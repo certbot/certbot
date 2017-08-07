@@ -23,8 +23,6 @@ from certbot import configuration
 from certbot import crypto_util
 from certbot import errors
 from certbot import main
-from certbot import renewal
-from certbot import storage
 from certbot import util
 
 from certbot.plugins import disco

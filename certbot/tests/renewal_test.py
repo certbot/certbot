@@ -1,5 +1,4 @@
 """Tests for certbot.renewal"""
-import os
 import mock
 import unittest
 

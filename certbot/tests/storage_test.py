@@ -13,7 +13,6 @@ import six
 
 import certbot
 from certbot import cli
-from certbot import configuration
 from certbot import errors
 from certbot.storage import ALL_FOUR
 

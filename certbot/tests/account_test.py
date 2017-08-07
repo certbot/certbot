@@ -14,12 +14,10 @@ from acme import messages
 
 from certbot import errors
 
-from certbot.tests import util
-
 import certbot.tests.util as test_util
 
 
-KEY = jose.JWKRSA.load(util.load_vector("rsa512_key_2.pem"))
+KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key_2.pem"))
 
 
 class AccountTest(unittest.TestCase):
