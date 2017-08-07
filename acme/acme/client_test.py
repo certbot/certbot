@@ -633,8 +633,8 @@ class ClientNetworkTest(unittest.TestCase):
                              "Connection refused", str(y))
 
         # Requests Library Exceptions
-        except requests.exceptions.RequestException as z: #pragma: no cover
-            self.assertEqual("('Connection aborted.', error(111, 'Connection refused'))", str(z))
+        except requests.exceptions.ConnectionError as z: #pragma: no cover
+            self.assertEqual("('Connection aborted.', error(99, 'Cannot assign requested address'))", str(z))
 
 class ClientNetworkWithMockedResponseTest(unittest.TestCase):
     """Tests for acme.client.ClientNetwork which mock out response."""
