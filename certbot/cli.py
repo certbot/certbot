@@ -1157,7 +1157,7 @@ def _create_subparsers(helpful):
     helpful.add("revoke",
                 "--reason", dest="reason",
                 choices=CaseInsensitiveList(sorted(constants.REVOCATION_REASONS,
-                                                   key=constants.REVOCATION_REASONS.get),
+                                                   key=constants.REVOCATION_REASONS.get)),
                 action=_EncodeReasonAction, default=0,
                 help="Specify reason for revoking certificate. (default: unspecified)")
     helpful.add("rollback",
