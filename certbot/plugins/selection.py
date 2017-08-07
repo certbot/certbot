@@ -108,11 +108,19 @@ def choose_plugin(prepared, question):
     opts = [plugin_ep.description_with_name +
             (" [Misconfigured]" if plugin_ep.misconfigured else "")
             for plugin_ep in prepared]
+    names = set(plugin_ep.name for plugin_ep in prepared)
 
     while True:
         disp = z_util(interfaces.IDisplay)
-        code, index = disp.menu(
-            question, opts, force_interactive=True)
+        if "CERTBOT_AUTO" in os.environ and names == set(("apache", "nginx")):
+            # The possibility of being offered exactly apache and nginx here
+            # is new interactivity brought by https://github.com/certbot/certbot/issues/4079,
+            # so set apache as a default for those kinds of non-interactive use
+            # (the user will get a warning to set --non-interactive or --force-interactive)
+            apache_idx = [n for n, p in enumerate(prepared) if p.name == "apache"][0]
+            code, index = disp.menu(question, opts, default=apache_idx)
+        else:
+            code, index = disp.menu(question, opts, force_interactive=True)
 
         if code == display_util.OK:
             plugin_ep = prepared[index]
