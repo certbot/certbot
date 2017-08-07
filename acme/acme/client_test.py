@@ -7,7 +7,6 @@ from six.moves import http_client  # pylint: disable=import-error
 
 import mock
 import requests
-import sys
 
 from acme import challenges
 from acme import errors
@@ -630,21 +629,8 @@ class ClientNetworkTest(unittest.TestCase):
 
         # Python Exceptions
         except ValueError as y:
-            if "linux" in sys.platform:
-                self.assertEqual("Requesting localhost/nonexistent: "
-                                 "Connection refused", str(y))
-            else: #pragma: no cover
-                self.assertEqual("Requesting localhost/nonexistent: "
-                                 "Connection refused", str(y))
-
-        # Requests Exceptions
-        except requests.exceptions.ConnectionError as z: #pragma: no cover
-            if "linux" in sys.platform:
-                self.assertEqual("('Connection aborted.', "
-                                 "error(111, 'Connection refused'))", str(z))
-            else: #pragma: no cover
-                self.assertEqual("('Connection aborted.', "
-                                 "error('Connection refused'))", str(z))
+            self.assertEqual("Requesting localhost/nonexistent: "
+                             "Connection refused", str(y))
 
 class ClientNetworkWithMockedResponseTest(unittest.TestCase):
     """Tests for acme.client.ClientNetwork which mock out response."""
