@@ -633,7 +633,7 @@ class ClientNetworkTest(unittest.TestCase):
                              "Connection refused", str(y))
 
         # Requests Library Exceptions
-        except requests.exceptions.RequestException as z:
+        except requests.exceptions.RequestException as z: #pragma: no cover
             self.assertEqual("('Connection aborted.', error(111, 'Connection refused'))", str(z))
 
 class ClientNetworkWithMockedResponseTest(unittest.TestCase):
