@@ -152,10 +152,11 @@ su_sudo() {
   su root -c "$args"
 }
 
-if [ "$1" = "--cb-auto-has-root" ]; then
-  shift 1
-elif [ "$1" != "--le-auto-phase2" ]; then
-  # if $1 is --le-auto-phase2, we've executed this branch before
+# Sets the environment variable SUDO to be the name of the program or function
+# to call to get root access. If this script already has root privleges, SUDO
+# is set to an empty string. The value in SUDO should be run with the command
+# to called with root privileges as arguments.
+set_root_auth_mechanism() {
   SUDO=""
   if [ -n "${LE_AUTO_SUDO+x}" ]; then
     case "$LE_AUTO_SUDO" in
@@ -181,6 +182,13 @@ elif [ "$1" != "--le-auto-phase2" ]; then
       fi
     fi
   fi
+}
+
+if [ "$1" = "--cb-auto-has-root" ]; then
+  shift 1
+elif [ "$1" != "--le-auto-phase2" ]; then
+  # if $1 is --le-auto-phase2, we've executed this branch before
+  set_root_auth_mechanism
   if [ -n "$SUDO" ]; then
     echo "Requesting to rerun $0 with root privileges..."
     $SUDO "$0" --cb-auto-has-root "$@"
