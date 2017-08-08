@@ -87,8 +87,6 @@ class NginxConfigurator(common.Plugin):
 
     description = "Nginx Web Server plugin - Alpha"
 
-    hidden = True
-
     DEFAULT_LISTEN_PORT = '80'
 
     @classmethod
