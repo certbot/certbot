@@ -1145,15 +1145,21 @@ def _create_subparsers(helpful):
              '(default: {0}). The flags encoded in the user agent are: '
              '--duplicate, --force-renew, --allow-subset-of-names, -n, and '
              'whether any hooks are set.'.format(sample_user_agent()))
+    helpful.add(
+        None, "--user-agent-comment", default=None, type=_user_agent_comment_type,
+        help="Add a comment to the default user agent string. May be used when repackaging Certbot "
+             "or calling it from another tool to allow additional statistical data to be collected."
+             " Ignored if --user-agent is set. (Example: Foo-Wrapper/1.0)")
     helpful.add("certonly",
                 "--csr", type=read_file,
                 help="Path to a Certificate Signing Request (CSR) in DER or PEM format."
                 " Currently --csr only works with the 'certonly' subcommand.")
     helpful.add("revoke",
                 "--reason", dest="reason",
-                choices=CaseInsensitiveList(constants.REVOCATION_REASONS.keys()),
+                choices=CaseInsensitiveList(sorted(constants.REVOCATION_REASONS,
+                                                   key=constants.REVOCATION_REASONS.get)),
                 action=_EncodeReasonAction, default=0,
-                help="Specify reason for revoking certificate.")
+                help="Specify reason for revoking certificate. (default: unspecified)")
     helpful.add("rollback",
                 "--checkpoints", type=int, metavar="N",
                 default=flag_default("rollback_checkpoints"),
@@ -1360,6 +1366,10 @@ def parse_preferred_challenges(pref_challs):
             "Unrecognized challenges: {0}".format(unrecognized))
     return challs
 
+def _user_agent_comment_type(value):
+    if "(" in value or ")" in value:
+        raise argparse.ArgumentTypeError("may not contain parentheses")
+    return value
 
 class _DeployHookAction(argparse.Action):
     """Action class for parsing deploy hooks."""
