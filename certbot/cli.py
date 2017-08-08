@@ -1156,9 +1156,10 @@ def _create_subparsers(helpful):
                 " Currently --csr only works with the 'certonly' subcommand.")
     helpful.add("revoke",
                 "--reason", dest="reason",
-                choices=CaseInsensitiveList(constants.REVOCATION_REASONS.keys()),
+                choices=CaseInsensitiveList(sorted(constants.REVOCATION_REASONS,
+                                                   key=constants.REVOCATION_REASONS.get)),
                 action=_EncodeReasonAction, default=0,
-                help="Specify reason for revoking certificate.")
+                help="Specify reason for revoking certificate. (default: unspecified)")
     helpful.add("rollback",
                 "--checkpoints", type=int, metavar="N",
                 default=flag_default("rollback_checkpoints"),
