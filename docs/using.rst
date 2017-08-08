@@ -538,14 +538,15 @@ commands into your individual environment.
 Modifying the Renewal Configuration File
 ----------------------------------------
 
-When a certificate is issued Certbot creates a renewal configuration file that
+When a certificate is issued, by default Certbot creates a renewal configuration file that
 tracks the options that were selected when Certbot was run. This allows Certbot
 to use those same options again when it comes time for renewal. These renewal
 configuration files are located at ``/etc/letsencrypt/renewal/CERTNAME``.
 
 For advanced certificate management tasks, it is possible to manually modify the certificate's
 renewal configuration file, but this is discouraged since it can easily break Certbot's
-ability to renew your certificates.
+ability to renew your certificates. If you choose to modify the renewal configuration file
+we advise you to test it's validity with the ``certbot renew --dry-run`` command.
 
 .. warning:: Modifying any files in ``/etc/letsencrypt`` can damage them so Certbot can no longer properly manage its certificates, and we do not recommend doing so.
 
@@ -816,10 +817,11 @@ By default, the following locations are searched:
   set).
 
 Since this configuration file applies to all invocations of certbot it is incorrect
-to list domains in it. Listing domains in cli.ini will prevent renewal from working.
+to list domains in it. Listing domains in cli.ini may prevent renewal from working.
 Additionally due to how arguments in cli.ini are parsed, options which wish to
-not be set should not be listed. Options set to ``= False`` will instead be read
-as being set to true, since they have been listed in the config file.
+not be set should not be listed. Options set to false will instead be read
+as being set to true by older versions of Certbot, since they have been listed
+in the config file.
 
 .. keep it up to date with constants.py
 
