@@ -341,6 +341,10 @@ fi
 PrevBootstrapVersion() {
   if [ -f $VENV_BOOTSTRAP_VERSION ]; then
     cat "$VENV_BOOTSTRAP_VERSION"
+  # The list below only contains bootstrap version strings that existed before
+  # we started writing them to disk.
+  #
+  # DO NOT MODIFY THIS LIST UNLESS YOU KNOW WHAT YOU'RE DOING!
   elif grep -Fqx "$BOOTSTRAP_VERSION" << "UNLIKELY_EOF"
 NO_BOOTSTRAP 1
 BootstrapDebCommon 1
