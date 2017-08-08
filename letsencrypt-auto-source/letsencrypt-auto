@@ -156,6 +156,7 @@ if [ "$1" = "--cb-auto-has-root" ]; then
   shift 1
 elif [ "$1" != "--le-auto-phase2" ]; then
   # if $1 is --le-auto-phase2, we've executed this branch before
+  SUDO=""
   if [ -n "${LE_AUTO_SUDO+x}" ]; then
     case "$LE_AUTO_SUDO" in
       su_sudo|su)
@@ -178,12 +179,13 @@ elif [ "$1" != "--le-auto-phase2" ]; then
         say \"sudo\" is not available, will use \"su\" for installation steps...
         SUDO=su_sudo
       fi
-    else
-      SUDO=
     fi
   fi
-  $SUDO "$0" --cb-auto-has-root "$@"
-  exit 0
+  if [ -n "$SUDO" ]; then
+    echo "Requesting to rerun $0 with root privileges..."
+    $SUDO "$0" --cb-auto-has-root "$@"
+    exit 0
+  fi
 fi
 
 BootstrapMessage() {
