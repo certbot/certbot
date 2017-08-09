@@ -23,12 +23,10 @@ class Installer(plugins_common.Plugin):
     description = "Configure TLS with the Postfix MTA"
 
     def __init__(self,
-                 policy_config,
                  postfix_dir,
                  fixup=False):
         self.fixup          = fixup
         self.postfix_dir    = postfix_dir
-        self.policy_config  = policy_config
         self.policy_file    = os.path.join(postfix_dir,
                                            "starttls_everywhere_policy")
         self.ca_file = os.path.join(postfix_dir, "starttls_everywhere_CAfile")
@@ -132,35 +130,6 @@ class Installer(plugins_common.Plugin):
 
         with open(self.fn, "w") as f:
             f.write(self.new_cf)
-
-    def set_domainwise_tls_policies(self):
-        all_acceptable_mxs = self.policy_config.acceptable_mxs
-        for address_domain, properties in all_acceptable_mxs.items():
-            mx_list = properties.accept_mx_domains
-            if len(mx_list) > 1:
-                logger.warn('Lists of multiple accept-mx-domains not yet '
-                            'supported.')
-                logger.warn('Using MX {} for {}'.format(mx_list[0],
-                                                        address_domain)
-                           )
-                logger.warn('Ignoring: {}'.format(', '.join(mx_list[1:])))
-            mx_domain = mx_list[0]
-            mx_policy = self.policy_config.get_tls_policy(mx_domain)
-            entry = address_domain + " encrypt"
-            if mx_policy.min_tls_version.lower() == "tlsv1":
-                entry += " protocols=!SSLv2:!SSLv3"
-            elif mx_policy.min_tls_version.lower() == "tlsv1.1":
-                entry += " protocols=!SSLv2:!SSLv3:!TLSv1"
-            elif mx_policy.min_tls_version.lower() == "tlsv1.2":
-                entry += " protocols=!SSLv2:!SSLv3:!TLSv1:!TLSv1.1"
-            else:
-                logger.warn('Unknown minimum TLS version: {} '.format(
-                    mx_policy.min_tls_version)
-                )
-            self.policy_lines.append(entry)
-
-        with open(self.policy_file, "w") as f:
-            f.write("\n".join(self.policy_lines) + "\n")
 
     ### Let's Encrypt client IPlugin ###
     # https://github.com/letsencrypt/letsencrypt/blob/master/letsencrypt/plugins/common.py#L35
@@ -405,6 +374,35 @@ class Installer(plugins_common.Plugin):
 
     def update_CAfile(self):
         os.system("cat /usr/share/ca-certificates/mozilla/*.crt > " + self.ca_file)
+
+    # def set_domainwise_tls_policies(self):
+    #     all_acceptable_mxs = self.policy_config.acceptable_mxs
+    #     for address_domain, properties in all_acceptable_mxs.items():
+    #         mx_list = properties.accept_mx_domains
+    #         if len(mx_list) > 1:
+    #             logger.warn('Lists of multiple accept-mx-domains not yet '
+    #                         'supported.')
+    #             logger.warn('Using MX {} for {}'.format(mx_list[0],
+    #                                                     address_domain)
+    #                        )
+    #             logger.warn('Ignoring: {}'.format(', '.join(mx_list[1:])))
+    #         mx_domain = mx_list[0]
+    #         mx_policy = self.policy_config.get_tls_policy(mx_domain)
+    #         entry = address_domain + " encrypt"
+    #         if mx_policy.min_tls_version.lower() == "tlsv1":
+    #             entry += " protocols=!SSLv2:!SSLv3"
+    #         elif mx_policy.min_tls_version.lower() == "tlsv1.1":
+    #             entry += " protocols=!SSLv2:!SSLv3:!TLSv1"
+    #         elif mx_policy.min_tls_version.lower() == "tlsv1.2":
+    #             entry += " protocols=!SSLv2:!SSLv3:!TLSv1:!TLSv1.1"
+    #         else:
+    #             logger.warn('Unknown minimum TLS version: {} '.format(
+    #                 mx_policy.min_tls_version)
+    #             )
+    #         self.policy_lines.append(entry)
+
+    #     with open(self.policy_file, "w") as f:
+    #         f.write("\n".join(self.policy_lines) + "\n")
 
 
 def parse_line(line_data):

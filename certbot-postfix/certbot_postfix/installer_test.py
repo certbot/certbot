@@ -29,7 +29,6 @@ smtpd_tls_key_file = /etc/letsencrypt/live/www.fubard.org/privkey.pem""")
 class TestPostfixConfigGenerator(unittest.TestCase):
 
     def setUp(self):
-        self.config = None
         self.postfix_dir = 'tests/'
 
     def testGetAllNames(self):
@@ -37,7 +36,6 @@ class TestPostfixConfigGenerator(unittest.TestCase):
         with mock.patch('certbot_postfix.installer.open') as mock_open:
             mock_open.return_value = six.StringIO(names_only_config)
             postfix_config_gen = installer.Installer(
-                self.config,
                 self.postfix_dir,
                 fixup=True,
             )
@@ -50,7 +48,6 @@ class TestPostfixConfigGenerator(unittest.TestCase):
         with mock.patch('certbot_postfix.installer.open') as mock_open:
             mock_open.return_value = six.StringIO(certs_only_config)
             postfix_config_gen = installer.Installer(
-                self.config,
                 self.postfix_dir,
                 fixup=True,
             )
@@ -60,7 +57,6 @@ class TestPostfixConfigGenerator(unittest.TestCase):
         with mock.patch('certbot_postfix.installer.open') as mock_open:
             mock_open.return_value = six.StringIO(names_only_config)
             postfix_config_gen = installer.Installer(
-                self.config,
                 self.postfix_dir,
                 fixup=True,
             )
