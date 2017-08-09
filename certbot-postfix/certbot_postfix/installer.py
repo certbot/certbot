@@ -22,6 +22,12 @@ class Installer(plugins_common.Plugin):
 
     description = "Configure TLS with the Postfix MTA"
 
+    @classmethod
+    def add_parser_arguments(cls, add):
+        add("config-dir", help="Path to the directory containing the "
+            "Postfix main.cf file to modify instead of using the "
+            "default configuration paths")
+
     def __init__(self,
                  postfix_dir,
                  fixup=False):
