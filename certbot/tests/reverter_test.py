@@ -14,16 +14,16 @@ from certbot import errors
 from certbot.tests import util as test_util
 
 
-class ReverterCheckpointLocalTest(unittest.TestCase):
+class ReverterCheckpointLocalTest(test_util.ConfigTestCase):
     # pylint: disable=too-many-instance-attributes, too-many-public-methods
     """Test the Reverter Class."""
     def setUp(self):
+        super(ReverterCheckpointLocalTest, self).setUp()
         from certbot.reverter import Reverter
 
         # Disable spurious errors... we are trying to test for them
         logging.disable(logging.CRITICAL)
 
-        self.config = setup_work_direc()
         self.reverter = Reverter(self.config)
 
         tup = setup_test_files()
@@ -277,15 +277,15 @@ class ReverterCheckpointLocalTest(unittest.TestCase):
         self.assertEqual(read_in(self.config2), "directive-dir2")
 
 
-class TestFullCheckpointsReverter(unittest.TestCase):
+class TestFullCheckpointsReverter(test_util.ConfigTestCase):
     # pylint: disable=too-many-instance-attributes
     """Tests functions having to deal with full checkpoints."""
     def setUp(self):
+        super(TestFullCheckpointsReverter, self).setUp()
         from certbot.reverter import Reverter
         # Disable spurious errors...
         logging.disable(logging.CRITICAL)
 
-        self.config = setup_work_direc()
         self.reverter = Reverter(self.config)
 
         tup = setup_test_files()
@@ -437,21 +437,6 @@ class TestFullCheckpointsReverter(unittest.TestCase):
         update_file(config3, "Final form config3")
 
         return config3
-
-
-def setup_work_direc():
-    """Setup directories.
-
-    :returns: Mocked :class:`certbot.interfaces.IConfig`
-
-    """
-    work_dir = tempfile.mkdtemp("work")
-    backup_dir = os.path.join(work_dir, "backup")
-
-    return mock.MagicMock(
-        work_dir=work_dir, backup_dir=backup_dir,
-        temp_checkpoint_dir=os.path.join(work_dir, "temp"),
-        in_progress_dir=os.path.join(backup_dir, "in_progress_dir"))
 
 
 def setup_test_files():

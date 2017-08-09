@@ -6,33 +6,32 @@ import mock
 
 from certbot import errors
 
+from certbot.tests import util as test_util
 
-class NamespaceConfigTest(unittest.TestCase):
+class NamespaceConfigTest(test_util.ConfigTestCase):
     """Tests for certbot.configuration.NamespaceConfig."""
 
     def setUp(self):
-        self.namespace = mock.MagicMock(
-            config_dir='/tmp/config', work_dir='/tmp/foo',
-            logs_dir="/tmp/bar", foo='bar',
-            server='https://acme-server.org:443/new',
-            tls_sni_01_port=1234, http01_port=4321)
-        from certbot.configuration import NamespaceConfig
-        self.config = NamespaceConfig(self.namespace)
+        super(NamespaceConfigTest, self).setUp()
+        self.config.foo = 'bar'
+        self.config.server = 'https://acme-server.org:443/new'
+        self.config.tls_sni_01_port = 1234
+        self.config.http01_port = 4321
 
     def test_init_same_ports(self):
-        self.namespace.tls_sni_01_port = 4321
+        self.config.namespace.tls_sni_01_port = 4321
         from certbot.configuration import NamespaceConfig
-        self.assertRaises(errors.Error, NamespaceConfig, self.namespace)
+        self.assertRaises(errors.Error, NamespaceConfig, self.config.namespace)
 
     def test_proxy_getattr(self):
         self.assertEqual(self.config.foo, 'bar')
-        self.assertEqual(self.config.work_dir, '/tmp/foo')
+        self.assertEqual(self.config.work_dir, os.path.join(self.tempdir, 'work'))
 
     def test_server_path(self):
         self.assertEqual(['acme-server.org:443', 'new'],
                          self.config.server_path.split(os.path.sep))
 
-        self.namespace.server = ('http://user:pass@acme.server:443'
+        self.config.namespace.server = ('http://user:pass@acme.server:443'
                                  '/p/a/t/h;parameters?query#fragment')
         self.assertEqual(['user:pass@acme.server:443', 'p', 'a', 't', 'h'],
                          self.config.server_path.split(os.path.sep))
@@ -48,12 +47,18 @@ class NamespaceConfigTest(unittest.TestCase):
         constants.TEMP_CHECKPOINT_DIR = 't'
 
         self.assertEqual(
-            self.config.accounts_dir, '/tmp/config/acc/acme-server.org:443/new')
-        self.assertEqual(self.config.backup_dir, '/tmp/foo/backups')
-        self.assertEqual(self.config.csr_dir, '/tmp/config/csr')
-        self.assertEqual(self.config.in_progress_dir, '/tmp/foo/../p')
-        self.assertEqual(self.config.key_dir, '/tmp/config/keys')
-        self.assertEqual(self.config.temp_checkpoint_dir, '/tmp/foo/t')
+            self.config.accounts_dir, os.path.join(
+                self.config.config_dir, 'acc/acme-server.org:443/new'))
+        self.assertEqual(
+                self.config.backup_dir, os.path.join(self.config.work_dir, 'backups'))
+        self.assertEqual(
+                self.config.csr_dir, os.path.join(self.config.config_dir, 'csr'))
+        self.assertEqual(
+                self.config.in_progress_dir, os.path.join(self.config.work_dir, '../p'))
+        self.assertEqual(
+                self.config.key_dir, os.path.join(self.config.config_dir, 'keys'))
+        self.assertEqual(
+                self.config.temp_checkpoint_dir, os.path.join(self.config.work_dir, 't'))
 
     def test_absolute_paths(self):
         from certbot.configuration import NamespaceConfig
@@ -95,10 +100,13 @@ class NamespaceConfigTest(unittest.TestCase):
         constants.LIVE_DIR = 'l'
         constants.RENEWAL_CONFIGS_DIR = 'renewal_configs'
 
-        self.assertEqual(self.config.default_archive_dir, '/tmp/config/a')
-        self.assertEqual(self.config.live_dir, '/tmp/config/l')
         self.assertEqual(
-            self.config.renewal_configs_dir, '/tmp/config/renewal_configs')
+                self.config.default_archive_dir, os.path.join(self.config.config_dir, 'a'))
+        self.assertEqual(
+                self.config.live_dir, os.path.join(self.config.config_dir, 'l'))
+        self.assertEqual(
+                self.config.renewal_configs_dir, os.path.join(
+                    self.config.config_dir, 'renewal_configs'))
 
     def test_renewal_absolute_paths(self):
         from certbot.configuration import NamespaceConfig
