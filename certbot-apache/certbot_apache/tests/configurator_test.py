@@ -131,9 +131,7 @@ class MultipleVhostsTest(util.ApacheTest):
     @mock.patch("certbot_apache.configurator.socket.gethostbyaddr")
     def test_get_all_names_addrs(self, mock_gethost, mock_getutility):
         mock_gethost.side_effect = [("google.com", "", ""), socket.error]
-        notification = mock.Mock()
-        notification.notification = mock.Mock(return_value=True)
-        mock_getutility.return_value = notification
+        mock_getutility().notification.return_value = True
         vhost = obj.VirtualHost(
             "fp", "ap",
             set([obj.Addr(("8.8.8.8", "443")),
