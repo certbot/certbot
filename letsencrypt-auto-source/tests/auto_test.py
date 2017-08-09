@@ -166,7 +166,7 @@ def install_le_auto(contents, install_path):
     root level of a virtualenv.
 
     :arg contents: The contents of the built letsencrypt-auto script
-    :arg install_path: path where to install the script
+    :arg install_path: The path where to install the script
 
     """
     with open(install_path, 'w') as le_auto:

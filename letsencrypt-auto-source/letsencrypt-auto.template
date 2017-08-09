@@ -124,16 +124,16 @@ fi
 
 # Certbot itself needs root access for almost all modes of operation.
 # certbot-auto needs root access to bootstrap OS dependencies and install
-# Certbot a protected path so it can be safely run as root. To accomplish this,
-# this script will attempt to run itself as root if it doesn't have the
+# Certbot at a protected path so it can be safely run as root. To accomplish
+# this, this script will attempt to run itself as root if it doesn't have the
 # necessary privileges by using `sudo` or falling back to `su` if it is not
-# available. The mechanism used to obtain root access can set explicitly by the
-# user by overriding the environment variable LE_AUTO_SUDO to 'sudo',
-# 'su_sudo', or '' as used below.
+# available. The mechanism used to obtain root access can be set explicitly by
+# setting the environment variable LE_AUTO_SUDO to 'sudo', 'su', 'su_sudo',
+# 'SuSudo', or '' as used below.
 
 # Because the parameters in `su -c` has to be a string,
 # we need to properly escape it.
-su_sudo() {
+SuSudo() {
   args=""
   # This `while` loop iterates over all parameters given to this function.
   # For each parameter, all `'` will be replace by `'"'"'`, and the escaped string
@@ -156,12 +156,12 @@ su_sudo() {
 # to call to get root access. If this script already has root privleges, SUDO
 # is set to an empty string. The value in SUDO should be run with the command
 # to called with root privileges as arguments.
-set_root_auth_mechanism() {
+SetRootAuthMechanism() {
   SUDO=""
   if [ -n "${LE_AUTO_SUDO+x}" ]; then
     case "$LE_AUTO_SUDO" in
-      su_sudo|su)
-        SUDO=su_sudo
+      SuSudo|su_sudo|su)
+        SUDO=SuSudo
         ;;
       sudo)
         SUDO="sudo -E"
@@ -178,7 +178,7 @@ set_root_auth_mechanism() {
         SUDO="sudo -E"
       else
         say \"sudo\" is not available, will use \"su\" for installation steps...
-        SUDO=su_sudo
+        SUDO=SuSudo
       fi
     fi
   fi
@@ -188,7 +188,7 @@ if [ "$1" = "--cb-auto-has-root" ]; then
   shift 1
 elif [ "$1" != "--le-auto-phase2" ]; then
   # if $1 is --le-auto-phase2, we've executed this branch before
-  set_root_auth_mechanism
+  SetRootAuthMechanism
   if [ -n "$SUDO" ]; then
     echo "Requesting to rerun $0 with root privileges..."
     $SUDO "$0" --cb-auto-has-root "$@"
