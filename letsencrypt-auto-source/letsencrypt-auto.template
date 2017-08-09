@@ -28,7 +28,7 @@ if [ -z "$VENV_PATH" ]; then
   VENV_PATH="$XDG_DATA_HOME/$VENV_NAME"
 fi
 VENV_BIN="$VENV_PATH/bin"
-VENV_BOOTSTRAP_VERSION="$VENV_PATH/certbot-auto-bootstrap-version.txt"
+BOOTSTRAP_VERSION_PATH="$VENV_PATH/certbot-auto-bootstrap-version.txt"
 LE_AUTO_VERSION="{{ LE_AUTO_VERSION }}"
 BASENAME=$(basename $0)
 USAGE="Usage: $BASENAME [OPTIONS]
@@ -339,8 +339,8 @@ else
 fi
 
 PrevBootstrapVersion() {
-  if [ -f $VENV_BOOTSTRAP_VERSION ]; then
-    cat "$VENV_BOOTSTRAP_VERSION"
+  if [ -f $BOOTSTRAP_VERSION_PATH ]; then
+    cat "$BOOTSTRAP_VERSION_PATH"
   # The list below only contains bootstrap version strings that existed before
   # we started writing them to disk.
   #
@@ -415,7 +415,7 @@ if [ "$1" = "--le-auto-phase2" ]; then
     else
       virtualenv --no-site-packages --python "$LE_PYTHON" "$VENV_PATH" > /dev/null
     fi
-    echo "$BOOTSTRAP_VERSION" > "$VENV_BOOTSTRAP_VERSION"
+    echo "$BOOTSTRAP_VERSION" > "$BOOTSTRAP_VERSION_PATH"
 
     say "Installing Python packages..."
     TEMP_DIR=$(TempDir)
