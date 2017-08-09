@@ -208,6 +208,13 @@ class FreezableMock(object):
             return getattr(object.__getattribute__(self, '_mock'), name)
 
     def __setattr__(self, name, value):
+        """ Set attributes on the underlying _mock if the FreezableMock is frozen.
+
+        In cases of return_value and side_effect, these attributes are always passed
+        through to the instance's _mock. return_value cannot be set after the FreezableMock
+        instance has been frozen.
+
+        """
         if name == 'return_value': # Rationale: __setattr__ takes precedence over properties
             if self._frozen:
                 msg = ("Changing the return_value of a frozen FreezableMock is forbidden "
