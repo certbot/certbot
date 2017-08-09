@@ -487,6 +487,8 @@ def install(config, plugins):
     except errors.PluginSelectionError as e:
         return str(e)
 
+    logger.info('Plugins used: Installer: {0}'.format(installer.__class__))
+
     domains, _ = _find_domains_or_certname(config, installer)
     le_client = _init_le_client(config, authenticator=None, installer=installer)
     _install_cert(config, le_client, domains)
@@ -594,6 +596,9 @@ def run(config, plugins):  # pylint: disable=too-many-branches,too-many-locals
     except errors.PluginSelectionError as e:
         return str(e)
 
+    logger.info('Plugins used: Authenticator: {0}; Installer: {1}'.format(
+        authenticator.__class__, installer.__class__))
+
     # TODO: Handle errors from _init_le_client?
     le_client = _init_le_client(config, authenticator, installer)
 
@@ -645,6 +650,10 @@ def renew_cert(config, plugins, lineage):
     except errors.PluginSelectionError as e:
         logger.info("Could not choose appropriate plugin: %s", e)
         raise
+
+    logger.info('Plugins used: Authenticator: {0}; Installer: {1}'.format(
+        auth.__class__, installer.__class__))
+
     le_client = _init_le_client(config, auth, installer)
 
     _get_and_save_cert(le_client, config, lineage=lineage)
@@ -673,6 +682,10 @@ def certonly(config, plugins):
     except errors.PluginSelectionError as e:
         logger.info("Could not choose appropriate plugin: %s", e)
         raise
+
+    logger.info('Plugins used: Authenticator: {0}; Installer: {1}'.format(
+        auth.__class__, installer.__class__))
+
     le_client = _init_le_client(config, auth, installer)
 
     if config.csr:
