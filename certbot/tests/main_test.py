@@ -817,22 +817,6 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
             self._test_renewal_common(True, [], args=args, should_renew=True,
                                       error_expected=False)
 
-    # Duplicated in renewal_test.py
-    # @mock.patch("certbot.cli.set_by_cli")
-    # def test_ancient_webroot_renewal_conf(self, mock_set_by_cli):
-    #     mock_set_by_cli.return_value = False
-    #     rc_path = test_util.make_lineage(
-    #         self.config_dir, 'sample-renewal-ancient.conf')
-    #     args = mock.MagicMock(account=None, config_dir=self.config_dir,
-    #                           logs_dir=self.logs_dir, work_dir=self.work_dir,
-    #                           email=None, webroot_path=None)
-    #     config = configuration.NamespaceConfig(args)
-    #     lineage = storage.RenewableCert(rc_path, config)
-    #     renewalparams = lineage.configuration["renewalparams"]
-    #     # pylint: disable=protected-access
-    #     renewal._restore_webroot_config(config, renewalparams)
-    #     self.assertEqual(config.webroot_path, ["/var/www/"])
-
     def test_renew_verb_empty_config(self):
         rd = os.path.join(self.config.config_dir, 'renewal')
         if not os.path.exists(rd):

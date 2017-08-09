@@ -99,7 +99,6 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
     def setUp(self):
         super(AccountFileStorageTest, self).setUp()
 
-        self.config.accounts_dir = os.path.join(self.tempdir, "accounts")
         from certbot.account import AccountFileStorage
         self.storage = AccountFileStorage(self.config)
 

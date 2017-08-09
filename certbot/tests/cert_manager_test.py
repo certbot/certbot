@@ -26,9 +26,7 @@ class BaseCertManagerTest(test_util.ConfigTestCase):
         super(BaseCertManagerTest, self).setUp()
 
         self.config.quiet = False
-        # TODO: This and others should use the NamespaceConfig properties, no?
-        # cj-dev
-        os.makedirs(os.path.join(self.config.config_dir, "renewal"))
+        os.makedirs(self.config.renewal_configs_dir)
 
         self.domains = {
             "example.org": None,
@@ -40,27 +38,27 @@ class BaseCertManagerTest(test_util.ConfigTestCase):
         # We also create a file that isn't a renewal config in the same
         # location to test that logic that reads in all-and-only renewal
         # configs will ignore it and NOT attempt to parse it.
-        junk = open(os.path.join(self.config.config_dir, "renewal", "IGNORE.THIS"), "w")
+        junk = open(os.path.join(self.config.renewal_configs_dir, "IGNORE.THIS"), "w")
         junk.write("This file should be ignored!")
         junk.close()
 
     def _set_up_config(self, domain, custom_archive):
         # TODO: maybe provide NamespaceConfig.make_dirs?
         # TODO: main() should create those dirs, c.f. #902
-        os.makedirs(os.path.join(self.config.config_dir, "live", domain))
+        os.makedirs(os.path.join(self.config.live_dir, domain))
         config_file = configobj.ConfigObj()
 
         if custom_archive is not None:
             os.makedirs(custom_archive)
             config_file["archive_dir"] = custom_archive
         else:
-            os.makedirs(os.path.join(self.config.config_dir, "archive", domain))
+            os.makedirs(os.path.join(self.config.default_archive_dir, domain))
 
         for kind in ALL_FOUR:
-            config_file[kind] = os.path.join(self.config.config_dir, "live", domain,
+            config_file[kind] = os.path.join(self.config.live_dir, domain,
                                         kind + ".pem")
 
-        config_file.filename = os.path.join(self.config.config_dir, "renewal",
+        config_file.filename = os.path.join(self.config.renewal_configs_dir,
                                        domain + ".conf")
         config_file.write()
         return config_file
@@ -80,7 +78,7 @@ class UpdateLiveSymlinksTest(BaseCertManagerTest):
             if custom_archive is not None:
                 archive_dir_path = custom_archive
             else:
-                archive_dir_path = os.path.join(self.config.config_dir, "archive", domain)
+                archive_dir_path = os.path.join(self.config.default_archive_dir, domain)
             archive_paths[domain] = dict((kind,
                 os.path.join(archive_dir_path, kind + "1.pem")) for kind in ALL_FOUR)
             for kind in ALL_FOUR:
@@ -169,7 +167,7 @@ class CertificatesTest(BaseCertManagerTest):
             quiet=False
         ))
 
-        os.makedirs(os.path.join(empty_config.config_dir, "renewal"))
+        os.makedirs(empty_config.renewal_configs_dir)
         self._certificates(empty_config)
         self.assertFalse(mock_logger.warning.called) #pylint: disable=no-member
         self.assertTrue(mock_utility.called)
@@ -384,7 +382,6 @@ class RenameLineageTest(BaseCertManagerTest):
     @mock.patch("certbot.storage.RenewableCert._check_symlinks")
     def test_rename_cert(self, mock_check, unused_get_utility):
         mock_check.return_value = True
-        # mock_config = self.mock_config
         self._call(self.config)
         from certbot import cert_manager
         updated_lineage = cert_manager.lineage_for_certname(self.config, self.config.new_certname)
@@ -395,7 +392,6 @@ class RenameLineageTest(BaseCertManagerTest):
     @mock.patch("certbot.storage.RenewableCert._check_symlinks")
     def test_rename_cert_interactive_certname(self, mock_check, mock_get_utility):
         mock_check.return_value = True
-        # mock_config = self.mock_config
         self.config.certname = None
         util_mock = mock.Mock()
         util_mock.menu.return_value = (display_util.OK, 0)
@@ -410,7 +406,6 @@ class RenameLineageTest(BaseCertManagerTest):
     @mock.patch("certbot.storage.RenewableCert._check_symlinks")
     def test_rename_cert_bad_new_certname(self, mock_check, unused_get_utility):
         mock_check.return_value = True
-        # mock_config = self.mock_config
 
         # for example, don't rename to existing certname
         self.config.new_certname = "example.org"

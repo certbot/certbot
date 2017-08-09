@@ -22,9 +22,9 @@ from certbot import constants
 from certbot import interfaces
 from certbot import storage
 from certbot import util
+from certbot import configuration
 
 from certbot.display import util as display_util
-from certbot.configuration import NamespaceConfig
 
 
 def vector_path(*names):
@@ -253,8 +253,8 @@ class ConfigTestCase(TempDirTestCase):
     """
     def setUp(self):
         super(ConfigTestCase, self).setUp()
-        self.config = NamespaceConfig(
-            mock.MagicMock(
+        self.config = configuration.NamespaceConfig(
+            mock.MagicMock( # spec me?
                 config_dir=os.path.join(self.tempdir, 'config'),
                 work_dir=os.path.join(self.tempdir, 'work'),
                 logs_dir=os.path.join(self.tempdir, 'logs'),
