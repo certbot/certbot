@@ -208,11 +208,16 @@ class FreezableMock(object):
             return getattr(object.__getattribute__(self, '_mock'), name)
 
     def __setattr__(self, name, value):
-        if self._frozen:
-            if name == 'return_value': # Rationale: __setattr__ takes precedence over properties
+        if name == 'return_value': # Rationale: __setattr__ takes precedence over properties
+            if self._frozen:
                 msg = ("Changing the return_value of a frozen FreezableMock is forbidden "
                         "because that would nullify callbacks important to thorough tests.")
                 raise AttributeError(msg)
+            else:
+                return setattr(self._mock, name, value)
+        if name == 'side_effect':
+            return setattr(self._mock, name, value)
+        if self._frozen:
             return setattr(self._mock, name, value)
         elif name != '_frozen_set':
             self._frozen_set.add(name)
@@ -222,7 +227,7 @@ def _create_get_utility_mock():
     display = FreezableMock()
     for name in interfaces.IDisplay.names():  # pylint: disable=no-member
         if name != 'notification':
-            frozen_mock = FreezableMock(frozen=True, func=_assert_valid_call)
+            frozen_mock = FreezableMock(frozen=False, func=_assert_valid_call)
             setattr(display, name, frozen_mock)
     display.freeze()
     return FreezableMock(frozen=True, return_value=display)
