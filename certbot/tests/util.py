@@ -254,7 +254,7 @@ class ConfigTestCase(TempDirTestCase):
     def setUp(self):
         super(ConfigTestCase, self).setUp()
         self.config = configuration.NamespaceConfig(
-            mock.MagicMock( # spec me?
+            mock.MagicMock(
                 config_dir=os.path.join(self.tempdir, 'config'),
                 work_dir=os.path.join(self.tempdir, 'work'),
                 logs_dir=os.path.join(self.tempdir, 'logs'),
