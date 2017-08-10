@@ -74,11 +74,42 @@ class Installer(plugins_common.Plugin):
             self.raw_cf = f.readlines()
         self.cf = map(string.strip, self.raw_cf)
         #self.cf = [line for line in cf if line and not line.startswith("#")]
-        # XXX ensure we raise the right kinds of exceptions
 
+    def _verify_postconf_available(self):
+        """Ensure 'postconf' can be found.
+
+        :raises .NoInstallationError: when unable to find 'postconf'
+
+        """
+        if not certbot_util.exe_exists(self.conf("config-utility")):
+            if not plugins_util.path_surgery(self.conf("config-utility")):
+                raise errors.NoInstallationError(
+                    "Cannot find executable '{0}'. You can provide the "
+                    "path to this command with --{1}".format(
+                        self.conf("config-utility"),
+                        self.option_name("config-utility")))
+
+    def _set_config_dir(self):
+        """Ensure self.config_dir is set to the correct path.
+
+        If the configuration directory to use was set by the user, we'll
+        use that value, otherwise, we'll find the default path using
+        'postconf'.
+
+        """
+        if self.conf("config-dir") is None:
+            self.config_dir = self.get_config_var("config_directory")
+        else:
+            self.config_dir = self.conf("config-dir")
+
+    def _check_version(self):
+        """Verifies that the installed Postfix version is supported.
+
+        :raises errors.NotSupportedError: if the version is unsupported
+
+        """
         if self.get_version() < (2, 11, 0):
             raise errors.NotSupportedError('Postfix version is too old')
-
         # Postfix has changed support for TLS features, supported protocol versions
         # KEX methods, ciphers et cetera over the years. We sort out version dependend
         # differences here and pass them onto other configuration functions.
@@ -123,32 +154,6 @@ class Installer(plugins_common.Plugin):
         # - Built-in support for TLS management and DANE added, see:
         #   http://www.postfix.org/postfix-tls.1.html
 
-    def _verify_postconf_available(self):
-        """Ensure 'postconf' can be found.
-
-        :raises .NoInstallationError: when unable to find 'postconf'
-
-        """
-        if not certbot_util.exe_exists(self.conf("config-utility")):
-            if not plugins_util.path_surgery(self.conf("config-utility")):
-                raise errors.NoInstallationError(
-                    "Cannot find executable '{0}'. You can provide the "
-                    "path to this command with --{1}".format(
-                        self.conf("config-utility"),
-                        self.option_name("config-utility")))
-
-    def _set_config_dir(self):
-        """Ensure self.config_dir is set to the correct path.
-
-        If the configuration directory to use was set by the user, we'll
-        use that value, otherwise, we'll find the default path using
-        'postconf'.
-
-        """
-        if self.conf("config-dir") is None:
-            self.config_dir = self.get_config_var("config_directory")
-        else:
-            self.config_dir = self.conf("config-dir")
 
     def find_postfix_cf(self):
         "Search far and wide for the correct postfix configuration file"
