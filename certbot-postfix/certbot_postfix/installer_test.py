@@ -7,6 +7,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import logging
+import subprocess
 import unittest
 
 import mock
@@ -28,7 +29,8 @@ smtpd_tls_key_file = /etc/letsencrypt/live/www.fubard.org/privkey.pem""")
 class InstallerTest(unittest.TestCase):
 
     def setUp(self):
-        self.config = mock.MagicMock(postfix_config_dir="tests/")
+        self.config = mock.MagicMock(postfix_config_dir="tests/",
+                                     postfix_config_utility="postconf")
 
     def test_add_parser_arguments(self):
         mock_add = mock.MagicMock()
@@ -90,6 +92,22 @@ class InstallerTest(unittest.TestCase):
         command = self._test_get_config_var_success_common('foo', True)
         self.assertFalse("-c" in command)
         self.assertTrue("-d" in command)
+
+    @mock.patch("certbot_postfix.installer.logger")
+    @mock.patch("certbot_postfix.installer.util.check_output")
+    def test_get_config_var_failure(self, mock_check_output, mock_logger):
+        mock_check_output.side_effect = subprocess.CalledProcessError(42, "foo")
+        installer = self._create_installer()
+        self.assertRaises(errors.PluginError, installer.get_config_var, "foo")
+        self.assertTrue(mock_logger.debug.call_args[1]["exc_info"])
+
+    @mock.patch("certbot_postfix.installer.util.check_output")
+    def test_get_config_var_unexpected_output(self, mock_check_output):
+        self.config.postfix_config_dir = None
+        mock_check_output.return_value = "foo"
+
+        installer = self._create_installer()
+        self.assertRaises(errors.PluginError, installer.get_config_var, "foo")
 
     def _test_get_config_var_success_common(self, name, default):
         installer = self._create_installer()
