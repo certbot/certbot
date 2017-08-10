@@ -7,6 +7,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import logging
+import os
 import subprocess
 import unittest
 
@@ -14,6 +15,7 @@ import mock
 import six
 
 from certbot import errors
+from certbot.tests import util as certbot_test_util
 
 # Fake Postfix Configs
 names_only_config = """myhostname = mail.fubard.org
@@ -26,10 +28,11 @@ certs_only_config = (
 smtpd_tls_key_file = /etc/letsencrypt/live/www.fubard.org/privkey.pem""")
 
 
-class InstallerTest(unittest.TestCase):
+class InstallerTest(certbot_test_util.TempDirTestCase):
 
     def setUp(self):
-        self.config = mock.MagicMock(postfix_config_dir="tests/",
+        super(InstallerTest, self).setUp()
+        self.config = mock.MagicMock(postfix_config_dir=self.tempdir,
                                      postfix_config_utility="postconf")
 
     def test_add_parser_arguments(self):
@@ -62,7 +65,7 @@ class InstallerTest(unittest.TestCase):
     def test_get_all_certs_and_keys(self):
         return_vals = [('/etc/letsencrypt/live/www.fubard.org/fullchain.pem',
                         '/etc/letsencrypt/live/www.fubard.org/privkey.pem',
-                        'tests/main.cf'),]
+                        os.path.join(self.tempdir, 'main.cf')),]
         with mock.patch('certbot_postfix.installer.open') as mock_open:
             mock_open.return_value = six.StringIO(certs_only_config)
             postfix_config_gen = self._create_prepared_installer()
