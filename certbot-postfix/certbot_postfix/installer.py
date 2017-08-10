@@ -32,7 +32,6 @@ class Installer(plugins_common.Plugin):
         super(Installer, self).__init__(*args, **kwargs)
         self.fixup          = False
         self.postfix_dir    = self.conf("config-dir")
-        self.ca_file = os.path.join(self.postfix_dir, "starttls_everywhere_CAfile")
 
         self.additions = []
         self.deletions = []
@@ -98,7 +97,7 @@ class Installer(plugins_common.Plugin):
         # policy_cf_entry = "texthash:" + self.policy_file
 
         # self.ensure_cf_var("smtp_tls_policy_maps", policy_cf_entry, [])
-        self.ensure_cf_var("smtp_tls_CAfile", self.ca_file, [])
+        # self.ensure_cf_var("smtp_tls_CAfile", self.ca_file, [])
 
 	# Disable SSLv2 and SSLv3. Syntax for `smtp_tls_protocols` changed
 	# between Postfix version 2.5 and 2.6, since we only support => 2.11
@@ -375,9 +374,9 @@ class Installer(plugins_common.Plugin):
         if rc != 0:
             raise errors.MisconfigurationError('cannot restart postfix')
 
-    def update_CAfile(self):
-        os.system("cat /usr/share/ca-certificates/mozilla/*.crt > " + self.ca_file)
-
+    # def update_CAfile(self):
+    #     os.system("cat /usr/share/ca-certificates/mozilla/*.crt > " + self.ca_file)
+    #
     # def set_domainwise_tls_policies(self):
     #     all_acceptable_mxs = self.policy_config.acceptable_mxs
     #     for address_domain, properties in all_acceptable_mxs.items():
