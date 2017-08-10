@@ -9,7 +9,9 @@ import zope.interface
 
 from certbot import errors
 from certbot import interfaces
+from certbot import util
 from certbot.plugins import common as plugins_common
+from certbot.plugins import util as plugins_util
 
 
 logger = logging.getLogger(__name__)
@@ -27,6 +29,8 @@ class Installer(plugins_common.Plugin):
         add("config-dir", help="Path to the directory containing the "
             "Postfix main.cf file to modify instead of using the "
             "default configuration paths")
+        add("config-utility", default="postconf",
+            help="Path to the 'postconf' executable.")
 
     def __init__(self, *args, **kwargs):
         super(Installer, self).__init__(*args, **kwargs)
@@ -40,6 +44,94 @@ class Installer(plugins_common.Plugin):
         self.fn = None
         self.raw_cf = []
         self.cf = []
+
+    def prepare(self):
+        """Prepare the installer.
+
+        Finish up any additional initialization.
+
+        :raises .PluginError:
+            when full initialization cannot be completed.
+        :raises .MisconfigurationError:
+            when full initialization cannot be completed. Plugin will
+            be displayed on a list of available plugins.
+        :raises .NoInstallationError:
+            when the necessary programs/files cannot be located. Plugin
+            will NOT be displayed on a list of available plugins.
+        :raises .NotSupportedError:
+            when the installation is recognized, but the version is not
+            currently supported.
+        :rtype tuple:
+
+        """
+        self._verify_postconf_available()
+
+        self.fn = self.find_postfix_cf()
+        self.raw_cf = open(self.fn).readlines()
+        self.cf = map(string.strip, self.raw_cf)
+        #self.cf = [line for line in cf if line and not line.startswith("#")]
+        # XXX ensure we raise the right kinds of exceptions
+
+        if self.get_version() < (2, 11, 0):
+            raise errors.NotSupportedError('Postfix version is too old')
+
+        # Postfix has changed support for TLS features, supported protocol versions
+        # KEX methods, ciphers et cetera over the years. We sort out version dependend
+        # differences here and pass them onto other configuration functions.
+        # see:
+        #  http://www.postfix.org/TLS_README.html
+        #  http://www.postfix.org/FORWARD_SECRECY_README.html
+
+        # Postfix == 2.2:
+        # - TLS support introduced via 3rd party patch, see:
+        #   http://www.postfix.org/TLS_LEGACY_README.html
+
+        # Postfix => 2.2:
+        # - built-in TLS support added
+        # - Support for PFS introduced
+        # - Support for (E)DHE params >= 1024bit (need to be generated), default 1k
+
+        # Postfix => 2.5:
+        # - Syntax to specify mandatory protocol version changes:
+        #   *  < 2.5: `smtpd_tls_mandatory_protocols = TLSv1`
+        #   * => 2.5: `smtpd_tls_mandatory_protocols = !SSLv2, !SSLv3`
+        # - Certificate fingerprint verification added
+
+        # Postfix => 2.6:
+        # - Support for ECDHE NIST P-256 curve (enable `smtpd_tls_eecdh_grade = strong`)
+        # - Support for configurable cipher-suites and protocol versions added, pre-2.6
+        #   releases always set EXPORT, options: `smtp_tls_ciphers` and `smtp_tls_protocols`
+        # - `smtp_tls_eccert_file` and `smtp_tls_eckey_file` config. options added
+
+        # Postfix => 2.8:
+        # - Override Client suite preference w. `tls_preempt_cipherlist = yes`
+        # - Elliptic curve crypto. support enabled by default
+
+        # Postfix => 2.9:
+        # - Public key fingerprint support added
+        # - `permit_tls_clientcerts`, `permit_tls_all_clientcerts` and
+        #   `check_ccert_access` config. options added
+
+        # Postfix <= 2.9.5:
+        # - BUG: Public key fingerprint is computed incorrectly
+
+        # Postfix => 3.1:
+        # - Built-in support for TLS management and DANE added, see:
+        #   http://www.postfix.org/postfix-tls.1.html
+
+    def _verify_postconf_available(self):
+        """Ensure 'postconf' can be found.
+
+        :raises .NoInstallationError: when unable to find 'postconf'
+
+        """
+        if not util.exe_exists(self.conf("config-utility")):
+            if not plugins_util.path_surgery(self.conf("config-utility")):
+                raise errors.NoInstallationError(
+                    "Cannot find executable '{0}'. You can provide the "
+                    "path to this command with --{1}".format(
+                        self.conf("config-utility"),
+                        self.option_name("config-utility")))
 
     def find_postfix_cf(self):
         "Search far and wide for the correct postfix configuration file"
@@ -135,77 +227,6 @@ class Installer(plugins_common.Plugin):
     ### Let's Encrypt client IPlugin ###
     # https://github.com/letsencrypt/letsencrypt/blob/master/letsencrypt/plugins/common.py#L35
 
-    def prepare(self):
-        """Prepare the plugin.
-
-        Finish up any additional initialization.
-
-        :raises .PluginError:
-            when full initialization cannot be completed.
-        :raises .MisconfigurationError:
-            when full initialization cannot be completed. Plugin will
-            be displayed on a list of available plugins.
-        :raises .NoInstallationError:
-            when the necessary programs/files cannot be located. Plugin
-            will NOT be displayed on a list of available plugins.
-        :raises .NotSupportedError:
-            when the installation is recognized, but the version is not
-            currently supported.
-        :rtype tuple:
-
-        """
-        self.fn = self.find_postfix_cf()
-        self.raw_cf = open(self.fn).readlines()
-        self.cf = map(string.strip, self.raw_cf)
-        #self.cf = [line for line in cf if line and not line.startswith("#")]
-        # XXX ensure we raise the right kinds of exceptions
-
-        if self.get_version() < (2, 11, 0):
-            raise errors.NotSupportedError('Postfix version is too old')
-
-        # Postfix has changed support for TLS features, supported protocol versions
-        # KEX methods, ciphers et cetera over the years. We sort out version dependend
-        # differences here and pass them onto other configuration functions.
-        # see:
-        #  http://www.postfix.org/TLS_README.html
-        #  http://www.postfix.org/FORWARD_SECRECY_README.html
-
-        # Postfix == 2.2:
-        # - TLS support introduced via 3rd party patch, see:
-        #   http://www.postfix.org/TLS_LEGACY_README.html
-
-        # Postfix => 2.2:
-        # - built-in TLS support added
-        # - Support for PFS introduced
-        # - Support for (E)DHE params >= 1024bit (need to be generated), default 1k
-
-        # Postfix => 2.5:
-        # - Syntax to specify mandatory protocol version changes:
-        #   *  < 2.5: `smtpd_tls_mandatory_protocols = TLSv1`
-        #   * => 2.5: `smtpd_tls_mandatory_protocols = !SSLv2, !SSLv3`
-        # - Certificate fingerprint verification added
-
-        # Postfix => 2.6:
-        # - Support for ECDHE NIST P-256 curve (enable `smtpd_tls_eecdh_grade = strong`)
-        # - Support for configurable cipher-suites and protocol versions added, pre-2.6
-        #   releases always set EXPORT, options: `smtp_tls_ciphers` and `smtp_tls_protocols`
-        # - `smtp_tls_eccert_file` and `smtp_tls_eckey_file` config. options added
-
-        # Postfix => 2.8:
-        # - Override Client suite preference w. `tls_preempt_cipherlist = yes`
-        # - Elliptic curve crypto. support enabled by default
-
-        # Postfix => 2.9:
-        # - Public key fingerprint support added
-        # - `permit_tls_clientcerts`, `permit_tls_all_clientcerts` and
-        #   `check_ccert_access` config. options added
-
-        # Postfix <= 2.9.5:
-        # - BUG: Public key fingerprint is computed incorrectly
-
-        # Postfix => 3.1:
-        # - Built-in support for TLS management and DANE added, see:
-        #   http://www.postfix.org/postfix-tls.1.html
 
     def get_version(self):
         """Return the mail version of Postfix.
@@ -219,7 +240,7 @@ class Installer(plugins_common.Plugin):
 
         """
         # Parse Postfix version number (feature support, syntax changes etc.)
-        cmd = subprocess.Popen(['/usr/sbin/postconf', '-d', 'mail_version'],
+        cmd = subprocess.Popen([self.conf('config-utility'), '-d', 'mail_version'],
                                    stdout=subprocess.PIPE)
         stdout, _ = cmd.communicate()
         if cmd.returncode != 0:
