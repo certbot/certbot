@@ -285,7 +285,7 @@ class Registration(ResourceBody):
 @Directory.register
 class NewRegistration(Registration):
     """New registration."""
-    resource_type = 'new-reg'
+    resource_type = 'new-account'
     resource = fields.Resource(resource_type)
 
 
@@ -326,7 +326,7 @@ class ChallengeBody(ResourceBody):
 
     """
     __slots__ = ('chall',)
-    uri = jose.Field('uri')
+    uri = jose.Field('url')
     status = jose.Field('status', decoder=Status.from_json,
                         omitempty=True, default=STATUS_PENDING)
     validated = fields.RFC3339Field('validated', omitempty=True)
