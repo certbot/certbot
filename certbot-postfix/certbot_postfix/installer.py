@@ -241,20 +241,8 @@ class Installer(plugins_common.Plugin):
         :raises .PluginError: Unable to find Postfix version.
 
         """
-        # Parse Postfix version number (feature support, syntax changes etc.)
-        try:
-            stdout = util.check_output(
-                [self.conf('config-utility'), '-d', 'mail_version'])
-        except subprocess.CalledProcessError:
-            logger.debug(
-                'Encountered an error when trying to determine Postfix version.',
-                exc_info=True)
-            raise errors.PluginError('Unable to determine Postfix version.')
-
-        # grabs version component of string like "mail_version = 2.11.3"
-        mail_version = stdout.split()[2]
-        postfix_version = tuple([int(i) for i in mail_version.split('.')])
-        return postfix_version
+        mail_version = self.get_config_var("mail_version", default=True)
+        return tuple(int(i) for i in mail_version.split('.'))
 
     def more_info(self):
         """Human-readable string to help the user.
@@ -405,6 +393,59 @@ class Installer(plugins_common.Plugin):
             rc = os.system("service postfix reload")
         if rc != 0:
             raise errors.MisconfigurationError('cannot restart postfix')
+
+    def get_config_var(self, name, default=False):
+        """Return the value of the specified Postfix config parameter.
+
+        :param str name: name of the Postfix config parameter to return
+        :param bool default: whether or not to return the default value
+            instead of the actual value
+
+        :returns: value of the specified configuration parameter
+        :rtype: str
+
+        """
+        cmd = self._build_cmd_for_config_var(name, default)
+
+        try:
+            output = util.check_output(cmd)
+        except subprocess.CalledProcessError:
+            logger.debug("Encountered an error when running 'postconf'",
+                         exc_info=True)
+            raise errors.PluginError(
+                "Unable to determine the value "
+                "of Postfix parameter {0}".format(name))
+
+        expected_prefix = name + " ="
+        if not output.startswith(expected_prefix):
+            raise errors.PluginError(
+                "Unexpected output from '{0}'".format(''.join(cmd)))
+
+        return output[len(expected_prefix):].strip()
+
+    def _build_cmd_for_config_var(self, name, default):
+        """Return a command to run to get a Postfix config parameter.
+
+        :param str name: name of the Postfix config parameter to return
+        :param bool default: whether or not to return the default value
+            instead of the actual value
+
+        :returns: command to run
+        :rtype: list
+
+        """
+        cmd = [self.conf("config-utility")]
+
+        if self.conf("config-dir") is not None:
+            cmd.extend(("-c", self.conf("config-dir"),))
+
+        if default:
+            cmd.append("-d")
+
+        cmd.append(name)
+
+        return cmd
+
 
     # def update_CAfile(self):
     #     os.system("cat /usr/share/ca-certificates/mozilla/*.crt > " + self.ca_file)
