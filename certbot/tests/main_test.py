@@ -1135,7 +1135,7 @@ class UnregisterTest(unittest.TestCase):
     def test_abort_unregister(self):
         self.mocks['account'].AccountFileStorage.return_value = mock.Mock()
 
-        util_mock = self.mocks['get_utility'].return_value
+        util_mock = self.mocks['get_utility']()
         util_mock.yesno.return_value = False
 
         config = mock.Mock()

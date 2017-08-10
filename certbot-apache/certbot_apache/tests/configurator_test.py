@@ -121,7 +121,8 @@ class MultipleVhostsTest(util.ApacheTest):
 
     @certbot_util.patch_get_utility()
     def test_get_all_names(self, mock_getutility):
-        mock_getutility.notification = mock.MagicMock(return_value=True)
+        mock_utility = mock_getutility()
+        mock_utility.notification = mock.MagicMock(return_value=True)
         names = self.config.get_all_names()
         self.assertEqual(names, set(
             ["certbot.demo", "ocspvhost.com", "encryption-example.demo"]
@@ -131,7 +132,8 @@ class MultipleVhostsTest(util.ApacheTest):
     @mock.patch("certbot_apache.configurator.socket.gethostbyaddr")
     def test_get_all_names_addrs(self, mock_gethost, mock_getutility):
         mock_gethost.side_effect = [("google.com", "", ""), socket.error]
-        mock_getutility().notification.return_value = True
+        mock_utility = mock_getutility()
+        mock_utility.notification.return_value = True
         vhost = obj.VirtualHost(
             "fp", "ap",
             set([obj.Addr(("8.8.8.8", "443")),

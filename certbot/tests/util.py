@@ -184,7 +184,8 @@ class FreezableMock(object):
     def __init__(self, frozen=False, func=None, return_value=mock.sentinel.DEFAULT):
         self._frozen_set = set() if frozen else set(('freeze',))
         self._func = func
-        self._mock = mock.MagicMock(return_value=return_value)
+        self._mock = mock.MagicMock()
+        self.return_value = return_value
         self._frozen = frozen
 
     def freeze(self):
@@ -211,24 +212,23 @@ class FreezableMock(object):
         """ Set attributes on the underlying _mock if the FreezableMock is frozen.
 
         In cases of return_value and side_effect, these attributes are always passed
-        through to the instance's _mock. return_value cannot be set after the FreezableMock
-        instance has been frozen.
+        through to the instance's _mock.
 
         """
-        if name == 'return_value': # Rationale: __setattr__ takes precedence over properties
-            if self._frozen:
-                msg = ("Changing the return_value of a frozen FreezableMock is forbidden "
-                        "because that would nullify callbacks important to thorough tests.")
-                raise AttributeError(msg)
+        if self._frozen:
+            if name in self._frozen_set:
+                raise AttributeError('Cannot change frozen attribute ' + name)
             else:
                 return setattr(self._mock, name, value)
-        if name == 'side_effect':
-            return setattr(self._mock, name, value)
-        if self._frozen:
-            return setattr(self._mock, name, value)
-        elif name != '_frozen_set':
+
+        if name != '_frozen_set':
             self._frozen_set.add(name)
-        return object.__setattr__(self, name, value)
+
+        if name in ('return_value', 'side_effect',):
+            return setattr(self._mock, name, value)
+        else:
+            return object.__setattr__(self, name, value)
+
 
 def _create_get_utility_mock():
     display = FreezableMock()

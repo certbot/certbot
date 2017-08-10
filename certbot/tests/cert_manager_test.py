@@ -355,26 +355,28 @@ class RenameLineageTest(BaseCertManagerTest):
     @test_util.patch_get_utility()
     def test_no_certname(self, mock_get_utility, mock_renewal_conf_files):
         mock_config = mock.Mock(certname=None, new_certname="two")
+        mock_utility = mock_get_utility()
 
         # if not choices
         mock_renewal_conf_files.return_value = []
         self.assertRaises(errors.Error, self._call, mock_config)
 
         mock_renewal_conf_files.return_value = ["one.conf"]
-        mock_get_utility().menu.return_value = (display_util.CANCEL, 0)
+        mock_utility.menu.return_value = (display_util.CANCEL, 0)
         self.assertRaises(errors.Error, self._call, mock_config)
 
-        mock_get_utility().menu.return_value = (display_util.OK, -1)
+        mock_utility.menu.return_value = (display_util.OK, -1)
         self.assertRaises(errors.Error, self._call, mock_config)
 
     @test_util.patch_get_utility()
     def test_no_new_certname(self, mock_get_utility):
         mock_config = mock.Mock(certname="one", new_certname=None)
+        mock_utility = mock_get_utility()
 
-        mock_get_utility().input.return_value = (display_util.CANCEL, "name")
+        mock_utility.input.return_value = (display_util.CANCEL, "name")
         self.assertRaises(errors.Error, self._call, mock_config)
 
-        mock_get_utility().input.return_value = (display_util.OK, None)
+        mock_utility.input.return_value = (display_util.OK, None)
         self.assertRaises(errors.Error, self._call, mock_config)
 
     @test_util.patch_get_utility()
@@ -402,7 +404,8 @@ class RenameLineageTest(BaseCertManagerTest):
         mock_check.return_value = True
         mock_config = self.mock_config
         mock_config.certname = None
-        mock_get_utility().menu.return_value = (display_util.OK, 0)
+        mock_utility = mock_get_utility()
+        mock_utility.menu.return_value = (display_util.OK, 0)
         self._call(mock_config)
         from certbot import cert_manager
         updated_lineage = cert_manager.lineage_for_certname(mock_config, mock_config.new_certname)
