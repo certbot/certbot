@@ -37,7 +37,7 @@ class Installer(plugins_common.Plugin):
     def __init__(self, *args, **kwargs):
         super(Installer, self).__init__(*args, **kwargs)
         self.fixup          = False
-        self.postfix_dir    = self.conf("config-dir")
+        self.config_dir     = self.conf("config-dir")
 
         self.additions = []
         self.deletions = []
@@ -137,7 +137,7 @@ class Installer(plugins_common.Plugin):
 
     def find_postfix_cf(self):
         "Search far and wide for the correct postfix configuration file"
-        return os.path.join(self.postfix_dir, "main.cf")
+        return os.path.join(self.config_dir, "main.cf")
 
     def ensure_cf_var(self, var, ideal, also_acceptable):
         """
@@ -268,7 +268,7 @@ class Installer(plugins_common.Plugin):
             "Server root: {root}{0}"
             "Version: {version}".format(
                 os.linesep,
-                root=self.postfix_dir,
+                root=self.config_dir,
                 version='.'.join([str(i) for i in self.get_version()]))
         )
 
