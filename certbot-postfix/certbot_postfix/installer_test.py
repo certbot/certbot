@@ -12,6 +12,8 @@ import unittest
 import mock
 import six
 
+from certbot import errors
+
 # Fake Postfix Configs
 names_only_config = """myhostname = mail.fubard.org
 mydomain = fubard.org
@@ -36,6 +38,17 @@ class TestPostfixConfigGenerator(unittest.TestCase):
 
         for call in mock_add.call_args_list:
             self.assertTrue(call[0][0] in ('config-dir', 'config-utility'))
+
+    def test_no_postconf_prepare(self):
+        installer = self._create_installer()
+
+        installer_path = "certbot_postfix.installer"
+        exe_exists_path = installer_path + ".util.exe_exists"
+        path_surgery_path = installer_path + ".plugins_util.path_surgery"
+
+        with mock.patch(path_surgery_path, return_value=False):
+            with mock.patch(exe_exists_path, return_value=False):
+                self.assertRaises(errors.NoInstallationError, installer.prepare)
 
     def testGetAllNames(self):
         sorted_names = ['fubard.org', 'mail.fubard.org']
