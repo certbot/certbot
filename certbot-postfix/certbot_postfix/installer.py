@@ -13,6 +13,8 @@ from certbot import util as certbot_util
 from certbot.plugins import common as plugins_common
 from certbot.plugins import util as plugins_util
 
+from certbot_postfix import util
+
 
 logger = logging.getLogger(__name__)
 
@@ -240,10 +242,13 @@ class Installer(plugins_common.Plugin):
 
         """
         # Parse Postfix version number (feature support, syntax changes etc.)
-        cmd = subprocess.Popen([self.conf('config-utility'), '-d', 'mail_version'],
-                                   stdout=subprocess.PIPE)
-        stdout, _ = cmd.communicate()
-        if cmd.returncode != 0:
+        try:
+            stdout = util.check_output(
+                [self.conf('config-utility'), '-d', 'mail_version'])
+        except subprocess.CalledProcessError:
+            logger.debug(
+                'Encountered an error when trying to determine Postfix version.',
+                exc_info=True)
             raise errors.PluginError('Unable to determine Postfix version.')
 
         # grabs version component of string like "mail_version = 2.11.3"

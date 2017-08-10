@@ -84,12 +84,11 @@ class TestPostfixConfigGenerator(unittest.TestCase):
         """
         installer = self._create_installer()
 
+        check_output_path = "certbot_postfix.installer.util.check_output"
         exe_exists_path = "certbot_postfix.installer.certbot_util.exe_exists"
-        popen_path = "certbot_postfix.installer.subprocess.Popen"
-        with mock.patch(exe_exists_path, return_value=True) as mock_exe_exists:
-            with mock.patch(popen_path) as mock_popen:
-                mock_popen().returncode = 0
-                mock_popen().communicate.return_value = ("mail_version = 3.1.4", "")
+        with mock.patch(check_output_path) as mock_check_output:
+            with mock.patch(exe_exists_path, return_value=True):
+                mock_check_output.return_value = "mail_version = 3.1.4"
                 installer.prepare()
 
         return installer
