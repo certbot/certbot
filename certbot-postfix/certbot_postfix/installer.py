@@ -32,8 +32,6 @@ class Installer(plugins_common.Plugin):
         super(Installer, self).__init__(*args, **kwargs)
         self.fixup          = False
         self.postfix_dir    = self.conf("config-dir")
-        self.policy_file    = os.path.join(self.postfix_dir,
-                                           "starttls_everywhere_policy")
         self.ca_file = os.path.join(self.postfix_dir, "starttls_everywhere_CAfile")
 
         self.additions = []
@@ -97,9 +95,9 @@ class Installer(plugins_common.Plugin):
         # Maximum verbosity lets us collect failure information
         self.ensure_cf_var("smtp_tls_loglevel", "1", [])
         # Inject a reference to our per-domain policy map
-        policy_cf_entry = "texthash:" + self.policy_file
+        # policy_cf_entry = "texthash:" + self.policy_file
 
-        self.ensure_cf_var("smtp_tls_policy_maps", policy_cf_entry, [])
+        # self.ensure_cf_var("smtp_tls_policy_maps", policy_cf_entry, [])
         self.ensure_cf_var("smtp_tls_CAfile", self.ca_file, [])
 
 	# Disable SSLv2 and SSLv3. Syntax for `smtp_tls_protocols` changed
