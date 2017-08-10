@@ -98,15 +98,15 @@ class Installer(plugins_common.Plugin):
         # self.ensure_cf_var("smtp_tls_policy_maps", policy_cf_entry, [])
         # self.ensure_cf_var("smtp_tls_CAfile", self.ca_file, [])
 
-	# Disable SSLv2 and SSLv3. Syntax for `smtp_tls_protocols` changed
-	# between Postfix version 2.5 and 2.6, since we only support => 2.11
-	# we don't use nor support legacy Postfix syntax.
-	# - Server:
-	self.ensure_cf_var("smtpd_tls_protocols", "!SSLv2, !SSLv3", [])
-	self.ensure_cf_var("smtpd_tls_mandatory_protocols", "!SSLv2, !SSLv3", [])
-	# - Client:
-	self.ensure_cf_var("smtp_tls_protocols", "!SSLv2, !SSLv3", [])
-	self.ensure_cf_var("smtp_tls_mandatory_protocols", "!SSLv2, !SSLv3", [])
+        # Disable SSLv2 and SSLv3. Syntax for `smtp_tls_protocols` changed
+        # between Postfix version 2.5 and 2.6, since we only support => 2.11
+        # we don't use nor support legacy Postfix syntax.
+        # - Server:
+        self.ensure_cf_var("smtpd_tls_protocols", "!SSLv2, !SSLv3", [])
+        self.ensure_cf_var("smtpd_tls_mandatory_protocols", "!SSLv2, !SSLv3", [])
+        # - Client:
+        self.ensure_cf_var("smtp_tls_protocols", "!SSLv2, !SSLv3", [])
+        self.ensure_cf_var("smtp_tls_mandatory_protocols", "!SSLv2, !SSLv3", [])
 
     def maybe_add_config_lines(self):
         if not self.additions:
@@ -137,7 +137,9 @@ class Installer(plugins_common.Plugin):
 
     def prepare(self):
         """Prepare the plugin.
+
         Finish up any additional initialization.
+
         :raises .PluginError:
             when full initialization cannot be completed.
         :raises .MisconfigurationError:
@@ -146,11 +148,12 @@ class Installer(plugins_common.Plugin):
         :raises .NoInstallationError:
             when the necessary programs/files cannot be located. Plugin
             will NOT be displayed on a list of available plugins.
-	:raises .NotSupportedError:
-	    when the installation is recognized, but the version is not
-	    currently supported.
-	:rtype tuple:
-	"""
+        :raises .NotSupportedError:
+            when the installation is recognized, but the version is not
+            currently supported.
+        :rtype tuple:
+
+        """
         self.fn = self.find_postfix_cf()
         self.raw_cf = open(self.fn).readlines()
         self.cf = map(string.strip, self.raw_cf)
@@ -160,49 +163,49 @@ class Installer(plugins_common.Plugin):
         if self.get_version() < (2, 11, 0):
             raise errors.NotSupportedError('Postfix version is too old')
 
-	# Postfix has changed support for TLS features, supported protocol versions
-	# KEX methods, ciphers et cetera over the years. We sort out version dependend
-	# differences here and pass them onto other configuration functions.
-	# see:
-	#  http://www.postfix.org/TLS_README.html
-	#  http://www.postfix.org/FORWARD_SECRECY_README.html
+        # Postfix has changed support for TLS features, supported protocol versions
+        # KEX methods, ciphers et cetera over the years. We sort out version dependend
+        # differences here and pass them onto other configuration functions.
+        # see:
+        #  http://www.postfix.org/TLS_README.html
+        #  http://www.postfix.org/FORWARD_SECRECY_README.html
 
-	# Postfix == 2.2:
-	# - TLS support introduced via 3rd party patch, see:
-	#   http://www.postfix.org/TLS_LEGACY_README.html
-	
-	# Postfix => 2.2:
-	# - built-in TLS support added
-	# - Support for PFS introduced
-	# - Support for (E)DHE params >= 1024bit (need to be generated), default 1k
+        # Postfix == 2.2:
+        # - TLS support introduced via 3rd party patch, see:
+        #   http://www.postfix.org/TLS_LEGACY_README.html
 
-	# Postfix => 2.5:
-	# - Syntax to specify mandatory protocol version changes:
-	#   *  < 2.5: `smtpd_tls_mandatory_protocols = TLSv1`
-	#   * => 2.5: `smtpd_tls_mandatory_protocols = !SSLv2, !SSLv3`
-	# - Certificate fingerprint verification added
+        # Postfix => 2.2:
+        # - built-in TLS support added
+        # - Support for PFS introduced
+        # - Support for (E)DHE params >= 1024bit (need to be generated), default 1k
 
-	# Postfix => 2.6:
-	# - Support for ECDHE NIST P-256 curve (enable `smtpd_tls_eecdh_grade = strong`)
-	# - Support for configurable cipher-suites and protocol versions added, pre-2.6 
-	#   releases always set EXPORT, options: `smtp_tls_ciphers` and `smtp_tls_protocols`
-	# - `smtp_tls_eccert_file` and `smtp_tls_eckey_file` config. options added
-	
-	# Postfix => 2.8:
-	# - Override Client suite preference w. `tls_preempt_cipherlist = yes`
-	# - Elliptic curve crypto. support enabled by default
-	
-	# Postfix => 2.9:
-	# - Public key fingerprint support added
-	# - `permit_tls_clientcerts`, `permit_tls_all_clientcerts` and
-	#   `check_ccert_access` config. options added
+        # Postfix => 2.5:
+        # - Syntax to specify mandatory protocol version changes:
+        #   *  < 2.5: `smtpd_tls_mandatory_protocols = TLSv1`
+        #   * => 2.5: `smtpd_tls_mandatory_protocols = !SSLv2, !SSLv3`
+        # - Certificate fingerprint verification added
 
-	# Postfix <= 2.9.5:
-	# - BUG: Public key fingerprint is computed incorrectly
+        # Postfix => 2.6:
+        # - Support for ECDHE NIST P-256 curve (enable `smtpd_tls_eecdh_grade = strong`)
+        # - Support for configurable cipher-suites and protocol versions added, pre-2.6
+        #   releases always set EXPORT, options: `smtp_tls_ciphers` and `smtp_tls_protocols`
+        # - `smtp_tls_eccert_file` and `smtp_tls_eckey_file` config. options added
 
-	# Postfix => 3.1:
-	# - Built-in support for TLS management and DANE added, see:
-	#   http://www.postfix.org/postfix-tls.1.html
+        # Postfix => 2.8:
+        # - Override Client suite preference w. `tls_preempt_cipherlist = yes`
+        # - Elliptic curve crypto. support enabled by default
+
+        # Postfix => 2.9:
+        # - Public key fingerprint support added
+        # - `permit_tls_clientcerts`, `permit_tls_all_clientcerts` and
+        #   `check_ccert_access` config. options added
+
+        # Postfix <= 2.9.5:
+        # - BUG: Public key fingerprint is computed incorrectly
+
+        # Postfix => 3.1:
+        # - Built-in support for TLS management and DANE added, see:
+        #   http://www.postfix.org/postfix-tls.1.html
 
     def get_version(self):
         """Return the mail version of Postfix.
@@ -212,12 +215,12 @@ class Installer(plugins_common.Plugin):
         :returns: version
         :rtype: tuple
 
-        :raises .PluginError:
-            Unable to find Postfix version.
+        :raises .PluginError: Unable to find Postfix version.
+
         """
-	# Parse Postfix version number (feature support, syntax changes etc.)
-	cmd = subprocess.Popen(['/usr/sbin/postconf', '-d', 'mail_version'],
-                               stdout=subprocess.PIPE)
+        # Parse Postfix version number (feature support, syntax changes etc.)
+        cmd = subprocess.Popen(['/usr/sbin/postconf', '-d', 'mail_version'],
+                                   stdout=subprocess.PIPE)
         stdout, _ = cmd.communicate()
         if cmd.returncode != 0:
             raise errors.PluginError('Unable to determine Postfix version.')
@@ -225,7 +228,7 @@ class Installer(plugins_common.Plugin):
         # grabs version component of string like "mail_version = 2.11.3"
         mail_version = stdout.split()[2]
         postfix_version = tuple([int(i) for i in mail_version.split('.')])
-	return postfix_version
+        return postfix_version
 
     def more_info(self):
         """Human-readable string to help the user.
