@@ -25,7 +25,7 @@ certs_only_config = (
 smtpd_tls_key_file = /etc/letsencrypt/live/www.fubard.org/privkey.pem""")
 
 
-class TestPostfixConfigGenerator(unittest.TestCase):
+class InstallerTest(unittest.TestCase):
 
     def setUp(self):
         self.postfix_dir = 'tests/'
@@ -50,14 +50,14 @@ class TestPostfixConfigGenerator(unittest.TestCase):
             with mock.patch(exe_exists_path, return_value=False):
                 self.assertRaises(errors.NoInstallationError, installer.prepare)
 
-    def testGetAllNames(self):
+    def test_get_all_names(self):
         sorted_names = ['fubard.org', 'mail.fubard.org']
         with mock.patch('certbot_postfix.installer.open') as mock_open:
             mock_open.return_value = six.StringIO(names_only_config)
             postfix_config_gen = self._create_prepared_installer()
         self.assertEqual(sorted_names, postfix_config_gen.get_all_names())
 
-    def testGetAllCertAndKeys(self):
+    def test_get_all_certs_and_keys(self):
         return_vals = [('/etc/letsencrypt/live/www.fubard.org/fullchain.pem',
                         '/etc/letsencrypt/live/www.fubard.org/privkey.pem',
                         'tests/main.cf'),]
@@ -66,7 +66,7 @@ class TestPostfixConfigGenerator(unittest.TestCase):
             postfix_config_gen = self._create_prepared_installer()
         self.assertEqual(return_vals, postfix_config_gen.get_all_certs_keys())
 
-    def testGetAllCertsAndKeys_With_None(self):
+    def test_get_all_certs_and_keys_with_none(self):
         with mock.patch('certbot_postfix.installer.open') as mock_open:
             mock_open.return_value = six.StringIO(names_only_config)
             postfix_config_gen = self._create_prepared_installer()
