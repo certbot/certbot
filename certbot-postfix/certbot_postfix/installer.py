@@ -70,7 +70,8 @@ class Installer(plugins_common.Plugin):
         self._set_config_dir()
 
         self.fn = self.find_postfix_cf()
-        self.raw_cf = open(self.fn).readlines()
+        with open(self.fn) as f:
+            self.raw_cf = f.readlines()
         self.cf = map(string.strip, self.raw_cf)
         #self.cf = [line for line in cf if line and not line.startswith("#")]
         # XXX ensure we raise the right kinds of exceptions
