@@ -35,12 +35,11 @@ class Installer(plugins_common.Plugin):
 
         self.additions = []
         self.deletions = []
-        self.fn = self.find_postfix_cf()
-        self.raw_cf = open(self.fn).readlines()
-        self.cf = map(string.strip, self.raw_cf)
-        #self.cf = [line for line in cf if line and not line.startswith("#")]
         self.policy_lines = []
         self.new_cf = ""
+        self.fn = None
+        self.raw_cf = []
+        self.cf = []
 
     def find_postfix_cf(self):
         "Search far and wide for the correct postfix configuration file"
@@ -152,6 +151,10 @@ class Installer(plugins_common.Plugin):
 	    currently supported.
 	:rtype tuple:
 	"""
+        self.fn = self.find_postfix_cf()
+        self.raw_cf = open(self.fn).readlines()
+        self.cf = map(string.strip, self.raw_cf)
+        #self.cf = [line for line in cf if line and not line.startswith("#")]
         # XXX ensure we raise the right kinds of exceptions
 
         if self.get_version() < (2, 11, 0):
