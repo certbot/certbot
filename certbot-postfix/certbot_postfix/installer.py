@@ -9,7 +9,7 @@ import zope.interface
 
 from certbot import errors
 from certbot import interfaces
-from certbot import util
+from certbot import util as certbot_util
 from certbot.plugins import common as plugins_common
 from certbot.plugins import util as plugins_util
 
@@ -125,7 +125,7 @@ class Installer(plugins_common.Plugin):
         :raises .NoInstallationError: when unable to find 'postconf'
 
         """
-        if not util.exe_exists(self.conf("config-utility")):
+        if not certbot_util.exe_exists(self.conf("config-utility")):
             if not plugins_util.path_surgery(self.conf("config-utility")):
                 raise errors.NoInstallationError(
                     "Cannot find executable '{0}'. You can provide the "

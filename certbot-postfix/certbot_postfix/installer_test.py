@@ -43,7 +43,7 @@ class TestPostfixConfigGenerator(unittest.TestCase):
         installer = self._create_installer()
 
         installer_path = "certbot_postfix.installer"
-        exe_exists_path = installer_path + ".util.exe_exists"
+        exe_exists_path = installer_path + ".certbot_util.exe_exists"
         path_surgery_path = installer_path + ".plugins_util.path_surgery"
 
         with mock.patch(path_surgery_path, return_value=False):
@@ -84,7 +84,7 @@ class TestPostfixConfigGenerator(unittest.TestCase):
         """
         installer = self._create_installer()
 
-        exe_exists_path = "certbot_postfix.installer.util.exe_exists"
+        exe_exists_path = "certbot_postfix.installer.certbot_util.exe_exists"
         popen_path = "certbot_postfix.installer.subprocess.Popen"
         with mock.patch(exe_exists_path, return_value=True) as mock_exe_exists:
             with mock.patch(popen_path) as mock_popen:
