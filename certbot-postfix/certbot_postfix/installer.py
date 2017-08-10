@@ -37,7 +37,7 @@ class Installer(plugins_common.Plugin):
     def __init__(self, *args, **kwargs):
         super(Installer, self).__init__(*args, **kwargs)
         self.fixup          = False
-        self.config_dir     = self.conf("config-dir")
+        self.config_dir     = None
 
         self.additions = []
         self.deletions = []
@@ -67,6 +67,7 @@ class Installer(plugins_common.Plugin):
 
         """
         self._verify_postconf_available()
+        self._set_config_dir()
 
         self.fn = self.find_postfix_cf()
         self.raw_cf = open(self.fn).readlines()
@@ -134,6 +135,19 @@ class Installer(plugins_common.Plugin):
                     "path to this command with --{1}".format(
                         self.conf("config-utility"),
                         self.option_name("config-utility")))
+
+    def _set_config_dir(self):
+        """Ensure self.config_dir is set to the correct path.
+
+        If the configuration directory to use was set by the user, we'll
+        use that value, otherwise, we'll find the default path using
+        'postconf'.
+
+        """
+        if self.conf("config-dir") is None:
+            self.config_dir = self.get_config_var("config_directory")
+        else:
+            self.config_dir = self.conf("config-dir")
 
     def find_postfix_cf(self):
         "Search far and wide for the correct postfix configuration file"
