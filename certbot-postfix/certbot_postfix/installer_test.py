@@ -28,7 +28,7 @@ smtpd_tls_key_file = /etc/letsencrypt/live/www.fubard.org/privkey.pem""")
 class InstallerTest(unittest.TestCase):
 
     def setUp(self):
-        self.postfix_dir = 'tests/'
+        self.config = mock.MagicMock(postfix_config_dir="tests/")
 
     def test_add_parser_arguments(self):
         mock_add = mock.MagicMock()
@@ -72,6 +72,36 @@ class InstallerTest(unittest.TestCase):
             postfix_config_gen = self._create_prepared_installer()
         self.assertEqual([], postfix_config_gen.get_all_certs_keys())
 
+    def test_get_config_var_success(self):
+        self.config.postfix_config_dir = None
+
+        command = self._test_get_config_var_success_common('foo', False)
+        self.assertFalse("-c" in command)
+        self.assertFalse("-d" in command)
+
+    def test_get_config_var_success_with_config(self):
+        command = self._test_get_config_var_success_common('foo', False)
+        self.assertTrue("-c" in command)
+        self.assertFalse("-d" in command)
+
+    def test_get_config_var_success_with_default(self):
+        self.config.postfix_config_dir = None
+
+        command = self._test_get_config_var_success_common('foo', True)
+        self.assertFalse("-c" in command)
+        self.assertTrue("-d" in command)
+
+    def _test_get_config_var_success_common(self, name, default):
+        installer = self._create_installer()
+
+        check_output_path = "certbot_postfix.installer.util.check_output"
+        with mock.patch(check_output_path) as mock_check_output:
+            value = "bar"
+            mock_check_output.return_value = name + " = " + value
+            self.assertEqual(installer.get_config_var(name, default), value)
+
+        return mock_check_output.call_args[0][0]
+
     def _create_prepared_installer(self):
         """Creates and returns a new prepared Postfix Installer.
 
@@ -100,11 +130,10 @@ class InstallerTest(unittest.TestCase):
         :rtype: certbot_postfix.installer.Installer
 
         """
-        config = mock.MagicMock(postfix_config_dir=self.postfix_dir)
         name = "postfix"
 
         from certbot_postfix import installer
-        return installer.Installer(config, name)
+        return installer.Installer(self.config, name)
 
 
 if __name__ == '__main__':
