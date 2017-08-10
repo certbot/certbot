@@ -55,6 +55,25 @@ class InstallerTest(certbot_test_util.TempDirTestCase):
             with mock.patch(exe_exists_path, return_value=False):
                 self.assertRaises(errors.NoInstallationError, installer.prepare)
 
+    def test_set_config_dir(self):
+        self.config.postfix_config_dir = os.path.join(self.tempdir, "subdir")
+        os.mkdir(self.config.postfix_config_dir)
+        self._write_config(names_only_config)
+        installer = self._create_installer()
+
+        expected = self.config.postfix_config_dir
+        self.config.postfix_config_dir = None
+
+        check_output_path = "certbot_postfix.installer.util.check_output"
+        exe_exists_path = "certbot_postfix.installer.certbot_util.exe_exists"
+        with mock.patch(check_output_path) as mock_check_output:
+            mock_check_output.side_effect = [
+                "config_directory = " + expected, "mail_version = 3.1.4"
+            ]
+            with mock.patch(exe_exists_path, return_value=True):
+                installer.prepare()
+        self.assertEqual(installer.config_dir, expected)
+
     def test_get_all_names(self):
         sorted_names = ['fubard.org', 'mail.fubard.org']
         self._write_config(names_only_config)
@@ -75,7 +94,8 @@ class InstallerTest(certbot_test_util.TempDirTestCase):
         self.assertEqual([], installer.get_all_certs_keys())
 
     def _write_config(self, content):
-        with open(os.path.join(self.tempdir, "main.cf"), "w") as f:
+        config_dir = self.config.postfix_config_dir
+        with open(os.path.join(config_dir, "main.cf"), "w") as f:
             f.write(content)
 
     def test_get_config_var_success(self):

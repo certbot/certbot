@@ -433,7 +433,7 @@ class Installer(plugins_common.Plugin):
         expected_prefix = name + " ="
         if not output.startswith(expected_prefix):
             raise errors.PluginError(
-                "Unexpected output from '{0}'".format(''.join(cmd)))
+                "Unexpected output from '{0}'".format(' '.join(cmd)))
 
         return output[len(expected_prefix):].strip()
 
