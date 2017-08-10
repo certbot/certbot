@@ -7,6 +7,7 @@ import multiprocessing
 import os
 import pkg_resources
 import shutil
+import sys
 import tempfile
 import unittest
 
@@ -154,19 +155,28 @@ def make_lineage(config_dir, testfile):
     return conf_path
 
 
-def patch_get_utility(target='zope.component.getUtility'):
+def patch_get_utility(target='zope.component.getUtility',
+                        stdout_notification=False):
     """Patch zope.component.getUtility to use a special mock IDisplay.
 
     The mock IDisplay works like a regular mock object, except it also
     also asserts that methods are called with valid arguments.
 
     :param str target: path to patch
+    :param bool stdout_notification: True if the mocked
+        interfaces.IDisplay.notification method must print the message passed
+        to stodout.
 
     :returns: mock zope.component.getUtility
     :rtype: mock.MagicMock
 
     """
-    return mock.patch(target, new_callable=_create_get_utility_mock)
+    if stdout_notification:
+        return mock.patch(target, new_callable=_create_get_utility_mock,
+                              stdout_notification=True)
+    else:
+        return mock.patch(target, new_callable=_create_get_utility_mock,
+                              stdout_notification=False)
 
 
 class FreezableMock(object):
@@ -216,11 +226,14 @@ class FreezableMock(object):
         return object.__setattr__(self, name, value)
 
 
-def _create_get_utility_mock():
+def _create_get_utility_mock(stdout_notification=False):
     display = FreezableMock()
     for name in interfaces.IDisplay.names():  # pylint: disable=no-member
         if name != 'notification':
             frozen_mock = FreezableMock(frozen=True, func=_assert_valid_call)
+            setattr(display, name, frozen_mock)
+        if name == 'notification' and stdout_notification:
+            frozen_mock = FreezableMock(frozen=True, func=_stdout_notification)
             setattr(display, name, frozen_mock)
     display.freeze()
     return mock.MagicMock(return_value=display)
@@ -236,6 +249,10 @@ def _assert_valid_call(*args, **kwargs):
 
     # pylint: disable=star-args
     display_util.assert_valid_call(*assert_args, **assert_kwargs)
+
+
+def _stdout_notification(*args, **kwargs):
+    sys.stdout.write(args[0] if args else kwargs['message'])
 
 
 class TempDirTestCase(unittest.TestCase):
