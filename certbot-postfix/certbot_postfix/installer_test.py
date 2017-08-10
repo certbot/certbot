@@ -28,6 +28,15 @@ class TestPostfixConfigGenerator(unittest.TestCase):
     def setUp(self):
         self.postfix_dir = 'tests/'
 
+    def test_add_parser_arguments(self):
+        mock_add = mock.MagicMock()
+
+        from certbot_postfix import installer
+        installer.Installer.add_parser_arguments(mock_add)
+
+        for call in mock_add.call_args_list:
+            self.assertTrue(call[0][0] in ('config-dir', 'config-utility'))
+
     def testGetAllNames(self):
         sorted_names = ['fubard.org', 'mail.fubard.org']
         with mock.patch('certbot_postfix.installer.open') as mock_open:
