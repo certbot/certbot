@@ -100,7 +100,7 @@ class Installer(plugins_common.Plugin):
         :raises errors.NotSupportedError: if the version is unsupported
 
         """
-        if self.get_version() < (2, 11, 0):
+        if self._get_version() < (2, 11, 0):
             raise errors.NotSupportedError('Postfix version is too old')
         # Postfix has changed support for TLS features, supported protocol versions
         # KEX methods, ciphers et cetera over the years. We sort out version dependend
@@ -242,7 +242,7 @@ class Installer(plugins_common.Plugin):
     # https://github.com/letsencrypt/letsencrypt/blob/master/letsencrypt/plugins/common.py#L35
 
 
-    def get_version(self):
+    def _get_version(self):
         """Return the mail version of Postfix.
 
         Version is returned as a tuple. (e.g. '2.11.3' is (2, 11, 3))
@@ -269,7 +269,7 @@ class Installer(plugins_common.Plugin):
             "Version: {version}".format(
                 os.linesep,
                 root=self.config_dir,
-                version='.'.join([str(i) for i in self.get_version()]))
+                version='.'.join([str(i) for i in self._get_version()]))
         )
 
 
