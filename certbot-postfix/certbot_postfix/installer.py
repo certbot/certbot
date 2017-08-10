@@ -52,22 +52,14 @@ class Installer(plugins_common.Plugin):
 
         Finish up any additional initialization.
 
-        :raises .PluginError:
-            when full initialization cannot be completed.
-        :raises .MisconfigurationError:
-            when full initialization cannot be completed. Plugin will
-            be displayed on a list of available plugins.
-        :raises .NoInstallationError:
-            when the necessary programs/files cannot be located. Plugin
-            will NOT be displayed on a list of available plugins.
-        :raises .NotSupportedError:
-            when the installation is recognized, but the version is not
-            currently supported.
-        :rtype tuple:
+        :raises errors.PluginError: when an unexpected error occurs
+        :raises errors.NoInstallationError: when can't find installation
+        :raises errors.NotSupportedError: when version is not supported
 
         """
         self._verify_postconf_available()
         self._set_config_dir()
+        self._check_version()
 
         self.fn = self.find_postfix_cf()
         with open(self.fn) as f:
