@@ -57,25 +57,26 @@ class InstallerTest(certbot_test_util.TempDirTestCase):
 
     def test_get_all_names(self):
         sorted_names = ['fubard.org', 'mail.fubard.org']
-        with mock.patch('certbot_postfix.installer.open') as mock_open:
-            mock_open.return_value = six.StringIO(names_only_config)
-            postfix_config_gen = self._create_prepared_installer()
-        self.assertEqual(sorted_names, postfix_config_gen.get_all_names())
+        self._write_config(names_only_config)
+        installer = self._create_prepared_installer()
+        self.assertEqual(sorted_names, installer.get_all_names())
 
     def test_get_all_certs_and_keys(self):
         return_vals = [('/etc/letsencrypt/live/www.fubard.org/fullchain.pem',
                         '/etc/letsencrypt/live/www.fubard.org/privkey.pem',
                         os.path.join(self.tempdir, 'main.cf')),]
-        with mock.patch('certbot_postfix.installer.open') as mock_open:
-            mock_open.return_value = six.StringIO(certs_only_config)
-            postfix_config_gen = self._create_prepared_installer()
-        self.assertEqual(return_vals, postfix_config_gen.get_all_certs_keys())
+        self._write_config(certs_only_config)
+        installer = self._create_prepared_installer()
+        self.assertEqual(return_vals, installer.get_all_certs_keys())
 
     def test_get_all_certs_and_keys_with_none(self):
-        with mock.patch('certbot_postfix.installer.open') as mock_open:
-            mock_open.return_value = six.StringIO(names_only_config)
-            postfix_config_gen = self._create_prepared_installer()
-        self.assertEqual([], postfix_config_gen.get_all_certs_keys())
+        self._write_config(names_only_config)
+        installer = self._create_prepared_installer()
+        self.assertEqual([], installer.get_all_certs_keys())
+
+    def _write_config(self, content):
+        with open(os.path.join(self.tempdir, "main.cf"), "w") as f:
+            f.write(content)
 
     def test_get_config_var_success(self):
         self.config.postfix_config_dir = None
