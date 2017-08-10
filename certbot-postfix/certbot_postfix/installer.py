@@ -28,14 +28,13 @@ class Installer(plugins_common.Plugin):
             "Postfix main.cf file to modify instead of using the "
             "default configuration paths")
 
-    def __init__(self,
-                 postfix_dir,
-                 fixup=False):
-        self.fixup          = fixup
-        self.postfix_dir    = postfix_dir
-        self.policy_file    = os.path.join(postfix_dir,
+    def __init__(self, *args, **kwargs):
+        super(Installer, self).__init__(*args, **kwargs)
+        self.fixup          = False
+        self.postfix_dir    = self.conf("config-dir")
+        self.policy_file    = os.path.join(self.postfix_dir,
                                            "starttls_everywhere_policy")
-        self.ca_file = os.path.join(postfix_dir, "starttls_everywhere_CAfile")
+        self.ca_file = os.path.join(self.postfix_dir, "starttls_everywhere_CAfile")
 
         self.additions = []
         self.deletions = []
