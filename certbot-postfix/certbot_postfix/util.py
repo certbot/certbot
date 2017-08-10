@@ -27,6 +27,9 @@ def check_output(*args, **kwargs):
     :returns: data printed to stdout
     :rtype: str
 
+    :raises ValueError: if arguments are invalid
+    :raises subprocess.CalledProcessError: if the command fails
+
     """
     for keyword in ('stdout', 'universal_newlines',):
         if keyword in kwargs:
