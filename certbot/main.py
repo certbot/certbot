@@ -645,6 +645,7 @@ def renew_cert(config, plugins, lineage):
     except errors.PluginSelectionError as e:
         logger.info("Could not choose appropriate plugin: %s", e)
         raise
+
     le_client = _init_le_client(config, auth, installer)
 
     _get_and_save_cert(le_client, config, lineage=lineage)
@@ -673,6 +674,7 @@ def certonly(config, plugins):
     except errors.PluginSelectionError as e:
         logger.info("Could not choose appropriate plugin: %s", e)
         raise
+
     le_client = _init_le_client(config, auth, installer)
 
     if config.csr:
