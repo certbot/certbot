@@ -9,7 +9,7 @@
 # -e makes sure we fail fast and don't submit coveralls submit
 
 if [ "xxx$1" = "xxx" ]; then
-  pkgs="certbot acme certbot_apache certbot_nginx letshelp_certbot"
+  pkgs="certbot acme certbot_apache certbot_dns_cloudflare certbot_dns_cloudxns certbot_dns_digitalocean certbot_dns_dnsimple certbot_dns_dnsmadeeasy certbot_dns_google certbot_dns_luadns certbot_dns_nsone certbot_dns_rfc2136 certbot_dns_route53 certbot_nginx letshelp_certbot"
 else
   pkgs="$@"
 fi
@@ -21,6 +21,26 @@ cover () {
     min=100
   elif [ "$1" = "certbot_apache" ]; then
     min=100
+  elif [ "$1" = "certbot_dns_cloudflare" ]; then
+    min=98
+  elif [ "$1" = "certbot_dns_cloudxns" ]; then
+    min=99
+  elif [ "$1" = "certbot_dns_digitalocean" ]; then
+    min=98
+  elif [ "$1" = "certbot_dns_dnsimple" ]; then
+    min=98
+  elif [ "$1" = "certbot_dns_dnsmadeeasy" ]; then
+    min=99
+  elif [ "$1" = "certbot_dns_google" ]; then
+    min=99
+  elif [ "$1" = "certbot_dns_luadns" ]; then
+    min=98
+  elif [ "$1" = "certbot_dns_nsone" ]; then
+    min=99
+  elif [ "$1" = "certbot_dns_rfc2136" ]; then
+    min=99
+  elif [ "$1" = "certbot_dns_route53" ]; then
+    min=99
   elif [ "$1" = "certbot_nginx" ]; then
     min=97
   elif [ "$1" = "letshelp_certbot" ]; then

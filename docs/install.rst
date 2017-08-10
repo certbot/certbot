@@ -22,8 +22,8 @@ your system.
 System Requirements
 ===================
 
-Certbot currently requires Python 2.6 or 2.7. By default, it requires root
-access in order to write to ``/etc/letsencrypt``,
+Certbot currently requires Python 2.6, 2.7, or 3.3+. By default, it requires
+root access in order to write to ``/etc/letsencrypt``,
 ``/var/log/letsencrypt``, ``/var/lib/letsencrypt``; to bind to ports 80 and 443
 (if you use the ``standalone`` plugin) and to read and modify webserver
 configurations (if you use the ``apache`` or ``nginx`` plugins).  If none of
@@ -89,7 +89,7 @@ You can workaround this restriction by creating a temporary swapfile::
   user@webserver:~$ sudo mkswap /tmp/swapfile
   user@webserver:~$ sudo swapon /tmp/swapfile
 
-Disable and remove the swapfile once the virtual enviroment is constructed::
+Disable and remove the swapfile once the virtual environment is constructed::
 
   user@webserver:~$ sudo swapoff /tmp/swapfile
   user@webserver:~$ sudo rm /tmp/swapfile
@@ -234,11 +234,10 @@ Installing from source
 Installation from source is only supported for developers and the
 whole process is described in the :doc:`contributing`.
 
-.. warning:: Please do **not** use ``python setup.py install`` or
-   ``python pip install .``. Please do **not** attempt the
-   installation commands as superuser/root and/or without virtual
-   environment, e.g. ``sudo python setup.py install``, ``sudo pip
-   install``, ``sudo ./venv/bin/...``. These modes of operation might
-   corrupt your operating system and are **not supported** by the
-   Certbot team!
+.. warning:: Please do **not** use ``python setup.py install``, ``python pip
+   install .``, or ``easy_install .``. Please do **not** attempt the
+   installation commands as superuser/root and/or without virtual environment,
+   e.g. ``sudo python setup.py install``, ``sudo pip install``, ``sudo
+   ./venv/bin/...``. These modes of operation might corrupt your operating
+   system and are **not supported** by the Certbot team!
 

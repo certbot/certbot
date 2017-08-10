@@ -14,12 +14,10 @@ from acme import messages
 
 from certbot import errors
 
-from certbot.tests import util
-
-from certbot.tests.util import TempDirTestCase
+import certbot.tests.util as test_util
 
 
-KEY = jose.JWKRSA.load(util.load_vector("rsa512_key_2.pem"))
+KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key_2.pem"))
 
 
 class AccountTest(unittest.TestCase):
@@ -58,11 +56,8 @@ class AccountTest(unittest.TestCase):
         self.assertTrue(repr(self.acc).startswith(
           "<Account(i_am_a_regr, bca5889f66457d5b62fbba7b25f9ab6f, Meta("))
 
-class ReportNewAccountTest(unittest.TestCase):
+class ReportNewAccountTest(test_util.ConfigTestCase):
     """Tests for certbot.account.report_new_account."""
-
-    def setUp(self):
-        self.config = mock.MagicMock(config_dir="/etc/letsencrypt")
 
     def _call(self):
         from certbot.account import report_new_account
@@ -98,14 +93,12 @@ class AccountMemoryStorageTest(unittest.TestCase):
         self.assertEqual([account], self.storage.find_all())
 
 
-class AccountFileStorageTest(TempDirTestCase):
+class AccountFileStorageTest(test_util.ConfigTestCase):
     """Tests for certbot.account.AccountFileStorage."""
 
     def setUp(self):
         super(AccountFileStorageTest, self).setUp()
 
-        self.config = mock.MagicMock(
-            accounts_dir=os.path.join(self.tempdir, "accounts"))
         from certbot.account import AccountFileStorage
         self.storage = AccountFileStorage(self.config)
 

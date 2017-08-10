@@ -183,19 +183,22 @@ def setup_tempdir(args):
         config_fd.write(args.config_file + "\n")
 
     proc = subprocess.Popen([args.apache_ctl, "-v"],
-                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                            universal_newlines=True)
     with open(os.path.join(tempdir, "version"), "w") as version_fd:
         version_fd.write(proc.communicate()[0])
 
     proc = subprocess.Popen([args.apache_ctl, "-d", args.server_root, "-f",
                              args.config_file, "-M"],
-                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                            universal_newlines=True)
     with open(os.path.join(tempdir, "modules"), "w") as modules_fd:
         modules_fd.write(proc.communicate()[0])
 
     proc = subprocess.Popen([args.apache_ctl, "-d", args.server_root, "-f",
                              args.config_file, "-t", "-D", "DUMP_VHOSTS"],
-                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                            universal_newlines=True)
     with open(os.path.join(tempdir, "vhosts"), "w") as vhosts_fd:
         vhosts_fd.write(proc.communicate()[0])
 
@@ -231,7 +234,8 @@ def locate_config(apache_ctl):
     """
     try:
         proc = subprocess.Popen([apache_ctl, "-V"],
-                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                universal_newlines=True)
         output, _ = proc.communicate()
     except OSError:
         sys.exit(_NO_APACHECTL)

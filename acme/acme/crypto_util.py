@@ -107,7 +107,7 @@ class SSLSocket(object):  # pylint: disable=too-few-public-methods
 
 
 def probe_sni(name, host, port=443, timeout=300,
-              method=_DEFAULT_TLSSNI01_SSL_METHOD, source_address=('0', 0)):
+              method=_DEFAULT_TLSSNI01_SSL_METHOD, source_address=('', 0)):
     """Probe SNI server for SSL certificate.
 
     :param bytes name: Byte string to send as the server name in the
@@ -132,9 +132,14 @@ def probe_sni(name, host, port=443, timeout=300,
     socket_kwargs = {} if sys.version_info < (2, 7) else {
         'source_address': source_address}
 
+    host_protocol_agnostic = None if host == '::' or host == '0' else host
+
     try:
         # pylint: disable=star-args
-        sock = socket.create_connection((host, port), **socket_kwargs)
+        logger.debug("Attempting to connect to %s:%d%s.", host_protocol_agnostic, port,
+            " from {0}:{1}".format(source_address[0], source_address[1]) if \
+            socket_kwargs else "")
+        sock = socket.create_connection((host_protocol_agnostic, port), **socket_kwargs)
     except socket.error as error:
         raise errors.Error(error)
 
@@ -213,7 +218,7 @@ def _pyopenssl_cert_or_req_san(cert_or_req):
     text = func(OpenSSL.crypto.FILETYPE_TEXT, cert_or_req).decode("utf-8")
     # WARNING: this function does not support multiple SANs extensions.
     # Multiple X509v3 extensions of the same type is disallowed by RFC 5280.
-    match = re.search(r"X509v3 Subject Alternative Name:\s*(.*)", text)
+    match = re.search(r"X509v3 Subject Alternative Name:(?: critical)?\s*(.*)", text)
     # WARNING: this function assumes that no SAN can include
     # parts_separator, hence the split!
     sans_parts = [] if match is None else match.group(1).split(parts_separator)

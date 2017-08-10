@@ -4,20 +4,22 @@ import unittest
 import mock
 
 from certbot import constants
-from certbot.tests import util
+import certbot.tests.util as test_util
 
 
-class HandleSubscriptionTest(unittest.TestCase):
+class HandleSubscriptionTest(test_util.ConfigTestCase):
     """Tests for certbot.eff.handle_subscription."""
     def setUp(self):
+        super(HandleSubscriptionTest, self).setUp()
         self.email = 'certbot@example.org'
-        self.config = mock.Mock(email=self.email, eff_email=None)
+        self.config.email = self.email
+        self.config.eff_email = None
 
     def _call(self):
         from certbot.eff import handle_subscription
         return handle_subscription(self.config)
 
-    @util.patch_get_utility()
+    @test_util.patch_get_utility()
     @mock.patch('certbot.eff.subscribe')
     def test_failure(self, mock_subscribe, mock_get_utility):
         self.config.email = None
@@ -32,12 +34,12 @@ class HandleSubscriptionTest(unittest.TestCase):
     @mock.patch('certbot.eff.subscribe')
     def test_no_subscribe_with_no_prompt(self, mock_subscribe):
         self.config.eff_email = False
-        with util.patch_get_utility() as mock_get_utility:
+        with test_util.patch_get_utility() as mock_get_utility:
             self._call()
         self.assertFalse(mock_subscribe.called)
         self._assert_no_get_utility_calls(mock_get_utility)
 
-    @util.patch_get_utility()
+    @test_util.patch_get_utility()
     @mock.patch('certbot.eff.subscribe')
     def test_subscribe_with_no_prompt(self, mock_subscribe, mock_get_utility):
         self.config.eff_email = True
@@ -49,7 +51,7 @@ class HandleSubscriptionTest(unittest.TestCase):
         self.assertFalse(mock_get_utility().yesno.called)
         self.assertFalse(mock_get_utility().add_message.called)
 
-    @util.patch_get_utility()
+    @test_util.patch_get_utility()
     @mock.patch('certbot.eff.subscribe')
     def test_subscribe_with_prompt(self, mock_subscribe, mock_get_utility):
         mock_get_utility().yesno.return_value = True
@@ -62,7 +64,7 @@ class HandleSubscriptionTest(unittest.TestCase):
         self.assertTrue(mock_subscribe.called)
         self.assertEqual(mock_subscribe.call_args[0][0], self.email)
 
-    @util.patch_get_utility()
+    @test_util.patch_get_utility()
     @mock.patch('certbot.eff.subscribe')
     def test_no_subscribe_with_prompt(self, mock_subscribe, mock_get_utility):
         mock_get_utility().yesno.return_value = False
@@ -105,7 +107,7 @@ class SubscribeTest(unittest.TestCase):
         self.assertFalse(data is None)
         self.assertEqual(data.get('email'), self.email)
 
-    @util.patch_get_utility()
+    @test_util.patch_get_utility()
     def test_bad_status(self, mock_get_utility):
         self.json['status'] = False
         self._call()  # pylint: disable=no-value-for-parameter
@@ -113,7 +115,7 @@ class SubscribeTest(unittest.TestCase):
         expected_part = 'because your e-mail address appears to be invalid.'
         self.assertTrue(expected_part in actual)
 
-    @util.patch_get_utility()
+    @test_util.patch_get_utility()
     def test_not_ok(self, mock_get_utility):
         self.response.ok = False
         self._call()  # pylint: disable=no-value-for-parameter
@@ -125,7 +127,7 @@ class SubscribeTest(unittest.TestCase):
         self.assertTrue(mock_get_utility().add_message.called)
         return mock_get_utility().add_message.call_args[0][0]
 
-    @util.patch_get_utility()
+    @test_util.patch_get_utility()
     def test_subscribe(self, mock_get_utility):
         self._call()  # pylint: disable=no-value-for-parameter
         self.assertFalse(mock_get_utility.called)

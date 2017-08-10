@@ -26,18 +26,13 @@ class PreArgParseSetupTest(unittest.TestCase):
         return pre_arg_parse_setup(*args, **kwargs)
 
     @mock.patch('certbot.log.sys')
-    @mock.patch('certbot.log.except_hook')
+    @mock.patch('certbot.log.pre_arg_parse_except_hook')
     @mock.patch('certbot.log.logging.getLogger')
     @mock.patch('certbot.log.util.atexit_register')
     def test_it(self, mock_register, mock_get, mock_except_hook, mock_sys):
         mock_sys.argv = ['--debug']
         mock_sys.version_info = sys.version_info
         self._call()
-
-        mock_register.assert_called_once_with(logging.shutdown)
-        mock_sys.excepthook(1, 2, 3)
-        mock_except_hook.assert_called_once_with(
-            1, 2, 3, debug=True, log_path=mock.ANY)
 
         mock_root_logger = mock_get()
         mock_root_logger.setLevel.assert_called_once_with(logging.DEBUG)
@@ -54,8 +49,13 @@ class PreArgParseSetupTest(unittest.TestCase):
         self.assertTrue(
             isinstance(memory_handler.target, logging.StreamHandler))
 
+        mock_register.assert_called_once_with(logging.shutdown)
+        mock_sys.excepthook(1, 2, 3)
+        mock_except_hook.assert_called_once_with(
+            memory_handler, 1, 2, 3, debug=True, log_path=mock.ANY)
 
-class PostArgParseSetupTest(test_util.TempDirTestCase):
+
+class PostArgParseSetupTest(test_util.ConfigTestCase):
     """Tests for certbot.log.post_arg_parse_setup."""
 
     @classmethod
@@ -65,9 +65,10 @@ class PostArgParseSetupTest(test_util.TempDirTestCase):
 
     def setUp(self):
         super(PostArgParseSetupTest, self).setUp()
-        self.config = mock.MagicMock(
-            debug=False, logs_dir=self.tempdir, quiet=False,
-            verbose_count=constants.CLI_DEFAULTS['verbose_count'])
+        self.config.debug = False
+        self.config.max_log_backups = 1000
+        self.config.quiet = False
+        self.config.verbose_count = constants.CLI_DEFAULTS['verbose_count']
         self.devnull = open(os.devnull, 'w')
 
         from certbot.log import ColoredStreamHandler
@@ -88,7 +89,8 @@ class PostArgParseSetupTest(test_util.TempDirTestCase):
     def test_common(self):
         with mock.patch('certbot.log.logging.getLogger') as mock_get_logger:
             mock_get_logger.return_value = self.root_logger
-            with mock.patch('certbot.log.except_hook') as mock_except_hook:
+            except_hook_path = 'certbot.log.post_arg_parse_except_hook'
+            with mock.patch(except_hook_path) as mock_except_hook:
                 with mock.patch('certbot.log.sys') as mock_sys:
                     mock_sys.version_info = sys.version_info
                     self._call(self.config)
@@ -101,7 +103,7 @@ class PostArgParseSetupTest(test_util.TempDirTestCase):
         self.assertFalse(os.path.exists(self.temp_path))
         mock_sys.excepthook(1, 2, 3)
         mock_except_hook.assert_called_once_with(
-            1, 2, 3, debug=self.config.debug, log_path=self.tempdir)
+            1, 2, 3, debug=self.config.debug, log_path=self.config.logs_dir)
 
         level = self.stream_handler.level
         if self.config.quiet:
@@ -118,7 +120,7 @@ class PostArgParseSetupTest(test_util.TempDirTestCase):
         self.test_common()
 
 
-class SetupLogFileHandlerTest(test_util.TempDirTestCase):
+class SetupLogFileHandlerTest(test_util.ConfigTestCase):
     """Tests for certbot.log.setup_log_file_handler."""
 
     @classmethod
@@ -128,7 +130,7 @@ class SetupLogFileHandlerTest(test_util.TempDirTestCase):
 
     def setUp(self):
         super(SetupLogFileHandlerTest, self).setUp()
-        self.config = mock.MagicMock(logs_dir=self.tempdir)
+        self.config.max_log_backups = 42
 
     @mock.patch('certbot.main.logging.handlers.RotatingFileHandler')
     def test_failure(self, mock_handler):
@@ -141,15 +143,32 @@ class SetupLogFileHandlerTest(test_util.TempDirTestCase):
         else:  # pragma: no cover
             self.fail('Error not raised.')
 
-    def test_success(self):
+    def test_success_with_rollover(self):
+        self._test_success_common(should_rollover=True)
+
+    def test_success_without_rollover(self):
+        self.config.max_log_backups = 0
+        self._test_success_common(should_rollover=False)
+
+    def _test_success_common(self, should_rollover):
         log_file = 'test.log'
         handler, log_path = self._call(self.config, log_file, '%(message)s')
+        handler.close()
+
         self.assertEqual(handler.level, logging.DEBUG)
         self.assertEqual(handler.formatter.converter, time.gmtime)
 
         expected_path = os.path.join(self.config.logs_dir, log_file)
         self.assertEqual(log_path, expected_path)
-        handler.close()
+
+        backup_path = os.path.join(self.config.logs_dir, log_file + '.1')
+        self.assertEqual(os.path.exists(backup_path), should_rollover)
+
+    @mock.patch('certbot.log.logging.handlers.RotatingFileHandler')
+    def test_max_log_backups_used(self, mock_handler):
+        self._call(self.config, 'test.log', '%(message)s')
+        backup_count = mock_handler.call_args[1]['backupCount']
+        self.assertEqual(self.config.max_log_backups, backup_count)
 
 
 class ColoredStreamHandlerTest(unittest.TestCase):
@@ -203,12 +222,13 @@ class MemoryHandlerTest(unittest.TestCase):
 
     def test_flush(self):
         self._test_log_debug()
-        self.handler.flush()
+        self.handler.flush(force=True)
         self.assertEqual(self.stream.getvalue(), self.msg + '\n')
 
     def test_not_flushed(self):
         # By default, logging.ERROR messages and higher are flushed
         self.logger.critical(self.msg)
+        self.handler.flush()
         self.assertEqual(self.stream.getvalue(), '')
 
     def test_target_reset(self):
@@ -217,7 +237,7 @@ class MemoryHandlerTest(unittest.TestCase):
         new_stream = six.StringIO()
         new_stream_handler = logging.StreamHandler(new_stream)
         self.handler.setTarget(new_stream_handler)
-        self.handler.flush()
+        self.handler.flush(force=True)
         self.assertEqual(self.stream.getvalue(), '')
         self.assertEqual(new_stream.getvalue(), self.msg + '\n')
         new_stream_handler.close()
@@ -234,31 +254,50 @@ class TempHandlerTest(unittest.TestCase):
         self.handler = TempHandler()
 
     def tearDown(self):
-        if not self.closed:
-            self.handler.delete_and_close()
+        self.handler.close()
 
     def test_permissions(self):
         self.assertTrue(
             util.check_permissions(self.handler.path, 0o600, os.getuid()))
 
     def test_delete(self):
-        self.handler.delete_and_close()
-        self.closed = True
+        self.handler.close()
         self.assertFalse(os.path.exists(self.handler.path))
 
     def test_no_delete(self):
+        self.handler.emit(mock.MagicMock())
         self.handler.close()
-        self.closed = True
         self.assertTrue(os.path.exists(self.handler.path))
         os.remove(self.handler.path)
 
 
-class ExceptHookTest(unittest.TestCase):
-    """Tests for certbot.log.except_hook."""
+class PreArgParseExceptHookTest(unittest.TestCase):
+    """Tests for certbot.log.pre_arg_parse_except_hook."""
     @classmethod
     def _call(cls, *args, **kwargs):
-        from certbot.log import except_hook
-        return except_hook(*args, **kwargs)
+        from certbot.log import pre_arg_parse_except_hook
+        return pre_arg_parse_except_hook(*args, **kwargs)
+
+    @mock.patch('certbot.log.post_arg_parse_except_hook')
+    def test_it(self, mock_post_arg_parse_except_hook):
+        # pylint: disable=star-args
+        memory_handler = mock.MagicMock()
+        args = ('some', 'args',)
+        kwargs = {'some': 'kwargs'}
+
+        self._call(memory_handler, *args, **kwargs)
+
+        mock_post_arg_parse_except_hook.assert_called_once_with(
+            *args, **kwargs)
+        memory_handler.flush.assert_called_once_with(force=True)
+
+
+class PostArgParseExceptHookTest(unittest.TestCase):
+    """Tests for certbot.log.post_arg_parse_except_hook."""
+    @classmethod
+    def _call(cls, *args, **kwargs):
+        from certbot.log import post_arg_parse_except_hook
+        return post_arg_parse_except_hook(*args, **kwargs)
 
     def setUp(self):
         self.error_msg = 'test error message'

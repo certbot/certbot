@@ -9,7 +9,7 @@ Developer Guide
 .. _getting_started:
 
 Getting Started
-=======
+===============
 
 Running a local copy of the client
 ----------------------------------

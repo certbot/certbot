@@ -57,30 +57,30 @@ SHORT_USAGE = """
 
 Certbot can obtain and install HTTPS/TLS/SSL certificates.  By default,
 it will attempt to use a webserver both for obtaining and installing the
-cert. """.format(cli_command)
+certificate. """.format(cli_command)
 
 # This section is used for --help and --help all ; it needs information
 # about installed plugins to be fully formatted
 COMMAND_OVERVIEW = """The most common SUBCOMMANDS and flags are:
 
 obtain, install, and renew certificates:
-    (default) run   Obtain & install a cert in your current webserver
-    certonly        Obtain or renew a cert, but do not install it
-    renew           Renew all previously obtained certs that are near expiry
-   -d DOMAINS       Comma-separated list of domains to obtain a cert for
+    (default) run   Obtain & install a certificate in your current webserver
+    certonly        Obtain or renew a certificate, but do not install it
+    renew           Renew all previously obtained certificates that are near expiry
+   -d DOMAINS       Comma-separated list of domains to obtain a certificate for
 
   %s
   --standalone      Run a standalone webserver for authentication
   %s
   --webroot         Place files in a server's webroot folder for authentication
-  --manual          Obtain certs interactively, or using shell script hooks
+  --manual          Obtain certificates interactively, or using shell script hooks
 
    -n               Run non-interactively
-  --test-cert       Obtain a test cert from a staging server
-  --dry-run         Test "renew" or "certonly" without saving any certs to disk
+  --test-cert       Obtain a test certificate from a staging server
+  --dry-run         Test "renew" or "certonly" without saving any certificates to disk
 
 manage certificates:
-    certificates    Display information about certs you have from Certbot
+    certificates    Display information about certificates you have from Certbot
     revoke          Revoke a certificate (supply --cert-path)
     delete          Delete a certificate
 
@@ -324,13 +324,13 @@ class CustomHelpFormatter(argparse.HelpFormatter):
 VERB_HELP = [
     ("run (default)", {
         "short": "Obtain/renew a certificate, and install it",
-        "opts": "Options for obtaining & installing certs",
+        "opts": "Options for obtaining & installing certificates",
         "usage": SHORT_USAGE.replace("[SUBCOMMAND]", ""),
         "realname": "run"
     }),
     ("certonly", {
         "short": "Obtain or renew a certificate, but do not install it",
-        "opts": "Options for modifying how a cert is obtained",
+        "opts": "Options for modifying how a certificate is obtained",
         "usage": ("\n\n  certbot certonly [options] [-d DOMAIN] [-d DOMAIN] ...\n\n"
                   "This command obtains a TLS/SSL certificate without installing it anywhere.")
     }),
@@ -357,42 +357,51 @@ VERB_HELP = [
     }),
     ("delete", {
         "short": "Clean up all files related to a certificate",
-        "opts": "Options for deleting a certificate"
+        "opts": "Options for deleting a certificate",
+        "usage": "\n\n  certbot delete --cert-name CERTNAME\n\n"
     }),
     ("revoke", {
         "short": "Revoke a certificate specified with --cert-path",
-        "opts": "Options for revocation of certs",
+        "opts": "Options for revocation of certificates",
         "usage": "\n\n  certbot revoke --cert-path /path/to/fullchain.pem [options]\n\n"
     }),
     ("register", {
         "short": "Register for account with Let's Encrypt / other ACME server",
-        "opts": "Options for account registration & modification"
+        "opts": "Options for account registration & modification",
+        "usage": "\n\n  certbot register --email user@example.com [options]\n\n"
     }),
     ("unregister", {
         "short": "Irrevocably deactivate your account",
-        "opts": "Options for account deactivation."
+        "opts": "Options for account deactivation.",
+        "usage": "\n\n  certbot unregister [options]\n\n"
     }),
     ("install", {
-        "short": "Install an arbitrary cert in a server",
-        "opts": "Options for modifying how a cert is deployed"
+        "short": "Install an arbitrary certificate in a server",
+        "opts": "Options for modifying how a certificate is deployed",
+        "usage": "\n\n  certbot install --cert-path /path/to/fullchain.pem "
+        " --key-path /path/to/private-key [options]\n\n"
     }),
     ("config_changes", {
         "short": "Show changes that Certbot has made to server configurations",
-        "opts": "Options for controlling which changes are displayed"
+        "opts": "Options for controlling which changes are displayed",
+        "usage": "\n\n  certbot config_changes --num NUM [options]\n\n"
     }),
     ("rollback", {
-        "short": "Roll back server conf changes made during cert installation",
-        "opts": "Options for rolling back server configuration changes"
+        "short": "Roll back server conf changes made during certificate installation",
+        "opts": "Options for rolling back server configuration changes",
+        "usage": "\n\n  certbot rollback --checkpoints 3 [options]\n\n"
     }),
     ("plugins", {
         "short": "List plugins that are installed and available on your system",
-        "opts": 'Options for for the "plugins" subcommand'
+        "opts": 'Options for for the "plugins" subcommand',
+        "usage": "\n\n  certbot plugins [options]\n\n"
     }),
     ("update_symlinks", {
         "short": "Recreate symlinks in your /etc/letsencrypt/live/ directory",
-        "opts": ("Recreates cert and key symlinks in {0}, if you changed them by hand "
+        "opts": ("Recreates certificate and key symlinks in {0}, if you changed them by hand "
                  "or edited a renewal configuration file".format(
-                  os.path.join(flag_default("config_dir"), "live")))
+                  os.path.join(flag_default("config_dir"), "live"))),
+        "usage": "\n\n  certbot update_symlinks [options]\n\n"
     }),
 
 ]
@@ -431,8 +440,8 @@ class HelpfulArgumentParser(object):
         }
 
         # List of topics for which additional help can be provided
-        HELP_TOPICS = ["all", "security", "paths", "automation", "testing"] + list(self.VERBS)
-        HELP_TOPICS += self.COMMANDS_TOPICS + ["manage"]
+        HELP_TOPICS = ["all", "security", "paths", "automation", "testing"]
+        HELP_TOPICS += list(self.VERBS) + self.COMMANDS_TOPICS + ["manage"]
 
         plugin_names = list(plugins)
         self.help_topics = HELP_TOPICS + plugin_names + [None]
@@ -620,7 +629,9 @@ class HelpfulArgumentParser(object):
                 % parsed_args.csr[0])
 
         parsed_args.actual_csr = (csr, typ)
-        csr_domains, config_domains = set(domains), set(parsed_args.domains)
+
+        csr_domains = set([d.lower() for d in domains])
+        config_domains = set(parsed_args.domains)
         if csr_domains != config_domains:
             raise errors.ConfigurationError(
                 "Inconsistent domain requests:\nFrom the CSR: {0}\nFrom command line/config: {1}"
@@ -839,6 +850,12 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         None, "-t", "--text", dest="text_mode", action="store_true",
         help=argparse.SUPPRESS)
     helpful.add(
+        None, "--max-log-backups", type=nonnegative_int, default=1000,
+        help="Specifies the maximum number of backup logs that should "
+             "be kept by Certbot's built in log rotation. Setting this "
+             "flag to 0 disables log rotation entirely, causing "
+             "Certbot to always append to the same log file.")
+    helpful.add(
         [None, "automation", "run", "certonly"], "-n", "--non-interactive", "--noninteractive",
         dest="noninteractive_mode", action="store_true",
         help="Run without ever asking for user input. This may require "
@@ -867,16 +884,16 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
     helpful.add(
         [None, "testing", "renew", "certonly"],
         "--dry-run", action="store_true", dest="dry_run",
-        help="Perform a test run of the client, obtaining test (invalid) certs"
+        help="Perform a test run of the client, obtaining test (invalid) certificates"
              " but not saving them to disk. This can currently only be used"
              " with the 'certonly' and 'renew' subcommands. \nNote: Although --dry-run"
              " tries to avoid making any persistent changes on a system, it "
              " is not completely side-effect free: if used with webserver authenticator plugins"
              " like apache and nginx, it makes and then reverts temporary config changes"
-             " in order to obtain test certs, and reloads webservers to deploy and then"
+             " in order to obtain test certificates, and reloads webservers to deploy and then"
              " roll back those changes.  It also calls --pre-hook and --post-hook commands"
              " if they are defined because they may be necessary to accurately simulate"
-             " renewal. --renew-hook commands are not called.")
+             " renewal. --deploy-hook commands are not called.")
     helpful.add(
         ["register", "automation"], "--register-unsafely-without-email", action="store_true",
         help="Specifying this flag enables registering an account with no "
@@ -905,12 +922,12 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         ["automation", "certonly", "run"],
         "--keep-until-expiring", "--keep", "--reinstall",
         dest="reinstall", action="store_true",
-        help="If the requested cert matches an existing cert, always keep the "
+        help="If the requested certificate matches an existing certificate, always keep the "
              "existing one until it is due for renewal (for the "
-             "'run' subcommand this means reinstall the existing cert). (default: Ask)")
+             "'run' subcommand this means reinstall the existing certificate). (default: Ask)")
     helpful.add(
         "automation", "--expand", action="store_true",
-        help="If an existing cert is a strict subset of the requested names, "
+        help="If an existing certificate is a strict subset of the requested names, "
              "always expand and replace it with the additional names. (default: Ask)")
     helpful.add(
         "automation", "--version", action="version",
@@ -969,7 +986,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
     # overwrites server, handled in HelpfulArgumentParser.parse_args()
     helpful.add(["testing", "revoke", "run"], "--test-cert", "--staging",
         action='store_true', dest='staging',
-        help='Use the staging server to obtain or revoke test (invalid) certs; equivalent'
+        help='Use the staging server to obtain or revoke test (invalid) certificates; equivalent'
              ' to --server ' + constants.STAGING_URI)
     helpful.add(
         "testing", "--debug", action="store_true",
@@ -989,13 +1006,21 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         default=flag_default("tls_sni_01_port"),
         help=config_help("tls_sni_01_port"))
     helpful.add(
+        ["testing", "standalone"], "--tls-sni-01-address",
+        default=flag_default("tls_sni_01_address"),
+        help=config_help("tls_sni_01_address"))
+    helpful.add(
         ["testing", "standalone", "manual"], "--http-01-port", type=int,
         dest="http01_port",
         default=flag_default("http01_port"), help=config_help("http01_port"))
     helpful.add(
+        ["testing", "standalone"], "--http-01-address",
+        dest="http01_address",
+        default=flag_default("http01_address"), help=config_help("http01_address"))
+    helpful.add(
         "testing", "--break-my-certs", action="store_true",
-        help="Be willing to replace or renew valid certs with invalid "
-             "(testing/staging) certs")
+        help="Be willing to replace or renew valid certificates with invalid "
+             "(testing/staging) certificates")
     helpful.add(
         "security", "--rsa-key-size", type=int, metavar="N",
         default=flag_default("rsa_key_size"), help=config_help("rsa_key_size"))
@@ -1066,24 +1091,28 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         " run if an attempt was made to obtain/renew a certificate. If"
         " multiple renewed certificates have identical post-hooks, only"
         " one will be run.")
+    helpful.add("renew", "--renew-hook",
+                action=_RenewHookAction, help=argparse.SUPPRESS)
     helpful.add(
-        "renew", "--renew-hook",
-        help="Command to be run in a shell once for each successfully renewed"
-        " certificate. For this command, the shell variable $RENEWED_LINEAGE"
-        " will point to the config live subdirectory (for example,"
-        " \"/etc/letsencrypt/live/example.com\") containing the new certs"
-        " and keys; the shell variable $RENEWED_DOMAINS will contain a"
-        " space-delimited list of renewed cert domains (for example,"
-        " \"example.com www.example.com\"")
+        "renew", "--deploy-hook", action=_DeployHookAction,
+        help="Command to be run in a shell once for each successfully"
+        " issued certificate. For this command, the shell variable"
+        " $RENEWED_LINEAGE will point to the config live subdirectory"
+        ' (for example, "/etc/letsencrypt/live/example.com") containing'
+        " the new certificates and keys; the shell variable"
+        " $RENEWED_DOMAINS will contain a space-delimited list of"
+        ' renewed certificate domains (for example, "example.com'
+        ' www.example.com"')
     helpful.add(
         "renew", "--disable-hook-validation",
         action='store_false', dest='validate_hooks', default=True,
         help="Ordinarily the commands specified for"
-        " --pre-hook/--post-hook/--renew-hook will be checked for validity, to"
-        " see if the programs being run are in the $PATH, so that mistakes can"
-        " be caught early, even when the hooks aren't being run just yet. The"
-        " validation is rather simplistic and fails if you use more advanced"
-        " shell constructs, so you can use this switch to disable it."
+        " --pre-hook/--post-hook/--deploy-hook will be checked for"
+        " validity, to see if the programs being run are in the $PATH,"
+        " so that mistakes can be caught early, even when the hooks"
+        " aren't being run just yet. The validation is rather"
+        " simplistic and fails if you use more advanced shell"
+        " constructs, so you can use this switch to disable it."
         " (default: False)")
 
     helpful.add_deprecated_argument("--agree-dev-preview", 0)
@@ -1109,19 +1138,28 @@ def _create_subparsers(helpful):
     helpful.add(
         None, "--user-agent", default=None,
         help="Set a custom user agent string for the client. User agent strings allow "
-             "the CA to collect high level statistics about success rates by OS and "
-             "plugin. If you wish to hide your server OS version from the Let's "
+             "the CA to collect high level statistics about success rates by OS, "
+             "plugin and use case, and to know when to deprecate support for past Python "
+             "versions and flags. If you wish to hide this information from the Let's "
              'Encrypt server, set this to "". '
-             '(default: {0})'.format(sample_user_agent()))
+             '(default: {0}). The flags encoded in the user agent are: '
+             '--duplicate, --force-renew, --allow-subset-of-names, -n, and '
+             'whether any hooks are set.'.format(sample_user_agent()))
+    helpful.add(
+        None, "--user-agent-comment", default=None, type=_user_agent_comment_type,
+        help="Add a comment to the default user agent string. May be used when repackaging Certbot "
+             "or calling it from another tool to allow additional statistical data to be collected."
+             " Ignored if --user-agent is set. (Example: Foo-Wrapper/1.0)")
     helpful.add("certonly",
                 "--csr", type=read_file,
                 help="Path to a Certificate Signing Request (CSR) in DER or PEM format."
                 " Currently --csr only works with the 'certonly' subcommand.")
     helpful.add("revoke",
                 "--reason", dest="reason",
-                choices=CaseInsensitiveList(constants.REVOCATION_REASONS.keys()),
+                choices=CaseInsensitiveList(sorted(constants.REVOCATION_REASONS,
+                                                   key=constants.REVOCATION_REASONS.get)),
                 action=_EncodeReasonAction, default=0,
-                help="Specify reason for revoking certificate.")
+                help="Specify reason for revoking certificate. (default: unspecified)")
     helpful.add("rollback",
                 "--checkpoints", type=int, metavar="N",
                 default=flag_default("rollback_checkpoints"),
@@ -1154,7 +1192,7 @@ def _paths_parser(helpful):
     if verb == "help":
         verb = helpful.help_arg
 
-    cph = "Path to where cert is saved (with auth --csr), installed from, or revoked."
+    cph = "Path to where certificate is saved (with auth --csr), installed from, or revoked."
     section = ["paths", "install", "revoke", "certonly", "manage"]
     if verb == "certonly":
         add(section, "--cert-path", type=os.path.abspath,
@@ -1171,14 +1209,14 @@ def _paths_parser(helpful):
     # revoke --key-path reads a file, install --key-path takes a string
     add(section, "--key-path", required=(verb == "install"),
         type=((verb == "revoke" and read_file) or os.path.abspath),
-        help="Path to private key for cert installation "
+        help="Path to private key for certificate installation "
              "or revocation (if account key is missing)")
 
     default_cp = None
     if verb == "certonly":
         default_cp = flag_default("auth_chain_path")
     add(["paths", "install"], "--fullchain-path", default=default_cp, type=os.path.abspath,
-        help="Accompanying path to a full certificate chain (cert plus chain).")
+        help="Accompanying path to a full certificate chain (certificate plus chain).")
     add("paths", "--chain-path", default=default_cp, type=os.path.abspath,
         help="Accompanying path to a certificate chain.")
     add("paths", "--config-dir", default=flag_default("config_dir"),
@@ -1209,15 +1247,44 @@ def _plugins_parsing(helpful, plugins):
                 help="Installer plugin name (also used to find domains).")
     helpful.add(["plugins", "certonly", "run", "install", "config_changes"],
                 "--apache", action="store_true",
-                help="Obtain and install certs using Apache")
+                help="Obtain and install certificates using Apache")
     helpful.add(["plugins", "certonly", "run", "install", "config_changes"],
-                "--nginx", action="store_true", help="Obtain and install certs using Nginx")
+                "--nginx", action="store_true", help="Obtain and install certificates using Nginx")
     helpful.add(["plugins", "certonly"], "--standalone", action="store_true",
-                help='Obtain certs using a "standalone" webserver.')
+                help='Obtain certificates using a "standalone" webserver.')
     helpful.add(["plugins", "certonly"], "--manual", action="store_true",
-                help='Provide laborious manual instructions for obtaining a cert')
+                help='Provide laborious manual instructions for obtaining a certificate')
     helpful.add(["plugins", "certonly"], "--webroot", action="store_true",
-                help='Obtain certs by placing files in a webroot directory.')
+                help='Obtain certificates by placing files in a webroot directory.')
+    helpful.add(["plugins", "certonly"], "--dns-cloudflare", action="store_true",
+                help=('Obtain certificates using a DNS TXT record (if you are '
+                      'using Cloudflare for DNS).'))
+    helpful.add(["plugins", "certonly"], "--dns-cloudxns", action="store_true",
+                help=('Obtain certificates using a DNS TXT record (if you are '
+                     'using CloudXNS for DNS).'))
+    helpful.add(["plugins", "certonly"], "--dns-digitalocean", action="store_true",
+                help=('Obtain certificates using a DNS TXT record (if you are '
+                      'using DigitalOcean for DNS).'))
+    helpful.add(["plugins", "certonly"], "--dns-dnsimple", action="store_true",
+                help=('Obtain certificates using a DNS TXT record (if you are '
+                      'using DNSimple for DNS).'))
+    helpful.add(["plugins", "certonly"], "--dns-dnsmadeeasy", action="store_true",
+                help=('Obtain certificates using a DNS TXT record (if you are'
+                      'using DNS Made Easy for DNS).'))
+    helpful.add(["plugins", "certonly"], "--dns-google", action="store_true",
+                help=('Obtain certificates using a DNS TXT record (if you are '
+                      'using Google Cloud DNS).'))
+    helpful.add(["plugins", "certonly"], "--dns-luadns", action="store_true",
+                help=('Obtain certificates using a DNS TXT record (if you are '
+                      'using LuaDNS for DNS).'))
+    helpful.add(["plugins", "certonly"], "--dns-nsone", action="store_true",
+                help=('Obtain certificates using a DNS TXT record (if you are '
+                      'using NS1 for DNS).'))
+    helpful.add(["plugins", "certonly"], "--dns-rfc2136", action="store_true",
+                help='Obtain certificates using a DNS TXT record (if you are using BIND for DNS).')
+    helpful.add(["plugins", "certonly"], "--dns-route53", action="store_true",
+                help=('Obtain certificates using a DNS TXT record (if you are using Route53 for '
+                      'DNS).'))
 
     # things should not be reorder past/pre this comment:
     # plugins_group should be displayed in --help before plugin
@@ -1273,7 +1340,7 @@ class _PrefChallAction(argparse.Action):
         try:
             challs = parse_preferred_challenges(pref_challs.split(","))
         except errors.Error as error:
-            raise argparse.ArgumentTypeError(str(error))
+            raise argparse.ArgumentError(self, str(error))
         namespace.pref_challs.extend(challs)
 
 
@@ -1298,3 +1365,53 @@ def parse_preferred_challenges(pref_challs):
         raise errors.Error(
             "Unrecognized challenges: {0}".format(unrecognized))
     return challs
+
+def _user_agent_comment_type(value):
+    if "(" in value or ")" in value:
+        raise argparse.ArgumentTypeError("may not contain parentheses")
+    return value
+
+class _DeployHookAction(argparse.Action):
+    """Action class for parsing deploy hooks."""
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        renew_hook_set = namespace.deploy_hook != namespace.renew_hook
+        if renew_hook_set and namespace.renew_hook != values:
+            raise argparse.ArgumentError(
+                self, "conflicts with --renew-hook value")
+        namespace.deploy_hook = namespace.renew_hook = values
+
+
+class _RenewHookAction(argparse.Action):
+    """Action class for parsing renew hooks."""
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        deploy_hook_set = namespace.deploy_hook is not None
+        if deploy_hook_set and namespace.deploy_hook != values:
+            raise argparse.ArgumentError(
+                self, "conflicts with --deploy-hook value")
+        namespace.renew_hook = values
+
+
+def nonnegative_int(value):
+    """Converts value to an int and checks that it is not negative.
+
+    This function should used as the type parameter for argparse
+    arguments.
+
+    :param str value: value provided on the command line
+
+    :returns: integer representation of value
+    :rtype: int
+
+    :raises argparse.ArgumentTypeError: if value isn't a non-negative integer
+
+    """
+    try:
+        int_value = int(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError("value must be an integer")
+
+    if int_value < 0:
+        raise argparse.ArgumentTypeError("value must be non-negative")
+    return int_value

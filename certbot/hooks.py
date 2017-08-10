@@ -18,6 +18,7 @@ def validate_hooks(config):
     """Check hook commands are executable."""
     validate_hook(config.pre_hook, "pre")
     validate_hook(config.post_hook, "post")
+    validate_hook(config.deploy_hook, "deploy")
     validate_hook(config.renew_hook, "renew")
 
 
@@ -95,16 +96,30 @@ def run_saved_post_hooks():
         _run_hook(cmd)
 
 
+def deploy_hook(config, domains, lineage_path):
+    """Run post-issuance hook if defined.
+
+    :param configuration.NamespaceConfig config: Certbot settings
+    :param domains: domains in the obtained certificate
+    :type domains: `list` of `str`
+    :param str lineage_path: live directory path for the new cert
+
+    """
+    if config.deploy_hook:
+        renew_hook(config, domains, lineage_path)
+
+
 def renew_hook(config, domains, lineage_path):
     """Run post-renewal hook if defined."""
     if config.renew_hook:
         if not config.dry_run:
             os.environ["RENEWED_DOMAINS"] = " ".join(domains)
             os.environ["RENEWED_LINEAGE"] = lineage_path
-            logger.info("Running renew-hook command: %s", config.renew_hook)
+            logger.info("Running deploy-hook command: %s", config.renew_hook)
             _run_hook(config.renew_hook)
         else:
-            logger.warning("Dry run: skipping renewal hook command: %s", config.renew_hook)
+            logger.warning(
+                "Dry run: skipping deploy hook command: %s", config.renew_hook)
 
 
 def _run_hook(shell_cmd):
@@ -126,11 +141,13 @@ def execute(shell_cmd):
     cmd = Popen(shell_cmd, shell=True, stdout=PIPE,
                 stderr=PIPE, universal_newlines=True)
     out, err = cmd.communicate()
+    base_cmd = os.path.basename(shell_cmd.split(None, 1)[0])
+    if out:
+        logger.info('Output from %s:\n%s', base_cmd, out)
     if cmd.returncode != 0:
         logger.error('Hook command "%s" returned error code %d',
                      shell_cmd, cmd.returncode)
     if err:
-        base_cmd = os.path.basename(shell_cmd.split(None, 1)[0])
         logger.error('Error output from %s:\n%s', base_cmd, err)
     return (err, out)
 

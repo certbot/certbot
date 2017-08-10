@@ -82,6 +82,8 @@ def _get_and_save_cert(le_client, config, domains=None, certname=None, lineage=N
             lineage = le_client.obtain_and_enroll_certificate(domains, certname)
             if lineage is False:
                 raise errors.Error("Certificate could not be obtained")
+            elif lineage is not None:
+                hooks.deploy_hook(config, lineage.names(), lineage.live_dir)
     finally:
         hooks.post_hook(config)
 
@@ -161,14 +163,13 @@ def _handle_identical_cert_request(config, lineage):
                "Renew & replace the cert (limit ~5 per 7 days)"]
 
     display = zope.component.getUtility(interfaces.IDisplay)
-    response = display.menu(question, choices, "OK", "Cancel",
+    response = display.menu(question, choices,
                             default=0, force_interactive=True)
     if response[0] == display_util.CANCEL:
         # TODO: Add notification related to command-line options for
         #       skipping the menu for this case.
         raise errors.Error(
-            "User chose to cancel the operation and may "
-            "reinvoke the client.")
+            "Operation canceled. You may re-run the client.")
     elif response[1] == 0:
         return "reinstall", lineage
     elif response[1] == 1:
@@ -254,12 +255,14 @@ def _ask_user_to_confirm_new_names(config, new_domains, certname, old_domains):
     """
     if config.renew_with_new_domains:
         return
-    msg = ("Confirm that you intend to update certificate {0} "
-           "to include domains {1}. Note that it previously "
-           "contained domains {2}.".format(
+
+    msg = ("You are updating certificate {0} to include domains: {1}{br}{br}"
+           "It previously included domains: {2}{br}{br}"
+           "Did you intend to make this change?".format(
                certname,
-               new_domains,
-               old_domains))
+               ", ".join(new_domains),
+               ", ".join(old_domains),
+               br=os.linesep))
     obj = zope.component.getUtility(interfaces.IDisplay)
     if not obj.yesno(msg, "Update cert", "Cancel", default=True):
         raise errors.ConfigurationError("Specified mismatched cert name and domains.")
@@ -290,11 +293,12 @@ def _find_domains_or_certname(config, installer):
     return domains, certname
 
 
-def _report_new_cert(config, cert_path, fullchain_path):
+def _report_new_cert(config, cert_path, fullchain_path, key_path=None):
     """Reports the creation of a new certificate to the user.
 
     :param str cert_path: path to cert
     :param str fullchain_path: path to full chain
+    :param str key_path: path to private key, if available
 
     """
     if config.dry_run:
@@ -309,13 +313,17 @@ def _report_new_cert(config, cert_path, fullchain_path):
     # (Nginx and Apache2.4) will want.
 
     verbswitch = ' with the "certonly" option' if config.verb == "run" else ""
+    privkey_statement = 'Your key file has been saved at:{br}{0}{br}'.format(
+            key_path, br=os.linesep) if key_path else ""
     # XXX Perhaps one day we could detect the presence of known old webservers
     # and say something more informative here.
-    msg = ('Congratulations! Your certificate and chain have been saved at {0}.'
-           ' Your cert will expire on {1}. To obtain a new or tweaked version of this '
-           'certificate in the future, simply run {2} again{3}. '
-           'To non-interactively renew *all* of your certificates, run "{2} renew"'
-           .format(fullchain_path, expiry, cli.cli_command, verbswitch))
+    msg = ('Congratulations! Your certificate and chain have been saved at:{br}'
+           '{0}{br}{1}'
+           'Your cert will expire on {2}. To obtain a new or tweaked version of this '
+           'certificate in the future, simply run {3} again{4}. '
+           'To non-interactively renew *all* of your certificates, run "{3} renew"'
+           .format(fullchain_path, privkey_statement, expiry, cli.cli_command, verbswitch,
+               br=os.linesep))
     reporter_util.add_message(msg, reporter_util.MEDIUM_PRIORITY)
 
 
@@ -559,6 +567,7 @@ def revoke(config, unused_plugins):  # TODO: coop with renewal config
     if config.key_path is not None:  # revocation by cert key
         logger.debug("Revoking %s using cert key %s",
                      config.cert_path[0], config.key_path[0])
+        crypto_util.verify_cert_matches_priv_key(config.cert_path[0], config.key_path[0])
         key = jose.JWK.load(config.key_path[1])
     else:  # revocation by account key
         logger.debug("Revoking %s using Account Key", config.cert_path[0])
@@ -598,7 +607,8 @@ def run(config, plugins):  # pylint: disable=too-many-branches,too-many-locals
 
     cert_path = new_lineage.cert_path if new_lineage else None
     fullchain_path = new_lineage.fullchain_path if new_lineage else None
-    _report_new_cert(config, cert_path, fullchain_path)
+    key_path = new_lineage.key_path if new_lineage else None
+    _report_new_cert(config, cert_path, fullchain_path, key_path)
 
     _install_cert(config, le_client, domains, new_lineage)
 
@@ -683,7 +693,8 @@ def certonly(config, plugins):
 
     cert_path = lineage.cert_path if lineage else None
     fullchain_path = lineage.fullchain_path if lineage else None
-    _report_new_cert(config, cert_path, fullchain_path)
+    key_path = lineage.key_path if lineage else None
+    _report_new_cert(config, cert_path, fullchain_path, key_path)
     _suggest_donation_if_appropriate(config)
 
 def renew(config, unused_plugins):
@@ -696,10 +707,10 @@ def renew(config, unused_plugins):
 
 def make_or_verify_needed_dirs(config):
     """Create or verify existence of config and work directories"""
-    util.make_or_verify_core_dir(config.config_dir, constants.CONFIG_DIRS_MODE,
-                            os.geteuid(), config.strict_permissions)
-    util.make_or_verify_core_dir(config.work_dir, constants.CONFIG_DIRS_MODE,
-                            os.geteuid(), config.strict_permissions)
+    util.set_up_core_dir(config.config_dir, constants.CONFIG_DIRS_MODE,
+                         os.geteuid(), config.strict_permissions)
+    util.set_up_core_dir(config.work_dir, constants.CONFIG_DIRS_MODE,
+                         os.geteuid(), config.strict_permissions)
 
 
 def set_displayer(config):

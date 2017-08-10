@@ -13,12 +13,6 @@ set -eux
 . ./tests/integration/_common.sh
 export PATH="$PATH:/usr/sbin"  # /usr/sbin/nginx
 
-if [ `uname` = "Darwin" ];then
-  readlink="greadlink"
-else
-  readlink="readlink"
-fi
-
 cleanup_and_exit() {
     EXIT_STATUS=$?
     if SERVER_STILL_RUNNING=`ps -p $python_server_pid -o pid=`
@@ -58,15 +52,19 @@ CheckHooks() {
     if [ $(head -n1 $HOOK_TEST) = "wtf.pre" ]; then
         echo "wtf.pre" > "$EXPECTED"
         echo "wtf2.pre" >> "$EXPECTED"
-        echo "renew" >> "$EXPECTED"
-        echo "renew" >> "$EXPECTED"
+        echo "deploy" >> "$EXPECTED"
+        echo "deploy" >> "$EXPECTED"
+        echo "deploy" >> "$EXPECTED"
+        echo "deploy" >> "$EXPECTED"
         echo "wtf.post" >> "$EXPECTED"
         echo "wtf2.post" >> "$EXPECTED"
     else
         echo "wtf2.pre" > "$EXPECTED"
         echo "wtf.pre" >> "$EXPECTED"
-        echo "renew" >> "$EXPECTED"
-        echo "renew" >> "$EXPECTED"
+        echo "deploy" >> "$EXPECTED"
+        echo "deploy" >> "$EXPECTED"
+        echo "deploy" >> "$EXPECTED"
+        echo "deploy" >> "$EXPECTED"
         echo "wtf2.post" >> "$EXPECTED"
         echo "wtf.post" >> "$EXPECTED"
     fi
@@ -80,32 +78,113 @@ CheckHooks() {
     rm "$HOOK_TEST"
 }
 
+# Checks if deploy is in the hook output and deletes the file
+DeployInHookOutput() {
+    CONTENTS=$(cat "$HOOK_TEST")
+    rm "$HOOK_TEST"
+    grep deploy <(echo "$CONTENTS")
+}
+
+# Asserts that there is a saved renew_hook for a lineage.
+#
+# Arguments:
+#     Name of lineage to check
+CheckSavedRenewHook() {
+    if ! grep renew_hook "$config_dir/renewal/$1.conf"; then
+        echo "Hook wasn't saved as renew_hook" >&2
+        exit 1
+    fi
+}
+
+# Asserts the deploy hook was properly run and saved and deletes the hook file
+#
+# Arguments:
+#   Lineage name of the issued cert
+CheckDeployHook() {
+    if ! DeployInHookOutput; then
+        echo "The deploy hook wasn't run" >&2
+        exit 1
+    fi
+    CheckSavedRenewHook $1
+}
+
+# Asserts the renew hook wasn't run but was saved and deletes the hook file
+#
+# Arguments:
+#   Lineage name of the issued cert
+# Asserts the deploy hook wasn't run and deletes the hook file
+CheckRenewHook() {
+    if DeployInHookOutput; then
+        echo "The renew hook was incorrectly run" >&2
+        exit 1
+    fi
+    CheckSavedRenewHook $1
+}
+
+# Cleanup coverage data
+coverage erase
+
+# test for regressions of #4719
+get_num_tmp_files() {
+    ls -1 /tmp | wc -l
+}
+num_tmp_files=$(get_num_tmp_files)
+common --csr / && echo expected error && exit 1 || true
+common --help
+common --help all
+common --version
+if [ $(get_num_tmp_files) -ne $num_tmp_files ]; then
+    echo "New files or directories created in /tmp!"
+    exit 1
+fi
+
+common register
+common register --update-registration --email example@example.org
+
+common plugins --init --prepare | grep webroot
+
 # We start a server listening on the port for the
 # unrequested challenge to prevent regressions in #3601.
 python ./tests/run_http_server.py $http_01_port &
 python_server_pid=$!
 
+certname="le1.wtf"
 common --domains le1.wtf --preferred-challenges tls-sni-01 auth \
+       --cert-name $certname \
        --pre-hook 'echo wtf.pre >> "$HOOK_TEST"' \
        --post-hook 'echo wtf.post >> "$HOOK_TEST"'\
-       --renew-hook 'echo renew >> "$HOOK_TEST"'
+       --deploy-hook 'echo deploy >> "$HOOK_TEST"'
 kill $python_server_pid
+CheckDeployHook $certname
+
 python ./tests/run_http_server.py $tls_sni_01_port &
 python_server_pid=$!
+certname="le2.wtf"
 common --domains le2.wtf --preferred-challenges http-01 run \
+       --cert-name $certname \
        --pre-hook 'echo wtf.pre >> "$HOOK_TEST"' \
        --post-hook 'echo wtf.post >> "$HOOK_TEST"'\
-       --renew-hook 'echo renew >> "$HOOK_TEST"'
+       --deploy-hook 'echo deploy >> "$HOOK_TEST"'
 kill $python_server_pid
+CheckDeployHook $certname
 
-common certonly -a manual -d le.wtf --rsa-key-size 4096 \
+certname="le.wtf"
+common certonly -a manual -d le.wtf --rsa-key-size 4096 --cert-name $certname \
     --manual-auth-hook ./tests/manual-http-auth.sh \
     --manual-cleanup-hook ./tests/manual-http-cleanup.sh \
     --pre-hook 'echo wtf2.pre >> "$HOOK_TEST"' \
-    --post-hook 'echo wtf2.post >> "$HOOK_TEST"'
+    --post-hook 'echo wtf2.post >> "$HOOK_TEST"' \
+    --renew-hook 'echo deploy >> "$HOOK_TEST"'
+CheckRenewHook $certname
 
-common certonly -a manual -d dns.le.wtf --preferred-challenges dns,tls-sni \
-    --manual-auth-hook ./tests/manual-dns-auth.sh
+certname="dns.le.wtf"
+common -a manual -d dns.le.wtf --preferred-challenges dns,tls-sni run \
+    --cert-name $certname \
+    --manual-auth-hook ./tests/manual-dns-auth.sh \
+    --pre-hook 'echo wtf2.pre >> "$HOOK_TEST"' \
+    --post-hook 'echo wtf2.post >> "$HOOK_TEST"' \
+    --renew-hook 'echo deploy >> "$HOOK_TEST"'
+CheckRenewHook $certname
 
 common certonly --cert-name newname -d newname.le.wtf
 
@@ -203,7 +282,33 @@ common revoke --cert-path "$root/conf/live/le2.wtf/cert.pem" \
 
 common unregister
 
-if type nginx;
+out=$(common certificates)
+subdomains="le le2 dns.le newname.le must-staple.le"
+for subdomain in $subdomains; do
+    domain="$subdomain.wtf"
+    if ! echo $out | grep "$domain"; then
+        echo "$domain not in certificates output!"
+        exit 1;
+    fi
+done
+
+cert_name="must-staple.le.wtf"
+common delete --cert-name $cert_name
+archive="$root/conf/archive/$cert_name"
+conf="$root/conf/renewal/$cert_name.conf"
+live="$root/conf/live/$cert_name"
+for path in $archive $conf $live; do
+    if [ -e $path ]; then
+        echo "Lineage not properly deleted!"
+        exit 1
+    fi
+done
+
+# Most CI systems set this variable to true.
+# If the tests are running as part of CI, Nginx should be available.
+if ${CI:-false} || type nginx;
 then
     . ./certbot-nginx/tests/boulder-integration.sh
 fi
+
+coverage report --fail-under 64 -m

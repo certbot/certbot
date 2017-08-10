@@ -2,11 +2,13 @@
 import argparse
 import errno
 import os
+import shutil
 import stat
 import unittest
 
 import mock
 import six
+from six.moves import reload_module  # pylint: disable=import-error
 
 from certbot import errors
 import certbot.tests.util as test_util
@@ -73,19 +75,52 @@ class ExeExistsTest(unittest.TestCase):
         self.assertFalse(self._call("exe"))
 
 
-class MakeOrVerifyCoreDirTest(test_util.TempDirTestCase):
+class LockDirUntilExit(test_util.TempDirTestCase):
+    """Tests for certbot.util.lock_dir_until_exit."""
+    @classmethod
+    def _call(cls, *args, **kwargs):
+        from certbot.util import lock_dir_until_exit
+        return lock_dir_until_exit(*args, **kwargs)
+
+    def setUp(self):
+        super(LockDirUntilExit, self).setUp()
+        # reset global state from other tests
+        import certbot.util
+        reload_module(certbot.util)
+
+    @mock.patch('certbot.util.logger')
+    @mock.patch('certbot.util.atexit_register')
+    def test_it(self, mock_register, mock_logger):
+        subdir = os.path.join(self.tempdir, 'subdir')
+        os.mkdir(subdir)
+        self._call(self.tempdir)
+        self._call(subdir)
+        self._call(subdir)
+
+        self.assertEqual(mock_register.call_count, 1)
+        registered_func = mock_register.call_args[0][0]
+        shutil.rmtree(subdir)
+        registered_func()  # exception not raised
+        # logger.debug is only called once because the second call
+        # to lock subdir was ignored because it was already locked
+        self.assertEqual(mock_logger.debug.call_count, 1)
+
+
+class SetUpCoreDirTest(test_util.TempDirTestCase):
     """Tests for certbot.util.make_or_verify_core_dir."""
 
     def _call(self, *args, **kwargs):
-        from certbot.util import make_or_verify_core_dir
-        return make_or_verify_core_dir(*args, **kwargs)
+        from certbot.util import set_up_core_dir
+        return set_up_core_dir(*args, **kwargs)
 
-    def test_success(self):
+    @mock.patch('certbot.util.lock_dir_until_exit')
+    def test_success(self, mock_lock):
         new_dir = os.path.join(self.tempdir, 'new')
         self._call(new_dir, 0o700, os.geteuid(), False)
         self.assertTrue(os.path.exists(new_dir))
+        self.assertEqual(mock_lock.call_count, 1)
 
-    @mock.patch('certbot.main.util.make_or_verify_dir')
+    @mock.patch('certbot.util.make_or_verify_dir')
     def test_failure(self, mock_make_or_verify):
         mock_make_or_verify.side_effect = OSError
         self.assertRaises(errors.Error, self._call,
@@ -333,6 +368,30 @@ class AddDeprecatedArgumentTest(unittest.TestCase):
                 pass
         self.assertTrue("--old-option" not in stdout.getvalue())
 
+    def test_set_constant(self):
+        """Test when ACTION_TYPES_THAT_DONT_NEED_A_VALUE is a set.
+
+        This variable is a set in configargparse versions < 0.12.0.
+
+        """
+        self._test_constant_common(set)
+
+    def test_tuple_constant(self):
+        """Test when ACTION_TYPES_THAT_DONT_NEED_A_VALUE is a tuple.
+
+        This variable is a tuple in configargparse versions >= 0.12.0.
+
+        """
+        self._test_constant_common(tuple)
+
+    def _test_constant_common(self, typ):
+        with mock.patch("certbot.util.configargparse") as mock_configargparse:
+            mock_configargparse.ACTION_TYPES_THAT_DONT_NEED_A_VALUE = typ()
+            self._call("--old-option", 1)
+            self._call("--old-option2", 2)
+        self.assertEqual(
+            len(mock_configargparse.ACTION_TYPES_THAT_DONT_NEED_A_VALUE), 1)
+
 
 class EnforceLeValidity(unittest.TestCase):
     """Test enforce_le_validity."""
@@ -360,6 +419,13 @@ class EnforceLeValidity(unittest.TestCase):
 
     def test_valid_domain(self):
         self.assertEqual(self._call(u"example.com"), u"example.com")
+
+    def test_input_with_scheme(self):
+        self.assertRaises(errors.ConfigurationError, self._call, u"http://example.com")
+        self.assertRaises(errors.ConfigurationError, self._call, u"https://example.com")
+
+    def test_valid_input_with_scheme_name(self):
+        self.assertEqual(self._call(u"http.example.com"), u"http.example.com")
 
 
 class EnforceDomainSanityTest(unittest.TestCase):

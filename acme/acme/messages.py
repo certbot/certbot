@@ -1,5 +1,6 @@
 """ACME protocol messages."""
 import collections
+import six
 
 from acme import challenges
 from acme import errors
@@ -36,9 +37,13 @@ ERROR_TYPE_DESCRIPTIONS.update(dict(  # add errors with old prefix, deprecate me
 
 def is_acme_error(err):
     """Check if argument is an ACME error."""
-    return (ERROR_PREFIX in str(err)) or (OLD_ERROR_PREFIX in str(err))
+    if isinstance(err, Error) and (err.typ is not None):
+        return (ERROR_PREFIX in err.typ) or (OLD_ERROR_PREFIX in err.typ)
+    else:
+        return False
 
 
+@six.python_2_unicode_compatible
 class Error(jose.JSONObjectWithFields, errors.Error):
     """ACME error.
 
@@ -92,10 +97,10 @@ class Error(jose.JSONObjectWithFields, errors.Error):
             return code
 
     def __str__(self):
-        return ' :: '.join(
-            part for part in
+        return b' :: '.join(
+            part.encode('ascii', 'backslashreplace') for part in
             (self.typ, self.description, self.detail, self.title)
-            if part is not None)
+            if part is not None).decode()
 
 
 class _Constant(jose.JSONDeSerializable, collections.Hashable):  # type: ignore

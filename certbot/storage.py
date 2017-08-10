@@ -4,6 +4,7 @@ import glob
 import logging
 import os
 import re
+import stat
 
 import configobj
 import parsedatetime
@@ -117,9 +118,19 @@ def write_renewal_config(o_filename, n_filename, archive_dir, target, relevant_d
     # TODO: add human-readable comments explaining other available
     #       parameters
     logger.debug("Writing new config %s.", n_filename)
+
+    # Ensure that the file exists
+    open(n_filename, 'a').close()
+
+    # Copy permissions from the old version of the file, if it exists.
+    if os.path.exists(o_filename):
+        current_permissions = stat.S_IMODE(os.lstat(o_filename).st_mode)
+        os.chmod(n_filename, current_permissions)
+
     with open(n_filename, "wb") as f:
         config.write(outfile=f)
     return config
+
 
 def rename_renewal_config(prev_name, new_name, cli_config):
     """Renames cli_config.certname's config to cli_config.new_certname.
@@ -175,8 +186,15 @@ def get_link_target(link):
     :returns: Absolute path to the target of link
     :rtype: str
 
+    :raises .CertStorageError: If link does not exists.
+
     """
-    target = os.readlink(link)
+    try:
+        target = os.readlink(link)
+    except OSError:
+        raise errors.CertStorageError(
+            "Expected {0} to be a symlink".format(link))
+
     if not os.path.isabs(target):
         target = os.path.join(os.path.dirname(link), target)
     return os.path.abspath(target)

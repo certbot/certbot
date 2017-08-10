@@ -11,6 +11,7 @@ from acme import challenges
 from acme import jose
 
 from certbot import achallenges
+from certbot import crypto_util
 
 from certbot.tests import acme_util
 from certbot.tests import util as test_util
@@ -220,6 +221,87 @@ class TLSSNI01Test(unittest.TestCase):
         mock_safe_open.return_value.write.assert_called_once_with(
             OpenSSL.crypto.dump_privatekey(OpenSSL.crypto.FILETYPE_PEM, key))
 
+    def test_get_z_domain(self):
+        achall = self.achalls[0]
+        self.assertEqual(self.sni.get_z_domain(achall),
+            achall.response(achall.account_key).z_domain.decode("utf-8"))
+
+
+class InstallSslOptionsConfTest(test_util.TempDirTestCase):
+    """Tests for certbot.plugins.common.install_ssl_options_conf."""
+
+    def setUp(self):
+        super(InstallSslOptionsConfTest, self).setUp()
+        self.hashes = ["someotherhash"]
+        self.dest_path = os.path.join(self.tempdir, "options-ssl-dest.conf")
+        self.hash_path = os.path.join(self.tempdir, ".options-ssl-conf.txt")
+        self.old_path = os.path.join(self.tempdir, "options-ssl-old.conf")
+        self.source_path = os.path.join(self.tempdir, "options-ssl-src.conf")
+        for path in (self.source_path, self.old_path,):
+            with open(path, "w") as f:
+                f.write(path)
+            self.hashes.append(crypto_util.sha256sum(path))
+
+    def _call(self):
+        from certbot.plugins.common import install_ssl_options_conf
+        install_ssl_options_conf(self.dest_path,
+                                 self.hash_path,
+                                 self.source_path,
+                                 self.hashes)
+
+    def _current_ssl_options_hash(self):
+        return crypto_util.sha256sum(self.source_path)
+
+    def _assert_current_file(self):
+        self.assertTrue(os.path.isfile(self.dest_path))
+        self.assertEqual(crypto_util.sha256sum(self.dest_path),
+            self._current_ssl_options_hash())
+
+    def test_no_file(self):
+        self.assertFalse(os.path.isfile(self.dest_path))
+        self._call()
+        self._assert_current_file()
+
+    def test_current_file(self):
+        # 1st iteration installs the file, the 2nd checks if it needs updating
+        for _ in range(2):
+            self._call()
+            self._assert_current_file()
+
+    def test_prev_file_updates_to_current(self):
+        shutil.copyfile(self.old_path, self.dest_path)
+        self._call()
+        self._assert_current_file()
+
+    def test_manually_modified_current_file_does_not_update(self):
+        self._call()
+        with open(self.dest_path, "a") as mod_ssl_conf:
+            mod_ssl_conf.write("a new line for the wrong hash\n")
+        with mock.patch("certbot.plugins.common.logger") as mock_logger:
+            self._call()
+            self.assertFalse(mock_logger.warning.called)
+        self.assertTrue(os.path.isfile(self.dest_path))
+        self.assertEqual(crypto_util.sha256sum(self.source_path),
+            self._current_ssl_options_hash())
+        self.assertNotEqual(crypto_util.sha256sum(self.dest_path),
+            self._current_ssl_options_hash())
+
+    def test_manually_modified_past_file_warns(self):
+        with open(self.dest_path, "a") as mod_ssl_conf:
+            mod_ssl_conf.write("a new line for the wrong hash\n")
+        with open(self.hash_path, "w") as f:
+            f.write("hashofanoldversion")
+        with mock.patch("certbot.plugins.common.logger") as mock_logger:
+            self._call()
+            self.assertEqual(mock_logger.warning.call_args[0][0],
+                "%s has been manually modified; updated ssl configuration options "
+                "saved to %s. We recommend updating %s for security purposes.")
+        self.assertEqual(crypto_util.sha256sum(self.source_path),
+            self._current_ssl_options_hash())
+        # only print warning once
+        with mock.patch("certbot.plugins.common.logger") as mock_logger:
+            self._call()
+            self.assertFalse(mock_logger.warning.called)
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

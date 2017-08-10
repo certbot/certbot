@@ -40,7 +40,7 @@ class TestReadFile(TempDirTestCase):
 
 
 
-class ParseTest(unittest.TestCase):
+class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     '''Test the cli args entrypoint'''
 
     _multiprocess_can_split_ = True
@@ -103,12 +103,13 @@ class ParseTest(unittest.TestCase):
         self._help_output(['--help'])  # assert SystemExit is raised here
         out = self._help_output(['--help', 'all'])
         self.assertTrue("--configurator" in out)
-        self.assertTrue("how a cert is deployed" in out)
+        self.assertTrue("how a certificate is deployed" in out)
         self.assertTrue("--webroot-path" in out)
         self.assertTrue("--text" not in out)
         self.assertTrue("--dialog" not in out)
         self.assertTrue("%s" not in out)
         self.assertTrue("{0}" not in out)
+        self.assertTrue("--renew-hook" not in out)
 
         out = self._help_output(['-h', 'nginx'])
         if "nginx" in PLUGINS:
@@ -161,7 +162,7 @@ class ParseTest(unittest.TestCase):
 
         out = self._help_output(['help', 'all'])
         self.assertTrue("--configurator" in out)
-        self.assertTrue("how a cert is deployed" in out)
+        self.assertTrue("how a certificate is deployed" in out)
         self.assertTrue("--webroot-path" in out)
         self.assertTrue("--text" not in out)
         self.assertTrue("--dialog" not in out)
@@ -211,7 +212,10 @@ class ParseTest(unittest.TestCase):
         self.assertEqual(namespace.pref_challs, expected)
 
         short_args = ['--preferred-challenges', 'jumping-over-the-moon']
-        self.assertRaises(argparse.ArgumentTypeError, self.parse, short_args)
+        # argparse.ArgumentError makes argparse print more information
+        # to stderr and call sys.exit()
+        with mock.patch('sys.stderr'):
+            self.assertRaises(SystemExit, self.parse, short_args)
 
     def test_server_flag(self):
         namespace = self.parse('--server example.com'.split())
@@ -319,6 +323,58 @@ class ParseTest(unittest.TestCase):
             errors.Error, self.parse, "renew --force-interactive".split())
         self.assertRaises(
             errors.Error, self.parse, "-n --force-interactive".split())
+
+    def test_deploy_hook_conflict(self):
+        with mock.patch("certbot.cli.sys.stderr"):
+            self.assertRaises(SystemExit, self.parse,
+                              "--renew-hook foo --deploy-hook bar".split())
+
+    def test_deploy_hook_matches_renew_hook(self):
+        value = "foo"
+        namespace = self.parse(["--renew-hook", value,
+                                "--deploy-hook", value,
+                                "--disable-hook-validation"])
+        self.assertEqual(namespace.deploy_hook, value)
+        self.assertEqual(namespace.renew_hook, value)
+
+    def test_deploy_hook_sets_renew_hook(self):
+        value = "foo"
+        namespace = self.parse(
+            ["--deploy-hook", value, "--disable-hook-validation"])
+        self.assertEqual(namespace.deploy_hook, value)
+        self.assertEqual(namespace.renew_hook, value)
+
+    def test_renew_hook_conflict(self):
+        with mock.patch("certbot.cli.sys.stderr"):
+            self.assertRaises(SystemExit, self.parse,
+                              "--deploy-hook foo --renew-hook bar".split())
+
+    def test_renew_hook_matches_deploy_hook(self):
+        value = "foo"
+        namespace = self.parse(["--deploy-hook", value,
+                                "--renew-hook", value,
+                                "--disable-hook-validation"])
+        self.assertEqual(namespace.deploy_hook, value)
+        self.assertEqual(namespace.renew_hook, value)
+
+    def test_renew_hook_does_not_set_renew_hook(self):
+        value = "foo"
+        namespace = self.parse(
+            ["--renew-hook", value, "--disable-hook-validation"])
+        self.assertEqual(namespace.deploy_hook, None)
+        self.assertEqual(namespace.renew_hook, value)
+
+    def test_max_log_backups_error(self):
+        with mock.patch('certbot.cli.sys.stderr'):
+            self.assertRaises(
+                SystemExit, self.parse, "--max-log-backups foo".split())
+            self.assertRaises(
+                SystemExit, self.parse, "--max-log-backups -42".split())
+
+    def test_max_log_backups_success(self):
+        value = "42"
+        namespace = self.parse(["--max-log-backups", value])
+        self.assertEqual(namespace.max_log_backups, int(value))
 
 
 class DefaultTest(unittest.TestCase):
