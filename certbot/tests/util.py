@@ -203,6 +203,8 @@ class FreezableMock(object):
                 return object.__getattribute__(self, name)
             except AttributeError:
                 return False
+        elif name in ('return_value', 'side_effect',):
+            return getattr(object.__getattribute__(self, '_mock'), name)
         elif name == '_frozen_set' or name in self._frozen_set:
             return object.__getattribute__(self, name)
         else:
@@ -226,6 +228,7 @@ class FreezableMock(object):
 
         if name in ('return_value', 'side_effect',):
             return setattr(self._mock, name, value)
+
         else:
             return object.__setattr__(self, name, value)
 
