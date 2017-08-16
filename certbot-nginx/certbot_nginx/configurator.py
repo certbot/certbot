@@ -236,7 +236,10 @@ class NginxConfigurator(common.Plugin):
         if not vhost:
             # No matches. Raise a misconfiguration error.
             raise errors.MisconfigurationError(
-                        "Cannot find a VirtualHost matching domain %s." % (target_name))
+                        """Cannot find a VirtualHost matching domain %s.
+                           In order for Certbot to correctly perform the challenge
+                           please add a server_name directive to your nginx configuration.
+                           This configuration file can likely be found in /etc/nginx""" % (target_name))
         else:
             # Note: if we are enhancing with ocsp, vhost should already be ssl.
             if not vhost.ssl:
