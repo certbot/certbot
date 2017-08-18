@@ -870,7 +870,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
     helpful.add(
         [None, "run", "certonly", "certificates"],
         "-d", "--domains", "--domain", dest="domains",
-        metavar="DOMAIN", action=_DomainsAction, default=flag_default('domains'),
+        metavar="DOMAIN", action=_DomainsAction, default=[],
         help="Domain names to apply. For multiple domains you can use "
              "multiple -d flags or enter a comma separated list of domains "
              "as a parameter. The first provided domain will be used in "
@@ -1056,12 +1056,12 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         "security", "--no-hsts", action="store_false", dest="hsts",
         default=flag_default('hsts'), help=argparse.SUPPRESS)
     helpful.add(
-        "security", "--uir", action="store_true", dest="uir", default=flag_default(uir),
+        "security", "--uir", action="store_true", dest="uir", default=flag_default('uir'),
         help="Add the \"Content-Security-Policy: upgrade-insecure-requests\""
              " header to every HTTP response. Forcing the browser to use"
              " https:// for every http:// resource.")
     helpful.add(
-        "security", "--no-uir", action="store_false", dest="uir", default=flag_default(uir),
+        "security", "--no-uir", action="store_false", dest="uir", default=flag_default('uir'),
         help=argparse.SUPPRESS)
     helpful.add(
         "security", "--staple-ocsp", action="store_true", dest="staple",
@@ -1078,7 +1078,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
     helpful.add(
         ["manual", "standalone", "certonly", "renew"],
         "--preferred-challenges", dest="pref_challs",
-        action=_PrefChallAction, default=flag_default('pref_challs')
+        action=_PrefChallAction, default=flag_default('pref_challs'),
         help='A sorted, comma delimited list of the preferred challenge to '
              'use during authorization with the most preferred challenge '
              'listed first (Eg, "dns" or "tls-sni-01,http,dns"). '
@@ -1117,7 +1117,8 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         ' www.example.com"')
     helpful.add(
         "renew", "--disable-hook-validation",
-        action='store_false', dest='validate_hooks', default=True,
+        action='store_false', dest='validate_hooks',
+        default=flag_default('validate_hooks'),
         help="Ordinarily the commands specified for"
         " --pre-hook/--post-hook/--deploy-hook will be checked for"
         " validity, to see if the programs being run are in the $PATH,"
