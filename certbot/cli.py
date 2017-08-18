@@ -850,7 +850,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         None, "-t", "--text", dest="text_mode", action="store_true",
         help=argparse.SUPPRESS)
     helpful.add(
-        None, "--max-log-backups", type=nonnegative_int, default=1000,
+        None, "--max-log-backups", type=nonnegative_int, default=flag_default('max_log_backups'),
         help="Specifies the maximum number of backup logs that should "
              "be kept by Certbot's built in log rotation. Setting this "
              "flag to 0 disables log rotation entirely, causing "
@@ -870,7 +870,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
     helpful.add(
         [None, "run", "certonly", "certificates"],
         "-d", "--domains", "--domain", dest="domains",
-        metavar="DOMAIN", action=_DomainsAction, default=[],
+        metavar="DOMAIN", action=_DomainsAction, default=flag_default('domains'),
         help="Domain names to apply. For multiple domains you can use "
              "multiple -d flags or enter a comma separated list of domains "
              "as a parameter. The first provided domain will be used in "
@@ -881,7 +881,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
     helpful.add(
         [None, "run", "certonly", "manage", "delete", "certificates"],
         "--cert-name", dest="certname",
-        metavar="CERTNAME", default=None,
+        metavar="CERTNAME", default=flag_default('certname'),
         help="Certificate name to apply. This name is used by Certbot for housekeeping "
              "and in file paths; it doesn't affect the content of the certificate itself. "
              "To see certificate names, run 'certbot certificates'. "
@@ -918,12 +918,13 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              "should be updated, rather than registering a new account.")
     helpful.add(
         ["register", "unregister", "automation"], "-m", "--email",
+        default=flag_default('email'),
         help=config_help("email"))
     helpful.add(["register", "automation"], "--eff-email", action="store_true",
-                default=None, dest="eff_email",
+                default=flag_default('eff_email'), dest="eff_email",
                 help="Share your e-mail address with EFF")
     helpful.add(["register", "automation"], "--no-eff-email", action="store_false",
-                default=None, dest="eff_email",
+                default=flag_default('eff_email'), dest="eff_email",
                 help="Don't share your e-mail address with EFF")
     helpful.add(
         ["automation", "certonly", "run"],
@@ -967,6 +968,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         help="Agree to the ACME Subscriber Agreement (default: Ask)")
     helpful.add(
         ["unregister", "automation"], "--account", metavar="ACCOUNT_ID",
+        default=flag_default('account'),
         help="Account ID to use")
     helpful.add(
         "automation", "--duplicate", dest="duplicate", action="store_true",
@@ -1033,39 +1035,42 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         default=flag_default("rsa_key_size"), help=config_help("rsa_key_size"))
     helpful.add(
         "security", "--must-staple", action="store_true",
-        help=config_help("must_staple"), dest="must_staple", default=False)
+        dest="must_staple", default=flag_default('must_staple'),
+        help=config_help("must_staple"))
     helpful.add(
-        "security", "--redirect", action="store_true",
+        "security", "--redirect", action="store_true", dest="redirect",
+        default=flag_default('redirect'),
         help="Automatically redirect all HTTP traffic to HTTPS for the newly "
-             "authenticated vhost. (default: Ask)", dest="redirect", default=None)
+             "authenticated vhost. (default: Ask)")
     helpful.add(
-        "security", "--no-redirect", action="store_false",
+        "security", "--no-redirect", action="store_false", dest="redirect",
+        default=flag_default('redirect'),
         help="Do not automatically redirect all HTTP traffic to HTTPS for the newly "
-             "authenticated vhost. (default: Ask)", dest="redirect", default=None)
+             "authenticated vhost. (default: Ask)")
     helpful.add(
-        "security", "--hsts", action="store_true",
+        "security", "--hsts", action="store_true", dest="hsts", default=flag_default('hsts'),
         help="Add the Strict-Transport-Security header to every HTTP response."
              " Forcing browser to always use SSL for the domain."
-             " Defends against SSL Stripping.", dest="hsts", default=False)
+             " Defends against SSL Stripping.")
     helpful.add(
-        "security", "--no-hsts", action="store_false",
-        help=argparse.SUPPRESS, dest="hsts", default=False)
+        "security", "--no-hsts", action="store_false", dest="hsts",
+        default=flag_default('hsts'), help=argparse.SUPPRESS)
     helpful.add(
-        "security", "--uir", action="store_true",
+        "security", "--uir", action="store_true", dest="uir", default=flag_default(uir),
         help="Add the \"Content-Security-Policy: upgrade-insecure-requests\""
              " header to every HTTP response. Forcing the browser to use"
-             " https:// for every http:// resource.", dest="uir", default=None)
+             " https:// for every http:// resource.")
     helpful.add(
-        "security", "--no-uir", action="store_false",
-        help=argparse.SUPPRESS, dest="uir", default=None)
+        "security", "--no-uir", action="store_false", dest="uir", default=flag_default(uir),
+        help=argparse.SUPPRESS)
     helpful.add(
-        "security", "--staple-ocsp", action="store_true",
+        "security", "--staple-ocsp", action="store_true", dest="staple",
+        default=flag_default('staple'),
         help="Enables OCSP Stapling. A valid OCSP response is stapled to"
-        " the certificate that the server offers during TLS.",
-        dest="staple", default=None)
+        " the certificate that the server offers during TLS.")
     helpful.add(
-        "security", "--no-staple-ocsp", action="store_false",
-        help=argparse.SUPPRESS, dest="staple", default=None)
+        "security", "--no-staple-ocsp", action="store_false", dest="staple",
+        default=flag_default('staple'), help=argparse.SUPPRESS)
     helpful.add(
         "security", "--strict-permissions", action="store_true",
         help="Require that all configuration files are owned by the current "
@@ -1073,7 +1078,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
     helpful.add(
         ["manual", "standalone", "certonly", "renew"],
         "--preferred-challenges", dest="pref_challs",
-        action=_PrefChallAction, default=[],
+        action=_PrefChallAction, default=flag_default('pref_challs')
         help='A sorted, comma delimited list of the preferred challenge to '
              'use during authorization with the most preferred challenge '
              'listed first (Eg, "dns" or "tls-sni-01,http,dns"). '
