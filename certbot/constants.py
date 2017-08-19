@@ -77,6 +77,7 @@ CLI_DEFAULTS = dict(
     # Path parsers
     auth_cert_path="./cert.pem",
     auth_chain_path="./chain.pem",
+    key_path=None,
     config_dir="/etc/letsencrypt",
     work_dir="/var/lib/letsencrypt",
     logs_dir="/var/log/letsencrypt",
