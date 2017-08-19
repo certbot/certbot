@@ -1149,7 +1149,7 @@ def _create_subparsers(helpful):
 
     from certbot.client import sample_user_agent # avoid import loops
     helpful.add(
-        None, "--user-agent", default=None,
+        None, "--user-agent", default=flag_default('user_agent'),
         help="Set a custom user agent string for the client. User agent strings allow "
              "the CA to collect high level statistics about success rates by OS, "
              "plugin and use case, and to know when to deprecate support for past Python "
@@ -1159,19 +1159,20 @@ def _create_subparsers(helpful):
              '--duplicate, --force-renew, --allow-subset-of-names, -n, and '
              'whether any hooks are set.'.format(sample_user_agent()))
     helpful.add(
-        None, "--user-agent-comment", default=None, type=_user_agent_comment_type,
+        None, "--user-agent-comment", default=flag_default('user_agent_comment'),
+        type=_user_agent_comment_type,
         help="Add a comment to the default user agent string. May be used when repackaging Certbot "
              "or calling it from another tool to allow additional statistical data to be collected."
              " Ignored if --user-agent is set. (Example: Foo-Wrapper/1.0)")
     helpful.add("certonly",
-                "--csr", type=read_file,
+                "--csr", default=flag_default('csr'), type=read_file,
                 help="Path to a Certificate Signing Request (CSR) in DER or PEM format."
                 " Currently --csr only works with the 'certonly' subcommand.")
     helpful.add("revoke",
                 "--reason", dest="reason",
                 choices=CaseInsensitiveList(sorted(constants.REVOCATION_REASONS,
                                                    key=constants.REVOCATION_REASONS.get)),
-                action=_EncodeReasonAction, default=0,
+                action=_EncodeReasonAction, default=flag_default('reason'),
                 help="Specify reason for revoking certificate. (default: unspecified)")
     helpful.add("rollback",
                 "--checkpoints", type=int, metavar="N",

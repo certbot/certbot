@@ -18,6 +18,8 @@ CLI_DEFAULTS = dict(
         os.path.join(os.environ.get("XDG_CONFIG_HOME", "~/.config"),
                      "letsencrypt", "cli.ini"),
     ],
+
+    # Main parser
     verbose_count=-int(logging.INFO / 10),
     text_mode=False,
     max_log_backups=1000,
@@ -61,14 +63,45 @@ CLI_DEFAULTS = dict(
     pref_challs=[],
     validate_hooks=True,
 
-    server="https://acme-v01.api.letsencrypt.org/directory",
+    # Subparsers
+    num=None,
+    user_agent=None,
+    user_agent_comment=None,
+    csr=None,
+    reason=0,
     rollback_checkpoints=1,
+    init=False,
+    prepare=False,
+    ifaces=None,
+
+    # Path parsers
+    auth_cert_path="./cert.pem",
+    auth_chain_path="./chain.pem",
     config_dir="/etc/letsencrypt",
     work_dir="/var/lib/letsencrypt",
     logs_dir="/var/log/letsencrypt",
+    server="https://acme-v01.api.letsencrypt.org/directory",
 
-    auth_cert_path="./cert.pem",
-    auth_chain_path="./chain.pem",
+    # Plugins parsers
+    configurator=None,
+    authenticator=None,
+    installer=None,
+    apache=False,
+    nginx=False,
+    standalone=False,
+    manual=False,
+    webroot=False,
+    dns_cloudflare=False,
+    dns_cloudxns=False,
+    dns_digitalocean=False,
+    dns_dnsimple=False,
+    dns_dnsmadeeasy=False,
+    dns_google=False,
+    dns_luadns=False,
+    dns_nsone=False,
+    dns_rfc2136=False,
+    dns_route53=False
+
 )
 STAGING_URI = "https://acme-staging.api.letsencrypt.org/directory"
 
