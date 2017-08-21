@@ -30,7 +30,7 @@ configurations (if you use the ``apache`` or ``nginx`` plugins).  If none of
 these apply to you, it is theoretically possible to run without root privileges,
 but for most users who want to avoid running an ACME client as root, either
 `letsencrypt-nosudo <https://github.com/diafygi/letsencrypt-nosudo>`_ or
-`simp_le <https://github.com/kuba/simp_le>`_ are more appropriate choices.
+`simp_le <https://github.com/zenhack/simp_le>`_ are more appropriate choices.
 
 The Apache plugin currently requires an OS with augeas version 1.0; currently `it
 supports
