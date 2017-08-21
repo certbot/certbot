@@ -23,9 +23,11 @@ fi
 if [ -z "$XDG_DATA_HOME" ]; then
   XDG_DATA_HOME=~/.local/share
 fi
-VENV_NAME="letsencrypt"
 if [ -z "$VENV_PATH" ]; then
-  VENV_PATH="$XDG_DATA_HOME/$VENV_NAME"
+  # We export these values so they are preserved properly if this script is
+  # rerun with sudo/su where $HOME/$XDG_DATA_HOME may have a different value.
+  export OLD_VENV_PATH="$XDG_DATA_HOME/letsencrypt"
+  export VENV_PATH="/opt/eff.org/certbot/venv"
 fi
 VENV_BIN="$VENV_PATH/bin"
 LE_AUTO_VERSION="0.18.0.dev0"
@@ -49,6 +51,7 @@ Help for certbot itself cannot be provided until it is installed.
                                             implies --non-interactive
 
 All arguments are accepted and forwarded to the Certbot client when run."
+export CERTBOT_AUTO="$0"
 
 for arg in "$@" ; do
   case "$arg" in
@@ -119,16 +122,18 @@ else
   exit 1
 fi
 
-# certbot-auto needs root access to bootstrap OS dependencies, and
-# certbot itself needs root access for almost all modes of operation
-# The "normal" case is that sudo is used for the steps that need root, but
-# this script *can* be run as root (not recommended), or fall back to using
-# `su`. Auto-detection can be overridden by explicitly setting the
-# environment variable LE_AUTO_SUDO to 'sudo', 'sudo_su' or '' as used below.
+# Certbot itself needs root access for almost all modes of operation.
+# certbot-auto needs root access to bootstrap OS dependencies and install
+# Certbot at a protected path so it can be safely run as root. To accomplish
+# this, this script will attempt to run itself as root if it doesn't have the
+# necessary privileges by using `sudo` or falling back to `su` if it is not
+# available. The mechanism used to obtain root access can be set explicitly by
+# setting the environment variable LE_AUTO_SUDO to 'sudo', 'su', 'su_sudo',
+# 'SuSudo', or '' as used below.
 
 # Because the parameters in `su -c` has to be a string,
 # we need to properly escape it.
-su_sudo() {
+SuSudo() {
   args=""
   # This `while` loop iterates over all parameters given to this function.
   # For each parameter, all `'` will be replace by `'"'"'`, and the escaped string
@@ -147,34 +152,47 @@ su_sudo() {
   su root -c "$args"
 }
 
-SUDO_ENV=""
-export CERTBOT_AUTO="$0"
-if [ -n "${LE_AUTO_SUDO+x}" ]; then
-  case "$LE_AUTO_SUDO" in
-    su_sudo|su)
-      SUDO=su_sudo
-      ;;
-    sudo)
-      SUDO=sudo
-      SUDO_ENV="CERTBOT_AUTO=$0"
-      ;;
-    '') ;; # Nothing to do for plain root method.
-    *)
-      error "Error: unknown root authorization mechanism '$LE_AUTO_SUDO'."
-      exit 1
-  esac
-  say "Using preset root authorization mechanism '$LE_AUTO_SUDO'."
-else
-  if test "`id -u`" -ne "0" ; then
-    if $EXISTS sudo 1>/dev/null 2>&1; then
-      SUDO=sudo
-      SUDO_ENV="CERTBOT_AUTO=$0"
-    else
-      say \"sudo\" is not available, will use \"su\" for installation steps...
-      SUDO=su_sudo
-    fi
+# Sets the environment variable SUDO to be the name of the program or function
+# to call to get root access. If this script already has root privleges, SUDO
+# is set to an empty string. The value in SUDO should be run with the command
+# to called with root privileges as arguments.
+SetRootAuthMechanism() {
+  SUDO=""
+  if [ -n "${LE_AUTO_SUDO+x}" ]; then
+    case "$LE_AUTO_SUDO" in
+      SuSudo|su_sudo|su)
+        SUDO=SuSudo
+        ;;
+      sudo)
+        SUDO="sudo -E"
+        ;;
+      '') ;; # Nothing to do for plain root method.
+      *)
+        error "Error: unknown root authorization mechanism '$LE_AUTO_SUDO'."
+        exit 1
+    esac
+    say "Using preset root authorization mechanism '$LE_AUTO_SUDO'."
   else
-    SUDO=
+    if test "`id -u`" -ne "0" ; then
+      if $EXISTS sudo 1>/dev/null 2>&1; then
+        SUDO="sudo -E"
+      else
+        say \"sudo\" is not available, will use \"su\" for installation steps...
+        SUDO=SuSudo
+      fi
+    fi
+  fi
+}
+
+if [ "$1" = "--cb-auto-has-root" ]; then
+  shift 1
+elif [ "$1" != "--le-auto-phase2" ]; then
+  # if $1 is --le-auto-phase2, we've executed this branch before
+  SetRootAuthMechanism
+  if [ -n "$SUDO" ]; then
+    echo "Requesting to rerun $0 with root privileges..."
+    $SUDO "$0" --cb-auto-has-root "$@"
+    exit 0
   fi
 fi
 
@@ -261,7 +279,7 @@ BootstrapDebCommon() {
     QUIET_FLAG='-qq'
   fi
 
-  $SUDO apt-get $QUIET_FLAG update || error apt-get update hit problems but continuing anyway...
+  apt-get $QUIET_FLAG update || error apt-get update hit problems but continuing anyway...
 
   # virtualenv binary can be found in different packages depending on
   # distro version (#346)
@@ -311,13 +329,13 @@ BootstrapDebCommon() {
           esac
         fi
         if [ "$add_backports" = 1 ]; then
-          $SUDO sh -c "echo $BACKPORT_SOURCELINE >> /etc/apt/sources.list.d/$BACKPORT_NAME.list"
-          $SUDO apt-get $QUIET_FLAG update
+          sh -c "echo $BACKPORT_SOURCELINE >> /etc/apt/sources.list.d/$BACKPORT_NAME.list"
+          apt-get $QUIET_FLAG update
         fi
       fi
     fi
     if [ "$add_backports" != 0 ]; then
-      $SUDO apt-get install $QUIET_FLAG $YES_FLAG --no-install-recommends -t "$BACKPORT_NAME" $augeas_pkg
+      apt-get install $QUIET_FLAG $YES_FLAG --no-install-recommends -t "$BACKPORT_NAME" $augeas_pkg
       augeas_pkg=
     fi
   }
@@ -336,7 +354,7 @@ BootstrapDebCommon() {
     # XXX add a case for ubuntu PPAs
   fi
 
-  $SUDO apt-get install $QUIET_FLAG $YES_FLAG --no-install-recommends \
+  apt-get install $QUIET_FLAG $YES_FLAG --no-install-recommends \
     python \
     python-dev \
     $virtualenv \
@@ -380,9 +398,9 @@ BootstrapRpmCommon() {
     QUIET_FLAG='--quiet'
   fi
 
-  if ! $SUDO $tool list *virtualenv >/dev/null 2>&1; then
+  if ! $tool list *virtualenv >/dev/null 2>&1; then
     echo "To use Certbot, packages from the EPEL repository need to be installed."
-    if ! $SUDO $tool list epel-release >/dev/null 2>&1; then
+    if ! $tool list epel-release >/dev/null 2>&1; then
       error "Enable the EPEL repository and try running Certbot again."
       exit 1
     fi
@@ -394,7 +412,7 @@ BootstrapRpmCommon() {
       /bin/echo -e "\e[0K\rEnabling the EPEL repository in 1 seconds..."
       sleep 1s
     fi
-    if ! $SUDO $tool install $yes_flag $QUIET_FLAG epel-release; then
+    if ! $tool install $yes_flag $QUIET_FLAG epel-release; then
       error "Could not enable EPEL. Aborting bootstrap!"
       exit 1
     fi
@@ -411,7 +429,7 @@ BootstrapRpmCommon() {
   "
 
   # Most RPM distros use the "python" or "python-" naming convention.  Let's try that first.
-  if $SUDO $tool list python >/dev/null 2>&1; then
+  if $tool list python >/dev/null 2>&1; then
     pkgs="$pkgs
       python
       python-devel
@@ -421,7 +439,7 @@ BootstrapRpmCommon() {
     "
   # Fedora 26 starts to use the prefix python2 for python2 based packages.
   # this elseif is theoretically for any Fedora over version 26:
-  elif $SUDO $tool list python2 >/dev/null 2>&1; then
+  elif $tool list python2 >/dev/null 2>&1; then
     pkgs="$pkgs
       python2
       python2-libs
@@ -443,13 +461,13 @@ BootstrapRpmCommon() {
     "
   fi
 
-  if $SUDO $tool list installed "httpd" >/dev/null 2>&1; then
+  if $tool list installed "httpd" >/dev/null 2>&1; then
     pkgs="$pkgs
       mod_ssl
     "
   fi
 
-  if ! $SUDO $tool install $yes_flag $QUIET_FLAG $pkgs; then
+  if ! $tool install $yes_flag $QUIET_FLAG $pkgs; then
     error "Could not install OS dependencies. Aborting bootstrap!"
     exit 1
   fi
@@ -467,7 +485,7 @@ BootstrapSuseCommon() {
     QUIET_FLAG='-qq'
   fi
 
-  $SUDO zypper $QUIET_FLAG $zypper_flags in $install_flags \
+  zypper $QUIET_FLAG $zypper_flags in $install_flags \
     python \
     python-devel \
     python-virtualenv \
@@ -498,7 +516,7 @@ BootstrapArchCommon() {
   "
 
   # pacman -T exits with 127 if there are missing dependencies
-  missing=$($SUDO pacman -T $deps) || true
+  missing=$(pacman -T $deps) || true
 
   if [ "$ASSUME_YES" = 1 ]; then
     noconfirm="--noconfirm"
@@ -506,9 +524,9 @@ BootstrapArchCommon() {
 
   if [ "$missing" ]; then
     if [ "$QUIET" = 1 ]; then
-      $SUDO pacman -S --needed $missing $noconfirm > /dev/null
+      pacman -S --needed $missing $noconfirm > /dev/null
     else
-      $SUDO pacman -S --needed $missing $noconfirm
+      pacman -S --needed $missing $noconfirm
     fi
   fi
 }
@@ -530,13 +548,13 @@ BootstrapGentooCommon() {
 
   case "$PACKAGE_MANAGER" in
     (paludis)
-      $SUDO cave resolve --preserve-world --keep-targets if-possible $PACKAGES -x
+      cave resolve --preserve-world --keep-targets if-possible $PACKAGES -x
       ;;
     (pkgcore)
-      $SUDO pmerge --noreplace --oneshot $ASK_OPTION $PACKAGES
+      pmerge --noreplace --oneshot $ASK_OPTION $PACKAGES
       ;;
     (portage|*)
-      $SUDO emerge --noreplace --oneshot $ASK_OPTION $PACKAGES
+      emerge --noreplace --oneshot $ASK_OPTION $PACKAGES
       ;;
   esac
 }
@@ -546,7 +564,7 @@ BootstrapFreeBsd() {
     QUIET_FLAG="--quiet"
   fi
 
-  $SUDO pkg install -Ay $QUIET_FLAG \
+  pkg install -Ay $QUIET_FLAG \
     python \
     py27-virtualenv \
     augeas \
@@ -561,7 +579,7 @@ BootstrapMac() {
   elif hash port 2>/dev/null; then
     say "Using MacPorts to install dependencies..."
     pkgman=port
-    pkgcmd="$SUDO port install"
+    pkgcmd="port install"
   else
     say "No Homebrew/MacPorts; installing Homebrew..."
     ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
@@ -581,8 +599,8 @@ BootstrapMac() {
   # Workaround for _dlopen not finding augeas on macOS
   if [ "$pkgman" = "port" ] && ! [ -e "/usr/local/lib/libaugeas.dylib" ] && [ -e "/opt/local/lib/libaugeas.dylib" ]; then
     say "Applying augeas workaround"
-    $SUDO mkdir -p /usr/local/lib/
-    $SUDO ln -s /opt/local/lib/libaugeas.dylib /usr/local/lib/
+    mkdir -p /usr/local/lib/
+    ln -s /opt/local/lib/libaugeas.dylib /usr/local/lib/
   fi
 
   if ! hash pip 2>/dev/null; then
@@ -608,7 +626,7 @@ BootstrapMageiaCommon() {
     QUIET_FLAG='--quiet'
   fi
 
-  if ! $SUDO urpmi --force $QUIET_FLAG \
+  if ! urpmi --force $QUIET_FLAG \
       python \
       libpython-devel \
       python-virtualenv
@@ -617,7 +635,7 @@ BootstrapMageiaCommon() {
       exit 1
   fi
 
-  if ! $SUDO urpmi --force $QUIET_FLAG \
+  if ! urpmi --force $QUIET_FLAG \
       git \
       gcc \
       python-augeas \
@@ -1144,20 +1162,15 @@ UNLIKELY_EOF
       rm -rf "$VENV_PATH"
       exit 1
     fi
+
+    if [ -d "$OLD_VENV_PATH" -a ! -L "$OLD_VENV_PATH" ]; then
+      rm -rf "$OLD_VENV_PATH"
+      ln -s "$VENV_PATH" "$OLD_VENV_PATH"
+    fi
+
     say "Installation succeeded."
   fi
-  if [ -n "$SUDO" ]; then
-    # SUDO is su wrapper or sudo
-    say "Requesting root privileges to run certbot..."
-    say "  $VENV_BIN/letsencrypt" "$@"
-  fi
-  if [ -z "$SUDO_ENV" ] ; then
-    # SUDO is su wrapper / noop
-    $SUDO "$VENV_BIN/letsencrypt" "$@"
-  else
-    # sudo
-    $SUDO "$SUDO_ENV" "$VENV_BIN/letsencrypt" "$@"
-  fi
+  "$VENV_BIN/letsencrypt" "$@"
 
 else
   # Phase 1: Upgrade certbot-auto if necessary, then self-invoke.
@@ -1168,12 +1181,14 @@ else
   # package). Phase 2 checks the version of the locally installed certbot.
 
   if [ ! -f "$VENV_BIN/letsencrypt" ]; then
-    if [ "$HELP" = 1 ]; then
-      echo "$USAGE"
-      exit 0
+    if [ -z "$OLD_VENV_PATH" -o ! -f "$OLD_VENV_PATH/bin/letsencrypt" ]; then
+      if [ "$HELP" = 1 ]; then
+        echo "$USAGE"
+        exit 0
+      fi
+      # If it looks like we've never bootstrapped before, bootstrap:
+      Bootstrap
     fi
-    # If it looks like we've never bootstrapped before, bootstrap:
-    Bootstrap
   fi
   if [ "$OS_PACKAGES_ONLY" = 1 ]; then
     say "OS packages installed."
@@ -1333,13 +1348,13 @@ UNLIKELY_EOF
       say "Replacing certbot-auto..."
       # Clone permissions with cp. chmod and chown don't have a --reference
       # option on macOS or BSD, and stat -c on Linux is stat -f on macOS and BSD:
-      $SUDO cp -p "$0" "$TEMP_DIR/letsencrypt-auto.permission-clone"
-      $SUDO cp "$TEMP_DIR/letsencrypt-auto" "$TEMP_DIR/letsencrypt-auto.permission-clone"
+      cp -p "$0" "$TEMP_DIR/letsencrypt-auto.permission-clone"
+      cp "$TEMP_DIR/letsencrypt-auto" "$TEMP_DIR/letsencrypt-auto.permission-clone"
       # Using mv rather than cp leaves the old file descriptor pointing to the
       # original copy so the shell can continue to read it unmolested. mv across
       # filesystems is non-atomic, doing `rm dest, cp src dest, rm src`, but the
-      # cp is unlikely to fail (esp. under sudo) if the rm doesn't.
-      $SUDO mv -f "$TEMP_DIR/letsencrypt-auto.permission-clone" "$0"
+      # cp is unlikely to fail if the rm doesn't.
+      mv -f "$TEMP_DIR/letsencrypt-auto.permission-clone" "$0"
     fi  # A newer version is available.
   fi  # Self-upgrading is allowed.
 

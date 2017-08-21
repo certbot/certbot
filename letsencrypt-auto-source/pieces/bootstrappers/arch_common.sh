@@ -18,7 +18,7 @@ BootstrapArchCommon() {
   "
 
   # pacman -T exits with 127 if there are missing dependencies
-  missing=$($SUDO pacman -T $deps) || true
+  missing=$(pacman -T $deps) || true
 
   if [ "$ASSUME_YES" = 1 ]; then
     noconfirm="--noconfirm"
@@ -26,9 +26,9 @@ BootstrapArchCommon() {
 
   if [ "$missing" ]; then
     if [ "$QUIET" = 1 ]; then
-      $SUDO pacman -S --needed $missing $noconfirm > /dev/null
+      pacman -S --needed $missing $noconfirm > /dev/null
     else
-      $SUDO pacman -S --needed $missing $noconfirm
+      pacman -S --needed $missing $noconfirm
     fi
   fi
 }
