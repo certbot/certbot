@@ -146,6 +146,26 @@ class Installer(plugins_common.Plugin):
         # - Built-in support for TLS management and DANE added, see:
         #   http://www.postfix.org/postfix-tls.1.html
 
+    def find_postfix_cf(self):
+        "Search far and wide for the correct postfix configuration file"
+        return os.path.join(self.config_dir, "main.cf")
+
+    def more_info(self):
+        """Human-readable string to help the user.
+        Should describe the steps taken and any relevant info to help the user
+        decide which plugin to use.
+        :rtype str:
+        """
+        return (
+            "Configures Postfix to try to authenticate mail servers, use "
+            "installed certificates and disable weak ciphers and protocols.{0}"
+            "Server root: {root}{0}"
+            "Version: {version}".format(
+                os.linesep,
+                root=self.config_dir,
+                version='.'.join([str(i) for i in self._get_version()]))
+        )
+
     def _get_version(self):
         """Return the mail version of Postfix.
 
@@ -159,10 +179,6 @@ class Installer(plugins_common.Plugin):
         """
         mail_version = self.get_config_var("mail_version", default=True)
         return tuple(int(i) for i in mail_version.split('.'))
-
-    def find_postfix_cf(self):
-        "Search far and wide for the correct postfix configuration file"
-        return os.path.join(self.config_dir, "main.cf")
 
     def ensure_cf_var(self, var, ideal, also_acceptable):
         """
@@ -253,23 +269,6 @@ class Installer(plugins_common.Plugin):
 
     ### Let's Encrypt client IPlugin ###
     # https://github.com/letsencrypt/letsencrypt/blob/master/letsencrypt/plugins/common.py#L35
-
-
-    def more_info(self):
-        """Human-readable string to help the user.
-        Should describe the steps taken and any relevant info to help the user
-        decide which plugin to use.
-        :rtype str:
-        """
-        return (
-            "Configures Postfix to try to authenticate mail servers, use "
-            "installed certificates and disable weak ciphers and protocols.{0}"
-            "Server root: {root}{0}"
-            "Version: {version}".format(
-                os.linesep,
-                root=self.config_dir,
-                version='.'.join([str(i) for i in self._get_version()]))
-        )
 
 
     ### Let's Encrypt client IInstaller ###
