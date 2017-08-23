@@ -18,7 +18,7 @@ import certbot.tests.util as test_util
 
 
 KEY = test_util.load_vector("rsa512_key.pem")
-CSR_SAN = test_util.load_vector("csr-san.pem")
+CSR_SAN = test_util.load_vector("csr-san_512.pem")
 
 
 class RegisterTest(test_util.ConfigTestCase):
@@ -312,14 +312,14 @@ class ClientTest(ClientTestCommon):
     @mock.patch("certbot.cli.helpful_parser")
     def test_save_certificate(self, mock_parser):
         # pylint: disable=too-many-locals
-        certs = ["matching_cert.pem", "cert.pem", "cert-san.pem"]
+        certs = ["cert_512.pem", "cert-san_512.pem"]
         tmp_path = tempfile.mkdtemp()
         os.chmod(tmp_path, 0o755)  # TODO: really??
 
         certr = mock.MagicMock(body=test_util.load_comparable_cert(certs[0]))
-        chain_cert = [test_util.load_comparable_cert(certs[1]),
-                      test_util.load_comparable_cert(certs[2])]
-        candidate_cert_path = os.path.join(tmp_path, "certs", "cert.pem")
+        chain_cert = [test_util.load_comparable_cert(certs[0]),
+                      test_util.load_comparable_cert(certs[1])]
+        candidate_cert_path = os.path.join(tmp_path, "certs", "cert_512.pem")
         candidate_chain_path = os.path.join(tmp_path, "chains", "chain.pem")
         candidate_fullchain_path = os.path.join(tmp_path, "chains", "fullchain.pem")
         mock_parser.verb = "certonly"
@@ -344,8 +344,8 @@ class ClientTest(ClientTestCommon):
 
         with open(chain_path, "rb") as chain_file:
             chain_contents = chain_file.read()
-        self.assertEqual(chain_contents, test_util.load_vector(certs[1]) +
-                         test_util.load_vector(certs[2]))
+        self.assertEqual(chain_contents, test_util.load_vector(certs[0]) +
+                         test_util.load_vector(certs[1]))
 
         shutil.rmtree(tmp_path)
 

@@ -426,7 +426,7 @@ class DuplicativeCertsTest(storage_test.BaseRenewableCertTest):
     @mock.patch('certbot.util.make_or_verify_dir')
     def test_find_duplicative_names(self, unused_makedir):
         from certbot.cert_manager import find_duplicative_certs
-        test_cert = test_util.load_vector('cert-san.pem')
+        test_cert = test_util.load_vector('cert-san_512.pem')
         with open(self.test_rc.cert, 'wb') as f:
             f.write(test_cert)
 

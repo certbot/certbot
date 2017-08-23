@@ -19,7 +19,8 @@ from certbot.storage import ALL_FOUR
 import certbot.tests.util as test_util
 
 
-CERT = test_util.load_cert('cert.pem')
+CERT = test_util.load_cert('cert_512.pem')
+
 
 
 def unlink_all(rc_object):
@@ -360,18 +361,21 @@ class RenewableCertTests(BaseRenewableCertTest):
 
     def test_names(self):
         # Trying the current version
-        self._write_out_kind("cert", 12, test_util.load_vector("cert-san.pem"))
+        self._write_out_kind("cert", 12, test_util.load_vector("cert-san_512.pem"))
+
         self.assertEqual(self.test_rc.names(),
                          ["example.com", "www.example.com"])
 
         # Trying a non-current version
-        self._write_out_kind("cert", 15, test_util.load_vector("cert.pem"))
+        self._write_out_kind("cert", 15, test_util.load_vector("cert_512.pem"))
+
         self.assertEqual(self.test_rc.names(12),
                          ["example.com", "www.example.com"])
 
         # Testing common name is listed first
         self._write_out_kind(
-            "cert", 12, test_util.load_vector("cert-5sans.pem"))
+            "cert", 12, test_util.load_vector("cert-5sans_512.pem"))
+
         self.assertEqual(
             self.test_rc.names(12),
             ["example.com"] + ["{0}.example.com".format(c) for c in "abcd"])
@@ -384,7 +388,8 @@ class RenewableCertTests(BaseRenewableCertTest):
     def test_time_interval_judgments(self, mock_datetime):
         """Test should_autodeploy() and should_autorenew() on the basis
         of expiry time windows."""
-        test_cert = test_util.load_vector("cert.pem")
+        test_cert = test_util.load_vector("cert_512.pem")
+
         self._write_out_ex_kinds()
 
         self.test_rc.update_all_links_to(12)
