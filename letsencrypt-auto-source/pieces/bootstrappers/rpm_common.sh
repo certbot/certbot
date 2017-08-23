@@ -1,3 +1,7 @@
+# If new packages are installed by BootstrapRpmCommon below, this version
+# number must be increased.
+BOOTSTRAP_RPM_COMMON_VERSION=1
+
 BootstrapRpmCommon() {
   # Tested with:
   #   - Fedora 20, 21, 22, 23 (x64)

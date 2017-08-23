@@ -1,3 +1,7 @@
+# If new packages are installed by BootstrapDebCommon below, this version
+# number must be increased.
+BOOTSTRAP_DEB_COMMON_VERSION=1
+
 BootstrapDebCommon() {
   # Current version tested with:
   #

@@ -1,3 +1,7 @@
+# If new packages are installed by BootstrapSuseCommon below, this version
+# number must be increased.
+BOOTSTRAP_SUSE_COMMON_VERSION=1
+
 BootstrapSuseCommon() {
   # SLE12 don't have python-virtualenv
 
