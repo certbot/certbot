@@ -267,13 +267,6 @@ class Installer(plugins_common.Plugin):
         with open(self.fn, "w") as f:
             f.write(self.new_cf)
 
-    ### Let's Encrypt client IPlugin ###
-    # https://github.com/letsencrypt/letsencrypt/blob/master/letsencrypt/plugins/common.py#L35
-
-
-    ### Let's Encrypt client IInstaller ###
-    # https://github.com/letsencrypt/letsencrypt/blob/master/letsencrypt/interfaces.py#L232
-
     def get_all_names(self):
         """Returns all names that may be authenticated.
         :rtype: `list` of `str`
