@@ -185,7 +185,10 @@ class FreezableMock(object):
         self._frozen_set = set() if frozen else set(('freeze',))
         self._func = func
         self._mock = mock.MagicMock()
-        self.return_value = return_value
+        if return_value != mock.sentinel.DEFAULT:
+            self.return_value = return_value
+        else:
+            self._mock.return_value = return_value
         self._frozen = frozen
 
     def freeze(self):
@@ -226,7 +229,7 @@ class FreezableMock(object):
         if name != '_frozen_set':
             self._frozen_set.add(name)
 
-        if name in ('return_value', 'side_effect',):
+        if name in ('return_value', 'side_effect'):
             return setattr(self._mock, name, value)
 
         else:
@@ -237,7 +240,7 @@ def _create_get_utility_mock():
     display = FreezableMock()
     for name in interfaces.IDisplay.names():  # pylint: disable=no-member
         if name != 'notification':
-            frozen_mock = FreezableMock(frozen=False, func=_assert_valid_call)
+            frozen_mock = FreezableMock(frozen=True, func=_assert_valid_call)
             setattr(display, name, frozen_mock)
     display.freeze()
     return FreezableMock(frozen=True, return_value=display)
