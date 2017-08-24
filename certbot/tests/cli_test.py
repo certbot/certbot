@@ -58,7 +58,7 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     @staticmethod
     def parse(*args, **kwargs):
         """Mocks zope.component.getUtility and calls _unmocked_parse."""
-        with test_util.patch_get_utility() as mocked_get_utility: # pylint: disable=unused-variable
+        with test_util.patch_get_utility():
             return ParseTest._unmocked_parse(*args, **kwargs)
 
     def _help_output(self, args):
@@ -113,7 +113,6 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(namespace.key_path, os.path.abspath(key))
         self.assertEqual(namespace.chain_path, os.path.abspath(chain))
         self.assertEqual(namespace.fullchain_path, os.path.abspath(fullchain))
-
 
     def test_help(self):
         self._help_output(['--help'])  # assert SystemExit is raised here
@@ -466,7 +465,7 @@ class SetByCliTest(unittest.TestCase):
 
 def _call_set_by_cli(var, args, verb):
     with mock.patch('certbot.cli.helpful_parser') as mock_parser:
-        with test_util.patch_get_utility() as mocked_get_utility: # pylint: disable=unused-variable
+        with test_util.patch_get_utility():
             mock_parser.args = args
             mock_parser.verb = verb
             return cli.set_by_cli(var)
