@@ -317,30 +317,6 @@ class Installer(plugins_common.Plugin):
         :rtype: :class:`list` of :class:`str`
         """
 
-    def get_all_certs_keys(self):
-        """Retrieve all certs and keys set in configuration.
-        :returns: tuples with form `[(cert, key, path)]`, where:
-            - `cert` - str path to certificate file
-            - `key` - str path to associated key file
-            - `path` - file path to configuration file
-        :rtype: list
-        """
-        cert_materials = {'smtpd_tls_key_file': None,
-                          'smtpd_tls_cert_file': None,
-                         }
-        for num, line in enumerate(self.cf):
-            num, found_var, found_value = parse_line((num, line))
-            if found_var in cert_materials.keys():
-                cert_materials[found_var] = found_value
-
-        if not all(cert_materials.values()):
-            cert_material_tuples = []
-        else:
-            cert_material_tuples = [(cert_materials['smtpd_tls_cert_file'],
-                                     cert_materials['smtpd_tls_key_file'],
-                                     self.fn),]
-        return cert_material_tuples
-
     def save(self, title=None, temporary=False):
         """Saves all changes to the configuration files.
         Both title and temporary are needed because a save may be

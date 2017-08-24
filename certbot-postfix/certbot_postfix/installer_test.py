@@ -80,19 +80,6 @@ class InstallerTest(certbot_test_util.TempDirTestCase):
         installer = self._create_prepared_installer()
         self.assertEqual(sorted_names, installer.get_all_names())
 
-    def test_get_all_certs_and_keys(self):
-        return_vals = [('/etc/letsencrypt/live/www.fubard.org/fullchain.pem',
-                        '/etc/letsencrypt/live/www.fubard.org/privkey.pem',
-                        os.path.join(self.tempdir, 'main.cf')),]
-        self._write_config(certs_only_config)
-        installer = self._create_prepared_installer()
-        self.assertEqual(return_vals, installer.get_all_certs_keys())
-
-    def test_get_all_certs_and_keys_with_none(self):
-        self._write_config(names_only_config)
-        installer = self._create_prepared_installer()
-        self.assertEqual([], installer.get_all_certs_keys())
-
     def _write_config(self, content):
         config_dir = self.config.postfix_config_dir
         with open(os.path.join(config_dir, "main.cf"), "w") as f:
