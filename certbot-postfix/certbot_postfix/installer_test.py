@@ -84,6 +84,11 @@ class InstallerTest(certbot_test_util.TempDirTestCase):
         self.assertTrue("fubard.org" in result)
         self.assertTrue("mail.fubard.org" in result)
 
+    def test_enhance(self):
+        self.assertRaises(errors.PluginError,
+                          self._create_prepared_installer().enhance,
+                          "example.org", "redirect")
+
     def test_supported_enhancements(self):
         self.assertEqual(
             self._create_prepared_installer().supported_enhancements(), [])

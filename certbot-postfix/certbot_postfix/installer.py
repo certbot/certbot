@@ -142,6 +142,16 @@ class Installer(plugins_common.Plugin):
         return set(self.get_config_var(var)
                    for var in ('mydomain', 'myhostname', 'myorigin',))
 
+    def enhance(self, domain, enhancement, options=None):
+        """Raises an exception for request for unsupported enhancement.
+
+        :raises .PluginError: this is always raised as no enhancements
+            are currently supported
+
+        """
+        raise errors.PluginError(
+            "Unsupported enhancement: {0}".format(enhancement))
+
     def supported_enhancements(self):
         """Returns a list of supported enhancements.
 
@@ -252,20 +262,6 @@ class Installer(plugins_common.Plugin):
         self.ensure_cf_var("smtpd_tls_key_file", key_path, [])
         self.set_domainwise_tls_policies()
         self.update_CAfile()
-
-    def enhance(self, domain, enhancement, options=None):
-        """Perform a configuration enhancement.
-        :param str domain: domain for which to provide enhancement
-        :param str enhancement: An enhancement as defined in
-            :const:`~letsencrypt.constants.ENHANCEMENTS`
-        :param options: Flexible options parameter for enhancement.
-            Check documentation of
-            :const:`~letsencrypt.constants.ENHANCEMENTS`
-            for expected options for each enhancement.
-        :raises .PluginError: If Enhancement is not supported, or if
-            an error occurs during the enhancement.
-        """
-
 
     def save(self, title=None, temporary=False):
         """Saves all changes to the configuration files.
