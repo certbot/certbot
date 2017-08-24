@@ -60,6 +60,7 @@ class Installer(plugins_common.Plugin):
         self._verify_postconf_available()
         self._set_config_dir()
         self._check_version()
+        self._lock_config_dir()
 
         self.fn = self.find_postfix_cf()
         with open(self.fn) as f:
@@ -145,6 +146,19 @@ class Installer(plugins_common.Plugin):
         # Postfix => 3.1:
         # - Built-in support for TLS management and DANE added, see:
         #   http://www.postfix.org/postfix-tls.1.html
+
+    def _lock_config_dir(self):
+        """Stop two Postfix plugins from modifying the config at once.
+
+        :raises .PluginError: if unable to acquire the lock
+
+        """
+        try:
+            certbot_util.lock_dir_until_exit(self.config_dir)
+        except (OSError, errors.LockError):
+            logger.debug("Encountered error:", exc_info=True)
+            raise errors.PluginError(
+                "Unable to lock %s", self.config_dir)
 
     def find_postfix_cf(self):
         "Search far and wide for the correct postfix configuration file"
