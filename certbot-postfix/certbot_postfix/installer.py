@@ -142,6 +142,14 @@ class Installer(plugins_common.Plugin):
         return set(self.get_config_var(var)
                    for var in ('mydomain', 'myhostname', 'myorigin',))
 
+    def supported_enhancements(self):
+        """Returns a list of supported enhancements.
+
+        :rtype: list
+
+        """
+        return []
+
     def ensure_cf_var(self, var, ideal, also_acceptable):
         """
         Ensure that existing postfix config @var is in the list of @acceptable
@@ -258,12 +266,6 @@ class Installer(plugins_common.Plugin):
             an error occurs during the enhancement.
         """
 
-    def supported_enhancements(self):
-        """Returns a list of supported enhancements.
-        :returns: supported enhancements which should be a subset of
-            :const:`~letsencrypt.constants.ENHANCEMENTS`
-        :rtype: :class:`list` of :class:`str`
-        """
 
     def save(self, title=None, temporary=False):
         """Saves all changes to the configuration files.
