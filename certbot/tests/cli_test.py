@@ -51,22 +51,34 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         reload_module(cli)
 
     @staticmethod
-    def parse(*args, **kwargs):
+    def _unmocked_parse(*args, **kwargs):
         """Get result of cli.prepare_and_parse_args."""
         return cli.prepare_and_parse_args(PLUGINS, *args, **kwargs)
+
+    @staticmethod
+    def parse(*args, **kwargs):
+        """Mocks zope.component.getUtility and calls _unmocked_parse."""
+        with test_util.patch_get_utility() as mocked_get_utility: # pylint: disable=unused-variable
+            return ParseTest._unmocked_parse(*args, **kwargs)
 
     def _help_output(self, args):
         "Run a command, and return the output string for scrutiny"
 
         output = six.StringIO()
+
+        def write_msg(message, *args, **kwargs): # pylint: disable=missing-docstring,unused-argument
+            output.write(message)
+
         with mock.patch('certbot.main.sys.stdout', new=output):
-            with mock.patch('certbot.main.sys.stderr'):
-                self.assertRaises(SystemExit, self.parse, args, output)
+            with test_util.patch_get_utility() as mock_get_utility:
+                mock_get_utility().notification.side_effect = write_msg
+                with mock.patch('certbot.main.sys.stderr'):
+                    self.assertRaises(SystemExit, self._unmocked_parse, args, output)
+
         return output.getvalue()
 
     @mock.patch("certbot.cli.flag_default")
-    @test_util.patch_get_utility()
-    def test_cli_ini_domains(self, unused_mock_get_utility, mock_flag_default):
+    def test_cli_ini_domains(self, mock_flag_default):
         tmp_config = tempfile.NamedTemporaryFile()
         # use a shim to get ConfigArgParse to pick up tmp_config
         shim = lambda v: constants.CLI_DEFAULTS[v] if v != "config_files" else [tmp_config.name]
@@ -81,14 +93,12 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         namespace = self.parse(["renew"])
         self.assertEqual(namespace.domains, [])
 
-    @test_util.patch_get_utility()
-    def test_no_args(self, unused_mock_get_utility):
+    def test_no_args(self):
         namespace = self.parse([])
         for d in ('config_dir', 'logs_dir', 'work_dir'):
             self.assertEqual(getattr(namespace, d), cli.flag_default(d))
 
-    @test_util.patch_get_utility()
-    def test_install_abspath(self, unused_mock_get_utility):
+    def test_install_abspath(self):
         cert = 'cert'
         key = 'key'
         chain = 'chain'
@@ -104,8 +114,8 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(namespace.chain_path, os.path.abspath(chain))
         self.assertEqual(namespace.fullchain_path, os.path.abspath(fullchain))
 
-    @test_util.patch_get_utility(stdout_notification=True)
-    def test_help(self, unused_mock_get_utility):
+
+    def test_help(self):
         self._help_output(['--help'])  # assert SystemExit is raised here
         out = self._help_output(['--help', 'all'])
         self.assertTrue("--configurator" in out)
@@ -163,8 +173,7 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertTrue("%s" not in out)
         self.assertTrue("{0}" not in out)
 
-    @test_util.patch_get_utility()
-    def test_help_no_dashes(self, unused_mock_get_utility):
+    def test_help_no_dashes(self):
         self._help_output(['help'])  # assert SystemExit is raised here
 
         out = self._help_output(['help', 'all'])
@@ -184,8 +193,7 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertTrue("--cert-path" in out)
         self.assertTrue("--key-path" in out)
 
-    @test_util.patch_get_utility()
-    def test_parse_domains(self, unused_mock_get_utility):
+    def test_parse_domains(self):
         short_args = ['-d', 'example.com']
         namespace = self.parse(short_args)
         self.assertEqual(namespace.domains, ['example.com'])
@@ -211,8 +219,7 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         namespace = self.parse(long_args)
         self.assertEqual(namespace.domains, ['example.com', 'another.net'])
 
-    @test_util.patch_get_utility()
-    def test_preferred_challenges(self, unused_mock_get_utility):
+    def test_preferred_challenges(self):
         short_args = ['--preferred-challenges', 'http, tls-sni-01, dns']
         namespace = self.parse(short_args)
 
@@ -226,20 +233,17 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         with mock.patch('sys.stderr'):
             self.assertRaises(SystemExit, self.parse, short_args)
 
-    @test_util.patch_get_utility()
-    def test_server_flag(self, unused_mock_get_utility):
+    def test_server_flag(self):
         namespace = self.parse('--server example.com'.split())
         self.assertEqual(namespace.server, 'example.com')
 
-    @test_util.patch_get_utility()
-    def test_must_staple_flag(self, unused_mock_get_utility):
+    def test_must_staple_flag(self):
         short_args = ['--must-staple']
         namespace = self.parse(short_args)
         self.assertTrue(namespace.must_staple)
         self.assertTrue(namespace.staple)
 
-    @test_util.patch_get_utility()
-    def test_no_gui(self, unused_mock_get_utility):
+    def test_no_gui(self):
         args = ['renew', '--dialog']
         stderr = six.StringIO()
         with mock.patch('certbot.main.sys.stderr', new=stderr):
@@ -259,8 +263,7 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             for arg in conflicting_args:
                 self.assertTrue(arg in str(error))
 
-    @test_util.patch_get_utility()
-    def test_staging_flag(self, unused_mock_get_utility):
+    def test_staging_flag(self):
         short_args = ['--staging']
         namespace = self.parse(short_args)
         self.assertTrue(namespace.staging)
@@ -282,8 +285,7 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             self.assertFalse(namespace.tos)
             self.assertFalse(namespace.register_unsafely_without_email)
 
-    @test_util.patch_get_utility()
-    def test_dry_run_flag(self, unused_mock_get_utility):
+    def test_dry_run_flag(self):
         config_dir = tempfile.mkdtemp()
         short_args = '--dry-run --config-dir {0}'.format(config_dir).split()
         self.assertRaises(errors.Error, self.parse, short_args)
@@ -312,8 +314,7 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         conflicts += ['--staging']
         self._check_server_conflict_message(short_args, conflicts)
 
-    @test_util.patch_get_utility()
-    def test_option_was_set(self, unused_mock_get_utility):
+    def test_option_was_set(self):
         key_size_option = 'rsa_key_size'
         key_size_value = cli.flag_default(key_size_option)
         self.parse('--rsa-key-size {0}'.format(key_size_value).split())
@@ -325,8 +326,7 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertFalse(cli.option_was_set(
             config_dir_option, cli.flag_default(config_dir_option)))
 
-    @test_util.patch_get_utility()
-    def test_encode_revocation_reason(self, unused_mock_get_utility):
+    def test_encode_revocation_reason(self):
         for reason, code in constants.REVOCATION_REASONS.items():
             namespace = self.parse(['--reason', reason])
             self.assertEqual(namespace.reason, code)
@@ -334,21 +334,18 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             namespace = self.parse(['--reason', reason.upper()])
             self.assertEqual(namespace.reason, code)
 
-    @test_util.patch_get_utility()
-    def test_force_interactive(self, unused_mock_get_utility):
+    def test_force_interactive(self):
         self.assertRaises(
             errors.Error, self.parse, "renew --force-interactive".split())
         self.assertRaises(
             errors.Error, self.parse, "-n --force-interactive".split())
 
-    @test_util.patch_get_utility()
-    def test_deploy_hook_conflict(self, unused_mock_get_utility):
+    def test_deploy_hook_conflict(self):
         with mock.patch("certbot.cli.sys.stderr"):
             self.assertRaises(SystemExit, self.parse,
                               "--renew-hook foo --deploy-hook bar".split())
 
-    @test_util.patch_get_utility()
-    def test_deploy_hook_matches_renew_hook(self, unused_mock_get_utility):
+    def test_deploy_hook_matches_renew_hook(self):
         value = "foo"
         namespace = self.parse(["--renew-hook", value,
                                 "--deploy-hook", value,
@@ -356,22 +353,19 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(namespace.deploy_hook, value)
         self.assertEqual(namespace.renew_hook, value)
 
-    @test_util.patch_get_utility()
-    def test_deploy_hook_sets_renew_hook(self, unused_mock_get_utility):
+    def test_deploy_hook_sets_renew_hook(self):
         value = "foo"
         namespace = self.parse(
             ["--deploy-hook", value, "--disable-hook-validation"])
         self.assertEqual(namespace.deploy_hook, value)
         self.assertEqual(namespace.renew_hook, value)
 
-    @test_util.patch_get_utility()
-    def test_renew_hook_conflict(self, unused_mock_get_utility):
+    def test_renew_hook_conflict(self):
         with mock.patch("certbot.cli.sys.stderr"):
             self.assertRaises(SystemExit, self.parse,
                               "--deploy-hook foo --renew-hook bar".split())
 
-    @test_util.patch_get_utility()
-    def test_renew_hook_matches_deploy_hook(self, unused_mock_get_utility):
+    def test_renew_hook_matches_deploy_hook(self):
         value = "foo"
         namespace = self.parse(["--deploy-hook", value,
                                 "--renew-hook", value,
@@ -379,24 +373,21 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(namespace.deploy_hook, value)
         self.assertEqual(namespace.renew_hook, value)
 
-    @test_util.patch_get_utility()
-    def test_renew_hook_does_not_set_renew_hook(self, unused_mock_get_utility):
+    def test_renew_hook_does_not_set_renew_hook(self):
         value = "foo"
         namespace = self.parse(
             ["--renew-hook", value, "--disable-hook-validation"])
         self.assertEqual(namespace.deploy_hook, None)
         self.assertEqual(namespace.renew_hook, value)
 
-    @test_util.patch_get_utility()
-    def test_max_log_backups_error(self, unused_mock_get_utility):
+    def test_max_log_backups_error(self):
         with mock.patch('certbot.cli.sys.stderr'):
             self.assertRaises(
                 SystemExit, self.parse, "--max-log-backups foo".split())
             self.assertRaises(
                 SystemExit, self.parse, "--max-log-backups -42".split())
 
-    @test_util.patch_get_utility()
-    def test_max_log_backups_success(self, unused_mock_get_utility):
+    def test_max_log_backups_success(self):
         value = "42"
         namespace = self.parse(["--max-log-backups", value])
         self.assertEqual(namespace.max_log_backups, int(value))
