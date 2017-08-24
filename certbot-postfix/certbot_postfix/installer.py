@@ -39,14 +39,6 @@ class Installer(plugins_common.Plugin):
         self.fixup          = False
         self.config_dir     = None
 
-        self.additions = []
-        self.deletions = []
-        self.policy_lines = []
-        self.new_cf = ""
-        self.fn = None
-        self.raw_cf = []
-        self.cf = []
-
     def prepare(self):
         """Prepare the installer.
 
@@ -61,12 +53,6 @@ class Installer(plugins_common.Plugin):
         self._set_config_dir()
         self._check_version()
         self._lock_config_dir()
-
-        self.fn = self.find_postfix_cf()
-        with open(self.fn) as f:
-            self.raw_cf = f.readlines()
-        self.cf = map(string.strip, self.raw_cf)
-        #self.cf = [line for line in cf if line and not line.startswith("#")]
 
     def _verify_postconf_available(self):
         """Ensure 'postconf' can be found.
