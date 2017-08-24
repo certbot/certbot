@@ -422,22 +422,19 @@ class SetByCliTest(unittest.TestCase):
     def setUp(self):
         reload_module(cli)
 
-    @test_util.patch_get_utility()
-    def test_webroot_map(self, unused_mock_get_utility):
+    def test_webroot_map(self):
         args = '-w /var/www/html -d example.com'.split()
         verb = 'renew'
         self.assertTrue(_call_set_by_cli('webroot_map', args, verb))
 
-    @test_util.patch_get_utility()
-    def test_report_config_interaction_str(self, unused_mock_get_utility):
+    def test_report_config_interaction_str(self):
         cli.report_config_interaction('manual_public_ip_logging_ok',
                                       'manual_auth_hook')
         cli.report_config_interaction('manual_auth_hook', 'manual')
 
         self._test_report_config_interaction_common()
 
-    @test_util.patch_get_utility()
-    def test_report_config_interaction_iterable(self, unused_mock_get_utility):
+    def test_report_config_interaction_iterable(self):
         cli.report_config_interaction(('manual_public_ip_logging_ok',),
                                       ('manual_auth_hook',))
         cli.report_config_interaction(('manual_auth_hook',), ('manual',))
@@ -469,9 +466,10 @@ class SetByCliTest(unittest.TestCase):
 
 def _call_set_by_cli(var, args, verb):
     with mock.patch('certbot.cli.helpful_parser') as mock_parser:
-        mock_parser.args = args
-        mock_parser.verb = verb
-        return cli.set_by_cli(var)
+        with test_util.patch_get_utility() as mocked_get_utility: # pylint: disable=unused-variable
+            mock_parser.args = args
+            mock_parser.verb = verb
+            return cli.set_by_cli(var)
 
 
 if __name__ == '__main__':
