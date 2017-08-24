@@ -519,8 +519,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         self.assertEqual(1, mock_cert_manager.call_count)
 
     @mock.patch('certbot.cert_manager.certificates')
-    @test_util.patch_get_utility()
-    def test_certificates(self, mock_cert_manager, unused_mock_get_utility):
+    def test_certificates(self, mock_cert_manager):
         self._call_no_clientmock(['certificates'])
         self.assertEqual(1, mock_cert_manager.call_count)
 
@@ -580,8 +579,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         available = verified.available()
         self.assertEqual(stdout.getvalue().strip(), str(available))
 
-    @test_util.patch_get_utility()
-    def test_certonly_abspath(self, unused_mock_get_utility):
+    def test_certonly_abspath(self):
         cert = 'cert'
         key = 'key'
         chain = 'chain'
@@ -598,8 +596,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         self.assertEqual(config.chain_path, os.path.abspath(chain))
         self.assertEqual(config.fullchain_path, os.path.abspath(fullchain))
 
-    @test_util.patch_get_utility()
-    def test_certonly_bad_args(self, unused_mock_get_utility):
+    def test_certonly_bad_args(self):
         try:
             self._call(['-a', 'bad_auth', 'certonly'])
             assert False, "Exception should have been raised"
@@ -1027,8 +1024,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
                     jose.ComparableX509(cert),
                     mock.ANY)
 
-    @test_util.patch_get_utility()
-    def test_agree_dev_preview_config(self, unused_mock_get_utility):
+    def test_agree_dev_preview_config(self):
         with mock.patch('certbot.main.run') as mocked_run:
             self._call(['-c', test_util.vector_path('cli.ini')])
         self.assertTrue(mocked_run.called)
