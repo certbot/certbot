@@ -14,6 +14,7 @@ from acme.jose import util as jose_util
 from certbot import constants
 from certbot import crypto_util
 from certbot import interfaces
+from certbot import reverter
 from certbot import util
 
 logger = logging.getLogger(__name__)
@@ -98,6 +99,17 @@ class Plugin(object):
         """Find a configuration value for variable ``var``."""
         return getattr(self.config, self.dest(var))
 # other
+
+
+class Installer(Plugin):
+    """An installer base class with reverter methods defined.
+
+    Installer plugins do not have to inherit from this class.
+
+    """
+    def __init__(self, *args, **kwargs):
+        super(Installer, self).__init__(*args, **kwargs)
+        self.reverter = reverter.Reverter(self.config)
 
 
 class Addr(object):
