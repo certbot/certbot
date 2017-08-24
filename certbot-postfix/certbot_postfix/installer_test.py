@@ -18,8 +18,8 @@ from certbot import errors
 from certbot.tests import util as certbot_test_util
 
 # Fake Postfix Configs
-names_only_config = """myhostname = mail.fubard.org
-mydomain = fubard.org
+names_only_config = """mydomain = fubard.org
+myhostname = mail.fubard.org
 myorigin = fubard.org"""
 
 
@@ -74,11 +74,15 @@ class InstallerTest(certbot_test_util.TempDirTestCase):
                 installer.prepare()
         self.assertEqual(installer.config_dir, expected)
 
-    def test_get_all_names(self):
-        sorted_names = ['fubard.org', 'mail.fubard.org']
+    @mock.patch("certbot_postfix.installer.util.check_output")
+    def test_get_all_names(self, mock_check_output):
         self._write_config(names_only_config)
         installer = self._create_prepared_installer()
-        self.assertEqual(sorted_names, installer.get_all_names())
+        mock_check_output.side_effect = names_only_config.splitlines()
+
+        result = installer.get_all_names()
+        self.assertTrue("fubard.org" in result)
+        self.assertTrue("mail.fubard.org" in result)
 
     def _write_config(self, content):
         config_dir = self.config.postfix_config_dir

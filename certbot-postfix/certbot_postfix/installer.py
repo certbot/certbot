@@ -180,6 +180,15 @@ class Installer(plugins_common.Plugin):
         mail_version = self.get_config_var("mail_version", default=True)
         return tuple(int(i) for i in mail_version.split('.'))
 
+    def get_all_names(self):
+        """Returns all names that may be authenticated.
+
+        :rtype: `set` of `str`
+
+        """
+        return set(self.get_config_var(var)
+                   for var in ('mydomain', 'myhostname', 'myorigin',))
+
     def ensure_cf_var(self, var, ideal, also_acceptable):
         """
         Ensure that existing postfix config @var is in the list of @acceptable
@@ -266,20 +275,6 @@ class Installer(plugins_common.Plugin):
 
         with open(self.fn, "w") as f:
             f.write(self.new_cf)
-
-    def get_all_names(self):
-        """Returns all names that may be authenticated.
-        :rtype: `list` of `str`
-        """
-        var_names = ('myhostname', 'mydomain', 'myorigin')
-        names_found = set()
-        for num, line in enumerate(self.cf):
-            num, found_var, found_value = parse_line((num, line))
-            if found_var in var_names:
-                names_found.add(found_value)
-        name_list = list(names_found)
-        name_list.sort()
-        return name_list
 
     def deploy_cert(self, domain, _cert_path, key_path, _chain_path, fullchain_path):
         """Deploy certificate.
@@ -398,7 +393,8 @@ class Installer(plugins_common.Plugin):
         expected_prefix = name + " ="
         if not output.startswith(expected_prefix):
             raise errors.PluginError(
-                "Unexpected output from '{0}'".format(' '.join(cmd)))
+                "Unexpected output '{0}' from '{1}'".format(output,
+                                                            ' '.join(cmd)))
 
         return output[len(expected_prefix):].strip()
 
