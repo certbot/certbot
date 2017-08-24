@@ -13,7 +13,7 @@ import configargparse
 import six
 import zope.component
 
-from zope.interface.interfaces import ComponentLookupError
+from zope.interface import interfaces as zope_interfaces
 
 from acme import challenges
 
@@ -447,7 +447,7 @@ class HelpfulArgumentParser(object):
         try:
             self.notify = zope.component.getUtility(
                 interfaces.IDisplay).notification
-        except ComponentLookupError:
+        except zope_interfaces.ComponentLookupError:
             self.notify = display_util.NoninteractiveDisplay(
                 sys.stdout).notification
 
