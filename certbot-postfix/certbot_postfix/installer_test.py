@@ -23,11 +23,6 @@ myhostname = mail.fubard.org
 myorigin = fubard.org"""
 
 
-certs_only_config = (
-"""smtpd_tls_cert_file = /etc/letsencrypt/live/www.fubard.org/fullchain.pem
-smtpd_tls_key_file = /etc/letsencrypt/live/www.fubard.org/privkey.pem""")
-
-
 class InstallerTest(certbot_test_util.TempDirTestCase):
 
     def setUp(self):
