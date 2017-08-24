@@ -103,10 +103,6 @@ class Installer(plugins_common.Plugin):
             raise errors.PluginError(
                 "Unable to lock %s", self.config_dir)
 
-    def find_postfix_cf(self):
-        "Search far and wide for the correct postfix configuration file"
-        return os.path.join(self.config_dir, "main.cf")
-
     def more_info(self):
         """Human-readable string to help the user.
         Should describe the steps taken and any relevant info to help the user
