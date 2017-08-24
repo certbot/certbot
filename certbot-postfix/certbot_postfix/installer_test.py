@@ -58,7 +58,6 @@ class InstallerTest(certbot_test_util.TempDirTestCase):
     def test_set_config_dir(self):
         self.config.postfix_config_dir = os.path.join(self.tempdir, "subdir")
         os.mkdir(self.config.postfix_config_dir)
-        self._write_config(names_only_config)
         installer = self._create_installer()
 
         expected = self.config.postfix_config_dir
@@ -76,18 +75,12 @@ class InstallerTest(certbot_test_util.TempDirTestCase):
 
     @mock.patch("certbot_postfix.installer.util.check_output")
     def test_get_all_names(self, mock_check_output):
-        self._write_config(names_only_config)
         installer = self._create_prepared_installer()
         mock_check_output.side_effect = names_only_config.splitlines()
 
         result = installer.get_all_names()
         self.assertTrue("fubard.org" in result)
         self.assertTrue("mail.fubard.org" in result)
-
-    def _write_config(self, content):
-        config_dir = self.config.postfix_config_dir
-        with open(os.path.join(config_dir, "main.cf"), "w") as f:
-            f.write(content)
 
     def test_get_config_var_success(self):
         self.config.postfix_config_dir = None
