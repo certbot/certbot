@@ -6,6 +6,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import functools
 import logging
 import os
 import subprocess
@@ -67,6 +68,12 @@ class InstallerTest(certbot_test_util.TempDirTestCase):
             with mock.patch(exe_exists_path, return_value=True):
                 installer.prepare()
         self.assertEqual(installer.config_dir, expected)
+
+    def test_lock_error(self):
+        assert_raises = functools.partial(self.assertRaises,
+                                          errors.PluginError,
+                                          self._create_prepared_installer)
+        certbot_test_util.lock_and_call(assert_raises, self.tempdir)
 
     @mock.patch("certbot_postfix.installer.util.check_output")
     def test_get_all_names(self, mock_check_output):
