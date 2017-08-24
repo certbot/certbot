@@ -187,8 +187,6 @@ class FreezableMock(object):
         self._mock = mock.MagicMock()
         if return_value != mock.sentinel.DEFAULT:
             self.return_value = return_value
-        else:
-            self._mock.return_value = return_value
         self._frozen = frozen
 
     def freeze(self):
