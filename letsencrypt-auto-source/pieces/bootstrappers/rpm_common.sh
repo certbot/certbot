@@ -97,6 +97,12 @@ BootstrapRpmCommon() {
     "
   fi
 
+  if [ ! -z "$configure_cron" ]; then
+    pkgs="$pkgs
+      cronie
+    "
+  fi
+
   if ! $tool install $yes_flag $QUIET_FLAG $pkgs; then
     error "Could not install OS dependencies. Aborting bootstrap!"
     exit 1

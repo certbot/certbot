@@ -100,6 +100,10 @@ BootstrapDebCommon() {
     # XXX add a case for ubuntu PPAs
   fi
 
+  if [ ! -z "$configure_cron" ]; then
+    cron="cron"
+  fi
+
   apt-get install $QUIET_FLAG $YES_FLAG --no-install-recommends \
     python \
     python-dev \
@@ -110,10 +114,22 @@ BootstrapDebCommon() {
     openssl \
     libffi-dev \
     ca-certificates \
+    $cron \
 
 
   if ! $EXISTS virtualenv > /dev/null ; then
     error Failed to install a working \"virtualenv\" command, exiting
     exit 1
   fi
+
+  ConfigureCronDeb() {
+    root_crontab=/var/spool/cron/crontabs/root
+    pkg_crontab=/etc/cron.d/certbot
+    if $SUDO test -f "$pkg_crontab"; then
+      echo "Found /etc/cron.d/certbot (created by Debian's certbot package), so a cron job"
+      echo "or systemd timer already exists. Nothing to do."
+      return 0
+    fi
+    ConfigureCronCommon "/var/spool/cron/crontabs/root "
+  }
 }

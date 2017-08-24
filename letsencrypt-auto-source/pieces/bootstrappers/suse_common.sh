@@ -14,6 +14,11 @@ BootstrapSuseCommon() {
     QUIET_FLAG='-qq'
   fi
 
+  if [ ! -z $configure_cron ]; then
+    # on newer versions of openSuSe, this package actually installs cronie
+    cron="cron"
+  fi
+
   zypper $QUIET_FLAG $zypper_flags in $install_flags \
     python \
     python-devel \
@@ -22,5 +27,6 @@ BootstrapSuseCommon() {
     augeas-lenses \
     libopenssl-devel \
     libffi-devel \
-    ca-certificates
+    ca-certificates \
+    $cron
 }
