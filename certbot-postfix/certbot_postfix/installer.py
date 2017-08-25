@@ -55,6 +55,7 @@ class Installer(plugins_common.Installer):
             self._verify_executable_is_available(param)
         self._set_config_dir()
         self._check_version()
+        self.config_test()
         self._lock_config_dir()
 
     def _verify_executable_is_available(self, config_name):

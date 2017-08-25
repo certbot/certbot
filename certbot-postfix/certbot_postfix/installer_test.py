@@ -61,6 +61,7 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
         expected = self.config.postfix_config_dir
         self.config.postfix_config_dir = None
 
+        check_call_path = "certbot_postfix.installer.subprocess.check_call"
         check_output_path = "certbot_postfix.installer.util.check_output"
         exe_exists_path = "certbot_postfix.installer.certbot_util.exe_exists"
         with mock.patch(check_output_path) as mock_check_output:
@@ -68,7 +69,8 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
                 "config_directory = " + expected, "mail_version = 3.1.4"
             ]
             with mock.patch(exe_exists_path, return_value=True):
-                installer.prepare()
+                with mock.patch(check_call_path):
+                    installer.prepare()
         self.assertEqual(installer.config_dir, expected)
 
     def test_lock_error(self):
@@ -159,12 +161,14 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
         """
         installer = self._create_installer()
 
+        check_call_path = "certbot_postfix.installer.subprocess.check_call"
         check_output_path = "certbot_postfix.installer.util.check_output"
         exe_exists_path = "certbot_postfix.installer.certbot_util.exe_exists"
         with mock.patch(check_output_path) as mock_check_output:
             with mock.patch(exe_exists_path, return_value=True):
-                mock_check_output.return_value = "mail_version = 3.1.4"
-                installer.prepare()
+                with mock.patch(check_call_path):
+                    mock_check_output.return_value = "mail_version = 3.1.4"
+                    installer.prepare()
 
         return installer
 
