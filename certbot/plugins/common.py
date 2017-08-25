@@ -13,6 +13,7 @@ from acme.jose import util as jose_util
 
 from certbot import constants
 from certbot import crypto_util
+from certbot import errors
 from certbot import interfaces
 from certbot import reverter
 from certbot import util
@@ -110,6 +111,91 @@ class Installer(Plugin):
     def __init__(self, *args, **kwargs):
         super(Installer, self).__init__(*args, **kwargs)
         self.reverter = reverter.Reverter(self.config)
+
+    def add_to_checkpoint(self, save_files, save_notes, temporary=False):
+        """Add files to a checkpoint.
+
+        :param set save_files: set of filepaths to save
+        :param str save_notes: notes about changes during the save
+        :param bool temporary: True if the files should be added to a
+            temporary checkpoint rather than a permanent one. This is
+            usually used for changes that will soon be reverted.
+
+        :raises .errors.PluginError: when unable to add to checkpoint
+
+        """
+        if temporary:
+            checkpoint_func = self.reverter.add_to_temp_checkpoint
+        else:
+            checkpoint_func = self.reverter.add_to_checkpoint
+
+        try:
+            checkpoint_func(save_files, save_notes)
+        except errors.ReverterError as err:
+            raise errors.PluginError(str(err))
+
+    def finalize_checkpoint(self, title):
+        """Timestamp and save changes made through the reverter.
+
+        :param str title: Title describing checkpoint
+
+        :raises .errors.PluginError: when an error occurs
+
+        """
+        try:
+            self.reverter.finalize_checkpoint(title)
+        except errors.ReverterError as err:
+            raise errors.PluginError(str(err))
+
+    def recovery_routine(self):
+        """Revert all previously modified files.
+
+        Reverts all modified files that have not been saved as a checkpoint
+
+        :raises .errors.PluginError: If unable to recover the configuration
+
+        """
+        try:
+            self.reverter.recovery_routine()
+        except errors.ReverterError as err:
+            raise errors.PluginError(str(err))
+
+    def revert_temporary_config(self):
+        """Rollback temporary checkpoint.
+
+        :raises .errors.PluginError: when unable to revert config
+
+        """
+        try:
+            self.reverter.revert_temporary_config()
+        except errors.ReverterError as err:
+            raise errors.PluginError(str(err))
+
+    def rollback_checkpoints(self, rollback=1):
+        """Rollback saved checkpoints.
+
+        :param int rollback: Number of checkpoints to revert
+
+        :raises .errors.PluginError: If there is a problem with the input or
+            the function is unable to correctly revert the configuration
+
+        """
+        try:
+            self.reverter.rollback_checkpoints(rollback)
+        except errors.ReverterError as err:
+            raise errors.PluginError(str(err))
+
+    def view_config_changes(self):
+        """Show all of the configuration changes that have taken place.
+
+        :raises .errors.PluginError: If there is a problem while processing
+            the checkpoints directories.
+
+        """
+        try:
+            self.reverter.view_config_changes()
+        except errors.ReverterError as err:
+            raise errors.PluginError(str(err))
 
 
 class Addr(object):
