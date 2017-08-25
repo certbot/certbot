@@ -179,6 +179,59 @@ class Installer(plugins_common.Installer):
             raise errors.MisconfigurationError(
                 "Postfix failed internal configuration check.")
 
+    def restart(self):
+        """Restart or refresh the server content.
+
+        :raises .PluginError: when server cannot be restarted
+
+        """
+        logger.info("Reloading Postfix configuration...")
+        if self._is_postfix_running():
+            self._reload()
+        else:
+            self._start()
+
+    def _is_postfix_running(self):
+        """Is Postfix currently running?
+
+        Uses the 'postfix status' command to determine if Postfix is
+        currently running using the specified configuration files.
+
+        :returns: True if Postfix is running, otherwise, False
+        :rtype: bool
+
+        """
+        try:
+            self._run_postfix_subcommand("status")
+        except subprocess.CalledProcessError:
+            return False
+        return True
+
+    def _reload(self):
+        """Instructions Postfix to reload its configuration.
+
+        If Postfix isn't currently running, this method will fail.
+
+        :raises .PluginError: when Postfix cannot reload
+
+        """
+        try:
+            self._run_postfix_subcommand("reload")
+        except subprocess.CalledProcessError:
+            raise errors.PluginError(
+                "Postfix failed to reload its configuration.")
+
+    def _start(self):
+        """Instructions Postfix to start running.
+
+        :raises .PluginError: when Postfix cannot start
+
+        """
+        try:
+            self._run_postfix_subcommand("start")
+        except subprocess.CalledProcessError:
+            raise errors.PluginError("Postfix failed to start")
+
     def _run_postfix_subcommand(self, subcommand):
         """Runs a subcommand of the 'postfix' control program.
 
@@ -319,18 +372,6 @@ class Installer(plugins_common.Installer):
         :raises .PluginError: when save is unsuccessful
         """
         self.maybe_add_config_lines()
-
-    def restart(self):
-        """Restart or refresh the server content.
-        :raises .PluginError: when server cannot be restarted
-        """
-        logger.info('Reloading postfix config...')
-        if os.geteuid() != 0:
-            rc = os.system("sudo service postfix reload")
-        else:
-            rc = os.system("service postfix reload")
-        if rc != 0:
-            raise errors.MisconfigurationError('cannot restart postfix')
 
     def get_config_var(self, name, default=False):
         """Return the value of the specified Postfix config parameter.
