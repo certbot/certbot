@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 @zope.interface.implementer(interfaces.IInstaller)
 @zope.interface.provider(interfaces.IPluginFactory)
-class Installer(plugins_common.Plugin):
+class Installer(plugins_common.Installer):
     """Certbot installer plugin for Postfix."""
 
     description = "Configure TLS with the Postfix MTA"
@@ -277,24 +277,6 @@ class Installer(plugins_common.Plugin):
         :raises .PluginError: when save is unsuccessful
         """
         self.maybe_add_config_lines()
-
-    def rollback_checkpoints(self, rollback=1):
-        """Revert `rollback` number of configuration checkpoints.
-        :raises .PluginError: when configuration cannot be fully reverted
-        """
-
-    def recovery_routine(self):
-        """Revert configuration to most recent finalized checkpoint.
-        Remove all changes (temporary and permanent) that have not been
-        finalized. This is useful to protect against crashes and other
-        execution interruptions.
-        :raises .errors.PluginError: If unable to recover the configuration
-        """
-
-    def view_config_changes(self):
-        """Display all of the LE config changes.
-        :raises .PluginError: when config changes cannot be parsed
-        """
 
     def config_test(self):
         """Make sure the configuration is valid.

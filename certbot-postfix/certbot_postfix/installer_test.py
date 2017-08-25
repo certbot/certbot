@@ -24,12 +24,12 @@ myhostname = mail.fubard.org
 myorigin = fubard.org"""
 
 
-class InstallerTest(certbot_test_util.TempDirTestCase):
+class InstallerTest(certbot_test_util.ConfigTestCase):
 
     def setUp(self):
         super(InstallerTest, self).setUp()
-        self.config = mock.MagicMock(postfix_config_dir=self.tempdir,
-                                     postfix_config_utility="postconf")
+        self.config.postfix_config_dir = self.tempdir
+        self.config.postfix_config_utility = "postconf"
 
     def test_add_parser_arguments(self):
         mock_add = mock.MagicMock()
