@@ -32,13 +32,14 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
         self.config.postfix_config_utility = "postconf"
 
     def test_add_parser_arguments(self):
+        options = set(('ctl', 'config-dir', 'config-utility',))
         mock_add = mock.MagicMock()
 
         from certbot_postfix import installer
         installer.Installer.add_parser_arguments(mock_add)
 
         for call in mock_add.call_args_list:
-            self.assertTrue(call[0][0] in ('config-dir', 'config-utility'))
+            self.assertTrue(call[0][0] in options)
 
     def test_no_postconf_prepare(self):
         installer = self._create_installer()

@@ -28,9 +28,11 @@ class Installer(plugins_common.Installer):
 
     @classmethod
     def add_parser_arguments(cls, add):
+        add("ctl", default="postfix",
+            help="Path to the 'postfix' control program.")
         add("config-dir", help="Path to the directory containing the "
             "Postfix main.cf file to modify instead of using the "
-            "default configuration paths")
+            "default configuration paths.")
         add("config-utility", default="postconf",
             help="Path to the 'postconf' executable.")
 
