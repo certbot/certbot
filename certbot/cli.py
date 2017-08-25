@@ -848,9 +848,10 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         "e.g. -vvv.")
     helpful.add(
         None, "-t", "--text", dest="text_mode", action="store_true",
-        help=argparse.SUPPRESS)
+        default=flag_default("text_mode"), help=argparse.SUPPRESS)
     helpful.add(
-        None, "--max-log-backups", type=nonnegative_int, default=flag_default('max_log_backups'),
+        None, "--max-log-backups", type=nonnegative_int,
+        default=flag_default("max_log_backups"),
         help="Specifies the maximum number of backup logs that should "
              "be kept by Certbot's built in log rotation. Setting this "
              "flag to 0 disables log rotation entirely, causing "
@@ -858,12 +859,14 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
     helpful.add(
         [None, "automation", "run", "certonly"], "-n", "--non-interactive", "--noninteractive",
         dest="noninteractive_mode", action="store_true",
+        default=flag_default('noninteractive_mode'),
         help="Run without ever asking for user input. This may require "
               "additional command line flags; the client will try to explain "
               "which ones are required if it finds one missing")
     helpful.add(
         [None, "register", "run", "certonly"],
         constants.FORCE_INTERACTIVE_FLAG, action="store_true",
+        default=flag_default('force_interactive'),
         help="Force Certbot to be interactive even if it detects it's not "
              "being run in a terminal. This flag cannot be used with the "
              "renew subcommand.")
@@ -891,6 +894,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
     helpful.add(
         [None, "testing", "renew", "certonly"],
         "--dry-run", action="store_true", dest="dry_run",
+        default=flag_default('dry_run'),
         help="Perform a test run of the client, obtaining test (invalid) certificates"
              " but not saving them to disk. This can currently only be used"
              " with the 'certonly' and 'renew' subcommands. \nNote: Although --dry-run"
@@ -903,6 +907,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              " renewal. --deploy-hook commands are not called.")
     helpful.add(
         ["register", "automation"], "--register-unsafely-without-email", action="store_true",
+        default=flag_default('register_unsafely_without_email'),
         help="Specifying this flag enables registering an account with no "
              "email address. This is strongly discouraged, because in the "
              "event of key loss or account compromise you will irrevocably "
@@ -913,6 +918,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              "update to the web site.")
     helpful.add(
         "register", "--update-registration", action="store_true",
+        default=flag_default('update_registration'),
         help="With the register verb, indicates that details associated "
              "with an existing registration, such as the e-mail address, "
              "should be updated, rather than registering a new account.")
@@ -929,12 +935,12 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
     helpful.add(
         ["automation", "certonly", "run"],
         "--keep-until-expiring", "--keep", "--reinstall",
-        dest="reinstall", action="store_true",
+        dest="reinstall", action="store_true", default=flag_default('reinstall'),
         help="If the requested certificate matches an existing certificate, always keep the "
              "existing one until it is due for renewal (for the "
              "'run' subcommand this means reinstall the existing certificate). (default: Ask)")
     helpful.add(
-        "automation", "--expand", action="store_true",
+        "automation", "--expand", action="store_true", default=flag_default('expand'),
         help="If an existing certificate is a strict subset of the requested names, "
              "always expand and replace it with the additional names. (default: Ask)")
     helpful.add(
@@ -943,21 +949,24 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         help="show program's version number and exit")
     helpful.add(
         ["automation", "renew"],
-        "--force-renewal", "--renew-by-default",
-        action="store_true", dest="renew_by_default", help="If a certificate "
+        "--force-renewal", "--renew-by-default", dest="renew_by_default",
+        action="store_true", default=flag_default('renew_by_default'),
+        help="If a certificate "
              "already exists for the requested domains, renew it now, "
              "regardless of whether it is near expiry. (Often "
              "--keep-until-expiring is more appropriate). Also implies "
              "--expand.")
     helpful.add(
-        "automation", "--renew-with-new-domains",
-        action="store_true", dest="renew_with_new_domains", help="If a "
+        "automation", "--renew-with-new-domains", dest="renew_with_new_domains",
+        action="store_true", default=flag_default('renew_with_new_domains'),
+        help="If a "
              "certificate already exists for the requested certificate name "
              "but does not match the requested domains, renew it now, "
              "regardless of whether it is near expiry.")
     helpful.add(
         ["automation", "renew", "certonly"],
         "--allow-subset-of-names", action="store_true",
+        default=flag_default('allow_subset_of_names'),
         help="When performing domain validation, do not consider it a failure "
              "if authorizations can not be obtained for a strict subset of "
              "the requested domains. This may be useful for allowing renewals for "
@@ -965,6 +974,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              "at this system. This option cannot be used with --csr.")
     helpful.add(
         "automation", "--agree-tos", dest="tos", action="store_true",
+        default=flag_default('tos'),
         help="Agree to the ACME Subscriber Agreement (default: Ask)")
     helpful.add(
         ["unregister", "automation"], "--account", metavar="ACCOUNT_ID",
@@ -972,33 +982,38 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         help="Account ID to use")
     helpful.add(
         "automation", "--duplicate", dest="duplicate", action="store_true",
+        default=flag_default('duplicate'),
         help="Allow making a certificate lineage that duplicates an existing one "
              "(both can be renewed in parallel)")
     helpful.add(
         "automation", "--os-packages-only", action="store_true",
+        default=flag_default('os_packages_only'),
         help="(certbot-auto only) install OS package dependencies and then stop")
     helpful.add(
         "automation", "--no-self-upgrade", action="store_true",
+        default=flag_default('no_self_upgrade'),
         help="(certbot-auto only) prevent the certbot-auto script from"
              " upgrading itself to newer released versions (default: Upgrade"
              " automatically)")
     helpful.add(
         "automation", "--no-bootstrap", action="store_true",
+        default=flag_default('no_bootstrap'),
         help="(certbot-auto only) prevent the certbot-auto script from"
              " installing OS-level dependencies (default: Prompt to install "
              " OS-wide dependencies, but exit if the user says 'No')")
     helpful.add(
         ["automation", "renew", "certonly", "run"],
         "-q", "--quiet", dest="quiet", action="store_true",
+        default=flag_default('quiet'),
         help="Silence all output except errors. Useful for automation via cron."
              " Implies --non-interactive.")
     # overwrites server, handled in HelpfulArgumentParser.parse_args()
     helpful.add(["testing", "revoke", "run"], "--test-cert", "--staging",
-        action='store_true', dest='staging',
+        dest='staging', action='store_true', default=flag_default('staging'),
         help='Use the staging server to obtain or revoke test (invalid) certificates; equivalent'
              ' to --server ' + constants.STAGING_URI)
     helpful.add(
-        "testing", "--debug", action="store_true",
+        "testing", "--debug", action="store_true", default=flag_default('debug'),
         help="Show tracebacks in case of errors, and allow certbot-auto "
              "execution on experimental platforms")
     helpful.add(
@@ -1028,6 +1043,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         default=flag_default("http01_address"), help=config_help("http01_address"))
     helpful.add(
         "testing", "--break-my-certs", action="store_true",
+        default=flag_default('break_my_certs'),
         help="Be willing to replace or renew valid certificates with invalid "
              "(testing/staging) certificates")
     helpful.add(
@@ -1073,6 +1089,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         default=flag_default('staple'), help=argparse.SUPPRESS)
     helpful.add(
         "security", "--strict-permissions", action="store_true",
+        default=flag_default('strict_permissions'),
         help="Require that all configuration files are owned by the current "
              "user; only needed if your config is somewhere unsafe like /tmp/")
     helpful.add(
@@ -1144,7 +1161,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
 
 
 def _create_subparsers(helpful):
-    helpful.add("config_changes", "--num", type=int,
+    helpful.add("config_changes", "--num", type=int, default=flag_default('num'),
                 help="How many past revisions you want to be displayed")
 
     from certbot.client import sample_user_agent # avoid import loops
@@ -1179,14 +1196,18 @@ def _create_subparsers(helpful):
                 default=flag_default("rollback_checkpoints"),
                 help="Revert configuration N number of checkpoints.")
     helpful.add("plugins",
-                "--init", action="store_true", help="Initialize plugins.")
+                "--init", action="store_true", default=flag_default('init'),
+                help="Initialize plugins.")
     helpful.add("plugins",
-                "--prepare", action="store_true", help="Initialize and prepare plugins.")
+                "--prepare", action="store_true", default=flag_default('prepare'),
+                help="Initialize and prepare plugins.")
     helpful.add("plugins",
                 "--authenticators", action="append_const", dest="ifaces",
+                default=flag_default('ifaces'),
                 const=interfaces.IAuthenticator, help="Limit to authenticator plugins only.")
     helpful.add("plugins",
                 "--installers", action="append_const", dest="ifaces",
+                default=flag_default('ifaces'),
                 const=interfaces.IInstaller, help="Limit to installer plugins only.")
 
 
@@ -1252,51 +1273,66 @@ def _plugins_parsing(helpful, plugins):
         "a particular plugin by setting options provided below. Running "
         "--help <plugin_name> will list flags specific to that plugin.")
 
-    helpful.add("plugins", "--configurator",
+    helpful.add("plugins", "--configurator", default=flag_default('configurator'),
                 help="Name of the plugin that is both an authenticator and an installer."
                 " Should not be used together with --authenticator or --installer. "
                 "(default: Ask)")
-    helpful.add("plugins", "-a", "--authenticator", help="Authenticator plugin name.")
-    helpful.add("plugins", "-i", "--installer",
+    helpful.add("plugins", "-a", "--authenticator", default=flag_default('authenticator'),
+                help="Authenticator plugin name.")
+    helpful.add("plugins", "-i", "--installer", default=flag_default('installer'),
                 help="Installer plugin name (also used to find domains).")
     helpful.add(["plugins", "certonly", "run", "install", "config_changes"],
-                "--apache", action="store_true",
+                "--apache", action="store_true", default=flag_default('apache'),
                 help="Obtain and install certificates using Apache")
     helpful.add(["plugins", "certonly", "run", "install", "config_changes"],
-                "--nginx", action="store_true", help="Obtain and install certificates using Nginx")
+                "--nginx", action="store_true", default=flag_default('nginx'),
+                help="Obtain and install certificates using Nginx")
     helpful.add(["plugins", "certonly"], "--standalone", action="store_true",
+                default=flag_default('standalone'),
                 help='Obtain certificates using a "standalone" webserver.')
     helpful.add(["plugins", "certonly"], "--manual", action="store_true",
+                default=flag_default('manual'),
                 help='Provide laborious manual instructions for obtaining a certificate')
     helpful.add(["plugins", "certonly"], "--webroot", action="store_true",
+                default=flag_default('webroot'),
                 help='Obtain certificates by placing files in a webroot directory.')
     helpful.add(["plugins", "certonly"], "--dns-cloudflare", action="store_true",
+                default=flag_default('dns_cloudflare'),
                 help=('Obtain certificates using a DNS TXT record (if you are '
                       'using Cloudflare for DNS).'))
     helpful.add(["plugins", "certonly"], "--dns-cloudxns", action="store_true",
+                default=flag_default('dns_cloudxns'),
                 help=('Obtain certificates using a DNS TXT record (if you are '
                      'using CloudXNS for DNS).'))
     helpful.add(["plugins", "certonly"], "--dns-digitalocean", action="store_true",
+                default=flag_default('dns_digitalocean'),
                 help=('Obtain certificates using a DNS TXT record (if you are '
                       'using DigitalOcean for DNS).'))
     helpful.add(["plugins", "certonly"], "--dns-dnsimple", action="store_true",
+                default=flag_default('dns_dnsimple'),
                 help=('Obtain certificates using a DNS TXT record (if you are '
                       'using DNSimple for DNS).'))
     helpful.add(["plugins", "certonly"], "--dns-dnsmadeeasy", action="store_true",
+                default=flag_default('dns_dnsmadeeasy'),
                 help=('Obtain certificates using a DNS TXT record (if you are'
                       'using DNS Made Easy for DNS).'))
     helpful.add(["plugins", "certonly"], "--dns-google", action="store_true",
+                default=flag_default('dns_google'),
                 help=('Obtain certificates using a DNS TXT record (if you are '
                       'using Google Cloud DNS).'))
     helpful.add(["plugins", "certonly"], "--dns-luadns", action="store_true",
+                default=flag_default('dns_luadns'),
                 help=('Obtain certificates using a DNS TXT record (if you are '
                       'using LuaDNS for DNS).'))
     helpful.add(["plugins", "certonly"], "--dns-nsone", action="store_true",
+                default=flag_default('dns_nsone'),
                 help=('Obtain certificates using a DNS TXT record (if you are '
                       'using NS1 for DNS).'))
     helpful.add(["plugins", "certonly"], "--dns-rfc2136", action="store_true",
+                default=flag_default('dns_rfc2136'),
                 help='Obtain certificates using a DNS TXT record (if you are using BIND for DNS).')
     helpful.add(["plugins", "certonly"], "--dns-route53", action="store_true",
+                default=flag_default('dns_route53'),
                 help=('Obtain certificates using a DNS TXT record (if you are using Route53 for '
                       'DNS).'))
 
