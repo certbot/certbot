@@ -165,6 +165,41 @@ class Installer(plugins_common.Installer):
         """
         return []
 
+    def config_test(self):
+        """Make sure the configuration is valid.
+
+        :raises .MisconfigurationError: if the config is invalid
+
+        """
+        try:
+            self._run_postfix_subcommand("check")
+        except subprocess.CalledProcessError:
+            raise errors.MisconfigurationError(
+                "Postfix failed internal configuration check.")
+
+    def _run_postfix_subcommand(self, subcommand):
+        """Runs a subcommand of the 'postfix' control program.
+
+        If the command fails, the exception is logged at the DEBUG
+        level.
+
+        :param str subcommand: subcommand to run
+
+        :raises subprocess.CalledProcessError: if the command fails
+
+        """
+        cmd = [self.conf("ctl")]
+        if self.conf("config-dir") is not None:
+            cmd.extend(("-c", self.conf("config-dir"),))
+        cmd.append(subcommand)
+
+        try:
+            subprocess.check_call(cmd)
+        except subprocess.CalledProcessError:
+            logger.debug("%s exited with a non-zero status.",
+                         "".join(cmd), exc_info=True)
+            raise
+
     def ensure_cf_var(self, var, ideal, also_acceptable):
         """
         Ensure that existing postfix config @var is in the list of @acceptable
@@ -282,17 +317,6 @@ class Installer(plugins_common.Installer):
         :raises .PluginError: when save is unsuccessful
         """
         self.maybe_add_config_lines()
-
-    def config_test(self):
-        """Make sure the configuration is valid.
-        :raises .MisconfigurationError: when the config is not in a usable state
-        """
-        if os.geteuid() != 0:
-            rc = os.system('sudo /usr/sbin/postfix check')
-        else:
-            rc = os.system('/usr/sbin/postfix check')
-        if rc != 0:
-            raise errors.MisconfigurationError('Postfix failed self-check.')
 
     def restart(self):
         """Restart or refresh the server content.
