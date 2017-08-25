@@ -172,8 +172,8 @@ class FreezableMock(object):
     """Mock object with the ability to freeze attributes.
 
     This class works like a regular mock.MagicMock object, except
-    attributes and behavior can be set and frozen so they cannot be
-    changed during tests.
+    attributes and behavior set before the object is frozen cannot
+    be changed during tests.
 
     If a func argument is provided to the constructor, this function
     is called first when an instance of FreezableMock is called,
@@ -212,10 +212,14 @@ class FreezableMock(object):
             return getattr(object.__getattribute__(self, '_mock'), name)
 
     def __setattr__(self, name, value):
-        """ Set attributes on the underlying _mock if the FreezableMock is frozen.
+        """ Before it is frozen, attributes are set on the FreezableMock
+        instance and added to the _frozen_set. Attributes in the _frozen_set
+        cannot be changed after the FreezableMock is frozen. In this case,
+        they are set on the underlying _mock.
 
-        In cases of return_value and side_effect, these attributes are always passed
-        through to the instance's _mock.
+        In cases of return_value and side_effect, these attributes are always
+        passed through to the instance's _mock and added to the _frozen_set
+        before the object is frozen.
 
         """
         if self._frozen:
