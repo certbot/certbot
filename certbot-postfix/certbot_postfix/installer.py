@@ -51,24 +51,27 @@ class Installer(plugins_common.Installer):
         :raises errors.NotSupportedError: when version is not supported
 
         """
-        self._verify_postconf_available()
+        for param in ("ctl", "config_dir",):
+            self._verify_executable_is_available(param)
         self._set_config_dir()
         self._check_version()
         self._lock_config_dir()
 
-    def _verify_postconf_available(self):
-        """Ensure 'postconf' can be found.
+    def _verify_executable_is_available(self, config_name):
+        """Asserts the program in the specified config param is found.
 
-        :raises .NoInstallationError: when unable to find 'postconf'
+        :param str config_name: name of the config param
+
+        :raises .NoInstallationError: when the executable isn't found
 
         """
-        if not certbot_util.exe_exists(self.conf("config-utility")):
-            if not plugins_util.path_surgery(self.conf("config-utility")):
+        if not certbot_util.exe_exists(self.conf(config_name)):
+            if not plugins_util.path_surgery(self.conf(config_name)):
                 raise errors.NoInstallationError(
                     "Cannot find executable '{0}'. You can provide the "
                     "path to this command with --{1}".format(
-                        self.conf("config-utility"),
-                        self.option_name("config-utility")))
+                        self.conf(config_name),
+                        self.option_name(config_name)))
 
     def _set_config_dir(self):
         """Ensure self.config_dir is set to the correct path.
