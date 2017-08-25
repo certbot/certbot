@@ -372,8 +372,8 @@ def handle_renewal_request(config):
                            "renewing all installed certificates that are due "
                            "to be renewed or renewing a single certificate specified "
                            "by its name. If you would like to renew specific "
-                           "certificates by their domains, use the certonly "
-                           "command. The renew verb may provide other options "
+                           "certificates by their domains, use the certonly command "
+                           "instead. The renew verb may provide other options "
                            "for selecting certificates to renew in the future.")
 
     if config.certname:
