@@ -11,6 +11,9 @@ import sys
 
 import configargparse
 import six
+import zope.component
+
+from zope.interface import interfaces as zope_interfaces
 
 from acme import challenges
 
@@ -23,6 +26,7 @@ from certbot import hooks
 from certbot import interfaces
 from certbot import util
 
+from certbot.display import util as display_util
 from certbot.plugins import disco as plugins_disco
 import certbot.plugins.selection as plugin_selection
 
@@ -439,6 +443,15 @@ class HelpfulArgumentParser(object):
             "delete": main.delete,
         }
 
+        # Get notification function for printing
+        try:
+            self.notify = zope.component.getUtility(
+                interfaces.IDisplay).notification
+        except zope_interfaces.ComponentLookupError:
+            self.notify = display_util.NoninteractiveDisplay(
+                sys.stdout).notification
+
+
         # List of topics for which additional help can be provided
         HELP_TOPICS = ["all", "security", "paths", "automation", "testing"]
         HELP_TOPICS += list(self.VERBS) + self.COMMANDS_TOPICS + ["manage"]
@@ -510,10 +523,10 @@ class HelpfulArgumentParser(object):
 
         usage = SHORT_USAGE
         if help_arg == True:
-            print(usage + COMMAND_OVERVIEW % (apache_doc, nginx_doc) + HELP_USAGE)
+            self.notify(usage + COMMAND_OVERVIEW % (apache_doc, nginx_doc) + HELP_USAGE)
             sys.exit(0)
         elif help_arg in self.COMMANDS_TOPICS:
-            print(usage + self._list_subcommands())
+            self.notify(usage + self._list_subcommands())
             sys.exit(0)
         elif help_arg == "all":
             # if we're doing --help all, the OVERVIEW is part of the SHORT_USAGE at
