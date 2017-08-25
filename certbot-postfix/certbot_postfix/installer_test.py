@@ -28,6 +28,7 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
 
     def setUp(self):
         super(InstallerTest, self).setUp()
+        self.config.postfix_ctl = "postfix"
         self.config.postfix_config_dir = self.tempdir
         self.config.postfix_config_utility = "postconf"
 
@@ -93,6 +94,12 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
     def test_supported_enhancements(self):
         self.assertEqual(
             self._create_prepared_installer().supported_enhancements(), [])
+
+    @mock.patch("certbot_postfix.installer.subprocess.check_call")
+    def test_config_test_failure(self, mock_check_call):
+        installer = self._create_prepared_installer()
+        mock_check_call.side_effect = subprocess.CalledProcessError(42, "foo")
+        self.assertRaises(errors.MisconfigurationError, installer.config_test)
 
     def test_get_config_var_success(self):
         self.config.postfix_config_dir = None
