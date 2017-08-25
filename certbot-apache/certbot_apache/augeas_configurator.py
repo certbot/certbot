@@ -3,7 +3,6 @@ import logging
 
 
 from certbot import errors
-from certbot import reverter
 from certbot.plugins import common
 
 from certbot_apache import constants
@@ -33,11 +32,6 @@ class AugeasConfigurator(common.Installer):
 
         self.save_notes = ""
 
-        # See if any temporary changes need to be recovered
-        # This needs to occur before VirtualHost objects are setup...
-        # because this will change the underlying configuration and potential
-        # vhosts
-        self.reverter = reverter.Reverter(self.config)
 
     def init_augeas(self):
         """ Initialize the actual Augeas instance """
@@ -50,6 +44,10 @@ class AugeasConfigurator(common.Installer):
             flags=(augeas.Augeas.NONE |
                    augeas.Augeas.NO_MODL_AUTOLOAD |
                    augeas.Augeas.ENABLE_SPAN))
+        # See if any temporary changes need to be recovered
+        # This needs to occur before VirtualHost objects are setup...
+        # because this will change the underlying configuration and potential
+        # vhosts
         self.recovery_routine()
 
     def check_parsing_errors(self, lens):

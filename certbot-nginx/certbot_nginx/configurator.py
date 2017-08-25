@@ -19,7 +19,6 @@ from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
 from certbot import util
-from certbot import reverter
 
 from certbot.plugins import common
 
@@ -127,8 +126,6 @@ class NginxConfigurator(common.Installer):
         self._enhance_func = {"redirect": self._enable_redirect,
                               "staple-ocsp": self._enable_ocsp_stapling}
 
-        # Set up reverter
-        self.reverter = reverter.Reverter(self.config)
         self.reverter.recovery_routine()
 
     @property
