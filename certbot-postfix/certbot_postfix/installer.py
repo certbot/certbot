@@ -47,6 +47,7 @@ class Installer(plugins_common.Installer):
         Finish up any additional initialization.
 
         :raises errors.PluginError: when an unexpected error occurs
+        :raises errors.MisconfigurationError: when the config is invalid
         :raises errors.NoInstallationError: when can't find installation
         :raises errors.NotSupportedError: when version is not supported
 
