@@ -103,6 +103,33 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
         mock_check_call.side_effect = subprocess.CalledProcessError(42, "foo")
         self.assertRaises(errors.MisconfigurationError, installer.config_test)
 
+    @mock.patch("certbot_postfix.installer.subprocess.check_call")
+    def test_postfix_reload_failure(self, mock_check_call):
+        installer = self._create_prepared_installer()
+        mock_check_call.side_effect = [
+            None, subprocess.CalledProcessError(42, "foo")
+        ]
+        self.assertRaises(errors.PluginError, installer.restart)
+
+    @mock.patch("certbot_postfix.installer.subprocess.check_call")
+    def test_postfix_reload_success(self, mock_check_call):
+        installer = self._create_prepared_installer()
+        installer.restart()
+
+    @mock.patch("certbot_postfix.installer.subprocess.check_call")
+    def test_postfix_start_failure(self, mock_check_call):
+        installer = self._create_prepared_installer()
+        mock_check_call.side_effect = subprocess.CalledProcessError(42, "foo")
+        self.assertRaises(errors.PluginError, installer.restart)
+
+    @mock.patch("certbot_postfix.installer.subprocess.check_call")
+    def test_postfix_start_success(self, mock_check_call):
+        installer = self._create_prepared_installer()
+        mock_check_call.side_effect = [
+            subprocess.CalledProcessError(42, "foo"), None
+        ]
+        installer.restart()
+
     def test_get_config_var_success(self):
         self.config.postfix_config_dir = None
 
