@@ -5,6 +5,29 @@ import unittest
 
 import mock
 
+class CheckCallTest(unittest.TestCase):
+    """Tests for certbot_postfix.util.check_call."""
+
+    @classmethod
+    def _call(cls, *args, **kwargs):
+        from certbot_postfix.util import check_call
+        return check_call(*args, **kwargs)
+
+    @mock.patch('certbot_postfix.util.logger')
+    @mock.patch('certbot_postfix.util.subprocess.check_call')
+    def test_failure(self, mock_check_call, mock_logger):
+        cmd = "postconf smtpd_use_tls=yes".split()
+        mock_check_call.side_effect = subprocess.CalledProcessError(42, cmd)
+        self.assertRaises(subprocess.CalledProcessError, self._call, cmd)
+        self.assertTrue(mock_logger.method_calls)
+
+    @mock.patch('certbot_postfix.util.subprocess.check_call')
+    def test_success(self, mock_check_call):
+        cmd = "postconf smtpd_use_tls=yes".split()
+        self._call(cmd)
+        mock_check_call.assert_called_once_with(cmd)
+
+
 class CheckOutputTest(unittest.TestCase):
     """Tests for certbot_postfix.util.check_output."""
 

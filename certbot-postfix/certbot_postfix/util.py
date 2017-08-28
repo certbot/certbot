@@ -7,6 +7,24 @@ import subprocess
 logger = logging.getLogger(__name__)
 
 
+def check_call(*args, **kwargs):
+    """A simple wrapper of subprocess.check_call that logs errors.
+
+    :param tuple args: positional arguments to subprocess.check_call
+    :param dict kargs: keyword arguments to subprocess.check_call
+
+    :raises subprocess.CalledProcessError: if the call fails
+
+    """
+    try:
+        subprocess.check_call(*args, **kwargs)
+    except subprocess.CalledProcessError:
+        cmd = _get_cmd(*args, **kwargs)
+        logger.debug("%s exited with a non-zero status.",
+                     "".join(cmd), exc_info=True)
+        raise
+
+
 def check_output(*args, **kwargs):
     """Backported version of subprocess.check_output for Python 2.6+.
 
@@ -43,10 +61,19 @@ def check_output(*args, **kwargs):
     output, unused_err = process.communicate()
     retcode = process.poll()
     if retcode:
-        cmd = kwargs.get('args')
-        if cmd is None:
-            cmd = args[0]
+        cmd = _get_cmd(*args, **kwargs)
         logger.debug(
             "'%s' exited with %d. Output was:\n%s", cmd, retcode, output)
         raise subprocess.CalledProcessError(retcode, cmd)
     return output
+
+
+def _get_cmd(*args, **kwargs):
+    """Return the command from Popen args.
+
+    :param tuple args: Popen args
+    :param dict kwargs: Popen kwargs
+
+    """
+    cmd = kwargs.get('args')
+    return args[0] if cmd is None else cmd
