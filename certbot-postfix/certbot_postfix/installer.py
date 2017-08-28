@@ -40,6 +40,7 @@ class Installer(plugins_common.Installer):
         super(Installer, self).__init__(*args, **kwargs)
         self.fixup          = False
         self.config_dir     = None
+        self.proposed_changes = {}
 
     def prepare(self):
         """Prepare the installer.
@@ -426,6 +427,19 @@ class Installer(plugins_common.Installer):
 
         return cmd
 
+    def set_config_var(self, name, value):
+        """Set the Postfix config parameter name to value.
+
+        This method only stores the requested change in memory. The
+        Postfix configuration is not modified until save() is called.
+
+        :param str name: name of the Postfix config parameter
+        :param str value: value to set the Postfix config parameter to
+
+        """
+        assert isinstance(name, str), "Invalid name value"
+        assert isinstance(value, str), "Invalid key value"
+        self.proposed_changes[name] = value
 
     # def update_CAfile(self):
     #     os.system("cat /usr/share/ca-certificates/mozilla/*.crt > " + self.ca_file)
