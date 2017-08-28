@@ -164,11 +164,11 @@ class Installer(plugins_common.Installer):
         :raises .PluginError: when cert cannot be deployed
 
         """
-        self.set_config_var("smtpd_tls_cert_file", fullchain_path)
-        self.set_config_var("smtpd_tls_key_file", key_path)
-        self.set_config_var("smtpd_tls_mandatory_protocols", "!SSLv2, !SSLv3")
-        self.set_config_var("smtpd_tls_protocols", "!SSLv2, !SSLv3")
-        self.set_config_var("smtpd_use_tls", "yes")
+        self._set_config_var("smtpd_tls_cert_file", fullchain_path)
+        self._set_config_var("smtpd_tls_key_file", key_path)
+        self._set_config_var("smtpd_tls_mandatory_protocols", "!SSLv2, !SSLv3")
+        self._set_config_var("smtpd_tls_protocols", "!SSLv2, !SSLv3")
+        self._set_config_var("smtpd_use_tls", "yes")
 
     def enhance(self, domain, enhancement, options=None):
         """Raises an exception for request for unsupported enhancement.
@@ -431,7 +431,7 @@ class Installer(plugins_common.Installer):
 
         return cmd
 
-    def set_config_var(self, name, value):
+    def _set_config_var(self, name, value):
         """Set the Postfix config parameter name to value.
 
         This method only stores the requested change in memory. The
