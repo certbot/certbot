@@ -150,6 +150,26 @@ class Installer(plugins_common.Installer):
         return set(self.get_config_var(var)
                    for var in ('mydomain', 'myhostname', 'myorigin',))
 
+    def deploy_cert(self, domain, cert_path,
+                    key_path, chain_path, fullchain_path):
+        """Configure the Postfix SMTP server to use the given TLS cert.
+
+        :param str domain: domain to deploy certificate file
+        :param str cert_path: absolute path to the certificate file
+        :param str key_path: absolute path to the private key file
+        :param str chain_path: absolute path to the certificate chain file
+        :param str fullchain_path: absolute path to the certificate fullchain
+            file (cert plus chain)
+
+        :raises .PluginError: when cert cannot be deployed
+
+        """
+        self.set_config_var("smtpd_tls_cert_file", fullchain_path)
+        self.set_config_var("smtpd_tls_key_file", key_path)
+        self.set_config_var("smtpd_tls_mandatory_protocols", "!SSLv2, !SSLv3")
+        self.set_config_var("smtpd_tls_protocols", "!SSLv2, !SSLv3")
+        self.set_config_var("smtpd_use_tls", "yes")
+
     def enhance(self, domain, enhancement, options=None):
         """Raises an exception for request for unsupported enhancement.
 
@@ -342,22 +362,6 @@ class Installer(plugins_common.Installer):
 
         with open(self.fn, "w") as f:
             f.write(self.new_cf)
-
-    def deploy_cert(self, domain, _cert_path, key_path, _chain_path, fullchain_path):
-        """Deploy certificate.
-        :param str domain: domain to deploy certificate file
-        :param str cert_path: absolute path to the certificate file
-        :param str key_path: absolute path to the private key file
-        :param str chain_path: absolute path to the certificate chain file
-        :param str fullchain_path: absolute path to the certificate fullchain
-            file (cert plus chain)
-        :raises .PluginError: when cert cannot be deployed
-        """
-        self.wrangle_existing_config()
-        self.ensure_cf_var("smtpd_tls_cert_file", fullchain_path, [])
-        self.ensure_cf_var("smtpd_tls_key_file", key_path, [])
-        self.set_domainwise_tls_policies()
-        self.update_CAfile()
 
     def save(self, title=None, temporary=False):
         """Saves all changes to the configuration files.
