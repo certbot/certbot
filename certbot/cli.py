@@ -11,6 +11,9 @@ import sys
 
 import configargparse
 import six
+import zope.component
+
+from zope.interface import interfaces as zope_interfaces
 
 from acme import challenges
 
@@ -23,6 +26,7 @@ from certbot import hooks
 from certbot import interfaces
 from certbot import util
 
+from certbot.display import util as display_util
 from certbot.plugins import disco as plugins_disco
 import certbot.plugins.selection as plugin_selection
 
@@ -439,9 +443,18 @@ class HelpfulArgumentParser(object):
             "delete": main.delete,
         }
 
+        # Get notification function for printing
+        try:
+            self.notify = zope.component.getUtility(
+                interfaces.IDisplay).notification
+        except zope_interfaces.ComponentLookupError:
+            self.notify = display_util.NoninteractiveDisplay(
+                sys.stdout).notification
+
+
         # List of topics for which additional help can be provided
-        HELP_TOPICS = ["all", "security", "paths", "automation", "testing"] + list(self.VERBS)
-        HELP_TOPICS += self.COMMANDS_TOPICS + ["manage"]
+        HELP_TOPICS = ["all", "security", "paths", "automation", "testing"]
+        HELP_TOPICS += list(self.VERBS) + self.COMMANDS_TOPICS + ["manage"]
 
         plugin_names = list(plugins)
         self.help_topics = HELP_TOPICS + plugin_names + [None]
@@ -510,10 +523,10 @@ class HelpfulArgumentParser(object):
 
         usage = SHORT_USAGE
         if help_arg == True:
-            print(usage + COMMAND_OVERVIEW % (apache_doc, nginx_doc) + HELP_USAGE)
+            self.notify(usage + COMMAND_OVERVIEW % (apache_doc, nginx_doc) + HELP_USAGE)
             sys.exit(0)
         elif help_arg in self.COMMANDS_TOPICS:
-            print(usage + self._list_subcommands())
+            self.notify(usage + self._list_subcommands())
             sys.exit(0)
         elif help_arg == "all":
             # if we're doing --help all, the OVERVIEW is part of the SHORT_USAGE at
@@ -850,6 +863,12 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         None, "-t", "--text", dest="text_mode", action="store_true",
         help=argparse.SUPPRESS)
     helpful.add(
+        None, "--max-log-backups", type=nonnegative_int, default=1000,
+        help="Specifies the maximum number of backup logs that should "
+             "be kept by Certbot's built in log rotation. Setting this "
+             "flag to 0 disables log rotation entirely, causing "
+             "Certbot to always append to the same log file.")
+    helpful.add(
         [None, "automation", "run", "certonly"], "-n", "--non-interactive", "--noninteractive",
         dest="noninteractive_mode", action="store_true",
         help="Run without ever asking for user input. This may require "
@@ -867,14 +886,21 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         metavar="DOMAIN", action=_DomainsAction, default=[],
         help="Domain names to apply. For multiple domains you can use "
              "multiple -d flags or enter a comma separated list of domains "
-             "as a parameter. (default: Ask)")
+             "as a parameter. The first provided domain will be used in "
+             "some software user interfaces and file paths for the "
+             "certificate and related material unless otherwise "
+             "specified or you already have a certificate for the same "
+             "domains. (default: Ask)")
     helpful.add(
         [None, "run", "certonly", "manage", "delete", "certificates"],
         "--cert-name", dest="certname",
         metavar="CERTNAME", default=None,
-        help="Certificate name to apply. Only one certificate name can be used "
-             "per Certbot run. To see certificate names, run 'certbot certificates'. "
-             "When creating a new certificate, specifies the new certificate's name.")
+        help="Certificate name to apply. This name is used by Certbot for housekeeping "
+             "and in file paths; it doesn't affect the content of the certificate itself. "
+             "To see certificate names, run 'certbot certificates'. "
+             "When creating a new certificate, specifies the new certificate's name. "
+             "(default: the first provided domain or the name of an existing "
+             "certificate on your system for the same domains)")
     helpful.add(
         [None, "testing", "renew", "certonly"],
         "--dry-run", action="store_true", dest="dry_run",
@@ -1139,15 +1165,21 @@ def _create_subparsers(helpful):
              '(default: {0}). The flags encoded in the user agent are: '
              '--duplicate, --force-renew, --allow-subset-of-names, -n, and '
              'whether any hooks are set.'.format(sample_user_agent()))
+    helpful.add(
+        None, "--user-agent-comment", default=None, type=_user_agent_comment_type,
+        help="Add a comment to the default user agent string. May be used when repackaging Certbot "
+             "or calling it from another tool to allow additional statistical data to be collected."
+             " Ignored if --user-agent is set. (Example: Foo-Wrapper/1.0)")
     helpful.add("certonly",
                 "--csr", type=read_file,
                 help="Path to a Certificate Signing Request (CSR) in DER or PEM format."
                 " Currently --csr only works with the 'certonly' subcommand.")
     helpful.add("revoke",
                 "--reason", dest="reason",
-                choices=CaseInsensitiveList(constants.REVOCATION_REASONS.keys()),
+                choices=CaseInsensitiveList(sorted(constants.REVOCATION_REASONS,
+                                                   key=constants.REVOCATION_REASONS.get)),
                 action=_EncodeReasonAction, default=0,
-                help="Specify reason for revoking certificate.")
+                help="Specify reason for revoking certificate. (default: unspecified)")
     helpful.add("rollback",
                 "--checkpoints", type=int, metavar="N",
                 default=flag_default("rollback_checkpoints"),
@@ -1354,6 +1386,10 @@ def parse_preferred_challenges(pref_challs):
             "Unrecognized challenges: {0}".format(unrecognized))
     return challs
 
+def _user_agent_comment_type(value):
+    if "(" in value or ")" in value:
+        raise argparse.ArgumentTypeError("may not contain parentheses")
+    return value
 
 class _DeployHookAction(argparse.Action):
     """Action class for parsing deploy hooks."""
@@ -1375,3 +1411,27 @@ class _RenewHookAction(argparse.Action):
             raise argparse.ArgumentError(
                 self, "conflicts with --deploy-hook value")
         namespace.renew_hook = values
+
+
+def nonnegative_int(value):
+    """Converts value to an int and checks that it is not negative.
+
+    This function should used as the type parameter for argparse
+    arguments.
+
+    :param str value: value provided on the command line
+
+    :returns: integer representation of value
+    :rtype: int
+
+    :raises argparse.ArgumentTypeError: if value isn't a non-negative integer
+
+    """
+    try:
+        int_value = int(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError("value must be an integer")
+
+    if int_value < 0:
+        raise argparse.ArgumentTypeError("value must be non-negative")
+    return int_value

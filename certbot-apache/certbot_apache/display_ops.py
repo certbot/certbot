@@ -85,10 +85,11 @@ def _vhost_menu(domain, vhosts):
             "vhosts are not yet supported)".format(domain, os.linesep),
             choices, force_interactive=True)
     except errors.MissingCommandlineFlag:
-        msg = ("Encountered vhost ambiguity but unable to ask for user guidance in "
-               "non-interactive mode. Currently Certbot needs each vhost to be "
-               "in its own conf file, and may need vhosts to be explicitly "
-               "labelled with ServerName or ServerAlias directives.")
+        msg = (
+            "Encountered vhost ambiguity but unable to ask for user "
+            "guidance in non-interactive mode. Certbot may need "
+            "vhosts to be explicitly labelled with ServerName or "
+            "ServerAlias directives.")
         logger.warning(msg)
         raise errors.MissingCommandlineFlag(msg)
 

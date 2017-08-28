@@ -169,8 +169,7 @@ notifications:
   email: false
   irc:
     channels:
-      - "chat.freenode.net#letsencrypt"
+      - "chat.freenode.net#letsencrypt-dev"
     on_success: never
     on_failure: always
     use_notice: true
-    skip_join: true

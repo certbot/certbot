@@ -55,7 +55,7 @@ class PreArgParseSetupTest(unittest.TestCase):
             memory_handler, 1, 2, 3, debug=True, log_path=mock.ANY)
 
 
-class PostArgParseSetupTest(test_util.TempDirTestCase):
+class PostArgParseSetupTest(test_util.ConfigTestCase):
     """Tests for certbot.log.post_arg_parse_setup."""
 
     @classmethod
@@ -65,9 +65,10 @@ class PostArgParseSetupTest(test_util.TempDirTestCase):
 
     def setUp(self):
         super(PostArgParseSetupTest, self).setUp()
-        self.config = mock.MagicMock(
-            debug=False, logs_dir=self.tempdir, quiet=False,
-            verbose_count=constants.CLI_DEFAULTS['verbose_count'])
+        self.config.debug = False
+        self.config.max_log_backups = 1000
+        self.config.quiet = False
+        self.config.verbose_count = constants.CLI_DEFAULTS['verbose_count']
         self.devnull = open(os.devnull, 'w')
 
         from certbot.log import ColoredStreamHandler
@@ -102,7 +103,7 @@ class PostArgParseSetupTest(test_util.TempDirTestCase):
         self.assertFalse(os.path.exists(self.temp_path))
         mock_sys.excepthook(1, 2, 3)
         mock_except_hook.assert_called_once_with(
-            1, 2, 3, debug=self.config.debug, log_path=self.tempdir)
+            1, 2, 3, debug=self.config.debug, log_path=self.config.logs_dir)
 
         level = self.stream_handler.level
         if self.config.quiet:
@@ -119,7 +120,7 @@ class PostArgParseSetupTest(test_util.TempDirTestCase):
         self.test_common()
 
 
-class SetupLogFileHandlerTest(test_util.TempDirTestCase):
+class SetupLogFileHandlerTest(test_util.ConfigTestCase):
     """Tests for certbot.log.setup_log_file_handler."""
 
     @classmethod
@@ -129,7 +130,7 @@ class SetupLogFileHandlerTest(test_util.TempDirTestCase):
 
     def setUp(self):
         super(SetupLogFileHandlerTest, self).setUp()
-        self.config = mock.MagicMock(logs_dir=self.tempdir)
+        self.config.max_log_backups = 42
 
     @mock.patch('certbot.main.logging.handlers.RotatingFileHandler')
     def test_failure(self, mock_handler):
@@ -142,15 +143,32 @@ class SetupLogFileHandlerTest(test_util.TempDirTestCase):
         else:  # pragma: no cover
             self.fail('Error not raised.')
 
-    def test_success(self):
+    def test_success_with_rollover(self):
+        self._test_success_common(should_rollover=True)
+
+    def test_success_without_rollover(self):
+        self.config.max_log_backups = 0
+        self._test_success_common(should_rollover=False)
+
+    def _test_success_common(self, should_rollover):
         log_file = 'test.log'
         handler, log_path = self._call(self.config, log_file, '%(message)s')
+        handler.close()
+
         self.assertEqual(handler.level, logging.DEBUG)
         self.assertEqual(handler.formatter.converter, time.gmtime)
 
         expected_path = os.path.join(self.config.logs_dir, log_file)
         self.assertEqual(log_path, expected_path)
-        handler.close()
+
+        backup_path = os.path.join(self.config.logs_dir, log_file + '.1')
+        self.assertEqual(os.path.exists(backup_path), should_rollover)
+
+    @mock.patch('certbot.log.logging.handlers.RotatingFileHandler')
+    def test_max_log_backups_used(self, mock_handler):
+        self._call(self.config, 'test.log', '%(message)s')
+        backup_count = mock_handler.call_args[1]['backupCount']
+        self.assertEqual(self.config.max_log_backups, backup_count)
 
 
 class ColoredStreamHandlerTest(unittest.TestCase):
