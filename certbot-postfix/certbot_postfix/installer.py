@@ -269,12 +269,7 @@ class Installer(plugins_common.Installer):
             cmd.extend(("-c", self.conf("config-dir"),))
         cmd.append(subcommand)
 
-        try:
-            subprocess.check_call(cmd)
-        except subprocess.CalledProcessError:
-            logger.debug("%s exited with a non-zero status.",
-                         "".join(cmd), exc_info=True)
-            raise
+        util.check_call(cmd)
 
     def ensure_cf_var(self, var, ideal, also_acceptable):
         """
@@ -419,10 +414,7 @@ class Installer(plugins_common.Installer):
         :rtype: list
 
         """
-        cmd = [self.conf("config-utility")]
-
-        if self.conf("config-dir") is not None:
-            cmd.extend(("-c", self.conf("config-dir"),))
+        cmd = self._postconf_command_base()
 
         if default:
             cmd.append("-d")
@@ -444,6 +436,31 @@ class Installer(plugins_common.Installer):
         assert isinstance(name, str), "Invalid name value"
         assert isinstance(value, str), "Invalid key value"
         self.proposed_changes[name] = value
+
+    def _write_config_changes(self):
+        """Write proposed changes to the Postfix config.
+
+        :raises errors.PluginError: if an error occurs
+
+        """
+        cmd = self._postconf_command_base()
+        cmd.extend("{0}={1}".format(name, value)
+                   for name, value in self.proposed_changes.items())
+
+        try:
+            util.check_call(cmd)
+        except subprocess.CalledProcessError:
+            raise errors.PluginError(
+                "An error occurred while updating your Postfix config.")
+
+    def _postconf_command_base(self):
+        """Builds start of a postconf command using the selected config."""
+        cmd = [self.conf("config-utility")]
+
+        if self.conf("config-dir") is not None:
+            cmd.extend(("-c", self.conf("config-dir"),))
+
+        return cmd
 
     # def update_CAfile(self):
     #     os.system("cat /usr/share/ca-certificates/mozilla/*.crt > " + self.ca_file)
