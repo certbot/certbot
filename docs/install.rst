@@ -80,7 +80,7 @@ For full command line help, you can type::
 Problems with Python virtual environment
 ----------------------------------------
 
-On a low memory system such as VPS with less than 512MB of RAM, the required dependencies of Certbot will failed to build.
+On a low memory system such as VPS with less than 512MB of RAM, the required dependencies of Certbot will fail to build.
 This can be identified if the pip outputs contains something like ``internal compiler error: Killed (program cc1)``.
 You can workaround this restriction by creating a temporary swapfile::
 
