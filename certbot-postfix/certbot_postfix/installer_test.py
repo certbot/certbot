@@ -1,19 +1,10 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
+"""Tests for certbot_postfix.installer."""
 import functools
-import logging
 import os
 import subprocess
 import unittest
 
 import mock
-import six
 
 from certbot import errors
 from certbot.tests import util as certbot_test_util
@@ -112,10 +103,10 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
         ]
         self.assertRaises(errors.PluginError, installer.restart)
 
-    @mock.patch("certbot_postfix.installer.subprocess.check_call")
-    def test_postfix_reload_success(self, mock_check_call):
-        installer = self._create_prepared_installer()
-        installer.restart()
+    def test_postfix_reload_success(self):
+        with mock.patch("certbot_postfix.installer.subprocess.check_call"):
+            installer = self._create_prepared_installer()
+            installer.restart()
 
     @mock.patch("certbot_postfix.installer.subprocess.check_call")
     def test_postfix_start_failure(self, mock_check_call):

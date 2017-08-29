@@ -1,9 +1,7 @@
 """Certbot installer plugin for Postfix."""
 import logging
 import os
-import string
 import subprocess
-import sys
 
 import zope.interface
 
@@ -164,6 +162,7 @@ class Installer(plugins_common.Installer):
         :raises .PluginError: when cert cannot be deployed
 
         """
+        # pylint: disable=unused-argument
         self.save_notes.append("Configuring TLS for {0}".format(domain))
         self._set_config_var("smtpd_tls_cert_file", fullchain_path)
         self._set_config_var("smtpd_tls_key_file", key_path)
@@ -178,6 +177,7 @@ class Installer(plugins_common.Installer):
             are currently supported
 
         """
+        # pylint: disable=unused-argument
         raise errors.PluginError(
             "Unsupported enhancement: {0}".format(enhancement))
 
