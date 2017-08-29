@@ -20,7 +20,15 @@ logger = logging.getLogger(__name__)
 @zope.interface.implementer(interfaces.IInstaller)
 @zope.interface.provider(interfaces.IPluginFactory)
 class Installer(plugins_common.Installer):
-    """Certbot installer plugin for Postfix."""
+    """Certbot installer plugin for Postfix.
+
+    :ivar str config_dir: Postfix configuration directory to modify
+    :ivar dict proposed_changes: configuration parameters and values to
+        be written to the Postfix config when save() is called
+    :ivar list save_notes: documentation for proposed changes. This is
+        cleared and stored in Certbot checkpoints when save() is called
+
+    """
 
     description = "Configure TLS with the Postfix MTA"
 
