@@ -65,6 +65,17 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
                     installer.prepare()
         self.assertEqual(installer.config_dir, expected)
 
+    @mock.patch("certbot_postfix.installer.util.check_output")
+    @mock.patch("certbot_postfix.installer.certbot_util.exe_exists")
+    def test_old_version(self, mock_exe_exists, mock_check_output):
+        installer = self._create_installer()
+
+        mock_exe_exists.return_value = True
+        mock_check_output.return_value = "mail_version = 0.0.1"
+
+        with mock.patch("certbot_postfix.installer.subprocess.check_call"):
+            self.assertRaises(errors.NotSupportedError, installer.prepare)
+
     def test_lock_error(self):
         assert_raises = functools.partial(self.assertRaises,
                                           errors.PluginError,
@@ -206,4 +217,4 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    unittest.main()  # pragma: no cover
