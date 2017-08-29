@@ -430,6 +430,37 @@ class DeleteIfAppropriateTest(unittest.TestCase):
         self._call(config)
         mock_delete.assert_called_once()
 
+    # pylint: disable=too-many-arguments
+    @mock.patch('certbot.cert_manager.match_and_check_overlaps')
+    @mock.patch('certbot.storage.full_archive_path')
+    @mock.patch('certbot.cert_manager.delete')
+    @mock.patch('certbot.cert_manager.human_readable_cert_info')
+    @mock.patch('certbot.storage.RenewableCert')
+    @mock.patch('certbot.storage.renewal_file_for_certname')
+    @mock.patch('certbot.cert_manager.cert_path_to_lineage')
+    @mock.patch('certbot.cert_manager.lineage_for_certname')
+    @test_util.patch_get_utility()
+    def test_noninteractive_certname_cert_path_mismatch(self, mock_get_utility,
+            mock_lineage_for_certname, cert_path_to_lineage,
+            mock_renewal_file_for_certname, mock_RenewableCert,
+            mock_human_readable_cert_info, mock_delete, mock_archive,
+            mock_overlapping_archive_dirs):
+        # pylint: disable=unused-argument
+        config = self.config
+        config.certname = "example.com"
+        config.cert_path = "/some/reasonable/path"
+        mock_lineage_for_certname.return_value = "some-reasonable-path.com"
+        mock_RenewableCert.return_value = mock.Mock()
+        mock_human_readable_cert_info.return_value = ""
+        mock_overlapping_archive_dirs.return_value = False
+        # Test for non-interactive mode
+        from certbot.display import util as display_util
+        util_mock = mock.Mock()
+        util_mock.menu.side_effect = errors.MissingCommandlineFlag("Oh no.")
+        mock_get_utility.return_value = util_mock
+        self.assertRaises(errors.Error, self._call, config)
+        mock_delete.assert_not_called()
+
 
 class DetermineAccountTest(test_util.ConfigTestCase):
     """Tests for certbot.main._determine_account."""
