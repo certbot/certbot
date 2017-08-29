@@ -210,14 +210,12 @@ class Installer(plugins_common.Installer):
         :raises errors.PluginError: when save is unsuccessful
 
         """
-        if not self.proposed_changes:
-            return
+        if self.proposed_changes:
+            self.add_to_checkpoint(os.path.join(self.config_dir, "main.cf"),
+                                   "\n".join(self.save_notes), temporary)
+            self._write_config_changes()
+            self.proposed_changes.clear()
 
-        self.add_to_checkpoint(os.path.join(self.config_dir, "main.cf"),
-                               "\n".join(self.save_notes), temporary)
-        self._write_config_changes()
-
-        self.proposed_changes.clear()
         del self.save_notes[:]
 
         if title and not temporary:
