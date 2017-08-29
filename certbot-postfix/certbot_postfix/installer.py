@@ -380,15 +380,17 @@ class Installer(plugins_common.Installer):
 
         This method only stores the requested change in memory. The
         Postfix configuration is not modified until save() is called.
+        If there's already an identical in progress change or the
+        Postfix configuration parameter already has the specified value,
+        no changes are made.
 
         :param str name: name of the Postfix config parameter
         :param str value: value to set the Postfix config parameter to
 
         """
-        assert isinstance(name, str), "Invalid name value"
-        assert isinstance(value, str), "Invalid key value"
-        self.proposed_changes[name] = value
-        self.save_notes.append("\t* Set {0} to {1}".format(name, value))
+        if self.get_config_var(name) != value:
+            self.proposed_changes[name] = value
+            self.save_notes.append("\t* Set {0} to {1}".format(name, value))
 
     def _write_config_changes(self):
         """Write proposed changes to the Postfix config.
