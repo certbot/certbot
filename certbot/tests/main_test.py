@@ -461,6 +461,15 @@ class DeleteIfAppropriateTest(unittest.TestCase):
         self.assertRaises(errors.Error, self._call, config)
         mock_delete.assert_not_called()
 
+    @test_util.patch_get_utility()
+    def test_no_certname_or_cert_path(self, mock_get_utility):
+        # pylint: disable=unused-argument
+        config = self.config
+        config.certname = None
+        config.cert_path = None
+        self.assertRaises(errors.Error, self._call, config)
+        mock_delete.assert_not_called()
+
 
 class DetermineAccountTest(test_util.ConfigTestCase):
     """Tests for certbot.main._determine_account."""
