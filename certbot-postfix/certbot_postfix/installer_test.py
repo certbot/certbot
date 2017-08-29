@@ -51,7 +51,8 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
 
         with mock.patch(path_surgery_path, return_value=False):
             with mock.patch(exe_exists_path, return_value=False):
-                self.assertRaises(errors.NoInstallationError, installer.prepare)
+                self.assertRaises(errors.NoInstallationError,
+                                  installer.prepare)
 
     def test_set_config_dir(self):
         self.config.postfix_config_dir = os.path.join(self.tempdir, "subdir")
@@ -152,7 +153,8 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
     @mock.patch("certbot_postfix.installer.logger")
     @mock.patch("certbot_postfix.installer.util.check_output")
     def test_get_config_var_failure(self, mock_check_output, mock_logger):
-        mock_check_output.side_effect = subprocess.CalledProcessError(42, "foo")
+        mock_check_output.side_effect = subprocess.CalledProcessError(42,
+                                                                      "foo")
         installer = self._create_installer()
         self.assertRaises(errors.PluginError, installer.get_config_var, "foo")
         self.assertTrue(mock_logger.debug.call_args[1]["exc_info"])

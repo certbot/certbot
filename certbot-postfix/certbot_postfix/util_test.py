@@ -5,6 +5,7 @@ import unittest
 
 import mock
 
+
 class CheckCallTest(unittest.TestCase):
     """Tests for certbot_postfix.util.check_call."""
 
