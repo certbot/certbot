@@ -83,6 +83,17 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
         certbot_test_util.lock_and_call(assert_raises, self.tempdir)
 
     @mock.patch("certbot_postfix.installer.util.check_output")
+    def test_more_info(self, mock_check_output):
+        version = "3.1.4"
+        mock_check_output.return_value = "mail_version = " + version
+
+        installer = self._create_prepared_installer()
+        output = installer.more_info()
+        self.assertTrue("Postfix" in output)
+        self.assertTrue(self.tempdir in output)
+        self.assertTrue(version in output)
+
+    @mock.patch("certbot_postfix.installer.util.check_output")
     def test_get_all_names(self, mock_check_output):
         installer = self._create_prepared_installer()
         mock_check_output.side_effect = names_only_config.splitlines()
