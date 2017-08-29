@@ -461,8 +461,9 @@ class DeleteIfAppropriateTest(unittest.TestCase):
         self.assertRaises(errors.Error, self._call, config)
         mock_delete.assert_not_called()
 
+    @mock.patch('certbot.cert_manager.delete')
     @test_util.patch_get_utility()
-    def test_no_certname_or_cert_path(self, mock_get_utility):
+    def test_no_certname_or_cert_path(self, mock_get_utility, mock_delete):
         # pylint: disable=unused-argument
         config = self.config
         config.certname = None
