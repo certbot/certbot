@@ -41,6 +41,7 @@ class Installer(plugins_common.Installer):
         self.fixup          = False
         self.config_dir     = None
         self.proposed_changes = {}
+        self.save_notes = []
 
     def prepare(self):
         """Prepare the installer.
@@ -164,6 +165,7 @@ class Installer(plugins_common.Installer):
         :raises .PluginError: when cert cannot be deployed
 
         """
+        self.save_notes.append("Configuring TLS for {0}".format(domain))
         self._set_config_var("smtpd_tls_cert_file", fullchain_path)
         self._set_config_var("smtpd_tls_key_file", key_path)
         self._set_config_var("smtpd_tls_mandatory_protocols", "!SSLv2, !SSLv3")
@@ -187,6 +189,32 @@ class Installer(plugins_common.Installer):
 
         """
         return []
+
+    def save(self, title=None, temporary=False):
+        """Creates backups and writes changes to configuration files.
+
+        :param str title: The title of the save. If a title is given, the
+            configuration will be saved as a new checkpoint and put in a
+            timestamped directory. `title` has no effect if temporary is true.
+
+        :param bool temporary: Indicates whether the changes made will
+            be quickly reversed in the future (challenges)
+
+        :raises errors.PluginError: when save is unsuccessful
+
+        """
+        if not self.proposed_changes:
+            return
+
+        self.add_to_checkpoint(os.path.join(self.config_dir, "main.cf"),
+                               "\n".join(self.save_notes), temporary)
+        self._write_config_changes()
+
+        self.proposed_changes.clear()
+        del self.save_notes[:]
+
+        if title and not temporary:
+            self.finalize_checkpoint(title)
 
     def config_test(self):
         """Make sure the configuration is valid.
@@ -436,6 +464,7 @@ class Installer(plugins_common.Installer):
         assert isinstance(name, str), "Invalid name value"
         assert isinstance(value, str), "Invalid key value"
         self.proposed_changes[name] = value
+        self.save_notes.append("\t* Set {0} to {1}".format(name, value))
 
     def _write_config_changes(self):
         """Write proposed changes to the Postfix config.
