@@ -85,7 +85,7 @@ def latest_stable_version(get):
     # The regex is a sufficient regex for picking out prereleases for most
     # packages, LE included.
     return str(max(LooseVersion(r) for r
-                   in metadata['releases'].iterkeys()
+                   in metadata['releases'].keys()
                    if re.match('^[0-9.]+$', r)))
 
 
