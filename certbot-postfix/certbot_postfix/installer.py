@@ -301,6 +301,10 @@ class Installer(plugins_common.Installer):
     def get_config_var(self, name, default=False):
         """Return the value of the specified Postfix config parameter.
 
+        If there is an unsaved change modifying the value of the
+        specified config parameter, the value after this proposed change
+        is returned rather than the current value.
+
         :param str name: name of the Postfix config parameter to return
         :param bool default: whether or not to return the default value
             instead of the actual value
@@ -309,44 +313,67 @@ class Installer(plugins_common.Installer):
         :rtype: str
 
         """
-        cmd = self._build_cmd_for_config_var(name, default)
+        if not default and name in self.proposed_changes:
+            return self.proposed_changes[name]
+        else:
+            return self._get_config_var_from_postconf(name, default)
 
-        try:
-            output = util.check_output(cmd)
-        except subprocess.CalledProcessError:
-            logger.debug("Encountered an error when running 'postconf'",
-                         exc_info=True)
-            raise errors.PluginError(
-                "Unable to determine the value "
-                "of Postfix parameter {0}".format(name))
+    def _get_config_var_from_postconf(self, name, default):
+        """Return the value of the specified Postfix config parameter.
 
-        expected_prefix = name + " ="
-        if not output.startswith(expected_prefix):
-            raise errors.PluginError(
-                "Unexpected output '{0}' from '{1}'".format(output,
-                                                            ' '.join(cmd)))
-
-        return output[len(expected_prefix):].strip()
-
-    def _build_cmd_for_config_var(self, name, default):
-        """Return a command to run to get a Postfix config parameter.
+        This ignores self.proposed_changes and gets the value from
+        postconf.
 
         :param str name: name of the Postfix config parameter to return
         :param bool default: whether or not to return the default value
             instead of the actual value
 
-        :returns: command to run
-        :rtype: list
+        :returns: value of the specified configuration parameter
+        :rtype: str
+
+        """
+        output = self._get_raw_config_output(name, default)
+        return self._clean_postconf_output(output, name)
+
+    def _get_raw_config_output(self, name, default):
+        """Returns the raw output from postconf for the specified param.
+
+        :param str name: name of the Postfix config parameter to obtain
+        :param bool default: whether or not to return the default value
+            instead of the actual value
+
+        :returns: output from postconf
+        :rtype: str
 
         """
         cmd = self._postconf_command_base()
-
         if default:
             cmd.append("-d")
-
         cmd.append(name)
 
-        return cmd
+        try:
+            return util.check_output(cmd)
+        except subprocess.CalledProcessError:
+            raise errors.PluginError(
+                "Unable to determine the value "
+                "of Postfix parameter {0}".format(name))
+
+    def _clean_postconf_output(self, output, name):
+        """Parses postconf output and returns the specified value.
+
+        :param str output: output from postconf
+        :param str name: name of the Postfix config parameter to obtain
+
+        :returns: value of the specified configuration parameter
+        :rtype: str
+
+        """
+        expected_prefix = name + " ="
+        if not output.startswith(expected_prefix):
+            raise errors.PluginError(
+                "Unexpected output '{0}' from postconf".format(output))
+
+        return output[len(expected_prefix):].strip()
 
     def _set_config_var(self, name, value):
         """Set the Postfix config parameter name to value.

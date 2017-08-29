@@ -163,14 +163,12 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
         self.assertFalse("-c" in command)
         self.assertTrue("-d" in command)
 
-    @mock.patch("certbot_postfix.installer.logger")
     @mock.patch("certbot_postfix.installer.util.check_output")
-    def test_get_config_var_failure(self, mock_check_output, mock_logger):
+    def test_get_config_var_failure(self, mock_check_output):
         mock_check_output.side_effect = subprocess.CalledProcessError(42,
                                                                       "foo")
         installer = self._create_installer()
         self.assertRaises(errors.PluginError, installer.get_config_var, "foo")
-        self.assertTrue(mock_logger.debug.call_args[1]["exc_info"])
 
     @mock.patch("certbot_postfix.installer.util.check_output")
     def test_get_config_var_unexpected_output(self, mock_check_output):

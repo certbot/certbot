@@ -63,7 +63,8 @@ def check_output(*args, **kwargs):
     if retcode:
         cmd = _get_cmd(*args, **kwargs)
         logger.debug(
-            "'%s' exited with %d. Output was:\n%s", cmd, retcode, output)
+            "'%s' exited with %d. Output was:\n%s",
+            cmd, retcode, output, exc_info=True)
         raise subprocess.CalledProcessError(retcode, cmd)
     return output
 
