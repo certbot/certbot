@@ -169,7 +169,7 @@ notifications:
   email: false
   irc:
     channels:
-      - "chat.freenode.net#letsencrypt-dev"
+      - secure: "HeXUVxLjB5dLl7JdTvY3EicLkZM5ZNtEa75x4Eud8a656y/6cpuhJli+devRwaAhq7fx7WkkZWWtcm9bJFx/vKwUYr7OCN2OJBNKviQfLxtBENt3gcMHALA+MNi5pQPw5ARe4NvEHABfyGTn6oti+5iFXcgAMGDq11RgDpHR+Bk="
     on_success: never
     on_failure: always
     use_notice: true
