@@ -164,9 +164,7 @@ class CertonlyTest(unittest.TestCase):
         self.assertTrue(mock_report_cert.call_count == 2)
 
         # error in _ask_user_to_confirm_new_names
-        util_mock = mock.Mock()
-        util_mock.yesno.return_value = False
-        self.mock_get_utility.return_value = util_mock
+        self.mock_get_utility().yesno.return_value = False
         self.assertRaises(errors.ConfigurationError, self._call,
             ('certonly --webroot -d example.com -d test.com --cert-name example.com').split())
 
@@ -1115,7 +1113,7 @@ class UnregisterTest(unittest.TestCase):
     def test_abort_unregister(self):
         self.mocks['account'].AccountFileStorage.return_value = mock.Mock()
 
-        util_mock = self.mocks['get_utility'].return_value
+        util_mock = self.mocks['get_utility']()
         util_mock.yesno.return_value = False
 
         config = mock.Mock()
