@@ -50,8 +50,7 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
         expected = self.config.postfix_config_dir
         self.config.postfix_config_dir = None
 
-        self.mock_postfix(
-            "postconf config_directory={0}".format(expected).split())
+        self.mock_postfix.set_value("config_directory", expected)
         exe_exists_path = "certbot_postfix.installer.certbot_util.exe_exists"
         with mock.patch(exe_exists_path, return_value=True):
             self._mock_postfix_and_call(installer.prepare)
@@ -61,7 +60,7 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
     def test_old_version(self, mock_exe_exists):
         installer = self._create_installer()
         mock_exe_exists.return_value = True
-        self.mock_postfix("postconf mail_version=0.0.1".split())
+        self.mock_postfix.set_value("mail_version", "0.0.1")
         self._mock_postfix_and_call(
             self.assertRaises, errors.NotSupportedError, installer.prepare)
 
@@ -73,8 +72,8 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
 
     def test_more_info(self):
         installer = self._create_prepared_installer()
-        version = "3.1.4"
-        self.mock_postfix("postconf mail_version={0}".format(version).split())
+        version = "3.1.2"
+        self.mock_postfix.set_value("mail_version", version)
 
         output = self._mock_postfix_and_call(installer.more_info)
         self.assertTrue("Postfix" in output)
@@ -82,13 +81,15 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
         self.assertTrue(version in output)
 
     def test_get_all_names(self):
+        config = {"mydomain": "example.org",
+                  "myhostname": "mail.example.org",
+                  "myorigin": "example.org"}
+        for name, value in config.items():
+            self.mock_postfix.set_value(name, value)
+
         installer = self._create_prepared_installer()
-        self.mock_postfix("postconf mydomain=example.org "
-                          "myhostname=mail.example.org "
-                          "myorigin=example.org".split())
         result = self._mock_postfix_and_call(installer.get_all_names)
-        self.assertTrue("example.org" in result)
-        self.assertTrue("mail.example.org" in result)
+        self.assertEqual(result, set(config.values()))
 
     def test_deploy_and_save(self):
         key_path = "key_path"
@@ -108,8 +109,7 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
                            "smtpd_tls_key_file": key_path,
                            "smtpd_use_tls": "yes"}
         for key, value in expected_config.items():
-            postconf_output = self.mock_postfix(["postconf", key])
-            self.assertEqual("{0} = {1}\n".format(key, value), postconf_output)
+            self.assertEqual(self.mock_postfix.get_value(key), value)
 
     def test_enhance(self):
         self.assertRaises(errors.PluginError,
