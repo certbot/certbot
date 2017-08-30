@@ -62,7 +62,7 @@ class ApacheParser(object):
 
         # Must also attempt to parse additional virtual host root
         if vhostroot:
-            self.parse_file(vhostroot + "/" +
+            self.parse_file(os.path.abspath(vhostroot) + "/" +
                             constants.os_constant("vhost_files"))
 
         # check to see if there were unparsed define statements

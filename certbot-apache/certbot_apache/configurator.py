@@ -194,7 +194,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if not self.conf("vhost-root"):
             self.vhostroot = constants.os_constant("vhost_root")
         else:
-            self.vhostroot = self.conf("vhost-root")
+            self.vhostroot = os.path.abspath(self.conf("vhost-root"))
 
         self.parser = parser.ApacheParser(
             self.aug, self.conf("server-root"), self.conf("vhost-root"), self.version)
@@ -609,10 +609,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             self.parser.add_dir(
                 parser.get_aug_path(main_config),
                 "Include", inc_path)
-            # Add the new file to augeas DOM
-            # self.parser.parse_file(inc_path)
-            # Reload augeas
-            # self.aug.load()
 
     def get_virtual_hosts(self):
         """Returns list of virtual hosts found in the Apache configuration.
@@ -642,6 +638,27 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 realpath = os.path.realpath(new_vhost.filep)
                 if realpath not in file_paths:
                     file_paths[realpath] = new_vhost.filep
+                    internal_paths[realpath].add(internal_path)
+                    vhs.append(new_vhost)
+                elif (realpath == new_vhost.filep and
+                      realpath != file_paths[realpath]):
+                    # Prefer "real" vhost paths instead of symlinked ones
+                    # ex: sites-enabled/vh.conf -> sites-available/vh.conf
+
+                    # remove old (most likely) symlinked one
+                    new_vhs = []
+                    for v in vhs:
+                        if v.filep == file_paths[realpath]:
+                            internal_paths[realpath].remove(
+                                get_internal_aug_path(v.path))
+                        else:
+                            new_vhs.append(v)
+                    vhs = new_vhs
+
+                    file_paths[realpath] = realpath
+                    internal_paths[realpath].add(internal_path)
+                    vhs.append(new_vhost)
+                elif internal_path not in internal_paths[realpath]:
                     internal_paths[realpath].add(internal_path)
                     vhs.append(new_vhost)
         return vhs
@@ -922,17 +939,17 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         but if the value is invalid or not defined, will fall back to non-ssl
         vhost filepath.
 
-        :param str non_ssl_vh_fp: File path of non-SSL vhost
+        :param str non_ssl_vh_fp: Filepath of non-SSL vhost
 
-        :returns: File path for SSL vhost
-        :rtype: string
+        :returns: Filepath for SSL vhost
+        :rtype: str
         """
 
         if self.conf("vhost-root") and os.path.exists(self.conf("vhost-root")):
             # Defined by user on CLI
 
-            fp = (os.path.realpath(self.conf("vhost-root")) +
-                  "/" + os.path.basename(non_ssl_vh_fp))
+            fp = os.path.join(os.path.realpath(self.vhostroot),
+                              os.path.basename(non_ssl_vh_fp))
         else:
             # Use non-ssl filepath
             fp = os.path.realpath(non_ssl_vh_fp)
