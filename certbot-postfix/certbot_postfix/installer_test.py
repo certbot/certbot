@@ -42,6 +42,27 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
                 self.assertRaises(errors.NoInstallationError,
                                   installer.prepare)
 
+    def test_postconf_error(self):
+        installer = self._create_installer()
+
+        check_output_path = "certbot_postfix.installer.util.check_output"
+        exe_exists_path = "certbot_postfix.installer.certbot_util.exe_exists"
+        with mock.patch(check_output_path) as mock_check_output:
+            mock_check_output.side_effect = subprocess.CalledProcessError(42,
+                                                                          "a")
+            with mock.patch(exe_exists_path, return_value=True):
+                self.assertRaises(errors.PluginError, installer.prepare)
+
+    def test_unexpected_postconf(self):
+        installer = self._create_installer()
+
+        check_output_path = "certbot_postfix.installer.util.check_output"
+        exe_exists_path = "certbot_postfix.installer.certbot_util.exe_exists"
+        with mock.patch(check_output_path) as mock_check_output:
+            mock_check_output.return_value = "foobar"
+            with mock.patch(exe_exists_path, return_value=True):
+                self.assertRaises(errors.PluginError, installer.prepare)
+
     def test_set_config_dir(self):
         self.config.postfix_config_dir = os.path.join(self.tempdir, "subdir")
         os.mkdir(self.config.postfix_config_dir)
@@ -91,6 +112,21 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
         result = self._mock_postfix_and_call(installer.get_all_names)
         self.assertEqual(result, set(config.values()))
 
+    def test_deploy(self):
+        installer = self._create_prepared_installer()
+
+        def deploy_cert(domain):
+            """Calls deploy_cert for the given domain.
+
+            :param str domain: domain to deploy cert for
+
+            """
+            installer.deploy_cert(domain, "foo", "bar", "baz", "qux")
+
+        self._mock_postfix_and_call(deploy_cert, "example.org")
+        # No calls to postconf are expected so mock isn't needed
+        deploy_cert("mail.example.org")
+
     def test_deploy_and_save(self):
         key_path = "key_path"
         fullchain_path = "fullchain_path"
@@ -101,6 +137,7 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
                 installer.deploy_cert, domain, "unused",
                 key_path, "unused", fullchain_path)
             if i:
+                # No mock because Postfix utilities aren't expected to be used
                 installer.save("noop")
             else:
                 self._mock_postfix_and_call(installer.save, "real save")
@@ -110,6 +147,17 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
                            "smtpd_use_tls": "yes"}
         for key, value in expected_config.items():
             self.assertEqual(self.mock_postfix.get_value(key), value)
+
+    def test_save_error(self):
+        installer = self._create_prepared_installer()
+        self._mock_postfix_and_call(
+            installer.deploy_cert, "example.org", "foo", "bar", "baz", "qux")
+
+        check_call_path = "certbot_postfix.installer.util.check_call"
+        with mock.patch(check_call_path) as mock_check_call:
+            mock_check_call.side_effect = subprocess.CalledProcessError(42,
+                                                                        "foo")
+            self.assertRaises(errors.PluginError, installer.save)
 
     def test_enhance(self):
         self.assertRaises(errors.PluginError,
@@ -216,15 +264,13 @@ class MockPostfix(object):
     :ivar str config_path: path to Postfix main.cf file
 
     """
-    def __init__(self, config_dir, initial_values=None):
+    def __init__(self, config_dir, initial_values):
         """Create Postfix configuration.
 
         :param str config_dir: path for Postfix config dir
         :param dict initial_values: initial Postfix config values
 
         """
-        if initial_values is None:
-            initial_values = {}
         initial_values["config_directory"] = config_dir
 
         self.config_path = os.path.join(config_dir, "main.cf")
@@ -234,7 +280,7 @@ class MockPostfix(object):
         cmd = os.path.basename(args[0])
         if cmd == "postfix":
             return
-        elif cmd != "postconf":
+        elif cmd != "postconf":  # pragma: no cover
             assert False, "Unexpected command '{0}'".format(''.join(args))
 
         output = []
