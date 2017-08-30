@@ -1,4 +1,5 @@
 """Tests for certbot.plugins.common."""
+import functools
 import os
 import shutil
 import tempfile
@@ -12,6 +13,7 @@ from acme import jose
 
 from certbot import achallenges
 from certbot import crypto_util
+from certbot import errors
 
 from certbot.tests import acme_util
 from certbot.tests import util as test_util
@@ -75,6 +77,91 @@ class PluginTest(unittest.TestCase):
         # correct prefix
         parser.add_argument.assert_called_once_with(
             "--mock-foo-bar", dest="different_to_foo_bar", x=1, y=None)
+
+
+class InstallerTest(unittest.TestCase):
+    """Tests for certbot.plugins.common.Installer."""
+
+    def setUp(self):
+        from certbot.plugins.common import Installer
+
+        with mock.patch("certbot.plugins.common.reverter.Reverter"):
+            self.installer = Installer(config=mock.MagicMock(),
+                                       name="Installer")
+        self.reverter = self.installer.reverter
+
+    def test_add_to_real_checkpoint(self):
+        files = set(("foo.bar", "baz.qux",))
+        save_notes = "foo bar baz qux"
+        self._test_wrapped_method("add_to_checkpoint", files, save_notes)
+
+    def test_add_to_real_checkpoint2(self):
+        self._test_add_to_checkpoint_common(False)
+
+    def test_add_to_temporary_checkpoint(self):
+        self._test_add_to_checkpoint_common(True)
+
+    def _test_add_to_checkpoint_common(self, temporary):
+        files = set(("foo.bar", "baz.qux",))
+        save_notes = "foo bar baz qux"
+
+        installer_func = functools.partial(self.installer.add_to_checkpoint,
+                                           temporary=temporary)
+
+        if temporary:
+            reverter_func = self.reverter.add_to_temp_checkpoint
+        else:
+            reverter_func = self.reverter.add_to_checkpoint
+
+        self._test_adapted_method(
+            installer_func, reverter_func, files, save_notes)
+
+    def test_finalize_checkpoint(self):
+        self._test_wrapped_method("finalize_checkpoint", "foo")
+
+    def test_recovery_routine(self):
+        self._test_wrapped_method("recovery_routine")
+
+    def test_revert_temporary_config(self):
+        self._test_wrapped_method("revert_temporary_config")
+
+    def test_rollback_checkpoints(self):
+        self._test_wrapped_method("rollback_checkpoints", 42)
+
+    def test_view_config_changes(self):
+        self._test_wrapped_method("view_config_changes")
+
+    def _test_wrapped_method(self, name, *args, **kwargs):
+        """Test a wrapped reverter method.
+
+        :param str name: name of the method to test
+        :param tuple args: position arguments to method
+        :param dict kwargs: keyword arguments to method
+
+        """
+        installer_func = getattr(self.installer, name)
+        reverter_func = getattr(self.reverter, name)
+        self._test_adapted_method(
+            installer_func, reverter_func, *args, **kwargs)
+
+    def _test_adapted_method(self, installer_func,
+                             reverter_func, *passed_args, **passed_kwargs):
+        """Test an adapted reverter method
+
+        :param callable installer_func: installer method to test
+        :param mock.MagicMock reverter_func: mocked adapated
+            reverter method
+        :param tuple passed_args: positional arguments passed from
+            installer method to the reverter method
+        :param dict passed_kargs: keyword arguments passed from
+            installer method to the reverter method
+
+        """
+        installer_func(*passed_args, **passed_kwargs)
+        reverter_func.assert_called_once_with(*passed_args, **passed_kwargs)
+        reverter_func.side_effect = errors.ReverterError
+        self.assertRaises(
+            errors.PluginError, installer_func, *passed_args, **passed_kwargs)
 
 
 class AddrTest(unittest.TestCase):
@@ -202,7 +289,7 @@ class TLSSNI01Test(unittest.TestCase):
         achall.chall.encode.return_value = "token"
         key = test_util.load_pyopenssl_private_key("rsa512_key.pem")
         achall.response_and_validation.return_value = (
-            response, (test_util.load_cert("cert.pem"), key))
+            response, (test_util.load_cert("cert_512.pem"), key))
 
         with mock.patch("certbot.plugins.common.open",
                         mock_open, create=True):
@@ -215,7 +302,7 @@ class TLSSNI01Test(unittest.TestCase):
         # pylint: disable=no-member
         mock_open.assert_called_once_with(self.sni.get_cert_path(achall), "wb")
         mock_open.return_value.write.assert_called_once_with(
-            test_util.load_vector("cert.pem"))
+            test_util.load_vector("cert_512.pem"))
         mock_safe_open.assert_called_once_with(
             self.sni.get_key_path(achall), "wb", chmod=0o400)
         mock_safe_open.return_value.write.assert_called_once_with(

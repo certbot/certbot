@@ -15,6 +15,8 @@ from certbot import constants
 from certbot import errors
 from certbot.plugins import disco
 
+import certbot.tests.util as test_util
+
 from certbot.tests.util import TempDirTestCase
 
 PLUGINS = disco.PluginsRegistry.find_all()
@@ -49,17 +51,30 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         reload_module(cli)
 
     @staticmethod
-    def parse(*args, **kwargs):
+    def _unmocked_parse(*args, **kwargs):
         """Get result of cli.prepare_and_parse_args."""
         return cli.prepare_and_parse_args(PLUGINS, *args, **kwargs)
+
+    @staticmethod
+    def parse(*args, **kwargs):
+        """Mocks zope.component.getUtility and calls _unmocked_parse."""
+        with test_util.patch_get_utility():
+            return ParseTest._unmocked_parse(*args, **kwargs)
 
     def _help_output(self, args):
         "Run a command, and return the output string for scrutiny"
 
         output = six.StringIO()
+
+        def write_msg(message, *args, **kwargs): # pylint: disable=missing-docstring,unused-argument
+            output.write(message)
+
         with mock.patch('certbot.main.sys.stdout', new=output):
-            with mock.patch('certbot.main.sys.stderr'):
-                self.assertRaises(SystemExit, self.parse, args, output)
+            with test_util.patch_get_utility() as mock_get_utility:
+                mock_get_utility().notification.side_effect = write_msg
+                with mock.patch('certbot.main.sys.stderr'):
+                    self.assertRaises(SystemExit, self._unmocked_parse, args, output)
+
         return output.getvalue()
 
     @mock.patch("certbot.cli.flag_default")
@@ -450,9 +465,10 @@ class SetByCliTest(unittest.TestCase):
 
 def _call_set_by_cli(var, args, verb):
     with mock.patch('certbot.cli.helpful_parser') as mock_parser:
-        mock_parser.args = args
-        mock_parser.verb = verb
-        return cli.set_by_cli(var)
+        with test_util.patch_get_utility():
+            mock_parser.args = args
+            mock_parser.verb = verb
+            return cli.set_by_cli(var)
 
 
 if __name__ == '__main__':

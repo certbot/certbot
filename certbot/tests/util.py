@@ -22,6 +22,7 @@ from certbot import constants
 from certbot import interfaces
 from certbot import storage
 from certbot import util
+from certbot import configuration
 
 from certbot.display import util as display_util
 
@@ -269,6 +270,20 @@ class TempDirTestCase(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.tempdir)
 
+class ConfigTestCase(TempDirTestCase):
+    """Test class which sets up a NamespaceConfig object.
+
+    """
+    def setUp(self):
+        super(ConfigTestCase, self).setUp()
+        self.config = configuration.NamespaceConfig(
+            mock.MagicMock(
+                config_dir=os.path.join(self.tempdir, 'config'),
+                work_dir=os.path.join(self.tempdir, 'work'),
+                logs_dir=os.path.join(self.tempdir, 'logs'),
+                server="example.com",
+            )
+        )
 
 def lock_and_call(func, lock_path):
     """Grab a lock for lock_path and call func.

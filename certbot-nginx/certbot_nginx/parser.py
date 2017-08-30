@@ -278,8 +278,8 @@ class NginxParser(object):
 
         This method modifies vhost to be fully consistent with the new directives.
 
-        ..note :: If replace is True, this raises a misconfiguration error
-        if the directive does not already exist.
+        ..note :: If replace is True and the directive already exists, the first
+        instance will be replaced. Otherwise, the directive is added.
         ..note :: If replace is False nothing gets added if an identical
         block exists already.
 
@@ -464,8 +464,9 @@ def _add_directives(block, directives, replace):
     When replace=False, it's an error to try and add a directive that already
     exists in the config block with a conflicting value.
 
-    When replace=True, a directive with the same name MUST already exist in the
-    config block, and the first instance will be replaced.
+    When replace=True and a directive with the same name already exists in the
+    config block, the first instance will be replaced. Otherwise, the directive
+    will be added to the config block.
 
     ..todo :: Find directives that are in included files.
 
@@ -547,49 +548,46 @@ def _add_directive(block, directive, replace):
     location = find_location(directive)
 
     if replace:
-        if location is None:
-            raise errors.MisconfigurationError(
-                'expected directive for {0} in the Nginx '
-                'config but did not find it.'.format(directive[0]))
-        block[location] = directive
-        _comment_directive(block, location)
-    else:
-        # Append directive. Fail if the name is not a repeatable directive name,
-        # and there is already a copy of that directive with a different value
-        # in the config file.
+        if location is not None:
+            block[location] = directive
+            _comment_directive(block, location)
+            return
+    # Append directive. Fail if the name is not a repeatable directive name,
+    # and there is already a copy of that directive with a different value
+    # in the config file.
 
-        # handle flat include files
+    # handle flat include files
 
-        directive_name = directive[0]
-        def can_append(loc, dir_name):
-            """ Can we append this directive to the block? """
-            return loc is None or (isinstance(dir_name, str) and dir_name in REPEATABLE_DIRECTIVES)
+    directive_name = directive[0]
+    def can_append(loc, dir_name):
+        """ Can we append this directive to the block? """
+        return loc is None or (isinstance(dir_name, str) and dir_name in REPEATABLE_DIRECTIVES)
 
-        err_fmt = 'tried to insert directive "{0}" but found conflicting "{1}".'
+    err_fmt = 'tried to insert directive "{0}" but found conflicting "{1}".'
 
-        # Give a better error message about the specific directive than Nginx's "fail to restart"
-        if directive_name == INCLUDE:
-            # in theory, we might want to do this recursively, but in practice, that's really not
-            # necessary because we know what file we're talking about (and if we don't recurse, we
-            # just give a worse error message)
-            included_directives = _parse_ssl_options(directive[1])
+    # Give a better error message about the specific directive than Nginx's "fail to restart"
+    if directive_name == INCLUDE:
+        # in theory, we might want to do this recursively, but in practice, that's really not
+        # necessary because we know what file we're talking about (and if we don't recurse, we
+        # just give a worse error message)
+        included_directives = _parse_ssl_options(directive[1])
 
-            for included_directive in included_directives:
-                included_dir_loc = find_location(included_directive)
-                included_dir_name = included_directive[0]
-                if not is_whitespace_or_comment(included_directive) \
-                    and not can_append(included_dir_loc, included_dir_name):
-                    if block[included_dir_loc] != included_directive:
-                        raise errors.MisconfigurationError(err_fmt.format(included_directive,
-                            block[included_dir_loc]))
-                    else:
-                        _comment_out_directive(block, included_dir_loc, directive[1])
+        for included_directive in included_directives:
+            included_dir_loc = find_location(included_directive)
+            included_dir_name = included_directive[0]
+            if not is_whitespace_or_comment(included_directive) \
+                and not can_append(included_dir_loc, included_dir_name):
+                if block[included_dir_loc] != included_directive:
+                    raise errors.MisconfigurationError(err_fmt.format(included_directive,
+                        block[included_dir_loc]))
+                else:
+                    _comment_out_directive(block, included_dir_loc, directive[1])
 
-        if can_append(location, directive_name):
-            block.append(directive)
-            _comment_directive(block, len(block) - 1)
-        elif block[location] != directive:
-            raise errors.MisconfigurationError(err_fmt.format(directive, block[location]))
+    if can_append(location, directive_name):
+        block.append(directive)
+        _comment_directive(block, len(block) - 1)
+    elif block[location] != directive:
+        raise errors.MisconfigurationError(err_fmt.format(directive, block[location]))
 
 def _apply_global_addr_ssl(addr_to_ssl, parsed_server):
     """Apply global sslishness information to the parsed server block

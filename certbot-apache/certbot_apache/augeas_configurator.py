@@ -3,7 +3,6 @@ import logging
 
 
 from certbot import errors
-from certbot import reverter
 from certbot.plugins import common
 
 from certbot_apache import constants
@@ -11,7 +10,7 @@ from certbot_apache import constants
 logger = logging.getLogger(__name__)
 
 
-class AugeasConfigurator(common.Plugin):
+class AugeasConfigurator(common.Installer):
     """Base Augeas Configurator class.
 
     :ivar config: Configuration.
@@ -33,11 +32,6 @@ class AugeasConfigurator(common.Plugin):
 
         self.save_notes = ""
 
-        # See if any temporary changes need to be recovered
-        # This needs to occur before VirtualHost objects are setup...
-        # because this will change the underlying configuration and potential
-        # vhosts
-        self.reverter = reverter.Reverter(self.config)
 
     def init_augeas(self):
         """ Initialize the actual Augeas instance """
@@ -50,6 +44,10 @@ class AugeasConfigurator(common.Plugin):
             flags=(augeas.Augeas.NONE |
                    augeas.Augeas.NO_MODL_AUTOLOAD |
                    augeas.Augeas.ENABLE_SPAN))
+        # See if any temporary changes need to be recovered
+        # This needs to occur before VirtualHost objects are setup...
+        # because this will change the underlying configuration and potential
+        # vhosts
         self.recovery_routine()
 
     def check_parsing_errors(self, lens):
@@ -124,17 +122,8 @@ class AugeasConfigurator(common.Plugin):
         if save_paths:
             for path in save_paths:
                 save_files.add(self.aug.get(path)[6:])
-
-            try:
-                # Create Checkpoint
-                if temporary:
-                    self.reverter.add_to_temp_checkpoint(
-                        save_files, self.save_notes)
-                else:
-                    self.reverter.add_to_checkpoint(save_files,
-                                                    self.save_notes)
-            except errors.ReverterError as err:
-                raise errors.PluginError(str(err))
+            self.add_to_checkpoint(save_files,
+                                   self.save_notes, temporary=temporary)
 
         self.aug.set("/augeas/save", save_state)
         self.save_notes = ""
@@ -147,10 +136,7 @@ class AugeasConfigurator(common.Plugin):
                 self.aug.remove("/files/"+sf)
             self.aug.load()
         if title and not temporary:
-            try:
-                self.reverter.finalize_checkpoint(title)
-            except errors.ReverterError as err:
-                raise errors.PluginError(str(err))
+            self.finalize_checkpoint(title)
 
     def _log_save_errors(self, ex_errs):
         """Log errors due to bad Augeas save.
@@ -175,10 +161,7 @@ class AugeasConfigurator(common.Plugin):
         :raises .errors.PluginError: If unable to recover the configuration
 
         """
-        try:
-            self.reverter.recovery_routine()
-        except errors.ReverterError as err:
-            raise errors.PluginError(str(err))
+        super(AugeasConfigurator, self).recovery_routine()
         # Need to reload configuration after these changes take effect
         self.aug.load()
 
@@ -188,10 +171,7 @@ class AugeasConfigurator(common.Plugin):
         :raises .errors.PluginError: If unable to revert the challenge config.
 
         """
-        try:
-            self.reverter.revert_temporary_config()
-        except errors.ReverterError as err:
-            raise errors.PluginError(str(err))
+        self.revert_temporary_config()
         self.aug.load()
 
     def rollback_checkpoints(self, rollback=1):
@@ -203,20 +183,5 @@ class AugeasConfigurator(common.Plugin):
             the function is unable to correctly revert the configuration
 
         """
-        try:
-            self.reverter.rollback_checkpoints(rollback)
-        except errors.ReverterError as err:
-            raise errors.PluginError(str(err))
+        super(AugeasConfigurator, self).rollback_checkpoints(rollback)
         self.aug.load()
-
-    def view_config_changes(self):
-        """Show all of the configuration changes that have taken place.
-
-        :raises .errors.PluginError: If there is a problem while processing
-            the checkpoints directories.
-
-        """
-        try:
-            self.reverter.view_config_changes()
-        except errors.ReverterError as err:
-            raise errors.PluginError(str(err))

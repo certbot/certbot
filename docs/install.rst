@@ -30,7 +30,7 @@ configurations (if you use the ``apache`` or ``nginx`` plugins).  If none of
 these apply to you, it is theoretically possible to run without root privileges,
 but for most users who want to avoid running an ACME client as root, either
 `letsencrypt-nosudo <https://github.com/diafygi/letsencrypt-nosudo>`_ or
-`simp_le <https://github.com/kuba/simp_le>`_ are more appropriate choices.
+`simp_le <https://github.com/zenhack/simp_le>`_ are more appropriate choices.
 
 The Apache plugin currently requires an OS with augeas version 1.0; currently `it
 supports
@@ -80,7 +80,7 @@ For full command line help, you can type::
 Problems with Python virtual environment
 ----------------------------------------
 
-On a low memory system such as VPS with less than 512MB of RAM, the required dependencies of Certbot will failed to build.
+On a low memory system such as VPS with less than 512MB of RAM, the required dependencies of Certbot will fail to build.
 This can be identified if the pip outputs contains something like ``internal compiler error: Killed (program cc1)``.
 You can workaround this restriction by creating a temporary swapfile::
 
@@ -234,11 +234,10 @@ Installing from source
 Installation from source is only supported for developers and the
 whole process is described in the :doc:`contributing`.
 
-.. warning:: Please do **not** use ``python setup.py install`` or
-   ``python pip install .``. Please do **not** attempt the
-   installation commands as superuser/root and/or without virtual
-   environment, e.g. ``sudo python setup.py install``, ``sudo pip
-   install``, ``sudo ./venv/bin/...``. These modes of operation might
-   corrupt your operating system and are **not supported** by the
-   Certbot team!
+.. warning:: Please do **not** use ``python setup.py install``, ``python pip
+   install .``, or ``easy_install .``. Please do **not** attempt the
+   installation commands as superuser/root and/or without virtual environment,
+   e.g. ``sudo python setup.py install``, ``sudo pip install``, ``sudo
+   ./venv/bin/...``. These modes of operation might corrupt your operating
+   system and are **not supported** by the Certbot team!
 
