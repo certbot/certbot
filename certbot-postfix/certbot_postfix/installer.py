@@ -91,7 +91,7 @@ class Installer(plugins_common.Installer):
 
         """
         if self.conf("config-dir") is None:
-            self.config_dir = self.get_config_var("config_directory")
+            self.config_dir = self._get_config_var("config_directory")
         else:
             self.config_dir = self.conf("config-dir")
 
@@ -144,7 +144,7 @@ class Installer(plugins_common.Installer):
         :raises .PluginError: Unable to find Postfix version.
 
         """
-        mail_version = self.get_config_var("mail_version", default=True)
+        mail_version = self._get_config_var("mail_version", default=True)
         return tuple(int(i) for i in mail_version.split('.'))
 
     def get_all_names(self):
@@ -153,7 +153,7 @@ class Installer(plugins_common.Installer):
         :rtype: `set` of `str`
 
         """
-        return set(self.get_config_var(var)
+        return set(self._get_config_var(var)
                    for var in ('mydomain', 'myhostname', 'myorigin',))
 
     def deploy_cert(self, domain, cert_path,
@@ -305,7 +305,7 @@ class Installer(plugins_common.Installer):
 
         util.check_call(cmd)
 
-    def get_config_var(self, name, default=False):
+    def _get_config_var(self, name, default=False):
         """Return the value of the specified Postfix config parameter.
 
         If there is an unsaved change modifying the value of the
@@ -323,9 +323,9 @@ class Installer(plugins_common.Installer):
         if not default and name in self.proposed_changes:
             return self.proposed_changes[name]
         else:
-            return self._get_config_var_from_postconf(name, default)
+            return self.__get_config_var_from_postconf(name, default)
 
-    def _get_config_var_from_postconf(self, name, default):
+    def __get_config_var_from_postconf(self, name, default):
         """Return the value of the specified Postfix config parameter.
 
         This ignores self.proposed_changes and gets the value from
@@ -395,7 +395,7 @@ class Installer(plugins_common.Installer):
         :param str value: value to set the Postfix config parameter to
 
         """
-        if self.get_config_var(name) != value:
+        if self._get_config_var(name) != value:
             self.proposed_changes[name] = value
             self.save_notes.append("\t* Set {0} to {1}".format(name, value))
 

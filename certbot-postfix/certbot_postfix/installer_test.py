@@ -153,51 +153,6 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
         ]
         installer.restart()
 
-    def test_get_config_var_success(self):
-        self.config.postfix_config_dir = None
-
-        command = self._test_get_config_var_success_common('foo', False)
-        self.assertFalse("-c" in command)
-        self.assertFalse("-d" in command)
-
-    def test_get_config_var_success_with_config(self):
-        command = self._test_get_config_var_success_common('foo', False)
-        self.assertTrue("-c" in command)
-        self.assertFalse("-d" in command)
-
-    def test_get_config_var_success_with_default(self):
-        self.config.postfix_config_dir = None
-
-        command = self._test_get_config_var_success_common('foo', True)
-        self.assertFalse("-c" in command)
-        self.assertTrue("-d" in command)
-
-    @mock.patch("certbot_postfix.installer.util.check_output")
-    def test_get_config_var_failure(self, mock_check_output):
-        mock_check_output.side_effect = subprocess.CalledProcessError(42,
-                                                                      "foo")
-        installer = self._create_installer()
-        self.assertRaises(errors.PluginError, installer.get_config_var, "foo")
-
-    @mock.patch("certbot_postfix.installer.util.check_output")
-    def test_get_config_var_unexpected_output(self, mock_check_output):
-        self.config.postfix_config_dir = None
-        mock_check_output.return_value = "foo"
-
-        installer = self._create_installer()
-        self.assertRaises(errors.PluginError, installer.get_config_var, "foo")
-
-    def _test_get_config_var_success_common(self, name, default):
-        installer = self._create_installer()
-
-        check_output_path = "certbot_postfix.installer.util.check_output"
-        with mock.patch(check_output_path) as mock_check_output:
-            value = "bar"
-            mock_check_output.return_value = name + " = " + value
-            self.assertEqual(installer.get_config_var(name, default), value)
-
-        return mock_check_output.call_args[0][0]
-
     def _create_prepared_installer(self):
         """Creates and returns a new prepared Postfix Installer.
 
