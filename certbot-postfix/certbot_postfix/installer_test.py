@@ -282,7 +282,6 @@ class MockPostfix(object):
         elif cmd != "postconf":
             assert False, "Unexpected command '{0}'".format(''.join(args))
 
-        config = self._read_config()
         output = []
 
         skip = False
@@ -294,12 +293,35 @@ class MockPostfix(object):
                     skip = True
             elif "=" in arg:
                 name, _, value = arg.partition("=")
-                config[name] = value
+                self.set_value(name, value)
             else:
-                output.append("{0} = {1}\n".format(arg, config.get(arg, "")))
+                output.append("{0} = {1}\n".format(arg, self.get_value(arg)))
 
-        self._write_config(config)
         return "\n".join(output)
+
+    def get_value(self, name):
+        """Returns the value for the Postfix config parameter name.
+
+        If the value isn't set, an empty string is returned.
+
+        :param str name: name of the Postfix config parameter
+
+        :returns: value of the named parameter
+        :rtype: str
+
+        """
+        return self._read_config().get(name, "")
+
+    def set_value(self, name, value):
+        """Sets the value for a Postfix config parameter.
+
+        :param str name: name of the Postfix config parameter
+        :param str value: value ot set the parameter to
+
+        """
+        config = self._read_config()
+        config[name] = value
+        self._write_config(config)
 
     def _read_config(self):
         config = {}
