@@ -9,6 +9,7 @@ import unittest
 import configobj
 import mock
 
+from certbot import cert_manager
 from certbot import configuration
 from certbot import errors
 
@@ -453,14 +454,53 @@ class DuplicativeCertsTest(storage_test.BaseRenewableCertTest):
         self.assertEqual(result, (None, None))
 
 
-class CertPathToLineageTest(BaseCertManagerTest):
+class CertPathToLineageTest(storage_test.BaseRenewableCertTest):
     """Test for certbot.cert_manager.cert_path_to_lineage"""
 
-    @mock.patch('certbot.cert_manager._search_lineages')
-    def test_cert_path_to_lineage_error(self, mock_search_lineages):
-        mock_search_lineages.return_value = None
+    def setUp(self):
+        super(CertPathToLineageTest, self).setUp()
+        self.config_file.write()
+        self._write_out_ex_kinds()
+        self.fullchain = os.path.join(self.config.config_dir, 'live', 'example.org', 'fullchain.pem')
+        self.config.cert_path = (self.fullchain, '')
+
+    def _call(self, cli_config):
         from certbot.cert_manager import cert_path_to_lineage
-        self.assertRaises(errors.Error, cert_path_to_lineage, self.cli_config)
+        return cert_path_to_lineage(cli_config)
+
+    def test_basic_match(self):
+        self.assertEqual('example.org', self._call(self.config))
+
+    def test_no_match_exists(self):
+        self.bad_config = self.config
+        self.bad_config.cert_path = os.path.join(self.config.config_dir, 'live', 'SailorMoon', 'fullchain.pem')
+        self.assertRaises(errors.Error, self._call, self.bad_config)
+
+    @mock.patch('certbot.cert_manager._acceptable_matches')
+    def test_options_fullchain(self, mock_acceptable_matches):
+        mock_acceptable_matches.return_value = [lambda x: x.fullchain_path]
+        self.config.fullchain_path = self.fullchain
+        self.assertEqual('example.org', self._call(self.config))
+
+    @mock.patch('certbot.cert_manager._acceptable_matches')
+    def test_options_cert_path(self, mock_acceptable_matches):
+        mock_acceptable_matches.return_value = [lambda x: x.cert_path]
+        self.cert = os.path.join(self.config.config_dir, 'live', 'example.org', 'cert.pem')
+        self.config.cert_path = (self.cert, '')
+        self.assertEqual('example.org', self._call(self.config))
+
+    @mock.patch('certbot.cert_manager._acceptable_matches')
+    def test_options_archive_cert(self, mock_acceptable_matches):
+        # Also this and the next test check that the regex of _archive_files is working.
+        self.config.cert_path = (os.path.join(self.config.config_dir, 'archive', 'example.org', 'cert11.pem'), '')
+        mock_acceptable_matches.return_value = [lambda x: cert_manager._archive_files(x, 'cert')]
+        self.assertEqual('example.org', self._call(self.config))
+
+    @mock.patch('certbot.cert_manager._acceptable_matches')
+    def test_options_archive_fullchain(self, mock_acceptable_matches):
+        self.config.cert_path = (os.path.join(self.config.config_dir, 'archive', 'example.org', 'fullchain11.pem'), '')
+        mock_acceptable_matches.return_value = [lambda x: cert_manager._archive_files(x, 'fullchain')]
+        self.assertEqual('example.org', self._call(self.config))
 
 
 if __name__ == "__main__":
