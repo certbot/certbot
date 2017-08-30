@@ -54,7 +54,7 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
             "postconf config_directory={0}".format(expected).split())
         exe_exists_path = "certbot_postfix.installer.certbot_util.exe_exists"
         with mock.patch(exe_exists_path, return_value=True):
-            self.mock_postfix.mock_and_call(installer.prepare)
+            self._mock_postfix_and_call(installer.prepare)
         self.assertEqual(installer.config_dir, expected)
 
     @mock.patch("certbot_postfix.installer.certbot_util.exe_exists")
@@ -62,7 +62,7 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
         installer = self._create_installer()
         mock_exe_exists.return_value = True
         self.mock_postfix("postconf mail_version=0.0.1".split())
-        self.mock_postfix.mock_and_call(
+        self._mock_postfix_and_call(
             self.assertRaises, errors.NotSupportedError, installer.prepare)
 
     def test_lock_error(self):
@@ -76,7 +76,7 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
         version = "3.1.4"
         self.mock_postfix("postconf mail_version={0}".format(version).split())
 
-        output = self.mock_postfix.mock_and_call(installer.more_info)
+        output = self._mock_postfix_and_call(installer.more_info)
         self.assertTrue("Postfix" in output)
         self.assertTrue(self.tempdir in output)
         self.assertTrue(version in output)
@@ -86,7 +86,7 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
         self.mock_postfix("postconf mydomain=example.org "
                           "myhostname=mail.example.org "
                           "myorigin=example.org".split())
-        result = self.mock_postfix.mock_and_call(installer.get_all_names)
+        result = self._mock_postfix_and_call(installer.get_all_names)
         self.assertTrue("example.org" in result)
         self.assertTrue("mail.example.org" in result)
 
@@ -96,13 +96,13 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
         installer = self._create_prepared_installer()
 
         for i, domain in enumerate(("example.org", "mail.example.org",)):
-            self.mock_postfix.mock_and_call(
+            self._mock_postfix_and_call(
                 installer.deploy_cert, domain, "unused",
                 key_path, "unused", fullchain_path)
             if i:
                 installer.save("noop")
             else:
-                self.mock_postfix.mock_and_call(installer.save, "real save")
+                self._mock_postfix_and_call(installer.save, "real save")
 
         expected_config = {"smtpd_tls_cert_file": fullchain_path,
                            "smtpd_tls_key_file": key_path,
@@ -212,7 +212,7 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
 
         exe_exists_path = "certbot_postfix.installer.certbot_util.exe_exists"
         with mock.patch(exe_exists_path, return_value=True):
-            self.mock_postfix.mock_and_call(installer.prepare)
+            self._mock_postfix_and_call(installer.prepare)
 
         return installer
 
@@ -227,6 +227,25 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
 
         from certbot_postfix import installer
         return installer.Installer(self.config, name)
+
+    def _mock_postfix_and_call(self, func, *args, **kwargs):
+        """Calls func with mocked responses from Postfix utilities.
+
+        :param callable func: function to call with mocked args
+        :param tuple args: positional arguments to func
+        :param dict kwargs: keyword arguments to func
+
+        :returns: the return value of func
+
+        """
+        check_call_path = "certbot_postfix.installer.subprocess.check_call"
+        check_output_path = "certbot_postfix.installer.util.check_output"
+
+        with mock.patch(check_call_path) as mock_check_call:
+            mock_check_call.side_effect = self.mock_postfix
+            with mock.patch(check_output_path) as mock_check_output:
+                mock_check_output.side_effect = self.mock_postfix
+                return func(*args, **kwargs)
 
 
 class MockPostfix(object):
@@ -255,25 +274,6 @@ class MockPostfix(object):
 
         self.config_path = os.path.join(config_dir, "main.cf")
         self._write_config(initial_values)
-
-    def mock_and_call(self, func, *args, **kwargs):
-        """Mocks Installer utility functions and calls func.
-
-        :param callable func: function to call with mocked args
-        :param tuple args: positional arguments to func
-        :param dict kwargs: keyword arguments to func
-
-        :returns: the return value of func
-
-        """
-        check_call_path = "certbot_postfix.installer.subprocess.check_call"
-        check_output_path = "certbot_postfix.installer.util.check_output"
-
-        with mock.patch(check_call_path) as mock_check_call:
-            mock_check_call.side_effect = self
-            with mock.patch(check_output_path) as mock_check_output:
-                mock_check_output.side_effect = self
-                return func(*args, **kwargs)
 
     def __call__(self, args, *unused_args, **unused_kwargs):
         cmd = os.path.basename(args[0])
