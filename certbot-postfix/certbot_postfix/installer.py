@@ -211,7 +211,8 @@ class Installer(plugins_common.Installer):
 
         """
         if self.proposed_changes:
-            self.add_to_checkpoint(os.path.join(self.config_dir, "main.cf"),
+            save_files = set((os.path.join(self.config_dir, "main.cf"),))
+            self.add_to_checkpoint(save_files,
                                    "\n".join(self.save_notes), temporary)
             self._write_config_changes()
             self.proposed_changes.clear()
