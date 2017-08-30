@@ -372,8 +372,8 @@ def handle_renewal_request(config):
                            "renewing all installed certificates that are due "
                            "to be renewed or renewing a single certificate specified "
                            "by its name. If you would like to renew specific "
-                           "certificates by their domains, use the certonly "
-                           "command. The renew verb may provide other options "
+                           "certificates by their domains, use the certonly command "
+                           "instead. The renew verb may provide other options "
                            "for selecting certificates to renew in the future.")
 
     if config.certname:
@@ -389,14 +389,16 @@ def handle_renewal_request(config):
         disp = zope.component.getUtility(interfaces.IDisplay)
         disp.notification("Processing " + renewal_file, pause=False)
         lineage_config = copy.deepcopy(config)
+        lineagename = storage.lineagename_for_filename(renewal_file)
 
         # Note that this modifies config (to add back the configuration
         # elements from within the renewal configuration file).
         try:
             renewal_candidate = _reconstitute(lineage_config, renewal_file)
         except Exception as e:  # pylint: disable=broad-except
-            logger.warning("Renewal configuration file %s produced an "
-                           "unexpected error: %s. Skipping.", renewal_file, e)
+            logger.warning("Renewal configuration file %s (cert: %s) "
+                           "produced an unexpected error: %s. Skipping.",
+                           renewal_file, lineagename, e)
             logger.debug("Traceback was:\n%s", traceback.format_exc())
             parse_failures.append(renewal_file)
             continue
@@ -422,8 +424,9 @@ def handle_renewal_request(config):
                     renew_skipped.append(renewal_candidate.fullchain)
         except Exception as e:  # pylint: disable=broad-except
             # obtain_cert (presumably) encountered an unanticipated problem.
-            logger.warning("Attempting to renew cert from %s produced an "
-                           "unexpected error: %s. Skipping.", renewal_file, e)
+            logger.warning("Attempting to renew cert (%s) from %s produced an "
+                           "unexpected error: %s. Skipping.", lineagename,
+                               renewal_file, e)
             logger.debug("Traceback was:\n%s", traceback.format_exc())
             renew_failures.append(renewal_candidate.fullchain)
 

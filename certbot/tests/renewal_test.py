@@ -1,5 +1,4 @@
 """Tests for certbot.renewal"""
-import os
 import mock
 import unittest
 
@@ -9,24 +8,22 @@ from certbot import configuration
 from certbot import errors
 from certbot import storage
 
-from certbot.tests import util
+import certbot.tests.util as test_util
 
 
-class RenewalTest(util.TempDirTestCase):
+class RenewalTest(test_util.ConfigTestCase):
     def setUp(self):
         super(RenewalTest, self).setUp()
-
-        self.config_dir = os.path.join(self.tempdir, 'config')
 
     @mock.patch('certbot.cli.set_by_cli')
     def test_ancient_webroot_renewal_conf(self, mock_set_by_cli):
         mock_set_by_cli.return_value = False
-        rc_path = util.make_lineage(
-            self.config_dir, 'sample-renewal-ancient.conf')
-        args = mock.MagicMock(account=None, config_dir=self.config_dir,
-                              logs_dir="logs", work_dir="work",
-                              email=None, webroot_path=None)
-        config = configuration.NamespaceConfig(args)
+        rc_path = test_util.make_lineage(
+            self.config.config_dir, 'sample-renewal-ancient.conf')
+        self.config.account = None
+        self.config.email = None
+        self.config.webroot_path = None
+        config = configuration.NamespaceConfig(self.config)
         lineage = storage.RenewableCert(rc_path, config)
         renewalparams = lineage.configuration['renewalparams']
         # pylint: disable=protected-access
@@ -35,10 +32,10 @@ class RenewalTest(util.TempDirTestCase):
         self.assertEqual(config.webroot_path, ['/var/www/'])
 
 
-class RestoreRequiredConfigElementsTest(unittest.TestCase):
+class RestoreRequiredConfigElementsTest(test_util.ConfigTestCase):
     """Tests for certbot.renewal.restore_required_config_elements."""
     def setUp(self):
-        self.config = mock.MagicMock()
+        super(RestoreRequiredConfigElementsTest, self).setUp()
 
     @classmethod
     def _call(cls, *args, **kwargs):
