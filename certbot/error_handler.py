@@ -85,7 +85,7 @@ class ErrorHandler(object):
         return retval
 
     def register(self, func, *args, **kwargs):
-        """Sets func to be called with *args and **kwargs during cleanup
+        """Sets func to be run with the given arguments during cleanup.
 
         :param function func: function to be called in case of an error
 
