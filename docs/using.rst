@@ -428,64 +428,8 @@ The ``renew`` command includes hooks for running commands or scripts before or a
 renewed. For example, if you have a single certificate obtained using
 the standalone_ plugin, you might need to stop the webserver
 before renewing so standalone can bind to the necessary ports, and
-then restart it after the plugin is finished. Example::
-
-  certbot renew --pre-hook "service nginx stop" --post-hook "service nginx start"
-
-If a hook exits with a non-zero exit code, the error will be printed
-to ``stderr`` but renewal will be attempted anyway. A failing hook
-doesn't directly cause Certbot to exit with a non-zero exit code, but
-since Certbot exits with a non-zero exit code when renewals fail, a
-failed hook causing renewal failures will indirectly result in a
-non-zero exit code. Hooks will only be run if a certificate is due for
-renewal, so you can run the above command frequently without
-unnecessarily stopping your webserver.
-
-``--pre-hook`` and ``--post-hook`` hooks run before and after every renewal
-attempt. If you want your hook to run only after a successful renewal, use
-``--deploy-hook`` in a command like this.
-
-``certbot renew --deploy-hook /path/to/deploy-hook-script``
-
-For example, if you have a daemon that does not read its certificates as the
-root user, a deploy hook like this can copy them to the correct location and
-apply appropriate file permissions.
-
-/path/to/deploy-hook-script
-
-.. code-block:: none
-
-   #!/bin/sh
-
-   set -e
-
-   for domain in $RENEWED_DOMAINS; do
-           case $domain in
-           example.com)
-                   daemon_cert_root=/etc/some-daemon/certs
-
-                   # Make sure the certificate and private key files are
-                   # never world readable, even just for an instant while
-                   # we're copying them into daemon_cert_root.
-                   umask 077
-
-                   cp "$RENEWED_LINEAGE/fullchain.pem" "$daemon_cert_root/$domain.cert"
-                   cp "$RENEWED_LINEAGE/privkey.pem" "$daemon_cert_root/$domain.key"
-
-                   # Apply the proper file ownership and permissions for
-                   # the daemon to read its certificate and key.
-                   chown some-daemon "$daemon_cert_root/$domain.cert" \
-                           "$daemon_cert_root/$domain.key"
-                   chmod 400 "$daemon_cert_root/$domain.cert" \
-                           "$daemon_cert_root/$domain.key"
-
-                   service some-daemon restart >/dev/null
-                   ;;
-           esac
-   done
-
-More information about hooks can be found by running
-``certbot --help renew``.
+then restart it after the plugin is finished. For more informaton on hooks
+please refer to the hooks_ section.
 
 If you're sure that this command executes successfully without human
 intervention, you can add the command to ``crontab`` (since certificates
@@ -493,6 +437,17 @@ are only renewed when they're determined to be near expiry, the command
 can run on a regular basis, like every week or every day). In that case,
 you are likely to want to use the ``-q`` or ``--quiet`` quiet flag to
 silence all output except errors.
+
+To test that the renewal of a cert will work you can use the ``--dry-run``
+command. Example:
+
+   certbot renew --dry-run
+   
+Which will attempt renewal of all of your certificates, regardless of their
+age, with test certificates from our staging server. Certificates tested this
+way will not save these test certificates, but if renewal is successful
+with ``--dry-run`` then you can have confidence that they will be successfully
+renewed when they are within 30 days of expiration when you call ``certbot renew``.
 
 If you are manually renewing all of your certificates, the
 ``--force-renewal`` flag may be helpful; it causes the expiration time of
@@ -553,6 +508,8 @@ For advanced certificate management tasks, it is possible to manually modify the
 renewal configuration file, but this is discouraged since it can easily break Certbot's
 ability to renew your certificates. If you choose to modify the renewal configuration file
 we advise you to test its validity with the ``certbot renew --dry-run`` command.
+
+To understand how hooks are saved in the renewal configuration file please refer to the hooks_ section.
 
 .. warning:: Modifying any files in ``/etc/letsencrypt`` can damage them so Certbot can no longer properly manage its certificates, and we do not recommend doing so.
 
@@ -655,8 +612,106 @@ The following files are available:
 
 .. _hooks:
 
-Pre and Post Validation Hooks
-=============================
+Hooks
+-----
+
+The ``renew`` and ``run`` commands include hooks for running system commands or scripts before or after a certificate is
+renewed. For example, if you have a single certificate obtained using
+the standalone_ plugin, you might need to stop the webserver
+before renewing so standalone can bind to the necessary ports, and
+then restart it after the plugin is finished. Example::
+
+  certbot certonly --standalone --pre-hook "service nginx stop" --post-hook "service nginx start"
+
+Hooks specified in the creation of a cert will be saved in that certificate's
+renewal configuration file, and will be called each time renewal for that
+certificate is attempted.
+
+Alternately you can specify hooks as arguments with ``certbot renew`` either on
+the command line or in your crontab. Example::
+
+  certbot renew --pre-hook "service nginx stop" --post-hook "service nginx start"
+  
+.. note:: Any certificates renewed this way will have the hook values in their
+   renewal configuration files overwritten with the arguments specified in this
+   renew command. Certificates for which renewal is not attempted will have the
+   hook values in their renewal configuration files unchanged.
+   
+Similarly global hooks can be specified in the (optional) ``cli.ini``
+configuration file. For more information on configuration files, please
+refer to config-file_.
+
+If a hook exits with a non-zero exit code, the error will be printed
+to ``stderr`` but renewal will be attempted anyway. A failing hook
+doesn't directly cause Certbot to exit with a non-zero exit code, but
+since Certbot exits with a non-zero exit code when renewals fail, a
+failed hook causing renewal failures will indirectly result in a
+non-zero exit code. Hooks will only be run if a certificate is due for
+renewal, so you can run the above command frequently via ``certbot renew`` 
+without unnecessarily stopping your webserver.
+
+Unique ``--pre-hook`` and ``--post-hook`` hooks run before and after every renewal
+attempt. If two certificates have identical pre and post hooks, they will be run
+only once. Meaning renewal for the two certificates would follow this form:
+pre-hook is run, renewal for cert 1 is run, renewal for cert 2 is run, post-hook
+is run.
+
+Note that certificates outside of the renewal window (30 days) will not have
+renewal attempted, and will therefore not cause pre and post hooks to be run.
+If you want your hook to run only after a successful renewal, use
+``--deploy-hook`` in a command like this.
+
+``certbot renew --deploy-hook /path/to/deploy-hook-script``
+
+For example, if you have a daemon that does not read its certificates as the
+root user, a deploy hook like this can copy them to the correct location and
+apply appropriate file permissions.
+
+/path/to/deploy-hook-script
+
+.. code-block:: none
+
+   #!/bin/sh
+
+   set -e
+
+   for domain in $RENEWED_DOMAINS; do
+           case $domain in
+           example.com)
+                   daemon_cert_root=/etc/some-daemon/certs
+
+                   # Make sure the certificate and private key files are
+                   # never world readable, even just for an instant while
+                   # we're copying them into daemon_cert_root.
+                   umask 077
+
+                   cp "$RENEWED_LINEAGE/fullchain.pem" "$daemon_cert_root/$domain.cert"
+                   cp "$RENEWED_LINEAGE/privkey.pem" "$daemon_cert_root/$domain.key"
+
+                   # Apply the proper file ownership and permissions for
+                   # the daemon to read its certificate and key.
+                   chown some-daemon "$daemon_cert_root/$domain.cert" \
+                           "$daemon_cert_root/$domain.key"
+                   chmod 400 "$daemon_cert_root/$domain.cert" \
+                           "$daemon_cert_root/$domain.key"
+
+                   service some-daemon restart >/dev/null
+                   ;;
+           esac
+   done
+
+If you would like to change what hooks are being run during the renewal of a
+certificate you can either request that certificate again and specify all of
+the arguments you want to be associated with it (hooks and otherwise), or
+manually edit its renewal configuration file. For information on the renewal
+configuration file please refer to config-file_.
+
+More information about hooks can be found by running
+``certbot --help renew``.
+
+
+Manual Validation Hooks
+-----------------------
 
 Certbot allows for the specification of pre and post validation hooks when run
 in manual mode. The flags to specify these scripts are ``--manual-auth-hook``
@@ -807,6 +862,15 @@ Certbot accepts a global configuration file that applies its options to all invo
 of Certbot. Certificate specific configuration choices should be set in the ``.conf``
 files that can be found in ``/etc/letsencrypt/renewal``.
 
+Renewal configuration files store all values specified when a certificate was first
+issued. This includes things like key size, domains, authentication and installation
+method, and pre/post/deploy hooks. It is not recommended to manually edit these values
+as incorrectly set values can cause renewal failure. If you would like to update the
+information set in a renewal configuration file it is recommended that you re-issue
+the certificate with the values that you would prefer. If you do choose to edit the
+configuration file directly it is recommended that you call ``certbot renew --dry-run``
+to ensure that you haven't broken that certificate's ability to renew.
+
 By default no cli.ini file is created, after creating one 
 it is possible to specify the location of this configuration file with
 ``certbot-auto --config cli.ini`` (or shorter ``-c cli.ini``). An
@@ -824,6 +888,8 @@ By default, the following locations are searched:
 
 Since this configuration file applies to all invocations of certbot it is incorrect
 to list domains in it. Listing domains in cli.ini may prevent renewal from working.
+Similarly hooks specified in this file will be run for all renewals, causing
+values saved in specific renewal configuration files to be ignored.
 Additionally due to how arguments in cli.ini are parsed, options which wish to
 not be set should not be listed. Options set to false will instead be read
 as being set to true by older versions of Certbot, since they have been listed
