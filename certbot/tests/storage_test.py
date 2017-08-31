@@ -890,7 +890,8 @@ class CertPathForCertNameTest(BaseRenewableCertTest):
         super(CertPathForCertNameTest, self).setUp()
         self.config_file.write()
         self._write_out_ex_kinds()
-        self.fullchain = os.path.join(self.config.config_dir, 'live', 'example.org', 'fullchain.pem')
+        self.fullchain = os.path.join(self.config.config_dir, 'live', 'example.org',
+                'fullchain.pem')
         self.config.cert_path = (self.fullchain, '')
 
     def _call(self, cli_config, certname):

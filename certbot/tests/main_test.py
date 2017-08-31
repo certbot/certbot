@@ -313,6 +313,7 @@ class DeleteIfAppropriateTest(unittest.TestCase):
         from certbot.main import _delete_if_appropriate
         _delete_if_appropriate(mock_config)
 
+    # pylint: disable=too-many-arguments
     @mock.patch('certbot.storage.renewal_file_for_certname')
     @mock.patch('certbot.cert_manager.delete')
     @mock.patch('certbot.cert_manager.match_and_check_overlaps')
@@ -332,6 +333,7 @@ class DeleteIfAppropriateTest(unittest.TestCase):
         self._call(config)
         mock_delete.assert_not_called()
 
+    # pylint: disable=too-many-arguments
     @mock.patch('certbot.storage.renewal_file_for_certname')
     @mock.patch('certbot.cert_manager.match_and_check_overlaps')
     @mock.patch('certbot.storage.full_archive_path')
@@ -350,6 +352,7 @@ class DeleteIfAppropriateTest(unittest.TestCase):
         self._call(config)
         mock_delete.assert_called_once()
 
+    # pylint: disable=too-many-arguments
     @mock.patch('certbot.storage.renewal_file_for_certname')
     @mock.patch('certbot.cert_manager.match_and_check_overlaps')
     @mock.patch('certbot.storage.full_archive_path')
@@ -368,6 +371,7 @@ class DeleteIfAppropriateTest(unittest.TestCase):
         self._call(config)
         mock_delete.assert_called_once()
 
+    # pylint: disable=too-many-arguments
     @mock.patch('certbot.storage.renewal_file_for_certname')
     @mock.patch('certbot.cert_manager.match_and_check_overlaps')
     @mock.patch('certbot.storage.full_archive_path')
@@ -388,6 +392,7 @@ class DeleteIfAppropriateTest(unittest.TestCase):
         self._call(config)
         mock_delete.assert_called_once()
 
+    # pylint: disable=too-many-arguments
     @mock.patch('certbot.storage.renewal_file_for_certname')
     @mock.patch('certbot.cert_manager.match_and_check_overlaps')
     @mock.patch('certbot.storage.full_archive_path')
@@ -460,7 +465,6 @@ class DeleteIfAppropriateTest(unittest.TestCase):
         mock_human_readable_cert_info.return_value = ""
         mock_overlapping_archive_dirs.return_value = False
         # Test for non-interactive mode
-        from certbot.display import util as display_util
         util_mock = mock.Mock()
         util_mock.menu.side_effect = errors.MissingCommandlineFlag("Oh no.")
         mock_get_utility.return_value = util_mock

@@ -159,7 +159,7 @@ def _archive_files(candidate_lineage, filetype):
     else:
         return None
 
-def _acceptable_matches(cli_config):
+def _acceptable_matches():
     return [lambda x: x.fullchain_path, lambda x: x.cert_path,
             lambda x: _archive_files(x, "cert"), lambda x: _archive_files(x, "fullchain")]
 
@@ -168,7 +168,7 @@ def cert_path_to_lineage(cli_config):
 
     :param .NamespaceConfig cli_config
     """
-    acceptable_matches = _acceptable_matches(cli_config)
+    acceptable_matches = _acceptable_matches()
     match = match_and_check_overlaps(cli_config, acceptable_matches,
             lambda x: cli_config.cert_path[0], lambda x: x.lineagename)
     return match[0]
