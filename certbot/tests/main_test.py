@@ -313,6 +313,7 @@ class DeleteIfAppropriateTest(unittest.TestCase):
         from certbot.main import _delete_if_appropriate
         _delete_if_appropriate(mock_config)
 
+    @mock.patch('certbot.storage.renewal_file_for_certname')
     @mock.patch('certbot.cert_manager.delete')
     @mock.patch('certbot.cert_manager.match_and_check_overlaps')
     @mock.patch('certbot.storage.full_archive_path')
@@ -320,7 +321,8 @@ class DeleteIfAppropriateTest(unittest.TestCase):
     @test_util.patch_get_utility()
     def test_overlapping_archive_dirs(self, mock_get_utility,
             mock_cert_path_to_lineage, mock_archive,
-            mock_match_and_check_overlaps, mock_delete):
+            mock_match_and_check_overlaps, mock_delete,
+            mock_renewal_file_for_certname):
         # pylint: disable = unused-argument
         config = self.config
         config.cert_path = "/some/reasonable/path"
@@ -330,6 +332,7 @@ class DeleteIfAppropriateTest(unittest.TestCase):
         self._call(config)
         mock_delete.assert_not_called()
 
+    @mock.patch('certbot.storage.renewal_file_for_certname')
     @mock.patch('certbot.cert_manager.match_and_check_overlaps')
     @mock.patch('certbot.storage.full_archive_path')
     @mock.patch('certbot.cert_manager.delete')
@@ -337,7 +340,7 @@ class DeleteIfAppropriateTest(unittest.TestCase):
     @test_util.patch_get_utility()
     def test_cert_name_only(self, mock_get_utility,
             mock_cert_path_for_cert_name, mock_delete, mock_archive,
-            mock_overlapping_archive_dirs):
+            mock_overlapping_archive_dirs, mock_renewal_file_for_certname):
         # pylint: disable = unused-argument
         config = self.config
         config.certname = "example.com"
@@ -347,6 +350,7 @@ class DeleteIfAppropriateTest(unittest.TestCase):
         self._call(config)
         mock_delete.assert_called_once()
 
+    @mock.patch('certbot.storage.renewal_file_for_certname')
     @mock.patch('certbot.cert_manager.match_and_check_overlaps')
     @mock.patch('certbot.storage.full_archive_path')
     @mock.patch('certbot.cert_manager.delete')
@@ -354,7 +358,7 @@ class DeleteIfAppropriateTest(unittest.TestCase):
     @test_util.patch_get_utility()
     def test_cert_path_only(self, mock_get_utility,
             mock_cert_path_to_lineage, mock_delete, mock_archive,
-            mock_overlapping_archive_dirs):
+            mock_overlapping_archive_dirs, mock_renewal_file_for_certname):
         # pylint: disable = unused-argument
         config = self.config
         config.cert_path = "/some/reasonable/path"
@@ -364,6 +368,7 @@ class DeleteIfAppropriateTest(unittest.TestCase):
         self._call(config)
         mock_delete.assert_called_once()
 
+    @mock.patch('certbot.storage.renewal_file_for_certname')
     @mock.patch('certbot.cert_manager.match_and_check_overlaps')
     @mock.patch('certbot.storage.full_archive_path')
     @mock.patch('certbot.cert_manager.cert_path_to_lineage')
@@ -371,7 +376,7 @@ class DeleteIfAppropriateTest(unittest.TestCase):
     @test_util.patch_get_utility()
     def test_noninteractive_deletion(self, mock_get_utility, mock_delete,
             mock_cert_path_to_lineage, mock_full_archive_dir,
-            mock_match_and_check_overlaps):
+            mock_match_and_check_overlaps, mock_renewal_file_for_certname):
         # pylint: disable = unused-argument
         config = self.config
         config.namespace.noninteractive_mode = True
@@ -383,6 +388,7 @@ class DeleteIfAppropriateTest(unittest.TestCase):
         self._call(config)
         mock_delete.assert_called_once()
 
+    @mock.patch('certbot.storage.renewal_file_for_certname')
     @mock.patch('certbot.cert_manager.match_and_check_overlaps')
     @mock.patch('certbot.storage.full_archive_path')
     @mock.patch('certbot.cert_manager.delete')
@@ -390,7 +396,7 @@ class DeleteIfAppropriateTest(unittest.TestCase):
     @test_util.patch_get_utility()
     def test_certname_and_cert_path_match(self, mock_get_utility,
             mock_lineage_for_certname, mock_delete, mock_archive,
-            mock_overlapping_archive_dirs):
+            mock_overlapping_archive_dirs, mock_renewal_file_for_certname):
         # pylint: disable = unused-argument
         config = self.config
         config.certname = "example.com"
