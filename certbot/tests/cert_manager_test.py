@@ -478,13 +478,13 @@ class CertPathToLineageTest(storage_test.BaseRenewableCertTest):
 
     @mock.patch('certbot.cert_manager._acceptable_matches')
     def test_options_fullchain(self, mock_acceptable_matches):
-        mock_acceptable_matches.return_value = [lambda x: x.fullchain_path]
+        mock_acceptable_matches.return_value = [lambda x: [x.fullchain_path]]
         self.config.fullchain_path = self.fullchain
         self.assertEqual('example.org', self._call(self.config))
 
     @mock.patch('certbot.cert_manager._acceptable_matches')
     def test_options_cert_path(self, mock_acceptable_matches):
-        mock_acceptable_matches.return_value = [lambda x: x.cert_path]
+        mock_acceptable_matches.return_value = [lambda x: [x.cert_path]]
         test_cert_path = os.path.join(self.config.config_dir, 'live', 'example.org',
                 'cert.pem')
         self.config.cert_path = (test_cert_path, '')

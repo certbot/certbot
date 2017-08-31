@@ -152,15 +152,13 @@ def _archive_files(candidate_lineage, filetype):
     archive_dir = candidate_lineage.archive_dir
     pattern = [os.path.join(archive_dir, f) for f in os.listdir(archive_dir)
                     if re.match("{0}[0-9]*.pem".format(filetype), f)]
-    # Using [0] here, so make sure to also check for overlapping archive dirs
-    # if you use this function.
     if len(pattern) > 0:
-        return pattern[0]
+        return pattern
     else:
         return None
 
 def _acceptable_matches():
-    return [lambda x: x.fullchain_path, lambda x: x.cert_path,
+    return [lambda x: [x.fullchain_path], lambda x: [x.cert_path],
             lambda x: _archive_files(x, "cert"), lambda x: _archive_files(x, "fullchain")]
 
 def cert_path_to_lineage(cli_config):
@@ -186,9 +184,11 @@ def match_and_check_overlaps(cli_config, acceptable_matches, match_func, rv_func
     """
     def find_matches(candidate_lineage, return_value, acceptable_matches):
         """Returns a list of matches using _search_lineages."""
-        acceptable_matches = [func(candidate_lineage) for func in acceptable_matches]
+        acceptable_matches_rv = []
+        for func in acceptable_matches:
+            acceptable_matches_rv += func(candidate_lineage)
         match = match_func(candidate_lineage)
-        if match in acceptable_matches:
+        if match in acceptable_matches_rv:
             return_value.append(rv_func(candidate_lineage))
         return return_value
 
