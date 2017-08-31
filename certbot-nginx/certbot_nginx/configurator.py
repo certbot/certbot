@@ -138,7 +138,6 @@ class NginxConfigurator(common.Installer):
         """Full absolute path to digest of updated SSL configuration file."""
         return os.path.join(self.config.config_dir, constants.UPDATED_MOD_SSL_CONF_DIGEST)
 
-
     # This is called in determine_authenticator and determine_installer
     def prepare(self):
         """Prepare the authenticator/installer.
