@@ -873,7 +873,8 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
     helpful.add(
         [None, "run", "certonly", "certificates"],
         "-d", "--domains", "--domain", dest="domains",
-        metavar="DOMAIN", action=_DomainsAction, default=[],
+        metavar="DOMAIN", action=_DomainsAction,
+        default=flag_default('domains')[:], # Copy, not reference
         help="Domain names to apply. For multiple domains you can use "
              "multiple -d flags or enter a comma separated list of domains "
              "as a parameter. The first provided domain will be used in "
