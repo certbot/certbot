@@ -435,9 +435,8 @@ class DeleteIfAppropriateTest(unittest.TestCase):
         mock_human_readable_cert_info.return_value = ""
         mock_overlapping_archive_dirs.return_value = False
         from certbot.display import util as display_util
-        util_mock = mock.Mock()
+        util_mock = mock_get_utility()
         util_mock.menu.return_value = (display_util.OK, 0)
-        mock_get_utility.return_value = util_mock
         self._call(config)
         mock_delete.assert_called_once()
 
@@ -465,9 +464,8 @@ class DeleteIfAppropriateTest(unittest.TestCase):
         mock_human_readable_cert_info.return_value = ""
         mock_overlapping_archive_dirs.return_value = False
         # Test for non-interactive mode
-        util_mock = mock.Mock()
+        util_mock = mock_get_utility()
         util_mock.menu.side_effect = errors.MissingCommandlineFlag("Oh no.")
-        mock_get_utility.return_value = util_mock
         self.assertRaises(errors.Error, self._call, config)
         mock_delete.assert_not_called()
 
