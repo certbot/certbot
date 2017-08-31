@@ -696,7 +696,8 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
                           self._certonly_new_request_common, mock_client)
 
     def _test_renewal_common(self, due_for_renewal, extra_args, log_out=None,
-                             args=None, should_renew=True, error_expected=False):
+                             args=None, should_renew=True, error_expected=False,
+                                 quiet_mode=False):
         # pylint: disable=too-many-locals,too-many-arguments
         cert_path = test_util.vector_path('cert_512.pem')
         chain_path = '/etc/letsencrypt/live/foo.bar/fullchain.pem'
@@ -708,15 +709,23 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         mock_certr = mock.MagicMock()
         mock_key = mock.MagicMock(pem='pem_key')
         mock_client = mock.MagicMock()
-        stdout = None
+        stdout = six.StringIO()
         mock_client.obtain_certificate.return_value = (mock_certr, 'chain',
                                                        mock_key, 'csr')
+
+        def write_msg(message, *args, **kwargs):
+            """Write message to stdout."""
+            _, _ = args, kwargs
+            stdout.write(message)
+
         try:
             with mock.patch('certbot.cert_manager.find_duplicative_certs') as mock_fdc:
                 mock_fdc.return_value = (mock_lineage, None)
                 with mock.patch('certbot.main._init_le_client') as mock_init:
                     mock_init.return_value = mock_client
                     with test_util.patch_get_utility() as mock_get_utility:
+                        if not quiet_mode:
+                            mock_get_utility().notification.side_effect = write_msg
                         with mock.patch('certbot.main.renewal.OpenSSL') as mock_ssl:
                             mock_latest = mock.MagicMock()
                             mock_latest.get_issuer.return_value = "Fake fake"
@@ -727,7 +736,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
                                 if extra_args:
                                     args += extra_args
                                 try:
-                                    ret, stdout, _, _ = self._call(args)
+                                    ret, stdout, _, _ = self._call(args, stdout)
                                     if ret:
                                         print("Returned", ret)
                                         raise AssertionError(ret)
@@ -797,7 +806,8 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         self.assertTrue("renew" in out)
 
         args = ["renew", "--dry-run", "-q"]
-        _, _, stdout = self._test_renewal_common(True, [], args=args, should_renew=True)
+        _, _, stdout = self._test_renewal_common(True, [], args=args,
+                                                 should_renew=True, quiet_mode=True)
         out = stdout.getvalue()
         self.assertEqual("", out)
 
