@@ -346,9 +346,8 @@ class RenameLineageTest(BaseCertManagerTest):
         self.assertRaises(errors.Error, self._call, self.config)
 
         mock_renewal_conf_files.return_value = ["one.conf"]
-        util_mock = mock.Mock()
+        util_mock = mock_get_utility()
         util_mock.menu.return_value = (display_util.CANCEL, 0)
-        mock_get_utility.return_value = util_mock
         self.assertRaises(errors.Error, self._call, self.config)
 
         util_mock.menu.return_value = (display_util.OK, -1)
@@ -359,14 +358,11 @@ class RenameLineageTest(BaseCertManagerTest):
         self.config.certname = "one"
         self.config.new_certname = None
 
-        util_mock = mock.Mock()
+        util_mock = mock_get_utility()
         util_mock.input.return_value = (display_util.CANCEL, "name")
-        mock_get_utility.return_value = util_mock
         self.assertRaises(errors.Error, self._call, self.config)
 
-        util_mock = mock.Mock()
         util_mock.input.return_value = (display_util.OK, None)
-        mock_get_utility.return_value = util_mock
         self.assertRaises(errors.Error, self._call, self.config)
 
     @test_util.patch_get_utility()
@@ -393,9 +389,8 @@ class RenameLineageTest(BaseCertManagerTest):
     def test_rename_cert_interactive_certname(self, mock_check, mock_get_utility):
         mock_check.return_value = True
         self.config.certname = None
-        util_mock = mock.Mock()
+        util_mock = mock_get_utility()
         util_mock.menu.return_value = (display_util.OK, 0)
-        mock_get_utility.return_value = util_mock
         self._call(self.config)
         from certbot import cert_manager
         updated_lineage = cert_manager.lineage_for_certname(self.config, self.config.new_certname)
