@@ -103,7 +103,7 @@ class Plugin(object):
 
 
 class Installer(Plugin):
-    """An installer base class with reverter methods defined.
+    """An installer base class with reverter and ssl_dhparam methods defined.
 
     Installer plugins do not have to inherit from this class.
 
@@ -196,6 +196,24 @@ class Installer(Plugin):
             self.reverter.view_config_changes()
         except errors.ReverterError as err:
             raise errors.PluginError(str(err))
+
+    @property
+    def ssl_dhparams(self):
+        """Full absolute path to ssl_dhparams file."""
+        return os.path.join(self.config.config_dir, constants.SSL_DHPARAMS_DEST)
+
+    @property
+    def updated_ssl_dhparams_digest(self):
+        """Full absolute path to digest of updated ssl_dhparams file."""
+        return os.path.join(self.config.config_dir, constants.UPDATED_SSL_DHPARAMS_DIGEST)
+
+    def install_ssl_dhparams(self):
+        """Copy Certbot's ssl_dhparams file into the system's config dir if required."""
+        return install_version_controlled_file(
+            self.ssl_dhparams,
+            self.updated_ssl_dhparams_digest,
+            constants.SSL_DHPARAMS_SRC,
+            constants.ALL_SSL_DHPARAMS_HASHES)
 
 
 class Addr(object):

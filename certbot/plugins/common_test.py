@@ -79,14 +79,16 @@ class PluginTest(unittest.TestCase):
             "--mock-foo-bar", dest="different_to_foo_bar", x=1, y=None)
 
 
-class InstallerTest(unittest.TestCase):
+class InstallerTest(test_util.ConfigTestCase):
     """Tests for certbot.plugins.common.Installer."""
 
     def setUp(self):
+        super(InstallerTest, self).setUp()
+        os.mkdir(self.config.config_dir)
         from certbot.plugins.common import Installer
 
         with mock.patch("certbot.plugins.common.reverter.Reverter"):
-            self.installer = Installer(config=mock.MagicMock(),
+            self.installer = Installer(config=self.config,
                                        name="Installer")
         self.reverter = self.installer.reverter
 
@@ -162,6 +164,10 @@ class InstallerTest(unittest.TestCase):
         reverter_func.side_effect = errors.ReverterError
         self.assertRaises(
             errors.PluginError, installer_func, *passed_args, **passed_kwargs)
+
+    def test_install_ssl_dhparams(self):
+        self.installer.install_ssl_dhparams()
+        self.assertTrue(os.path.isfile(self.installer.ssl_dhparams))
 
 
 class AddrTest(unittest.TestCase):
