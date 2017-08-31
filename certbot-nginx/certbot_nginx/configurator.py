@@ -138,15 +138,6 @@ class NginxConfigurator(common.Installer):
         """Full absolute path to digest of updated SSL configuration file."""
         return os.path.join(self.config.config_dir, constants.UPDATED_MOD_SSL_CONF_DIGEST)
 
-    @property
-    def ssl_dhparams(self):
-        """Full absolute path to ssl_dhparams file."""
-        return os.path.join(self.config.config_dir, constants.SSL_DHPARAMS_DEST)
-
-    @property
-    def updated_ssl_dhparams_digest(self):
-        """Full absolute path to digest of updated ssl_dhparams file."""
-        return os.path.join(self.config.config_dir, constants.UPDATED_SSL_DHPARAMS_DIGEST)
 
     # This is called in determine_authenticator and determine_installer
     def prepare(self):
@@ -167,7 +158,7 @@ class NginxConfigurator(common.Installer):
 
         install_ssl_options_conf(self.mod_ssl_conf, self.updated_mod_ssl_conf_digest)
 
-        install_ssl_dhparams(self.ssl_dhparams, self.updated_ssl_dhparams_digest)
+        self.install_ssl_dhparams()
 
         # Set Version
         if self.version is None:
@@ -838,9 +829,3 @@ def install_ssl_options_conf(options_ssl, options_ssl_digest):
     """Copy Certbot's SSL options file into the system's config dir if required."""
     return common.install_version_controlled_file(options_ssl, options_ssl_digest,
         constants.MOD_SSL_CONF_SRC, constants.ALL_SSL_OPTIONS_HASHES)
-
-
-def install_ssl_dhparams(ssl_dhparams, updated_ssl_dhparams_digest):
-    """Copy Certbot's ssl_dhparams file into the system's config dir if required."""
-    return common.install_version_controlled_file(ssl_dhparams, updated_ssl_dhparams_digest,
-        constants.SSL_DHPARAMS_SRC, constants.ALL_SSL_DHPARAMS_HASHES)
