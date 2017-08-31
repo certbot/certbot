@@ -255,9 +255,13 @@ class ConfigTestCase(TempDirTestCase):
         super(ConfigTestCase, self).setUp()
         self.config = configuration.NamespaceConfig(
             mock.MagicMock(
+                verb="certonly",
                 config_dir=os.path.join(self.tempdir, 'config'),
                 work_dir=os.path.join(self.tempdir, 'work'),
                 logs_dir=os.path.join(self.tempdir, 'logs'),
+                cert_path=constants.CLI_DEFAULTS['auth_cert_path'],
+                fullchain_path=constants.CLI_DEFAULTS['auth_chain_path'],
+                chain_path=constants.CLI_DEFAULTS['auth_chain_path'],
                 server="example.com",
             )
         )
