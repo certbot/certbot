@@ -310,10 +310,11 @@ class ChooseNamesTest(unittest.TestCase):
     @test_util.patch_get_utility("certbot.display.ops.z_util")
     def test_choose_manually(self, mock_util):
         from certbot.display.ops import _choose_names_manually
+        utility_mock = mock_util()
         # No retry
-        mock_util().yesno.return_value = False
+        utility_mock.yesno.return_value = False
         # IDN and no retry
-        mock_util().input.return_value = (display_util.OK,
+        utility_mock.input.return_value = (display_util.OK,
                                           "uniçodé.com")
         self.assertEqual(_choose_names_manually(), [])
         # IDN exception with previous mocks
@@ -324,7 +325,7 @@ class ChooseNamesTest(unittest.TestCase):
             mock_sli.side_effect = unicode_error
             self.assertEqual(_choose_names_manually(), [])
         # Valid domains
-        mock_util().input.return_value = (display_util.OK,
+        utility_mock.input.return_value = (display_util.OK,
                                           ("example.com,"
                                            "under_score.example.com,"
                                            "justtld,"
@@ -332,14 +333,17 @@ class ChooseNamesTest(unittest.TestCase):
         self.assertEqual(_choose_names_manually(),
                          ["example.com", "under_score.example.com",
                           "justtld", "valid.example.com"])
+
+    @test_util.patch_get_utility("certbot.display.ops.z_util")
+    def test_choose_manually_retry(self, mock_util):
+        from certbot.display.ops import _choose_names_manually
+        utility_mock = mock_util()
         # Three iterations
-        mock_util().input.return_value = (display_util.OK,
+        utility_mock.input.return_value = (display_util.OK,
                                           "uniçodé.com")
-        yn = mock.MagicMock()
-        yn.side_effect = [True, True, False]
-        mock_util().yesno = yn
+        utility_mock.yesno.side_effect = [True, True, False]
         _choose_names_manually()
-        self.assertEqual(mock_util().yesno.call_count, 3)
+        self.assertEqual(utility_mock.yesno.call_count, 3)
 
 
 class SuccessInstallationTest(unittest.TestCase):

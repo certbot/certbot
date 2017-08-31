@@ -320,6 +320,12 @@ def _renew_describe_results(config, renew_successes, renew_failures,
 
     out = []
     notify = out.append
+    disp = zope.component.getUtility(interfaces.IDisplay)
+
+    def notify_error(err):
+        """Notify and log errors."""
+        notify(err)
+        logger.error(err)
 
     if config.dry_run:
         notify("** DRY RUN: simulating 'certbot renew' close to cert expiry")
@@ -338,14 +344,14 @@ def _renew_describe_results(config, renew_successes, renew_failures,
                "have been renewed:")
         notify(report(renew_successes, "success"))
     elif renew_failures and not renew_successes:
-        notify("All renewal attempts failed. The following certs could not be "
-               "renewed:")
-        notify(report(renew_failures, "failure"))
+        notify_error("All renewal attempts failed. The following certs could "
+               "not be renewed:")
+        notify_error(report(renew_failures, "failure"))
     elif renew_failures and renew_successes:
         notify("The following certs were successfully renewed:")
-        notify(report(renew_successes, "success"))
-        notify("\nThe following certs could not be renewed:")
-        notify(report(renew_failures, "failure"))
+        notify(report(renew_successes, "success") + "\n")
+        notify_error("The following certs could not be renewed:")
+        notify_error(report(renew_failures, "failure"))
 
     if parse_failures:
         notify("\nAdditionally, the following renewal configuration files "
@@ -356,9 +362,7 @@ def _renew_describe_results(config, renew_successes, renew_failures,
         notify("** DRY RUN: simulating 'certbot renew' close to cert expiry")
         notify("**          (The test certificates above have not been saved.)")
 
-    if config.quiet and not (renew_failures or parse_failures):
-        return
-    print("\n".join(out))
+    disp.notification("\n".join(out), wrap=False)
 
 
 def handle_renewal_request(config):
@@ -372,8 +376,8 @@ def handle_renewal_request(config):
                            "renewing all installed certificates that are due "
                            "to be renewed or renewing a single certificate specified "
                            "by its name. If you would like to renew specific "
-                           "certificates by their domains, use the certonly "
-                           "command. The renew verb may provide other options "
+                           "certificates by their domains, use the certonly command "
+                           "instead. The renew verb may provide other options "
                            "for selecting certificates to renew in the future.")
 
     if config.certname:

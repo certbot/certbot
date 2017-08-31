@@ -22,6 +22,7 @@ from certbot import constants
 from certbot import interfaces
 from certbot import storage
 from certbot import util
+from certbot import configuration
 
 from certbot.display import util as display_util
 
@@ -172,8 +173,8 @@ class FreezableMock(object):
     """Mock object with the ability to freeze attributes.
 
     This class works like a regular mock.MagicMock object, except
-    attributes and behavior can be set and frozen so they cannot be
-    changed during tests.
+    attributes and behavior set before the object is frozen cannot
+    be changed during tests.
 
     If a func argument is provided to the constructor, this function
     is called first when an instance of FreezableMock is called,
@@ -181,10 +182,12 @@ class FreezableMock(object):
     value of func is ignored.
 
     """
-    def __init__(self, frozen=False, func=None):
+    def __init__(self, frozen=False, func=None, return_value=mock.sentinel.DEFAULT):
         self._frozen_set = set() if frozen else set(('freeze',))
         self._func = func
         self._mock = mock.MagicMock()
+        if return_value != mock.sentinel.DEFAULT:
+            self.return_value = return_value
         self._frozen = frozen
 
     def freeze(self):
@@ -202,17 +205,38 @@ class FreezableMock(object):
                 return object.__getattribute__(self, name)
             except AttributeError:
                 return False
+        elif name in ('return_value', 'side_effect',):
+            return getattr(object.__getattribute__(self, '_mock'), name)
         elif name == '_frozen_set' or name in self._frozen_set:
             return object.__getattribute__(self, name)
         else:
             return getattr(object.__getattribute__(self, '_mock'), name)
 
     def __setattr__(self, name, value):
+        """ Before it is frozen, attributes are set on the FreezableMock
+        instance and added to the _frozen_set. Attributes in the _frozen_set
+        cannot be changed after the FreezableMock is frozen. In this case,
+        they are set on the underlying _mock.
+
+        In cases of return_value and side_effect, these attributes are always
+        passed through to the instance's _mock and added to the _frozen_set
+        before the object is frozen.
+
+        """
         if self._frozen:
-            return setattr(self._mock, name, value)
-        elif name != '_frozen_set':
+            if name in self._frozen_set:
+                raise AttributeError('Cannot change frozen attribute ' + name)
+            else:
+                return setattr(self._mock, name, value)
+
+        if name != '_frozen_set':
             self._frozen_set.add(name)
-        return object.__setattr__(self, name, value)
+
+        if name in ('return_value', 'side_effect'):
+            return setattr(self._mock, name, value)
+
+        else:
+            return object.__setattr__(self, name, value)
 
 
 def _create_get_utility_mock():
@@ -222,7 +246,7 @@ def _create_get_utility_mock():
             frozen_mock = FreezableMock(frozen=True, func=_assert_valid_call)
             setattr(display, name, frozen_mock)
     display.freeze()
-    return mock.MagicMock(return_value=display)
+    return FreezableMock(frozen=True, return_value=display)
 
 
 def _assert_valid_call(*args, **kwargs):
@@ -246,6 +270,20 @@ class TempDirTestCase(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.tempdir)
 
+class ConfigTestCase(TempDirTestCase):
+    """Test class which sets up a NamespaceConfig object.
+
+    """
+    def setUp(self):
+        super(ConfigTestCase, self).setUp()
+        self.config = configuration.NamespaceConfig(
+            mock.MagicMock(
+                config_dir=os.path.join(self.tempdir, 'config'),
+                work_dir=os.path.join(self.tempdir, 'work'),
+                logs_dir=os.path.join(self.tempdir, 'logs'),
+                server="example.com",
+            )
+        )
 
 def lock_and_call(func, lock_path):
     """Grab a lock for lock_path and call func.
