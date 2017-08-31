@@ -29,18 +29,19 @@ class ErrorHandler(object):
     """Context manager for running code that must be cleaned up on failure.
 
     The context manager allows you to register functions that will be called
-    when an exception (excluding SystemExit) or signal is encountered. Usage:
+    when an exception (excluding SystemExit) or signal is encountered.
+    Usage::
 
-    handler = ErrorHandler(cleanup1_func, *cleanup1_args, **cleanup1_kwargs)
-    handler.register(cleanup2_func, *cleanup2_args, **cleanup2_kwargs)
+        handler = ErrorHandler(cleanup1_func, *cleanup1_args, **cleanup1_kwargs)
+        handler.register(cleanup2_func, *cleanup2_args, **cleanup2_kwargs)
 
-    with handler:
-        do_something()
+        with handler:
+            do_something()
 
-    Or for one cleanup function:
+    Or for one cleanup function::
 
-    with ErrorHandler(func, args, kwargs):
-        do_something()
+        with ErrorHandler(func, args, kwargs):
+            do_something()
 
     If an exception is raised out of do_something, the cleanup functions will
     be called in last in first out order. Then the exception is raised.
