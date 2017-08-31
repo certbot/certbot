@@ -256,14 +256,14 @@ class ConfigTestCase(TempDirTestCase):
         self.config = configuration.NamespaceConfig(
             mock.MagicMock(**constants.CLI_DEFAULTS)
         )
-        self.config.verb="certonly"
-        self.config.config_dir=os.path.join(self.tempdir, 'config')
-        self.config.work_dir=os.path.join(self.tempdir, 'work')
-        self.config.logs_dir=os.path.join(self.tempdir, 'logs')
-        self.config.cert_path=constants.CLI_DEFAULTS['auth_cert_path']
-        self.config.fullchain_path=constants.CLI_DEFAULTS['auth_chain_path']
-        self.config.chain_path=constants.CLI_DEFAULTS['auth_chain_path']
-        self.config.server="example.com"
+        self.config.verb = "certonly"
+        self.config.config_dir = os.path.join(self.tempdir, 'config')
+        self.config.work_dir = os.path.join(self.tempdir, 'work')
+        self.config.logs_dir = os.path.join(self.tempdir, 'logs')
+        self.config.cert_path = constants.CLI_DEFAULTS['auth_cert_path']
+        self.config.fullchain_path = constants.CLI_DEFAULTS['auth_chain_path']
+        self.config.chain_path = constants.CLI_DEFAULTS['auth_chain_path']
+        self.config.server = "example.com"
 
 def lock_and_call(func, lock_path):
     """Grab a lock for lock_path and call func.
