@@ -187,7 +187,7 @@ def match_and_check_overlaps(cli_config, acceptable_matches, match_func, rv_func
         acceptable_matches = [func(candidate_lineage) for func in acceptable_matches]
         acceptable_matches_rv = []
         for item in acceptable_matches:
-            if isinstance(item) == list:
+            if isinstance(item, list):
                 acceptable_matches_rv += item
             else:
                 acceptable_matches_rv.append(item)
