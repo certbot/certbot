@@ -76,7 +76,6 @@ class RegisterTest(test_util.ConfigTestCase):
     @mock.patch("certbot.account.report_new_account")
     def test_email_invalid_noninteractive(self, _rep):
         from acme import messages
-        self.config.email = mock.MagicMock()
         self.config.noninteractive_mode = True
         msg = "DNS problem: NXDOMAIN looking up MX for example.com"
         mx_err = messages.Error.with_code('invalidContact', detail=msg)
