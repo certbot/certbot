@@ -1074,9 +1074,9 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         default=flag_default("hsts"), help=argparse.SUPPRESS)
     helpful.add(
         "security", "--uir", action="store_true", dest="uir", default=flag_default("uir"),
-        help="Add the \"Content-Security-Policy: upgrade-insecure-requests\""
-             " header to every HTTP response. Forcing the browser to use"
-             " https:// for every http:// resource.")
+        help='Add the "Content-Security-Policy: upgrade-insecure-requests"'
+             ' header to every HTTP response. Forcing the browser to use'
+             ' https:// for every http:// resource.')
     helpful.add(
         "security", "--no-uir", action="store_false", dest="uir", default=flag_default("uir"),
         help=argparse.SUPPRESS)
@@ -1097,14 +1097,14 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         ["manual", "standalone", "certonly", "renew"],
         "--preferred-challenges", dest="pref_challs",
         action=_PrefChallAction, default=flag_default("pref_challs"),
-        help="A sorted, comma delimited list of the preferred challenge to "
-             "use during authorization with the most preferred challenge "
-             "listed first (Eg, \"dns\" or \"tls-sni-01,http,dns\"). "
-             "Not all plugins support all challenges. See "
-             "https://certbot.eff.org/docs/using.html#plugins for details. "
-             "ACME Challenges are versioned, but if you pick \"http\" rather "
-             "than \"http-01\", Certbot will select the latest version "
-             "automatically.")
+        help='A sorted, comma delimited list of the preferred challenge to '
+             'use during authorization with the most preferred challenge '
+             'listed first (Eg, "dns" or "tls-sni-01,http,dns"). '
+             'Not all plugins support all challenges. See '
+             'https://certbot.eff.org/docs/using.html#plugins for details. '
+             'ACME Challenges are versioned, but if you pick "http" rather '
+             'than "http-01", Certbot will select the latest version '
+             'automatically.')
     helpful.add(
         "renew", "--pre-hook",
         help="Command to be run in a shell before obtaining any certificates."
@@ -1125,14 +1125,14 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
                 action=_RenewHookAction, help=argparse.SUPPRESS)
     helpful.add(
         "renew", "--deploy-hook", action=_DeployHookAction,
-        help="Command to be run in a shell once for each successfully"
-        " issued certificate. For this command, the shell variable"
-        " $RENEWED_LINEAGE will point to the config live subdirectory"
-        " (for example, \"/etc/letsencrypt/live/example.com\") containing"
-        " the new certificates and keys; the shell variable"
-        " $RENEWED_DOMAINS will contain a space-delimited list of"
-        " renewed certificate domains (for example, \"example.com"
-        " www.example.com\"")
+        help='Command to be run in a shell once for each successfully'
+        ' issued certificate. For this command, the shell variable'
+        ' $RENEWED_LINEAGE will point to the config live subdirectory'
+        ' (for example, "/etc/letsencrypt/live/example.com") containing'
+        ' the new certificates and keys; the shell variable'
+        ' $RENEWED_DOMAINS will contain a space-delimited list of'
+        ' renewed certificate domains (for example, "example.com'
+        ' www.example.com"')
     helpful.add(
         "renew", "--disable-hook-validation",
         action="store_false", dest="validate_hooks",
@@ -1168,14 +1168,14 @@ def _create_subparsers(helpful):
     from certbot.client import sample_user_agent # avoid import loops
     helpful.add(
         None, "--user-agent", default=flag_default("user_agent"),
-        help="Set a custom user agent string for the client. User agent strings allow "
-             "the CA to collect high level statistics about success rates by OS, "
-             "plugin and use case, and to know when to deprecate support for past Python "
+        help='Set a custom user agent string for the client. User agent strings allow '
+             'the CA to collect high level statistics about success rates by OS, '
+             'plugin and use case, and to know when to deprecate support for past Python '
              "versions and flags. If you wish to hide this information from the Let's "
-             "Encrypt server, set this to \"\". "
-             "(default: {0}). The flags encoded in the user agent are: "
-             "--duplicate, --force-renew, --allow-subset-of-names, -n, and "
-             "whether any hooks are set.".format(sample_user_agent()))
+             'Encrypt server, set this to "". '
+             '(default: {0}). The flags encoded in the user agent are: '
+             '--duplicate, --force-renew, --allow-subset-of-names, -n, and '
+             'whether any hooks are set.'.format(sample_user_agent()))
     helpful.add(
         None, "--user-agent-comment", default=flag_default("user_agent_comment"),
         type=_user_agent_comment_type,
@@ -1290,7 +1290,7 @@ def _plugins_parsing(helpful, plugins):
                 help="Obtain and install certificates using Nginx")
     helpful.add(["plugins", "certonly"], "--standalone", action="store_true",
                 default=flag_default("standalone"),
-                help="Obtain certificates using a \"standalone\" webserver.")
+                help='Obtain certificates using a "standalone" webserver.')
     helpful.add(["plugins", "certonly"], "--manual", action="store_true",
                 default=flag_default("manual"),
                 help="Provide laborious manual instructions for obtaining a certificate")
