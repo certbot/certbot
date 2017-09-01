@@ -273,7 +273,7 @@ def flag_default(name):
     # argparse has been set up; it is not accurate for all flags.  Call it
     # with caution.  Plugin defaults are missing, and some things are using
     # defaults defined in this file, not in constants.py :(
-    return constants.CLI_DEFAULTS[name]
+    return copy.deepcopy(constants.CLI_DEFAULTS[name])
 
 
 def config_help(name, hidden=False):
@@ -874,7 +874,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         [None, "run", "certonly", "certificates"],
         "-d", "--domains", "--domain", dest="domains",
         metavar="DOMAIN", action=_DomainsAction,
-        default=flag_default('domains')[:], # Copy, not reference
+        default=flag_default("domains"),
         help="Domain names to apply. For multiple domains you can use "
              "multiple -d flags or enter a comma separated list of domains "
              "as a parameter. The first provided domain will be used in "
