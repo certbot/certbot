@@ -2,7 +2,7 @@
 # the kernel to use.
 root=${root:-$(mktemp -d -t leitXXXX)}
 echo "Root integration tests directory: $root"
-config_dir="$root/conf"
+config_dir="$root/config"
 store_flags="--config-dir $config_dir --work-dir $root/work"
 store_flags="$store_flags --logs-dir $root/logs"
 tls_sni_01_port=5001
