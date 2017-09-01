@@ -202,9 +202,9 @@ common --domains le3.wtf install \
        --key-path "${root}/csr/key.pem"
 
 CheckCertCount() {
-    CERTCOUNT=`ls "${root}/config/archive/$1/cert"* | wc -l`
+    CERTCOUNT=`ls "${root}/conf/archive/$1/cert"* | wc -l`
     if [ "$CERTCOUNT" -ne "$2" ] ; then
-        echo Wrong cert count, not "$2" `ls "${root}/config/archive/$1/"*`
+        echo Wrong cert count, not "$2" `ls "${root}/conf/archive/$1/"*`
         exit 1
     fi
 }
@@ -223,19 +223,19 @@ common renew --cert-name dns.le.wtf --authenticator manual
 CheckCertCount "dns.le.wtf" 2
 
 # This will renew because the expiry is less than 10 years from now
-sed -i "4arenew_before_expiry = 4 years" "$root/config/renewal/le.wtf.conf"
+sed -i "4arenew_before_expiry = 4 years" "$root/conf/renewal/le.wtf.conf"
 common_no_force_renew renew --rsa-key-size 2048
 CheckCertCount "le.wtf" 3
 
 # The 4096 bit setting should persist to the first renewal, but be overridden in the second
 
-size1=`wc -c ${root}/config/archive/le.wtf/privkey1.pem | cut -d" " -f1`
-size2=`wc -c ${root}/config/archive/le.wtf/privkey2.pem | cut -d" " -f1`
-size3=`wc -c ${root}/config/archive/le.wtf/privkey3.pem | cut -d" " -f1`
+size1=`wc -c ${root}/conf/archive/le.wtf/privkey1.pem | cut -d" " -f1`
+size2=`wc -c ${root}/conf/archive/le.wtf/privkey2.pem | cut -d" " -f1`
+size3=`wc -c ${root}/conf/archive/le.wtf/privkey3.pem | cut -d" " -f1`
 # 4096 bit PEM keys are about ~3270 bytes, 2048 ones are about 1700 bytes
 if [ "$size1" -lt 3000 ] || [ "$size2" -lt 3000 ] || [ "$size3" -gt 1800 ] ; then
     echo key sizes violate assumptions:
-    ls -l "${root}/config/archive/le.wtf/privkey"*
+    ls -l "${root}/conf/archive/le.wtf/privkey"*
     exit 1
 fi
 
@@ -261,23 +261,23 @@ openssl x509 -in "${root}/csr/cert-p384.pem" -text | grep 'ASN1 OID: secp384r1'
 
 # OCSP Must Staple
 common auth --must-staple --domains "must-staple.le.wtf"
-openssl x509 -in "${root}/config/live/must-staple.le.wtf/cert.pem" -text | grep '1.3.6.1.5.5.7.1.24'
+openssl x509 -in "${root}/conf/live/must-staple.le.wtf/cert.pem" -text | grep '1.3.6.1.5.5.7.1.24'
 
 # revoke by account key
-common revoke --cert-path "$root/config/live/le.wtf/cert.pem"
+common revoke --cert-path "$root/conf/live/le.wtf/cert.pem"
 # revoke renewed
-common revoke --cert-path "$root/config/live/le1.wtf/cert.pem"
+common revoke --cert-path "$root/conf/live/le1.wtf/cert.pem"
 # revoke by cert key
-common revoke --cert-path "$root/config/live/le2.wtf/cert.pem" \
-    --key-path "$root/config/live/le2.wtf/privkey.pem"
+common revoke --cert-path "$root/conf/live/le2.wtf/cert.pem" \
+    --key-path "$root/conf/live/le2.wtf/privkey.pem"
 
 # Get new certs to test revoke with a reason, by account and by cert key
 common --domains le1.wtf
-common revoke --cert-path "$root/config/live/le1.wtf/cert.pem" \
+common revoke --cert-path "$root/conf/live/le1.wtf/cert.pem" \
     --reason cessationOfOperation
 common --domains le2.wtf
-common revoke --cert-path "$root/config/live/le2.wtf/cert.pem" \
-    --key-path "$root/config/live/le2.wtf/privkey.pem" \
+common revoke --cert-path "$root/conf/live/le2.wtf/cert.pem" \
+    --key-path "$root/conf/live/le2.wtf/privkey.pem" \
     --reason keyCompromise
 
 common unregister
@@ -304,9 +304,9 @@ done
 
 cert_name="must-staple.le.wtf"
 common delete --cert-name $cert_name
-archive="$root/config/archive/$cert_name"
-conf="$root/config/renewal/$cert_name.conf"
-live="$root/config/live/$cert_name"
+archive="$root/conf/archive/$cert_name"
+conf="$root/conf/renewal/$cert_name.conf"
+live="$root/conf/live/$cert_name"
 for path in $archive $conf $live; do
     if [ -e $path ]; then
         echo "Lineage not properly deleted!"
