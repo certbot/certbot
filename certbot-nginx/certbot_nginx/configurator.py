@@ -157,6 +157,8 @@ class NginxConfigurator(common.Installer):
 
         install_ssl_options_conf(self.mod_ssl_conf, self.updated_mod_ssl_conf_digest)
 
+        self.install_ssl_dhparams()
+
         # Set Version
         if self.version is None:
             self.version = self.get_version()
@@ -449,11 +451,13 @@ class NginxConfigurator(common.Installer):
 
         snakeoil_cert, snakeoil_key = self._get_snakeoil_paths()
 
-        ssl_block = (
-            [['\n    ', 'listen', ' ', '{0} ssl'.format(self.config.tls_sni_01_port)],
-             ['\n    ', 'ssl_certificate', ' ', snakeoil_cert],
-             ['\n    ', 'ssl_certificate_key', ' ', snakeoil_key],
-             ['\n    ', 'include', ' ', self.mod_ssl_conf]])
+        ssl_block = ([
+            ['\n    ', 'listen', ' ', '{0} ssl'.format(self.config.tls_sni_01_port)],
+            ['\n    ', 'ssl_certificate', ' ', snakeoil_cert],
+            ['\n    ', 'ssl_certificate_key', ' ', snakeoil_key],
+            ['\n    ', 'include', ' ', self.mod_ssl_conf],
+            ['\n    ', 'ssl_dhparam', ' ', self.ssl_dhparams],
+        ])
 
         self.parser.add_server_directives(
             vhost, ssl_block, replace=False)
@@ -822,5 +826,5 @@ def nginx_restart(nginx_ctl, nginx_conf):
 
 def install_ssl_options_conf(options_ssl, options_ssl_digest):
     """Copy Certbot's SSL options file into the system's config dir if required."""
-    return common.install_ssl_options_conf(options_ssl, options_ssl_digest,
+    return common.install_version_controlled_file(options_ssl, options_ssl_digest,
         constants.MOD_SSL_CONF_SRC, constants.ALL_SSL_OPTIONS_HASHES)

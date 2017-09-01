@@ -1,6 +1,7 @@
 """Certbot constants."""
-import os
 import logging
+import os
+import pkg_resources
 
 from acme import challenges
 
@@ -112,3 +113,18 @@ FORCE_INTERACTIVE_FLAG = "--force-interactive"
 
 EFF_SUBSCRIBE_URI = "https://supporters.eff.org/subscribe/certbot"
 """EFF URI used to submit the e-mail address of users who opt-in."""
+
+SSL_DHPARAMS_DEST = "ssl-dhparams.pem"
+"""Name of the ssl_dhparams file as saved in `IConfig.config_dir`."""
+
+SSL_DHPARAMS_SRC = pkg_resources.resource_filename(
+    "certbot", "ssl-dhparams.pem")
+"""Path to the nginx ssl_dhparams file found in the Certbot distribution."""
+
+UPDATED_SSL_DHPARAMS_DIGEST = ".updated-ssl-dhparams-pem-digest.txt"
+"""Name of the hash of the updated or informed ssl_dhparams as saved in `IConfig.config_dir`."""
+
+ALL_SSL_DHPARAMS_HASHES = [
+    '9ba6429597aeed2d8617a7705b56e96d044f64b07971659382e426675105654b',
+]
+"""SHA256 hashes of the contents of all versions of SSL_DHPARAMS_SRC"""
