@@ -158,7 +158,7 @@ def _archive_files(candidate_lineage, filetype):
         return None
 
 def _acceptable_matches():
-    return [lambda x: [x.fullchain_path], lambda x: [x.cert_path],
+    return [lambda x: x.fullchain_path, lambda x: x.cert_path,
             lambda x: _archive_files(x, "cert"), lambda x: _archive_files(x, "fullchain")]
 
 def cert_path_to_lineage(cli_config):
@@ -184,9 +184,13 @@ def match_and_check_overlaps(cli_config, acceptable_matches, match_func, rv_func
     """
     def find_matches(candidate_lineage, return_value, acceptable_matches):
         """Returns a list of matches using _search_lineages."""
+        acceptable_matches = [func(candidate_lineage) for func in acceptable_matches]
         acceptable_matches_rv = []
-        for func in acceptable_matches:
-            acceptable_matches_rv += func(candidate_lineage)
+        for item in acceptable_matches:
+            if type(item) == list:
+                acceptable_matches_rv += item
+            else:
+                acceptable_matches_rv.append(item)
         match = match_func(candidate_lineage)
         if match in acceptable_matches_rv:
             return_value.append(rv_func(candidate_lineage))
