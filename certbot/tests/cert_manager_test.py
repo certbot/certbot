@@ -449,7 +449,7 @@ class DuplicativeCertsTest(storage_test.BaseRenewableCertTest):
 
 
 class CertPathToLineageTest(storage_test.BaseRenewableCertTest):
-    """Test for certbot.cert_manager.cert_path_to_lineage"""
+    """Tests for certbot.cert_manager.cert_path_to_lineage"""
 
     def setUp(self):
         super(CertPathToLineageTest, self).setUp()
