@@ -444,7 +444,7 @@ def _delete_if_appropriate(config): # pylint: disable=too-many-locals,too-many-b
         cert_manager.match_and_check_overlaps(config, [lambda x: archive_dir],
             lambda x: x.archive_dir, lambda x: x)
     except errors.OverlappingMatchFound:
-        msg = ('Not deleting due to overlapping archive dirs. More than '
+        msg = ('Not deleting revoked certs due to overlapping archive dirs. More than '
                 'one lineage is using {0}'.format(archive_dir))
         reporter_util.add_message(''.join(msg), reporter_util.MEDIUM_PRIORITY)
         return
