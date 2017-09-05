@@ -520,23 +520,23 @@ class MatchAndCheckOverlaps(storage_test.BaseRenewableCertTest):
 
     def _call(self, cli_config, acceptable_matches, match_func, rv_func):
         from certbot.cert_manager import match_and_check_overlaps
-        return match_and_check_overlaps(self.config, acceptable_matches, match_func, rv_func)
+        return match_and_check_overlaps(cli_config, acceptable_matches, match_func, rv_func)
 
     def test_basic_match(self):
         from certbot.cert_manager import _acceptable_matches
         self.assertEqual(['example.org'], self._call(self.config, _acceptable_matches(),
-
             lambda x: self.config.cert_path[0], lambda x: x.lineagename))
 
     @mock.patch('certbot.cert_manager._search_lineages')
     def test_no_matches(self, mock_search_lineages):
         mock_search_lineages.return_value = []
-        self.assertRaises(errors.Error, self._call, None, None, None, None)
+        self.assertRaises(errors.Error, self._call, self.config, None, None, None)
 
     @mock.patch('certbot.cert_manager._search_lineages')
     def test_too_many_matches(self, mock_search_lineages):
         mock_search_lineages.return_value = ['spider', 'dance']
-        self.assertRaises(errors.OverlappingMatchFound, self._call, None, None, None, None)
+        self.assertRaises(errors.OverlappingMatchFound, self._call, self.config, None, None, None)
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
