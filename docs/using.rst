@@ -428,7 +428,7 @@ The ``renew`` command includes hooks for running commands or scripts before or a
 renewed. For example, if you have a single certificate obtained using
 the standalone_ plugin, you might need to stop the webserver
 before renewing so standalone can bind to the necessary ports, and
-then restart it after the plugin is finished. For more informaton on hooks
+then restart it after the plugin is finished. For more information on hooks
 please refer to the hooks_ section.
 
 If you're sure that this command executes successfully without human
@@ -438,8 +438,8 @@ can run on a regular basis, like every week or every day). In that case,
 you are likely to want to use the ``-q`` or ``--quiet`` quiet flag to
 silence all output except errors.
 
-To test that the renewal of a cert will work you can use the ``--dry-run``
-command. Example:
+To test that the renewal of a certificate will work you can use the ``--dry-run``
+command. Example::
 
    certbot renew --dry-run
    
@@ -613,29 +613,31 @@ The following files are available:
 .. _hooks:
 
 Hooks
------
+=====
 
-The ``renew`` and ``run`` commands include hooks for running system commands or scripts before or after a certificate is
-renewed. For example, if you have a single certificate obtained using
+When using Certbot to obtain a certificate (such as when using the
+``certonly``, ``run``, ``renew`` subcommands), you can provide hooks
+to run custom commands or scripts before or after the certificates are
+obtained. For example, if you have a single certificate obtained using
 the standalone_ plugin, you might need to stop the webserver
 before renewing so standalone can bind to the necessary ports, and
 then restart it after the plugin is finished. Example::
 
-  certbot certonly --standalone --pre-hook "service nginx stop" --post-hook "service nginx start"
+  certbot certonly --standalone --pre-hook "service lighttpd stop" --post-hook "service lighttpd start"
 
-Hooks specified in the creation of a cert will be saved in that certificate's
-renewal configuration file, and will be called each time renewal for that
-certificate is attempted.
+Pre and post hooks specified while obtaining a certificate will be saved in
+that certificate's renewal configuration file, and will be called each time
+renewal for that certificate is attempted. Deploy hooks will be called on
+successful renewals.
 
 Alternately you can specify hooks as arguments with ``certbot renew`` either on
 the command line or in your crontab. Example::
 
-  certbot renew --pre-hook "service nginx stop" --post-hook "service nginx start"
+  certbot renew --deploy-hook "service lighttpd restart"
   
 .. note:: Any certificates renewed this way will have the hook values in their
    renewal configuration files overwritten with the arguments specified in this
-   renew command. Certificates for which renewal is not attempted will have the
-   hook values in their renewal configuration files unchanged.
+   renew command.
    
 Similarly global hooks can be specified in the (optional) ``cli.ini``
 configuration file. For more information on configuration files, please
@@ -650,11 +652,11 @@ non-zero exit code. Hooks will only be run if a certificate is due for
 renewal, so you can run the above command frequently via ``certbot renew`` 
 without unnecessarily stopping your webserver.
 
-Unique ``--pre-hook`` and ``--post-hook`` hooks run before and after every renewal
-attempt. If two certificates have identical pre and post hooks, they will be run
+Saved or specified hooks run before and after every renewal attempt.
+If two certificates have identical pre and post hooks, they will be run
 only once. Meaning renewal for the two certificates would follow this form:
-pre-hook is run, renewal for cert 1 is run, renewal for cert 2 is run, post-hook
-is run.
+Your pre-hook is run, certificate 1 is renewed, certificate 2 is renewed, 
+then your post-hook is run.
 
 Note that certificates outside of the renewal window (30 days) will not have
 renewal attempted, and will therefore not cause pre and post hooks to be run.
@@ -705,6 +707,11 @@ certificate you can either request that certificate again and specify all of
 the arguments you want to be associated with it (hooks and otherwise), or
 manually edit its renewal configuration file. For information on the renewal
 configuration file please refer to config-file_.
+
+Note that each cert can only have one value for ``--pre-hook``, ``--post-hook``,
+``--deploy-hook``. If you would like Certbot to perform multiple actions when
+running one of the hooks you should combine them into a single command or specify
+them all in a script.
 
 More information about hooks can be found by running
 ``certbot --help renew``.
