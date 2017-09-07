@@ -32,3 +32,9 @@ if ! ./letsencrypt-auto -v --debug --version --no-self-upgrade 2>&1 | grep $EXPE
     exit 1
 fi
 echo upgrade appeared to be successful
+
+if [ "$(tools/readlink.py ${XDG_DATA_HOME:-~/.local/share}/letsencrypt)" != "/opt/eff.org/certbot/venv" ]; then
+    echo symlink from old venv path not properly created!
+    exit 1
+fi
+echo symlink properly created
