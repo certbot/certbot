@@ -706,7 +706,7 @@ If you would like to change what hooks are being run during the renewal of a
 certificate you can either request that certificate again and specify all of
 the arguments you want to be associated with it (hooks and otherwise), or
 manually edit its renewal configuration file. For information on the renewal
-configuration file please refer to config-file_.
+configuration files please refer to config-file_.
 
 Note that each cert can only have one value for ``--pre-hook``, ``--post-hook``,
 ``--deploy-hook``. If you would like Certbot to perform multiple actions when
