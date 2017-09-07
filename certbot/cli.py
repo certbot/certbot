@@ -49,8 +49,13 @@ if "CERTBOT_AUTO" in os.environ:
     # user saved the script under a different name
     LEAUTO = os.path.basename(os.environ["CERTBOT_AUTO"])
 
-fragment = os.path.join(".local", "share", "letsencrypt")
-cli_command = LEAUTO if fragment in sys.argv[0] else "certbot"
+old_path_fragment = os.path.join(".local", "share", "letsencrypt")
+new_path_prefix = os.path.abspath(os.path.join(os.sep, "opt",
+                                               "eff.org", "certbot", "venv"))
+if old_path_fragment in sys.argv[0] or sys.argv[0].startswith(new_path_prefix):
+    cli_command = LEAUTO
+else:
+    cli_command = "certbot"
 
 # Argparse's help formatting has a lot of unhelpful peculiarities, so we want
 # to replace as much of it as we can...
