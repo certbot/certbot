@@ -59,7 +59,7 @@ class Installer(plugins_common.Installer):
         :raises errors.NotSupportedError: when version is not supported
 
         """
-        for param in ("ctl", "config_dir",):
+        for param in ("ctl", "config_utility",):
             self._verify_executable_is_available(param)
         self._set_config_dir()
         self._check_version()
