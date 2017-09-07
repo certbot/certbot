@@ -539,7 +539,16 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         ifaces = []
         plugins = mock_disco.PluginsRegistry.find_all()
 
-        _, stdout, _, _ = self._call(['plugins'])
+        stdout = six.StringIO()
+        def write_msg(message, *args, **kwargs):
+            """Write message to stdout"""
+            _, _ = args, kwargs
+            stdout.write(message)
+
+        with test_util.patch_get_utility() as mock_get_utility:
+            mock_get_utility().notification.side_effect = write_msg
+            _, stdout, _, _ = self._call(['plugins'], stdout)
+
         plugins.visible.assert_called_once_with()
         plugins.visible().ifaces.assert_called_once_with(ifaces)
         filtered = plugins.visible().ifaces()
@@ -551,7 +560,16 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         ifaces = []
         plugins = mock_disco.PluginsRegistry.find_all()
 
-        _, stdout, _, _ = self._call(['plugins', '--init'])
+        stdout = six.StringIO()
+        def write_msg(message, *args, **kwargs):
+            """Write message to stdout"""
+            _, _ = args, kwargs
+            stdout.write(message)
+
+        with test_util.patch_get_utility() as mock_get_utility:
+            mock_get_utility().notification.side_effect = write_msg
+            _, stdout, _, _ = self._call(['plugins', '--init'], stdout)
+
         plugins.visible.assert_called_once_with()
         plugins.visible().ifaces.assert_called_once_with(ifaces)
         filtered = plugins.visible().ifaces()
@@ -565,7 +583,17 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
     def test_plugins_prepare(self, _det, mock_disco):
         ifaces = []
         plugins = mock_disco.PluginsRegistry.find_all()
-        _, stdout, _, _ = self._call(['plugins', '--init', '--prepare'])
+
+        stdout = six.StringIO()
+        def write_msg(message, *args, **kwargs):
+            """Write message to stdout"""
+            _, _ = args, kwargs
+            stdout.write(message)
+
+        with test_util.patch_get_utility() as mock_get_utility:
+            mock_get_utility().notification.side_effect = write_msg
+            _, stdout, _, _ = self._call(['plugins', '--init', '--prepare'], stdout)
+
         plugins.visible.assert_called_once_with()
         plugins.visible().ifaces.assert_called_once_with(ifaces)
         filtered = plugins.visible().ifaces()
