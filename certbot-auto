@@ -31,7 +31,7 @@ if [ -z "$VENV_PATH" ]; then
 fi
 VENV_BIN="$VENV_PATH/bin"
 BOOTSTRAP_VERSION_PATH="$VENV_PATH/certbot-auto-bootstrap-version.txt"
-LE_AUTO_VERSION="0.18.0"
+LE_AUTO_VERSION="0.18.1"
 BASENAME=$(basename $0)
 USAGE="Usage: $BASENAME [OPTIONS]
 A self-updating wrapper script for the Certbot ACME client. When run, updates
@@ -187,8 +187,7 @@ SetRootAuthMechanism() {
 
 if [ "$1" = "--cb-auto-has-root" ]; then
   shift 1
-elif [ "$1" != "--le-auto-phase2" ]; then
-  # if $1 is --le-auto-phase2, we've executed this branch before
+else
   SetRootAuthMechanism
   if [ -n "$SUDO" ]; then
     echo "Requesting to rerun $0 with root privileges..."
@@ -196,6 +195,14 @@ elif [ "$1" != "--le-auto-phase2" ]; then
     exit 0
   fi
 fi
+
+# Runs this script again with the given arguments. --cb-auto-has-root is added
+# to the command line arguments to ensure we don't try to acquire root a
+# second time. After the script is rerun, we exit the current script.
+RerunWithArgs() {
+    "$0" --cb-auto-has-root "$@"
+    exit 0
+}
 
 BootstrapMessage() {
   # Arguments: Platform name
@@ -825,8 +832,7 @@ if [ "$1" = "--le-auto-phase2" ]; then
       # if non-interactive mode or stdin and stdout are connected to a terminal
       if [ \( "$NONINTERACTIVE" = 1 \) -o \( \( -t 0 \) -a \( -t 1 \) \) ]; then
         rm -rf "$VENV_PATH"
-        "$0" "$@"
-        exit 0
+        RerunWithArgs "$@"
       else
         error "Skipping upgrade because new OS dependencies may need to be installed."
         error
@@ -1071,18 +1077,18 @@ letsencrypt==0.7.0 \
     --hash=sha256:105a5fb107e45bcd0722eb89696986dcf5f08a86a321d6aef25a0c7c63375ade \
     --hash=sha256:c36e532c486a7e92155ee09da54b436a3c420813ec1c590b98f635d924720de9
 
-certbot==0.18.0 \
-    --hash=sha256:941925f045aaae2a7e5b1d322b68ea3e042a1c2d6a3b3de76c5b8a5122e515a7 \
-    --hash=sha256:f70bdfd7a455f0c1f72610b48bf4a462e4aecd8e66baa9d2278f7bc4a4f4195f
-acme==0.18.0 \
-    --hash=sha256:e35b2dbc27a40ca35d9120cb417abde667e9c59436662a10f260f3eaa2eb8fe0 \
-    --hash=sha256:301b0c9108f80d1182add10e8fd0fa962a143731b8208615631a711b8cd98938
-certbot-apache==0.18.0 \
-    --hash=sha256:e08504b1e13e0698dffd4b6437cdf24480f6666b60455c83e9a55cad56ab8c2d \
-    --hash=sha256:44b65d61f4d284da188c578ad0dc700d4743d03ae5382be86716ff26a82def94
-certbot-nginx==0.18.0 \
-    --hash=sha256:da58201350b0d02cd4b43ea53abd34a4a56cbb7d5564004c25607bdcbec5e890 \
-    --hash=sha256:528db0f8e5d5ac6956e4df15ab4809f313114ff2817c4b2f04c43913d750ca28
+certbot==0.18.1 \
+    --hash=sha256:46e5f0b225ceef0afe81f7f2442c0dd23485f96b5e16cbd78c9e692dc551203e \
+    --hash=sha256:ae0aaf0cc1af53713232a222fb20891475ec9ff9d128a277c4e0f92ea7c36b4c
+acme==0.18.1 \
+    --hash=sha256:a1c3d8dddb573b69573294ccc089f9a12fd91ebdfe72d9bfcacc260df28c50cf \
+    --hash=sha256:1e4c6c0a3fb9906f0d1389a39c76d730e2691d7f168a219e464237381ddcc667
+certbot-apache==0.18.1 \
+    --hash=sha256:2eb78c6b22bc6028e4d7f169e1cbdca1ddedf3aa60e69f5f38952654b7a2a94d \
+    --hash=sha256:2a25b2909167ae5c583b034957e59e9923017cf52c6fa4b310cfca2a3a005fb4
+certbot-nginx==0.18.1 \
+    --hash=sha256:19be0c3800cacf97d4ca8a20c7a65585fb24af3a2c9164484b12c4da634b6833 \
+    --hash=sha256:bda89d4ebcfc9dc7ee41fe23ea2fc19e6c773a4a2873737d4b19210c752f5aca
 
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
@@ -1491,5 +1497,5 @@ UNLIKELY_EOF
     fi  # A newer version is available.
   fi  # Self-upgrading is allowed.
 
-  "$0" --le-auto-phase2 "$@"
+  RerunWithArgs --le-auto-phase2 "$@"
 fi
