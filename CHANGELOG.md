@@ -2,6 +2,22 @@
 
 Certbot adheres to [Semantic Versioning](http://semver.org/).
 
+## 0.18.1 - 2017-09-08
+
+### Fixed
+
+* If certbot-auto was running as an unprivileged user and it upgraded from
+  0.17.0 to 0.18.0, it would crash with a permissions error and would need to
+  be run again to successfully complete the upgrade. This has been fixed and
+  certbot-auto should upgrade cleanly to 0.18.1.
+* Certbot usually uses "certbot-auto" or "letsencrypt-auto" in error messages
+  and the User-Agent string instead of "certbot" when you are using one of
+  these wrapper scripts. Proper detection of this was broken with Certbot's new
+  installation path in /opt in 0.18.0 but this problem has been resolved.
+
+More details about these changes can be found on our GitHub repo:
+https://github.com/certbot/certbot/milestone/45?closed=1
+
 ## 0.18.0 - 2017-09-06
 
 ### Added
