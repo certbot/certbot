@@ -13,6 +13,7 @@ virtualenv --no-site-packages -p $PYTHON --setuptools venv
 . ./venv/bin/activate
 pip install -U pip
 pip install -U setuptools
+pip install --requirement letsencrypt-auto-source/pieces/dependency-requirements.txt
 
 # build sdists
 for pkg_dir in acme . $PLUGINS; do
