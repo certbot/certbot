@@ -38,7 +38,7 @@ if [ "$REVOKED" != 1 ] ; then
     exit 1
 fi
 
-if ! letsencrypt-auto --help | grep -F "letsencrypt-auto [SUBCOMMAND]"; then
+if ! letsencrypt-auto --help --no-self-upgrade | grep -F "letsencrypt-auto [SUBCOMMAND]"; then
     echo "letsencrypt-auto not included in help output!"
     exit 1
 fi
