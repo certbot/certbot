@@ -187,8 +187,7 @@ SetRootAuthMechanism() {
 
 if [ "$1" = "--cb-auto-has-root" ]; then
   shift 1
-elif [ "$1" != "--le-auto-phase2" ]; then
-  # if $1 is --le-auto-phase2, we've executed this branch before
+else
   SetRootAuthMechanism
   if [ -n "$SUDO" ]; then
     echo "Requesting to rerun $0 with root privileges..."
@@ -196,6 +195,14 @@ elif [ "$1" != "--le-auto-phase2" ]; then
     exit 0
   fi
 fi
+
+# Runs this script again with the given arguments. --cb-auto-has-root is added
+# to the command line arguments to ensure we don't try to acquire root a
+# second time. After the script is rerun, we exit the current script.
+RerunWithArgs() {
+    "$0" --cb-auto-has-root "$@"
+    exit 0
+}
 
 BootstrapMessage() {
   # Arguments: Platform name
@@ -825,8 +832,7 @@ if [ "$1" = "--le-auto-phase2" ]; then
       # if non-interactive mode or stdin and stdout are connected to a terminal
       if [ \( "$NONINTERACTIVE" = 1 \) -o \( \( -t 0 \) -a \( -t 1 \) \) ]; then
         rm -rf "$VENV_PATH"
-        "$0" "$@"
-        exit 0
+        RerunWithArgs "$@"
       else
         error "Skipping upgrade because new OS dependencies may need to be installed."
         error
@@ -1491,5 +1497,5 @@ UNLIKELY_EOF
     fi  # A newer version is available.
   fi  # Self-upgrading is allowed.
 
-  "$0" --le-auto-phase2 "$@"
+  RerunWithArgs --le-auto-phase2 "$@"
 fi
