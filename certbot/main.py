@@ -743,8 +743,14 @@ def main(cli_args=sys.argv[1:]):
     config = configuration.NamespaceConfig(args)
     zope.component.provideUtility(config)
 
-    log.post_arg_parse_setup(config)
-    make_or_verify_needed_dirs(config)
+    try:
+        log.post_arg_parse_setup(config)
+        make_or_verify_needed_dirs(config)
+    except errors.Error:
+        # Let plugins_cmd be run as un-privileged user.
+        if config.func != plugins_cmd:
+            raise
+
     set_displayer(config)
 
     # Reporter
