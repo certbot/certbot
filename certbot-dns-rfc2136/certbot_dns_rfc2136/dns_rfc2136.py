@@ -208,7 +208,7 @@ class _RFC2136Client(object):
             rcode = response.rcode()
 
             # Authoritative Answer bit should be set
-            if (rcode == dns.rcode.NOERROR and len(response.answer) > 0 and
+            if (rcode == dns.rcode.NOERROR and response.get_rrset(response.answer, domain, dns.rdataclass.IN, dns.rdatatype.SOA) and
                     response.flags & dns.flags.AA):
                 logger.debug('Received authoritative SOA response for %s', domain_name)
                 return True
