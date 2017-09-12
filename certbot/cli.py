@@ -944,6 +944,11 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
                 default=None, dest="eff_email",
                 help="Don't share your e-mail address with EFF")
     helpful.add(
+        ["certonly", "run", "renew", "manage"], "--cert-name",
+        help="Flag to specify a particular certificate for the run, certonly,"
+        " certificates, renew, and delete commands. To get a list of all"
+        "certificates that Certbot knows about run 'certbot certificates'")
+    helpful.add(
         ["automation", "certonly", "run"],
         "--keep-until-expiring", "--keep", "--reinstall",
         dest="reinstall", action="store_true",
