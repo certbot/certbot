@@ -897,7 +897,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              "specified or you already have a certificate for the same "
              "domains. (default: Ask)")
     helpful.add(
-        [None, "run", "certonly", "manage", "delete", "certificates"],
+        [None, "run", "certonly", "manage", "delete", "certificates", "renew"],
         "--cert-name", dest="certname",
         metavar="CERTNAME", default=None,
         help="Certificate name to apply. This name is used by Certbot for housekeeping "
