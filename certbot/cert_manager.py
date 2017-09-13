@@ -198,7 +198,7 @@ def match_and_check_overlaps(cli_config, acceptable_matches, match_func, rv_func
 
     matched = _search_lineages(cli_config, find_matches, [], acceptable_matches)
     if not matched:
-        raise errors.Error("No match found for cert-path {0}!".format(cli_config.cert_path))
+        raise errors.Error("No match found for cert-path {0}!".format(cli_config.cert_path[0]))
     elif len(matched) > 1:
         raise errors.OverlappingMatchFound()
     else:

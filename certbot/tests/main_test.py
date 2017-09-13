@@ -395,16 +395,16 @@ class DeleteIfAppropriateTest(unittest.TestCase):
     @mock.patch('certbot.cert_manager.match_and_check_overlaps')
     @mock.patch('certbot.storage.full_archive_path')
     @mock.patch('certbot.cert_manager.delete')
-    @mock.patch('certbot.cert_manager.lineage_for_certname')
+    @mock.patch('certbot.cert_manager.cert_path_to_lineage')
     @test_util.patch_get_utility()
     def test_certname_and_cert_path_match(self, mock_get_utility,
-            mock_lineage_for_certname, mock_delete, mock_archive,
+            mock_cert_path_to_lineage, mock_delete, mock_archive,
             mock_overlapping_archive_dirs, mock_renewal_file_for_certname):
         # pylint: disable = unused-argument
         config = self.config
         config.certname = "example.com"
         config.cert_path = "/some/reasonable/path"
-        mock_lineage_for_certname.return_value = config.cert_path
+        mock_cert_path_to_lineage.return_value = config.certname
         mock_overlapping_archive_dirs.return_value = False
         self._call(config)
         mock_delete.assert_called_once()
@@ -417,18 +417,16 @@ class DeleteIfAppropriateTest(unittest.TestCase):
     @mock.patch('certbot.storage.RenewableCert')
     @mock.patch('certbot.storage.renewal_file_for_certname')
     @mock.patch('certbot.cert_manager.cert_path_to_lineage')
-    @mock.patch('certbot.cert_manager.lineage_for_certname')
     @test_util.patch_get_utility()
     def test_certname_and_cert_path_mismatch(self, mock_get_utility,
-            mock_lineage_for_certname, cert_path_to_lineage,
-            mock_renewal_file_for_certname, mock_RenewableCert,
-            mock_human_readable_cert_info, mock_delete, mock_archive,
-            mock_overlapping_archive_dirs):
+            mock_cert_path_to_lineage, mock_renewal_file_for_certname,
+            mock_RenewableCert, mock_human_readable_cert_info,
+            mock_delete, mock_archive, mock_overlapping_archive_dirs):
         # pylint: disable=unused-argument
         config = self.config
         config.certname = "example.com"
         config.cert_path = "/some/reasonable/path"
-        mock_lineage_for_certname.return_value = "some-reasonable-path.com"
+        mock_cert_path_to_lineage = "something else"
         mock_RenewableCert.return_value = mock.Mock()
         mock_human_readable_cert_info.return_value = ""
         mock_overlapping_archive_dirs.return_value = False
@@ -446,18 +444,16 @@ class DeleteIfAppropriateTest(unittest.TestCase):
     @mock.patch('certbot.storage.RenewableCert')
     @mock.patch('certbot.storage.renewal_file_for_certname')
     @mock.patch('certbot.cert_manager.cert_path_to_lineage')
-    @mock.patch('certbot.cert_manager.lineage_for_certname')
     @test_util.patch_get_utility()
     def test_noninteractive_certname_cert_path_mismatch(self, mock_get_utility,
-            mock_lineage_for_certname, cert_path_to_lineage,
-            mock_renewal_file_for_certname, mock_RenewableCert,
-            mock_human_readable_cert_info, mock_delete, mock_archive,
-            mock_overlapping_archive_dirs):
+            mock_cert_path_to_lineage, mock_renewal_file_for_certname,
+            mock_RenewableCert, mock_human_readable_cert_info,
+            mock_delete, mock_archive, mock_overlapping_archive_dirs):
         # pylint: disable=unused-argument
         config = self.config
         config.certname = "example.com"
         config.cert_path = "/some/reasonable/path"
-        mock_lineage_for_certname.return_value = "some-reasonable-path.com"
+        mock_cert_path_to_lineage.return_value = "some-reasonable-path.com"
         mock_RenewableCert.return_value = mock.Mock()
         mock_human_readable_cert_info.return_value = ""
         mock_overlapping_archive_dirs.return_value = False

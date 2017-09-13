@@ -397,9 +397,9 @@ def _delete_if_appropriate(config): # pylint: disable=too-many-locals,too-many-b
 
     if config.certname and config.cert_path:
         # first, check if certname and cert_path imply the same certs
-        cert_name_implied_cert_path = cert_manager.lineage_for_certname(config, config.certname)
+        implied_cert_name = cert_manager.cert_path_to_lineage(config)
 
-        if cert_name_implied_cert_path != config.cert_path:
+        if implied_cert_name != config.certname:
             cert_path_implied_cert_name = cert_manager.cert_path_to_lineage(config)
             cert_path_implied_conf = storage.renewal_file_for_certname(config,
                     cert_path_implied_cert_name)
