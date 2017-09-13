@@ -897,7 +897,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              "specified or you already have a certificate for the same "
              "domains. (default: Ask)")
     helpful.add(
-        [None, "run", "certonly", "manage", "delete", "certificates"],
+        [None, "run", "certonly", "manage", "delete", "certificates", "renew"],
         "--cert-name", dest="certname",
         metavar="CERTNAME", default=None,
         help="Certificate name to apply. This name is used by Certbot for housekeeping "
@@ -943,11 +943,6 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
     helpful.add(["register", "automation"], "--no-eff-email", action="store_false",
                 default=None, dest="eff_email",
                 help="Don't share your e-mail address with EFF")
-    helpful.add(
-        ["certonly", "run", "renew", "manage"], "--cert-name",
-        help="Flag to specify a particular certificate for the run, certonly,"
-        " certificates, renew, and delete commands. To get a list of all"
-        "certificates that Certbot knows about run 'certbot certificates'")
     helpful.add(
         ["automation", "certonly", "run"],
         "--keep-until-expiring", "--keep", "--reinstall",
