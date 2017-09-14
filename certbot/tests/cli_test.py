@@ -381,6 +381,18 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         namespace = self.parse(["--max-log-backups", value])
         self.assertEqual(namespace.max_log_backups, int(value))
 
+    def test_unchanging_defaults(self):
+        namespace = self.parse([])
+        self.assertEqual(namespace.domains, [])
+        self.assertEqual(namespace.pref_challs, [])
+
+        namespace.pref_challs = [challenges.HTTP01.typ]
+        namespace.domains = ['example.com']
+
+        namespace = self.parse([])
+        self.assertEqual(namespace.domains, [])
+        self.assertEqual(namespace.pref_challs, [])
+
 
 class DefaultTest(unittest.TestCase):
     """Tests for certbot.cli._Default."""
