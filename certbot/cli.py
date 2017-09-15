@@ -356,7 +356,7 @@ VERB_HELP = [
                  " before and after renewal; see"
                  " https://certbot.eff.org/docs/using.html#renewal for more"
                  " information on these."),
-        "usage": "\n\n  certbot renew [--cert-name NAME] [options]\n\n"
+        "usage": "\n\n  certbot renew [--cert-name CERTNAME] [options]\n\n"
     }),
     ("certificates", {
         "short": "List certificates managed by Certbot",
