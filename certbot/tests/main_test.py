@@ -547,6 +547,26 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
 
     @mock.patch('certbot.main.plugins_disco')
     @mock.patch('certbot.main.cli.HelpfulArgumentParser.determine_help_topics')
+    def test_plugins_no_args_unprivileged(self, _det, mock_disco):
+        ifaces = []
+        plugins = mock_disco.PluginsRegistry.find_all()
+
+        def throw_error(directory, mode, uid, strict):
+            """Raises error.Error."""
+            _, _, _, _ = directory, mode, uid, strict
+            raise errors.Error()
+
+        with mock.patch('certbot.util.set_up_core_dir') as mock_set_up_core_dir:
+            mock_set_up_core_dir.side_effect = throw_error
+
+            _, stdout, _, _ = self._call(['plugins'])
+            plugins.visible.assert_called_once_with()
+            plugins.visible().ifaces.assert_called_once_with(ifaces)
+            filtered = plugins.visible().ifaces()
+            self.assertEqual(stdout.getvalue().strip(), str(filtered))
+
+    @mock.patch('certbot.main.plugins_disco')
+    @mock.patch('certbot.main.cli.HelpfulArgumentParser.determine_help_topics')
     def test_plugins_init(self, _det, mock_disco):
         ifaces = []
         plugins = mock_disco.PluginsRegistry.find_all()
