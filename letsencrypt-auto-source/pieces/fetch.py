@@ -22,7 +22,6 @@ from subprocess import check_call, CalledProcessError
 from sys import argv, exit
 from urllib2 import build_opener, HTTPHandler, HTTPSHandler
 from urllib2 import HTTPError, URLError
-import socket
 
 PUBLIC_KEY = environ.get('LE_AUTO_PUBLIC_KEY', """-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA6MR8W/galdxnpGqBsYbq
@@ -51,15 +50,17 @@ class HttpsGetter(object):
             if isinstance(handler, HTTPHandler):
                 self._opener.handlers.remove(handler)
 
-    def get(self, url, timeout=socket._GLOBAL_DEFAULT_TIMEOUT):
+    def get(self, url):
         """Return the document contents pointed to by an HTTPS URL.
 
         If something goes wrong (404, timeout, etc.), raise ExpectedError.
 
         """
         try:
-            return self._opener.open(url, timeout = timeout).read()
-        except (HTTPError, URLError, IOError) as exc:
+            # socket module docs say default timeout is None: that is, no
+            # timeout
+            return self._opener.open(url, timeout=30).read()
+        except (HTTPError, IOError) as exc:
             raise ExpectedError("Couldn't download %s." % url, exc)
 
 
@@ -73,7 +74,7 @@ def latest_stable_version(get):
     """Return the latest stable release of letsencrypt."""
     metadata = loads(get(
         environ.get('LE_AUTO_JSON_URL',
-                    'https://pypi.python.org/pypi/certbot/json'), timeout = 10))
+                    'https://pypi.python.org/pypi/certbot/json')))
     # metadata['info']['version'] actually returns the latest of any kind of
     # release release, contrary to https://wiki.python.org/moin/PyPIJSON.
     # The regex is a sufficient regex for picking out prereleases for most
@@ -94,8 +95,8 @@ def verified_new_le_auto(get, tag, temp_dir):
         'LE_AUTO_DIR_TEMPLATE',
         'https://raw.githubusercontent.com/certbot/certbot/%s/'
         'letsencrypt-auto-source/') % tag
-    write(get(le_auto_dir + 'letsencrypt-auto', timeout = 10), temp_dir, 'letsencrypt-auto')
-    write(get(le_auto_dir + 'letsencrypt-auto.sig', timeout = 10), temp_dir, 'letsencrypt-auto.sig')
+    write(get(le_auto_dir + 'letsencrypt-auto'), temp_dir, 'letsencrypt-auto')
+    write(get(le_auto_dir + 'letsencrypt-auto.sig'), temp_dir, 'letsencrypt-auto.sig')
     write(PUBLIC_KEY, temp_dir, 'public_key.pem')
     try:
         with open(devnull, 'w') as dev_null:
