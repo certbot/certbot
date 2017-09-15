@@ -148,6 +148,13 @@ def _archive_files(candidate_lineage, filetype):
 
         Anonymous functions which call this function are eventually passed (in a list) to
         `match_and_check_overlaps` to help specify the acceptable_matches.
+
+        :param `.storage.RenewableCert` candidate_lineage: Lineage whose archive dir is to
+            be searched.
+        :param str filetype: main file name prefix e.g. "fullchain" or "chain".
+
+        :returns: Files in candidate_lineage's archive dir that match the provided filetype.
+        :rtype: list of str or None
     """
     archive_dir = candidate_lineage.archive_dir
     pattern = [os.path.join(archive_dir, f) for f in os.listdir(archive_dir)
@@ -158,13 +165,25 @@ def _archive_files(candidate_lineage, filetype):
         return None
 
 def _acceptable_matches():
+    """ Generates the list that's passed to match_and_check_overlaps. Is its own function to
+    make unit testing easier.
+
+    :returns: list of functions
+    :rtype: list
+    """
     return [lambda x: x.fullchain_path, lambda x: x.cert_path,
             lambda x: _archive_files(x, "cert"), lambda x: _archive_files(x, "fullchain")]
 
 def cert_path_to_lineage(cli_config):
     """ If config.cert_path is defined, try to find an appropriate value for config.certname.
 
-    :param .NamespaceConfig cli_config
+    :param `configuration.NamespaceConfig` cli_config: parsed command line arguments
+
+    :returns: a lineage name
+    :rtype: str
+
+    :raises `errors.Error`: If the specified cert path can't be matched to a lineage name.
+    :raises `errors.OverlappingMatchFound`: If the matched lineage's archive is shared.
     """
     acceptable_matches = _acceptable_matches()
     match = match_and_check_overlaps(cli_config, acceptable_matches,
@@ -176,7 +195,7 @@ def match_and_check_overlaps(cli_config, acceptable_matches, match_func, rv_func
     If a duplicate is found, an error is raised, as performing operations on lineages
     that have their properties incorrectly duplicated elsewhere is probably a bad idea.
 
-    :param .NamespaceConfig cli_config
+    :param `configuration.NamespaceConfig` cli_config: parsed command line arguments
     :param list acceptable_matches: a list of functions that specify acceptable matches
     :param function match_func: specifies what to match
     :param function rv_func: specifies what to return
@@ -205,7 +224,7 @@ def match_and_check_overlaps(cli_config, acceptable_matches, match_func, rv_func
         return matched
 
 def human_readable_cert_info(config, cert, skip_filter_checks=False):
-    """ Returns a human readable description of info about a RenewablCert object"""
+    """ Returns a human readable description of info about a RenewableCert object"""
     certinfo = []
     checker = ocsp.RevocationChecker()
 
@@ -306,6 +325,12 @@ def _search_lineages(cli_config, func, initial_rv, *args):
 
     Allows flexible customization of return values, including multiple
     return values and complex checks.
+
+    :param `configuration.NamespaceConfig` cli_config: parsed command line arguments
+    :param function func: function used while searching over lineages
+    :param initial_rv: initial return value of the function (any type)
+
+    :returns: Whatever was specified by `func` if a match is found.
     """
     configs_dir = cli_config.renewal_configs_dir
     # Verify the directory is there

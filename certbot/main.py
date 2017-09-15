@@ -388,7 +388,15 @@ def _determine_account(config):
 
 
 def _delete_if_appropriate(config): # pylint: disable=too-many-locals,too-many-branches
-    """Does the user want to delete their now-revoked certs?"""
+    """Does the user want to delete their now-revoked certs? If run in non-interactive mode,
+    deleting happens automatically, unless if both `--cert-name` and `--cert-path` were
+    specified with conflicting values.
+
+    :param `configuration.NamespaceConfig` config: parsed command line arguments
+
+    :raises `error.Errors`: If anything goes wrong, including bad user input, if an overlapping
+        archive dir is found for the specified lineage, etc ...
+    """
     display = zope.component.getUtility(interfaces.IDisplay)
     reporter_util = zope.component.getUtility(interfaces.IReporter)
 
