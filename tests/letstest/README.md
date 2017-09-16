@@ -15,7 +15,7 @@ Simple AWS testfarm scripts for certbot client testing
     are needed, they need to be requested via online webform.
 
 ## Usage
-  - To install the necessary dependencies, run:
+  - To install the necessary dependencies on Ubuntu 16.04, run:
 ```
 sudo apt install awscli python-yaml python-boto3 fabric
 ```
@@ -28,8 +28,7 @@ sudo apt install awscli python-yaml python-boto3 fabric
 [interactive: enter secrets for IAM role]
 >aws ec2 create-key-pair --profile <profile name> --key-name <key name> --query 'KeyMaterial' --output text > whatever/path/you/want.pem
 ```
-Note: you can pick any file name for `<key-name>`, but it must have a `.pem` extension. Also, whatever you pick for `<profle name>` will be shown
-to other users with AWS access.
+Note: whatever you pick for `<key name>` will be shown to other users with AWS access.
 
 When prompted for a default region name, enter: `us-east-1`
 
