@@ -30,8 +30,14 @@ class ApacheParser(object):
     arg_var_interpreter = re.compile(r"\$\{[^ \}]*}")
     fnmatch_chars = set(["*", "?", "\\", "[", "]"])
 
-    def __init__(self, aug, root, vhostroot=None, version=(2, 4)):
+    def __init__(self, aug, root, vhostroot=None, version=(2, 4),
+                 configurator=None):
         # Note: Order is important here.
+
+        # Needed for calling save() with reverter functionality that resides in
+        # AugeasConfigurator superclass of ApacheConfigurator. This resolves
+        # issues with aug.load() after adding new files / defines to parse tree
+        self.configurator = configurator
 
         # This uses the binary, so it can be done first.
         # https://httpd.apache.org/docs/2.4/mod/core.html#define
@@ -479,6 +485,10 @@ class ApacheParser(object):
 
         """
         use_new, remove_old = self._check_path_actions(filepath)
+        # Ensure that we have the latest Augeas DOM state on disk before
+        # calling aug.load() which reloads the state from disk
+        if self.configurator:
+            self.configurator.ensure_augeas_state()
         # Test if augeas included file for Httpd.lens
         # Note: This works for augeas globs, ie. *.conf
         if use_new:

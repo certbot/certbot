@@ -197,7 +197,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             self.vhostroot = os.path.abspath(self.conf("vhost-root"))
 
         self.parser = parser.ApacheParser(
-            self.aug, self.conf("server-root"), self.conf("vhost-root"), self.version)
+            self.aug, self.conf("server-root"), self.conf("vhost-root"),
+            self.version, configurator=self)
         # Check for errors in parsing files with Augeas
         self.check_parsing_errors("httpd.aug")
 

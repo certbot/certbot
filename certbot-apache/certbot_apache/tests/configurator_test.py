@@ -776,10 +776,10 @@ class MultipleVhostsTest(util.ApacheTest):
 
     def test_add_name_vhost_if_necessary(self):
         # pylint: disable=protected-access
-        self.config.save = mock.Mock()
+        self.config.add_name_vhost = mock.Mock()
         self.config.version = (2, 2)
         self.config._add_name_vhost_if_necessary(self.vh_truth[0])
-        self.assertTrue(self.config.save.called)
+        self.assertTrue(self.config.add_name_vhost.called)
 
         new_addrs = set()
         for addr in self.vh_truth[0].addrs:
@@ -787,7 +787,7 @@ class MultipleVhostsTest(util.ApacheTest):
 
         self.vh_truth[0].addrs = new_addrs
         self.config._add_name_vhost_if_necessary(self.vh_truth[0])
-        self.assertEqual(self.config.save.call_count, 2)
+        self.assertEqual(self.config.add_name_vhost.call_count, 2)
 
     @mock.patch("certbot_apache.configurator.tls_sni_01.ApacheTlsSni01.perform")
     @mock.patch("certbot_apache.configurator.ApacheConfigurator.restart")
