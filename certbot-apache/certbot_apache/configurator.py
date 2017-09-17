@@ -2034,5 +2034,5 @@ def install_ssl_options_conf(options_ssl, options_ssl_digest):
     # XXX if we ever try to enforce a local privilege boundary (eg, running
     # certbot for unprivileged users via setuid), this function will need
     # to be modified.
-    return common.install_ssl_options_conf(options_ssl, options_ssl_digest,
+    return common.install_version_controlled_file(options_ssl, options_ssl_digest,
         constants.os_constant("MOD_SSL_CONF_SRC"), constants.ALL_SSL_OPTIONS_HASHES)

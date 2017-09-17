@@ -1559,7 +1559,7 @@ class InstallSslOptionsConfTest(util.ApacheTest):
         with mock.patch("certbot.plugins.common.logger") as mock_logger:
             self._call()
             self.assertEqual(mock_logger.warning.call_args[0][0],
-                "%s has been manually modified; updated ssl configuration options "
+                "%s has been manually modified; updated file "
                 "saved to %s. We recommend updating %s for security purposes.")
         self.assertEqual(crypto_util.sha256sum(constants.os_constant("MOD_SSL_CONF_SRC")),
             self._current_ssl_options_hash())

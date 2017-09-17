@@ -399,6 +399,8 @@ relevant files can be removed from the system with the ``delete`` subcommand::
 
 .. note:: If you don't use ``delete`` to remove the certificate completely, it will be renewed automatically at the next renewal event.
 
+.. note:: Revoking a certificate will have no effect on the rate limit imposed by the Let's Encrypt server.
+
 .. _renewal:
 
 Renewing certificates

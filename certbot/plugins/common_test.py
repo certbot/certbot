@@ -79,14 +79,16 @@ class PluginTest(unittest.TestCase):
             "--mock-foo-bar", dest="different_to_foo_bar", x=1, y=None)
 
 
-class InstallerTest(unittest.TestCase):
+class InstallerTest(test_util.ConfigTestCase):
     """Tests for certbot.plugins.common.Installer."""
 
     def setUp(self):
+        super(InstallerTest, self).setUp()
+        os.mkdir(self.config.config_dir)
         from certbot.plugins.common import Installer
 
         with mock.patch("certbot.plugins.common.reverter.Reverter"):
-            self.installer = Installer(config=mock.MagicMock(),
+            self.installer = Installer(config=self.config,
                                        name="Installer")
         self.reverter = self.installer.reverter
 
@@ -162,6 +164,20 @@ class InstallerTest(unittest.TestCase):
         reverter_func.side_effect = errors.ReverterError
         self.assertRaises(
             errors.PluginError, installer_func, *passed_args, **passed_kwargs)
+
+    def test_install_ssl_dhparams(self):
+        self.installer.install_ssl_dhparams()
+        self.assertTrue(os.path.isfile(self.installer.ssl_dhparams))
+
+    def _current_ssl_dhparams_hash(self):
+        from certbot.constants import SSL_DHPARAMS_SRC
+        return crypto_util.sha256sum(SSL_DHPARAMS_SRC)
+
+    def test_current_file_hash_in_all_hashes(self):
+        from certbot.constants import ALL_SSL_DHPARAMS_HASHES
+        self.assertTrue(self._current_ssl_dhparams_hash() in ALL_SSL_DHPARAMS_HASHES,
+            "Constants.ALL_SSL_DHPARAMS_HASHES must be appended"
+            " with the sha256 hash of self.config.ssl_dhparams when it is updated.")
 
 
 class AddrTest(unittest.TestCase):
@@ -314,11 +330,11 @@ class TLSSNI01Test(unittest.TestCase):
             achall.response(achall.account_key).z_domain.decode("utf-8"))
 
 
-class InstallSslOptionsConfTest(test_util.TempDirTestCase):
-    """Tests for certbot.plugins.common.install_ssl_options_conf."""
+class InstallVersionControlledFileTest(test_util.TempDirTestCase):
+    """Tests for certbot.plugins.common.install_version_controlled_file."""
 
     def setUp(self):
-        super(InstallSslOptionsConfTest, self).setUp()
+        super(InstallVersionControlledFileTest, self).setUp()
         self.hashes = ["someotherhash"]
         self.dest_path = os.path.join(self.tempdir, "options-ssl-dest.conf")
         self.hash_path = os.path.join(self.tempdir, ".options-ssl-conf.txt")
@@ -330,19 +346,19 @@ class InstallSslOptionsConfTest(test_util.TempDirTestCase):
             self.hashes.append(crypto_util.sha256sum(path))
 
     def _call(self):
-        from certbot.plugins.common import install_ssl_options_conf
-        install_ssl_options_conf(self.dest_path,
-                                 self.hash_path,
-                                 self.source_path,
-                                 self.hashes)
+        from certbot.plugins.common import install_version_controlled_file
+        install_version_controlled_file(self.dest_path,
+                                        self.hash_path,
+                                        self.source_path,
+                                        self.hashes)
 
-    def _current_ssl_options_hash(self):
+    def _current_file_hash(self):
         return crypto_util.sha256sum(self.source_path)
 
     def _assert_current_file(self):
         self.assertTrue(os.path.isfile(self.dest_path))
         self.assertEqual(crypto_util.sha256sum(self.dest_path),
-            self._current_ssl_options_hash())
+            self._current_file_hash())
 
     def test_no_file(self):
         self.assertFalse(os.path.isfile(self.dest_path))
@@ -369,9 +385,9 @@ class InstallSslOptionsConfTest(test_util.TempDirTestCase):
             self.assertFalse(mock_logger.warning.called)
         self.assertTrue(os.path.isfile(self.dest_path))
         self.assertEqual(crypto_util.sha256sum(self.source_path),
-            self._current_ssl_options_hash())
+            self._current_file_hash())
         self.assertNotEqual(crypto_util.sha256sum(self.dest_path),
-            self._current_ssl_options_hash())
+            self._current_file_hash())
 
     def test_manually_modified_past_file_warns(self):
         with open(self.dest_path, "a") as mod_ssl_conf:
@@ -381,10 +397,10 @@ class InstallSslOptionsConfTest(test_util.TempDirTestCase):
         with mock.patch("certbot.plugins.common.logger") as mock_logger:
             self._call()
             self.assertEqual(mock_logger.warning.call_args[0][0],
-                "%s has been manually modified; updated ssl configuration options "
+                "%s has been manually modified; updated file "
                 "saved to %s. We recommend updating %s for security purposes.")
         self.assertEqual(crypto_util.sha256sum(self.source_path),
-            self._current_ssl_options_hash())
+            self._current_file_hash())
         # only print warning once
         with mock.patch("certbot.plugins.common.logger") as mock_logger:
             self._call()

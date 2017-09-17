@@ -56,12 +56,19 @@ optional arguments:
   -d DOMAIN, --domains DOMAIN, --domain DOMAIN
                         Domain names to apply. For multiple domains you can
                         use multiple -d flags or enter a comma separated list
-                        of domains as a parameter. (default: Ask)
-  --cert-name CERTNAME  Certificate name to apply. Only one certificate name
-                        can be used per Certbot run. To see certificate names,
-                        run 'certbot certificates'. When creating a new
-                        certificate, specifies the new certificate's name.
-                        (default: None)
+                        of domains as a parameter. The first provided domain
+                        will be used in some software user interfaces and file
+                        paths for the certificate and related material unless
+                        otherwise specified or you already have a certificate
+                        for the same domains. (default: Ask)
+  --cert-name CERTNAME  Certificate name to apply. This name is used by
+                        Certbot for housekeeping and in file paths; it doesn't
+                        affect the content of the certificate itself. To see
+                        certificate names, run 'certbot certificates'. When
+                        creating a new certificate, specifies the new
+                        certificate's name. (default: the first provided
+                        domain or the name of an existing certificate on your
+                        system for the same domains)
   --dry-run             Perform a test run of the client, obtaining test
                         (invalid) certificates but not saving them to disk.
                         This can currently only be used with the 'certonly'
@@ -95,7 +102,7 @@ optional arguments:
                         case, and to know when to deprecate support for past
                         Python versions and flags. If you wish to hide this
                         information from the Let's Encrypt server, set this to
-                        "". (default: CertbotACMEClient/0.17.0 (certbot;
+                        "". (default: CertbotACMEClient/0.18.1 (certbot;
                         Ubuntu 16.04.3 LTS) Authenticator/XXX Installer/YYY
                         (SUBCOMMAND; flags: FLAGS) Py/2.7.12). The flags
                         encoded in the user agent are: --duplicate, --force-
@@ -315,8 +322,9 @@ delete:
 revoke:
   Options for revocation of certificates
 
-  --reason {keycompromise,affiliationchanged,superseded,unspecified,cessationofoperation}
-                        Specify reason for revoking certificate. (default: 0)
+  --reason {unspecified,keycompromise,affiliationchanged,superseded,cessationofoperation}
+                        Specify reason for revoking certificate. (default:
+                        unspecified)
 
 register:
   Options for account registration & modification
