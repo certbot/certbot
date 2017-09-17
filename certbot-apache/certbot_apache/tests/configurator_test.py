@@ -8,6 +8,7 @@ import unittest
 import mock
 # six is used in mock.patch()
 import six  # pylint: disable=unused-import
+import tempfile
 
 from acme import challenges
 
@@ -656,22 +657,18 @@ class MultipleVhostsTest(util.ApacheTest):
                              os.path.dirname(os.path.realpath(
                                  self.vh_truth[1].filep)))
 
-    def test_make_vhost_ssl_nonexistent_vhost_path_nohandlesites(self):
-        def conf_side_effect(arg):
-            """ Mock function for ApacheConfigurator.conf """
-            confvars = {
-                "vhost-root": "/tmp/nonexistent",
-                "le_vhost_ext": "-le-ssl.conf",
-                "handle-sites": False}
-            return confvars[arg]
+    def test_make_vhost_ssl_nonparsed_path(self):
+        tmp_path = os.path.realpath(tempfile.mkdtemp("vhostroot"))
+        os.chmod(tmp_path, 0o755)
+        mock_p = "certbot_apache.configurator.ApacheConfigurator._get_ssl_vhost_path"
+        mock_a = "certbot_apache.configurator.ApacheConfigurator.add_include"
 
-        with mock.patch(
-                "certbot_apache.configurator.ApacheConfigurator.conf"
-        ) as mock_conf:
-            mock_conf.side_effect = conf_side_effect
-            ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[10])
-            self.assertEqual(os.path.dirname(ssl_vhost.filep),
-                             os.path.dirname(self.vh_truth[10].filep))
+        with mock.patch(mock_p) as mock_path:
+            mock_path.return_value = os.path.join(tmp_path, "whatever.conf")
+            with mock.patch(mock_a) as mock_add:
+                self.config.make_vhost_ssl(self.vh_truth[1])
+                self.assertTrue(mock_add.called)
+        shutil.rmtree(tmp_path)
 
     def test_make_vhost_ssl(self):
         ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[0])

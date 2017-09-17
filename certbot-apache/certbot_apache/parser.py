@@ -1,4 +1,5 @@
 """ApacheParser is a member object of the ApacheConfigurator class."""
+import copy
 import fnmatch
 import logging
 import os
@@ -65,6 +66,8 @@ class ApacheParser(object):
 
         # Set up rest of locations
         self.loc.update(self._set_locations())
+
+        self.existing_paths = copy.deepcopy(self.parser_paths)
 
         # Must also attempt to parse additional virtual host root
         if vhostroot:

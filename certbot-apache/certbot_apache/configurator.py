@@ -589,8 +589,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if "/macro/" in path.lower():
             macro = True
 
+        vhost_enabled = self.parsed_in_original(filename)
+
         vhost = obj.VirtualHost(filename, path, addrs, is_ssl,
-                                True, modmacro=macro)
+                                vhost_enabled, modmacro=macro)
         self._add_servernames(vhost)
         return vhost
 
@@ -871,9 +873,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         if not vh_p:
             # The vhost was not found on the currently parsed paths
-            if not self.conf("handle-sites"):
-                # Not enabling the site, so add direct include to root conf
-                self.add_include(self.parser.loc["default"], ssl_fp)
             # Make Augeas aware of the new vhost
             self.parser.parse_file(ssl_fp)
             # Try to search again
@@ -885,6 +884,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             if not vh_p:
                 raise errors.PluginError(
                     "Could not reverse map the HTTPS VirtualHost to the original")
+
+        if not self.parsed_in_original(ssl_fp):
+            # Add direct include to root conf
+            self.add_include(self.parser.loc["default"], ssl_fp)
 
         # Update Addresses
         self._update_ssl_vhosts_addrs(vh_p)
@@ -902,9 +905,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         ssl_vhost = self._create_vhost(vh_p)
         ssl_vhost.ancestor = nonssl_vhost
 
-        if self.conf("handle-sites") and "/sites-enabled/" not in ssl_vhost.filep:
-            # Set vhost as disabled for enabling later on
-            ssl_vhost.enabled = False
         self.vhosts.append(ssl_vhost)
 
         # NOTE: Searches through Augeas seem to ruin changes to directives
@@ -1023,7 +1023,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 new_file.write("</IfModule>\n")
             # Add new file to augeas paths if we're supposed to handle
             # activation (it's not included as default)
-            if self.conf("handle-sites"):
+            if not self.parsed_in_current(ssl_fp):
                 self.parser.parse_file(ssl_fp)
         except IOError:
             logger.fatal("Error writing/reading to file in make_vhost_ssl")
@@ -1677,9 +1677,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         with open(redirect_filepath, "w") as redirect_file:
             redirect_file.write(text)
 
-        # Add new file to augeas paths if we're supposed to handle
-        # activation (it's not included as default)
-        if self.conf("handle-sites"):
+        # Add new include to configuration if it doesn't exist yet
+        if not self.parsed_in_current(redirect_filepath):
             self.parser.parse_file(redirect_filepath)
 
         logger.info("Created redirect file: %s", redirect_filename)
@@ -1720,6 +1719,39 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             redirects.add(addr.get_addr_obj(port))
 
         return redirects
+
+    def parsed_in_current(self, filep):
+        """Checks if the file path is parsed by current Augeas parser config
+        ie. returns True if the file is found on a path that's found in live
+        Augeas configuration.
+
+        :param str filep: Path to match
+
+        :returns: True if file is parsed in existing configuration tree
+        :rtype: bool
+        """
+        return self._parsed_by_parser_paths(filep, self.parser.parser_paths)
+
+    def parsed_in_original(self, filep):
+        """Checks if the file path is parsed by existing Apache config.
+        ie. returns True if the file is found on a path that matches Include or
+        IncludeOptional statement in the Apache configuration.
+
+        :param str filep: Path to match
+
+        :returns: True if file is parsed in existing configuration tree
+        :rtype: bool
+        """
+        return self._parsed_by_parser_paths(filep, self.parser.existing_paths)
+
+    def _parsed_by_parser_paths(self, filep, paths):
+        """Helper function that searches through provided paths and returns
+        True if file path is found in the set"""
+        for directory in paths.keys():
+            for filename in paths[directory]:
+                if fnmatch.fnmatch(filep, os.path.join(directory, filename)):
+                    return True
+        return False
 
     def enable_site(self, vhost):
         """Enables an available site, Apache reload required.
