@@ -1,5 +1,6 @@
 """Certbot main entry point."""
 from __future__ import print_function
+import functools
 import logging.handlers
 import os
 import sys
@@ -500,7 +501,8 @@ def plugins_cmd(config, plugins):
     filtered = plugins.visible().ifaces(ifaces)
     logger.debug("Filtered plugins: %r", filtered)
 
-    notify = zope.component.getUtility(interfaces.IDisplay).notification
+    notify = functools.partial(zope.component.getUtility(
+        interfaces.IDisplay).notification, pause=False)
     if not config.init and not config.prepare:
         notify(str(filtered))
         return
