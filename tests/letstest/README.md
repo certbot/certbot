@@ -44,7 +44,7 @@ NameError: name 'instances' is not defined
 
 If you see this, you can run the following command to shut down all running instances:
 ```
-aws ec2 terminate-instances --profile <profile name> --instance-ids $(aws ec2 describe-instances --profile <profile name> | grep <profile name> | cut -f8)
+aws ec2 terminate-instances --profile <profile name> --instance-ids $(aws ec2 describe-instances --profile <profile name> | grep <key name> | cut -f8)
 ```
 
 It will take a minute for these instances to shut down and become available again. Running this will invalidate any in progress tests.
