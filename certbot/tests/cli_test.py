@@ -3,6 +3,7 @@ import argparse
 import unittest
 import os
 import tempfile
+import copy
 
 import mock
 import six
@@ -81,7 +82,11 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     def test_cli_ini_domains(self, mock_flag_default):
         tmp_config = tempfile.NamedTemporaryFile()
         # use a shim to get ConfigArgParse to pick up tmp_config
-        shim = lambda v: constants.CLI_DEFAULTS[v] if v != "config_files" else [tmp_config.name]
+        shim = (
+                lambda v: copy.deepcopy(constants.CLI_DEFAULTS[v])
+                if v != "config_files"
+                else [tmp_config.name]
+                )
         mock_flag_default.side_effect = shim
 
         namespace = self.parse(["certonly"])
@@ -390,6 +395,18 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         value = "42"
         namespace = self.parse(["--max-log-backups", value])
         self.assertEqual(namespace.max_log_backups, int(value))
+
+    def test_unchanging_defaults(self):
+        namespace = self.parse([])
+        self.assertEqual(namespace.domains, [])
+        self.assertEqual(namespace.pref_challs, [])
+
+        namespace.pref_challs = [challenges.HTTP01.typ]
+        namespace.domains = ['example.com']
+
+        namespace = self.parse([])
+        self.assertEqual(namespace.domains, [])
+        self.assertEqual(namespace.pref_challs, [])
 
 
 class DefaultTest(unittest.TestCase):

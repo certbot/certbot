@@ -1,4 +1,5 @@
 #!/bin/bash -x
+set -eo pipefail
 
 # $PUBLIC_IP $PRIVATE_IP $PUBLIC_HOSTNAME $BOULDER_URL are dynamically set at execution
 
@@ -34,5 +35,10 @@ fi
 
 if [ "$REVOKED" != 1 ] ; then
     echo "Did not find one revoked cert as expected ($REVOKED)"
+    exit 1
+fi
+
+if ! letsencrypt-auto --help --no-self-upgrade | grep -F "letsencrypt-auto [SUBCOMMAND]"; then
+    echo "letsencrypt-auto not included in help output!"
     exit 1
 fi
