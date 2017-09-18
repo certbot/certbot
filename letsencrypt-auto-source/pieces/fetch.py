@@ -20,7 +20,11 @@ from os.path import dirname, join
 import re
 from subprocess import check_call, CalledProcessError
 from sys import argv, exit
-from urllib2 import build_opener, HTTPHandler, HTTPSHandler, HTTPError
+try:
+    from urllib2 import build_opener, HTTPHandler, HTTPSHandler, HTTPError
+except ImportError:
+    from urllib.request import build_opener, HTTPHandler, HTTPSHandler, HTTPError
+
 
 PUBLIC_KEY = environ.get('LE_AUTO_PUBLIC_KEY', """-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA6MR8W/galdxnpGqBsYbq
@@ -66,6 +70,10 @@ def write(contents, dir, filename):
     with open(join(dir, filename), 'w') as file:
         file.write(contents)
 
+def writebytes(contents, dir, filename):
+    """Write something to a file in a certain directory."""
+    with open(join(dir, filename), 'wb') as file:
+        file.write(contents)        
 
 def latest_stable_version(get):
     """Return the latest stable release of letsencrypt."""
@@ -77,7 +85,7 @@ def latest_stable_version(get):
     # The regex is a sufficient regex for picking out prereleases for most
     # packages, LE included.
     return str(max(LooseVersion(r) for r
-                   in metadata['releases'].iterkeys()
+                   in metadata['releases'].keys()
                    if re.match('^[0-9.]+$', r)))
 
 
@@ -92,8 +100,8 @@ def verified_new_le_auto(get, tag, temp_dir):
         'LE_AUTO_DIR_TEMPLATE',
         'https://raw.githubusercontent.com/certbot/certbot/%s/'
         'letsencrypt-auto-source/') % tag
-    write(get(le_auto_dir + 'letsencrypt-auto'), temp_dir, 'letsencrypt-auto')
-    write(get(le_auto_dir + 'letsencrypt-auto.sig'), temp_dir, 'letsencrypt-auto.sig')
+    writebytes(get(le_auto_dir + 'letsencrypt-auto'), temp_dir, 'letsencrypt-auto')
+    writebytes(get(le_auto_dir + 'letsencrypt-auto.sig'), temp_dir, 'letsencrypt-auto.sig')
     write(PUBLIC_KEY, temp_dir, 'public_key.pem')
     try:
         with open(devnull, 'w') as dev_null:
