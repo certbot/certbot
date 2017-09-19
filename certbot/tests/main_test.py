@@ -539,7 +539,45 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         ifaces = []
         plugins = mock_disco.PluginsRegistry.find_all()
 
-        _, stdout, _, _ = self._call(['plugins'])
+        stdout = six.StringIO()
+        def write_msg(message, *args, **kwargs):
+            """Write message to stdout"""
+            _, _ = args, kwargs
+            stdout.write(message)
+
+        with test_util.patch_get_utility() as mock_get_utility:
+            mock_get_utility().notification.side_effect = write_msg
+            _, stdout, _, _ = self._call(['plugins'], stdout)
+
+        plugins.visible.assert_called_once_with()
+        plugins.visible().ifaces.assert_called_once_with(ifaces)
+        filtered = plugins.visible().ifaces()
+        self.assertEqual(stdout.getvalue().strip(), str(filtered))
+
+    @mock.patch('certbot.main.plugins_disco')
+    @mock.patch('certbot.main.cli.HelpfulArgumentParser.determine_help_topics')
+    def test_plugins_no_args_unprivileged(self, _det, mock_disco):
+        ifaces = []
+        plugins = mock_disco.PluginsRegistry.find_all()
+
+        def throw_error(directory, mode, uid, strict):
+            """Raises error.Error."""
+            _, _, _, _ = directory, mode, uid, strict
+            raise errors.Error()
+
+        stdout = six.StringIO()
+        def write_msg(message, *args, **kwargs):
+            """Write message to stdout"""
+            _, _ = args, kwargs
+            stdout.write(message)
+
+        with mock.patch('certbot.util.set_up_core_dir') as mock_set_up_core_dir:
+            with test_util.patch_get_utility() as mock_get_utility:
+                mock_set_up_core_dir.side_effect = throw_error
+                mock_get_utility().notification.side_effect = write_msg
+
+                _, stdout, _, _ = self._call(['plugins'], stdout)
+
         plugins.visible.assert_called_once_with()
         plugins.visible().ifaces.assert_called_once_with(ifaces)
         filtered = plugins.visible().ifaces()
@@ -571,7 +609,16 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         ifaces = []
         plugins = mock_disco.PluginsRegistry.find_all()
 
-        _, stdout, _, _ = self._call(['plugins', '--init'])
+        stdout = six.StringIO()
+        def write_msg(message, *args, **kwargs):
+            """Write message to stdout"""
+            _, _ = args, kwargs
+            stdout.write(message)
+
+        with test_util.patch_get_utility() as mock_get_utility:
+            mock_get_utility().notification.side_effect = write_msg
+            _, stdout, _, _ = self._call(['plugins', '--init'], stdout)
+
         plugins.visible.assert_called_once_with()
         plugins.visible().ifaces.assert_called_once_with(ifaces)
         filtered = plugins.visible().ifaces()
@@ -585,7 +632,17 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
     def test_plugins_prepare(self, _det, mock_disco):
         ifaces = []
         plugins = mock_disco.PluginsRegistry.find_all()
-        _, stdout, _, _ = self._call(['plugins', '--init', '--prepare'])
+
+        stdout = six.StringIO()
+        def write_msg(message, *args, **kwargs):
+            """Write message to stdout"""
+            _, _ = args, kwargs
+            stdout.write(message)
+
+        with test_util.patch_get_utility() as mock_get_utility:
+            mock_get_utility().notification.side_effect = write_msg
+            _, stdout, _, _ = self._call(['plugins', '--init', '--prepare'], stdout)
+
         plugins.visible.assert_called_once_with()
         plugins.visible().ifaces.assert_called_once_with(ifaces)
         filtered = plugins.visible().ifaces()
