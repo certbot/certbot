@@ -6,7 +6,11 @@ Certbot adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
-* An issue where Certbot's ACME module would raise an AttributeError trying to create self-signed certificates when used with pyOpenSSL 17.3.0 has been resolved. For Certbot users with this version of pyOpenSSL, this caused Certbot to crash when performing a TLS SNI challenge or when the Nginx plugin tried to create an SSL server block.
+* An issue where Certbot's ACME module would raise an AttributeError trying to
+  create self-signed certificates when used with pyOpenSSL 17.3.0 has been
+  resolved. For Certbot users with this version of pyOpenSSL, this caused
+  Certbot to crash when performing a TLS SNI challenge or when the Nginx plugin
+  tried to create an SSL server block.
 
 More details about these changes can be found on our GitHub repo:
 https://github.com/certbot/certbot/milestone/46?closed=1
