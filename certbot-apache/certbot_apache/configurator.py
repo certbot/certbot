@@ -248,12 +248,17 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             a lack of directives
 
         """
+        # Choose vhost before (possible) enabling of mod_ssl, to keep the
+        # vhost choice namespace similar with the pre-validation one.
         vhost = self.choose_vhost(domain)
-        self._clean_vhost(vhost)
 
         # This is done first so that ssl module is enabled and cert_path,
         # cert_key... can all be parsed appropriately
         self.prepare_server_https("443")
+
+        # Add directives and remove duplicates
+        self._add_dummy_ssl_directives(vhost.path)
+        self._clean_vhost(vhost)
 
         path = {"cert_path": self.parser.find_dir("SSLCertificateFile",
                                                   None, vhost.path),
@@ -891,9 +896,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         # Update Addresses
         self._update_ssl_vhosts_addrs(vh_p)
-        # Add directives
-        self._add_dummy_ssl_directives(vh_p)
-        self.save()
 
         # Log actions and create save notes
         logger.info("Created an SSL vhost at %s", ssl_fp)

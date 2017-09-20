@@ -447,6 +447,38 @@ class MultipleVhostsTest(util.ApacheTest):
         self.config.parser.modules.add("ssl_module")
         self.config.parser.modules.add("mod_ssl.c")
 
+        # Patch _add_dummy_ssl_directives to make sure we write them correctly
+        # pylint: disable=protected-access
+        orig_add_dummy = self.config._add_dummy_ssl_directives
+        def mock_add_dummy_ssl(vhostpath):
+            """Mock method for _add_dummy_ssl_directives"""
+            def find_args(path, directive):
+                """Return list of arguments in requested directive at path"""
+                f_args = []
+                dirs = self.config.parser.find_dir(directive, None,
+                                                   path)
+                for d in dirs:
+                    f_args.append(self.config.parser.get_arg(d))
+                return f_args
+            # Verify that the dummy directives do not exist
+            self.assertFalse(
+                "insert_cert_file_path" in find_args(vhostpath,
+                                                     "SSLCertificateFile"))
+            self.assertFalse(
+                "insert_key_file_path" in find_args(vhostpath,
+                                                    "SSLCertificateKeyFile"))
+            orig_add_dummy(vhostpath)
+            # Verify that the dummy directives exist
+            self.assertTrue(
+                "insert_cert_file_path" in find_args(vhostpath,
+                                                     "SSLCertificateFile"))
+            self.assertTrue(
+                "insert_key_file_path" in find_args(vhostpath,
+                                                    "SSLCertificateKeyFile"))
+
+        # pylint: disable=protected-access
+        self.config._add_dummy_ssl_directives = mock_add_dummy_ssl
+
         # Get the default 443 vhost
         self.config.assoc["random.demo"] = self.vh_truth[1]
         self.config.deploy_cert(
@@ -685,11 +717,6 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertEqual(ssl_vhost.name, "encryption-example.demo")
         self.assertTrue(ssl_vhost.ssl)
         self.assertFalse(ssl_vhost.enabled)
-
-        self.assertTrue(self.config.parser.find_dir(
-            "SSLCertificateFile", None, ssl_vhost.path, False))
-        self.assertTrue(self.config.parser.find_dir(
-            "SSLCertificateKeyFile", None, ssl_vhost.path, False))
 
         self.assertEqual(self.config.is_name_vhost(self.vh_truth[0]),
                          self.config.is_name_vhost(ssl_vhost))
@@ -1416,11 +1443,6 @@ class MultiVhostsTest(util.ApacheTest):
         self.assertEqual(ssl_vhost.name, "banana.vomit.com")
         self.assertTrue(ssl_vhost.ssl)
         self.assertFalse(ssl_vhost.enabled)
-
-        self.assertTrue(self.config.parser.find_dir(
-            "SSLCertificateFile", None, ssl_vhost.path, False))
-        self.assertTrue(self.config.parser.find_dir(
-            "SSLCertificateKeyFile", None, ssl_vhost.path, False))
 
         self.assertEqual(self.config.is_name_vhost(self.vh_truth[1]),
                          self.config.is_name_vhost(ssl_vhost))
