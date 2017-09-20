@@ -616,7 +616,7 @@ Hooks
 =====
 
 When using Certbot to obtain a certificate (such as when using the
-``certonly``, ``run``, ``renew`` subcommands), you can provide hooks
+``certonly``, ``run``, or  ``renew`` subcommands), you can provide hooks
 to run custom commands or scripts before or after the certificates are
 obtained. For example, if you have a single certificate obtained using
 the standalone_ plugin, you might need to stop the webserver
@@ -633,7 +633,7 @@ successful renewals.
 Alternately you can specify hooks as arguments with ``certbot renew`` either on
 the command line or in your crontab. Example::
 
-  certbot renew --deploy-hook "service lighttpd restart"
+  certbot renew --deploy-hook "service lighttpd reload"
   
 .. note:: Any certificates renewed this way will have the hook values in their
    renewal configuration files overwritten with the arguments specified in this
@@ -652,9 +652,9 @@ non-zero exit code. Hooks will only be run if a certificate is due for
 renewal, so you can run the above command frequently via ``certbot renew`` 
 without unnecessarily stopping your webserver.
 
-Saved or specified hooks run before and after every renewal attempt.
-If two certificates have identical pre and post hooks, they will be run
-only once. Meaning renewal for the two certificates would follow this form:
+If two certificates are due for renewal and have identical pre and post hooks, 
+when ``certbot reneww`` is run, each hook will only be run once.
+Meaning renewal for the two certificates would follow this form:
 Your pre-hook is run, certificate 1 is renewed, certificate 2 is renewed, 
 then your post-hook is run.
 
