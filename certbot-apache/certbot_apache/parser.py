@@ -79,6 +79,30 @@ class ApacheParser(object):
             if self.find_dir("Define", exclude=False):
                 raise errors.PluginError("Error parsing runtime variables")
 
+    def add_include(self, main_config, inc_path):
+        """Add Include for a new configuration file if one does not exist
+
+        :param str main_config: file path to main Apache config file
+        :param str inc_path: path of file to include
+
+        """
+        if len(self.find_dir(case_i("Include"), inc_path)) == 0:
+            logger.debug("Adding Include %s to %s",
+                         inc_path, get_aug_path(main_config))
+            self.add_dir(
+                get_aug_path(main_config),
+                "Include", inc_path)
+
+            # Add new path to parser paths
+            new_dir = os.path.dirname(inc_path)
+            new_file = os.path.basename(inc_path)
+            if new_dir in self.existing_paths.keys():
+                # Add to existing path
+                self.existing_paths[new_dir].append(new_file)
+            else:
+                # Create a new path
+                self.existing_paths[new_dir] = [new_file]
+
     def init_modules(self):
         """Iterates on the configuration until no new modules are loaded.
 
@@ -505,6 +529,39 @@ class ApacheParser(object):
                     self._remove_httpd_transform(filepath)
                 self._add_httpd_transform(filepath)
                 self.aug.load()
+
+    def parsed_in_current(self, filep):
+        """Checks if the file path is parsed by current Augeas parser config
+        ie. returns True if the file is found on a path that's found in live
+        Augeas configuration.
+
+        :param str filep: Path to match
+
+        :returns: True if file is parsed in existing configuration tree
+        :rtype: bool
+        """
+        return self._parsed_by_parser_paths(filep, self.parser_paths)
+
+    def parsed_in_original(self, filep):
+        """Checks if the file path is parsed by existing Apache config.
+        ie. returns True if the file is found on a path that matches Include or
+        IncludeOptional statement in the Apache configuration.
+
+        :param str filep: Path to match
+
+        :returns: True if file is parsed in existing configuration tree
+        :rtype: bool
+        """
+        return self._parsed_by_parser_paths(filep, self.existing_paths)
+
+    def _parsed_by_parser_paths(self, filep, paths):
+        """Helper function that searches through provided paths and returns
+        True if file path is found in the set"""
+        for directory in paths.keys():
+            for filename in paths[directory]:
+                if fnmatch.fnmatch(filep, os.path.join(directory, filename)):
+                    return True
+        return False
 
     def _check_path_actions(self, filepath):
         """Determine actions to take with a new augeas path

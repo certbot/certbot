@@ -104,8 +104,8 @@ class ApacheTlsSni01(common.TLSSNI01):
 
         config_text += "</IfModule>\n"
 
-        self.configurator.add_include(self.configurator.parser.loc["default"],
-                                      self.challenge_conf)
+        self.configurator.parser.add_include(
+            self.configurator.parser.loc["default"], self.challenge_conf)
         self.configurator.reverter.register_file_creation(
             True, self.challenge_conf)
 
