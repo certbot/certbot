@@ -895,11 +895,15 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         default=flag_default("domains"),
         help="Domain names to apply. For multiple domains you can use "
              "multiple -d flags or enter a comma separated list of domains "
-             "as a parameter. The first provided domain will be used in "
-             "some software user interfaces and file paths for the "
+             "as a parameter. The first domain provided will be the "
+             "subject CN of the certificate, and all domains will be "
+             "Subject Alternative Names on the certificate. "
+             "The first domain will also be used in "
+             "some software user interfaces and as the file paths for the "
              "certificate and related material unless otherwise "
-             "specified or you already have a certificate for the same "
-             "domains. (default: Ask)")
+             "specified or you already have a certificate with the same "
+             "name. In the case of a name collision it will append a number "
+             "like 0001 to the file path name. (default: Ask)")
     helpful.add(
         [None, "run", "certonly", "manage", "delete", "certificates", "renew"],
         "--cert-name", dest="certname",
