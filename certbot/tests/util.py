@@ -14,6 +14,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 import mock
 import OpenSSL
+import six
 from six.moves import reload_module  # pylint: disable=import-error
 
 from acme import jose
@@ -169,6 +170,26 @@ def patch_get_utility(target='zope.component.getUtility'):
     return mock.patch(target, new_callable=_create_get_utility_mock)
 
 
+def patch_get_utility_with_stdout(target='zope.component.getUtility',
+                                  stdout=six.StringIO()):
+    """Patch zope.component.getUtility to use a special mock IDisplay.
+
+    The mock IDisplay works like a regular mock object, except it also
+    also asserts that methods are called with valid arguments.
+
+    :param str target: path to patch
+    :param object stdout: object to write standard output to; it is
+        expected to have a `write` method
+
+    :returns: mock zope.component.getUtility
+    :rtype: mock.MagicMock
+
+    """
+
+    freezable_mock = _create_get_utility_mock_with_stdout(stdout)
+    return mock.patch(target, new=freezable_mock)
+
+
 class FreezableMock(object):
     """Mock object with the ability to freeze attributes.
 
@@ -246,6 +267,27 @@ def _create_get_utility_mock():
             frozen_mock = FreezableMock(frozen=True, func=_assert_valid_call)
             setattr(display, name, frozen_mock)
     display.freeze()
+    return FreezableMock(frozen=True, return_value=display)
+
+
+def _create_get_utility_mock_with_stdout(stdout):
+    def _write_msg(message, *unused_args, **unused_kwargs):
+        """Write to message to stdout.
+        """
+        stdout.write(message)
+
+    display = FreezableMock()
+    for name in interfaces.IDisplay.names():  # pylint: disable=no-member
+        if name == 'notification':
+            frozen_mock = FreezableMock(frozen=True,
+                                        func=_write_msg)
+            setattr(display, name, frozen_mock)
+        else:
+            frozen_mock = FreezableMock(frozen=True,
+                                        func=_assert_valid_call)
+            setattr(display, name, frozen_mock)
+    display.freeze()
+
     return FreezableMock(frozen=True, return_value=display)
 
 
