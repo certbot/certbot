@@ -171,11 +171,14 @@ def patch_get_utility(target='zope.component.getUtility'):
 
 
 def patch_get_utility_with_stdout(target='zope.component.getUtility',
-                                  stdout=six.StringIO()):
+                                  stdout=None):
     """Patch zope.component.getUtility to use a special mock IDisplay.
 
     The mock IDisplay works like a regular mock object, except it also
     also asserts that methods are called with valid arguments.
+
+    The `message` argument passed to the IDisplay methods is passed to
+    stdout's write method.
 
     :param str target: path to patch
     :param object stdout: object to write standard output to; it is
@@ -185,6 +188,7 @@ def patch_get_utility_with_stdout(target='zope.component.getUtility',
     :rtype: mock.MagicMock
 
     """
+    stdout = stdout if stdout else six.StringIO()
 
     freezable_mock = _create_get_utility_mock_with_stdout(stdout)
     return mock.patch(target, new=freezable_mock)
