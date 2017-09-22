@@ -276,6 +276,15 @@ def _create_get_utility_mock_with_stdout(stdout):
         """
         stdout.write(message)
 
+    def mock_method(*args, **kwargs):
+        """
+        Mock function for IDisplay methods.
+        """
+        message = args[0] if args else kwargs.get('message', None)
+        if message:
+            _write_msg(message, args, kwargs)
+        _assert_valid_call(args, kwargs)
+
     display = FreezableMock()
     for name in interfaces.IDisplay.names():  # pylint: disable=no-member
         if name == 'notification':
@@ -284,7 +293,7 @@ def _create_get_utility_mock_with_stdout(stdout):
             setattr(display, name, frozen_mock)
         else:
             frozen_mock = FreezableMock(frozen=True,
-                                        func=_assert_valid_call)
+                                        func=mock_method)
             setattr(display, name, frozen_mock)
     display.freeze()
 
