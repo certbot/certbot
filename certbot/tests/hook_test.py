@@ -2,6 +2,7 @@
 # pylint: disable=protected-access
 
 import os
+import stat
 import unittest
 
 import mock
@@ -9,6 +10,7 @@ from six.moves import reload_module  # pylint: disable=import-error
 
 from certbot import errors
 from certbot import hooks
+from certbot.tests import util
 
 class HookTest(unittest.TestCase):
     def setUp(self):
@@ -131,6 +133,43 @@ class HookTest(unittest.TestCase):
             mock_cmd.communicate.return_value = ("", "thing")
             hooks._run_hook("ls")
             self.assertEqual(mock_error.call_count, 2)
+
+
+class ListHooksTest(util.TempDirTestCase):
+    """Tests for certbot.hooks.list_hooks."""
+
+    @classmethod
+    def _call(cls, *args, **kwargs):
+        from certbot.hooks import list_hooks
+        return list_hooks(*args, **kwargs)
+
+    def test_empty(self):
+        self.assertFalse(self._call(self.tempdir))
+
+    def test_multiple(self):
+        names = sorted(("foo", "bar", "baz", "qux"))
+        for name in names:
+            self._create_hook(name)
+
+        result = self._call(self.tempdir)
+        self.assertEqual(len(result), len(names))
+        for hook, expected_base in zip(result, names):
+            self.assertEqual(os.path.dirname(hook), self.tempdir)
+            self.assertEqual(os.path.basename(hook), expected_base)
+
+    def test_single(self):
+        name = 'foo'
+        self._create_hook(name)
+
+        result = self._call(self.tempdir)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(os.path.dirname(result[0]), self.tempdir)
+        self.assertEqual(os.path.basename(result[0]), name)
+
+    def _create_hook(self, name):
+        path = os.path.join(self.tempdir, name)
+        open(path, "w").close()
+        os.chmod(path, os.stat(path).st_mode | stat.S_IXUSR)
 
 
 if __name__ == '__main__':
