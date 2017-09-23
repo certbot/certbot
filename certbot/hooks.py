@@ -151,3 +151,15 @@ def execute(shell_cmd):
         logger.error('Error output from %s:\n%s', base_cmd, err)
     return (err, out)
 
+
+def list_hooks(dir_path):
+    """List paths to all hooks found in dir_path in sorted order.
+
+    :param str dir_path: directory to search
+
+    :returns: `list` of `str`
+    :rtype: sorted list of absolute paths to executables in dir_path
+
+    """
+    paths = (os.path.join(dir_path, f) for f in os.listdir(dir_path))
+    return sorted(path for path in paths if util.is_exe(path))
