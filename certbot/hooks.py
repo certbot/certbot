@@ -133,20 +133,59 @@ def deploy_hook(config, domains, lineage_path):
 
     """
     if config.deploy_hook:
-        renew_hook(config, domains, lineage_path)
+        _run_deploy_hook(config.deploy_hook, domains,
+                         lineage_path, config.dry_run)
 
 
 def renew_hook(config, domains, lineage_path):
-    """Run post-renewal hook if defined."""
-    if config.renew_hook:
-        if not config.dry_run:
-            os.environ["RENEWED_DOMAINS"] = " ".join(domains)
-            os.environ["RENEWED_LINEAGE"] = lineage_path
-            logger.info("Running deploy-hook command: %s", config.renew_hook)
-            _run_hook(config.renew_hook)
-        else:
-            logger.warning(
-                "Dry run: skipping deploy hook command: %s", config.renew_hook)
+    """Run post-renewal hooks.
+
+    This function runs any hooks found in
+    config.renewal_deploy_hooks_dir followed by any renew-hook in the
+    config. If the renew-hook in the config is a path to a script in
+    config.renewal_deploy_hooks_dir, it is not run twice.
+
+    If Certbot is doing a dry run, no hooks are run and messages are
+    logged saying that they were skipped.
+
+    :param configuration.NamespaceConfig config: Certbot settings
+    :param domains: domains in the obtained certificate
+    :type domains: `list` of `str`
+    :param str lineage_path: live directory path for the new cert
+
+    """
+    renew_hooks = list_hooks(config.renewal_deploy_hooks_dir)
+    for hook in renew_hooks:
+        _run_deploy_hook(hook, domains, lineage_path, config.dry_run)
+
+    if config.renew_hook and config.renew_hook not in renew_hooks:
+        _run_deploy_hook(config.renew_hook, domains,
+                         lineage_path, config.dry_run)
+
+
+def _run_deploy_hook(command, domains, lineage_path, dry_run):
+    """Run the specified deploy-hook (if not doing a dry run).
+
+    If dry_run is True, command is not run and a message is logged
+    saying that it was skipped. If dry_run is False, the hook is run
+    after setting the appropriate environment variables.
+
+    :param str command: command to run as a deploy-hook
+    :param domains: domains in the obtained certificate
+    :type domains: `list` of `str`
+    :param str lineage_path: live directory path for the new cert
+    :param bool dry_run: True iff Certbot is doing a dry run
+
+    """
+    if dry_run:
+        logger.warning("Dry run: skipping deploy hook command: %s",
+                       command)
+        return
+
+    os.environ["RENEWED_DOMAINS"] = " ".join(domains)
+    os.environ["RENEWED_LINEAGE"] = lineage_path
+    logger.info("Running deploy-hook command: %s", command)
+    _run_hook(command)
 
 
 def _run_hook(shell_cmd):
