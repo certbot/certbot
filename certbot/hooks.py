@@ -97,23 +97,49 @@ def _run_pre_hook_if_necessary(command):
 
 
 def post_hook(config):
-    """Run post hook if defined.
+    """Run post-hooks if defined.
 
-    If the verb is renew, we might have more certs to renew, so we wait until
-    run_saved_post_hooks() is called.
+    This function also registers any executables found in
+    config.renewal_post_hooks_dir to be run when Certbot is used with
+    the renew subcommand.
+
+    If the verb is renew, we delay executing any post-hooks until
+    :func:`run_saved_post_hooks` is called. In this case, this function
+    registers all hooks found in config.renewal_post_hooks_dir to be
+    called followed by any post-hook in the config. If the post-hook in
+    the config is a path to an executable in the post-hook directory, it
+    is not scheduled to be run twice.
+
+    :param configuration.NamespaceConfig config: Certbot settings
+
     """
 
     cmd = config.post_hook
     # In the "renew" case, we save these up to run at the end
     if config.verb == "renew":
-        if cmd and cmd not in post_hook.eventually:
-            post_hook.eventually.append(cmd)
+        for hook in list_hooks(config.renewal_post_hooks_dir):
+            _run_eventually(hook)
+        if cmd:
+            _run_eventually(cmd)
     # certonly / run
     elif cmd:
         logger.info("Running post-hook command: %s", cmd)
         _run_hook(cmd)
 
 post_hook.eventually = []  # type: ignore
+
+
+def _run_eventually(command):
+    """Registers a post-hook to be run eventually.
+
+    All commands given to this function will be run exactly once in the
+    order they were given when :func:`run_saved_post_hooks` is called.
+
+    :param str command: post-hook to register to be run
+
+    """
+    if command not in post_hook.eventually:
+        post_hook.eventually.append(command)
 
 
 def run_saved_post_hooks():
@@ -158,9 +184,13 @@ def renew_hook(config, domains, lineage_path):
     for hook in renew_hooks:
         _run_deploy_hook(hook, domains, lineage_path, config.dry_run)
 
-    if config.renew_hook and config.renew_hook not in renew_hooks:
-        _run_deploy_hook(config.renew_hook, domains,
-                         lineage_path, config.dry_run)
+    if config.renew_hook:
+        if config.renew_hook in renew_hooks:
+            logger.info("Skipping deploy-hook '%s' as it was already run.",
+                        config.renew_hook)
+        else:
+            _run_deploy_hook(config.renew_hook, domains,
+                             lineage_path, config.dry_run)
 
 
 def _run_deploy_hook(command, domains, lineage_path, dry_run):
