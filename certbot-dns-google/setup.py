@@ -19,6 +19,8 @@ install_requires = [
     # will tolerate; see #2599:
     'setuptools>=1.0',
     'zope.interface',
+    # already a dependency of google-api-python-client, but added for consistency
+    'httplib2'
 ]
 
 docs_extras = [
