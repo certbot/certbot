@@ -45,6 +45,9 @@ class ApacheTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
             return
 
         for vhost_basename in os.listdir(sites_enabled):
+            # Keep the one non-symlink test vhost in place
+            if vhost_basename == "non-symlink.conf":
+                continue
             vhost = os.path.join(sites_enabled, vhost_basename)
             if not os.path.islink(vhost):  # pragma: no cover
                 os.remove(vhost)
@@ -115,7 +118,8 @@ def get_vh_truth(temp_dir, config_name):
     """Return the ground truth for the specified directory."""
     if config_name == "debian_apache_2_4/multiple_vhosts":
         prefix = os.path.join(
-            temp_dir, config_name, "apache2/sites-available")
+            temp_dir, config_name, "apache2/sites-enabled")
+
         aug_pre = "/files" + prefix
         vh_truth = [
             obj.VirtualHost(
@@ -125,8 +129,9 @@ def get_vh_truth(temp_dir, config_name):
                 False, True, "encryption-example.demo"),
             obj.VirtualHost(
                 os.path.join(prefix, "default-ssl.conf"),
-                os.path.join(aug_pre, "default-ssl.conf/IfModule/VirtualHost"),
-                set([obj.Addr.fromstring("_default_:443")]), True, False),
+                os.path.join(aug_pre,
+                             "default-ssl.conf/IfModule/VirtualHost"),
+                set([obj.Addr.fromstring("_default_:443")]), True, True),
             obj.VirtualHost(
                 os.path.join(prefix, "000-default.conf"),
                 os.path.join(aug_pre, "000-default.conf/VirtualHost"),
@@ -148,17 +153,34 @@ def get_vh_truth(temp_dir, config_name):
                 os.path.join(prefix, "default-ssl-port-only.conf"),
                 os.path.join(aug_pre, ("default-ssl-port-only.conf/"
                                        "IfModule/VirtualHost")),
-                set([obj.Addr.fromstring("_default_:443")]), True, False),
+                set([obj.Addr.fromstring("_default_:443")]), True, True),
             obj.VirtualHost(
                 os.path.join(prefix, "wildcard.conf"),
                 os.path.join(aug_pre, "wildcard.conf/VirtualHost"),
-                set([obj.Addr.fromstring("*:80")]), False, False,
+                set([obj.Addr.fromstring("*:80")]), False, True,
                 "ip-172-30-0-17", aliases=["*.blue.purple.com"]),
             obj.VirtualHost(
                 os.path.join(prefix, "ocsp-ssl.conf"),
                 os.path.join(aug_pre, "ocsp-ssl.conf/IfModule/VirtualHost"),
                 set([obj.Addr.fromstring("10.2.3.4:443")]), True, True,
-                "ocspvhost.com")]
+                "ocspvhost.com"),
+            obj.VirtualHost(
+                os.path.join(prefix, "non-symlink.conf"),
+                os.path.join(aug_pre, "non-symlink.conf/VirtualHost"),
+                set([obj.Addr.fromstring("*:80")]), False, True,
+                "nonsym.link"),
+            obj.VirtualHost(
+                os.path.join(prefix, "default-ssl-port-only.conf"),
+                os.path.join(aug_pre,
+                             "default-ssl-port-only.conf/VirtualHost"),
+                set([obj.Addr.fromstring("*:80")]), True, True, ""),
+            obj.VirtualHost(
+                os.path.join(temp_dir, config_name,
+                             "apache2/apache2.conf"),
+                "/files" + os.path.join(temp_dir, config_name,
+                                        "apache2/apache2.conf/VirtualHost"),
+                set([obj.Addr.fromstring("*:80")]), False, True,
+                "vhost.in.rootconf")]
         return vh_truth
     if config_name == "debian_apache_2_4/multi_vhosts":
         prefix = os.path.join(

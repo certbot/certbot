@@ -38,7 +38,7 @@ class BasicParserTest(util.ParserTest):
         file_path = os.path.join(
             self.config_path, "not-parsed-by-default", "certbot.conf")
 
-        self.parser._parse_file(file_path)  # pylint: disable=protected-access
+        self.parser.parse_file(file_path)  # pylint: disable=protected-access
 
         # search for the httpd incl
         matches = self.parser.aug.match(
@@ -52,7 +52,7 @@ class BasicParserTest(util.ParserTest):
         test2 = self.parser.find_dir("documentroot")
 
         self.assertEqual(len(test), 1)
-        self.assertEqual(len(test2), 4)
+        self.assertEqual(len(test2), 7)
 
     def test_add_dir(self):
         aug_default = "/files" + self.parser.loc["default"]

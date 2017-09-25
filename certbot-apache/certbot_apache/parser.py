@@ -1,4 +1,5 @@
 """ApacheParser is a member object of the ApacheConfigurator class."""
+import copy
 import fnmatch
 import logging
 import os
@@ -30,8 +31,14 @@ class ApacheParser(object):
     arg_var_interpreter = re.compile(r"\$\{[^ \}]*}")
     fnmatch_chars = set(["*", "?", "\\", "[", "]"])
 
-    def __init__(self, aug, root, vhostroot, version=(2, 4)):
+    def __init__(self, aug, root, vhostroot=None, version=(2, 4),
+                 configurator=None):
         # Note: Order is important here.
+
+        # Needed for calling save() with reverter functionality that resides in
+        # AugeasConfigurator superclass of ApacheConfigurator. This resolves
+        # issues with aug.load() after adding new files / defines to parse tree
+        self.configurator = configurator
 
         # This uses the binary, so it can be done first.
         # https://httpd.apache.org/docs/2.4/mod/core.html#define
@@ -46,9 +53,7 @@ class ApacheParser(object):
         # Find configuration root and make sure augeas can parse it.
         self.root = os.path.abspath(root)
         self.loc = {"root": self._find_config_root()}
-        self._parse_file(self.loc["root"])
-
-        self.vhostroot = os.path.abspath(vhostroot)
+        self.parse_file(self.loc["root"])
 
         # This problem has been fixed in Augeas 1.0
         self.standardize_excl()
@@ -62,14 +67,41 @@ class ApacheParser(object):
         # Set up rest of locations
         self.loc.update(self._set_locations())
 
-        # Must also attempt to parse virtual host root
-        self._parse_file(self.vhostroot + "/" +
-                         constants.os_constant("vhost_files"))
+        self.existing_paths = copy.deepcopy(self.parser_paths)
+
+        # Must also attempt to parse additional virtual host root
+        if vhostroot:
+            self.parse_file(os.path.abspath(vhostroot) + "/" +
+                            constants.os_constant("vhost_files"))
 
         # check to see if there were unparsed define statements
         if version < (2, 4):
             if self.find_dir("Define", exclude=False):
                 raise errors.PluginError("Error parsing runtime variables")
+
+    def add_include(self, main_config, inc_path):
+        """Add Include for a new configuration file if one does not exist
+
+        :param str main_config: file path to main Apache config file
+        :param str inc_path: path of file to include
+
+        """
+        if len(self.find_dir(case_i("Include"), inc_path)) == 0:
+            logger.debug("Adding Include %s to %s",
+                         inc_path, get_aug_path(main_config))
+            self.add_dir(
+                get_aug_path(main_config),
+                "Include", inc_path)
+
+            # Add new path to parser paths
+            new_dir = os.path.dirname(inc_path)
+            new_file = os.path.basename(inc_path)
+            if new_dir in self.existing_paths.keys():
+                # Add to existing path
+                self.existing_paths[new_dir].append(new_file)
+            else:
+                # Create a new path
+                self.existing_paths[new_dir] = [new_file]
 
     def init_modules(self):
         """Iterates on the configuration until no new modules are loaded.
@@ -428,9 +460,9 @@ class ApacheParser(object):
 
         # Attempts to add a transform to the file if one does not already exist
         if os.path.isdir(arg):
-            self._parse_file(os.path.join(arg, "*"))
+            self.parse_file(os.path.join(arg, "*"))
         else:
-            self._parse_file(arg)
+            self.parse_file(arg)
 
         # Argument represents an fnmatch regular expression, convert it
         # Split up the path and convert each into an Augeas accepted regex
@@ -470,7 +502,7 @@ class ApacheParser(object):
             # Since Python 3.6, it returns a different pattern like (?s:.*\.load)\Z
             return fnmatch.translate(clean_fn_match)[4:-3]
 
-    def _parse_file(self, filepath):
+    def parse_file(self, filepath):
         """Parse file with Augeas
 
         Checks to see if file_path is parsed by Augeas
@@ -480,6 +512,10 @@ class ApacheParser(object):
 
         """
         use_new, remove_old = self._check_path_actions(filepath)
+        # Ensure that we have the latest Augeas DOM state on disk before
+        # calling aug.load() which reloads the state from disk
+        if self.configurator:
+            self.configurator.ensure_augeas_state()
         # Test if augeas included file for Httpd.lens
         # Note: This works for augeas globs, ie. *.conf
         if use_new:
@@ -493,6 +529,39 @@ class ApacheParser(object):
                     self._remove_httpd_transform(filepath)
                 self._add_httpd_transform(filepath)
                 self.aug.load()
+
+    def parsed_in_current(self, filep):
+        """Checks if the file path is parsed by current Augeas parser config
+        ie. returns True if the file is found on a path that's found in live
+        Augeas configuration.
+
+        :param str filep: Path to match
+
+        :returns: True if file is parsed in existing configuration tree
+        :rtype: bool
+        """
+        return self._parsed_by_parser_paths(filep, self.parser_paths)
+
+    def parsed_in_original(self, filep):
+        """Checks if the file path is parsed by existing Apache config.
+        ie. returns True if the file is found on a path that matches Include or
+        IncludeOptional statement in the Apache configuration.
+
+        :param str filep: Path to match
+
+        :returns: True if file is parsed in existing configuration tree
+        :rtype: bool
+        """
+        return self._parsed_by_parser_paths(filep, self.existing_paths)
+
+    def _parsed_by_parser_paths(self, filep, paths):
+        """Helper function that searches through provided paths and returns
+        True if file path is found in the set"""
+        for directory in paths.keys():
+            for filename in paths[directory]:
+                if fnmatch.fnmatch(filep, os.path.join(directory, filename)):
+                    return True
+        return False
 
     def _check_path_actions(self, filepath):
         """Determine actions to take with a new augeas path
@@ -622,7 +691,6 @@ class ApacheParser(object):
         for name in location:
             if os.path.isfile(os.path.join(self.root, name)):
                 return os.path.join(self.root, name)
-
         raise errors.NoInstallationError("Could not find configuration root")
 
 

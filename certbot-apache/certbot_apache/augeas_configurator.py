@@ -76,26 +76,26 @@ class AugeasConfigurator(common.Installer):
                     self.aug.get(path + "/message")))
                 raise errors.PluginError(msg)
 
-    # TODO: Cleanup this function
-    def save(self, title=None, temporary=False):
-        """Saves all changes to the configuration files.
+    def ensure_augeas_state(self):
+        """Makes sure that all Augeas dom changes are written to files to avoid
+        loss of configuration directives when doing additional augeas parsing,
+        causing a possible augeas.load() resulting dom reset
+        """
 
-        This function first checks for save errors, if none are found,
-        all configuration changes made will be saved. According to the
-        function parameters. If an exception is raised, a new checkpoint
-        was not created.
+        if self.unsaved_files():
+            self.save_notes += "(autosave)"
+            self.save()
 
-        :param str title: The title of the save. If a title is given, the
-            configuration will be saved as a new checkpoint and put in a
-            timestamped directory.
-
-        :param bool temporary: Indicates whether the changes made will
-            be quickly reversed in the future (ie. challenges)
+    def unsaved_files(self):
+        """Lists files that have modified Augeas DOM but the changes have not
+        been written to the filesystem yet, used by `self.save()` and
+        ApacheConfigurator to check the file state.
 
         :raises .errors.PluginError: If there was an error in Augeas, in
             an attempt to save the configuration, or an error creating a
             checkpoint
 
+        :returns: `set` of unsaved files
         """
         save_state = self.aug.get("/augeas/save")
         self.aug.set("/augeas/save", "noop")
@@ -111,21 +111,41 @@ class AugeasConfigurator(common.Installer):
             raise errors.PluginError(
                 "Error saving files, check logs for more info.")
 
+        # Return the original save method
+        self.aug.set("/augeas/save", save_state)
+
         # Retrieve list of modified files
         # Note: Noop saves can cause the file to be listed twice, I used a
         # set to remove this possibility. This is a known augeas 0.10 error.
         save_paths = self.aug.match("/augeas/events/saved")
 
-        # If the augeas tree didn't change, no files were saved and a backup
-        # should not be created
         save_files = set()
         if save_paths:
             for path in save_paths:
                 save_files.add(self.aug.get(path)[6:])
+        return save_files
+
+    def save(self, title=None, temporary=False):
+        """Saves all changes to the configuration files.
+
+        This function first checks for save errors, if none are found,
+        all configuration changes made will be saved. According to the
+        function parameters. If an exception is raised, a new checkpoint
+        was not created.
+
+        :param str title: The title of the save. If a title is given, the
+            configuration will be saved as a new checkpoint and put in a
+            timestamped directory.
+
+        :param bool temporary: Indicates whether the changes made will
+            be quickly reversed in the future (ie. challenges)
+
+        """
+        save_files = self.unsaved_files()
+        if save_files:
             self.add_to_checkpoint(save_files,
                                    self.save_notes, temporary=temporary)
 
-        self.aug.set("/augeas/save", save_state)
         self.save_notes = ""
         self.aug.save()
 
