@@ -1729,6 +1729,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             if not self.parser.parsed_in_original(vhost.filep):
                 # Add direct include to root conf
                 self.parser.add_include(self.parser.loc["default"], vhost.filep)
+                vhost.enabled = True
             return
 
         enabled_path = ("%s/sites-enabled/%s" %
