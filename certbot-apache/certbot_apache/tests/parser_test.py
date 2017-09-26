@@ -66,6 +66,14 @@ class BasicParserTest(util.ParserTest):
         for i, match in enumerate(matches):
             self.assertEqual(self.parser.aug.get(match), str(i + 1))
 
+    def test_empty_arg(self):
+        mock_aug = mock.Mock()
+        mock_getarg = mock.Mock()
+        mock_getarg.return_value = None
+        mock_aug.get = mock_getarg
+        self.parser.aug = mock_aug
+        self.assertEquals("", self.parser.get_arg("whatever"))
+
     def test_add_dir_to_ifmodssl(self):
         """test add_dir_to_ifmodssl.
 

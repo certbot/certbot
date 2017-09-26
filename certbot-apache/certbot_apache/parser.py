@@ -371,7 +371,10 @@ class ApacheParser(object):
 
         # Note: normal argument may be a quoted variable
         # e.g. strip now, not later
-        value = value.strip("'\"")
+        if not value:
+            return ""
+        else:
+            value = value.strip("'\"")
 
         variables = ApacheParser.arg_var_interpreter.findall(value)
 
