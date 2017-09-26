@@ -278,16 +278,16 @@ def _create_get_utility_mock_with_stdout(stdout):
     def _write_msg(message, *unused_args, **unused_kwargs):
         """Write to message to stdout.
         """
-        stdout.write(message)
+        if message:
+            stdout.write(message)
 
     def mock_method(*args, **kwargs):
         """
         Mock function for IDisplay methods.
         """
-        message = args[0] if args else kwargs.get('message', None)
-        if message:
-            _write_msg(message, args, kwargs)
         _assert_valid_call(args, kwargs)
+        _write_msg(*args, **kwargs)
+
 
     display = FreezableMock()
     for name in interfaces.IDisplay.names():  # pylint: disable=no-member
