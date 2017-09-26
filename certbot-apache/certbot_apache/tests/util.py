@@ -124,7 +124,7 @@ def get_vh_truth(temp_dir, config_name):
         vh_truth = [
             obj.VirtualHost(
                 os.path.join(prefix, "encryption-example.conf"),
-                os.path.join(aug_pre, "encryption-example.conf/VirtualHost"),
+                os.path.join(aug_pre, "encryption-example.conf/Virtualhost"),
                 set([obj.Addr.fromstring("*:80")]),
                 False, True, "encryption-example.demo"),
             obj.VirtualHost(
