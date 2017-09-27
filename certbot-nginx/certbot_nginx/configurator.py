@@ -149,10 +149,6 @@ class NginxConfigurator(common.Installer):
         if not util.exe_exists(self.conf('ctl')):
             raise errors.NoInstallationError
 
-        # Make sure configuration is valid
-        self.config_test()
-
-
         self.parser = parser.NginxParser(self.conf('server-root'))
 
         install_ssl_options_conf(self.mod_ssl_conf, self.updated_mod_ssl_conf_digest)

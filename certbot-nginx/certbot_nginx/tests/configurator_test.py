@@ -62,13 +62,11 @@ class NginxConfiguratorTest(util.NginxTest):
         mock_exe_exists.return_value = True
 
         self.config.version = None
-        self.config.config_test = mock.Mock()
         self.config.prepare()
         self.assertEqual((1, 6, 2), self.config.version)
 
     def test_prepare_locked(self):
         server_root = self.config.conf("server-root")
-        self.config.config_test = mock.Mock()
         os.remove(os.path.join(server_root, ".certbot.lock"))
         certbot_test_util.lock_and_call(self._test_prepare_locked, server_root)
 
@@ -378,15 +376,6 @@ class NginxConfiguratorTest(util.NginxTest):
     def test_no_nginx_start(self, mock_popen):
         mock_popen.side_effect = OSError("Can't find program")
         self.assertRaises(errors.MisconfigurationError, self.config.restart)
-
-    @mock.patch("certbot.util.run_script")
-    def test_config_test_bad_process(self, mock_run_script):
-        mock_run_script.side_effect = errors.SubprocessError
-        self.assertRaises(errors.MisconfigurationError, self.config.config_test)
-
-    @mock.patch("certbot.util.run_script")
-    def test_config_test(self, _):
-        self.config.config_test()
 
     @mock.patch("certbot.reverter.Reverter.recovery_routine")
     def test_recovery_routine_throws_error_from_reverter(self, mock_recovery_routine):
