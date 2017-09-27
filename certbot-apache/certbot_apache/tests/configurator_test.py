@@ -172,7 +172,7 @@ class MultipleVhostsTest(util.ApacheTest):
     def test_get_aug_internal_path(self):
         from certbot_apache.configurator import get_internal_aug_path
         internal_paths = [
-            "VirtualHost", "IfModule/VirtualHost", "VirtualHost", "VirtualHost",
+            "Virtualhost", "IfModule/VirtualHost", "VirtualHost", "VirtualHost",
             "Macro/VirtualHost", "IfModule/VirtualHost", "VirtualHost",
             "IfModule/VirtualHost"]
 
@@ -755,7 +755,7 @@ class MultipleVhostsTest(util.ApacheTest):
                          "encryption-example-le-ssl.conf"))
 
         self.assertEqual(ssl_vhost.path,
-                         "/files" + ssl_vhost.filep + "/IfModule/VirtualHost")
+                         "/files" + ssl_vhost.filep + "/IfModule/Virtualhost")
         self.assertEqual(len(ssl_vhost.addrs), 1)
         self.assertEqual(set([obj.Addr.fromstring("*:443")]), ssl_vhost.addrs)
         self.assertEqual(ssl_vhost.name, "encryption-example.demo")
