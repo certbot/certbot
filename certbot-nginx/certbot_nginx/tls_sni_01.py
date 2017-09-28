@@ -53,14 +53,8 @@ class NginxTlsSni01(common.TLSSNI01):
 
         for achall in self.achalls:
             vhost = self.configurator.choose_vhost(achall.domain)
-            if vhost is None:
-                logger.error(
-                    "No nginx vhost exists with server_name matching: %s. "
-                    "Please specify server_names in the Nginx config.",
-                    achall.domain)
-                return None
 
-            if vhost.addrs:
+            if vhost is not None and vhost.addrs:
                 addresses.append(list(vhost.addrs))
             else:
                 addresses.append([obj.Addr.fromstring(default_addr)])
