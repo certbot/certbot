@@ -209,7 +209,7 @@ class NginxConfigurator(common.Installer):
     #######################
     # Vhost parsing methods
     #######################
-    def choose_vhost(self, target_name):
+    def choose_vhost(self, target_name, raise_if_no_match=True):
         """Chooses a virtual host based on the given domain name.
 
         .. note:: This makes the vhost SSL-enabled if it isn't already. Follows
@@ -233,13 +233,16 @@ class NginxConfigurator(common.Installer):
         matches = self._get_ranked_matches(target_name)
         vhost = self._select_best_name_match(matches)
         if not vhost:
-            # No matches. Raise a misconfiguration error.
-            raise errors.MisconfigurationError(
-                        ("Cannot find a VirtualHost matching domain %s. "
-                         "In order for Certbot to correctly perform the challenge "
-                         "please add a corresponding server_name directive to your "
-                         "nginx configuration: "
-                         "https://nginx.org/en/docs/http/server_names.html") % (target_name))
+            if raise_if_no_match:
+                # No matches. Raise a misconfiguration error.
+                raise errors.MisconfigurationError(
+                            ("Cannot find a VirtualHost matching domain %s. "
+                             "In order for Certbot to correctly perform the challenge "
+                             "please add a corresponding server_name directive to your "
+                             "nginx configuration: "
+                             "https://nginx.org/en/docs/http/server_names.html") % (target_name))
+            else:
+                return None
         else:
             # Note: if we are enhancing with ocsp, vhost should already be ssl.
             if not vhost.ssl:

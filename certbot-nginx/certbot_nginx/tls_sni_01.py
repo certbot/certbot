@@ -52,7 +52,7 @@ class NginxTlsSni01(common.TLSSNI01):
             self.configurator.config.tls_sni_01_port)
 
         for achall in self.achalls:
-            vhost = self.configurator.choose_vhost(achall.domain)
+            vhost = self.configurator.choose_vhost(achall.domain, raise_if_no_match=False)
 
             if vhost is not None and vhost.addrs:
                 addresses.append(list(vhost.addrs))
