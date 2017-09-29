@@ -438,6 +438,10 @@ class SetByCliTest(unittest.TestCase):
     def setUp(self):
         reload_module(cli)
 
+    def test_deploy_hook(self):
+        self.assertTrue(_call_set_by_cli(
+            'renew_hook', '--deploy-hook foo'.split(), 'renew'))
+
     def test_webroot_map(self):
         args = '-w /var/www/html -d example.com'.split()
         verb = 'renew'

@@ -129,6 +129,7 @@ ZERO_ARG_ACTIONS = set(("store_const", "store_true",
 # This dictionary is used recursively, so if A modifies B and B modifies C,
 # it is determined that C was modified by the user if A was modified.
 VAR_MODIFIERS = {"account": set(("server",)),
+                 "renew_hook": set(("deploy_hook",)),
                  "server": set(("dry_run", "staging",)),
                  "webroot_map": set(("webroot_path",))}
 
