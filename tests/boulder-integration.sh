@@ -61,7 +61,6 @@ EOF
         chmod +x "$hook_path"
     done
 }
-CreateDirHooks
 
 # Asserts that the hooks created by CreateDirHooks have been run once and
 # resets the file.
@@ -193,8 +192,15 @@ if [ $(get_num_tmp_files) -ne $num_tmp_files ]; then
     echo "New files or directories created in /tmp!"
     exit 1
 fi
+CreateDirHooks
 
 common register
+for dir in $renewal_hooks_dirs; do
+    if [ ! -d "$dir" ]; then
+        echo "Hook directory not created by Certbot!" >&2
+        exit 1
+    fi
+done
 common register --update-registration --email example@example.org
 
 common plugins --init --prepare | grep webroot
