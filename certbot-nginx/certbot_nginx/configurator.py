@@ -117,6 +117,9 @@ class NginxConfigurator(common.Installer):
         # Files to save
         self.save_notes = ""
 
+        # For creating new vhosts if no names match
+        self.new_vhost = None
+
         # Add number of outstanding challenges
         self._chall_out = 0
 
@@ -191,9 +194,11 @@ class NginxConfigurator(common.Installer):
                 "The nginx plugin currently requires --fullchain-path to "
                 "install a cert.")
 
-        vhost = self.choose_vhost(domain)
-        cert_directives = [['\n', 'ssl_certificate', ' ', fullchain_path],
-                           ['\n', 'ssl_certificate_key', ' ', key_path]]
+        vhost = self.choose_vhost(domain, raise_if_no_match=False)
+        if vhost is None:
+            vhost = self._vhost_from_duplicated_default(domain)
+        cert_directives = [['\n    ', 'ssl_certificate', ' ', fullchain_path],
+                           ['\n    ', 'ssl_certificate_key', ' ', key_path]]
 
         self.parser.add_server_directives(vhost,
                                           cert_directives, replace=True)
@@ -249,6 +254,32 @@ class NginxConfigurator(common.Installer):
                 self._make_server_ssl(vhost)
 
         return vhost
+
+    def _vhost_from_duplicated_default(self, domain):
+        if self.new_vhost is None:
+            default_vhost = self._get_default_vhost()
+            self.new_vhost = self.parser.create_new_vhost_from_default(default_vhost)
+            self.new_vhost.names = set()
+
+        import ipdb; ipdb.set_trace()
+        self.new_vhost.names.add(domain)
+        name_block = [['\n    ', 'server_name', ' ', " ".join(self.new_vhost.names)]]
+        self.parser.add_server_directives(self.new_vhost, name_block, replace=True)
+        return self.new_vhost
+
+    def _get_default_vhost(self):
+        vhost_list = self.parser.get_vhosts()
+        # if one has default_server set, return that one
+        for vhost in vhost_list:
+            for addr in vhost.addrs:
+                if addr.default:
+                    return vhost
+
+        # otherwise, return the first one
+        if len(vhost_list) > 0:
+            return vhost_list[0]
+
+        raise errors.MisconfigurationError("No server blocks found in Nginx configuration.")
 
     def _get_ranked_matches(self, target_name):
         """Returns a ranked list of vhosts that match target_name.

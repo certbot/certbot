@@ -235,8 +235,8 @@ class UnspacedList(list):
         self.dirty = True
 
     def __deepcopy__(self, memo):
-        l = UnspacedList(self[:])
-        l.spaced = copy.deepcopy(self.spaced, memo=memo)
+        new_spaced = copy.deepcopy(self.spaced, memo=memo)
+        l = UnspacedList(new_spaced)
         l.dirty = self.dirty
         return l
 

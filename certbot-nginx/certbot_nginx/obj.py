@@ -1,4 +1,5 @@
 """Module contains classes used by the Nginx Configurator."""
+import copy
 import re
 
 import six
@@ -124,6 +125,9 @@ class Addr(common.Addr):
                     self.ssl == other.ssl and
                     self.default == other.default)
         return False
+
+    def copy(self):
+        return Addr.fromstring(str(self))
 
 
 class VirtualHost(object):  # pylint: disable=too-few-public-methods

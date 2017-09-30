@@ -312,6 +312,24 @@ class NginxParser(object):
         except errors.MisconfigurationError as err:
             raise errors.MisconfigurationError("Problem in %s: %s" % (filename, str(err)))
 
+    def create_new_vhost_from_default(self, vhost_template):
+        # TODO: do the right thing for debian
+        # put it in the same file as the template, at the same level
+        enclosing_block = self.parsed[vhost_template.filep]
+        for index in vhost_template.path[:-1]:
+            enclosing_block = enclosing_block[index]
+        new_location = vhost_template.path[-1] + 1
+        raw_in_parsed = copy.deepcopy(enclosing_block[vhost_template.path[-1]])
+        enclosing_block.insert(new_location, raw_in_parsed)
+        new_vhost = copy.deepcopy(vhost_template)
+        new_vhost.path[-1] = new_location
+        for addr in new_vhost.addrs:
+            addr.default = False
+        for directive in enclosing_block[new_vhost.path[-1]][1]:
+            if len(directive) > 0 and directive[0] == 'listen' and 'default_server' in directive:
+                del directive[directive.index('default_server')]
+        return new_vhost
+
 def _parse_ssl_options(ssl_options):
     if ssl_options is not None:
         try:
