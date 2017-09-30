@@ -189,13 +189,15 @@ class UnspacedList(list):
         item, spaced_item = self._coerce(x)
         slicepos = self._spaced_position(i) if i < len(self) else len(self.spaced)
         self.spaced.insert(slicepos, spaced_item)
-        list.insert(self, i, item)
+        if not spacey(item):
+            list.insert(self, i, item)
         self.dirty = True
 
     def append(self, x):
         item, spaced_item = self._coerce(x)
         self.spaced.append(spaced_item)
-        list.append(self, item)
+        if not spacey(item):
+            list.append(self, item)
         self.dirty = True
 
     def extend(self, x):
@@ -226,7 +228,8 @@ class UnspacedList(list):
             raise NotImplementedError("Slice operations on UnspacedLists not yet implemented")
         item, spaced_item = self._coerce(value)
         self.spaced.__setitem__(self._spaced_position(i), spaced_item)
-        list.__setitem__(self, i, item)
+        if not spacey(item):
+            list.__setitem__(self, i, item)
         self.dirty = True
 
     def __delitem__(self, i):

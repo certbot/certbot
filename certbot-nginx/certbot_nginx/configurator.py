@@ -259,14 +259,13 @@ class NginxConfigurator(common.Installer):
         if self.new_vhost is None:
             default_vhost = self._get_default_vhost()
             self.new_vhost = self.parser.create_new_vhost_from_default(default_vhost)
+            if not self.new_vhost.ssl:
+                self._make_server_ssl(self.new_vhost)
             self.new_vhost.names = set()
 
         self.new_vhost.names.add(domain)
         name_block = [['\n    ', 'server_name', ' ', " ".join(self.new_vhost.names)]]
         self.parser.add_server_directives(self.new_vhost, name_block, replace=True)
-
-        if not self.new_vhost.ssl:
-            self._make_server_ssl(self.new_vhost)
         return self.new_vhost
 
     def _get_default_vhost(self):
