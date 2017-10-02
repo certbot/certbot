@@ -5,6 +5,7 @@ import logging
 import os
 import pyparsing
 import re
+import six
 
 from certbot import errors
 
@@ -462,7 +463,7 @@ def _is_include_directive(entry):
     """
     return (isinstance(entry, list) and
             len(entry) == 2 and entry[0] == 'include' and
-            isinstance(entry[1], str))
+            isinstance(entry[1], six.string_types))
 
 def _is_ssl_on_directive(entry):
     """Checks if an nginx parsed entry is an 'ssl on' directive.
@@ -579,7 +580,8 @@ def _add_directive(block, directive, replace):
     directive_name = directive[0]
     def can_append(loc, dir_name):
         """ Can we append this directive to the block? """
-        return loc is None or (isinstance(dir_name, str) and dir_name in REPEATABLE_DIRECTIVES)
+        return loc is None or (isinstance(dir_name, six.string_types)\
+            and dir_name in REPEATABLE_DIRECTIVES)
 
     err_fmt = 'tried to insert directive "{0}" but found conflicting "{1}".'
 
