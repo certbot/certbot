@@ -130,7 +130,7 @@ class ApacheParser(object):
                     self.modules.add(os.path.basename(mod_filename)[:-2] + "c")
                 else:
                     logger.debug("Could not read LoadModule directive from " +
-                                 "Augeas path: {}".format(match_name[6:]))
+                                 "Augeas path: {0}".format(match_name[6:]))
 
     def update_runtime_variables(self):
         """"
