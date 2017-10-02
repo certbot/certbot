@@ -1,5 +1,4 @@
 """Module contains classes used by the Nginx Configurator."""
-import copy
 import re
 
 import six
