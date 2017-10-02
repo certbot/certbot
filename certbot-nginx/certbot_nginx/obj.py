@@ -125,9 +125,6 @@ class Addr(common.Addr):
                     self.default == other.default)
         return False
 
-    def copy(self):
-        return Addr.fromstring(str(self))
-
 
 class VirtualHost(object):  # pylint: disable=too-few-public-methods
     """Represents an Nginx Virtualhost.
