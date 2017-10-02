@@ -123,9 +123,14 @@ class ApacheParser(object):
 
             for match_name, match_filename in six.moves.zip(
                     iterator, iterator):
-                self.modules.add(self.get_arg(match_name))
-                self.modules.add(
-                    os.path.basename(self.get_arg(match_filename))[:-2] + "c")
+                mod_name = self.get_arg(match_name)
+                mod_filename = self.get_arg(match_filename)
+                if mod_name and mod_filename:
+                    self.modules.add(mod_name)
+                    self.modules.add(os.path.basename(mod_filename)[:-2] + "c")
+                else:
+                    logger.debug("Could not read LoadModule directive from " +
+                                 "Augeas path: {}".format(match_name[6:]))
 
     def update_runtime_variables(self):
         """"
@@ -372,7 +377,7 @@ class ApacheParser(object):
         # Note: normal argument may be a quoted variable
         # e.g. strip now, not later
         if not value:
-            return ""
+            return None
         else:
             value = value.strip("'\"")
 

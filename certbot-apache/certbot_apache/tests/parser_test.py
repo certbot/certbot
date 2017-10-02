@@ -67,7 +67,8 @@ class BasicParserTest(util.ParserTest):
             self.assertEqual(self.parser.aug.get(match), str(i + 1))
 
     def test_empty_arg(self):
-        self.assertEquals("", self.parser.get_arg("/files/whatever/nonexistent"))
+        self.assertEquals(None,
+                          self.parser.get_arg("/files/whatever/nonexistent"))
 
     def test_add_dir_to_ifmodssl(self):
         """test add_dir_to_ifmodssl.
@@ -116,6 +117,16 @@ class BasicParserTest(util.ParserTest):
 
             self.assertEqual(results["default"], results["listen"])
             self.assertEqual(results["default"], results["name"])
+
+    @mock.patch("certbot_apache.parser.ApacheParser.find_dir")
+    @mock.patch("certbot_apache.parser.ApacheParser.get_arg")
+    def test_init_modules_bad_syntax(self, mock_arg, mock_find):
+        mock_find.return_value = ["1", "2", "3", "4", "5", "6", "7", "8"]
+        mock_arg.return_value = None
+        with mock.patch("certbot_apache.parser.logger") as mock_logger:
+            self.parser.init_modules()
+            # Make sure that we got None return value and logged the file
+            self.assertTrue(mock_logger.debug.called)
 
     @mock.patch("certbot_apache.parser.ApacheParser._get_runtime_cfg")
     def test_update_runtime_variables(self, mock_cfg):
