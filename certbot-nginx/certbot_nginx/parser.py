@@ -314,6 +314,14 @@ class NginxParser(object):
             raise errors.MisconfigurationError("Problem in %s: %s" % (filename, str(err)))
 
     def create_new_vhost_from_default(self, vhost_template):
+        """Duplicate the default vhost in the configuration files.
+
+        :param :class:`~certbot_nginx.obj.VirtualHost` vhost_template: The vhost
+            whose information we copy
+
+        :returns: A vhost object for the newly created vhost
+        :rtype: :class:`~certbot_nginx.obj.VirtualHost`
+        """
         # TODO: do the right thing for debian
         # put it in the same file as the template, at the same level
         enclosing_block = self.parsed[vhost_template.filep]
