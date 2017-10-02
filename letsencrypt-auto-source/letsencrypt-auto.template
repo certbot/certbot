@@ -47,6 +47,7 @@ Help for certbot itself cannot be provided until it is installed.
   --no-bootstrap                            do not install OS dependencies
   --no-self-upgrade                         do not download updates
   --os-packages-only                        install OS dependencies and exit
+  --pypi-mirror                             use alternative Python package server
   -v, --verbose                             provide more output
   -q, --quiet                               provide only update/error output;
                                             implies --non-interactive
@@ -66,6 +67,8 @@ for arg in "$@" ; do
       NO_SELF_UPGRADE=1;;
     --no-bootstrap)
       NO_BOOTSTRAP=1;;
+    --pypi-mirror)
+      export PIP_INDEX_URL="https://pypi.doubanio.com/simple";;
     --help)
       HELP=1;;
     --noninteractive|--non-interactive|renew)
