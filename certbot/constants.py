@@ -63,6 +63,7 @@ CLI_DEFAULTS = dict(
     strict_permissions=False,
     pref_challs=[],
     validate_hooks=True,
+    directory_hooks=True,
 
     # Subparsers
     num=None,
@@ -175,6 +176,18 @@ TEMP_CHECKPOINT_DIR = "temp_checkpoint"
 
 RENEWAL_CONFIGS_DIR = "renewal"
 """Renewal configs directory, relative to `IConfig.config_dir`."""
+
+RENEWAL_HOOKS_DIR = "renewal-hooks"
+"""Basename of directory containing hooks to run with the renew command."""
+
+RENEWAL_PRE_HOOKS_DIR = "pre"
+"""Basename of directory containing pre-hooks to run with the renew command."""
+
+RENEWAL_DEPLOY_HOOKS_DIR = "deploy"
+"""Basename of directory containing deploy-hooks to run with the renew command."""
+
+RENEWAL_POST_HOOKS_DIR = "post"
+"""Basename of directory containing post-hooks to run with the renew command."""
 
 FORCE_INTERACTIVE_FLAG = "--force-interactive"
 """Flag to disable TTY checking in IDisplay."""

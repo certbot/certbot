@@ -129,6 +129,7 @@ ZERO_ARG_ACTIONS = set(("store_const", "store_true",
 # This dictionary is used recursively, so if A modifies B and B modifies C,
 # it is determined that C was modified by the user if A was modified.
 VAR_MODIFIERS = {"account": set(("server",)),
+                 "renew_hook": set(("deploy_hook",)),
                  "server": set(("dry_run", "staging",)),
                  "webroot_map": set(("webroot_path",))}
 
@@ -1167,6 +1168,11 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         " simplistic and fails if you use more advanced shell"
         " constructs, so you can use this switch to disable it."
         " (default: False)")
+    helpful.add(
+        "renew", "--no-directory-hooks", action="store_false",
+        default=flag_default("directory_hooks"), dest="directory_hooks",
+        help="Disable running executables found in Certbot's hook directories"
+        " during renewal. (default: False)")
 
     helpful.add_deprecated_argument("--agree-dev-preview", 0)
     helpful.add_deprecated_argument("--dialog", 0)

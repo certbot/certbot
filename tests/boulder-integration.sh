@@ -28,10 +28,65 @@ cleanup_and_exit() {
     : "------------------ ------------------ ------------------"
     : "------------------  end boulder logs  ------------------"
     : "------------------ ------------------ ------------------"
+    if [ -f "$HOOK_DIRS_TEST" ]; then
+        rm -f "$HOOK_DIRS_TEST"
+    fi
     exit $EXIT_STATUS
 }
 
 trap cleanup_and_exit EXIT
+
+export HOOK_DIRS_TEST="$(mktemp)"
+renewal_hooks_root="$config_dir/renewal-hooks"
+renewal_hooks_dirs=$(echo "$renewal_hooks_root/"{pre,deploy,post})
+renewal_dir_pre_hook="$(echo $renewal_hooks_dirs | cut -f 1 -d " ")/hook.sh"
+renewal_dir_deploy_hook="$(echo $renewal_hooks_dirs | cut -f 2 -d " ")/hook.sh"
+renewal_dir_post_hook="$(echo $renewal_hooks_dirs | cut -f 3 -d " ")/hook.sh"
+
+# Creates hooks in Certbot's renewal hook directory that write to a file
+CreateDirHooks() {
+    for hook_dir in $renewal_hooks_dirs; do
+        mkdir -p $hook_dir
+        hook_path="$hook_dir/hook.sh"
+        cat << EOF > "$hook_path"
+#!/bin/bash -xe
+if [ "\$0" = "$renewal_dir_deploy_hook" ]; then
+    if [ -z "\$RENEWED_DOMAINS" -o -z "\$RENEWED_LINEAGE" ]; then
+        echo "Environment variables not properly set!" >&2
+        exit 1
+    fi
+fi
+echo \$(basename \$(dirname "\$0")) >> "\$HOOK_DIRS_TEST"
+EOF
+        chmod +x "$hook_path"
+    done
+}
+
+# Asserts that the hooks created by CreateDirHooks have been run once and
+# resets the file.
+#
+# Arguments:
+#     The number of times the deploy hook should have been run. (It should run
+#     once for each certificate that was issued in that run of Certbot.)
+CheckDirHooks() {
+    expected="pre\n"
+    for ((i=0; i<$1; i++)); do
+        expected=$expected"deploy\n"
+    done
+    expected=$expected"post"
+
+    if ! diff "$HOOK_DIRS_TEST" <(echo -e "$expected"); then
+        echo "Unexpected directory hook output!" >&2
+        echo "Expected:" >&2
+        echo -e "$expected" >&2
+        echo "Got:" >&2
+        cat "$HOOK_DIRS_TEST" >&2
+        exit 1
+    fi
+
+    rm -f "$HOOK_DIRS_TEST"
+    export HOOK_DIRS_TEST="$(mktemp)"
+}
 
 common_no_force_renew() {
     certbot_test_no_force_renew \
@@ -48,32 +103,30 @@ common() {
 
 export HOOK_TEST="/tmp/hook$$"
 CheckHooks() {
-    EXPECTED="/tmp/expected$$"
-    if [ $(head -n1 $HOOK_TEST) = "wtf.pre" ]; then
-        echo "wtf.pre" > "$EXPECTED"
-        echo "wtf2.pre" >> "$EXPECTED"
-        echo "deploy" >> "$EXPECTED"
-        echo "deploy" >> "$EXPECTED"
-        echo "deploy" >> "$EXPECTED"
-        echo "deploy" >> "$EXPECTED"
-        echo "wtf.post" >> "$EXPECTED"
-        echo "wtf2.post" >> "$EXPECTED"
+    if [ $(head -n1 "$HOOK_TEST") = "wtf.pre" ]; then
+        expected="wtf.pre\ndeploy\n"
+        if [ $(sed '3q;d' "$HOOK_TEST") = "deploy" ]; then
+            expected=$expected"deploy\nwtf2.pre\n"
+        else
+            expected=$expected"wtf2.pre\ndeploy\n"
+        fi
+        expected=$expected"deploy\ndeploy\nwtf.post\nwtf2.post"
     else
-        echo "wtf2.pre" > "$EXPECTED"
-        echo "wtf.pre" >> "$EXPECTED"
-        echo "deploy" >> "$EXPECTED"
-        echo "deploy" >> "$EXPECTED"
-        echo "deploy" >> "$EXPECTED"
-        echo "deploy" >> "$EXPECTED"
-        echo "wtf2.post" >> "$EXPECTED"
-        echo "wtf.post" >> "$EXPECTED"
+        expected="wtf2.pre\ndeploy\n"
+        if [ $(sed '3q;d' "$HOOK_TEST") = "deploy" ]; then
+            expected=$expected"deploy\nwtf.pre\n"
+        else
+            expected=$expected"wtf.pre\ndeploy\n"
+        fi
+        expected=$expected"deploy\ndeploy\nwtf2.post\nwtf.post"
     fi
 
-    if ! cmp --quiet "$EXPECTED" "$HOOK_TEST" ; then
-        echo Hooks did not run as expected\; got
-        cat "$HOOK_TEST"
-        echo Expected
-        cat "$EXPECTED"
+    if ! cmp --quiet <(echo -e "$expected") "$HOOK_TEST" ; then
+        echo Hooks did not run as expected\; got >&2
+        cat "$HOOK_TEST" >&2
+        echo -e "Expected\n$expected" >&2
+        rm "$HOOK_TEST"
+        exit 1
     fi
     rm "$HOOK_TEST"
 }
@@ -137,8 +190,15 @@ if [ $(get_num_tmp_files) -ne $num_tmp_files ]; then
     echo "New files or directories created in /tmp!"
     exit 1
 fi
+CreateDirHooks
 
 common register
+for dir in $renewal_hooks_dirs; do
+    if [ ! -d "$dir" ]; then
+        echo "Hook directory not created by Certbot!" >&2
+        exit 1
+    fi
+done
 common register --update-registration --email example@example.org
 
 common plugins --init --prepare | grep webroot
@@ -213,19 +273,36 @@ CheckCertCount "le.wtf" 1
 # This won't renew (because it's not time yet)
 common_no_force_renew renew
 CheckCertCount "le.wtf" 1
+if [ -s "$HOOK_DIRS_TEST" ]; then
+    echo "Directory hooks were executed for non-renewal!" >&2;
+    exit 1
+fi
 
+rm -rf "$renewal_hooks_root"
 # renew using HTTP manual auth hooks
 common renew --cert-name le.wtf --authenticator manual
 CheckCertCount "le.wtf" 2
 
+# test renewal with no executables in hook directories
+for hook_dir in $renewal_hooks_dirs; do
+    touch "$hook_dir/file"
+    mkdir "$hook_dir/dir"
+done
 # renew using DNS manual auth hooks
 common renew --cert-name dns.le.wtf --authenticator manual
 CheckCertCount "dns.le.wtf" 2
 
+# test with disabled directory hooks
+rm -rf "$renewal_hooks_root"
+CreateDirHooks
 # This will renew because the expiry is less than 10 years from now
 sed -i "4arenew_before_expiry = 4 years" "$root/conf/renewal/le.wtf.conf"
-common_no_force_renew renew --rsa-key-size 2048
+common_no_force_renew renew --rsa-key-size 2048 --no-directory-hooks
 CheckCertCount "le.wtf" 3
+if [ -s "$HOOK_DIRS_TEST" ]; then
+    echo "Directory hooks were executed with --no-directory-hooks!" >&2
+    exit 1
+fi
 
 # The 4096 bit setting should persist to the first renewal, but be overridden in the second
 
@@ -244,6 +321,18 @@ fi
 common renew
 CheckCertCount "le.wtf" 4
 CheckHooks
+CheckDirHooks 5
+
+# test with overlapping directory hooks on the command line
+common renew --cert-name le2.wtf \
+    --pre-hook "$renewal_dir_pre_hook" \
+    --renew-hook "$renewal_dir_deploy_hook" \
+    --post-hook "$renewal_dir_post_hook"
+CheckDirHooks 1
+
+# test with overlapping directory hooks in the renewal conf files
+common renew --cert-name le2.wtf
+CheckDirHooks 1
 
 # ECDSA
 openssl ecparam -genkey -name secp384r1 -out "${root}/privkey-p384.pem"
@@ -283,7 +372,7 @@ common revoke --cert-path "$root/conf/live/le2.wtf/cert.pem" \
 common unregister
 
 out=$(common certificates)
-subdomains="le le2 dns.le newname.le must-staple.le"
+subdomains="le dns.le newname.le must-staple.le"
 for subdomain in $subdomains; do
     domain="$subdomain.wtf"
     if ! echo $out | grep "$domain"; then
@@ -291,6 +380,46 @@ for subdomain in $subdomains; do
         exit 1;
     fi
 done
+
+# Testing that revocation also deletes by default
+subdomains="le1 le2"
+for subdomain in $subdomains; do
+    domain="$subdomain.wtf"
+    if echo $out | grep "$domain"; then
+        echo "Revoked $domain in certificates output! Should not be!"
+        exit 1;
+    fi
+done
+
+# Test that revocation raises correct error if --cert-name and --cert-path don't match
+common --domains le1.wtf
+common --domains le2.wtf
+out=$(common revoke --cert-path "$root/conf/live/le1.wtf/fullchain.pem" --cert-name "le2.wtf" 2>&1) || true
+if ! echo $out | grep "or both must point to the same certificate lineages."; then
+    echo "Non-interactive revoking with mismatched --cert-name and --cert-path "
+    echo "did not raise the correct error!"
+    exit 1
+fi
+
+# Revoking by matching --cert-name and --cert-path deletes
+common --domains le1.wtf
+common revoke --cert-path "$root/conf/live/le1.wtf/fullchain.pem" --cert-name "le1.wtf"
+out=$(common certificates)
+if echo $out | grep "le1.wtf"; then
+    echo "Cert le1.wtf should've been deleted! Was revoked via matching --cert-path & --cert-name"
+    exit 1
+fi
+
+# Test that revocation doesn't delete if multiple lineages share an archive dir
+common --domains le1.wtf
+common --domains le2.wtf
+sed -i "s|^archive_dir = .*$|archive_dir = $root/conf/archive/le1.wtf|" "$root/conf/renewal/le2.wtf.conf"
+#common update_symlinks # not needed, but a bit more context for what this test is about
+out=$(common revoke --cert-path "$root/conf/live/le1.wtf/cert.pem")
+if ! echo $out | grep "Not deleting revoked certs due to overlapping archive dirs"; then
+    echo "Deleted a cert that had an overlapping archive dir with another lineage!"
+    exit 1
+fi
 
 cert_name="must-staple.le.wtf"
 common delete --cert-name $cert_name

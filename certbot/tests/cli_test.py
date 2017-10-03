@@ -408,6 +408,12 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(namespace.domains, [])
         self.assertEqual(namespace.pref_challs, [])
 
+    def test_no_directory_hooks_set(self):
+        self.assertFalse(self.parse(["--no-directory-hooks"]).directory_hooks)
+
+    def test_no_directory_hooks_unset(self):
+        self.assertTrue(self.parse([]).directory_hooks)
+
 
 class DefaultTest(unittest.TestCase):
     """Tests for certbot.cli._Default."""
@@ -437,6 +443,10 @@ class SetByCliTest(unittest.TestCase):
 
     def setUp(self):
         reload_module(cli)
+
+    def test_deploy_hook(self):
+        self.assertTrue(_call_set_by_cli(
+            'renew_hook', '--deploy-hook foo'.split(), 'renew'))
 
     def test_webroot_map(self):
         args = '-w /var/www/html -d example.com'.split()
