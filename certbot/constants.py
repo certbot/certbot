@@ -44,6 +44,7 @@ CLI_DEFAULTS = dict(
     os_packages_only=False,
     no_self_upgrade=False,
     no_bootstrap=False,
+    pypi_mirror=False,
     quiet=False,
     staging=False,
     debug=False,

@@ -1025,6 +1025,11 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              " installing OS-level dependencies (default: Prompt to install "
              " OS-wide dependencies, but exit if the user says 'No')")
     helpful.add(
+        "automation", "--pypi-mirror", action="store_true",
+        default=flag_default("pypi_mirror"),
+        help="(certbot-auto only) use an alternative Python package server "
+             "that is reachable from China")
+    helpful.add(
         ["automation", "renew", "certonly", "run"],
         "-q", "--quiet", dest="quiet", action="store_true",
         default=flag_default("quiet"),
