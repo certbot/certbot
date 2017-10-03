@@ -5,6 +5,7 @@ import logging.handlers
 import os
 import sys
 
+import configobj
 import zope.component
 
 from acme import jose
@@ -26,6 +27,7 @@ from certbot import interfaces
 from certbot import log
 from certbot import renewal
 from certbot import reporter
+from certbot import storage
 from certbot import util
 
 from certbot.display import util as display_util, ops as display_ops
@@ -385,6 +387,92 @@ def _determine_account(config):
     return acc, acme
 
 
+def _delete_if_appropriate(config): # pylint: disable=too-many-locals,too-many-branches
+    """Does the user want to delete their now-revoked certs? If run in non-interactive mode,
+    deleting happens automatically, unless if both `--cert-name` and `--cert-path` were
+    specified with conflicting values.
+
+    :param `configuration.NamespaceConfig` config: parsed command line arguments
+
+    :raises `error.Errors`: If anything goes wrong, including bad user input, if an overlapping
+        archive dir is found for the specified lineage, etc ...
+    """
+    display = zope.component.getUtility(interfaces.IDisplay)
+    reporter_util = zope.component.getUtility(interfaces.IReporter)
+
+    msg = ("Would you like to delete the cert(s) you just revoked?")
+    attempt_deletion = display.yesno(msg, yes_label="Yes (recommended)", no_label="No",
+            force_interactive=True, default=True)
+
+    if not attempt_deletion:
+        reporter_util.add_message("Not deleting revoked certs.", reporter_util.LOW_PRIORITY)
+        return
+
+    if not (config.certname or config.cert_path):
+        raise errors.Error('At least one of --cert-path or --cert-name must be specified.')
+
+    if config.certname and config.cert_path:
+        # first, check if certname and cert_path imply the same certs
+        implied_cert_name = cert_manager.cert_path_to_lineage(config)
+
+        if implied_cert_name != config.certname:
+            cert_path_implied_cert_name = cert_manager.cert_path_to_lineage(config)
+            cert_path_implied_conf = storage.renewal_file_for_certname(config,
+                    cert_path_implied_cert_name)
+            cert_path_cert = storage.RenewableCert(cert_path_implied_conf, config)
+            cert_path_info = cert_manager.human_readable_cert_info(config, cert_path_cert,
+                    skip_filter_checks=True)
+
+            cert_name_implied_conf = storage.renewal_file_for_certname(config, config.certname)
+            cert_name_cert = storage.RenewableCert(cert_name_implied_conf, config)
+            cert_name_info = cert_manager.human_readable_cert_info(config, cert_name_cert)
+
+            msg = ("You specified conflicting values for --cert-path and --cert-name. "
+                    "Which did you mean to select?")
+            choices = [cert_path_info, cert_name_info]
+            try:
+                code, index = display.menu(msg,
+                        choices, ok_label="Select", force_interactive=True)
+            except errors.MissingCommandlineFlag:
+                error_msg = ('To run in non-interactive mode, you must either specify only one of '
+                '--cert-path or --cert-name, or both must point to the same certificate lineages.')
+                raise errors.Error(error_msg)
+
+            if code != display_util.OK or not index in range(0, len(choices)):
+                raise errors.Error("User ended interaction.")
+
+            if index == 0:
+                config.certname = cert_path_implied_cert_name
+            else:
+                config.cert_path = storage.cert_path_for_cert_name(config, config.certname)
+
+    elif config.cert_path:
+        config.certname = cert_manager.cert_path_to_lineage(config)
+
+    else: # if only config.certname was specified
+        config.cert_path = storage.cert_path_for_cert_name(config, config.certname)
+
+    # don't delete if the archive_dir is used by some other lineage
+    archive_dir = storage.full_archive_path(
+            configobj.ConfigObj(storage.renewal_file_for_certname(config, config.certname)),
+            config, config.certname)
+    try:
+        cert_manager.match_and_check_overlaps(config, [lambda x: archive_dir],
+            lambda x: x.archive_dir, lambda x: x)
+    except errors.OverlappingMatchFound:
+        msg = ('Not deleting revoked certs due to overlapping archive dirs. More than '
+                'one lineage is using {0}'.format(archive_dir))
+        reporter_util.add_message(''.join(msg), reporter_util.MEDIUM_PRIORITY)
+        return
+    except Exception as e:
+        msg = ('config.default_archive_dir: {0}, config.live_dir: {1}, archive_dir: {2},'
+        'original exception: {3}')
+        msg = msg.format(config.default_archive_dir, config.live_dir, archive_dir, e)
+        raise errors.Error(msg)
+
+    cert_manager.delete(config)
+
+
 def _init_le_client(config, authenticator, installer):
     if authenticator is not None:
         # if authenticator was given, then we will need account...
@@ -582,6 +670,7 @@ def revoke(config, unused_plugins):  # TODO: coop with renewal config
 
     try:
         acme.revoke(jose.ComparableX509(cert), config.reason)
+        _delete_if_appropriate(config)
     except acme_errors.ClientError as e:
         return str(e)
 

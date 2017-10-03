@@ -478,5 +478,95 @@ class DuplicativeCertsTest(storage_test.BaseRenewableCertTest):
         self.assertEqual(result, (None, None))
 
 
+class CertPathToLineageTest(storage_test.BaseRenewableCertTest):
+    """Tests for certbot.cert_manager.cert_path_to_lineage"""
+
+    def setUp(self):
+        super(CertPathToLineageTest, self).setUp()
+        self.config_file.write()
+        self._write_out_ex_kinds()
+        self.fullchain = os.path.join(self.config.config_dir, 'live', 'example.org',
+                'fullchain.pem')
+        self.config.cert_path = (self.fullchain, '')
+
+    def _call(self, cli_config):
+        from certbot.cert_manager import cert_path_to_lineage
+        return cert_path_to_lineage(cli_config)
+
+    def _archive_files(self, cli_config, filetype):
+        from certbot.cert_manager import _archive_files
+        return _archive_files(cli_config, filetype)
+
+    def test_basic_match(self):
+        self.assertEqual('example.org', self._call(self.config))
+
+    def test_no_match_exists(self):
+        bad_test_config = self.config
+        bad_test_config.cert_path = os.path.join(self.config.config_dir, 'live',
+                'SailorMoon', 'fullchain.pem')
+        self.assertRaises(errors.Error, self._call, bad_test_config)
+
+    @mock.patch('certbot.cert_manager._acceptable_matches')
+    def test_options_fullchain(self, mock_acceptable_matches):
+        mock_acceptable_matches.return_value = [lambda x: x.fullchain_path]
+        self.config.fullchain_path = self.fullchain
+        self.assertEqual('example.org', self._call(self.config))
+
+    @mock.patch('certbot.cert_manager._acceptable_matches')
+    def test_options_cert_path(self, mock_acceptable_matches):
+        mock_acceptable_matches.return_value = [lambda x: x.cert_path]
+        test_cert_path = os.path.join(self.config.config_dir, 'live', 'example.org',
+                'cert.pem')
+        self.config.cert_path = (test_cert_path, '')
+        self.assertEqual('example.org', self._call(self.config))
+
+    @mock.patch('certbot.cert_manager._acceptable_matches')
+    def test_options_archive_cert(self, mock_acceptable_matches):
+        # Also this and the next test check that the regex of _archive_files is working.
+        self.config.cert_path = (os.path.join(self.config.config_dir, 'archive', 'example.org',
+            'cert11.pem'), '')
+        mock_acceptable_matches.return_value = [lambda x: self._archive_files(x, 'cert')]
+        self.assertEqual('example.org', self._call(self.config))
+
+    @mock.patch('certbot.cert_manager._acceptable_matches')
+    def test_options_archive_fullchain(self, mock_acceptable_matches):
+        self.config.cert_path = (os.path.join(self.config.config_dir, 'archive',
+            'example.org', 'fullchain11.pem'), '')
+        mock_acceptable_matches.return_value = [lambda x:
+                self._archive_files(x, 'fullchain')]
+        self.assertEqual('example.org', self._call(self.config))
+
+
+class MatchAndCheckOverlaps(storage_test.BaseRenewableCertTest):
+    """Tests for certbot.cert_manager.match_and_check_overlaps w/o overlapping archive dirs."""
+    # A test with real overlapping archive dirs can be found in tests/boulder_integration.sh
+    def setUp(self):
+        super(MatchAndCheckOverlaps, self).setUp()
+        self.config_file.write()
+        self._write_out_ex_kinds()
+        self.fullchain = os.path.join(self.config.config_dir, 'live', 'example.org',
+                'fullchain.pem')
+        self.config.cert_path = (self.fullchain, '')
+
+    def _call(self, cli_config, acceptable_matches, match_func, rv_func):
+        from certbot.cert_manager import match_and_check_overlaps
+        return match_and_check_overlaps(cli_config, acceptable_matches, match_func, rv_func)
+
+    def test_basic_match(self):
+        from certbot.cert_manager import _acceptable_matches
+        self.assertEqual(['example.org'], self._call(self.config, _acceptable_matches(),
+            lambda x: self.config.cert_path[0], lambda x: x.lineagename))
+
+    @mock.patch('certbot.cert_manager._search_lineages')
+    def test_no_matches(self, mock_search_lineages):
+        mock_search_lineages.return_value = []
+        self.assertRaises(errors.Error, self._call, self.config, None, None, None)
+
+    @mock.patch('certbot.cert_manager._search_lineages')
+    def test_too_many_matches(self, mock_search_lineages):
+        mock_search_lineages.return_value = ['spider', 'dance']
+        self.assertRaises(errors.OverlappingMatchFound, self._call, self.config, None, None, None)
+
+
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

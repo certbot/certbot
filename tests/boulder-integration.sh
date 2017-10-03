@@ -372,7 +372,7 @@ common revoke --cert-path "$root/conf/live/le2.wtf/cert.pem" \
 common unregister
 
 out=$(common certificates)
-subdomains="le le2 dns.le newname.le must-staple.le"
+subdomains="le dns.le newname.le must-staple.le"
 for subdomain in $subdomains; do
     domain="$subdomain.wtf"
     if ! echo $out | grep "$domain"; then
@@ -380,6 +380,46 @@ for subdomain in $subdomains; do
         exit 1;
     fi
 done
+
+# Testing that revocation also deletes by default
+subdomains="le1 le2"
+for subdomain in $subdomains; do
+    domain="$subdomain.wtf"
+    if echo $out | grep "$domain"; then
+        echo "Revoked $domain in certificates output! Should not be!"
+        exit 1;
+    fi
+done
+
+# Test that revocation raises correct error if --cert-name and --cert-path don't match
+common --domains le1.wtf
+common --domains le2.wtf
+out=$(common revoke --cert-path "$root/conf/live/le1.wtf/fullchain.pem" --cert-name "le2.wtf" 2>&1) || true
+if ! echo $out | grep "or both must point to the same certificate lineages."; then
+    echo "Non-interactive revoking with mismatched --cert-name and --cert-path "
+    echo "did not raise the correct error!"
+    exit 1
+fi
+
+# Revoking by matching --cert-name and --cert-path deletes
+common --domains le1.wtf
+common revoke --cert-path "$root/conf/live/le1.wtf/fullchain.pem" --cert-name "le1.wtf"
+out=$(common certificates)
+if echo $out | grep "le1.wtf"; then
+    echo "Cert le1.wtf should've been deleted! Was revoked via matching --cert-path & --cert-name"
+    exit 1
+fi
+
+# Test that revocation doesn't delete if multiple lineages share an archive dir
+common --domains le1.wtf
+common --domains le2.wtf
+sed -i "s|^archive_dir = .*$|archive_dir = $root/conf/archive/le1.wtf|" "$root/conf/renewal/le2.wtf.conf"
+#common update_symlinks # not needed, but a bit more context for what this test is about
+out=$(common revoke --cert-path "$root/conf/live/le1.wtf/cert.pem")
+if ! echo $out | grep "Not deleting revoked certs due to overlapping archive dirs"; then
+    echo "Deleted a cert that had an overlapping archive dir with another lineage!"
+    exit 1
+fi
 
 cert_name="must-staple.le.wtf"
 common delete --cert-name $cert_name
