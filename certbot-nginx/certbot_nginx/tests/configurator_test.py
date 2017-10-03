@@ -591,25 +591,7 @@ class NginxConfiguratorTest(util.NginxTest):
 
         parsed_default_conf = util.filter_comments(self.config.parser.parsed[default_conf])
 
-
-        self.assertEqual([[['server'],
-                           [['listen', 'myhost', 'default_server'],
-                            ['server_name', 'www.example.org'],
-                            [['location', '/'],
-                             [['root', 'html'],
-                              ['index', 'index.html', 'index.htm']]]]],
-                          [['server'],
-                           [['listen', 'myhost'],
-                            ['server_name', 'www.nomatch.com', 'nomatch.com'],
-                            [['location', '/'],
-                             [['root', 'html'],
-                              ['index', 'index.html', 'index.htm']]],
-                            ['listen', '5001', 'ssl'],
-                            ['ssl_certificate', 'example/fullchain.pem'],
-                            ['ssl_certificate_key', 'example/key.pem'],
-                            ['include', self.config.mod_ssl_conf],
-                            ['ssl_dhparam', self.config.ssl_dhparams]]]],
-                         parsed_default_conf)
+        self.assertTrue(util.contains_at_depth(parsed_default_conf, "nomatch.com", 3))
 
     def test_deploy_no_match_no_default_set(self):
         default_conf = self.config.parser.abs_path('sites-enabled/default')
