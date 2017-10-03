@@ -68,7 +68,7 @@ def pre_hook(config):
     :param configuration.NamespaceConfig config: Certbot settings
 
     """
-    if config.verb == "renew":
+    if config.verb == "renew" and config.directory_hooks:
         for hook in list_hooks(config.renewal_pre_hooks_dir):
             _run_pre_hook_if_necessary(hook)
 
@@ -117,8 +117,9 @@ def post_hook(config):
     cmd = config.post_hook
     # In the "renew" case, we save these up to run at the end
     if config.verb == "renew":
-        for hook in list_hooks(config.renewal_post_hooks_dir):
-            _run_eventually(hook)
+        if config.directory_hooks:
+            for hook in list_hooks(config.renewal_post_hooks_dir):
+                _run_eventually(hook)
         if cmd:
             _run_eventually(cmd)
     # certonly / run
@@ -180,12 +181,14 @@ def renew_hook(config, domains, lineage_path):
     :param str lineage_path: live directory path for the new cert
 
     """
-    renew_hooks = list_hooks(config.renewal_deploy_hooks_dir)
-    for hook in renew_hooks:
-        _run_deploy_hook(hook, domains, lineage_path, config.dry_run)
+    executed_dir_hooks = set()
+    if config.directory_hooks:
+        for hook in list_hooks(config.renewal_deploy_hooks_dir):
+            _run_deploy_hook(hook, domains, lineage_path, config.dry_run)
+            executed_dir_hooks.add(hook)
 
     if config.renew_hook:
-        if config.renew_hook in renew_hooks:
+        if config.renew_hook in executed_dir_hooks:
             logger.info("Skipping deploy-hook '%s' as it was already run.",
                         config.renew_hook)
         else:

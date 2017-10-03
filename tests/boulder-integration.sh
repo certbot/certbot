@@ -294,10 +294,17 @@ done
 common renew --cert-name dns.le.wtf --authenticator manual
 CheckCertCount "dns.le.wtf" 2
 
+# test with disabled directory hooks
+rm -rf "$renewal_hooks_root"
+CreateDirHooks
 # This will renew because the expiry is less than 10 years from now
 sed -i "4arenew_before_expiry = 4 years" "$root/conf/renewal/le.wtf.conf"
-common_no_force_renew renew --rsa-key-size 2048
+common_no_force_renew renew --rsa-key-size 2048 --no-directory-hooks
 CheckCertCount "le.wtf" 3
+if [ -s "$HOOK_DIRS_TEST" ]; then
+    echo "Directory hooks were executed with --no-directory-hooks!" >&2
+    exit 1
+fi
 
 # The 4096 bit setting should persist to the first renewal, but be overridden in the second
 
@@ -311,9 +318,6 @@ if [ "$size1" -lt 3000 ] || [ "$size2" -lt 3000 ] || [ "$size3" -gt 1800 ] ; the
     exit 1
 fi
 
-# test with directory hooks
-rm -rf "$renewal_hooks_root"
-CreateDirHooks
 # --renew-by-default is used, so renewal should occur
 [ -f "$HOOK_TEST" ] && rm -f "$HOOK_TEST"
 common renew

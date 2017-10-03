@@ -132,6 +132,12 @@ class PreHookTest(HookTest):
         self.assertFalse(mock_execute.called)
         self.assertFalse(mock_logger.info.called)
 
+    def test_renew_disabled_dir_hooks(self):
+        self.config.directory_hooks = False
+        mock_execute = self._call_with_mock_execute(self.config)
+        mock_execute.assert_called_once_with(self.config.pre_hook)
+        self._test_no_executions_common()
+
     def test_renew_no_overlap(self):
         self.config.verb = "renew"
         mock_execute = self._call_with_mock_execute(self.config)
@@ -194,6 +200,10 @@ class PostHookTest(HookTest):
             self.config.verb = verb
             self.assertFalse(self._call_with_mock_execute(self.config).called)
             self.assertFalse(self._get_eventually())
+
+    def test_renew_disabled_dir_hooks(self):
+        self.config.directory_hooks = False
+        self._test_renew_common([self.config.post_hook])
 
     def test_renew_no_config_hook(self):
         self.config.post_hook = None
@@ -367,6 +377,12 @@ class RenewHookTest(RenewalHookTest):
         self.dir_hook = os.path.join(self.config.renewal_deploy_hooks_dir,
                                      "bar")
         create_hook(self.dir_hook)
+
+    def test_disabled_dir_hooks(self):
+        self.config.directory_hooks = False
+        mock_execute = self._call_with_mock_execute(
+            self.config, ["example.org"], "/foo/bar")
+        mock_execute.assert_called_once_with(self.config.renew_hook)
 
     @mock.patch("certbot.hooks.logger")
     def test_dry_run(self, mock_logger):

@@ -408,6 +408,12 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(namespace.domains, [])
         self.assertEqual(namespace.pref_challs, [])
 
+    def test_no_directory_hooks_set(self):
+        self.assertFalse(self.parse(["--no-directory-hooks"]).directory_hooks)
+
+    def test_no_directory_hooks_unset(self):
+        self.assertTrue(self.parse([]).directory_hooks)
+
 
 class DefaultTest(unittest.TestCase):
     """Tests for certbot.cli._Default."""

@@ -1167,6 +1167,11 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         " simplistic and fails if you use more advanced shell"
         " constructs, so you can use this switch to disable it."
         " (default: False)")
+    helpful.add(
+        "renew", "--no-directory-hooks", action="store_false",
+        default=flag_default("directory_hooks"), dest="directory_hooks",
+        help="Disable running executables found in Certbot's hook directories"
+        " during renewal. (default: False)")
 
     helpful.add_deprecated_argument("--agree-dev-preview", 0)
     helpful.add_deprecated_argument("--dialog", 0)
