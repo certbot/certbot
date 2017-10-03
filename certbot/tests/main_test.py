@@ -311,6 +311,14 @@ class DeleteIfAppropriateTest(unittest.TestCase):
         from certbot.main import _delete_if_appropriate
         _delete_if_appropriate(mock_config)
 
+    @mock.patch('certbot.cert_manager.delete')
+    @test_util.patch_get_utility()
+    def test_delete_opt_out(self, mock_get_utility, mock_delete):
+        util_mock = mock_get_utility()
+        util_mock.yesno.return_value = False
+        self._call(self.config)
+        mock_delete.assert_not_called()
+
     # pylint: disable=too-many-arguments
     @mock.patch('certbot.storage.renewal_file_for_certname')
     @mock.patch('certbot.cert_manager.delete')

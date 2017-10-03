@@ -400,6 +400,14 @@ def _delete_if_appropriate(config): # pylint: disable=too-many-locals,too-many-b
     display = zope.component.getUtility(interfaces.IDisplay)
     reporter_util = zope.component.getUtility(interfaces.IReporter)
 
+    msg = ("Would you like to delete the cert(s) you just revoked?")
+    attempt_deletion = display.yesno(msg, yes_label="Yes (recommended)", no_label="No",
+            force_interactive=True, default=True)
+
+    if not attempt_deletion:
+        reporter_util.add_message("Not deleting revoked certs.", reporter_util.LOW_PRIORITY)
+        return
+
     if not (config.certname or config.cert_path):
         raise errors.Error('At least one of --cert-path or --cert-name must be specified.')
 
