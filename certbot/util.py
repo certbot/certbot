@@ -647,3 +647,13 @@ def atexit_register(func, *args, **kwargs):
 def _atexit_call(func, *args, **kwargs):
     if _INITIAL_PID == os.getpid():
         func(*args, **kwargs)
+
+def os_path_exists(path):
+    try:
+        if os.path.exists(path):
+            return True
+        else:
+            return False
+    except OSError as e:
+        raise
+        return False

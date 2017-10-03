@@ -487,9 +487,15 @@ class EnforceDomainSanityTest(unittest.TestCase):
         self._call('this.is.xn--ls8h.tld')
 
 
+class OsPathExistsTest(unittest.TestCase):
+    """Test whether a path exists or not"""
+    def test_os_path_exists(self):
+        from certbot.util import os_path_exists
+        self.assertEqual(os_path_exists("."), True) #Testing current directory
+
+
 class OsInfoTest(unittest.TestCase):
     """Test OS / distribution detection"""
-
     def test_systemd_os_release(self):
         from certbot.util import (get_os_info, get_systemd_os_info,
                                      get_os_info_ua)
@@ -588,7 +594,6 @@ class AtexitRegisterTest(unittest.TestCase):
             args, kwargs = mock_atexit.register.call_args
             atexit_func = args[0]
             atexit_func(*args[1:], **kwargs)  # pylint: disable=star-args
-
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
