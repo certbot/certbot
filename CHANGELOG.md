@@ -2,6 +2,69 @@
 
 Certbot adheres to [Semantic Versioning](http://semver.org/).
 
+## 0.18.2 - 2017-09-20
+
+### Fixed
+
+* An issue where Certbot's ACME module would raise an AttributeError trying to
+  create self-signed certificates when used with pyOpenSSL 17.3.0 has been
+  resolved. For Certbot users with this version of pyOpenSSL, this caused
+  Certbot to crash when performing a TLS SNI challenge or when the Nginx plugin
+  tried to create an SSL server block.
+
+More details about these changes can be found on our GitHub repo:
+https://github.com/certbot/certbot/milestone/46?closed=1
+
+## 0.18.1 - 2017-09-08
+
+### Fixed
+
+* If certbot-auto was running as an unprivileged user and it upgraded from
+  0.17.0 to 0.18.0, it would crash with a permissions error and would need to
+  be run again to successfully complete the upgrade. This has been fixed and
+  certbot-auto should upgrade cleanly to 0.18.1.
+* Certbot usually uses "certbot-auto" or "letsencrypt-auto" in error messages
+  and the User-Agent string instead of "certbot" when you are using one of
+  these wrapper scripts. Proper detection of this was broken with Certbot's new
+  installation path in /opt in 0.18.0 but this problem has been resolved.
+
+More details about these changes can be found on our GitHub repo:
+https://github.com/certbot/certbot/milestone/45?closed=1
+
+## 0.18.0 - 2017-09-06
+
+### Added
+
+* The Nginx plugin now configures Nginx to use 2048-bit Diffie-Hellman
+  parameters. Java 6 clients do not support Diffie-Hellman parameters larger
+  than 1024 bits, so if you need to support these clients you will need to
+  manually modify your Nginx configuration after using the Nginx installer.
+
+### Changed
+
+* certbot-auto now installs Certbot in directories under `/opt/eff.org`. If you
+  had an existing installation from certbot-auto, a symlink is created to the
+  new directory. You can configure certbot-auto to use a different path by
+  setting the environment variable VENV_PATH.
+* The Nginx plugin can now be selected in Certbot's interactive output.
+* Output verbosity of renewal failures when running with `--quiet` has been
+  reduced.
+* The default revocation reason shown in Certbot help output now is a human
+  readable string instead of a numerical code.
+* Plugin selection is now included in normal terminal output.
+
+### Fixed
+
+* A newer version of ConfigArgParse is now installed when using certbot-auto
+  causing values set to false in a Certbot INI configuration file to be handled
+  intuitively. Setting a boolean command line flag to false is equivalent to
+  not including it in the configuration file at all.
+* New naming conventions preventing certbot-auto from installing OS
+  dependencies on Fedora 26 have been resolved.
+
+More details about these changes can be found on our GitHub repo:
+https://github.com/certbot/certbot/milestone/42?closed=1
+
 ## 0.17.0 - 2017-08-02
 
 ### Added

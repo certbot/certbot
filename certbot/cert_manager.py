@@ -46,7 +46,7 @@ def rename_lineage(config):
     """
     disp = zope.component.getUtility(interfaces.IDisplay)
 
-    certname = _get_certname(config, "rename")
+    certname = _get_certnames(config, "rename")[0]
 
     new_certname = config.new_certname
     if not new_certname:
@@ -88,11 +88,12 @@ def certificates(config):
 
 def delete(config):
     """Delete Certbot files associated with a certificate lineage."""
-    certname = _get_certname(config, "delete")
-    storage.delete_files(config, certname)
-    disp = zope.component.getUtility(interfaces.IDisplay)
-    disp.notification("Deleted all files relating to certificate {0}."
-        .format(certname), pause=False)
+    certnames = _get_certnames(config, "delete", allow_multiple=True)
+    for certname in certnames:
+        storage.delete_files(config, certname)
+        disp = zope.component.getUtility(interfaces.IDisplay)
+        disp.notification("Deleted all files relating to certificate {0}."
+            .format(certname), pause=False)
 
 ###################
 # Public Helpers
@@ -270,23 +271,34 @@ def human_readable_cert_info(config, cert, skip_filter_checks=False):
 # Private Helpers
 ###################
 
-def _get_certname(config, verb):
+def _get_certnames(config, verb, allow_multiple=False):
     """Get certname from flag, interactively, or error out.
     """
     certname = config.certname
-    if not certname:
+    if certname:
+        certnames = [certname]
+    else:
         disp = zope.component.getUtility(interfaces.IDisplay)
         filenames = storage.renewal_conf_files(config)
         choices = [storage.lineagename_for_filename(name) for name in filenames]
         if not choices:
             raise errors.Error("No existing certificates found.")
-        code, index = disp.menu("Which certificate would you like to {0}?".format(verb),
-                                choices, flag="--cert-name",
-                                force_interactive=True)
-        if code != display_util.OK or not index in range(0, len(choices)):
-            raise errors.Error("User ended interaction.")
-        certname = choices[index]
-    return certname
+        if allow_multiple:
+            code, certnames = disp.checklist(
+                                    "Which certificate(s) would you like to {0}?".format(verb),
+                                    choices, cli_flag="--cert-name",
+                                    force_interactive=True)
+            if code != display_util.OK:
+                raise errors.Error("User ended interaction.")
+        else:
+            code, index = disp.menu("Which certificate would you like to {0}?".format(verb),
+                                    choices, cli_flag="--cert-name",
+                                    force_interactive=True)
+
+            if code != display_util.OK or index not in range(0, len(choices)):
+                raise errors.Error("User ended interaction.")
+            certnames = [choices[index]]
+    return certnames
 
 def _report_lines(msgs):
     """Format a results report for a category of single-line renewal outcomes"""

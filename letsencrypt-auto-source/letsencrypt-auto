@@ -31,7 +31,7 @@ if [ -z "$VENV_PATH" ]; then
 fi
 VENV_BIN="$VENV_PATH/bin"
 BOOTSTRAP_VERSION_PATH="$VENV_PATH/certbot-auto-bootstrap-version.txt"
-LE_AUTO_VERSION="0.18.0.dev0"
+LE_AUTO_VERSION="0.19.0.dev0"
 BASENAME=$(basename $0)
 USAGE="Usage: $BASENAME [OPTIONS]
 A self-updating wrapper script for the Certbot ACME client. When run, updates
@@ -187,8 +187,7 @@ SetRootAuthMechanism() {
 
 if [ "$1" = "--cb-auto-has-root" ]; then
   shift 1
-elif [ "$1" != "--le-auto-phase2" ]; then
-  # if $1 is --le-auto-phase2, we've executed this branch before
+else
   SetRootAuthMechanism
   if [ -n "$SUDO" ]; then
     echo "Requesting to rerun $0 with root privileges..."
@@ -196,6 +195,14 @@ elif [ "$1" != "--le-auto-phase2" ]; then
     exit 0
   fi
 fi
+
+# Runs this script again with the given arguments. --cb-auto-has-root is added
+# to the command line arguments to ensure we don't try to acquire root a
+# second time. After the script is rerun, we exit the current script.
+RerunWithArgs() {
+    "$0" --cb-auto-has-root "$@"
+    exit 0
+}
 
 BootstrapMessage() {
   # Arguments: Platform name
@@ -825,8 +832,7 @@ if [ "$1" = "--le-auto-phase2" ]; then
       # if non-interactive mode or stdin and stdout are connected to a terminal
       if [ \( "$NONINTERACTIVE" = 1 \) -o \( \( -t 0 \) -a \( -t 1 \) \) ]; then
         rm -rf "$VENV_PATH"
-        "$0" "$@"
-        exit 0
+        RerunWithArgs "$@"
       else
         error "Skipping upgrade because new OS dependencies may need to be installed."
         error
@@ -1071,18 +1077,18 @@ letsencrypt==0.7.0 \
     --hash=sha256:105a5fb107e45bcd0722eb89696986dcf5f08a86a321d6aef25a0c7c63375ade \
     --hash=sha256:c36e532c486a7e92155ee09da54b436a3c420813ec1c590b98f635d924720de9
 
-certbot==0.17.0 \
-    --hash=sha256:64c25c7123357feffded6408660bc6f5c7d493dd635ae172081d21473075a86a \
-    --hash=sha256:43f5b26c3f314d14babf79a3bdf3522e4fc9eef867a0681c426f113c650a669c
-acme==0.17.0 \
-    --hash=sha256:501710171633af13fc52aa61d0277a6fe335f7477db5810e72239aaf4f3a09e7 \
-    --hash=sha256:3ccbe4aaeb98c77b98ee4093b4e4adb76a1a24cbdfec0130c489c206f1d9b66e
-certbot-apache==0.17.0 \
-    --hash=sha256:17a7e8d7526d838610e68b96cf052af17c4055655b76b06d1cbc74857d90a216 \
-    --hash=sha256:29b9e7bc5eaaff6dc4bce8398e35eeacdf346126aad68cac3d41bb87df20a6b9
-certbot-nginx==0.17.0 \
-    --hash=sha256:980c9a33a79ab839a089a0085ff0c5414f01f47b6db26ed342df25916658cec9 \
-    --hash=sha256:e573f8b4283172755c07b9cca8a8da7ef2d31b4df763881394b5339b2d42994a
+certbot==0.18.2 \
+    --hash=sha256:e1d1fcd6248cdbdba92e3a769dc40567dbffc717bff86ef3431fadf31419a6b6 \
+    --hash=sha256:0122e6ee3fc1167fa91883b9f2ea1897f3d0d4612739f175827b5a3e8f259c9a
+acme==0.18.2 \
+    --hash=sha256:67e1270318a2f8ca5f309b22fc50669abfdb38c875133b20e8a1358e96591a7a \
+    --hash=sha256:718efa9b3a7e6defcc7179e214a838d43a2bcef7dbd77667a2e505504e453ef6
+certbot-apache==0.18.2 \
+    --hash=sha256:54d9a16a7ec87df0538a094a28aabf5415d92bda3e80742dfd0b3d1ed82d8760 \
+    --hash=sha256:07856f49db28593eb58ed970da2f6520b0d0d7402ac7757a5ea41fcb6a24a9ea
+certbot-nginx==0.18.2 \
+    --hash=sha256:7fac4ec1be4966ef828f2aca32a04db303a9b49453589961f2fb5867b70823c5 \
+    --hash=sha256:d35aeda6f2ce6213d84ecbbc658ca6cf13c98961c475867c70740552d05ae3e3
 
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
@@ -1355,7 +1361,8 @@ from os.path import dirname, join
 import re
 from subprocess import check_call, CalledProcessError
 from sys import argv, exit
-from urllib2 import build_opener, HTTPHandler, HTTPSHandler, HTTPError
+from urllib2 import build_opener, HTTPHandler, HTTPSHandler
+from urllib2 import HTTPError, URLError
 
 PUBLIC_KEY = environ.get('LE_AUTO_PUBLIC_KEY', """-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA6MR8W/galdxnpGqBsYbq
@@ -1391,7 +1398,9 @@ class HttpsGetter(object):
 
         """
         try:
-            return self._opener.open(url).read()
+            # socket module docs say default timeout is None: that is, no
+            # timeout
+            return self._opener.open(url, timeout=30).read()
         except (HTTPError, IOError) as exc:
             raise ExpectedError("Couldn't download %s." % url, exc)
 
@@ -1491,5 +1500,5 @@ UNLIKELY_EOF
     fi  # A newer version is available.
   fi  # Self-upgrading is allowed.
 
-  "$0" --le-auto-phase2 "$@"
+  RerunWithArgs --le-auto-phase2 "$@"
 fi

@@ -48,32 +48,30 @@ common() {
 
 export HOOK_TEST="/tmp/hook$$"
 CheckHooks() {
-    EXPECTED="/tmp/expected$$"
-    if [ $(head -n1 $HOOK_TEST) = "wtf.pre" ]; then
-        echo "wtf.pre" > "$EXPECTED"
-        echo "wtf2.pre" >> "$EXPECTED"
-        echo "deploy" >> "$EXPECTED"
-        echo "deploy" >> "$EXPECTED"
-        echo "deploy" >> "$EXPECTED"
-        echo "deploy" >> "$EXPECTED"
-        echo "wtf.post" >> "$EXPECTED"
-        echo "wtf2.post" >> "$EXPECTED"
+    if [ $(head -n1 "$HOOK_TEST") = "wtf.pre" ]; then
+        expected="wtf.pre\ndeploy\n"
+        if [ $(sed '3q;d' "$HOOK_TEST") = "deploy" ]; then
+            expected=$expected"deploy\nwtf2.pre\n"
+        else
+            expected=$expected"wtf2.pre\ndeploy\n"
+        fi
+        expected=$expected"deploy\ndeploy\nwtf.post\nwtf2.post"
     else
-        echo "wtf2.pre" > "$EXPECTED"
-        echo "wtf.pre" >> "$EXPECTED"
-        echo "deploy" >> "$EXPECTED"
-        echo "deploy" >> "$EXPECTED"
-        echo "deploy" >> "$EXPECTED"
-        echo "deploy" >> "$EXPECTED"
-        echo "wtf2.post" >> "$EXPECTED"
-        echo "wtf.post" >> "$EXPECTED"
+        expected="wtf2.pre\ndeploy\n"
+        if [ $(sed '3q;d' "$HOOK_TEST") = "deploy" ]; then
+            expected=$expected"deploy\nwtf.pre\n"
+        else
+            expected=$expected"wtf.pre\ndeploy\n"
+        fi
+        expected=$expected"deploy\ndeploy\nwtf2.post\nwtf.post"
     fi
 
-    if ! cmp --quiet "$EXPECTED" "$HOOK_TEST" ; then
-        echo Hooks did not run as expected\; got
-        cat "$HOOK_TEST"
-        echo Expected
-        cat "$EXPECTED"
+    if ! cmp --quiet <(echo -e "$expected") "$HOOK_TEST" ; then
+        echo Hooks did not run as expected\; got >&2
+        cat "$HOOK_TEST" >&2
+        echo -e "Expected\n$expected" >&2
+        rm "$HOOK_TEST"
+        exit 1
     fi
     rm "$HOOK_TEST"
 }

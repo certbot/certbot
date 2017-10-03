@@ -15,6 +15,9 @@ protocol) that can automate the tasks of obtaining certificates and
 configuring webservers to use them. This client runs on Unix-based operating
 systems.
 
+To see the changes made to Certbot between versions please refer to our
+`changelog <https://github.com/certbot/certbot/blob/master/CHANGELOG.md>`_.
+
 Until May 2016, Certbot was named simply ``letsencrypt`` or ``letsencrypt-auto``,
 depending on install method. Instructions on the Internet, and some pieces of the
 software, may still refer to this older name.

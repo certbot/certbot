@@ -14,6 +14,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 import mock
 import OpenSSL
+import six
 from six.moves import reload_module  # pylint: disable=import-error
 
 from acme import jose
@@ -169,6 +170,30 @@ def patch_get_utility(target='zope.component.getUtility'):
     return mock.patch(target, new_callable=_create_get_utility_mock)
 
 
+def patch_get_utility_with_stdout(target='zope.component.getUtility',
+                                  stdout=None):
+    """Patch zope.component.getUtility to use a special mock IDisplay.
+
+    The mock IDisplay works like a regular mock object, except it also
+    also asserts that methods are called with valid arguments.
+
+    The `message` argument passed to the IDisplay methods is passed to
+    stdout's write method.
+
+    :param str target: path to patch
+    :param object stdout: object to write standard output to; it is
+        expected to have a `write` method
+
+    :returns: mock zope.component.getUtility
+    :rtype: mock.MagicMock
+
+    """
+    stdout = stdout if stdout else six.StringIO()
+
+    freezable_mock = _create_get_utility_mock_with_stdout(stdout)
+    return mock.patch(target, new=freezable_mock)
+
+
 class FreezableMock(object):
     """Mock object with the ability to freeze attributes.
 
@@ -249,6 +274,36 @@ def _create_get_utility_mock():
     return FreezableMock(frozen=True, return_value=display)
 
 
+def _create_get_utility_mock_with_stdout(stdout):
+    def _write_msg(message, *unused_args, **unused_kwargs):
+        """Write to message to stdout.
+        """
+        if message:
+            stdout.write(message)
+
+    def mock_method(*args, **kwargs):
+        """
+        Mock function for IDisplay methods.
+        """
+        _assert_valid_call(args, kwargs)
+        _write_msg(*args, **kwargs)
+
+
+    display = FreezableMock()
+    for name in interfaces.IDisplay.names():  # pylint: disable=no-member
+        if name == 'notification':
+            frozen_mock = FreezableMock(frozen=True,
+                                        func=_write_msg)
+            setattr(display, name, frozen_mock)
+        else:
+            frozen_mock = FreezableMock(frozen=True,
+                                        func=mock_method)
+            setattr(display, name, frozen_mock)
+    display.freeze()
+
+    return FreezableMock(frozen=True, return_value=display)
+
+
 def _assert_valid_call(*args, **kwargs):
     assert_args = [args[0] if args else kwargs['message']]
 
@@ -277,13 +332,16 @@ class ConfigTestCase(TempDirTestCase):
     def setUp(self):
         super(ConfigTestCase, self).setUp()
         self.config = configuration.NamespaceConfig(
-            mock.MagicMock(
-                config_dir=os.path.join(self.tempdir, 'config'),
-                work_dir=os.path.join(self.tempdir, 'work'),
-                logs_dir=os.path.join(self.tempdir, 'logs'),
-                server="example.com",
-            )
+            mock.MagicMock(**constants.CLI_DEFAULTS)
         )
+        self.config.verb = "certonly"
+        self.config.config_dir = os.path.join(self.tempdir, 'config')
+        self.config.work_dir = os.path.join(self.tempdir, 'work')
+        self.config.logs_dir = os.path.join(self.tempdir, 'logs')
+        self.config.cert_path = constants.CLI_DEFAULTS['auth_cert_path']
+        self.config.fullchain_path = constants.CLI_DEFAULTS['auth_chain_path']
+        self.config.chain_path = constants.CLI_DEFAULTS['auth_chain_path']
+        self.config.server = "example.com"
 
 def lock_and_call(func, lock_path):
     """Grab a lock for lock_path and call func.

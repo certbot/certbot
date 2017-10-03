@@ -1,6 +1,6 @@
 """Certbot main entry point."""
 from __future__ import print_function
-
+import functools
 import logging.handlers
 import os
 import sys
@@ -573,7 +573,7 @@ def install(config, plugins):
     _install_cert(config, le_client, domains)
 
 
-def plugins_cmd(config, plugins):  # TODO: Use IDisplay rather than print
+def plugins_cmd(config, plugins):
     """List server software plugins."""
     logger.debug("Expected interfaces: %s", config.ifaces)
 
@@ -581,8 +581,10 @@ def plugins_cmd(config, plugins):  # TODO: Use IDisplay rather than print
     filtered = plugins.visible().ifaces(ifaces)
     logger.debug("Filtered plugins: %r", filtered)
 
+    notify = functools.partial(zope.component.getUtility(
+        interfaces.IDisplay).notification, pause=False)
     if not config.init and not config.prepare:
-        print(str(filtered))
+        notify(str(filtered))
         return
 
     filtered.init(config)
@@ -590,13 +592,13 @@ def plugins_cmd(config, plugins):  # TODO: Use IDisplay rather than print
     logger.debug("Verified plugins: %r", verified)
 
     if not config.prepare:
-        print(str(verified))
+        notify(str(verified))
         return
 
     verified.prepare()
     available = verified.available()
     logger.debug("Prepared plugins: %s", available)
-    print(str(available))
+    notify(str(available))
 
 
 def rollback(config, plugins):
@@ -825,8 +827,14 @@ def main(cli_args=sys.argv[1:]):
     config = configuration.NamespaceConfig(args)
     zope.component.provideUtility(config)
 
-    log.post_arg_parse_setup(config)
-    make_or_verify_needed_dirs(config)
+    try:
+        log.post_arg_parse_setup(config)
+        make_or_verify_needed_dirs(config)
+    except errors.Error:
+        # Let plugins_cmd be run as un-privileged user.
+        if config.func != plugins_cmd:
+            raise
+
     set_displayer(config)
 
     # Reporter

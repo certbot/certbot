@@ -3,7 +3,7 @@ import sys
 from distutils.core import setup
 from setuptools import find_packages
 
-version = '0.18.0.dev0'
+version = '0.19.0.dev0'
 
 install_requires = [
     'acme=={0}'.format(version),

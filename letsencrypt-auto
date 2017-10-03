@@ -23,12 +23,15 @@ fi
 if [ -z "$XDG_DATA_HOME" ]; then
   XDG_DATA_HOME=~/.local/share
 fi
-VENV_NAME="letsencrypt"
 if [ -z "$VENV_PATH" ]; then
-  VENV_PATH="$XDG_DATA_HOME/$VENV_NAME"
+  # We export these values so they are preserved properly if this script is
+  # rerun with sudo/su where $HOME/$XDG_DATA_HOME may have a different value.
+  export OLD_VENV_PATH="$XDG_DATA_HOME/letsencrypt"
+  export VENV_PATH="/opt/eff.org/certbot/venv"
 fi
 VENV_BIN="$VENV_PATH/bin"
-LE_AUTO_VERSION="0.17.0"
+BOOTSTRAP_VERSION_PATH="$VENV_PATH/certbot-auto-bootstrap-version.txt"
+LE_AUTO_VERSION="0.18.2"
 BASENAME=$(basename $0)
 USAGE="Usage: $BASENAME [OPTIONS]
 A self-updating wrapper script for the Certbot ACME client. When run, updates
@@ -49,6 +52,7 @@ Help for certbot itself cannot be provided until it is installed.
                                             implies --non-interactive
 
 All arguments are accepted and forwarded to the Certbot client when run."
+export CERTBOT_AUTO="$0"
 
 for arg in "$@" ; do
   case "$arg" in
@@ -77,7 +81,7 @@ for arg in "$@" ; do
           h)
             HELP=1;;
           n)
-            ASSUME_YES=1;;
+            NONINTERACTIVE=1;;
           q)
             QUIET=1;;
           v)
@@ -93,8 +97,8 @@ if [ $BASENAME = "letsencrypt-auto" ]; then
   HELP=0
 fi
 
-# Set ASSUME_YES to 1 if QUIET (i.e. --quiet implies --non-interactive)
-if [ "$QUIET" = 1 ]; then
+# Set ASSUME_YES to 1 if QUIET or NONINTERACTIVE
+if [ "$QUIET" = 1 -o "$NONINTERACTIVE" = 1 ]; then
   ASSUME_YES=1
 fi
 
@@ -119,16 +123,18 @@ else
   exit 1
 fi
 
-# certbot-auto needs root access to bootstrap OS dependencies, and
-# certbot itself needs root access for almost all modes of operation
-# The "normal" case is that sudo is used for the steps that need root, but
-# this script *can* be run as root (not recommended), or fall back to using
-# `su`. Auto-detection can be overridden by explicitly setting the
-# environment variable LE_AUTO_SUDO to 'sudo', 'sudo_su' or '' as used below.
+# Certbot itself needs root access for almost all modes of operation.
+# certbot-auto needs root access to bootstrap OS dependencies and install
+# Certbot at a protected path so it can be safely run as root. To accomplish
+# this, this script will attempt to run itself as root if it doesn't have the
+# necessary privileges by using `sudo` or falling back to `su` if it is not
+# available. The mechanism used to obtain root access can be set explicitly by
+# setting the environment variable LE_AUTO_SUDO to 'sudo', 'su', 'su_sudo',
+# 'SuSudo', or '' as used below.
 
 # Because the parameters in `su -c` has to be a string,
 # we need to properly escape it.
-su_sudo() {
+SuSudo() {
   args=""
   # This `while` loop iterates over all parameters given to this function.
   # For each parameter, all `'` will be replace by `'"'"'`, and the escaped string
@@ -147,36 +153,56 @@ su_sudo() {
   su root -c "$args"
 }
 
-SUDO_ENV=""
-export CERTBOT_AUTO="$0"
-if [ -n "${LE_AUTO_SUDO+x}" ]; then
-  case "$LE_AUTO_SUDO" in
-    su_sudo|su)
-      SUDO=su_sudo
-      ;;
-    sudo)
-      SUDO=sudo
-      SUDO_ENV="CERTBOT_AUTO=$0"
-      ;;
-    '') ;; # Nothing to do for plain root method.
-    *)
-      error "Error: unknown root authorization mechanism '$LE_AUTO_SUDO'."
-      exit 1
-  esac
-  say "Using preset root authorization mechanism '$LE_AUTO_SUDO'."
-else
-  if test "`id -u`" -ne "0" ; then
-    if $EXISTS sudo 1>/dev/null 2>&1; then
-      SUDO=sudo
-      SUDO_ENV="CERTBOT_AUTO=$0"
-    else
-      say \"sudo\" is not available, will use \"su\" for installation steps...
-      SUDO=su_sudo
-    fi
+# Sets the environment variable SUDO to be the name of the program or function
+# to call to get root access. If this script already has root privleges, SUDO
+# is set to an empty string. The value in SUDO should be run with the command
+# to called with root privileges as arguments.
+SetRootAuthMechanism() {
+  SUDO=""
+  if [ -n "${LE_AUTO_SUDO+x}" ]; then
+    case "$LE_AUTO_SUDO" in
+      SuSudo|su_sudo|su)
+        SUDO=SuSudo
+        ;;
+      sudo)
+        SUDO="sudo -E"
+        ;;
+      '') ;; # Nothing to do for plain root method.
+      *)
+        error "Error: unknown root authorization mechanism '$LE_AUTO_SUDO'."
+        exit 1
+    esac
+    say "Using preset root authorization mechanism '$LE_AUTO_SUDO'."
   else
-    SUDO=
+    if test "`id -u`" -ne "0" ; then
+      if $EXISTS sudo 1>/dev/null 2>&1; then
+        SUDO="sudo -E"
+      else
+        say \"sudo\" is not available, will use \"su\" for installation steps...
+        SUDO=SuSudo
+      fi
+    fi
+  fi
+}
+
+if [ "$1" = "--cb-auto-has-root" ]; then
+  shift 1
+else
+  SetRootAuthMechanism
+  if [ -n "$SUDO" ]; then
+    echo "Requesting to rerun $0 with root privileges..."
+    $SUDO "$0" --cb-auto-has-root "$@"
+    exit 0
   fi
 fi
+
+# Runs this script again with the given arguments. --cb-auto-has-root is added
+# to the command line arguments to ensure we don't try to acquire root a
+# second time. After the script is rerun, we exit the current script.
+RerunWithArgs() {
+    "$0" --cb-auto-has-root "$@"
+    exit 0
+}
 
 BootstrapMessage() {
   # Arguments: Platform name
@@ -238,6 +264,10 @@ DeterminePythonVersion() {
   fi
 }
 
+# If new packages are installed by BootstrapDebCommon below, this version
+# number must be increased.
+BOOTSTRAP_DEB_COMMON_VERSION=1
+
 BootstrapDebCommon() {
   # Current version tested with:
   #
@@ -261,7 +291,7 @@ BootstrapDebCommon() {
     QUIET_FLAG='-qq'
   fi
 
-  $SUDO apt-get $QUIET_FLAG update || error apt-get update hit problems but continuing anyway...
+  apt-get $QUIET_FLAG update || error apt-get update hit problems but continuing anyway...
 
   # virtualenv binary can be found in different packages depending on
   # distro version (#346)
@@ -311,13 +341,13 @@ BootstrapDebCommon() {
           esac
         fi
         if [ "$add_backports" = 1 ]; then
-          $SUDO sh -c "echo $BACKPORT_SOURCELINE >> /etc/apt/sources.list.d/$BACKPORT_NAME.list"
-          $SUDO apt-get $QUIET_FLAG update
+          sh -c "echo $BACKPORT_SOURCELINE >> /etc/apt/sources.list.d/$BACKPORT_NAME.list"
+          apt-get $QUIET_FLAG update
         fi
       fi
     fi
     if [ "$add_backports" != 0 ]; then
-      $SUDO apt-get install $QUIET_FLAG $YES_FLAG --no-install-recommends -t "$BACKPORT_NAME" $augeas_pkg
+      apt-get install $QUIET_FLAG $YES_FLAG --no-install-recommends -t "$BACKPORT_NAME" $augeas_pkg
       augeas_pkg=
     fi
   }
@@ -336,7 +366,7 @@ BootstrapDebCommon() {
     # XXX add a case for ubuntu PPAs
   fi
 
-  $SUDO apt-get install $QUIET_FLAG $YES_FLAG --no-install-recommends \
+  apt-get install $QUIET_FLAG $YES_FLAG --no-install-recommends \
     python \
     python-dev \
     $virtualenv \
@@ -353,6 +383,10 @@ BootstrapDebCommon() {
     exit 1
   fi
 }
+
+# If new packages are installed by BootstrapRpmCommon below, this version
+# number must be increased.
+BOOTSTRAP_RPM_COMMON_VERSION=1
 
 BootstrapRpmCommon() {
   # Tested with:
@@ -380,9 +414,9 @@ BootstrapRpmCommon() {
     QUIET_FLAG='--quiet'
   fi
 
-  if ! $SUDO $tool list *virtualenv >/dev/null 2>&1; then
+  if ! $tool list *virtualenv >/dev/null 2>&1; then
     echo "To use Certbot, packages from the EPEL repository need to be installed."
-    if ! $SUDO $tool list epel-release >/dev/null 2>&1; then
+    if ! $tool list epel-release >/dev/null 2>&1; then
       error "Enable the EPEL repository and try running Certbot again."
       exit 1
     fi
@@ -394,7 +428,7 @@ BootstrapRpmCommon() {
       /bin/echo -e "\e[0K\rEnabling the EPEL repository in 1 seconds..."
       sleep 1s
     fi
-    if ! $SUDO $tool install $yes_flag $QUIET_FLAG epel-release; then
+    if ! $tool install $yes_flag $QUIET_FLAG epel-release; then
       error "Could not enable EPEL. Aborting bootstrap!"
       exit 1
     fi
@@ -410,9 +444,8 @@ BootstrapRpmCommon() {
     ca-certificates
   "
 
-  # Some distros and older versions of current distros use a "python27"
-  # instead of "python" naming convention. Try both conventions.
-  if $SUDO $tool list python >/dev/null 2>&1; then
+  # Most RPM distros use the "python" or "python-" naming convention.  Let's try that first.
+  if $tool list python >/dev/null 2>&1; then
     pkgs="$pkgs
       python
       python-devel
@@ -420,6 +453,20 @@ BootstrapRpmCommon() {
       python-tools
       python-pip
     "
+  # Fedora 26 starts to use the prefix python2 for python2 based packages.
+  # this elseif is theoretically for any Fedora over version 26:
+  elif $tool list python2 >/dev/null 2>&1; then
+    pkgs="$pkgs
+      python2
+      python2-libs
+      python2-setuptools
+      python2-devel
+      python2-virtualenv
+      python2-tools
+      python2-pip
+    "
+  # Some distros and older versions of current distros use a "python27"
+  # instead of the "python" or "python-" naming convention.
   else
     pkgs="$pkgs
       python27
@@ -430,17 +477,21 @@ BootstrapRpmCommon() {
     "
   fi
 
-  if $SUDO $tool list installed "httpd" >/dev/null 2>&1; then
+  if $tool list installed "httpd" >/dev/null 2>&1; then
     pkgs="$pkgs
       mod_ssl
     "
   fi
 
-  if ! $SUDO $tool install $yes_flag $QUIET_FLAG $pkgs; then
+  if ! $tool install $yes_flag $QUIET_FLAG $pkgs; then
     error "Could not install OS dependencies. Aborting bootstrap!"
     exit 1
   fi
 }
+
+# If new packages are installed by BootstrapSuseCommon below, this version
+# number must be increased.
+BOOTSTRAP_SUSE_COMMON_VERSION=1
 
 BootstrapSuseCommon() {
   # SLE12 don't have python-virtualenv
@@ -454,7 +505,7 @@ BootstrapSuseCommon() {
     QUIET_FLAG='-qq'
   fi
 
-  $SUDO zypper $QUIET_FLAG $zypper_flags in $install_flags \
+  zypper $QUIET_FLAG $zypper_flags in $install_flags \
     python \
     python-devel \
     python-virtualenv \
@@ -464,6 +515,10 @@ BootstrapSuseCommon() {
     libffi-devel \
     ca-certificates
 }
+
+# If new packages are installed by BootstrapArchCommon below, this version
+# number must be increased.
+BOOTSTRAP_ARCH_COMMON_VERSION=1
 
 BootstrapArchCommon() {
   # Tested with:
@@ -485,20 +540,24 @@ BootstrapArchCommon() {
   "
 
   # pacman -T exits with 127 if there are missing dependencies
-  missing=$($SUDO pacman -T $deps) || true
+  missing=$(pacman -T $deps) || true
 
   if [ "$ASSUME_YES" = 1 ]; then
     noconfirm="--noconfirm"
   fi
 
   if [ "$missing" ]; then
-    if [ "$QUIET" = 1]; then
-      $SUDO pacman -S --needed $missing $noconfirm > /dev/null
+    if [ "$QUIET" = 1 ]; then
+      pacman -S --needed $missing $noconfirm > /dev/null
     else
-      $SUDO pacman -S --needed $missing $noconfirm
+      pacman -S --needed $missing $noconfirm
     fi
   fi
 }
+
+# If new packages are installed by BootstrapGentooCommon below, this version
+# number must be increased.
+BOOTSTRAP_GENTOO_COMMON_VERSION=1
 
 BootstrapGentooCommon() {
   PACKAGES="
@@ -517,28 +576,36 @@ BootstrapGentooCommon() {
 
   case "$PACKAGE_MANAGER" in
     (paludis)
-      $SUDO cave resolve --preserve-world --keep-targets if-possible $PACKAGES -x
+      cave resolve --preserve-world --keep-targets if-possible $PACKAGES -x
       ;;
     (pkgcore)
-      $SUDO pmerge --noreplace --oneshot $ASK_OPTION $PACKAGES
+      pmerge --noreplace --oneshot $ASK_OPTION $PACKAGES
       ;;
     (portage|*)
-      $SUDO emerge --noreplace --oneshot $ASK_OPTION $PACKAGES
+      emerge --noreplace --oneshot $ASK_OPTION $PACKAGES
       ;;
   esac
 }
+
+# If new packages are installed by BootstrapFreeBsd below, this version number
+# must be increased.
+BOOTSTRAP_FREEBSD_VERSION=1
 
 BootstrapFreeBsd() {
   if [ "$QUIET" = 1 ]; then
     QUIET_FLAG="--quiet"
   fi
 
-  $SUDO pkg install -Ay $QUIET_FLAG \
+  pkg install -Ay $QUIET_FLAG \
     python \
     py27-virtualenv \
     augeas \
     libffi
 }
+
+# If new packages are installed by BootstrapMac below, this version number must
+# be increased.
+BOOTSTRAP_MAC_VERSION=1
 
 BootstrapMac() {
   if hash brew 2>/dev/null; then
@@ -548,7 +615,7 @@ BootstrapMac() {
   elif hash port 2>/dev/null; then
     say "Using MacPorts to install dependencies..."
     pkgman=port
-    pkgcmd="$SUDO port install"
+    pkgcmd="port install"
   else
     say "No Homebrew/MacPorts; installing Homebrew..."
     ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
@@ -568,8 +635,8 @@ BootstrapMac() {
   # Workaround for _dlopen not finding augeas on macOS
   if [ "$pkgman" = "port" ] && ! [ -e "/usr/local/lib/libaugeas.dylib" ] && [ -e "/opt/local/lib/libaugeas.dylib" ]; then
     say "Applying augeas workaround"
-    $SUDO mkdir -p /usr/local/lib/
-    $SUDO ln -s /opt/local/lib/libaugeas.dylib /usr/local/lib/
+    mkdir -p /usr/local/lib/
+    ln -s /opt/local/lib/libaugeas.dylib /usr/local/lib/
   fi
 
   if ! hash pip 2>/dev/null; then
@@ -585,17 +652,25 @@ BootstrapMac() {
   fi
 }
 
+# If new packages are installed by BootstrapSmartOS below, this version number
+# must be increased.
+BOOTSTRAP_SMARTOS_VERSION=1
+
 BootstrapSmartOS() {
   pkgin update
   pkgin -y install 'gcc49' 'py27-augeas' 'py27-virtualenv'
 }
+
+# If new packages are installed by BootstrapMageiaCommon below, this version
+# number must be increased.
+BOOTSTRAP_MAGEIA_COMMON_VERSION=1
 
 BootstrapMageiaCommon() {
   if [ "$QUIET" = 1 ]; then
     QUIET_FLAG='--quiet'
   fi
 
-  if ! $SUDO urpmi --force $QUIET_FLAG \
+  if ! urpmi --force $QUIET_FLAG \
       python \
       libpython-devel \
       python-virtualenv
@@ -604,7 +679,7 @@ BootstrapMageiaCommon() {
       exit 1
   fi
 
-  if ! $SUDO urpmi --force $QUIET_FLAG \
+  if ! urpmi --force $QUIET_FLAG \
       git \
       gcc \
       python-augeas \
@@ -618,23 +693,41 @@ BootstrapMageiaCommon() {
 }
 
 
-# Install required OS packages:
-Bootstrap() {
-  if [ "$NO_BOOTSTRAP" = 1 ]; then
-      return
-  elif [ -f /etc/debian_version ]; then
+# Set Bootstrap to the function that installs OS dependencies on this system
+# and BOOTSTRAP_VERSION to the unique identifier for the current version of
+# that function. If Bootstrap is set to a function that doesn't install any
+# packages (either because --no-bootstrap was included on the command line or
+# we don't know how to bootstrap on this system), BOOTSTRAP_VERSION is not set.
+if [ "$NO_BOOTSTRAP" = 1 ]; then
+  Bootstrap() {
+    :
+  }
+elif [ -f /etc/debian_version ]; then
+  Bootstrap() {
     BootstrapMessage "Debian-based OSes"
     BootstrapDebCommon
-  elif [ -f /etc/mageia-release ]; then
-    # Mageia has both /etc/mageia-release and /etc/redhat-release
+  }
+  BOOTSTRAP_VERSION="BootstrapDebCommon $BOOTSTRAP_DEB_COMMON_VERSION"
+elif [ -f /etc/mageia-release ]; then
+  # Mageia has both /etc/mageia-release and /etc/redhat-release
+  Bootstrap() {
     ExperimentalBootstrap "Mageia" BootstrapMageiaCommon
-  elif [ -f /etc/redhat-release ]; then
+  }
+  BOOTSTRAP_VERSION="BootstrapMageiaCommon $BOOTSTRAP_MAGEIA_COMMON_VERSION"
+elif [ -f /etc/redhat-release ]; then
+  Bootstrap() {
     BootstrapMessage "RedHat-based OSes"
     BootstrapRpmCommon
-  elif [ -f /etc/os-release ] && `grep -q openSUSE /etc/os-release` ; then
+  }
+  BOOTSTRAP_VERSION="BootstrapRpmCommon $BOOTSTRAP_RPM_COMMON_VERSION"
+elif [ -f /etc/os-release ] && `grep -q openSUSE /etc/os-release` ; then
+  Bootstrap() {
     BootstrapMessage "openSUSE-based OSes"
     BootstrapSuseCommon
-  elif [ -f /etc/arch-release ]; then
+  }
+  BOOTSTRAP_VERSION="BootstrapSuseCommon $BOOTSTRAP_SUSE_COMMON_VERSION"
+elif [ -f /etc/arch-release ]; then
+  Bootstrap() {
     if [ "$DEBUG" = 1 ]; then
       BootstrapMessage "Archlinux"
       BootstrapArchCommon
@@ -646,25 +739,76 @@ Bootstrap() {
       error "--debug flag."
       exit 1
     fi
-  elif [ -f /etc/manjaro-release ]; then
+  }
+  BOOTSTRAP_VERSION="BootstrapArchCommon $BOOTSTRAP_ARCH_COMMON_VERSION"
+elif [ -f /etc/manjaro-release ]; then
+  Bootstrap() {
     ExperimentalBootstrap "Manjaro Linux" BootstrapArchCommon
-  elif [ -f /etc/gentoo-release ]; then
+  }
+  BOOTSTRAP_VERSION="BootstrapArchCommon $BOOTSTRAP_ARCH_COMMON_VERSION"
+elif [ -f /etc/gentoo-release ]; then
+  Bootstrap() {
     DeprecationBootstrap "Gentoo" BootstrapGentooCommon
-  elif uname | grep -iq FreeBSD ; then
+  }
+  BOOTSTRAP_VERSION="BootstrapGentooCommon $BOOTSTRAP_GENTOO_COMMON_VERSION"
+elif uname | grep -iq FreeBSD ; then
+  Bootstrap() {
     DeprecationBootstrap "FreeBSD" BootstrapFreeBsd
-  elif uname | grep -iq Darwin ; then
+  }
+  BOOTSTRAP_VERSION="BootstrapFreeBsd $BOOTSTRAP_FREEBSD_VERSION"
+elif uname | grep -iq Darwin ; then
+  Bootstrap() {
     DeprecationBootstrap "macOS" BootstrapMac
-  elif [ -f /etc/issue ] && grep -iq "Amazon Linux" /etc/issue ; then
+  }
+  BOOTSTRAP_VERSION="BootstrapMac $BOOTSTRAP_MAC_VERSION"
+elif [ -f /etc/issue ] && grep -iq "Amazon Linux" /etc/issue ; then
+  Bootstrap() {
     ExperimentalBootstrap "Amazon Linux" BootstrapRpmCommon
-  elif [ -f /etc/product ] && grep -q "Joyent Instance" /etc/product ; then
+  }
+  BOOTSTRAP_VERSION="BootstrapRpmCommon $BOOTSTRAP_RPM_COMMON_VERSION"
+elif [ -f /etc/product ] && grep -q "Joyent Instance" /etc/product ; then
+  Bootstrap() {
     ExperimentalBootstrap "Joyent SmartOS Zone" BootstrapSmartOS
-  else
+  }
+  BOOTSTRAP_VERSION="BootstrapSmartOS $BOOTSTRAP_SMARTOS_VERSION"
+else
+  Bootstrap() {
     error "Sorry, I don't know how to bootstrap Certbot on your operating system!"
     error
     error "You will need to install OS dependencies, configure virtualenv, and run pip install manually."
     error "Please see https://letsencrypt.readthedocs.org/en/latest/contributing.html#prerequisites"
     error "for more info."
     exit 1
+  }
+fi
+
+# Sets PREV_BOOTSTRAP_VERSION to the identifier for the bootstrap script used
+# to install OS dependencies on this system. PREV_BOOTSTRAP_VERSION isn't set
+# if it is unknown how OS dependencies were installed on this system.
+SetPrevBootstrapVersion() {
+  if [ -f $BOOTSTRAP_VERSION_PATH ]; then
+    PREV_BOOTSTRAP_VERSION=$(cat "$BOOTSTRAP_VERSION_PATH")
+  # The list below only contains bootstrap version strings that existed before
+  # we started writing them to disk.
+  #
+  # DO NOT MODIFY THIS LIST UNLESS YOU KNOW WHAT YOU'RE DOING!
+  elif grep -Fqx "$BOOTSTRAP_VERSION" << "UNLIKELY_EOF"
+BootstrapDebCommon 1
+BootstrapMageiaCommon 1
+BootstrapRpmCommon 1
+BootstrapSuseCommon 1
+BootstrapArchCommon 1
+BootstrapGentooCommon 1
+BootstrapFreeBsd 1
+BootstrapMac 1
+BootstrapSmartOS 1
+UNLIKELY_EOF
+  then
+    # If there's no bootstrap version saved to disk, but the currently selected
+    # bootstrap script is from before we started saving the version number,
+    # return the currently selected version to prevent us from rebootstrapping
+    # unnecessarily.
+    PREV_BOOTSTRAP_VERSION="$BOOTSTRAP_VERSION"
   fi
 }
 
@@ -678,18 +822,38 @@ if [ "$1" = "--le-auto-phase2" ]; then
   # Phase 2: Create venv, install LE, and run.
 
   shift 1  # the --le-auto-phase2 arg
-  if [ -f "$VENV_BIN/letsencrypt" ]; then
-    # --version output ran through grep due to python-cryptography DeprecationWarnings
-    # grep for both certbot and letsencrypt until certbot and shim packages have been released
-    INSTALLED_VERSION=$("$VENV_BIN/letsencrypt" --version 2>&1 | grep "^certbot\|^letsencrypt" | cut -d " " -f 2)
-    if [ -z "$INSTALLED_VERSION" ]; then
-        error "Error: couldn't get currently installed version for $VENV_BIN/letsencrypt: " 1>&2
-        "$VENV_BIN/letsencrypt" --version
-        exit 1
+  SetPrevBootstrapVersion
+
+  INSTALLED_VERSION="none"
+  if [ -d "$VENV_PATH" ]; then
+    # If the selected Bootstrap function isn't a noop and it differs from the
+    # previously used version
+    if [ -n "$BOOTSTRAP_VERSION" -a "$BOOTSTRAP_VERSION" != "$PREV_BOOTSTRAP_VERSION" ]; then
+      # if non-interactive mode or stdin and stdout are connected to a terminal
+      if [ \( "$NONINTERACTIVE" = 1 \) -o \( \( -t 0 \) -a \( -t 1 \) \) ]; then
+        rm -rf "$VENV_PATH"
+        RerunWithArgs "$@"
+      else
+        error "Skipping upgrade because new OS dependencies may need to be installed."
+        error
+        error "To upgrade to a newer version, please run this script again manually so you can"
+        error "approve changes or with --non-interactive on the command line to automatically"
+        error "install any required packages."
+        # Set INSTALLED_VERSION to be the same so we don't update the venv
+        INSTALLED_VERSION="$LE_AUTO_VERSION"
+      fi
+    elif [ -f "$VENV_BIN/letsencrypt" ]; then
+      # --version output ran through grep due to python-cryptography DeprecationWarnings
+      # grep for both certbot and letsencrypt until certbot and shim packages have been released
+      INSTALLED_VERSION=$("$VENV_BIN/letsencrypt" --version 2>&1 | grep "^certbot\|^letsencrypt" | cut -d " " -f 2)
+      if [ -z "$INSTALLED_VERSION" ]; then
+          error "Error: couldn't get currently installed version for $VENV_BIN/letsencrypt: " 1>&2
+          "$VENV_BIN/letsencrypt" --version
+          exit 1
+      fi
     fi
-  else
-    INSTALLED_VERSION="none"
   fi
+
   if [ "$LE_AUTO_VERSION" != "$INSTALLED_VERSION" ]; then
     say "Creating virtual environment..."
     DeterminePythonVersion
@@ -698,6 +862,12 @@ if [ "$1" = "--le-auto-phase2" ]; then
       virtualenv --no-site-packages --python "$LE_PYTHON" "$VENV_PATH"
     else
       virtualenv --no-site-packages --python "$LE_PYTHON" "$VENV_PATH" > /dev/null
+    fi
+
+    if [ -n "$BOOTSTRAP_VERSION" ]; then
+      echo "$BOOTSTRAP_VERSION" > "$BOOTSTRAP_VERSION_PATH"
+    elif [ -n "$PREV_BOOTSTRAP_VERSION" ]; then
+      echo "$PREV_BOOTSTRAP_VERSION" > "$BOOTSTRAP_VERSION_PATH"
     fi
 
     say "Installing Python packages..."
@@ -766,8 +936,8 @@ cffi==1.10.0 \
     --hash=sha256:285ab352552f52f1398c912556d4d36d4ea9b8450e5c65d03809bf9886755533 \
     --hash=sha256:5576644b859197da7bbd8f8c7c2fb5dcc6cd505cadb42992d5f104c013f8a214 \
     --hash=sha256:b3b02911eb1f6ada203b0763ba924234629b51586f72a21faacc638269f4ced5
-ConfigArgParse==0.10.0 \
-    --hash=sha256:3b50a83dd58149dfcee98cb6565265d10b53e9c0a2bca7eeef7fb5f5524890a7
+ConfigArgParse==0.12.0 \
+    --hash=sha256:28cd7d67669651f2a4518367838c49539457504584a139709b2b8f6c208ef339
 configobj==5.0.6 \
     --hash=sha256:a2f5650770e1c87fb335af19a9b7eb73fc05ccf22144eb68db7d00cd2bcb0902
 cryptography==2.0.2 \
@@ -907,18 +1077,18 @@ letsencrypt==0.7.0 \
     --hash=sha256:105a5fb107e45bcd0722eb89696986dcf5f08a86a321d6aef25a0c7c63375ade \
     --hash=sha256:c36e532c486a7e92155ee09da54b436a3c420813ec1c590b98f635d924720de9
 
-certbot==0.17.0 \
-    --hash=sha256:64c25c7123357feffded6408660bc6f5c7d493dd635ae172081d21473075a86a \
-    --hash=sha256:43f5b26c3f314d14babf79a3bdf3522e4fc9eef867a0681c426f113c650a669c
-acme==0.17.0 \
-    --hash=sha256:501710171633af13fc52aa61d0277a6fe335f7477db5810e72239aaf4f3a09e7 \
-    --hash=sha256:3ccbe4aaeb98c77b98ee4093b4e4adb76a1a24cbdfec0130c489c206f1d9b66e
-certbot-apache==0.17.0 \
-    --hash=sha256:17a7e8d7526d838610e68b96cf052af17c4055655b76b06d1cbc74857d90a216 \
-    --hash=sha256:29b9e7bc5eaaff6dc4bce8398e35eeacdf346126aad68cac3d41bb87df20a6b9
-certbot-nginx==0.17.0 \
-    --hash=sha256:980c9a33a79ab839a089a0085ff0c5414f01f47b6db26ed342df25916658cec9 \
-    --hash=sha256:e573f8b4283172755c07b9cca8a8da7ef2d31b4df763881394b5339b2d42994a
+certbot==0.18.2 \
+    --hash=sha256:e1d1fcd6248cdbdba92e3a769dc40567dbffc717bff86ef3431fadf31419a6b6 \
+    --hash=sha256:0122e6ee3fc1167fa91883b9f2ea1897f3d0d4612739f175827b5a3e8f259c9a
+acme==0.18.2 \
+    --hash=sha256:67e1270318a2f8ca5f309b22fc50669abfdb38c875133b20e8a1358e96591a7a \
+    --hash=sha256:718efa9b3a7e6defcc7179e214a838d43a2bcef7dbd77667a2e505504e453ef6
+certbot-apache==0.18.2 \
+    --hash=sha256:54d9a16a7ec87df0538a094a28aabf5415d92bda3e80742dfd0b3d1ed82d8760 \
+    --hash=sha256:07856f49db28593eb58ed970da2f6520b0d0d7402ac7757a5ea41fcb6a24a9ea
+certbot-nginx==0.18.2 \
+    --hash=sha256:7fac4ec1be4966ef828f2aca32a04db303a9b49453589961f2fb5867b70823c5 \
+    --hash=sha256:d35aeda6f2ce6213d84ecbbc658ca6cf13c98961c475867c70740552d05ae3e3
 
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
@@ -1131,20 +1301,15 @@ UNLIKELY_EOF
       rm -rf "$VENV_PATH"
       exit 1
     fi
+
+    if [ -d "$OLD_VENV_PATH" -a ! -L "$OLD_VENV_PATH" ]; then
+      rm -rf "$OLD_VENV_PATH"
+      ln -s "$VENV_PATH" "$OLD_VENV_PATH"
+    fi
+
     say "Installation succeeded."
   fi
-  if [ -n "$SUDO" ]; then
-    # SUDO is su wrapper or sudo
-    say "Requesting root privileges to run certbot..."
-    say "  $VENV_BIN/letsencrypt" "$@"
-  fi
-  if [ -z "$SUDO_ENV" ] ; then
-    # SUDO is su wrapper / noop
-    $SUDO "$VENV_BIN/letsencrypt" "$@"
-  else
-    # sudo
-    $SUDO "$SUDO_ENV" "$VENV_BIN/letsencrypt" "$@"
-  fi
+  "$VENV_BIN/letsencrypt" "$@"
 
 else
   # Phase 1: Upgrade certbot-auto if necessary, then self-invoke.
@@ -1155,12 +1320,14 @@ else
   # package). Phase 2 checks the version of the locally installed certbot.
 
   if [ ! -f "$VENV_BIN/letsencrypt" ]; then
-    if [ "$HELP" = 1 ]; then
-      echo "$USAGE"
-      exit 0
+    if [ -z "$OLD_VENV_PATH" -o ! -f "$OLD_VENV_PATH/bin/letsencrypt" ]; then
+      if [ "$HELP" = 1 ]; then
+        echo "$USAGE"
+        exit 0
+      fi
+      # If it looks like we've never bootstrapped before, bootstrap:
+      Bootstrap
     fi
-    # If it looks like we've never bootstrapped before, bootstrap:
-    Bootstrap
   fi
   if [ "$OS_PACKAGES_ONLY" = 1 ]; then
     say "OS packages installed."
@@ -1320,15 +1487,15 @@ UNLIKELY_EOF
       say "Replacing certbot-auto..."
       # Clone permissions with cp. chmod and chown don't have a --reference
       # option on macOS or BSD, and stat -c on Linux is stat -f on macOS and BSD:
-      $SUDO cp -p "$0" "$TEMP_DIR/letsencrypt-auto.permission-clone"
-      $SUDO cp "$TEMP_DIR/letsencrypt-auto" "$TEMP_DIR/letsencrypt-auto.permission-clone"
+      cp -p "$0" "$TEMP_DIR/letsencrypt-auto.permission-clone"
+      cp "$TEMP_DIR/letsencrypt-auto" "$TEMP_DIR/letsencrypt-auto.permission-clone"
       # Using mv rather than cp leaves the old file descriptor pointing to the
       # original copy so the shell can continue to read it unmolested. mv across
       # filesystems is non-atomic, doing `rm dest, cp src dest, rm src`, but the
-      # cp is unlikely to fail (esp. under sudo) if the rm doesn't.
-      $SUDO mv -f "$TEMP_DIR/letsencrypt-auto.permission-clone" "$0"
+      # cp is unlikely to fail if the rm doesn't.
+      mv -f "$TEMP_DIR/letsencrypt-auto.permission-clone" "$0"
     fi  # A newer version is available.
   fi  # Self-upgrading is allowed.
 
-  "$0" --le-auto-phase2 "$@"
+  RerunWithArgs --le-auto-phase2 "$@"
 fi

@@ -226,8 +226,9 @@ class NginxConfiguratorTest(util.NginxTest):
                             ['listen', '5001', 'ssl'],
                             ['ssl_certificate', 'example/fullchain.pem'],
                             ['ssl_certificate_key', 'example/key.pem'],
-                            ['include', self.config.mod_ssl_conf]]
-                            ]],
+                            ['include', self.config.mod_ssl_conf],
+                            ['ssl_dhparam', self.config.ssl_dhparams],
+                            ]]],
                          parsed_example_conf)
         self.assertEqual([['server_name', 'somename', 'alias', 'another.alias']],
                          parsed_server_conf)
@@ -244,8 +245,9 @@ class NginxConfiguratorTest(util.NginxTest):
               ['listen', '5001', 'ssl'],
               ['ssl_certificate', '/etc/nginx/fullchain.pem'],
               ['ssl_certificate_key', '/etc/nginx/key.pem'],
-              ['include', self.config.mod_ssl_conf]]
-            ],
+              ['include', self.config.mod_ssl_conf],
+              ['ssl_dhparam', self.config.ssl_dhparams],
+            ]],
             2))
 
     def test_deploy_cert_add_explicit_listen(self):
@@ -268,8 +270,9 @@ class NginxConfiguratorTest(util.NginxTest):
                            ['listen', '5001', 'ssl'],
                            ['ssl_certificate', 'summer/fullchain.pem'],
                            ['ssl_certificate_key', 'summer/key.pem'],
-                           ['include', self.config.mod_ssl_conf]]
-                           ],
+                           ['include', self.config.mod_ssl_conf],
+                           ['ssl_dhparam', self.config.ssl_dhparams],
+                           ]],
                          parsed_migration_conf[0])
 
     @mock.patch("certbot_nginx.configurator.tls_sni_01.NginxTlsSni01.perform")
@@ -601,7 +604,7 @@ class InstallSslOptionsConfTest(util.NginxTest):
         with mock.patch("certbot.plugins.common.logger") as mock_logger:
             self._call()
             self.assertEqual(mock_logger.warning.call_args[0][0],
-                "%s has been manually modified; updated ssl configuration options "
+                "%s has been manually modified; updated file "
                 "saved to %s. We recommend updating %s for security purposes.")
         self.assertEqual(crypto_util.sha256sum(constants.MOD_SSL_CONF_SRC),
             self._current_ssl_options_hash())
