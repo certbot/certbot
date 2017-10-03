@@ -494,7 +494,10 @@ configuration directory. Assuming your configuration directory is
 ``/etc/letsencrypt/renewal-hooks/post`` will be run as pre, deploy, and post
 hooks respectively when any certificate is renewed with the ``renew``
 subcommand. These hooks are run in alphabetical order and are not run for other
-subcommands. Hooks specified in the command line, :ref:`configuration file
+subcommands. (The order the hooks are run is determined by the byte value of
+the characters in their filenames and is not dependent on your locale.)
+
+Hooks specified in the command line, :ref:`configuration file
 <config-file>`, or :ref:`renewal configuration files <renewal-config-file>` are
 run as usual after running all hooks in these directories. One minor exception
 to this is if a hook specified elsewhere is simply the path to an executable
