@@ -276,10 +276,6 @@ class NginxConfigurator(common.Installer):
                 if addr.default:
                     return vhost
 
-        # otherwise, return the first one
-        if len(vhost_list) > 0:
-            return vhost_list[0]
-
         raise errors.MisconfigurationError("No server blocks found in Nginx configuration.")
 
     def _get_ranked_matches(self, target_name):

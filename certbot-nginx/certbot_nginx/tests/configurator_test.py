@@ -542,6 +542,114 @@ class NginxConfiguratorTest(util.NginxTest):
         self.assertTrue(util.contains_at_depth(
             generated_conf, ['ssl_stapling_verify', 'on'], 2))
 
+    def test_deploy_no_match_default_set(self):
+        default_conf = self.config.parser.abs_path('sites-enabled/default')
+        foo_conf = self.config.parser.abs_path('foo.conf')
+        del self.config.parser.parsed[foo_conf][2][1][0][1][0] # remove default_server
+        self.config.version = (1, 3, 1)
+
+        self.config.deploy_cert(
+            "www.nomatch.com",
+            "example/cert.pem",
+            "example/key.pem",
+            "example/chain.pem",
+            "example/fullchain.pem")
+        self.config.save()
+
+        self.config.parser.load()
+
+        parsed_default_conf = util.filter_comments(self.config.parser.parsed[default_conf])
+
+        self.assertEqual([[['server'],
+                           [['listen', 'myhost', 'default_server'],
+                            ['server_name', 'www.example.org'],
+                            [['location', '/'],
+                             [['root', 'html'],
+                              ['index', 'index.html', 'index.htm']]]]],
+                          [['server'],
+                           [['listen', 'myhost'],
+                            ['server_name', 'www.nomatch.com'],
+                            [['location', '/'],
+                             [['root', 'html'],
+                              ['index', 'index.html', 'index.htm']]],
+                            ['listen', '5001', 'ssl'],
+                            ['ssl_certificate', 'example/fullchain.pem'],
+                            ['ssl_certificate_key', 'example/key.pem'],
+                            ['include', self.config.mod_ssl_conf],
+                            ['ssl_dhparam', self.config.ssl_dhparams]]]],
+                         parsed_default_conf)
+
+        self.config.deploy_cert(
+            "nomatch.com",
+            "example/cert.pem",
+            "example/key.pem",
+            "example/chain.pem",
+            "example/fullchain.pem")
+        self.config.save()
+
+        self.config.parser.load()
+
+        parsed_default_conf = util.filter_comments(self.config.parser.parsed[default_conf])
+
+
+        self.assertEqual([[['server'],
+                           [['listen', 'myhost', 'default_server'],
+                            ['server_name', 'www.example.org'],
+                            [['location', '/'],
+                             [['root', 'html'],
+                              ['index', 'index.html', 'index.htm']]]]],
+                          [['server'],
+                           [['listen', 'myhost'],
+                            ['server_name', 'www.nomatch.com', 'nomatch.com'],
+                            [['location', '/'],
+                             [['root', 'html'],
+                              ['index', 'index.html', 'index.htm']]],
+                            ['listen', '5001', 'ssl'],
+                            ['ssl_certificate', 'example/fullchain.pem'],
+                            ['ssl_certificate_key', 'example/key.pem'],
+                            ['include', self.config.mod_ssl_conf],
+                            ['ssl_dhparam', self.config.ssl_dhparams]]]],
+                         parsed_default_conf)
+
+    def test_deploy_no_match_no_default_set(self):
+        default_conf = self.config.parser.abs_path('sites-enabled/default')
+        foo_conf = self.config.parser.abs_path('foo.conf')
+        del self.config.parser.parsed[default_conf][0][1][0]
+        del self.config.parser.parsed[foo_conf][2][1][0][1][0]
+        self.config.version = (1, 3, 1)
+
+        self.assertRaises(errors.MisconfigurationError, self.config.deploy_cert,
+            "www.nomatch.com", "example/cert.pem", "example/key.pem",
+            "example/chain.pem", "example/fullchain.pem")
+
+    def test_deploy_no_match_add_redirect(self):
+        default_conf = self.config.parser.abs_path('sites-enabled/default')
+        foo_conf = self.config.parser.abs_path('foo.conf')
+        del self.config.parser.parsed[foo_conf][2][1][0][1][0] # remove default_server
+        self.config.version = (1, 3, 1)
+
+        self.config.deploy_cert(
+            "www.nomatch.com",
+            "example/cert.pem",
+            "example/key.pem",
+            "example/chain.pem",
+            "example/fullchain.pem")
+
+        self.config.enhance("www.nomatch.com", "redirect")
+
+        self.config.save()
+
+        self.config.parser.load()
+
+        expected = [
+            ['if', '($scheme', '!=', '"https")'],
+            [['return', '301', 'https://$host$request_uri']]
+        ]
+
+        generated_conf = self.config.parser.parsed[default_conf]
+        self.assertTrue(util.contains_at_depth(generated_conf, expected, 2))
+
+
 class InstallSslOptionsConfTest(util.NginxTest):
     """Test that the options-ssl-nginx.conf file is installed and updated properly."""
 
