@@ -242,7 +242,7 @@ class PostHookTest(HookTest):
         return post_hook.eventually
 
 
-class RunRenewPostHooksTest(HookTest):
+class RunSavedPostHooksTest(HookTest):
     """Tests for certbot.hooks.run_saved_post_hooks."""
 
     @classmethod
@@ -263,7 +263,7 @@ class RunRenewPostHooksTest(HookTest):
             return self._call_with_mock_execute(*args, **kwargs)
 
     def setUp(self):
-        super(RunRenewPostHooksTest, self).setUp()
+        super(RunSavedPostHooksTest, self).setUp()
         self.eventually = []
 
     def test_empty(self):
