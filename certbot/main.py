@@ -711,11 +711,19 @@ def renew(config, unused_plugins):
 
 
 def make_or_verify_needed_dirs(config):
-    """Create or verify existence of config and work directories"""
+    """Create or verify existence of config, work, and hook directories."""
     util.set_up_core_dir(config.config_dir, constants.CONFIG_DIRS_MODE,
                          os.geteuid(), config.strict_permissions)
     util.set_up_core_dir(config.work_dir, constants.CONFIG_DIRS_MODE,
                          os.geteuid(), config.strict_permissions)
+
+    hook_dirs = (config.renewal_pre_hooks_dir,
+                 config.renewal_deploy_hooks_dir,
+                 config.renewal_post_hooks_dir,)
+    for hook_dir in hook_dirs:
+        util.make_or_verify_dir(hook_dir,
+                                uid=os.geteuid(),
+                                strict=config.strict_permissions)
 
 
 def set_displayer(config):

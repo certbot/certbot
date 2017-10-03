@@ -486,6 +486,25 @@ apply appropriate file permissions.
            esac
    done
 
+You can also specify hooks by placing files in subdirectories of Certbot's
+configuration directory. Assuming your configuration directory is
+``/etc/letsencrypt``, any executable files found in
+``/etc/letsencrypt/renewal-hooks/pre``,
+``/etc/letsencrypt/renewal-hooks/deploy``, and
+``/etc/letsencrypt/renewal-hooks/post`` will be run as pre, deploy, and post
+hooks respectively when any certificate is renewed with the ``renew``
+subcommand. These hooks are run in alphabetical order and are not run for other
+subcommands. (The order the hooks are run is determined by the byte value of
+the characters in their filenames and is not dependent on your locale.)
+
+Hooks specified in the command line, :ref:`configuration file
+<config-file>`, or :ref:`renewal configuration files <renewal-config-file>` are
+run as usual after running all hooks in these directories. One minor exception
+to this is if a hook specified elsewhere is simply the path to an executable
+file in the hook directory of the same type (e.g. your pre-hook is the path to
+an executable in ``/etc/letsencrypt/renewal-hooks/pre``), the file is not run a
+second time.
+
 More information about hooks can be found by running
 ``certbot --help renew``.
 
@@ -541,6 +560,8 @@ commands into your individual environment.
   If you write a custom script and expect to run a command only after a cert was actually renewed
   you will need to use the ``--post-hook`` since the exit status will be 0 both on successful renewal
   and when renewal is not necessary.
+
+.. _renewal-config-file:
 
 
 Modifying the Renewal Configuration File

@@ -1201,5 +1201,27 @@ class UnregisterTest(unittest.TestCase):
         self.assertFalse(cb_client.acme.deactivate_registration.called)
 
 
+class MakeOrVerifyNeededDirs(test_util.ConfigTestCase):
+    """Tests for certbot.main.make_or_verify_needed_dirs."""
+
+    @mock.patch("certbot.main.util")
+    def test_it(self, mock_util):
+        main.make_or_verify_needed_dirs(self.config)
+        for core_dir in (self.config.config_dir, self.config.work_dir,):
+            mock_util.set_up_core_dir.assert_any_call(
+                core_dir, constants.CONFIG_DIRS_MODE,
+                os.geteuid(), self.config.strict_permissions
+            )
+
+        hook_dirs = (self.config.renewal_pre_hooks_dir,
+                     self.config.renewal_deploy_hooks_dir,
+                     self.config.renewal_post_hooks_dir,)
+        for hook_dir in hook_dirs:
+            # default mode of 755 is used
+            mock_util.make_or_verify_dir.assert_any_call(
+                hook_dir, uid=os.geteuid(),
+                strict=self.config.strict_permissions)
+
+
 if __name__ == '__main__':
     unittest.main()  # pragma: no cover
