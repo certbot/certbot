@@ -2,6 +2,11 @@
 import pkg_resources
 from certbot import util
 
+from certbot.plugins import common
+
+from certbot_apache import override_debian
+from certbot_apache import override_centos
+
 CLI_DEFAULTS_DEFAULT = dict(
     server_root="/etc/apache2",
     vhost_root="/etc/apache2/sites-available",
@@ -17,6 +22,7 @@ CLI_DEFAULTS_DEFAULT = dict(
     handle_mods=False,
     handle_sites=False,
     challenge_location="/etc/apache2",
+    override_class=None,
     MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
         "certbot_apache", "options-ssl-apache.conf")
 )
@@ -35,6 +41,7 @@ CLI_DEFAULTS_DEBIAN = dict(
     handle_mods=True,
     handle_sites=True,
     challenge_location="/etc/apache2",
+    override_class=override_debian.Override,
     MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
         "certbot_apache", "options-ssl-apache.conf")
 )
@@ -53,6 +60,7 @@ CLI_DEFAULTS_CENTOS = dict(
     handle_mods=False,
     handle_sites=False,
     challenge_location="/etc/httpd/conf.d",
+    override_class=override_centos.Override,
     MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
         "certbot_apache", "centos-options-ssl-apache.conf")
 )
@@ -71,6 +79,7 @@ CLI_DEFAULTS_GENTOO = dict(
     handle_mods=False,
     handle_sites=False,
     challenge_location="/etc/apache2/vhosts.d",
+    override_class=None,
     MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
         "certbot_apache", "options-ssl-apache.conf")
 )
@@ -89,6 +98,7 @@ CLI_DEFAULTS_DARWIN = dict(
     handle_mods=False,
     handle_sites=False,
     challenge_location="/etc/apache2/other",
+    override_class=None,
     MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
         "certbot_apache", "options-ssl-apache.conf")
 )
@@ -107,6 +117,7 @@ CLI_DEFAULTS_SUSE = dict(
     handle_mods=False,
     handle_sites=False,
     challenge_location="/etc/apache2/vhosts.d",
+    override_class=None,
     MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
         "certbot_apache", "options-ssl-apache.conf")
 )
@@ -125,6 +136,7 @@ CLI_DEFAULTS_ARCH = dict(
     handle_mods=False,
     handle_sites=False,
     challenge_location="/etc/httpd/conf",
+    override_class=None,
     MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
         "certbot_apache", "options-ssl-apache.conf")
 )
@@ -192,6 +204,14 @@ UIR_ARGS = ["always", "set", "Content-Security-Policy",
 HEADER_ARGS = {"Strict-Transport-Security": HSTS_ARGS,
                "Upgrade-Insecure-Requests": UIR_ARGS}
 
+def install_ssl_options_conf(options_ssl, options_ssl_digest):
+    """Copy Certbot's SSL options file into the system's config dir if required."""
+
+    # XXX if we ever try to enforce a local privilege boundary (eg, running
+    # certbot for unprivileged users via setuid), this function will need
+    # to be modified.
+    return common.install_version_controlled_file(options_ssl, options_ssl_digest,
+        os_constant("MOD_SSL_CONF_SRC"), ALL_SSL_OPTIONS_HASHES)
 
 def os_constant(key):
     """
@@ -227,3 +247,30 @@ def os_like_constants():
             if os_name in CLI_DEFAULTS.keys():
                 return CLI_DEFAULTS[os_name]
     return {}
+
+def get_override(caller):
+    """
+    Initialize the override class and pass the caller class to it
+
+    :param caller: `class` of caller
+    :return: Override class or `None` if not found
+    """
+    override_class = os_constant("override_class")
+    if override_class:
+        return override_class(caller)
+    return None
+
+def override(method):
+    """Decorator for ApacheConfigurator for distribution specific method
+    overrides."""
+    def override_args(caller_class, *args, **kwargs):
+        """Check if distro specific class overrides called method, return
+        overriding method if found, in other case, return the default"""
+        try:
+            # Try to find overriding method
+            return getattr(caller_class.os_info,
+                           method.__name__)(*args, **kwargs)
+        except AttributeError:
+            # Override not found, return the default
+            return method(caller_class, *args, **kwargs)
+    return override_args

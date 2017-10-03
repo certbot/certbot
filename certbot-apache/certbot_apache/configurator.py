@@ -25,6 +25,7 @@ from certbot_apache import display_ops
 from certbot_apache import tls_sni_01
 from certbot_apache import obj
 from certbot_apache import parser
+from certbot_apache import apache_util
 
 from collections import defaultdict
 
@@ -122,6 +123,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         version = kwargs.pop("version", None)
         super(ApacheConfigurator, self).__init__(*args, **kwargs)
 
+        # Detect OS and store distro based override class here to avoid
+        # calling the detection code every time we need something. Also provides
+        # access to the configurator object for the override class.
+        self.os_info = constants.get_override(self)
+
         # Add name_server association dict
         self.assoc = dict()
         # Outstanding challenges
@@ -205,7 +211,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Get all of the available vhosts
         self.vhosts = self.get_virtual_hosts()
 
-        install_ssl_options_conf(self.mod_ssl_conf, self.updated_mod_ssl_conf_digest)
+        constants.install_ssl_options_conf(self.mod_ssl_conf,
+                                           self.updated_mod_ssl_conf_digest)
 
         # Prevent two Apache plugins from modifying a config at once
         try:
@@ -585,7 +592,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             if addr.get_port() == "443":
                 is_ssl = True
 
-        filename = get_file_path(self.aug.get("/augeas/files%s/path" % get_file_path(path)))
+        filename = apache_util.get_file_path(
+            self.aug.get("/augeas/files%s/path" % apache_util.get_file_path(path)))
         if filename is None:
             return None
 
@@ -624,7 +632,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 new_vhost = self._create_vhost(path)
                 if not new_vhost:
                     continue
-                internal_path = get_internal_aug_path(new_vhost.path)
+                internal_path = apache_util.get_internal_aug_path(new_vhost.path)
                 realpath = os.path.realpath(new_vhost.filep)
                 if realpath not in file_paths:
                     file_paths[realpath] = new_vhost.filep
@@ -640,7 +648,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                     for v in vhs:
                         if v.filep == file_paths[realpath]:
                             internal_paths[realpath].remove(
-                                get_internal_aug_path(v.path))
+                                apache_util.get_internal_aug_path(v.path))
                         else:
                             new_vhs.append(v)
                     vhs = new_vhs
@@ -1702,59 +1710,24 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         return redirects
 
-
+    @constants.override
     def enable_site(self, vhost):
-        """Enables an available site, Apache reload required.
-
-        .. note:: Does not make sure that the site correctly works or that all
-                  modules are enabled appropriately.
-
-        .. todo:: This function should number subdomains before the domain
-                  vhost
-
-        .. todo:: Make sure link is not broken...
-
-        :param vhost: vhost to enable
-        :type vhost: :class:`~certbot_apache.obj.VirtualHost`
-
-        :raises .errors.NotSupportedError: If filesystem layout is not
-            supported.
-
+        """Handles enabling the new VirtualHost if underlying OS uses such
+        configuration scheme. The implementation is distribution specific,
+        and handled in the distribution specific overrides.
         """
         if vhost.enabled:
             return
 
         # Handle non-debian systems
-        if not self.conf("handle-sites"):
-            if not self.parser.parsed_in_original(vhost.filep):
-                # Add direct include to root conf
-                self.parser.add_include(self.parser.loc["default"], vhost.filep)
-                vhost.enabled = True
-            return
-
-        enabled_path = ("%s/sites-enabled/%s" %
-                        (self.parser.root, os.path.basename(vhost.filep)))
-        self.reverter.register_file_creation(False, enabled_path)
-        try:
-            os.symlink(vhost.filep, enabled_path)
-        except OSError as err:
-            if os.path.islink(enabled_path) and os.path.realpath(
-               enabled_path) == vhost.filep:
-                # Already in shape
-                vhost.enabled = True
-                return
-            else:
-                logger.warning(
-                    "Could not symlink %s to %s, got error: %s", enabled_path,
-                    vhost.filep, err.strerror)
-                errstring = ("Encountered error while trying to enable a " +
-                             "newly created VirtualHost located at {0} by " +
-                             "linking to it from {1}")
-                raise errors.NotSupportedError(errstring.format(vhost.filep,
-                                                                enabled_path))
-        vhost.enabled = True
-        logger.info("Enabling available site: %s", vhost.filep)
-        self.save_notes += "Enabled site %s\n" % vhost.filep
+        if not self.parser.parsed_in_original(vhost.filep):
+            # Add direct include to root conf
+            logger.info("Enabling site %s by adding Include to root configuration",
+                        vhost.filep)
+            self.save_notes += "Enabled site %s\n" % vhost.filep
+            self.parser.add_include(self.parser.loc["default"], vhost.filep)
+            vhost.enabled = True
+        return
 
     def enable_mod(self, mod_name, temp=False):
         """Enables module in Apache.
@@ -1778,7 +1751,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 "Unsupported directory layout. You may try to enable mod %s "
                 "and try again." % mod_name)
 
-        deps = _get_mod_deps(mod_name)
+        deps = apache_util.get_mod_deps(mod_name)
 
         # Enable all dependencies
         for dep in deps:
@@ -1945,84 +1918,3 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             self.restart()
             self.parser.init_modules()
 
-
-def _get_mod_deps(mod_name):
-    """Get known module dependencies.
-
-    .. note:: This does not need to be accurate in order for the client to
-        run.  This simply keeps things clean if the user decides to revert
-        changes.
-    .. warning:: If all deps are not included, it may cause incorrect parsing
-        behavior, due to enable_mod's shortcut for updating the parser's
-        currently defined modules (`.ApacheConfigurator._add_parser_mod`)
-        This would only present a major problem in extremely atypical
-        configs that use ifmod for the missing deps.
-
-    """
-    deps = {
-        "ssl": ["setenvif", "mime"]
-    }
-    return deps.get(mod_name, [])
-
-
-def get_file_path(vhost_path):
-    """Get file path from augeas_vhost_path.
-
-    Takes in Augeas path and returns the file name
-
-    :param str vhost_path: Augeas virtual host path
-
-    :returns: filename of vhost
-    :rtype: str
-
-    """
-    if not vhost_path or not vhost_path.startswith("/files/"):
-        return None
-
-    return _split_aug_path(vhost_path)[0]
-
-
-def get_internal_aug_path(vhost_path):
-    """Get the Augeas path for a vhost with the file path removed.
-
-    :param str vhost_path: Augeas virtual host path
-
-    :returns: Augeas path to vhost relative to the containing file
-    :rtype: str
-
-    """
-    return _split_aug_path(vhost_path)[1]
-
-
-def _split_aug_path(vhost_path):
-    """Splits an Augeas path into a file path and an internal path.
-
-    After removing "/files", this function splits vhost_path into the
-    file path and the remaining Augeas path.
-
-    :param str vhost_path: Augeas virtual host path
-
-    :returns: file path and internal Augeas path
-    :rtype: `tuple` of `str`
-
-    """
-    # Strip off /files
-    file_path = vhost_path[6:]
-    internal_path = []
-
-    # Remove components from the end of file_path until it becomes valid
-    while not os.path.exists(file_path):
-        file_path, _, internal_path_part = file_path.rpartition("/")
-        internal_path.append(internal_path_part)
-
-    return file_path, "/".join(reversed(internal_path))
-
-
-def install_ssl_options_conf(options_ssl, options_ssl_digest):
-    """Copy Certbot's SSL options file into the system's config dir if required."""
-
-    # XXX if we ever try to enforce a local privilege boundary (eg, running
-    # certbot for unprivileged users via setuid), this function will need
-    # to be modified.
-    return common.install_version_controlled_file(options_ssl, options_ssl_digest,
-        constants.os_constant("MOD_SSL_CONF_SRC"), constants.ALL_SSL_OPTIONS_HASHES)
