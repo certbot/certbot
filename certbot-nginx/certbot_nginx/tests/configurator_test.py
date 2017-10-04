@@ -604,6 +604,12 @@ class NginxConfiguratorTest(util.NginxTest):
             "www.nomatch.com", "example/cert.pem", "example/key.pem",
             "example/chain.pem", "example/fullchain.pem")
 
+    def test_deploy_no_match_fail_multiple_defaults(self):
+        self.config.version = (1, 3, 1)
+        self.assertRaises(errors.MisconfigurationError, self.config.deploy_cert,
+            "www.nomatch.com", "example/cert.pem", "example/key.pem",
+            "example/chain.pem", "example/fullchain.pem")
+
     def test_deploy_no_match_add_redirect(self):
         default_conf = self.config.parser.abs_path('sites-enabled/default')
         foo_conf = self.config.parser.abs_path('foo.conf')

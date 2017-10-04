@@ -271,12 +271,19 @@ class NginxConfigurator(common.Installer):
     def _get_default_vhost(self):
         vhost_list = self.parser.get_vhosts()
         # if one has default_server set, return that one
+        default_vhosts = []
         for vhost in vhost_list:
             for addr in vhost.addrs:
                 if addr.default:
-                    return vhost
+                    default_vhosts.append(vhost)
 
-        raise errors.MisconfigurationError("No server blocks found in Nginx configuration.")
+        if len(default_vhosts) == 1:
+            return default_vhosts[0]
+
+        # TODO: present a list of vhosts for user to choose from
+
+        raise errors.MisconfigurationError("Could not automatically find a matching server"
+            " block. Set the `server_name` directive to use the Nginx installer.")
 
     def _get_ranked_matches(self, target_name):
         """Returns a ranked list of vhosts that match target_name.
