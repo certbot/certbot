@@ -271,14 +271,15 @@ class NginxConfigurator(common.Installer):
     def _get_default_vhost(self):
         vhost_list = self.parser.get_vhosts()
         # if one has default_server set, return that one
-        default_vhosts = []
+        default_vhosts = set()
         for vhost in vhost_list:
             for addr in vhost.addrs:
                 if addr.default:
-                    default_vhosts.append(vhost)
+                    default_vhosts.add(vhost)
+                    break
 
         if len(default_vhosts) == 1:
-            return default_vhosts[0]
+            return next(iter(default_vhosts))
 
         # TODO: present a list of vhosts for user to choose from
 
