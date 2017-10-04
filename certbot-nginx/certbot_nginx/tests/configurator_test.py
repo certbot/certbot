@@ -562,12 +562,14 @@ class NginxConfiguratorTest(util.NginxTest):
 
         self.assertEqual([[['server'],
                            [['listen', 'myhost', 'default_server'],
+                            ['listen', 'otherhost', 'default_server'],
                             ['server_name', 'www.example.org'],
                             [['location', '/'],
                              [['root', 'html'],
                               ['index', 'index.html', 'index.htm']]]]],
                           [['server'],
                            [['listen', 'myhost'],
+                            ['listen', 'otherhost'],
                             ['server_name', 'www.nomatch.com'],
                             [['location', '/'],
                              [['root', 'html'],
@@ -596,6 +598,7 @@ class NginxConfiguratorTest(util.NginxTest):
     def test_deploy_no_match_no_default_set(self):
         default_conf = self.config.parser.abs_path('sites-enabled/default')
         foo_conf = self.config.parser.abs_path('foo.conf')
+        del self.config.parser.parsed[default_conf][0][1][0]
         del self.config.parser.parsed[default_conf][0][1][0]
         del self.config.parser.parsed[foo_conf][2][1][0][1][0]
         self.config.version = (1, 3, 1)
