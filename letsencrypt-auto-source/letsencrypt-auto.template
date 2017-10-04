@@ -68,7 +68,7 @@ for arg in "$@" ; do
     --no-bootstrap)
       NO_BOOTSTRAP=1;;
     --pypi-mirror)
-      export PIP_INDEX_URL="https://pypi.doubanio.com/simple";;
+      export PIP_INDEX_URL="https://mirrors.ustc.edu.cn/pypi/web/simple";;
     --help)
       HELP=1;;
     --noninteractive|--non-interactive|renew)
