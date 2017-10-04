@@ -228,6 +228,8 @@ class NginxConfigurator(common.Installer):
             hostname. Currently we just ignore this.
 
         :param str target_name: domain name
+        :param bool raise_if_no_match: True iff not finding a match is an error;
+                                       otherwise, return None
 
         :returns: ssl vhost associated with name
         :rtype: :class:`~certbot_nginx.obj.VirtualHost`
