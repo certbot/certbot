@@ -56,11 +56,16 @@ optional arguments:
   -d DOMAIN, --domains DOMAIN, --domain DOMAIN
                         Domain names to apply. For multiple domains you can
                         use multiple -d flags or enter a comma separated list
-                        of domains as a parameter. The first provided domain
-                        will be used in some software user interfaces and file
-                        paths for the certificate and related material unless
+                        of domains as a parameter. The first domain provided
+                        will be the subject CN of the certificate, and all
+                        domains will be Subject Alternative Names on the
+                        certificate. The first domain will also be used in
+                        some software user interfaces and as the file paths
+                        for the certificate and related material unless
                         otherwise specified or you already have a certificate
-                        for the same domains. (default: Ask)
+                        with the same name. In the case of a name collision it
+                        will append a number like 0001 to the file path name.
+                        (default: Ask)
   --cert-name CERTNAME  Certificate name to apply. This name is used by
                         Certbot for housekeeping and in file paths; it doesn't
                         affect the content of the certificate itself. To see
@@ -102,7 +107,7 @@ optional arguments:
                         case, and to know when to deprecate support for past
                         Python versions and flags. If you wish to hide this
                         information from the Let's Encrypt server, set this to
-                        "". (default: CertbotACMEClient/0.18.2 (certbot;
+                        "". (default: CertbotACMEClient/0.19.0 (certbot;
                         Ubuntu 16.04.3 LTS) Authenticator/XXX Installer/YYY
                         (SUBCOMMAND; flags: FLAGS) Py/2.7.12). The flags
                         encoded in the user agent are: --duplicate, --force-
@@ -177,8 +182,7 @@ security:
                         Ask)
   --hsts                Add the Strict-Transport-Security header to every HTTP
                         response. Forcing browser to always use SSL for the
-                        domain. Defends against SSL Stripping. (default:
-                        False)
+                        domain. Defends against SSL Stripping. (default: None)
   --uir                 Add the "Content-Security-Policy: upgrade-insecure-
                         requests" header to every HTTP response. Forcing the
                         browser to use https:// for every http:// resource.
@@ -312,6 +316,8 @@ renew:
                         rather simplistic and fails if you use more advanced
                         shell constructs, so you can use this switch to
                         disable it. (default: False)
+  --no-directory-hooks  Disable running executables found in Certbot's hook
+                        directories during renewal. (default: False)
 
 certificates:
   List certificates managed by Certbot
@@ -446,7 +452,7 @@ apache:
                         Apache server root directory. (default: /etc/apache2)
   --apache-vhost-root APACHE_VHOST_ROOT
                         Apache server VirtualHost configuration root (default:
-                        /etc/apache2/sites-available)
+                        None)
   --apache-logs-root APACHE_LOGS_ROOT
                         Apache server logs directory (default:
                         /var/log/apache2)
