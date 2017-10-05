@@ -2,7 +2,7 @@
 
 set -o errexit
 
-./tests/boulder-fetch.sh
+travis_retry ./tests/boulder-fetch.sh
 
 source .tox/$TOXENV/bin/activate
 
