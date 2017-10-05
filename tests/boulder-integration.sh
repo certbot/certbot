@@ -326,7 +326,7 @@ CheckDirHooks 5
 # test with overlapping directory hooks on the command line
 common renew --cert-name le2.wtf \
     --pre-hook "$renewal_dir_pre_hook" \
-    --renew-hook "$renewal_dir_deploy_hook" \
+    --deploy-hook "$renewal_dir_deploy_hook" \
     --post-hook "$renewal_dir_post_hook"
 CheckDirHooks 1
 
