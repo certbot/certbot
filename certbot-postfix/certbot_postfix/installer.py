@@ -101,7 +101,7 @@ class Installer(plugins_common.Installer):
         :raises errors.NotSupportedError: if the version is unsupported
 
         """
-        if self._get_version() < (2, 11, 0):
+        if self._get_version() < (2, 6,):
             raise errors.NotSupportedError('Postfix version is too old')
 
     def _lock_config_dir(self):
