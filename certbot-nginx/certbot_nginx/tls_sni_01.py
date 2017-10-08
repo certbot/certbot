@@ -67,7 +67,7 @@ class NginxTlsSni01(common.TLSSNI01):
             else:
                 if ipv6info[0]:
                     # If IPv6 is active in Nginx configuration
-                    ipv6_addr = "[::]:{} ssl".format(
+                    ipv6_addr = "[::]:{0} ssl".format(
                         self.configurator.config.tls_sni_01_port)
                     if not ipv6info[1]:
                         # If ipv6only=on is not already present in the config

@@ -477,7 +477,7 @@ class NginxConfigurator(common.Installer):
             ipv6_block = ['\n    ',
                             'listen',
                             ' ',
-                            '[::]:{} ssl'.format(self.config.tls_sni_01_port)]
+                            '[::]:{0} ssl'.format(self.config.tls_sni_01_port)]
             if not ipv6info[1]:
                 # ipv6only=on is absent in global config
                 ipv6_block.append(' ')

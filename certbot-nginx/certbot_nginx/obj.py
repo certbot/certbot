@@ -35,6 +35,7 @@ class Addr(common.Addr):
     CANONICAL_UNSPECIFIED_ADDRESS = UNSPECIFIED_IPV4_ADDRESSES[0]
 
     def __init__(self, host, port, ssl, default, ipv6, ipv6only):
+        # pylint: disable=too-many-arguments
         super(Addr, self).__init__((host, port))
         self.ssl = ssl
         self.default = default

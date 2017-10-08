@@ -110,7 +110,8 @@ class NginxParserTest(util.NginxTest): #pylint: disable=too-many-public-methods
         vhosts = nparser.get_vhosts()
 
         vhost = obj.VirtualHost(nparser.abs_path('sites-enabled/globalssl.com'),
-                                [obj.Addr('4.8.2.6', '57', True, False)],
+                                [obj.Addr('4.8.2.6', '57', True, False,
+                                          False, False)],
                                 True, True, set(['globalssl.com']), [], [0])
 
         globalssl_com = [x for x in vhosts if 'globalssl.com' in x.filep][0]
@@ -121,29 +122,35 @@ class NginxParserTest(util.NginxTest): #pylint: disable=too-many-public-methods
         vhosts = nparser.get_vhosts()
 
         vhost1 = obj.VirtualHost(nparser.abs_path('nginx.conf'),
-                                 [obj.Addr('', '8080', False, False)],
+                                 [obj.Addr('', '8080', False, False,
+                                           False, False)],
                                  False, True,
                                  set(['localhost',
                                       r'~^(www\.)?(example|bar)\.']),
                                  [], [10, 1, 9])
         vhost2 = obj.VirtualHost(nparser.abs_path('nginx.conf'),
-                                 [obj.Addr('somename', '8080', False, False),
-                                  obj.Addr('', '8000', False, False)],
+                                 [obj.Addr('somename', '8080', False, False,
+                                           False, False),
+                                  obj.Addr('', '8000', False, False,
+                                           False, False)],
                                  False, True,
                                  set(['somename', 'another.alias', 'alias']),
                                  [], [10, 1, 12])
         vhost3 = obj.VirtualHost(nparser.abs_path('sites-enabled/example.com'),
                                  [obj.Addr('69.50.225.155', '9000',
-                                           False, False),
-                                  obj.Addr('127.0.0.1', '', False, False)],
+                                           False, False, False, False),
+                                  obj.Addr('127.0.0.1', '', False, False,
+                                           False, False)],
                                  False, True,
                                  set(['.example.com', 'example.*']), [], [0])
         vhost4 = obj.VirtualHost(nparser.abs_path('sites-enabled/default'),
-                                 [obj.Addr('myhost', '', False, True)],
+                                 [obj.Addr('myhost', '', False, True,
+                                           False, False)],
                                  False, True, set(['www.example.org']),
                                  [], [0])
         vhost5 = obj.VirtualHost(nparser.abs_path('foo.conf'),
-                                 [obj.Addr('*', '80', True, True)],
+                                 [obj.Addr('*', '80', True, True,
+                                           False, False)],
                                  True, True, set(['*.www.foo.com',
                                                   '*.www.example.com']),
                                  [], [2, 1, 0])
