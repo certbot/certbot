@@ -247,6 +247,24 @@ class NginxConfigurator(common.Installer):
 
         return vhost
 
+    def ipv6_info(self):
+        """Returns tuple of booleans (ipv6_active, ipv6only_present)
+        ipv6_active is true if any server block has an active ipv6 address.
+        ipv6only_present is true if ipv6only=on option exists in configuration.
+
+        :rtype: tuple of type (bool, bool)
+        """
+        vhosts = self.parser.get_vhosts()
+        ipv6_active = False
+        ipv6only_present = False
+        for vh in vhosts:
+            for addr in vh.addrs:
+                if addr.ipv6:
+                    ipv6_active = True
+                if addr.ipv6only:
+                    ipv6only_present = True
+        return (ipv6_active, ipv6only_present)
+
     def _get_ranked_matches(self, target_name):
         """Returns a ranked list of vhosts that match target_name.
         The ranking gives preference to SSL vhosts.
@@ -405,9 +423,12 @@ class NginxConfigurator(common.Installer):
                     all_names.add(host)
                 elif not common.private_ips_regex.match(host):
                     # If it isn't a private IP, do a reverse DNS lookup
-                    # TODO: IPv6 support
                     try:
-                        socket.inet_aton(host)
+                        if addr.ipv6:
+                            host = addr.get_ipv6_exploded()
+                            socket.inet_pton(socket.AF_INET6, host)
+                        else:
+                            socket.inet_pton(socket.AF_INET, host)
                         all_names.add(socket.gethostbyaddr(host)[0])
                     except (socket.error, socket.herror, socket.timeout):
                         continue
@@ -443,15 +464,29 @@ class NginxConfigurator(common.Installer):
         :type vhost: :class:`~certbot_nginx.obj.VirtualHost`
 
         """
+        ipv6info = self.ipv6_info()
+
         # If the vhost was implicitly listening on the default Nginx port,
         # have it continue to do so.
         if len(vhost.addrs) == 0:
             listen_block = [['\n    ', 'listen', ' ', self.DEFAULT_LISTEN_PORT]]
             self.parser.add_server_directives(vhost, listen_block, replace=False)
 
+        ipv6_block = ['']
+        if vhost.ipv6_enabled():
+            ipv6_block = ['\n    ',
+                            'listen',
+                            ' ',
+                            '[::]:{} ssl'.format(self.config.tls_sni_01_port)]
+            if not ipv6info[1]:
+                # ipv6only=on is absent in global config
+                ipv6_block.append(' ')
+                ipv6_block.append('ipv6only=on')
+
         snakeoil_cert, snakeoil_key = self._get_snakeoil_paths()
 
         ssl_block = ([
+            ipv6_block,
             ['\n    ', 'listen', ' ', '{0} ssl'.format(self.config.tls_sni_01_port)],
             ['\n    ', 'ssl_certificate', ' ', snakeoil_cert],
             ['\n    ', 'ssl_certificate_key', ' ', snakeoil_key],
