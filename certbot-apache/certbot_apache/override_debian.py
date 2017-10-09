@@ -19,16 +19,11 @@ class Override(object):
         """
         self.config = config
 
-    def enable_site(self, vhost):
+    def enable_site(self, caller, vhost):
         """Enables an available site, Apache reload required.
 
         .. note:: Does not make sure that the site correctly works or that all
                   modules are enabled appropriately.
-
-        .. todo:: This function should number subdomains before the domain
-                  vhost
-
-        .. todo:: Make sure link is not broken...
 
         :param vhost: vhost to enable
         :type vhost: :class:`~certbot_apache.obj.VirtualHost`
@@ -43,6 +38,10 @@ class Override(object):
         enabled_path = ("%s/sites-enabled/%s" %
                         (self.config.parser.root,
                          os.path.basename(vhost.filep)))
+        if not os.path.isdir(os.path.dirname(enabled_path)):
+            # For some reason, sites-enabled / sites-available do not exist
+            # Call the original caller method
+            caller["method"](caller["class"], vhost)
         self.config.reverter.register_file_creation(False, enabled_path)
         try:
             os.symlink(vhost.filep, enabled_path)
@@ -65,7 +64,8 @@ class Override(object):
         logger.info("Enabling available site: %s", vhost.filep)
         self.config.save_notes += "Enabled site %s\n" % vhost.filep
 
-    def enable_mod(self, mod_name, temp=False):
+    def enable_mod(self, caller, mod_name, temp=False):
+        # pylint: disable=unused-argument
         """Enables module in Apache.
 
         Both enables and reloads Apache so module is active.
@@ -87,6 +87,7 @@ class Override(object):
                 "and try again." % mod_name)
 
         deps = apache_util.get_mod_deps(mod_name)
+
         # Enable all dependencies
         for dep in deps:
             if (dep + "_module") not in self.config.parser.modules:

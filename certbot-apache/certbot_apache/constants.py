@@ -268,8 +268,9 @@ def override(method):
         overriding method if found, in other case, return the default"""
         try:
             # Try to find overriding method
+            caller = {"class": caller_class, "method": method}
             return getattr(caller_class.os_info,
-                           method.__name__)(*args, **kwargs)
+                           method.__name__)(caller, *args, **kwargs)
         except AttributeError:
             # Override not found, return the default
             return method(caller_class, *args, **kwargs)

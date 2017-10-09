@@ -1712,14 +1712,23 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
     @constants.override
     def enable_site(self, vhost):
-        """Handles enabling the new VirtualHost if underlying OS uses such
-        configuration scheme. The implementation is distribution specific,
-        and handled in the distribution specific overrides.
+        """Enables an available site, Apache reload required.
+
+        .. note:: Does not make sure that the site correctly works or that all
+                  modules are enabled appropriately.
+        .. note:: The distribution specific override replaces functionality
+                  of this method where available.
+
+        :param vhost: vhost to enable
+        :type vhost: :class:`~certbot_apache.obj.VirtualHost`
+
+        :raises .errors.NotSupportedError: If filesystem layout is not
+            supported.
+
         """
         if vhost.enabled:
             return
 
-        # Handle non-debian systems
         if not self.parser.parsed_in_original(vhost.filep):
             # Add direct include to root conf
             logger.info("Enabling site %s by adding Include to root configuration",
@@ -1729,7 +1738,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             vhost.enabled = True
         return
 
-    def enable_mod(self, mod_name, temp=False):
+    @constants.override
+    def enable_mod(self, mod_name, temp=False): # pylint: disable=unused-argument
         """Enables module in Apache.
 
         Both enables and reloads Apache so module is active.
@@ -1737,64 +1747,25 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :param str mod_name: Name of the module to enable. (e.g. 'ssl')
         :param bool temp: Whether or not this is a temporary action.
 
+        .. note:: The distribution specific override replaces functionality
+                  of this method where available.
+
         :raises .errors.NotSupportedError: If the filesystem layout is not
             supported.
         :raises .errors.MisconfigurationError: If a2enmod or a2dismod cannot be
             run.
 
         """
-        # Support Debian specific setup
-        avail_path = os.path.join(self.parser.root, "mods-available")
-        enabled_path = os.path.join(self.parser.root, "mods-enabled")
-        if not os.path.isdir(avail_path) or not os.path.isdir(enabled_path):
-            raise errors.NotSupportedError(
-                "Unsupported directory layout. You may try to enable mod %s "
-                "and try again." % mod_name)
+        mod_message = ("Apache needs to have module  \"{0}\" active for the " +
+            "requested installation options. Unfortunately Certbot is unable " +
+            "to install or enable it for you. Please install the module, and " +
+            "run Certbot again.")
+        raise errors.MisconfigurationError(mod_message.format(mod_name))
 
-        deps = apache_util.get_mod_deps(mod_name)
-
-        # Enable all dependencies
-        for dep in deps:
-            if (dep + "_module") not in self.parser.modules:
-                self._enable_mod_debian(dep, temp)
-                self._add_parser_mod(dep)
-
-                note = "Enabled dependency of %s module - %s" % (mod_name, dep)
-                if not temp:
-                    self.save_notes += note + os.linesep
-                logger.debug(note)
-
-        # Enable actual module
-        self._enable_mod_debian(mod_name, temp)
-        self._add_parser_mod(mod_name)
-
-        if not temp:
-            self.save_notes += "Enabled %s module in Apache\n" % mod_name
-        logger.info("Enabled Apache %s module", mod_name)
-
-        # Modules can enable additional config files. Variables may be defined
-        # within these new configuration sections.
-        # Reload is not necessary as DUMP_RUN_CFG uses latest config.
-        self.parser.update_runtime_variables()
-
-    def _add_parser_mod(self, mod_name):
+    def add_parser_mod(self, mod_name):
         """Shortcut for updating parser modules."""
         self.parser.modules.add(mod_name + "_module")
         self.parser.modules.add("mod_" + mod_name + ".c")
-
-    def _enable_mod_debian(self, mod_name, temp):
-        """Assumes mods-available, mods-enabled layout."""
-        # Generate reversal command.
-        # Try to be safe here... check that we can probably reverse before
-        # applying enmod command
-        if not util.exe_exists(self.conf("dismod")):
-            raise errors.MisconfigurationError(
-                "Unable to find a2dismod, please make sure a2enmod and "
-                "a2dismod are configured correctly for certbot.")
-
-        self.reverter.register_undo_command(
-            temp, [self.conf("dismod"), mod_name])
-        util.run_script([self.conf("enmod"), mod_name])
 
     def restart(self):
         """Runs a config test and reloads the Apache server.

@@ -347,7 +347,10 @@ class MultipleVhostsTest(util.ApacheTest):
     def test_enable_mod_nonexistent(self):
         from certbot_apache import override_centos
         self.config.os_info = override_centos.Override(self.config)
-        self.assertEqual(self.config.enable_mod("ssl"), None)
+        self.assertRaises(
+            errors.MisconfigurationError,
+            self.config.enable_mod,
+            "whatever")
 
     def test_enable_site_already_enabled(self):
         self.assertTrue(self.vh_truth[1].enabled)
@@ -366,28 +369,22 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertEqual(self.config.enable_site(self.vh_truth[1]), None)
 
     def test_enable_site_nondebian(self):
-        mock_c = "certbot_apache.configurator.ApacheConfigurator.conf"
-        def conf_side_effect(arg):
-            """ Mock function for ApacheConfigurator.conf """
-            confvars = {"handle-sites": False}
-            if arg in confvars:
-                return confvars[arg]
+        from certbot_apache import override_centos
+        self.config.os_info = override_centos.Override(self.config)
         inc_path = "/path/to/whereever"
         vhost = self.vh_truth[0]
-        with mock.patch(mock_c) as mock_conf:
-            mock_conf.side_effect = conf_side_effect
-            vhost.enabled = False
-            vhost.filep = inc_path
-            self.assertFalse(self.config.parser.find_dir("Include", inc_path))
-            self.assertFalse(
-                os.path.dirname(inc_path) in self.config.parser.existing_paths)
-            self.config.enable_site(vhost)
-            self.assertTrue(self.config.parser.find_dir("Include", inc_path))
-            self.assertTrue(
-                os.path.dirname(inc_path) in self.config.parser.existing_paths)
-            self.assertTrue(
-                os.path.basename(inc_path) in self.config.parser.existing_paths[
-                    os.path.dirname(inc_path)])
+        vhost.enabled = False
+        vhost.filep = inc_path
+        self.assertFalse(self.config.parser.find_dir("Include", inc_path))
+        self.assertFalse(
+            os.path.dirname(inc_path) in self.config.parser.existing_paths)
+        self.config.enable_site(vhost)
+        self.assertTrue(self.config.parser.find_dir("Include", inc_path))
+        self.assertTrue(
+            os.path.dirname(inc_path) in self.config.parser.existing_paths)
+        self.assertTrue(
+            os.path.basename(inc_path) in self.config.parser.existing_paths[
+                os.path.dirname(inc_path)])
 
     def test_deploy_cert_enable_new_vhost(self):
         # Create
@@ -478,25 +475,19 @@ class MultipleVhostsTest(util.ApacheTest):
 
     def test_deploy_cert_not_parsed_path(self):
         # Make sure that we add include to root config for vhosts when
-        # handle-sites is false
+        # running Debian, but missing sites-enabled structure
         self.config.parser.modules.add("ssl_module")
         self.config.parser.modules.add("mod_ssl.c")
         tmp_path = os.path.realpath(tempfile.mkdtemp("vhostroot"))
         os.chmod(tmp_path, 0o755)
         mock_p = "certbot_apache.configurator.ApacheConfigurator._get_ssl_vhost_path"
         mock_a = "certbot_apache.parser.ApacheParser.add_include"
-        mock_c = "certbot_apache.configurator.ApacheConfigurator.conf"
-        orig_conf = self.config.conf
-        def conf_side_effect(arg):
-            """ Mock function for ApacheConfigurator.conf """
-            confvars = {"handle-sites": False}
-            if arg in confvars:
-                return confvars[arg]
-            else:
-                return orig_conf("arg")
 
-        with mock.patch(mock_c) as mock_conf:
-            mock_conf.side_effect = conf_side_effect
+        from certbot_apache import override_debian
+        self.config.os_info = override_debian.Override(self.config)
+
+        with mock.patch("os.path.isdir") as mock_osp:
+            mock_osp.return_value = False
             with mock.patch(mock_p) as mock_path:
                 mock_path.return_value = os.path.join(tmp_path, "whatever.conf")
                 with mock.patch(mock_a) as mock_add:
