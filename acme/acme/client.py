@@ -584,14 +584,13 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
             "alg": self.alg,
             "nonce": nonce
         }
-        # New ACME spec
-        kwargs["url"] = url
         if self.account is not None:
+            # new ACME spec
             kwargs["kid"] = self.account.uri
             kwargs["url"] = url
             kwargs["key"] = self.key
         else:
-            # old-style ACME spec
+            # old ACME spec
             kwargs["key"] = self.key
         return jws.JWS.sign(jobj, **kwargs).json_dumps(indent=2)
 
