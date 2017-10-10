@@ -11,6 +11,7 @@ from certbot.tests import util as certbot_test_util
 
 
 class InstallerTest(certbot_test_util.ConfigTestCase):
+    # pylint: disable=too-many-public-methods
 
     def setUp(self):
         super(InstallerTest, self).setUp()
@@ -128,6 +129,14 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
         deploy_cert("mail.example.org")
 
     def test_deploy_and_save(self):
+        self._test_deploy_and_save_common({"smtpd_tls_security_level": "may"})
+
+    def test_deploy_and_save2(self):
+        self.mock_postfix.set_value("smtpd_tls_security_level", "encrypt")
+        self._test_deploy_and_save_common({"smtpd_tls_security_level":
+                                           "encrypt"})
+
+    def _test_deploy_and_save_common(self, expected_config):
         key_path = "key_path"
         fullchain_path = "fullchain_path"
         installer = self._create_prepared_installer()
@@ -142,9 +151,8 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
             else:
                 self._mock_postfix_and_call(installer.save, "real save")
 
-        expected_config = {"smtpd_tls_cert_file": fullchain_path,
-                           "smtpd_tls_key_file": key_path,
-                           "smtpd_tls_security_level": "may"}
+        expected_config.setdefault("smtpd_tls_cert_file", fullchain_path)
+        expected_config.setdefault("smtpd_tls_key_file", key_path)
         for key, value in expected_config.items():
             self.assertEqual(self.mock_postfix.get_value(key), value)
 
