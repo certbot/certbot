@@ -144,7 +144,7 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
 
         expected_config = {"smtpd_tls_cert_file": fullchain_path,
                            "smtpd_tls_key_file": key_path,
-                           "smtpd_use_tls": "yes"}
+                           "smtpd_tls_security_level": "may"}
         for key, value in expected_config.items():
             self.assertEqual(self.mock_postfix.get_value(key), value)
 

@@ -176,7 +176,10 @@ class Installer(plugins_common.Installer):
         self._set_config_var("smtpd_tls_key_file", key_path)
         self._set_config_var("smtpd_tls_mandatory_protocols", "!SSLv2, !SSLv3")
         self._set_config_var("smtpd_tls_protocols", "!SSLv2, !SSLv3")
-        self._set_config_var("smtpd_use_tls", "yes")
+
+        # Don't configure opportunistic TLS if it's currently mandatory
+        if self._get_config_var("smtpd_tls_security_level") != "encrypt":
+            self._set_config_var("smtpd_tls_security_level", "may")
 
     def enhance(self, domain, enhancement, options=None):
         """Raises an exception for request for unsupported enhancement.
