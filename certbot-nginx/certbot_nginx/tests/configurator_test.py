@@ -46,7 +46,7 @@ class NginxConfiguratorTest(util.NginxTest):
 
     def test_prepare(self):
         self.assertEqual((1, 6, 2), self.config.version)
-        self.assertEqual(8, len(self.config.parser.parsed))
+        self.assertEqual(9, len(self.config.parser.parsed))
 
     @mock.patch("certbot_nginx.configurator.util.exe_exists")
     @mock.patch("certbot_nginx.configurator.subprocess.Popen")
@@ -90,7 +90,7 @@ class NginxConfiguratorTest(util.NginxTest):
         self.assertEqual(names, set(
             ["155.225.50.69.nephoscale.net", "www.example.org", "another.alias",
              "migration.com", "summer.com", "geese.com", "sslon.com",
-             "globalssl.com", "globalsslsetssl.com"]))
+             "globalssl.com", "globalsslsetssl.com", "ipv6.com"]))
 
     def test_supported_enhancements(self):
         self.assertEqual(['redirect', 'staple-ocsp'],
@@ -132,6 +132,7 @@ class NginxConfiguratorTest(util.NginxTest):
         server_conf = set(['somename', 'another.alias', 'alias'])
         example_conf = set(['.example.com', 'example.*'])
         foo_conf = set(['*.www.foo.com', '*.www.example.com'])
+        ipv6_conf = set(['ipv6.com'])
 
         results = {'localhost': localhost_conf,
                    'alias': server_conf,
@@ -140,7 +141,8 @@ class NginxConfiguratorTest(util.NginxTest):
                    'www.example.com': example_conf,
                    'test.www.example.com': foo_conf,
                    'abc.www.foo.com': foo_conf,
-                   'www.bar.co.uk': localhost_conf}
+                   'www.bar.co.uk': localhost_conf,
+                   'ipv6.com': ipv6_conf}
 
         conf_path = {'localhost': "etc_nginx/nginx.conf",
                    'alias': "etc_nginx/nginx.conf",
@@ -149,7 +151,8 @@ class NginxConfiguratorTest(util.NginxTest):
                    'www.example.com': "etc_nginx/sites-enabled/example.com",
                    'test.www.example.com': "etc_nginx/foo.conf",
                    'abc.www.foo.com': "etc_nginx/foo.conf",
-                   'www.bar.co.uk': "etc_nginx/nginx.conf"}
+                   'www.bar.co.uk': "etc_nginx/nginx.conf",
+                   'ipv6.com': "etc_nginx/sites-enabled/ipv6.com"}
 
         bad_results = ['www.foo.com', 'example', 't.www.bar.co',
                        '69.255.225.155']
@@ -160,10 +163,23 @@ class NginxConfiguratorTest(util.NginxTest):
 
             self.assertEqual(results[name], vhost.names)
             self.assertEqual(conf_path[name], path)
+            # IPv6 specific checks
+            if name == "ipv6.com":
+                self.assertTrue(vhost.ipv6_enabled())
+                # Make sure that we have SSL enabled also for IPv6 addr
+                self.assertTrue(
+                    any([True for x in vhost.addrs if x.ssl and x.ipv6]))
 
         for name in bad_results:
             self.assertRaises(errors.MisconfigurationError,
                               self.config.choose_vhost, name)
+
+    def test_ipv6only(self):
+        # ipv6_info: (ipv6_active, ipv6only_present)
+        self.assertEquals((True, False), self.config.ipv6_info())
+        self.config.choose_vhost("ipv6.com")
+        # We wrote ipv6_info to the SSL listen directives
+        self.assertEquals((True, True), self.config.ipv6_info())
 
     def test_more_info(self):
         self.assertTrue('nginx.conf' in self.config.more_info())
