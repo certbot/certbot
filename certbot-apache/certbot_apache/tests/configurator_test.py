@@ -41,6 +41,9 @@ class MultipleVhostsTest(util.ApacheTest):
             """Mock default vhost path"""
             if key == "vhost_root":
                 return vhost_path
+            elif key == "override_class":
+                from certbot_apache import override_debian
+                return override_debian.Override
             else:
                 return orig_os_constant(key)
 
@@ -482,9 +485,6 @@ class MultipleVhostsTest(util.ApacheTest):
         os.chmod(tmp_path, 0o755)
         mock_p = "certbot_apache.configurator.ApacheConfigurator._get_ssl_vhost_path"
         mock_a = "certbot_apache.parser.ApacheParser.add_include"
-
-        from certbot_apache import override_debian
-        self.config.os_info = override_debian.Override(self.config)
 
         with mock.patch("os.path.isdir") as mock_osp:
             mock_osp.return_value = False
