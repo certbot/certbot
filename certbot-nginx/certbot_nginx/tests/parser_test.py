@@ -51,7 +51,8 @@ class NginxParserTest(util.NginxTest): #pylint: disable=too-many-public-methods
                                'sites-enabled/migration.com',
                                'sites-enabled/sslon.com',
                                'sites-enabled/globalssl.com',
-                               'sites-enabled/ipv6.com']]),
+                               'sites-enabled/ipv6.com',
+                               'sites-enabled/ipv6ssl.com']]),
                          set(nparser.parsed.keys()))
         self.assertEqual([['server_name', 'somename', 'alias', 'another.alias']],
                          nparser.parsed[nparser.abs_path('server.conf')])
@@ -75,7 +76,7 @@ class NginxParserTest(util.NginxTest): #pylint: disable=too-many-public-methods
         parsed = nparser._parse_files(nparser.abs_path(
             'sites-enabled/example.com.test'))
         self.assertEqual(3, len(glob.glob(nparser.abs_path('*.test'))))
-        self.assertEqual(6, len(
+        self.assertEqual(7, len(
             glob.glob(nparser.abs_path('sites-enabled/*.test'))))
         self.assertEqual([[['server'], [['listen', '69.50.225.155:9000'],
                                         ['listen', '127.0.0.1'],
@@ -156,7 +157,7 @@ class NginxParserTest(util.NginxTest): #pylint: disable=too-many-public-methods
                                                   '*.www.example.com']),
                                  [], [2, 1, 0])
 
-        self.assertEqual(11, len(vhosts))
+        self.assertEqual(12, len(vhosts))
         example_com = [x for x in vhosts if 'example.com' in x.filep][0]
         self.assertEqual(vhost3, example_com)
         default = [x for x in vhosts if 'default' in x.filep][0]

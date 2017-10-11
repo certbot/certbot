@@ -51,7 +51,8 @@ class NginxTlsSni01(common.TLSSNI01):
         default_addr = "{0} ssl".format(
             self.configurator.config.tls_sni_01_port)
 
-        ipv6info = self.configurator.ipv6_info()
+        ipv6info = self.configurator.ipv6_info(
+            self.configurator.config.tls_sni_01_port)
 
         for achall in self.achalls:
             vhost = self.configurator.choose_vhost(achall.domain)

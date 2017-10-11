@@ -247,11 +247,17 @@ class NginxConfigurator(common.Installer):
 
         return vhost
 
-    def ipv6_info(self):
+    def ipv6_info(self, port):
         """Returns tuple of booleans (ipv6_active, ipv6only_present)
-        ipv6_active is true if any server block has an active ipv6 address.
-        ipv6only_present is true if ipv6only=on option exists in configuration.
+        ipv6_active is true if any server block listens ipv6 address in any port
 
+        ipv6only_present is true if ipv6only=on option exists in any server
+        block ipv6 listen directive for the specified port.
+
+        :param str port: Port to check ipv6only=on directive for
+
+        :returns: Tuple containing information if IPv6 is enabled in the global
+            configuration, and existence of ipv6only directive for specified port
         :rtype: tuple of type (bool, bool)
         """
         vhosts = self.parser.get_vhosts()
@@ -261,7 +267,7 @@ class NginxConfigurator(common.Installer):
             for addr in vh.addrs:
                 if addr.ipv6:
                     ipv6_active = True
-                if addr.ipv6only:
+                if addr.ipv6only and addr.get_port() == port:
                     ipv6only_present = True
         return (ipv6_active, ipv6only_present)
 
@@ -464,7 +470,7 @@ class NginxConfigurator(common.Installer):
         :type vhost: :class:`~certbot_nginx.obj.VirtualHost`
 
         """
-        ipv6info = self.ipv6_info()
+        ipv6info = self.ipv6_info(self.config.tls_sni_01_port)
 
         # If the vhost was implicitly listening on the default Nginx port,
         # have it continue to do so.

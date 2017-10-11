@@ -46,7 +46,7 @@ class NginxConfiguratorTest(util.NginxTest):
 
     def test_prepare(self):
         self.assertEqual((1, 6, 2), self.config.version)
-        self.assertEqual(9, len(self.config.parser.parsed))
+        self.assertEqual(10, len(self.config.parser.parsed))
 
     @mock.patch("certbot_nginx.configurator.util.exe_exists")
     @mock.patch("certbot_nginx.configurator.subprocess.Popen")
@@ -90,7 +90,7 @@ class NginxConfiguratorTest(util.NginxTest):
         self.assertEqual(names, set(
             ["155.225.50.69.nephoscale.net", "www.example.org", "another.alias",
              "migration.com", "summer.com", "geese.com", "sslon.com",
-             "globalssl.com", "globalsslsetssl.com", "ipv6.com"]))
+             "globalssl.com", "globalsslsetssl.com", "ipv6.com", "ipv6ssl.com"]))
 
     def test_supported_enhancements(self):
         self.assertEqual(['redirect', 'staple-ocsp'],
@@ -176,10 +176,10 @@ class NginxConfiguratorTest(util.NginxTest):
 
     def test_ipv6only(self):
         # ipv6_info: (ipv6_active, ipv6only_present)
-        self.assertEquals((True, False), self.config.ipv6_info())
-        self.config.choose_vhost("ipv6.com")
-        # We wrote ipv6_info to the SSL listen directives
-        self.assertEquals((True, True), self.config.ipv6_info())
+        self.assertEquals((True, False), self.config.ipv6_info("80"))
+        # Port 443 has ipv6only=on because of ipv6ssl.com vhost
+        self.assertEquals((True, True), self.config.ipv6_info("443"))
+
 
     def test_more_info(self):
         self.assertTrue('nginx.conf' in self.config.more_info())
