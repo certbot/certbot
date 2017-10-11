@@ -96,7 +96,7 @@ class AuthenticatorTest(unittest.TestCase):
     @test_util.patch_get_utility()
     def test_new_webroot(self, mock_get_utility):
         self.config.webroot_path = []
-        self.config.webroot_map = {}
+        self.config.webroot_map = {"something.com": self.path}
 
         mock_display = mock_get_utility()
         mock_display.menu.return_value = (display_util.OK, 0,)
@@ -107,6 +107,19 @@ class AuthenticatorTest(unittest.TestCase):
             self.auth.perform([self.achall])
 
         self.assertEqual(self.config.webroot_map[self.achall.domain], self.path)
+
+    @test_util.patch_get_utility()
+    def test_new_webroot_empty_map_cancel(self, mock_get_utility):
+        self.config.webroot_path = []
+        self.config.webroot_map = {}
+
+        mock_display = mock_get_utility()
+        mock_display.menu.return_value = (display_util.OK, 0,)
+        with mock.patch('certbot.display.ops.validated_directory') as m:
+            m.return_value = (display_util.CANCEL, -1)
+            self.assertRaises(errors.PluginError,
+                              self.auth.perform,
+                              [self.achall])
 
     def test_perform_missing_root(self):
         self.config.webroot_path = None
