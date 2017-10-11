@@ -115,7 +115,7 @@ class NginxTlsSni01(common.TLSSNI01):
                 break
         if not included:
             raise errors.MisconfigurationError(
-                'LetsEncrypt could not find an HTTP block to include '
+                'Certbot could not find an HTTP block to include '
                 'TLS-SNI-01 challenges in %s.' % root)
 
         config = [self._make_server_block(pair[0], pair[1])
