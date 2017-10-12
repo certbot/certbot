@@ -324,7 +324,7 @@ class ChallengeBody(ResourceBody):
     :ivar messages.Error error:
 
     """
-    __slots__ = ('chall',)
+    __slots__ = ('chall', '_use_url')
     uri = jose.Field('uri')
     status = jose.Field('status', decoder=Status.from_json,
                         omitempty=True, default=STATUS_PENDING)
@@ -334,13 +334,23 @@ class ChallengeBody(ResourceBody):
 
     def to_partial_json(self):
         jobj = super(ChallengeBody, self).to_partial_json()
+        import ipdb; ipdb.set_trace()
+        if self._use_url:
+            jobj['url'] = jobj['uri']
+            del jobj['uri']
         jobj.update(self.chall.to_partial_json())
         return jobj
 
     @classmethod
     def fields_from_json(cls, jobj):
+        use_url = False
+        if 'url' in jobj:
+            jobj['uri'] = jobj['url']
+            del jobj['url']
+            use_url = True
         jobj_fields = super(ChallengeBody, cls).fields_from_json(jobj)
         jobj_fields['chall'] = challenges.Challenge.from_json(jobj)
+        jobj_fields['_use_url'] = True
         return jobj_fields
 
     def __getattr__(self, name):
