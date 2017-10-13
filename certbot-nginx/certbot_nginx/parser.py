@@ -5,6 +5,7 @@ import logging
 import os
 import pyparsing
 import re
+
 import six
 
 from certbot import errors
@@ -322,7 +323,7 @@ class NginxParser(object):
         :returns: A vhost object for the newly created vhost
         :rtype: :class:`~certbot_nginx.obj.VirtualHost`
         """
-        # TODO: do the right thing for debian
+        # TODO: https://github.com/certbot/certbot/issues/5185
         # put it in the same file as the template, at the same level
         enclosing_block = self.parsed[vhost_template.filep]
         for index in vhost_template.path[:-1]:
@@ -588,7 +589,7 @@ def _add_directive(block, directive, replace):
     directive_name = directive[0]
     def can_append(loc, dir_name):
         """ Can we append this directive to the block? """
-        return loc is None or (isinstance(dir_name, six.string_types)\
+        return loc is None or (isinstance(dir_name, six.string_types)
             and dir_name in REPEATABLE_DIRECTIVES)
 
     err_fmt = 'tried to insert directive "{0}" but found conflicting "{1}".'

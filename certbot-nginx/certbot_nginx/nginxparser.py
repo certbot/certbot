@@ -2,12 +2,12 @@
 # Forked from https://github.com/fatiherikli/nginxparser (MIT Licensed)
 import copy
 import logging
-import six
 
 from pyparsing import (
     Literal, White, Forward, Group, Optional, OneOrMore, QuotedString, Regex, ZeroOrMore, Combine)
 from pyparsing import stringEnd
 from pyparsing import restOfLine
+import six
 
 logger = logging.getLogger(__name__)
 

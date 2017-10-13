@@ -266,7 +266,7 @@ class NginxConfigurator(common.Installer):
             self.new_vhost.names = set()
 
         self.new_vhost.names.add(domain)
-        name_block = [['\n    ', 'server_name', ' ', " ".join(self.new_vhost.names)]]
+        name_block = [['\n    ', 'server_name', ' ', ' '.join(self.new_vhost.names)]]
         self.parser.add_server_directives(self.new_vhost, name_block, replace=True)
         return self.new_vhost
 
