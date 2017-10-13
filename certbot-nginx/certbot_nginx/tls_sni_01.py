@@ -58,6 +58,7 @@ class NginxTlsSni01(common.TLSSNI01):
                 addresses.append(list(vhost.addrs))
             else:
                 addresses.append([obj.Addr.fromstring(default_addr)])
+                logger.info("Using default address %s for TLSSNI01 authentication.", default_addr)
 
         # Create challenge certs
         responses = [self._setup_challenge_cert(x) for x in self.achalls]
