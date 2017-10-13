@@ -595,6 +595,39 @@ class NginxConfiguratorTest(util.NginxTest):
 
         self.assertTrue(util.contains_at_depth(parsed_default_conf, "nomatch.com", 3))
 
+    def test_deploy_no_match_default_set_multi_level_path(self):
+        default_conf = self.config.parser.abs_path('sites-enabled/default')
+        foo_conf = self.config.parser.abs_path('foo.conf')
+        del self.config.parser.parsed[default_conf][0][1][0]
+        del self.config.parser.parsed[default_conf][0][1][0]
+        self.config.version = (1, 3, 1)
+
+        self.config.deploy_cert(
+            "www.nomatch.com",
+            "example/cert.pem",
+            "example/key.pem",
+            "example/chain.pem",
+            "example/fullchain.pem")
+        self.config.save()
+
+        self.config.parser.load()
+
+        parsed_foo_conf = util.filter_comments(self.config.parser.parsed[foo_conf])
+
+        self.assertEqual([['server'],
+                          [['listen', '*:80', 'ssl'],
+                          ['server_name', 'www.nomatch.com'],
+                          ['root', '/home/ubuntu/sites/foo/'],
+                          [['location', '/status'], [[['types'], [['image/jpeg', 'jpg']]]]],
+                          [['location', '~', 'case_sensitive\\.php$'], [['index', 'index.php'],
+                           ['root', '/var/root']]],
+                          [['location', '~*', 'case_insensitive\\.php$'], []],
+                          [['location', '=', 'exact_match\\.php$'], []],
+                          [['location', '^~', 'ignore_regex\\.php$'], []],
+                          ['ssl_certificate', 'example/fullchain.pem'],
+                          ['ssl_certificate_key', 'example/key.pem']]],
+                         parsed_foo_conf[1][1][1])
+
     def test_deploy_no_match_no_default_set(self):
         default_conf = self.config.parser.abs_path('sites-enabled/default')
         foo_conf = self.config.parser.abs_path('foo.conf')
