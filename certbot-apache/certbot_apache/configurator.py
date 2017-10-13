@@ -1295,13 +1295,13 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         .. note:: This function saves the configuration
 
         :param ssl_vhost: Destination of traffic, an ssl enabled vhost
-        :type ssl_vhost: :class:`~letsencrypt_apache.obj.VirtualHost`
+        :type ssl_vhost: :class:`~certbot_apache.obj.VirtualHost`
 
         :param unused_options: Not currently used
         :type unused_options: Not Available
 
         :returns: Success, general_vhost (HTTP vhost)
-        :rtype: (bool, :class:`~letsencrypt_apache.obj.VirtualHost`)
+        :rtype: (bool, :class:`~certbot_apache.obj.VirtualHost`)
 
         """
         min_apache_ver = (2, 3, 3)
