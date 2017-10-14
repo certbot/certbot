@@ -51,7 +51,7 @@ class NginxTlsSni01(common.TLSSNI01):
         default_addr = "{0} ssl".format(
             self.configurator.config.tls_sni_01_port)
 
-        ipv6info = self.configurator.ipv6_info(
+        ipv6, ipv6only  = self.configurator.ipv6_info(
             self.configurator.config.tls_sni_01_port)
 
         for achall in self.achalls:
@@ -60,11 +60,11 @@ class NginxTlsSni01(common.TLSSNI01):
             if vhost is not None and vhost.addrs:
                 addresses.append(list(vhost.addrs))
             else:
-                if ipv6info[0]:
+                if ipv6:
                     # If IPv6 is active in Nginx configuration
                     ipv6_addr = "[::]:{0} ssl".format(
                         self.configurator.config.tls_sni_01_port)
-                    if not ipv6info[1]:
+                    if not ipv6only:
                         # If ipv6only=on is not already present in the config
                         ipv6_addr = ipv6_addr + " ipv6only=on"
                     addresses.append([obj.Addr.fromstring(default_addr),
