@@ -93,10 +93,16 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         :rtype: `.RegistrationResource`
 
         """
+
+        if hasattr(self.directory, 'new_account'):
+            url = self.directory.new_account
+        else:
+            url = self.directory.new_reg
+
         new_reg = messages.NewRegistration() if new_reg is None else new_reg
         assert isinstance(new_reg, messages.NewRegistration)
 
-        response = self.net.post(self.directory[new_reg], new_reg)
+        response = self.net.post(url, new_reg)
         # TODO: handle errors
         assert response.status_code == http_client.CREATED
 

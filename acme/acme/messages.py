@@ -340,6 +340,10 @@ class ChallengeBody(ResourceBody):
 
     @classmethod
     def fields_from_json(cls, jobj):
+        if 'url' in jobj:
+            # new ACME spec style
+            jobj['uri'] = jobj['url']
+            del jobj['url']
         jobj_fields = super(ChallengeBody, cls).fields_from_json(jobj)
         jobj_fields['chall'] = challenges.Challenge.from_json(jobj)
         return jobj_fields
