@@ -93,9 +93,8 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         :rtype: `.RegistrationResource`
 
         """
-
-        if hasattr(self.directory, 'new_account'):
-            url = self.directory.new_account
+        if hasattr(self.directory, 'new_acct'):
+            url = self.directory.new_acct
         else:
             url = self.directory.new_reg
 
