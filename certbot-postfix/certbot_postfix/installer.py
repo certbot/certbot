@@ -326,9 +326,9 @@ class Installer(plugins_common.Installer):
         if not default and name in self.proposed_changes:
             return self.proposed_changes[name]
         else:
-            return self.__get_config_var_from_postconf(name, default)
+            return self._get_config_var_from_postconf(name, default)
 
-    def __get_config_var_from_postconf(self, name, default):
+    def _get_config_var_from_postconf(self, name, default):
         """Return the value of the specified Postfix config parameter.
 
         This ignores self.proposed_changes and gets the value from
