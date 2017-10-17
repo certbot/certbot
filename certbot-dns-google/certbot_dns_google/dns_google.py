@@ -2,6 +2,7 @@
 import json
 import logging
 
+import httplib2
 import zope.interface
 from googleapiclient import discovery
 from googleapiclient import errors as googleapiclient_errors
@@ -15,6 +16,8 @@ logger = logging.getLogger(__name__)
 
 ACCT_URL = 'https://developers.google.com/identity/protocols/OAuth2ServiceAccount#creatinganaccount'
 PERMISSIONS_URL = 'https://cloud.google.com/dns/access-control#permissions_and_roles'
+METADATA_URL = 'http://metadata.google.internal/computeMetadata/v1/'
+METADATA_HEADERS = {'Metadata-Flavor': 'Google'}
 
 
 @zope.interface.implementer(interfaces.IAuthenticator)
@@ -39,16 +42,29 @@ class Authenticator(dns_common.DNSAuthenticator):
         add('credentials',
             help=('Path to Google Cloud DNS service account JSON file. (See {0} for' +
                   'information about creating a service account and {1} for information about the' +
-                  'required permissions.)').format(ACCT_URL, PERMISSIONS_URL))
+                  'required permissions.)').format(ACCT_URL, PERMISSIONS_URL),
+            default=None)
 
     def more_info(self): # pylint: disable=missing-docstring,no-self-use
         return 'This plugin configures a DNS TXT record to respond to a dns-01 challenge using ' + \
                'the Google Cloud DNS API.'
 
     def _setup_credentials(self):
-        self._configure_file('credentials', 'path to Google Cloud DNS service account JSON file')
+        if self.conf('credentials') is None:
+            try:
+                # use project_id query to check for availability of google metadata server
+                # we won't use the result but know we're not on GCP when an exception is thrown
+                _GoogleClient.get_project_id()
+            except (ValueError, httplib2.ServerNotFoundError):
+                raise errors.PluginError('Unable to get Google Cloud Metadata and no credentials'
+                                         ' specified. Automatic credential lookup is only '
+                                         'available on Google Cloud Platform. Please configure'
+                                         ' credentials using --dns-google-credentials <file>')
+        else:
+            self._configure_file('credentials',
+                                 'path to Google Cloud DNS service account JSON file')
 
-        dns_common.validate_file_permissions(self.conf('credentials'))
+            dns_common.validate_file_permissions(self.conf('credentials'))
 
     def _perform(self, domain, validation_name, validation):
         self._get_google_client().add_txt_record(domain, validation_name, validation, self.ttl)
@@ -65,13 +81,18 @@ class _GoogleClient(object):
     Encapsulates all communication with the Google Cloud DNS API.
     """
 
-    def __init__(self, account_json):
+    def __init__(self, account_json=None):
 
         scopes = ['https://www.googleapis.com/auth/ndev.clouddns.readwrite']
-        credentials = ServiceAccountCredentials.from_json_keyfile_name(account_json, scopes)
+        if account_json is not None:
+            credentials = ServiceAccountCredentials.from_json_keyfile_name(account_json, scopes)
+            with open(account_json) as account:
+                self.project_id = json.load(account)['project_id']
+        else:
+            credentials = None
+            self.project_id = self.get_project_id()
+
         self.dns = discovery.build('dns', 'v1', credentials=credentials, cache_discovery=False)
-        with open(account_json) as account:
-            self.project_id = json.load(account)['project_id']
 
     def add_txt_record(self, domain, record_name, record_content, record_ttl):
         """
@@ -183,3 +204,24 @@ class _GoogleClient(object):
 
         raise errors.PluginError('Unable to determine managed zone for {0} using zone names: {1}.'
                                  .format(domain, zone_dns_name_guesses))
+
+    @staticmethod
+    def get_project_id():
+        """
+        Query the google metadata service for the current project ID
+
+        This only works on Google Cloud Platform
+
+        :raises ServerNotFoundError: Not running on Google Compute or DNS not available
+        :raises ValueError: Server is found, but response code is not 200
+        :returns: project id
+        """
+        url = '{0}project/project-id'.format(METADATA_URL)
+
+        # Request an access token from the metadata server.
+        http = httplib2.Http()
+        r, content = http.request(url, headers=METADATA_HEADERS)
+        if r.status != 200:
+            raise ValueError("Invalid status code: {0}".format(r))
+
+        return content

@@ -3,6 +3,7 @@ import datetime
 import logging
 import os
 import pytz
+import re
 import traceback
 import zope.component
 
@@ -45,7 +46,7 @@ def rename_lineage(config):
     """
     disp = zope.component.getUtility(interfaces.IDisplay)
 
-    certname = _get_certname(config, "rename")
+    certname = _get_certnames(config, "rename")[0]
 
     new_certname = config.new_certname
     if not new_certname:
@@ -87,11 +88,12 @@ def certificates(config):
 
 def delete(config):
     """Delete Certbot files associated with a certificate lineage."""
-    certname = _get_certname(config, "delete")
-    storage.delete_files(config, certname)
-    disp = zope.component.getUtility(interfaces.IDisplay)
-    disp.notification("Deleted all files relating to certificate {0}."
-        .format(certname), pause=False)
+    certnames = _get_certnames(config, "delete", allow_multiple=True)
+    for certname in certnames:
+        storage.delete_files(config, certname)
+        disp = zope.component.getUtility(interfaces.IDisplay)
+        disp.notification("Deleted all files relating to certificate {0}."
+            .format(certname), pause=False)
 
 ###################
 # Public Helpers
@@ -141,28 +143,162 @@ def find_duplicative_certs(config, domains):
 
     return _search_lineages(config, update_certs_for_domain_matches, (None, None))
 
+def _archive_files(candidate_lineage, filetype):
+    """ In order to match things like:
+        /etc/letsencrypt/archive/example.com/chain1.pem.
+
+        Anonymous functions which call this function are eventually passed (in a list) to
+        `match_and_check_overlaps` to help specify the acceptable_matches.
+
+        :param `.storage.RenewableCert` candidate_lineage: Lineage whose archive dir is to
+            be searched.
+        :param str filetype: main file name prefix e.g. "fullchain" or "chain".
+
+        :returns: Files in candidate_lineage's archive dir that match the provided filetype.
+        :rtype: list of str or None
+    """
+    archive_dir = candidate_lineage.archive_dir
+    pattern = [os.path.join(archive_dir, f) for f in os.listdir(archive_dir)
+                    if re.match("{0}[0-9]*.pem".format(filetype), f)]
+    if len(pattern) > 0:
+        return pattern
+    else:
+        return None
+
+def _acceptable_matches():
+    """ Generates the list that's passed to match_and_check_overlaps. Is its own function to
+    make unit testing easier.
+
+    :returns: list of functions
+    :rtype: list
+    """
+    return [lambda x: x.fullchain_path, lambda x: x.cert_path,
+            lambda x: _archive_files(x, "cert"), lambda x: _archive_files(x, "fullchain")]
+
+def cert_path_to_lineage(cli_config):
+    """ If config.cert_path is defined, try to find an appropriate value for config.certname.
+
+    :param `configuration.NamespaceConfig` cli_config: parsed command line arguments
+
+    :returns: a lineage name
+    :rtype: str
+
+    :raises `errors.Error`: If the specified cert path can't be matched to a lineage name.
+    :raises `errors.OverlappingMatchFound`: If the matched lineage's archive is shared.
+    """
+    acceptable_matches = _acceptable_matches()
+    match = match_and_check_overlaps(cli_config, acceptable_matches,
+            lambda x: cli_config.cert_path[0], lambda x: x.lineagename)
+    return match[0]
+
+def match_and_check_overlaps(cli_config, acceptable_matches, match_func, rv_func):
+    """ Searches through all lineages for a match, and checks for duplicates.
+    If a duplicate is found, an error is raised, as performing operations on lineages
+    that have their properties incorrectly duplicated elsewhere is probably a bad idea.
+
+    :param `configuration.NamespaceConfig` cli_config: parsed command line arguments
+    :param list acceptable_matches: a list of functions that specify acceptable matches
+    :param function match_func: specifies what to match
+    :param function rv_func: specifies what to return
+
+    """
+    def find_matches(candidate_lineage, return_value, acceptable_matches):
+        """Returns a list of matches using _search_lineages."""
+        acceptable_matches = [func(candidate_lineage) for func in acceptable_matches]
+        acceptable_matches_rv = []
+        for item in acceptable_matches:
+            if isinstance(item, list):
+                acceptable_matches_rv += item
+            else:
+                acceptable_matches_rv.append(item)
+        match = match_func(candidate_lineage)
+        if match in acceptable_matches_rv:
+            return_value.append(rv_func(candidate_lineage))
+        return return_value
+
+    matched = _search_lineages(cli_config, find_matches, [], acceptable_matches)
+    if not matched:
+        raise errors.Error("No match found for cert-path {0}!".format(cli_config.cert_path[0]))
+    elif len(matched) > 1:
+        raise errors.OverlappingMatchFound()
+    else:
+        return matched
+
+def human_readable_cert_info(config, cert, skip_filter_checks=False):
+    """ Returns a human readable description of info about a RenewableCert object"""
+    certinfo = []
+    checker = ocsp.RevocationChecker()
+
+    if config.certname and cert.lineagename != config.certname and not skip_filter_checks:
+        return ""
+    if config.domains and not set(config.domains).issubset(cert.names()):
+        return ""
+    now = pytz.UTC.fromutc(datetime.datetime.utcnow())
+
+    reasons = []
+    if cert.is_test_cert:
+        reasons.append('TEST_CERT')
+    if cert.target_expiry <= now:
+        reasons.append('EXPIRED')
+    if checker.ocsp_revoked(cert.cert, cert.chain):
+        reasons.append('REVOKED')
+
+    if reasons:
+        status = "INVALID: " + ", ".join(reasons)
+    else:
+        diff = cert.target_expiry - now
+        if diff.days == 1:
+            status = "VALID: 1 day"
+        elif diff.days < 1:
+            status = "VALID: {0} hour(s)".format(diff.seconds // 3600)
+        else:
+            status = "VALID: {0} days".format(diff.days)
+
+    valid_string = "{0} ({1})".format(cert.target_expiry, status)
+    certinfo.append("  Certificate Name: {0}\n"
+                    "    Domains: {1}\n"
+                    "    Expiry Date: {2}\n"
+                    "    Certificate Path: {3}\n"
+                    "    Private Key Path: {4}".format(
+                         cert.lineagename,
+                         " ".join(cert.names()),
+                         valid_string,
+                         cert.fullchain,
+                         cert.privkey))
+    return "".join(certinfo)
 
 ###################
 # Private Helpers
 ###################
 
-def _get_certname(config, verb):
+def _get_certnames(config, verb, allow_multiple=False):
     """Get certname from flag, interactively, or error out.
     """
     certname = config.certname
-    if not certname:
+    if certname:
+        certnames = [certname]
+    else:
         disp = zope.component.getUtility(interfaces.IDisplay)
         filenames = storage.renewal_conf_files(config)
         choices = [storage.lineagename_for_filename(name) for name in filenames]
         if not choices:
             raise errors.Error("No existing certificates found.")
-        code, index = disp.menu("Which certificate would you like to {0}?".format(verb),
-                                choices, flag="--cert-name",
-                                force_interactive=True)
-        if code != display_util.OK or not index in range(0, len(choices)):
-            raise errors.Error("User ended interaction.")
-        certname = choices[index]
-    return certname
+        if allow_multiple:
+            code, certnames = disp.checklist(
+                                    "Which certificate(s) would you like to {0}?".format(verb),
+                                    choices, cli_flag="--cert-name",
+                                    force_interactive=True)
+            if code != display_util.OK:
+                raise errors.Error("User ended interaction.")
+        else:
+            code, index = disp.menu("Which certificate would you like to {0}?".format(verb),
+                                    choices, cli_flag="--cert-name",
+                                    force_interactive=True)
+
+            if code != display_util.OK or index not in range(0, len(choices)):
+                raise errors.Error("User ended interaction.")
+            certnames = [choices[index]]
+    return certnames
 
 def _report_lines(msgs):
     """Format a results report for a category of single-line renewal outcomes"""
@@ -171,44 +307,8 @@ def _report_lines(msgs):
 def _report_human_readable(config, parsed_certs):
     """Format a results report for a parsed cert"""
     certinfo = []
-    checker = ocsp.RevocationChecker()
     for cert in parsed_certs:
-        if config.certname and cert.lineagename != config.certname:
-            continue
-        if config.domains and not set(config.domains).issubset(cert.names()):
-            continue
-        now = pytz.UTC.fromutc(datetime.datetime.utcnow())
-
-        reasons = []
-        if cert.is_test_cert:
-            reasons.append('TEST_CERT')
-        if cert.target_expiry <= now:
-            reasons.append('EXPIRED')
-        if checker.ocsp_revoked(cert.cert, cert.chain):
-            reasons.append('REVOKED')
-
-        if reasons:
-            status = "INVALID: " + ", ".join(reasons)
-        else:
-            diff = cert.target_expiry - now
-            if diff.days == 1:
-                status = "VALID: 1 day"
-            elif diff.days < 1:
-                status = "VALID: {0} hour(s)".format(diff.seconds // 3600)
-            else:
-                status = "VALID: {0} days".format(diff.days)
-
-        valid_string = "{0} ({1})".format(cert.target_expiry, status)
-        certinfo.append("  Certificate Name: {0}\n"
-                        "    Domains: {1}\n"
-                        "    Expiry Date: {2}\n"
-                        "    Certificate Path: {3}\n"
-                        "    Private Key Path: {4}".format(
-                            cert.lineagename,
-                            ",".join(cert.names()),
-                            valid_string,
-                            cert.fullchain,
-                            cert.privkey))
+        certinfo.append(human_readable_cert_info(config, cert))
     return "\n".join(certinfo)
 
 def _describe_certs(config, parsed_certs, parse_failures):
@@ -232,11 +332,17 @@ def _describe_certs(config, parsed_certs, parse_failures):
     disp = zope.component.getUtility(interfaces.IDisplay)
     disp.notification("\n".join(out), pause=False, wrap=False)
 
-def _search_lineages(cli_config, func, initial_rv):
+def _search_lineages(cli_config, func, initial_rv, *args):
     """Iterate func over unbroken lineages, allowing custom return conditions.
 
     Allows flexible customization of return values, including multiple
     return values and complex checks.
+
+    :param `configuration.NamespaceConfig` cli_config: parsed command line arguments
+    :param function func: function used while searching over lineages
+    :param initial_rv: initial return value of the function (any type)
+
+    :returns: Whatever was specified by `func` if a match is found.
     """
     configs_dir = cli_config.renewal_configs_dir
     # Verify the directory is there
@@ -250,5 +356,5 @@ def _search_lineages(cli_config, func, initial_rv):
             logger.debug("Renewal conf file %s is broken. Skipping.", renewal_file)
             logger.debug("Traceback was:\n%s", traceback.format_exc())
             continue
-        rv = func(candidate_lineage, rv)
+        rv = func(candidate_lineage, rv, *args)
     return rv
