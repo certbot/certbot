@@ -527,7 +527,7 @@ class NginxConfiguratorTest(util.NginxTest):
         ]
         generated_conf = self.config.parser.parsed[example_conf]
         for line in unexpected:
-          self.assertFalse(util.contains_at_depth(generated_conf, line, 2))
+            self.assertFalse(util.contains_at_depth(generated_conf, line, 2))
 
     def test_staple_ocsp_bad_version(self):
         self.config.version = (1, 3, 1)
