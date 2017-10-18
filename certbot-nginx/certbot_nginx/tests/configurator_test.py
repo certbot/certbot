@@ -429,7 +429,7 @@ class NginxConfiguratorTest(util.NginxTest):
         # Test that we successfully add a redirect when there is
         # a listen directive
         expected = [
-            ['if', '($scheme', '!=', '"https") '],
+            ['if', '($scheme', '!=', '"https")'],
             [['return', '301', 'https://$host$request_uri']]
         ]
 
