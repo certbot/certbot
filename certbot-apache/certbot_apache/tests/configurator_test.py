@@ -363,7 +363,7 @@ class MultipleVhostsTest(util.ApacheTest):
             confvars = {"handle-sites": False}
             if arg in confvars:
                 return confvars[arg]
-        inc_path = "/path/to/whereever"
+        inc_path = "/path/to/wherever"
         vhost = self.vh_truth[0]
         with mock.patch(mock_c) as mock_conf:
             mock_conf.side_effect = conf_side_effect
@@ -1367,7 +1367,7 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertFalse(self.config._check_aug_version())
 
 class AugeasVhostsTest(util.ApacheTest):
-    """Test vhosts with illegal names dependant on augeas version."""
+    """Test vhosts with illegal names dependent on augeas version."""
     # pylint: disable=protected-access
     _multiprocess_can_split_ = True
 
@@ -1451,7 +1451,7 @@ class AugeasVhostsTest(util.ApacheTest):
                           broken_vhost)
 
 class MultiVhostsTest(util.ApacheTest):
-    """Test vhosts with illegal names dependant on augeas version."""
+    """Test vhosts with illegal names dependent on augeas version."""
     # pylint: disable=protected-access
 
     def setUp(self):  # pylint: disable=arguments-differ
