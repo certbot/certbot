@@ -503,7 +503,8 @@ run as usual after running all hooks in these directories. One minor exception
 to this is if a hook specified elsewhere is simply the path to an executable
 file in the hook directory of the same type (e.g. your pre-hook is the path to
 an executable in ``/etc/letsencrypt/renewal-hooks/pre``), the file is not run a
-second time.
+second time. You can stop Certbot from automatically running executables found
+in these directories by including ``--no-directory-hooks`` on the command line.
 
 More information about hooks can be found by running
 ``certbot --help renew``.

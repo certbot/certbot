@@ -7,6 +7,7 @@ from pyparsing import (
     Literal, White, Forward, Group, Optional, OneOrMore, QuotedString, Regex, ZeroOrMore, Combine)
 from pyparsing import stringEnd
 from pyparsing import restOfLine
+import six
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +72,7 @@ class RawNginxDumper(object):
         """Iterates the dumped nginx content."""
         blocks = blocks or self.blocks
         for b0 in blocks:
-            if isinstance(b0, str):
+            if isinstance(b0, six.string_types):
                 yield b0
                 continue
             item = copy.deepcopy(b0)
@@ -88,7 +89,7 @@ class RawNginxDumper(object):
                 yield '}'
             else: # not a block - list of strings
                 semicolon = ";"
-                if isinstance(item[0], str) and item[0].strip() == '#': # comment
+                if isinstance(item[0], six.string_types) and item[0].strip() == '#': # comment
                     semicolon = ""
                 yield "".join(item) + semicolon
 
@@ -145,7 +146,7 @@ def dump(blocks, _file):
     return _file.write(dumps(blocks))
 
 
-spacey = lambda x: (isinstance(x, str) and x.isspace()) or x == ''
+spacey = lambda x: (isinstance(x, six.string_types) and x.isspace()) or x == ''
 
 class UnspacedList(list):
     """Wrap a list [of lists], making any whitespace entries magically invisible"""
@@ -189,13 +190,15 @@ class UnspacedList(list):
         item, spaced_item = self._coerce(x)
         slicepos = self._spaced_position(i) if i < len(self) else len(self.spaced)
         self.spaced.insert(slicepos, spaced_item)
-        list.insert(self, i, item)
+        if not spacey(item):
+            list.insert(self, i, item)
         self.dirty = True
 
     def append(self, x):
         item, spaced_item = self._coerce(x)
         self.spaced.append(spaced_item)
-        list.append(self, item)
+        if not spacey(item):
+            list.append(self, item)
         self.dirty = True
 
     def extend(self, x):
@@ -226,7 +229,8 @@ class UnspacedList(list):
             raise NotImplementedError("Slice operations on UnspacedLists not yet implemented")
         item, spaced_item = self._coerce(value)
         self.spaced.__setitem__(self._spaced_position(i), spaced_item)
-        list.__setitem__(self, i, item)
+        if not spacey(item):
+            list.__setitem__(self, i, item)
         self.dirty = True
 
     def __delitem__(self, i):
@@ -235,8 +239,8 @@ class UnspacedList(list):
         self.dirty = True
 
     def __deepcopy__(self, memo):
-        l = UnspacedList(self[:])
-        l.spaced = copy.deepcopy(self.spaced, memo=memo)
+        new_spaced = copy.deepcopy(self.spaced, memo=memo)
+        l = UnspacedList(new_spaced)
         l.dirty = self.dirty
         return l
 

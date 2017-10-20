@@ -30,7 +30,7 @@ from certbot_nginx import parser
 logger = logging.getLogger(__name__)
 
 REDIRECT_BLOCK = [[
-    ['\n    ', 'if', ' ', '($scheme', ' ', '!=', ' ', '"https") '],
+    ['\n    ', 'if', ' ', '($scheme', ' ', '!=', ' ', '"https")'],
     [['\n        ', 'return', ' ', '301', ' ', 'https://$host$request_uri'],
      '\n    ']
 ], ['\n']]
@@ -117,6 +117,9 @@ class NginxConfigurator(common.Installer):
         # Files to save
         self.save_notes = ""
 
+        # For creating new vhosts if no names match
+        self.new_vhost = None
+
         # Add number of outstanding challenges
         self._chall_out = 0
 
@@ -191,9 +194,11 @@ class NginxConfigurator(common.Installer):
                 "The nginx plugin currently requires --fullchain-path to "
                 "install a cert.")
 
-        vhost = self.choose_vhost(domain)
-        cert_directives = [['\n', 'ssl_certificate', ' ', fullchain_path],
-                           ['\n', 'ssl_certificate_key', ' ', key_path]]
+        vhost = self.choose_vhost(domain, raise_if_no_match=False)
+        if vhost is None:
+            vhost = self._vhost_from_duplicated_default(domain)
+        cert_directives = [['\n    ', 'ssl_certificate', ' ', fullchain_path],
+                           ['\n    ', 'ssl_certificate_key', ' ', key_path]]
 
         self.parser.add_server_directives(vhost,
                                           cert_directives, replace=True)
@@ -209,7 +214,7 @@ class NginxConfigurator(common.Installer):
     #######################
     # Vhost parsing methods
     #######################
-    def choose_vhost(self, target_name):
+    def choose_vhost(self, target_name, raise_if_no_match=True):
         """Chooses a virtual host based on the given domain name.
 
         .. note:: This makes the vhost SSL-enabled if it isn't already. Follows
@@ -223,6 +228,8 @@ class NginxConfigurator(common.Installer):
             hostname. Currently we just ignore this.
 
         :param str target_name: domain name
+        :param bool raise_if_no_match: True iff not finding a match is an error;
+                                       otherwise, return None
 
         :returns: ssl vhost associated with name
         :rtype: :class:`~certbot_nginx.obj.VirtualHost`
@@ -233,19 +240,53 @@ class NginxConfigurator(common.Installer):
         matches = self._get_ranked_matches(target_name)
         vhost = self._select_best_name_match(matches)
         if not vhost:
-            # No matches. Raise a misconfiguration error.
-            raise errors.MisconfigurationError(
-                        ("Cannot find a VirtualHost matching domain %s. "
-                         "In order for Certbot to correctly perform the challenge "
-                         "please add a corresponding server_name directive to your "
-                         "nginx configuration: "
-                         "https://nginx.org/en/docs/http/server_names.html") % (target_name))
+            if raise_if_no_match:
+                # No matches. Raise a misconfiguration error.
+                raise errors.MisconfigurationError(
+                            ("Cannot find a VirtualHost matching domain %s. "
+                             "In order for Certbot to correctly perform the challenge "
+                             "please add a corresponding server_name directive to your "
+                             "nginx configuration: "
+                             "https://nginx.org/en/docs/http/server_names.html") % (target_name))
+            else:
+                return None
         else:
             # Note: if we are enhancing with ocsp, vhost should already be ssl.
             if not vhost.ssl:
                 self._make_server_ssl(vhost)
 
         return vhost
+
+    def _vhost_from_duplicated_default(self, domain):
+        if self.new_vhost is None:
+            default_vhost = self._get_default_vhost()
+            self.new_vhost = self.parser.create_new_vhost_from_default(default_vhost)
+            if not self.new_vhost.ssl:
+                self._make_server_ssl(self.new_vhost)
+            self.new_vhost.names = set()
+
+        self.new_vhost.names.add(domain)
+        name_block = [['\n    ', 'server_name', ' ', ' '.join(self.new_vhost.names)]]
+        self.parser.add_server_directives(self.new_vhost, name_block, replace=True)
+        return self.new_vhost
+
+    def _get_default_vhost(self):
+        vhost_list = self.parser.get_vhosts()
+        # if one has default_server set, return that one
+        default_vhosts = []
+        for vhost in vhost_list:
+            for addr in vhost.addrs:
+                if addr.default:
+                    default_vhosts.append(vhost)
+                    break
+
+        if len(default_vhosts) == 1:
+            return default_vhosts[0]
+
+        # TODO: present a list of vhosts for user to choose from
+
+        raise errors.MisconfigurationError("Could not automatically find a matching server"
+            " block. Set the `server_name` directive to use the Nginx installer.")
 
     def _get_ranked_matches(self, target_name):
         """Returns a ranked list of vhosts that match target_name.

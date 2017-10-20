@@ -374,7 +374,7 @@ class MultipleVhostsTest(util.ApacheTest):
     def test_enable_site_nondebian(self):
         from certbot_apache import override_centos
         self.config.os_info = override_centos.Override(self.config)
-        inc_path = "/path/to/whereever"
+        inc_path = "/path/to/wherever"
         vhost = self.vh_truth[0]
         vhost.enabled = False
         vhost.filep = inc_path
@@ -1367,7 +1367,7 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertFalse(self.config._check_aug_version())
 
 class AugeasVhostsTest(util.ApacheTest):
-    """Test vhosts with illegal names dependant on augeas version."""
+    """Test vhosts with illegal names dependent on augeas version."""
     # pylint: disable=protected-access
     _multiprocess_can_split_ = True
 
@@ -1451,7 +1451,7 @@ class AugeasVhostsTest(util.ApacheTest):
                           broken_vhost)
 
 class MultiVhostsTest(util.ApacheTest):
-    """Test vhosts with illegal names dependant on augeas version."""
+    """Test vhosts with illegal names dependent on augeas version."""
     # pylint: disable=protected-access
 
     def setUp(self):  # pylint: disable=arguments-differ
