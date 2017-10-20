@@ -144,7 +144,7 @@ class Installer(plugins_common.Installer):
         :raises .PluginError: Unable to find Postfix version.
 
         """
-        mail_version = self._get_config_var("mail_version", default=True)
+        mail_version = self._get_config_default("mail_version")
         return tuple(int(i) for i in mail_version.split('.'))
 
     def get_all_names(self):
@@ -308,82 +308,50 @@ class Installer(plugins_common.Installer):
 
         util.check_call(cmd)
 
-    def _get_config_var(self, name, default=False):
+    def _get_config_default(self, name):
+        """Return the default value of the specified config parameter.
+
+        :param str name: name of the Postfix config default to return
+
+        :returns: default for the specified configuration parameter if it
+            exists, otherwise, None
+        :rtype: str or types.NoneType
+
+        :raises errors.PluginError: if an error occurs while running postconf
+            or parsing its output
+
+        """
+        try:
+            return self._get_value_from_postconf(("-d", name,))
+        except (subprocess.CalledProcessError, errors.PluginError):
+            raise errors.PluginError("Unable to determine the default value of"
+                                     " the Postfix parameter {0}".format(name))
+
+    def _get_config_var(self, name):
         """Return the value of the specified Postfix config parameter.
 
         If there is an unsaved change modifying the value of the
         specified config parameter, the value after this proposed change
-        is returned rather than the current value.
+        is returned rather than the current value. If the value is
+        unset, `None` is returned.
 
         :param str name: name of the Postfix config parameter to return
-        :param bool default: whether or not to return the default value
-            instead of the actual value
 
-        :returns: value of the specified configuration parameter
-        :rtype: str
+        :returns: value of the parameter included in postconf_args
+        :rtype: str or types.NoneType
+
+        :raises errors.PluginError: if an error occurs while running postconf
+            or parsing its output
 
         """
-        if not default and name in self.proposed_changes:
+        if name in self.proposed_changes:
             return self.proposed_changes[name]
-        else:
-            return self._get_config_var_from_postconf(name, default)
-
-    def _get_config_var_from_postconf(self, name, default):
-        """Return the value of the specified Postfix config parameter.
-
-        This ignores self.proposed_changes and gets the value from
-        postconf.
-
-        :param str name: name of the Postfix config parameter to return
-        :param bool default: whether or not to return the default value
-            instead of the actual value
-
-        :returns: value of the specified configuration parameter
-        :rtype: str
-
-        """
-        output = self._get_raw_config_output(name, default)
-        return self._clean_postconf_output(output, name)
-
-    def _get_raw_config_output(self, name, default):
-        """Returns the raw output from postconf for the specified param.
-
-        :param str name: name of the Postfix config parameter to obtain
-        :param bool default: whether or not to return the default value
-            instead of the actual value
-
-        :returns: output from postconf
-        :rtype: str
-
-        """
-        cmd = self._postconf_command_base()
-        if default:
-            cmd.append("-d")
-        cmd.append(name)
 
         try:
-            return util.check_output(cmd)
-        except subprocess.CalledProcessError:
-            raise errors.PluginError(
-                "Unable to determine the value "
-                "of Postfix parameter {0}".format(name))
-
-    def _clean_postconf_output(self, output, name):
-        """Parses postconf output and returns the specified value.
-
-        :param str output: output from postconf
-        :param str name: name of the Postfix config parameter to obtain
-
-        :returns: value of the specified configuration parameter
-        :rtype: str
-
-        """
-        expected_prefix = name + " ="
-        if not output.startswith(expected_prefix):
-            raise errors.PluginError(
-                "Unexpected output '{0}' from postconf".format(output))
-
-        return output[len(expected_prefix):].strip()
+            return self._get_value_from_postconf((name,))
+        except (subprocess.CalledProcessError, errors.PluginError):
+            raise errors.PluginError("Unable to determine the value of"
+                                     " the Postfix parameter {0}".format(name))
 
     def _set_config_var(self, name, value):
         """Set the Postfix config parameter name to value.
@@ -408,21 +376,83 @@ class Installer(plugins_common.Installer):
         :raises errors.PluginError: if an error occurs
 
         """
-        cmd = self._postconf_command_base()
-        cmd.extend("{0}={1}".format(name, value)
-                   for name, value in self.proposed_changes.items())
-
         try:
-            util.check_call(cmd)
+            self._run_postconf_command(
+                "{0}={1}".format(name, value)
+                 for name, value in self.proposed_changes.items())
         except subprocess.CalledProcessError:
             raise errors.PluginError(
                 "An error occurred while updating your Postfix config.")
 
-    def _postconf_command_base(self):
-        """Builds start of a postconf command using the selected config."""
-        cmd = [self.conf("config-utility")]
+    def _get_value_from_postconf(self, postconf_args):
+        """Runs postconf and extracts the specified config value.
 
+        It is assumed that the name of the Postfix config parameter to
+        parse from the output is the last value in postconf_args. If the
+        value is unset, `None` is returned. If an error occurs, the
+        relevant information is logged before an exception is raised.
+
+        :param collections.Iterable args: arguments to postconf
+
+        :returns: value of the parameter included in postconf_args
+        :rtype: str or types.NoneType
+
+        :raises errors.PluginError: if unable to parse postconf output
+        :raises subprocess.CalledProcessError: if postconf fails
+
+        """
+        name = postconf_args[-1]
+        output = self._run_postconf_command(postconf_args)
+
+        try:
+            return self._parse_postconf_output(output, name)
+        except errors.PluginError:
+            logger.debug("An error occurred while parsing postconf output",
+                         exc_info=True)
+            raise
+
+    def _run_postconf_command(self, args):
+        """Runs a postconf command using the selected config.
+
+        If postconf exits with a nonzero status, the error is logged
+        before an exception is raised.
+
+        :param collections.Iterable args: additional arguments to postconf
+
+        :returns: stdout output of postconf
+        :rtype: str
+
+        :raises subprocess.CalledProcessError: if the command fails
+
+        """
+
+        cmd = [self.conf("config-utility")]
         if self.conf("config-dir") is not None:
             cmd.extend(("-c", self.conf("config-dir"),))
+        cmd.extend(args)
 
-        return cmd
+        return util.check_output(cmd)
+
+    def _parse_postconf_output(self, output, name):
+        """Parses postconf output and returns the specified value.
+
+        If the specified Postfix parameter is unset, `None` is returned.
+        It is assumed that most one configuration parameter will be
+        included in the given output.
+
+        :param str output: output from postconf
+        :param str name: name of the Postfix config parameter to obtain
+
+        :returns: value of the parameter included in postconf_args
+        :rtype: str or types.NoneType
+
+        :raises errors.PluginError: if unable to parse postconf ouput
+
+        """
+        expected_prefix = name + " ="
+        if output.count("\n") != 1 or not output.startswith(expected_prefix):
+            raise errors.PluginError(
+                "Unexpected output '{0}' from postconf".format(output))
+
+        value = output[len(expected_prefix):].strip()
+        return value if value else None

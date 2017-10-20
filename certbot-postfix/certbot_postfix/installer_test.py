@@ -161,7 +161,7 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
         self._mock_postfix_and_call(
             installer.deploy_cert, "example.org", "foo", "bar", "baz", "qux")
 
-        check_call_path = "certbot_postfix.installer.util.check_call"
+        check_call_path = "certbot_postfix.installer.util.check_output"
         with mock.patch(check_call_path) as mock_check_call:
             mock_check_call.side_effect = subprocess.CalledProcessError(42,
                                                                         "foo")
