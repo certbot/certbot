@@ -4,8 +4,8 @@ from certbot import util
 
 from certbot.plugins import common
 
-from certbot_apache import override_debian
 from certbot_apache import override_centos
+from certbot_apache import override_debian
 
 CLI_DEFAULTS_DEFAULT = dict(
     server_root="/etc/apache2",

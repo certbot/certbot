@@ -19,13 +19,13 @@ from certbot import util
 from certbot.plugins import common
 from certbot.plugins.util import path_surgery
 
+from certbot_apache import apache_util
 from certbot_apache import augeas_configurator
 from certbot_apache import constants
 from certbot_apache import display_ops
 from certbot_apache import tls_sni_01
 from certbot_apache import obj
 from certbot_apache import parser
-from certbot_apache import apache_util
 
 from collections import defaultdict
 
