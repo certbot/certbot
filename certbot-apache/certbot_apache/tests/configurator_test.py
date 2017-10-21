@@ -19,10 +19,10 @@ from certbot import errors
 from certbot.tests import acme_util
 from certbot.tests import util as certbot_util
 
-from certbot_apache import configurator
 from certbot_apache import constants
 from certbot_apache import parser
 from certbot_apache import obj
+from certbot_apache import apache_util
 
 from certbot_apache.tests import util
 
@@ -41,6 +41,9 @@ class MultipleVhostsTest(util.ApacheTest):
             """Mock default vhost path"""
             if key == "vhost_root":
                 return vhost_path
+            elif key == "override_class":
+                from certbot_apache import override_debian
+                return override_debian.Override
             else:
                 return orig_os_constant(key)
 
@@ -164,13 +167,11 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertTrue("certbot.demo" in names)
 
     def test_get_bad_path(self):
-        from certbot_apache.configurator import get_file_path
-        self.assertEqual(get_file_path(None), None)
-        self.assertEqual(get_file_path("nonexistent"), None)
+        self.assertEqual(apache_util.get_file_path(None), None)
+        self.assertEqual(apache_util.get_file_path("nonexistent"), None)
         self.assertEqual(self.config._create_vhost("nonexistent"), None) # pylint: disable=protected-access
 
     def test_get_aug_internal_path(self):
-        from certbot_apache.configurator import get_internal_aug_path
         internal_paths = [
             "Virtualhost", "IfModule/VirtualHost", "VirtualHost", "VirtualHost",
             "Macro/VirtualHost", "IfModule/VirtualHost", "VirtualHost",
@@ -178,7 +179,8 @@ class MultipleVhostsTest(util.ApacheTest):
 
         for i, internal_path in enumerate(internal_paths):
             self.assertEqual(
-                get_internal_aug_path(self.vh_truth[i].path), internal_path)
+                apache_util.get_internal_aug_path(self.vh_truth[i].path),
+                internal_path)
 
     def test_bad_servername_alias(self):
         ssl_vh1 = obj.VirtualHost(
@@ -345,6 +347,14 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertRaises(
             errors.MisconfigurationError, self.config.enable_mod, "ssl")
 
+    def test_enable_mod_nonexistent(self):
+        from certbot_apache import override_centos
+        self.config.os_info = override_centos.Override(self.config)
+        self.assertRaises(
+            errors.MisconfigurationError,
+            self.config.enable_mod,
+            "whatever")
+
     def test_enable_site_already_enabled(self):
         self.assertTrue(self.vh_truth[1].enabled)
         self.config.enable_site(self.vh_truth[1])
@@ -356,29 +366,28 @@ class MultipleVhostsTest(util.ApacheTest):
             self.config.enable_site,
             obj.VirtualHost("asdf", "afsaf", set(), False, False))
 
+    def test_enable_site_nonexistent(self):
+        from certbot_apache import override_centos
+        self.config.os_info = override_centos.Override(self.config)
+        self.assertEqual(self.config.enable_site(self.vh_truth[1]), None)
+
     def test_enable_site_nondebian(self):
-        mock_c = "certbot_apache.configurator.ApacheConfigurator.conf"
-        def conf_side_effect(arg):
-            """ Mock function for ApacheConfigurator.conf """
-            confvars = {"handle-sites": False}
-            if arg in confvars:
-                return confvars[arg]
+        from certbot_apache import override_centos
+        self.config.os_info = override_centos.Override(self.config)
         inc_path = "/path/to/wherever"
         vhost = self.vh_truth[0]
-        with mock.patch(mock_c) as mock_conf:
-            mock_conf.side_effect = conf_side_effect
-            vhost.enabled = False
-            vhost.filep = inc_path
-            self.assertFalse(self.config.parser.find_dir("Include", inc_path))
-            self.assertFalse(
-                os.path.dirname(inc_path) in self.config.parser.existing_paths)
-            self.config.enable_site(vhost)
-            self.assertTrue(self.config.parser.find_dir("Include", inc_path))
-            self.assertTrue(
-                os.path.dirname(inc_path) in self.config.parser.existing_paths)
-            self.assertTrue(
-                os.path.basename(inc_path) in self.config.parser.existing_paths[
-                    os.path.dirname(inc_path)])
+        vhost.enabled = False
+        vhost.filep = inc_path
+        self.assertFalse(self.config.parser.find_dir("Include", inc_path))
+        self.assertFalse(
+            os.path.dirname(inc_path) in self.config.parser.existing_paths)
+        self.config.enable_site(vhost)
+        self.assertTrue(self.config.parser.find_dir("Include", inc_path))
+        self.assertTrue(
+            os.path.dirname(inc_path) in self.config.parser.existing_paths)
+        self.assertTrue(
+            os.path.basename(inc_path) in self.config.parser.existing_paths[
+                os.path.dirname(inc_path)])
 
     def test_deploy_cert_enable_new_vhost(self):
         # Create
@@ -427,12 +436,12 @@ class MultipleVhostsTest(util.ApacheTest):
         # Verify one directive was found in the correct file
         self.assertEqual(len(loc_cert), 1)
         self.assertEqual(
-            configurator.get_file_path(loc_cert[0]),
+            apache_util.get_file_path(loc_cert[0]),
             self.vh_truth[1].filep)
 
         self.assertEqual(len(loc_key), 1)
         self.assertEqual(
-            configurator.get_file_path(loc_key[0]),
+            apache_util.get_file_path(loc_key[0]),
             self.vh_truth[1].filep)
 
     def test_deploy_cert_newssl_no_fullchain(self):
@@ -469,25 +478,16 @@ class MultipleVhostsTest(util.ApacheTest):
 
     def test_deploy_cert_not_parsed_path(self):
         # Make sure that we add include to root config for vhosts when
-        # handle-sites is false
+        # running Debian, but missing sites-enabled structure
         self.config.parser.modules.add("ssl_module")
         self.config.parser.modules.add("mod_ssl.c")
         tmp_path = os.path.realpath(tempfile.mkdtemp("vhostroot"))
         os.chmod(tmp_path, 0o755)
         mock_p = "certbot_apache.configurator.ApacheConfigurator._get_ssl_vhost_path"
         mock_a = "certbot_apache.parser.ApacheParser.add_include"
-        mock_c = "certbot_apache.configurator.ApacheConfigurator.conf"
-        orig_conf = self.config.conf
-        def conf_side_effect(arg):
-            """ Mock function for ApacheConfigurator.conf """
-            confvars = {"handle-sites": False}
-            if arg in confvars:
-                return confvars[arg]
-            else:
-                return orig_conf("arg")
 
-        with mock.patch(mock_c) as mock_conf:
-            mock_conf.side_effect = conf_side_effect
+        with mock.patch("os.path.isdir") as mock_osp:
+            mock_osp.return_value = False
             with mock.patch(mock_p) as mock_path:
                 mock_path.return_value = os.path.join(tmp_path, "whatever.conf")
                 with mock.patch(mock_a) as mock_add:
@@ -558,17 +558,17 @@ class MultipleVhostsTest(util.ApacheTest):
         # Verify one directive was found in the correct file
         self.assertEqual(len(loc_cert), 1)
         self.assertEqual(
-            configurator.get_file_path(loc_cert[0]),
+            apache_util.get_file_path(loc_cert[0]),
             self.vh_truth[1].filep)
 
         self.assertEqual(len(loc_key), 1)
         self.assertEqual(
-            configurator.get_file_path(loc_key[0]),
+            apache_util.get_file_path(loc_key[0]),
             self.vh_truth[1].filep)
 
         self.assertEqual(len(loc_chain), 1)
         self.assertEqual(
-            configurator.get_file_path(loc_chain[0]),
+            apache_util.get_file_path(loc_chain[0]),
             self.vh_truth[1].filep)
 
         # One more time for chain directive setting
@@ -952,7 +952,7 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertTrue(isinstance(self.config.get_chall_pref(""), list))
 
     def test_install_ssl_options_conf(self):
-        from certbot_apache.configurator import install_ssl_options_conf
+        from certbot_apache.constants import install_ssl_options_conf
         path = os.path.join(self.work_dir, "test_it")
         other_path = os.path.join(self.work_dir, "other_test_it")
         install_ssl_options_conf(path, other_path)
@@ -1571,7 +1571,7 @@ class InstallSslOptionsConfTest(util.ApacheTest):
             self.config_path, self.vhost_path, self.config_dir, self.work_dir)
 
     def _call(self):
-        from certbot_apache.configurator import install_ssl_options_conf
+        from certbot_apache.constants import install_ssl_options_conf
         install_ssl_options_conf(self.config.mod_ssl_conf, self.config.updated_mod_ssl_conf_digest)
 
     def _current_ssl_options_hash(self):

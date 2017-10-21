@@ -29,6 +29,7 @@ class ConstantsTest(unittest.TestCase):
         self.assertEqual(constants.os_constant("server_root"), "/etc/apache2")
         self.assertEqual(constants.os_constant("vhost_root"),
                          "/etc/apache2/sites-available")
+        self.assertEqual(constants.get_override(None), None)
 
     @mock.patch("certbot.util.get_systemd_os_like")
     @mock.patch("certbot.util.get_os_info")

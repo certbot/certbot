@@ -19,8 +19,6 @@ logger = logging.getLogger(__name__)
 class ApacheParser(object):
     """Class handles the fine details of parsing the Apache Configuration.
 
-    .. todo:: Make parsing general... remove sites-available etc...
-
     :ivar str root: Normalized absolute path to the server root
         directory. Without trailing slash.
     :ivar set modules: All module names that are currently enabled.

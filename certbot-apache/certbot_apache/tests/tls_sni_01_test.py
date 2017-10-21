@@ -9,6 +9,7 @@ from certbot.plugins import common_test
 
 from certbot_apache import obj
 from certbot_apache.tests import util
+from certbot_apache import override_debian
 
 from six.moves import xrange  # pylint: disable=redefined-builtin, import-error
 
@@ -25,6 +26,7 @@ class TlsSniPerformTest(util.ApacheTest):
         config = util.get_apache_configurator(
             self.config_path, self.vhost_path, self.config_dir, self.work_dir)
         config.config.tls_sni_01_port = 443
+        config.os_info = override_debian.Override(config)
 
         from certbot_apache import tls_sni_01
         self.sni = tls_sni_01.ApacheTlsSni01(config)
