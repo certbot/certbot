@@ -19,13 +19,105 @@ from certbot import errors
 from certbot.tests import acme_util
 from certbot.tests import util as certbot_util
 
-from certbot_apache import configurator
+from certbot_apache import apache_util
 from certbot_apache import constants
 from certbot_apache import parser
 from certbot_apache import obj
 
 from certbot_apache.tests import util
 
+
+class MultipleVhostsTestNonDebian(util.ApacheTest):
+    """Multiple vhost tests for non-debian distro"""
+
+    _multiprocess_can_split_ = True
+
+    def setUp(self):  # pylint: disable=arguments-differ
+        super(MultipleVhostsTestNonDebian, self).setUp()
+
+        from certbot_apache.constants import os_constant
+        orig_os_constant = os_constant
+        def mock_os_constant(key, vhost_path=self.vhost_path):
+            """Mock default vhost path"""
+            if key == "vhost_root":
+                return vhost_path
+            else:
+                return orig_os_constant(key)
+        with mock.patch("certbot.util.get_os_info") as mock_osi:
+            mock_osi.return_value = ("nonexistent_distro", "7")
+            with mock.patch("certbot_apache.constants.os_constant") as mock_c:
+                mock_c.side_effect = mock_os_constant
+                self.config = util.get_apache_configurator(
+                    self.config_path, None, self.config_dir, self.work_dir)
+                self.config = self.mock_deploy_cert(self.config)
+            self.vh_truth = util.get_vh_truth(
+                self.temp_dir, "debian_apache_2_4/multiple_vhosts")
+
+    def mock_deploy_cert(self, config):
+        """A test for a mock deploy cert"""
+        self.config.real_deploy_cert = self.config.deploy_cert
+
+        def mocked_deploy_cert(*args, **kwargs):
+            """a helper to mock a deployed cert"""
+            with mock.patch("certbot_apache.configurator.ApacheConfigurator.enable_mod"):
+                config.real_deploy_cert(*args, **kwargs)
+        self.config.deploy_cert = mocked_deploy_cert
+        return self.config
+
+    def tearDown(self):
+        shutil.rmtree(self.temp_dir)
+        shutil.rmtree(self.config_dir)
+        shutil.rmtree(self.work_dir)
+
+    def test_enable_site_nondebian(self):
+        inc_path = "/path/to/wherever"
+        vhost = self.vh_truth[0]
+        vhost.enabled = False
+        vhost.filep = inc_path
+        self.assertFalse(self.config.parser.find_dir("Include", inc_path))
+        self.assertFalse(
+            os.path.dirname(inc_path) in self.config.parser.existing_paths)
+        self.config.enable_site(vhost)
+        self.assertTrue(self.config.parser.find_dir("Include", inc_path))
+        self.assertTrue(
+            os.path.dirname(inc_path) in self.config.parser.existing_paths)
+        self.assertTrue(
+            os.path.basename(inc_path) in self.config.parser.existing_paths[
+                os.path.dirname(inc_path)])
+
+    def test_deploy_cert_not_parsed_path(self):
+        # Make sure that we add include to root config for vhosts when
+        # handle-sites is false
+        self.config.parser.modules.add("ssl_module")
+        self.config.parser.modules.add("mod_ssl.c")
+        tmp_path = os.path.realpath(tempfile.mkdtemp("vhostroot"))
+        os.chmod(tmp_path, 0o755)
+        mock_p = "certbot_apache.configurator.ApacheConfigurator._get_ssl_vhost_path"
+        mock_a = "certbot_apache.parser.ApacheParser.add_include"
+
+        with mock.patch(mock_p) as mock_path:
+            mock_path.return_value = os.path.join(tmp_path, "whatever.conf")
+            with mock.patch(mock_a) as mock_add:
+                self.config.deploy_cert(
+                    "encryption-example.demo",
+                    "example/cert.pem", "example/key.pem",
+                    "example/cert_chain.pem")
+                # Test that we actually called add_include
+                self.assertTrue(mock_add.called)
+        shutil.rmtree(tmp_path)
+
+    @mock.patch("certbot_apache.parser.ApacheParser.parsed_in_original")
+    def test_choose_vhost_and_servername_addition(self, mock_parsed):
+        ret_vh = self.vh_truth[8]
+        ret_vh.enabled = True
+        self.config.enable_site(ret_vh)
+        # Make sure that we return early
+        self.assertFalse(mock_parsed.called)
+
+    def test_enable_mod_unsupported(self):
+        self.assertRaises(errors.MisconfigurationError,
+                          self.config.enable_mod,
+                          "whatever")
 
 class MultipleVhostsTest(util.ApacheTest):
     """Test two standard well-configured HTTP vhosts."""
@@ -43,13 +135,16 @@ class MultipleVhostsTest(util.ApacheTest):
             else:
                 return orig_os_constant(key)
 
-        with mock.patch("certbot_apache.constants.os_constant") as mock_c:
-            mock_c.side_effect = mock_os_constant
-            self.config = util.get_apache_configurator(
-                self.config_path, None, self.config_dir, self.work_dir)
-            self.config = self.mock_deploy_cert(self.config)
-        self.vh_truth = util.get_vh_truth(
-            self.temp_dir, "debian_apache_2_4/multiple_vhosts")
+        with mock.patch("certbot.util.get_os_info") as mock_osi:
+            # Make sure we act like Debian for these tests
+            mock_osi.return_value = ("debian", "7")
+            with mock.patch("certbot_apache.constants.os_constant") as mock_c:
+                mock_c.side_effect = mock_os_constant
+                self.config = util.get_apache_configurator(
+                    self.config_path, None, self.config_dir, self.work_dir)
+                self.config = self.mock_deploy_cert(self.config)
+            self.vh_truth = util.get_vh_truth(
+                self.temp_dir, "debian_apache_2_4/multiple_vhosts")
 
     def mock_deploy_cert(self, config):
         """A test for a mock deploy cert"""
@@ -57,7 +152,7 @@ class MultipleVhostsTest(util.ApacheTest):
 
         def mocked_deploy_cert(*args, **kwargs):
             """a helper to mock a deployed cert"""
-            with mock.patch("certbot_apache.configurator.ApacheConfigurator.enable_mod"):
+            with mock.patch("certbot_apache.override_debian.DebianConfigurator.enable_mod"):
                 config.real_deploy_cert(*args, **kwargs)
         self.config.deploy_cert = mocked_deploy_cert
         return self.config
@@ -163,13 +258,12 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertTrue("certbot.demo" in names)
 
     def test_get_bad_path(self):
-        from certbot_apache.configurator import get_file_path
-        self.assertEqual(get_file_path(None), None)
-        self.assertEqual(get_file_path("nonexistent"), None)
+        self.assertEqual(apache_util.get_file_path(None), None)
+        self.assertEqual(apache_util.get_file_path("nonexistent"), None)
         self.assertEqual(self.config._create_vhost("nonexistent"), None) # pylint: disable=protected-access
 
     def test_get_aug_internal_path(self):
-        from certbot_apache.configurator import get_internal_aug_path
+        from certbot_apache.apache_util import get_internal_aug_path
         internal_paths = [
             "Virtualhost", "IfModule/VirtualHost", "VirtualHost", "VirtualHost",
             "Macro/VirtualHost", "IfModule/VirtualHost", "VirtualHost",
@@ -350,34 +444,24 @@ class MultipleVhostsTest(util.ApacheTest):
 
     def test_enable_site_failure(self):
         self.config.parser.root = "/tmp/nonexistent"
-        self.assertRaises(
-            errors.NotSupportedError,
-            self.config.enable_site,
-            obj.VirtualHost("asdf", "afsaf", set(), False, False))
+        with mock.patch("os.path.isdir") as mock_dir:
+            mock_dir.return_value = True
+            with mock.patch("os.path.islink") as mock_link:
+                mock_link.return_value = False
+                self.assertRaises(
+                    errors.NotSupportedError,
+                    self.config.enable_site,
+                    obj.VirtualHost("asdf", "afsaf", set(), False, False))
 
-    def test_enable_site_nondebian(self):
-        mock_c = "certbot_apache.configurator.ApacheConfigurator.conf"
-        def conf_side_effect(arg):
-            """ Mock function for ApacheConfigurator.conf """
-            confvars = {"handle-sites": False}
-            if arg in confvars:
-                return confvars[arg]
-        inc_path = "/path/to/wherever"
-        vhost = self.vh_truth[0]
-        with mock.patch(mock_c) as mock_conf:
-            mock_conf.side_effect = conf_side_effect
-            vhost.enabled = False
-            vhost.filep = inc_path
-            self.assertFalse(self.config.parser.find_dir("Include", inc_path))
-            self.assertFalse(
-                os.path.dirname(inc_path) in self.config.parser.existing_paths)
-            self.config.enable_site(vhost)
-            self.assertTrue(self.config.parser.find_dir("Include", inc_path))
-            self.assertTrue(
-                os.path.dirname(inc_path) in self.config.parser.existing_paths)
-            self.assertTrue(
-                os.path.basename(inc_path) in self.config.parser.existing_paths[
-                    os.path.dirname(inc_path)])
+    def test_enable_site_call_parent(self):
+        with mock.patch(
+            "certbot_apache.configurator.ApacheConfigurator.enable_site") as e_s:
+            self.config.parser.root = "/tmp/nonexistent"
+            vh = self.vh_truth[0]
+            vh.enabled = False
+            self.config.enable_site(vh)
+            self.assertTrue(e_s.called)
+
 
     def test_deploy_cert_enable_new_vhost(self):
         # Create
@@ -426,12 +510,12 @@ class MultipleVhostsTest(util.ApacheTest):
         # Verify one directive was found in the correct file
         self.assertEqual(len(loc_cert), 1)
         self.assertEqual(
-            configurator.get_file_path(loc_cert[0]),
+            apache_util.get_file_path(loc_cert[0]),
             self.vh_truth[1].filep)
 
         self.assertEqual(len(loc_key), 1)
         self.assertEqual(
-            configurator.get_file_path(loc_key[0]),
+            apache_util.get_file_path(loc_key[0]),
             self.vh_truth[1].filep)
 
     def test_deploy_cert_newssl_no_fullchain(self):
@@ -466,37 +550,6 @@ class MultipleVhostsTest(util.ApacheTest):
                               "random.demo", "example/cert.pem",
                               "example/key.pem"))
 
-    def test_deploy_cert_not_parsed_path(self):
-        # Make sure that we add include to root config for vhosts when
-        # handle-sites is false
-        self.config.parser.modules.add("ssl_module")
-        self.config.parser.modules.add("mod_ssl.c")
-        tmp_path = os.path.realpath(tempfile.mkdtemp("vhostroot"))
-        os.chmod(tmp_path, 0o755)
-        mock_p = "certbot_apache.configurator.ApacheConfigurator._get_ssl_vhost_path"
-        mock_a = "certbot_apache.parser.ApacheParser.add_include"
-        mock_c = "certbot_apache.configurator.ApacheConfigurator.conf"
-        orig_conf = self.config.conf
-        def conf_side_effect(arg):
-            """ Mock function for ApacheConfigurator.conf """
-            confvars = {"handle-sites": False}
-            if arg in confvars:
-                return confvars[arg]
-            else:
-                return orig_conf("arg")
-
-        with mock.patch(mock_c) as mock_conf:
-            mock_conf.side_effect = conf_side_effect
-            with mock.patch(mock_p) as mock_path:
-                mock_path.return_value = os.path.join(tmp_path, "whatever.conf")
-                with mock.patch(mock_a) as mock_add:
-                    self.config.deploy_cert(
-                        "encryption-example.demo",
-                        "example/cert.pem", "example/key.pem",
-                        "example/cert_chain.pem")
-                    # Test that we actually called add_include
-                    self.assertTrue(mock_add.called)
-        shutil.rmtree(tmp_path)
 
 
     def test_deploy_cert(self):
@@ -557,17 +610,17 @@ class MultipleVhostsTest(util.ApacheTest):
         # Verify one directive was found in the correct file
         self.assertEqual(len(loc_cert), 1)
         self.assertEqual(
-            configurator.get_file_path(loc_cert[0]),
+            apache_util.get_file_path(loc_cert[0]),
             self.vh_truth[1].filep)
 
         self.assertEqual(len(loc_key), 1)
         self.assertEqual(
-            configurator.get_file_path(loc_key[0]),
+            apache_util.get_file_path(loc_key[0]),
             self.vh_truth[1].filep)
 
         self.assertEqual(len(loc_chain), 1)
         self.assertEqual(
-            configurator.get_file_path(loc_chain[0]),
+            apache_util.get_file_path(loc_chain[0]),
             self.vh_truth[1].filep)
 
         # One more time for chain directive setting

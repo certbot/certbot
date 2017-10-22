@@ -2,6 +2,49 @@
 import pkg_resources
 from certbot import util
 
+def get_configurator(*args, **kwargs):
+    """
+    Initialize the configurator override class
+
+    :return: Configurator class or `None` if no override
+    """
+
+    from certbot_apache import override_debian
+    OVERRIDES = {
+        "default": None,
+        "debian": override_debian.DebianConfigurator,
+        "ubuntu": None,
+        "centos": None,
+        "centos linux": None,
+        "fedora": None,
+        "red hat enterprise linux server": None,
+        "rhel": None,
+        "amazon": None,
+        "gentoo": None,
+        "gentoo base system": None,
+        "darwin": None,
+        "opensuse": None,
+        "suse": None,
+        "arch": None,
+    }
+
+    os_info = util.get_os_info()
+    override_class = None
+    try:
+        override_class = OVERRIDES[os_info[0].lower()]
+    except KeyError:
+        # OS not found in the list
+        os_like = util.get_systemd_os_like()
+        if os_like:
+            for os_name in os_like:
+                if os_name in OVERRIDES.keys():
+                    override_class = OVERRIDES[os_name]
+        if not override_class:
+            override_class = OVERRIDES["default"]
+    if override_class:
+        return override_class(*args, **kwargs)
+    return None
+
 CLI_DEFAULTS_DEFAULT = dict(
     server_root="/etc/apache2",
     vhost_root="/etc/apache2/sites-available",

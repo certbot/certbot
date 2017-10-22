@@ -22,9 +22,13 @@ class TlsSniPerformTest(util.ApacheTest):
     def setUp(self):  # pylint: disable=arguments-differ
         super(TlsSniPerformTest, self).setUp()
 
-        config = util.get_apache_configurator(
-            self.config_path, self.vhost_path, self.config_dir, self.work_dir)
-        config.config.tls_sni_01_port = 443
+        with mock.patch("certbot.util.get_os_info") as mock_osi:
+            # Make sure we act like Debian for these tests
+            mock_osi.return_value = ("debian", "7")
+            config = util.get_apache_configurator(
+                self.config_path, self.vhost_path, self.config_dir,
+                self.work_dir)
+            config.config.tls_sni_01_port = 443
 
         from certbot_apache import tls_sni_01
         self.sni = tls_sni_01.ApacheTlsSni01(config)
@@ -81,7 +85,8 @@ class TlsSniPerformTest(util.ApacheTest):
         # pylint: disable=protected-access
         self.sni._setup_challenge_cert = mock_setup_cert
 
-        with mock.patch("certbot_apache.configurator.ApacheConfigurator.enable_mod"):
+        with mock.patch(
+            "certbot_apache.override_debian.DebianConfigurator.enable_mod"):
             sni_responses = self.sni.perform()
 
         self.assertEqual(mock_setup_cert.call_count, 2)
