@@ -148,8 +148,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             configurator = constants.get_configurator(*args, **kwargs)
             if configurator:
                 return configurator
-        return super(ApacheConfigurator, cls).__new__(
-            cls, *args, **kwargs)
+        return super(ApacheConfigurator, cls).__new__(cls)
 
     @property
     def mod_ssl_conf(self):
@@ -209,9 +208,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         else:
             self.vhostroot = os.path.abspath(self.conf("vhost-root"))
 
-        self.parser = parser.ApacheParser(
-            self.aug, self.conf("server-root"), self.conf("vhost-root"),
-            self.version, configurator=self)
+        self.parser = self.get_parser()
+
         # Check for errors in parsing files with Augeas
         self.check_parsing_errors("httpd.aug")
 
@@ -242,6 +240,12 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             return False
         self.aug.remove("/test/path")
         return matches
+
+    def get_parser(self):
+        """Initializes the ApacheParser"""
+        return parser.ApacheParser(
+            self.aug, self.conf("server-root"), self.conf("vhost-root"),
+            self.version, configurator=self)
 
     def deploy_cert(self, domain, cert_path, key_path,
                     chain_path=None, fullchain_path=None):
@@ -1910,6 +1914,5 @@ class OverrideConfigurator(ApacheConfigurator):
         super(OverrideConfigurator, self).__init__(*args, **kwargs)
 
     def __new__(cls, *args, **kwargs):
-        kwargs["overridden"] = True
         return super(OverrideConfigurator, cls).__new__(
-            cls, *args, **kwargs)
+            cls, overridden=True)
