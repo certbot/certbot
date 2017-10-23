@@ -45,13 +45,16 @@ class MultipleVhostsTestNonDebian(util.ApacheTest):
                 return orig_os_constant(key)
         with mock.patch("certbot.util.get_os_info") as mock_osi:
             mock_osi.return_value = ("nonexistent_distro", "7")
-            with mock.patch("certbot_apache.constants.os_constant") as mock_c:
-                mock_c.side_effect = mock_os_constant
-                self.config = util.get_apache_configurator(
-                    self.config_path, None, self.config_dir, self.work_dir)
-                self.config = self.mock_deploy_cert(self.config)
-            self.vh_truth = util.get_vh_truth(
-                self.temp_dir, "debian_apache_2_4/multiple_vhosts")
+            with mock.patch("certbot.util.get_systemd_os_like") as mock_like:
+                mock_like.return_value = ["nonexistent"]
+                with mock.patch(
+                    "certbot_apache.constants.os_constant") as mock_c:
+                    mock_c.side_effect = mock_os_constant
+                    self.config = util.get_apache_configurator(
+                        self.config_path, None, self.config_dir, self.work_dir)
+                    self.config = self.mock_deploy_cert(self.config)
+                self.vh_truth = util.get_vh_truth(
+                    self.temp_dir, "debian_apache_2_4/multiple_vhosts")
 
     def mock_deploy_cert(self, config):
         """A test for a mock deploy cert"""
@@ -90,6 +93,7 @@ class MultipleVhostsTestNonDebian(util.ApacheTest):
         # handle-sites is false
         self.config.parser.modules.add("ssl_module")
         self.config.parser.modules.add("mod_ssl.c")
+        self.config.parser.modules.add("socache_shmcb_module")
         tmp_path = os.path.realpath(tempfile.mkdtemp("vhostroot"))
         os.chmod(tmp_path, 0o755)
         mock_p = "certbot_apache.configurator.ApacheConfigurator._get_ssl_vhost_path"
@@ -482,9 +486,12 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertTrue(ssl_vhost.enabled)
 
     def test_deploy_cert_newssl(self):
-        self.config = util.get_apache_configurator(
-            self.config_path, self.vhost_path, self.config_dir,
-            self.work_dir, version=(2, 4, 16))
+        with mock.patch("certbot.util.get_os_info") as mock_osi:
+            # Make sure we act like Debian for this test
+            mock_osi.return_value = ("debian", "7")
+            self.config = util.get_apache_configurator(
+                self.config_path, self.vhost_path, self.config_dir,
+                self.work_dir, version=(2, 4, 16))
 
         self.config.parser.modules.add("ssl_module")
         self.config.parser.modules.add("mod_ssl.c")
@@ -519,9 +526,13 @@ class MultipleVhostsTest(util.ApacheTest):
             self.vh_truth[1].filep)
 
     def test_deploy_cert_newssl_no_fullchain(self):
-        self.config = util.get_apache_configurator(
-            self.config_path, self.vhost_path, self.config_dir,
-            self.work_dir, version=(2, 4, 16))
+
+        with mock.patch("certbot.util.get_os_info") as mock_osi:
+            # Make sure we act like Debian for this test
+            mock_osi.return_value = ("debian", "7")
+            self.config = util.get_apache_configurator(
+                self.config_path, self.vhost_path, self.config_dir,
+                self.work_dir, version=(2, 4, 16))
         self.config = self.mock_deploy_cert(self.config)
 
         self.config.parser.modules.add("ssl_module")
@@ -535,9 +546,12 @@ class MultipleVhostsTest(util.ApacheTest):
                               "example/key.pem"))
 
     def test_deploy_cert_old_apache_no_chain(self):
-        self.config = util.get_apache_configurator(
-            self.config_path, self.vhost_path, self.config_dir,
-            self.work_dir, version=(2, 4, 7))
+        with mock.patch("certbot.util.get_os_info") as mock_osi:
+            # Make sure we act like Debian for this test
+            mock_osi.return_value = ("debian", "7")
+            self.config = util.get_apache_configurator(
+                self.config_path, self.vhost_path, self.config_dir,
+                self.work_dir, version=(2, 4, 7))
         self.config = self.mock_deploy_cert(self.config)
 
         self.config.parser.modules.add("ssl_module")
@@ -1430,8 +1444,12 @@ class AugeasVhostsTest(util.ApacheTest):
                                             config_root=cr,
                                             vhost_root=vr)
 
-        self.config = util.get_apache_configurator(
-            self.config_path, self.vhost_path, self.config_dir, self.work_dir)
+        with mock.patch("certbot.util.get_os_info") as mock_osi:
+            # Make sure we act like Debian for this test
+            mock_osi.return_value = ("debian", "7")
+            self.config = util.get_apache_configurator(
+                self.config_path, self.vhost_path, self.config_dir,
+                self.work_dir)
 
     def tearDown(self):
         shutil.rmtree(self.temp_dir)
@@ -1513,8 +1531,12 @@ class MultiVhostsTest(util.ApacheTest):
                                             config_root=cr,
                                             vhost_root=vr)
 
-        self.config = util.get_apache_configurator(
-            self.config_path, self.vhost_path, self.config_dir, self.work_dir)
+        with mock.patch("certbot.util.get_os_info") as mock_osi:
+            # Make sure we act like Debian for this test
+            mock_osi.return_value = ("debian", "7")
+            self.config = util.get_apache_configurator(
+                self.config_path, self.vhost_path,
+                self.config_dir, self.work_dir)
         self.vh_truth = util.get_vh_truth(
             self.temp_dir, "debian_apache_2_4/multi_vhosts")
 
