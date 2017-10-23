@@ -140,6 +140,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                               "staple-ocsp": self._enable_ocsp_stapling}
 
     def __new__(cls, *args, **kwargs):
+        """Class constructor. Looks up if there's a appropriate override
+        class and returns that instead if found"""
+
         if "overridden" not in kwargs.keys():
             # Try to override only once
             configurator = constants.get_configurator(*args, **kwargs)
