@@ -4,10 +4,9 @@ import sys
 import unittest
 
 import augeas
+import josepy as jose
 import mock
 import zope.component
-
-from acme import jose
 
 from certbot.display import util as display_util
 

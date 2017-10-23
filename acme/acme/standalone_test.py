@@ -10,13 +10,13 @@ import unittest
 from six.moves import http_client  # pylint: disable=import-error
 from six.moves import socketserver  # type: ignore  # pylint: disable=import-error
 
+import josepy as jose
 import mock
 import requests
 
 from acme import challenges
 from acme import crypto_util
 from acme import errors
-from acme import jose
 from acme import test_util
 
 
