@@ -396,12 +396,12 @@ class NginxParserTest(util.NginxTest): #pylint: disable=too-many-public-methods
         ])
         self.assertTrue(server['ssl'])
 
-    def test_create_new_vhost_from_default(self):
+    def test_duplicate_vhost(self):
         nparser = parser.NginxParser(self.config_path)
 
         vhosts = nparser.get_vhosts()
         default = [x for x in vhosts if 'default' in x.filep][0]
-        new_vhost = nparser.create_new_vhost_from_default(default)
+        new_vhost = nparser.duplicate_vhost(default)
         nparser.filedump(ext='')
 
         # check properties of new vhost

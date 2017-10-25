@@ -260,7 +260,7 @@ class NginxConfigurator(common.Installer):
     def _vhost_from_duplicated_default(self, domain):
         if self.new_vhost is None:
             default_vhost = self._get_default_vhost()
-            self.new_vhost = self.parser.create_new_vhost_from_default(default_vhost)
+            self.new_vhost = self.parser.duplicate_vhost(default_vhost)
             if not self.new_vhost.ssl:
                 self._make_server_ssl(self.new_vhost)
             self.new_vhost.names = set()

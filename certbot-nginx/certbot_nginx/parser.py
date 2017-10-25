@@ -314,8 +314,8 @@ class NginxParser(object):
         except errors.MisconfigurationError as err:
             raise errors.MisconfigurationError("Problem in %s: %s" % (filename, str(err)))
 
-    def create_new_vhost_from_default(self, vhost_template):
-        """Duplicate the default vhost in the configuration files.
+    def duplicate_vhost(self, vhost_template, delete_default=True):
+        """Duplicate the vhost in the configuration files.
 
         :param :class:`~certbot_nginx.obj.VirtualHost` vhost_template: The vhost
             whose information we copy
@@ -335,9 +335,10 @@ class NginxParser(object):
         new_vhost.path[-1] = new_location
         for addr in new_vhost.addrs:
             addr.default = False
-        for directive in enclosing_block[new_vhost.path[-1]][1]:
-            if len(directive) > 0 and directive[0] == 'listen' and 'default_server' in directive:
-                del directive[directive.index('default_server')]
+        if delete_default:
+            for directive in enclosing_block[new_vhost.path[-1]][1]:
+                if len(directive) > 0 and directive[0] == 'listen' and 'default_server' in directive:
+                    del directive[directive.index('default_server')]
         return new_vhost
 
 def _parse_ssl_options(ssl_options):
