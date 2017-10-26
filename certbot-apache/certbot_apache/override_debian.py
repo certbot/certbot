@@ -87,7 +87,7 @@ class DebianConfigurator(configurator.OverrideConfigurator):
         for dep in deps:
             if (dep + "_module") not in self.parser.modules:
                 self._enable_mod_debian(dep, temp)
-                self.add_parser_mod(dep)
+                self.parser.add_mod(dep)
                 note = "Enabled dependency of %s module - %s" % (mod_name, dep)
                 if not temp:
                     self.save_notes += note + os.linesep
@@ -95,7 +95,7 @@ class DebianConfigurator(configurator.OverrideConfigurator):
 
         # Enable actual module
         self._enable_mod_debian(mod_name, temp)
-        self.add_parser_mod(mod_name)
+        self.parser.add_mod(mod_name)
 
         if not temp:
             self.save_notes += "Enabled %s module in Apache\n" % mod_name

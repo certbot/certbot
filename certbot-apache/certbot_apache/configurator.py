@@ -1770,11 +1770,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             "run Certbot again.")
         raise errors.MisconfigurationError(mod_message.format(mod_name))
 
-    def add_parser_mod(self, mod_name):
-        """Shortcut for updating parser modules."""
-        self.parser.modules.add(mod_name + "_module")
-        self.parser.modules.add("mod_" + mod_name + ".c")
-
     def restart(self):
         """Runs a config test and reloads the Apache server.
 

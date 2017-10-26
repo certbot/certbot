@@ -46,14 +46,16 @@ class ApacheParser(object):
         # This only handles invocation parameters and Define directives!
         self.parser_paths = {}
         self.variables = {}
-        if version >= (2, 4):
-            self.update_runtime_variables()
 
         self.aug = aug
         # Find configuration root and make sure augeas can parse it.
         self.root = os.path.abspath(root)
         self.loc = {"root": self._find_config_root()}
         self.parse_file(self.loc["root"])
+
+        if version >= (2, 4):
+            # Look up variables from httpd and add to DOM if not already parsed
+            self.update_runtime_variables()
 
         # This problem has been fixed in Augeas 1.0
         self.standardize_excl()
@@ -67,6 +69,7 @@ class ApacheParser(object):
         # Set up rest of locations
         self.loc.update(self._set_locations())
 
+        # list of the active include paths, before modifications
         self.existing_paths = copy.deepcopy(self.parser_paths)
 
         # Must also attempt to parse additional virtual host root
@@ -103,6 +106,13 @@ class ApacheParser(object):
                 # Create a new path
                 self.existing_paths[new_dir] = [new_file]
 
+    def add_mod(self, mod_name):
+        """Shortcut for updating parser modules."""
+        if mod_name + "_module" not in self.modules:
+            self.modules.add(mod_name + "_module")
+        if "mod_" + mod_name + ".c" not in self.modules:
+            self.modules.add("mod_" + mod_name + ".c")
+
     def init_modules(self):
         """Iterates on the configuration until no new modules are loaded.
 
@@ -133,20 +143,18 @@ class ApacheParser(object):
                                  "Augeas path: {0}".format(match_name[6:]))
 
     def update_runtime_variables(self):
-        """"
+        """Update Includes, Defines and Includes from httpd config dump data"""
+        self.update_defines()
+        self.update_includes()
+        self.update_modules()
 
-        .. note:: Compile time variables (apache2ctl -V) are not used within
-            the dynamic configuration files.  These should not be parsed or
-            interpreted.
-
-        .. todo:: Create separate compile time variables...
-            simply for arg_get()
-
-        """
-        stdout = self._get_runtime_cfg()
+    def update_defines(self):
+        """Get Defines from httpd process"""
 
         variables = dict()
-        matches = re.compile(r"Define: ([^ \n]*)").findall(stdout)
+        define_cmd = [constants.os_constant("apache_cmd"), "-t", "-D",
+                      "DUMP_RUN_CFG"]
+        matches = self.parse_from_subprocess(define_cmd, r"Define: ([^ \n]*)")
         try:
             matches.remove("DUMP_RUN_CFG")
         except ValueError:
@@ -163,15 +171,50 @@ class ApacheParser(object):
 
         self.variables = variables
 
-    def _get_runtime_cfg(self):  # pylint: disable=no-self-use
-        """Get runtime configuration info.
+    def update_includes(self):
+        """Get includes from httpd process, and add them to DOM if needed"""
 
-        :returns: stdout from DUMP_RUN_CFG
+        inc_cmd = [constants.os_constant("apache_cmd"), "-t", "-D",
+                   "DUMP_INCLUDES"]
+        matches = self.parse_from_subprocess(inc_cmd, r"\(.*\) (.*)")
+        if matches:
+            for i in matches:
+                if not self.parsed_in_current(i):
+                    self.parse_file(i)
+    def update_modules(self):
+        """Get loaded modules from httpd process, and add them to DOM"""
+
+        mod_cmd = [constants.os_constant("apache_cmd"), "-t", "-D",
+                       "DUMP_MODULES"]
+        matches = self.parse_from_subprocess(mod_cmd, r"(.*)_module")
+        for mod in matches:
+			self.add_mod(mod.strip())
+
+    def parse_from_subprocess(self, command, regexp):
+        """Get values from stdout of subprocess command
+
+        :param list command: Command to run
+        :param str regexp: Regexp for parsing
+
+        :returns: list parsed from command output
+        :rtype: list
+
+        """
+        stdout = self._get_runtime_cfg(command)
+        if stdout:
+            return re.compile(regexp).findall(stdout)
+        return []
+
+    def _get_runtime_cfg(self, command):  # pylint: disable=no-self-use
+        """Get runtime configuration info.
+        :param command: Command to run
+
+        :returns: stdout from command
 
         """
         try:
             proc = subprocess.Popen(
-                constants.os_constant("define_cmd"),
+                command,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 universal_newlines=True)
@@ -180,10 +223,10 @@ class ApacheParser(object):
         except (OSError, ValueError):
             logger.error(
                 "Error running command %s for runtime parameters!%s",
-                constants.os_constant("define_cmd"), os.linesep)
+                command, os.linesep)
             raise errors.MisconfigurationError(
                 "Error accessing loaded Apache parameters: %s",
-                constants.os_constant("define_cmd"))
+                command)
         # Small errors that do not impede
         if proc.returncode != 0:
             logger.warning("Error in checking parameter list: %s", stderr)

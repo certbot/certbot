@@ -9,7 +9,7 @@ def get_mod_deps(mod_name):
         changes.
     .. warning:: If all deps are not included, it may cause incorrect parsing
         behavior, due to enable_mod's shortcut for updating the parser's
-        currently defined modules (`.ApacheConfigurator._add_parser_mod`)
+        currently defined modules (`.ApacheParser.add_mod`)
         This would only present a major problem in extremely atypical
         configs that use ifmod for the missing deps.
 
