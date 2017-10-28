@@ -3,6 +3,10 @@
 import logging
 import subprocess
 
+from certbot import errors
+from certbot import util as certbot_util
+from certbot.plugins import util as plugins_util
+
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +56,23 @@ def check_all_output(*args, **kwargs):
             cmd, retcode, output, err)
         raise subprocess.CalledProcessError(retcode, cmd)
     return (output, err)
+
+
+def verify_exe_exists(exe):
+    """Ensures an executable with the given name is available.
+
+    If an executable isn't found for the given path or name, extra
+    directories are added to the user's PATH to help find system
+    utilities that may not be available in the default cron PATH.
+
+    :param str exe: executable path or name
+
+    :raises .NoInstallationError: when the executable isn't found
+
+    """
+    if not (certbot_util.exe_exists(exe) or plugins_util.path_surgery(exe)):
+        raise errors.NoInstallationError(
+            "Cannot find executable '{0}'.".format(exe))
 
 
 def check_call(*args, **kwargs):

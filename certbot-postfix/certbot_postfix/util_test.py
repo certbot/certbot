@@ -5,6 +5,8 @@ import unittest
 
 import mock
 
+from certbot import errors
+
 
 class CheckAllOutputTest(unittest.TestCase):
     """Tests for certbot_postfix.util.check_all_output."""
@@ -47,6 +49,33 @@ class CheckAllOutputTest(unittest.TestCase):
 
     def test_universal_newlines_error(self):
         self.assertRaises(ValueError, self._call, universal_newlines=False)
+
+
+class VerifyExeExistsTest(unittest.TestCase):
+    """Tests for certbot_postfix.util.verify_exe_exists."""
+
+    @classmethod
+    def _call(cls, *args, **kwargs):
+        from certbot_postfix.util import verify_exe_exists
+        return verify_exe_exists(*args, **kwargs)
+
+    @mock.patch('certbot_postfix.util.certbot_util.exe_exists')
+    @mock.patch('certbot_postfix.util.plugins_util.path_surgery')
+    def test_failure(self, mock_exe_exists, mock_path_surgery):
+        mock_exe_exists.return_value = mock_path_surgery.return_value = False
+        self.assertRaises(errors.NoInstallationError, self._call, 'foo')
+
+    @mock.patch('certbot_postfix.util.certbot_util.exe_exists')
+    def test_simple_success(self, mock_exe_exists):
+        mock_exe_exists.return_value = True
+        self._call('foo')
+
+    @mock.patch('certbot_postfix.util.certbot_util.exe_exists')
+    @mock.patch('certbot_postfix.util.plugins_util.path_surgery')
+    def test_successful_surgery(self, mock_exe_exists, mock_path_surgery):
+        mock_exe_exists.return_value = False
+        mock_path_surgery.return_value = True
+        self._call('foo')
 
 
 class CheckCallTest(unittest.TestCase):
