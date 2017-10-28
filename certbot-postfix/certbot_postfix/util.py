@@ -7,6 +7,53 @@ import subprocess
 logger = logging.getLogger(__name__)
 
 
+def check_all_output(*args, **kwargs):
+    """A version of subprocess.check_output that also captures stderr.
+
+    This is the same as :func:`subprocess.check_output` except output
+    written to stderr is also captured and returned to the caller. The
+    return value is a tuple of two strings (rather than byte strings).
+    To accomplish this, the caller cannot set the stdout, stderr, or
+    universal_newlines parameters to :class:`subprocess.Popen`.
+
+    Additionally, if the command exits with a nonzero status, output is
+    not included in the raised :class:`subprocess.CalledProcessError`
+    because Python 2.6 does not support this. Instead, the failure
+    including the output is logged.
+
+    :param tuple args: positional arguments for Popen
+    :param dict kwargs: keyword arguments for Popen
+
+    :returns: data written to stdout and stderr
+    :rtype: `tuple` of `str`
+
+    :raises ValueError: if arguments are invalid
+    :raises subprocess.CalledProcessError: if the command fails
+
+    """
+    for keyword in ('stdout', 'stderr', 'universal_newlines',):
+        if keyword in kwargs:
+            raise ValueError(
+                keyword + ' argument not allowed, it will be overridden.')
+
+    kwargs['stdout'] = subprocess.PIPE
+    kwargs['stderr'] = subprocess.PIPE
+    kwargs['universal_newlines'] = True
+
+    process = subprocess.Popen(*args, **kwargs)
+    output, err = process.communicate()
+    retcode = process.poll()
+    if retcode:
+        cmd = kwargs.get('args')
+        if cmd is None:
+            cmd = args[0]
+        logger.debug(
+            "'%s' exited with %d. stdout output was:\n%s\nstderr output was:\n%s",
+            cmd, retcode, output, err)
+        raise subprocess.CalledProcessError(retcode, cmd)
+    return (output, err)
+
+
 def check_call(*args, **kwargs):
     """A simple wrapper of subprocess.check_call that logs errors.
 
