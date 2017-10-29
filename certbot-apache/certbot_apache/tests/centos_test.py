@@ -91,7 +91,11 @@ class MultipleVhostsTestCentOS(util.ApacheTest):
         mock_get.side_effect = mock_get_cfg
         self.config.parser.modules = set()
         self.config.parser.variables = {}
-        self.config.parser.update_runtime_variables()
+
+        with mock.patch("certbot.util.get_os_info") as mock_osi:
+            # Make sure we have the have the CentOS httpd constants
+            mock_osi.return_value = ("centos", "7")
+            self.config.parser.update_runtime_variables()
 
         self.assertEquals(mock_get.call_count, 3)
         self.assertEquals(len(self.config.parser.modules), 4)
@@ -114,12 +118,20 @@ class MultipleVhostsTestCentOS(util.ApacheTest):
                 raise Exception("Missed: %s" % vhost)  # pragma: no cover
         self.assertEqual(found, 2)
 
-    def test_get_sysconfig_vars(self):
+    @mock.patch("certbot_apache.parser.ApacheParser._get_runtime_cfg")
+    def test_get_sysconfig_vars(self, mock_cfg):
         """Make sure we read the sysconfig OPTIONS variable correctly"""
+        # Return nothing for the process calls
+        mock_cfg.return_value = ""
         self.config.parser.sysconfig_filep = os.path.realpath(
             os.path.join(self.config.parser.root, "../sysconfig/httpd"))
         self.config.parser.variables = {}
-        self.config.parser.update_runtime_variables()
+
+        with mock.patch("certbot.util.get_os_info") as mock_osi:
+            # Make sure we have the have the CentOS httpd constants
+            mock_osi.return_value = ("centos", "7")
+            self.config.parser.update_runtime_variables()
+
         self.assertTrue("mock_define" in self.config.parser.variables.keys())
         self.assertTrue("mock_define_too" in self.config.parser.variables.keys())
         self.assertTrue("mock_value" in self.config.parser.variables.keys())
