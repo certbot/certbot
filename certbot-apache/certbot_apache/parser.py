@@ -40,10 +40,7 @@ class ApacheParser(object):
         # issues with aug.load() after adding new files / defines to parse tree
         self.configurator = configurator
 
-        # This uses the binary, so it can be done first.
-        # https://httpd.apache.org/docs/2.4/mod/core.html#define
-        # https://httpd.apache.org/docs/2.4/mod/core.html#ifdefine
-        # This only handles invocation parameters and Define directives!
+        self.modules = set()
         self.parser_paths = {}
         self.variables = {}
 
@@ -60,10 +57,6 @@ class ApacheParser(object):
         # This problem has been fixed in Augeas 1.0
         self.standardize_excl()
 
-        # Temporarily set modules to be empty, so that find_dirs can work
-        # https://httpd.apache.org/docs/2.4/mod/core.html#ifmodule
-        # This needs to come before locations are set.
-        self.modules = set()
         self.init_modules()
 
         # Set up rest of locations
@@ -120,27 +113,27 @@ class ApacheParser(object):
             the iteration issue.  Else... parse and enable mods at same time.
 
         """
-        # Since modules are being initiated... clear existing set.
-        self.modules = set()
+        mods = set()
         matches = self.find_dir("LoadModule")
-
         iterator = iter(matches)
         # Make sure prev_size != cur_size for do: while: iteration
         prev_size = -1
 
-        while len(self.modules) != prev_size:
-            prev_size = len(self.modules)
+        while len(mods) != prev_size:
+            prev_size = len(mods)
 
             for match_name, match_filename in six.moves.zip(
                     iterator, iterator):
                 mod_name = self.get_arg(match_name)
                 mod_filename = self.get_arg(match_filename)
                 if mod_name and mod_filename:
-                    self.modules.add(mod_name)
-                    self.modules.add(os.path.basename(mod_filename)[:-2] + "c")
+                    mods.add(mod_name)
+                    mods.add(os.path.basename(mod_filename)[:-2] + "c")
                 else:
                     logger.debug("Could not read LoadModule directive from " +
                                  "Augeas path: {0}".format(match_name[6:]))
+        for m in mods:
+            self.modules.add(m)
 
     def update_runtime_variables(self):
         """Update Includes, Defines and Includes from httpd config dump data"""
@@ -181,6 +174,7 @@ class ApacheParser(object):
             for i in matches:
                 if not self.parsed_in_current(i):
                     self.parse_file(i)
+
     def update_modules(self):
         """Get loaded modules from httpd process, and add them to DOM"""
 
@@ -201,9 +195,7 @@ class ApacheParser(object):
 
         """
         stdout = self._get_runtime_cfg(command)
-        if stdout:
-            return re.compile(regexp).findall(stdout)
-        return []
+        return re.compile(regexp).findall(stdout)
 
     def _get_runtime_cfg(self, command):  # pylint: disable=no-self-use
         """Get runtime configuration info.
