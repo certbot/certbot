@@ -1,6 +1,5 @@
 """ Distribution specific override class for CentOS family (RHEL, Fedora) """
-from certbot import util
-
+from certbot_apache import apache_util
 from certbot_apache import configurator
 from certbot_apache import parser
 
@@ -30,13 +29,6 @@ class CentOSParser(parser.ApacheParser):
 
     def parse_sysconfig_var(self):
         """ Parses Apache CLI options from CentOS configuration file """
-        # Get list of words in the variable
-        a_opts = util.get_var_from_file("OPTIONS",
-                                        self.sysconfig_filep).split(" ")
-        for i, v in enumerate(a_opts):
-            # Handle Define statements and make sure it has an argument
-            if v == "-D" and len(a_opts) >= i+2:
-                # Add results to parser.variables dict
-                var_parts = a_opts[i+1].partition("=")
-                self.variables[var_parts[0]] = var_parts[2]
-
+        defines = apache_util.parse_define_file(self.sysconfig_filep, "OPTIONS")
+        for k in defines.keys():
+            self.variables[k] = defines[k]

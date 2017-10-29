@@ -1,6 +1,8 @@
 """ Utility functions for certbot-apache plugin """
 import os
 
+from certbot import util
+
 def get_mod_deps(mod_name):
     """Get known module dependencies.
 
@@ -73,3 +75,22 @@ def _split_aug_path(vhost_path):
     return file_path, "/".join(reversed(internal_path))
 
 
+def parse_define_file(filepath, varname):
+    """ Parses Defines from a variable in configuration file
+
+    :param str filepath: Path of file to parse
+    :param str varname: Name of the variable
+
+    :returns: Dict of Define:Value pairs
+    :rtype: `dict`
+
+    """
+    return_vars = {}
+    # Get list of words in the variable
+    a_opts = util.get_var_from_file(varname, filepath).split(" ")
+    for i, v in enumerate(a_opts):
+        # Handle Define statements and make sure it has an argument
+        if v == "-D" and len(a_opts) >= i+2:
+            var_parts = a_opts[i+1].partition("=")
+            return_vars[var_parts[0]] = var_parts[2]
+    return return_vars
