@@ -182,7 +182,7 @@ class ApacheParser(object):
                        "DUMP_MODULES"]
         matches = self.parse_from_subprocess(mod_cmd, r"(.*)_module")
         for mod in matches:
-			self.add_mod(mod.strip())
+            self.add_mod(mod.strip())
 
     def parse_from_subprocess(self, command, regexp):
         """Get values from stdout of subprocess command

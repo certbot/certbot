@@ -8,7 +8,6 @@ import unittest
 import mock
 # six is used in mock.patch()
 import six  # pylint: disable=unused-import
-import tempfile
 
 from acme import challenges
 

@@ -1,7 +1,6 @@
 """Test for certbot_apache.configurator non-overridden flow"""
 import os
 import shutil
-import unittest
 
 import mock
 import tempfile
@@ -15,7 +14,7 @@ class MultipleVhostsTestGeneric(util.ApacheTest):
 
     _multiprocess_can_split_ = True
 
-    def setUp(self):  # pylint: disable=arguments-differ,duplicate-code
+    def setUp(self):  # pylint: disable=arguments-differ
         super(MultipleVhostsTestGeneric, self).setUp()
 
         from certbot_apache.constants import os_constant
