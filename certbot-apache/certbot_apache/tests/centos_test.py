@@ -83,9 +83,9 @@ class MultipleVhostsTestCentOS(util.ApacheTest):
         )
         def mock_get_cfg(command):
             """Mock httpd process stdout"""
-            if command == ['apache2ctl', '-t', '-D', 'DUMP_RUN_CFG']:
+            if command == ['apachectl', '-t', '-D', 'DUMP_RUN_CFG']:
                 return define_val
-            elif command == ['apache2ctl', '-t', '-D', 'DUMP_MODULES']:
+            elif command == ['apachectl', '-t', '-D', 'DUMP_MODULES']:
                 return mod_val
             return ""
         mock_get.side_effect = mock_get_cfg
