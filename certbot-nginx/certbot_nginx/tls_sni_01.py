@@ -69,6 +69,10 @@ class NginxTlsSni01(common.TLSSNI01):
                         ipv6_addr = ipv6_addr + " ipv6only=on"
                     addresses.append([obj.Addr.fromstring(default_addr),
                                       obj.Addr.fromstring(ipv6_addr)])
+                    logger.info(("Using default addresses %s and %s for " +
+                                 "TLSSNI01 authentication."),
+                                default_addr,
+                                ipv6_addr)
                 else:
                     addresses.append([obj.Addr.fromstring(default_addr)])
                     logger.info("Using default address %s for TLSSNI01 authentication.",

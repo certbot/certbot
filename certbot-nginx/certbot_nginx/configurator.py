@@ -513,6 +513,8 @@ class NginxConfigurator(common.Installer):
 
         """
         ipv6info = self.ipv6_info(self.config.tls_sni_01_port)
+        ipv6_block = ['']
+        ipv4_block = ['']
 
         # If the vhost was implicitly listening on the default Nginx port,
         # have it continue to do so.
@@ -520,22 +522,28 @@ class NginxConfigurator(common.Installer):
             listen_block = [['\n    ', 'listen', ' ', self.DEFAULT_LISTEN_PORT]]
             self.parser.add_server_directives(vhost, listen_block, replace=False)
 
-        ipv6_block = ['']
         if vhost.ipv6_enabled():
             ipv6_block = ['\n    ',
-                            'listen',
-                            ' ',
-                            '[::]:{0} ssl'.format(self.config.tls_sni_01_port)]
+                          'listen',
+                          ' ',
+                          '[::]:{0} ssl'.format(self.config.tls_sni_01_port)]
             if not ipv6info[1]:
                 # ipv6only=on is absent in global config
                 ipv6_block.append(' ')
                 ipv6_block.append('ipv6only=on')
 
+        if vhost.ipv4_enabled():
+            ipv4_block = ['\n    ',
+                          'listen',
+                          ' ',
+                          '{0} ssl'.format(self.config.tls_sni_01_port)]
+
+
         snakeoil_cert, snakeoil_key = self._get_snakeoil_paths()
 
         ssl_block = ([
             ipv6_block,
-            ['\n    ', 'listen', ' ', '{0} ssl'.format(self.config.tls_sni_01_port)],
+            ipv4_block,
             ['\n    ', 'ssl_certificate', ' ', snakeoil_cert],
             ['\n    ', 'ssl_certificate_key', ' ', snakeoil_key],
             ['\n    ', 'include', ' ', self.mod_ssl_conf],

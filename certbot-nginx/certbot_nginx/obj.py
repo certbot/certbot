@@ -217,6 +217,13 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
             if a.ipv6:
                 return True
 
+    def ipv4_enabled(self):
+        """Return true if one or more of the listen directives in vhost are IPv4
+        only"""
+        for a in self.addrs:
+            if not a.ipv6:
+                return True
+
 def _find_directive(directives, directive_name):
     """Find a directive of type directive_name in directives
     """
