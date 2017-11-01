@@ -1,5 +1,6 @@
 server {
     listen       myhost default_server;
+    listen       otherhost default_server;
     server_name www.example.org;
 
     location / {

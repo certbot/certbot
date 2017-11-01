@@ -5,7 +5,7 @@ cache:
         - $HOME/.cache/pip
 
 before_install:
-  - '[ $TRAVIS_OS_NAME == linux ] && dpkg -s libaugeas0 || brew install augeas python3'
+  - '([ $TRAVIS_OS_NAME == linux ] && dpkg -s libaugeas0) || (brew update && brew install augeas python3)'
 
 before_script:
   - 'if [ $TRAVIS_OS_NAME = osx ] ; then ulimit -n 1024 ; fi'
@@ -161,7 +161,9 @@ addons:
     - libapache2-mod-macro
 
 install: "travis_retry pip install tox coveralls"
-script: 'travis_retry tox && ([ "xxx$BOULDER_INTEGRATION" = "xxx" ] || ./tests/travis-integration.sh)'
+script:
+    - travis_retry tox
+    - '[ -z "${BOULDER_INTEGRATION+x}" ] || (travis_retry tests/boulder-fetch.sh && tests/tox-boulder-integration.sh)'
 
 after_success: '[ "$TOXENV" == "cover" ] && coveralls'
 
@@ -169,7 +171,7 @@ notifications:
   email: false
   irc:
     channels:
-      - "chat.freenode.net#letsencrypt-dev"
+      - secure: "SGWZl3ownKx9xKVV2VnGt7DqkTmutJ89oJV9tjKhSs84kLijU6EYdPnllqISpfHMTxXflNZuxtGo0wTDYHXBuZL47w1O32W6nzuXdra5zC+i4sYQwYULUsyfOv9gJX8zWAULiK0Z3r0oho45U+FR5ZN6TPCidi8/eGU+EEPwaAw="
     on_success: never
     on_failure: always
     use_notice: true

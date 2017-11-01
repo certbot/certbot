@@ -1,3 +1,7 @@
+# If new packages are installed by BootstrapGentooCommon below, this version
+# number must be increased.
+BOOTSTRAP_GENTOO_COMMON_VERSION=1
+
 BootstrapGentooCommon() {
   PACKAGES="
     dev-lang/python:2.7
@@ -15,13 +19,13 @@ BootstrapGentooCommon() {
 
   case "$PACKAGE_MANAGER" in
     (paludis)
-      $SUDO cave resolve --preserve-world --keep-targets if-possible $PACKAGES -x
+      cave resolve --preserve-world --keep-targets if-possible $PACKAGES -x
       ;;
     (pkgcore)
-      $SUDO pmerge --noreplace --oneshot $ASK_OPTION $PACKAGES
+      pmerge --noreplace --oneshot $ASK_OPTION $PACKAGES
       ;;
     (portage|*)
-      $SUDO emerge --noreplace --oneshot $ASK_OPTION $PACKAGES
+      emerge --noreplace --oneshot $ASK_OPTION $PACKAGES
       ;;
   esac
 }

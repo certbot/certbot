@@ -1,3 +1,7 @@
+# If new packages are installed by BootstrapDebCommon below, this version
+# number must be increased.
+BOOTSTRAP_DEB_COMMON_VERSION=1
+
 BootstrapDebCommon() {
   # Current version tested with:
   #
@@ -21,7 +25,7 @@ BootstrapDebCommon() {
     QUIET_FLAG='-qq'
   fi
 
-  $SUDO apt-get $QUIET_FLAG update || error apt-get update hit problems but continuing anyway...
+  apt-get $QUIET_FLAG update || error apt-get update hit problems but continuing anyway...
 
   # virtualenv binary can be found in different packages depending on
   # distro version (#346)
@@ -71,13 +75,13 @@ BootstrapDebCommon() {
           esac
         fi
         if [ "$add_backports" = 1 ]; then
-          $SUDO sh -c "echo $BACKPORT_SOURCELINE >> /etc/apt/sources.list.d/$BACKPORT_NAME.list"
-          $SUDO apt-get $QUIET_FLAG update
+          sh -c "echo $BACKPORT_SOURCELINE >> /etc/apt/sources.list.d/$BACKPORT_NAME.list"
+          apt-get $QUIET_FLAG update
         fi
       fi
     fi
     if [ "$add_backports" != 0 ]; then
-      $SUDO apt-get install $QUIET_FLAG $YES_FLAG --no-install-recommends -t "$BACKPORT_NAME" $augeas_pkg
+      apt-get install $QUIET_FLAG $YES_FLAG --no-install-recommends -t "$BACKPORT_NAME" $augeas_pkg
       augeas_pkg=
     fi
   }
@@ -96,7 +100,7 @@ BootstrapDebCommon() {
     # XXX add a case for ubuntu PPAs
   fi
 
-  $SUDO apt-get install $QUIET_FLAG $YES_FLAG --no-install-recommends \
+  apt-get install $QUIET_FLAG $YES_FLAG --no-install-recommends \
     python \
     python-dev \
     $virtualenv \

@@ -142,6 +142,8 @@ def record_chosen_plugins(config, plugins, auth, inst):
     "Update the config entries to reflect the plugins we actually selected."
     config.authenticator = plugins.find_init(auth).name if auth else "None"
     config.installer = plugins.find_init(inst).name if inst else "None"
+    logger.info("Plugins selected: Authenticator %s, Installer %s",
+         config.authenticator, config.installer)
 
 
 def choose_configurator_plugins(config, plugins, verb):

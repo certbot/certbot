@@ -1,3 +1,7 @@
+# If new packages are installed by BootstrapRpmCommon below, this version
+# number must be increased.
+BOOTSTRAP_RPM_COMMON_VERSION=1
+
 BootstrapRpmCommon() {
   # Tested with:
   #   - Fedora 20, 21, 22, 23 (x64)
@@ -24,9 +28,9 @@ BootstrapRpmCommon() {
     QUIET_FLAG='--quiet'
   fi
 
-  if ! $SUDO $tool list *virtualenv >/dev/null 2>&1; then
+  if ! $tool list *virtualenv >/dev/null 2>&1; then
     echo "To use Certbot, packages from the EPEL repository need to be installed."
-    if ! $SUDO $tool list epel-release >/dev/null 2>&1; then
+    if ! $tool list epel-release >/dev/null 2>&1; then
       error "Enable the EPEL repository and try running Certbot again."
       exit 1
     fi
@@ -38,7 +42,7 @@ BootstrapRpmCommon() {
       /bin/echo -e "\e[0K\rEnabling the EPEL repository in 1 seconds..."
       sleep 1s
     fi
-    if ! $SUDO $tool install $yes_flag $QUIET_FLAG epel-release; then
+    if ! $tool install $yes_flag $QUIET_FLAG epel-release; then
       error "Could not enable EPEL. Aborting bootstrap!"
       exit 1
     fi
@@ -55,7 +59,7 @@ BootstrapRpmCommon() {
   "
 
   # Most RPM distros use the "python" or "python-" naming convention.  Let's try that first.
-  if $SUDO $tool list python >/dev/null 2>&1; then
+  if $tool list python >/dev/null 2>&1; then
     pkgs="$pkgs
       python
       python-devel
@@ -65,7 +69,7 @@ BootstrapRpmCommon() {
     "
   # Fedora 26 starts to use the prefix python2 for python2 based packages.
   # this elseif is theoretically for any Fedora over version 26:
-  elif $SUDO $tool list python2 >/dev/null 2>&1; then
+  elif $tool list python2 >/dev/null 2>&1; then
     pkgs="$pkgs
       python2
       python2-libs
@@ -87,13 +91,13 @@ BootstrapRpmCommon() {
     "
   fi
 
-  if $SUDO $tool list installed "httpd" >/dev/null 2>&1; then
+  if $tool list installed "httpd" >/dev/null 2>&1; then
     pkgs="$pkgs
       mod_ssl
     "
   fi
 
-  if ! $SUDO $tool install $yes_flag $QUIET_FLAG $pkgs; then
+  if ! $tool install $yes_flag $QUIET_FLAG $pkgs; then
     error "Could not install OS dependencies. Aborting bootstrap!"
     exit 1
   fi

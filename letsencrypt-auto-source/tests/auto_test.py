@@ -4,7 +4,7 @@ from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 from contextlib import contextmanager
 from functools import partial
 from json import dumps
-from os import chmod, environ
+from os import chmod, environ, makedirs
 from os.path import abspath, dirname, exists, join
 import re
 from shutil import copy, rmtree
@@ -118,12 +118,13 @@ LE_AUTO_PATH = join(dirname(tests_dir()), 'letsencrypt-auto')
 
 
 @contextmanager
-def ephemeral_dir():
+def temp_paths():
+    """Creates and deletes paths for letsencrypt-auto and its venv."""
     dir = mkdtemp(prefix='le-test-')
     try:
-        yield dir
+        yield join(dir, 'letsencrypt-auto'), join(dir, 'venv')
     finally:
-        rmtree(dir)
+        rmtree(dir, ignore_errors=True)
 
 
 def out_and_err(command, input=None, shell=False, env=None):
@@ -160,21 +161,20 @@ def signed(content, private_key_name='signing.key'):
     return out
 
 
-def install_le_auto(contents, venv_dir):
+def install_le_auto(contents, install_path):
     """Install some given source code as the letsencrypt-auto script at the
     root level of a virtualenv.
 
     :arg contents: The contents of the built letsencrypt-auto script
-    :arg venv_dir: The path under which to install the script
+    :arg install_path: The path where to install the script
 
     """
-    venv_le_auto_path = join(venv_dir, 'letsencrypt-auto')
-    with open(venv_le_auto_path, 'w') as le_auto:
+    with open(install_path, 'w') as le_auto:
         le_auto.write(contents)
-    chmod(venv_le_auto_path, S_IRUSR | S_IXUSR)
+    chmod(install_path, S_IRUSR | S_IXUSR)
 
 
-def run_le_auto(venv_dir, base_url, **kwargs):
+def run_le_auto(le_auto_path, venv_dir, base_url, **kwargs):
     """Run the prebuilt version of letsencrypt-auto, returning stdout and
     stderr strings.
 
@@ -182,7 +182,7 @@ def run_le_auto(venv_dir, base_url, **kwargs):
 
     """
     env = environ.copy()
-    d = dict(XDG_DATA_HOME=venv_dir,
+    d = dict(VENV_PATH=venv_dir,
              # URL to PyPI-style JSON that tell us the latest released version
              # of LE:
              LE_AUTO_JSON_URL=base_url + 'certbot/json',
@@ -201,7 +201,7 @@ iQIDAQAB
              **kwargs)
     env.update(d)
     return out_and_err(
-        join(venv_dir, 'letsencrypt-auto') + ' --version',
+        le_auto_path + ' --version',
         shell=True,
         env=env)
 
@@ -213,10 +213,12 @@ def set_le_script_version(venv_dir, version):
     print its version.
 
     """
-    with open(join(venv_dir, 'letsencrypt', 'bin', 'letsencrypt'), 'w') as script:
+    letsencrypt_path = join(venv_dir, 'bin', 'letsencrypt')
+    with open(letsencrypt_path, 'w') as script:
         script.write("#!/usr/bin/env python\n"
                      "from sys import stderr\n"
                      "stderr.write('letsencrypt %s\\n')" % version)
+    chmod(letsencrypt_path, S_IRUSR | S_IXUSR)
 
 
 class AutoTests(TestCase):
@@ -237,6 +239,11 @@ class AutoTests(TestCase):
     test suites.
 
     """
+    NEW_LE_AUTO = build_le_auto(
+            version='99.9.9',
+            requirements='letsencrypt==99.9.9 --hash=sha256:1cc14d61ab424cdee446f51e50f1123f8482ec740587fe78626c933bba2873a0')
+    NEW_LE_AUTO_SIG = signed(NEW_LE_AUTO)
+
     def test_successes(self):
         """Exercise most branches of letsencrypt-auto.
 
@@ -252,20 +259,16 @@ class AutoTests(TestCase):
            the next, saving code.
 
         """
-        NEW_LE_AUTO = build_le_auto(
-                version='99.9.9',
-                requirements='letsencrypt==99.9.9 --hash=sha256:1cc14d61ab424cdee446f51e50f1123f8482ec740587fe78626c933bba2873a0')
-        NEW_LE_AUTO_SIG = signed(NEW_LE_AUTO)
-
-        with ephemeral_dir() as venv_dir:
+        with temp_paths() as (le_auto_path, venv_dir):
             # This serves a PyPI page with a higher version, a GitHub-alike
             # with a corresponding le-auto script, and a matching signature.
             resources = {'certbot/json': dumps({'releases': {'99.9.9': None}}),
-                         'v99.9.9/letsencrypt-auto': NEW_LE_AUTO,
-                         'v99.9.9/letsencrypt-auto.sig': NEW_LE_AUTO_SIG}
+                         'v99.9.9/letsencrypt-auto': self.NEW_LE_AUTO,
+                         'v99.9.9/letsencrypt-auto.sig': self.NEW_LE_AUTO_SIG}
             with serving(resources) as base_url:
                 run_letsencrypt_auto = partial(
                         run_le_auto,
+                        le_auto_path,
                         venv_dir,
                         base_url,
                         PIP_FIND_LINKS=join(tests_dir(),
@@ -274,7 +277,7 @@ class AutoTests(TestCase):
 
                 # Test when a phase-1 upgrade is needed, there's no LE binary
                 # installed, and pip hashes verify:
-                install_le_auto(build_le_auto(version='50.0.0'), venv_dir)
+                install_le_auto(build_le_auto(version='50.0.0'), le_auto_path)
                 out, err = run_letsencrypt_auto()
                 ok_(re.match(r'letsencrypt \d+\.\d+\.\d+',
                              err.strip().splitlines()[-1]))
@@ -291,16 +294,28 @@ class AutoTests(TestCase):
                 self.assertFalse('Upgrading certbot-auto ' in out)
                 self.assertFalse('Creating virtual environment...' in out)
 
-                # Test when a phase-1 upgrade is not needed but a phase-2
-                # upgrade is:
+    def test_phase2_upgrade(self):
+        """Test a phase-2 upgrade without a phase-1 upgrade."""
+        with temp_paths() as (le_auto_path, venv_dir):
+            resources = {'certbot/json': dumps({'releases': {'99.9.9': None}}),
+                         'v99.9.9/letsencrypt-auto': self.NEW_LE_AUTO,
+                         'v99.9.9/letsencrypt-auto.sig': self.NEW_LE_AUTO_SIG}
+            with serving(resources) as base_url:
+                venv_bin = join(venv_dir, 'bin')
+                makedirs(venv_bin)
                 set_le_script_version(venv_dir, '0.0.1')
-                out, err = run_letsencrypt_auto()
+
+                install_le_auto(self.NEW_LE_AUTO, le_auto_path)
+                pip_find_links=join(tests_dir(), 'fake-letsencrypt', 'dist')
+                out, err = run_le_auto(le_auto_path, venv_dir, base_url,
+                                       PIP_FIND_LINKS=pip_find_links)
+
                 self.assertFalse('Upgrading certbot-auto ' in out)
                 self.assertTrue('Creating virtual environment...' in out)
 
     def test_openssl_failure(self):
         """Make sure we stop if the openssl signature check fails."""
-        with ephemeral_dir() as venv_dir:
+        with temp_paths() as (le_auto_path, venv_dir):
             # Serve an unrelated hash signed with the good key (easier than
             # making a bad key, and a mismatch is a mismatch):
             resources = {'': '<a href="certbot/">certbot/</a>',
@@ -308,9 +323,9 @@ class AutoTests(TestCase):
                          'v99.9.9/letsencrypt-auto': build_le_auto(version='99.9.9'),
                          'v99.9.9/letsencrypt-auto.sig': signed('something else')}
             with serving(resources) as base_url:
-                copy(LE_AUTO_PATH, venv_dir)
+                copy(LE_AUTO_PATH, le_auto_path)
                 try:
-                    out, err = run_le_auto(venv_dir, base_url)
+                    out, err = run_le_auto(le_auto_path, venv_dir, base_url)
                 except CalledProcessError as exc:
                     eq_(exc.returncode, 1)
                     self.assertTrue("Couldn't verify signature of downloaded "
@@ -320,7 +335,7 @@ class AutoTests(TestCase):
 
     def test_pip_failure(self):
         """Make sure pip stops us if there is a hash mismatch."""
-        with ephemeral_dir() as venv_dir:
+        with temp_paths() as (le_auto_path, venv_dir):
             resources = {'': '<a href="certbot/">certbot/</a>',
                          'certbot/json': dumps({'releases': {'99.9.9': None}})}
             with serving(resources) as base_url:
@@ -329,14 +344,14 @@ class AutoTests(TestCase):
                     build_le_auto(
                         version='99.9.9',
                         requirements='configobj==5.0.6 --hash=sha256:badbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadb'),
-                    venv_dir)
+                    le_auto_path)
                 try:
-                    out, err = run_le_auto(venv_dir, base_url)
+                    out, err = run_le_auto(le_auto_path, venv_dir, base_url)
                 except CalledProcessError as exc:
                     eq_(exc.returncode, 1)
                     self.assertTrue("THESE PACKAGES DO NOT MATCH THE HASHES "
                                     "FROM THE REQUIREMENTS FILE" in exc.output)
-                    ok_(not exists(join(venv_dir, 'letsencrypt')),
+                    ok_(not exists(venv_dir),
                         msg="The virtualenv was left around, even though "
                             "installation didn't succeed. We shouldn't do "
                             "this, as it foils our detection of whether we "
