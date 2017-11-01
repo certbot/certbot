@@ -847,7 +847,9 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertEqual(mock_restart.call_count, 1)
 
     @mock.patch("certbot_apache.configurator.ApacheConfigurator.restart")
-    def test_cleanup(self, mock_restart):
+    @mock.patch("certbot_apache.parser.ApacheParser._get_runtime_cfg")
+    def test_cleanup(self, mock_cfg, mock_restart):
+        mock_cfg.return_value = ""
         _, achall1, achall2 = self.get_achalls()
 
         self.config._chall_out.add(achall1)  # pylint: disable=protected-access
@@ -860,7 +862,9 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertTrue(mock_restart.called)
 
     @mock.patch("certbot_apache.configurator.ApacheConfigurator.restart")
-    def test_cleanup_no_errors(self, mock_restart):
+    @mock.patch("certbot_apache.parser.ApacheParser._get_runtime_cfg")
+    def test_cleanup_no_errors(self, mock_cfg, mock_restart):
+        mock_cfg.return_value = ""
         _, achall1, achall2 = self.get_achalls()
 
         self.config._chall_out.add(achall1)  # pylint: disable=protected-access

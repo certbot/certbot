@@ -1890,7 +1890,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if not self._chall_out:
             self.revert_challenge_config()
             self.restart()
-            self.parser.init_modules()
+            self.parser.reset_modules()
 
 
 def install_ssl_options_conf(options_ssl, options_ssl_digest):

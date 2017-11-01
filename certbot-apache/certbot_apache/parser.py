@@ -57,7 +57,8 @@ class ApacheParser(object):
         # This problem has been fixed in Augeas 1.0
         self.standardize_excl()
 
-        self.init_modules()
+        # Parse LoadModule directives from configuration files
+        self.parse_modules()
 
         # Set up rest of locations
         self.loc.update(self._set_locations())
@@ -106,7 +107,14 @@ class ApacheParser(object):
         if "mod_" + mod_name + ".c" not in self.modules:
             self.modules.add("mod_" + mod_name + ".c")
 
-    def init_modules(self):
+    def reset_modules(self):
+        """Reset the loaded modules list. This is called from cleanup to clear
+        temporarily loaded modules."""
+        self.modules = set()
+        self.update_modules()
+        self.parse_modules()
+
+    def parse_modules(self):
         """Iterates on the configuration until no new modules are loaded.
 
         ..todo:: This should be attempted to be done with a binary to avoid
