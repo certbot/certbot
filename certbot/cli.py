@@ -90,7 +90,7 @@ obtain, install, and renew certificates:
 
 manage certificates:
     certificates    Display information about certificates you have from Certbot
-    revoke          Revoke a certificate (supply --cert-path)
+    revoke          Revoke a certificate (supply --cert-path or --cert-name)
     delete          Delete a certificate
 
 manage your account with Let's Encrypt:
@@ -371,9 +371,9 @@ VERB_HELP = [
         "usage": "\n\n  certbot delete --cert-name CERTNAME\n\n"
     }),
     ("revoke", {
-        "short": "Revoke a certificate specified with --cert-path",
+        "short": "Revoke a certificate specified with --cert-path or --cert-name",
         "opts": "Options for revocation of certificates",
-        "usage": "\n\n  certbot revoke --cert-path /path/to/fullchain.pem [options]\n\n"
+        "usage": "\n\n  certbot revoke --cert-path /path/to/fullchain.pem --cert-name example.com [options]\n\n"
     }),
     ("register", {
         "short": "Register for account with Let's Encrypt / other ACME server",
@@ -1262,7 +1262,7 @@ def _paths_parser(helpful):
         add(section, "--cert-path", type=os.path.abspath,
             default=flag_default("auth_cert_path"), help=cph)
     elif verb == "revoke":
-        add(section, "--cert-path", type=read_file, required=True, help=cph)
+        add(section, "--cert-path", type=read_file, required=False, help=cph)
     else:
         add(section, "--cert-path", type=os.path.abspath,
             help=cph, required=(verb == "install"))

@@ -224,6 +224,8 @@ class RevokeTest(test_util.TempDirTestCase):
         shutil.copy(CERT_PATH, self.tempdir)
         self.tmp_cert_path = os.path.abspath(os.path.join(self.tempdir,
             'cert_512.pem'))
+        with open(self.tmp_cert_path, 'r') as f:
+            self.tmp_cert = (self.tmp_cert_path, f.read())
 
         self.patches = [
             mock.patch('acme.client.Client', autospec=True),
@@ -253,9 +255,10 @@ class RevokeTest(test_util.TempDirTestCase):
         for patch in self.patches:
             patch.stop()
 
-    def _call(self, extra_args=""):
-        args = 'revoke --cert-path={0} ' + extra_args
-        args = args.format(self.tmp_cert_path).split()
+    def _call(self, args=[]):
+        if not args:
+            args = 'revoke --cert-path={0} '
+            args = args.format(self.tmp_cert_path).split()
         plugins = disco.PluginsRegistry.find_all()
         config = configuration.NamespaceConfig(
             cli.prepare_and_parse_args(plugins, args))
@@ -271,11 +274,24 @@ class RevokeTest(test_util.TempDirTestCase):
         mock_revoke = mock_acme_client.Client().revoke
         expected = []
         for reason, code in constants.REVOCATION_REASONS.items():
-            self._call("--reason " + reason)
+            args = 'revoke --cert-path={0} --reason {1}'.format(self.tmp_cert_path, reason).split()
+            self._call(args)
             expected.append(mock.call(mock.ANY, code))
-            self._call("--reason " + reason.upper())
+            args = 'revoke --cert-path={0} --reason {1}'.format(self.tmp_cert_path,
+                    reason.upper()).split()
+            self._call(args)
             expected.append(mock.call(mock.ANY, code))
         self.assertEqual(expected, mock_revoke.call_args_list)
+
+    @mock.patch('certbot.main._delete_if_appropriate')
+    @mock.patch('certbot.storage.cert_path_for_cert_name')
+    def test_revoke_by_certname(self, mock_cert_path_for_cert_name,
+            mock_delete_if_appropriate):
+        args = 'revoke --cert-name=example.com'.split()
+        mock_cert_path_for_cert_name.return_value = self.tmp_cert
+        mock_delete_if_appropriate.return_value = False
+        self._call(args)
+        self.mock_success_revoke.assert_called_once_with(self.tmp_cert_path)
 
     @mock.patch('certbot.main._delete_if_appropriate')
     def test_revocation_success(self, mock_delete_if_appropriate):

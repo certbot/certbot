@@ -655,6 +655,14 @@ def revoke(config, unused_plugins):  # TODO: coop with renewal config
     """Revoke a previously obtained certificate."""
     # For user-agent construction
     config.installer = config.authenticator = "None"
+
+    if config.cert_path is None and config.certname:
+        config.cert_path = storage.cert_path_for_cert_name(config, config.certname)
+    elif not config.cert_path or (config.cert_path and config.certname):
+        # intentionally not supporting --cert-path & --cert-name together,
+        # to avoid dealing with mismatched values
+        raise errors.Error("Error! Exactly one of --cert-path or --cert-name must be specified!")
+
     if config.key_path is not None:  # revocation by cert key
         logger.debug("Revoking %s using cert key %s",
                      config.cert_path[0], config.key_path[0])
@@ -667,7 +675,6 @@ def revoke(config, unused_plugins):  # TODO: coop with renewal config
     acme = client.acme_from_config_key(config, key)
     cert = crypto_util.pyopenssl_load_certificate(config.cert_path[1])[0]
     logger.debug("Reason code for revocation: %s", config.reason)
-
     try:
         acme.revoke(jose.ComparableX509(cert), config.reason)
         _delete_if_appropriate(config)
