@@ -1,5 +1,4 @@
 """Utility functions for use in the Postfix installer."""
-
 import logging
 import subprocess
 
@@ -9,6 +8,41 @@ from certbot.plugins import util as plugins_util
 
 
 logger = logging.getLogger(__name__)
+
+
+class PostfixUtilBase(object):
+    """A base class for wrapping Postfix command line utilities."""
+
+    def __init__(self, executable, config_dir=None):
+        """Sets up the Postfix utility class.
+
+        :param str executable: name or path of the Postfix utility
+        :param str config_dir: path to an alternative Postfix config
+
+        :raises .NoInstallationError: when the executable isn't found
+
+        """
+        verify_exe_exists(executable)
+
+        self._base_command = [executable]
+        if config_dir is not None:
+            self._base_command.extend(('-c', config_dir,))
+
+    def _call(self, extra_args=None):
+        """Runs the Postfix utility and returns the result.
+
+        :param list extra_args: additional arguments for the command
+
+        :returns: data written to stdout and stderr
+        :rtype: `tuple` of `str`
+
+        :raises subprocess.CalledProcessError: if the command fails
+
+        """
+        args = list(self._base_command)
+        if extra_args is not None:
+            args.extend(extra_args)
+        return check_all_output(args)
 
 
 def check_all_output(*args, **kwargs):

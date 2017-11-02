@@ -8,6 +8,25 @@ import mock
 from certbot import errors
 
 
+class PostfixUtilBaseTest(unittest.TestCase):
+    """Tests for certbot_postfix.util.PostfixUtilBase."""
+
+    @classmethod
+    def _create_object(cls, *args, **kwargs):
+        from certbot_postfix.util import PostfixUtilBase
+        return PostfixUtilBase(*args, **kwargs)
+
+    @mock.patch('certbot_postfix.util.verify_exe_exists')
+    def test_no_exe(self, mock_verify):
+        expected_error = errors.NoInstallationError
+        mock_verify.side_effect = expected_error
+        self.assertRaises(expected_error, self._create_object, 'nonexistent')
+
+    def test_object_creation(self):
+        with mock.patch('certbot_postfix.util.verify_exe_exists'):
+            self._create_object('existent')
+
+
 class CheckAllOutputTest(unittest.TestCase):
     """Tests for certbot_postfix.util.check_all_output."""
 
