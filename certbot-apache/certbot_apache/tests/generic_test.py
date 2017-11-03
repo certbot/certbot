@@ -16,27 +16,15 @@ class MultipleVhostsTestGeneric(util.ApacheTest):
 
     def setUp(self):  # pylint: disable=arguments-differ
         super(MultipleVhostsTestGeneric, self).setUp()
+        with mock.patch("certbot.util.get_systemd_os_like") as mock_like:
+            mock_like.return_value = ["nonexistent"]
+            self.config = util.get_apache_configurator(
+                self.config_path, None, self.config_dir, self.work_dir,
+                os_info=("nonexistent_distro", "7"))
+            self.config = self.mock_deploy_cert(self.config)
 
-        from certbot_apache.constants import os_constant
-        orig_os_constant = os_constant
-        def mock_os_constant(key, vhost_path=self.vhost_path):
-            """Mock default vhost path"""
-            if key == "vhost_root":
-                return vhost_path
-            else:
-                return orig_os_constant(key)
-        with mock.patch("certbot.util.get_os_info") as mock_osi:
-            mock_osi.return_value = ("nonexistent_distro", "7")
-            with mock.patch("certbot.util.get_systemd_os_like") as mock_like:
-                mock_like.return_value = ["nonexistent"]
-                with mock.patch(
-                    "certbot_apache.constants.os_constant") as mock_c:
-                    mock_c.side_effect = mock_os_constant
-                    self.config = util.get_apache_configurator(
-                        self.config_path, None, self.config_dir, self.work_dir)
-                    self.config = self.mock_deploy_cert(self.config)
-                self.vh_truth = util.get_vh_truth(
-                    self.temp_dir, "debian_apache_2_4/multiple_vhosts")
+        self.vh_truth = util.get_vh_truth(self.temp_dir,
+                                          "debian_apache_2_4/multiple_vhosts")
 
     def mock_deploy_cert(self, config):
         """A test for a mock deploy cert"""
@@ -48,11 +36,6 @@ class MultipleVhostsTestGeneric(util.ApacheTest):
                 config.real_deploy_cert(*args, **kwargs)
         self.config.deploy_cert = mocked_deploy_cert
         return self.config
-
-    def tearDown(self):
-        shutil.rmtree(self.temp_dir)
-        shutil.rmtree(self.config_dir)
-        shutil.rmtree(self.work_dir)
 
     def test_enable_site_nondebian(self):
         inc_path = "/path/to/wherever"

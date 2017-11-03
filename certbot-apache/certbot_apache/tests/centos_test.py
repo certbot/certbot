@@ -1,7 +1,6 @@
 # pylint: disable=duplicate-code
 """Test for certbot_apache.configurator for Centos overrides"""
 import os
-import shutil
 
 import mock
 
@@ -41,28 +40,11 @@ class MultipleVhostsTestCentOS(util.ApacheTest):
                                                     config_root=config_root,
                                                     vhost_root=vhost_root)
 
-        from certbot_apache.constants import os_constant
-        orig_os_constant = os_constant
-        def mock_os_constant(key, vhost_path=self.vhost_path):
-            """Mock default vhost path"""
-            if key == "vhost_root":
-                return vhost_path
-            else:
-                return orig_os_constant(key)
-        with mock.patch("certbot.util.get_os_info") as mock_osi:
-            mock_osi.return_value = ("centos", "7")
-            with mock.patch(
-                "certbot_apache.constants.os_constant") as mock_c:
-                mock_c.side_effect = mock_os_constant
-                self.config = util.get_apache_configurator(
-                    self.config_path, None, self.config_dir, self.work_dir)
-            self.vh_truth = get_vh_truth(
-                self.temp_dir, "centos7_apache/apache")
-
-    def tearDown(self):
-        shutil.rmtree(self.temp_dir)
-        shutil.rmtree(self.config_dir)
-        shutil.rmtree(self.work_dir)
+        self.config = util.get_apache_configurator(
+            self.config_path, self.vhost_path, self.config_dir, self.work_dir,
+            os_info=("centos", "7"))
+        self.vh_truth = get_vh_truth(
+            self.temp_dir, "centos7_apache/apache")
 
     def test_get_parser(self):
         from certbot_apache import override_centos
@@ -110,8 +92,8 @@ class MultipleVhostsTestCentOS(util.ApacheTest):
         found = 0
 
         for vhost in vhs:
-            for truth in self.vh_truth:
-                if vhost == truth:
+            for centos_truth in self.vh_truth:
+                if vhost == centos_truth:
                     found += 1
                     break
             else:

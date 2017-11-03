@@ -1,9 +1,6 @@
 # pylint: disable=duplicate-code
 """Test for certbot_apache.configurator for Gentoo overrides"""
 import os
-import shutil
-
-import mock
 
 from certbot_apache import obj
 from certbot_apache.tests import util
@@ -48,28 +45,11 @@ class MultipleVhostsTestGentoo(util.ApacheTest):
                                                     config_root=config_root,
                                                     vhost_root=vhost_root)
 
-        from certbot_apache.constants import os_constant
-        orig_os_constant = os_constant
-        def mock_os_constant(key, vhost_path=self.vhost_path):
-            """Mock default vhost path"""
-            if key == "vhost_root":
-                return vhost_path
-            else:
-                return orig_os_constant(key)
-        with mock.patch("certbot.util.get_os_info") as mock_osi:
-            mock_osi.return_value = ("gentoo", "201708")
-            with mock.patch(
-                "certbot_apache.constants.os_constant") as mock_c:
-                mock_c.side_effect = mock_os_constant
-                self.config = util.get_apache_configurator(
-                    self.config_path, None, self.config_dir, self.work_dir)
-            self.vh_truth = get_vh_truth(
-                self.temp_dir, "gentoo_apache/apache")
-
-    def tearDown(self):
-        shutil.rmtree(self.temp_dir)
-        shutil.rmtree(self.config_dir)
-        shutil.rmtree(self.work_dir)
+        self.config = util.get_apache_configurator(
+            self.config_path, self.vhost_path, self.config_dir, self.work_dir,
+            os_info=("gentoo", "201708"))
+        self.vh_truth = get_vh_truth(
+            self.temp_dir, "gentoo_apache/apache")
 
     def test_get_parser(self):
         from certbot_apache import override_gentoo
@@ -83,8 +63,8 @@ class MultipleVhostsTestGentoo(util.ApacheTest):
         found = 0
 
         for vhost in vhs:
-            for truth in self.vh_truth:
-                if vhost == truth:
+            for gentoo_truth in self.vh_truth:
+                if vhost == gentoo_truth:
                     found += 1
                     break
             else:

@@ -1,5 +1,6 @@
 """Common utilities for certbot_apache."""
 import os
+import shutil
 import sys
 import unittest
 
@@ -55,8 +56,13 @@ class ApacheTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
                     os.path.pardir, "sites-available", vhost_basename)
                 os.symlink(target, vhost)
 
+    def tearDown(self):
+        shutil.rmtree(self.temp_dir)
+        shutil.rmtree(self.config_dir)
+        shutil.rmtree(self.work_dir)
 
-class ParserTest(ApacheTest):  # pytlint: disable=too-few-public-methods
+
+class ParserTest(ApacheTest):
 
     def setUp(self, test_dir="debian_apache_2_4/multiple_vhosts",
               config_root="debian_apache_2_4/multiple_vhosts/apache2",
@@ -75,9 +81,12 @@ class ParserTest(ApacheTest):  # pytlint: disable=too-few-public-methods
                 self.aug, self.config_path, self.vhost_path)
 
 
-def get_apache_configurator(
+def get_apache_configurator(  # pylint: disable=too-many-arguments, too-many-locals
         config_path, vhost_path,
-        config_dir, work_dir, version=(2, 4, 7), conf=None):
+        config_dir, work_dir, version=(2, 4, 7),
+        conf=None,
+        os_info=("debian", "8"),
+        conf_vhost_path=None):
     """Create an Apache Configurator with the specified options.
 
     :param conf: Function that returns binary paths. self.conf in Configurator
@@ -86,7 +95,7 @@ def get_apache_configurator(
     backups = os.path.join(work_dir, "backups")
     mock_le_config = mock.MagicMock(
         apache_server_root=config_path,
-        apache_vhost_root=vhost_path,
+        apache_vhost_root=conf_vhost_path,
         apache_le_vhost_ext=constants.os_constant("le_vhost_ext"),
         apache_challenge_location=config_path,
         backup_dir=backups,
@@ -95,22 +104,34 @@ def get_apache_configurator(
         in_progress_dir=os.path.join(backups, "IN_PROGRESS"),
         work_dir=work_dir)
 
-    with mock.patch("certbot_apache.configurator.util.run_script"):
-        with mock.patch("certbot_apache.configurator.util."
-                        "exe_exists") as mock_exe_exists:
-            mock_exe_exists.return_value = True
-            with mock.patch("certbot_apache.parser.ApacheParser."
-                            "update_runtime_variables"):
-                config = configurator.ApacheConfigurator(
-                    config=mock_le_config,
-                    name="apache",
-                    version=version)
-                # This allows testing scripts to set it a bit more quickly
-                if conf is not None:
-                    config.conf = conf  # pragma: no cover
+    orig_os_constant = constants.os_constant
+    def mock_os_constant(key, vhost_path=vhost_path):
+        """Mock default vhost path"""
+        if key == "vhost_root":
+            return vhost_path
+        else:
+            return orig_os_constant(key)
 
-                config.prepare()
+    with mock.patch("certbot_apache.constants.os_constant") as mock_cons:
+        mock_cons.side_effect = mock_os_constant
+        with mock.patch("certbot.util.get_os_info") as mock_info:
+            mock_info.return_value = os_info
+            with mock.patch("certbot_apache.configurator.util.run_script"):
+                with mock.patch("certbot_apache.configurator.util."
+                                "exe_exists") as mock_exe_exists:
+                    mock_exe_exists.return_value = True
+                    with mock.patch("certbot_apache.parser.ApacheParser."
+                                    "update_runtime_variables"):
+                        config = configurator.ApacheConfigurator(
+                            config=mock_le_config,
+                            name="apache",
+                            version=version)
+                        # This allows testing scripts to set it a bit more
+                        # quickly
+                        if conf is not None:
+                            config.conf = conf  # pragma: no cover
 
+                        config.prepare()
     return config
 
 

@@ -33,25 +33,11 @@ class MultipleVhostsTest(util.ApacheTest):
     def setUp(self):  # pylint: disable=arguments-differ
         super(MultipleVhostsTest, self).setUp()
 
-        from certbot_apache.constants import os_constant
-        orig_os_constant = os_constant
-        def mock_os_constant(key, vhost_path=self.vhost_path):
-            """Mock default vhost path"""
-            if key == "vhost_root":
-                return vhost_path
-            else:
-                return orig_os_constant(key)
-
-        with mock.patch("certbot.util.get_os_info") as mock_osi:
-            # Make sure we act like Debian for these tests
-            mock_osi.return_value = ("debian", "7")
-            with mock.patch("certbot_apache.constants.os_constant") as mock_c:
-                mock_c.side_effect = mock_os_constant
-                self.config = util.get_apache_configurator(
-                    self.config_path, None, self.config_dir, self.work_dir)
-                self.config = self.mock_deploy_cert(self.config)
-            self.vh_truth = util.get_vh_truth(
-                self.temp_dir, "debian_apache_2_4/multiple_vhosts")
+        self.config = util.get_apache_configurator(
+            self.config_path, self.vhost_path, self.config_dir, self.work_dir)
+        self.config = self.mock_deploy_cert(self.config)
+        self.vh_truth = util.get_vh_truth(
+            self.temp_dir, "debian_apache_2_4/multiple_vhosts")
 
     def mock_deploy_cert(self, config):
         """A test for a mock deploy cert"""
@@ -63,11 +49,6 @@ class MultipleVhostsTest(util.ApacheTest):
                 config.real_deploy_cert(*args, **kwargs)
         self.config.deploy_cert = mocked_deploy_cert
         return self.config
-
-    def tearDown(self):
-        shutil.rmtree(self.temp_dir)
-        shutil.rmtree(self.config_dir)
-        shutil.rmtree(self.work_dir)
 
     @mock.patch("certbot_apache.configurator.ApacheConfigurator.init_augeas")
     @mock.patch("certbot_apache.configurator.path_surgery")
@@ -1358,11 +1339,6 @@ class AugeasVhostsTest(util.ApacheTest):
                 self.config_path, self.vhost_path, self.config_dir,
                 self.work_dir)
 
-    def tearDown(self):
-        shutil.rmtree(self.temp_dir)
-        shutil.rmtree(self.config_dir)
-        shutil.rmtree(self.work_dir)
-
     def test_choosevhost_with_illegal_name(self):
         self.config.aug = mock.MagicMock()
         self.config.aug.match.side_effect = RuntimeError
@@ -1438,19 +1414,11 @@ class MultiVhostsTest(util.ApacheTest):
                                             config_root=cr,
                                             vhost_root=vr)
 
-        with mock.patch("certbot.util.get_os_info") as mock_osi:
-            # Make sure we act like Debian for this test
-            mock_osi.return_value = ("debian", "7")
-            self.config = util.get_apache_configurator(
-                self.config_path, self.vhost_path,
-                self.config_dir, self.work_dir)
+        self.config = util.get_apache_configurator(
+            self.config_path, self.vhost_path,
+            self.config_dir, self.work_dir, conf_vhost_path=self.vhost_path)
         self.vh_truth = util.get_vh_truth(
             self.temp_dir, "debian_apache_2_4/multi_vhosts")
-
-    def tearDown(self):
-        shutil.rmtree(self.temp_dir)
-        shutil.rmtree(self.config_dir)
-        shutil.rmtree(self.work_dir)
 
     def test_make_vhost_ssl(self):
         ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[1])
