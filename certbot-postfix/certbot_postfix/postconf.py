@@ -59,4 +59,4 @@ def _parse_main_output(output):
     """
     for line in output.splitlines():
         name, _, value = line.partition(" =")
-        yield name, value.split()
+        yield name, value.strip()
