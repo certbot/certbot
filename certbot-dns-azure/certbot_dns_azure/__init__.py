@@ -9,9 +9,12 @@ Named Arguments
 ---------------
 
 ========================================  =====================================
-``--dns-azure-credentials``              Google Cloud Platform credentials_
-                                          JSON file.
-                                          (Required - Optional on Google Compute Engine)
+``--dns-azure-credentials``              Azure credentials JSON file.
+                                          (Alternately, this can be specified
+                                          the AZURE_AUTH_LOCATION env variable)
+``--dns-azure-resource-group``           Azure resource group that contains the
+                                          DNS zone being used.
+                                          (Required)
 ``--dns-azure-propagation-seconds``      The number of seconds to wait for DNS
                                           to propagate before asking the ACME
                                           server to verify the DNS record.
@@ -22,36 +25,41 @@ Named Arguments
 Credentials
 -----------
 
-Use of this plugin requires Google Cloud Platform API credentials
-for an account with the following permissions:
 
-* ``dns.changes.create``
-* ``dns.changes.get``
-* ``dns.managedZones.list``
-* ``dns.resourceRecordSets.create``
-* ``dns.resourceRecordSets.delete``
+Use of this plugin requires a Service Principal account create with the DNS Zone
+Contributor role. A new service principal can be created using the Azure CLI
+<https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest>
+by running the command
+.. code-block:: bash
+   az login
+   az ad sp create-for-rbac --name Certbot --sdk-auth \\
+      --role "DNS Zone Contributor" \\
+      --scope /subscriptions/<SUBSCRIPTION ID>/resourceGroups/<RESOURCE GROUP ID> \\
+      > mycredentials.json
 
-Google provides instructions for `creating a service account <https://developers
-.azure.com/identity/protocols/OAuth2ServiceAccount#creatinganaccount>`_ and
-`information about the required permissions <https://cloud.azure.com/dns/access
--control#permissions_and_roles>`_. If you're running on Google Compute Engine,
-you can `assign the service account to the instance <https://cloud.azure.com/
-compute/docs/access/create-enable-service-accounts-for-instances>`_ which
-is running certbot. A credentials file is not required in this case, as they
-are automatically obtained by certbot through the `metadata service
-<https://cloud.azure.com/compute/docs/storing-retrieving-metadata>`_ .
+This will create file "mycredentials.json" which you should secure, then
+specify with this option or with the AZURE_AUTH_LOCATION environment variable.
 
+Alternately, you can use an existing service principal account with the correct
+role assignment. In this case, you can create a json file in the following
+format (as per <https://docs.microsoft.com/en-au/python/azure/python-sdk-azure-authenticate?view=azure-python#mgmt-auth-file>):
 .. code-block:: json
-   :name: credentials.json
-   :caption: Example credentials file:
-
-   {
-     "type": "service_account",
-     ...
-   }
+    {
+        "clientId": "ad735158-65ca-11e7-ba4d-ecb1d756380e",
+        "clientSecret": "b70bb224-65ca-11e7-810c-ecb1d756380e",
+        "subscriptionId": "bfc42d3a-65ca-11e7-95cf-ecb1d756380e",
+        "tenantId": "c81da1d8-65ca-11e7-b1d1-ecb1d756380e",
+        "activeDirectoryEndpointUrl": "https://login.microsoftonline.com",
+        "resourceManagerEndpointUrl": "https://management.azure.com/",
+        "activeDirectoryGraphResourceId": "https://graph.windows.net/",
+        "sqlManagementEndpointUrl": "https://management.core.windows.net:8443/",
+        "galleryEndpointUrl": "https://gallery.azure.com/",
+        "managementEndpointUrl": "https://management.core.windows.net/"
+    }
 
 The path to this file can be provided interactively or using the
-``--dns-azure-credentials`` command-line argument. Certbot records the path
+``--dns-azure-credentials`` command-line argument, or by specifying it in the
+AZURE_AUTH_LOCATION environment variable. Certbot records the path
 to this file for use during renewal, but does not store the file's contents.
 
 .. caution::
@@ -79,6 +87,7 @@ Examples
    certbot certonly \\
      --dns-azure \\
      --dns-azure-credentials ~/.secrets/certbot/azure.json \\
+     --dns-azure-resource-group Foo-RG02 \\
      -d example.com
 
 .. code-block:: bash
@@ -88,6 +97,7 @@ Examples
    certbot certonly \\
      --dns-azure \\
      --dns-azure-credentials ~/.secrets/certbot/azure.json \\
+     --dns-azure-resource-group Foo-RG02 \\
      -d example.com \\
      -d www.example.com
 
@@ -97,7 +107,8 @@ Examples
 
    certbot certonly \\
      --dns-azure \\
-     --dns-azure-credentials ~/.secrets/certbot/azure.ini \\
+     --dns-azure-credentials ~/.secrets/certbot/azure.json \\
+     --dns-azure-resource-group Foo-RG02 \\
      --dns-azure-propagation-seconds 120 \\
      -d example.com
 
