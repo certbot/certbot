@@ -67,7 +67,8 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         """
         self.key = key
         self.account = account
-        self.net = ClientNetwork(key, account=account, alg=alg, verify_ssl=verify_ssl) if net is None else net
+        self.net = ClientNetwork(key, account=account, alg=alg,
+            verify_ssl=verify_ssl) if net is None else net
 
         if isinstance(directory, six.string_types):
             self.directory = messages.Directory.from_json(
@@ -96,11 +97,12 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         """
         if hasattr(self.directory, 'new_acct'):
             url = self.directory.new_acct
+            new_reg = messages.NewAccount() if new_reg is None else new_reg
+            assert isinstance(new_reg, messages.NewAccount)
         else:
             url = self.directory.new_reg
-
-        new_reg = messages.NewRegistration() if new_reg is None else new_reg
-        assert isinstance(new_reg, messages.NewRegistration)
+            new_reg = messages.NewRegistration() if new_reg is None else new_reg
+            assert isinstance(new_reg, messages.NewRegistration)
 
         response = self.net.post(url, new_reg)
         # TODO: handle errors
@@ -592,12 +594,9 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         }
         if self.account is not None:
             # new ACME spec
-            kwargs["kid"] = self.account.uri
+            kwargs["kid"] = self.account["uri"]
             kwargs["url"] = url
-            kwargs["key"] = self.key
-        else:
-            # old ACME spec
-            kwargs["key"] = self.key
+        kwargs["key"] = self.key
         return jws.JWS.sign(jobj, **kwargs).json_dumps(indent=2)
 
     @classmethod
