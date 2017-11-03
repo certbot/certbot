@@ -1,6 +1,6 @@
-# pylint: disable=duplicate-code
 """Test for certbot_apache.configurator for Gentoo overrides"""
 import os
+import unittest
 
 from certbot_apache import obj
 from certbot_apache.tests import util
@@ -81,3 +81,6 @@ class MultipleVhostsTestGentoo(util.ApacheTest):
         self.config.parser.update_runtime_variables()
         for define in defines:
             self.assertTrue(define in self.config.parser.variables.keys())
+
+if __name__ == "__main__":
+    unittest.main()  # pragma: no cover

@@ -5,9 +5,6 @@ from certbot_apache import parser
 
 class CentOSConfigurator(configurator.OverrideConfigurator):
     """CentOS specific ApacheConfigurator override class"""
-    def __init__(self, *args, **kwargs):
-        super(CentOSConfigurator, self).__init__(*args, **kwargs)
-
     def get_parser(self):
         """Initializes the ApacheParser"""
         return CentOSParser(
@@ -18,6 +15,7 @@ class CentOSConfigurator(configurator.OverrideConfigurator):
 class CentOSParser(parser.ApacheParser):
     """CentOS specific ApacheParser override class"""
     def __init__(self, *args, **kwargs):
+        # CentOS specific configuration file for Apache
         self.sysconfig_filep = "/etc/sysconfig/httpd"
         super(CentOSParser, self).__init__(*args, **kwargs)
 

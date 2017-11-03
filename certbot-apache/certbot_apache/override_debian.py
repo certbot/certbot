@@ -1,6 +1,7 @@
 """ Distribution specific override class for Debian family (Ubuntu/Debian) """
 import logging
 import os
+
 from certbot import errors
 from certbot import util
 
@@ -11,9 +12,6 @@ logger = logging.getLogger(__name__)
 
 class DebianConfigurator(configurator.OverrideConfigurator):
     """Debian specific ApacheConfigurator override class"""
-    def __init__(self, *args, **kwargs):
-        super(DebianConfigurator, self).__init__(*args, **kwargs)
-
     def enable_site(self, vhost):
         """Enables an available site, Apache reload required.
 

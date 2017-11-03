@@ -1,6 +1,6 @@
-# pylint: disable=duplicate-code
 """Test for certbot_apache.configurator for Centos overrides"""
 import os
+import unittest
 
 import mock
 
@@ -28,7 +28,7 @@ def get_vh_truth(temp_dir, config_name):
     return vh_truth
 
 class MultipleVhostsTestCentOS(util.ApacheTest):
-    """Multiple vhost tests for non-debian distro"""
+    """Multiple vhost tests for CentOS / RHEL family of distros"""
 
     _multiprocess_can_split_ = True
 
@@ -118,3 +118,6 @@ class MultipleVhostsTestCentOS(util.ApacheTest):
         self.assertTrue("mock_define_too" in self.config.parser.variables.keys())
         self.assertTrue("mock_value" in self.config.parser.variables.keys())
         self.assertEqual("TRUE", self.config.parser.variables["mock_value"])
+
+if __name__ == "__main__":
+    unittest.main()  # pragma: no cover

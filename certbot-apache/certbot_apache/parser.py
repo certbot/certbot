@@ -140,8 +140,7 @@ class ApacheParser(object):
                 else:
                     logger.debug("Could not read LoadModule directive from " +
                                  "Augeas path: {0}".format(match_name[6:]))
-        for m in mods:
-            self.modules.add(m)
+        self.modules.update(mods)
 
     def update_runtime_variables(self):
         """Update Includes, Defines and Includes from httpd config dump data"""

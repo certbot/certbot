@@ -87,7 +87,7 @@ def parse_define_file(filepath, varname):
     """
     return_vars = {}
     # Get list of words in the variable
-    a_opts = util.get_var_from_file(varname, filepath).split(" ")
+    a_opts = util.get_var_from_file(varname, filepath).split()
     for i, v in enumerate(a_opts):
         # Handle Define statements and make sure it has an argument
         if v == "-D" and len(a_opts) >= i+2:

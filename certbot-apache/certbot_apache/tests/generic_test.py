@@ -1,9 +1,10 @@
 """Test for certbot_apache.configurator non-overridden flow"""
 import os
 import shutil
+import tempfile
+import unittest
 
 import mock
-import tempfile
 
 from certbot import errors
 
@@ -87,3 +88,6 @@ class MultipleVhostsTestGeneric(util.ApacheTest):
         self.assertRaises(errors.MisconfigurationError,
                           self.config.enable_mod,
                           "whatever")
+
+if __name__ == "__main__":
+    unittest.main()  # pragma: no cover

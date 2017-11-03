@@ -1758,10 +1758,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         .. note:: The distribution specific override replaces functionality
                   of this method where available.
 
-        :raises .errors.NotSupportedError: If the filesystem layout is not
-            supported.
-        :raises .errors.MisconfigurationError: If a2enmod or a2dismod cannot be
-            run.
+        :raises .errors.MisconfigurationError: We cannot enable modules in
+            generic fashion.
 
         """
         mod_message = ("Apache needs to have module  \"{0}\" active for the " +
