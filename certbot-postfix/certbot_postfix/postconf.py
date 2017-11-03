@@ -17,14 +17,14 @@ class ReadOnlyMainMap(util.PostfixUtilBase, collections.Mapping):
     """An iterable containing additional CLI flags for postconf."""
 
     def __getitem__(self, name):
-        return next(_parse_main_output(self._call([name])))[1]
+        return next(_parse_main_output(self._get_output([name])))[1]
 
     def __iter__(self):
-        for name, _ in _parse_main_output(self._call()):
+        for name, _ in _parse_main_output(self._get_output()):
             yield name
 
     def __len__(self):
-        return sum(1 for _ in _parse_main_output(self._call()))
+        return sum(1 for _ in _parse_main_output(self._get_output()))
 
     def _call(self, extra_args=None):
         """Runs Postconf and returns the result.
