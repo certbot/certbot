@@ -9,6 +9,8 @@ import zope.interface
 from azure.mgmt.dns import DnsManagementClient
 from azure.common.client_factory import get_client_from_auth_file
 from azure.mgmt.dns.models import RecordSet, TxtRecord
+from msrestazure.azure_exceptions import CloudError
+
 
 from certbot import errors
 from certbot import interfaces
@@ -111,30 +113,20 @@ class _AzureClient(object):
         :param int record_ttl: The record TTL (number of seconds that the record may be cached).
         :raises certbot.errors.PluginError: if an error occurs communicating with the Azure API
         """
-        record = RecordSet(ttl=record_ttl,
-                           txt_records=[TxtRecord(value=[record_content])])
-        zone = self._find_managed_zone(record_name)
-        relative_record_name = ".".join(
-            record_name.split('.')[0:-len(zone.split('.'))])
-        self.dns_client.record_sets.create_or_update(self.resource_group, zone,
-                                                     relative_record_name,
-                                                     'TXT', record)
-        # TODO - error handling
-
-        # try:
-        #     request = changes.create(project=self.project_id, managedZone=zone_id, body=data)
-        #     response = request.execute()
-        #
-        #     status = response['status']
-        #     change = response['id']
-        #     while status == 'pending':
-        #         request = changes.get(project=self.project_id, managedZone=zone_id, changeId=change)
-        #         response = request.execute()
-        #         status = response['status']
-        # except googleapiclient_errors.Error as e:
-        #     logger.error('Encountered error adding TXT record: %s', e)
-        #     raise errors.PluginError('Error communicating with the Google Cloud DNS API: {0}'
-        #                              .format(e))
+        try:
+            record = RecordSet(ttl=record_ttl,
+                               txt_records=[TxtRecord(value=[record_content])])
+            zone = self._find_managed_zone(record_name)
+            relative_record_name = ".".join(
+                record_name.split('.')[0:-len(zone.split('.'))])
+            self.dns_client.record_sets.create_or_update(self.resource_group,
+                                                         zone,
+                                                         relative_record_name,
+                                                         'TXT',
+                                                         record)
+        except CloudError as e:
+            logger.error('Encountered error adding TXT record: %s', e)
+            raise errors.PluginError('Error communicating with the Azure DNS API: {0}'.format(e))
 
     def del_txt_record(self, domain, record_name, record_content, record_ttl):
         """
@@ -147,25 +139,16 @@ class _AzureClient(object):
         :raises certbot.errors.PluginError: if an error occurs communicating with the Azure API
         """
 
-        zone = self._find_managed_zone(record_name)
-        relative_record_name = ".".join(
-            record_name.split('.')[0:-len(zone.split('.'))])
-        self.dns_client.record_sets.delete(self.resource_group,
-                                           zone,
-                                           relative_record_name,
-                                           'TXT')
-        # try:
-        #     zone_id = self._find_managed_zone_id(domain)
-        # except errors.PluginError as e:
-        #     logger.warn('Error finding zone. Skipping cleanup.')
-        #     return
-        #
-        #
-        # try:
-        #     request = changes.create(project=self.project_id, managedZone=zone_id, body=data)
-        #     request.execute()
-        # except googleapiclient_errors.Error as e:
-        #     logger.warn('Encountered error deleting TXT record: %s', e)
+        try:
+            zone = self._find_managed_zone(record_name)
+            relative_record_name = ".".join(
+                record_name.split('.')[0:-len(zone.split('.'))])
+            self.dns_client.record_sets.delete(self.resource_group,
+                                               zone,
+                                               relative_record_name,
+                                               'TXT')
+        except (CloudError, errors.PluginError) as e:
+            logger.warning('Encountered error deleting TXT record: %s', e)
 
     def _find_managed_zone(self, domain):
         """
@@ -176,16 +159,18 @@ class _AzureClient(object):
         :rtype: str
         :raises certbot.errors.PluginError: if the managed zone cannot be found.
         """
-        azure_zones = self.dns_client.zones.list()  # TODO - catch errors
-        azure_zones_list = []
         try:
+            azure_zones = self.dns_client.zones.list()  # TODO - catch errors
+            azure_zones_list = []
             while True:
                 for zone in azure_zones.current_page:
                     azure_zones_list.append(zone.name)
                 azure_zones.next()
         except StopIteration:
             pass
-
+        except CloudError as e:
+            logger.error('Error finding zone: {0}'.format(e))
+            raise errors.PluginError('Error finding zone form the Azure DNS API: {0}'.format(e))
         zone_dns_name_guesses = dns_common.base_domain_name_guesses(domain)
 
         for zone_name in zone_dns_name_guesses:
