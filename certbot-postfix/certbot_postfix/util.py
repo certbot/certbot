@@ -44,6 +44,21 @@ class PostfixUtilBase(object):
             args.extend(extra_args)
         return check_all_output(args)
 
+    def _get_output(self, extra_args=None):
+        """Runs the Postfix utility and returns only stdout output.
+
+        This function relies on self._call for running the utility.
+
+        :param list extra_args: additional arguments for the command
+
+        :returns: data written to stdout
+        :rtype: str
+
+        :raises subprocess.CalledProcessError: if the command fails
+
+        """
+        return self._call(extra_args)[0]
+
 
 def check_all_output(*args, **kwargs):
     """A version of subprocess.check_output that also captures stderr.
