@@ -155,6 +155,8 @@ class NginxParser(object):
 
         self._update_vhosts_addrs_ssl(vhosts)
 
+        self._vhosts = vhosts
+
         return vhosts
 
     def _update_vhosts_addrs_ssl(self, vhosts):
@@ -328,6 +330,7 @@ class NginxParser(object):
         """
         # TODO: https://github.com/certbot/certbot/issues/5185
         # put it in the same file as the template, at the same level
+        all_vhosts = self.get_vhosts()
         enclosing_block = self.parsed[vhost_template.filep]
         for index in vhost_template.path[:-1]:
             enclosing_block = enclosing_block[index]
@@ -336,12 +339,14 @@ class NginxParser(object):
         enclosing_block.insert(new_location, raw_in_parsed)
         new_vhost = copy.deepcopy(vhost_template)
         new_vhost.path[-1] = new_location
+        new_vhost.source_vhost = vhost_template
         for addr in new_vhost.addrs:
             addr.default = False
         if delete_default:
             for directive in enclosing_block[new_vhost.path[-1]][1]:
                 if len(directive) > 0 and directive[0] == 'listen' and 'default_server' in directive:
                     del directive[directive.index('default_server')]
+        all_vhosts.append(new_vhost)
         return new_vhost
 
 def _parse_ssl_options(ssl_options):

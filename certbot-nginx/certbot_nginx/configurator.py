@@ -45,6 +45,11 @@ TEST_REDIRECT_BLOCK = [
     ['#', ' managed by Certbot']
 ]
 
+NO_IF_REDIRECT_BLOCK = [[
+    ['\n    ', 'return', ' ', '301', ' ', 'https://$host$request_uri'],
+     '\n    '
+], ['\n']]
+
 REDIRECT_COMMENT_BLOCK = [
     ['\n    ', '#', ' Redirect non-https traffic to https'],
     ['\n    ', '#', ' if ($scheme != "https") {'],
@@ -58,6 +63,12 @@ TEST_REDIRECT_COMMENT_BLOCK = [
     ['#', ' if ($scheme != "https") {'],
     ['#', "     return 301 https://$host$request_uri;"],
     ['#', " } # managed by Certbot"],
+]
+
+NO_IF_REDIRECT_COMMENT_BLOCK = [
+    ['\n    ', '#', ' Redirect non-https traffic to https'],
+    ['\n    ', '#', " return 301 https://$host$request_uri;"],
+    ['\n']
 ]
 
 @zope.interface.implementer(interfaces.IAuthenticator, interfaces.IInstaller)
@@ -533,13 +544,19 @@ class NginxConfigurator(common.Installer):
     def _has_certbot_redirect_comment(self, vhost):
         return vhost.contains_list(TEST_REDIRECT_COMMENT_BLOCK)
 
-    def _add_redirect_block(self, vhost, active=True):
+    def _add_redirect_block(self, vhost, active=True, use_if=True):
         """Add redirect directive to vhost
         """
         if active:
-            redirect_block = REDIRECT_BLOCK
+            if use_if:
+                redirect_block = REDIRECT_BLOCK
+            else:
+                redirect_block = NO_IF_REDIRECT_BLOCK
         else:
-            redirect_block = REDIRECT_COMMENT_BLOCK
+            if use_if:
+                redirect_block = REDIRECT_COMMENT_BLOCK
+            else:
+                redirect_block = NO_IF_REDIRECT_COMMENT_BLOCK
 
         self.parser.add_server_directives(
             vhost, redirect_block, replace=False)
@@ -557,29 +574,38 @@ class NginxConfigurator(common.Installer):
         """
 
         port = self.DEFAULT_LISTEN_PORT
-        vhost = None
+        ssl_vhost = None
         # If there are blocks listening plaintextishly on self.DEFAULT_LISTEN_PORT,
         # choose the most name-matching one.
-        vhost = self.choose_redirect_vhost(domain, port)
+        ssl_vhost = self.choose_redirect_vhost(domain, port)
 
-        if vhost is None:
+        if ssl_vhost is None:
             logger.info("No matching insecure server blocks listening on port %s found.",
                 self.DEFAULT_LISTEN_PORT)
+            return
+
+        # if we created it this run, use the appropriate source vhost
+        created_this_run = ssl_vhost.source_vhost is not None
+        if created_this_run:
+            vhost = ssl_vhost.source_vhost
         else:
-            if self._has_certbot_redirect(vhost):
-                logger.info("Traffic on port %s already redirecting to ssl in %s",
-                    self.DEFAULT_LISTEN_PORT, vhost.filep)
-            elif vhost.has_redirect():
-                if not self._has_certbot_redirect_comment(vhost):
-                    self._add_redirect_block(vhost, active=False)
-                logger.info("The appropriate server block is already redirecting "
-                            "traffic. To enable redirect anyway, uncomment the "
-                            "redirect lines in %s.", vhost.filep)
-            else:
-                # Redirect plaintextish host to https
-                self._add_redirect_block(vhost, active=True)
-                logger.info("Redirecting all traffic on port %s to ssl in %s",
-                    self.DEFAULT_LISTEN_PORT, vhost.filep)
+            # TODO(issue #NNNN): try to find a matching non-ssl server block
+            vhost = ssl_vhost
+
+        if self._has_certbot_redirect(vhost):
+            logger.info("Traffic on port %s already redirecting to ssl in %s",
+                self.DEFAULT_LISTEN_PORT, vhost.filep)
+        elif vhost.has_redirect():
+            if not self._has_certbot_redirect_comment(vhost):
+                self._add_redirect_block(vhost, active=False, use_if=(not created_this_run))
+            logger.info("The appropriate server block is already redirecting "
+                        "traffic. To enable redirect anyway, uncomment the "
+                        "redirect lines in %s.", vhost.filep)
+        else:
+            # Redirect plaintextish host to https
+            self._add_redirect_block(vhost, active=True, use_if=(not created_this_run))
+            logger.info("Redirecting all traffic on port %s to ssl in %s",
+                self.DEFAULT_LISTEN_PORT, vhost.filep)
 
     def _enable_ocsp_stapling(self, domain, chain_path):
         """Include OCSP response in TLS handshake
