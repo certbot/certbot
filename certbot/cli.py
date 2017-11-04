@@ -142,14 +142,14 @@ def report_config_interaction(modified, modifiers):
     between config options.
 
     :param modified: config options that can be modified by modifiers
-    :type modified: iterable or str
+    :type modified: iterable or str (string_types)
     :param modifiers: config options that modify modified
-    :type modifiers: iterable or str
+    :type modifiers: iterable or str (string_types)
 
     """
-    if isinstance(modified, str):
+    if isinstance(modified, six.string_types):
         modified = (modified,)
-    if isinstance(modifiers, str):
+    if isinstance(modifiers, six.string_types):
         modifiers = (modifiers,)
 
     for var in modified:
@@ -477,7 +477,7 @@ class HelpfulArgumentParser(object):
         if isinstance(help1, bool) and isinstance(help2, bool):
             self.help_arg = help1 or help2
         else:
-            self.help_arg = help1 if isinstance(help1, str) else help2
+            self.help_arg = help1 if isinstance(help1, six.string_types) else help2
 
         short_usage = self._usage_string(plugins, self.help_arg)
 

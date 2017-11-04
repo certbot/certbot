@@ -125,10 +125,10 @@ class TlsSniPerformTest(util.NginxTest):
         self.sni.add_chall(self.achalls[0])
         self.sni.add_chall(self.achalls[2])
 
-        v_addr1 = [obj.Addr("69.50.225.155", "9000", True, False),
-                   obj.Addr("127.0.0.1", "", False, False)]
-        v_addr2 = [obj.Addr("myhost", "", False, True)]
-        v_addr2_print = [obj.Addr("myhost", "", False, False)]
+        v_addr1 = [obj.Addr("69.50.225.155", "9000", True, False, False, False),
+                   obj.Addr("127.0.0.1", "", False, False, False, False)]
+        v_addr2 = [obj.Addr("myhost", "", False, True, False, False)]
+        v_addr2_print = [obj.Addr("myhost", "", False, False, False, False)]
         ll_addr = [v_addr1, v_addr2]
         self.sni._mod_config(ll_addr)  # pylint: disable=protected-access
 

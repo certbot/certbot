@@ -251,7 +251,7 @@ class Addr(object):
         """Normalized representation of addr/port tuple
         """
         if self.ipv6:
-            return (self._normalize_ipv6(self.tup[0]), self.tup[1])
+            return (self.get_ipv6_exploded(), self.tup[1])
         return self.tup
 
     def __eq__(self, other):

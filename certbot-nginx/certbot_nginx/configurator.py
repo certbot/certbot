@@ -270,6 +270,30 @@ class NginxConfigurator(common.Installer):
         self._make_server_ssl(new_vhost)
         return new_vhost
 
+    def ipv6_info(self, port):
+        """Returns tuple of booleans (ipv6_active, ipv6only_present)
+        ipv6_active is true if any server block listens ipv6 address in any port
+
+        ipv6only_present is true if ipv6only=on option exists in any server
+        block ipv6 listen directive for the specified port.
+
+        :param str port: Port to check ipv6only=on directive for
+
+        :returns: Tuple containing information if IPv6 is enabled in the global
+            configuration, and existence of ipv6only directive for specified port
+        :rtype: tuple of type (bool, bool)
+        """
+        vhosts = self.parser.get_vhosts()
+        ipv6_active = False
+        ipv6only_present = False
+        for vh in vhosts:
+            for addr in vh.addrs:
+                if addr.ipv6:
+                    ipv6_active = True
+                if addr.ipv6only and addr.get_port() == port:
+                    ipv6only_present = True
+        return (ipv6_active, ipv6only_present)
+
     def _vhost_from_duplicated_default(self, domain):
         if self.new_vhost is None:
             default_vhost = self._get_default_vhost()
@@ -460,9 +484,12 @@ class NginxConfigurator(common.Installer):
                     all_names.add(host)
                 elif not common.private_ips_regex.match(host):
                     # If it isn't a private IP, do a reverse DNS lookup
-                    # TODO: IPv6 support
                     try:
-                        socket.inet_aton(host)
+                        if addr.ipv6:
+                            host = addr.get_ipv6_exploded()
+                            socket.inet_pton(socket.AF_INET6, host)
+                        else:
+                            socket.inet_pton(socket.AF_INET, host)
                         all_names.add(socket.gethostbyaddr(host)[0])
                     except (socket.error, socket.herror, socket.timeout):
                         continue
@@ -498,10 +525,32 @@ class NginxConfigurator(common.Installer):
         :type vhost: :class:`~certbot_nginx.obj.VirtualHost`
 
         """
+        ipv6info = self.ipv6_info(self.config.tls_sni_01_port)
+        ipv6_block = ['']
+        ipv4_block = ['']
+
+        if vhost.ipv6_enabled():
+            ipv6_block = ['\n    ',
+                          'listen',
+                          ' ',
+                          '[::]:{0} ssl'.format(self.config.tls_sni_01_port)]
+            if not ipv6info[1]:
+                # ipv6only=on is absent in global config
+                ipv6_block.append(' ')
+                ipv6_block.append('ipv6only=on')
+
+        if vhost.ipv4_enabled():
+            ipv4_block = ['\n    ',
+                          'listen',
+                          ' ',
+                          '{0} ssl'.format(self.config.tls_sni_01_port)]
+
+
         snakeoil_cert, snakeoil_key = self._get_snakeoil_paths()
 
         ssl_block = ([
-            ['\n    ', 'listen', ' ', '{0} ssl'.format(self.config.tls_sni_01_port)],
+            ipv6_block,
+            ipv4_block,
             ['\n    ', 'ssl_certificate', ' ', snakeoil_cert],
             ['\n    ', 'ssl_certificate_key', ' ', snakeoil_key],
             ['\n    ', 'include', ' ', self.mod_ssl_conf],
