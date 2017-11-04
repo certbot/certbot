@@ -139,12 +139,10 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
     :ivar bool enabled: Virtual host is enabled
     :ivar list path: The indices into the parsed file used to access
         the server block defining the vhost
-    :ivar list source_path: Path to the original server block, if this is
-        a duplicate server block
 
     """
 
-    def __init__(self, filep, addrs, ssl, enabled, names, raw, path, source_path=None):
+    def __init__(self, filep, addrs, ssl, enabled, names, raw, path):
         # pylint: disable=too-many-arguments
         """Initialize a VH."""
         self.filep = filep
@@ -154,7 +152,6 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
         self.enabled = enabled
         self.raw = raw
         self.path = path
-        self.source_path = source_path
 
     def __str__(self):
         addr_str = ", ".join(str(addr) for addr in sorted(self.addrs, key=str))

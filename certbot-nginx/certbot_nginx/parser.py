@@ -335,7 +335,6 @@ class NginxParser(object):
         raw_in_parsed = copy.deepcopy(enclosing_block[vhost_template.path[-1]])
         enclosing_block.insert(new_location, raw_in_parsed)
         new_vhost = copy.deepcopy(vhost_template)
-        new_vhost.source_path = cope.deepcopy(new_vhost.path)
         new_vhost.path[-1] = new_location
         for addr in new_vhost.addrs:
             addr.default = False
