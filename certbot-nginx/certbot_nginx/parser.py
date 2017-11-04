@@ -30,6 +30,7 @@ class NginxParser(object):
         self.parsed = {}
         self.root = os.path.abspath(root)
         self.config_root = self._find_config_root()
+        self._vhosts = None
 
         # Parse nginx.conf and included files.
         # TODO: Check sites-available/ as well. For now, the configurator does
@@ -132,6 +133,8 @@ class NginxParser(object):
         :rtype: list
 
         """
+        if self._vhosts is not None:
+            return self._vhosts
         enabled = True  # We only look at enabled vhosts for now
         servers = self._get_raw_servers()
 
