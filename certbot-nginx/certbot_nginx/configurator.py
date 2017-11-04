@@ -194,9 +194,7 @@ class NginxConfigurator(common.Installer):
                 "The nginx plugin currently requires --fullchain-path to "
                 "install a cert.")
 
-        vhost = self.choose_vhost(domain, raise_if_no_match=False)
-        if vhost is None:
-            vhost = self._vhost_from_duplicated_default(domain)
+        vhost = self.choose_vhost(domain, create_if_no_match=True)
         cert_directives = [['\n    ', 'ssl_certificate', ' ', fullchain_path],
                            ['\n    ', 'ssl_certificate_key', ' ', key_path]]
 
@@ -214,7 +212,7 @@ class NginxConfigurator(common.Installer):
     #######################
     # Vhost parsing methods
     #######################
-    def choose_vhost(self, target_name, raise_if_no_match=True):
+    def choose_vhost(self, target_name, create_if_no_match=False):
         """Chooses a virtual host based on the given domain name.
 
         .. note:: This makes the vhost SSL-enabled if it isn't already. Follows
@@ -228,8 +226,8 @@ class NginxConfigurator(common.Installer):
             hostname. Currently we just ignore this.
 
         :param str target_name: domain name
-        :param bool raise_if_no_match: True iff not finding a match is an error;
-                                       otherwise, return None
+        :param bool create_if_no_match: If we should create a new vhost from default
+            when there is no match found
 
         :returns: ssl vhost associated with name
         :rtype: :class:`~certbot_nginx.obj.VirtualHost`
@@ -240,7 +238,9 @@ class NginxConfigurator(common.Installer):
         matches = self._get_ranked_matches(target_name)
         vhost = self._select_best_name_match(matches)
         if not vhost:
-            if raise_if_no_match:
+            if create_if_no_match:
+                vhost = self._vhost_from_duplicated_default(domain)
+            else:
                 # No matches. Raise a misconfiguration error.
                 raise errors.MisconfigurationError(
                             ("Cannot find a VirtualHost matching domain %s. "
@@ -248,21 +248,21 @@ class NginxConfigurator(common.Installer):
                              "please add a corresponding server_name directive to your "
                              "nginx configuration: "
                              "https://nginx.org/en/docs/http/server_names.html") % (target_name))
-            else:
-                return None
-        else:
-            # Note: if we are enhancing with ocsp, vhost should already be ssl.
-            if not vhost.ssl:
-                self._make_server_ssl(vhost)
+        # Note: if we are enhancing with ocsp, vhost should already be ssl.
+        if not vhost.ssl:
+            vhost = self._duplicate_and_make_server_ssl(vhost)
 
         return vhost
+
+    def _duplicate_and_make_server_ssl(self, vhost):
+        new_vhost = self.parser.duplicate_vhost(vhost, delete_default=False)
+        self._make_server_ssl(new_vhost)
+        return new_vhost
 
     def _vhost_from_duplicated_default(self, domain):
         if self.new_vhost is None:
             default_vhost = self._get_default_vhost()
             self.new_vhost = self.parser.duplicate_vhost(default_vhost)
-            if not self.new_vhost.ssl:
-                self._make_server_ssl(self.new_vhost)
             self.new_vhost.names = set()
 
         self.new_vhost.names.add(domain)
