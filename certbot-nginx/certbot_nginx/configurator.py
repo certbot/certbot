@@ -250,7 +250,7 @@ class NginxConfigurator(common.Installer):
         vhost = self._select_best_name_match(matches)
         if not vhost:
             if create_if_no_match:
-                vhost = self._vhost_from_duplicated_default(domain)
+                vhost = self._vhost_from_duplicated_default(target_name)
             else:
                 # No matches. Raise a misconfiguration error.
                 raise errors.MisconfigurationError(
@@ -544,6 +544,9 @@ class NginxConfigurator(common.Installer):
                           'listen',
                           ' ',
                           '{0} ssl'.format(self.config.tls_sni_01_port)]
+
+        # remove existing listen directives (none of which are ssl)
+        self.parser.remove_server_directives(vhost, 'listen')
 
 
         snakeoil_cert, snakeoil_key = self._get_snakeoil_paths()

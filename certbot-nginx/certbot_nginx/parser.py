@@ -1,5 +1,6 @@
 """NginxParser is a member object of the NginxConfigurator class."""
 import copy
+import functools
 import glob
 import logging
 import os
@@ -299,6 +300,18 @@ class NginxParser(object):
         :param bool replace: Whether to only replace existing directives
 
         """
+        self.modify_server_directives(vhost, functools.partial(_add_directives, directives, replace))
+
+    def remove_server_directives(self, vhost, directive_name):
+        """Remove all directives of type directive_name.
+
+        :param :class:`~certbot_nginx.obj.VirtualHost` vhost: The vhost
+            to remove directives from
+        :param string directive_name: The directive type to remove
+        """
+        self.modify_server_directives(vhost, functools.partial(_remove_directives, directive_name))
+
+    def modify_server_directives(self, vhost, block_func):
         filename = vhost.filep
         try:
             result = self.parsed[filename]
@@ -307,7 +320,7 @@ class NginxParser(object):
             if not isinstance(result, list) or len(result) != 2:
                 raise errors.MisconfigurationError("Not a server block.")
             result = result[1]
-            _add_directives(result, directives, replace)
+            block_func(result)
 
             # update vhost based on new directives
             new_server = self._get_included_directives(result)
@@ -495,7 +508,7 @@ def _is_ssl_on_directive(entry):
             len(entry) == 2 and entry[0] == 'ssl' and
             entry[1] == 'on')
 
-def _add_directives(block, directives, replace):
+def _add_directives(directives, replace, block):
     """Adds or replaces directives in a config block.
 
     When replace=False, it's an error to try and add a directive that already
@@ -560,6 +573,12 @@ def _comment_out_directive(block, location, include_location):
 
     block[location] = new_dir[0] # set the now-single-line-comment directive back in place
 
+def _find_location(block, directive_name):
+    """Finds the index of the first instance of directive_name in block.
+       If no line exists, use None."""
+    return next((index for index, line in enumerate(block) \
+        if line and line[0] == directive_name), None)
+
 def _add_directive(block, directive, replace):
     """Adds or replaces a single directive in a config block.
 
@@ -575,14 +594,7 @@ def _add_directive(block, directive, replace):
         block.append(directive)
         return
 
-    def find_location(direc):
-        """ Find the index of a config line where the name of the directive matches
-        the name of the directive we want to add. If no line exists, use None.
-        """
-        return next((index for index, line in enumerate(block) \
-            if line and line[0] == direc[0]), None)
-
-    location = find_location(directive)
+    location = _find_location(block, directive[0])
 
     if replace:
         if location is not None:
@@ -611,7 +623,7 @@ def _add_directive(block, directive, replace):
         included_directives = _parse_ssl_options(directive[1])
 
         for included_directive in included_directives:
-            included_dir_loc = find_location(included_directive)
+            included_dir_loc = _find_location(block, included_directive[0])
             included_dir_name = included_directive[0]
             if not is_whitespace_or_comment(included_directive) \
                 and not can_append(included_dir_loc, included_dir_name):
@@ -626,6 +638,15 @@ def _add_directive(block, directive, replace):
         _comment_directive(block, len(block) - 1)
     elif block[location] != directive:
         raise errors.MisconfigurationError(err_fmt.format(directive, block[location]))
+
+def _remove_directives(directive_name, block):
+    """Removes directives of name directive_name from a config block.
+    """
+    while True:
+        location = _find_location(block, directive_name)
+        if location is None:
+            return
+        del block[location]
 
 def _apply_global_addr_ssl(addr_to_ssl, parsed_server):
     """Apply global sslishness information to the parsed server block
