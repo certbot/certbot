@@ -353,7 +353,6 @@ class NginxParser(object):
         enclosing_block.insert(new_location, raw_in_parsed)
         new_vhost = copy.deepcopy(vhost_template)
         new_vhost.path[-1] = new_location
-        new_vhost.source_vhost = vhost_template
         for addr in new_vhost.addrs:
             addr.default = False
         if delete_default:
