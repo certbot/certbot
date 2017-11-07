@@ -171,8 +171,8 @@ class VirtualHostTest(unittest.TestCase):
     def test_contains_list(self):
         from certbot_nginx.obj import VirtualHost
         from certbot_nginx.obj import Addr
-        from certbot_nginx.configurator import TEST_REDIRECT_BLOCK
-        test_needle = TEST_REDIRECT_BLOCK
+        from certbot_nginx.configurator import REDIRECT_BLOCK, _test_block_from_block
+        test_needle = _test_block_from_block(REDIRECT_BLOCK)
         test_haystack = [['listen', '80'], ['root', '/var/www/html'],
             ['index', 'index.html index.htm index.nginx-debian.html'],
             ['server_name', 'two.functorkitten.xyz'], ['listen', '443 ssl'],
