@@ -353,9 +353,9 @@ class NginxParser(object):
         enclosing_block.insert(new_location, raw_in_parsed)
         new_vhost = copy.deepcopy(vhost_template)
         new_vhost.path[-1] = new_location
-        for addr in new_vhost.addrs:
-            addr.default = False
         if delete_default:
+            for addr in new_vhost.addrs:
+                addr.default = False
             for directive in enclosing_block[new_vhost.path[-1]][1]:
                 if len(directive) > 0 and directive[0] == 'listen' and 'default_server' in directive:
                     del directive[directive.index('default_server')]

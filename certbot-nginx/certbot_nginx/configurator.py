@@ -814,6 +814,7 @@ class NginxConfigurator(common.Installer):
 
         """
         super(NginxConfigurator, self).recovery_routine()
+        self.new_vhost = None
         self.parser.load()
 
     def revert_challenge_config(self):
@@ -823,6 +824,7 @@ class NginxConfigurator(common.Installer):
 
         """
         self.revert_temporary_config()
+        self.new_vhost = None
         self.parser.load()
 
     def rollback_checkpoints(self, rollback=1):
@@ -835,6 +837,7 @@ class NginxConfigurator(common.Installer):
 
         """
         super(NginxConfigurator, self).rollback_checkpoints(rollback)
+        self.new_vhost = None
         self.parser.load()
 
     ###########################################################################
