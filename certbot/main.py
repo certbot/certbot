@@ -897,7 +897,7 @@ def renew_cert(config, plugins, lineage):
 
     :param interfaces.IConfig config: Configuration object
     :param list plugins: List of plugins
-    :param lineage: TODO
+    :param RenewableCert lineage: a certificate lineage object
 
     :returns: `None`
     :rtype: None
