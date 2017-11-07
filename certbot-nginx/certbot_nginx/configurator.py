@@ -23,8 +23,9 @@ from certbot import util
 from certbot.plugins import common
 
 from certbot_nginx import constants
-from certbot_nginx import tls_sni_01
+from certbot_nginx import nginxparser
 from certbot_nginx import parser
+from certbot_nginx import tls_sni_01
 
 
 logger = logging.getLogger(__name__)
@@ -34,16 +35,6 @@ REDIRECT_BLOCK = [[
     [['\n        ', 'return', ' ', '301', ' ', 'https://$host$request_uri'],
      '\n    ']
 ], ['\n']]
-
-TEST_REDIRECT_BLOCK = [
-    [
-        ['if', '($scheme', '!=', '"https")'],
-        [
-            ['return', '301', 'https://$host$request_uri']
-        ]
-    ],
-    ['#', ' managed by Certbot']
-]
 
 NO_IF_REDIRECT_BLOCK = [
     ['\n    ', 'return', ' ', '301', ' ', 'https://$host$request_uri'],
@@ -56,13 +47,6 @@ REDIRECT_COMMENT_BLOCK = [
     ['\n    ', '#', "     return 301 https://$host$request_uri;"],
     ['\n    ', '#', " } # managed by Certbot"],
     ['\n']
-]
-
-TEST_REDIRECT_COMMENT_BLOCK = [
-    ['#', ' Redirect non-https traffic to https'],
-    ['#', ' if ($scheme != "https") {'],
-    ['#', "     return 301 https://$host$request_uri;"],
-    ['#', " } # managed by Certbot"],
 ]
 
 NO_IF_REDIRECT_COMMENT_BLOCK = [
@@ -591,11 +575,22 @@ class NginxConfigurator(common.Installer):
             logger.warning("Failed %s for %s", enhancement, domain)
             raise
 
+    def _test_block_from_block(block):
+        test_block = nginxparser.UnspacedList(block)
+        parser.comment_directive(test_block, 0)
+        return test_block
+
     def _has_certbot_redirect(self, vhost):
-        return vhost.contains_list(TEST_REDIRECT_BLOCK)
+        test_redirect_block = _test_block_from_block(REDIRECT_BLOCK)
+        test_no_if_redirect_block = _test_block_from_block(NO_IF_REDIRECT_BLOCK)
+        return vhost.contains_list(test_redirect_block) or
+            vhost.contains_list(test_no_if_redirect_block)
 
     def _has_certbot_redirect_comment(self, vhost):
-        return vhost.contains_list(TEST_REDIRECT_COMMENT_BLOCK)
+        test_redirect_comment_block = _test_block_from_block(REDIRECT_COMMENT_BLOCK)
+        test_no_if_redirect_commect_block = _test_block_from_block(NO_IF_REDIRECT_COMMENT_BLOCK)
+        return vhost.contains_list(test_redirect_comment_block) or
+            vhost.contains_list(test_no_if_redirect_commect_block)
 
     def _add_redirect_block(self, vhost, active=True, use_if=True):
         """Add redirect directive to vhost

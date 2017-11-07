@@ -535,7 +535,7 @@ REPEATABLE_DIRECTIVES = set(['server_name', 'listen', INCLUDE])
 COMMENT = ' managed by Certbot'
 COMMENT_BLOCK = [' ', '#', COMMENT]
 
-def _comment_directive(block, location):
+def comment_directive(block, location):
     """Add a comment to the end of the line at location."""
     next_entry = block[location + 1] if location + 1 < len(block) else None
     if isinstance(next_entry, list) and next_entry:
@@ -599,7 +599,7 @@ def _add_directive(block, directive, replace):
     if replace:
         if location is not None:
             block[location] = directive
-            _comment_directive(block, location)
+            comment_directive(block, location)
             return
     # Append directive. Fail if the name is not a repeatable directive name,
     # and there is already a copy of that directive with a different value
@@ -635,7 +635,7 @@ def _add_directive(block, directive, replace):
 
     if can_append(location, directive_name):
         block.append(directive)
-        _comment_directive(block, len(block) - 1)
+        comment_directive(block, len(block) - 1)
     elif block[location] != directive:
         raise errors.MisconfigurationError(err_fmt.format(directive, block[location]))
 
