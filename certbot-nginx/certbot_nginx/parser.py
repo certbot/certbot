@@ -42,6 +42,7 @@ class NginxParser(object):
         """Loads Nginx files into a parsed tree.
 
         """
+        self._vhosts = None
         self.parsed = {}
         self._parse_recursively(self.config_root)
 
