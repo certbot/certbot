@@ -84,8 +84,11 @@ def _get_and_save_cert(le_client, config, domains=None, certname=None, lineage=N
     checks, and requests for user input.
 
     :param interfaces.IConfig config: Configuration object
-    :param list domains: domains to get a certificate. This argument is optional, if not supplied it will default to `None`
-    :param str certname: Name of new cert. This argument is optional, if not supplied it will default to `None`
+
+    :param list domains: domains to get a certificate. Defaults to `None`
+
+    :param str certname: Name of new cert. Defaults to `None`
+
     :param storage.RenewableCert lineage:
 
     :returns: the issued certificate or `None` if doing a dry run
@@ -902,8 +905,7 @@ def renew_cert(config, plugins, lineage):
     :returns: `None`
     :rtype: None
 
-    :raises errors.PluginSelectionError: MissingCommandlineFlag in case supplied parameters do not pass
-
+    :raises errors.PluginSelectionError: MissingCommandlineFlag if supplied parameters do not pass
 
     """
     try:
@@ -1039,7 +1041,7 @@ def main(cli_args=sys.argv[1:]):
 
     :returns: TODO
 
-    :raises errors.Error: General operating system errors triggered by issues related to wrong permissions
+    :raises errors.Error: OS errors triggered by wrong permissions
 
     """
     log.pre_arg_parse_setup()
