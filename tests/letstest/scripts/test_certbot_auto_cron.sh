@@ -109,6 +109,6 @@ else
         echo "Something's wrong! Code to check if system is compatible with cron isn't being triggered."
         exit 1
     fi
-    echo "Non-compatability tests (mostly AWS) finished successfully :)
+    echo "Non-compatability tests (mostly AWS) finished successfully :)"
 fi
 
