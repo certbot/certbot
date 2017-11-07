@@ -66,6 +66,8 @@ CronTests() {
      fi
 
     echo "Test for no duplicate cronjobs being added"
+    # We rely on how the previous tests are setup for this one, but if the above changed,
+    # probably need to uncomment the next two lines.
 #    sudo crontab -r
 #    Common
     Common
