@@ -1,4 +1,4 @@
-#!/bin/sh -x
+#!/bin/sh
 #
 # Download and run the latest release version of the Certbot client.
 #
@@ -191,11 +191,6 @@ SetRootAuthMechanism() {
     fi
   fi
 }
-
-if [ "$1" = "--force-cron" ]; then
-    FORCE_CRON=1
-    shift 1
-fi
 
 if [ "$1" = "--cb-auto-has-root" ]; then
   shift 1
@@ -1400,7 +1395,7 @@ UNLIKELY_EOF
 
     say "Installation succeeded."
   fi
-  #"$VENV_BIN/letsencrypt" "$@" &> /dev/null
+  "$VENV_BIN/letsencrypt" "$@"
 
   AskToConfigureCron
   if [ "$configure_cron" = 1 ]; then
