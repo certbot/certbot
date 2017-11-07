@@ -322,7 +322,7 @@ def _find_domains_or_certname(config, installer):
     """Retrieve domains and certname from config or user input.
 
     :param interfaces.IConfig config: Configuration object
-    :param: TODO installer?
+    :param installer: Installer object
 
     :returns: Two-part tuple of domains and certname
     :rtype: tuple
@@ -536,8 +536,8 @@ def _init_le_client(config, authenticator, installer):
     """Initialize Let's Encrypt Client
 
     :param interfaces.IConfig config: Configuration object
-    :param: TODO authenticator
-    :param: TODO installer
+    :param AuthHandler authenticator: Acme authentication handler
+    :param installer: Installer object
 
     :returns: client: Client object
 
@@ -896,7 +896,7 @@ def renew_cert(config, plugins, lineage):
     """Renew & save an existing cert. Do not install it.
 
     :param interfaces.IConfig config: Configuration object
-    :param list plugins: TODO
+    :param list plugins: List of plugins
     :param lineage: TODO
 
     :returns: `None`
