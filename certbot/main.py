@@ -558,7 +558,7 @@ def unregister(config, unused_plugins):
     """Deactivate account on server
 
     :param interfaces.IConfig config: Configuration object
-    :param unused_plugins: list of plugins (deprecated)
+    :param list unused_plugins: list of plugins (deprecated)
 
     :returns: `None`
     :rtype: None
@@ -595,7 +595,7 @@ def register(config, unused_plugins):
     """Create or modify accounts on the server.
 
     :param interfaces.IConfig config: Configuration object
-    :param unused_plugins: list of plugins (deprecated)
+    :param list unused_plugins: list of plugins (deprecated)
 
     :returns: `None` or a string indicating and error
     :rtype: None or str
@@ -652,7 +652,7 @@ def install(config, plugins):
     """Install a previously obtained cert in a server.
 
     :param interfaces.IConfig config: Configuration object
-    :param plugins: list of plugins
+    :param list plugins: list of plugins
 
     :returns: `None`
     :rtype: None
@@ -676,7 +676,7 @@ def plugins_cmd(config, plugins):
     """List server software plugins.
 
     :param interfaces.IConfig config: Configuration object
-    :param plugins: list of plugins
+    :param list plugins: list of plugins
 
     :returns: `None`
     :rtype: None
@@ -712,7 +712,7 @@ def rollback(config, plugins):
     """Rollback server configuration changes made during install.
 
     :param interfaces.IConfig config: Configuration object
-    :param plugins: list of plugins
+    :param list plugins: list of plugins
 
     :returns: `None`
     :rtype: None
@@ -727,7 +727,7 @@ def config_changes(config, unused_plugins):
     View checkpoints and associated configuration changes.
 
     :param interfaces.IConfig config: Configuration object
-    :param unused_plugins: list of plugins (deprecated)
+    :param list unused_plugins: list of plugins (deprecated)
 
     :returns: `None`
     :rtype: None
@@ -742,7 +742,7 @@ def update_symlinks(config, unused_plugins):
     the correct archive directory.
 
     :param interfaces.IConfig config: Configuration object
-    :param unused_plugins: list of plugins (deprecated)
+    :param list unused_plugins: list of plugins (deprecated)
 
     :returns: `None`
     :rtype: None
@@ -757,7 +757,7 @@ def rename(config, unused_plugins):
     lineage.
 
     :param interfaces.IConfig config: Configuration object
-    :param unused_plugins: list of plugins (deprecated)
+    :param list unused_plugins: list of plugins (deprecated)
 
     :returns: `None`
     :rtype: None
@@ -772,7 +772,7 @@ def delete(config, unused_plugins):
     lineage.
 
     :param interfaces.IConfig config: Configuration object
-    :param unused_plugins: list of plugins (deprecated)
+    :param list unused_plugins: list of plugins (deprecated)
 
     :returns: `None`
     :rtype: None
@@ -784,7 +784,7 @@ def certificates(config, unused_plugins):
     """Display information about certs configured with Certbot
 
     :param interfaces.IConfig config: Configuration object
-    :param unused_plugins: list of plugins (deprecated)
+    :param list unused_plugins: list of plugins (deprecated)
 
     :returns: `None`
     :rtype: None
@@ -795,7 +795,7 @@ def revoke(config, unused_plugins):  # TODO: coop with renewal config
     """Revoke a previously obtained certificate.
 
     :param interfaces.IConfig config: Configuration object
-    :param unused_plugins: list of plugins (deprecated)
+    :param list unused_plugins: list of plugins (deprecated)
 
     :returns: `None` returns string indicating error in case of error
     :rtype: None or str
@@ -829,7 +829,7 @@ def run(config, plugins):  # pylint: disable=too-many-branches,too-many-locals
     """Obtain a certificate and install.
 
     :param interfaces.IConfig config: Configuration object
-    :param plugins: list of plugins
+    :param list plugins: list of plugins
 
     :returns: `None`
     :rtype: None
@@ -896,7 +896,7 @@ def renew_cert(config, plugins, lineage):
     """Renew & save an existing cert. Do not install it.
 
     :param interfaces.IConfig config: Configuration object
-    :param plugins: TODO
+    :param list plugins: TODO
     :param lineage: TODO
 
     :returns: `None`
@@ -935,7 +935,7 @@ def certonly(config, plugins):
     This implements the 'certonly' subcommand.
 
     :param interfaces.IConfig config: Configuration object
-    :param: TODO plugins
+    :param list plugins: List of plugins
 
     :returns: `None`
     :rtype: None
@@ -979,7 +979,7 @@ def renew(config, unused_plugins):
     """Renew previously-obtained certificates.
 
     :param interfaces.IConfig config: Configuration object
-    :param unused_plugins: list of plugins (deprecated)
+    :param list unused_plugins: list of plugins (deprecated)
 
     :returns: `None`
     :rtype: None
