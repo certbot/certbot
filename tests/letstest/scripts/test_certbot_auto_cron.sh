@@ -92,7 +92,7 @@ if [ -f "/etc/debian_version" ]; then
     TEST_COUNT=$(echo "$OUT" | grep "or systemd timer already exists. Nothing to do.")
     echo "TEST_COUNT is $TEST_COUNT"
     if [ -z "$TEST_COUNT" ]; then
-        echo "Something's wrong! Code to check if system is compatible with cron isn't being triggered."
+        echo "Something's wrong! Code to check if packaged certbot's crontab is present isn't being triggered."
         exit 1
     fi
     echo "Debian tests finished successfully :)"
