@@ -1,41 +1,7 @@
-#!/bin/bash -x
-
-# $PUBLIC_IP $PRIVATE_IP $PUBLIC_HOSTNAME $BOULDER_URL are dynamically set at execution
-
-# with curl, instance metadata available from EC2 metadata service:
-#public_host=$(curl -s http://169.254.169.254/2014-11-05/meta-data/public-hostname)
-#public_ip=$(curl -s http://169.254.169.254/2014-11-05/meta-data/public-ipv4)
-#private_ip=$(curl -s http://169.254.169.254/2014-11-05/meta-data/local-ipv4)
+#!/bin/bash
 
 cd letsencrypt
 export PATH="$PWD/letsencrypt-auto-source:$PATH"
-#letsencrypt-auto --os-packages-only --debug --version
-#letsencrypt-auto certonly --no-self-upgrade -v --standalone --debug \
-#                   --text --agree-dev-preview --agree-tos \
-#                   --renew-by-default --redirect \
-#                   --register-unsafely-without-email \
-#                   --domain "$PUBLIC_HOSTNAME" --server "$BOULDER_URL"
-#
-## we have to jump through some hoops to cope with relative paths in renewal
-## conf files ...
-## 1. be in the right directory
-#cd tests/letstest/testdata/
-#
-## 2. refer to the config with the same level of relativity that it itself
-## contains :/
-#OUT=$(letsencrypt-auto certificates --config-dir sample-config -v --no-self-upgrade)
-#TEST_CERTS=$(echo "$OUT" | grep -c TEST_CERT)
-#REVOKED=$(echo "$OUT" | grep -c REVOKED)
-#
-#if [ "$TEST_CERTS" != 2 ] ; then
-#    echo "Did not find two test certs as expected ($TEST_CERTS)"
-#    exit 1
-#fi
-#
-#if [ "$REVOKED" != 1 ] ; then
-#    echo "Did not find one revoked cert as expected ($REVOKED)"
-#    exit 1
-#fi
 
 ###############################
 ## Tests for setting up cron ##
@@ -53,7 +19,7 @@ Common(){
 }
 
 Cleanup() {
-    letsencrypt-auto --delete --cert-name "$PUBLIC_HOSTNAME"
+    letsencrypt-auto --delete --cert-name "$PUBLIC_HOSTNAME" --no-self-upgrade
 }
 
 CronTests() {
@@ -122,14 +88,18 @@ if [ -f "/etc/debian_version" ]; then
     sudo touch /etc/cron.d/certbot
     OUT=$(Common)
     TEST_COUNT=$(echo "$OUT" | grep "or systemd timer already exists. Nothing to do.")
-    if [ "$TEST_COUNT" = 0 ]; then
+    echo "TEST_COUNT is $TEST_COUNT"
+    if [ -z "$TEST_COUNT" ]; then
         echo "Something's wrong! Code to check if system is compatible with cron isn't being triggered."
         exit 1
     fi
+    echo "Debian tests finished successfully :)"
 elif [ -f /etc/redhat-release ]; then
     CronTests
+    echo "Redhat tests finished successfully :)"
 elif [ -f /etc/os-release ] && `grep -q openSUSE /etc/os-release` ; then
     CronTests
+    echo "Opensuse tests finished successfully :)"
 else
     OUT=$(Common)
     TEST_COUNT=$(echo "$OUT" | grep "Generating cron jobs for your system is not yet supported.")
@@ -137,4 +107,6 @@ else
         echo "Something's wrong! Code to check if system is compatible with cron isn't being triggered."
         exit 1
     fi
+    echo "Non-compatability tests (mostly AWS) finished successfully :)
 fi
+
