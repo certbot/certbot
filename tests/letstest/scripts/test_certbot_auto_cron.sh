@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 
 cd letsencrypt
 export PATH="$PWD/letsencrypt-auto-source:$PATH"
