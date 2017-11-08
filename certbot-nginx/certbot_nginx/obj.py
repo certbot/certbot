@@ -154,7 +154,7 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
     :ivar bool enabled: Virtual host is enabled
     :ivar list path: The indices into the parsed file used to access
         the server block defining the vhost
-    :ivar bool has_ssl_copy: If this vhost was duplicated and the copy made ssl
+    :ivar bool ssl_copy: The duplicated, ssl-ified copy of this vhost
 
     """
 
@@ -168,7 +168,7 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
         self.enabled = enabled
         self.raw = raw
         self.path = path
-        self.has_ssl_copy = False
+        self.ssl_copy = None
 
     def __str__(self):
         addr_str = ", ".join(str(addr) for addr in sorted(self.addrs, key=str))
@@ -222,6 +222,8 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
     def ipv4_enabled(self):
         """Return true if one or more of the listen directives in vhost are IPv4
         only"""
+        if self.addrs is None or len(self.addrs) == 0:
+            return True
         for a in self.addrs:
             if not a.ipv6:
                 return True

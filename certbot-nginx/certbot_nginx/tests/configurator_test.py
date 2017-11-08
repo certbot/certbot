@@ -232,10 +232,8 @@ class NginxConfiguratorTest(util.NginxTest):
         parsed_server_conf = util.filter_comments(self.config.parser.parsed[server_conf])
         parsed_nginx_conf = util.filter_comments(self.config.parser.parsed[nginx_conf])
 
-        self.assertEqual([[['server'],
+        self.assertEqual([['server'],
                            [
-                            ['listen', '69.50.225.155:9000'],
-                            ['listen', '127.0.0.1'],
                             ['server_name', '.example.com'],
                             ['server_name', 'example.*'],
 
@@ -244,16 +242,14 @@ class NginxConfiguratorTest(util.NginxTest):
                             ['ssl_certificate_key', 'example/key.pem'],
                             ['include', self.config.mod_ssl_conf],
                             ['ssl_dhparam', self.config.ssl_dhparams],
-                            ]]],
-                         parsed_example_conf)
+                            ]],
+                         parsed_example_conf[1])
         self.assertEqual([['server_name', 'somename', 'alias', 'another.alias']],
                          parsed_server_conf)
         self.assertTrue(util.contains_at_depth(
             parsed_nginx_conf,
             [['server'],
              [
-              ['listen', '8000'],
-              ['listen', 'somename:8080'],
               ['include', 'server.conf'],
               [['location', '/'],
                [['root', 'html'],
@@ -266,7 +262,7 @@ class NginxConfiguratorTest(util.NginxTest):
             ]],
             2))
 
-    def test_deploy_cert_add_explicit_listen(self):
+    def test_deploy_cert_no_existing_listen(self):
         migration_conf = self.config.parser.abs_path('sites-enabled/migration.com')
         self.config.deploy_cert(
             "summer.com",
@@ -282,14 +278,13 @@ class NginxConfiguratorTest(util.NginxTest):
                            ['server_name', 'migration.com'],
                            ['server_name', 'summer.com'],
 
-                           ['listen', '80'],
                            ['listen', '5001', 'ssl'],
                            ['ssl_certificate', 'summer/fullchain.pem'],
                            ['ssl_certificate_key', 'summer/key.pem'],
                            ['include', self.config.mod_ssl_conf],
                            ['ssl_dhparam', self.config.ssl_dhparams],
                            ]],
-                         parsed_migration_conf[0])
+                         parsed_migration_conf[1])
 
     @mock.patch("certbot_nginx.configurator.tls_sni_01.NginxTlsSni01.perform")
     @mock.patch("certbot_nginx.configurator.NginxConfigurator.restart")
@@ -606,12 +601,18 @@ class NginxConfiguratorTest(util.NginxTest):
                             ['server_name', 'www.nomatch.com'],
                             [['location', '/'],
                              [['root', 'html'],
+                              ['index', 'index.html', 'index.htm']]]]],
+                          [['server'],
+                           [['server_name', 'www.nomatch.com'],
+                            [['location', '/'],
+                             [['root', 'html'],
                               ['index', 'index.html', 'index.htm']]],
                             ['listen', '5001', 'ssl'],
                             ['ssl_certificate', 'example/fullchain.pem'],
                             ['ssl_certificate_key', 'example/key.pem'],
                             ['include', self.config.mod_ssl_conf],
-                            ['ssl_dhparam', self.config.ssl_dhparams]]]],
+                            ['ssl_dhparam', self.config.ssl_dhparams]]]
+                         ],
                          parsed_default_conf)
 
         self.config.deploy_cert(
@@ -626,7 +627,8 @@ class NginxConfiguratorTest(util.NginxTest):
 
         parsed_default_conf = util.filter_comments(self.config.parser.parsed[default_conf])
 
-        self.assertTrue(util.contains_at_depth(parsed_default_conf, "nomatch.com", 3))
+        self.assertTrue(util.contains_at_depth(parsed_default_conf[1], "nomatch.com", 2))
+        self.assertTrue(util.contains_at_depth(parsed_default_conf[2], "nomatch.com", 2))
 
     def test_deploy_no_match_default_set_multi_level_path(self):
         default_conf = self.config.parser.abs_path('sites-enabled/default')
@@ -705,10 +707,7 @@ class NginxConfiguratorTest(util.NginxTest):
 
         self.config.parser.load()
 
-        expected = [
-            ['if', '($scheme', '!=', '"https")'],
-            [['return', '301', 'https://$host$request_uri']]
-        ]
+        expected = ['return', '301', 'https://$host$request_uri']
 
         generated_conf = self.config.parser.parsed[default_conf]
         self.assertTrue(util.contains_at_depth(generated_conf, expected, 2))

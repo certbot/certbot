@@ -250,9 +250,12 @@ class NginxConfigurator(common.Installer):
         return vhost
 
     def _duplicate_and_make_server_ssl(self, vhost):
-        new_vhost = self.parser.duplicate_vhost(vhost, delete_default=False)
-        self._make_server_ssl(new_vhost)
-        vhost.has_ssl_copy = True
+        if vhost.ssl_copy is None:
+            new_vhost = self.parser.duplicate_vhost(vhost, delete_default=False)
+            self._make_server_ssl(new_vhost)
+            vhost.ssl_copy = new_vhost
+        else:
+            new_vhost = vhost.ssl_copy
         return new_vhost
 
     def ipv6_info(self, port):
@@ -285,13 +288,18 @@ class NginxConfigurator(common.Installer):
             self.new_vhost = self.parser.duplicate_vhost(default_vhost)
             self.new_vhost.names = set()
 
-        self.new_vhost.names.add(domain)
+        self._add_server_name_to_vhost(self.new_vhost, domain)
+        if self.new_vhost.ssl_copy is not None:
+            self._add_server_name_to_vhost(self.new_vhost.ssl_copy, domain)
+        return self.new_vhost
+
+    def _add_server_name_to_vhost(self, vhost, domain):
+        vhost.names.add(domain)
         name_block = [['\n    ', 'server_name']]
-        for name in self.new_vhost.names:
+        for name in vhost.names:
             name_block[0].append(' ')
             name_block[0].append(name)
-        self.parser.add_server_directives(self.new_vhost, name_block, replace=True)
-        return self.new_vhost
+        self.parser.add_server_directives(vhost, name_block, replace=True)
 
     def _get_default_vhost(self):
         vhost_list = self.parser.get_vhosts()
@@ -632,13 +640,13 @@ class NginxConfigurator(common.Installer):
                 self.DEFAULT_LISTEN_PORT, vhost.filep)
         elif vhost.has_redirect():
             if not self._has_certbot_redirect_comment(vhost):
-                self._add_redirect_block(vhost, active=False, use_if=(not vhost.has_ssl_copy))
+                self._add_redirect_block(vhost, active=False, use_if=(vhost.ssl_copy is None))
             logger.info("The appropriate server block is already redirecting "
                         "traffic. To enable redirect anyway, uncomment the "
                         "redirect lines in %s.", vhost.filep)
         else:
             # Redirect plaintextish host to https
-            self._add_redirect_block(vhost, active=True, use_if=(not vhost.has_ssl_copy))
+            self._add_redirect_block(vhost, active=True, use_if=(vhost.ssl_copy is None))
             logger.info("Redirecting all traffic on port %s to ssl in %s",
                 self.DEFAULT_LISTEN_PORT, vhost.filep)
 
