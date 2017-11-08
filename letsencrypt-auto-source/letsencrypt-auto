@@ -1400,7 +1400,6 @@ UNLIKELY_EOF
   fi
   "$VENV_BIN/letsencrypt" "$@"
 
-  AskToConfigureCron
   if [ "$configure_cron" = 1 ]; then
     if [ -f /etc/debian_version ]; then
      echo "Configuring cron for Debian."
