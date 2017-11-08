@@ -73,7 +73,6 @@ for arg in "$@" ; do
     --quiet)
       QUIET=1;;
     --verbose)
-      echo "setting verbose"
       VERBOSE=1;;
     --force-cron)
       # Because configuring cron is off by default during the test farm tests,
