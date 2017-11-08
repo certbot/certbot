@@ -44,7 +44,6 @@ CronTests() {
     echo "* * * * * echo" > "$tmp_file"
     sudo crontab "$tmp_file"
     out=$(sudo crontab -l)
-    echo "crontab before: $out"
     Common
     out=$(sudo crontab -l)
     crontab_backup_out=$(sudo cat $CRONTAB_BACKUP)
