@@ -349,11 +349,10 @@ class NginxParser(object):
         enclosing_block = self.parsed[vhost_template.filep]
         for index in vhost_template.path[:-1]:
             enclosing_block = enclosing_block[index]
-        new_location = vhost_template.path[-1] + 1
         raw_in_parsed = copy.deepcopy(enclosing_block[vhost_template.path[-1]])
-        enclosing_block.insert(new_location, raw_in_parsed)
+        enclosing_block.append(raw_in_parsed)
         new_vhost = copy.deepcopy(vhost_template)
-        new_vhost.path[-1] = new_location
+        new_vhost.path[-1] = len(enclosing_block) - 1
         if delete_default:
             for addr in new_vhost.addrs:
                 addr.default = False

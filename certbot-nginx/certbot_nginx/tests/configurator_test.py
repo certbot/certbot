@@ -284,7 +284,7 @@ class NginxConfiguratorTest(util.NginxTest):
                            ['include', self.config.mod_ssl_conf],
                            ['ssl_dhparam', self.config.ssl_dhparams],
                            ]],
-                         parsed_migration_conf[1])
+                         parsed_migration_conf[2])
 
     @mock.patch("certbot_nginx.configurator.tls_sni_01.NginxTlsSni01.perform")
     @mock.patch("certbot_nginx.configurator.NginxConfigurator.restart")
