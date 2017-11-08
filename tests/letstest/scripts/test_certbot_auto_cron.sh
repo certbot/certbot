@@ -81,21 +81,10 @@ CronTests() {
 
 if [ -f "/etc/debian_version" ]; then
     CronTests
-    # Test to not add anything if packaged certbot's crontab is detected.
-    sudo crontab -r
-    Cleanup
-    if [ ! -d /etc/cron.d ]; then
-        mkdir /etc/cron.d
-    fi
-    sudo touch /etc/cron.d/certbot
-    OUT=$(Common)
-    TEST_COUNT=$(echo "$OUT" | grep "or systemd timer already exists. Nothing to do.")
-    echo "TEST_COUNT is $TEST_COUNT"
-    if [ -z "$TEST_COUNT" ]; then
-        echo "Something's wrong! Code to check if packaged certbot's crontab is present isn't being triggered."
-        exit 1
-    fi
     echo "Debian tests finished successfully :)"
+    # Note: test for not interferring with the debian certbot package's crontab had to
+    # placed in its own file (test_certbot_auto_cron_debian_pkg.sh), as LE's rate-limiting
+    # was interfering w/ being able to capture output + check results.
 elif [ -f /etc/redhat-release ]; then
     CronTests
     echo "Redhat tests finished successfully :)"
