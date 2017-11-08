@@ -301,7 +301,8 @@ class NginxParser(object):
         :param bool replace: Whether to only replace existing directives
 
         """
-        self.modify_server_directives(vhost, functools.partial(_add_directives, directives, replace))
+        self._modify_server_directives(vhost,
+            functools.partial(_add_directives, directives, replace))
 
     def remove_server_directives(self, vhost, directive_name):
         """Remove all directives of type directive_name.
@@ -310,9 +311,9 @@ class NginxParser(object):
             to remove directives from
         :param string directive_name: The directive type to remove
         """
-        self.modify_server_directives(vhost, functools.partial(_remove_directives, directive_name))
+        self._modify_server_directives(vhost, functools.partial(_remove_directives, directive_name))
 
-    def modify_server_directives(self, vhost, block_func):
+    def _modify_server_directives(self, vhost, block_func):
         filename = vhost.filep
         try:
             result = self.parsed[filename]
@@ -357,7 +358,8 @@ class NginxParser(object):
             for addr in new_vhost.addrs:
                 addr.default = False
             for directive in enclosing_block[new_vhost.path[-1]][1]:
-                if len(directive) > 0 and directive[0] == 'listen' and 'default_server' in directive:
+                if len(directive) > 0 and directive[0] == 'listen' \
+                    and 'default_server' in directive:
                     del directive[directive.index('default_server')]
         all_vhosts.append(new_vhost)
         return new_vhost
