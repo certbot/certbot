@@ -288,6 +288,12 @@ class NewRegistration(Registration):
     resource_type = 'new-account'
     resource = fields.Resource(resource_type)
 
+@Directory.register
+class NewAccount(Registration):
+    """New account."""
+    resource_type = 'new-acct'
+    resource = fields.Resource(resource_type)
+
 
 class UpdateRegistration(Registration):
     """Update registration."""
@@ -299,12 +305,10 @@ class RegistrationResource(ResourceWithURI):
     """Registration Resource.
 
     :ivar acme.messages.Registration body:
-    :ivar unicode new_authzr_uri: Deprecated. Do not use.
     :ivar unicode terms_of_service: URL for the CA TOS.
 
     """
     body = jose.Field('body', decoder=Registration.from_json)
-    new_authzr_uri = jose.Field('new_authzr_uri', omitempty=True)
     terms_of_service = jose.Field('terms_of_service', omitempty=True)
 
 
@@ -340,6 +344,10 @@ class ChallengeBody(ResourceBody):
 
     @classmethod
     def fields_from_json(cls, jobj):
+        if 'url' in jobj:
+            # new ACME spec style
+            jobj['uri'] = jobj['url']
+            del jobj['url']
         jobj_fields = super(ChallengeBody, cls).fields_from_json(jobj)
         jobj_fields['chall'] = challenges.Challenge.from_json(jobj)
         return jobj_fields

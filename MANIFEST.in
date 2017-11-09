@@ -6,3 +6,4 @@ include linter_plugin.py
 recursive-include docs *
 recursive-include examples *
 recursive-include certbot/tests/testdata *
+include certbot/ssl-dhparams.pem

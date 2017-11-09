@@ -232,7 +232,6 @@ class RegistrationResourceTest(unittest.TestCase):
     def test_to_partial_json(self):
         self.assertEqual(self.regr.to_json(), {
             'body': mock.sentinel.body,
-            'new_authzr_uri': None,
             'uri': mock.sentinel.uri,
             'terms_of_service': mock.sentinel.terms_of_service,
         })
@@ -284,6 +283,11 @@ class ChallengeBodyTest(unittest.TestCase):
     def test_from_json(self):
         from acme.messages import ChallengeBody
         self.assertEqual(self.challb, ChallengeBody.from_json(self.jobj_from))
+        jobj_from_cpy = self.jobj_from
+        jobj_from_cpy["url"] = "http://challb"
+        del(jobj_from_cpy["uri"])
+        self.assertEqual(self.challb, ChallengeBody.from_json(jobj_from_cpy))
+
 
     def test_from_json_hashable(self):
         from acme.messages import ChallengeBody

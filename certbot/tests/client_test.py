@@ -18,7 +18,7 @@ import certbot.tests.util as test_util
 
 
 KEY = test_util.load_vector("rsa512_key.pem")
-CSR_SAN = test_util.load_vector("csr-san.pem")
+CSR_SAN = test_util.load_vector("csr-san_512.pem")
 
 
 class RegisterTest(test_util.ConfigTestCase):
@@ -28,6 +28,7 @@ class RegisterTest(test_util.ConfigTestCase):
         super(RegisterTest, self).setUp()
         self.config.rsa_key_size = 1024
         self.config.register_unsafely_without_email = False
+        self.config.email = "alias@example.com"
         self.account_storage = account.AccountMemoryStorage()
         self.tos_cb = mock.MagicMock()
 
@@ -75,6 +76,7 @@ class RegisterTest(test_util.ConfigTestCase):
     @mock.patch("certbot.account.report_new_account")
     def test_email_invalid_noninteractive(self, _rep):
         from acme import messages
+        self.config.noninteractive_mode = True
         msg = "DNS problem: NXDOMAIN looking up MX for example.com"
         mx_err = messages.Error.with_code('invalidContact', detail=msg)
         with mock.patch("certbot.client.acme_client.Client") as mock_client:
@@ -312,14 +314,14 @@ class ClientTest(ClientTestCommon):
     @mock.patch("certbot.cli.helpful_parser")
     def test_save_certificate(self, mock_parser):
         # pylint: disable=too-many-locals
-        certs = ["matching_cert.pem", "cert.pem", "cert-san.pem"]
+        certs = ["cert_512.pem", "cert-san_512.pem"]
         tmp_path = tempfile.mkdtemp()
         os.chmod(tmp_path, 0o755)  # TODO: really??
 
         certr = mock.MagicMock(body=test_util.load_comparable_cert(certs[0]))
-        chain_cert = [test_util.load_comparable_cert(certs[1]),
-                      test_util.load_comparable_cert(certs[2])]
-        candidate_cert_path = os.path.join(tmp_path, "certs", "cert.pem")
+        chain_cert = [test_util.load_comparable_cert(certs[0]),
+                      test_util.load_comparable_cert(certs[1])]
+        candidate_cert_path = os.path.join(tmp_path, "certs", "cert_512.pem")
         candidate_chain_path = os.path.join(tmp_path, "chains", "chain.pem")
         candidate_fullchain_path = os.path.join(tmp_path, "chains", "fullchain.pem")
         mock_parser.verb = "certonly"
@@ -344,8 +346,8 @@ class ClientTest(ClientTestCommon):
 
         with open(chain_path, "rb") as chain_file:
             chain_contents = chain_file.read()
-        self.assertEqual(chain_contents, test_util.load_vector(certs[1]) +
-                         test_util.load_vector(certs[2]))
+        self.assertEqual(chain_contents, test_util.load_vector(certs[0]) +
+                         test_util.load_vector(certs[1]))
 
         shutil.rmtree(tmp_path)
 

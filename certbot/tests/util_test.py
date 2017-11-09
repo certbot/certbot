@@ -258,7 +258,7 @@ class UniqueLineageNameTest(test_util.TempDirTestCase):
         for _ in six.moves.range(10):
             f, name = self._call("wow")
         self.assertTrue(isinstance(f, file_type))
-        self.assertTrue(isinstance(name, str))
+        self.assertTrue(isinstance(name, six.string_types))
         self.assertTrue("wow-0009.conf" in name)
 
     @mock.patch("certbot.util.os.fdopen")

@@ -91,6 +91,18 @@ def run_script(params, log=logger.error):
     return stdout, stderr
 
 
+def is_exe(path):
+    """Is path an executable file?
+
+    :param str path: path to test
+
+    :returns: True iff path is an executable file
+    :rtype: bool
+
+    """
+    return os.path.isfile(path) and os.access(path, os.X_OK)
+
+
 def exe_exists(exe):
     """Determine whether path/name refers to an executable.
 
@@ -100,10 +112,6 @@ def exe_exists(exe):
     :rtype: bool
 
     """
-    def is_exe(path):
-        """Determine if path is an exe."""
-        return os.path.isfile(path) and os.access(path, os.X_OK)
-
     path, _ = os.path.split(exe)
     if path:
         return is_exe(exe)

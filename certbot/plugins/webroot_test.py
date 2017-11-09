@@ -50,7 +50,7 @@ class AuthenticatorTest(unittest.TestCase):
 
     def test_more_info(self):
         more_info = self.auth.more_info()
-        self.assertTrue(isinstance(more_info, str))
+        self.assertTrue(isinstance(more_info, six.string_types))
         self.assertTrue(self.path in more_info)
 
     def test_add_parser_arguments(self):
@@ -96,7 +96,7 @@ class AuthenticatorTest(unittest.TestCase):
     @test_util.patch_get_utility()
     def test_new_webroot(self, mock_get_utility):
         self.config.webroot_path = []
-        self.config.webroot_map = {}
+        self.config.webroot_map = {"something.com": self.path}
 
         mock_display = mock_get_utility()
         mock_display.menu.return_value = (display_util.OK, 0,)
@@ -107,6 +107,19 @@ class AuthenticatorTest(unittest.TestCase):
             self.auth.perform([self.achall])
 
         self.assertEqual(self.config.webroot_map[self.achall.domain], self.path)
+
+    @test_util.patch_get_utility()
+    def test_new_webroot_empty_map_cancel(self, mock_get_utility):
+        self.config.webroot_path = []
+        self.config.webroot_map = {}
+
+        mock_display = mock_get_utility()
+        mock_display.menu.return_value = (display_util.OK, 0,)
+        with mock.patch('certbot.display.ops.validated_directory') as m:
+            m.return_value = (display_util.CANCEL, -1)
+            self.assertRaises(errors.PluginError,
+                              self.auth.perform,
+                              [self.achall])
 
     def test_perform_missing_root(self):
         self.config.webroot_path = None
@@ -131,6 +144,22 @@ class AuthenticatorTest(unittest.TestCase):
     def test_failed_chown(self, mock_chown):
         mock_chown.side_effect = OSError(errno.EACCES, "msg")
         self.auth.perform([self.achall])  # exception caught and logged
+
+
+    @test_util.patch_get_utility()
+    def test_perform_new_webroot_not_in_map(self, mock_get_utility):
+        new_webroot = tempfile.mkdtemp()
+        self.config.webroot_path = []
+        self.config.webroot_map = {"whatever.com": self.path}
+        mock_display = mock_get_utility()
+        mock_display.menu.side_effect = ((display_util.OK, 0),
+                                         (display_util.OK, new_webroot))
+        achall = achallenges.KeyAuthorizationAnnotatedChallenge(
+            challb=acme_util.HTTP01_P, domain="something.com", account_key=KEY)
+        with mock.patch('certbot.display.ops.validated_directory') as m:
+            m.return_value = (display_util.OK, new_webroot,)
+            self.auth.perform([achall])
+        self.assertEqual(self.config.webroot_map[achall.domain], new_webroot)
 
     def test_perform_permissions(self):
         self.auth.prepare()

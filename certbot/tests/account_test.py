@@ -17,7 +17,7 @@ from certbot import errors
 import certbot.tests.util as test_util
 
 
-KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key_2.pem"))
+KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 
 
 class AccountTest(unittest.TestCase):
@@ -46,15 +46,15 @@ class AccountTest(unittest.TestCase):
 
     def test_id(self):
         self.assertEqual(
-            self.acc.id, "bca5889f66457d5b62fbba7b25f9ab6f")
+            self.acc.id, "7adac10320f585ddf118429c0c4af2cd")
 
     def test_slug(self):
         self.assertEqual(
-            self.acc.slug, "test.certbot.org@2015-07-04T14:04:10Z (bca5)")
+            self.acc.slug, "test.certbot.org@2015-07-04T14:04:10Z (7ada)")
 
     def test_repr(self):
         self.assertTrue(repr(self.acc).startswith(
-          "<Account(i_am_a_regr, bca5889f66457d5b62fbba7b25f9ab6f, Meta("))
+          "<Account(i_am_a_regr, 7adac10320f585ddf118429c0c4af2cd, Meta("))
 
 class ReportNewAccountTest(test_util.ConfigTestCase):
     """Tests for certbot.account.report_new_account."""

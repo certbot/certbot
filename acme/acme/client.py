@@ -11,6 +11,7 @@ import six
 from six.moves import http_client  # pylint: disable=import-error
 
 import OpenSSL
+import re
 import requests
 import sys
 
@@ -66,7 +67,8 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         """
         self.key = key
         self.account = account
-        self.net = ClientNetwork(key, account=account, alg=alg, verify_ssl=verify_ssl) if net is None else net
+        self.net = ClientNetwork(key, account=account, alg=alg,
+            verify_ssl=verify_ssl) if net is None else net
 
         if isinstance(directory, six.string_types):
             self.directory = messages.Directory.from_json(
@@ -93,10 +95,16 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         :rtype: `.RegistrationResource`
 
         """
-        new_reg = messages.NewRegistration() if new_reg is None else new_reg
-        assert isinstance(new_reg, messages.NewRegistration)
+        if hasattr(self.directory, 'new_acct'):
+            url = self.directory.new_acct
+            new_reg = messages.NewAccount() if new_reg is None else new_reg
+            assert isinstance(new_reg, messages.NewAccount)
+        else:
+            url = self.directory.new_reg
+            new_reg = messages.NewRegistration() if new_reg is None else new_reg
+            assert isinstance(new_reg, messages.NewRegistration)
 
-        response = self.net.post(self.directory[new_reg], new_reg)
+        response = self.net.post(url, new_reg)
         # TODO: handle errors
         assert response.status_code == http_client.CREATED
 
@@ -584,15 +592,11 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
             "alg": self.alg,
             "nonce": nonce
         }
-        # New ACME spec
-        kwargs["url"] = url
         if self.account is not None:
-            kwargs["kid"] = self.account.uri
+            # new ACME spec
+            kwargs["kid"] = self.account["uri"]
             kwargs["url"] = url
-            kwargs["key"] = self.key
-        else:
-            # old-style ACME spec
-            kwargs["key"] = self.key
+        kwargs["key"] = self.key
         return jws.JWS.sign(jobj, **kwargs).json_dumps(indent=2)
 
     @classmethod
@@ -652,6 +656,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         return response
 
     def _send_request(self, method, url, *args, **kwargs):
+        # pylint: disable=too-many-locals
         """Send HTTP request.
 
         Makes sure that `verify_ssl` is respected. Logs request and
@@ -677,7 +682,32 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         kwargs.setdefault('headers', {})
         kwargs['headers'].setdefault('User-Agent', self.user_agent)
         kwargs.setdefault('timeout', self._default_timeout)
-        response = self.session.request(method, url, *args, **kwargs)
+        try:
+            response = self.session.request(method, url, *args, **kwargs)
+        except requests.exceptions.RequestException as e:
+            # pylint: disable=pointless-string-statement
+            """Requests response parsing
+
+            The requests library emits exceptions with a lot of extra text.
+            We parse them with a regexp to raise a more readable exceptions.
+
+            Example:
+            HTTPSConnectionPool(host='acme-v01.api.letsencrypt.org',
+            port=443): Max retries exceeded with url: /directory
+            (Caused by NewConnectionError('
+            <requests.packages.urllib3.connection.VerifiedHTTPSConnection
+            object at 0x108356c50>: Failed to establish a new connection:
+            [Errno 65] No route to host',))"""
+
+            # pylint: disable=line-too-long
+            err_regex = r".*host='(\S*)'.*Max retries exceeded with url\: (\/\w*).*(\[Errno \d+\])([A-Za-z ]*)"
+            m = re.match(err_regex, str(e))
+            if m is None:
+                raise # pragma: no cover
+            else:
+                host, path, _err_no, err_msg = m.groups()
+                raise ValueError("Requesting {0}{1}:{2}".format(host, path, err_msg))
+
         # If content is DER, log the base64 of it instead of raw bytes, to keep
         # binary data out of the logs.
         if response.headers.get("Content-Type") == DER_CONTENT_TYPE:

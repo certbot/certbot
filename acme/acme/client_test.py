@@ -467,10 +467,20 @@ class ClientNetworkTest(unittest.TestCase):
 
         # pylint: disable=protected-access
         jws_dump = self.net._wrap_in_jws(
-            MockJSONDeSerializable('foo'), nonce=b'Tg')
+            MockJSONDeSerializable('foo'), nonce=b'Tg', url="url")
         jws = acme_jws.JWS.json_loads(jws_dump)
         self.assertEqual(json.loads(jws.payload.decode()), {'foo': 'foo'})
         self.assertEqual(jws.signature.combined.nonce, b'Tg')
+
+        self.net.account = {'uri': 'acct-uri'}
+        jws_dump = self.net._wrap_in_jws(
+            MockJSONDeSerializable('foo'), nonce=b'Tg', url="url")
+        jws = acme_jws.JWS.json_loads(jws_dump)
+        self.assertEqual(json.loads(jws.payload.decode()), {'foo': 'foo'})
+        self.assertEqual(jws.signature.combined.nonce, b'Tg')
+        self.assertEqual(jws.signature.combined.kid, u'acct-uri')
+        self.assertEqual(jws.signature.combined.url, u'url')
+
 
     def test_check_response_not_ok_jobj_no_error(self):
         self.response.ok = False
@@ -621,6 +631,21 @@ class ClientNetworkTest(unittest.TestCase):
         self.assertRaises(requests.exceptions.RequestException,
                           self.net._send_request, 'GET', 'uri')
 
+    def test_urllib_error(self):
+        # Using a connection error to test a properly formatted error message
+        try:
+            # pylint: disable=protected-access
+            self.net._send_request('GET', "http://localhost:19123/nonexistent.txt")
+
+        # Value Error Generated Exceptions
+        except ValueError as y:
+            self.assertEqual("Requesting localhost/nonexistent: "
+                             "Connection refused", str(y))
+
+        # Requests Library Exceptions
+        except requests.exceptions.ConnectionError as z: #pragma: no cover
+            self.assertEqual("('Connection aborted.', "
+                             "error(111, 'Connection refused'))", str(z))
 
 class ClientNetworkWithMockedResponseTest(unittest.TestCase):
     """Tests for acme.client.ClientNetwork which mock out response."""
@@ -686,13 +711,13 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
         self.assertEqual(self.checked_response, self.net.post(
             'uri', self.obj, content_type=self.content_type))
         self.net._wrap_in_jws.assert_called_once_with(
-            self.obj, jose.b64decode(self.all_nonces.pop()))
+            self.obj, jose.b64decode(self.all_nonces.pop()), "uri")
 
         self.available_nonces = []
         self.assertRaises(errors.MissingNonce, self.net.post,
                           'uri', self.obj, content_type=self.content_type)
         self.net._wrap_in_jws.assert_called_with(
-            self.obj, jose.b64decode(self.all_nonces.pop()))
+            self.obj, jose.b64decode(self.all_nonces.pop()), "uri")
 
     def test_post_wrong_initial_nonce(self):  # HEAD
         self.available_nonces = [b'f', jose.b64encode(b'good')]
