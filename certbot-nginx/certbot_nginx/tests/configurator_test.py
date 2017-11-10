@@ -743,12 +743,12 @@ class NginxConfiguratorTest(util.NginxTest):
         generated_conf = self.config.parser.parsed[default_conf]
         self.assertTrue(util.contains_at_depth(generated_conf, expected, 2))
 
+    @mock.patch('certbot.reverter.logger')
     @mock.patch('certbot_nginx.parser.NginxParser.load')
-    def test_parser_reload_after_config_changes(self, mock_parser_load):
-        with mock.patch("certbot.reverter.logger") as mock_logger:
-            self.config.recovery_routine()
-            self.config.revert_challenge_config()
-            self.config.rollback_checkpoints()
+    def test_parser_reload_after_config_changes(self, mock_parser_load, unused_mock_logger):
+        self.config.recovery_routine()
+        self.config.revert_challenge_config()
+        self.config.rollback_checkpoints()
         self.assertTrue(mock_parser_load.call_count == 3)
 
 class InstallSslOptionsConfTest(util.NginxTest):
