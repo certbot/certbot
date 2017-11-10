@@ -263,7 +263,7 @@ class BasicParserTest(util.ParserTest):
         self.assertRaises(
             errors.PluginError, self.parser.update_runtime_variables)
 
-    @mock.patch("certbot_apache.constants.os_constant")
+    @mock.patch("certbot_apache.configurator.ApacheConfigurator.constant")
     @mock.patch("certbot_apache.parser.subprocess.Popen")
     def test_update_runtime_vars_bad_ctl(self, mock_popen, mock_const):
         mock_popen.side_effect = OSError

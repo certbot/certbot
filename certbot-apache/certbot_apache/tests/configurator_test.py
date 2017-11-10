@@ -1529,7 +1529,7 @@ class InstallSslOptionsConfTest(util.ApacheTest):
                                              self.config.updated_mod_ssl_conf_digest)
 
     def _current_ssl_options_hash(self):
-        return crypto_util.sha256sum(constants.os_constant("MOD_SSL_CONF_SRC"))
+        return crypto_util.sha256sum(self.config.constant("MOD_SSL_CONF_SRC"))
 
     def _assert_current_file(self):
         self.assertTrue(os.path.isfile(self.config.mod_ssl_conf))
@@ -1564,7 +1564,8 @@ class InstallSslOptionsConfTest(util.ApacheTest):
             self._call()
             self.assertFalse(mock_logger.warning.called)
         self.assertTrue(os.path.isfile(self.config.mod_ssl_conf))
-        self.assertEqual(crypto_util.sha256sum(constants.os_constant("MOD_SSL_CONF_SRC")),
+        self.assertEqual(crypto_util.sha256sum(
+            self.config.constant("MOD_SSL_CONF_SRC")),
             self._current_ssl_options_hash())
         self.assertNotEqual(crypto_util.sha256sum(self.config.mod_ssl_conf),
             self._current_ssl_options_hash())
@@ -1579,7 +1580,8 @@ class InstallSslOptionsConfTest(util.ApacheTest):
             self.assertEqual(mock_logger.warning.call_args[0][0],
                 "%s has been manually modified; updated file "
                 "saved to %s. We recommend updating %s for security purposes.")
-        self.assertEqual(crypto_util.sha256sum(constants.os_constant("MOD_SSL_CONF_SRC")),
+        self.assertEqual(crypto_util.sha256sum(
+            self.config.constant("MOD_SSL_CONF_SRC")),
             self._current_ssl_options_hash())
         # only print warning once
         with mock.patch("certbot.plugins.common.logger") as mock_logger:
