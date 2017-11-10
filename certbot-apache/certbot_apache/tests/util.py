@@ -18,6 +18,7 @@ from certbot.tests import util as test_util
 
 from certbot_apache import configurator
 from certbot_apache import constants
+from certbot_apache import override
 from certbot_apache import obj
 
 
@@ -38,6 +39,9 @@ class ApacheTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
 
         self.rsa512jwk = jose.JWKRSA.load(test_util.load_vector(
             "rsa512_key.pem"))
+
+        self.config = get_apache_configurator(self.config_path, vhost_root,
+                                              self.config_dir, self.work_dir)
 
         # Make sure all vhosts in sites-enabled are symlinks (Python packaging
         # does not preserve symlinks)
@@ -78,14 +82,15 @@ class ParserTest(ApacheTest):
         with mock.patch("certbot_apache.parser.ApacheParser."
                         "update_runtime_variables"):
             self.parser = ApacheParser(
-                self.aug, self.config_path, self.vhost_path)
+                self.aug, self.config_path, self.vhost_path,
+                configurator=self.config)
 
 
 def get_apache_configurator(  # pylint: disable=too-many-arguments, too-many-locals
         config_path, vhost_path,
         config_dir, work_dir, version=(2, 4, 7),
         conf=None,
-        os_info=("debian", "8"),
+        os_info="debian",
         conf_vhost_path=None):
     """Create an Apache Configurator with the specified options.
 
@@ -112,26 +117,26 @@ def get_apache_configurator(  # pylint: disable=too-many-arguments, too-many-loc
         else:
             return orig_os_constant(key)
 
-    with mock.patch("certbot_apache.constants.os_constant") as mock_cons:
+    with mock.patch("certbot_apache.configurator.ApacheConfigurator.constant") as mock_cons:
         mock_cons.side_effect = mock_os_constant
-        with mock.patch("certbot.util.get_os_info") as mock_info:
-            mock_info.return_value = os_info
-            with mock.patch("certbot_apache.configurator.util.run_script"):
-                with mock.patch("certbot_apache.configurator.util."
-                                "exe_exists") as mock_exe_exists:
-                    mock_exe_exists.return_value = True
-                    with mock.patch("certbot_apache.parser.ApacheParser."
-                                    "update_runtime_variables"):
-                        config = configurator.ApacheConfigurator(
-                            config=mock_le_config,
-                            name="apache",
-                            version=version)
-                        # This allows testing scripts to set it a bit more
-                        # quickly
-                        if conf is not None:
-                            config.conf = conf  # pragma: no cover
+        with mock.patch("certbot_apache.configurator.util.run_script"):
+            with mock.patch("certbot_apache.configurator.util."
+                            "exe_exists") as mock_exe_exists:
+                mock_exe_exists.return_value = True
+                with mock.patch("certbot_apache.parser.ApacheParser."
+                                "update_runtime_variables"):
+                    try:
+                        config_class = override.OVERRIDE_CLASSES[os_info]
+                    except KeyError:
+                        config_class = configurator.ApacheConfigurator
+                    config = config_class(config=mock_le_config, name="apache",
+                        version=version)
+                    # This allows testing scripts to set it a bit more
+                    # quickly
+                    if conf is not None:
+                        config.conf = conf  # pragma: no cover
 
-                        config.prepare()
+                    config.prepare()
     return config
 
 

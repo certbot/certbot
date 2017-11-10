@@ -3,6 +3,7 @@
 import fnmatch
 import logging
 import os
+import pkg_resources
 import re
 import socket
 import time
@@ -86,27 +87,53 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
     description = "Apache Web Server plugin - Beta"
 
+    OS_DEFAULTS = dict(
+        server_root="/etc/apache2",
+        vhost_root="/etc/apache2/sites-available",
+        vhost_files="*",
+        logs_root="/var/log/apache2",
+        version_cmd=['apache2ctl', '-v'],
+        apache_cmd="apache2ctl",
+        restart_cmd=['apache2ctl', 'graceful'],
+        conftest_cmd=['apache2ctl', 'configtest'],
+        enmod=None,
+        dismod=None,
+        le_vhost_ext="-le-ssl.conf",
+        handle_mods=False,
+        handle_sites=False,
+        challenge_location="/etc/apache2",
+        MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
+            "certbot_apache", "options-ssl-apache.conf")
+    )
+
+    def constant(self, key):
+        """Get constant for OS_DEFAULTS"""
+        try:
+            return self.OS_DEFAULTS[key]
+        except KeyError:
+            return None
+
     @classmethod
     def add_parser_arguments(cls, add):
-        add("enmod", default=constants.os_constant("enmod"),
+        add("enmod", default=cls.OS_DEFAULTS["enmod"],
             help="Path to the Apache 'a2enmod' binary.")
-        add("dismod", default=constants.os_constant("dismod"),
+        add("dismod", default=cls.OS_DEFAULTS["dismod"],
             help="Path to the Apache 'a2dismod' binary.")
-        add("le-vhost-ext", default=constants.os_constant("le_vhost_ext"),
+        add("le-vhost-ext", default=cls.OS_DEFAULTS["le_vhost_ext"],
             help="SSL vhost configuration extension.")
-        add("server-root", default=constants.os_constant("server_root"),
+        add("server-root", default=cls.OS_DEFAULTS["server_root"],
             help="Apache server root directory.")
         add("vhost-root", default=None,
             help="Apache server VirtualHost configuration root")
-        add("logs-root", default=constants.os_constant("logs_root"),
+        add("logs-root", default=cls.OS_DEFAULTS["logs_root"],
             help="Apache server logs directory")
         add("challenge-location",
-            default=constants.os_constant("challenge_location"),
+            default=cls.OS_DEFAULTS["challenge_location"],
             help="Directory path for challenge configuration.")
-        add("handle-modules", default=constants.os_constant("handle_mods"),
+        add("handle-modules", default=cls.OS_DEFAULTS["handle_mods"],
             help="Let installer handle enabling required modules for you." +
                  "(Only Ubuntu/Debian currently)")
-        add("handle-sites", default=constants.os_constant("handle_sites"),
+        add("handle-sites", default=cls.OS_DEFAULTS["handle_sites"],
             help="Let installer handle enabling sites for you." +
                  "(Only Ubuntu/Debian currently)")
         util.add_deprecated_argument(add, argument_name="ctl", nargs=1)
@@ -139,17 +166,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                               "ensure-http-header": self._set_http_header,
                               "staple-ocsp": self._enable_ocsp_stapling}
 
-    def __new__(cls, *args, **kwargs):
-        """Class constructor. Looks up if there's a appropriate override
-        class and returns that instead if found"""
-
-        if "overridden" not in kwargs.keys():
-            # Try to override only once
-            configurator = constants.get_configurator(*args, **kwargs)
-            if configurator:
-                return configurator
-        return super(ApacheConfigurator, cls).__new__(cls)
-
     @property
     def mod_ssl_conf(self):
         """Full absolute path to SSL configuration file."""
@@ -178,7 +194,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             raise errors.NoInstallationError("Problem in Augeas installation")
 
         # Verify Apache is installed
-        restart_cmd = constants.os_constant("restart_cmd")[0]
+        restart_cmd = self.constant("restart_cmd")[0]
         if not util.exe_exists(restart_cmd):
             if not path_surgery(restart_cmd):
                 raise errors.NoInstallationError(
@@ -204,7 +220,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         # Parse vhost-root if defined on cli
         if not self.conf("vhost-root"):
-            self.vhostroot = constants.os_constant("vhost_root")
+            self.vhostroot = self.constant("vhost_root")
         else:
             self.vhostroot = os.path.abspath(self.conf("vhost-root"))
 
@@ -216,7 +232,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Get all of the available vhosts
         self.vhosts = self.get_virtual_hosts()
 
-        install_ssl_options_conf(self.mod_ssl_conf, self.updated_mod_ssl_conf_digest)
+        self.install_ssl_options_conf(self.mod_ssl_conf,
+                                      self.updated_mod_ssl_conf_digest)
 
         # Prevent two Apache plugins from modifying a config at once
         try:
@@ -846,7 +863,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         Duplicates vhost and adds default ssl options
         New vhost will reside as (nonssl_vhost.path) +
-        ``certbot_apache.constants.os_constant("le_vhost_ext")``
+        ``self.constant("le_vhost_ext")``
 
         .. note:: This function saves the configuration
 
@@ -1785,7 +1802,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         try:
-            util.run_script(constants.os_constant("restart_cmd"))
+            util.run_script(self.constant("restart_cmd"))
         except errors.SubprocessError as err:
             raise errors.MisconfigurationError(str(err))
 
@@ -1796,7 +1813,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         try:
-            util.run_script(constants.os_constant("conftest_cmd"))
+            util.run_script(self.constant("conftest_cmd"))
         except errors.SubprocessError as err:
             raise errors.MisconfigurationError(str(err))
 
@@ -1812,11 +1829,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         try:
-            stdout, _ = util.run_script(constants.os_constant("version_cmd"))
+            stdout, _ = util.run_script(self.constant("version_cmd"))
         except errors.SubprocessError:
             raise errors.PluginError(
                 "Unable to run %s -v" %
-                constants.os_constant("version_cmd"))
+                self.constant("version_cmd"))
 
         regex = re.compile(r"Apache/([0-9\.]*)", re.IGNORECASE)
         matches = regex.findall(stdout)
@@ -1890,22 +1907,13 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             self.restart()
             self.parser.reset_modules()
 
+    def install_ssl_options_conf(self, options_ssl, options_ssl_digest):
+        """Copy Certbot's SSL options file into the system's config dir if required."""
 
-def install_ssl_options_conf(options_ssl, options_ssl_digest):
-    """Copy Certbot's SSL options file into the system's config dir if required."""
-
-    # XXX if we ever try to enforce a local privilege boundary (eg, running
-    # certbot for unprivileged users via setuid), this function will need
-    # to be modified.
-    return common.install_version_controlled_file(options_ssl, options_ssl_digest,
-        constants.os_constant("MOD_SSL_CONF_SRC"), constants.ALL_SSL_OPTIONS_HASHES)
+        # XXX if we ever try to enforce a local privilege boundary (eg, running
+        # certbot for unprivileged users via setuid), this function will need
+        # to be modified.
+        return common.install_version_controlled_file(options_ssl, options_ssl_digest,
+            self.constant("MOD_SSL_CONF_SRC"), constants.ALL_SSL_OPTIONS_HASHES)
 
 
-class OverrideConfigurator(ApacheConfigurator):
-    """Base class for overrides"""
-    def __init__(self, *args, **kwargs):
-        super(OverrideConfigurator, self).__init__(*args, **kwargs)
-
-    def __new__(cls, *args, **kwargs):
-        return super(OverrideConfigurator, cls).__new__(
-            cls, overridden=True)

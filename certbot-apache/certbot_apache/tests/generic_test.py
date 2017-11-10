@@ -17,12 +17,10 @@ class MultipleVhostsTestGeneric(util.ApacheTest):
 
     def setUp(self):  # pylint: disable=arguments-differ
         super(MultipleVhostsTestGeneric, self).setUp()
-        with mock.patch("certbot.util.get_systemd_os_like") as mock_like:
-            mock_like.return_value = ["nonexistent"]
-            self.config = util.get_apache_configurator(
-                self.config_path, None, self.config_dir, self.work_dir,
-                os_info=("nonexistent_distro", "7"))
-            self.config = self.mock_deploy_cert(self.config)
+        self.config = util.get_apache_configurator(
+            self.config_path, None, self.config_dir, self.work_dir,
+            os_info="generic")
+        self.config = self.mock_deploy_cert(self.config)
 
         self.vh_truth = util.get_vh_truth(self.temp_dir,
                                           "debian_apache_2_4/multiple_vhosts")

@@ -299,7 +299,7 @@ class ParserInitTest(util.ApacheTest):
         self.assertRaises(
             errors.PluginError,
             ApacheParser, self.aug, os.path.relpath(self.config_path),
-            "/dummy/vhostpath", version=(2, 2, 22))
+            "/dummy/vhostpath", version=(2, 2, 22), configurator=self.config)
 
     def test_root_normalized(self):
         from certbot_apache.parser import ApacheParser
@@ -311,7 +311,7 @@ class ParserInitTest(util.ApacheTest):
                 "debian_apache_2_4/////multiple_vhosts/../multiple_vhosts/apache2")
 
             parser = ApacheParser(self.aug, path,
-                                  "/dummy/vhostpath")
+                                  "/dummy/vhostpath", configurator=self.config)
 
         self.assertEqual(parser.root, self.config_path)
 
@@ -321,7 +321,7 @@ class ParserInitTest(util.ApacheTest):
                         "update_runtime_variables"):
             parser = ApacheParser(
                 self.aug, os.path.relpath(self.config_path),
-                "/dummy/vhostpath")
+                "/dummy/vhostpath", configurator=self.config)
 
         self.assertEqual(parser.root, self.config_path)
 
@@ -331,7 +331,7 @@ class ParserInitTest(util.ApacheTest):
                         "update_runtime_variables"):
             parser = ApacheParser(
                 self.aug, self.config_path + os.path.sep,
-                "/dummy/vhostpath")
+                "/dummy/vhostpath", configurator=self.config)
         self.assertEqual(parser.root, self.config_path)
 
 

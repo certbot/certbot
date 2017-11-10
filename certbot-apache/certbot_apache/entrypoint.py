@@ -1,14 +1,19 @@
+# pylint: disable=unused-import
 """ Entry point for Apache Plugin """
 from certbot import util
 
 from certbot_apache import configurator
+from certbot_apache import override_arch
+from certbot_apache import override_darwin
 from certbot_apache import override_debian
 from certbot_apache import override_centos
 from certbot_apache import override_gentoo
+from certbot_apache import override_suse
 
 from certbot_apache.override import OVERRIDE_CLASSES
 
 def get_configurator():
+    """ Get correct configurator class based on the OS fingerprint """
     os_info = util.get_os_info()
     override_class = None
     try:

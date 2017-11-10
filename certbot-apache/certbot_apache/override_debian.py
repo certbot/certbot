@@ -1,17 +1,44 @@
 """ Distribution specific override class for Debian family (Ubuntu/Debian) """
 import logging
 import os
+import pkg_resources
+
+import zope.interface
 
 from certbot import errors
+from certbot import interfaces
 from certbot import util
 
 from certbot_apache import apache_util
 from certbot_apache import configurator
+from certbot_apache import override
 
 logger = logging.getLogger(__name__)
 
-class DebianConfigurator(configurator.OverrideConfigurator):
+@override.register(["debian", "ubuntu"])
+@zope.interface.provider(interfaces.IPluginFactory)
+class DebianConfigurator(configurator.ApacheConfigurator):
     """Debian specific ApacheConfigurator override class"""
+
+    OS_DEFAULTS = dict(
+        server_root="/etc/apache2",
+        vhost_root="/etc/apache2/sites-available",
+        vhost_files="*",
+        logs_root="/var/log/apache2",
+        version_cmd=['apache2ctl', '-v'],
+        apache_cmd="apache2ctl",
+        restart_cmd=['apache2ctl', 'graceful'],
+        conftest_cmd=['apache2ctl', 'configtest'],
+        enmod="a2enmod",
+        dismod="a2dismod",
+        le_vhost_ext="-le-ssl.conf",
+        handle_mods=True,
+        handle_sites=True,
+        challenge_location="/etc/apache2",
+        MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
+            "certbot_apache", "options-ssl-apache.conf")
+    )
+
     def enable_site(self, vhost):
         """Enables an available site, Apache reload required.
 

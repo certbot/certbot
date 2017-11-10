@@ -2,6 +2,7 @@
 import os
 import unittest
 
+from certbot_apache import override_gentoo  # pylint: disable=unused-import
 from certbot_apache import obj
 from certbot_apache.tests import util
 
@@ -47,12 +48,11 @@ class MultipleVhostsTestGentoo(util.ApacheTest):
 
         self.config = util.get_apache_configurator(
             self.config_path, self.vhost_path, self.config_dir, self.work_dir,
-            os_info=("gentoo", "201708"))
+            os_info="gentoo")
         self.vh_truth = get_vh_truth(
             self.temp_dir, "gentoo_apache/apache")
 
     def test_get_parser(self):
-        from certbot_apache import override_gentoo
         self.assertTrue(isinstance(self.config.parser,
                                    override_gentoo.GentooParser))
 

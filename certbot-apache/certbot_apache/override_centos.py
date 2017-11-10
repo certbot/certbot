@@ -1,10 +1,41 @@
 """ Distribution specific override class for CentOS family (RHEL, Fedora) """
+import pkg_resources
+
+import zope.interface
+
+from certbot import interfaces
+
 from certbot_apache import apache_util
 from certbot_apache import configurator
+from certbot_apache import override
 from certbot_apache import parser
 
-class CentOSConfigurator(configurator.OverrideConfigurator):
+
+@override.register(["centos", "centos linux", "fedora",
+                    "red hat enterprise linux server", "rhel", "amazon"])
+@zope.interface.provider(interfaces.IPluginFactory)
+class CentOSConfigurator(configurator.ApacheConfigurator):
     """CentOS specific ApacheConfigurator override class"""
+
+    OS_DEFAULTS = dict(
+        server_root="/etc/httpd",
+        vhost_root="/etc/httpd/conf.d",
+        vhost_files="*.conf",
+        logs_root="/var/log/httpd",
+        version_cmd=['apachectl', '-v'],
+        apache_cmd="apachectl",
+        restart_cmd=['apachectl', 'graceful'],
+        conftest_cmd=['apachectl', 'configtest'],
+        enmod=None,
+        dismod=None,
+        le_vhost_ext="-le-ssl.conf",
+        handle_mods=False,
+        handle_sites=False,
+        challenge_location="/etc/httpd/conf.d",
+        MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
+            "certbot_apache", "centos-options-ssl-apache.conf")
+    )
+
     def get_parser(self):
         """Initializes the ApacheParser"""
         return CentOSParser(

@@ -2,52 +2,6 @@
 import pkg_resources
 from certbot import util
 
-def get_configurator(*args, **kwargs):
-    """
-    Initialize the configurator override class
-
-    :return: Configurator class or `None` if no override
-    """
-
-    from certbot_apache import override_centos
-    from certbot_apache import override_debian
-    from certbot_apache import override_gentoo
-
-    OVERRIDES = {
-        "default": None,
-        "debian": override_debian.DebianConfigurator,
-        "ubuntu": override_debian.DebianConfigurator,
-        "centos": override_centos.CentOSConfigurator,
-        "centos linux": override_centos.CentOSConfigurator,
-        "fedora": override_centos.CentOSConfigurator,
-        "red hat enterprise linux server": override_centos.CentOSConfigurator,
-        "rhel": override_centos.CentOSConfigurator,
-        "amazon": None,
-        "gentoo": override_gentoo.GentooConfigurator,
-        "gentoo base system": override_gentoo.GentooConfigurator,
-        "darwin": None,
-        "opensuse": None,
-        "suse": None,
-        "arch": None,
-    }
-
-    os_info = util.get_os_info()
-    override_class = None
-    try:
-        override_class = OVERRIDES[os_info[0].lower()]
-    except KeyError:
-        # OS not found in the list
-        os_like = util.get_systemd_os_like()
-        if os_like:
-            for os_name in os_like:
-                if os_name in OVERRIDES.keys():
-                    override_class = OVERRIDES[os_name]
-        if not override_class:
-            override_class = OVERRIDES["default"]
-    if override_class:
-        return override_class(*args, **kwargs)
-    return None
-
 CLI_DEFAULTS_DEFAULT = dict(
     server_root="/etc/apache2",
     vhost_root="/etc/apache2/sites-available",
@@ -175,21 +129,21 @@ CLI_DEFAULTS_ARCH = dict(
         "certbot_apache", "options-ssl-apache.conf")
 )
 CLI_DEFAULTS = {
-    "default": CLI_DEFAULTS_DEFAULT,
-    "debian": CLI_DEFAULTS_DEBIAN,
-    "ubuntu": CLI_DEFAULTS_DEBIAN,
-    "centos": CLI_DEFAULTS_CENTOS,
-    "centos linux": CLI_DEFAULTS_CENTOS,
-    "fedora": CLI_DEFAULTS_CENTOS,
-    "red hat enterprise linux server": CLI_DEFAULTS_CENTOS,
-    "rhel": CLI_DEFAULTS_CENTOS,
-    "amazon": CLI_DEFAULTS_CENTOS,
-    "gentoo": CLI_DEFAULTS_GENTOO,
-    "gentoo base system": CLI_DEFAULTS_GENTOO,
-    "darwin": CLI_DEFAULTS_DARWIN,
-    "opensuse": CLI_DEFAULTS_SUSE,
-    "suse": CLI_DEFAULTS_SUSE,
-    "arch": CLI_DEFAULTS_ARCH,
+    "default": CLI_DEFAULTS_DEFAULT, #
+    "debian": CLI_DEFAULTS_DEBIAN,   #
+    "ubuntu": CLI_DEFAULTS_DEBIAN,   #
+    "centos": CLI_DEFAULTS_CENTOS,   #
+    "centos linux": CLI_DEFAULTS_CENTOS, #
+    "fedora": CLI_DEFAULTS_CENTOS,   #
+    "red hat enterprise linux server": CLI_DEFAULTS_CENTOS, #
+    "rhel": CLI_DEFAULTS_CENTOS, #
+    "amazon": CLI_DEFAULTS_CENTOS, #
+    "gentoo": CLI_DEFAULTS_GENTOO, #
+    "gentoo base system": CLI_DEFAULTS_GENTOO, #
+    "darwin": CLI_DEFAULTS_DARWIN, #
+    "opensuse": CLI_DEFAULTS_SUSE, #
+    "suse": CLI_DEFAULTS_SUSE, #
+    "arch": CLI_DEFAULTS_ARCH, #
 }
 """CLI defaults."""
 

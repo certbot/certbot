@@ -39,22 +39,5 @@ class ConstantsTest(unittest.TestCase):
         self.assertEqual(constants.os_constant("vhost_root"),
                          "/etc/apache2/other")
 
-    @mock.patch("certbot.util.get_systemd_os_like")
-    @mock.patch("certbot.util.get_os_info")
-    def test_get_configurator_os_like(self, os_info, os_like):
-        from certbot_apache import override_debian
-        mock_le_config = mock.Mock()
-        version = (2, 4, 11)
-        os_info.return_value = ('Nonexistent Linux', '', '')
-        os_like.return_value = ["debian"]
-        with mock.patch(
-            "certbot_apache.configurator.ApacheConfigurator.__init__"):
-            config = constants.get_configurator(
-                config=mock_le_config,
-                name="x",
-                version=version)
-            self.assertTrue(isinstance(config,
-                                       override_debian.DebianConfigurator))
-
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

@@ -1,11 +1,40 @@
 """ Distribution specific override class for Gentoo Linux """
+import pkg_resources
+
+import zope.interface
+
+from certbot import interfaces
+
 from certbot_apache import apache_util
 from certbot_apache import configurator
+from certbot_apache import override
 from certbot_apache import parser
 
 
-class GentooConfigurator(configurator.OverrideConfigurator):
+@override.register(["gentoo", "gentoo base system"])
+@zope.interface.provider(interfaces.IPluginFactory)
+class GentooConfigurator(configurator.ApacheConfigurator):
     """Gentoo specific ApacheConfigurator override class"""
+
+    OS_DEFAULTS = dict(
+        server_root="/etc/apache2",
+        vhost_root="/etc/apache2/vhosts.d",
+        vhost_files="*.conf",
+        logs_root="/var/log/apache2",
+        version_cmd=['/usr/sbin/apache2', '-v'],
+        apache_cmd="apache2ctl",
+        restart_cmd=['apache2ctl', 'graceful'],
+        conftest_cmd=['apache2ctl', 'configtest'],
+        enmod=None,
+        dismod=None,
+        le_vhost_ext="-le-ssl.conf",
+        handle_mods=False,
+        handle_sites=False,
+        challenge_location="/etc/apache2/vhosts.d",
+        MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
+            "certbot_apache", "options-ssl-apache.conf")
+    )
+
     def get_parser(self):
         """Initializes the ApacheParser"""
         return GentooParser(

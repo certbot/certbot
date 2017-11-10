@@ -20,6 +20,7 @@ from certbot.tests import util as certbot_util
 
 from certbot_apache import apache_util
 from certbot_apache import constants
+from certbot_apache import override_debian  # pylint: disable=unused-import
 from certbot_apache import parser
 from certbot_apache import obj
 
@@ -45,8 +46,11 @@ class MultipleVhostsTest(util.ApacheTest):
 
         def mocked_deploy_cert(*args, **kwargs):
             """a helper to mock a deployed cert"""
-            with mock.patch("certbot_apache.override_debian.DebianConfigurator.enable_mod"):
-                config.real_deploy_cert(*args, **kwargs)
+            g_mod = "certbot_apache.configurator.ApacheConfigurator.enable_mod"
+            d_mod = "certbot_apache.override_debian.DebianConfigurator.enable_mod"
+            with mock.patch(g_mod):
+                with mock.patch(d_mod):
+                    config.real_deploy_cert(*args, **kwargs)
         self.config.deploy_cert = mocked_deploy_cert
         return self.config
 
@@ -112,6 +116,10 @@ class MultipleVhostsTest(util.ApacheTest):
         from certbot_apache.configurator import ApacheConfigurator
         # Weak test..
         ApacheConfigurator.add_parser_arguments(mock.MagicMock())
+
+    def test_constant(self):
+        self.assertEqual(self.config.constant("server_root"), "/etc/apache2")
+        self.assertEqual(self.config.constant("nonexistent"), None)
 
     @certbot_util.patch_get_utility()
     def test_get_all_names(self, mock_getutility):
@@ -482,7 +490,6 @@ class MultipleVhostsTest(util.ApacheTest):
             self.assertTrue(
                 "insert_key_file_path" in find_args(vhostpath,
                                                     "SSLCertificateKeyFile"))
-
         # pylint: disable=protected-access
         self.config._add_dummy_ssl_directives = mock_add_dummy_ssl
 
@@ -906,10 +913,9 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertTrue(isinstance(self.config.get_chall_pref(""), list))
 
     def test_install_ssl_options_conf(self):
-        from certbot_apache.configurator import install_ssl_options_conf
         path = os.path.join(self.work_dir, "test_it")
         other_path = os.path.join(self.work_dir, "other_test_it")
-        install_ssl_options_conf(path, other_path)
+        self.config.install_ssl_options_conf(path, other_path)
         self.assertTrue(os.path.isfile(path))
         self.assertTrue(os.path.isfile(other_path))
 
@@ -1519,8 +1525,8 @@ class InstallSslOptionsConfTest(util.ApacheTest):
             self.config_path, self.vhost_path, self.config_dir, self.work_dir)
 
     def _call(self):
-        from certbot_apache.configurator import install_ssl_options_conf
-        install_ssl_options_conf(self.config.mod_ssl_conf, self.config.updated_mod_ssl_conf_digest)
+        self.config.install_ssl_options_conf(self.config.mod_ssl_conf,
+                                             self.config.updated_mod_ssl_conf_digest)
 
     def _current_ssl_options_hash(self):
         return crypto_util.sha256sum(constants.os_constant("MOD_SSL_CONF_SRC"))

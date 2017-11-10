@@ -5,6 +5,7 @@ import unittest
 import mock
 
 from certbot_apache import obj
+from certbot_apache import override_centos
 from certbot_apache.tests import util
 
 def get_vh_truth(temp_dir, config_name):
@@ -42,12 +43,11 @@ class MultipleVhostsTestCentOS(util.ApacheTest):
 
         self.config = util.get_apache_configurator(
             self.config_path, self.vhost_path, self.config_dir, self.work_dir,
-            os_info=("centos", "7"))
+            os_info="centos")
         self.vh_truth = get_vh_truth(
             self.temp_dir, "centos7_apache/apache")
 
     def test_get_parser(self):
-        from certbot_apache import override_centos
         self.assertTrue(isinstance(self.config.parser,
                                    override_centos.CentOSParser))
 
