@@ -9,8 +9,7 @@ import zope.interface
 from certbot import configuration
 from certbot import errors as le_errors
 from certbot import util as certbot_util
-from certbot_apache import configurator
-from certbot_apache import constants
+from certbot_apache import override_debian
 from certbot_compatibility_test import errors
 from certbot_compatibility_test import interfaces
 from certbot_compatibility_test import util
@@ -56,13 +55,14 @@ class Proxy(configurators_common.Proxy):
 
     def _prepare_configurator(self):
         """Prepares the Apache plugin for testing"""
-        for k in constants.CLI_DEFAULTS_DEBIAN.keys():
-            setattr(self.le_config, "apache_" + k, constants.os_constant(k))
+        for k in override_debian.DebianConfigurator.OS_DEFAULTS.keys():
+            setattr(self.le_config, "apache_" + k,
+                    override_debian.DebianConfigurator.OS_DEFAULTS[k])
 
         # An alias
         self.le_config.apache_handle_modules = self.le_config.apache_handle_mods
 
-        self._configurator = configurator.ApacheConfigurator(
+        self._configurator = override_debian.DebianConfigurator(
             config=configuration.NamespaceConfig(self.le_config),
             name="apache")
         self._configurator.prepare()
