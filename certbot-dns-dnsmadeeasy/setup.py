@@ -10,7 +10,9 @@ version = '0.20.0.dev0'
 install_requires = [
     'acme=={0}'.format(version),
     'certbot=={0}'.format(version),
-    'dns-lexicon',
+    # new versions of lexicon require that we install dnsmadeeasy extras and
+    # 2.1.11 is the first version that defines them.
+    'dns-lexicon[dnsmadeeasy]>=2.1.11',
     'mock',
     # For pkg_resources. >=1.0 so pip resolves it to a version cryptography
     # will tolerate; see #2599:
