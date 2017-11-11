@@ -63,3 +63,7 @@ class EntryPointTest(unittest.TestCase):
                 mock_like.return_value = ["unknonwn"]
                 self.assertEqual(entrypoint.get_configurator(),
                                  configurator.ApacheConfigurator)
+
+
+if __name__ == "__main__":
+    unittest.main()  # pragma: no cover
