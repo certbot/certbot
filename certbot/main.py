@@ -139,7 +139,7 @@ def _handle_subset_cert_request(config, domains, cert):
 
     :returns: Tuple of (str action, cert_or_None) as per _find_lineage_for_domains_and_certname
               action can be: "newcert" | "renew" | "reinstall"
-    :rtype: tuple
+    :rtype: `tuple` of `str`
 
     """
     existing = ", ".join(cert.names())
@@ -184,7 +184,7 @@ def _handle_identical_cert_request(config, lineage):
 
     :returns: Tuple of (str action, cert_or_None) as per _find_lineage_for_domains_and_certname
               action can be: "newcert" | "renew" | "reinstall"
-    :rtype: tuple
+    :rtype: `tuple` of `str`
 
     """
     if not lineage.ensure_deployed():
@@ -238,6 +238,7 @@ def _find_lineage_for_domains(config, domains):
     :returns: Two-element tuple containing desired new-certificate behavior as
               a string token ("reinstall", "renew", or "newcert"), plus either
               a RenewableCert instance or `None` if renewal shouldn't occur.
+    :rtype: `tuple` of `str` and :class:`storage.RenewableCert` or `None`
 
     :raises errors.Error: If the user would like to rerun the client again.
 
@@ -275,6 +276,8 @@ def _find_cert(config, domains, certname):
     :returns: Two-element tuple of a boolean that indicates if this function should be
               followed by a call to fetch a certificate from the server, and either a
               RenewableCert instance or None.
+    :rtype: `tuple` of `bool` and :class:`storage.RenewableCert` or `None`
+
     """
     action, lineage = _find_lineage_for_domains_and_certname(config, domains, certname)
     if action == "reinstall":
@@ -296,6 +299,8 @@ def _find_lineage_for_domains_and_certname(config, domains, certname):
     :returns: Two-element tuple containing desired new-certificate behavior as
               a string token ("reinstall", "renew", or "newcert"), plus either
               a RenewableCert instance or None if renewal should not occur.
+
+    :rtype: `tuple` of `str` and :class:`storage.RenewableCert` or `None`
 
     :raises errors.Error: If the user would like to rerun the client again.
 
@@ -366,7 +371,7 @@ def _find_domains_or_certname(config, installer):
 
 
     :returns: Two-part tuple of domains and certname
-    :rtype: tuple
+    :rtype: `tuple` of list of `str` and `str`
 
     :raises errors.Error: Usage message, if parameters are not used correctly
 
@@ -446,7 +451,7 @@ def _determine_account(config):
 
     :returns: Account and optionally ACME client API (biproduct of new
         registration).
-    :rtype: tuple of certbot.account.Account and acme.client.Client
+    :rtype: tuple of :class:`certbot.account.Account` and :class:`acme.client.Client`
 
     :raises errors.Error: If unable to register an account with ACME server
 
@@ -497,6 +502,9 @@ def _delete_if_appropriate(config): # pylint: disable=too-many-locals,too-many-b
     specified with conflicting values.
 
     :param `configuration.NamespaceConfig` config: parsed command line arguments
+
+    :returns: `None`
+    :rtype: None
 
     :raises errors.Error: If anything goes wrong, including bad user input, if an overlapping
         archive dir is found for the specified lineage, etc ...
@@ -589,6 +597,7 @@ def _init_le_client(config, authenticator, installer):
     :type installer: interfaces.IInstaller
 
     :returns: client: Client object
+    :rtype: client.Client
 
     """
     if authenticator is not None:
@@ -867,6 +876,7 @@ def certificates(config, unused_plugins):
 
     :returns: `None`
     :rtype: None
+
     """
     cert_manager.certificates(config)
 
@@ -967,7 +977,7 @@ def _csr_get_and_save_cert(config, le_client):
     :type client: client.Client
 
     :returns: `cert_path` and `fullchain_path` as absolute paths to the actual files
-    :rtype: tuple of str
+    :rtype: `tuple` of `str`
 
     """
     csr, _ = config.actual_csr
