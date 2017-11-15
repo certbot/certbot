@@ -705,6 +705,24 @@ def register(config, unused_plugins):
     add_msg("Your e-mail address was updated to {0}.".format(config.email))
 
 def _install_cert(config, le_client, domains, lineage=None):
+    """Install a cert
+
+    :param config: Configuration object
+    :type config: interfaces.IConfig
+
+    :param le_client: Client object
+    :type le_client: client.Client
+
+    :param plugins: list of domains
+    :type plugins: `list` of `str`
+
+    :param lineage: certificate lineage object
+    :type lineage: storage.RenewableCert
+
+    :returns: `None`
+    :rtype: None
+
+    """
     path_provider = lineage if lineage else config
     assert path_provider.cert_path is not None
 
