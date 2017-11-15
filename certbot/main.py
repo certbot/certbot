@@ -88,13 +88,13 @@ def _get_and_save_cert(le_client, config, domains=None, certname=None, lineage=N
     :param config: Configuration object
     :type config: interfaces.IConfig
 
-    :param domains: domains to get a certificate. Defaults to `None`
+    :param domains: List of domain names to get a certificate. Defaults to `None`
     :type domains: `list` of `str`
 
-    :param certname: Name of new cert. Defaults to `None`
+    :param certname: Name of new certificate. Defaults to `None`
     :type certname: str
 
-    :param lineage:
+    :param lineage: Certificate lineage object. Defaults to `None`
     :type lineage: storage.RenewableCert
 
     :returns: the issued certificate or `None` if doing a dry run
@@ -131,10 +131,10 @@ def _handle_subset_cert_request(config, domains, cert):
     :param config: Configuration object
     :type config: interfaces.IConfig
 
-    :param domains: domains
+    :param domains: List of domain names
     :type domains: `list` of `str`
 
-    :param cert:
+    :param cert: Certificate object
     :type cert: storage.RenewableCert
 
     :returns: Tuple of (str action, cert_or_None) as per _find_lineage_for_domains_and_certname
@@ -179,7 +179,7 @@ def _handle_identical_cert_request(config, lineage):
     :param config: Configuration object
     :type config: interfaces.IConfig
 
-    :param lineage:
+    :param lineage: Certificate lineage object
     :type lineage: storage.RenewableCert
 
     :returns: Tuple of (str action, cert_or_None) as per _find_lineage_for_domains_and_certname
@@ -232,7 +232,7 @@ def _find_lineage_for_domains(config, domains):
     :param config: Configuration object
     :type config: interfaces.IConfig
 
-    :param domains: domains
+    :param domains: List of domain names
     :type domains: `list` of `str`
 
     :returns: Two-element tuple containing desired new-certificate behavior as
@@ -267,10 +267,10 @@ def _find_cert(config, domains, certname):
     :param config: Configuration object
     :type config: interfaces.IConfig
 
-    :param domains: domains
+    :param domains: List of domain names
     :type domains: `list` of `str`
 
-    :param certname: Name of cert
+    :param certname: Name of certificate
     :type certname: str
 
     :returns: Two-element tuple of a boolean that indicates if this function should be
@@ -290,10 +290,10 @@ def _find_lineage_for_domains_and_certname(config, domains, certname):
     :param config: Configuration object
     :type config: interfaces.IConfig
 
-    :param domains: domains
+    :param domains: List of domain names
     :type domains: `list` of `str`
 
-    :param certname: Name of cert
+    :param certname: Name of certificate
     :type certname: str
 
     :returns: Two-element tuple containing desired new-certificate behavior as
@@ -331,13 +331,13 @@ def _ask_user_to_confirm_new_names(config, new_domains, certname, old_domains):
     :param config: Configuration object
     :type config: interfaces.IConfig
 
-    :param new_domains: domains
+    :param new_domains: List of new domain names
     :type new_domains: `list` of `str`
 
-    :param certname: Name of cert
+    :param certname: Name of certificate
     :type certname: str
 
-    :param old_domains: domains
+    :param old_domains: List of old domain names
     :type old_domains: `list` of `str`
 
     :returns: None
@@ -402,10 +402,12 @@ def _find_domains_or_certname(config, installer):
 def _report_new_cert(config, cert_path, fullchain_path, key_path=None):
     """Reports the creation of a new certificate to the user.
 
-    :param cert_path: path to cert
+    :param cert_path: path to certificate
     :type cert_path: str
+
     :param fullchain_path: path to full chain
     :type fullchain_path: str
+
     :param key_path: path to private key, if available
     :type key_path: str
 
@@ -501,7 +503,8 @@ def _delete_if_appropriate(config): # pylint: disable=too-many-locals,too-many-b
     deleting happens automatically, unless if both `--cert-name` and `--cert-path` were
     specified with conflicting values.
 
-    :param `configuration.NamespaceConfig` config: parsed command line arguments
+    :param config: parsed command line arguments
+    :type config: interfaces.IConfig
 
     :returns: `None`
     :rtype: None
@@ -618,7 +621,7 @@ def unregister(config, unused_plugins):
     :param config: Configuration object
     :type config: interfaces.IConfig
 
-    :param unused_plugins: list of plugins (deprecated)
+    :param unused_plugins: List of plugins (deprecated)
     :type unused_plugins: `list` of `str`
 
     :returns: `None`
@@ -658,7 +661,7 @@ def register(config, unused_plugins):
     :param config: Configuration object
     :type config: interfaces.IConfig
 
-    :param unused_plugins: list of plugins (deprecated)
+    :param unused_plugins: List of plugins (deprecated)
     :type unused_plugins: `list` of `str`
 
     :returns: `None` or a string indicating and error
@@ -713,10 +716,10 @@ def _install_cert(config, le_client, domains, lineage=None):
     :param le_client: Client object
     :type le_client: client.Client
 
-    :param plugins: list of domains
+    :param plugins: List of domains
     :type plugins: `list` of `str`
 
-    :param lineage: certificate lineage object. Defaults to `None`
+    :param lineage: Certificate lineage object. Defaults to `None`
     :type lineage: storage.RenewableCert
 
     :returns: `None`
@@ -736,7 +739,7 @@ def install(config, plugins):
     :param config: Configuration object
     :type config: interfaces.IConfig
 
-    :param plugins: list of plugins
+    :param plugins: List of plugins
     :type plugins: `list` of `str`
 
     :returns: `None`
@@ -763,7 +766,7 @@ def plugins_cmd(config, plugins):
     :param config: Configuration object
     :type config: interfaces.IConfig
 
-    :param plugins: list of plugins
+    :param plugins: List of plugins
     :type plugins: `list` of `str`
 
     :returns: `None`
@@ -802,7 +805,7 @@ def rollback(config, plugins):
     :param config: Configuration object
     :type config: interfaces.IConfig
 
-    :param plugins: list of plugins
+    :param plugins: List of plugins
     :type plugins: `list` of `str`
 
     :returns: `None`
@@ -820,7 +823,7 @@ def config_changes(config, unused_plugins):
     :param config: Configuration object
     :type config: interfaces.IConfig
 
-    :param unused_plugins: list of plugins (deprecated)
+    :param unused_plugins: List of plugins (deprecated)
     :type unused_plugins: `list` of `str`
 
     :returns: `None`
@@ -838,7 +841,7 @@ def update_symlinks(config, unused_plugins):
     :param config: Configuration object
     :type config: interfaces.IConfig
 
-    :param unused_plugins: list of plugins (deprecated)
+    :param unused_plugins: List of plugins (deprecated)
     :type unused_plugins: `list` of `str`
 
     :returns: `None`
@@ -856,7 +859,7 @@ def rename(config, unused_plugins):
     :param config: Configuration object
     :type config: interfaces.IConfig
 
-    :param unused_plugins: list of plugins (deprecated)
+    :param unused_plugins: List of plugins (deprecated)
     :type unused_plugins: `list` of `str`
 
     :returns: `None`
@@ -874,7 +877,7 @@ def delete(config, unused_plugins):
     :param config: Configuration object
     :type config: interfaces.IConfig
 
-    :param unused_plugins: list of plugins (deprecated)
+    :param unused_plugins: List of plugins (deprecated)
     :type unused_plugins: `list` of `str`
 
     :returns: `None`
@@ -889,7 +892,7 @@ def certificates(config, unused_plugins):
     :param config: Configuration object
     :type config: interfaces.IConfig
 
-    :param unused_plugins: list of plugins (deprecated)
+    :param unused_plugins: List of plugins (deprecated)
     :type unused_plugins: `list` of `str`
 
     :returns: `None`
@@ -904,7 +907,7 @@ def revoke(config, unused_plugins):  # TODO: coop with renewal config
     :param config: Configuration object
     :type config: interfaces.IConfig
 
-    :param unused_plugins: list of plugins (deprecated)
+    :param unused_plugins: List of plugins (deprecated)
     :type unused_plugins: `list` of `str`
 
     :returns: `None` or string indicating error in case of error
@@ -941,7 +944,7 @@ def run(config, plugins):  # pylint: disable=too-many-branches,too-many-locals
     :param config: Configuration object
     :type config: interfaces.IConfig
 
-    :param plugins: list of plugins
+    :param plugins: List of plugins
     :type plugins: `list` of `str`
 
     :returns: `None`
@@ -1014,10 +1017,10 @@ def renew_cert(config, plugins, lineage):
     :param config: Configuration object
     :type config: interfaces.IConfig
 
-    :param plugins: list of plugins
+    :param plugins: List of plugins
     :type plugins: `list` of `str`
 
-    :param lineage: certificate lineage object
+    :param lineage: Certificate lineage object
     :type lineage: storage.RenewableCert
 
     :returns: `None`
@@ -1057,7 +1060,7 @@ def certonly(config, plugins):
     :param config: Configuration object
     :type config: interfaces.IConfig
 
-    :param plugins: list of plugins
+    :param plugins: List of plugins
     :type plugins: `list` of `str`
 
     :returns: `None`
@@ -1104,7 +1107,7 @@ def renew(config, unused_plugins):
     :param config: Configuration object
     :type config: interfaces.IConfig
 
-    :param unused_plugins: list of plugins (deprecated)
+    :param unused_plugins: List of plugins (deprecated)
     :type unused_plugins: `list` of `str`
 
     :returns: `None`
