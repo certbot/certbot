@@ -716,7 +716,7 @@ def _install_cert(config, le_client, domains, lineage=None):
     :param plugins: list of domains
     :type plugins: `list` of `str`
 
-    :param lineage: certificate lineage object
+    :param lineage: certificate lineage object. Defaults to `None`
     :type lineage: storage.RenewableCert
 
     :returns: `None`
