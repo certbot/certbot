@@ -202,7 +202,7 @@ class TLSSNI01Test(unittest.TestCase):
         achall.chall.encode.return_value = "token"
         key = test_util.load_pyopenssl_private_key("rsa512_key.pem")
         achall.response_and_validation.return_value = (
-            response, (test_util.load_cert("cert.pem"), key))
+            response, (test_util.load_cert("cert_512.pem"), key))
 
         with mock.patch("certbot.plugins.common.open",
                         mock_open, create=True):
@@ -215,7 +215,7 @@ class TLSSNI01Test(unittest.TestCase):
         # pylint: disable=no-member
         mock_open.assert_called_once_with(self.sni.get_cert_path(achall), "wb")
         mock_open.return_value.write.assert_called_once_with(
-            test_util.load_vector("cert.pem"))
+            test_util.load_vector("cert_512.pem"))
         mock_safe_open.assert_called_once_with(
             self.sni.get_key_path(achall), "wb", chmod=0o400)
         mock_safe_open.return_value.write.assert_called_once_with(

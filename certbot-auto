@@ -28,7 +28,7 @@ if [ -z "$VENV_PATH" ]; then
   VENV_PATH="$XDG_DATA_HOME/$VENV_NAME"
 fi
 VENV_BIN="$VENV_PATH/bin"
-LE_AUTO_VERSION="0.16.0"
+LE_AUTO_VERSION="0.17.0"
 BASENAME=$(basename $0)
 USAGE="Usage: $BASENAME [OPTIONS]
 A self-updating wrapper script for the Certbot ACME client. When run, updates
@@ -199,6 +199,25 @@ ExperimentalBootstrap() {
     exit 1
   fi
 }
+
+DeprecationBootstrap() {
+  # Arguments: Platform name, bootstrap function name
+  if [ "$DEBUG" = 1 ]; then
+    if [ "$2" != "" ]; then
+      BootstrapMessage $1
+      $2
+    fi
+  else
+    error "WARNING: certbot-auto support for this $1 is DEPRECATED!"
+    error "Please visit certbot.eff.org to learn how to download a version of"
+    error "Certbot that is packaged for your system. While an existing version"
+    error "of certbot-auto may work currently, we have stopped supporting updating"
+    error "system packages for your system. Please switch to a packaged version"
+    error "as soon as possible."
+    exit 1
+  fi
+}
+
 
 DeterminePythonVersion() {
   for LE_PYTHON in "$LE_PYTHON" python2.7 python27 python2 python; do
@@ -630,11 +649,11 @@ Bootstrap() {
   elif [ -f /etc/manjaro-release ]; then
     ExperimentalBootstrap "Manjaro Linux" BootstrapArchCommon
   elif [ -f /etc/gentoo-release ]; then
-    ExperimentalBootstrap "Gentoo" BootstrapGentooCommon
+    DeprecationBootstrap "Gentoo" BootstrapGentooCommon
   elif uname | grep -iq FreeBSD ; then
-    ExperimentalBootstrap "FreeBSD" BootstrapFreeBsd
+    DeprecationBootstrap "FreeBSD" BootstrapFreeBsd
   elif uname | grep -iq Darwin ; then
-    ExperimentalBootstrap "macOS" BootstrapMac
+    DeprecationBootstrap "macOS" BootstrapMac
   elif [ -f /etc/issue ] && grep -iq "Amazon Linux" /etc/issue ; then
     ExperimentalBootstrap "Amazon Linux" BootstrapRpmCommon
   elif [ -f /etc/product ] && grep -q "Joyent Instance" /etc/product ; then
@@ -751,25 +770,37 @@ ConfigArgParse==0.10.0 \
     --hash=sha256:3b50a83dd58149dfcee98cb6565265d10b53e9c0a2bca7eeef7fb5f5524890a7
 configobj==5.0.6 \
     --hash=sha256:a2f5650770e1c87fb335af19a9b7eb73fc05ccf22144eb68db7d00cd2bcb0902
-cryptography==1.9 \
-    --hash=sha256:469a9d3d851038f1eb7d7f77bb08bb4775b41483372be450e25b293fe57bd59e \
-    --hash=sha256:533143321d15c8743f91eec5c5f495c1b5cad9a25de8f6dab01eddd6b416903e \
-    --hash=sha256:2230c186182d773064d06242e0fa604cd718bfff28aa9c5ae73d7e426e98a151 \
-    --hash=sha256:3dc94ed5a26b8553a325767358f505c0a43e0c89df078647f77a4d022ddcdc57 \
-    --hash=sha256:2eb8297b877cb6b56216750fa7017c9f5786bec8afd6a0f1aaace02cbfb6195f \
-    --hash=sha256:025a96e48164106f2082b00f42bf430cf21f09e203e42585a712e420b75cbff0 \
-    --hash=sha256:61eb3534f8ed2415dd708b28919205d523f220e4cd5b8165844edfdd4a649b8e \
-    --hash=sha256:5474fe5ce6b517d3086e0231b6ad88f8978c551c4379f91c3d619c308490f0d7 \
-    --hash=sha256:5ff169869624e23767d70db274f13a9ea4e97c029425a1224aa5e049e84ce2af \
-    --hash=sha256:c26e057a2de13e97e708328d295c5ac4cd3eab4a5c42ce727dd1a53316034b8a \
-    --hash=sha256:7db719432648f14ea33edffc5f75330c595804eac86ca916528b35ce50a8bfd6 \
-    --hash=sha256:ca72537a7064bb80e34b6908e576ffc8e2c2cad29a7168f48d0999df089695c3 \
-    --hash=sha256:2a5e577f5d2093e51486b4ec02b51bb5adb165b98fee99929d5af0813e90b469 \
-    --hash=sha256:9d9da8bac2e31003d092f5ef6981a725c77c4e9a30638436884d61ad39f9a1ee \
-    --hash=sha256:fab8ec6866e384d9827d5dc02a1383e991a6c05c54f818316c4b829e56ca2ba3 \
-    --hash=sha256:365eb804362e581c9a02e7a610b30514f07dd77b2a38aed338eb5192446bbc58 \
-    --hash=sha256:2908f709f02711dbb10561a9f154d2f7d1792385e2341e9708539cc4ecfb8667 \
-    --hash=sha256:5518337022718029e367d982642f3e3523541e098ad671672a90b82474c84882
+cryptography==2.0.2 \
+    --hash=sha256:187ae17358436d2c760f28c2aeb02fefa3f37647a9c5b6f7f7c3e83cd1c5a972 \
+    --hash=sha256:19e43a13bbf52028dd1e810c803f2ad8880d0692d772f98d42e1eaf34bdee3d6 \
+    --hash=sha256:da9291502cbc87dc0284a20c56876e4d2e68deac61cc43df4aec934e44ca97b1 \
+    --hash=sha256:0954f8813095f581669330e0a2d5e726c33ac7f450c1458fac58bab54595e516 \
+    --hash=sha256:d68b0cc40a8432ed3fc84876c519de704d6001800ec22b136e75ae841910c45b \
+    --hash=sha256:2f8ad9580ab4da645cfea52a91d2da99a49a1e76616d8be68441a986fad652b0 \
+    --hash=sha256:cc00b4511294f5f6b65c4e77a1a9c62f52490a63d2c120f3872176b40a82351e \
+    --hash=sha256:cf896020f6a9f095a547b3d672c8db1ef2ed71fca11250731fa1d4a4cb8b1590 \
+    --hash=sha256:e0fdb8322206fa02aa38f71519ff75dce2eb481b7e1110e2936795cb376bb6ee \
+    --hash=sha256:277538466657ca5d6637f80be100242f9831d75138b788d718edd3aab34621f8 \
+    --hash=sha256:2c77eb0560f54ce654ab82d6b2a64327a71ee969b29022bf9746ca311c9f5069 \
+    --hash=sha256:755a7853b679e79d0a799351c092a9b0271f95ff54c8dd8823d8b527a2926a86 \
+    --hash=sha256:77197a2d525e761cdd4c771180b4bd0d80703654c6385e4311cbbbe2beb56fa1 \
+    --hash=sha256:eb8bb79d0ab00c931c8333b745f06fec481a51c52d70acd4ee95d6093ba5c386 \
+    --hash=sha256:131f61de82ef28f3e20beb4bfc24f9692d28cecfd704e20e6c7f070f7793013a \
+    --hash=sha256:ac35435974b2e27cd4520f29c191d7da36f4189aa3264e52c4c6c6d089ab6142 \
+    --hash=sha256:04b6ea99daa2a8460728794213d76d45ad58ea247dc7e7ff148d7dd726e87863 \
+    --hash=sha256:2b9442f8b4c3d575f6cc3db0e856034e0f5a9d55ecd636f52d8c496795b26952 \
+    --hash=sha256:b3d3b3ecba1fe1bdb6f180770a137f877c8f07571f7b2934bb269475bcf0e5e8 \
+    --hash=sha256:670a58c0d75cb0e78e73dd003bd96d4440bbb1f2bc041dcf7b81767ca4fb0ce9 \
+    --hash=sha256:5af84d23bdb86b5e90aca263df1424b43f1748480bfcde3ac2a3cbe622612468 \
+    --hash=sha256:ba22e8eefabdd7aca37d0c0c00d2274000d2cebb5cce9e5a710cb55bf8797b31 \
+    --hash=sha256:b798b22fa7e92b439547323b8b719d217f1e1b7677585cfeeedf3b55c70bb7fb \
+    --hash=sha256:59cff28af8cce96cb7e94a459726e1d88f6f5fa75097f9dcbebd99118d64ea4c \
+    --hash=sha256:fe859e445abc9ba9e97950ddafb904e23234c4ecb76b0fae6c86e80592ce464a \
+    --hash=sha256:655f3c474067f1e277430f23cc0549f0b1dc99b82aec6e53f80b9b2db7f76f11 \
+    --hash=sha256:0ebc2be053c9a03a2f3e20a466e87bf12a51586b3c79bd2a22171b073a805346 \
+    --hash=sha256:01e6e60654df64cca53733cda39446d67100c819c181d403afb120e0d2a71e1b \
+    --hash=sha256:d46f4e5d455cb5563685c52ef212696f0a6cc1ea627603218eabbd8a095291d8 \
+    --hash=sha256:3780b2663ee7ebb37cb83263326e3cd7f8b2ea439c448539d4b87de12c8d06ab
 enum34==1.1.2 \
     --hash=sha256:2475d7fcddf5951e92ff546972758802de5260bf409319a9f1934e6bbc8b1dc7 \
     --hash=sha256:35907defb0f992b75ab7788f65fedc1cf20ffa22688e0e6f6f12afc06b3ea501
@@ -876,18 +907,18 @@ letsencrypt==0.7.0 \
     --hash=sha256:105a5fb107e45bcd0722eb89696986dcf5f08a86a321d6aef25a0c7c63375ade \
     --hash=sha256:c36e532c486a7e92155ee09da54b436a3c420813ec1c590b98f635d924720de9
 
-certbot==0.16.0 \
-    --hash=sha256:e1cc2479f4f149a7128b67192c3f5f6c111b6b9ddcac421ebee8ac5030d5b09b \
-    --hash=sha256:795801fd6b06b32060e364ac045312e6b26c6272d5ca32878277e5a2afdee186
-acme==0.16.0 \
-    --hash=sha256:31592a744f7a6e7cbb4c5daf2deebc9af6b03997d6f80e5becc203ab8694edcf \
-    --hash=sha256:538b69134cc50bdcdcc081b844c85158509022c61d7abc1f44216beeb95de9cd
-certbot-apache==0.16.0 \
-    --hash=sha256:337f84f391c7d7c31d84376e7a8c882ac119112a4aabceadd1a7de6a2f01ca06 \
-    --hash=sha256:f1f37b56e1ceb0a28ccf51d54ca34444e6a708448845ef25372e223b9a82c4d4
-certbot-nginx==0.16.0 \
-    --hash=sha256:1d57428202f8e7abdd99c3ddbcf374aad5f69c4262fe8dae53d2016e4ae04ded \
-    --hash=sha256:77711655514d707ddf728195f00b2f6cdd1ad9db52440276b4a67664479c6954
+certbot==0.17.0 \
+    --hash=sha256:64c25c7123357feffded6408660bc6f5c7d493dd635ae172081d21473075a86a \
+    --hash=sha256:43f5b26c3f314d14babf79a3bdf3522e4fc9eef867a0681c426f113c650a669c
+acme==0.17.0 \
+    --hash=sha256:501710171633af13fc52aa61d0277a6fe335f7477db5810e72239aaf4f3a09e7 \
+    --hash=sha256:3ccbe4aaeb98c77b98ee4093b4e4adb76a1a24cbdfec0130c489c206f1d9b66e
+certbot-apache==0.17.0 \
+    --hash=sha256:17a7e8d7526d838610e68b96cf052af17c4055655b76b06d1cbc74857d90a216 \
+    --hash=sha256:29b9e7bc5eaaff6dc4bce8398e35eeacdf346126aad68cac3d41bb87df20a6b9
+certbot-nginx==0.17.0 \
+    --hash=sha256:980c9a33a79ab839a089a0085ff0c5414f01f47b6db26ed342df25916658cec9 \
+    --hash=sha256:e573f8b4283172755c07b9cca8a8da7ef2d31b4df763881394b5339b2d42994a
 
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
@@ -915,6 +946,7 @@ anything goes wrong, it will exit with a non-zero status code.
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
 from __future__ import print_function
+from distutils.version import StrictVersion
 from hashlib import sha256
 from os.path import join
 from pipes import quote
@@ -949,12 +981,14 @@ except ImportError:
     from urllib.parse import urlparse  # 3.4
 
 
-__version__ = 1, 1, 1
+__version__ = 1, 3, 0
+PIP_VERSION = '9.0.1'
 
 
 # wheel has a conditional dependency on argparse:
 maybe_argparse = (
-    [('https://pypi.python.org/packages/source/a/argparse/'
+    [('https://pypi.python.org/packages/18/dd/'
+      'e617cfc3f6210ae183374cd9f6a26b20514bbb5a792af97949c5aacddf0f/'
       'argparse-1.4.0.tar.gz',
       '62b089a55be1d8949cd2bc7e0df0bddb9e028faefc8c32038cc84862aefdd6e4')]
     if version_info < (2, 7, 0) else [])
@@ -962,13 +996,19 @@ maybe_argparse = (
 
 PACKAGES = maybe_argparse + [
     # Pip has no dependencies, as it vendors everything:
-    ('https://pypi.python.org/packages/source/p/pip/pip-8.0.3.tar.gz',
-     '30f98b66f3fe1069c529a491597d34a1c224a68640c82caf2ade5f88aa1405e8'),
+    ('https://pypi.python.org/packages/11/b6/'
+     'abcb525026a4be042b486df43905d6893fb04f05aac21c32c638e939e447/'
+     'pip-{0}.tar.gz'
+     .format(PIP_VERSION),
+     '09f243e1a7b461f654c26a725fa373211bb7ff17a9300058b205c61658ca940d'),
     # This version of setuptools has only optional dependencies:
-    ('https://pypi.python.org/packages/source/s/setuptools/'
+    ('https://pypi.python.org/packages/69/65/'
+     '4c544cde88d4d876cdf5cbc5f3f15d02646477756d89547e9a7ecd6afa76/'
      'setuptools-20.2.2.tar.gz',
      '24fcfc15364a9fe09a220f37d2dcedc849795e3de3e4b393ee988e66a9cbd85a'),
-    ('https://pypi.python.org/packages/source/w/wheel/wheel-0.29.0.tar.gz',
+    ('https://pypi.python.org/packages/c9/1d/'
+     'bd19e691fd4cfe908c76c429fe6e4436c9e83583c4414b54f6c85471954a/'
+     'wheel-0.29.0.tar.gz',
      '1ebb8ad7e26b448e9caa4773d2357849bf80ff9e313964bcaf79cbf0201a1648')
 ]
 
@@ -1018,11 +1058,21 @@ def hashed_download(url, temp, digest):
 
 
 def main():
+    pip_version = StrictVersion(check_output(['pip', '--version'])
+                                .decode('utf-8').split()[1])
+    min_pip_version = StrictVersion(PIP_VERSION)
+    if pip_version >= min_pip_version:
+        return 0
+    has_pip_cache = pip_version >= StrictVersion('6.0')
+
     temp = mkdtemp(prefix='pipstrap-')
     try:
         downloads = [hashed_download(url, temp, digest)
                      for url, digest in PACKAGES]
         check_output('pip install --no-index --no-deps -U ' +
+                     # Disable cache since we're not using it and it otherwise
+                     # sometimes throws permission warnings:
+                     ('--no-cache-dir ' if has_pip_cache else '') +
                      ' '.join(quote(d) for d in downloads),
                      shell=True)
     except HashError as exc:
@@ -1045,9 +1095,9 @@ UNLIKELY_EOF
     PATH="$VENV_BIN:$PATH" "$VENV_BIN/python" "$TEMP_DIR/pipstrap.py"
     set +e
     if [ "$VERBOSE" = 1 ]; then
-      "$VENV_BIN/pip" install --no-cache-dir --require-hashes -r "$TEMP_DIR/letsencrypt-auto-requirements.txt"
+      "$VENV_BIN/pip" install --disable-pip-version-check --no-cache-dir --require-hashes -r "$TEMP_DIR/letsencrypt-auto-requirements.txt"
     else
-      PIP_OUT=`"$VENV_BIN/pip" install --no-cache-dir --require-hashes -r "$TEMP_DIR/letsencrypt-auto-requirements.txt" 2>&1`
+      PIP_OUT=`"$VENV_BIN/pip" install --disable-pip-version-check --no-cache-dir --require-hashes -r "$TEMP_DIR/letsencrypt-auto-requirements.txt" 2>&1`
     fi
     PIP_STATUS=$?
     set -e

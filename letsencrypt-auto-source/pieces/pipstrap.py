@@ -21,6 +21,7 @@ anything goes wrong, it will exit with a non-zero status code.
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
 from __future__ import print_function
+from distutils.version import StrictVersion
 from hashlib import sha256
 from os.path import join
 from pipes import quote
@@ -55,12 +56,14 @@ except ImportError:
     from urllib.parse import urlparse  # 3.4
 
 
-__version__ = 1, 1, 1
+__version__ = 1, 3, 0
+PIP_VERSION = '9.0.1'
 
 
 # wheel has a conditional dependency on argparse:
 maybe_argparse = (
-    [('https://pypi.python.org/packages/source/a/argparse/'
+    [('https://pypi.python.org/packages/18/dd/'
+      'e617cfc3f6210ae183374cd9f6a26b20514bbb5a792af97949c5aacddf0f/'
       'argparse-1.4.0.tar.gz',
       '62b089a55be1d8949cd2bc7e0df0bddb9e028faefc8c32038cc84862aefdd6e4')]
     if version_info < (2, 7, 0) else [])
@@ -68,13 +71,19 @@ maybe_argparse = (
 
 PACKAGES = maybe_argparse + [
     # Pip has no dependencies, as it vendors everything:
-    ('https://pypi.python.org/packages/source/p/pip/pip-8.0.3.tar.gz',
-     '30f98b66f3fe1069c529a491597d34a1c224a68640c82caf2ade5f88aa1405e8'),
+    ('https://pypi.python.org/packages/11/b6/'
+     'abcb525026a4be042b486df43905d6893fb04f05aac21c32c638e939e447/'
+     'pip-{0}.tar.gz'
+     .format(PIP_VERSION),
+     '09f243e1a7b461f654c26a725fa373211bb7ff17a9300058b205c61658ca940d'),
     # This version of setuptools has only optional dependencies:
-    ('https://pypi.python.org/packages/source/s/setuptools/'
+    ('https://pypi.python.org/packages/69/65/'
+     '4c544cde88d4d876cdf5cbc5f3f15d02646477756d89547e9a7ecd6afa76/'
      'setuptools-20.2.2.tar.gz',
      '24fcfc15364a9fe09a220f37d2dcedc849795e3de3e4b393ee988e66a9cbd85a'),
-    ('https://pypi.python.org/packages/source/w/wheel/wheel-0.29.0.tar.gz',
+    ('https://pypi.python.org/packages/c9/1d/'
+     'bd19e691fd4cfe908c76c429fe6e4436c9e83583c4414b54f6c85471954a/'
+     'wheel-0.29.0.tar.gz',
      '1ebb8ad7e26b448e9caa4773d2357849bf80ff9e313964bcaf79cbf0201a1648')
 ]
 
@@ -124,11 +133,21 @@ def hashed_download(url, temp, digest):
 
 
 def main():
+    pip_version = StrictVersion(check_output(['pip', '--version'])
+                                .decode('utf-8').split()[1])
+    min_pip_version = StrictVersion(PIP_VERSION)
+    if pip_version >= min_pip_version:
+        return 0
+    has_pip_cache = pip_version >= StrictVersion('6.0')
+
     temp = mkdtemp(prefix='pipstrap-')
     try:
         downloads = [hashed_download(url, temp, digest)
                      for url, digest in PACKAGES]
         check_output('pip install --no-index --no-deps -U ' +
+                     # Disable cache since we're not using it and it otherwise
+                     # sometimes throws permission warnings:
+                     ('--no-cache-dir ' if has_pip_cache else '') +
                      ' '.join(quote(d) for d in downloads),
                      shell=True)
     except HashError as exc:
