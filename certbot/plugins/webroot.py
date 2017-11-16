@@ -102,10 +102,14 @@ to serve all files under specified web root ({0})."""
         webroot = None
 
         while webroot is None:
-            webroot = self._prompt_with_webroot_list(domain, known_webroots)
-
-            if webroot is None:
-                webroot = self._prompt_for_new_webroot(domain)
+            if known_webroots:
+                # Only show the menu if we have options for it
+                webroot = self._prompt_with_webroot_list(domain, known_webroots)
+                if webroot is None:
+                    webroot = self._prompt_for_new_webroot(domain)
+            else:
+                # Allow prompt to raise PluginError instead of looping forever
+                webroot = self._prompt_for_new_webroot(domain, True)
 
         return webroot
 
@@ -125,13 +129,18 @@ to serve all files under specified web root ({0})."""
             else:  # code == display_util.OK
                 return None if index == 0 else known_webroots[index - 1]
 
-    def _prompt_for_new_webroot(self, domain):
+    def _prompt_for_new_webroot(self, domain, allowraise=False):
         code, webroot = ops.validated_directory(
             _validate_webroot,
             "Input the webroot for {0}:".format(domain),
             force_interactive=True)
         if code == display_util.CANCEL:
-            return None
+            if not allowraise:
+                return None
+            else:
+                raise errors.PluginError(
+                    "Every requested domain must have a "
+                    "webroot when using the webroot plugin.")
         else:  # code == display_util.OK
             return _validate_webroot(webroot)
 

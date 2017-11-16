@@ -86,10 +86,11 @@ def _vhost_menu(domain, vhosts):
             choices, force_interactive=True)
     except errors.MissingCommandlineFlag:
         msg = (
-            "Encountered vhost ambiguity but unable to ask for user "
+            "Encountered vhost ambiguity when trying to find a vhost for "
+            "{0} but was unable to ask for user "
             "guidance in non-interactive mode. Certbot may need "
             "vhosts to be explicitly labelled with ServerName or "
-            "ServerAlias directives.")
+            "ServerAlias directives.".format(domain))
         logger.warning(msg)
         raise errors.MissingCommandlineFlag(msg)
 

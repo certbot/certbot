@@ -884,6 +884,25 @@ class DeleteFilesTest(BaseRenewableCertTest):
             self.config.live_dir, "example.org")))
         self.assertFalse(os.path.exists(archive_dir))
 
+class CertPathForCertNameTest(BaseRenewableCertTest):
+    """Test for certbot.storage.cert_path_for_cert_name"""
+    def setUp(self):
+        super(CertPathForCertNameTest, self).setUp()
+        self.config_file.write()
+        self._write_out_ex_kinds()
+        self.fullchain = os.path.join(self.config.config_dir, 'live', 'example.org',
+                'fullchain.pem')
+        self.config.cert_path = (self.fullchain, '')
+
+    def _call(self, cli_config, certname):
+        from certbot.storage import cert_path_for_cert_name
+        return cert_path_for_cert_name(cli_config, certname)
+
+    def test_simple_cert_name(self):
+        self.assertEqual(self._call(self.config, 'example.org'), (self.fullchain, 'fullchain'))
+
+    def test_no_such_cert_name(self):
+        self.assertRaises(errors.CertStorageError, self._call, self.config, 'fake-example.org')
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

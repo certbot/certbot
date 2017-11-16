@@ -32,6 +32,8 @@ class HookCommandNotFound(Error):
 class SignalExit(Error):
     """A Unix signal was received while in the ErrorHandler context manager."""
 
+class OverlappingMatchFound(Error):
+    """Multiple lineages matched what should have been a unique result."""
 
 class LockError(Error):
     """File locking error."""

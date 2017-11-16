@@ -28,6 +28,7 @@ class RegisterTest(test_util.ConfigTestCase):
         super(RegisterTest, self).setUp()
         self.config.rsa_key_size = 1024
         self.config.register_unsafely_without_email = False
+        self.config.email = "alias@example.com"
         self.account_storage = account.AccountMemoryStorage()
         self.tos_cb = mock.MagicMock()
 
@@ -75,6 +76,7 @@ class RegisterTest(test_util.ConfigTestCase):
     @mock.patch("certbot.account.report_new_account")
     def test_email_invalid_noninteractive(self, _rep):
         from acme import messages
+        self.config.noninteractive_mode = True
         msg = "DNS problem: NXDOMAIN looking up MX for example.com"
         mx_err = messages.Error.with_code('invalidContact', detail=msg)
         with mock.patch("certbot.client.acme_client.Client") as mock_client:

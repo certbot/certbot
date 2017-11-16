@@ -621,6 +621,21 @@ class ClientNetworkTest(unittest.TestCase):
         self.assertRaises(requests.exceptions.RequestException,
                           self.net._send_request, 'GET', 'uri')
 
+    def test_urllib_error(self):
+        # Using a connection error to test a properly formatted error message
+        try:
+            # pylint: disable=protected-access
+            self.net._send_request('GET', "http://localhost:19123/nonexistent.txt")
+
+        # Value Error Generated Exceptions
+        except ValueError as y:
+            self.assertEqual("Requesting localhost/nonexistent: "
+                             "Connection refused", str(y))
+
+        # Requests Library Exceptions
+        except requests.exceptions.ConnectionError as z: #pragma: no cover
+            self.assertEqual("('Connection aborted.', "
+                             "error(111, 'Connection refused'))", str(z))
 
 class ClientNetworkWithMockedResponseTest(unittest.TestCase):
     """Tests for acme.client.ClientNetwork which mock out response."""
