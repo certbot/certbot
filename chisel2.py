@@ -133,8 +133,9 @@ def auth_and_issue(domains, chall_type="http-01", email=None, cert_output=None, 
         while True:
             order, response = client.poll_order(order)
             print order.to_json()
-            if order.body.status != "pending":
-                break
+            for authz in order.authorizations:
+                if authz.body.status != "pending":
+                  raise Exception("failed authorization: %s" % authz.body)
             time.sleep(1)
     finally:
         cleanup()
