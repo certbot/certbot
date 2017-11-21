@@ -257,7 +257,10 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         :raises .UnexpectedUpdate:
 
         """
-        response = self.net.post(challb.uri, response)
+        url = challb.uri
+        if url is None:
+            url = challb.url
+        response = self.net.post(url, response)
         try:
             authzr_uri = response.links['up']['url']
         except KeyError:
@@ -265,9 +268,6 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         challr = messages.ChallengeResource(
             authzr_uri=authzr_uri,
             body=messages.ChallengeBody.from_json(response.json()))
-        # TODO: check that challr.uri == response.headers['Location']?
-        if challr.uri != challb.uri:
-            raise errors.UnexpectedUpdate(challr.uri)
         return challr
 
     @classmethod
