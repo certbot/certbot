@@ -95,10 +95,9 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         :rtype: `.RegistrationResource`
 
         """
-        if hasattr(self.directory, 'new_acct'):
-            url = self.directory.new_acct
+        if hasattr(self.directory, 'new_account'):
+            url = self.directory.new_account
             new_reg = messages.NewAccount() if new_reg is None else new_reg
-            assert isinstance(new_reg, messages.NewAccount)
         else:
             url = self.directory.new_reg
             new_reg = messages.NewRegistration() if new_reg is None else new_reg
@@ -558,7 +557,8 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
     REPLAY_NONCE_HEADER = 'Replay-Nonce'
 
     def __init__(self, key, account=None, alg=jose.RS256, verify_ssl=True,
-                 user_agent='acme-python', timeout=DEFAULT_NETWORK_TIMEOUT):
+                 user_agent='acme-python', timeout=DEFAULT_NETWORK_TIMEOUT,
+                 acme_version=2):
         self.key = key
         self.account = account
         self.alg = alg
@@ -567,6 +567,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         self.user_agent = user_agent
         self.session = requests.Session()
         self._default_timeout = timeout
+        self.acme_version = acme_version
 
     def __del__(self):
         # Try to close the session, but don't show exceptions to the
@@ -592,10 +593,11 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
             "alg": self.alg,
             "nonce": nonce
         }
-        if self.account is not None:
+        if self.acme_version is 2:
             # new ACME spec
-            kwargs["kid"] = self.account["uri"]
             kwargs["url"] = url
+            if self.account is not None:
+                kwargs["kid"] = self.account["uri"]
         kwargs["key"] = self.key
         return jws.JWS.sign(jobj, **kwargs).json_dumps(indent=2)
 
