@@ -227,17 +227,16 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         :raises .UnexpectedUpdate:
 
         """
-        response = self.net.post(challb.url(), response)
+        challr = messages.ChallengeResource(body=challb)
+        response = self.net.post(challr.uri, response)
         try:
             authzr_uri = response.links['up']['url']
         except KeyError:
             raise errors.ClientError('"up" Link header missing')
         challr = messages.ChallengeResource(
+        return messages.ChallengeResource(
             authzr_uri=authzr_uri,
             body=messages.ChallengeBody.from_json(response.json()))
-        # TODO: check that challr.uri == response.headers['Location']?
-        if challr.uri != challb.uri:
-            raise errors.UnexpectedUpdate(challr.uri)
         return challr
 
     @classmethod

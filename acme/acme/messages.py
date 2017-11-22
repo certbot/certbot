@@ -368,7 +368,7 @@ class ChallengeResource(Resource):
     def uri(self):  # pylint: disable=missing-docstring,no-self-argument
         # bug? 'method already defined line None'
         # pylint: disable=function-redefined
-        return self.body.uri  # pylint: disable=no-member
+        return self.body._url or self.body._uri  # pylint: disable=no-member
 
 
 class Authorization(ResourceBody):
