@@ -35,7 +35,7 @@ def chall_to_challb(chall, status):  # pylint: disable=redefined-outer-name
     """Return ChallengeBody from Challenge."""
     kwargs = {
         "chall": chall,
-        "uri": chall.typ + "_uri",
+        "_uri": chall.typ + "_uri",
         "status": status,
     }
 
