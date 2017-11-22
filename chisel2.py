@@ -130,13 +130,8 @@ def auth_and_issue(domains, chall_type="http-01", email=None, cert_output=None, 
         raise Exception("invalid challenge type %s" % chall_type)
 
     try:
-        while True:
-            order, response = client.poll_order(order)
-            print order.to_json()
-            for authz in order.authorizations:
-                if authz.body.status != "pending":
-                  raise Exception("failed authorization: %s" % authz.body)
-            time.sleep(1)
+        order = client.poll_order_and_request_issuance(order)
+        print(order.fullchain_pem)
     finally:
         cleanup()
 

@@ -477,6 +477,7 @@ class Order(ResourceBody):
     csr = jose.Field('csr', decoder=jose.decode_csr, encoder=jose.encode_csr)
     status = jose.Field('status', omitempty=True)
     authorizations = jose.Field('authorizations', omitempty=True)
+    certificate = jose.Field('certificate', omitempty=True)
     expires = fields.RFC3339Field('expires', omitempty=True)
 
 class OrderResource(ResourceWithURI):
@@ -487,7 +488,7 @@ class OrderResource(ResourceWithURI):
     """
     body = jose.Field('body', decoder=Order.from_json)
     authorizations = jose.Field('authorizations')
-
+    fullchain_pem = jose.Field('fullchain_pem', omitempty=True)
 
 @Directory.register
 class NewOrder(Order):

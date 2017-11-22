@@ -189,9 +189,16 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         for authz_uri in response.json()["authorizations"]:
             authz_response = self.net.get(authz_uri)
             authorizations.append(self._authzr_from_response(authz_response))
+        fullchain_pem = None
+        if "certificate" in response.json():
+          certificate_response = self.net.get(response.json()["certificate"],
+            content_type=None)
+          if certificate_response.ok:
+            fullchain_pem = certificate_response.text
         return messages.OrderResource(
             body=messages.Order.from_json(response.json()),
             uri=response.headers.get('Location', uri),
+            fullchain_pem=fullchain_pem,
             authorizations=authorizations)
 
     def new_order(self, csr_pem):
@@ -318,21 +325,37 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
             response, authzr.body.identifier, authzr.uri)
         return updated_authzr, response
 
-    def poll_order(self, orderr):
+    def poll_order_and_request_issuance(self, orderr):
         """Poll Order Resource for status.
 
         :param orderr: Order Resource
         :type orderr: `.OrderResource`
 
-        :returns: Updated Order Resource and HTTP response.
+        :returns: Updated Order Resource
 
-        :rtype: (`.OrderResource`, `requests.Response`)
+        :rtype: (`.OrderResource`)
 
         """
-        response = self.net.get(orderr.uri)
-        updated_orderr = self._order_resource_from_response(
-            response, uri=orderr.uri)
-        return updated_orderr, response
+        while True:
+            response = self.net.get(orderr.uri)
+            latest = self._order_resource_from_response(response, uri=orderr.uri)
+            if any([a.body.status == messages.STATUS_PENDING for a in latest.authorizations]):
+                time.sleep(1)
+            else:
+                break
+        print latest.to_json()
+        for authz in latest.authorizations:
+            if authz.body.status != messages.STATUS_VALID:
+                for chall in authz.body.challenges:
+                    if chall.error != None:
+                        raise Exception("failed challenge for %s: %s" %
+                            (authz.body.identifier.value, chall.error))
+                raise Exception("failed authorization: %s" % authz.body)
+        while latest.fullchain_pem is None:
+            time.sleep(1)
+            response = self.net.get(orderr.uri)
+            latest = self._order_resource_from_response(response, uri=orderr.uri)
+        return latest
 
 
     def request_issuance(self, csr, authzrs):
