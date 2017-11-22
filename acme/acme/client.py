@@ -227,15 +227,18 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         :raises .UnexpectedUpdate:
 
         """
-        challr = messages.ChallengeResource(body=challb)
-        response = self.net.post(challr.uri, response)
+        response = self.net.post(challb.uri, response)
         try:
             authzr_uri = response.links['up']['url']
         except KeyError:
             raise errors.ClientError('"up" Link header missing')
-        return messages.ChallengeResource(
+        challr = messages.ChallengeResource(
             authzr_uri=authzr_uri,
             body=messages.ChallengeBody.from_json(response.json()))
+        # TODO: check that challr.uri == response.headers['Location']?
+        if challr.uri != challb.uri:
+            raise errors.UnexpectedUpdate(challr.uri)
+        return challr
 
     @classmethod
     def retry_after(cls, response, default):

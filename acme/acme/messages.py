@@ -347,7 +347,8 @@ class ChallengeBody(ResourceBody):
         jobj_fields['chall'] = challenges.Challenge.from_json(jobj)
         return jobj_fields
 
-    def url(self):
+    @property
+    def uri(self):
         return self._url or self._uri
 
     def __getattr__(self, name):
