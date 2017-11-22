@@ -227,7 +227,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         :raises .UnexpectedUpdate:
 
         """
-        response = self.net.post(challb.uri, response)
+        response = self.net.post(challb.url(), response)
         try:
             authzr_uri = response.links['up']['url']
         except KeyError:

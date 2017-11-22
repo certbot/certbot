@@ -325,7 +325,11 @@ class ChallengeBody(ResourceBody):
 
     """
     __slots__ = ('chall',)
-    uri = jose.Field('uri')
+    # ACMEv1 has a "uri" field in challenges. ACMEv2 has a "url" field. This
+    # challenge object supports either one. In Client.answer_challenge,
+    # whichever one is set will be used.
+    _uri = jose.Field('uri', omitempty=True, default=None)
+    _url = jose.Field('url', omitempty=True, default=None)
     status = jose.Field('status', decoder=Status.from_json,
                         omitempty=True, default=STATUS_PENDING)
     validated = fields.RFC3339Field('validated', omitempty=True)
@@ -342,6 +346,9 @@ class ChallengeBody(ResourceBody):
         jobj_fields = super(ChallengeBody, cls).fields_from_json(jobj)
         jobj_fields['chall'] = challenges.Challenge.from_json(jobj)
         return jobj_fields
+
+    def url(self):
+        return self._url or self._uri
 
     def __getattr__(self, name):
         return getattr(self.chall, name)
