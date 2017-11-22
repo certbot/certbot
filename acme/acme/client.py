@@ -233,11 +233,9 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
             authzr_uri = response.links['up']['url']
         except KeyError:
             raise errors.ClientError('"up" Link header missing')
-        challr = messages.ChallengeResource(
         return messages.ChallengeResource(
             authzr_uri=authzr_uri,
             body=messages.ChallengeBody.from_json(response.json()))
-        return challr
 
     @classmethod
     def retry_after(cls, response, default):

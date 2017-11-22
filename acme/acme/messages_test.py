@@ -243,7 +243,7 @@ class ChallengeResourceTest(unittest.TestCase):
     def test_uri(self):
         from acme.messages import ChallengeResource
         self.assertEqual('http://challb', ChallengeResource(body=mock.MagicMock(
-            uri='http://challb'), authzr_uri='http://authz').uri)
+            _url='http://challb'), authzr_uri='http://authz').uri)
 
 
 class ChallengeBodyTest(unittest.TestCase):
@@ -260,7 +260,7 @@ class ChallengeBodyTest(unittest.TestCase):
         error = Error(typ='urn:ietf:params:acme:error:serverInternal',
                       detail='Unable to communicate with DNS server')
         self.challb = ChallengeBody(
-            uri='http://challb', chall=self.chall, status=self.status,
+            _uri='http://challb', chall=self.chall, status=self.status,
             error=error)
 
         self.jobj_to = {
@@ -302,9 +302,9 @@ class AuthorizationTest(unittest.TestCase):
 
         self.challbs = (
             ChallengeBody(
-                uri='http://challb1', status=STATUS_VALID,
+                _uri='http://challb1', status=STATUS_VALID,
                 chall=challenges.HTTP01(token=b'IlirfxKKXAsHtmzK29Pj8A')),
-            ChallengeBody(uri='http://challb2', status=STATUS_VALID,
+            ChallengeBody(_uri='http://challb2', status=STATUS_VALID,
                           chall=challenges.DNS(
                               token=b'DGyRejmCefe7v4NfDGDKfA')),
         )
