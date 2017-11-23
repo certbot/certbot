@@ -179,6 +179,10 @@ class ClientTest(unittest.TestCase):
 
         self.client.answer_challenge(self.challr.body, chall_response)
 
+        # TODO: split here and separate test
+        self.assertRaises(errors.UnexpectedUpdate, self.client.answer_challenge,
+                          self.challr.body.update(_uri='foo'), chall_response)
+
     def test_answer_challenge_missing_next(self):
         self.assertRaises(
             errors.ClientError, self.client.answer_challenge,
