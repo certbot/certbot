@@ -348,7 +348,7 @@ class ChallengeBody(ResourceBody):
         return jobj_fields
 
     @property
-    def uri(self):
+    def uri(self):  # pylint: disable=missing-docstring
         return self._url or self._uri
 
     def __getattr__(self, name):
@@ -368,7 +368,7 @@ class ChallengeResource(Resource):
     @property
     def uri(self):  # pylint: disable=missing-docstring,no-self-argument
         # bug? 'method already defined line None'
-        # pylint: disable=function-redefined
+        # pylint: disable=function-redefined,protected-access
         return self.body._url or self.body._uri  # pylint: disable=no-member
 
 
