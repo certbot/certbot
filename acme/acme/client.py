@@ -92,18 +92,17 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
     def register(self, new_reg=None):
         """Register.
 
-        :param .NewRegistration or .NewAccount new_reg:
+        :param .NewRegistration new_reg:
 
         :returns: Registration Resource.
         :rtype: `.RegistrationResource`
 
         """
+        new_reg = messages.NewRegistration() if new_reg is None else new_reg
         if self.acme_version == 2:
             url = self.directory.new_account
-            new_reg = messages.NewAccount() if new_reg is None else new_reg
         else:
             url = self.directory.new_reg
-            new_reg = messages.NewRegistration() if new_reg is None else new_reg
 
         response = self.net.post(url, new_reg)
         # TODO: handle errors
