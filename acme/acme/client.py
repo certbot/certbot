@@ -57,6 +57,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
 
     """
 
+    # pylint: disable=too-many-arguments
     def __init__(self, directory, key, account=None, alg=jose.RS256, verify_ssl=True,
                  net=None):
         """Initialize.
@@ -95,15 +96,10 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         :rtype: `.RegistrationResource`
 
         """
-        if hasattr(self.directory, 'new_account'):
-            url = self.directory.new_account
-            new_reg = messages.NewAccount() if new_reg is None else new_reg
-        else:
-            url = self.directory.new_reg
-            new_reg = messages.NewRegistration() if new_reg is None else new_reg
-            assert isinstance(new_reg, messages.NewRegistration)
+        new_reg = messages.NewRegistration() if new_reg is None else new_reg
+        assert isinstance(new_reg, messages.NewRegistration)
 
-        response = self.net.post(url, new_reg)
+        response = self.net.post(self.directory.new_reg, new_reg)
         # TODO: handle errors
         assert response.status_code == http_client.CREATED
 
@@ -517,6 +513,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
     JSON_ERROR_CONTENT_TYPE = 'application/problem+json'
     REPLAY_NONCE_HEADER = 'Replay-Nonce'
 
+    # pylint: disable=too-many-arguments
     def __init__(self, key, account=None, alg=jose.RS256, verify_ssl=True,
                  user_agent='acme-python', timeout=DEFAULT_NETWORK_TIMEOUT,
                  acme_version=2):
@@ -560,6 +557,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
             if self.account is not None:
                 kwargs["kid"] = self.account["uri"]
         kwargs["key"] = self.key
+        # pylint: disable=star-args
         return jws.JWS.sign(jobj, **kwargs).json_dumps(indent=2)
 
     @classmethod
