@@ -828,11 +828,11 @@ class HelpfulArgumentParser(object):
             return dict([(t, t == chosen_topic) for t in self.help_topics])
 
 def _add_all_groups(helpful):
-    helpful.add_group("automation", description="Arguments for automating execution & other tweaks")
+    helpful.add_group("automation", description="Flags for automating execution & other tweaks")
     helpful.add_group("security", description="Security parameters & server settings")
     helpful.add_group("testing",
         description="The following flags are meant for testing and integration purposes only.")
-    helpful.add_group("paths", description="Arguments changing execution paths & servers")
+    helpful.add_group("paths", description="Flags for changing execution paths & servers")
     helpful.add_group("manage",
         description="Various subcommands and flags are available for managing your certificates:",
         verbs=["certificates", "delete", "renew", "revoke", "update_symlinks"])
