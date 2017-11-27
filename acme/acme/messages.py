@@ -285,13 +285,14 @@ class Registration(ResourceBody):
 @Directory.register
 class NewRegistration(Registration):
     """New registration."""
-    resource_type = 'new-account'
+    resource_type = 'new-reg'
     resource = fields.Resource(resource_type)
+
 
 @Directory.register
 class NewAccount(Registration):
     """New account."""
-    resource_type = 'new-acct'
+    resource_type = 'new-account' # not used
     resource = fields.Resource(resource_type)
 
 
