@@ -95,13 +95,11 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         :rtype: `.RegistrationResource`
 
         """
+        new_reg = messages.NewRegistration() if new_reg is None else new_reg
         if hasattr(self.directory, 'new_account'):
             url = self.directory.new_account
-            new_reg = messages.NewAccount() if new_reg is None else new_reg
         else:
             url = self.directory.new_reg
-            new_reg = messages.NewRegistration() if new_reg is None else new_reg
-            assert isinstance(new_reg, messages.NewRegistration)
 
         response = self.net.post(url, new_reg)
         # TODO: handle errors
