@@ -49,6 +49,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
     :ivar messages.Directory directory:
     :ivar key: `.JWK` (private)
     :ivar account: `.Account` (private)
+    :ivar acme_version: `int` (private) 1 for ACMEv1, or 2 for ACMEv2.
     :ivar alg: `.JWASignature`
     :ivar bool verify_ssl: Verify SSL certificates?
     :ivar .ClientNetwork net: Client network. Useful for testing. If not
@@ -57,8 +58,8 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
 
     """
 
-    def __init__(self, directory, key, account=None, alg=jose.RS256, verify_ssl=True,
-                 net=None):
+    def __init__(self, directory, key, account=None, acme_version=1, alg=jose.RS256,
+                 verify_ssl=True, net=None):
         """Initialize.
 
         :param directory: Directory Resource (`.messages.Directory`) or
@@ -67,8 +68,9 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         """
         self.key = key
         self.account = account
-        self.net = ClientNetwork(key, account=account, alg=alg,
-            verify_ssl=verify_ssl) if net is None else net
+        self.acme_version = acme_version
+        self.net = ClientNetwork(key, account=account, acme_version=acme_version,
+            alg=alg, verify_ssl=verify_ssl) if net is None else net
 
         if isinstance(directory, six.string_types):
             self.directory = messages.Directory.from_json(
@@ -574,9 +576,9 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
     JSON_ERROR_CONTENT_TYPE = 'application/problem+json'
     REPLAY_NONCE_HEADER = 'Replay-Nonce'
 
-    def __init__(self, key, account=None, alg=jose.RS256, verify_ssl=True,
-                 user_agent='acme-python', timeout=DEFAULT_NETWORK_TIMEOUT,
-                 acme_version=2):
+    def __init__(self, key, account=None, acme_version=1, alg=jose.RS256,
+                 verify_ssl=True, user_agent='acme-python',
+                 timeout=DEFAULT_NETWORK_TIMEOUT):
         self.key = key
         self.account = account
         self.alg = alg

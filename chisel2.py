@@ -42,10 +42,10 @@ def make_client(email=None):
     """Build an acme.Client and register a new account with a random key."""
     key = jose.JWKRSA(key=rsa.generate_private_key(65537, 2048, default_backend()))
 
-    net = acme_client.ClientNetwork(key, verify_ssl=False,
+    net = acme_client.ClientNetwork(key, verify_ssl=False, acme_version=2,
                                     user_agent="Boulder integration tester")
 
-    client = acme_client.Client(DIRECTORY, key=key, net=net)
+    client = acme_client.Client(DIRECTORY, key=key, net=net, acme_version=2)
     tos = client.directory.meta.terms_of_service
     if tos is not None and "Do%20what%20thou%20wilt" in tos:
         net.account = client.register(messages.NewRegistration.from_data(email=email,
