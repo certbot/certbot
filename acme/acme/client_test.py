@@ -104,6 +104,20 @@ class ClientTest(unittest.TestCase):
         self.assertEqual(self.regr, self.client.register(self.new_reg))
         # TODO: test POST call arguments
 
+    def test_register_v2(self):
+        directory = messages.Directory({
+            messages.NewAccount: 'https://www.letsencrypt-demo.org/acme/new-account',
+        })
+        from acme.client import Client
+        client = Client(directory=directory, key=KEY, acme_version=2, net=self.net)
+
+        account = messages.NewAccount()
+        self.response.status_code = http_client.CREATED
+        self.response.json.return_value = account.to_json()
+        self.response.headers['Location'] = self.regr.uri
+
+        self.assertEqual(account, client.register(account))
+
     def test_update_registration(self):
         # "Instance of 'Field' has no to_json/update member" bug:
         # pylint: disable=no-member
