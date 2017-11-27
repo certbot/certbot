@@ -104,7 +104,7 @@ class ClientTest(unittest.TestCase):
         self.assertEqual(self.regr, self.client.register(self.new_reg))
         # TODO: test POST call arguments
 
-    def test_register(self):
+    def test_register_v2(self):
         directory = messages.Directory({
             "new-account": 'https://www.letsencrypt-demo.org/acme/new-account',
         })
