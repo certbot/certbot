@@ -339,6 +339,8 @@ class NginxParser(object):
 
         :param :class:`~certbot_nginx.obj.VirtualHost` vhost_template: The vhost
             whose information we copy
+        :param bool delete_default: If we should remove default_server
+            from listen directives in the block.
 
         :returns: A vhost object for the newly created vhost
         :rtype: :class:`~certbot_nginx.obj.VirtualHost`
@@ -521,8 +523,9 @@ def _add_directives(directives, replace, block):
 
     ..todo :: Find directives that are in included files.
 
-    :param list block: The block to replace in
     :param list directives: The new directives.
+    :param bool replace: Described above.
+    :param list block: The block to replace in
 
     """
     for directive in directives:
@@ -537,7 +540,11 @@ COMMENT = ' managed by Certbot'
 COMMENT_BLOCK = [' ', '#', COMMENT]
 
 def comment_directive(block, location):
-    """Add a comment to the end of the line at location."""
+    """Add a ``#managed by Certbot`` comment to the end of the line at location.
+
+    :param list block: The block containing the directive to be commented
+    :param int location: The location within ``block`` of the directive to be commented
+    """
     next_entry = block[location + 1] if location + 1 < len(block) else None
     if isinstance(next_entry, list) and next_entry:
         if len(next_entry) >= 2 and next_entry[-2] == "#" and COMMENT in next_entry[-1]:

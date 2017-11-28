@@ -508,11 +508,8 @@ class NginxConfigurator(common.Installer):
     def _make_server_ssl(self, vhost):
         """Make a server SSL.
 
-        Make a server SSL based on server_name and filename by adding a
-        ``listen IConfig.tls_sni_01_port ssl`` directive to the server block.
-
-        .. todo:: Maybe this should create a new block instead of modifying
-            the existing one?
+        Make a server SSL by removing all existing listen directives and
+        adding new listen and SSL directives.
 
         :param vhost: The vhost to add SSL to.
         :type vhost: :class:`~certbot_nginx.obj.VirtualHost`
