@@ -10,9 +10,6 @@ before_install:
 before_script:
   - 'if [ $TRAVIS_OS_NAME = osx ] ; then ulimit -n 1024 ; fi'
 
-# using separate envs with different TOXENVs creates 4x1 Travis build
-# matrix, which allows us to clearly distinguish which component under
-# test has failed
 matrix:
   include:
     - python: "2.7"
@@ -130,17 +127,6 @@ branches:
 sudo: false
 
 addons:
-  # Custom /etc/hosts required for simple verification of http-01
-  # and tls-sni-01, and for certbot_test_nginx
-  hosts:
-    - le.wtf
-    - le1.wtf
-    - le2.wtf
-    - le3.wtf
-    - nginx.wtf
-    - boulder
-    - boulder-mysql
-    - boulder-rabbitmq
   apt:
     sources:
     - augeas
