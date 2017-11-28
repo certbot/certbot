@@ -17,5 +17,5 @@ for requirement in "$@" ; do
   if [ $pkg = "." ]; then
     pkg="certbot"
   fi
-  nosetests -v $pkg --processes=-1 --process-timeout=100
+  nosetests $pkg --processes=-1 --process-timeout=100
 done
