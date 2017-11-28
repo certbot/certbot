@@ -5,6 +5,11 @@ cache:
         - $HOME/.cache/pip
 
 before_install:
+  # In the heavy-tests branch only, we check out master instead of the branch
+  # Travis put us on. This is because we want heavy-tests to run against master
+  # nightly in a Travis cron, but with a different set of tests than master
+  # has in .travis.yml.
+  - git checkout master
   - '([ $TRAVIS_OS_NAME == linux ] && dpkg -s libaugeas0) || (brew update && brew install augeas python3)'
 
 before_script:
