@@ -10,9 +10,6 @@ before_install:
 before_script:
   - 'if [ $TRAVIS_OS_NAME = osx ] ; then ulimit -n 1024 ; fi'
 
-# using separate envs with different TOXENVs creates 4x1 Travis build
-# matrix, which allows us to clearly distinguish which component under
-# test has failed
 matrix:
   include:
     - python: "2.7"
@@ -20,14 +17,14 @@ matrix:
     - python: "2.7"
       env: TOXENV=lint
     - python: "2.7"
-      env: TOXENV=py27-oldest BOULDER_INTEGRATION=1
+      env: TOXENV=py27-oldest
       sudo: required
       after_failure:
         - sudo cat /var/log/mysql/error.log
         - ps aux | grep mysql
       services: docker
     - python: "2.6"
-      env: TOXENV=py26 BOULDER_INTEGRATION=1
+      env: TOXENV=py26
       sudo: required
       after_failure:
         - sudo cat /var/log/mysql/error.log
@@ -108,12 +105,6 @@ matrix:
       services: docker
     - python: "2.7"
       env: TOXENV=nginxroundtrip
-    - language: generic
-      env: TOXENV=py27
-      os: osx
-    - language: generic
-      env: TOXENV=py36
-      os: osx
 
 
 # Only build pushes to the master branch, PRs, and branches beginning with
