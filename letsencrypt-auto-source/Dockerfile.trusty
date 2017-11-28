@@ -15,6 +15,9 @@ RUN sed -i.bkp -e \
 RUN apt-get update && \
     apt-get -q -y install python-pip && \
     apt-get clean
+# Use pipstrap to install a stable and tested version of pip
+COPY ./pieces/pipstrap.py /opt
+RUN /opt/pipstrap.py
 RUN pip install nose
 
 RUN mkdir -p /home/lea/certbot
