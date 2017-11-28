@@ -156,7 +156,7 @@ If you run Debian Stretch or Debian Sid, you can install certbot packages.
    sudo apt-get install certbot python-certbot-apache
 
 If you don't want to use the Apache plugin, you can omit the
-``python-certbot-apache`` package.
+``python-certbot-apache`` package. Or you can install ``python-certbot-nginx`` instead.
 
 Packages exist for Debian Jessie via backports. First you'll have to follow the
 instructions at http://backports.debian.org/Instructions/ to enable the Jessie backports
