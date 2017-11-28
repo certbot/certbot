@@ -20,14 +20,14 @@ matrix:
     - python: "2.7"
       env: TOXENV=lint
     - python: "2.7"
-      env: TOXENV=py27-oldest BOULDER_INTEGRATION=1
+      env: TOXENV=py27-oldest
       sudo: required
       after_failure:
         - sudo cat /var/log/mysql/error.log
         - ps aux | grep mysql
       services: docker
     - python: "2.6"
-      env: TOXENV=py26 BOULDER_INTEGRATION=1
+      env: TOXENV=py26
       sudo: required
       after_failure:
         - sudo cat /var/log/mysql/error.log
@@ -40,6 +40,12 @@ matrix:
         - sudo cat /var/log/mysql/error.log
         - ps aux | grep mysql
       services: docker
+    - language: generic
+      env: TOXENV=py27 OS=OSX # $OS is ignored, makes job list clearer
+      os: osx
+    - language: generic
+      env: TOXENV=py36 OS=OSX
+      os: osx
     - sudo: required
       env: TOXENV=apache_compat
       services: docker
@@ -79,28 +85,28 @@ matrix:
       env: TOXENV=apacheconftest
       sudo: required
     - python: "3.3"
-      env: TOXENV=py33 BOULDER_INTEGRATION=1
+      env: TOXENV=py33
       sudo: required
       after_failure:
         - sudo cat /var/log/mysql/error.log
         - ps aux | grep mysql
       services: docker
     - python: "3.4"
-      env: TOXENV=py34 BOULDER_INTEGRATION=1
+      env: TOXENV=py34
       sudo: required
       after_failure:
         - sudo cat /var/log/mysql/error.log
         - ps aux | grep mysql
       services: docker
     - python: "3.5"
-      env: TOXENV=py35 BOULDER_INTEGRATION=1
+      env: TOXENV=py35
       sudo: required
       after_failure:
         - sudo cat /var/log/mysql/error.log
         - ps aux | grep mysql
       services: docker
     - python: "3.6"
-      env: TOXENV=py36 BOULDER_INTEGRATION=1
+      env: TOXENV=py36
       sudo: required
       after_failure:
         - sudo cat /var/log/mysql/error.log
@@ -108,12 +114,6 @@ matrix:
       services: docker
     - python: "2.7"
       env: TOXENV=nginxroundtrip
-    - language: generic
-      env: TOXENV=py27
-      os: osx
-    - language: generic
-      env: TOXENV=py36
-      os: osx
 
 
 # Only build pushes to the master branch, PRs, and branches beginning with
