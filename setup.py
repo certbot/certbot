@@ -67,7 +67,8 @@ dev_extras = [
     'astroid==1.3.5',
     'coverage',
     'ipdb',
-    'nose',
+    'pytest',
+    'pytest-xdist',
     'pylint==1.4.2',  # upstream #248
     'tox',
     'twine',
