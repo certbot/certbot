@@ -7,6 +7,9 @@ RUN yum install -y epel-release
 
 # Install pip, sudo and nose:
 RUN yum install -y python-pip sudo
+# Use pipstrap to install a stable and tested version of pip
+COPY ./pieces/pipstrap.py /opt
+RUN /opt/pipstrap.py
 RUN pip install nose
 
 # Add an unprivileged user:

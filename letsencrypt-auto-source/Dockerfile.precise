@@ -11,7 +11,9 @@ RUN apt-get update && \
     apt-get -q -y install python-pip sudo openssl && \
     apt-get clean
 
-ENV PIP_INDEX_URL https://pypi.python.org/simple
+# Use pipstrap to install a stable and tested version of pip
+COPY ./pieces/pipstrap.py /opt
+RUN /opt/pipstrap.py
 RUN pip install nose
 
 # Let that user sudo:
