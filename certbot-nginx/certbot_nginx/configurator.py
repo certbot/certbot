@@ -586,14 +586,14 @@ class NginxConfigurator(common.Installer):
     def _has_certbot_redirect(self, vhost):
         test_redirect_block = _test_block_from_block(REDIRECT_BLOCK)
         test_no_if_redirect_block = _test_block_from_block(NO_IF_REDIRECT_BLOCK)
-        return vhost.contains_list(test_redirect_block)\
-            or vhost.contains_list(test_no_if_redirect_block)
+        return (vhost.contains_list(test_redirect_block)
+            or vhost.contains_list(test_no_if_redirect_block))
 
     def _has_certbot_redirect_comment(self, vhost):
         test_redirect_comment_block = _test_block_from_block(REDIRECT_COMMENT_BLOCK)
         test_no_if_redirect_commect_block = _test_block_from_block(NO_IF_REDIRECT_COMMENT_BLOCK)
-        return vhost.contains_list(test_redirect_comment_block)\
-            or vhost.contains_list(test_no_if_redirect_commect_block)
+        return (vhost.contains_list(test_redirect_comment_block)
+            or vhost.contains_list(test_no_if_redirect_commect_block))
 
     def _add_redirect_block(self, vhost, active=True, use_if=True):
         """Add redirect directive to vhost

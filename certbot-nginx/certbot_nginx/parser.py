@@ -357,8 +357,8 @@ class NginxParser(object):
             for addr in new_vhost.addrs:
                 addr.default = False
             for directive in enclosing_block[new_vhost.path[-1]][1]:
-                if len(directive) > 0 and directive[0] == 'listen' \
-                    and 'default_server' in directive:
+                if (len(directive) > 0 and directive[0] == 'listen'
+                    and 'default_server' in directive):
                     del directive[directive.index('default_server')]
         all_vhosts.append(new_vhost)
         return new_vhost
