@@ -44,14 +44,14 @@ NO_IF_REDIRECT_BLOCK = [
 REDIRECT_COMMENT_BLOCK = [
     ['\n    ', '#', ' Redirect non-https traffic to https'],
     ['\n    ', '#', ' if ($scheme != "https") {'],
-    ['\n    ', '#', "     return 301 https://$host$request_uri;"],
-    ['\n    ', '#', " } # managed by Certbot"],
+    ['\n    ', '#', '     return 301 https://$host$request_uri;'],
+    ['\n    ', '#', ' } # managed by Certbot'],
     ['\n']
 ]
 
 NO_IF_REDIRECT_COMMENT_BLOCK = [
     ['\n    ', '#', ' Redirect non-https traffic to https'],
-    ['\n    ', '#', " return 301 https://$host$request_uri;"],
+    ['\n    ', '#', ' return 301 https://$host$request_uri;'],
     ['\n']
 ]
 
