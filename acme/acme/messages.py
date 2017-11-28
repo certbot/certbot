@@ -250,7 +250,6 @@ class Registration(ResourceBody):
     contact = jose.Field('contact', omitempty=True, default=())
     agreement = jose.Field('agreement', omitempty=True)
     status = jose.Field('status', omitempty=True)
-    terms_of_service_agreed = jose.Field('terms-of-service-agreed', omitempty=True)
 
     phone_prefix = 'tel:'
     email_prefix = 'mailto:'
@@ -324,11 +323,7 @@ class ChallengeBody(ResourceBody):
 
     """
     __slots__ = ('chall',)
-    # ACMEv1 has a "uri" field in challenges. ACMEv2 has a "url" field. This
-    # challenge object supports either one. In Client.answer_challenge,
-    # whichever one is set will be used.
-    _uri = jose.Field('uri', omitempty=True, default=None)
-    _url = jose.Field('url', omitempty=True, default=None)
+    uri = jose.Field('uri')
     status = jose.Field('status', decoder=Status.from_json,
                         omitempty=True, default=STATUS_PENDING)
     validated = fields.RFC3339Field('validated', omitempty=True)
@@ -364,7 +359,7 @@ class ChallengeResource(Resource):
     def uri(self):  # pylint: disable=missing-docstring,no-self-argument
         # bug? 'method already defined line None'
         # pylint: disable=function-redefined
-        return self.body._url or self.body._uri # pylint: disable=no-member
+        return self.body.uri  # pylint: disable=no-member
 
 
 class Authorization(ResourceBody):

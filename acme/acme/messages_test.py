@@ -283,11 +283,6 @@ class ChallengeBodyTest(unittest.TestCase):
     def test_from_json(self):
         from acme.messages import ChallengeBody
         self.assertEqual(self.challb, ChallengeBody.from_json(self.jobj_from))
-        jobj_from_cpy = self.jobj_from
-        jobj_from_cpy["url"] = "http://challb"
-        del(jobj_from_cpy["uri"])
-        self.assertEqual(self.challb, ChallengeBody.from_json(jobj_from_cpy))
-
 
     def test_from_json_hashable(self):
         from acme.messages import ChallengeBody

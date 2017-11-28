@@ -48,8 +48,6 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
 
     :ivar messages.Directory directory:
     :ivar key: `.JWK` (private)
-    :ivar account: `.Account` (private)
-    :ivar acme_version: `int` (private) 1 for ACMEv1, or 2 for ACMEv2.
     :ivar alg: `.JWASignature`
     :ivar bool verify_ssl: Verify SSL certificates?
     :ivar .ClientNetwork net: Client network. Useful for testing. If not
@@ -58,8 +56,8 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
 
     """
 
-    def __init__(self, directory, key, account=None, acme_version=1, alg=jose.RS256,
-                 verify_ssl=True, net=None):
+    def __init__(self, directory, key, alg=jose.RS256, verify_ssl=True,
+                 net=None):
         """Initialize.
 
         :param directory: Directory Resource (`.messages.Directory`) or
@@ -67,10 +65,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
 
         """
         self.key = key
-        self.account = account
-        self.acme_version = acme_version
-        self.net = ClientNetwork(key, account=account, acme_version=acme_version,
-            alg=alg, verify_ssl=verify_ssl) if net is None else net
+        self.net = ClientNetwork(key, alg, verify_ssl) if net is None else net
 
         if isinstance(directory, six.string_types):
             self.directory = messages.Directory.from_json(
@@ -98,12 +93,9 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
 
         """
         new_reg = messages.NewRegistration() if new_reg is None else new_reg
-        if hasattr(self.directory, 'new_account'):
-            url = self.directory.new_account
-        else:
-            url = self.directory.new_reg
+        assert isinstance(new_reg, messages.NewRegistration)
 
-        response = self.net.post(url, new_reg)
+        response = self.net.post(self.directory[new_reg], new_reg)
         # TODO: handle errors
         assert response.status_code == http_client.CREATED
 
@@ -264,15 +256,18 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         :raises .UnexpectedUpdate:
 
         """
-        challr = messages.ChallengeResource(body=challb)
-        response = self.net.post(challr.uri, response)
+        response = self.net.post(challb.uri, response)
         try:
             authzr_uri = response.links['up']['url']
         except KeyError:
             raise errors.ClientError('"up" Link header missing')
-        return messages.ChallengeResource(
+        challr = messages.ChallengeResource(
             authzr_uri=authzr_uri,
             body=messages.ChallengeBody.from_json(response.json()))
+        # TODO: check that challr.uri == response.headers['Location']?
+        if challr.uri != challb.uri:
+            raise errors.UnexpectedUpdate(challr.uri)
+        return challr
 
     @classmethod
     def retry_after(cls, response, default):
@@ -576,18 +571,15 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
     JSON_ERROR_CONTENT_TYPE = 'application/problem+json'
     REPLAY_NONCE_HEADER = 'Replay-Nonce'
 
-    def __init__(self, key, account=None, acme_version=1, alg=jose.RS256,
-                 verify_ssl=True, user_agent='acme-python',
-                 timeout=DEFAULT_NETWORK_TIMEOUT):
+    def __init__(self, key, alg=jose.RS256, verify_ssl=True,
+                 user_agent='acme-python', timeout=DEFAULT_NETWORK_TIMEOUT):
         self.key = key
-        self.account = account
         self.alg = alg
         self.verify_ssl = verify_ssl
         self._nonces = set()
         self.user_agent = user_agent
         self.session = requests.Session()
         self._default_timeout = timeout
-        self.acme_version = acme_version
 
     def __del__(self):
         # Try to close the session, but don't show exceptions to the
@@ -597,7 +589,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         except Exception:  # pylint: disable=broad-except
             pass
 
-    def _wrap_in_jws(self, obj, nonce, url):
+    def _wrap_in_jws(self, obj, nonce):
         """Wrap `JSONDeSerializable` object in JWS.
 
         .. todo:: Implement ``acmePath``.
@@ -609,17 +601,9 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         """
         jobj = obj.json_dumps(indent=2).encode()
         logger.debug('JWS payload:\n%s', jobj)
-        kwargs = {
-            "alg": self.alg,
-            "nonce": nonce
-        }
-        if self.acme_version is 2:
-            # new ACME spec
-            kwargs["url"] = url
-            if self.account is not None:
-                kwargs["kid"] = self.account["uri"]
-        kwargs["key"] = self.key
-        return jws.JWS.sign(jobj, **kwargs).json_dumps(indent=2)
+        return jws.JWS.sign(
+            payload=jobj, key=self.key, alg=self.alg,
+            nonce=nonce).json_dumps(indent=2)
 
     @classmethod
     def _check_response(cls, response, content_type=None):
@@ -793,7 +777,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
                 raise
 
     def _post_once(self, url, obj, content_type=JOSE_CONTENT_TYPE, **kwargs):
-        data = self._wrap_in_jws(obj, self._get_nonce(url), url)
+        data = self._wrap_in_jws(obj, self._get_nonce(url))
         kwargs.setdefault('headers', {'Content-Type': content_type})
         response = self._send_request('POST', url, data=data, **kwargs)
         self._add_nonce(response)
