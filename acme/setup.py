@@ -32,6 +32,7 @@ if sys.version_info < (2, 7):
 
 dev_extras = [
     'pytest',
+    'pytest-xdist',
     'tox',
 ]
 
