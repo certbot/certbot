@@ -4,7 +4,9 @@
 # invocation, some constraints may be ignored due to pip's lack of dependency
 # resolution.
 alabaster==0.7.10
+apipkg==1.4
 astroid==1.3.5
+attrs==17.3.0
 Babel==2.5.1
 backports.shutil-get-terminal-size==1.0.0
 boto3==1.4.7
@@ -15,6 +17,7 @@ decorator==4.1.2
 dns-lexicon[dnsmadeeasy]==2.1.11
 dnspython==1.15.0
 docutils==0.14
+execnet==1.5.0
 future==0.16.0
 futures==3.1.1
 google-api-python-client==1.6.4
@@ -27,7 +30,6 @@ Jinja2==2.9.6
 jmespath==0.9.3
 logilab-common==1.4.1
 MarkupSafe==1.0
-nose==1.3.7
 oauth2client==4.1.2
 pathlib2==2.3.0
 pexpect==4.2.1
@@ -37,11 +39,14 @@ pkginfo==1.4.1
 pluggy==0.5.2
 prompt-toolkit==1.0.15
 ptyprocess==0.5.2
-py==1.4.34
+py==1.5.2
 pyasn1==0.3.7
 pyasn1-modules==0.1.5
 Pygments==2.2.0
 pylint==1.4.2
+pytest==3.3.0
+pytest-forked==0.2
+pytest-xdist==1.20.1
 python-dateutil==2.6.1
 python-digitalocean==1.12
 PyYAML==3.12
