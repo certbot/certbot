@@ -68,6 +68,7 @@ dev_extras = [
     'coverage',
     'ipdb',
     'pytest',
+    'pytest-cov',
     'pytest-xdist',
     'pylint==1.4.2',  # upstream #248
     'tox',
