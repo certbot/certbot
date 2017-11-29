@@ -15,17 +15,6 @@ before_script:
 # test has failed
 matrix:
   include:
-    - python: "2.7"
-      env: TOXENV=cover
-    - python: "2.7"
-      env: TOXENV=lint
-    - python: "2.7"
-      env: TOXENV=py27-oldest BOULDER_INTEGRATION=1
-      sudo: required
-      after_failure:
-        - sudo cat /var/log/mysql/error.log
-        - ps aux | grep mysql
-      services: docker
     - python: "2.6"
       env: TOXENV=py26 BOULDER_INTEGRATION=1
       sudo: required
@@ -33,87 +22,6 @@ matrix:
         - sudo cat /var/log/mysql/error.log
         - ps aux | grep mysql
       services: docker
-    - python: "2.7"
-      env: TOXENV=py27_install BOULDER_INTEGRATION=1
-      sudo: required
-      after_failure:
-        - sudo cat /var/log/mysql/error.log
-        - ps aux | grep mysql
-      services: docker
-    - sudo: required
-      env: TOXENV=apache_compat
-      services: docker
-      before_install:
-      addons:
-    - sudo: required
-      env: TOXENV=nginx_compat
-      services: docker
-      before_install:
-      addons:
-    - sudo: required
-      env: TOXENV=le_auto_precise
-      services: docker
-      before_install:
-      addons:
-    - sudo: required
-      env: TOXENV=le_auto_trusty
-      services: docker
-      before_install:
-      addons:
-    - sudo: required
-      env: TOXENV=le_auto_wheezy
-      services: docker
-      before_install:
-      addons:
-    - sudo: required
-      env: TOXENV=le_auto_centos6
-      services: docker
-      before_install:
-      addons:
-    - sudo: required
-      env: TOXENV=docker_dev
-      services: docker
-      before_install:
-      addons:
-    - python: "2.7"
-      env: TOXENV=apacheconftest
-      sudo: required
-    - python: "3.3"
-      env: TOXENV=py33 BOULDER_INTEGRATION=1
-      sudo: required
-      after_failure:
-        - sudo cat /var/log/mysql/error.log
-        - ps aux | grep mysql
-      services: docker
-    - python: "3.4"
-      env: TOXENV=py34 BOULDER_INTEGRATION=1
-      sudo: required
-      after_failure:
-        - sudo cat /var/log/mysql/error.log
-        - ps aux | grep mysql
-      services: docker
-    - python: "3.5"
-      env: TOXENV=py35 BOULDER_INTEGRATION=1
-      sudo: required
-      after_failure:
-        - sudo cat /var/log/mysql/error.log
-        - ps aux | grep mysql
-      services: docker
-    - python: "3.6"
-      env: TOXENV=py36 BOULDER_INTEGRATION=1
-      sudo: required
-      after_failure:
-        - sudo cat /var/log/mysql/error.log
-        - ps aux | grep mysql
-      services: docker
-    - python: "2.7"
-      env: TOXENV=nginxroundtrip
-    - language: generic
-      env: TOXENV=py27
-      os: osx
-    - language: generic
-      env: TOXENV=py36
-      os: osx
 
 
 # Only build pushes to the master branch, PRs, and branches beginning with
