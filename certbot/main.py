@@ -253,18 +253,39 @@ def _find_lineage_for_domains_and_certname(config, domains, certname):
                     "Use -d to specify domains, or run certbot --certificates to see "
                     "possible certificate names.".format(certname))
 
+def _get_added_removed(after, before):
+    """Get lists of items removed from `before` 
+    and a lists of items added to `after`
+    """
+    added = list(set(after) - set(before))
+    removed = list(set(before) - set(after))
+    added.sort()
+    removed.sort()
+    return added, removed
+
+def _format_list(character, list):
+    """Format list with given character
+    """
+    formatted = "{br}{ch} " + "{br}{ch} ".join(list)
+    return formatted.format(
+        ch=character,
+        br=os.linesep
+    )
+
 def _ask_user_to_confirm_new_names(config, new_domains, certname, old_domains):
     """Ask user to confirm update cert certname to contain new_domains.
     """
     if config.renew_with_new_domains:
         return
 
-    msg = ("You are updating certificate {0} to include domains: {1}{br}{br}"
-           "It previously included domains: {2}{br}{br}"
+    added, removed = _get_added_removed(new_domains, old_domains)
+
+    msg = ("You are updating certificate {0} to include new domain(s): {1}{br}{br}"
+           "You are also removing previously included domain(s): {2}{br}{br}"
            "Did you intend to make this change?".format(
                certname,
-               ", ".join(new_domains),
-               ", ".join(old_domains),
+               _format_list("+", added),
+               _format_list("-", removed),
                br=os.linesep))
     obj = zope.component.getUtility(interfaces.IDisplay)
     if not obj.yesno(msg, "Update cert", "Cancel", default=True):
