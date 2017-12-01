@@ -1,4 +1,3 @@
-# pylint: disable=unused-import
 """ Entry point for Apache Plugin """
 from certbot import util
 

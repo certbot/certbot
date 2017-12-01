@@ -2,7 +2,7 @@
 import os
 import unittest
 
-from certbot_apache import override_gentoo  # pylint: disable=unused-import
+from certbot_apache import override_gentoo
 from certbot_apache import obj
 from certbot_apache.tests import util
 
