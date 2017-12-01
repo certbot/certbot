@@ -375,9 +375,8 @@ class ChallengeResource(Resource):
     authzr_uri = jose.Field('authzr_uri')
 
     @property
-    def uri(self):  # pylint: disable=missing-docstring,no-self-argument
-        # bug? 'method already defined line None'
-        # pylint: disable=function-redefined,protected-access
+    def uri(self):  # pylint: disable=missing-docstring
+        # pylint: disable=function-redefined,no-member
         return self.body.uri
 
 
