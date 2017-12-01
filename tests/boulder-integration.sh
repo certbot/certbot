@@ -20,14 +20,6 @@ cleanup_and_exit() {
         echo Kill server subprocess, left running by abnormal exit
         kill $SERVER_STILL_RUNNING
     fi
-    # Dump boulder logs in case they contain useful debugging information.
-    : "------------------ ------------------ ------------------"
-    : "------------------ begin boulder logs ------------------"
-    : "------------------ ------------------ ------------------"
-    docker logs boulder_boulder_1
-    : "------------------ ------------------ ------------------"
-    : "------------------  end boulder logs  ------------------"
-    : "------------------ ------------------ ------------------"
     if [ -f "$HOOK_DIRS_TEST" ]; then
         rm -f "$HOOK_DIRS_TEST"
     fi
