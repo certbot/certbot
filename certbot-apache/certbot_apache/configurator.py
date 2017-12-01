@@ -108,10 +108,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
     def constant(self, key):
         """Get constant for OS_DEFAULTS"""
-        try:
-            return self.OS_DEFAULTS[key]
-        except KeyError:
-            return None
+        return self.OS_DEFAULTS.get(key)
 
     @classmethod
     def add_parser_arguments(cls, add):
