@@ -42,8 +42,8 @@ class TlsSniPerformTest(util.ApacheTest):
     @mock.patch("certbot.util.exe_exists")
     @mock.patch("certbot.util.run_script")
     def test_perform1(self, _, mock_exists):
-        mock_register = mock.Mock()
-        self.sni.configurator.reverter.register_undo_command = mock_register
+        self.sni.configurator.parser.modules.add("socache_shmcb_module")
+        self.sni.configurator.parser.modules.add("ssl_module")
 
         mock_exists.return_value = True
         self.sni.configurator.parser.update_runtime_variables = mock.Mock()
@@ -56,10 +56,6 @@ class TlsSniPerformTest(util.ApacheTest):
         self.sni._setup_challenge_cert = mock_setup_cert
 
         responses = self.sni.perform()
-
-        # Make sure that register_undo_command was called into temp directory.
-        self.assertEqual(True, mock_register.call_args[0][0])
-
         mock_setup_cert.assert_called_once_with(achall)
 
         # Check to make sure challenge config path is included in apache config
@@ -72,7 +68,7 @@ class TlsSniPerformTest(util.ApacheTest):
     def test_perform2(self):
         # Avoid load module
         self.sni.configurator.parser.modules.add("ssl_module")
-
+        self.sni.configurator.parser.modules.add("socache_shmcb_module")
         acme_responses = []
         for achall in self.achalls:
             self.sni.add_chall(achall)

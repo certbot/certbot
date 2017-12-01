@@ -3,6 +3,7 @@
 import os
 import shutil
 import socket
+import tempfile
 import unittest
 
 import mock
@@ -20,7 +21,6 @@ from certbot.tests import util as certbot_util
 
 from certbot_apache import apache_util
 from certbot_apache import constants
-from certbot_apache import override_debian  # pylint: disable=unused-import
 from certbot_apache import parser
 from certbot_apache import obj
 
@@ -42,15 +42,13 @@ class MultipleVhostsTest(util.ApacheTest):
 
     def mock_deploy_cert(self, config):
         """A test for a mock deploy cert"""
-        self.config.real_deploy_cert = self.config.deploy_cert
+        config.real_deploy_cert = self.config.deploy_cert
 
         def mocked_deploy_cert(*args, **kwargs):
             """a helper to mock a deployed cert"""
             g_mod = "certbot_apache.configurator.ApacheConfigurator.enable_mod"
-            d_mod = "certbot_apache.override_debian.DebianConfigurator.enable_mod"
             with mock.patch(g_mod):
-                with mock.patch(d_mod):
-                    config.real_deploy_cert(*args, **kwargs)
+                config.real_deploy_cert(*args, **kwargs)
         self.config.deploy_cert = mocked_deploy_cert
         return self.config
 
@@ -309,159 +307,23 @@ class MultipleVhostsTest(util.ApacheTest):
         # pylint: disable=protected-access
         self.assertEqual(len(self.config._non_default_vhosts()), 8)
 
-    @mock.patch("certbot.util.run_script")
-    @mock.patch("certbot.util.exe_exists")
-    @mock.patch("certbot_apache.parser.subprocess.Popen")
-    def test_enable_mod(self, mock_popen, mock_exe_exists, mock_run_script):
-        mock_popen().communicate.return_value = ("Define: DUMP_RUN_CFG", "")
-        mock_popen().returncode = 0
-        mock_exe_exists.return_value = True
-
-        self.config.enable_mod("ssl")
-        self.assertTrue("ssl_module" in self.config.parser.modules)
-        self.assertTrue("mod_ssl.c" in self.config.parser.modules)
-
-        self.assertTrue(mock_run_script.called)
-
-    def test_enable_mod_unsupported_dirs(self):
-        shutil.rmtree(os.path.join(self.config.parser.root, "mods-enabled"))
-        self.assertRaises(
-            errors.NotSupportedError, self.config.enable_mod, "ssl")
-
-    @mock.patch("certbot.util.exe_exists")
-    def test_enable_mod_no_disable(self, mock_exe_exists):
-        mock_exe_exists.return_value = False
-        self.assertRaises(
-            errors.MisconfigurationError, self.config.enable_mod, "ssl")
-
-    def test_enable_site_already_enabled(self):
-        self.assertTrue(self.vh_truth[1].enabled)
-        self.config.enable_site(self.vh_truth[1])
-
-    def test_enable_site_failure(self):
-        self.config.parser.root = "/tmp/nonexistent"
-        with mock.patch("os.path.isdir") as mock_dir:
-            mock_dir.return_value = True
-            with mock.patch("os.path.islink") as mock_link:
-                mock_link.return_value = False
-                self.assertRaises(
-                    errors.NotSupportedError,
-                    self.config.enable_site,
-                    obj.VirtualHost("asdf", "afsaf", set(), False, False))
-
-    def test_enable_site_call_parent(self):
-        with mock.patch(
-            "certbot_apache.configurator.ApacheConfigurator.enable_site") as e_s:
-            self.config.parser.root = "/tmp/nonexistent"
-            vh = self.vh_truth[0]
-            vh.enabled = False
-            self.config.enable_site(vh)
-            self.assertTrue(e_s.called)
-
-
     def test_deploy_cert_enable_new_vhost(self):
         # Create
         ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[0])
         self.config.parser.modules.add("ssl_module")
         self.config.parser.modules.add("mod_ssl.c")
+        self.config.parser.modules.add("socache_shmcb_module")
+
         self.assertFalse(ssl_vhost.enabled)
         self.config.deploy_cert(
             "encryption-example.demo", "example/cert.pem", "example/key.pem",
             "example/cert_chain.pem", "example/fullchain.pem")
         self.assertTrue(ssl_vhost.enabled)
-        # Make sure that we don't error out if symlink already exists
-        ssl_vhost.enabled = False
-        self.assertFalse(ssl_vhost.enabled)
-        self.config.deploy_cert(
-            "encryption-example.demo", "example/cert.pem", "example/key.pem",
-            "example/cert_chain.pem", "example/fullchain.pem")
-        self.assertTrue(ssl_vhost.enabled)
-
-    def test_deploy_cert_newssl(self):
-        with mock.patch("certbot.util.get_os_info") as mock_osi:
-            # Make sure we act like Debian for this test
-            mock_osi.return_value = ("debian", "7")
-            self.config = util.get_apache_configurator(
-                self.config_path, self.vhost_path, self.config_dir,
-                self.work_dir, version=(2, 4, 16))
-
-        self.config.parser.modules.add("ssl_module")
-        self.config.parser.modules.add("mod_ssl.c")
-
-        # Get the default 443 vhost
-        self.config.assoc["random.demo"] = self.vh_truth[1]
-        self.config = self.mock_deploy_cert(self.config)
-        self.config.deploy_cert(
-            "random.demo", "example/cert.pem", "example/key.pem",
-            "example/cert_chain.pem", "example/fullchain.pem")
-        self.config.save()
-
-        # Verify ssl_module was enabled.
-        self.assertTrue(self.vh_truth[1].enabled)
-        self.assertTrue("ssl_module" in self.config.parser.modules)
-
-        loc_cert = self.config.parser.find_dir(
-            "sslcertificatefile", "example/fullchain.pem",
-            self.vh_truth[1].path)
-        loc_key = self.config.parser.find_dir(
-            "sslcertificateKeyfile", "example/key.pem", self.vh_truth[1].path)
-
-        # Verify one directive was found in the correct file
-        self.assertEqual(len(loc_cert), 1)
-        self.assertEqual(
-            apache_util.get_file_path(loc_cert[0]),
-            self.vh_truth[1].filep)
-
-        self.assertEqual(len(loc_key), 1)
-        self.assertEqual(
-            apache_util.get_file_path(loc_key[0]),
-            self.vh_truth[1].filep)
-
-    def test_deploy_cert_newssl_no_fullchain(self):
-
-        with mock.patch("certbot.util.get_os_info") as mock_osi:
-            # Make sure we act like Debian for this test
-            mock_osi.return_value = ("debian", "7")
-            self.config = util.get_apache_configurator(
-                self.config_path, self.vhost_path, self.config_dir,
-                self.work_dir, version=(2, 4, 16))
-        self.config = self.mock_deploy_cert(self.config)
-
-        self.config.parser.modules.add("ssl_module")
-        self.config.parser.modules.add("mod_ssl.c")
-
-        # Get the default 443 vhost
-        self.config.assoc["random.demo"] = self.vh_truth[1]
-        self.assertRaises(errors.PluginError,
-                          lambda: self.config.deploy_cert(
-                              "random.demo", "example/cert.pem",
-                              "example/key.pem"))
-
-    def test_deploy_cert_old_apache_no_chain(self):
-        with mock.patch("certbot.util.get_os_info") as mock_osi:
-            # Make sure we act like Debian for this test
-            mock_osi.return_value = ("debian", "7")
-            self.config = util.get_apache_configurator(
-                self.config_path, self.vhost_path, self.config_dir,
-                self.work_dir, version=(2, 4, 7))
-        self.config = self.mock_deploy_cert(self.config)
-
-        self.config.parser.modules.add("ssl_module")
-        self.config.parser.modules.add("mod_ssl.c")
-
-        # Get the default 443 vhost
-        self.config.assoc["random.demo"] = self.vh_truth[1]
-        self.assertRaises(errors.PluginError,
-                          lambda: self.config.deploy_cert(
-                              "random.demo", "example/cert.pem",
-                              "example/key.pem"))
-
-
 
     def test_deploy_cert(self):
         self.config.parser.modules.add("ssl_module")
         self.config.parser.modules.add("mod_ssl.c")
-
+        self.config.parser.modules.add("socache_shmcb_module")
         # Patch _add_dummy_ssl_directives to make sure we write them correctly
         # pylint: disable=protected-access
         orig_add_dummy = self.config._add_dummy_ssl_directives
@@ -955,19 +817,16 @@ class MultipleVhostsTest(util.ApacheTest):
             errors.PluginError,
             self.config.enhance, "certbot.demo", "unknown_enhancement")
 
-    @mock.patch("certbot.util.run_script")
     @mock.patch("certbot.util.exe_exists")
-    def test_ocsp_stapling(self, mock_exe, mock_run_script):
+    def test_ocsp_stapling(self, mock_exe):
         self.config.parser.update_runtime_variables = mock.Mock()
         self.config.parser.modules.add("mod_ssl.c")
+        self.config.parser.modules.add("socache_shmcb_module")
         self.config.get_version = mock.Mock(return_value=(2, 4, 7))
         mock_exe.return_value = True
 
         # This will create an ssl vhost for certbot.demo
         self.config.enhance("certbot.demo", "staple-ocsp")
-
-        self.assertTrue("socache_shmcb_module" in self.config.parser.modules)
-        self.assertTrue(mock_run_script.called)
 
         # Get the ssl vhost for certbot.demo
         ssl_vhost = self.config.assoc["certbot.demo"]
@@ -1038,13 +897,12 @@ class MultipleVhostsTest(util.ApacheTest):
     def test_http_header_hsts(self, mock_exe, _):
         self.config.parser.update_runtime_variables = mock.Mock()
         self.config.parser.modules.add("mod_ssl.c")
+        self.config.parser.modules.add("headers_module")
         mock_exe.return_value = True
 
         # This will create an ssl vhost for certbot.demo
         self.config.enhance("certbot.demo", "ensure-http-header",
                             "Strict-Transport-Security")
-
-        self.assertTrue("headers_module" in self.config.parser.modules)
 
         # Get the ssl vhost for certbot.demo
         ssl_vhost = self.config.assoc["certbot.demo"]
@@ -1076,6 +934,8 @@ class MultipleVhostsTest(util.ApacheTest):
     def test_http_header_uir(self, mock_exe, _):
         self.config.parser.update_runtime_variables = mock.Mock()
         self.config.parser.modules.add("mod_ssl.c")
+        self.config.parser.modules.add("headers_module")
+
         mock_exe.return_value = True
 
         # This will create an ssl vhost for certbot.demo
@@ -1112,6 +972,7 @@ class MultipleVhostsTest(util.ApacheTest):
     @mock.patch("certbot.util.run_script")
     @mock.patch("certbot.util.exe_exists")
     def test_redirect_well_formed_http(self, mock_exe, _):
+        self.config.parser.modules.add("rewrite_module")
         self.config.parser.update_runtime_variables = mock.Mock()
         mock_exe.return_value = True
         self.config.get_version = mock.Mock(return_value=(2, 2))
@@ -1134,8 +995,6 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertTrue(rw_engine[0].startswith(self.vh_truth[3].path[:-3]))
         self.assertTrue(rw_rule[0].startswith(self.vh_truth[3].path[:-3]))
 
-        self.assertTrue("rewrite_module" in self.config.parser.modules)
-
     def test_rewrite_rule_exists(self):
         # Skip the enable mod
         self.config.parser.modules.add("rewrite_module")
@@ -1157,6 +1016,7 @@ class MultipleVhostsTest(util.ApacheTest):
     @mock.patch("certbot.util.run_script")
     @mock.patch("certbot.util.exe_exists")
     def test_redirect_with_existing_rewrite(self, mock_exe, _):
+        self.config.parser.modules.add("rewrite_module")
         self.config.parser.update_runtime_variables = mock.Mock()
         mock_exe.return_value = True
         self.config.get_version = mock.Mock(return_value=(2, 2, 0))
@@ -1189,6 +1049,7 @@ class MultipleVhostsTest(util.ApacheTest):
     @mock.patch("certbot.util.run_script")
     @mock.patch("certbot.util.exe_exists")
     def test_redirect_with_old_https_redirection(self, mock_exe, _):
+        self.config.parser.modules.add("rewrite_module")
         self.config.parser.update_runtime_variables = mock.Mock()
         mock_exe.return_value = True
         self.config.get_version = mock.Mock(return_value=(2, 2, 0))
@@ -1326,6 +1187,57 @@ class MultipleVhostsTest(util.ApacheTest):
         self.config.aug.match.side_effect = RuntimeError
         self.assertFalse(self.config._check_aug_version())
 
+    def test_enable_site_nondebian(self):
+        inc_path = "/path/to/wherever"
+        vhost = self.vh_truth[0]
+        vhost.enabled = False
+        vhost.filep = inc_path
+        self.assertFalse(self.config.parser.find_dir("Include", inc_path))
+        self.assertFalse(
+            os.path.dirname(inc_path) in self.config.parser.existing_paths)
+        self.config.enable_site(vhost)
+        self.assertTrue(self.config.parser.find_dir("Include", inc_path))
+        self.assertTrue(
+            os.path.dirname(inc_path) in self.config.parser.existing_paths)
+        self.assertTrue(
+            os.path.basename(inc_path) in self.config.parser.existing_paths[
+                os.path.dirname(inc_path)])
+
+    def test_deploy_cert_not_parsed_path(self):
+        # Make sure that we add include to root config for vhosts when
+        # handle-sites is false
+        self.config.parser.modules.add("ssl_module")
+        self.config.parser.modules.add("mod_ssl.c")
+        self.config.parser.modules.add("socache_shmcb_module")
+        tmp_path = os.path.realpath(tempfile.mkdtemp("vhostroot"))
+        os.chmod(tmp_path, 0o755)
+        mock_p = "certbot_apache.configurator.ApacheConfigurator._get_ssl_vhost_path"
+        mock_a = "certbot_apache.parser.ApacheParser.add_include"
+
+        with mock.patch(mock_p) as mock_path:
+            mock_path.return_value = os.path.join(tmp_path, "whatever.conf")
+            with mock.patch(mock_a) as mock_add:
+                self.config.deploy_cert(
+                    "encryption-example.demo",
+                    "example/cert.pem", "example/key.pem",
+                    "example/cert_chain.pem")
+                # Test that we actually called add_include
+                self.assertTrue(mock_add.called)
+        shutil.rmtree(tmp_path)
+
+    @mock.patch("certbot_apache.parser.ApacheParser.parsed_in_original")
+    def test_choose_vhost_and_servername_addition_parsed(self, mock_parsed):
+        ret_vh = self.vh_truth[8]
+        ret_vh.enabled = True
+        self.config.enable_site(ret_vh)
+        # Make sure that we return early
+        self.assertFalse(mock_parsed.called)
+
+    def test_enable_mod_unsupported(self):
+        self.assertRaises(errors.MisconfigurationError,
+                          self.config.enable_mod,
+                          "whatever")
+
 class AugeasVhostsTest(util.ApacheTest):
     """Test vhosts with illegal names dependent on augeas version."""
     # pylint: disable=protected-access
@@ -1338,12 +1250,9 @@ class AugeasVhostsTest(util.ApacheTest):
                                             config_root=cr,
                                             vhost_root=vr)
 
-        with mock.patch("certbot.util.get_os_info") as mock_osi:
-            # Make sure we act like Debian for this test
-            mock_osi.return_value = ("debian", "7")
-            self.config = util.get_apache_configurator(
-                self.config_path, self.vhost_path, self.config_dir,
-                self.work_dir)
+        self.config = util.get_apache_configurator(
+            self.config_path, self.vhost_path, self.config_dir,
+            self.work_dir)
 
     def test_choosevhost_with_illegal_name(self):
         self.config.aug = mock.MagicMock()

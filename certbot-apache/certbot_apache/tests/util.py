@@ -89,7 +89,7 @@ def get_apache_configurator(  # pylint: disable=too-many-arguments, too-many-loc
         config_path, vhost_path,
         config_dir, work_dir, version=(2, 4, 7),
         conf=None,
-        os_info="debian",
+        os_info="generic",
         conf_vhost_path=None):
     """Create an Apache Configurator with the specified options.
 
