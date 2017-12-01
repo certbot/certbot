@@ -407,7 +407,7 @@ class ReportFailedChallsTest(unittest.TestCase):
     def setUp(self):
         kwargs = {
             "chall": acme_util.HTTP01,
-            "_uri": "uri",
+            "uri": "uri",
             "status": messages.STATUS_INVALID,
             "error": messages.Error.with_code("tls", detail="detail"),
         }

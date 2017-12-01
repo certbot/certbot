@@ -63,7 +63,7 @@ class ClientTest(unittest.TestCase):
         # Authorization
         authzr_uri = 'https://www.letsencrypt-demo.org/acme/authz/1'
         challb = messages.ChallengeBody(
-            _uri=(authzr_uri + '/1'), status=messages.STATUS_VALID,
+            uri=(authzr_uri + '/1'), status=messages.STATUS_VALID,
             chall=challenges.DNS(token=jose.b64decode(
                 'evaGxfADs6pSRb2LAv9IZf17Dt3juxGJ-PCt92wr-oA')))
         self.challr = messages.ChallengeResource(
@@ -181,7 +181,7 @@ class ClientTest(unittest.TestCase):
 
         # TODO: split here and separate test
         self.assertRaises(errors.UnexpectedUpdate, self.client.answer_challenge,
-                          self.challr.body.update(_uri='foo'), chall_response)
+                          self.challr.body.update(_uri='xoo'), chall_response)
 
     def test_answer_challenge_missing_next(self):
         self.assertRaises(

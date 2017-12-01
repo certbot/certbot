@@ -16,7 +16,7 @@ class FailedChallengesTest(unittest.TestCase):
         from certbot.errors import FailedChallenges
         self.error = FailedChallenges(set([achallenges.DNS(
             domain="example.com", challb=messages.ChallengeBody(
-                chall=acme_util.DNS01, _uri=None,
+                chall=acme_util.DNS01, uri=None,
                 error=messages.Error(typ="tls", detail="detail")))]))
 
     def test_str(self):
@@ -28,7 +28,7 @@ class FailedChallengesTest(unittest.TestCase):
         arabic_detail = u'\u0639\u062f\u0627\u0644\u0629'
         arabic_error = FailedChallenges(set([achallenges.DNS(
             domain="example.com", challb=messages.ChallengeBody(
-                chall=acme_util.DNS01, _uri=None,
+                chall=acme_util.DNS01, uri=None,
                 error=messages.Error(typ="tls", detail=arabic_detail)))]))
 
         self.assertTrue(str(arabic_error).startswith(

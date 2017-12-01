@@ -299,13 +299,13 @@ class NginxConfiguratorTest(util.NginxTest):
         achall1 = achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=messages.ChallengeBody(
                 chall=challenges.TLSSNI01(token=b"kNdwjwOeX0I_A8DXt9Msmg"),
-                _uri="https://ca.org/chall0_uri",
+                uri="https://ca.org/chall0_uri",
                 status=messages.Status("pending"),
             ), domain="localhost", account_key=self.rsa512jwk)
         achall2 = achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=messages.ChallengeBody(
                 chall=challenges.TLSSNI01(token=b"m8TdO1qik4JVFtgPPurJmg"),
-                _uri="https://ca.org/chall1_uri",
+                uri="https://ca.org/chall1_uri",
                 status=messages.Status("pending"),
             ), domain="example.com", account_key=self.rsa512jwk)
 
