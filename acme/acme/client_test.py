@@ -449,6 +449,18 @@ class ClientTest(unittest.TestCase):
             self.certr,
             self.rsn)
 
+class MockJSONDeSerializable(jose.JSONDeSerializable):
+    # pylint: disable=missing-docstring
+    def __init__(self, value):
+        self.value = value
+
+    def to_partial_json(self):
+        return {'foo': self.value}
+
+    @classmethod
+    def from_json(cls, value):
+        pass  # pragma: no cover
+
 
 class ClientNetworkTest(unittest.TestCase):
     """Tests for acme.client.ClientNetwork."""
@@ -470,18 +482,6 @@ class ClientNetworkTest(unittest.TestCase):
         self.assertTrue(self.net.verify_ssl is self.verify_ssl)
 
     def test_wrap_in_jws(self):
-        class MockJSONDeSerializable(jose.JSONDeSerializable):
-            # pylint: disable=missing-docstring
-            def __init__(self, value):
-                self.value = value
-
-            def to_partial_json(self):
-                return {'foo': self.value}
-
-            @classmethod
-            def from_json(cls, value):
-                pass  # pragma: no cover
-
         # pylint: disable=protected-access
         jws_dump = self.net._wrap_in_jws(
             MockJSONDeSerializable('foo'), nonce=b'Tg', url="url")
@@ -489,6 +489,7 @@ class ClientNetworkTest(unittest.TestCase):
         self.assertEqual(json.loads(jws.payload.decode()), {'foo': 'foo'})
         self.assertEqual(jws.signature.combined.nonce, b'Tg')
 
+    def test_wrap_in_jws_v2(self):
         self.net.account = {'uri': 'acct-uri'}
         jws_dump = self.net._wrap_in_jws(
             MockJSONDeSerializable('foo'), nonce=b'Tg', url="url")
