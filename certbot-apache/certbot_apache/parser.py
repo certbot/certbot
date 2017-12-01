@@ -172,6 +172,11 @@ class ApacheParser(object):
     def update_includes(self):
         """Get includes from httpd process, and add them to DOM if needed"""
 
+        # Find_dir iterates over configuration for Include and IncludeOptional
+        # directives to make sure we see the full include tree present in the
+        # configuration files
+        _ = self.find_dir("Include")
+
         inc_cmd = [self.configurator.constant("apache_cmd"), "-t", "-D",
                    "DUMP_INCLUDES"]
         matches = self.parse_from_subprocess(inc_cmd, r"\(.*\) (.*)")
