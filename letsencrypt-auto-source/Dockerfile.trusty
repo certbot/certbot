@@ -11,11 +11,11 @@ RUN sed -i.bkp -e \
       's/%sudo\s\+ALL=(ALL\(:ALL\)\?)\s\+ALL/%sudo ALL=NOPASSWD:ALL/g' \
       /etc/sudoers
 
-# Install pip and pytest:
+# Install pip:
 RUN apt-get update && \
     apt-get -q -y install python-pip && \
     apt-get clean
-# Use pipstrap to install a stable and tested version of pip
+# Use pipstrap to update to a stable and tested version of pip
 COPY ./pieces/pipstrap.py /opt
 RUN /opt/pipstrap.py
 # Pin pytest version for increased stability

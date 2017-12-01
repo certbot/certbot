@@ -5,9 +5,9 @@ FROM centos:6
 
 RUN yum install -y epel-release
 
-# Install pip, sudo and pytest:
+# Install pip and sudo:
 RUN yum install -y python-pip sudo
-# Use pipstrap to install a stable and tested version of pip
+# Use pipstrap to update to a stable and tested version of pip
 COPY ./pieces/pipstrap.py /opt
 RUN /opt/pipstrap.py
 # Pin pytest version for increased stability

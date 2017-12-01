@@ -6,12 +6,12 @@ FROM ubuntu:precise
 # Add an unprivileged user:
 RUN useradd --create-home --home-dir /home/lea --shell /bin/bash --groups sudo --uid 1000 lea
 
-# Install pip, sudo, openssl, and pytest:
+# Install pip, sudo, and openssl:
 RUN apt-get update && \
     apt-get -q -y install python-pip sudo openssl && \
     apt-get clean
 
-# Use pipstrap to install a stable and tested version of pip
+# Use pipstrap to update to a stable and tested version of pip
 COPY ./pieces/pipstrap.py /opt
 RUN /opt/pipstrap.py
 # Pin pytest version for increased stability
