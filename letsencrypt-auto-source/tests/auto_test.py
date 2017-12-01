@@ -17,10 +17,10 @@ from tempfile import mkdtemp
 from threading import Thread
 from unittest import TestCase
 
-from nose.tools import eq_, nottest, ok_
+from pytest import mark
 
 
-@nottest
+@mark.skip
 def tests_dir():
     """Return a path to the "tests" directory."""
     return dirname(abspath(__file__))
@@ -279,8 +279,8 @@ class AutoTests(TestCase):
                 # installed, and pip hashes verify:
                 install_le_auto(build_le_auto(version='50.0.0'), le_auto_path)
                 out, err = run_letsencrypt_auto()
-                ok_(re.match(r'letsencrypt \d+\.\d+\.\d+',
-                             err.strip().splitlines()[-1]))
+                self.assertTrue(re.match(r'letsencrypt \d+\.\d+\.\d+',
+                                err.strip().splitlines()[-1]))
                 # Make a few assertions to test the validity of the next tests:
                 self.assertTrue('Upgrading certbot-auto ' in out)
                 self.assertTrue('Creating virtual environment...' in out)
@@ -327,7 +327,7 @@ class AutoTests(TestCase):
                 try:
                     out, err = run_le_auto(le_auto_path, venv_dir, base_url)
                 except CalledProcessError as exc:
-                    eq_(exc.returncode, 1)
+                    self.assertEqual(exc.returncode, 1)
                     self.assertTrue("Couldn't verify signature of downloaded "
                                     "certbot-auto." in exc.output)
                 else:
@@ -348,10 +348,11 @@ class AutoTests(TestCase):
                 try:
                     out, err = run_le_auto(le_auto_path, venv_dir, base_url)
                 except CalledProcessError as exc:
-                    eq_(exc.returncode, 1)
+                    self.assertEqual(exc.returncode, 1)
                     self.assertTrue("THESE PACKAGES DO NOT MATCH THE HASHES "
                                     "FROM THE REQUIREMENTS FILE" in exc.output)
-                    ok_(not exists(venv_dir),
+                    self.assertFalse(
+                        exists(venv_dir),
                         msg="The virtualenv was left around, even though "
                             "installation didn't succeed. We shouldn't do "
                             "this, as it foils our detection of whether we "
