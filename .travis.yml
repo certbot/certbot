@@ -19,23 +19,14 @@ matrix:
     - python: "2.7"
       env: TOXENV=py27-oldest
       sudo: required
-      after_failure:
-        - sudo cat /var/log/mysql/error.log
-        - ps aux | grep mysql
       services: docker
     - python: "2.6"
       env: TOXENV=py26
       sudo: required
-      after_failure:
-        - sudo cat /var/log/mysql/error.log
-        - ps aux | grep mysql
       services: docker
     - python: "2.7"
       env: TOXENV=py27_install BOULDER_INTEGRATION=1
       sudo: required
-      after_failure:
-        - sudo cat /var/log/mysql/error.log
-        - ps aux | grep mysql
       services: docker
     - sudo: required
       env: TOXENV=apache_compat
@@ -78,30 +69,18 @@ matrix:
     - python: "3.3"
       env: TOXENV=py33 BOULDER_INTEGRATION=1
       sudo: required
-      after_failure:
-        - sudo cat /var/log/mysql/error.log
-        - ps aux | grep mysql
       services: docker
     - python: "3.4"
       env: TOXENV=py34 BOULDER_INTEGRATION=1
       sudo: required
-      after_failure:
-        - sudo cat /var/log/mysql/error.log
-        - ps aux | grep mysql
       services: docker
     - python: "3.5"
       env: TOXENV=py35 BOULDER_INTEGRATION=1
       sudo: required
-      after_failure:
-        - sudo cat /var/log/mysql/error.log
-        - ps aux | grep mysql
       services: docker
     - python: "3.6"
       env: TOXENV=py36 BOULDER_INTEGRATION=1
       sudo: required
-      after_failure:
-        - sudo cat /var/log/mysql/error.log
-        - ps aux | grep mysql
       services: docker
     - python: "2.7"
       env: TOXENV=nginxroundtrip
@@ -121,17 +100,6 @@ branches:
 sudo: false
 
 addons:
-  # Custom /etc/hosts required for simple verification of http-01
-  # and tls-sni-01, and for certbot_test_nginx
-  hosts:
-    - le.wtf
-    - le1.wtf
-    - le2.wtf
-    - le3.wtf
-    - nginx.wtf
-    - boulder
-    - boulder-mysql
-    - boulder-rabbitmq
   apt:
     sources:
     - augeas
@@ -151,7 +119,7 @@ addons:
     - libapache2-mod-wsgi
     - libapache2-mod-macro
 
-install: "travis_retry pip install tox coveralls"
+install: "travis_retry $(command -v pip || command -v pip3) install tox coveralls"
 script:
     - travis_retry tox
     - '[ -z "${BOULDER_INTEGRATION+x}" ] || (travis_retry tests/boulder-fetch.sh && tests/tox-boulder-integration.sh)'
