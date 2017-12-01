@@ -128,8 +128,9 @@ class BasicParserTest(util.ParserTest):
             # Make sure that we got None return value and logged the file
             self.assertTrue(mock_logger.debug.called)
 
+    @mock.patch("certbot_apache.parser.ApacheParser.find_dir")
     @mock.patch("certbot_apache.parser.ApacheParser._get_runtime_cfg")
-    def test_update_runtime_variables(self, mock_cfg):
+    def test_update_runtime_variables(self, mock_cfg, _):
         define_val = (
             'ServerRoot: "/etc/apache2"\n'
             'Main DocumentRoot: "/var/www"\n'
@@ -232,8 +233,9 @@ class BasicParserTest(util.ParserTest):
             # Make sure we tried to include them all.
             self.assertEqual(mock_parse.call_count, 25)
 
+    @mock.patch("certbot_apache.parser.ApacheParser.find_dir")
     @mock.patch("certbot_apache.parser.ApacheParser._get_runtime_cfg")
-    def test_update_runtime_variables_alt_values(self, mock_cfg):
+    def test_update_runtime_variables_alt_values(self, mock_cfg, _):
         inc_val = (
             'Included configuration files:\n'
             '  (*) {0}\n'
