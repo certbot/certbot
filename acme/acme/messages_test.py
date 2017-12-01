@@ -266,7 +266,7 @@ class ChallengeBodyTest(unittest.TestCase):
         error = Error(typ='urn:ietf:params:acme:error:serverInternal',
                       detail='Unable to communicate with DNS server')
         self.challb = ChallengeBody(
-            _uri='http://challb', chall=self.chall, status=self.status,
+            uri='http://challb', chall=self.chall, status=self.status,
             error=error)
 
         self.jobj_to = {
@@ -308,9 +308,9 @@ class AuthorizationTest(unittest.TestCase):
 
         self.challbs = (
             ChallengeBody(
-                _uri='http://challb1', status=STATUS_VALID,
+                uri='http://challb1', status=STATUS_VALID,
                 chall=challenges.HTTP01(token=b'IlirfxKKXAsHtmzK29Pj8A')),
-            ChallengeBody(_uri='http://challb2', status=STATUS_VALID,
+            ChallengeBody(uri='http://challb2', status=STATUS_VALID,
                           chall=challenges.DNS(
                               token=b'DGyRejmCefe7v4NfDGDKfA')),
         )
