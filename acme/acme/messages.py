@@ -357,7 +357,8 @@ class ChallengeBody(ResourceBody):
         return jobj_fields
 
     @property
-    def uri(self):  # pylint: disable=missing-docstring
+    def uri(self):
+        """The URL of this challenge."""
         return self._url or self._uri
 
     def __getattr__(self, name):
@@ -375,7 +376,8 @@ class ChallengeResource(Resource):
     authzr_uri = jose.Field('authzr_uri')
 
     @property
-    def uri(self):  # pylint: disable=missing-docstring
+    def uri(self):
+        """The URL of the challenge body."""
         # pylint: disable=function-redefined,no-member
         return self.body.uri
 
