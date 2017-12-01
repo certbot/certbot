@@ -11,11 +11,9 @@ from certbot import util
 
 from certbot_apache import apache_util
 from certbot_apache import configurator
-from certbot_apache import override
 
 logger = logging.getLogger(__name__)
 
-@override.register(["debian", "ubuntu"])
 @zope.interface.provider(interfaces.IPluginFactory)
 class DebianConfigurator(configurator.ApacheConfigurator):
     """Debian specific ApacheConfigurator override class"""

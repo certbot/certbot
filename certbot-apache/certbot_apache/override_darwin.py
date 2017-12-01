@@ -6,10 +6,7 @@ import zope.interface
 from certbot import interfaces
 
 from certbot_apache import configurator
-from certbot_apache import override
 
-
-@override.register(["darwin"])
 @zope.interface.provider(interfaces.IPluginFactory)
 class DarwinConfigurator(configurator.ApacheConfigurator):
     """macOS specific ApacheConfigurator override class"""

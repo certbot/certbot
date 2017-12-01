@@ -6,10 +6,7 @@ import zope.interface
 from certbot import interfaces
 
 from certbot_apache import configurator
-from certbot_apache import override
 
-
-@override.register(["arch"])
 @zope.interface.provider(interfaces.IPluginFactory)
 class ArchConfigurator(configurator.ApacheConfigurator):
     """Arch Linux specific ApacheConfigurator override class"""

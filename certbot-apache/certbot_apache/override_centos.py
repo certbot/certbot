@@ -7,12 +7,8 @@ from certbot import interfaces
 
 from certbot_apache import apache_util
 from certbot_apache import configurator
-from certbot_apache import override
 from certbot_apache import parser
 
-
-@override.register(["centos", "centos linux", "fedora",
-                    "red hat enterprise linux server", "rhel", "amazon"])
 @zope.interface.provider(interfaces.IPluginFactory)
 class CentOSConfigurator(configurator.ApacheConfigurator):
     """CentOS specific ApacheConfigurator override class"""

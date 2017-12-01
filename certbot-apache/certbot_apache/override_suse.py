@@ -6,10 +6,7 @@ import zope.interface
 from certbot import interfaces
 
 from certbot_apache import configurator
-from certbot_apache import override
 
-
-@override.register(["opensuse", "suse"])
 @zope.interface.provider(interfaces.IPluginFactory)
 class OpenSUSEConfigurator(configurator.ApacheConfigurator):
     """OpenSUSE specific ApacheConfigurator override class"""

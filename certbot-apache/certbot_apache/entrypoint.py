@@ -10,7 +10,22 @@ from certbot_apache import override_centos
 from certbot_apache import override_gentoo
 from certbot_apache import override_suse
 
-from certbot_apache.override import OVERRIDE_CLASSES
+OVERRIDE_CLASSES = {
+    "arch": override_arch.ArchConfigurator,
+    "darwin": override_darwin.DarwinConfigurator,
+    "debian": override_debian.DebianConfigurator,
+    "ubuntu": override_debian.DebianConfigurator,
+    "centos": override_centos.CentOSConfigurator,
+    "centos linux": override_centos.CentOSConfigurator,
+    "fedora": override_centos.CentOSConfigurator,
+    "red hat enterprise linux server": override_centos.CentOSConfigurator,
+    "rhel": override_centos.CentOSConfigurator,
+    "amazon": override_centos.CentOSConfigurator,
+    "gentoo": override_gentoo.GentooConfigurator,
+    "gentoo base system": override_gentoo.GentooConfigurator,
+    "opensuse": override_suse.OpenSUSEConfigurator,
+    "suse": override_suse.OpenSUSEConfigurator,
+}
 
 def get_configurator():
     """ Get correct configurator class based on the OS fingerprint """

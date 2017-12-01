@@ -7,11 +7,8 @@ from certbot import interfaces
 
 from certbot_apache import apache_util
 from certbot_apache import configurator
-from certbot_apache import override
 from certbot_apache import parser
 
-
-@override.register(["gentoo", "gentoo base system"])
 @zope.interface.provider(interfaces.IPluginFactory)
 class GentooConfigurator(configurator.ApacheConfigurator):
     """Gentoo specific ApacheConfigurator override class"""

@@ -17,7 +17,7 @@ from certbot.plugins import common
 from certbot.tests import util as test_util
 
 from certbot_apache import configurator
-from certbot_apache import override
+from certbot_apache import entrypoint
 from certbot_apache import obj
 
 
@@ -128,7 +128,7 @@ def get_apache_configurator(  # pylint: disable=too-many-arguments, too-many-loc
                 with mock.patch("certbot_apache.parser.ApacheParser."
                                 "update_runtime_variables"):
                     try:
-                        config_class = override.OVERRIDE_CLASSES[os_info]
+                        config_class = entrypoint.OVERRIDE_CLASSES[os_info]
                     except KeyError:
                         config_class = configurator.ApacheConfigurator
                     config = config_class(config=mock_le_config, name="apache",
