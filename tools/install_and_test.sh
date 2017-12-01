@@ -16,6 +16,10 @@ for requirement in "$@" ; do
   pkg=$(echo $requirement | cut -f1 -d\[)  # remove any extras such as [dev]
   if [ $pkg = "." ]; then
     pkg="certbot"
+  else
+    # Work around a bug in pytest/importlib for the deprecated Python 3.3.
+    # See https://travis-ci.org/certbot/certbot/jobs/308774157#L1333.
+    pkg=$(echo "$pkg" | tr - _)
   fi
-  nosetests $pkg --processes=-1 --process-timeout=100
+  pytest --numprocesses auto --quiet --pyargs $pkg
 done
