@@ -10,9 +10,9 @@ LE_AUTO_SUDO="" VENV_PATH=$VENV_NAME letsencrypt/certbot-auto --debug --no-boots
 
 # change to an empty directory to ensure CWD doesn't affect tests
 cd $(mktemp -d)
-pip install nose
+pip install pytest==3.2.5
 
 for module in $MODULES ; do
     echo testing $module
-    nosetests -v $module
+    pytest -v --pyargs $module
 done
