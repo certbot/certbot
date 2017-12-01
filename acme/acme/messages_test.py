@@ -243,7 +243,7 @@ class ChallengeResourceTest(unittest.TestCase):
     def test_uri(self):
         from acme.messages import ChallengeResource
         self.assertEqual('http://challb', ChallengeResource(body=mock.MagicMock(
-            _url='http://challb'), authzr_uri='http://authz').uri)
+            uri='http://challb'), authzr_uri='http://authz').uri)
 
 
 class ChallengeBodyTest(unittest.TestCase):

@@ -336,6 +336,15 @@ class ChallengeBody(ResourceBody):
     error = jose.Field('error', decoder=Error.from_json,
                        omitempty=True, default=None)
 
+    def __init__(self, **kwargs):
+        new_kwargs = {}
+        for k, v in kwargs.items():
+            if k in ('uri', 'url',):
+                k = '_' + k
+            new_kwargs[k] = v
+        # pylint: disable=star-args
+        super(ChallengeBody, self).__init__(**new_kwargs)
+
     def to_partial_json(self):
         jobj = super(ChallengeBody, self).to_partial_json()
         jobj.update(self.chall.to_partial_json())
@@ -369,7 +378,7 @@ class ChallengeResource(Resource):
     def uri(self):  # pylint: disable=missing-docstring,no-self-argument
         # bug? 'method already defined line None'
         # pylint: disable=function-redefined,protected-access
-        return self.body._url or self.body._uri  # pylint: disable=no-member
+        return self.body.uri
 
 
 class Authorization(ResourceBody):
