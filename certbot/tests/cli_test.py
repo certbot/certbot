@@ -26,7 +26,6 @@ PLUGINS = disco.PluginsRegistry.find_all()
 class TestReadFile(TempDirTestCase):
     '''Test cli.read_file'''
 
-    _multiprocess_can_split_ = True
 
     def test_read_file(self):
         rel_test_path = os.path.relpath(os.path.join(self.tempdir, 'foo'))
@@ -46,7 +45,6 @@ class TestReadFile(TempDirTestCase):
 class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     '''Test the cli args entrypoint'''
 
-    _multiprocess_can_split_ = True
 
     def setUp(self):
         reload_module(cli)
@@ -418,7 +416,6 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 class DefaultTest(unittest.TestCase):
     """Tests for certbot.cli._Default."""
 
-    _multiprocess_can_split_ = True
 
     def setUp(self):
         # pylint: disable=protected-access
@@ -439,7 +436,6 @@ class DefaultTest(unittest.TestCase):
 class SetByCliTest(unittest.TestCase):
     """Tests for certbot.set_by_cli and related functions."""
 
-    _multiprocess_can_split_ = True
 
     def setUp(self):
         reload_module(cli)

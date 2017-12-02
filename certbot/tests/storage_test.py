@@ -43,7 +43,6 @@ class BaseRenewableCertTest(test_util.ConfigTestCase):
     your test.  Check :class:`.cli_test.DuplicateCertTest` for an example.
 
     """
-    _multiprocess_can_split_ = True
 
     def setUp(self):
         from certbot import storage
