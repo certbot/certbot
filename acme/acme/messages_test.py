@@ -71,6 +71,12 @@ class ErrorTest(unittest.TestCase):
         self.assertTrue(is_acme_error(Error.with_code('badCSR')))
         self.assertRaises(ValueError, Error.with_code, 'not an ACME error code')
 
+    def test_str(self):
+        self.assertEqual(
+            str(self.error),
+            u"{0.typ} :: {0.description} :: {0.detail} :: {0.title}"
+            .format(self.error))
+
 
 class ConstantTest(unittest.TestCase):
     """Tests for acme.messages._Constant."""

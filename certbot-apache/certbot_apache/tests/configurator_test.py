@@ -30,7 +30,6 @@ from certbot_apache.tests import util
 class MultipleVhostsTest(util.ApacheTest):
     """Test two standard well-configured HTTP vhosts."""
 
-    _multiprocess_can_split_ = True
 
     def setUp(self):  # pylint: disable=arguments-differ
         super(MultipleVhostsTest, self).setUp()
@@ -1369,7 +1368,6 @@ class MultipleVhostsTest(util.ApacheTest):
 class AugeasVhostsTest(util.ApacheTest):
     """Test vhosts with illegal names dependent on augeas version."""
     # pylint: disable=protected-access
-    _multiprocess_can_split_ = True
 
     def setUp(self):  # pylint: disable=arguments-differ
         td = "debian_apache_2_4/augeas_vhosts"

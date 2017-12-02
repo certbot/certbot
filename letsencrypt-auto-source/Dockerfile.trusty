@@ -11,11 +11,15 @@ RUN sed -i.bkp -e \
       's/%sudo\s\+ALL=(ALL\(:ALL\)\?)\s\+ALL/%sudo ALL=NOPASSWD:ALL/g' \
       /etc/sudoers
 
-# Install pip and nose:
+# Install pip:
 RUN apt-get update && \
     apt-get -q -y install python-pip && \
     apt-get clean
-RUN pip install nose
+# Use pipstrap to update to a stable and tested version of pip
+COPY ./pieces/pipstrap.py /opt
+RUN /opt/pipstrap.py
+# Pin pytest version for increased stability
+RUN pip install pytest==3.2.5
 
 RUN mkdir -p /home/lea/certbot
 
@@ -29,4 +33,4 @@ COPY . /home/lea/certbot/letsencrypt-auto-source
 USER lea
 WORKDIR /home/lea
 
-CMD ["nosetests", "-v", "-s", "certbot/letsencrypt-auto-source/tests"]
+CMD ["pytest", "-v", "-s", "certbot/letsencrypt-auto-source/tests"]

@@ -16,7 +16,7 @@ fi
 
 cover () {
   if [ "$1" = "certbot" ]; then
-    min=98
+    min=97
   elif [ "$1" = "acme" ]; then
     min=100
   elif [ "$1" = "certbot_apache" ]; then
@@ -24,23 +24,23 @@ cover () {
   elif [ "$1" = "certbot_dns_cloudflare" ]; then
     min=98
   elif [ "$1" = "certbot_dns_cloudxns" ]; then
-    min=99
+    min=98
   elif [ "$1" = "certbot_dns_digitalocean" ]; then
     min=98
   elif [ "$1" = "certbot_dns_dnsimple" ]; then
     min=98
   elif [ "$1" = "certbot_dns_dnsmadeeasy" ]; then
-    min=99
+    min=98
   elif [ "$1" = "certbot_dns_google" ]; then
     min=99
   elif [ "$1" = "certbot_dns_luadns" ]; then
     min=98
   elif [ "$1" = "certbot_dns_nsone" ]; then
-    min=99
+    min=98
   elif [ "$1" = "certbot_dns_rfc2136" ]; then
     min=99
   elif [ "$1" = "certbot_dns_route53" ]; then
-    min=99
+    min=91
   elif [ "$1" = "certbot_nginx" ]; then
     min=97
   elif [ "$1" = "letshelp_certbot" ]; then
@@ -50,17 +50,10 @@ cover () {
     exit 1
   fi
 
-  # "-c /dev/null" makes sure setup.cfg is not loaded (multiple
-  # --with-cover add up, --cover-erase must not be set for coveralls
-  # to get all the data); --with-cover scopes coverage to only
-  # specific package, positional argument scopes tests only to
-  # specific package directory; --cover-tests makes sure every tests
-  # is run (c.f. #403)
-  nosetests -c /dev/null --with-cover --cover-tests --cover-package  \
-            "$1" --cover-min-percentage="$min" "$1"
+  pytest --cov "$1" --cov-report term-missing \
+         --cov-fail-under "$min" --numprocesses auto --pyargs "$1"
 }
 
-rm -f .coverage  # --cover-erase is off, make sure stats are correct
 for pkg in $pkgs
 do
   cover $pkg
