@@ -5,6 +5,13 @@ cache:
         - $HOME/.cache/pip
 
 before_install:
+  # In the test-everything branch, we merge master before running tests.
+  # This is because we want test-everything to test the code in master nightly
+  # in a Travis cron, but with a different set of tests than master has
+  # in .travis.yml.
+  - cp .travis.yml /tmp/travis.yml
+  - git pull origin master --strategy=recursive --strategy-option=theirs --no-edit
+  - if ! git diff .travis.yml /tmp/travis.yml ; then echo "Please merge master into test-everything"; exit 1; fi
   - '([ $TRAVIS_OS_NAME == linux ] && dpkg -s libaugeas0) || (brew update && brew install augeas python3)'
 
 before_script:
@@ -17,11 +24,11 @@ matrix:
     - python: "2.7"
       env: TOXENV=lint
     - python: "2.7"
-      env: TOXENV=py27-oldest
+      env: TOXENV=py27-oldest BOULDER_INTEGRATION=1
       sudo: required
       services: docker
     - python: "2.6"
-      env: TOXENV=py26
+      env: TOXENV=py26 BOULDER_INTEGRATION=1
       sudo: required
       services: docker
     - python: "2.7"
@@ -67,23 +74,29 @@ matrix:
       env: TOXENV=apacheconftest
       sudo: required
     - python: "3.3"
-      env: TOXENV=py33
+      env: TOXENV=py33 BOULDER_INTEGRATION=1
       sudo: required
       services: docker
     - python: "3.4"
-      env: TOXENV=py34
+      env: TOXENV=py34 BOULDER_INTEGRATION=1
       sudo: required
       services: docker
     - python: "3.5"
-      env: TOXENV=py35
+      env: TOXENV=py35 BOULDER_INTEGRATION=1
       sudo: required
       services: docker
     - python: "3.6"
-      env: TOXENV=py36
+      env: TOXENV=py36 BOULDER_INTEGRATION=1
       sudo: required
       services: docker
     - python: "2.7"
       env: TOXENV=nginxroundtrip
+    - language: generic
+      env: TOXENV=py27
+      os: osx
+    - language: generic
+      env: TOXENV=py36
+      os: osx
 
 
 # Only build pushes to the master branch, PRs, and branches beginning with
