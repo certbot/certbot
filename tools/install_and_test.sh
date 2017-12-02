@@ -1,15 +1,9 @@
 #!/bin/sh -e
 # pip installs the requested packages in editable mode and runs unit tests on
 # them. Each package is installed and tested in the order they are provided
-# before the script moves on to the next package. If CERTBOT_NO_PIN is set not
-# set to 1, packages are installed using certbot-auto's requirements file as
-# constraints.
+# before the script moves on to the next package.
 
-if [ "$CERTBOT_NO_PIN" = 1 ]; then
-  pip_install="pip install -q -e"
-else
-  pip_install="$(dirname $0)/pip_install_editable.sh"
-fi
+pip_install="$(dirname $0)/pip_install_editable.sh"
 
 set -x
 for requirement in "$@" ; do
