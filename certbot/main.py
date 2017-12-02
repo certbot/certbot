@@ -254,7 +254,7 @@ def _find_lineage_for_domains_and_certname(config, domains, certname):
                     "possible certificate names.".format(certname))
 
 def _get_added_removed(after, before):
-    """Get lists of items removed from `before` 
+    """Get lists of items removed from `before`
     and a lists of items added to `after`
     """
     added = list(set(after) - set(before))
