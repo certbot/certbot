@@ -398,5 +398,21 @@ class RevocationTest(unittest.TestCase):
         hash(Revocation.from_json(self.rev.to_json()))
 
 
+class OrderResourceTest(unittest.TestCase):
+    """Tests for acme.messages.OrderResource."""
+
+    def setUp(self):
+        from acme.messages import OrderResource
+        self.regr = OrderResource(
+            body=mock.sentinel.body, uri=mock.sentinel.uri)
+
+    def test_to_partial_json(self):
+        self.assertEqual(self.regr.to_json(), {
+            'body': mock.sentinel.body,
+            'uri': mock.sentinel.uri,
+            'authorizations': None,
+        })
+
+
 if __name__ == '__main__':
     unittest.main()  # pragma: no cover
