@@ -464,6 +464,7 @@ class MockJSONDeSerializable(jose.JSONDeSerializable):
 
 class ClientNetworkTest(unittest.TestCase):
     """Tests for acme.client.ClientNetwork."""
+    # pylint: disable=too-many-public-methods
 
     def setUp(self):
         self.verify_ssl = mock.MagicMock()
@@ -491,6 +492,7 @@ class ClientNetworkTest(unittest.TestCase):
 
     def test_wrap_in_jws_v2(self):
         self.net.account = {'uri': 'acct-uri'}
+        # pylint: disable=protected-access
         jws_dump = self.net._wrap_in_jws(
             MockJSONDeSerializable('foo'), nonce=b'Tg', url="url")
         jws = acme_jws.JWS.json_loads(jws_dump)
