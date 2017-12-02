@@ -30,26 +30,12 @@ from certbot_nginx import tls_sni_01
 
 logger = logging.getLogger(__name__)
 
-REDIRECT_BLOCK = [[
-    ['\n    ', 'if', ' ', '($scheme', ' ', '!=', ' ', '"https")'],
-    [['\n        ', 'return', ' ', '301', ' ', 'https://$host$request_uri'],
-     '\n    ']
-], ['\n']]
-
-NO_IF_REDIRECT_BLOCK = [
+REDIRECT_BLOCK = [
     ['\n    ', 'return', ' ', '301', ' ', 'https://$host$request_uri'],
     ['\n']
 ]
 
 REDIRECT_COMMENT_BLOCK = [
-    ['\n    ', '#', ' Redirect non-https traffic to https'],
-    ['\n    ', '#', ' if ($scheme != "https") {'],
-    ['\n    ', '#', '     return 301 https://$host$request_uri;'],
-    ['\n    ', '#', ' } # managed by Certbot'],
-    ['\n']
-]
-
-NO_IF_REDIRECT_COMMENT_BLOCK = [
     ['\n    ', '#', ' Redirect non-https traffic to https'],
     ['\n    ', '#', ' return 301 https://$host$request_uri;'],
     ['\n']
@@ -245,18 +231,9 @@ class NginxConfigurator(common.Installer):
                              "https://nginx.org/en/docs/http/server_names.html") % (target_name))
         # Note: if we are enhancing with ocsp, vhost should already be ssl.
         if not vhost.ssl:
-            vhost = self._duplicate_and_make_server_ssl(vhost)
+            vhost = self._make_server_ssl(vhost)
 
         return vhost
-
-    def _duplicate_and_make_server_ssl(self, vhost):
-        if vhost.ssl_copy is None:
-            new_vhost = self.parser.duplicate_vhost(vhost, delete_default=False)
-            self._make_server_ssl(new_vhost)
-            vhost.ssl_copy = new_vhost
-        else:
-            new_vhost = vhost.ssl_copy
-        return new_vhost
 
     def ipv6_info(self, port):
         """Returns tuple of booleans (ipv6_active, ipv6only_present)
@@ -289,8 +266,6 @@ class NginxConfigurator(common.Installer):
             self.new_vhost.names = set()
 
         self._add_server_name_to_vhost(self.new_vhost, domain)
-        if self.new_vhost.ssl_copy is not None:
-            self._add_server_name_to_vhost(self.new_vhost.ssl_copy, domain)
         return self.new_vhost
 
     def _add_server_name_to_vhost(self, vhost, domain):
@@ -508,8 +483,7 @@ class NginxConfigurator(common.Installer):
     def _make_server_ssl(self, vhost):
         """Make a server SSL.
 
-        Make a server SSL by removing all existing listen directives and
-        adding new listen and SSL directives.
+        Make a server SSL by adding new listen and SSL directives.
 
         :param vhost: The vhost to add SSL to.
         :type vhost: :class:`~certbot_nginx.obj.VirtualHost`
@@ -518,6 +492,12 @@ class NginxConfigurator(common.Installer):
         ipv6info = self.ipv6_info(self.config.tls_sni_01_port)
         ipv6_block = ['']
         ipv4_block = ['']
+
+        # If the vhost was implicitly listening on the default Nginx port,
+        # have it continue to do so.
+        if len(vhost.addrs) == 0:
+            listen_block = [['\n    ', 'listen', ' ', self.DEFAULT_LISTEN_PORT]]
+            self.parser.add_server_directives(vhost, listen_block, replace=False)
 
         if vhost.ipv6_enabled():
             ipv6_block = ['\n    ',
@@ -534,10 +514,6 @@ class NginxConfigurator(common.Installer):
                           'listen',
                           ' ',
                           '{0} ssl'.format(self.config.tls_sni_01_port)]
-
-        # remove existing listen directives (none of which are ssl)
-        self.parser.remove_server_directives(vhost, 'listen')
-
 
         snakeoil_cert, snakeoil_key = self._get_snakeoil_paths()
 
@@ -582,29 +558,19 @@ class NginxConfigurator(common.Installer):
 
     def _has_certbot_redirect(self, vhost):
         test_redirect_block = _test_block_from_block(REDIRECT_BLOCK)
-        test_no_if_redirect_block = _test_block_from_block(NO_IF_REDIRECT_BLOCK)
-        return (vhost.contains_list(test_redirect_block)
-            or vhost.contains_list(test_no_if_redirect_block))
+        return vhost.contains_list(test_redirect_block)
 
     def _has_certbot_redirect_comment(self, vhost):
         test_redirect_comment_block = _test_block_from_block(REDIRECT_COMMENT_BLOCK)
-        test_no_if_redirect_commect_block = _test_block_from_block(NO_IF_REDIRECT_COMMENT_BLOCK)
-        return (vhost.contains_list(test_redirect_comment_block)
-            or vhost.contains_list(test_no_if_redirect_commect_block))
+        return vhost.contains_list(test_redirect_comment_block)
 
-    def _add_redirect_block(self, vhost, active=True, use_if=True):
+    def _add_redirect_block(self, vhost, active=True):
         """Add redirect directive to vhost
         """
         if active:
-            if use_if:
-                redirect_block = REDIRECT_BLOCK
-            else:
-                redirect_block = NO_IF_REDIRECT_BLOCK
+            redirect_block = REDIRECT_BLOCK
         else:
-            if use_if:
-                redirect_block = REDIRECT_COMMENT_BLOCK
-            else:
-                redirect_block = NO_IF_REDIRECT_COMMENT_BLOCK
+            redirect_block = REDIRECT_COMMENT_BLOCK
 
         self.parser.add_server_directives(
             vhost, redirect_block, replace=False)
@@ -612,7 +578,8 @@ class NginxConfigurator(common.Installer):
     def _enable_redirect(self, domain, unused_options):
         """Redirect all equivalent HTTP traffic to ssl_vhost.
 
-        Add rewrite directive to non https traffic
+        If the vhost is listening plaintextishly, separate out the
+        relevant directives into a new server block and add a rewrite directive.
 
         .. note:: This function saves the configuration
 
@@ -625,6 +592,9 @@ class NginxConfigurator(common.Installer):
         vhost = None
         # If there are blocks listening plaintextishly on self.DEFAULT_LISTEN_PORT,
         # choose the most name-matching one.
+
+        # TODO: should we be adding redirects to all matching blocks?
+
         vhost = self.choose_redirect_vhost(domain, port)
 
         if vhost is None:
@@ -632,18 +602,36 @@ class NginxConfigurator(common.Installer):
                 self.DEFAULT_LISTEN_PORT)
             return
 
+        if vhost.ssl:
+            new_vhost = self.parser.duplicate_vhost(vhost,
+                only_directives=['listen', 'server_name'])
+
+            def _ssl_match_func(directive):
+                return 'ssl' in directive
+
+            def _no_ssl_match_func(directive):
+                return 'ssl' not in directive
+
+            # remove all ssl addresses from the new block
+            self.parser.remove_server_directives(new_vhost, 'listen', match_func = _ssl_match_func)
+
+            # remove all non-ssl addresses from the existing block
+            self.parser.remove_server_directives(vhost, 'listen', match_func=_no_ssl_match_func)
+
+            vhost = new_vhost
+
         if self._has_certbot_redirect(vhost):
             logger.info("Traffic on port %s already redirecting to ssl in %s",
                 self.DEFAULT_LISTEN_PORT, vhost.filep)
         elif vhost.has_redirect():
             if not self._has_certbot_redirect_comment(vhost):
-                self._add_redirect_block(vhost, active=False, use_if=(vhost.ssl_copy is None))
+                self._add_redirect_block(vhost, active=False)
             logger.info("The appropriate server block is already redirecting "
                         "traffic. To enable redirect anyway, uncomment the "
                         "redirect lines in %s.", vhost.filep)
         else:
             # Redirect plaintextish host to https
-            self._add_redirect_block(vhost, active=True, use_if=(vhost.ssl_copy is None))
+            self._add_redirect_block(vhost, active=True)
             logger.info("Redirecting all traffic on port %s to ssl in %s",
                 self.DEFAULT_LISTEN_PORT, vhost.filep)
 

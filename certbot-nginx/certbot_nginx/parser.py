@@ -31,7 +31,6 @@ class NginxParser(object):
         self.parsed = {}
         self.root = os.path.abspath(root)
         self.config_root = self._find_config_root()
-        self._vhosts = None
 
         # Parse nginx.conf and included files.
         # TODO: Check sites-available/ as well. For now, the configurator does
@@ -42,7 +41,6 @@ class NginxParser(object):
         """Loads Nginx files into a parsed tree.
 
         """
-        self._vhosts = None
         self.parsed = {}
         self._parse_recursively(self.config_root)
 
@@ -135,8 +133,6 @@ class NginxParser(object):
         :rtype: list
 
         """
-        if self._vhosts is not None:
-            return self._vhosts
         enabled = True  # We only look at enabled vhosts for now
         servers = self._get_raw_servers()
 
@@ -156,8 +152,6 @@ class NginxParser(object):
                 vhosts.append(vhost)
 
         self._update_vhosts_addrs_ssl(vhosts)
-
-        self._vhosts = vhosts
 
         return vhosts
 
@@ -304,14 +298,25 @@ class NginxParser(object):
         self._modify_server_directives(vhost,
             functools.partial(_add_directives, directives, replace))
 
-    def remove_server_directives(self, vhost, directive_name):
+    def remove_server_directives(self, vhost, directive_name, match_func=None):
         """Remove all directives of type directive_name.
 
         :param :class:`~certbot_nginx.obj.VirtualHost` vhost: The vhost
             to remove directives from
         :param string directive_name: The directive type to remove
+        :param callable match_func: Function of the directive that returns true for directives
+            to be deleted.
         """
-        self._modify_server_directives(vhost, functools.partial(_remove_directives, directive_name))
+        self._modify_server_directives(vhost,
+            functools.partial(_remove_directives, directive_name, match_func))
+
+    def _update_vhost_based_on_new_directives(self, vhost, directives_list):
+        new_server = self._get_included_directives(directives_list)
+        parsed_server = self.parse_server(new_server)
+        vhost.addrs = parsed_server['addrs']
+        vhost.ssl = parsed_server['ssl']
+        vhost.names = parsed_server['names']
+        vhost.raw = new_server
 
     def _modify_server_directives(self, vhost, block_func):
         filename = vhost.filep
@@ -324,23 +329,19 @@ class NginxParser(object):
             result = result[1]
             block_func(result)
 
-            # update vhost based on new directives
-            new_server = self._get_included_directives(result)
-            parsed_server = self.parse_server(new_server)
-            vhost.addrs = parsed_server['addrs']
-            vhost.ssl = parsed_server['ssl']
-            vhost.names = parsed_server['names']
-            vhost.raw = new_server
+            self._update_vhost_based_on_new_directives(vhost, result)
         except errors.MisconfigurationError as err:
             raise errors.MisconfigurationError("Problem in %s: %s" % (filename, str(err)))
 
-    def duplicate_vhost(self, vhost_template, delete_default=True):
+    def duplicate_vhost(self, vhost_template, delete_default=True, only_directives=None):
         """Duplicate the vhost in the configuration files.
 
         :param :class:`~certbot_nginx.obj.VirtualHost` vhost_template: The vhost
             whose information we copy
         :param bool delete_default: If we should remove default_server
             from listen directives in the block.
+        :param list only_directives: If it exists, only duplicate the named directives. Only
+            looks at first level of depth; does not expand includes.
 
         :returns: A vhost object for the newly created vhost
         :rtype: :class:`~certbot_nginx.obj.VirtualHost`
@@ -348,12 +349,23 @@ class NginxParser(object):
         # TODO: https://github.com/certbot/certbot/issues/5185
         # put it in the same file as the template, at the same level
         all_vhosts = self.get_vhosts()
+        new_vhost = copy.deepcopy(vhost_template)
+
         enclosing_block = self.parsed[vhost_template.filep]
         for index in vhost_template.path[:-1]:
             enclosing_block = enclosing_block[index]
         raw_in_parsed = copy.deepcopy(enclosing_block[vhost_template.path[-1]])
+
+        if only_directives is not None:
+            new_directives = nginxparser.UnspacedList([])
+            for directive in raw_in_parsed[1]:
+                if directive[0] in only_directives:
+                    new_directives.append(directive)
+            raw_in_parsed[1] = new_directives
+
+            self._update_vhost_based_on_new_directives(new_vhost, new_directives)
+
         enclosing_block.append(raw_in_parsed)
-        new_vhost = copy.deepcopy(vhost_template)
         new_vhost.path[-1] = len(enclosing_block) - 1
         if delete_default:
             for addr in new_vhost.addrs:
@@ -362,7 +374,6 @@ class NginxParser(object):
                 if (len(directive) > 0 and directive[0] == 'listen'
                     and 'default_server' in directive):
                     del directive[directive.index('default_server')]
-        all_vhosts.append(new_vhost)
         return new_vhost
 
 def _parse_ssl_options(ssl_options):
@@ -581,11 +592,11 @@ def _comment_out_directive(block, location, include_location):
 
     block[location] = new_dir[0] # set the now-single-line-comment directive back in place
 
-def _find_location(block, directive_name):
+def _find_location(block, directive_name, match_func=None):
     """Finds the index of the first instance of directive_name in block.
        If no line exists, use None."""
     return next((index for index, line in enumerate(block) \
-        if line and line[0] == directive_name), None)
+        if line and line[0] == directive_name and (match_func is None or match_func(line))), None)
 
 def _add_directive(block, directive, replace):
     """Adds or replaces a single directive in a config block.
@@ -647,11 +658,11 @@ def _add_directive(block, directive, replace):
     elif block[location] != directive:
         raise errors.MisconfigurationError(err_fmt.format(directive, block[location]))
 
-def _remove_directives(directive_name, block):
-    """Removes directives of name directive_name from a config block.
+def _remove_directives(directive_name, match_func, block):
+    """Removes directives of name directive_name from a config block if match_func matches.
     """
     while True:
-        location = _find_location(block, directive_name)
+        location = _find_location(block, directive_name, match_func=match_func)
         if location is None:
             return
         del block[location]

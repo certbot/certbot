@@ -154,7 +154,6 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
     :ivar bool enabled: Virtual host is enabled
     :ivar list path: The indices into the parsed file used to access
         the server block defining the vhost
-    :ivar bool ssl_copy: The duplicated, ssl-ified copy of this vhost
 
     """
 
@@ -168,7 +167,6 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
         self.enabled = enabled
         self.raw = raw
         self.path = path
-        self.ssl_copy = None
 
     def __str__(self):
         addr_str = ", ".join(str(addr) for addr in sorted(self.addrs, key=str))
