@@ -14,7 +14,7 @@ full_constraints="$temp_dir/full_constraints.txt"
 partial_constraints="$temp_dir/partial_constraints.txt"
 
 if [ "$CERTBOT_OLDEST" = 1 ]; then
-    cat "$tools_dir/oldest_constraints.txt" > "$partial_constraints"
+    cp "$tools_dir/oldest_constraints.txt" "$partial_constraints"
 else
     repo_root=$(dirname "$tools_dir")
     certbot_requirements="$repo_root/letsencrypt-auto-source/pieces/dependency-requirements.txt"
