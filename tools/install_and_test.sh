@@ -6,11 +6,12 @@
 # constraints.
 
 if [ "$CERTBOT_NO_PIN" = 1 ]; then
-  pip_install="pip install -e"
+  pip_install="pip install -q -e"
 else
   pip_install="$(dirname $0)/pip_install_editable.sh"
 fi
 
+set -x
 for requirement in "$@" ; do
   $pip_install $requirement
   pkg=$(echo $requirement | cut -f1 -d\[)  # remove any extras such as [dev]
