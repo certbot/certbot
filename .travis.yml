@@ -13,15 +13,15 @@ before_script:
 matrix:
   include:
     - python: "2.7"
-      env: TOXENV=cover
+      env: TOXENV=cover FYI="this also tests py27"
     - python: "2.7"
       env: TOXENV=lint
     - python: "2.7"
-      env: TOXENV=py27-oldest BOULDER_INTEGRATION=1
+      env: TOXENV=py27-oldest
       sudo: required
       services: docker
     - python: "2.6"
-      env: TOXENV=py26 BOULDER_INTEGRATION=1
+      env: TOXENV=py26
       sudo: required
       services: docker
     - python: "2.7"
@@ -67,29 +67,23 @@ matrix:
       env: TOXENV=apacheconftest
       sudo: required
     - python: "3.3"
-      env: TOXENV=py33 BOULDER_INTEGRATION=1
+      env: TOXENV=py33
       sudo: required
       services: docker
     - python: "3.4"
-      env: TOXENV=py34 BOULDER_INTEGRATION=1
+      env: TOXENV=py34
       sudo: required
       services: docker
     - python: "3.5"
-      env: TOXENV=py35 BOULDER_INTEGRATION=1
+      env: TOXENV=py35
       sudo: required
       services: docker
     - python: "3.6"
-      env: TOXENV=py36 BOULDER_INTEGRATION=1
+      env: TOXENV=py36
       sudo: required
       services: docker
     - python: "2.7"
       env: TOXENV=nginxroundtrip
-    - language: generic
-      env: TOXENV=py27
-      os: osx
-    - language: generic
-      env: TOXENV=py36
-      os: osx
 
 
 # Only build pushes to the master branch, PRs, and branches beginning with
