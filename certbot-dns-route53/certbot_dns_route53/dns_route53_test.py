@@ -193,7 +193,7 @@ class ClientTest(unittest.TestCase):
 
         self.client._wait_for_change(1)
 
-        self.client.r53.get_change.assert_called()
+        self.assertTrue(self.client.r53.get_change.called)
 
 
 if __name__ == "__main__":
