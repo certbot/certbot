@@ -613,7 +613,7 @@ class NginxConfigurator(common.Installer):
                 return 'ssl' not in directive
 
             # remove all ssl addresses from the new block
-            self.parser.remove_server_directives(new_vhost, 'listen', match_func = _ssl_match_func)
+            self.parser.remove_server_directives(new_vhost, 'listen', match_func=_ssl_match_func)
 
             # remove all non-ssl addresses from the existing block
             self.parser.remove_server_directives(vhost, 'listen', match_func=_no_ssl_match_func)
