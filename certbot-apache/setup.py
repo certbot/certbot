@@ -63,7 +63,7 @@ setup(
     },
     entry_points={
         'certbot.plugins': [
-            'apache = certbot_apache.configurator:ApacheConfigurator',
+            'apache = certbot_apache.entrypoint:ENTRYPOINT',
         ],
     },
     test_suite='certbot_apache',
