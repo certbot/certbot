@@ -185,18 +185,17 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         return authzr
 
     def _order_resource_from_response(self, response, uri=None):
+        body = messages.Order.from_json(response.json())
         authorizations = []
-        for authz_uri in response.json()["authorizations"]:
-            authz_response = self.net.get(authz_uri)
-            authorizations.append(self._authzr_from_response(authz_response))
+        for url in body.authorizations:
+            authorizations.append(self._authzr_from_response(self.net.get(url)))
         fullchain_pem = None
-        if "certificate" in response.json():
-          certificate_response = self.net.get(response.json()["certificate"],
-            content_type=None)
-          if certificate_response.ok:
-            fullchain_pem = certificate_response.text
+        if body.certificate is not None:
+            certificate_response = self.net.get(body.certificate, content_type=None)
+            if certificate_response.ok:
+                fullchain_pem = certificate_response.text
         return messages.OrderResource(
-            body=messages.Order.from_json(response.json()),
+            body=body,
             uri=response.headers.get('Location', uri),
             fullchain_pem=fullchain_pem,
             authorizations=authorizations)
