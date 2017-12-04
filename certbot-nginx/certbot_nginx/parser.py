@@ -359,7 +359,7 @@ class NginxParser(object):
         if only_directives is not None:
             new_directives = nginxparser.UnspacedList([])
             for directive in raw_in_parsed[1]:
-                if directive[0] in only_directives:
+                if len(directive) > 0 and directive[0] in only_directives:
                     new_directives.append(directive)
             raw_in_parsed[1] = new_directives
 

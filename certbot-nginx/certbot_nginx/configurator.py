@@ -231,7 +231,7 @@ class NginxConfigurator(common.Installer):
                              "https://nginx.org/en/docs/http/server_names.html") % (target_name))
         # Note: if we are enhancing with ocsp, vhost should already be ssl.
         if not vhost.ssl:
-            vhost = self._make_server_ssl(vhost)
+            self._make_server_ssl(vhost)
 
         return vhost
 
