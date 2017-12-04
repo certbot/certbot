@@ -181,9 +181,7 @@ class VirtualHostTest(unittest.TestCase):
             ['#', ' managed by Certbot'],
             ['ssl_certificate_key', '/etc/letsencrypt/live/two.functorkitten.xyz/privkey.pem'],
             ['#', ' managed by Certbot'],
-            [['if', '($scheme', '!=', '"https")'],
-             [['return', '301', 'https://$host$request_uri']]
-            ],
+            ['return', '301', 'https://$host$request_uri'],
             ['#', ' managed by Certbot'], []]
         vhost_haystack = VirtualHost(
             "filp",
