@@ -348,7 +348,6 @@ class NginxParser(object):
         """
         # TODO: https://github.com/certbot/certbot/issues/5185
         # put it in the same file as the template, at the same level
-        all_vhosts = self.get_vhosts()
         new_vhost = copy.deepcopy(vhost_template)
 
         enclosing_block = self.parsed[vhost_template.filep]
