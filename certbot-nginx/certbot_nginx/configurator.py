@@ -503,7 +503,9 @@ class NginxConfigurator(common.Installer):
             ipv6_block = ['\n    ',
                           'listen',
                           ' ',
-                          '[::]:{0} ssl'.format(self.config.tls_sni_01_port)]
+                          '[::]:{0}'.format(self.config.tls_sni_01_port),
+                          ' ',
+                          'ssl']
             if not ipv6info[1]:
                 # ipv6only=on is absent in global config
                 ipv6_block.append(' ')
@@ -513,7 +515,9 @@ class NginxConfigurator(common.Installer):
             ipv4_block = ['\n    ',
                           'listen',
                           ' ',
-                          '{0} ssl'.format(self.config.tls_sni_01_port)]
+                          '{0}'.format(self.config.tls_sni_01_port),
+                          ' ',
+                          'ssl']
 
         snakeoil_cert, snakeoil_key = self._get_snakeoil_paths()
 
