@@ -120,17 +120,18 @@ class BasicParserTest(util.ParserTest):
 
     @mock.patch("certbot_apache.parser.ApacheParser.find_dir")
     @mock.patch("certbot_apache.parser.ApacheParser.get_arg")
-    def test_init_modules_bad_syntax(self, mock_arg, mock_find):
+    def test_parse_modules_bad_syntax(self, mock_arg, mock_find):
         mock_find.return_value = ["1", "2", "3", "4", "5", "6", "7", "8"]
         mock_arg.return_value = None
         with mock.patch("certbot_apache.parser.logger") as mock_logger:
-            self.parser.init_modules()
+            self.parser.parse_modules()
             # Make sure that we got None return value and logged the file
             self.assertTrue(mock_logger.debug.called)
 
+    @mock.patch("certbot_apache.parser.ApacheParser.find_dir")
     @mock.patch("certbot_apache.parser.ApacheParser._get_runtime_cfg")
-    def test_update_runtime_variables(self, mock_cfg):
-        mock_cfg.return_value = (
+    def test_update_runtime_variables(self, mock_cfg, _):
+        define_val = (
             'ServerRoot: "/etc/apache2"\n'
             'Main DocumentRoot: "/var/www"\n'
             'Main ErrorLog: "/var/log/apache2/error.log"\n'
@@ -147,11 +148,113 @@ class BasicParserTest(util.ParserTest):
             'User: name="www-data" id=33 not_used\n'
             'Group: name="www-data" id=33 not_used\n'
         )
+        inc_val = (
+            'Included configuration files:\n'
+            '  (*) /etc/apache2/apache2.conf\n'
+            '    (146) /etc/apache2/mods-enabled/access_compat.load\n'
+            '    (146) /etc/apache2/mods-enabled/alias.load\n'
+            '    (146) /etc/apache2/mods-enabled/auth_basic.load\n'
+            '    (146) /etc/apache2/mods-enabled/authn_core.load\n'
+            '    (146) /etc/apache2/mods-enabled/authn_file.load\n'
+            '    (146) /etc/apache2/mods-enabled/authz_core.load\n'
+            '    (146) /etc/apache2/mods-enabled/authz_host.load\n'
+            '    (146) /etc/apache2/mods-enabled/authz_user.load\n'
+            '    (146) /etc/apache2/mods-enabled/autoindex.load\n'
+            '    (146) /etc/apache2/mods-enabled/deflate.load\n'
+            '    (146) /etc/apache2/mods-enabled/dir.load\n'
+            '    (146) /etc/apache2/mods-enabled/env.load\n'
+            '    (146) /etc/apache2/mods-enabled/filter.load\n'
+            '    (146) /etc/apache2/mods-enabled/mime.load\n'
+            '    (146) /etc/apache2/mods-enabled/mpm_event.load\n'
+            '    (146) /etc/apache2/mods-enabled/negotiation.load\n'
+            '    (146) /etc/apache2/mods-enabled/reqtimeout.load\n'
+            '    (146) /etc/apache2/mods-enabled/setenvif.load\n'
+            '    (146) /etc/apache2/mods-enabled/socache_shmcb.load\n'
+            '    (146) /etc/apache2/mods-enabled/ssl.load\n'
+            '    (146) /etc/apache2/mods-enabled/status.load\n'
+            '    (147) /etc/apache2/mods-enabled/alias.conf\n'
+            '    (147) /etc/apache2/mods-enabled/autoindex.conf\n'
+            '    (147) /etc/apache2/mods-enabled/deflate.conf\n'
+        )
+        mod_val = (
+            'Loaded Modules:\n'
+            ' core_module (static)\n'
+            ' so_module (static)\n'
+            ' watchdog_module (static)\n'
+            ' http_module (static)\n'
+            ' log_config_module (static)\n'
+            ' logio_module (static)\n'
+            ' version_module (static)\n'
+            ' unixd_module (static)\n'
+            ' access_compat_module (shared)\n'
+            ' alias_module (shared)\n'
+            ' auth_basic_module (shared)\n'
+            ' authn_core_module (shared)\n'
+            ' authn_file_module (shared)\n'
+            ' authz_core_module (shared)\n'
+            ' authz_host_module (shared)\n'
+            ' authz_user_module (shared)\n'
+            ' autoindex_module (shared)\n'
+            ' deflate_module (shared)\n'
+            ' dir_module (shared)\n'
+            ' env_module (shared)\n'
+            ' filter_module (shared)\n'
+            ' mime_module (shared)\n'
+            ' mpm_event_module (shared)\n'
+            ' negotiation_module (shared)\n'
+            ' reqtimeout_module (shared)\n'
+            ' setenvif_module (shared)\n'
+            ' socache_shmcb_module (shared)\n'
+            ' ssl_module (shared)\n'
+            ' status_module (shared)\n'
+        )
+
+        def mock_get_vars(cmd):
+            """Mock command output"""
+            if cmd[-1] == "DUMP_RUN_CFG":
+                return define_val
+            elif cmd[-1] == "DUMP_INCLUDES":
+                return inc_val
+            elif cmd[-1] == "DUMP_MODULES":
+                return mod_val
+
+        mock_cfg.side_effect = mock_get_vars
+
         expected_vars = {"TEST": "", "U_MICH": "", "TLS": "443",
                          "example_path": "Documents/path"}
 
-        self.parser.update_runtime_variables()
-        self.assertEqual(self.parser.variables, expected_vars)
+        self.parser.modules = set()
+        with mock.patch(
+            "certbot_apache.parser.ApacheParser.parse_file") as mock_parse:
+            self.parser.update_runtime_variables()
+            self.assertEqual(self.parser.variables, expected_vars)
+            self.assertEqual(len(self.parser.modules), 58)
+            # None of the includes in inc_val should be in parsed paths.
+            # Make sure we tried to include them all.
+            self.assertEqual(mock_parse.call_count, 25)
+
+    @mock.patch("certbot_apache.parser.ApacheParser.find_dir")
+    @mock.patch("certbot_apache.parser.ApacheParser._get_runtime_cfg")
+    def test_update_runtime_variables_alt_values(self, mock_cfg, _):
+        inc_val = (
+            'Included configuration files:\n'
+            '  (*) {0}\n'
+            '    (146) /etc/apache2/mods-enabled/access_compat.load\n'
+            '    (146) {1}/mods-enabled/alias.load\n'
+        ).format(self.parser.loc["root"],
+                 os.path.dirname(self.parser.loc["root"]))
+
+        mock_cfg.return_value = inc_val
+        self.parser.modules = set()
+
+        with mock.patch(
+            "certbot_apache.parser.ApacheParser.parse_file") as mock_parse:
+            self.parser.update_runtime_variables()
+            # No matching modules should have been found
+            self.assertEqual(len(self.parser.modules), 0)
+            # Only one of the three includes do not exist in already parsed
+            # path derived from root configuration Include statements
+            self.assertEqual(mock_parse.call_count, 1)
 
     @mock.patch("certbot_apache.parser.ApacheParser._get_runtime_cfg")
     def test_update_runtime_vars_bad_output(self, mock_cfg):
@@ -162,7 +265,7 @@ class BasicParserTest(util.ParserTest):
         self.assertRaises(
             errors.PluginError, self.parser.update_runtime_variables)
 
-    @mock.patch("certbot_apache.constants.os_constant")
+    @mock.patch("certbot_apache.configurator.ApacheConfigurator.constant")
     @mock.patch("certbot_apache.parser.subprocess.Popen")
     def test_update_runtime_vars_bad_ctl(self, mock_popen, mock_const):
         mock_popen.side_effect = OSError
@@ -198,7 +301,7 @@ class ParserInitTest(util.ApacheTest):
         self.assertRaises(
             errors.PluginError,
             ApacheParser, self.aug, os.path.relpath(self.config_path),
-            "/dummy/vhostpath", version=(2, 2, 22))
+            "/dummy/vhostpath", version=(2, 2, 22), configurator=self.config)
 
     def test_root_normalized(self):
         from certbot_apache.parser import ApacheParser
@@ -210,7 +313,7 @@ class ParserInitTest(util.ApacheTest):
                 "debian_apache_2_4/////multiple_vhosts/../multiple_vhosts/apache2")
 
             parser = ApacheParser(self.aug, path,
-                                  "/dummy/vhostpath")
+                                  "/dummy/vhostpath", configurator=self.config)
 
         self.assertEqual(parser.root, self.config_path)
 
@@ -220,7 +323,7 @@ class ParserInitTest(util.ApacheTest):
                         "update_runtime_variables"):
             parser = ApacheParser(
                 self.aug, os.path.relpath(self.config_path),
-                "/dummy/vhostpath")
+                "/dummy/vhostpath", configurator=self.config)
 
         self.assertEqual(parser.root, self.config_path)
 
@@ -230,7 +333,7 @@ class ParserInitTest(util.ApacheTest):
                         "update_runtime_variables"):
             parser = ApacheParser(
                 self.aug, self.config_path + os.path.sep,
-                "/dummy/vhostpath")
+                "/dummy/vhostpath", configurator=self.config)
         self.assertEqual(parser.root, self.config_path)
 
 
