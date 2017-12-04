@@ -3,6 +3,7 @@
 import fnmatch
 import logging
 import os
+import pkg_resources
 import re
 import socket
 import time
@@ -19,6 +20,7 @@ from certbot import util
 from certbot.plugins import common
 from certbot.plugins.util import path_surgery
 
+from certbot_apache import apache_util
 from certbot_apache import augeas_configurator
 from certbot_apache import constants
 from certbot_apache import display_ops
@@ -85,27 +87,50 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
     description = "Apache Web Server plugin - Beta"
 
+    OS_DEFAULTS = dict(
+        server_root="/etc/apache2",
+        vhost_root="/etc/apache2/sites-available",
+        vhost_files="*",
+        logs_root="/var/log/apache2",
+        version_cmd=['apache2ctl', '-v'],
+        apache_cmd="apache2ctl",
+        restart_cmd=['apache2ctl', 'graceful'],
+        conftest_cmd=['apache2ctl', 'configtest'],
+        enmod=None,
+        dismod=None,
+        le_vhost_ext="-le-ssl.conf",
+        handle_mods=False,
+        handle_sites=False,
+        challenge_location="/etc/apache2",
+        MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
+            "certbot_apache", "options-ssl-apache.conf")
+    )
+
+    def constant(self, key):
+        """Get constant for OS_DEFAULTS"""
+        return self.OS_DEFAULTS.get(key)
+
     @classmethod
     def add_parser_arguments(cls, add):
-        add("enmod", default=constants.os_constant("enmod"),
+        add("enmod", default=cls.OS_DEFAULTS["enmod"],
             help="Path to the Apache 'a2enmod' binary.")
-        add("dismod", default=constants.os_constant("dismod"),
+        add("dismod", default=cls.OS_DEFAULTS["dismod"],
             help="Path to the Apache 'a2dismod' binary.")
-        add("le-vhost-ext", default=constants.os_constant("le_vhost_ext"),
+        add("le-vhost-ext", default=cls.OS_DEFAULTS["le_vhost_ext"],
             help="SSL vhost configuration extension.")
-        add("server-root", default=constants.os_constant("server_root"),
+        add("server-root", default=cls.OS_DEFAULTS["server_root"],
             help="Apache server root directory.")
         add("vhost-root", default=None,
             help="Apache server VirtualHost configuration root")
-        add("logs-root", default=constants.os_constant("logs_root"),
+        add("logs-root", default=cls.OS_DEFAULTS["logs_root"],
             help="Apache server logs directory")
         add("challenge-location",
-            default=constants.os_constant("challenge_location"),
+            default=cls.OS_DEFAULTS["challenge_location"],
             help="Directory path for challenge configuration.")
-        add("handle-modules", default=constants.os_constant("handle_mods"),
+        add("handle-modules", default=cls.OS_DEFAULTS["handle_mods"],
             help="Let installer handle enabling required modules for you." +
                  "(Only Ubuntu/Debian currently)")
-        add("handle-sites", default=constants.os_constant("handle_sites"),
+        add("handle-sites", default=cls.OS_DEFAULTS["handle_sites"],
             help="Let installer handle enabling sites for you." +
                  "(Only Ubuntu/Debian currently)")
         util.add_deprecated_argument(add, argument_name="ctl", nargs=1)
@@ -166,7 +191,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             raise errors.NoInstallationError("Problem in Augeas installation")
 
         # Verify Apache is installed
-        restart_cmd = constants.os_constant("restart_cmd")[0]
+        restart_cmd = self.constant("restart_cmd")[0]
         if not util.exe_exists(restart_cmd):
             if not path_surgery(restart_cmd):
                 raise errors.NoInstallationError(
@@ -192,20 +217,20 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         # Parse vhost-root if defined on cli
         if not self.conf("vhost-root"):
-            self.vhostroot = constants.os_constant("vhost_root")
+            self.vhostroot = self.constant("vhost_root")
         else:
             self.vhostroot = os.path.abspath(self.conf("vhost-root"))
 
-        self.parser = parser.ApacheParser(
-            self.aug, self.conf("server-root"), self.conf("vhost-root"),
-            self.version, configurator=self)
+        self.parser = self.get_parser()
+
         # Check for errors in parsing files with Augeas
         self.check_parsing_errors("httpd.aug")
 
         # Get all of the available vhosts
         self.vhosts = self.get_virtual_hosts()
 
-        install_ssl_options_conf(self.mod_ssl_conf, self.updated_mod_ssl_conf_digest)
+        self.install_ssl_options_conf(self.mod_ssl_conf,
+                                      self.updated_mod_ssl_conf_digest)
 
         # Prevent two Apache plugins from modifying a config at once
         try:
@@ -229,6 +254,12 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             return False
         self.aug.remove("/test/path")
         return matches
+
+    def get_parser(self):
+        """Initializes the ApacheParser"""
+        return parser.ApacheParser(
+            self.aug, self.conf("server-root"), self.conf("vhost-root"),
+            self.version, configurator=self)
 
     def deploy_cert(self, domain, cert_path, key_path,
                     chain_path=None, fullchain_path=None):
@@ -585,7 +616,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             if addr.get_port() == "443":
                 is_ssl = True
 
-        filename = get_file_path(self.aug.get("/augeas/files%s/path" % get_file_path(path)))
+        filename = apache_util.get_file_path(
+            self.aug.get("/augeas/files%s/path" % apache_util.get_file_path(path)))
         if filename is None:
             return None
 
@@ -624,7 +656,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 new_vhost = self._create_vhost(path)
                 if not new_vhost:
                     continue
-                internal_path = get_internal_aug_path(new_vhost.path)
+                internal_path = apache_util.get_internal_aug_path(new_vhost.path)
                 realpath = os.path.realpath(new_vhost.filep)
                 if realpath not in file_paths:
                     file_paths[realpath] = new_vhost.filep
@@ -640,7 +672,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                     for v in vhs:
                         if v.filep == file_paths[realpath]:
                             internal_paths[realpath].remove(
-                                get_internal_aug_path(v.path))
+                                apache_util.get_internal_aug_path(v.path))
                         else:
                             new_vhs.append(v)
                     vhs = new_vhs
@@ -828,7 +860,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         Duplicates vhost and adds default ssl options
         New vhost will reside as (nonssl_vhost.path) +
-        ``certbot_apache.constants.os_constant("le_vhost_ext")``
+        ``self.constant("le_vhost_ext")``
 
         .. note:: This function saves the configuration
 
@@ -1702,17 +1734,13 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         return redirects
 
-
     def enable_site(self, vhost):
         """Enables an available site, Apache reload required.
 
         .. note:: Does not make sure that the site correctly works or that all
                   modules are enabled appropriately.
-
-        .. todo:: This function should number subdomains before the domain
-                  vhost
-
-        .. todo:: Make sure link is not broken...
+        .. note:: The distribution specific override replaces functionality
+                  of this method where available.
 
         :param vhost: vhost to enable
         :type vhost: :class:`~certbot_apache.obj.VirtualHost`
@@ -1724,39 +1752,16 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if vhost.enabled:
             return
 
-        # Handle non-debian systems
-        if not self.conf("handle-sites"):
-            if not self.parser.parsed_in_original(vhost.filep):
-                # Add direct include to root conf
-                self.parser.add_include(self.parser.loc["default"], vhost.filep)
-                vhost.enabled = True
-            return
+        if not self.parser.parsed_in_original(vhost.filep):
+            # Add direct include to root conf
+            logger.info("Enabling site %s by adding Include to root configuration",
+                        vhost.filep)
+            self.save_notes += "Enabled site %s\n" % vhost.filep
+            self.parser.add_include(self.parser.loc["default"], vhost.filep)
+            vhost.enabled = True
+        return
 
-        enabled_path = ("%s/sites-enabled/%s" %
-                        (self.parser.root, os.path.basename(vhost.filep)))
-        self.reverter.register_file_creation(False, enabled_path)
-        try:
-            os.symlink(vhost.filep, enabled_path)
-        except OSError as err:
-            if os.path.islink(enabled_path) and os.path.realpath(
-               enabled_path) == vhost.filep:
-                # Already in shape
-                vhost.enabled = True
-                return
-            else:
-                logger.warning(
-                    "Could not symlink %s to %s, got error: %s", enabled_path,
-                    vhost.filep, err.strerror)
-                errstring = ("Encountered error while trying to enable a " +
-                             "newly created VirtualHost located at {0} by " +
-                             "linking to it from {1}")
-                raise errors.NotSupportedError(errstring.format(vhost.filep,
-                                                                enabled_path))
-        vhost.enabled = True
-        logger.info("Enabling available site: %s", vhost.filep)
-        self.save_notes += "Enabled site %s\n" % vhost.filep
-
-    def enable_mod(self, mod_name, temp=False):
+    def enable_mod(self, mod_name, temp=False): # pylint: disable=unused-argument
         """Enables module in Apache.
 
         Both enables and reloads Apache so module is active.
@@ -1764,64 +1769,18 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :param str mod_name: Name of the module to enable. (e.g. 'ssl')
         :param bool temp: Whether or not this is a temporary action.
 
-        :raises .errors.NotSupportedError: If the filesystem layout is not
-            supported.
-        :raises .errors.MisconfigurationError: If a2enmod or a2dismod cannot be
-            run.
+        .. note:: The distribution specific override replaces functionality
+                  of this method where available.
+
+        :raises .errors.MisconfigurationError: We cannot enable modules in
+            generic fashion.
 
         """
-        # Support Debian specific setup
-        avail_path = os.path.join(self.parser.root, "mods-available")
-        enabled_path = os.path.join(self.parser.root, "mods-enabled")
-        if not os.path.isdir(avail_path) or not os.path.isdir(enabled_path):
-            raise errors.NotSupportedError(
-                "Unsupported directory layout. You may try to enable mod %s "
-                "and try again." % mod_name)
-
-        deps = _get_mod_deps(mod_name)
-
-        # Enable all dependencies
-        for dep in deps:
-            if (dep + "_module") not in self.parser.modules:
-                self._enable_mod_debian(dep, temp)
-                self._add_parser_mod(dep)
-
-                note = "Enabled dependency of %s module - %s" % (mod_name, dep)
-                if not temp:
-                    self.save_notes += note + os.linesep
-                logger.debug(note)
-
-        # Enable actual module
-        self._enable_mod_debian(mod_name, temp)
-        self._add_parser_mod(mod_name)
-
-        if not temp:
-            self.save_notes += "Enabled %s module in Apache\n" % mod_name
-        logger.info("Enabled Apache %s module", mod_name)
-
-        # Modules can enable additional config files. Variables may be defined
-        # within these new configuration sections.
-        # Reload is not necessary as DUMP_RUN_CFG uses latest config.
-        self.parser.update_runtime_variables()
-
-    def _add_parser_mod(self, mod_name):
-        """Shortcut for updating parser modules."""
-        self.parser.modules.add(mod_name + "_module")
-        self.parser.modules.add("mod_" + mod_name + ".c")
-
-    def _enable_mod_debian(self, mod_name, temp):
-        """Assumes mods-available, mods-enabled layout."""
-        # Generate reversal command.
-        # Try to be safe here... check that we can probably reverse before
-        # applying enmod command
-        if not util.exe_exists(self.conf("dismod")):
-            raise errors.MisconfigurationError(
-                "Unable to find a2dismod, please make sure a2enmod and "
-                "a2dismod are configured correctly for certbot.")
-
-        self.reverter.register_undo_command(
-            temp, [self.conf("dismod"), mod_name])
-        util.run_script([self.conf("enmod"), mod_name])
+        mod_message = ("Apache needs to have module  \"{0}\" active for the " +
+            "requested installation options. Unfortunately Certbot is unable " +
+            "to install or enable it for you. Please install the module, and " +
+            "run Certbot again.")
+        raise errors.MisconfigurationError(mod_message.format(mod_name))
 
     def restart(self):
         """Runs a config test and reloads the Apache server.
@@ -1840,7 +1799,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         try:
-            util.run_script(constants.os_constant("restart_cmd"))
+            util.run_script(self.constant("restart_cmd"))
         except errors.SubprocessError as err:
             raise errors.MisconfigurationError(str(err))
 
@@ -1851,7 +1810,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         try:
-            util.run_script(constants.os_constant("conftest_cmd"))
+            util.run_script(self.constant("conftest_cmd"))
         except errors.SubprocessError as err:
             raise errors.MisconfigurationError(str(err))
 
@@ -1867,11 +1826,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         try:
-            stdout, _ = util.run_script(constants.os_constant("version_cmd"))
+            stdout, _ = util.run_script(self.constant("version_cmd"))
         except errors.SubprocessError:
             raise errors.PluginError(
                 "Unable to run %s -v" %
-                constants.os_constant("version_cmd"))
+                self.constant("version_cmd"))
 
         regex = re.compile(r"Apache/([0-9\.]*)", re.IGNORECASE)
         matches = regex.findall(stdout)
@@ -1943,86 +1902,15 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if not self._chall_out:
             self.revert_challenge_config()
             self.restart()
-            self.parser.init_modules()
+            self.parser.reset_modules()
+
+    def install_ssl_options_conf(self, options_ssl, options_ssl_digest):
+        """Copy Certbot's SSL options file into the system's config dir if required."""
+
+        # XXX if we ever try to enforce a local privilege boundary (eg, running
+        # certbot for unprivileged users via setuid), this function will need
+        # to be modified.
+        return common.install_version_controlled_file(options_ssl, options_ssl_digest,
+            self.constant("MOD_SSL_CONF_SRC"), constants.ALL_SSL_OPTIONS_HASHES)
 
 
-def _get_mod_deps(mod_name):
-    """Get known module dependencies.
-
-    .. note:: This does not need to be accurate in order for the client to
-        run.  This simply keeps things clean if the user decides to revert
-        changes.
-    .. warning:: If all deps are not included, it may cause incorrect parsing
-        behavior, due to enable_mod's shortcut for updating the parser's
-        currently defined modules (`.ApacheConfigurator._add_parser_mod`)
-        This would only present a major problem in extremely atypical
-        configs that use ifmod for the missing deps.
-
-    """
-    deps = {
-        "ssl": ["setenvif", "mime"]
-    }
-    return deps.get(mod_name, [])
-
-
-def get_file_path(vhost_path):
-    """Get file path from augeas_vhost_path.
-
-    Takes in Augeas path and returns the file name
-
-    :param str vhost_path: Augeas virtual host path
-
-    :returns: filename of vhost
-    :rtype: str
-
-    """
-    if not vhost_path or not vhost_path.startswith("/files/"):
-        return None
-
-    return _split_aug_path(vhost_path)[0]
-
-
-def get_internal_aug_path(vhost_path):
-    """Get the Augeas path for a vhost with the file path removed.
-
-    :param str vhost_path: Augeas virtual host path
-
-    :returns: Augeas path to vhost relative to the containing file
-    :rtype: str
-
-    """
-    return _split_aug_path(vhost_path)[1]
-
-
-def _split_aug_path(vhost_path):
-    """Splits an Augeas path into a file path and an internal path.
-
-    After removing "/files", this function splits vhost_path into the
-    file path and the remaining Augeas path.
-
-    :param str vhost_path: Augeas virtual host path
-
-    :returns: file path and internal Augeas path
-    :rtype: `tuple` of `str`
-
-    """
-    # Strip off /files
-    file_path = vhost_path[6:]
-    internal_path = []
-
-    # Remove components from the end of file_path until it becomes valid
-    while not os.path.exists(file_path):
-        file_path, _, internal_path_part = file_path.rpartition("/")
-        internal_path.append(internal_path_part)
-
-    return file_path, "/".join(reversed(internal_path))
-
-
-def install_ssl_options_conf(options_ssl, options_ssl_digest):
-    """Copy Certbot's SSL options file into the system's config dir if required."""
-
-    # XXX if we ever try to enforce a local privilege boundary (eg, running
-    # certbot for unprivileged users via setuid), this function will need
-    # to be modified.
-    return common.install_version_controlled_file(options_ssl, options_ssl_digest,
-        constants.os_constant("MOD_SSL_CONF_SRC"), constants.ALL_SSL_OPTIONS_HASHES)
