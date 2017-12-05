@@ -339,7 +339,6 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
                 time.sleep(1)
             else:
                 break
-        print latest.to_json()
         for authz in latest.authorizations:
             if authz.body.status != messages.STATUS_VALID:
                 for chall in authz.body.challenges:
