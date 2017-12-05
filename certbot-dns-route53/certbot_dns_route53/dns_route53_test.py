@@ -31,7 +31,7 @@ class AuthenticatorTest(unittest.TestCase, dns_test_common.BaseAuthenticatorTest
         self.auth._change_txt_record.assert_called_once_with("UPSERT",
                                                              '_acme-challenge.' + DOMAIN,
                                                              mock.ANY)
-        self.auth._wait_for_change.assert_called_once()
+        self.assertEqual(self.auth._wait_for_change.call_count, 1)
 
     def test_perform_no_credentials_error(self):
         self.auth._change_txt_record = mock.MagicMock(side_effect=NoCredentialsError)
@@ -183,7 +183,8 @@ class ClientTest(unittest.TestCase):
 
         self.client._change_txt_record("FOO", DOMAIN, "foo")
 
-        self.client.r53.change_resource_record_sets.assert_called_once()
+        call_count = self.client.r53.change_resource_record_sets.call_count
+        self.assertEqual(call_count, 1)
 
     def test_wait_for_change(self):
         self.client.r53.get_change = mock.MagicMock(
@@ -192,7 +193,7 @@ class ClientTest(unittest.TestCase):
 
         self.client._wait_for_change(1)
 
-        self.client.r53.get_change.assert_called()
+        self.assertTrue(self.client.r53.get_change.called)
 
 
 if __name__ == "__main__":
