@@ -459,6 +459,35 @@ class NginxConfiguratorTest(util.NginxTest):
         generated_conf = self.config.parser.parsed[migration_conf]
         self.assertTrue(util.contains_at_depth(generated_conf, expected, 2))
 
+    def test_split_for_redirect(self):
+        example_conf = self.config.parser.abs_path('sites-enabled/example.com')
+        self.config.deploy_cert(
+            "example.org",
+            "example/cert.pem",
+            "example/key.pem",
+            "example/chain.pem",
+            "example/fullchain.pem")
+        self.config.enhance("www.example.com", "redirect")
+        generated_conf = self.config.parser.parsed[example_conf]
+        self.assertEqual(
+            [[['server'], [
+               ['server_name', '.example.com'],
+               ['server_name', 'example.*'], [],
+               ['listen', '5001', 'ssl'], ['#', ' managed by Certbot'],
+               ['ssl_certificate', 'example/fullchain.pem'], ['#', ' managed by Certbot'],
+               ['ssl_certificate_key', 'example/key.pem'], ['#', ' managed by Certbot'],
+               ['include', self.config.mod_ssl_conf], ['#', ' managed by Certbot'],
+               ['ssl_dhparam', self.config.ssl_dhparams], ['#', ' managed by Certbot'],
+               [], []]],
+             [['server'], [
+               ['listen', '69.50.225.155:9000'],
+               ['listen', '127.0.0.1'],
+               ['server_name', '.example.com'],
+               ['server_name', 'example.*'],
+               ['return', '301', 'https://$host$request_uri'], ['#', ' managed by Certbot'],
+               [], []]]],
+            generated_conf)
+
     @mock.patch('certbot_nginx.obj.VirtualHost.contains_list')
     @mock.patch('certbot_nginx.obj.VirtualHost.has_redirect')
     def test_certbot_redirect_exists(self, mock_has_redirect, mock_contains_list):

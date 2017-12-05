@@ -597,8 +597,6 @@ class NginxConfigurator(common.Installer):
         # If there are blocks listening plaintextishly on self.DEFAULT_LISTEN_PORT,
         # choose the most name-matching one.
 
-        # TODO: should we be adding redirects to all matching blocks?
-
         vhost = self.choose_redirect_vhost(domain, port)
 
         if vhost is None:
