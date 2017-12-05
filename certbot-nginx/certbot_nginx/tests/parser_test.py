@@ -139,8 +139,7 @@ class NginxParserTest(util.NginxTest): #pylint: disable=too-many-public-methods
                                  False, True,
                                  set(['.example.com', 'example.*']), [], [0])
         vhost4 = obj.VirtualHost(nparser.abs_path('sites-enabled/default'),
-                                 [obj.Addr('myhost', '', False, True),
-                                  obj.Addr('otherhost', '', False, True)],
+                                 [obj.Addr('myhost', '', False, True)],
                                  False, True, set(['www.example.org']),
                                  [], [0])
         vhost5 = obj.VirtualHost(nparser.abs_path('foo.conf'),
@@ -395,29 +394,6 @@ class NginxParserTest(util.NginxTest): #pylint: disable=too-many-public-methods
             ['listen', '443']
         ])
         self.assertTrue(server['ssl'])
-
-    def test_create_new_vhost_from_default(self):
-        nparser = parser.NginxParser(self.config_path)
-
-        vhosts = nparser.get_vhosts()
-        default = [x for x in vhosts if 'default' in x.filep][0]
-        new_vhost = nparser.create_new_vhost_from_default(default)
-        nparser.filedump(ext='')
-
-        # check properties of new vhost
-        self.assertFalse(next(iter(new_vhost.addrs)).default)
-        self.assertNotEqual(new_vhost.path, default.path)
-
-        # check that things are written to file correctly
-        new_nparser = parser.NginxParser(self.config_path)
-        new_vhosts = new_nparser.get_vhosts()
-        new_defaults = [x for x in new_vhosts if 'default' in x.filep]
-        self.assertEqual(len(new_defaults), 2)
-        new_vhost_parsed = new_defaults[1]
-        self.assertFalse(next(iter(new_vhost_parsed.addrs)).default)
-        self.assertEqual(next(iter(default.names)), next(iter(new_vhost_parsed.names)))
-        self.assertEqual(len(default.raw), len(new_vhost_parsed.raw))
-        self.assertTrue(next(iter(default.addrs)).super_eq(next(iter(new_vhost_parsed.addrs))))
 
 
 if __name__ == "__main__":

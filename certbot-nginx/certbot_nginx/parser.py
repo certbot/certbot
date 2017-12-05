@@ -6,8 +6,6 @@ import os
 import pyparsing
 import re
 
-import six
-
 from certbot import errors
 
 from certbot_nginx import obj
@@ -314,32 +312,6 @@ class NginxParser(object):
         except errors.MisconfigurationError as err:
             raise errors.MisconfigurationError("Problem in %s: %s" % (filename, str(err)))
 
-    def create_new_vhost_from_default(self, vhost_template):
-        """Duplicate the default vhost in the configuration files.
-
-        :param :class:`~certbot_nginx.obj.VirtualHost` vhost_template: The vhost
-            whose information we copy
-
-        :returns: A vhost object for the newly created vhost
-        :rtype: :class:`~certbot_nginx.obj.VirtualHost`
-        """
-        # TODO: https://github.com/certbot/certbot/issues/5185
-        # put it in the same file as the template, at the same level
-        enclosing_block = self.parsed[vhost_template.filep]
-        for index in vhost_template.path[:-1]:
-            enclosing_block = enclosing_block[index]
-        new_location = vhost_template.path[-1] + 1
-        raw_in_parsed = copy.deepcopy(enclosing_block[vhost_template.path[-1]])
-        enclosing_block.insert(new_location, raw_in_parsed)
-        new_vhost = copy.deepcopy(vhost_template)
-        new_vhost.path[-1] = new_location
-        for addr in new_vhost.addrs:
-            addr.default = False
-        for directive in enclosing_block[new_vhost.path[-1]][1]:
-            if len(directive) > 0 and directive[0] == 'listen' and 'default_server' in directive:
-                del directive[directive.index('default_server')]
-        return new_vhost
-
 def _parse_ssl_options(ssl_options):
     if ssl_options is not None:
         try:
@@ -472,7 +444,7 @@ def _is_include_directive(entry):
     """
     return (isinstance(entry, list) and
             len(entry) == 2 and entry[0] == 'include' and
-            isinstance(entry[1], six.string_types))
+            isinstance(entry[1], str))
 
 def _is_ssl_on_directive(entry):
     """Checks if an nginx parsed entry is an 'ssl on' directive.
@@ -589,8 +561,7 @@ def _add_directive(block, directive, replace):
     directive_name = directive[0]
     def can_append(loc, dir_name):
         """ Can we append this directive to the block? """
-        return loc is None or (isinstance(dir_name, six.string_types)
-            and dir_name in REPEATABLE_DIRECTIVES)
+        return loc is None or (isinstance(dir_name, str) and dir_name in REPEATABLE_DIRECTIVES)
 
     err_fmt = 'tried to insert directive "{0}" but found conflicting "{1}".'
 

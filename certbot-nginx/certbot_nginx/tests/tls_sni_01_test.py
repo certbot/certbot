@@ -66,7 +66,7 @@ class TlsSniPerformTest(util.NginxTest):
         self.sni.add_chall(self.achalls[1])
         mock_choose.return_value = None
         result = self.sni.perform()
-        self.assertFalse(result is None)
+        self.assertTrue(result is None)
 
     def test_perform0(self):
         responses = self.sni.perform()

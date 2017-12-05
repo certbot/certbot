@@ -52,13 +52,18 @@ class NginxTlsSni01(common.TLSSNI01):
             self.configurator.config.tls_sni_01_port)
 
         for achall in self.achalls:
-            vhost = self.configurator.choose_vhost(achall.domain, raise_if_no_match=False)
+            vhost = self.configurator.choose_vhost(achall.domain)
+            if vhost is None:
+                logger.error(
+                    "No nginx vhost exists with server_name matching: %s. "
+                    "Please specify server_names in the Nginx config.",
+                    achall.domain)
+                return None
 
-            if vhost is not None and vhost.addrs:
+            if vhost.addrs:
                 addresses.append(list(vhost.addrs))
             else:
                 addresses.append([obj.Addr.fromstring(default_addr)])
-                logger.info("Using default address %s for TLSSNI01 authentication.", default_addr)
 
         # Create challenge certs
         responses = [self._setup_challenge_cert(x) for x in self.achalls]
