@@ -1,7 +1,7 @@
 """DNS Authenticator for Linode."""
 import logging
 
-from linode import api as linodeApi
+from certbot_dns_linode import linode_api
 import zope.interface
 
 from certbot import errors
@@ -57,7 +57,7 @@ class _LinodeClient(object):
     """
 
     def __init__(self, api_key):
-        self.linode_api = linodeApi.Api(key=api_key)
+        self.linode_api = linode_api.Api(key=api_key)
 
     def add_txt_record(self, domain_name, record_name, record_content):
         """
@@ -72,7 +72,7 @@ class _LinodeClient(object):
 
         try:
             domain = self._find_domain(domain_name)
-        except linodeApi.ApiError as e:
+        except linode_api.ApiError as e:
             hint = None
 
             logger.debug('Error finding domain using the Linode API: %s', e)
@@ -88,7 +88,7 @@ class _LinodeClient(object):
             record_id = result['ResourceID']
 
             logger.debug('Successfully added TXT record with id: %d', record_id)
-        except linodeApi.ApiError as e:
+        except linode_api.ApiError as e:
             logger.debug('Error adding TXT record using the Linode API: %s', e)
             raise errors.PluginError('Error adding TXT record using the Linode API: {0}'
                                      .format(e))
@@ -109,7 +109,7 @@ class _LinodeClient(object):
 
         try:
             domain = self._find_domain(domain_name)
-        except linodeApi.ApiError as e:
+        except linode_api.ApiError as e:
             logger.debug('Error finding domain using the Linode API: %s', e)
             return
 
@@ -122,7 +122,7 @@ class _LinodeClient(object):
                                 if record['TYPE'] == 'TXT'
                                 and record['NAME'] == computed_domain_name
                                 and record['TARGET'] == record_content]
-        except linodeApi.ApiError as e:
+        except linode_api.ApiError as e:
             logger.debug('Error getting DNS records using the Linode API: %s', e)
             return
 
@@ -131,7 +131,7 @@ class _LinodeClient(object):
                 logger.debug('Removing TXT record with id: %s', record['RESOURCEID'])
                 self.linode_api.domain_resource_delete(DomainID=domain['DOMAINID'],
                     ResourceID=record['RESOURCEID'])
-            except linodeApi.ApiError as e:
+            except linode_api.ApiError as e:
                 logger.warn('Error deleting TXT record %s using the Linode API: %s',
                             record['RESOURCEID'], e)
 
