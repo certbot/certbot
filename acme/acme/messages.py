@@ -325,12 +325,25 @@ class ChallengeBody(ResourceBody):
 
     """
     __slots__ = ('chall',)
-    uri = jose.Field('uri')
+    # ACMEv1 has a "uri" field in challenges. ACMEv2 has a "url" field. This
+    # challenge object supports either one, but should be accessed through the
+    # name "uri". In Client.answer_challenge, whichever one is set will be
+    # used.
+    _uri = jose.Field('uri', omitempty=True, default=None)
+    _url = jose.Field('url', omitempty=True, default=None)
     status = jose.Field('status', decoder=Status.from_json,
                         omitempty=True, default=STATUS_PENDING)
     validated = fields.RFC3339Field('validated', omitempty=True)
     error = jose.Field('error', decoder=Error.from_json,
                        omitempty=True, default=None)
+
+    def __init__(self, **kwargs):
+        kwargs = dict((self._internal_name(k), v) for k, v in kwargs.items())
+        # pylint: disable=star-args
+        super(ChallengeBody, self).__init__(**kwargs)
+
+    def encode(self, name):
+        return super(ChallengeBody, self).encode(self._internal_name(name))
 
     def to_partial_json(self):
         jobj = super(ChallengeBody, self).to_partial_json()
@@ -343,8 +356,22 @@ class ChallengeBody(ResourceBody):
         jobj_fields['chall'] = challenges.Challenge.from_json(jobj)
         return jobj_fields
 
+    @property
+    def uri(self):
+        """The URL of this challenge."""
+        return self._url or self._uri
+
     def __getattr__(self, name):
         return getattr(self.chall, name)
+
+    def __iter__(self):
+        # When iterating over fields, use the external name 'uri' instead of
+        # the internal '_uri'.
+        for name in super(ChallengeBody, self).__iter__():
+            yield name[1:] if name == '_uri' else name
+
+    def _internal_name(self, name):
+        return '_' + name if name == 'uri' else name
 
 
 class ChallengeResource(Resource):
@@ -358,10 +385,10 @@ class ChallengeResource(Resource):
     authzr_uri = jose.Field('authzr_uri')
 
     @property
-    def uri(self):  # pylint: disable=missing-docstring,no-self-argument
-        # bug? 'method already defined line None'
-        # pylint: disable=function-redefined
-        return self.body.uri  # pylint: disable=no-member
+    def uri(self):
+        """The URL of the challenge body."""
+        # pylint: disable=function-redefined,no-member
+        return self.body.uri
 
 
 class Authorization(ResourceBody):
