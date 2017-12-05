@@ -30,7 +30,7 @@ from certbot_nginx import parser
 logger = logging.getLogger(__name__)
 
 REDIRECT_BLOCK = [[
-    ['\n    ', 'if', ' ', '($scheme', ' ', '!=', ' ', '"https") '],
+    ['\n    ', 'if', ' ', '($scheme', ' ', '!=', ' ', '"https")'],
     [['\n        ', 'return', ' ', '301', ' ', 'https://$host$request_uri'],
      '\n    ']
 ], ['\n']]

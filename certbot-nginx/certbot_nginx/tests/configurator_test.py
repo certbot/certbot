@@ -428,7 +428,7 @@ class NginxConfiguratorTest(util.NginxTest):
         # Test that we successfully add a redirect when there is
         # a listen directive
         expected = [
-            ['if', '($scheme', '!=', '"https") '],
+            ['if', '($scheme', '!=', '"https")'],
             [['return', '301', 'https://$host$request_uri']]
         ]
 
@@ -510,6 +510,23 @@ class NginxConfiguratorTest(util.NginxTest):
             self.config.enhance("geese.com", "redirect")
         self.assertEqual(mock_logger.info.call_args[0][0],
                 'No matching insecure server blocks listening on port %s found.')
+
+    def test_no_double_redirect(self):
+        # Test that we don't also add the commented redirect if we've just added
+        # a redirect to that vhost this run
+        example_conf = self.config.parser.abs_path('sites-enabled/example.com')
+        self.config.enhance("example.com", "redirect")
+        self.config.enhance("example.org", "redirect")
+
+        unexpected = [
+            ['#', ' Redirect non-https traffic to https'],
+            ['#', ' if ($scheme != "https") {'],
+            ['#', '     return 301 https://$host$request_uri;'],
+            ['#', ' } # managed by Certbot']
+        ]
+        generated_conf = self.config.parser.parsed[example_conf]
+        for line in unexpected:
+            self.assertFalse(util.contains_at_depth(generated_conf, line, 2))
 
     def test_staple_ocsp_bad_version(self):
         self.config.version = (1, 3, 1)
