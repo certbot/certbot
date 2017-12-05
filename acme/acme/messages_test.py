@@ -283,6 +283,9 @@ class ChallengeBodyTest(unittest.TestCase):
             'detail': 'Unable to communicate with DNS server',
         }
 
+    def test_encode(self):
+        self.assertEqual(self.challb.encode('uri'), self.challb.uri)
+
     def test_to_partial_json(self):
         self.assertEqual(self.jobj_to, self.challb.to_partial_json())
 
