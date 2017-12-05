@@ -55,10 +55,10 @@ class _LinodeClient(object):
     """
     Encapsulates all communication with the Linode API.
     """
-    
+
     def __init__(self, api_key):
         self.linode_api = linodeApi.Api(key=api_key)
-    
+
     def add_txt_record(self, domain_name, record_name, record_content):
         """
         Add a TXT record using the supplied information.
@@ -88,11 +88,11 @@ class _LinodeClient(object):
             record_id = result['ResourceID']
 
             logger.debug('Successfully added TXT record with id: %d', record_id)
-        except linode.Error as e:
+        except linodeApi.ApiError as e:
             logger.debug('Error adding TXT record using the Linode API: %s', e)
             raise errors.PluginError('Error adding TXT record using the Linode API: {0}'
                                      .format(e))
-    
+
     def del_txt_record(self, domain_name, record_name, record_content):
         """
         Delete a TXT record using the supplied information.
@@ -116,9 +116,11 @@ class _LinodeClient(object):
         try:
             domain_records = self.linode_api.domain_resource_list(DomainID=domain['DOMAINID'])
 
+            computed_domain_name = self._compute_record_name(domain['DOMAIN'], record_name)
+
             matching_records = [record for record in domain_records
                                 if record['TYPE'] == 'TXT'
-                                and record['NAME'] == self._compute_record_name(domain['DOMAIN'], record_name)
+                                and record['NAME'] == computed_domain_name
                                 and record['TARGET'] == record_content]
         except linodeApi.ApiError as e:
             logger.debug('Error getting DNS records using the Linode API: %s', e)
@@ -127,11 +129,12 @@ class _LinodeClient(object):
         for record in matching_records:
             try:
                 logger.debug('Removing TXT record with id: %s', record['RESOURCEID'])
-                self.linode_api.domain_resource_delete(DomainID=domain['DOMAINID'], ResourceID=record['RESOURCEID'])
+                self.linode_api.domain_resource_delete(DomainID=domain['DOMAINID'],
+                    ResourceID=record['RESOURCEID'])
             except linodeApi.ApiError as e:
                 logger.warn('Error deleting TXT record %s using the Linode API: %s',
                             record['RESOURCEID'], e)
-    
+
     def _find_domain(self, domain_name):
         """
         Find the domain object for a given domain name.
@@ -156,7 +159,7 @@ class _LinodeClient(object):
 
         raise errors.PluginError('Unable to determine base domain for {0} using names: {1}.'
                                  .format(domain_name, domain_name_guesses))
-    
+
     @staticmethod
     def _compute_record_name(domain, full_record_name):
         # The domain, from Linode's point of view, is automatically appended.

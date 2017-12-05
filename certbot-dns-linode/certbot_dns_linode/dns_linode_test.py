@@ -3,10 +3,8 @@
 import os
 import unittest
 
-from linode import api as linodeApi
 import mock
 
-from certbot import errors
 from certbot.plugins import dns_test_common
 from certbot.plugins.dns_test_common import DOMAIN
 from certbot.tests import util as test_util
@@ -72,7 +70,7 @@ class LinodeClientTest(unittest.TestCase):
             }
         ]
 
-        self.linode_api.domain_resource_create.return_value = { "ResourceID": 11000 }
+        self.linode_api.domain_resource_create.return_value = {"ResourceID": 11000}
         self.linode_client.add_txt_record(DOMAIN, self.record_name, self.record_content)
         self.linode_api.domain_resource_create.assert_called_with(DomainID=10001,
                                                                 Type='TXT',
@@ -108,7 +106,7 @@ class LinodeClientTest(unittest.TestCase):
         ]
 
         self.linode_client.del_txt_record(DOMAIN, self.record_name, self.record_content)
-        
+
         self.linode_api.domain_resource_delete.assert_called_with(DomainID=10001,
                                                                 ResourceID=11001)
 
