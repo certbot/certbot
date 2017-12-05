@@ -675,13 +675,6 @@ class NginxConfiguratorTest(util.NginxTest):
             "example/chain.pem",
             "example/fullchain.pem")
 
-        self.config.deploy_cert(
-            "nomatch.com",
-            "example/cert.pem",
-            "example/key.pem",
-            "example/chain.pem",
-            "example/fullchain.pem")
-
         self.config.enhance("www.nomatch.com", "redirect")
 
         self.config.save()
