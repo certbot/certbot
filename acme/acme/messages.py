@@ -491,8 +491,8 @@ class Order(ResourceBody):
     :ivar datetime.datetime expires:
 
     """
-    csr = jose.Field('csr', decoder=jose.decode_csr, encoder=jose.encode_csr)
-    status = jose.Field('status', omitempty=True)
+    identifiers = jose.Field('identifiers', omitempty=True)
+    status = jose.Field('status', omitempty=True, default=None)
     authorizations = jose.Field('authorizations', omitempty=True)
     certificate = jose.Field('certificate', omitempty=True)
     expires = fields.RFC3339Field('expires', omitempty=True)

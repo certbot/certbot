@@ -10,6 +10,7 @@ import time
 import six
 from six.moves import http_client  # pylint: disable=import-error
 
+import crypto_util
 import OpenSSL
 import re
 import requests
@@ -207,7 +208,11 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         :rtype: `list` of `.AuthorizationResource`
         """
         csr = OpenSSL.crypto.load_certificate_request(OpenSSL.crypto.FILETYPE_PEM, csr_pem)
-        order = messages.NewOrder(csr=jose.ComparableX509(csr))
+        identifiers = []
+        for name in crypto_util._pyopenssl_cert_or_req_san(csr):
+            identifiers.append(messages.Identifier(typ=messages.IDENTIFIER_FQDN,
+                value=name))
+        order = messages.NewOrder(identifiers=identifiers)
         response = self.net.post(self.directory.new_order, order)
         order_response = self._order_resource_from_response(response)
         return order_response
@@ -332,24 +337,27 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         :rtype: (`.OrderResource`)
 
         """
-        while True:
-            response = self.net.get(orderr.uri)
-            latest = self._order_resource_from_response(response, uri=orderr.uri)
-            if any([a.body.status == messages.STATUS_PENDING for a in latest.authorizations]):
-                time.sleep(1)
-            else:
-                break
-        for authz in latest.authorizations:
-            if authz.body.status != messages.STATUS_VALID:
+        responses = []
+        for url in orderr.body.authorizations:
+            while True:
+                authzr = self._authzr_from_response(self.net.get(url), uri=url)
+                if authzr.body.status != messages.STATUS_PENDING:
+                    responses.append(authzr)
+                    break
+        for authzr in responses:
+            if authzr.body.status != messages.STATUS_VALID:
                 for chall in authz.body.challenges:
                     if chall.error != None:
                         raise Exception("failed challenge for %s: %s" %
                             (authz.body.identifier.value, chall.error))
                 raise Exception("failed authorization: %s" % authz.body)
-        while latest.fullchain_pem is None:
+        return orderr
+        #### POST finalize url
+        fullchain_pem = None
+        while fullchain_pem is None:
             time.sleep(1)
             response = self.net.get(orderr.uri)
-            latest = self._order_resource_from_response(response, uri=orderr.uri)
+        latest = self._order_resource_from_response(response, uri=orderr.uri)
         return latest
 
 
