@@ -117,9 +117,6 @@ class NginxConfigurator(common.Installer):
         # Files to save
         self.save_notes = ""
 
-        # For creating new vhosts if no names match
-        self.new_vhost = None
-
         # Add number of outstanding challenges
         self._chall_out = 0
 
@@ -194,11 +191,9 @@ class NginxConfigurator(common.Installer):
                 "The nginx plugin currently requires --fullchain-path to "
                 "install a cert.")
 
-        vhost = self.choose_vhost(domain, raise_if_no_match=False)
-        if vhost is None:
-            vhost = self._vhost_from_duplicated_default(domain)
-        cert_directives = [['\n    ', 'ssl_certificate', ' ', fullchain_path],
-                           ['\n    ', 'ssl_certificate_key', ' ', key_path]]
+        vhost = self.choose_vhost(domain)
+        cert_directives = [['\n', 'ssl_certificate', ' ', fullchain_path],
+                           ['\n', 'ssl_certificate_key', ' ', key_path]]
 
         self.parser.add_server_directives(vhost,
                                           cert_directives, replace=True)
@@ -214,7 +209,7 @@ class NginxConfigurator(common.Installer):
     #######################
     # Vhost parsing methods
     #######################
-    def choose_vhost(self, target_name, raise_if_no_match=True):
+    def choose_vhost(self, target_name):
         """Chooses a virtual host based on the given domain name.
 
         .. note:: This makes the vhost SSL-enabled if it isn't already. Follows
@@ -228,8 +223,6 @@ class NginxConfigurator(common.Installer):
             hostname. Currently we just ignore this.
 
         :param str target_name: domain name
-        :param bool raise_if_no_match: True iff not finding a match is an error;
-                                       otherwise, return None
 
         :returns: ssl vhost associated with name
         :rtype: :class:`~certbot_nginx.obj.VirtualHost`
@@ -240,81 +233,19 @@ class NginxConfigurator(common.Installer):
         matches = self._get_ranked_matches(target_name)
         vhost = self._select_best_name_match(matches)
         if not vhost:
-            if raise_if_no_match:
-                # No matches. Raise a misconfiguration error.
-                raise errors.MisconfigurationError(
-                            ("Cannot find a VirtualHost matching domain %s. "
-                             "In order for Certbot to correctly perform the challenge "
-                             "please add a corresponding server_name directive to your "
-                             "nginx configuration: "
-                             "https://nginx.org/en/docs/http/server_names.html") % (target_name))
-            else:
-                return None
+            # No matches. Raise a misconfiguration error.
+            raise errors.MisconfigurationError(
+                        ("Cannot find a VirtualHost matching domain %s. "
+                         "In order for Certbot to correctly perform the challenge "
+                         "please add a corresponding server_name directive to your "
+                         "nginx configuration: "
+                         "https://nginx.org/en/docs/http/server_names.html") % (target_name))
         else:
             # Note: if we are enhancing with ocsp, vhost should already be ssl.
             if not vhost.ssl:
                 self._make_server_ssl(vhost)
 
         return vhost
-
-
-    def ipv6_info(self, port):
-        """Returns tuple of booleans (ipv6_active, ipv6only_present)
-        ipv6_active is true if any server block listens ipv6 address in any port
-
-        ipv6only_present is true if ipv6only=on option exists in any server
-        block ipv6 listen directive for the specified port.
-
-        :param str port: Port to check ipv6only=on directive for
-
-        :returns: Tuple containing information if IPv6 is enabled in the global
-            configuration, and existence of ipv6only directive for specified port
-        :rtype: tuple of type (bool, bool)
-        """
-        vhosts = self.parser.get_vhosts()
-        ipv6_active = False
-        ipv6only_present = False
-        for vh in vhosts:
-            for addr in vh.addrs:
-                if addr.ipv6:
-                    ipv6_active = True
-                if addr.ipv6only and addr.get_port() == port:
-                    ipv6only_present = True
-        return (ipv6_active, ipv6only_present)
-
-    def _vhost_from_duplicated_default(self, domain):
-        if self.new_vhost is None:
-            default_vhost = self._get_default_vhost()
-            self.new_vhost = self.parser.create_new_vhost_from_default(default_vhost)
-            if not self.new_vhost.ssl:
-                self._make_server_ssl(self.new_vhost)
-            self.new_vhost.names = set()
-
-        self.new_vhost.names.add(domain)
-        name_block = [['\n    ', 'server_name']]
-        for name in self.new_vhost.names:
-            name_block[0].append(' ')
-            name_block[0].append(name)
-        self.parser.add_server_directives(self.new_vhost, name_block, replace=True)
-        return self.new_vhost
-
-    def _get_default_vhost(self):
-        vhost_list = self.parser.get_vhosts()
-        # if one has default_server set, return that one
-        default_vhosts = []
-        for vhost in vhost_list:
-            for addr in vhost.addrs:
-                if addr.default:
-                    default_vhosts.append(vhost)
-                    break
-
-        if len(default_vhosts) == 1:
-            return default_vhosts[0]
-
-        # TODO: present a list of vhosts for user to choose from
-
-        raise errors.MisconfigurationError("Could not automatically find a matching server"
-            " block. Set the `server_name` directive to use the Nginx installer.")
 
     def _get_ranked_matches(self, target_name):
         """Returns a ranked list of vhosts that match target_name.
@@ -474,12 +405,9 @@ class NginxConfigurator(common.Installer):
                     all_names.add(host)
                 elif not common.private_ips_regex.match(host):
                     # If it isn't a private IP, do a reverse DNS lookup
+                    # TODO: IPv6 support
                     try:
-                        if addr.ipv6:
-                            host = addr.get_ipv6_exploded()
-                            socket.inet_pton(socket.AF_INET6, host)
-                        else:
-                            socket.inet_pton(socket.AF_INET, host)
+                        socket.inet_aton(host)
                         all_names.add(socket.gethostbyaddr(host)[0])
                     except (socket.error, socket.herror, socket.timeout):
                         continue
@@ -515,38 +443,16 @@ class NginxConfigurator(common.Installer):
         :type vhost: :class:`~certbot_nginx.obj.VirtualHost`
 
         """
-        ipv6info = self.ipv6_info(self.config.tls_sni_01_port)
-        ipv6_block = ['']
-        ipv4_block = ['']
-
         # If the vhost was implicitly listening on the default Nginx port,
         # have it continue to do so.
         if len(vhost.addrs) == 0:
             listen_block = [['\n    ', 'listen', ' ', self.DEFAULT_LISTEN_PORT]]
             self.parser.add_server_directives(vhost, listen_block, replace=False)
 
-        if vhost.ipv6_enabled():
-            ipv6_block = ['\n    ',
-                          'listen',
-                          ' ',
-                          '[::]:{0} ssl'.format(self.config.tls_sni_01_port)]
-            if not ipv6info[1]:
-                # ipv6only=on is absent in global config
-                ipv6_block.append(' ')
-                ipv6_block.append('ipv6only=on')
-
-        if vhost.ipv4_enabled():
-            ipv4_block = ['\n    ',
-                          'listen',
-                          ' ',
-                          '{0} ssl'.format(self.config.tls_sni_01_port)]
-
-
         snakeoil_cert, snakeoil_key = self._get_snakeoil_paths()
 
         ssl_block = ([
-            ipv6_block,
-            ipv4_block,
+            ['\n    ', 'listen', ' ', '{0} ssl'.format(self.config.tls_sni_01_port)],
             ['\n    ', 'ssl_certificate', ' ', snakeoil_cert],
             ['\n    ', 'ssl_certificate_key', ' ', snakeoil_key],
             ['\n    ', 'include', ' ', self.mod_ssl_conf],
