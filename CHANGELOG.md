@@ -14,7 +14,9 @@ Certbot adheres to [Semantic Versioning](http://semver.org/).
 
 * The Apache plugin now parses some distro specific Apache configuration files
   on non-Debian systems allowing it to get a clearer picture on the running
-  Apache configuration.
+  configuration. Internally, these changes were structured so that external
+  contributors can easily write patches to make the plugin work in new Apache
+  configurations.
 * Certbot better reports network failures by removing information about
   connection retries from the error output.
 * An unnecessary question when using Certbot's webroot plugin interactively has
@@ -25,6 +27,8 @@ Certbot adheres to [Semantic Versioning](http://semver.org/).
 * Certbot's NGINX plugin no longer sometimes incorrectly reports that it was
   unable to deploy a HTTP->HTTPS redirect when requesting Certbot to enable a
   redirect for multiple domains.
+* Problems where the Apache plugin was failing to find directives and
+  duplicating existing directives on openSUSE have been resolved.
 * An issue running the test shipped with Certbot and some our DNS plugins with
   older versions of mock have been resolved.
 * On some systems, users reported strangely interleaved output depending on
