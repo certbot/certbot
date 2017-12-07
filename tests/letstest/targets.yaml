@@ -2,7 +2,7 @@ targets:
   #-----------------------------------------------------------------------------
   #Ubuntu
   - ami: ami-26d5af4c
-    name: ubuntu15.10
+    name: ubuntu16.04LTS
     type: ubuntu
     virt: hvm
     user: ubuntu
