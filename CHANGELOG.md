@@ -2,6 +2,38 @@
 
 Certbot adheres to [Semantic Versioning](http://semver.org/).
 
+## 0.20.0 - 2017-12-06
+
+### Added
+
+* Certbot's ACME library now recognizes URL fields in challenge objects in
+  preparation for Let's Encrypt's new ACME endpoint. The value is still
+  accessible in our ACME library through the name "uri".
+
+### Changed
+
+* The Apache plugin now parses some distro specific Apache configuration files
+  on non-Debian systems allowing it to get a clearer picture on the running
+  Apache configuration.
+* Certbot better reports network failures by removing information about
+  connection retries from the error output.
+* An unnecessary question when using Certbot's webroot plugin interactively has
+  been removed.
+
+### Fixed
+
+* Certbot's NGINX plugin no longer sometimes incorrectly reports that it was
+  unable to deploy a HTTP->HTTPS redirect when requesting Certbot to enable a
+  redirect for multiple domains.
+* An issue running the test shipped with Certbot and some our DNS plugins with
+  older versions of mock have been resolved.
+* On some systems, users reported strangely interleaved output depending on
+  when stdout and stderr were flushed. This problem was resolved by having
+  Certbot regularly flush these streams.
+
+More details about these changes can be found on our GitHub repo:
+https://github.com/certbot/certbot/milestone/44?closed=1
+
 ## 0.19.0 - 2017-10-04
 
 ### Added
