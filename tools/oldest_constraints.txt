@@ -20,7 +20,7 @@ pytest==3.2.5
 python-augeas==0.4.1
 pytz==2012c
 requests[security]==2.6.0
-setuptools==0.9.8
+setuptools==1.0.0
 six==1.9.0
 urllib3==1.10
 zope.component==4.0.2
