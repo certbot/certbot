@@ -43,11 +43,6 @@ matrix:
       services: docker
       before_install:
       addons:
-    - sudo: required
-      env: TOXENV=docker_dev
-      services: docker
-      before_install:
-      addons:
     - python: "2.7"
       env: TOXENV=apacheconftest
       sudo: required
