@@ -39,22 +39,7 @@ matrix:
       before_install:
       addons:
     - sudo: required
-      env: TOXENV=le_auto_precise
-      services: docker
-      before_install:
-      addons:
-    - sudo: required
       env: TOXENV=le_auto_trusty
-      services: docker
-      before_install:
-      addons:
-    - sudo: required
-      env: TOXENV=le_auto_wheezy
-      services: docker
-      before_install:
-      addons:
-    - sudo: required
-      env: TOXENV=le_auto_centos6
       services: docker
       before_install:
       addons:
