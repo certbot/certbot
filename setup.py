@@ -47,9 +47,7 @@ install_requires = [
     'PyOpenSSL',
     'pyrfc3339',
     'pytz',
-    # For pkg_resources. >=1.0 so pip resolves it to a version cryptography
-    # will tolerate; see #2599:
-    'setuptools>=1.0',
+    'setuptools',  # pkg_resources
     'six',
     'zope.component',
     'zope.interface',
