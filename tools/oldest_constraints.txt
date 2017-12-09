@@ -38,6 +38,7 @@ pytz==2012rc0
 # Our setup.py constraints
 cloudflare==1.5.1
 cryptography==1.2.0
+google-api-python-client==1.5
 oauth2client==2.0
 parsedatetime==1.3
 pyparsing==1.5.5

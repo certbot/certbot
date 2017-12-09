@@ -18,7 +18,7 @@ docutils==0.14
 execnet==1.5.0
 future==0.16.0
 futures==3.1.1
-google-api-python-client==1.6.4
+google-api-python-client==1.5
 httplib2==0.10.3
 imagesize==0.7.1
 ipdb==0.10.3
