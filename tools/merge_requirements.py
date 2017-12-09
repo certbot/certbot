@@ -24,7 +24,7 @@ def read_file(file_path):
     with open(file_path) as f:
         for line in f:
             line = line.strip()
-            if not line.startswith('#'):
+            if line and not line.startswith('#'):
                 project, _, version = line.partition('==')
                 if not version:
                     raise ValueError("Unexpected syntax '{0}'".format(line))
