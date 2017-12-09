@@ -1,8 +1,5 @@
 # Specifies Python package versions for packages not specified in
-# letsencrypt-auto's requirements file. We should avoid listing packages in
-# both places because if both files are used as constraints for the same pip
-# invocation, some constraints may be ignored due to pip's lack of dependency
-# resolution.
+# letsencrypt-auto's requirements file.
 alabaster==0.7.10
 apipkg==1.4
 astroid==1.3.5
