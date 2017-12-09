@@ -65,6 +65,6 @@ tox==2.9.1
 tqdm==4.19.4
 traitlets==4.3.2
 twine==1.9.1
-uritemplate==3.0.0
+uritemplate==0.6
 virtualenv==15.1.0
 wcwidth==0.1.7
