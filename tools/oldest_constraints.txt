@@ -34,7 +34,6 @@ html5lib==0.999
 idna==2.0
 pbr==1.8.0
 pytz==2012rc0
-zope.component==4.2.1
 
 # Our setup.py constraints
 cloudflare==1.5.1
