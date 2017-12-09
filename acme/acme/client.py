@@ -215,6 +215,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         order = messages.NewOrder(identifiers=identifiers)
         response = self.net.post(self.directory.new_order, order)
         order_response = self._order_resource_from_response(response)
+        order_response.csr = csr
         return order_response
 
     def request_challenges(self, identifier, new_authzr_uri=None):

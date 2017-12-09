@@ -504,6 +504,7 @@ class OrderResource(ResourceWithURI):
 
     """
     body = jose.Field('body', decoder=Order.from_json)
+    csr = jose.Field('csr', omitempty=True)
     authorizations = jose.Field('authorizations')
     fullchain_pem = jose.Field('fullchain_pem', omitempty=True)
 
