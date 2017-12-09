@@ -11,5 +11,7 @@ trap "rm -f $certbot_auto_constraints" EXIT
 sed -n -e 's/^\([^[:space:]]*==[^[:space:]]*\).*$/\1/p' $requirements > $certbot_auto_constraints
 dev_constraints="$(dirname $my_path)/pip_constraints.txt"
 
+set -x
+
 # install the requested packages using the pinned requirements as constraints
-pip install --constraint $certbot_auto_constraints --constraint $dev_constraints "$@"
+pip install -q --constraint $certbot_auto_constraints --constraint $dev_constraints "$@"

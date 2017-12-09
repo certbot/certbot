@@ -205,7 +205,7 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
     def contains_list(self, test):
         """Determine if raw server block contains test list at top level
         """
-        for i in six.moves.range(0, len(self.raw) - len(test)):
+        for i in six.moves.range(0, len(self.raw) - len(test) + 1):
             if self.raw[i:i + len(test)] == test:
                 return True
         return False
@@ -220,6 +220,8 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
     def ipv4_enabled(self):
         """Return true if one or more of the listen directives in vhost are IPv4
         only"""
+        if self.addrs is None or len(self.addrs) == 0:
+            return True
         for a in self.addrs:
             if not a.ipv6:
                 return True

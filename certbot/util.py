@@ -342,9 +342,9 @@ def get_os_info_ua(filepath="/etc/os-release"):
     """
 
     if os.path.isfile(filepath):
-        os_ua = _get_systemd_os_release_var("PRETTY_NAME", filepath=filepath)
+        os_ua = get_var_from_file("PRETTY_NAME", filepath=filepath)
         if not os_ua:
-            os_ua = _get_systemd_os_release_var("NAME", filepath=filepath)
+            os_ua = get_var_from_file("NAME", filepath=filepath)
         if os_ua:
             return os_ua
 
@@ -361,8 +361,8 @@ def get_systemd_os_info(filepath="/etc/os-release"):
     :rtype: `tuple` of `str`
     """
 
-    os_name = _get_systemd_os_release_var("ID", filepath=filepath)
-    os_version = _get_systemd_os_release_var("VERSION_ID", filepath=filepath)
+    os_name = get_var_from_file("ID", filepath=filepath)
+    os_version = get_var_from_file("VERSION_ID", filepath=filepath)
 
     return (os_name, os_version)
 
@@ -377,10 +377,10 @@ def get_systemd_os_like(filepath="/etc/os-release"):
     :rtype: `list` of `str`
     """
 
-    return _get_systemd_os_release_var("ID_LIKE", filepath).split(" ")
+    return get_var_from_file("ID_LIKE", filepath).split(" ")
 
 
-def _get_systemd_os_release_var(varname, filepath="/etc/os-release"):
+def get_var_from_file(varname, filepath="/etc/os-release"):
     """
     Get single value from systemd /etc/os-release
 
@@ -405,7 +405,7 @@ def _get_systemd_os_release_var(varname, filepath="/etc/os-release"):
 
 def _normalize_string(orig):
     """
-    Helper function for _get_systemd_os_release_var() to remove quotes
+    Helper function for get_var_from_file() to remove quotes
     and whitespaces
     """
     return orig.replace('"', '').replace("'", "").strip()

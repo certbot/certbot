@@ -106,7 +106,7 @@ specified ``--webroot-path``. So, for instance,
 
 ::
 
-    certbot certonly --webroot -w /var/www/example/ -d www.example.com -d example.com -w /var/www/other -d other.example.net -d another.other.example.net
+    certbot certonly --webroot -w /var/www/example -d www.example.com -d example.com -w /var/www/other -d other.example.net -d another.other.example.net
 
 would obtain a single certificate for all of those names, using the
 ``/var/www/example`` webroot directory for the first two, and

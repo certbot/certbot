@@ -107,7 +107,7 @@ optional arguments:
                         case, and to know when to deprecate support for past
                         Python versions and flags. If you wish to hide this
                         information from the Let's Encrypt server, set this to
-                        "". (default: CertbotACMEClient/0.19.0 (certbot;
+                        "". (default: CertbotACMEClient/0.20.0 (certbot;
                         Ubuntu 16.04.3 LTS) Authenticator/XXX Installer/YYY
                         (SUBCOMMAND; flags: FLAGS) Py/2.7.12). The flags
                         encoded in the user agent are: --duplicate, --force-
@@ -121,7 +121,7 @@ optional arguments:
                         (Example: Foo-Wrapper/1.0) (default: None)
 
 automation:
-  Arguments for automating execution & other tweaks
+  Flags for automating execution & other tweaks
 
   --keep-until-expiring, --keep, --reinstall
                         If the requested certificate matches an existing
@@ -228,7 +228,7 @@ testing:
                         False)
 
 paths:
-  Arguments changing execution paths & servers
+  Flags for changing execution paths & servers
 
   --cert-path CERT_PATH
                         Path to where certificate is saved (with auth --csr),
