@@ -48,7 +48,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
 
     :ivar messages.Directory directory:
     :ivar key: `.JWK` (private)
-    :ivar account: `.Account` (private)
+    :ivar account: `.Registration` (private)
     :ivar acme_version: `int` (private)
     :ivar alg: `.JWASignature`
     :ivar bool verify_ssl: Verify SSL certificates?
@@ -58,7 +58,6 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
 
     """
 
-    # pylint: disable=too-many-arguments
     def __init__(self, directory, key, account=None, acme_version=1, alg=jose.RS256,
                  verify_ssl=True, net=None):
         """Initialize.
@@ -67,6 +66,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
             URI from which the resource will be downloaded.
 
         """
+        # pylint: disable=too-many-arguments
         self.key = key
         self.account = account
         self.acme_version = acme_version
@@ -518,10 +518,10 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
     JSON_ERROR_CONTENT_TYPE = 'application/problem+json'
     REPLAY_NONCE_HEADER = 'Replay-Nonce'
 
-    # pylint: disable=too-many-arguments
     def __init__(self, key, account=None, alg=jose.RS256, verify_ssl=True,
                  user_agent='acme-python', timeout=DEFAULT_NETWORK_TIMEOUT,
-                 acme_version=2):
+                 acme_version=1):
+        # pylint: disable=too-many-arguments
         self.key = key
         self.account = account
         self.alg = alg
@@ -546,6 +546,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         .. todo:: Implement ``acmePath``.
 
         :param .JSONDeSerializable obj:
+        :param str url: The URL to which this object will be POSTed
         :param bytes nonce:
         :rtype: `.JWS`
 
@@ -556,7 +557,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
             "alg": self.alg,
             "nonce": nonce
         }
-        if self.acme_version is 2:
+        if self.acme_version == 2:
             # new ACME spec
             kwargs["url"] = url
             if self.account is not None:

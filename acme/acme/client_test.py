@@ -464,7 +464,6 @@ class MockJSONDeSerializable(jose.JSONDeSerializable):
 
 class ClientNetworkTest(unittest.TestCase):
     """Tests for acme.client.ClientNetwork."""
-    # pylint: disable=too-many-public-methods
 
     def setUp(self):
         self.verify_ssl = mock.MagicMock()
