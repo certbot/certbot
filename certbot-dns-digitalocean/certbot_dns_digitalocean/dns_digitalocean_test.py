@@ -131,7 +131,7 @@ class DigitalOceanClientTest(unittest.TestCase):
 
         self.digitalocean_client.del_txt_record(DOMAIN, self.record_name, self.record_content)
 
-        correct_record_mock.destroy.assert_called()
+        self.assertTrue(correct_record_mock.destroy.called)
 
         self.assertFalse(first_record_mock.destroy.call_args_list)
         self.assertFalse(last_record_mock.destroy.call_args_list)
