@@ -97,12 +97,3 @@ script:
     - '[ -z "${BOULDER_INTEGRATION+x}" ] || (travis_retry tests/boulder-fetch.sh && tests/tox-boulder-integration.sh)'
 
 after_success: '[ "$TOXENV" == "cover" ] && coveralls'
-
-notifications:
-  email: false
-  irc:
-    channels:
-      - secure: "SGWZl3ownKx9xKVV2VnGt7DqkTmutJ89oJV9tjKhSs84kLijU6EYdPnllqISpfHMTxXflNZuxtGo0wTDYHXBuZL47w1O32W6nzuXdra5zC+i4sYQwYULUsyfOv9gJX8zWAULiK0Z3r0oho45U+FR5ZN6TPCidi8/eGU+EEPwaAw="
-    on_success: never
-    on_failure: always
-    use_notice: true
