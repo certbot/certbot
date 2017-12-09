@@ -491,6 +491,7 @@ class ClientNetworkTest(unittest.TestCase):
 
     def test_wrap_in_jws_v2(self):
         self.net.account = {'uri': 'acct-uri'}
+        self.net.acme_version = 2
         # pylint: disable=protected-access
         jws_dump = self.net._wrap_in_jws(
             MockJSONDeSerializable('foo'), nonce=b'Tg', url="url")
