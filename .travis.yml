@@ -1,4 +1,5 @@
 language: python
+group: edge
 
 cache:
     directories:
