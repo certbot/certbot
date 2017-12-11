@@ -4,10 +4,10 @@ import os
 import sys
 import unittest
 
+import josepy as jose
 import mock
 import zope.component
 
-from acme import jose
 from acme import messages
 
 from certbot import account

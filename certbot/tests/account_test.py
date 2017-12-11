@@ -6,10 +6,10 @@ import shutil
 import stat
 import unittest
 
+import josepy as jose
 import mock
 import pytz
 
-from acme import jose
 from acme import messages
 
 from certbot import errors
