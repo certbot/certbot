@@ -246,22 +246,27 @@ DeprecationBootstrap() {
 
 
 DeterminePythonVersion() {
-  for LE_PYTHON in "$LE_PYTHON" python2.7 python27 python2 python; do
+  for LE_PYTHON in "$LE_PYTHON" python3 python2.7 python27 python2 python; do
     # Break (while keeping the LE_PYTHON value) if found.
     $EXISTS "$LE_PYTHON" > /dev/null && break
   done
   if [ "$?" != "0" ]; then
-    error "Cannot find any Pythons; please install one!"
-    exit 1
+    if [ "$1" != "NOCRASH" ]; then
+      error "Cannot find any Pythons; please install one!"
+      exit 1
+    else
+      LE_PYTHON="Python 0.0.0"
+    fi
   fi
   export LE_PYTHON
 
   PYVER=`"$LE_PYTHON" -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//'`
-  if [ "$PYVER" -lt 26 ]; then
+  if [ "$PYVER" -lt 26 ] && [ "$1" != "NOCRASH" ]; then
     error "You have an ancient version of Python entombed in your operating system..."
     error "This isn't going to work; you'll need at least version 2.6."
     exit 1
   fi
+  export PYVER
 }
 
 {{ bootstrappers/deb_common.sh }}
@@ -296,11 +301,25 @@ elif [ -f /etc/mageia-release ]; then
   }
   BOOTSTRAP_VERSION="BootstrapMageiaCommon $BOOTSTRAP_MAGEIA_COMMON_VERSION"
 elif [ -f /etc/redhat-release ]; then
-  Bootstrap() {
-    BootstrapMessage "RedHat-based OSes"
-    BootstrapRpmCommon
-  }
-  BOOTSTRAP_VERSION="BootstrapRpmCommon $BOOTSTRAP_RPM_COMMON_VERSION"
+  PREV_LE_PYTHON="$LE_PYTHON"
+  DeterminePythonVersion "NOCRASH"
+  if [ "$PYVER" -eq 26 ] || [ "$PYVER" -eq 0 ]; then
+    Bootstrap() {
+      BootstrapMessage "RedHat-based OSes that will use Python3"
+      BootstrapRpmPython3
+    }
+    BOOTSTRAP_VERSION="BootstrapRpmPython3 $BOOTSTRAP_RPM_PYTHON3_VERSION"
+  else
+    Bootstrap() {
+      BootstrapMessage "RedHat-based OSes"
+      BootstrapRpmCommon
+    }
+    BOOTSTRAP_VERSION="BootstrapRpmCommon $BOOTSTRAP_RPM_COMMON_VERSION"
+  fi
+  LE_PYTHON="$PREV_LE_PYTHON"
+  export LE_PYTHON
+  # TODO what if they set it to Python 2.6?
+  # ask brad what the intended use case of LE_PYTHON is, anyway.
 elif [ -f /etc/os-release ] && `grep -q openSUSE /etc/os-release` ; then
   Bootstrap() {
     BootstrapMessage "openSUSE-based OSes"
