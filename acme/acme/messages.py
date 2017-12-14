@@ -495,6 +495,7 @@ class Order(ResourceBody):
     status = jose.Field('status', omitempty=True, default=None)
     authorizations = jose.Field('authorizations', omitempty=True)
     certificate = jose.Field('certificate', omitempty=True)
+    finalize_url = jose.Field('finalizeURL', omitempty=True)
     expires = fields.RFC3339Field('expires', omitempty=True)
 
 class OrderResource(ResourceWithURI):

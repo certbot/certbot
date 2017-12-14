@@ -209,13 +209,14 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         :rtype: `list` of `.AuthorizationResource`
         """
         csr = OpenSSL.crypto.load_certificate_request(OpenSSL.crypto.FILETYPE_PEM, csr_pem)
+        wrapped_csr = jose.ComparableX509(csr)
         identifiers = []
         for name in crypto_util._pyopenssl_cert_or_req_san(csr):
             identifiers.append(messages.Identifier(typ=messages.IDENTIFIER_FQDN,
                 value=name))
         order = messages.NewOrder(identifiers=identifiers)
         response = self.net.post(self.directory.new_order, order)
-        order_response = self._order_resource_from_response(response, csr=csr)
+        order_response = self._order_resource_from_response(response, csr=wrapped_csr)
         return order_response
 
     def request_challenges(self, identifier, new_authzr_uri=None):
@@ -354,14 +355,14 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
                         raise Exception("failed challenge for %s: %s" %
                             (authz.body.identifier.value, chall.error))
                 raise Exception("failed authorization: %s" % authz.body)
-        return orderr
-        #### POST finalize url
-        fullchain_pem = None
-        while fullchain_pem is None:
+        latest = self._order_resource_from_response(self.net.get(orderr.uri), uri=orderr.uri)
+        self.net.post(latest.body.finalize_url, messages.CertificateRequest(csr=orderr.csr))
+        while datetime.datetime.now() < deadline:
             time.sleep(1)
-            response = self.net.get(orderr.uri)
-        latest = self._order_resource_from_response(response, uri=orderr.uri)
-        return latest
+            latest = self._order_resource_from_response(self.net.get(orderr.uri), uri=orderr.uri)
+            if latest.fullchain_pem is not None:
+               return latest
+        return None
 
 
     def request_issuance(self, csr, authzrs):
