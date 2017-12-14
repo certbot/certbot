@@ -11,13 +11,13 @@ import six
 from six.moves import http_client  # pylint: disable=import-error
 
 import crypto_util
+import josepy as jose
 import OpenSSL
 import re
 import requests
 import sys
 
 from acme import errors
-from acme import jose
 from acme import jws
 from acme import messages
 
@@ -485,7 +485,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         :param str uri: URI of certificate
 
         :returns: tuple of the form
-            (response, :class:`acme.jose.ComparableX509`)
+            (response, :class:`josepy.util.ComparableX509`)
         :rtype: tuple
 
         """
