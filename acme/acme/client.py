@@ -185,7 +185,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
             raise errors.UnexpectedUpdate(authzr)
         return authzr
 
-    def _order_resource_from_response(self, response, uri=None):
+    def _order_resource_from_response(self, response, uri=None, csr=None):
         body = messages.Order.from_json(response.json())
         authorizations = []
         for url in body.authorizations:
@@ -199,7 +199,8 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
             body=body,
             uri=response.headers.get('Location', uri),
             fullchain_pem=fullchain_pem,
-            authorizations=authorizations)
+            authorizations=authorizations,
+            csr=csr)
 
     def new_order(self, csr_pem):
         """Request challenges.
@@ -214,8 +215,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
                 value=name))
         order = messages.NewOrder(identifiers=identifiers)
         response = self.net.post(self.directory.new_order, order)
-        order_response = self._order_resource_from_response(response)
-        order_response.csr = csr
+        order_response = self._order_resource_from_response(response, csr=csr)
         return order_response
 
     def request_challenges(self, identifier, new_authzr_uri=None):
