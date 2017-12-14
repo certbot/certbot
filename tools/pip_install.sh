@@ -14,4 +14,4 @@ dev_constraints="$(dirname $my_path)/pip_constraints.txt"
 set -x
 
 # install the requested packages using the pinned requirements as constraints
-pip install -q --constraint $certbot_auto_constraints --constraint $dev_constraints "$@"
+pip install --constraint $certbot_auto_constraints --constraint $dev_constraints "$@"
