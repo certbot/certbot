@@ -327,7 +327,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
             response, authzr.body.identifier, authzr.uri)
         return updated_authzr, response
 
-    def poll_order_and_request_issuance(self, orderr):
+    def poll_order_and_request_issuance(self, orderr, max_time=datetime.timedelta(seconds=90)):
         """Poll Order Resource for status.
 
         :param orderr: Order Resource
@@ -339,8 +339,10 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
 
         """
         responses = []
+        deadline = datetime.datetime.now() + max_time
         for url in orderr.body.authorizations:
-            while True:
+            while datetime.datetime.now() < deadline:
+                time.sleep(1)
                 authzr = self._authzr_from_response(self.net.get(url), uri=url)
                 if authzr.body.status != messages.STATUS_PENDING:
                     responses.append(authzr)
