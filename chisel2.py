@@ -42,7 +42,7 @@ def make_client(email=None):
     """Build an acme.Client and register a new account with a random key."""
     key = jose.JWKRSA(key=rsa.generate_private_key(65537, 2048, default_backend()))
 
-    net = acme_client.ClientNetwork(key, verify_ssl=False, acme_version=2,
+    net = acme_client.ClientNetwork(key, acme_version=2,
                                     user_agent="Boulder integration tester")
 
     client = acme_client.Client(DIRECTORY, key=key, net=net, acme_version=2)
