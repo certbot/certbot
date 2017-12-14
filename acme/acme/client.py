@@ -356,7 +356,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
                             (authz.body.identifier.value, chall.error))
                 raise Exception("failed authorization: %s" % authz.body)
         latest = self._order_resource_from_response(self.net.get(orderr.uri), uri=orderr.uri)
-        self.net.post(latest.body.finalize_url, messages.CertificateRequest(csr=orderr.csr))
+        self.net.post(latest.body.finalize, messages.CertificateRequest(csr=orderr.csr))
         while datetime.datetime.now() < deadline:
             time.sleep(1)
             latest = self._order_resource_from_response(self.net.get(orderr.uri), uri=orderr.uri)

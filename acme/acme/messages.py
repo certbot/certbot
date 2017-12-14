@@ -1,5 +1,6 @@
 """ACME protocol messages."""
 import collections
+import re
 import six
 
 from acme import challenges
@@ -170,9 +171,9 @@ class Directory(jose.JSONDeSerializable):
 
     class Meta(jose.JSONObjectWithFields):
         """Directory Meta."""
-        terms_of_service = jose.Field('terms-of-service', omitempty=True)
+        terms_of_service = jose.Field('termsOfService', omitempty=True)
         website = jose.Field('website', omitempty=True)
-        caa_identities = jose.Field('caa-identities', omitempty=True)
+        caa_identities = jose.Field('caaIdentities', omitempty=True)
 
     @classmethod
     def _canon_key(cls, key):
@@ -192,11 +193,19 @@ class Directory(jose.JSONDeSerializable):
         # not clear on that
         self._jobj = canon_jobj
 
+    def _camelCase(self, name):
+        """Convert a snake_case name to camelCase."""
+        return re.sub('_([a-z])', lambda x: x.group(1).upper(),  name)
+
     def __getattr__(self, name):
         try:
             return self[name.replace('_', '-')]
         except KeyError as error:
-            raise AttributeError(str(error) + ': ' + name)
+            try:
+                print self._camelCase(name)
+                return self[self._camelCase(name)]
+            except KeyError as error:
+                raise AttributeError(str(error) + ': ' + name)
 
     def __getitem__(self, name):
         try:
@@ -250,7 +259,7 @@ class Registration(ResourceBody):
     contact = jose.Field('contact', omitempty=True, default=())
     agreement = jose.Field('agreement', omitempty=True)
     status = jose.Field('status', omitempty=True)
-    terms_of_service_agreed = jose.Field('terms-of-service-agreed', omitempty=True)
+    terms_of_service_agreed = jose.Field('termsOfServiceAgreed', omitempty=True)
 
     phone_prefix = 'tel:'
     email_prefix = 'mailto:'
@@ -495,7 +504,7 @@ class Order(ResourceBody):
     status = jose.Field('status', omitempty=True, default=None)
     authorizations = jose.Field('authorizations', omitempty=True)
     certificate = jose.Field('certificate', omitempty=True)
-    finalize_url = jose.Field('finalizeURL', omitempty=True)
+    finalize = jose.Field('finalize', omitempty=True)
     expires = fields.RFC3339Field('expires', omitempty=True)
 
 class OrderResource(ResourceWithURI):
