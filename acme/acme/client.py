@@ -10,6 +10,7 @@ import time
 import six
 from six.moves import http_client  # pylint: disable=import-error
 
+import crypto_util
 import josepy as jose
 import OpenSSL
 import re
@@ -48,6 +49,8 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
 
     :ivar messages.Directory directory:
     :ivar key: `.JWK` (private)
+    :ivar account: `.Account` (private)
+    :ivar acme_version: `int` (private) 1 for ACMEv1, or 2 for ACMEv2.
     :ivar alg: `.JWASignature`
     :ivar bool verify_ssl: Verify SSL certificates?
     :ivar .ClientNetwork net: Client network. Useful for testing. If not
@@ -56,8 +59,8 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
 
     """
 
-    def __init__(self, directory, key, alg=jose.RS256, verify_ssl=True,
-                 net=None):
+    def __init__(self, directory, key, account=None, acme_version=1, alg=jose.RS256,
+                 verify_ssl=True, net=None):
         """Initialize.
 
         :param directory: Directory Resource (`.messages.Directory`) or
@@ -65,7 +68,10 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
 
         """
         self.key = key
-        self.net = ClientNetwork(key, alg, verify_ssl) if net is None else net
+        self.account = account
+        self.acme_version = acme_version
+        self.net = ClientNetwork(key, account=account, acme_version=acme_version,
+            alg=alg, verify_ssl=verify_ssl) if net is None else net
 
         if isinstance(directory, six.string_types):
             self.directory = messages.Directory.from_json(
@@ -93,9 +99,12 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
 
         """
         new_reg = messages.NewRegistration() if new_reg is None else new_reg
-        assert isinstance(new_reg, messages.NewRegistration)
+        if hasattr(self.directory, 'new_account'):
+            url = self.directory.new_account
+        else:
+            url = self.directory.new_reg
 
-        response = self.net.post(self.directory[new_reg], new_reg)
+        response = self.net.post(url, new_reg)
         # TODO: handle errors
         assert response.status_code == http_client.CREATED
 
@@ -168,13 +177,47 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         return self.update_registration(
             regr.update(body=regr.body.update(agreement=regr.terms_of_service)))
 
-    def _authzr_from_response(self, response, identifier, uri=None):
+    def _authzr_from_response(self, response, identifier=None, uri=None):
         authzr = messages.AuthorizationResource(
             body=messages.Authorization.from_json(response.json()),
             uri=response.headers.get('Location', uri))
-        if authzr.body.identifier != identifier:
+        if identifier is not None and authzr.body.identifier != identifier:
             raise errors.UnexpectedUpdate(authzr)
         return authzr
+
+    def _order_resource_from_response(self, response, uri=None, csr=None):
+        body = messages.Order.from_json(response.json())
+        authorizations = []
+        for url in body.authorizations:
+            authorizations.append(self._authzr_from_response(self.net.get(url)))
+        fullchain_pem = None
+        if body.certificate is not None:
+            certificate_response = self.net.get(body.certificate, content_type=None)
+            if certificate_response.ok:
+                fullchain_pem = certificate_response.text
+        return messages.OrderResource(
+            body=body,
+            uri=response.headers.get('Location', uri),
+            fullchain_pem=fullchain_pem,
+            authorizations=authorizations,
+            csr=csr)
+
+    def new_order(self, csr_pem):
+        """Request challenges.
+
+        :returns: List of Authorization Resources.
+        :rtype: `list` of `.AuthorizationResource`
+        """
+        csr = OpenSSL.crypto.load_certificate_request(OpenSSL.crypto.FILETYPE_PEM, csr_pem)
+        wrapped_csr = jose.ComparableX509(csr)
+        identifiers = []
+        for name in crypto_util._pyopenssl_cert_or_req_san(csr):
+            identifiers.append(messages.Identifier(typ=messages.IDENTIFIER_FQDN,
+                value=name))
+        order = messages.NewOrder(identifiers=identifiers)
+        response = self.net.post(self.directory.new_order, order)
+        order_response = self._order_resource_from_response(response, csr=wrapped_csr)
+        return order_response
 
     def request_challenges(self, identifier, new_authzr_uri=None):
         """Request challenges.
@@ -227,18 +270,15 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         :raises .UnexpectedUpdate:
 
         """
-        response = self.net.post(challb.uri, response)
+        challr = messages.ChallengeResource(body=challb)
+        response = self.net.post(challr.uri, response)
         try:
             authzr_uri = response.links['up']['url']
         except KeyError:
             raise errors.ClientError('"up" Link header missing')
-        challr = messages.ChallengeResource(
+        return messages.ChallengeResource(
             authzr_uri=authzr_uri,
             body=messages.ChallengeBody.from_json(response.json()))
-        # TODO: check that challr.uri == response.headers['Location']?
-        if challr.uri != challb.uri:
-            raise errors.UnexpectedUpdate(challr.uri)
-        return challr
 
     @classmethod
     def retry_after(cls, response, default):
@@ -287,6 +327,43 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         updated_authzr = self._authzr_from_response(
             response, authzr.body.identifier, authzr.uri)
         return updated_authzr, response
+
+    def poll_order_and_request_issuance(self, orderr, max_time=datetime.timedelta(seconds=90)):
+        """Poll Order Resource for status.
+
+        :param orderr: Order Resource
+        :type orderr: `.OrderResource`
+
+        :returns: Updated Order Resource
+
+        :rtype: (`.OrderResource`)
+
+        """
+        responses = []
+        deadline = datetime.datetime.now() + max_time
+        for url in orderr.body.authorizations:
+            while datetime.datetime.now() < deadline:
+                time.sleep(1)
+                authzr = self._authzr_from_response(self.net.get(url), uri=url)
+                if authzr.body.status != messages.STATUS_PENDING:
+                    responses.append(authzr)
+                    break
+        for authzr in responses:
+            if authzr.body.status != messages.STATUS_VALID:
+                for chall in authz.body.challenges:
+                    if chall.error != None:
+                        raise Exception("failed challenge for %s: %s" %
+                            (authz.body.identifier.value, chall.error))
+                raise Exception("failed authorization: %s" % authz.body)
+        latest = self._order_resource_from_response(self.net.get(orderr.uri), uri=orderr.uri)
+        self.net.post(latest.body.finalize, messages.CertificateRequest(csr=orderr.csr))
+        while datetime.datetime.now() < deadline:
+            time.sleep(1)
+            latest = self._order_resource_from_response(self.net.get(orderr.uri), uri=orderr.uri)
+            if latest.fullchain_pem is not None:
+               return latest
+        return None
+
 
     def request_issuance(self, csr, authzrs):
         """Request issuance.
@@ -509,15 +586,18 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
     JSON_ERROR_CONTENT_TYPE = 'application/problem+json'
     REPLAY_NONCE_HEADER = 'Replay-Nonce'
 
-    def __init__(self, key, alg=jose.RS256, verify_ssl=True,
-                 user_agent='acme-python', timeout=DEFAULT_NETWORK_TIMEOUT):
+    def __init__(self, key, account=None, acme_version=1, alg=jose.RS256,
+                 verify_ssl=True, user_agent='acme-python',
+                 timeout=DEFAULT_NETWORK_TIMEOUT):
         self.key = key
+        self.account = account
         self.alg = alg
         self.verify_ssl = verify_ssl
         self._nonces = set()
         self.user_agent = user_agent
         self.session = requests.Session()
         self._default_timeout = timeout
+        self.acme_version = acme_version
 
     def __del__(self):
         # Try to close the session, but don't show exceptions to the
@@ -527,7 +607,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         except Exception:  # pylint: disable=broad-except
             pass
 
-    def _wrap_in_jws(self, obj, nonce):
+    def _wrap_in_jws(self, obj, nonce, url):
         """Wrap `JSONDeSerializable` object in JWS.
 
         .. todo:: Implement ``acmePath``.
@@ -539,9 +619,17 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         """
         jobj = obj.json_dumps(indent=2).encode()
         logger.debug('JWS payload:\n%s', jobj)
-        return jws.JWS.sign(
-            payload=jobj, key=self.key, alg=self.alg,
-            nonce=nonce).json_dumps(indent=2)
+        kwargs = {
+            "alg": self.alg,
+            "nonce": nonce
+        }
+        if self.acme_version is 2:
+            # new ACME spec
+            kwargs["url"] = url
+            if self.account is not None:
+                kwargs["kid"] = self.account["uri"]
+        kwargs["key"] = self.key
+        return jws.JWS.sign(jobj, **kwargs).json_dumps(indent=2)
 
     @classmethod
     def _check_response(cls, response, content_type=None):
@@ -715,7 +803,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
                 raise
 
     def _post_once(self, url, obj, content_type=JOSE_CONTENT_TYPE, **kwargs):
-        data = self._wrap_in_jws(obj, self._get_nonce(url))
+        data = self._wrap_in_jws(obj, self._get_nonce(url), url)
         kwargs.setdefault('headers', {'Content-Type': content_type})
         response = self._send_request('POST', url, data=data, **kwargs)
         self._add_nonce(response)
