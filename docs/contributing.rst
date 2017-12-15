@@ -3,7 +3,7 @@ Developer Guide
 ===============
 
 .. contents:: Table of Contents
-   :local:
+   :local:
 
 
 .. _getting_started:
@@ -20,7 +20,7 @@ running:
 
 .. code-block:: shell
 
-   git clone https://github.com/certbot/certbot
+   git clone https://github.com/certbot/certbot
 
 If you're on macOS, we recommend you skip the rest of this section and instead
 run Certbot in Docker. You can find instructions for how to do this :ref:`here
@@ -31,17 +31,17 @@ a new plugin is introduced.
 
 .. code-block:: shell
 
-   cd certbot
-   ./certbot-auto --os-packages-only
-   ./tools/venv.sh
+   cd certbot
+   ./certbot-auto --os-packages-only
+   ./tools/venv.sh
 
 Then in each shell where you're working on the client, do:
 
 .. code-block:: shell
 
-   source ./venv/bin/activate
-   export SERVER=https://acme-staging.api.letsencrypt.org/directory
-   source tests/integration/_common.sh
+   source ./venv/bin/activate
+   export SERVER=https://acme-staging.api.letsencrypt.org/directory
+   source tests/integration/_common.sh
 
 After that, your shell will be using the virtual environment, and you run the
 client by typing `certbot` or `certbot_test`. The latter is an alias that
@@ -58,12 +58,12 @@ More information can be found in the `virtualenv docs`_.
 Find issues to work on
 ----------------------
 
-You can find the open issues in the `github issue tracker`_.  Comparatively
-easy ones are marked `Good Volunteer Task`_.  If you're starting work on
+You can find the open issues in the `github issue tracker`_.  Comparatively
+easy ones are marked `Good Volunteer Task`_.  If you're starting work on
 something, post a comment to let others know and seek feedback on your plan
 where appropriate.
 
-Once you've got a working branch, you can open a pull request.  All changes in
+Once you've got a working branch, you can open a pull request.  All changes in
 your pull request must have thorough unit test coverage, pass our
 tests, and be compliant with the :ref:`coding style <coding-style>`.
 
@@ -113,7 +113,7 @@ and working. Fetch and start Boulder using:
 
 .. code-block:: shell
 
-  ./tests/boulder-fetch.sh
+  ./tests/boulder-fetch.sh
 
 If you have problems with Docker, you may want to try `removing all containers and
 volumes`_ and making sure you have at least 1GB of memory.
@@ -123,14 +123,14 @@ Boulder:
 
 .. code-block:: shell
 
-   export SERVER=http://localhost:4000/directory
-   source tests/integration/_common.sh
+   export SERVER=http://localhost:4000/directory
+   source tests/integration/_common.sh
 
 Run the integration tests using:
 
 .. code-block:: shell
 
-  ./tests/boulder-integration.sh
+  ./tests/boulder-integration.sh
 
 .. _removing all containers and volumes: https://www.digitalocean.com/community/tutorials/how-to-remove-docker-images-containers-and-volumes
 
@@ -138,13 +138,13 @@ Code components and layout
 ==========================
 
 acme
-  contains all protocol specific code
+  contains all protocol specific code
 certbot
-  main client code
+  main client code
 certbot-apache and certbot-nginx
-  client code to configure specific web servers
+  client code to configure specific web servers
 certbot.egg-info
-  configuration for packaging Certbot
+  configuration for packaging Certbot
 
 
 Plugin-architecture
@@ -196,7 +196,7 @@ possibly tweak the security configuration to make it more correct and secure
 Installer plugins tell the main client about their abilities to do the latter
 via the :meth:`~.IInstaller.supported_enhancements` call. We currently
 have two Installers in the tree, the `~.ApacheConfigurator`. and the
-`~.NginxConfigurator`.  External projects have made some progress toward
+`~.NginxConfigurator`.  External projects have made some progress toward
 support for IIS, Icecast and Plesk.
 
 Installers and Authenticators will oftentimes be the same class/object
@@ -241,10 +241,10 @@ virtualenv like this:
 
 .. code-block:: shell
 
-  . venv/bin/activate
-  . tests/integration/_common.sh
-  pip install -e examples/plugins/
-  certbot_test plugins
+  . venv/bin/activate
+  . tests/integration/_common.sh
+  pip install -e examples/plugins/
+  certbot_test plugins
 
 Your plugin should show up in the output of the last command. If not,
 it was not installed properly.
@@ -258,13 +258,13 @@ the virtualenv used by `certbot-auto`, but they will be wiped away when
 `certbot-auto` upgrades.
 
 .. warning:: Please be aware though that as this client is still in a
-   developer-preview stage, the API may undergo a few changes. If you
-   believe the plugin will be beneficial to the community, please
-   consider submitting a pull request to the repo and we will update
-   it with any necessary API changes.
+   developer-preview stage, the API may undergo a few changes. If you
+   believe the plugin will be beneficial to the community, please
+   consider submitting a pull request to the repo and we will update
+   it with any necessary API changes.
 
 .. _`setuptools entry points`:
-    http://setuptools.readthedocs.io/en/latest/pkg_resources.html#entry-points
+    http://setuptools.readthedocs.io/en/latest/pkg_resources.html#entry-points
 
 .. _coding-style:
 
@@ -278,26 +278,26 @@ Please:
 2. Read `PEP 8 - Style Guide for Python Code`_.
 
 3. Follow the `Google Python Style Guide`_, with the exception that we
-   use `Sphinx-style`_ documentation::
+   use `Sphinx-style`_ documentation::
 
-        def foo(arg):
-            """Short description.
+        def foo(arg):
+            """Short description.
 
-            :param int arg: Some number.
+            :param int arg: Some number.
 
-            :returns: Argument
-            :rtype: int
+            :returns: Argument
+            :rtype: int
 
-            """
-            return arg
+            """
+            return arg
 
 4. Remember to use ``pylint``.
 
 .. _Google Python Style Guide:
-  https://google.github.io/styleguide/pyguide.html
+  https://google.github.io/styleguide/pyguide.html
 .. _Sphinx-style: http://sphinx-doc.org/
 .. _PEP 8 - Style Guide for Python Code:
-  https://www.python.org/dev/peps/pep-0008
+  https://www.python.org/dev/peps/pep-0008
 
 Submitting a pull request
 =========================
@@ -306,14 +306,14 @@ Steps:
 
 1. Write your code!
 2. Make sure your environment is set up properly and that you're in your
-   virtualenv. You can do this by running ``./tools/venv.sh``.
-   (this is a **very important** step)
+   virtualenv. You can do this by running ``./tools/venv.sh``.
+   (this is a **very important** step)
 3. Run ``tox -e lint`` to check for pylint errors. Fix any errors.
 4. Run ``tox --skip-missing-interpreters`` to run the entire test suite
-   including coverage. The ``--skip-missing-interpreters`` argument ignores
-   missing versions of Python needed for running the tests. Fix any errors.
+   including coverage. The ``--skip-missing-interpreters`` argument ignores
+   missing versions of Python needed for running the tests. Fix any errors.
 5. If your code touches communication with an ACME server/Boulder, you
-   should run the integration tests, see `integration`_.
+   should run the integration tests, see `integration`_.
 6. Submit the PR.
 7. Did your tests pass on Travis? If they didn't, fix any errors.
 
@@ -323,7 +323,7 @@ Updating certbot-auto and letsencrypt-auto
 Updating the scripts
 --------------------
 Developers should *not* modify the ``certbot-auto`` and ``letsencrypt-auto`` files
-in the root directory of the repository.  Rather, modify the
+in the root directory of the repository.  Rather, modify the
 ``letsencrypt-auto.template`` and associated platform-specific shell scripts in
 the ``letsencrypt-auto-source`` and
 ``letsencrypt-auto-source/pieces/bootstrappers`` directory, respectively.
@@ -331,16 +331,16 @@ the ``letsencrypt-auto-source`` and
 Building letsencrypt-auto-source/letsencrypt-auto
 -------------------------------------------------
 Once changes to any of the aforementioned files have been made, the
-``letsencrypt-auto-source/letsencrypt-auto`` script should be updated.  In lieu of
+``letsencrypt-auto-source/letsencrypt-auto`` script should be updated.  In lieu of
 manually updating this script, run the build script, which lives at
 ``letsencrypt-auto-source/build.py``:
 
 .. code-block:: shell
 
-   python letsencrypt-auto-source/build.py
+   python letsencrypt-auto-source/build.py
 
 Running ``build.py`` will update the ``letsencrypt-auto-source/letsencrypt-auto``
-script.  Note that the ``certbot-auto`` and ``letsencrypt-auto`` scripts in the root
+script.  Note that the ``certbot-auto`` and ``letsencrypt-auto`` scripts in the root
 directory of the repository will remain **unchanged** after this script is run.
 Your changes will be propagated to these files during the next release of
 Certbot.
@@ -350,12 +350,12 @@ Opening a PR
 When opening a PR, ensure that the following files are committed:
 
 1. ``letsencrypt-auto-source/letsencrypt-auto.template`` and
-   ``letsencrypt-auto-source/pieces/bootstrappers/*``
+   ``letsencrypt-auto-source/pieces/bootstrappers/*``
 2. ``letsencrypt-auto-source/letsencrypt-auto`` (generated by ``build.py``)
 
 It might also be a good idea to double check that **no** changes were
 inadvertently made to the ``certbot-auto`` or ``letsencrypt-auto`` scripts in the
-root of the repository.  These scripts will be updated by the core developers
+root of the repository.  These scripts will be updated by the core developers
 during the next release.
 
 
@@ -367,7 +367,7 @@ commands:
 
 .. code-block:: shell
 
-   make -C docs clean html man
+   make -C docs clean html man
 
 This should generate documentation in the ``docs/_build/html``
 directory.
@@ -383,26 +383,26 @@ testing Certbot. This is especially useful for macOS users. To install Docker
 Compose, follow the instructions at https://docs.docker.com/compose/install/.
 
 .. note:: Linux users can simply run ``pip install docker-compose`` to get
-  Docker Compose after installing Docker Engine and activating your shell as
-  described in the :ref:`Getting Started <getting_started>` section.
+  Docker Compose after installing Docker Engine and activating your shell as
+  described in the :ref:`Getting Started <getting_started>` section.
 
 Now you can develop on your host machine, but run Certbot and test your changes
 in Docker. When using ``docker-compose`` make sure you are inside your clone of
 the Certbot repository. As an example, you can run the following command to
 check for linting errors::
 
-  docker-compose run --rm --service-ports development bash -c 'tox -e lint'
+  docker-compose run --rm --service-ports development bash -c 'tox -e lint'
 
 You can also leave a terminal open running a shell in the Docker container and
 modify Certbot code in another window. The Certbot repo on your host machine is
 mounted inside of the container so any changes you make immediately take
 effect. To do this, run::
 
-  docker-compose run --rm --service-ports development bash
+  docker-compose run --rm --service-ports development bash
 
 Now running the check for linting errors described above is as easy as::
 
-  tox -e lint
+  tox -e lint
 
 .. _prerequisites:
 
@@ -413,7 +413,7 @@ OS-level dependencies can be installed like so:
 
 .. code-block:: shell
 
-    letsencrypt-auto-source/letsencrypt-auto --os-packages-only
+    letsencrypt-auto-source/letsencrypt-auto --os-packages-only
 
 In general...
 
@@ -421,7 +421,7 @@ In general...
 * `Python`_ 2.6/2.7 is required
 * `Augeas`_ is required for the Python bindings
 * ``virtualenv`` and ``pip`` are used for managing other python library
-  dependencies
+  dependencies
 
 .. _Python: https://wiki.python.org/moin/BeginnersGuide/Download
 .. _Augeas: http://augeas.net/
@@ -439,12 +439,14 @@ For squeeze you will need to:
 FreeBSD
 -------
 
-Packages can be installed on FreeBSD using ``pkg``, 
-or any other port-management tool (``portupgrade``, ``portmanager``, etc.) 
-from the pre-built package or can be built and installed from ports. 
-Either way will ensure proper installation of all the dependencies required 
+Packages can be installed on FreeBSD using ``pkg``, 
+or any other port-management tool (``portupgrade``, ``portmanager``, etc.) 
+from the pre-built package or can be built and installed from ports. 
+Either way will ensure proper installation of all the dependencies required 
 for the package.
 
 FreeBSD by default uses ``tcsh``. In order to activate virtualenv (see
 above), you will need a compatible shell, e.g. ``pkg install bash &&
 bash``.
+
+

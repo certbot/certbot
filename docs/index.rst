@@ -2,20 +2,21 @@ Welcome to the Certbot documentation!
 ==================================================
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 2
 
+   start
    intro
-   what
-   install
-   using
-   contributing
-   packaging
-   resources
+   install
+   using
+   contributing
+   packaging
+   resources
+   reference
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 1
 
-   api
+   api
 
 
 Indices and tables
@@ -24,3 +25,5 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
+
