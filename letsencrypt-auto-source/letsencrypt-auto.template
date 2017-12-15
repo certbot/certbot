@@ -245,8 +245,21 @@ DeprecationBootstrap() {
 }
 
 
+DeterminePython2Version() {
+  DeterminePythonVersionBase $1 "$LE_PYTHON python2.7 python27 python2 python"
+}
+
+# TODO: use this to not upgrade if we already have python3 installed
 DeterminePythonVersion() {
-  for LE_PYTHON in "$LE_PYTHON" python3 python2.7 python27 python2 python; do
+  # TODO: check that this is the only executable we might have installed
+  if [ "$USE_PYTHON_3" = true ] ; then
+    DeterminePythonVersionBase $1 "$LE_PYTHON python3"
+  else
+    DeterminePython2Version $1
+  fi
+
+DeterminePythonVersionBase() {
+  for LE_PYTHON in $2; do
     # Break (while keeping the LE_PYTHON value) if found.
     $EXISTS "$LE_PYTHON" > /dev/null && break
   done
@@ -302,12 +315,13 @@ elif [ -f /etc/mageia-release ]; then
   BOOTSTRAP_VERSION="BootstrapMageiaCommon $BOOTSTRAP_MAGEIA_COMMON_VERSION"
 elif [ -f /etc/redhat-release ]; then
   PREV_LE_PYTHON="$LE_PYTHON"
-  DeterminePythonVersion "NOCRASH"
+  DeterminePython2Version "NOCRASH"
   if [ "$PYVER" -eq 26 ] || [ "$PYVER" -eq 0 ]; then
     Bootstrap() {
       BootstrapMessage "RedHat-based OSes that will use Python3"
       BootstrapRpmPython3
     }
+    USE_PYTHON_3=true
     BOOTSTRAP_VERSION="BootstrapRpmPython3 $BOOTSTRAP_RPM_PYTHON3_VERSION"
   else
     Bootstrap() {
@@ -318,8 +332,6 @@ elif [ -f /etc/redhat-release ]; then
   fi
   LE_PYTHON="$PREV_LE_PYTHON"
   export LE_PYTHON
-  # TODO what if they set it to Python 2.6?
-  # ask brad what the intended use case of LE_PYTHON is, anyway.
 elif [ -f /etc/os-release ] && `grep -q openSUSE /etc/os-release` ; then
   Bootstrap() {
     BootstrapMessage "openSUSE-based OSes"
