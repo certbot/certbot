@@ -146,7 +146,7 @@ def record_chosen_plugins(config, plugins, auth, inst):
          config.authenticator, config.installer)
 
 
-def choose_configurator_plugins(config, plugins, verb):
+def choose_configurator_plugins(config, plugins, verb):  # pylint: disable=too-many-branches
     """
     Figure out which configurator we're going to use, modifies
     config.authenticator and config.installer strings to reflect that choice if

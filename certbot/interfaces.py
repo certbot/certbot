@@ -260,6 +260,10 @@ class IConfig(zope.interface.Interface):
         "If updates to the server's TLS configuration should be"
         " performed by the installer.")
 
+    installer_updates = zope.interface.Attribute(
+        "If updates provided by installer enhancements should be performed"
+        " when Certbot is being run with \"renew\" verb.")
+
 class IInstaller(IPlugin):
     """Generic Certbot Installer Interface.
 
@@ -633,7 +637,6 @@ class InstallerSpecificUpdater(object):
         :param lineage: Certificate lineage object that is defined if the
         certificate was renewed.
         :type lineage: storage.RenewableCert
-
         """
 
     @abc.abstractmethod
@@ -646,6 +649,7 @@ class InstallerSpecificUpdater(object):
 
         :param str domain: domain in the lineage being updated
 
+        :raises errors.MisconfigurationError: configuration conflict
         """
 
 class ServerTLSUpdater(object):
@@ -675,7 +679,9 @@ class ServerTLSUpdater(object):
         server updates.
 
         :param str domain: domain in the lineage being updated
-        :param dict unused_kwargs: for capturing any additional keyword
-            arguments that may be added to this interface in the future
+        :param bool renewed: if the certificate was renewed on this run
 
+        :param lineage: Certificate lineage object that is defined if the
+        certificate was renewed.
+        :type lineage: storage.RenewableCert
         """

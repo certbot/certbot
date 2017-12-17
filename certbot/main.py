@@ -1091,7 +1091,7 @@ def run_frequent_updaters(config, plugins, lineage):
     """
     try:
         # installers are used in auth mode to determine domain names
-        installer, auth = plug_sel.choose_configurator_plugins(config, plugins, "certonly")
+        installer, _ = plug_sel.choose_configurator_plugins(config, plugins, "certonly")
     except errors.PluginSelectionError as e:
         logger.info("Could not choose appropriate plugin: %s", e)
         raise
