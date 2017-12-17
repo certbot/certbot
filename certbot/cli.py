@@ -1074,6 +1074,12 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         "security", "--rsa-key-size", type=int, metavar="N",
         default=flag_default("rsa_key_size"), help=config_help("rsa_key_size"))
     helpful.add(
+        "security", "--disable-installer-updates", action="store_false",
+        default=flag_default("installer_updates"), dest="installer_updates",
+        help="Disable any automatic updates to your server configuration that"
+        " would otherwise be done by the selected installer plugin, and"
+        " triggered by the \"renew\" verb.")
+    helpful.add(
         "security", "--must-staple", action="store_true",
         dest="must_staple", default=flag_default("must_staple"),
         help=config_help("must_staple"))
@@ -1116,6 +1122,15 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         default=flag_default("strict_permissions"),
         help="Require that all configuration files are owned by the current "
              "user; only needed if your config is somewhere unsafe like /tmp/")
+    helpful.add(
+        "security", "--dangerously-disable-server-tls-updates", action="store_false",
+        default=flag_default("server_tls_updates"), dest="server_tls_updates",
+        help="Disable any updates to your server's TLS configuration"
+        " other than setting the certificate and key to be used when"
+        " Certbot installs a new certificate. Using this flag is"
+        " strongly discouraged as it may leave your server or its users"
+        " insecure either now or in the future when new vulnerabilities"
+        " are discovered.")
     helpful.add(
         ["manual", "standalone", "certonly", "renew"],
         "--preferred-challenges", dest="pref_challs",

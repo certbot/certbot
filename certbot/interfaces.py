@@ -256,6 +256,10 @@ class IConfig(zope.interface.Interface):
         "user; only needed if your config is somewhere unsafe like /tmp/."
         "This is a boolean")
 
+    server_tls_updates = zope.interface.Attribute(
+        "If updates to the server's TLS configuration should be"
+        " performed by the installer.")
+
 class IInstaller(IPlugin):
     """Generic Certbot Installer Interface.
 
@@ -591,3 +595,87 @@ class IReporter(zope.interface.Interface):
 
     def print_messages(self):
         """Prints messages to the user and clears the message queue."""
+
+
+# Updater interfaces
+#
+# When "certbot renew" is run, Certbot will iterate over each lineage and check
+# if the selected installer for that lineage is a subclass of each updater
+# class. If it is and the update of that type is configured to be run for that
+# lineage, the relevant update function will be called for each domain in the
+# lineage. These functions are never called for other subcommands, so if an
+# installer wants to perform an update during the run or install subcommand, it
+# should do so when :func:`IInstaller.deploy_cert` is called.
+
+class InstallerSpecificUpdater(object):
+    """Interface for update types not currently specified by Certbot.
+
+    This class allows plugins to perform types of updates that Certbot hasn't
+    defined (yet).
+
+    """
+
+    __metaclass__ = abc.ABCMeta
+
+    @abc.abstractmethod
+    def installer_specific_updates(self, domain, renewed=False, lineage=None,
+                                   *args, **kwargs):
+        """Perform any update types defined by the installer.
+
+        If an installer is a subclass of the class containing this method, this
+        function will always be called when "certbot renew" is run. If the
+        update defined by the installer should be run conditionally, the
+        installer needs to handle checking the conditions itself.
+
+        :param str domain: domain in the lineage being updated
+        :param bool renewed: if the certificate was renewed on this run
+
+        :param lineage: Certificate lineage object that is defined if the
+        certificate was renewed.
+        :type lineage: storage.RenewableCert
+
+        """
+
+    @abc.abstractmethod
+    def verify_installer_specific_updates(self, domain, *args, **kwargs):
+        """Verify that there is configuration errors in handling the installer
+        specific updates that would be run.
+
+        If an installer is a subclass of the class containing this method, this
+        function will always be called when "certbot renew" is run.
+
+        :param str domain: domain in the lineage being updated
+
+        """
+
+class ServerTLSUpdater(object):
+    """Interface for updating a server's TLS configuration.
+
+    An installer that wants to perform TLS server updates according to this
+    interface must not only be a subclass but must respect the disablement of
+    server side TLS updates if done so by the user when performing other
+    installer functions. For example, if server TLS updates are disabled and
+    :func:`IInstaller.deploy_cert` is called, the plugin must not modify an
+    existing TLS configuration in any way other than changing the certificates
+    and keys used by the server.
+
+    An installer can determine if TLS server updates are enabled by checking
+    :attr:`IConfig.server_tls_updates`.
+
+    """
+
+    __metaclass__ = abc.ABCMeta
+
+    @abc.abstractmethod
+    def server_tls_updates(self, domain, renewed=False, lineage=None,
+                           *args, **kwargs):
+        """Set the server's TLS config to latest recommended version.
+
+        This function will only be called if the user hasn't disabled TLS
+        server updates.
+
+        :param str domain: domain in the lineage being updated
+        :param dict unused_kwargs: for capturing any additional keyword
+            arguments that may be added to this interface in the future
+
+        """

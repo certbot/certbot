@@ -414,9 +414,9 @@ def handle_renewal_request(config):
                 # XXX: ensure that each call here replaces the previous one
                 zope.component.provideUtility(lineage_config)
                 renewal_candidate.ensure_deployed()
+                from certbot import main
+                plugins = plugins_disco.PluginsRegistry.find_all()
                 if should_renew(lineage_config, renewal_candidate):
-                    plugins = plugins_disco.PluginsRegistry.find_all()
-                    from certbot import main
                     # domains have been restored into lineage_config by reconstitute
                     # but they're unnecessary anyway because renew_cert here
                     # will just grab them from the certificate
@@ -425,6 +425,9 @@ def handle_renewal_request(config):
                     main.renew_cert(lineage_config, plugins, renewal_candidate)
                     renew_successes.append(renewal_candidate.fullchain)
                 else:
+                    # Run the updaters even though not renewed
+                    main.run_frequent_updaters(lineage_config, plugins,
+                                               renewal_candidate)
                     renew_skipped.append(renewal_candidate.fullchain)
         except Exception as e:  # pylint: disable=broad-except
             # obtain_cert (presumably) encountered an unanticipated problem.

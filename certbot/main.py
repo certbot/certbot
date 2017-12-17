@@ -1056,10 +1056,9 @@ def renew_cert(config, plugins, lineage):
     except errors.PluginSelectionError as e:
         logger.info("Could not choose appropriate plugin: %s", e)
         raise
-
     le_client = _init_le_client(config, auth, installer)
 
-    _get_and_save_cert(le_client, config, lineage=lineage)
+    renewed_lineage = _get_and_save_cert(le_client, config, lineage=lineage)
 
     notify = zope.component.getUtility(interfaces.IDisplay).notification
     if installer is None:
@@ -1072,6 +1071,57 @@ def renew_cert(config, plugins, lineage):
         installer.restart()
         notify("new certificate deployed with reload of {0} server; fullchain is {1}".format(
                config.installer, lineage.fullchain), pause=False)
+        # Run supported updaters
+        _run_updaters(renewed_lineage, installer, config, renewed=True)
+
+def run_frequent_updaters(config, plugins, lineage):
+    """Run updaters that the plugin supports
+
+    :param config: Configuration object
+    :type config: interfaces.IConfig
+
+    :param plugins: List of plugins
+    :type plugins: `list` of `str`
+
+    :param lineage: Certificate lineage object
+    :type lineage: storage.RenewableCert
+
+    :returns: `None`
+    :rtype: None
+    """
+    try:
+        # installers are used in auth mode to determine domain names
+        installer, auth = plug_sel.choose_configurator_plugins(config, plugins, "certonly")
+    except errors.PluginSelectionError as e:
+        logger.info("Could not choose appropriate plugin: %s", e)
+        raise
+    _run_updaters(lineage, installer, config, renewed=False)
+
+def _run_updaters(lineage, installer, config, renewed=False):
+    """Helper function to actually run the updater classes supported by
+    installer.
+
+    :param lineage: Certificate lineage object
+    :type lineage: storage.RenewableCert
+
+    :param installer: Installer object
+    :type installer: interfaces.IInstaller
+
+    :param renewed: If the lineage was just renewed
+    :type renewed: `bool`
+
+    :returns: `None`
+    :rtype: None
+    """
+    for domain in lineage.names():
+        if config.server_tls_updates:
+            if isinstance(installer, interfaces.ServerTLSUpdater):
+                installer.server_tls_updates(domain, renewed=renewed,
+                                            lineage=lineage)
+        if config.installer_updates:
+            if isinstance(installer, interfaces.InstallerSpecificUpdater):
+                installer.installer_specific_updates(domain, renewed=renewed,
+                                                    lineage=lineage)
 
 def certonly(config, plugins):
     """Authenticate & obtain cert, but do not install it.

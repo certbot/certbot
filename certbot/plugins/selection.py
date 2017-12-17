@@ -192,6 +192,9 @@ def choose_configurator_plugins(config, plugins, verb):
             installer = pick_installer(config, req_inst, plugins)
         if need_auth:
             authenticator = pick_authenticator(config, req_auth, plugins)
+    if installer is not None:
+        verify_enhancements_supported(config, installer)
+
     logger.debug("Selected authenticator %s and installer %s", authenticator, installer)
 
     # Report on any failures
@@ -203,6 +206,50 @@ def choose_configurator_plugins(config, plugins, verb):
     record_chosen_plugins(config, plugins, authenticator, installer)
     return installer, authenticator
 
+
+def verify_enhancements_supported(config, installer):
+    """Verify the requested enhancements are supported by the installer.
+
+    If the discouraged --dangerously-disable-server-tls-updates flag is
+    set, we try to verify with the user that this behavior was desired
+    and not set accidentally through a copied command line or
+    configuration file.
+
+    This function checks if server side TLS updates are supported,
+    and calls the installer to verify installer specific updates.
+
+    :param certbot.interface.IConfig config: Configuration object
+    :param certbot.interface.IIinstaller installer: installer object
+
+    :raises errors.Error: if server TLS updates shouldn't be disabled
+    :raises errors.PluginSelectionError: enhancements are not supported
+    :raises errors.MisconfigurationError: configuration conflict
+
+    """
+    if not config.server_tls_updates:
+        flag = "--dangerously-disable-server-tls-updates"
+        if isinstance(installer, interfaces.ServerTLSUpdater):
+            verified = z_util(interfaces.IDisplay).yesno(
+                "You have requested Certbot disable TLS updates by"
+                " setting {0} on the command line or in a configuration"
+                " file. Doing this is strongly discouraged. Are you sure"
+                " you want to continue with this setting?".format(flag),
+                default=True, force_interactive=True)
+            if verified:
+                logger.info("Server TLS updates have been disabled.")
+            else:
+                raise errors.Error(
+                    "You should remove {0} from the command line or"
+                    "configuration file".format(flag))
+        else:
+            raise errors.PluginSelectionError(
+                "The {0} plugin does not currently respect"
+                " {1} and its behavior regarding TLS updates is defined"
+                " by the plugin.".format(str(installer), flag))
+    # Call the installer to verify the configuration for enhancements under
+    # its control.
+    if isinstance(installer, interfaces.InstallerSpecificUpdater):
+        installer.verify_installer_specific_updates()
 
 def set_configurator(previously, now):
     """
