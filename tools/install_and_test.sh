@@ -2,8 +2,9 @@
 # pip installs the requested packages in editable mode and runs unit tests on
 # them. Each package is installed and tested in the order they are provided
 # before the script moves on to the next package. If CERTBOT_NO_PIN is set not
-# set to 1, packages are installed using certbot-auto's requirements file as
-# constraints.
+# set to 1, packages are installed using pinned versions of all of our
+# dependencies. See pip_install.sh for more information on the versions pinned
+# to.
 
 if [ "$CERTBOT_NO_PIN" = 1 ]; then
   pip_install="pip install -q -e"
