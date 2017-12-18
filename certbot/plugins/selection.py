@@ -249,7 +249,11 @@ def verify_enhancements_supported(config, installer):
     # Call the installer to verify the configuration for enhancements under
     # its control.
     if isinstance(installer, interfaces.InstallerSpecificUpdater):
-        installer.verify_installer_specific_updates()
+        try:
+            installer.verify_installer_specific_updates()
+        except errors.MisconfigurationError as error:
+            logger.error(error)
+            raise
 
 def set_configurator(previously, now):
     """

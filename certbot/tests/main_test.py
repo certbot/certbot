@@ -167,6 +167,14 @@ class RenewUpdaterTest(unittest.TestCase):
         selection.verify_enhancements_supported(config, self.plugin_installer)
         self.assertEqual(self.plugin_installer.verify_counter.call_count, 1)
 
+    def test_verify_enhancements_plugin_exception(self):
+        v_mock = mock.MagicMock()
+        v_mock.side_effect = errors.MisconfigurationError("Oops")
+        self.plugin_installer.verify_installer_specific_updates = v_mock
+        self.assertRaises(errors.MisconfigurationError,
+                          selection.verify_enhancements_supported,
+                          mock.MagicMock(),
+                          self.plugin_installer)
 
     @mock.patch('certbot.main._get_and_save_cert')
     @mock.patch('certbot.plugins.selection.choose_configurator_plugins')
