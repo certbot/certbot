@@ -1,5 +1,6 @@
 """NginxParser is a member object of the NginxConfigurator class."""
 import copy
+import codecs
 import functools
 import glob
 import logging
@@ -202,7 +203,7 @@ class NginxParser(object):
             if item in self.parsed and not override:
                 continue
             try:
-                with open(item) as _file:
+                with codecs.open(item, "r", "utf-8") as _file:
                     parsed = nginxparser.load(_file)
                     self.parsed[item] = parsed
                     trees.append(parsed)
@@ -378,7 +379,7 @@ class NginxParser(object):
 def _parse_ssl_options(ssl_options):
     if ssl_options is not None:
         try:
-            with open(ssl_options) as _file:
+            with codecs.open(ssl_options, "r", "utf-8") as _file:
                 return nginxparser.load(_file)
         except IOError:
             logger.warn("Missing NGINX TLS options file: %s", ssl_options)
