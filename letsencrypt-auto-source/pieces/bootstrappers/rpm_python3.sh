@@ -7,10 +7,9 @@ BootstrapRpmPython3() {
   #   - CentOS 6 (EPEL must be installed manually)
 
   FindInstallTool
-  tool=$?
 
   # EPEL uses python34
-  if $tool list python34 >/dev/null 2>&1; then
+  if $TOOL list python34 >/dev/null 2>&1; then
     python_pkgs="python34
       python34-devel
       python-virtualenv
@@ -21,5 +20,5 @@ BootstrapRpmPython3() {
   # TODO: add some elifs and elses for other distros that
   # might have 2.6 or no python installed to get here
 
-  BootstrapRpmCommonBase $python_pkgs
+  BootstrapRpmCommonBase "$python_pkgs"
 }

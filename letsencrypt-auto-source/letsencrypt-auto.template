@@ -249,15 +249,16 @@ DeterminePython2Version() {
   DeterminePythonVersionBase $1 "$LE_PYTHON python2.7 python27 python2 python"
 }
 
-# TODO: use this to not upgrade if we already have python3 installed
 DeterminePythonVersion() {
   # TODO: check that this is the only executable we might have installed
-  if [ "$USE_PYTHON_3" = true ] ; then
+  if [ "$USE_PYTHON_3" -eq 1 ] ; then
     DeterminePythonVersionBase $1 "$LE_PYTHON python3"
   else
     DeterminePython2Version $1
   fi
 
+# Sets LE_PYTHON to Python version string and PYVER to the first two
+# digits of the python version
 DeterminePythonVersionBase() {
   for LE_PYTHON in $2; do
     # Break (while keeping the LE_PYTHON value) if found.
@@ -279,7 +280,6 @@ DeterminePythonVersionBase() {
     error "This isn't going to work; you'll need at least version 2.6."
     exit 1
   fi
-  export PYVER
 }
 
 {{ bootstrappers/deb_common.sh }}
@@ -321,7 +321,7 @@ elif [ -f /etc/redhat-release ]; then
       BootstrapMessage "RedHat-based OSes that will use Python3"
       BootstrapRpmPython3
     }
-    USE_PYTHON_3=true
+    USE_PYTHON_3=1
     BOOTSTRAP_VERSION="BootstrapRpmPython3 $BOOTSTRAP_RPM_PYTHON3_VERSION"
   else
     Bootstrap() {
@@ -330,8 +330,7 @@ elif [ -f /etc/redhat-release ]; then
     }
     BOOTSTRAP_VERSION="BootstrapRpmCommon $BOOTSTRAP_RPM_COMMON_VERSION"
   fi
-  LE_PYTHON="$PREV_LE_PYTHON"
-  export LE_PYTHON
+  export LE_PYTHON="$PREV_LE_PYTHON"
 elif [ -f /etc/os-release ] && `grep -q openSUSE /etc/os-release` ; then
   Bootstrap() {
     BootstrapMessage "openSUSE-based OSes"

@@ -10,10 +10,9 @@ BootstrapRpmCommon() {
   #   - CentOS 6 (EPEL must be installed manually)
 
   FindInstallTool
-  tool=$?
 
   # Most RPM distros use the "python" or "python-" naming convention.  Let's try that first.
-  if $tool list python >/dev/null 2>&1; then
+  if $TOOL list python >/dev/null 2>&1; then
     python_pkgs="$python
       python-devel
       python-virtualenv
@@ -22,7 +21,7 @@ BootstrapRpmCommon() {
     "
   # Fedora 26 starts to use the prefix python2 for python2 based packages.
   # this elseif is theoretically for any Fedora over version 26:
-  elif $tool list python2 >/dev/null 2>&1; then
+  elif $TOOL list python2 >/dev/null 2>&1; then
     python_pkgs="$python2
       python2-libs
       python2-setuptools
@@ -42,5 +41,5 @@ BootstrapRpmCommon() {
     "
   fi
 
-  BootstrapRpmCommonBase $python_pkgs
+  BootstrapRpmCommonBase "$python_pkgs"
 }

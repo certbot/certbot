@@ -1,13 +1,14 @@
 # If new packages are installed by BootstrapRpmCommonBase below, version
 # numbers in rpm_common.sh and rpm_python3.sh must be increased.
 
+# Sets TOOL to the name of the package manager
 FindInstallTool() {
   if type dnf 2>/dev/null
   then
-    tool=dnf
+    TOOL=dnf
   elif type yum 2>/dev/null
   then
-    tool=yum
+    TOOL=yum
 
   else
     error "Neither yum nor dnf found. Aborting bootstrap!"
@@ -16,8 +17,9 @@ FindInstallTool() {
 }
 
 BootstrapRpmCommonBase() {
+  # Arguments: whitespace-delimited python packages to install
+
   FindInstallTool
-  tool=$?
 
   if [ "$ASSUME_YES" = 1 ]; then
     yes_flag="-y"
