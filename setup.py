@@ -30,7 +30,6 @@ readme = read_file(os.path.join(here, 'README.rst'))
 changes = read_file(os.path.join(here, 'CHANGES.rst'))
 version = meta['version']
 
-# Please update tox.ini when modifying dependency version requirements
 # This package relies on PyOpenSSL, requests, and six, however, it isn't
 # specified here to avoid masking the more specific request requirements in
 # acme. See https://github.com/pypa/pip/issues/988 for more info.
