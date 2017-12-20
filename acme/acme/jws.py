@@ -1,10 +1,10 @@
 """ACME-specific JWS.
 
-The JWS implementation in acme.jose only implements the base JOSE standard. In
+The JWS implementation in josepy only implements the base JOSE standard. In
 order to support the new header fields defined in ACME, this module defines some
-ACME-specific classes that layer on top of acme.jose.
+ACME-specific classes that layer on top of josepy.
 """
-from acme import jose
+import josepy as jose
 
 
 class Header(jose.Header):

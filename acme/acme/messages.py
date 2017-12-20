@@ -2,10 +2,11 @@
 import collections
 import six
 
+import josepy as jose
+
 from acme import challenges
 from acme import errors
 from acme import fields
-from acme import jose
 from acme import util
 
 OLD_ERROR_PREFIX = "urn:acme:error:"
@@ -238,7 +239,7 @@ class ResourceBody(jose.JSONObjectWithFields):
 class Registration(ResourceBody):
     """Registration Resource Body.
 
-    :ivar acme.jose.jwk.JWK key: Public key.
+    :ivar josepy.jwk.JWK key: Public key.
     :ivar tuple contact: Contact information following ACME spec,
         `tuple` of `unicode`.
     :ivar unicode agreement:
@@ -446,7 +447,7 @@ class AuthorizationResource(ResourceWithURI):
 class CertificateRequest(jose.JSONObjectWithFields):
     """ACME new-cert request.
 
-    :ivar acme.jose.util.ComparableX509 csr:
+    :ivar josepy.util.ComparableX509 csr:
         `OpenSSL.crypto.X509Req` wrapped in `.ComparableX509`
 
     """
@@ -458,7 +459,7 @@ class CertificateRequest(jose.JSONObjectWithFields):
 class CertificateResource(ResourceWithURI):
     """Certificate Resource.
 
-    :ivar acme.jose.util.ComparableX509 body:
+    :ivar josepy.util.ComparableX509 body:
         `OpenSSL.crypto.X509` wrapped in `.ComparableX509`
     :ivar unicode cert_chain_uri: URI found in the 'up' ``Link`` header
     :ivar tuple authzrs: `tuple` of `AuthorizationResource`.

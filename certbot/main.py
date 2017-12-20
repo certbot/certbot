@@ -6,9 +6,9 @@ import os
 import sys
 
 import configobj
+import josepy as jose
 import zope.component
 
-from acme import jose
 from acme import errors as acme_errors
 
 import certbot
@@ -1215,6 +1215,9 @@ def main(cli_args=sys.argv[1:]):
         # Let plugins_cmd be run as un-privileged user.
         if config.func != plugins_cmd:
             raise
+    if sys.version_info[:2] == (3, 3):
+        logger.warning("Python 3.3 support will be dropped in the next release "
+                    "of Certbot - please upgrade your Python version.")
 
     set_displayer(config)
 
