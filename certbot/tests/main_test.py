@@ -11,10 +11,9 @@ import unittest
 import datetime
 import pytz
 
+import josepy as jose
 import six
 from six.moves import reload_module  # pylint: disable=import-error
-
-from acme import jose
 
 from certbot import account
 from certbot import cli

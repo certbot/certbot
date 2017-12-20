@@ -6,9 +6,9 @@ import os
 import sys
 
 import configobj
+import josepy as jose
 import zope.component
 
-from acme import jose
 from acme import errors as acme_errors
 
 import certbot

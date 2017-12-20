@@ -1,10 +1,10 @@
 """Tests for acme.messages."""
 import unittest
 
+import josepy as jose
 import mock
 
 from acme import challenges
-from acme import jose
 from acme import test_util
 
 
