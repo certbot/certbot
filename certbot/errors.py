@@ -87,6 +87,10 @@ class NotSupportedError(PluginError):
     """Certbot Plugin function not supported error."""
 
 
+class PluginStorageError(PluginError):
+    """Certbot Plugin Storage error."""
+
+
 class StandaloneBindError(Error):
     """Standalone plugin bind error."""
 
@@ -95,6 +99,7 @@ class StandaloneBindError(Error):
             "Problem binding to port {0}: {1}".format(port, socket_error))
         self.socket_error = socket_error
         self.port = port
+
 
 
 class ConfigurationError(Error):

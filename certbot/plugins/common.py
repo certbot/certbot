@@ -1,4 +1,5 @@
 """Plugin common functions."""
+import json
 import logging
 import os
 import re
@@ -46,6 +47,7 @@ class Plugin(object):
     def __init__(self, config, name):
         self.config = config
         self.name = name
+        self.storage = PluginStorage(self.config.namespace.config_dir, name)
 
     @jose_util.abstractclassmethod
     def add_parser_arguments(cls, add):
@@ -313,6 +315,105 @@ class Addr(object):
                 # count the location from the end using negative indices
                 result[i-len(addr_list)] = str(block)
         return result
+
+
+class PluginStorage(object):
+    """Class implementing storage functionality for plugins"""
+
+    def __init__(self, path, classkey):
+        """Initializes PluginStorage object storing required configuration
+        options.
+
+        :param str path: directory path for the storage file
+        :param str classkey: class name to use as root key in storage file
+
+        :returns: Plugin storage object
+        :rtype: dict
+
+        :raises .errors.PluginStorageError: when unable to open or read the file
+        """
+
+        self.storagepath = os.path.join(path, "pluginstorage.json")
+        self.classkey = classkey
+        self._data = self.load()
+
+    def load(self):
+        """Reads PluginStorage content from the disk to a dict structure
+
+        :returns: Plugin storage object
+        :rtype: dict
+
+        :raises .errors.PluginStorageError: when unable to open or read the file
+        """
+
+        data = dict()
+        filedata = ""
+        try:
+            with open(self.storagepath, 'r') as fh:
+                filedata = fh.read()
+        except IOError as e:
+            errmsg = "Could not read PluginStorage data file: {0} : {1}".format(
+                self.storagepath, str(e))
+            if os.path.isfile(self.storagepath):
+                # Only error out if file exists, but cannot be read
+                logger.error(errmsg)
+                raise errors.PluginStorageError(errmsg)
+        try:
+            data = json.loads(filedata)
+        except ValueError:
+            if len(filedata) == 0:
+                logger.debug("Plugin storage file %s was empty, no values loaded",
+                             self.storagepath)
+            else:
+                errmsg = "PluginStorage file {0} is corrupted.".format(
+                    self.storagepath)
+                logger.error(errmsg)
+                raise errors.PluginStorageError(errmsg)
+        return data
+
+    def save(self):
+        """Saves PluginStorage content to disk
+
+        :raises .errors.PluginStorageError: when unable to serialize the data
+            or write it to the filesystem
+        """
+        try:
+            serialized = json.dumps(self._data)
+        except TypeError as e:
+            errmsg = "Could not serialize PluginStorage data: {0}".format(
+                str(e))
+            logger.error(errmsg)
+            raise errors.PluginStorageError(errmsg)
+        try:
+            with os.fdopen(os.open(self.storagepath,
+                                   os.O_WRONLY | os.O_CREAT, 0o600), 'w') as fh:
+                fh.truncate()
+                fh.write(serialized)
+        except IOError as e:
+            errmsg = "Could not write PluginStorage data to file {0} : {1}".format(
+                self.storagepath, str(e))
+            logger.error(errmsg)
+            raise errors.PluginStorageError(errmsg)
+
+    def put(self, key, value):
+        """Put configuration value to PluginStorage
+
+        :param str key: Key to store the value to
+        :param value: Data to store
+        """
+        if not self.classkey in self._data.keys():
+            self._data[self.classkey] = dict()
+        self._data[self.classkey][key] = value
+
+    def fetch(self, key):
+        """Get configuration value from PluginStorage
+
+        :param str key: Key to get value from the storage
+        """
+        try:
+            return self._data[self.classkey][key]
+        except KeyError:
+            return None
 
 
 class TLSSNI01(object):
