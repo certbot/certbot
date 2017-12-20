@@ -244,13 +244,17 @@ DeprecationBootstrap() {
   fi
 }
 
-
+# Sets LE_PYTHON to Python version string and PYVER to the first two
+# digits of the python version
 DeterminePython2Version() {
+  # Arguments: "NOCRASH" if we shouldn't crash if we don't find a good python
   DeterminePythonVersionBase $1 "$LE_PYTHON python2.7 python27 python2 python"
 }
 
+# Sets LE_PYTHON to Python version string and PYVER to the first two
+# digits of the python version
 DeterminePythonVersion() {
-  # TODO: check that this is the only executable we might have installed
+  # Arguments: "NOCRASH" if we shouldn't crash if we don't find a good python
   if [ "$USE_PYTHON_3" -eq 1 ] ; then
     DeterminePythonVersionBase $1 "$LE_PYTHON python3"
   else
@@ -260,6 +264,7 @@ DeterminePythonVersion() {
 # Sets LE_PYTHON to Python version string and PYVER to the first two
 # digits of the python version
 DeterminePythonVersionBase() {
+  # Arguments: "NOCRASH" if we shouldn't crash if we don't find a good python
   for LE_PYTHON in $2; do
     # Break (while keeping the LE_PYTHON value) if found.
     $EXISTS "$LE_PYTHON" > /dev/null && break
@@ -284,7 +289,9 @@ DeterminePythonVersionBase() {
 }
 
 {{ bootstrappers/deb_common.sh }}
+{{ bootstrappers/rpm_common_base.sh }}
 {{ bootstrappers/rpm_common.sh }}
+{{ bootstrappers/rpm_python3.sh }}
 {{ bootstrappers/suse_common.sh }}
 {{ bootstrappers/arch_common.sh }}
 {{ bootstrappers/gentoo_common.sh }}
