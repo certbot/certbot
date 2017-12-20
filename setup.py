@@ -30,10 +30,9 @@ readme = read_file(os.path.join(here, 'README.rst'))
 changes = read_file(os.path.join(here, 'CHANGES.rst'))
 version = meta['version']
 
-# Please update tox.ini when modifying dependency version requirements
-# This package relies on requests, however, it isn't specified here to avoid
-# masking the more specific request requirements in acme. See
-# https://github.com/pypa/pip/issues/988 for more info.
+# This package relies on PyOpenSSL, requests, and six, however, it isn't
+# specified here to avoid masking the more specific request requirements in
+# acme. See https://github.com/pypa/pip/issues/988 for more info.
 install_requires = [
     'acme=={0}'.format(version),
     # We technically need ConfigArgParse 0.10.0 for Python 2.6 support, but
@@ -44,13 +43,11 @@ install_requires = [
     'cryptography>=1.2',  # load_pem_x509_certificate
     'mock',
     'parsedatetime>=1.3',  # Calendar.parseDT
-    'PyOpenSSL',
     'pyrfc3339',
     'pytz',
     # For pkg_resources. >=1.0 so pip resolves it to a version cryptography
     # will tolerate; see #2599:
     'setuptools>=1.0',
-    'six',
     'zope.component',
     'zope.interface',
 ]
