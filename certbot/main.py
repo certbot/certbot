@@ -1113,15 +1113,18 @@ def _run_updaters(lineage, installer, config, renewed=False):
     :returns: `None`
     :rtype: None
     """
+    renewed_lineage = None
+    if renewed:
+        renewed_lineage = lineage
+
     for domain in lineage.names():
         if config.server_tls_updates:
             if isinstance(installer, interfaces.ServerTLSUpdater):
-                installer.server_tls_updates(domain, renewed=renewed,
-                                            lineage=lineage)
+                installer.server_tls_updates(domain, lineage=renewed_lineage)
         if config.installer_updates:
             if isinstance(installer, interfaces.InstallerSpecificUpdater):
-                installer.installer_specific_updates(domain, renewed=renewed,
-                                                    lineage=lineage)
+                installer.installer_specific_updates(domain,
+                                                     lineage=renewed_lineage)
 
 def certonly(config, plugins):
     """Authenticate & obtain cert, but do not install it.

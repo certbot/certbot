@@ -116,9 +116,9 @@ class RenewUpdaterTest(unittest.TestCase):
                 self.restart = mock.MagicMock()
                 self.callcounter = mock.MagicMock()
                 self.renewed = []
-            def server_tls_updates(self, domain, renewed, *args, **kwargs):
+            def server_tls_updates(self, domain, lineage, *args, **kwargs):
                 self.callcounter(*args, **kwargs)
-                self.renewed.append(renewed)
+                self.renewed.append(bool(lineage))
 
         class MockInstallerPluginUpdater(interfaces.InstallerSpecificUpdater):
             """Mock class that implements InstallerSpecificUpdater"""
@@ -128,10 +128,10 @@ class RenewUpdaterTest(unittest.TestCase):
                 self.callcounter = mock.MagicMock()
                 self.verify_counter = mock.MagicMock()
                 self.renewed = []
-            def installer_specific_updates(self, domain, renewed,
+            def installer_specific_updates(self, domain, lineage,
                                            *args, **kwargs):
                 self.callcounter(*args, **kwargs)
-                self.renewed.append(renewed)
+                self.renewed.append(bool(lineage))
             def verify_installer_specific_updates(self, *args, **kwargs):
                 self.verify_counter(*args, **kwargs)
 

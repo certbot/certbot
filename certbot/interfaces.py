@@ -622,8 +622,7 @@ class InstallerSpecificUpdater(object):
     __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
-    def installer_specific_updates(self, domain, renewed=False, lineage=None,
-                                   *args, **kwargs):
+    def installer_specific_updates(self, domain, lineage=None, *args, **kwargs):
         """Perform any update types defined by the installer.
 
         If an installer is a subclass of the class containing this method, this
@@ -632,10 +631,9 @@ class InstallerSpecificUpdater(object):
         installer needs to handle checking the conditions itself.
 
         :param str domain: domain in the lineage being updated
-        :param bool renewed: if the certificate was renewed on this run
 
-        :param lineage: Certificate lineage object that is defined if the
-        certificate was renewed.
+        :param lineage: Certificate lineage object that is set if certificate
+            was renewed on this run.
         :type lineage: storage.RenewableCert
         """
 
@@ -671,17 +669,15 @@ class ServerTLSUpdater(object):
     __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
-    def server_tls_updates(self, domain, renewed=False, lineage=None,
-                           *args, **kwargs):
+    def server_tls_updates(self, domain, lineage=None, *args, **kwargs):
         """Set the server's TLS config to latest recommended version.
 
         This function will only be called if the user hasn't disabled TLS
         server updates.
 
         :param str domain: domain in the lineage being updated
-        :param bool renewed: if the certificate was renewed on this run
 
-        :param lineage: Certificate lineage object that is defined if the
-        certificate was renewed.
+        :param lineage: Certificate lineage object that is set if certificate
+            was renewed on this run.
         :type lineage: storage.RenewableCert
         """
