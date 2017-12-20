@@ -13,7 +13,9 @@ What you’ll find there:
 * Instructions for getting a certificate
 * Automated renewal instructions
 
-You only need to go to the Manual Installation section if you have special needs: an unusual server or configuration, if you need to modify an existing certificate, if you need to run special scripts automatically before or after installation.
+You only need to go to the Manual Installation section if you have special needs: 
+an unusual server or configuration, if you need to modify an existing certificate, 
+if you need to run special scripts automatically before or after installation.
 
 
 Getting Help

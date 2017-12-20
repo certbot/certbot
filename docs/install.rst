@@ -50,8 +50,8 @@ The ``certbot-auto`` wrapper script installs Certbot, obtaining some dependencie
 from your web server OS and putting others in a python virtual environment. You can
 download and run it as follows::
 
-  user@webserver:~$ wget https://dl.eff.org/certbot-auto
-  user@webserver:~$ chmod a+x ./certbot-auto
+  user@webserver:~$ wget https://dl.eff.org/certbot-auto
+  user@webserver:~$ chmod a+x ./certbot-auto
   user@webserver:~$ ./certbot-auto --help
 
 .. hint:: The certbot-auto download is protected by HTTPS, which is pretty good, but if you'd like to
@@ -289,10 +289,7 @@ When using the ``dns`` challenge, ``certbot`` will ask you to place a TXT DNS
 record with specific contents under the domain name consisting of the hostname
 for which you want a certificate issued, prepended by ``_acme-challenge``.
 
-For example, for the domain ``example.com``, a zone file entry would look like:
-
-::
-
+For example, for the domain ``example.com``, a zone file entry would look like::
         _acme-challenge.example.com. 300 IN TXT "gfj9Xq...Rg85nM"
 
 When using the ``tls-sni`` challenge, ``certbot`` will prepare a self-signed
@@ -319,13 +316,11 @@ The Nginx plugin has been distributed with Certbot since version 0.9.0 and shoul
 work for most configurations. We recommend backing up Nginx
 configurations before using it (though you can also revert changes to
 configurations with ``certbot --nginx rollback``). You can use it by providing
-the ``--nginx`` flag on the commandline.
-
-::
+the ``--nginx`` flag on the commandline::
 
    certbot –nginx
 
-* NGINX plugin: (TLS-SNI-01) Tries to edit your NGINX configuration files to temporarily serve a 
+* NGINX plugin: (TLS-SNI-01) Tries to edit your NGINX configuration files to temporarily serve a
   Certbot-generated certificate for a specified name. Use the NGINX plugin when you're running 
   Certbot on a web server with NGINX listening on port 443.
 
@@ -359,6 +354,7 @@ the Internet on the specified port using each requested domain name.
   port 80 (for HTTP-01) or HTTPS on port 443 (for TLS-SNI-01). Use the Standalone plugin if no existing program 
   is listening to these ports. Choose TLS-SNI-01 or HTTP-01 using the `--preferred-challenges` option.
 
+
 .. _webroot:
 
 Webroot
@@ -377,25 +373,20 @@ If you're getting a certificate for many domains at once, the plugin
 needs to know where each domain's files are served from, which could
 potentially be a separate directory for each domain. When requesting a
 certificate for multiple domains, each domain will use the most recently
-specified ``--webroot-path``. So, for instance,
+specified ``--webroot-path``. So, for instance::
 
-::
+  certbot certonly --webroot -w /var/www/example/ -d www.example.com -d example.com -w /var/www/other -d other.example.net -d another.other.example.net
 
-    certbot certonly --webroot -w /var/www/example/ -d www.example.com -d example.com -w /var/www/other -d other.example.net -d another.other.example.net
-
-would obtain a single certificate for all of those names, using the
-``/var/www/example`` webroot directory for the first two, and
-``/var/www/other`` for the second two.
+would obtain a single certificate for all of those names, using the 
+``/var/www/example`` webroot directory for the first two, and ``/var/www/other`` for the second two.
 
 The webroot plugin works by creating a temporary file for each of your requested
 domains in ``${webroot-path}/.well-known/acme-challenge``. Then the Let's Encrypt
 validation server makes HTTP requests to validate that the DNS for each
 requested domain resolves to the server running certbot. An example request
-made to your web server would look like:
+made to your web server would look like::
 
-::
-
-    66.133.109.36 - - [05/Jan/2016:20:11:24 -0500] "GET /.well-known/acme-challenge/HGr8U1IeTW4kY_Z6UIyaakzOkyQgPr_7ArlLgtZE8SX HTTP/1.1" 200 87 "-" "Mozilla/5.0 (compatible; Let's Encrypt validation server; +https://www.letsencrypt.org)"
+  66.133.109.36 - - [05/Jan/2016:20:11:24 -0500] "GET /.well-known/acme-challenge/HGr8U1IeTW4kY_Z6UIyaakzOkyQgPr_7ArlLgtZE8SX HTTP/1.1" 200 87 "-" "Mozilla/5.0 (compatible; Let's Encrypt validation server; +https://www.letsencrypt.org)"
 
 Note that to use the webroot plugin, your server must be configured to serve
 files from hidden directories. If ``/.well-known`` is treated specially by
@@ -426,7 +417,7 @@ and your origin server, which cannot use the tls-sni-01_ challenge due to the
 intermediate proxy.
 
 ::
-
     certbot run -a webroot -i apache -w /var/www/html -d example.com
+
 
 

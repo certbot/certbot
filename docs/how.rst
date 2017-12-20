@@ -9,8 +9,6 @@ are doing these tasks later, it all makes sense.
 XXX Description of the order of events. That is... you pick your webserver and OS on the interactive installation tool. Behind the scenes, certbot knows how to modify the config file and handle the challenge. You can optionally do hooks. You get authenticated and the cert gets installed. A config file gets created so that automatic renewal can happen. After that, you can manage, modify, or delete certs.
 
 
-
-
 .. include:: challenges.rst
 
 
@@ -43,20 +41,20 @@ a combination_ of distinct authenticator and installer plugins.
 
 =========== ==== ==== =============================================================== =============================
 Plugin      Auth Inst Notes                                                           Challenge types (and port)
-=========== ==== ==== =============================================================== ===========================
-apache_     Y    Y    | Automates obtaining and installing a certificate with Apache  tls-sni-01_ (443)
+=========== ==== ==== =============================================================== =============================
+apache_     Y    Y    | Automates obtaining and installing a certificate with Apache  :ref:`TLS-SNI-01 <tls_sni_01_challege>` (443)
                       | 2.4 on Debian-based distributions with ``libaugeas0`` 1.0+.
-webroot_    Y    N    | Obtains a certificate by writing to the webroot directory of  http-01_ (80)
+webroot_    Y    N    | Obtains a certificate by writing to the webroot directory of  :ref:`HTTP-01 <http_01_challenge>` (80)
                       | an already running webserver.
-nginx_      Y    Y    | Automates obtaining and installing a certificate with Nginx.  tls-sni-01_ (443)
+nginx_      Y    Y    | Automates obtaining and installing a certificate with Nginx.  :ref:`TLS-SNI-01 <tls_sni_01_challege>` (443)
                       | Shipped with Certbot 0.9.0.
-standalone_ Y    N    | Uses a "standalone" webserver to obtain a certificate.        http-01_ (80) or
-                      | Requires port 80 or 443 to be available. This is useful on    tls-sni-01_ (443)
+standalone_ Y    N    | Uses a "standalone" webserver to obtain a certificate.        :ref:`HTTP-01 <http_01_challenge>` (80) or
+                      | Requires port 80 or 443 to be available. This is useful on    :ref:`TLS-SNI-01 <tls_sni_01_challege>` (443)
                       | systems with no webserver, or when direct integration with
                       | the local webserver is not supported or not desired.
-manual_     Y    N    | Helps you obtain a certificate by giving you instructions to  http-01_ (80),
-                      | perform domain validation yourself. Additionally allows you   dns-01_ (53) or
-                      | to specify scripts to automate the validation task in a       tls-sni-01_ (443)
+manual_     Y    N    | Helps you obtain a certificate by giving you instructions to  :ref:`HTTP-01 <http_01_challenge>` (80),
+                      | perform domain validation yourself. Additionally allows you   :ref:`DNS-01 <dns_01_challenge>` (53) or
+                      | to specify scripts to automate the validation task in a       :ref:`TLS-SNI-01 <tls_sni_01_challege>` (443)
                       | customized way.
 =========== ==== ==== =============================================================== =============================
 
@@ -137,11 +135,9 @@ Pre and Post Validation Hooks
 
 Certbot allows for the specification of pre and post validation hooks when run
 in manual mode. The flags to specify these scripts are ``--manual-auth-hook``
-and ``--manual-cleanup-hook`` respectively and can be used as follows:
+and ``--manual-cleanup-hook`` respectively and can be used as follows::
 
-::
-
- certbot certonly --manual --manual-auth-hook /path/to/http/authenticator.sh --manual-cleanup-hook /path/to/http/cleanup.sh -d secure.example.com
+  certbot certonly --manual --manual-auth-hook /path/to/http/authenticator.sh --manual-cleanup-hook /path/to/http/cleanup.sh -d secure.example.com
 
 This will run the ``authenticator.sh`` script, attempt the validation, and then run
 the ``cleanup.sh`` script. Additionally certbot will pass relevant environment
@@ -158,11 +154,9 @@ Additionally for cleanup:
 
 - ``CERTBOT_AUTH_OUTPUT``: Whatever the auth script wrote to stdout
 
-Example usage for HTTP-01:
+Example usage for HTTP-01::
 
-::
-
- certbot certonly --manual --preferred-challenges=http --manual-auth-hook /path/to/http/authenticator.sh --manual-cleanup-hook /path/to/http/cleanup.sh -d secure.example.com
+  certbot certonly --manual --preferred-challenges=http --manual-auth-hook /path/to/http/authenticator.sh --manual-cleanup-hook /path/to/http/cleanup.sh -d secure.example.com
 
 /path/to/http/authenticator.sh
 
@@ -178,11 +172,9 @@ Example usage for HTTP-01:
    #!/bin/bash
    rm -f /var/www/htdocs/.well-known/acme-challenge/$CERTBOT_TOKEN
 
-Example usage for DNS-01 (Cloudflare API v4) (for example purposes only, do not use as-is)
+Example usage for DNS-01 (Cloudflare API v4) (for example purposes only, do not use as-is)::
 
-::
-
- certbot certonly --manual --preferred-challenges=dns --manual-auth-hook /path/to/dns/authenticator.sh --manual-cleanup-hook /path/to/dns/cleanup.sh -d secure.example.com
+  certbot certonly --manual --preferred-challenges=dns --manual-auth-hook /path/to/dns/authenticator.sh --manual-cleanup-hook /path/to/dns/cleanup.sh -d secure.example.com
 
 /path/to/dns/authenticator.sh
 

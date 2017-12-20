@@ -3,7 +3,7 @@ Developer Guide
 ===============
 
 .. contents:: Table of Contents
-   :local:
+   :local:
 
 
 .. _getting_started:
@@ -20,7 +20,7 @@ running:
 
 .. code-block:: shell
 
-   git clone https://github.com/certbot/certbot
+  git clone https://github.com/certbot/certbot
 
 If you're on macOS, we recommend you skip the rest of this section and instead
 run Certbot in Docker. You can find instructions for how to do this :ref:`here
@@ -31,17 +31,17 @@ a new plugin is introduced.
 
 .. code-block:: shell
 
-   cd certbot
-   ./certbot-auto --os-packages-only
-   ./tools/venv.sh
+  cd certbot
+  ./certbot-auto --os-packages-only
+  ./tools/venv.sh
 
 Then in each shell where you're working on the client, do:
 
 .. code-block:: shell
 
-   source ./venv/bin/activate
-   export SERVER=https://acme-staging.api.letsencrypt.org/directory
-   source tests/integration/_common.sh
+  source ./venv/bin/activate
+  export SERVER=https://acme-staging.api.letsencrypt.org/directory
+  source tests/integration/_common.sh
 
 After that, your shell will be using the virtual environment, and you run the
 client by typing `certbot` or `certbot_test`. The latter is an alias that
@@ -123,8 +123,8 @@ Boulder:
 
 .. code-block:: shell
 
-   export SERVER=http://localhost:4000/directory
-   source tests/integration/_common.sh
+  export SERVER=http://localhost:4000/directory
+  source tests/integration/_common.sh
 
 Run the integration tests using:
 
@@ -258,13 +258,13 @@ the virtualenv used by `certbot-auto`, but they will be wiped away when
 `certbot-auto` upgrades.
 
 .. warning:: Please be aware though that as this client is still in a
-   developer-preview stage, the API may undergo a few changes. If you
-   believe the plugin will be beneficial to the community, please
-   consider submitting a pull request to the repo and we will update
-   it with any necessary API changes.
+   developer-preview stage, the API may undergo a few changes. If you
+   believe the plugin will be beneficial to the community, please
+   consider submitting a pull request to the repo and we will update
+   it with any necessary API changes.
 
 .. _`setuptools entry points`:
-    http://setuptools.readthedocs.io/en/latest/pkg_resources.html#entry-points
+   http://setuptools.readthedocs.io/en/latest/pkg_resources.html#entry-points
 
 .. _coding-style:
 
@@ -277,27 +277,26 @@ Please:
 
 2. Read `PEP 8 - Style Guide for Python Code`_.
 
-3. Follow the `Google Python Style Guide`_, with the exception that we
-   use `Sphinx-style`_ documentation::
+3. Follow the `Google Python Style Guide`_, with the exception that we use `Sphinx-style`_ documentation::
 
-        def foo(arg):
-            """Short description.
+  def foo(arg):
+      """Short description.
 
-            :param int arg: Some number.
+      :param int arg: Some number.
 
-            :returns: Argument
-            :rtype: int
+      :returns: Argument
+      :rtype: int
 
-            """
-            return arg
+      """
+      return arg
 
 4. Remember to use ``pylint``.
 
-.. _Google Python Style Guide:
-  https://google.github.io/styleguide/pyguide.html
+.. _Google Python Style Guide: https://google.github.io/styleguide/pyguide.html
+
 .. _Sphinx-style: http://sphinx-doc.org/
-.. _PEP 8 - Style Guide for Python Code:
-  https://www.python.org/dev/peps/pep-0008
+
+.. _PEP 8 - Style Guide for Python Code: https://www.python.org/dev/peps/pep-0008
 
 Submitting a pull request
 =========================
@@ -337,7 +336,7 @@ manually updating this script, run the build script, which lives at
 
 .. code-block:: shell
 
-   python letsencrypt-auto-source/build.py
+  python letsencrypt-auto-source/build.py
 
 Running ``build.py`` will update the ``letsencrypt-auto-source/letsencrypt-auto``
 script.  Note that the ``certbot-auto`` and ``letsencrypt-auto`` scripts in the root
@@ -383,8 +382,8 @@ testing Certbot. This is especially useful for macOS users. To install Docker
 Compose, follow the instructions at https://docs.docker.com/compose/install/.
 
 .. note:: Linux users can simply run ``pip install docker-compose`` to get
-  Docker Compose after installing Docker Engine and activating your shell as
-  described in the :ref:`Getting Started <getting_started>` section.
+   Docker Compose after installing Docker Engine and activating your shell as
+   described in the :ref:`Getting Started <getting_started>` section.
 
 Now you can develop on your host machine, but run Certbot and test your changes
 in Docker. When using ``docker-compose`` make sure you are inside your clone of

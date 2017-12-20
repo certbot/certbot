@@ -1,4 +1,4 @@
-s file contains a series of comments that are used to include sections of this README in other files. Do not modify these comments unless you know what you are doing. tag:intro-begin
+.. This file contains a series of comments that are used to include sections of this README in other files. Do not modify these comments unless you know what you are doing. tag:intro-begin
 
 Certbot is part of EFF’s effort to encrypt the entire Internet. Secure communication over the Web relies on HTTPS, which requires the use of a digital certificate that lets browsers verify the identity of web servers (e.g., is that really google.com?). Web servers obtain their certificates from trusted third parties called certificate authorities (CAs). Certbot is an easy-to-use client that fetches a certificate from Let’s Encrypt—an open certificate authority launched by the EFF, Mozilla, and others—and deploys it to a web server.
 
@@ -30,9 +30,6 @@ Certbot is packaged for many common operating systems and web servers. Check whe
 certbot.eff.org_, where you will also find the correct installation instructions for
 your system.
 
-.. Note:: Unless you have very specific requirements, we kindly suggest that you use the Certbot packages provided by your package manager (see certbot.eff.org_). If such packages are not available, we recommend using ``certbot-auto``, which automates the process of installing Certbot on your system.
-
-.. _certbot.eff.org: https://certbot.eff.org
 
 
 Contributing
@@ -59,25 +56,28 @@ In many cases, you can just run ``certbot-auto`` or ``certbot``, and the
 client will guide you through the process of obtaining and installing certs
 interactively.
 
-For full command line help, you can type::
+For full command line help, you can type
 
+::
   ./certbot-auto --help all
 
 
 You can also tell it exactly what you want it to do from the command line.
 For instance, if you want to obtain a cert for ``example.com``,
 ``www.example.com``, and ``other.example.net``, using the Apache plugin to both
-obtain and install the certs, you could do this::
+obtain and install the certs, you could do this
 
-  ./certbot-auto --apache -d example.com -d www.example.com -d other.example.net
+::
+  ./certbot-auto --apache -d example.com -d www.example.com -d other.example.net
 
 (The first time you run the command, it will make an account, and ask for an
 email and agreement to the Let's Encrypt Subscriber Agreement; you can
 automate those with ``--email`` and ``--agree-tos``)
 
 If you want to use a webserver that doesn't have full plugin support yet, you
-can still use "standalone" or "webroot" plugins to obtain a certificate::
+can still use "standalone" or "webroot" plugins to obtain a certificate
 
+::
   ./certbot-auto certonly --standalone --email admin@example.com -d example.com -d www.example.com -d other.example.net
 
 

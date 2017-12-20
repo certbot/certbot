@@ -18,7 +18,7 @@ You can use Certbot to easily obtain and configure a free certificate from Let's
 joint project of EFF, Mozilla, and many other sponsors.
 
 Certificates and Lineages
-=========================
+-------------------------
 
 Certbot introduces the concept of a *lineage,* which is a collection of all the versions of a certificate
 plus Certbot configuration information maintained for that certificate from

@@ -1,5 +1,4 @@
-
-rking with Certificates
+Working with Certificates
 =========================
 
 .. contents:: Table of Contents

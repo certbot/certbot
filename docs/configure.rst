@@ -1,10 +1,12 @@
-onfiguration Files
+Configuration Files
 =====================
 
 .. contents:: Table of Contents
-   :local:
+   :local:
 
-This is another new section that will talk about what can be configured and will explain the interaction between the renewal configuration file and the global configuration file. The text about the global configuration file has been moved here from using.rst
+This is another new section that will talk about what can be configured and will explain 
+the interaction between the renewal configuration file and the global configuration file. 
+The text about the global configuration file has been moved here from using.rst
 
 .. _renewal-config-file:
 
@@ -43,23 +45,19 @@ you must follow this with an invocation of ``certbot update_symlinks``.
 For example, say that a certificate's renewal configuration file previously contained the following
 directives::
 
-  archive_dir = /etc/letsencrypt/archive/example.com
-  cert = /etc/letsencrypt/live/example.com/cert.pem
-  privkey = /etc/letsencrypt/live/example.com/privkey.pem
-  chain = /etc/letsencrypt/live/example.com/chain.pem
-  fullchain = /etc/letsencrypt/live/example.com/fullchain.pem
+  archive_dir = /etc/letsencrypt/archive/example.com
+  cert = /etc/letsencrypt/live/example.com/cert.pem
+  privkey = /etc/letsencrypt/live/example.com/privkey.pem
+  chain = /etc/letsencrypt/live/example.com/chain.pem
+  fullchain = /etc/letsencrypt/live/example.com/fullchain.pem
 
 The following commands could be used to specify where these files are located::
 
-  mv /etc/letsencrypt/archive/example.com /home/user/me/certbot/example_archive
-  sed -i 's,/etc/letsencrypt/archive/example.com,/home/user/me/certbot/example_archive,' /etc/letsencrypt/renewal/example.com.conf
-  mv /etc/letsencrypt/live/example.com/*.pem /home/user/me/certbot/
-  sed -i 's,/etc/letsencrypt/live/example.com,/home/user/me/certbot,g' /etc/letsencrypt/renewal/example.com.conf
-  certbot update_symlinks
-
-
-
-
+  mv /etc/letsencrypt/archive/example.com /home/user/me/certbot/example_archive
+  sed -i 's,/etc/letsencrypt/archive/example.com,/home/user/me/certbot/example_archive,' /etc/letsencrypt/renewal/example.com.conf
+  mv /etc/letsencrypt/live/example.com/*.pem /home/user/me/certbot/
+  sed -i 's,/etc/letsencrypt/live/example.com,/home/user/me/certbot,g' /etc/letsencrypt/renewal/example.com.conf
+  certbot update_symlinks
 
 .. _config-file:
 
@@ -81,9 +79,7 @@ example configuration file is shown below:
 By default, the following locations are searched:
 
 - ``/etc/letsencrypt/cli.ini``
-- ``$XDG_CONFIG_HOME/letsencrypt/cli.ini`` (or
-  ``~/.config/letsencrypt/cli.ini`` if ``$XDG_CONFIG_HOME`` is not
-  set).
+- ``$XDG_CONFIG_HOME/letsencrypt/cli.ini`` (or ``~/.config/letsencrypt/cli.ini`` if ``$XDG_CONFIG_HOME`` is not set).
 
 Since this configuration file applies to all invocations of certbot it is incorrect
 to list domains in it. Listing domains in cli.ini may prevent renewal from working.
