@@ -16,9 +16,10 @@ BootstrapRpmPython3() {
       python34-tools
       python-pip
     "
+  else
+    error "No support Python package available to install. Aborting bootstrap!"
+    exit 1
   fi
-  # TODO: add some elifs and elses for other distros that
-  # might have 2.6 or no python installed to get here
 
   BootstrapRpmCommonBase "$python_pkgs"
 }
