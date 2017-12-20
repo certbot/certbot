@@ -260,6 +260,7 @@ DeterminePythonVersion() {
   else
     DeterminePython2Version $1
   fi
+}
 
 # Sets LE_PYTHON to Python version string and PYVER to the first two
 # digits of the python version
