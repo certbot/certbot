@@ -2,7 +2,7 @@ Working with Certificates
 =========================
 
 .. contents:: Table of Contents
-   :local:
+   :local:
 
 Before You Begin
 ================
@@ -27,18 +27,18 @@ the ``certificates`` subcommand:
 
 This returns information in the following format::
 
-  Found the following certs:
-    Certificate Name: example.com
-      Domains: example.com, www.example.com
-      Expiry Date: 2017-02-19 19:53:00+00:00 (VALID: 30 days)
-      Certificate Path: /etc/letsencrypt/live/example.com/fullchain.pem
-      Private Key Path: /etc/letsencrypt/live/example.com/privkey.pem
+  Found the following certs:
+    Certificate Name: example.com
+      Domains: example.com, www.example.com
+      Expiry Date: 2017-02-19 19:53:00+00:00 (VALID: 30 days)
+      Certificate Path: /etc/letsencrypt/live/example.com/fullchain.pem
+      Private Key Path: /etc/letsencrypt/live/example.com/privkey.pem
 
 ``Certificate Name`` shows the name of the certificate. Pass this name
 using the ``--cert-name`` flag to specify a particular certificate for the ``run``,
 ``certonly``, ``certificates``, ``renew``, and ``delete`` commands. Example::
 
-  certbot certonly --cert-name example.com
+  certbot certonly --cert-name example.com
 
 .. _updating_certs:
 
@@ -82,13 +82,13 @@ Example:
 
 .. code-block:: none
 
-  certbot --expand -d existing.com,example.com,newdomain.com
+  certbot --expand -d existing.com,example.com,newdomain.com
 
 If you prefer, you can specify the domains individually like this:
 
 .. code-block:: none
 
-  certbot --expand -d existing.com -d example.com -d newdomain.com
+  certbot --expand -d existing.com -d example.com -d newdomain.com
 
 Consider using ``--cert-name`` instead of ``--expand``, as it gives more control
 over which certificate is modified and it lets you remove domains as well as adding them.
@@ -116,12 +116,12 @@ by specifying new domains using the ``-d`` or ``--domains`` flag. If certificate
 previously contained ``example.com`` and ``www.example.com``, it can be modified to only
 contain ``example.com`` by specifying only ``example.com`` with the ``-d`` or ``--domains`` flag. Example::
 
-  certbot certonly --cert-name example.com -d example.com
+  certbot certonly --cert-name example.com -d example.com
 
 The same format can be used to expand the set of domains a certificate contains, or to
 replace that set entirely::
 
-  certbot certonly --cert-name example.com -d example.org,www.example.org
+  certbot certonly --cert-name example.com -d example.org,www.example.org
 
 
 Revoking certificates
@@ -131,13 +131,13 @@ If your account key has been compromised or you otherwise need to revoke a certi
 use the ``revoke`` command to do so. Note that the ``revoke`` command takes the certificate path
 (ending in ``cert.pem``), not a certificate name or domain. Example::
 
-  certbot revoke --cert-path /etc/letsencrypt/live/CERTNAME/cert.pem
+  certbot revoke --cert-path /etc/letsencrypt/live/CERTNAME/cert.pem
 
 You can also specify the reason for revoking your certificate by using the ``reason`` flag.
 Reasons include ``unspecified`` which is the default, as well as ``keycompromise``,
 ``affiliationchanged``, ``superseded``, and ``cessationofoperation``::
 
-  certbot revoke --cert-path /etc/letsencrypt/live/CERTNAME/cert.pem --reason keycompromise
+  certbot revoke --cert-path /etc/letsencrypt/live/CERTNAME/cert.pem --reason keycompromise
 
 Additionally, if a certificate
 is a test certificate obtained via the ``--staging`` or ``--test-cert`` flag, that flag must be passed to the
@@ -145,7 +145,7 @@ is a test certificate obtained via the ``--staging`` or ``--test-cert`` flag, th
 Once a certificate is revoked (or for other certificate management tasks), all of a certificate's
 relevant files can be removed from the system with the ``delete`` subcommand::
 
-  certbot delete --cert-name example.com
+  certbot delete --cert-name example.com
 
 .. note:: If you don't use ``delete`` to remove the certificate completely, it will be renewed automatically at the next renewal event.
 
@@ -157,8 +157,8 @@ Renewing certificates
 ---------------------
 
 .. note:: Let's Encrypt CA issues short-lived certificates (90
-   days). Make sure you renew the certificates at least once in 3
-   months.
+   days). Make sure you renew the certificates at least once in 3
+   months.
 
 As of version 0.10.0, Certbot supports a ``renew`` action to check
 all installed certificates for impending expiry and attempt to renew
@@ -182,7 +182,7 @@ the standalone_ plugin, you might need to stop the webserver
 before renewing so standalone can bind to the necessary ports, and
 then restart it after the plugin is finished. Example::
 
-  certbot renew --pre-hook "service nginx stop" --post-hook "service nginx start"
+  certbot renew --pre-hook "service nginx stop" --post-hook "service nginx start"
 
 If a hook exits with a non-zero exit code, the error will be printed
 to ``stderr`` but renewal will be attempted anyway. A failing hook
@@ -207,34 +207,34 @@ apply appropriate file permissions.
 
 .. code-block:: none
 
-   #!/bin/sh
+   #!/bin/sh
 
-   set -e
+   set -e
 
-   for domain in $RENEWED_DOMAINS; do
-           case $domain in
-           example.com)
-                   daemon_cert_root=/etc/some-daemon/certs
+   for domain in $RENEWED_DOMAINS; do
+           case $domain in
+           example.com)
+                   daemon_cert_root=/etc/some-daemon/certs
 
-                   # Make sure the certificate and private key files are
-                   # never world readable, even just for an instant while
-                   # we're copying them into daemon_cert_root.
-                   umask 077
+                   # Make sure the certificate and private key files are
+                   # never world readable, even just for an instant while
+                   # we're copying them into daemon_cert_root.
+                   umask 077
 
-                   cp "$RENEWED_LINEAGE/fullchain.pem" "$daemon_cert_root/$domain.cert"
-                   cp "$RENEWED_LINEAGE/privkey.pem" "$daemon_cert_root/$domain.key"
+                   cp "$RENEWED_LINEAGE/fullchain.pem" "$daemon_cert_root/$domain.cert"
+                   cp "$RENEWED_LINEAGE/privkey.pem" "$daemon_cert_root/$domain.key"
 
-                   # Apply the proper file ownership and permissions for
-                   # the daemon to read its certificate and key.
-                   chown some-daemon "$daemon_cert_root/$domain.cert" \
-                           "$daemon_cert_root/$domain.key"
-                   chmod 400 "$daemon_cert_root/$domain.cert" \
-                           "$daemon_cert_root/$domain.key"
+                   # Apply the proper file ownership and permissions for
+                   # the daemon to read its certificate and key.
+                   chown some-daemon "$daemon_cert_root/$domain.cert" \
+                           "$daemon_cert_root/$domain.key"
+                   chmod 400 "$daemon_cert_root/$domain.cert" \
+                           "$daemon_cert_root/$domain.key"
 
-                   service some-daemon restart >/dev/null
-                   ;;
-           esac
-   done
+                   service some-daemon restart >/dev/null
+                   ;;
+           esac
+   done
 
 You can also specify hooks by placing files in subdirectories of Certbot's
 configuration directory. Assuming your configuration directory is
@@ -307,10 +307,10 @@ apologize for any inconvenience you encounter in integrating these
 commands into your individual environment.
 
 .. note:: ``certbot renew`` exit status will only be 1 if a renewal attempt failed.
-  This means ``certbot renew`` exit status will be 0 if no cert needs to be updated.
-  If you write a custom script and expect to run a command only after a cert was actually renewed
-  you will need to use the ``--post-hook`` since the exit status will be 0 both on successful renewal
-  and when renewal is not necessary.
+  This means ``certbot renew`` exit status will be 0 if no cert needs to be updated.
+  If you write a custom script and expect to run a command only after a cert was actually renewed
+  you will need to use the ``--post-hook`` since the exit status will be 0 both on successful renewal
+  and when renewal is not necessary.
 
 
 
@@ -327,57 +327,57 @@ symlinks). During the renewal_, ``/etc/letsencrypt/live`` is updated
 with the latest necessary files.
 
 .. note:: ``/etc/letsencrypt/archive`` and ``/etc/letsencrypt/keys``
-   contain all previous keys and certificates, while
-   ``/etc/letsencrypt/live`` symlinks to the latest versions.
+   contain all previous keys and certificates, while
+   ``/etc/letsencrypt/live`` symlinks to the latest versions.
 
 The following files are available:
 
 ``privkey.pem``
-  Private key for the certificate.
+  Private key for the certificate.
 
-  .. warning:: This **must be kept secret at all times**! Never share
-     it with anyone, including Certbot developers. You cannot
-     put it into a safe, however - your server still needs to access
-     this file in order for SSL/TLS to work.
+  .. warning:: This **must be kept secret at all times**! Never share
+     it with anyone, including Certbot developers. You cannot
+     put it into a safe, however - your server still needs to access
+     this file in order for SSL/TLS to work.
 
-  This is what Apache needs for `SSLCertificateKeyFile
-  <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatekeyfile>`_,
-  and Nginx for `ssl_certificate_key
-  <http://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_certificate_key>`_.
+  This is what Apache needs for `SSLCertificateKeyFile
+  <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatekeyfile>`_,
+  and Nginx for `ssl_certificate_key
+  <http://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_certificate_key>`_.
 
 ``fullchain.pem``
-  All certificates, **including** server certificate (aka leaf certificate or
-  end-entity certificate). The server certificate is the first one in this file,
-  followed by any intermediates.
+  All certificates, **including** server certificate (aka leaf certificate or
+  end-entity certificate). The server certificate is the first one in this file,
+  followed by any intermediates.
 
-  This is what Apache >= 2.4.8 needs for `SSLCertificateFile
-  <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatefile>`_,
-  and what Nginx needs for `ssl_certificate
-  <http://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_certificate>`_.
+  This is what Apache >= 2.4.8 needs for `SSLCertificateFile
+  <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatefile>`_,
+  and what Nginx needs for `ssl_certificate
+  <http://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_certificate>`_.
 
 ``cert.pem`` and ``chain.pem`` (less common)
-  ``cert.pem`` contains the server certificate by itself, and
-  ``chain.pem`` contains the additional intermediate certificate or
-  certificates that web browsers will need in order to validate the
-  server certificate. If you provide one of these files to your web
-  server, you **must** provide both of them, or some browsers will show
-  "This Connection is Untrusted" errors for your site, `some of the time
-  <https://whatsmychaincert.com/>`_.
+  ``cert.pem`` contains the server certificate by itself, and
+  ``chain.pem`` contains the additional intermediate certificate or
+  certificates that web browsers will need in order to validate the
+  server certificate. If you provide one of these files to your web
+  server, you **must** provide both of them, or some browsers will show
+  "This Connection is Untrusted" errors for your site, `some of the time
+  <https://whatsmychaincert.com/>`_.
 
-  Apache < 2.4.8 needs these for `SSLCertificateFile
-  <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatefile>`_.
-  and `SSLCertificateChainFile
-  <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatechainfile>`_,
-  respectively.
+  Apache < 2.4.8 needs these for `SSLCertificateFile
+  <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatefile>`_.
+  and `SSLCertificateChainFile
+  <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatechainfile>`_,
+  respectively.
 
-  If you're using OCSP stapling with Nginx >= 1.3.7, ``chain.pem`` should be
-  provided as the `ssl_trusted_certificate
-  <http://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_trusted_certificate>`_
-  to validate OCSP responses.
+  If you're using OCSP stapling with Nginx >= 1.3.7, ``chain.pem`` should be
+  provided as the `ssl_trusted_certificate
+  <http://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_trusted_certificate>`_
+  to validate OCSP responses.
 
 .. note:: All files are PEM-encoded.
-   If you need other format, such as DER or PFX, then you
-   could convert using ``openssl``. You can automate that with
-   ``--deploy-hook`` if you're using automatic renewal_.
+   If you need other format, such as DER or PFX, then you
+   could convert using ``openssl``. You can automate that with
+   ``--deploy-hook`` if you're using automatic renewal_.
 
 

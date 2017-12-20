@@ -40,22 +40,22 @@ when no command is specified. The ``run`` subcommand can also be used to specify
 a combination_ of distinct authenticator and installer plugins.
 
 =========== ==== ==== =============================================================== =============================
-Plugin      Auth Inst Notes                                                           Challenge types (and port)
+Plugin      Auth Inst Notes                                                           Challenge types (and port)
 =========== ==== ==== =============================================================== =============================
-apache_     Y    Y    | Automates obtaining and installing a certificate with Apache  :ref:`TLS-SNI-01 <tls_sni_01_challege>` (443)
-                      | 2.4 on Debian-based distributions with ``libaugeas0`` 1.0+.
-webroot_    Y    N    | Obtains a certificate by writing to the webroot directory of  :ref:`HTTP-01 <http_01_challenge>` (80)
-                      | an already running webserver.
-nginx_      Y    Y    | Automates obtaining and installing a certificate with Nginx.  :ref:`TLS-SNI-01 <tls_sni_01_challege>` (443)
-                      | Shipped with Certbot 0.9.0.
-standalone_ Y    N    | Uses a "standalone" webserver to obtain a certificate.        :ref:`HTTP-01 <http_01_challenge>` (80) or
-                      | Requires port 80 or 443 to be available. This is useful on    :ref:`TLS-SNI-01 <tls_sni_01_challege>` (443)
-                      | systems with no webserver, or when direct integration with
-                      | the local webserver is not supported or not desired.
-manual_     Y    N    | Helps you obtain a certificate by giving you instructions to  :ref:`HTTP-01 <http_01_challenge>` (80),
-                      | perform domain validation yourself. Additionally allows you   :ref:`DNS-01 <dns_01_challenge>` (53) or
-                      | to specify scripts to automate the validation task in a       :ref:`TLS-SNI-01 <tls_sni_01_challege>` (443)
-                      | customized way.
+apache_     Y    Y    | Automates obtaining and installing a certificate with Apache  :ref:`TLS-SNI-01 <tls_sni_01_challege>` (443)
+                      | 2.4 on Debian-based distributions with ``libaugeas0`` 1.0+.
+webroot_    Y    N    | Obtains a certificate by writing to the webroot directory of  :ref:`HTTP-01 <http_01_challenge>` (80)
+                      | an already running webserver.
+nginx_      Y    Y    | Automates obtaining and installing a certificate with Nginx.  :ref:`TLS-SNI-01 <tls_sni_01_challege>` (443)
+                      | Shipped with Certbot 0.9.0.
+standalone_ Y    N    | Uses a "standalone" webserver to obtain a certificate.        :ref:`HTTP-01 <http_01_challenge>` (80) or
+                      | Requires port 80 or 443 to be available. This is useful on    :ref:`TLS-SNI-01 <tls_sni_01_challege>` (443)
+                      | systems with no webserver, or when direct integration with
+                      | the local webserver is not supported or not desired.
+manual_     Y    N    | Helps you obtain a certificate by giving you instructions to  :ref:`HTTP-01 <http_01_challenge>` (80),
+                      | perform domain validation yourself. Additionally allows you   :ref:`DNS-01 <dns_01_challenge>` (53) or
+                      | to specify scripts to automate the validation task in a       :ref:`TLS-SNI-01 <tls_sni_01_challege>` (443)
+                      | customized way.
 =========== ==== ==== =============================================================== =============================
 
 A few
@@ -72,19 +72,19 @@ other developers. Many are beta/experimental, but some are already in
 widespread use:
 
 =========== ==== ==== ===============================================================
-Plugin      Auth Inst Notes
+Plugin      Auth Inst Notes
 =========== ==== ==== ===============================================================
-plesk_      Y    Y    Integration with the Plesk web hosting tool
-haproxy_    Y    Y    Integration with the HAProxy load balancer
-s3front_    Y    Y    Integration with Amazon CloudFront distribution of S3 buckets
-gandi_      Y    Y    Integration with Gandi's hosting products and API
-varnish_    Y    N    Obtain certificates via a Varnish server
-external_   Y    N    A plugin for convenient scripting (See also ticket 2782_)
-icecast_    N    Y    Deploy certificates to Icecast 2 streaming media servers
-pritunl_    N    Y    Install certificates in pritunl distributed OpenVPN servers
-proxmox_    N    Y    Install certificates in Proxmox Virtualization servers
-postfix_    N    Y    STARTTLS Everywhere is becoming a Certbot Postfix/Exim plugin
-heroku_     Y    Y    Integration with Heroku SSL
+plesk_      Y    Y    Integration with the Plesk web hosting tool
+haproxy_    Y    Y    Integration with the HAProxy load balancer
+s3front_    Y    Y    Integration with Amazon CloudFront distribution of S3 buckets
+gandi_      Y    Y    Integration with Gandi's hosting products and API
+varnish_    Y    N    Obtain certificates via a Varnish server
+external_   Y    N    A plugin for convenient scripting (See also ticket 2782_)
+icecast_    N    Y    Deploy certificates to Icecast 2 streaming media servers
+pritunl_    N    Y    Install certificates in pritunl distributed OpenVPN servers
+proxmox_    N    Y    Install certificates in Proxmox Virtualization servers
+postfix_    N    Y    STARTTLS Everywhere is becoming a Certbot Postfix/Exim plugin
+heroku_     Y    Y    Integration with Heroku SSL
 =========== ==== ==== ===============================================================
 
 .. _plesk: https://github.com/plesk/letsencrypt-plesk
@@ -162,87 +162,87 @@ Example usage for HTTP-01::
 
 .. code-block:: none
 
-   #!/bin/bash
-   echo $CERTBOT_VALIDATION > /var/www/htdocs/.well-known/acme-challenge/$CERTBOT_TOKEN
+   #!/bin/bash
+   echo $CERTBOT_VALIDATION > /var/www/htdocs/.well-known/acme-challenge/$CERTBOT_TOKEN
 
 /path/to/http/cleanup.sh
 
 .. code-block:: none
 
-   #!/bin/bash
-   rm -f /var/www/htdocs/.well-known/acme-challenge/$CERTBOT_TOKEN
+   #!/bin/bash
+   rm -f /var/www/htdocs/.well-known/acme-challenge/$CERTBOT_TOKEN
 
 Example usage for DNS-01 (Cloudflare API v4) (for example purposes only, do not use as-is)::
 
-  certbot certonly --manual --preferred-challenges=dns --manual-auth-hook /path/to/dns/authenticator.sh --manual-cleanup-hook /path/to/dns/cleanup.sh -d secure.example.com
+  certbot certonly --manual --preferred-challenges=dns --manual-auth-hook /path/to/dns/authenticator.sh --manual-cleanup-hook /path/to/dns/cleanup.sh -d secure.example.com
 
 /path/to/dns/authenticator.sh
 
 .. code-block:: none
 
-   #!/bin/bash
+   #!/bin/bash
 
-   # Get your API key from https://www.cloudflare.com/a/account/my-account
-   API_KEY="your-api-key"
-   EMAIL="your.email@example.com"
+   # Get your API key from https://www.cloudflare.com/a/account/my-account
+   API_KEY="your-api-key"
+   EMAIL="your.email@example.com"
 
-   # Strip only the top domain to get the zone id
-   DOMAIN=$(expr match "$CERTBOT_DOMAIN" '.*\.\(.*\..*\)')
+   # Strip only the top domain to get the zone id
+   DOMAIN=$(expr match "$CERTBOT_DOMAIN" '.*\.\(.*\..*\)')
 
-   # Get the Cloudflare zone id
-   ZONE_EXTRA_PARAMS="status=active&page=1&per_page=20&order=status&direction=desc&match=all"
-   ZONE_ID=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=$DOMAIN&$ZONE_EXTRA_PARAMS" \
-        -H     "X-Auth-Email: $EMAIL" \
-        -H     "X-Auth-Key: $API_KEY" \
-        -H     "Content-Type: application/json" | python -c "import sys,json;print(json.load(sys.stdin)['result'][0]['id'])")
+   # Get the Cloudflare zone id
+   ZONE_EXTRA_PARAMS="status=active&page=1&per_page=20&order=status&direction=desc&match=all"
+   ZONE_ID=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=$DOMAIN&$ZONE_EXTRA_PARAMS" \
+        -H     "X-Auth-Email: $EMAIL" \
+        -H     "X-Auth-Key: $API_KEY" \
+        -H     "Content-Type: application/json" | python -c "import sys,json;print(json.load(sys.stdin)['result'][0]['id'])")
 
-   # Create TXT record
-   CREATE_DOMAIN="_acme-challenge.$CERTBOT_DOMAIN"
-   RECORD_ID=$(curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records" \
-        -H     "X-Auth-Email: $EMAIL" \
-        -H     "X-Auth-Key: $API_KEY" \
-        -H     "Content-Type: application/json" \
-        --data '{"type":"TXT","name":"'"$CREATE_DOMAIN"'","content":"'"$CERTBOT_VALIDATION"'","ttl":120}' \
-                | python -c "import sys,json;print(json.load(sys.stdin)['result']['id'])")
-   # Save info for cleanup
-   if [ ! -d /tmp/CERTBOT_$CERTBOT_DOMAIN ];then
-           mkdir -m 0700 /tmp/CERTBOT_$CERTBOT_DOMAIN
-   fi
-   echo $ZONE_ID > /tmp/CERTBOT_$CERTBOT_DOMAIN/ZONE_ID
-   echo $RECORD_ID > /tmp/CERTBOT_$CERTBOT_DOMAIN/RECORD_ID
+   # Create TXT record
+   CREATE_DOMAIN="_acme-challenge.$CERTBOT_DOMAIN"
+   RECORD_ID=$(curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records" \
+        -H     "X-Auth-Email: $EMAIL" \
+        -H     "X-Auth-Key: $API_KEY" \
+        -H     "Content-Type: application/json" \
+        --data '{"type":"TXT","name":"'"$CREATE_DOMAIN"'","content":"'"$CERTBOT_VALIDATION"'","ttl":120}' \
+                | python -c "import sys,json;print(json.load(sys.stdin)['result']['id'])")
+   # Save info for cleanup
+   if [ ! -d /tmp/CERTBOT_$CERTBOT_DOMAIN ];then
+           mkdir -m 0700 /tmp/CERTBOT_$CERTBOT_DOMAIN
+   fi
+   echo $ZONE_ID > /tmp/CERTBOT_$CERTBOT_DOMAIN/ZONE_ID
+   echo $RECORD_ID > /tmp/CERTBOT_$CERTBOT_DOMAIN/RECORD_ID
 
-   # Sleep to make sure the change has time to propagate over to DNS
-   sleep 25
+   # Sleep to make sure the change has time to propagate over to DNS
+   sleep 25
 
 /path/to/dns/cleanup.sh
 
 .. code-block:: none
 
-   #!/bin/bash
+   #!/bin/bash
 
-   # Get your API key from https://www.cloudflare.com/a/account/my-account
-   API_KEY="your-api-key"
-   EMAIL="your.email@example.com"
+   # Get your API key from https://www.cloudflare.com/a/account/my-account
+   API_KEY="your-api-key"
+   EMAIL="your.email@example.com"
 
-   if [ -f /tmp/CERTBOT_$CERTBOT_DOMAIN/ZONE_ID ]; then
-           ZONE_ID=$(cat /tmp/CERTBOT_$CERTBOT_DOMAIN/ZONE_ID)
-           rm -f /tmp/CERTBOT_$CERTBOT_DOMAIN/ZONE_ID
-   fi
+   if [ -f /tmp/CERTBOT_$CERTBOT_DOMAIN/ZONE_ID ]; then
+           ZONE_ID=$(cat /tmp/CERTBOT_$CERTBOT_DOMAIN/ZONE_ID)
+           rm -f /tmp/CERTBOT_$CERTBOT_DOMAIN/ZONE_ID
+   fi
 
-   if [ -f /tmp/CERTBOT_$CERTBOT_DOMAIN/RECORD_ID ]; then
-           RECORD_ID=$(cat /tmp/CERTBOT_$CERTBOT_DOMAIN/RECORD_ID)
-           rm -f /tmp/CERTBOT_$CERTBOT_DOMAIN/RECORD_ID
-   fi
+   if [ -f /tmp/CERTBOT_$CERTBOT_DOMAIN/RECORD_ID ]; then
+           RECORD_ID=$(cat /tmp/CERTBOT_$CERTBOT_DOMAIN/RECORD_ID)
+           rm -f /tmp/CERTBOT_$CERTBOT_DOMAIN/RECORD_ID
+   fi
 
-   # Remove the challenge TXT record from the zone
-   if [ -n "${ZONE_ID}" ]; then
-       if [ -n "${RECORD_ID}" ]; then
-           curl -s -X DELETE "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records/$RECORD_ID" \
-                   -H "X-Auth-Email: $EMAIL" \
-                   -H "X-Auth-Key: $API_KEY" \
-                   -H "Content-Type: application/json"
-       fi
-   fi
+   # Remove the challenge TXT record from the zone
+   if [ -n "${ZONE_ID}" ]; then
+       if [ -n "${RECORD_ID}" ]; then
+           curl -s -X DELETE "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records/$RECORD_ID" \
+                   -H "X-Auth-Email: $EMAIL" \
+                   -H "X-Auth-Key: $API_KEY" \
+                   -H "Content-Type: application/json"
+       fi
+   fi
 
 
 

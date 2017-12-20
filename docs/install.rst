@@ -3,7 +3,7 @@ Manual Installation
 =====================
 
 .. contents:: Table of Contents
-   :local:
+   :local:
 
 .. Note:: The easiest way to install Certbot is by visiting `certbot.eff.org`_, 
 where you can find the correct installation instructions for many web server 
@@ -19,7 +19,7 @@ Certbot currently requires Python 2.6, 2.7, or 3.3+. By default, it requires
 root access in order to write to ``/etc/letsencrypt``,
 ``/var/log/letsencrypt``, ``/var/lib/letsencrypt``; to bind to ports 80 and 443
 (if you use the ``standalone`` plugin) and to read and modify webserver
-configurations (if you use the ``apache`` or ``nginx`` plugins).  If none of
+configurations (if you use the ``apache`` or ``nginx`` plugins).  If none of
 these apply to you, it is theoretically possible to run without root privileges,
 but for most users who want to avoid running an ACME client as root, either
 `letsencrypt-nosudo <https://github.com/diafygi/letsencrypt-nosudo>`_ or
@@ -52,14 +52,14 @@ download and run it as follows::
 
   user@webserver:~$ wget https://dl.eff.org/certbot-auto
   user@webserver:~$ chmod a+x ./certbot-auto
-  user@webserver:~$ ./certbot-auto --help
+  user@webserver:~$ ./certbot-auto --help
 
 .. hint:: The certbot-auto download is protected by HTTPS, which is pretty good, but if you'd like to
-          double check the integrity of the ``certbot-auto`` script, you can use these steps for verification before running it::
+          double check the integrity of the ``certbot-auto`` script, you can use these steps for verification before running it::
 
-            user@server:~$ wget -N https://dl.eff.org/certbot-auto.asc
-            user@server:~$ gpg2 --recv-key A2CFB51FA275A7286234E7B24D17C995CD9775F2
-            user@server:~$ gpg2 --trusted-key 4D17C995CD9775F2 --verify certbot-auto.asc certbot-auto
+            user@server:~$ wget -N https://dl.eff.org/certbot-auto.asc
+            user@server:~$ gpg2 --recv-key A2CFB51FA275A7286234E7B24D17C995CD9775F2
+            user@server:~$ gpg2 --trusted-key 4D17C995CD9775F2 --verify certbot-auto.asc certbot-auto
 
 The ``certbot-auto`` command updates to the latest client release automatically.
 Since ``certbot-auto`` is a wrapper to ``certbot``, it accepts exactly
@@ -68,7 +68,7 @@ the same command line flags and arguments. For more information, see
 
 For full command line help, you can type::
 
-  ./certbot-auto --help all
+  ./certbot-auto --help all
 
 Running with Docker
 -------------------
@@ -97,10 +97,10 @@ to, `install Docker`_, then issue the following command:
 
 .. code-block:: shell
 
-   sudo docker run -it --rm -p 443:443 -p 80:80 --name certbot \
-               -v "/etc/letsencrypt:/etc/letsencrypt" \
-               -v "/var/lib/letsencrypt:/var/lib/letsencrypt" \
-               certbot/certbot certonly
+   sudo docker run -it --rm -p 443:443 -p 80:80 --name certbot \
+               -v "/etc/letsencrypt:/etc/letsencrypt" \
+               -v "/var/lib/letsencrypt:/var/lib/letsencrypt" \
+               certbot/certbot certonly
 
 Running Certbot with the ``certonly`` command will obtain a certificate and place it in the directory
 ``/etc/letsencrypt/live`` on your system. Because Certonly cannot install the certificate from
@@ -120,7 +120,7 @@ Operating System Packages
 
 .. code-block:: shell
 
-   sudo pacman -S certbot
+   sudo pacman -S certbot
 
 **Debian**
 
@@ -128,8 +128,8 @@ If you run Debian Stretch or Debian Sid, you can install certbot packages.
 
 .. code-block:: shell
 
-   sudo apt-get update
-   sudo apt-get install certbot python-certbot-apache
+   sudo apt-get update
+   sudo apt-get install certbot python-certbot-apache
 
 If you don't want to use the Apache plugin, you can omit the
 ``python-certbot-apache`` package.
@@ -140,18 +140,18 @@ repo, if you have not already done so. Then run:
 
 .. code-block:: shell
 
-   sudo apt-get install certbot python-certbot-apache -t jessie-backports
+   sudo apt-get install certbot python-certbot-apache -t jessie-backports
 
 **Fedora**
 
 .. code-block:: shell
 
-    sudo dnf install certbot python2-certbot-apache
+    sudo dnf install certbot python2-certbot-apache
 
 **FreeBSD**
 
-  * Port: ``cd /usr/ports/security/py-certbot && make install clean``
-  * Package: ``pkg install py27-certbot``
+  * Port: ``cd /usr/ports/security/py-certbot && make install clean``
+  * Package: ``pkg install py27-certbot``
 
 **Gentoo**
 
@@ -160,8 +160,8 @@ want to use the Apache plugin, it has to be installed separately:
 
 .. code-block:: shell
 
-   emerge -av app-crypt/certbot
-   emerge -av app-crypt/certbot-apache
+   emerge -av app-crypt/certbot
+   emerge -av app-crypt/certbot-apache
 
 When using the Apache plugin, you will run into a "cannot find a cert or key
 directive" error if you're sporting the default Gentoo ``httpd.conf``.
@@ -172,17 +172,17 @@ Change
 
 .. code-block:: shell
 
-   <IfDefine SSL>
-   LoadModule ssl_module modules/mod_ssl.so
-   </IfDefine>
+   <IfDefine SSL>
+   LoadModule ssl_module modules/mod_ssl.so
+   </IfDefine>
 
 to
 
 .. code-block:: shell
 
-   #<IfDefine SSL>
-   LoadModule ssl_module modules/mod_ssl.so
-   #</IfDefine>
+   #<IfDefine SSL>
+   LoadModule ssl_module modules/mod_ssl.so
+   #</IfDefine>
 
 For the time being, this is the only way for the Apache plugin to recognise
 the appropriate directives when installing the certificate.
@@ -190,13 +190,13 @@ Note: this change is not required for the other plugins.
 
 **NetBSD**
 
-  * Build from source: ``cd /usr/pkgsrc/security/py-certbot && make install clean``
-  * Install pre-compiled package: ``pkg_add py27-certbot``
+  * Build from source: ``cd /usr/pkgsrc/security/py-certbot && make install clean``
+  * Install pre-compiled package: ``pkg_add py27-certbot``
 
 **OpenBSD**
 
-  * Port: ``cd /usr/ports/security/letsencrypt/client && make install clean``
-  * Package: ``pkg_add letsencrypt``
+  * Port: ``cd /usr/ports/security/letsencrypt/client && make install clean``
+  * Package: ``pkg_add letsencrypt``
 
 **Other Operating Systems**
 
@@ -211,11 +211,11 @@ Installation from source is only supported for developers and the
 whole process is described in the :doc:`contributing`.
 
 .. warning:: Please do **not** use ``python setup.py install``, ``python pip
-   install .``, or ``easy_install .``. Please do **not** attempt the
-   installation commands as superuser/root and/or without virtual environment,
-   e.g. ``sudo python setup.py install``, ``sudo pip install``, ``sudo
-   ./venv/bin/...``. These modes of operation might corrupt your operating
-   system and are **not supported** by the Certbot team!
+   install .``, or ``easy_install .``. Please do **not** attempt the
+   installation commands as superuser/root and/or without virtual environment,
+   e.g. ``sudo python setup.py install``, ``sudo pip install``, ``sudo
+   ./venv/bin/...``. These modes of operation might corrupt your operating
+   system and are **not supported** by the Certbot team!
 
 Problems with Python virtual environment
 ----------------------------------------
@@ -224,15 +224,15 @@ On a low memory system such as VPS with less than 512MB of RAM, the required dep
 This can be identified if the pip outputs contains something like ``internal compiler error: Killed (program cc1)``.
 You can workaround this restriction by creating a temporary swapfile::
 
-  user@webserver:~$ sudo fallocate -l 1G /tmp/swapfile
-  user@webserver:~$ sudo chmod 600 /tmp/swapfile
-  user@webserver:~$ sudo mkswap /tmp/swapfile
-  user@webserver:~$ sudo swapon /tmp/swapfile
+  user@webserver:~$ sudo fallocate -l 1G /tmp/swapfile
+  user@webserver:~$ sudo chmod 600 /tmp/swapfile
+  user@webserver:~$ sudo mkswap /tmp/swapfile
+  user@webserver:~$ sudo swapon /tmp/swapfile
 
 Disable and remove the swapfile once the virtual environment is constructed::
 
-  user@webserver:~$ sudo swapoff /tmp/swapfile
-  user@webserver:~$ sudo rm /tmp/swapfile
+  user@webserver:~$ sudo swapoff /tmp/swapfile
+  user@webserver:~$ sudo rm /tmp/swapfile
 
 
 .. _getting_certs:
@@ -259,9 +259,9 @@ This automates both obtaining *and* installing certificates on an Apache
 webserver. To specify this plugin on the command line, simply include
 ``--apache``.
 
-* Apache plugin: (TLS-SNI-01) Tries to edit your Apache configuration files to temporarily serve 
-  a Certbot-generated certificate for a specified name. Use the Apache plugin when you're running 
-  Certbot on a web server with Apache listening on port 443.
+* Apache plugin: (TLS-SNI-01) Tries to edit your Apache configuration files to temporarily serve 
+  a Certbot-generated certificate for a specified name. Use the Apache plugin when you're running 
+  Certbot on a web server with Apache listening on port 443.
 
 .. _manual:
 
@@ -290,7 +290,7 @@ record with specific contents under the domain name consisting of the hostname
 for which you want a certificate issued, prepended by ``_acme-challenge``.
 
 For example, for the domain ``example.com``, a zone file entry would look like::
-        _acme-challenge.example.com. 300 IN TXT "gfj9Xq...Rg85nM"
+        _acme-challenge.example.com. 300 IN TXT "gfj9Xq...Rg85nM"
 
 When using the ``tls-sni`` challenge, ``certbot`` will prepare a self-signed
 SSL certificate for you with the challenge validation appropriately
@@ -303,9 +303,9 @@ perform the authentication procedure and/or clean up after it by using
 the ``--manual-auth-hook`` and ``--manual-cleanup-hook`` flags. This is
 described in more depth in the hooks_ section.
 
-* Manual plugin: (DNS-01 or HTTP-01) Either tells you what changes to make to your configuration or updates 
-  your DNS records using an external script (for DNS-01) or your webroot (for HTTP-01). Use the Manual 
-  plugin if you have the technical knowledge to make configuration changes yourself when asked to do so. 
+* Manual plugin: (DNS-01 or HTTP-01) Either tells you what changes to make to your configuration or updates 
+  your DNS records using an external script (for DNS-01) or your webroot (for HTTP-01). Use the Manual 
+  plugin if you have the technical knowledge to make configuration changes yourself when asked to do so. 
 
 .. _nginx:
 
@@ -318,11 +318,11 @@ configurations before using it (though you can also revert changes to
 configurations with ``certbot --nginx rollback``). You can use it by providing
 the ``--nginx`` flag on the commandline::
 
-   certbot –nginx
+   certbot –nginx
 
 * NGINX plugin: (TLS-SNI-01) Tries to edit your NGINX configuration files to temporarily serve a
-  Certbot-generated certificate for a specified name. Use the NGINX plugin when you're running 
-  Certbot on a web server with NGINX listening on port 443.
+  Certbot-generated certificate for a specified name. Use the NGINX plugin when you're running 
+  Certbot on a web server with NGINX listening on port 443.
 
 .. _standalone:
 
@@ -341,18 +341,18 @@ order to perform domain validation, so you may need to stop your
 existing webserver. To control which port the plugin uses, include
 one of the options shown below on the command line.
 
-    * ``--preferred-challenges http`` to use port 80
-    * ``--preferred-challenges tls-sni`` to use port 443
+    * ``--preferred-challenges http`` to use port 80
+    * ``--preferred-challenges tls-sni`` to use port 443
 
 It must still be possible for your machine to accept inbound connections from
 the Internet on the specified port using each requested domain name.
 
 .. note:: The ``--standalone-supported-challenges`` option has been
-   deprecated since ``certbot`` version 0.9.0.
+   deprecated since ``certbot`` version 0.9.0.
 
-* Standalone plugin: (TLS-SNI-01 or HTTP-01) Tries to run a temporary web server listening on either HTTP on 
-  port 80 (for HTTP-01) or HTTPS on port 443 (for TLS-SNI-01). Use the Standalone plugin if no existing program 
-  is listening to these ports. Choose TLS-SNI-01 or HTTP-01 using the `--preferred-challenges` option.
+* Standalone plugin: (TLS-SNI-01 or HTTP-01) Tries to run a temporary web server listening on either HTTP on 
+  port 80 (for HTTP-01) or HTTPS on port 443 (for TLS-SNI-01). Use the Standalone plugin if no existing program 
+  is listening to these ports. Choose TLS-SNI-01 or HTTP-01 using the `--preferred-challenges` option.
 
 
 .. _webroot:
@@ -375,7 +375,7 @@ potentially be a separate directory for each domain. When requesting a
 certificate for multiple domains, each domain will use the most recently
 specified ``--webroot-path``. So, for instance::
 
-  certbot certonly --webroot -w /var/www/example/ -d www.example.com -d example.com -w /var/www/other -d other.example.net -d another.other.example.net
+  certbot certonly --webroot -w /var/www/example/ -d www.example.com -d example.com -w /var/www/other -d other.example.net -d another.other.example.net
 
 would obtain a single certificate for all of those names, using the 
 ``/var/www/example`` webroot directory for the first two, and ``/var/www/other`` for the second two.
@@ -395,8 +395,8 @@ to ensure that files inside ``/.well-known/acme-challenge`` are served by
 the webserver.
 
 * Webroot plugin: (HTTP-01) Tries to place a file where it can be served over HTTP on port 80 by a
-  web server running on your system. Use the Webroot plugin when you're running Certbot on 
-  a web server with any server application listening on port 80 serving files from a folder on disk in response.
+  web server running on your system. Use the Webroot plugin when you're running Certbot on 
+  a web server with any server application listening on port 80 serving files from a folder on disk in response.
 
 
 .. _combination:
@@ -417,7 +417,7 @@ and your origin server, which cannot use the tls-sni-01_ challenge due to the
 intermediate proxy.
 
 ::
-    certbot run -a webroot -i apache -w /var/www/html -d example.com
+    certbot run -a webroot -i apache -w /var/www/html -d example.com
 
 
 

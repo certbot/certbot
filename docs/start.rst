@@ -32,10 +32,10 @@ tracker <https://github.com/certbot/certbot/issues>`_. Remember to
 give us as much information as possible:
 
 - copy and paste exact command line used and the output (though mind
-  that the latter might include some personally identifiable
-  information, including your email and domains)
+  that the latter might include some personally identifiable
+  information, including your email and domains)
 - copy and paste logs from ``/var/log/letsencrypt`` (though mind they
-  also might contain personally identifiable information)
+  also might contain personally identifiable information)
 - copy and paste ``certbot --version`` output
 - your operating system, including specific version
 - specify which installation method you've chosen
