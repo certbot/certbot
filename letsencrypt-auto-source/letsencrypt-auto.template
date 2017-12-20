@@ -269,7 +269,8 @@ DeterminePythonVersionBase() {
       error "Cannot find any Pythons; please install one!"
       exit 1
     else
-      LE_PYTHON="Python 0.0.0"
+      PYVER=0
+      return 0
     fi
   fi
   export LE_PYTHON
@@ -316,7 +317,7 @@ elif [ -f /etc/mageia-release ]; then
 elif [ -f /etc/redhat-release ]; then
   PREV_LE_PYTHON="$LE_PYTHON"
   DeterminePython2Version "NOCRASH"
-  if [ "$PYVER" -eq 26 ] || [ "$PYVER" -eq 0 ]; then
+  if [ "$PYVER" -le 26 ]; then
     Bootstrap() {
       BootstrapMessage "RedHat-based OSes that will use Python3"
       BootstrapRpmPython3
