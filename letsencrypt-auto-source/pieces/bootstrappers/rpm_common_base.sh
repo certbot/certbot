@@ -2,7 +2,7 @@
 # numbers in rpm_common.sh and rpm_python3.sh must be increased.
 
 # Sets TOOL to the name of the package manager
-FindInstallTool() {
+InitializeRPMCommonBase() {
   if type dnf 2>/dev/null
   then
     TOOL=dnf
@@ -14,12 +14,6 @@ FindInstallTool() {
     error "Neither yum nor dnf found. Aborting bootstrap!"
     exit 1
   fi
-}
-
-BootstrapRpmCommonBase() {
-  # Arguments: whitespace-delimited python packages to install
-
-  FindInstallTool
 
   if [ "$ASSUME_YES" = 1 ]; then
     yes_flag="-y"
@@ -47,6 +41,12 @@ BootstrapRpmCommonBase() {
       exit 1
     fi
   fi
+}
+
+BootstrapRpmCommonBase() {
+  # Arguments: whitespace-delimited python packages to install
+
+  InitializeRPMCommonBase # This call is superfluous in practice
 
   pkgs="
     gcc

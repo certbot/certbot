@@ -4,9 +4,9 @@ BOOTSTRAP_RPM_PYTHON3_VERSION=1
 
 BootstrapRpmPython3() {
   # Tested with:
-  #   - CentOS 6 (EPEL must be installed manually)
+  #   - CentOS 6
 
-  FindInstallTool
+  InitializeRPMCommonBase
 
   # EPEL uses python34
   if $TOOL list python34 >/dev/null 2>&1; then
