@@ -247,20 +247,21 @@ DeprecationBootstrap() {
 # Sets LE_PYTHON to Python version string and PYVER to the first two
 # digits of the python version
 DeterminePythonVersion() {
-  if [ "$USE_PYTHON_3" -eq 1 ] ; then
-    for LE_PYTHON in "$LE_PYTHON" python3; do
-      # Break (while keeping the LE_PYTHON value) if found.
-      $EXISTS "$LE_PYTHON" > /dev/null && break
-    done
-  else
-    for LE_PYTHON in "$LE_PYTHON" python2.7 python27 python2 python; do
-      # Break (while keeping the LE_PYTHON value) if found.
-      $EXISTS "$LE_PYTHON" > /dev/null && break
-    done
-  fi
+  # Arguments: "NOCRASH" if we shouldn't crash if we don't find a good python
+  prev_le_python="$LE_PYTHON"
+  for LE_PYTHON in "$LE_PYTHON" python2.7 python27 python2 python; do
+    # Break (while keeping the LE_PYTHON value) if found.
+    $EXISTS "$LE_PYTHON" > /dev/null && break
+  done
   if [ "$?" != "0" ]; then
-    error "Cannot find any Pythons; please install one!"
-    exit 1
+    if [ "$1" != "NOCRASH" ]; then
+      error "Cannot find any Pythons; please install one!"
+      exit 1
+    else
+      LE_PYTHON="$prev_le_python"
+      PYVER=0
+      return 0
+    fi
   fi
   export LE_PYTHON
 
@@ -750,7 +751,6 @@ BootstrapMageiaCommon() {
 # that function. If Bootstrap is set to a function that doesn't install any
 # packages (either because --no-bootstrap was included on the command line or
 # we don't know how to bootstrap on this system), BOOTSTRAP_VERSION is not set.
-USE_PYTHON_3=0
 if [ "$NO_BOOTSTRAP" = 1 ]; then
   Bootstrap() {
     :
@@ -768,14 +768,13 @@ elif [ -f /etc/mageia-release ]; then
   }
   BOOTSTRAP_VERSION="BootstrapMageiaCommon $BOOTSTRAP_MAGEIA_COMMON_VERSION"
 elif [ -f /etc/redhat-release ]; then
-  PREV_LE_PYTHON="$LE_PYTHON"
-  DeterminePythonVersion
+  DeterminePythonVersion "NOCRASH"
   if [ "$PYVER" -eq 26 ]; then
     Bootstrap() {
       BootstrapMessage "RedHat-based OSes that will use Python3"
       BootstrapRpmPython3
     }
-    USE_PYTHON_3=1
+    export LE_PYTHON=python3
     BOOTSTRAP_VERSION="BootstrapRpmPython3 $BOOTSTRAP_RPM_PYTHON3_VERSION"
   else
     Bootstrap() {
@@ -784,7 +783,6 @@ elif [ -f /etc/redhat-release ]; then
     }
     BOOTSTRAP_VERSION="BootstrapRpmCommon $BOOTSTRAP_RPM_COMMON_VERSION"
   fi
-  export LE_PYTHON="$PREV_LE_PYTHON"
 elif [ -f /etc/os-release ] && `grep -q openSUSE /etc/os-release` ; then
   Bootstrap() {
     BootstrapMessage "openSUSE-based OSes"
