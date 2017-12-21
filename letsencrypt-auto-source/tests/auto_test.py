@@ -30,6 +30,10 @@ sys.path.insert(0, dirname(tests_dir()))
 from build import build as build_le_auto
 
 
+BOOTSTRAP_FILENAME = 'certbot-auto-bootstrap-version.txt'
+"""Name of the file where certbot-auto saves its bootstrap version."""
+
+
 class RequestHandler(BaseHTTPRequestHandler):
     """An HTTPS request handler which is quiet and serves a specific folder."""
 
@@ -296,17 +300,31 @@ class AutoTests(TestCase):
 
     def test_phase2_upgrade(self):
         """Test a phase-2 upgrade without a phase-1 upgrade."""
-        with temp_paths() as (le_auto_path, venv_dir):
-            resources = {'certbot/json': dumps({'releases': {'99.9.9': None}}),
-                         'v99.9.9/letsencrypt-auto': self.NEW_LE_AUTO,
-                         'v99.9.9/letsencrypt-auto.sig': self.NEW_LE_AUTO_SIG}
-            with serving(resources) as base_url:
+        resources = {'certbot/json': dumps({'releases': {'99.9.9': None}}),
+                     'v99.9.9/letsencrypt-auto': self.NEW_LE_AUTO,
+                     'v99.9.9/letsencrypt-auto.sig': self.NEW_LE_AUTO_SIG}
+        with serving(resources) as base_url:
+            pip_find_links=join(tests_dir(), 'fake-letsencrypt', 'dist')
+            with temp_paths() as (le_auto_path, venv_dir):
+                install_le_auto(self.NEW_LE_AUTO, le_auto_path)
+
+                # Create venv saving the correct bootstrap script version
+                out, err = run_le_auto(le_auto_path, venv_dir, base_url,
+                                       PIP_FIND_LINKS=pip_find_links)
+                self.assertFalse('Upgrading certbot-auto ' in out)
+                self.assertTrue('Creating virtual environment...' in out)
+                with open(join(venv_dir, BOOTSTRAP_FILENAME)) as f:
+                    bootstrap_version = f.read()
+
+            # Create a new venv with an old letsencrypt version
+            with temp_paths() as (le_auto_path, venv_dir):
                 venv_bin = join(venv_dir, 'bin')
                 makedirs(venv_bin)
                 set_le_script_version(venv_dir, '0.0.1')
+                with open(join(venv_dir, BOOTSTRAP_FILENAME), 'w') as f:
+                    f.write(bootstrap_version)
 
                 install_le_auto(self.NEW_LE_AUTO, le_auto_path)
-                pip_find_links=join(tests_dir(), 'fake-letsencrypt', 'dist')
                 out, err = run_le_auto(le_auto_path, venv_dir, base_url,
                                        PIP_FIND_LINKS=pip_find_links)
 
