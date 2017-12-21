@@ -11,7 +11,7 @@ On failure, return non-zero.
 
 """
 
-from __future__ import print_function
+from __future__ import print_function, unicode_literals
 
 from distutils.version import LooseVersion
 from json import loads
@@ -63,14 +63,18 @@ class HttpsGetter(object):
         try:
             # socket module docs say default timeout is None: that is, no
             # timeout
-            return self._opener.open(url, timeout=30).read().decode('UTF-8')
+            return self._opener.open(url, timeout=30).read()
         except (HTTPError, IOError) as exc:
             raise ExpectedError("Couldn't download %s." % url, exc)
 
 
 def write(contents, dir, filename):
     """Write something to a file in a certain directory."""
-    with open(join(dir, filename), 'w') as file:
+    # try:
+    #     contents = contents.encode('UTF-8')
+    # except AttributeError:
+    #     pass
+    with open(join(dir, filename), 'wb') as file:
         file.write(contents)
 
 
@@ -78,7 +82,7 @@ def latest_stable_version(get):
     """Return the latest stable release of letsencrypt."""
     metadata = loads(get(
         environ.get('LE_AUTO_JSON_URL',
-                    'https://pypi.python.org/pypi/certbot/json')))
+                    'https://pypi.python.org/pypi/certbot/json')).decode('UTF-8'))
     # metadata['info']['version'] actually returns the latest of any kind of
     # release release, contrary to https://wiki.python.org/moin/PyPIJSON.
     # The regex is a sufficient regex for picking out prereleases for most
@@ -101,7 +105,7 @@ def verified_new_le_auto(get, tag, temp_dir):
         'letsencrypt-auto-source/') % tag
     write(get(le_auto_dir + 'letsencrypt-auto'), temp_dir, 'letsencrypt-auto')
     write(get(le_auto_dir + 'letsencrypt-auto.sig'), temp_dir, 'letsencrypt-auto.sig')
-    write(PUBLIC_KEY, temp_dir, 'public_key.pem')
+    write(PUBLIC_KEY.encode('UTF-8'), temp_dir, 'public_key.pem')
     try:
         with open(devnull, 'w') as dev_null:
             check_call(['openssl', 'dgst', '-sha256', '-verify',
