@@ -1486,7 +1486,7 @@ class HttpsGetter(object):
         try:
             # socket module docs say default timeout is None: that is, no
             # timeout
-            return self._opener.open(url, timeout=30).read()
+            return self._opener.open(url, timeout=30).read().decode('UTF-8')
         except (HTTPError, IOError) as exc:
             raise ExpectedError("Couldn't download %s." % url, exc)
 
@@ -1507,7 +1507,7 @@ def latest_stable_version(get):
     # The regex is a sufficient regex for picking out prereleases for most
     # packages, LE included.
     return str(max(LooseVersion(r) for r
-                   in metadata['releases'].iterkeys()
+                   in iter(metadata['releases'].keys())
                    if re.match('^[0-9.]+$', r)))
 
 
