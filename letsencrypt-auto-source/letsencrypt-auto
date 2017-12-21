@@ -247,7 +247,6 @@ DeprecationBootstrap() {
 # Sets LE_PYTHON to Python version string and PYVER to the first two
 # digits of the python version
 DeterminePythonVersion() {
-  # Arguments: "NOCRASH" if we shouldn't crash if we don't find a good python
   if [ "$USE_PYTHON_3" -eq 1 ] ; then
     for LE_PYTHON in "$LE_PYTHON" python3; do
       # Break (while keeping the LE_PYTHON value) if found.
@@ -260,18 +259,13 @@ DeterminePythonVersion() {
     done
   fi
   if [ "$?" != "0" ]; then
-    if [ "$1" != "NOCRASH" ]; then
-      error "Cannot find any Pythons; please install one!"
-      exit 1
-    else
-      PYVER=0
-      return 0
-    fi
+    error "Cannot find any Pythons; please install one!"
+    exit 1
   fi
   export LE_PYTHON
 
   PYVER=`"$LE_PYTHON" -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//'`
-  if [ "$PYVER" -lt 26 ] && [ "$1" != "NOCRASH" ]; then
+  if [ "$PYVER" -lt 26 ]; then
     error "You have an ancient version of Python entombed in your operating system..."
     error "This isn't going to work; you'll need at least version 2.6."
     exit 1
@@ -775,8 +769,8 @@ elif [ -f /etc/mageia-release ]; then
   BOOTSTRAP_VERSION="BootstrapMageiaCommon $BOOTSTRAP_MAGEIA_COMMON_VERSION"
 elif [ -f /etc/redhat-release ]; then
   PREV_LE_PYTHON="$LE_PYTHON"
-  DeterminePythonVersion "NOCRASH"
-  if [ "$PYVER" -le 26 ]; then
+  DeterminePythonVersion
+  if [ "$PYVER" -eq 26 ]; then
     Bootstrap() {
       BootstrapMessage "RedHat-based OSes that will use Python3"
       BootstrapRpmPython3
