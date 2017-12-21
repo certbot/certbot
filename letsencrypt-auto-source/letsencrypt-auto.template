@@ -295,6 +295,7 @@ DeterminePythonVersion() {
 # that function. If Bootstrap is set to a function that doesn't install any
 # packages (either because --no-bootstrap was included on the command line or
 # we don't know how to bootstrap on this system), BOOTSTRAP_VERSION is not set.
+USE_PYTHON_3=0
 if [ "$NO_BOOTSTRAP" = 1 ]; then
   Bootstrap() {
     :
@@ -313,7 +314,6 @@ elif [ -f /etc/mageia-release ]; then
   BOOTSTRAP_VERSION="BootstrapMageiaCommon $BOOTSTRAP_MAGEIA_COMMON_VERSION"
 elif [ -f /etc/redhat-release ]; then
   PREV_LE_PYTHON="$LE_PYTHON"
-  USE_PYTHON_3=0
   DeterminePythonVersion "NOCRASH"
   if [ "$PYVER" -le 26 ]; then
     Bootstrap() {

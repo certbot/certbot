@@ -537,7 +537,7 @@ BootstrapRpmPython3() {
       python34-devel
       python-virtualenv
       python34-tools
-      python34-setuptools
+      python-pip
     "
   else
     error "No support Python package available to install. Aborting bootstrap!"
@@ -545,8 +545,6 @@ BootstrapRpmPython3() {
   fi
 
   BootstrapRpmCommonBase "$python_pkgs"
-  python3 /usr/lib/python3.4/site-packages/easy_install.py pip
-  pip3 install --upgrade virtualenv
 }
 
 # If new packages are installed by BootstrapSuseCommon below, this version
@@ -758,6 +756,7 @@ BootstrapMageiaCommon() {
 # that function. If Bootstrap is set to a function that doesn't install any
 # packages (either because --no-bootstrap was included on the command line or
 # we don't know how to bootstrap on this system), BOOTSTRAP_VERSION is not set.
+USE_PYTHON_3=0
 if [ "$NO_BOOTSTRAP" = 1 ]; then
   Bootstrap() {
     :
@@ -776,7 +775,6 @@ elif [ -f /etc/mageia-release ]; then
   BOOTSTRAP_VERSION="BootstrapMageiaCommon $BOOTSTRAP_MAGEIA_COMMON_VERSION"
 elif [ -f /etc/redhat-release ]; then
   PREV_LE_PYTHON="$LE_PYTHON"
-  USE_PYTHON_3=0
   DeterminePythonVersion "NOCRASH"
   if [ "$PYVER" -le 26 ]; then
     Bootstrap() {
