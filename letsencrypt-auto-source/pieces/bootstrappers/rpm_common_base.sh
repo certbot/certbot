@@ -22,9 +22,9 @@ InitializeRPMCommonBase() {
     QUIET_FLAG='--quiet'
   fi
 
-  if ! $tool list *virtualenv >/dev/null 2>&1; then
+  if ! $TOOL list *virtualenv >/dev/null 2>&1; then
     echo "To use Certbot, packages from the EPEL repository need to be installed."
-    if ! $tool list epel-release >/dev/null 2>&1; then
+    if ! $TOOL list epel-release >/dev/null 2>&1; then
       error "Enable the EPEL repository and try running Certbot again."
       exit 1
     fi
@@ -36,7 +36,7 @@ InitializeRPMCommonBase() {
       /bin/echo -e "\e[0K\rEnabling the EPEL repository in 1 seconds..."
       sleep 1s
     fi
-    if ! $tool install $yes_flag $QUIET_FLAG epel-release; then
+    if ! $TOOL install $yes_flag $QUIET_FLAG epel-release; then
       error "Could not enable EPEL. Aborting bootstrap!"
       exit 1
     fi
@@ -59,17 +59,17 @@ BootstrapRpmCommonBase() {
   "
 
   # Add the python packages
-  pkgs = "$pkgs
+  pkgs="$pkgs
     $1
   "
 
-  if $tool list installed "httpd" >/dev/null 2>&1; then
+  if $TOOL list installed "httpd" >/dev/null 2>&1; then
     pkgs="$pkgs
       mod_ssl
     "
   fi
 
-  if ! $tool install $yes_flag $QUIET_FLAG $pkgs; then
+  if ! $TOOL install $yes_flag $QUIET_FLAG $pkgs; then
     error "Could not install OS dependencies. Aborting bootstrap!"
     exit 1
   fi

@@ -246,30 +246,19 @@ DeprecationBootstrap() {
 
 # Sets LE_PYTHON to Python version string and PYVER to the first two
 # digits of the python version
-DeterminePython2Version() {
-  # Arguments: "NOCRASH" if we shouldn't crash if we don't find a good python
-  DeterminePythonVersionBase $1 "$LE_PYTHON python2.7 python27 python2 python"
-}
-
-# Sets LE_PYTHON to Python version string and PYVER to the first two
-# digits of the python version
 DeterminePythonVersion() {
   # Arguments: "NOCRASH" if we shouldn't crash if we don't find a good python
   if [ "$USE_PYTHON_3" -eq 1 ] ; then
-    DeterminePythonVersionBase $1 "$LE_PYTHON python3"
+    for LE_PYTHON in "$LE_PYTHON" python3; do
+      # Break (while keeping the LE_PYTHON value) if found.
+      $EXISTS "$LE_PYTHON" > /dev/null && break
+    done
   else
-    DeterminePython2Version $1
+    for LE_PYTHON in "$LE_PYTHON" python2.7 python27 python2 python; do
+      # Break (while keeping the LE_PYTHON value) if found.
+      $EXISTS "$LE_PYTHON" > /dev/null && break
+    done
   fi
-}
-
-# Sets LE_PYTHON to Python version string and PYVER to the first two
-# digits of the python version
-DeterminePythonVersionBase() {
-  # Arguments: "NOCRASH" if we shouldn't crash if we don't find a good python
-  for LE_PYTHON in $2; do
-    # Break (while keeping the LE_PYTHON value) if found.
-    $EXISTS "$LE_PYTHON" > /dev/null && break
-  done
   if [ "$?" != "0" ]; then
     if [ "$1" != "NOCRASH" ]; then
       error "Cannot find any Pythons; please install one!"
@@ -324,7 +313,8 @@ elif [ -f /etc/mageia-release ]; then
   BOOTSTRAP_VERSION="BootstrapMageiaCommon $BOOTSTRAP_MAGEIA_COMMON_VERSION"
 elif [ -f /etc/redhat-release ]; then
   PREV_LE_PYTHON="$LE_PYTHON"
-  DeterminePython2Version "NOCRASH"
+  USE_PYTHON_3=0
+  DeterminePythonVersion "NOCRASH"
   if [ "$PYVER" -le 26 ]; then
     Bootstrap() {
       BootstrapMessage "RedHat-based OSes that will use Python3"

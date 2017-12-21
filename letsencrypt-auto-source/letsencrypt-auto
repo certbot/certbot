@@ -246,30 +246,19 @@ DeprecationBootstrap() {
 
 # Sets LE_PYTHON to Python version string and PYVER to the first two
 # digits of the python version
-DeterminePython2Version() {
-  # Arguments: "NOCRASH" if we shouldn't crash if we don't find a good python
-  DeterminePythonVersionBase $1 "$LE_PYTHON python2.7 python27 python2 python"
-}
-
-# Sets LE_PYTHON to Python version string and PYVER to the first two
-# digits of the python version
 DeterminePythonVersion() {
   # Arguments: "NOCRASH" if we shouldn't crash if we don't find a good python
   if [ "$USE_PYTHON_3" -eq 1 ] ; then
-    DeterminePythonVersionBase $1 "$LE_PYTHON python3"
+    for LE_PYTHON in "$LE_PYTHON" python3; do
+      # Break (while keeping the LE_PYTHON value) if found.
+      $EXISTS "$LE_PYTHON" > /dev/null && break
+    done
   else
-    DeterminePython2Version $1
+    for LE_PYTHON in "$LE_PYTHON" python2.7 python27 python2 python; do
+      # Break (while keeping the LE_PYTHON value) if found.
+      $EXISTS "$LE_PYTHON" > /dev/null && break
+    done
   fi
-}
-
-# Sets LE_PYTHON to Python version string and PYVER to the first two
-# digits of the python version
-DeterminePythonVersionBase() {
-  # Arguments: "NOCRASH" if we shouldn't crash if we don't find a good python
-  for LE_PYTHON in $2; do
-    # Break (while keeping the LE_PYTHON value) if found.
-    $EXISTS "$LE_PYTHON" > /dev/null && break
-  done
   if [ "$?" != "0" ]; then
     if [ "$1" != "NOCRASH" ]; then
       error "Cannot find any Pythons; please install one!"
@@ -433,9 +422,9 @@ InitializeRPMCommonBase() {
     QUIET_FLAG='--quiet'
   fi
 
-  if ! $tool list *virtualenv >/dev/null 2>&1; then
+  if ! $TOOL list *virtualenv >/dev/null 2>&1; then
     echo "To use Certbot, packages from the EPEL repository need to be installed."
-    if ! $tool list epel-release >/dev/null 2>&1; then
+    if ! $TOOL list epel-release >/dev/null 2>&1; then
       error "Enable the EPEL repository and try running Certbot again."
       exit 1
     fi
@@ -447,7 +436,7 @@ InitializeRPMCommonBase() {
       /bin/echo -e "\e[0K\rEnabling the EPEL repository in 1 seconds..."
       sleep 1s
     fi
-    if ! $tool install $yes_flag $QUIET_FLAG epel-release; then
+    if ! $TOOL install $yes_flag $QUIET_FLAG epel-release; then
       error "Could not enable EPEL. Aborting bootstrap!"
       exit 1
     fi
@@ -470,17 +459,17 @@ BootstrapRpmCommonBase() {
   "
 
   # Add the python packages
-  pkgs = "$pkgs
+  pkgs="$pkgs
     $1
   "
 
-  if $tool list installed "httpd" >/dev/null 2>&1; then
+  if $TOOL list installed "httpd" >/dev/null 2>&1; then
     pkgs="$pkgs
       mod_ssl
     "
   fi
 
-  if ! $tool install $yes_flag $QUIET_FLAG $pkgs; then
+  if ! $TOOL install $yes_flag $QUIET_FLAG $pkgs; then
     error "Could not install OS dependencies. Aborting bootstrap!"
     exit 1
   fi
@@ -548,7 +537,7 @@ BootstrapRpmPython3() {
       python34-devel
       python-virtualenv
       python34-tools
-      python-pip
+      python34-setuptools
     "
   else
     error "No support Python package available to install. Aborting bootstrap!"
@@ -556,6 +545,8 @@ BootstrapRpmPython3() {
   fi
 
   BootstrapRpmCommonBase "$python_pkgs"
+  python3 /usr/lib/python3.4/site-packages/easy_install.py pip
+  pip3 install --upgrade virtualenv
 }
 
 # If new packages are installed by BootstrapSuseCommon below, this version
@@ -785,7 +776,8 @@ elif [ -f /etc/mageia-release ]; then
   BOOTSTRAP_VERSION="BootstrapMageiaCommon $BOOTSTRAP_MAGEIA_COMMON_VERSION"
 elif [ -f /etc/redhat-release ]; then
   PREV_LE_PYTHON="$LE_PYTHON"
-  DeterminePython2Version "NOCRASH"
+  USE_PYTHON_3=0
+  DeterminePythonVersion "NOCRASH"
   if [ "$PYVER" -le 26 ]; then
     Bootstrap() {
       BootstrapMessage "RedHat-based OSes that will use Python3"
@@ -1446,8 +1438,12 @@ from os.path import dirname, join
 import re
 from subprocess import check_call, CalledProcessError
 from sys import argv, exit
-from urllib2 import build_opener, HTTPHandler, HTTPSHandler
-from urllib2 import HTTPError, URLError
+try:
+    from urllib2 import build_opener, HTTPHandler, HTTPSHandler
+    from urllib2 import HTTPError, URLError
+except ImportError:
+    from urllib.request import build_opener, HTTPHandler, HTTPSHandler
+    from urllib.error import HTTPError, URLError
 
 PUBLIC_KEY = environ.get('LE_AUTO_PUBLIC_KEY', """-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA6MR8W/galdxnpGqBsYbq

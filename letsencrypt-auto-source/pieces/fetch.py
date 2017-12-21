@@ -20,8 +20,12 @@ from os.path import dirname, join
 import re
 from subprocess import check_call, CalledProcessError
 from sys import argv, exit
-from urllib2 import build_opener, HTTPHandler, HTTPSHandler
-from urllib2 import HTTPError, URLError
+try:
+    from urllib2 import build_opener, HTTPHandler, HTTPSHandler
+    from urllib2 import HTTPError, URLError
+except ImportError:
+    from urllib.request import build_opener, HTTPHandler, HTTPSHandler
+    from urllib.error import HTTPError, URLError
 
 PUBLIC_KEY = environ.get('LE_AUTO_PUBLIC_KEY', """-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA6MR8W/galdxnpGqBsYbq
