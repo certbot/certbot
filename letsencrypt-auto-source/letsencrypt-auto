@@ -530,9 +530,7 @@ BootstrapRpmPython3() {
   if $TOOL list python34 >/dev/null 2>&1; then
     python_pkgs="python34
       python34-devel
-      python-virtualenv
       python34-tools
-      python-pip
     "
   else
     error "No support Python package available to install. Aborting bootstrap!"
@@ -921,10 +919,18 @@ if [ "$1" = "--le-auto-phase2" ]; then
     say "Creating virtual environment..."
     DeterminePythonVersion
     rm -rf "$VENV_PATH"
-    if [ "$VERBOSE" = 1 ]; then
-      virtualenv --no-site-packages --python "$LE_PYTHON" "$VENV_PATH"
+    if [ "$PYVER" -le 27 ]; then
+      if [ "$VERBOSE" = 1 ]; then
+        virtualenv --no-site-packages --python "$LE_PYTHON" "$VENV_PATH"
+      else
+        virtualenv --no-site-packages --python "$LE_PYTHON" "$VENV_PATH" > /dev/null
+      fi
     else
-      virtualenv --no-site-packages --python "$LE_PYTHON" "$VENV_PATH" > /dev/null
+      if [ "$VERBOSE" = 1 ]; then
+        "$LE_PYTHON" -m venv "$VENV_PATH"
+      else
+        "$LE_PYTHON" -m venv "$VENV_PATH" > /dev/null
+      fi
     fi
 
     if [ -n "$BOOTSTRAP_VERSION" ]; then

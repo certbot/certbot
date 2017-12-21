@@ -12,9 +12,7 @@ BootstrapRpmPython3() {
   if $TOOL list python34 >/dev/null 2>&1; then
     python_pkgs="python34
       python34-devel
-      python-virtualenv
       python34-tools
-      python-pip
     "
   else
     error "No support Python package available to install. Aborting bootstrap!"
