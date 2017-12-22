@@ -56,3 +56,8 @@ class GentooParser(parser.ApacheParser):
                                                 "APACHE2_OPTS")
         for k in defines.keys():
             self.variables[k] = defines[k]
+
+    def update_modules(self):
+        """ NOOP for update_modules as Gentoo does not provide a way to dump
+        module list from Apache binary"""
+        pass

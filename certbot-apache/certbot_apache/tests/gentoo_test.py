@@ -2,6 +2,8 @@
 import os
 import unittest
 
+import mock
+
 from certbot_apache import override_gentoo
 from certbot_apache import obj
 from certbot_apache.tests import util
@@ -81,6 +83,15 @@ class MultipleVhostsTestGentoo(util.ApacheTest):
         self.config.parser.update_runtime_variables()
         for define in defines:
             self.assertTrue(define in self.config.parser.variables.keys())
+
+    @mock.patch("certbot_apache.parser.ApacheParser.parse_from_subprocess")
+    def test_no_binary_configdump(self, mock_subprocess):
+        """Make sure we don't call binary dumps from Apache as this is not
+        supported in Gentoo currently"""
+
+        self.config.parser.update_runtime_variables()
+        self.config.parser.reset_modules()
+        self.assertFalse(mock_subprocess.called)
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
