@@ -33,10 +33,7 @@ class AuthenticatorTest(test_util.TempDirTestCase,
         }
         dns_test_common.write(credentials, path)
 
-        self.config = mock.MagicMock(ovh_credentials=path,
-                                     ovh_propagation_seconds=0)  # don't wait during tests
-
-        self.auth = Authenticator(self.config, "ovh")
+        self.configure(Authenticator(self.config, "ovh"), {"credentials": path})
 
         self.mock_client = mock.MagicMock()
         # _get_ovh_client | pylint: disable=protected-access

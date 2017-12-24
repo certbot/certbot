@@ -1,6 +1,7 @@
 """Common code for DNS Authenticator Plugins."""
 
 import abc
+import argparse
 import logging
 import os
 import stat
@@ -19,6 +20,24 @@ from certbot.plugins import common
 logger = logging.getLogger(__name__)
 
 
+class OverrideChallengeAction(argparse.Action):
+    """Action class for parsing override-challenge."""
+
+    def __init__(self, *args, **kwargs):
+        super(OverrideChallengeAction, self).__init__(*args, **kwargs)
+        self.challenge_map = {}
+        self.dest = kwargs['dest']
+        self.dest_map = self.dest + "_map"
+
+    def __call__(self, parser, namespace, override_chall, option_string=None):
+        for domain in namespace.domains:
+            self.challenge_map.setdefault(domain,
+                                          getattr(namespace, self.dest))
+        setattr(namespace, self.dest, override_chall)
+        if not hasattr(namespace, self.dest_map):
+            setattr(namespace, self.dest_map, self.challenge_map)
+
+
 @zope.interface.implementer(interfaces.IAuthenticator)
 @zope.interface.provider(interfaces.IPluginFactory)
 class DNSAuthenticator(common.Plugin):
@@ -34,8 +53,30 @@ class DNSAuthenticator(common.Plugin):
         add('propagation-seconds',
             default=default_propagation_seconds,
             type=int,
-            help='The number of seconds to wait for DNS to propagate before asking the ACME server '
-                 'to verify the DNS record.')
+            help='The number of seconds to wait for DNS to propagate before '
+                 'asking the ACME server to verify the DNS record.')
+        add('override-challenge',
+            action=OverrideChallengeAction,
+            default="{acme}",
+            help='Override default challenge for following domains on the '
+                 'command line. Validation depends on a CNAME having been '
+                 'provisioned at the standard location '
+                 '(_acme-challenge.<domain>), pointing to the alternate '
+                 'location. The specified value may include "{domain}" '
+                 'and "{acme}" format strings, which will respectively '
+                 'expand to the domain being requested, and the corresponding '
+                 'standard ACME challenge location.')
+
+    def validation_domain_name(self, achall):  # pylint: disable=missing-docstring
+
+        domain = achall.domain
+        acme_loc = achall.validation_domain_name(achall.domain)
+
+        challenge_map = self.conf('override-challenge-map')
+        challenge_ovr = self.conf('override-challenge')
+        challenge_str = challenge_map.get(domain, challenge_ovr)
+
+        return challenge_str.format(domain=domain, acme=acme_loc)
 
     def get_chall_pref(self, unused_domain): # pylint: disable=missing-docstring,no-self-use
         return [challenges.DNS01]
@@ -51,7 +92,7 @@ class DNSAuthenticator(common.Plugin):
         responses = []
         for achall in achalls:
             domain = achall.domain
-            validation_domain_name = achall.validation_domain_name(domain)
+            validation_domain_name = self.validation_domain_name(achall)
             validation = achall.validation(achall.account_key)
 
             self._perform(domain, validation_domain_name, validation)
@@ -70,7 +111,7 @@ class DNSAuthenticator(common.Plugin):
         if self._attempt_cleanup:
             for achall in achalls:
                 domain = achall.domain
-                validation_domain_name = achall.validation_domain_name(domain)
+                validation_domain_name = self.validation_domain_name(achall)
                 validation = achall.validation(achall.account_key)
 
                 self._cleanup(domain, validation_domain_name, validation)

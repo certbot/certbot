@@ -28,10 +28,7 @@ class AuthenticatorTest(test_util.TempDirTestCase,
             path
         )
 
-        self.config = mock.MagicMock(sakuracloud_credentials=path,
-                                     sakuracloud_propagation_seconds=0)  # don't wait during tests
-
-        self.auth = Authenticator(self.config, "sakuracloud")
+        self.configure(Authenticator(self.config, "sakuracloud"), {"credentials": path})
 
         self.mock_client = mock.MagicMock()
         # _get_sakuracloud_client | pylint: disable=protected-access

@@ -26,10 +26,7 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         path = os.path.join(self.tempdir, 'file.ini')
         dns_test_common.write({"cloudflare_email": EMAIL, "cloudflare_api_key": API_KEY}, path)
 
-        self.config = mock.MagicMock(cloudflare_credentials=path,
-                                     cloudflare_propagation_seconds=0)  # don't wait during tests
-
-        self.auth = Authenticator(self.config, "cloudflare")
+        self.configure(Authenticator(self.config, "cloudflare"), {"credentials": path})
 
         self.mock_client = mock.MagicMock()
         # _get_cloudflare_client | pylint: disable=protected-access

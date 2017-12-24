@@ -28,10 +28,7 @@ class AuthenticatorTest(test_util.TempDirTestCase,
                                "dnsmadeeasy_secret_key": SECRET_KEY},
                               path)
 
-        self.config = mock.MagicMock(dnsmadeeasy_credentials=path,
-                                     dnsmadeeasy_propagation_seconds=0)  # don't wait during tests
-
-        self.auth = Authenticator(self.config, "dnsmadeeasy")
+        self.configure(Authenticator(self.config, "dnsmadeeasy"), {"credentials": path})
 
         self.mock_client = mock.MagicMock()
         # _get_dnsmadeeasy_client | pylint: disable=protected-access

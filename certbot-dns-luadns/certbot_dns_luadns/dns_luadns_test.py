@@ -25,10 +25,7 @@ class AuthenticatorTest(test_util.TempDirTestCase,
         path = os.path.join(self.tempdir, 'file.ini')
         dns_test_common.write({"luadns_email": EMAIL, "luadns_token": TOKEN}, path)
 
-        self.config = mock.MagicMock(luadns_credentials=path,
-                                     luadns_propagation_seconds=0)  # don't wait during tests
-
-        self.auth = Authenticator(self.config, "luadns")
+        self.configure(Authenticator(self.config, "luadns"), {"credentials": path})
 
         self.mock_client = mock.MagicMock()
         # _get_luadns_client | pylint: disable=protected-access

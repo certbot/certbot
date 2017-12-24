@@ -28,10 +28,7 @@ class AuthenticatorTest(test_util.TempDirTestCase,
             path
         )
 
-        self.config = mock.MagicMock(gehirn_credentials=path,
-                                     gehirn_propagation_seconds=0)  # don't wait during tests
-
-        self.auth = Authenticator(self.config, "gehirn")
+        self.configure(Authenticator(self.config, "gehirn"), {"credentials": path})
 
         self.mock_client = mock.MagicMock()
         # _get_gehirn_client | pylint: disable=protected-access

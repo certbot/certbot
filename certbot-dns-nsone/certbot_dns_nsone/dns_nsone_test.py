@@ -25,10 +25,7 @@ class AuthenticatorTest(test_util.TempDirTestCase,
         path = os.path.join(self.tempdir, 'file.ini')
         dns_test_common.write({"nsone_api_key": API_KEY}, path)
 
-        self.config = mock.MagicMock(nsone_credentials=path,
-                                     nsone_propagation_seconds=0)  # don't wait during tests
-
-        self.auth = Authenticator(self.config, "nsone")
+        self.configure(Authenticator(self.config, "nsone"), {"credentials": path})
 
         self.mock_client = mock.MagicMock()
         # _get_nsone_client | pylint: disable=protected-access

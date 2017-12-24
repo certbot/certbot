@@ -10,7 +10,7 @@ from certbot.plugins import dns_test_common
 from certbot.plugins.dns_test_common import DOMAIN
 
 
-class AuthenticatorTest(unittest.TestCase, dns_test_common.BaseAuthenticatorTest):
+class AuthenticatorTest(dns_test_common.BaseAuthenticatorTest):
     # pylint: disable=protected-access
 
     def setUp(self):
@@ -18,9 +18,7 @@ class AuthenticatorTest(unittest.TestCase, dns_test_common.BaseAuthenticatorTest
 
         super(AuthenticatorTest, self).setUp()
 
-        self.config = mock.MagicMock()
-
-        self.auth = Authenticator(self.config, "route53")
+        self.configure(Authenticator(self.config, "route53"))
 
     def test_perform(self):
         self.auth._change_txt_record = mock.MagicMock()

@@ -31,10 +31,8 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         open(path, "wb").close()
 
         super(AuthenticatorTest, self).setUp()
-        self.config = mock.MagicMock(google_credentials=path,
-                                     google_propagation_seconds=0)  # don't wait during tests
 
-        self.auth = Authenticator(self.config, "google")
+        self.configure(Authenticator(self.config, "google"), {"credentials": path})
 
         self.mock_client = mock.MagicMock()
         # _get_google_client | pylint: disable=protected-access

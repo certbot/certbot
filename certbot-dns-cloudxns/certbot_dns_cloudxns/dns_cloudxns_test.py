@@ -29,10 +29,7 @@ class AuthenticatorTest(test_util.TempDirTestCase,
         path = os.path.join(self.tempdir, 'file.ini')
         dns_test_common.write({"cloudxns_api_key": API_KEY, "cloudxns_secret_key": SECRET}, path)
 
-        self.config = mock.MagicMock(cloudxns_credentials=path,
-                                     cloudxns_propagation_seconds=0)  # don't wait during tests
-
-        self.auth = Authenticator(self.config, "cloudxns")
+        self.configure(Authenticator(self.config, "cloudxns"), {"credentials": path})
 
         self.mock_client = mock.MagicMock()
         # _get_cloudxns_client | pylint: disable=protected-access

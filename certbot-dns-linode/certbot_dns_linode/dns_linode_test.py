@@ -22,10 +22,7 @@ class AuthenticatorTest(test_util.TempDirTestCase,
         path = os.path.join(self.tempdir, 'file.ini')
         dns_test_common.write({"linode_key": TOKEN}, path)
 
-        self.config = mock.MagicMock(linode_credentials=path,
-                                     linode_propagation_seconds=0)  # don't wait during tests
-
-        self.auth = Authenticator(self.config, "linode")
+        self.configure(Authenticator(self.config, "linode"), {"credentials": path})
 
         self.mock_client = mock.MagicMock()
         # _get_linode_client | pylint: disable=protected-access

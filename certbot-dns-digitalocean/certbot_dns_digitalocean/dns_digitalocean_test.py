@@ -25,10 +25,7 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         path = os.path.join(self.tempdir, 'file.ini')
         dns_test_common.write({"digitalocean_token": TOKEN}, path)
 
-        self.config = mock.MagicMock(digitalocean_credentials=path,
-                                     digitalocean_propagation_seconds=0)  # don't wait during tests
-
-        self.auth = Authenticator(self.config, "digitalocean")
+        self.configure(Authenticator(self.config, "digitalocean"), {"credentials": path})
 
         self.mock_client = mock.MagicMock()
         # _get_digitalocean_client | pylint: disable=protected-access
