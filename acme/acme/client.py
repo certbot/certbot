@@ -350,7 +350,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
                     break
         for authzr in responses:
             if authzr.body.status != messages.STATUS_VALID:
-                for chall in authz.body.challenges:
+                for chall in authzr.body.challenges:
                     if chall.error != None:
                         raise Exception("failed challenge for %s: %s" %
                             (authz.body.identifier.value, chall.error))
