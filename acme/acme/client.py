@@ -353,8 +353,8 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
                 for chall in authzr.body.challenges:
                     if chall.error != None:
                         raise Exception("failed challenge for %s: %s" %
-                            (authz.body.identifier.value, chall.error))
-                raise Exception("failed authorization: %s" % authz.body)
+                            (authzr.body.identifier.value, chall.error))
+                raise Exception("failed authorization: %s" % authzr.body)
         latest = self._order_resource_from_response(self.net.get(orderr.uri), uri=orderr.uri)
         self.net.post(latest.body.finalize, messages.CertificateRequest(csr=orderr.csr))
         while datetime.datetime.now() < deadline:
