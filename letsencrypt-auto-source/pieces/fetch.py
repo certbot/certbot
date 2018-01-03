@@ -18,7 +18,7 @@ from json import loads
 from os import devnull, environ
 from os.path import dirname, join
 import re
-from ssl import create_default_context, CERT_NONE
+import ssl
 from subprocess import check_call, CalledProcessError
 from sys import argv, exit
 try:
@@ -48,13 +48,11 @@ class HttpsGetter(object):
     def __init__(self):
         """Build an HTTPS opener."""
         # Based on pip 1.4.1's URLOpener
-        # This doesn't verify server certs.
-        # https://stackoverflow.com/questions/19268548/python-ignore-certificate-validation-urllib2
-        ctx = create_default_context()
-        ctx.check_hostname = False
-        ctx.verify_mode = CERT_NONE
-
-        self._opener = build_opener(HTTPSHandler(context=ctx))
+        # This verifies certs on only Python >=2.7.9, and when NO_CERT_VERIFY isn't set.
+        if environ.get('NO_CERT_VERIFY') == '1' and hasattr(ssl, 'SSLContext'):
+            self._opener = build_opener(HTTPSHandler(context=create_CERT_NONE_context()))
+        else:
+            self._opener = build_opener(HTTPSHandler())
         # Strip out HTTPHandler to prevent MITM spoof:
         for handler in self._opener.handlers:
             if isinstance(handler, HTTPHandler):
@@ -124,6 +122,17 @@ def verified_new_le_auto(get, tag, temp_dir):
     except CalledProcessError as exc:
         raise ExpectedError("Couldn't verify signature of downloaded "
                             "certbot-auto.", exc)
+
+
+def create_CERT_NONE_context():
+    """Create a SSLContext object to not check hostname."""
+    # PROTOCOL_TLS isn't available before 2.7.13 but this code is for 2.7.9+, so use this.
+    context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+
+    context.check_hostname = False
+    context.verify_mode = ssl.CERT_NONE
+
+    return context
 
 
 def main():

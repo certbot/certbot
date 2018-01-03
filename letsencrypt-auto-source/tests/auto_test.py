@@ -202,6 +202,7 @@ LsIVPBuy9IcgHidUQ96hJnoPsDCWsHwX62495QKEarauyKQrJzFes0EY95orDM47
 Z5o/NDiQB11m91yNB0MmPYY9QSbnOA9j7IaaC97AwRLuwXY+/R2ablTcxurWou68
 iQIDAQAB
 -----END PUBLIC KEY-----""",
+             NO_CERT_VERIFY='1',
              **kwargs)
     env.update(d)
     return out_and_err(
