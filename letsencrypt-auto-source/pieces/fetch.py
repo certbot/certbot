@@ -74,10 +74,6 @@ class HttpsGetter(object):
 
 def write(contents, dir, filename):
     """Write something to a file in a certain directory."""
-    # try:
-    #     contents = contents.encode('UTF-8')
-    # except AttributeError:
-    #     pass
     with open(join(dir, filename), 'wb') as file:
         file.write(contents)
 
