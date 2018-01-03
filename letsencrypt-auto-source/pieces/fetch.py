@@ -18,6 +18,7 @@ from json import loads
 from os import devnull, environ
 from os.path import dirname, join
 import re
+from ssl import create_default_context, CERT_NONE
 from subprocess import check_call, CalledProcessError
 from sys import argv, exit
 try:
@@ -47,8 +48,13 @@ class HttpsGetter(object):
     def __init__(self):
         """Build an HTTPS opener."""
         # Based on pip 1.4.1's URLOpener
-        # This verifies certs on only Python >=2.7.9.
-        self._opener = build_opener(HTTPSHandler())
+        # This doesn't verify server certs.
+        # https://stackoverflow.com/questions/19268548/python-ignore-certificate-validation-urllib2
+        ctx = create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = CERT_NONE
+
+        self._opener = build_opener(HTTPSHandler(context=ctx))
         # Strip out HTTPHandler to prevent MITM spoof:
         for handler in self._opener.handlers:
             if isinstance(handler, HTTPHandler):

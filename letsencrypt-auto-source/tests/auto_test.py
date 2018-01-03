@@ -331,6 +331,7 @@ class AutoTests(TestCase):
                     self.assertTrue("Couldn't verify signature of downloaded "
                                     "certbot-auto." in exc.output)
                 else:
+                    print(out)
                     self.fail('Signature check on certbot-auto erroneously passed.')
 
     def test_pip_failure(self):
