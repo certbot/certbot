@@ -48,9 +48,10 @@ class MultipleVhostsTestGentoo(util.ApacheTest):
                                                     config_root=config_root,
                                                     vhost_root=vhost_root)
 
-        self.config = util.get_apache_configurator(
-            self.config_path, self.vhost_path, self.config_dir, self.work_dir,
-            os_info="gentoo")
+        with mock.patch("certbot_apache.override_gentoo.GentooParser.update_runtime_variables"):
+            self.config = util.get_apache_configurator(
+                self.config_path, self.vhost_path, self.config_dir, self.work_dir,
+                os_info="gentoo")
         self.vh_truth = get_vh_truth(
             self.temp_dir, "gentoo_apache/apache")
 
@@ -80,18 +81,47 @@ class MultipleVhostsTestGentoo(util.ApacheTest):
         self.config.parser.apacheconfig_filep = os.path.realpath(
             os.path.join(self.config.parser.root, "../conf.d/apache2"))
         self.config.parser.variables = {}
-        self.config.parser.update_runtime_variables()
+        with mock.patch("certbot_apache.override_gentoo.GentooParser.update_modules"):
+            self.config.parser.update_runtime_variables()
         for define in defines:
             self.assertTrue(define in self.config.parser.variables.keys())
 
     @mock.patch("certbot_apache.parser.ApacheParser.parse_from_subprocess")
     def test_no_binary_configdump(self, mock_subprocess):
-        """Make sure we don't call binary dumps from Apache as this is not
-        supported in Gentoo currently"""
+        """Make sure we don't call binary dumps other than modules from Apache
+        as this is not supported in Gentoo currently"""
+
+        with mock.patch("certbot_apache.override_gentoo.GentooParser.update_modules"):
+            self.config.parser.update_runtime_variables()
+            self.config.parser.reset_modules()
+        self.assertFalse(mock_subprocess.called)
 
         self.config.parser.update_runtime_variables()
         self.config.parser.reset_modules()
-        self.assertFalse(mock_subprocess.called)
+        self.assertTrue(mock_subprocess.called)
+
+    @mock.patch("certbot_apache.parser.ApacheParser._get_runtime_cfg")
+    def test_opportunistic_httpd_runtime_parsing(self, mock_get):
+        mod_val = (
+            'Loaded Modules:\n'
+            ' mock_module (static)\n'
+            ' another_module (static)\n'
+        )
+        def mock_get_cfg(command):
+            """Mock httpd process stdout"""
+            if command == ['apache2ctl', 'modules']:
+                return mod_val
+        mock_get.side_effect = mock_get_cfg
+        self.config.parser.modules = set()
+
+        with mock.patch("certbot.util.get_os_info") as mock_osi:
+            # Make sure we have the have the CentOS httpd constants
+            mock_osi.return_value = ("gentoo", "123")
+            self.config.parser.update_runtime_variables()
+
+        self.assertEquals(mock_get.call_count, 1)
+        self.assertEquals(len(self.config.parser.modules), 4)
+        self.assertTrue("mod_another.c" in self.config.parser.modules)
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
