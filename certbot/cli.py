@@ -1220,6 +1220,18 @@ def _create_subparsers(helpful):
                                                    key=constants.REVOCATION_REASONS.get)),
                 action=_EncodeReasonAction, default=flag_default("reason"),
                 help="Specify reason for revoking certificate. (default: unspecified)")
+    helpful.add("revoke",
+                "--delete-after-revoke", action="store_true",
+                default=flag_default("delete_after_revoke"),
+                help="Delete certificates after revoking them.")
+    helpful.add("revoke",
+                "--no-delete-after-revoke", action="store_false",
+                dest="delete_after_revoke",
+                default=flag_default("delete_after_revoke"),
+                help="Do not delete certificates after revoking them. This "
+                     "option should be used with caution because the 'renew' "
+                     "subcommand will attempt to renew undeleted revoked "
+                     "certificates.")
     helpful.add("rollback",
                 "--checkpoints", type=int, metavar="N",
                 default=flag_default("rollback_checkpoints"),
