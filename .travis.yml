@@ -67,6 +67,8 @@ branches:
     - master
     - /^\d+\.\d+\.x$/
     - /^test-.*$/
+    - acme-v2
+    - acme-v2-integration
 
 # container-based infrastructure
 sudo: false
