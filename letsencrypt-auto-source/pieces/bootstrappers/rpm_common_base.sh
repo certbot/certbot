@@ -2,6 +2,7 @@
 # numbers in rpm_common.sh and rpm_python3.sh must be increased.
 
 # Sets TOOL to the name of the package manager
+# Sets appropriate values for YES_FLAG and QUIET_FLAG based on $ASSUME_YES and $QUIET_FLAG.
 # Enables EPEL if applicable and possible.
 InitializeRPMCommonBase() {
   if type dnf 2>/dev/null
@@ -17,7 +18,7 @@ InitializeRPMCommonBase() {
   fi
 
   if [ "$ASSUME_YES" = 1 ]; then
-    yes_flag="-y"
+    YES_FLAG="-y"
   fi
   if [ "$QUIET" = 1 ]; then
     QUIET_FLAG='--quiet'
@@ -37,7 +38,7 @@ InitializeRPMCommonBase() {
       /bin/echo -e "\e[0K\rEnabling the EPEL repository in 1 seconds..."
       sleep 1s
     fi
-    if ! $TOOL install $yes_flag $QUIET_FLAG epel-release; then
+    if ! $TOOL install $YES_FLAG $QUIET_FLAG epel-release; then
       error "Could not enable EPEL. Aborting bootstrap!"
       exit 1
     fi
@@ -70,7 +71,7 @@ BootstrapRpmCommonBase() {
     "
   fi
 
-  if ! $TOOL install $yes_flag $QUIET_FLAG $pkgs; then
+  if ! $TOOL install $YES_FLAG $QUIET_FLAG $pkgs; then
     error "Could not install OS dependencies. Aborting bootstrap!"
     exit 1
   fi
