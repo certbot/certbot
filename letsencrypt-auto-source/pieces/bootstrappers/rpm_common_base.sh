@@ -2,6 +2,7 @@
 # numbers in rpm_common.sh and rpm_python3.sh must be increased.
 
 # Sets TOOL to the name of the package manager
+# Enables EPEL if applicable and possible.
 InitializeRPMCommonBase() {
   if type dnf 2>/dev/null
   then

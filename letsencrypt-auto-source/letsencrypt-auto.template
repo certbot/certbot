@@ -248,13 +248,13 @@ DeprecationBootstrap() {
 # digits of the python version
 DeterminePythonVersion() {
   # Arguments: "NOCRASH" if we shouldn't crash if we don't find a good python
-  if [ "$USE_PYTHON_3" -eq 0 ]; then
-    for LE_PYTHON in "$LE_PYTHON" python2.7 python27 python2 python; do
+  if [ -n "$USE_PYTHON_3" ]; then
+    for LE_PYTHON in "$LE_PYTHON" python3; do
       # Break (while keeping the LE_PYTHON value) if found.
       $EXISTS "$LE_PYTHON" > /dev/null && break
     done
   else
-    for LE_PYTHON in "$LE_PYTHON" python3; do
+    for LE_PYTHON in "$LE_PYTHON" python2.7 python27 python2 python; do
       # Break (while keeping the LE_PYTHON value) if found.
       $EXISTS "$LE_PYTHON" > /dev/null && break
     done
@@ -295,7 +295,6 @@ DeterminePythonVersion() {
 # that function. If Bootstrap is set to a function that doesn't install any
 # packages (either because --no-bootstrap was included on the command line or
 # we don't know how to bootstrap on this system), BOOTSTRAP_VERSION is not set.
-export USE_PYTHON_3=0
 if [ "$NO_BOOTSTRAP" = 1 ]; then
   Bootstrap() {
     :
@@ -321,7 +320,7 @@ elif [ -f /etc/redhat-release ]; then
       BootstrapMessage "RedHat-based OSes that will use Python3"
       BootstrapRpmPython3
     }
-    export USE_PYTHON_3=1
+    USE_PYTHON_3=1
     BOOTSTRAP_VERSION="BootstrapRpmPython3 $BOOTSTRAP_RPM_PYTHON3_VERSION"
   else
     Bootstrap() {
