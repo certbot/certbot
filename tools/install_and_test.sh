@@ -22,5 +22,5 @@ for requirement in "$@" ; do
     # See https://travis-ci.org/certbot/certbot/jobs/308774157#L1333.
     pkg=$(echo "$pkg" | tr - _)
   fi
-  pytest --numprocesses auto --quiet --pyargs $pkg
+  PYTEST_DEBUG=1 pytest --numprocesses 2 -vvvv --pyargs $pkg
 done
