@@ -35,7 +35,7 @@ SERVER_PID=$!
 trap 'kill "$SERVER_PID" && rm -rf "$MY_TEMP_DIR"' EXIT
 cd ~-
 
-# Next, we set up the files to be served.
+# Then, we set up the files to be served.
 FAKE_VERSION_NUM="99.99.99"
 echo "{\"releases\": {\"$FAKE_VERSION_NUM\": null}}" > "$MY_TEMP_DIR/json"
 LE_AUTO_SOURCE_DIR="$MY_TEMP_DIR/v$FAKE_VERSION_NUM"
@@ -45,7 +45,7 @@ cp letsencrypt-auto-source/letsencrypt-auto "$LE_AUTO_SOURCE_DIR/letsencrypt-aut
 SIGNING_KEY="letsencrypt-auto-source/tests/signing.key"
 openssl dgst -sha256 -sign "$SIGNING_KEY" -out "$NEW_LE_AUTO_PATH.sig" "$NEW_LE_AUTO_PATH"
 
-# Finally, we set the necessary certbot-auto environment variables.
+# Next, we set the necessary certbot-auto environment variables.
 export LE_AUTO_DIR_TEMPLATE="http://localhost:$SERVER_PORT/%s/"
 export LE_AUTO_JSON_URL="http://localhost:$SERVER_PORT/json"
 export LE_AUTO_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----
@@ -58,6 +58,9 @@ Z5o/NDiQB11m91yNB0MmPYY9QSbnOA9j7IaaC97AwRLuwXY+/R2ablTcxurWou68
 iQIDAQAB
 -----END PUBLIC KEY-----
 "
+
+# Finally, we wait for the server to start.
+sleep 5s
 
 if ! ./letsencrypt-auto -v --debug --version || ! diff letsencrypt-auto letsencrypt-auto-source/letsencrypt-auto ; then
     echo upgrade appeared to fail
