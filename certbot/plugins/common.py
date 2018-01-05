@@ -9,7 +9,7 @@ import OpenSSL
 import pkg_resources
 import zope.interface
 
-from acme.jose import util as jose_util
+from josepy import util as jose_util
 
 from certbot import constants
 from certbot import crypto_util

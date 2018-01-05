@@ -1,9 +1,8 @@
 """ACME JSON fields."""
 import logging
 
+import josepy as jose
 import pyrfc3339
-
-from acme import jose
 
 
 logger = logging.getLogger(__name__)

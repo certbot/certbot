@@ -1,10 +1,10 @@
 """Tests for acme.messages."""
 import unittest
 
+import josepy as jose
 import mock
 
 from acme import challenges
-from acme import jose
 from acme import test_util
 
 
@@ -282,6 +282,9 @@ class ChallengeBodyTest(unittest.TestCase):
             'type': 'urn:ietf:params:acme:error:serverInternal',
             'detail': 'Unable to communicate with DNS server',
         }
+
+    def test_encode(self):
+        self.assertEqual(self.challb.encode('uri'), self.challb.uri)
 
     def test_to_partial_json(self):
         self.assertEqual(self.jobj_to, self.challb.to_partial_json())
