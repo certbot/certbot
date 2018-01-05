@@ -37,4 +37,4 @@ tests/letstest/venv/
 .venv
 
 # pytest cache
-/.cache
+.cache
