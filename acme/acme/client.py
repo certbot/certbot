@@ -541,9 +541,6 @@ class ClientV2(ClientBase):
         :ivar .ClientNetwork net: Client network.
         """
         super(ClientV2, self).__init__(directory=directory, net=net)
-        if not hasattr(self.directory, 'new_account'):
-            raise errors.ClientError('ClientV2 initialized with a directory '
-                'that does not support ACME v2')
 
     def new_account(self, new_account):
         """Register.
