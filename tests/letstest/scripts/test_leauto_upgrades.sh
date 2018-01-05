@@ -59,9 +59,7 @@ iQIDAQAB
 -----END PUBLIC KEY-----
 "
 
-EXPECTED_VERSION=$(grep -m1 LE_AUTO_VERSION certbot-auto | cut -d\" -f2)
-./letsencrypt-auto -v --debug --version
-if ! diff letsencrypt-auto letsencrypt-auto-source/letsencrypt-auto ; then
+if ! ./letsencrypt-auto -v --debug --version || ! diff letsencrypt-auto letsencrypt-auto-source/letsencrypt-auto ; then
     echo upgrade appeared to fail
     exit 1
 fi
