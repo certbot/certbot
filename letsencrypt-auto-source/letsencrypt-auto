@@ -825,13 +825,18 @@ if [ "$1" = "--le-auto-phase2" ]; then
   SetPrevBootstrapVersion
 
   INSTALLED_VERSION="none"
-  if [ -d "$VENV_PATH" ]; then
+  if [ -d "$VENV_PATH" -o -d "$OLD_VENV_PATH" ]; then
     # If the selected Bootstrap function isn't a noop and it differs from the
     # previously used version
     if [ -n "$BOOTSTRAP_VERSION" -a "$BOOTSTRAP_VERSION" != "$PREV_BOOTSTRAP_VERSION" ]; then
       # if non-interactive mode or stdin and stdout are connected to a terminal
       if [ \( "$NONINTERACTIVE" = 1 \) -o \( \( -t 0 \) -a \( -t 1 \) \) ]; then
-        rm -rf "$VENV_PATH"
+        if [ -d "$VENV_PATH" ]; then
+          rm -rf "$VENV_PATH"
+        else  # OLD_VENV_PATH exists
+          rm -rf "$OLD_VENV_PATH"
+          ln -s "$VENV_PATH" "$OLD_VENV_PATH"
+        fi
         RerunWithArgs "$@"
       else
         error "Skipping upgrade because new OS dependencies may need to be installed."
@@ -841,6 +846,10 @@ if [ "$1" = "--le-auto-phase2" ]; then
         error "install any required packages."
         # Set INSTALLED_VERSION to be the same so we don't update the venv
         INSTALLED_VERSION="$LE_AUTO_VERSION"
+        # Continue to use OLD_VENV_PATH if the new venv doesn't exist
+        if [ ! -d "$VENV_PATH" ]; then
+          VENV_BIN="$OLD_VENV_PATH/bin"
+        fi
       fi
     elif [ -f "$VENV_BIN/letsencrypt" ]; then
       # --version output ran through grep due to python-cryptography DeprecationWarnings
