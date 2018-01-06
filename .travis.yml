@@ -5,7 +5,7 @@ cache:
         - $HOME/.cache/pip
 
 before_install:
-  - '([ $TRAVIS_OS_NAME == linux ] && dpkg -s libaugeas0) || (brew update && brew install augeas python3)'
+  - '([ $TRAVIS_OS_NAME == linux ] && dpkg -s libaugeas0) || (brew update && brew install augeas python python3)'
 
 before_script:
   - 'if [ $TRAVIS_OS_NAME = osx ] ; then ulimit -n 2048 ; fi'
@@ -13,7 +13,7 @@ before_script:
 matrix:
   include:
     - language: generic
-      env: TOXENV=py36
+      env: TOXENV=py27
       os: osx
 
 
