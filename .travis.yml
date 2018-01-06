@@ -13,7 +13,7 @@ before_script:
 matrix:
   include:
     - language: generic
-      env: TOXENV=py27
+      env: TOXENV=py36
       os: osx
 
 
