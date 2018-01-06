@@ -8,7 +8,7 @@ before_install:
   - '([ $TRAVIS_OS_NAME == linux ] && dpkg -s libaugeas0) || (brew update && brew install augeas python3)'
 
 before_script:
-  - 'if [ $TRAVIS_OS_NAME = osx ] ; then ulimit -n 1024 ; fi'
+  - 'if [ $TRAVIS_OS_NAME = osx ] ; then ulimit -n 2048 ; fi'
 
 matrix:
   include:
