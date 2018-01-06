@@ -6,4 +6,4 @@
 # environnment provides two cores. See
 # https://docs.travis-ci.com/user/reference/overview/#Virtualization-environments.
 
-PYTEST_DEBUG=1 pytest --numprocesses auto --max-slave-restart 0 -vvvvvvvvvvvvv "$@"
+pytest --numprocesses auto --max-slave-restart 0 -vvvv "$@"
