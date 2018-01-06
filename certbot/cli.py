@@ -207,7 +207,6 @@ def set_by_cli(var):
         # propagate plugin requests: eg --standalone modifies config.authenticator
         detector.authenticator, detector.installer = (
             plugin_selection.cli_plugin_requests(detector))
-        logger.debug("Default Detector is %r", detector)
 
     if not isinstance(getattr(detector, var), _Default):
         return True
