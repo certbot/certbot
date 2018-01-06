@@ -6,10 +6,4 @@
 # environnment provides two cores. See
 # https://docs.travis-ci.com/user/reference/overview/#Virtualization-environments.
 
-if ${TRAVIS:-false}; then
-    NUMPROCESSES="2"
-else
-    NUMPROCESSES="auto"
-fi
-
-pytest --numprocesses "$NUMPROCESSES" "$@"
+pytest --full-trace --numprocesses auto --max-slave-restart 5 --boxed -vvvv "$@"
