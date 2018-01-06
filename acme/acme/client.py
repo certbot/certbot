@@ -603,7 +603,7 @@ class ClientV2(ClientBase):
             csr=csr)
 
     def poll_order_and_request_issuance(self, orderr, max_time=datetime.timedelta(seconds=90)):
-        """Poll Order Resource for status.
+        """Poll Order Resource for status."""
         responses = []
         deadline = datetime.datetime.now() + max_time
         for url in orderr.body.authorizations:
