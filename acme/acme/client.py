@@ -548,7 +548,7 @@ class ClientV2(ClientBase):
             identifiers.append(messages.Identifier(typ=messages.IDENTIFIER_FQDN,
                 value=name))
         order = messages.NewOrder(identifiers=identifiers)
-        response = self.net.post(self.directory.new_order, order)
+        response = self.net.post(self.directory['newOrder'], order)
         order_response = self._order_resource_from_response(response, csr=wrapped_csr)
         return order_response
 
