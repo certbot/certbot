@@ -10,6 +10,7 @@ import time
 import six
 from six.moves import http_client  # pylint: disable=import-error
 
+import crypto_util
 import josepy as jose
 import OpenSSL
 import re
@@ -198,26 +199,6 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
         updated_authzr = self._authzr_from_response(
             response, authzr.body.identifier, authzr.uri)
         return updated_authzr, response
-
-    def revoke(self, cert, rsn):
-        """Revoke certificate.
-
-        :param .ComparableX509 cert: `OpenSSL.crypto.X509` wrapped in
-            `.ComparableX509`
-
-        :param int rsn: Reason code for certificate revocation.
-
-        :raises .ClientError: If revocation is unsuccessful.
-
-        """
-        response = self.net.post(self.directory[messages.Revocation],
-                                 messages.Revocation(
-                                     certificate=cert,
-                                     reason=rsn),
-                                 content_type=None)
-        if response.status_code != http_client.OK:
-            raise errors.ClientError(
-                'Successful revocation must return HTTP OK status')
 
 class Client(ClientBase):
     """ACME client for a v1 API.
@@ -563,9 +544,14 @@ class ClientV2(ClientBase):
         :rtype: `list` of `.AuthorizationResource`
         """
         csr = OpenSSL.crypto.load_certificate_request(OpenSSL.crypto.FILETYPE_PEM, csr_pem)
-        order = messages.NewOrder(csr=jose.ComparableX509(csr))
+        wrapped_csr = jose.ComparableX509(csr)
+        identifiers = []
+        for name in crypto_util._pyopenssl_cert_or_req_san(csr):
+            identifiers.append(messages.Identifier(typ=messages.IDENTIFIER_FQDN,
+                value=name))
+        order = messages.NewOrder(identifiers=identifiers)
         response = self.net.post(self.directory.new_order, order)
-        order_response = self._order_resource_from_response(response)
+        order_response = self._order_resource_from_response(response, csr=wrapped_csr)
         return order_response
 
     def poll_order_and_request_issuance(self, orderr):
@@ -600,7 +586,7 @@ class ClientV2(ClientBase):
             latest = self._order_resource_from_response(response, uri=orderr.uri)
         return latest
 
-    def _order_resource_from_response(self, response, uri=None):
+    def _order_resource_from_response(self, response, uri=None, csr=None):
         body = messages.Order.from_json(response.json())
         authorizations = []
         for url in body.authorizations:
@@ -614,7 +600,35 @@ class ClientV2(ClientBase):
             body=body,
             uri=response.headers.get('Location', uri),
             fullchain_pem=fullchain_pem,
-            authorizations=authorizations)
+            authorizations=authorizations,
+            csr=csr)
+
+    def poll_order_and_request_issuance(self, orderr, max_time=datetime.timedelta(seconds=90)):
+        """Poll Order Resource for status.
+        responses = []
+        deadline = datetime.datetime.now() + max_time
+        for url in orderr.body.authorizations:
+            while datetime.datetime.now() < deadline:
+                time.sleep(1)
+                authzr = self._authzr_from_response(self.net.get(url), uri=url)
+                if authzr.body.status != messages.STATUS_PENDING:
+                    responses.append(authzr)
+                    break
+        for authzr in responses:
+            if authzr.body.status != messages.STATUS_VALID:
+                for chall in authzr.body.challenges:
+                    if chall.error != None:
+                        raise Exception("failed challenge for %s: %s" %
+                            (authzr.body.identifier.value, chall.error))
+                raise Exception("failed authorization: %s" % authzr.body)
+        latest = self._order_resource_from_response(self.net.get(orderr.uri), uri=orderr.uri)
+        self.net.post(latest.body.finalize, messages.CertificateRequest(csr=orderr.csr))
+        while datetime.datetime.now() < deadline:
+            time.sleep(1)
+            latest = self._order_resource_from_response(self.net.get(orderr.uri), uri=orderr.uri)
+            if latest.fullchain_pem is not None:
+               return latest
+        return None
 
 
 class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
