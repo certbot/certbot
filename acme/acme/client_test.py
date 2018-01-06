@@ -5,12 +5,12 @@ import unittest
 
 from six.moves import http_client  # pylint: disable=import-error
 
+import josepy as jose
 import mock
 import requests
 
 from acme import challenges
 from acme import errors
-from acme import jose
 from acme import jws as acme_jws
 from acme import messages
 from acme import messages_test
@@ -103,6 +103,23 @@ class ClientTest(unittest.TestCase):
 
         self.assertEqual(self.regr, self.client.register(self.new_reg))
         # TODO: test POST call arguments
+
+    def test_new_account_v2(self):
+        directory = messages.Directory({
+            "new-account": 'https://www.letsencrypt-demo.org/acme/new-account',
+        })
+        from acme.client import ClientV2
+        client = ClientV2(directory=directory, net=self.net)
+        self.response.status_code = http_client.CREATED
+        self.response.json.return_value = self.regr.body.to_json()
+        self.response.headers['Location'] = self.regr.uri
+
+        self.regr = messages.RegistrationResource(
+            body=messages.Registration(
+                contact=self.contact, key=KEY.public_key()),
+            uri='https://www.letsencrypt-demo.org/acme/reg/1')
+
+        self.assertEqual(self.regr, client.new_account(self.regr))
 
     def test_update_registration(self):
         # "Instance of 'Field' has no to_json/update member" bug:
@@ -432,9 +449,22 @@ class ClientTest(unittest.TestCase):
             self.certr,
             self.rsn)
 
+class MockJSONDeSerializable(jose.JSONDeSerializable):
+    # pylint: disable=missing-docstring
+    def __init__(self, value):
+        self.value = value
+
+    def to_partial_json(self):
+        return {'foo': self.value}
+
+    @classmethod
+    def from_json(cls, value):
+        pass  # pragma: no cover
+
 
 class ClientNetworkTest(unittest.TestCase):
     """Tests for acme.client.ClientNetwork."""
+    # pylint: disable=too-many-public-methods
 
     def setUp(self):
         self.verify_ssl = mock.MagicMock()
@@ -453,24 +483,25 @@ class ClientNetworkTest(unittest.TestCase):
         self.assertTrue(self.net.verify_ssl is self.verify_ssl)
 
     def test_wrap_in_jws(self):
-        class MockJSONDeSerializable(jose.JSONDeSerializable):
-            # pylint: disable=missing-docstring
-            def __init__(self, value):
-                self.value = value
-
-            def to_partial_json(self):
-                return {'foo': self.value}
-
-            @classmethod
-            def from_json(cls, value):
-                pass  # pragma: no cover
-
         # pylint: disable=protected-access
         jws_dump = self.net._wrap_in_jws(
-            MockJSONDeSerializable('foo'), nonce=b'Tg')
+            MockJSONDeSerializable('foo'), nonce=b'Tg', url="url")
         jws = acme_jws.JWS.json_loads(jws_dump)
         self.assertEqual(json.loads(jws.payload.decode()), {'foo': 'foo'})
         self.assertEqual(jws.signature.combined.nonce, b'Tg')
+
+    def test_wrap_in_jws_v2(self):
+        self.net.account = {'uri': 'acct-uri'}
+        self.net.acme_version = 2
+        # pylint: disable=protected-access
+        jws_dump = self.net._wrap_in_jws(
+            MockJSONDeSerializable('foo'), nonce=b'Tg', url="url")
+        jws = acme_jws.JWS.json_loads(jws_dump)
+        self.assertEqual(json.loads(jws.payload.decode()), {'foo': 'foo'})
+        self.assertEqual(jws.signature.combined.nonce, b'Tg')
+        self.assertEqual(jws.signature.combined.kid, u'acct-uri')
+        self.assertEqual(jws.signature.combined.url, u'url')
+
 
     def test_check_response_not_ok_jobj_no_error(self):
         self.response.ok = False
@@ -701,13 +732,13 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
         self.assertEqual(self.checked_response, self.net.post(
             'uri', self.obj, content_type=self.content_type))
         self.net._wrap_in_jws.assert_called_once_with(
-            self.obj, jose.b64decode(self.all_nonces.pop()))
+            self.obj, jose.b64decode(self.all_nonces.pop()), "uri")
 
         self.available_nonces = []
         self.assertRaises(errors.MissingNonce, self.net.post,
                           'uri', self.obj, content_type=self.content_type)
         self.net._wrap_in_jws.assert_called_with(
-            self.obj, jose.b64decode(self.all_nonces.pop()))
+            self.obj, jose.b64decode(self.all_nonces.pop()), "uri")
 
     def test_post_wrong_initial_nonce(self):  # HEAD
         self.available_nonces = [b'f', jose.b64encode(b'good')]

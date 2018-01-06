@@ -308,4 +308,5 @@ texinfo_documents = [
 
 intersphinx_mapping = {
     'python': ('https://docs.python.org/', None),
+    'josepy': ('https://josepy.readthedocs.io/en/latest/', None),
 }
