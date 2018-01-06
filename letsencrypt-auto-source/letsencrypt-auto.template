@@ -68,10 +68,12 @@ for arg in "$@" ; do
       NO_BOOTSTRAP=1;;
     --help)
       HELP=1;;
-    --noninteractive|--non-interactive|renew)
-      ASSUME_YES=1;;
+    --noninteractive|--non-interactive)
+      NONINTERACTIVE=1;;
     --quiet)
       QUIET=1;;
+    renew)
+      ASSUME_YES=1;;
     --verbose)
       VERBOSE=1;;
     -[!-]*)
@@ -93,7 +95,7 @@ done
 
 if [ $BASENAME = "letsencrypt-auto" ]; then
   # letsencrypt-auto does not respect --help or --yes for backwards compatibility
-  ASSUME_YES=1
+  NONINTERACTIVE=1
   HELP=0
 fi
 
