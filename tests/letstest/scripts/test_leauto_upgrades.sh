@@ -62,9 +62,38 @@ iQIDAQAB
 # Finally, we wait for the server to start.
 sleep 5s
 
-if ! ./letsencrypt-auto -v --debug --version || ! diff letsencrypt-auto letsencrypt-auto-source/letsencrypt-auto ; then
-    echo upgrade appeared to fail
-    exit 1
+if [ $(python -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//') -eq 26 ]; then
+    if command -v python3; then
+        echo "Didn't expect Python 3 to be installed!"
+        exit 1
+    fi
+    cp letsencrypt-auto cb-auto
+    if ! ./cb-auto -v --debug --version | grep 0.5.0 ; then
+        echo "Certbot shouldn't have updated to a new version!"
+        exit 1
+    fi
+    if [ -d "/opt/eff.org" ]; then
+        echo "New directory shouldn't have been created!"
+        exit 1
+    fi
+    EXPECTED_VERSION=$(grep -m1 LE_AUTO_VERSION certbot-auto | cut -d\" -f2)
+    if ! ./cb-auto -v --debug --version -n | grep "$EXPECTED_VERSION" ; then
+        echo "Certbot didn't upgrade as expected!"
+        exit 1
+    fi
+    if ! command -v python3; then
+        echo "Python3 wasn't properly installed"
+        exit 1
+    fi
+    if [ "$(/opt/eff.org/certbot/venv/bin/python -V 2>&1 | cut -d" " -f 2 | cut -d. -f1)" != 3 ]; then
+        echo "Python3 wasn't used in venv!"
+        exit 1
+    fi
+else
+    if ! ./letsencrypt-auto -v --debug --version || ! diff letsencrypt-auto letsencrypt-auto-source/letsencrypt-auto ; then
+        echo upgrade appeared to fail
+        exit 1
+    fi
 fi
 echo upgrade appeared to be successful
 
