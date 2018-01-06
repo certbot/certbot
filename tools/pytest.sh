@@ -6,4 +6,4 @@
 # environnment provides two cores. See
 # https://docs.travis-ci.com/user/reference/overview/#Virtualization-environments.
 
-pytest --numprocesses auto --max-slave-restart 0 -vvvv "$@"
+pytest --numprocesses auto --max-slave-restart 5 -vvvv "$@"
