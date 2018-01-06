@@ -572,7 +572,6 @@ class ClientV2(ClientBase):
                 time.sleep(1)
             else:
                 break
-        print latest.to_json()
         for authz in latest.authorizations:
             if authz.body.status != messages.STATUS_VALID:
                 for chall in authz.body.challenges:
