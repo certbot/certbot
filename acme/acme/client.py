@@ -549,7 +549,7 @@ class ClientV2(ClientBase):
         :rtype: `.RegistrationResource`
 
         """
-        response = self.net.post(self.directory.new_account, new_account)
+        response = self.net.post(self.directory['newAccount'], new_account)
         # "Instance of 'Field' has no key/contact member" bug:
         # pylint: disable=no-member
         return self._regr_from_response(response)
