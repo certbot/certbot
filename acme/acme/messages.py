@@ -172,7 +172,8 @@ class Directory(jose.JSONDeSerializable):
 
     class Meta(jose.JSONObjectWithFields):
         """Directory Meta."""
-        terms_of_service = jose.Field('termsOfService', omitempty=True)
+        terms_of_service = jose.Field('terms-of-service', omitempty=True)
+        terms_of_service_v2 = jose.Field('termsOfService', omitempty=True)
         website = jose.Field('website', omitempty=True)
         caa_identities = jose.Field('caaIdentities', omitempty=True)
 
@@ -194,18 +195,10 @@ class Directory(jose.JSONDeSerializable):
         # not clear on that
         self._jobj = canon_jobj
 
-    def _camelCase(self, name):
-        """Convert a snake_case name to camelCase."""
-        return re.sub('_([a-z])', lambda x: x.group(1).upper(),  name)
-
     def __getattr__(self, name):
         try:
             return self[name.replace('_', '-')]
         except KeyError as error:
-            try:
-                print self._camelCase(name)
-                return self[self._camelCase(name)]
-            except KeyError as error:
                 raise AttributeError(str(error) + ': ' + name)
 
     def __getitem__(self, name):
