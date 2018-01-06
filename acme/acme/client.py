@@ -235,10 +235,8 @@ class Client(ClientBase):
             alg=alg, verify_ssl=verify_ssl) if net is None else net
 
         if isinstance(directory, six.string_types):
-            self.directory = messages.Directory.from_json(
+            directory = messages.Directory.from_json(
                 self.net.get(directory).json())
-        else:
-            self.directory = directory
         super(Client, self).__init__(directory=directory, net=net)
 
     def register(self, new_reg=None):
