@@ -298,13 +298,8 @@ class RevokeTest(test_util.TempDirTestCase):
         self._call()
         self.assertFalse(mock_delete.called)
 
-class DeleteIfAppropriateTest(unittest.TestCase):
+class DeleteIfAppropriateTest(test_util.ConfigTestCase):
     """Tests for certbot.main._delete_if_appropriate """
-
-    def setUp(self):
-        self.config = mock.Mock()
-        self.config.namespace = mock.Mock()
-        self.config.namespace.noninteractive_mode = False
 
     def _call(self, mock_config):
         from certbot.main import _delete_if_appropriate
