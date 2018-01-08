@@ -56,12 +56,6 @@ matrix:
       sudo: required
     - python: "2.7"
       env: TOXENV=nginxroundtrip
-    - language: generic
-      env: TOXENV=py27
-      os: osx
-    - language: generic
-      env: TOXENV=py36
-      os: osx
 
 
 # Only build pushes to the master branch, PRs, and branches beginning with
