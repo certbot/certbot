@@ -1074,7 +1074,7 @@ def renew_cert(config, plugins, lineage):
         # Run supported updaters
         _run_updaters(renewed_lineage, installer, config, renewed=True)
 
-def run_frequent_updaters(config, plugins, lineage):
+def run_generic_updaters(config, plugins, lineage):
     """Run updaters that the plugin supports
 
     :param config: Configuration object
@@ -1098,8 +1098,8 @@ def run_frequent_updaters(config, plugins, lineage):
     _run_updaters(lineage, installer, config, renewed=False)
 
 def _run_updaters(lineage, installer, config, renewed=False):
-    """Helper function to actually run the updater classes supported by
-    installer.
+    """Helper function to actually run the updater and deployer interface methods
+    if supported by the installer.
 
     :param lineage: Certificate lineage object
     :type lineage: storage.RenewableCert
@@ -1113,18 +1113,17 @@ def _run_updaters(lineage, installer, config, renewed=False):
     :returns: `None`
     :rtype: None
     """
-    renewed_lineage = None
     if renewed:
-        renewed_lineage = lineage
-
-    for domain in lineage.names():
-        if config.server_tls_updates:
-            if isinstance(installer, interfaces.ServerTLSUpdater):
-                installer.server_tls_updates(domain, lineage=renewed_lineage)
-        if config.installer_updates:
-            if isinstance(installer, interfaces.InstallerSpecificUpdater):
-                installer.installer_specific_updates(domain,
-                                                     lineage=renewed_lineage)
+        if config.installer_updates and isinstance(installer, interfaces.RenewDeployer):
+            installer.renew_deploy(lineage)
+    else:
+        for domain in lineage.names():
+            if config.server_tls_updates:
+                if isinstance(installer, interfaces.ServerTLSUpdater):
+                    installer.server_tls_updates(domain)
+            if config.installer_updates:
+                if isinstance(installer, interfaces.GenericUpdater):
+                    installer.generic_updates(domain)
 
 def certonly(config, plugins):
     """Authenticate & obtain cert, but do not install it.

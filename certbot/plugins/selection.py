@@ -246,14 +246,6 @@ def verify_enhancements_supported(config, installer):
                 "The {0} plugin does not currently respect"
                 " {1} and its behavior regarding TLS updates is defined"
                 " by the plugin.".format(str(installer), flag))
-    # Call the installer to verify the configuration for enhancements under
-    # its control.
-    if isinstance(installer, interfaces.InstallerSpecificUpdater):
-        try:
-            installer.verify_installer_specific_updates()
-        except errors.MisconfigurationError as error:
-            logger.error(error)
-            raise
 
 def set_configurator(previously, now):
     """
