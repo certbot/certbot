@@ -23,5 +23,5 @@ for requirement in "$@" ; do
     # See https://travis-ci.org/certbot/certbot/jobs/308774157#L1333.
     pkg=$(echo "$pkg" | tr - _)
   fi
-  "$(dirname $0)/pytest.sh" --pyargs $pkg
+  PYTEST_DEBUG=1 "$(dirname $0)/pytest.sh" -vvvvvvvvvvvv --pyargs $pkg
 done
