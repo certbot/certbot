@@ -47,6 +47,12 @@ if [ $RESULT -eq 0 ]; then
   exit 1
 fi
 
+# Skip self upgrade due to LE_PYTHON value
+if ! LE_PYTHON=nonexistant certbot/letsencrypt-auto-source/letsencrypt-auto 2>&1 | grep -q "WARNING: couldn't find Python"; then
+  echo "Python upgrade failure warning not printed!"
+  exit 1
+fi
+
 # bootstrap, this time installing python3
 certbot/letsencrypt-auto-source/letsencrypt-auto --no-self-upgrade -n > /dev/null 2> /dev/null
 
