@@ -5,7 +5,7 @@ cache:
         - $HOME/.cache/pip
 
 before_install:
-  - '([ $TRAVIS_OS_NAME == linux ] && dpkg -s libaugeas0) || (brew update && brew install augeas python python3 && brew link python)'
+  - '([ $TRAVIS_OS_NAME == linux ] && dpkg -s libaugeas0) || (brew update && brew install augeas python3 && brew upgrade python && brew link python)'
 
 before_script:
   - 'if [ $TRAVIS_OS_NAME = osx ] ; then ulimit -n 1024 ; fi'
@@ -56,7 +56,12 @@ matrix:
       sudo: required
     - python: "2.7"
       env: TOXENV=nginxroundtrip
-
+    - language: generic
+      env: TOXENV=py27
+      os: osx
+    - language: generic
+      env: TOXENV=py36
+      os: osx
 
 # Only build pushes to the master branch, PRs, and branches beginning with
 # `test-` or of the form `digit(s).digit(s).x`. This reduces the number of
