@@ -270,7 +270,6 @@ DeterminePythonVersion() {
       return 0
     fi
   fi
-  export LE_PYTHON
 
   PYVER=`"$LE_PYTHON" -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//'`
   if [ "$PYVER" -lt 26 ]; then
@@ -331,7 +330,7 @@ elif [ -f /etc/redhat-release ]; then
     }
     BOOTSTRAP_VERSION="BootstrapRpmCommon $BOOTSTRAP_RPM_COMMON_VERSION"
   fi
-  export LE_PYTHON="$prev_le_python"
+  LE_PYTHON="$prev_le_python"
 elif [ -f /etc/os-release ] && `grep -q openSUSE /etc/os-release` ; then
   Bootstrap() {
     BootstrapMessage "openSUSE-based OSes"
