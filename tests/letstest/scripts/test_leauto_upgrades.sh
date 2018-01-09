@@ -29,7 +29,7 @@ fi
 # directory to be served.
 MY_TEMP_DIR=$(mktemp -d)
 PORT_FILE="$MY_TEMP_DIR/port"
-SERVER_PATH=$(tools/realpath.py tools/simple_http_server.py)
+SERVER_PATH=$(tools/readlink.py tools/simple_http_server.py)
 cd "$MY_TEMP_DIR"
 "$SERVER_PATH" 0 > $PORT_FILE &
 SERVER_PID=$!
