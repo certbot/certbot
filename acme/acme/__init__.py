@@ -13,9 +13,10 @@ supported version: `draft-ietf-acme-01`_.
 import sys
 import warnings
 
-if sys.version_info[:2] == (3, 3):
-    warnings.warn(
-            "Python 3.3 support will be dropped in the next release of "
-            "acme. Please upgrade your Python version.",
-            PendingDeprecationWarning,
-    ) #pragma: no cover
+for (major, minor) in [(2, 6), (3, 3)]:
+    if sys.version_info[:2] == (major, minor):
+        warnings.warn(
+                "Python {0}.{1} support will be dropped in the next release of "
+                "acme. Please upgrade your Python version.".format(major, minor),
+                PendingDeprecationWarning,
+        ) #pragma: no cover

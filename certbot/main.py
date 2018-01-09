@@ -1217,9 +1217,10 @@ def main(cli_args=sys.argv[1:]):
         # Let plugins_cmd be run as un-privileged user.
         if config.func != plugins_cmd:
             raise
-    if sys.version_info[:2] == (3, 3):
-        logger.warning("Python 3.3 support will be dropped in the next release "
-                    "of Certbot - please upgrade your Python version.")
+    for (major, minor) in [(2, 6), (3, 3)]:
+        if sys.version_info[:2] == (major, minor):
+            logger.warning("Python {0}.{1} support will be dropped in the next release "
+                        "of Certbot - please upgrade your Python version.")
 
     set_displayer(config)
 
