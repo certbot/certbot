@@ -5,7 +5,7 @@ from SimpleHTTPServer import SimpleHTTPRequestHandler
 import sys
 
 def serve_forever(port=0):
-    """Spins up an HTTP server on localhost and the given port.
+    """Spins up an HTTP server on all interfaces and the given port.
 
     A message is printed to stdout specifying the address and port being used
     by the server.
