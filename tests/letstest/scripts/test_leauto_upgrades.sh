@@ -28,11 +28,13 @@ fi
 # to provide a new version of letsencrypt-auto. First, we start the server and
 # directory to be served.
 MY_TEMP_DIR=$(mktemp -d)
-SERVER_PORT=12345
+PORT_FILE="$MY_TEMP_DIR/port"
+SERVER_PATH=$(tools/realpath.py tools/simple_http_server.py)
 cd "$MY_TEMP_DIR"
-python -m SimpleHTTPServer "$SERVER_PORT" &
+"$SERVER_PATH" 0 > $PORT_FILE &
 SERVER_PID=$!
 trap 'kill "$SERVER_PID" && rm -rf "$MY_TEMP_DIR"' EXIT
+SERVER_PORT=$(sed -n 's/.*port \([0-9]\+\).*/\1/p' "$PORT_FILE")
 cd ~-
 
 # Then, we set up the files to be served.
