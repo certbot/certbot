@@ -18,5 +18,5 @@ for (major, minor) in [(2, 6), (3, 3)]:
         warnings.warn(
                 "Python {0}.{1} support will be dropped in the next release of "
                 "acme. Please upgrade your Python version.".format(major, minor),
-                PendingDeprecationWarning,
+                DeprecationWarning,
         ) #pragma: no cover
