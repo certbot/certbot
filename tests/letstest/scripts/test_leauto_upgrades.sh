@@ -34,7 +34,6 @@ cd "$MY_TEMP_DIR"
 "$SERVER_PATH" 0 > $PORT_FILE &
 SERVER_PID=$!
 trap 'kill "$SERVER_PID" && rm -rf "$MY_TEMP_DIR"' EXIT
-SERVER_PORT=$(sed -n 's/.*port \([0-9]\+\).*/\1/p' "$PORT_FILE")
 cd ~-
 
 # Then, we set up the files to be served.
@@ -47,7 +46,11 @@ cp letsencrypt-auto-source/letsencrypt-auto "$LE_AUTO_SOURCE_DIR/letsencrypt-aut
 SIGNING_KEY="letsencrypt-auto-source/tests/signing.key"
 openssl dgst -sha256 -sign "$SIGNING_KEY" -out "$NEW_LE_AUTO_PATH.sig" "$NEW_LE_AUTO_PATH"
 
-# Next, we set the necessary certbot-auto environment variables.
+# Next, we wait for the server to start and get the port number.
+sleep 5s
+SERVER_PORT=$(sed -n 's/.*port \([0-9]\+\).*/\1/p' "$PORT_FILE")
+
+# Finally, we set the necessary certbot-auto environment variables.
 export LE_AUTO_DIR_TEMPLATE="http://localhost:$SERVER_PORT/%s/"
 export LE_AUTO_JSON_URL="http://localhost:$SERVER_PORT/json"
 export LE_AUTO_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----
@@ -60,9 +63,6 @@ Z5o/NDiQB11m91yNB0MmPYY9QSbnOA9j7IaaC97AwRLuwXY+/R2ablTcxurWou68
 iQIDAQAB
 -----END PUBLIC KEY-----
 "
-
-# Finally, we wait for the server to start.
-sleep 5s
 
 if ! ./letsencrypt-auto -v --debug --version || ! diff letsencrypt-auto letsencrypt-auto-source/letsencrypt-auto ; then
     echo upgrade appeared to fail
