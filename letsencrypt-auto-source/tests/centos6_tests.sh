@@ -1,6 +1,6 @@
 #!/bin/bash
 # Start by making sure your system is up-to-date:
-yum update > /dev/null
+yum update -y > /dev/null
 yum install -y centos-release-scl > /dev/null
 yum install -y python27 > /dev/null 2> /dev/null
 
