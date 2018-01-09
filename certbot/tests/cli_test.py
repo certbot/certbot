@@ -164,6 +164,8 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertTrue("--cert-path" in out)
         self.assertTrue("--key-path" in out)
         self.assertTrue("--reason" in out)
+        self.assertTrue("--delete-after-revoke" in out)
+        self.assertTrue("--no-delete-after-revoke" in out)
 
         out = self._help_output(['-h', 'config_changes'])
         self.assertTrue("--cert-path" not in out)
@@ -411,6 +413,18 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
     def test_no_directory_hooks_unset(self):
         self.assertTrue(self.parse([]).directory_hooks)
+
+    def test_delete_after_revoke(self):
+        namespace = self.parse(["--delete-after-revoke"])
+        self.assertTrue(namespace.delete_after_revoke)
+
+    def test_delete_after_revoke_default(self):
+        namespace = self.parse([])
+        self.assertEqual(namespace.delete_after_revoke, None)
+
+    def test_no_delete_after_revoke(self):
+        namespace = self.parse(["--no-delete-after-revoke"])
+        self.assertFalse(namespace.delete_after_revoke)
 
 
 class DefaultTest(unittest.TestCase):
