@@ -4,6 +4,8 @@ yum update > /dev/null
 yum install -y centos-release-scl > /dev/null
 yum install -y python27 > /dev/null 2> /dev/null
 
+LE_AUTO="certbot/letsencrypt-auto-source/letsencrypt-auto"
+
 # we're going to modify env variables, so do this in a subshell
 (
 source /opt/rh/python27/enable
@@ -25,7 +27,7 @@ if [ $RESULT -ne 0 ]; then
 fi
 
 # bootstrap, but don't install python 3.
-certbot/letsencrypt-auto-source/letsencrypt-auto --no-self-upgrade -n > /dev/null 2> /dev/null
+"$LE_AUTO" --no-self-upgrade -n > /dev/null 2> /dev/null
 
 # ensure python 3 isn't installed
 python3 --version 2> /dev/null
@@ -48,13 +50,13 @@ if [ $RESULT -eq 0 ]; then
 fi
 
 # Skip self upgrade due to Python 3 not being available.
-if ! certbot/letsencrypt-auto-source/letsencrypt-auto 2>&1 | grep -q "WARNING: couldn't find Python"; then
+if ! "$LE_AUTO" 2>&1 | grep -q "WARNING: couldn't find Python"; then
   echo "Python upgrade failure warning not printed!"
   exit 1
 fi
 
 # bootstrap, this time installing python3
-certbot/letsencrypt-auto-source/letsencrypt-auto --no-self-upgrade -n > /dev/null 2> /dev/null
+"$LE_AUTO" --no-self-upgrade -n > /dev/null 2> /dev/null
 
 # ensure python 3 is installed
 python3 --version > /dev/null
