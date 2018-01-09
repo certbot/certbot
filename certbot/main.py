@@ -6,9 +6,9 @@ import os
 import sys
 
 import configobj
+import josepy as jose
 import zope.component
 
-from acme import jose
 from acme import errors as acme_errors
 
 import certbot
@@ -536,9 +536,11 @@ def _delete_if_appropriate(config): # pylint: disable=too-many-locals,too-many-b
     display = zope.component.getUtility(interfaces.IDisplay)
     reporter_util = zope.component.getUtility(interfaces.IReporter)
 
-    msg = ("Would you like to delete the cert(s) you just revoked?")
-    attempt_deletion = display.yesno(msg, yes_label="Yes (recommended)", no_label="No",
-            force_interactive=True, default=True)
+    attempt_deletion = config.delete_after_revoke
+    if attempt_deletion is None:
+        msg = ("Would you like to delete the cert(s) you just revoked?")
+        attempt_deletion = display.yesno(msg, yes_label="Yes (recommended)", no_label="No",
+                force_interactive=True, default=True)
 
     if not attempt_deletion:
         reporter_util.add_message("Not deleting revoked certs.", reporter_util.LOW_PRIORITY)

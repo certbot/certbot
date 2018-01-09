@@ -71,6 +71,7 @@ CLI_DEFAULTS = dict(
     user_agent_comment=None,
     csr=None,
     reason=0,
+    delete_after_revoke=None,
     rollback_checkpoints=1,
     init=False,
     prepare=False,

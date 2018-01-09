@@ -1,7 +1,7 @@
 """Base test class for DNS authenticators built on Lexicon."""
 
+import josepy as jose
 import mock
-from acme import jose
 from requests.exceptions import HTTPError, RequestException
 
 from certbot import errors
