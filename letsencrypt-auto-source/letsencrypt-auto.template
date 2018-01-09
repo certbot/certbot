@@ -246,10 +246,14 @@ DeprecationBootstrap() {
   fi
 }
 
+MIN_PYTHON_VERSION="2.6"
+MIN_PYVER=$(echo "$MIN_PYTHON_VERSION" | sed 's/\.//')
 # Sets LE_PYTHON to Python version string and PYVER to the first two
 # digits of the python version
 DeterminePythonVersion() {
   # Arguments: "NOCRASH" if we shouldn't crash if we don't find a good python
+  #
+  # If no Python is found, PYVER is set to 0.
   if [ -n "$USE_PYTHON_3" ]; then
     for LE_PYTHON in "$LE_PYTHON" python3; do
       # Break (while keeping the LE_PYTHON value) if found.
@@ -273,10 +277,12 @@ DeterminePythonVersion() {
   export LE_PYTHON
 
   PYVER=`"$LE_PYTHON" -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//'`
-  if [ "$PYVER" -lt 26 ]; then
-    error "You have an ancient version of Python entombed in your operating system..."
-    error "This isn't going to work; you'll need at least version 2.6."
-    exit 1
+  if [ "$PYVER" -lt "$MIN_PYVER" ]; then
+    if [ "$1" != "NOCRASH" ]; then
+      error "You have an ancient version of Python entombed in your operating system..."
+      error "This isn't going to work; you'll need at least version $MIN_PYTHON_VERSION."
+      exit 1
+    fi
   fi
 }
 
@@ -595,8 +601,10 @@ else
 {{ fetch.py }}
 UNLIKELY_EOF
     # ---------------------------------------------------------------------------
-    DeterminePythonVersion
-    if ! REMOTE_VERSION=`"$LE_PYTHON" "$TEMP_DIR/fetch.py" --latest-version` ; then
+    DeterminePythonVersion "NOCRASH"
+    if [ "$PYVER" -lt "$MIN_PYVER" ]; then
+      error "WARNING: couldn't find Python $MIN_PYTHON_VERSION+ to check for updates."
+    elif ! REMOTE_VERSION=`"$LE_PYTHON" "$TEMP_DIR/fetch.py" --latest-version` ; then
       error "WARNING: unable to check for updates."
     elif [ "$LE_AUTO_VERSION" != "$REMOTE_VERSION" ]; then
       say "Upgrading certbot-auto $LE_AUTO_VERSION to $REMOTE_VERSION..."
