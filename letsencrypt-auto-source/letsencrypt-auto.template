@@ -251,7 +251,11 @@ DeprecationBootstrap() {
 DeterminePythonVersion() {
   # Arguments: "NOCRASH" if we shouldn't crash if we don't find a good python
   if [ -n "$USE_PYTHON_3" ]; then
-    for LE_PYTHON in "$LE_PYTHON" python3; do
+    if [ -n "$PRE_UPGRADE_LE_VERSION" ]; then
+      TEST_PYTHON="$LE_PYTHON"
+    fi # We stopped exporting LE_PYTHON, so if LE_PYTHON exists, a user set it.
+       # Respect the user-set value.
+    for LE_PYTHON in "$TEST_PYTHON" python3; do
       # Break (while keeping the LE_PYTHON value) if found.
       $EXISTS "$LE_PYTHON" > /dev/null && break
     done
@@ -608,6 +612,7 @@ UNLIKELY_EOF
       # filesystems is non-atomic, doing `rm dest, cp src dest, rm src`, but the
       # cp is unlikely to fail if the rm doesn't.
       mv -f "$TEMP_DIR/letsencrypt-auto.permission-clone" "$0"
+      export PRE_UPGRADE_LE_VERSION="$LE_AUTO_VERSION"
     fi  # A newer version is available.
   fi  # Self-upgrading is allowed.
 
