@@ -35,7 +35,7 @@ InitializeRPMCommonBase() {
       sleep 1s
       /bin/echo -ne "\e[0K\rEnabling the EPEL repository in 2 seconds..."
       sleep 1s
-      /bin/echo -e "\e[0K\rEnabling the EPEL repository in 1 seconds..."
+      /bin/echo -e "\e[0K\rEnabling the EPEL repository in 1 second..."
       sleep 1s
     fi
     if ! $TOOL install $YES_FLAG $QUIET_FLAG epel-release; then

@@ -254,7 +254,7 @@ DeterminePythonVersion() {
   # Arguments: "NOCRASH" if we shouldn't crash if we don't find a good python
   #
   # If no Python is found, PYVER is set to 0.
-  if [ -n "$USE_PYTHON_3" ]; then
+  if [ "$USE_PYTHON_3" = 1 ]; then
     for LE_PYTHON in "$LE_PYTHON" python3; do
       # Break (while keeping the LE_PYTHON value) if found.
       $EXISTS "$LE_PYTHON" > /dev/null && break
@@ -320,6 +320,9 @@ elif [ -f /etc/mageia-release ]; then
   }
   BOOTSTRAP_VERSION="BootstrapMageiaCommon $BOOTSTRAP_MAGEIA_COMMON_VERSION"
 elif [ -f /etc/redhat-release ]; then
+  # Run DeterminePythonVersion to decide on the basis of available Python versions
+  # whether to use 2.x or 3.x on RedHat-like systems.
+  # Then, revert LE_PYTHON to its previous state.
   prev_le_python="$LE_PYTHON"
   unset LE_PYTHON
   DeterminePythonVersion "NOCRASH"
