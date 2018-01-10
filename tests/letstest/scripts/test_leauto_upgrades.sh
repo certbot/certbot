@@ -70,7 +70,7 @@ if [ $(python -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//') -eq 26 ];
         exit 1
     fi
     cp letsencrypt-auto cb-auto
-    if ! ./cb-auto -v --debug --version | grep 0.5.0 ; then
+    if ! ./cb-auto -v --debug --version 2>&1 | grep 0.5.0 ; then
         echo "Certbot shouldn't have updated to a new version!"
         exit 1
     fi
