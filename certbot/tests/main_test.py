@@ -21,13 +21,11 @@ from certbot import constants
 from certbot import configuration
 from certbot import crypto_util
 from certbot import errors
-from certbot import interfaces
 from certbot import main
 from certbot import util
 
 from certbot.plugins import disco
 from certbot.plugins import manual
-from certbot.plugins import selection
 
 import certbot.tests.util as test_util
 
@@ -103,124 +101,6 @@ class RunTest(unittest.TestCase):
         self._call()
         self.mock_success_renewal.assert_called_once_with([self.domain])
 
-class RenewUpdaterTest(unittest.TestCase):
-    """Tests for interfaces.ServerTLSUpdater and
-    interfaces.InstallerSpecificUpdater"""
-
-    def setUp(self):
-        class MockInstallerTLSUpdater(interfaces.ServerTLSUpdater):
-            """Mock class that implements ServerTLSUpdater"""
-            def __init__(self, *args, **kwargs):
-                # pylint: disable=unused-argument
-                self.restart = mock.MagicMock()
-                self.callcounter = mock.MagicMock()
-                self.renewed = []
-            def server_tls_updates(self, domain, lineage, *args, **kwargs):
-                self.callcounter(*args, **kwargs)
-                self.renewed.append(bool(lineage))
-
-        class MockInstallerPluginUpdater(interfaces.InstallerSpecificUpdater):
-            """Mock class that implements InstallerSpecificUpdater"""
-            def __init__(self, *args, **kwargs):
-                # pylint: disable=unused-argument
-                self.restart = mock.MagicMock()
-                self.callcounter = mock.MagicMock()
-                self.verify_counter = mock.MagicMock()
-                self.renewed = []
-            def installer_specific_updates(self, domain, lineage,
-                                           *args, **kwargs):
-                self.callcounter(*args, **kwargs)
-                self.renewed.append(bool(lineage))
-            def verify_installer_specific_updates(self, *args, **kwargs):
-                self.verify_counter(*args, **kwargs)
-
-        self.plugin_installer = MockInstallerPluginUpdater()
-        self.tls_installer = MockInstallerTLSUpdater()
-
-    def get_config(self, args):
-        """Get mock config from dict of parameters"""
-        config = mock.MagicMock()
-        for key in args.keys():
-            config.__dict__[key] = args[key]
-        return config
-
-    @mock.patch('certbot.plugins.selection.z_util')
-    def test_verify_enhancements_tlsupdater(self, mock_z):
-        mock_z().yesno.return_value = False
-        config = self.get_config({"server_tls_updates": False})
-        self.assertRaises(errors.Error,
-                          selection.verify_enhancements_supported,
-                          config, self.tls_installer)
-        # No exception should be thrown
-        mock_z().yesno.return_value = True
-        selection.verify_enhancements_supported(config, self.tls_installer)
-
-        # Plugin does not implement ServerTLSUpdater
-        self.assertRaises(errors.PluginSelectionError,
-                          selection.verify_enhancements_supported,
-                          config, self.plugin_installer)
-
-    def test_verify_enhancements_plugin(self):
-        config = self.get_config({"server_tls_updates": True})
-        self.assertEqual(self.plugin_installer.verify_counter.call_count, 0)
-        selection.verify_enhancements_supported(config, self.plugin_installer)
-        self.assertEqual(self.plugin_installer.verify_counter.call_count, 1)
-
-    def test_verify_enhancements_plugin_exception(self):
-        v_mock = mock.MagicMock()
-        v_mock.side_effect = errors.MisconfigurationError("Oops")
-        self.plugin_installer.verify_installer_specific_updates = v_mock
-        self.assertRaises(errors.MisconfigurationError,
-                          selection.verify_enhancements_supported,
-                          mock.MagicMock(),
-                          self.plugin_installer)
-
-    @mock.patch('certbot.main._get_and_save_cert')
-    @mock.patch('certbot.plugins.selection.choose_configurator_plugins')
-    @test_util.patch_get_utility()
-    def test_server_updates(self, _, mock_select, mock_getsave):
-        config = self.get_config({"server_tls_updates": True,
-                                  "installer_updates": True})
-
-        lineage = mock.MagicMock()
-        lineage.names.return_value = ['firstdomain', 'seconddomain']
-        mock_getsave.return_value = lineage
-        mock_tls_installer = self.tls_installer
-        mock_plugin_installer = self.plugin_installer
-
-        # TLS Updater
-        mock_select.return_value = (mock_tls_installer, None)
-        with mock.patch('certbot.main._init_le_client'):
-            main.renew_cert(config, None, mock.MagicMock())
-        self.assertEqual(mock_tls_installer.callcounter.call_count, 2)
-        self.assertTrue(mock_tls_installer.restart.called)
-        self.assertTrue(all(mock_tls_installer.renewed))
-
-        mock_tls_installer.restart.reset_mock()
-        mock_tls_installer.callcounter.reset_mock()
-        mock_tls_installer.renewed = []
-
-        main.run_frequent_updaters(config, None, lineage)
-        self.assertEqual(mock_tls_installer.callcounter.call_count, 2)
-        self.assertFalse(mock_tls_installer.restart.called)
-        self.assertFalse(any(mock_tls_installer.renewed))
-
-        # Plugin Updater
-        mock_select.return_value = (mock_plugin_installer, None)
-        with mock.patch('certbot.main._init_le_client'):
-            main.renew_cert(config, None, mock.MagicMock())
-        self.assertEqual(mock_plugin_installer.callcounter.call_count, 2)
-        self.assertTrue(all(mock_plugin_installer.renewed))
-        self.assertTrue(mock_plugin_installer.restart.called)
-
-        mock_plugin_installer.restart.reset_mock()
-        mock_plugin_installer.callcounter.reset_mock()
-        mock_plugin_installer.renewed = []
-
-        main.run_frequent_updaters(config, None, lineage)
-        self.assertEqual(mock_plugin_installer.callcounter.call_count, 2)
-        self.assertFalse(mock_plugin_installer.restart.called)
-        self.assertFalse(any(mock_plugin_installer.renewed))
 
 class CertonlyTest(unittest.TestCase):
     """Tests for certbot.main.certonly."""
@@ -1244,7 +1124,9 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         self._test_renew_common(renewalparams=renewalparams, error_expected=True,
                                 names=names, assert_oc_called=False)
 
-    def test_renew_with_configurator(self):
+    @mock.patch('certbot.plugins.selection.choose_configurator_plugins')
+    def test_renew_with_configurator(self, mock_sel):
+        mock_sel.return_value = (mock.MagicMock(), mock.MagicMock())
         renewalparams = {'authenticator': 'webroot'}
         self._test_renew_common(
             renewalparams=renewalparams, assert_oc_called=True,
@@ -1465,7 +1347,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         mock_choose.side_effect = errors.PluginSelectionError
         self.assertRaises(errors.PluginSelectionError, main.renew_cert,
                           None, None, None)
-        self.assertRaises(errors.PluginSelectionError, main.run_frequent_updaters,
+        self.assertRaises(errors.PluginSelectionError, main.run_renewal_updaters,
                           None, None, None)
 
 class UnregisterTest(unittest.TestCase):

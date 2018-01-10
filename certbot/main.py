@@ -1071,10 +1071,10 @@ def renew_cert(config, plugins, lineage):
         installer.restart()
         notify("new certificate deployed with reload of {0} server; fullchain is {1}".format(
                config.installer, lineage.fullchain), pause=False)
-        # Run supported updaters
-        _run_updaters(renewed_lineage, installer, config, renewed=True)
+        # Run deployer
+        _run_renewal_deployer(renewed_lineage, installer, config)
 
-def run_generic_updaters(config, plugins, lineage):
+def run_renewal_updaters(config, plugins, lineage):
     """Run updaters that the plugin supports
 
     :param config: Configuration object
@@ -1095,11 +1095,11 @@ def run_generic_updaters(config, plugins, lineage):
     except errors.PluginSelectionError as e:
         logger.info("Could not choose appropriate plugin: %s", e)
         raise
-    _run_updaters(lineage, installer, config, renewed=False)
+    _run_updaters(lineage, installer, config)
 
-def _run_updaters(lineage, installer, config, renewed=False):
-    """Helper function to actually run the updater and deployer interface methods
-    if supported by the installer.
+def _run_renewal_deployer(lineage, installer, config):
+    """Helper function to run deployer interface method if supported by the used
+    installer plugin.
 
     :param lineage: Certificate lineage object
     :type lineage: storage.RenewableCert
@@ -1107,23 +1107,32 @@ def _run_updaters(lineage, installer, config, renewed=False):
     :param installer: Installer object
     :type installer: interfaces.IInstaller
 
-    :param renewed: If the lineage was just renewed
-    :type renewed: `bool`
+    :returns: `None`
+    :rtype: None
+    """
+    if config.installer_updates and isinstance(installer, interfaces.RenewDeployer):
+        installer.renew_deploy(lineage)
+
+def _run_updaters(lineage, installer, config):
+    """Helper function to run the updater interface methods if supported by the
+    used installer plugin.
+
+    :param lineage: Certificate lineage object
+    :type lineage: storage.RenewableCert
+
+    :param installer: Installer object
+    :type installer: interfaces.IInstaller
 
     :returns: `None`
     :rtype: None
     """
-    if renewed:
-        if config.installer_updates and isinstance(installer, interfaces.RenewDeployer):
-            installer.renew_deploy(lineage)
-    else:
-        for domain in lineage.names():
-            if config.server_tls_updates:
-                if isinstance(installer, interfaces.ServerTLSUpdater):
-                    installer.server_tls_updates(domain)
-            if config.installer_updates:
-                if isinstance(installer, interfaces.GenericUpdater):
-                    installer.generic_updates(domain)
+    for domain in lineage.names():
+        if config.server_tls_updates:
+            if isinstance(installer, interfaces.ServerTLSUpdater):
+                installer.server_tls_updates(domain)
+        if config.installer_updates:
+            if isinstance(installer, interfaces.GenericUpdater):
+                installer.generic_updates(domain)
 
 def certonly(config, plugins):
     """Authenticate & obtain cert, but do not install it.

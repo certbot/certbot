@@ -427,7 +427,7 @@ def handle_renewal_request(config):
                 else:
                     renew_skipped.append(renewal_candidate.fullchain)
                 # Run updater interface methods
-                main.run_generic_updaters(lineage_config, plugins, renewal_candidate)
+                main.run_renewal_updaters(lineage_config, plugins, renewal_candidate)
         except Exception as e:  # pylint: disable=broad-except
             # obtain_cert (presumably) encountered an unanticipated problem.
             logger.warning("Attempting to renew cert (%s) from %s produced an "
