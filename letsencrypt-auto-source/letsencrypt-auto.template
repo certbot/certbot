@@ -255,7 +255,11 @@ DeterminePythonVersion() {
   #
   # If no Python is found, PYVER is set to 0.
   if [ -n "$USE_PYTHON_3" ]; then
-    for LE_PYTHON in "$LE_PYTHON" python3; do
+    if [ -n "$PRE_UPGRADE_LE_VERSION" ]; then
+      TEST_PYTHON="$LE_PYTHON"
+    fi # We stopped exporting LE_PYTHON, so if LE_PYTHON exists, a user set it.
+       # Respect the user-set value.
+    for LE_PYTHON in "$TEST_PYTHON" python3; do
       # Break (while keeping the LE_PYTHON value) if found.
       $EXISTS "$LE_PYTHON" > /dev/null && break
     done
@@ -274,7 +278,6 @@ DeterminePythonVersion() {
       return 0
     fi
   fi
-  export LE_PYTHON
 
   PYVER=`"$LE_PYTHON" -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//'`
   if [ "$PYVER" -lt "$MIN_PYVER" ]; then
@@ -337,7 +340,7 @@ elif [ -f /etc/redhat-release ]; then
     }
     BOOTSTRAP_VERSION="BootstrapRpmCommon $BOOTSTRAP_RPM_COMMON_VERSION"
   fi
-  export LE_PYTHON="$prev_le_python"
+  LE_PYTHON="$prev_le_python"
 elif [ -f /etc/os-release ] && `grep -q openSUSE /etc/os-release` ; then
   Bootstrap() {
     BootstrapMessage "openSUSE-based OSes"
@@ -617,6 +620,7 @@ UNLIKELY_EOF
       # filesystems is non-atomic, doing `rm dest, cp src dest, rm src`, but the
       # cp is unlikely to fail if the rm doesn't.
       mv -f "$TEMP_DIR/letsencrypt-auto.permission-clone" "$0"
+      export PRE_UPGRADE_LE_VERSION="$LE_AUTO_VERSION"
     fi  # A newer version is available.
   fi  # Self-upgrading is allowed.
 
