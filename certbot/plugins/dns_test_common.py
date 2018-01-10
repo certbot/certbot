@@ -3,10 +3,10 @@
 import os
 
 import configobj
+import josepy as jose
 import mock
 import six
 from acme import challenges
-from acme import jose
 
 from certbot import achallenges
 from certbot.tests import acme_util

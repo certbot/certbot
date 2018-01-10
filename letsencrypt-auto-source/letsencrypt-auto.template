@@ -68,10 +68,12 @@ for arg in "$@" ; do
       NO_BOOTSTRAP=1;;
     --help)
       HELP=1;;
-    --noninteractive|--non-interactive|renew)
-      ASSUME_YES=1;;
+    --noninteractive|--non-interactive)
+      NONINTERACTIVE=1;;
     --quiet)
       QUIET=1;;
+    renew)
+      ASSUME_YES=1;;
     --verbose)
       VERBOSE=1;;
     -[!-]*)
@@ -93,7 +95,7 @@ done
 
 if [ $BASENAME = "letsencrypt-auto" ]; then
   # letsencrypt-auto does not respect --help or --yes for backwards compatibility
-  ASSUME_YES=1
+  NONINTERACTIVE=1
   HELP=0
 fi
 
@@ -244,15 +246,29 @@ DeprecationBootstrap() {
   fi
 }
 
-
+# Sets LE_PYTHON to Python version string and PYVER to the first two
+# digits of the python version
 DeterminePythonVersion() {
-  for LE_PYTHON in "$LE_PYTHON" python2.7 python27 python2 python; do
-    # Break (while keeping the LE_PYTHON value) if found.
-    $EXISTS "$LE_PYTHON" > /dev/null && break
-  done
+  # Arguments: "NOCRASH" if we shouldn't crash if we don't find a good python
+  if [ -n "$USE_PYTHON_3" ]; then
+    for LE_PYTHON in "$LE_PYTHON" python3; do
+      # Break (while keeping the LE_PYTHON value) if found.
+      $EXISTS "$LE_PYTHON" > /dev/null && break
+    done
+  else
+    for LE_PYTHON in "$LE_PYTHON" python2.7 python27 python2 python; do
+      # Break (while keeping the LE_PYTHON value) if found.
+      $EXISTS "$LE_PYTHON" > /dev/null && break
+    done
+  fi
   if [ "$?" != "0" ]; then
-    error "Cannot find any Pythons; please install one!"
-    exit 1
+    if [ "$1" != "NOCRASH" ]; then
+      error "Cannot find any Pythons; please install one!"
+      exit 1
+    else
+      PYVER=0
+      return 0
+    fi
   fi
   export LE_PYTHON
 
@@ -265,7 +281,9 @@ DeterminePythonVersion() {
 }
 
 {{ bootstrappers/deb_common.sh }}
+{{ bootstrappers/rpm_common_base.sh }}
 {{ bootstrappers/rpm_common.sh }}
+{{ bootstrappers/rpm_python3.sh }}
 {{ bootstrappers/suse_common.sh }}
 {{ bootstrappers/arch_common.sh }}
 {{ bootstrappers/gentoo_common.sh }}
@@ -296,11 +314,24 @@ elif [ -f /etc/mageia-release ]; then
   }
   BOOTSTRAP_VERSION="BootstrapMageiaCommon $BOOTSTRAP_MAGEIA_COMMON_VERSION"
 elif [ -f /etc/redhat-release ]; then
-  Bootstrap() {
-    BootstrapMessage "RedHat-based OSes"
-    BootstrapRpmCommon
-  }
-  BOOTSTRAP_VERSION="BootstrapRpmCommon $BOOTSTRAP_RPM_COMMON_VERSION"
+  prev_le_python="$LE_PYTHON"
+  unset LE_PYTHON
+  DeterminePythonVersion "NOCRASH"
+  if [ "$PYVER" -eq 26 ]; then
+    Bootstrap() {
+      BootstrapMessage "RedHat-based OSes that will use Python3"
+      BootstrapRpmPython3
+    }
+    USE_PYTHON_3=1
+    BOOTSTRAP_VERSION="BootstrapRpmPython3 $BOOTSTRAP_RPM_PYTHON3_VERSION"
+  else
+    Bootstrap() {
+      BootstrapMessage "RedHat-based OSes"
+      BootstrapRpmCommon
+    }
+    BOOTSTRAP_VERSION="BootstrapRpmCommon $BOOTSTRAP_RPM_COMMON_VERSION"
+  fi
+  export LE_PYTHON="$prev_le_python"
 elif [ -f /etc/os-release ] && `grep -q openSUSE /etc/os-release` ; then
   Bootstrap() {
     BootstrapMessage "openSUSE-based OSes"
@@ -439,10 +470,18 @@ if [ "$1" = "--le-auto-phase2" ]; then
     say "Creating virtual environment..."
     DeterminePythonVersion
     rm -rf "$VENV_PATH"
-    if [ "$VERBOSE" = 1 ]; then
-      virtualenv --no-site-packages --python "$LE_PYTHON" "$VENV_PATH"
+    if [ "$PYVER" -le 27 ]; then
+      if [ "$VERBOSE" = 1 ]; then
+        virtualenv --no-site-packages --python "$LE_PYTHON" "$VENV_PATH"
+      else
+        virtualenv --no-site-packages --python "$LE_PYTHON" "$VENV_PATH" > /dev/null
+      fi
     else
-      virtualenv --no-site-packages --python "$LE_PYTHON" "$VENV_PATH" > /dev/null
+      if [ "$VERBOSE" = 1 ]; then
+        "$LE_PYTHON" -m venv "$VENV_PATH"
+      else
+        "$LE_PYTHON" -m venv "$VENV_PATH" > /dev/null
+      fi
     fi
 
     if [ -n "$BOOTSTRAP_VERSION" ]; then
