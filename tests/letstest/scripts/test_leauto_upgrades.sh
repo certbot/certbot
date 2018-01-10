@@ -86,7 +86,7 @@ if [ $(python -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//') -eq 26 ];
     fi
     unset VENV_PATH
     EXPECTED_VERSION=$(grep -m1 LE_AUTO_VERSION certbot-auto | cut -d\" -f2)
-    if ! ./cb-auto -v --debug --version -n | grep "$EXPECTED_VERSION" ; then
+    if ! ./cb-auto -v --debug --version -n 2>&1 | grep "$EXPECTED_VERSION" ; then
         echo "Certbot didn't upgrade as expected!"
         exit 1
     fi
