@@ -96,10 +96,6 @@ elif ! ./letsencrypt-auto -v --debug --version || ! diff letsencrypt-auto letsen
     exit 1
 fi
 
-if ! ./letsencrypt-auto -v --debug --version || ! diff letsencrypt-auto letsencrypt-auto-source/letsencrypt-auto ; then
-    echo upgrade appeared to fail
-    exit 1
-fi
 echo upgrade appeared to be successful
 
 if [ "$(tools/readlink.py ${XDG_DATA_HOME:-~/.local/share}/letsencrypt)" != "/opt/eff.org/certbot/venv" ]; then
