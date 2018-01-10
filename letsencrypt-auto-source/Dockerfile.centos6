@@ -33,4 +33,5 @@ COPY . /home/lea/certbot/letsencrypt-auto-source
 USER lea
 WORKDIR /home/lea
 
-CMD ["pytest", "-v", "-s", "certbot/letsencrypt-auto-source/tests"]
+RUN sudo chmod +x certbot/letsencrypt-auto-source/tests/centos6_tests.sh
+CMD sudo certbot/letsencrypt-auto-source/tests/centos6_tests.sh

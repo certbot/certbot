@@ -9,9 +9,8 @@ import unittest
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
+import josepy as jose
 import OpenSSL
-
-from acme import jose
 
 
 def vector_path(*names):

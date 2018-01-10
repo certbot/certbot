@@ -5,13 +5,13 @@ import platform
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa
+import josepy as jose
 import OpenSSL
 import zope.component
 
 from acme import client as acme_client
 from acme import crypto_util as acme_crypto_util
 from acme import errors as acme_errors
-from acme import jose
 from acme import messages
 
 import certbot

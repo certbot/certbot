@@ -14,9 +14,9 @@ import six
 import zope.component
 from cryptography.hazmat.backends import default_backend
 from cryptography import x509
+import josepy as jose
 
 from acme import crypto_util as acme_crypto_util
-from acme import jose
 
 from certbot import errors
 from certbot import interfaces
@@ -368,7 +368,7 @@ def dump_pyopenssl_chain(chain, filetype=OpenSSL.crypto.FILETYPE_PEM):
     """Dump certificate chain into a bundle.
 
     :param list chain: List of `OpenSSL.crypto.X509` (or wrapped in
-        `acme.jose.ComparableX509`).
+        :class:`josepy.util.ComparableX509`).
 
     """
     # XXX: returns empty string when no chain is available, which
