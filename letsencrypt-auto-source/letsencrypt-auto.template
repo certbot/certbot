@@ -450,6 +450,8 @@ if [ "$1" = "--le-auto-phase2" ]; then
         if [ -d "$VENV_PATH" ]; then
           rm -rf "$VENV_PATH"
         fi
+        # In the case the old venv was just a symlink to the new one,
+        # OldVenvExists is now false because we deleted the venv at VENV_PATH.
         if OldVenvExists; then
           rm -rf "$OLD_VENV_PATH"
           ln -s "$VENV_PATH" "$OLD_VENV_PATH"
