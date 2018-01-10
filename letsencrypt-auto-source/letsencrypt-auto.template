@@ -428,7 +428,11 @@ TempDir() {
   mktemp -d 2>/dev/null || mktemp -d -t 'le'  # Linux || macOS
 }
 
-
+# Returns 0 if a letsencrypt installation exists at $OLD_VENV_PATH, otherwise,
+# returns a non-zero number.
+OldVenvExists() {
+    [ -z "$OLD_VENV_PATH" -o ! -f "$OLD_VENV_PATH/bin/letsencrypt" ]
+}
 
 if [ "$1" = "--le-auto-phase2" ]; then
   # Phase 2: Create venv, install LE, and run.
@@ -437,7 +441,7 @@ if [ "$1" = "--le-auto-phase2" ]; then
   SetPrevBootstrapVersion
 
   INSTALLED_VERSION="none"
-  if [ -d "$VENV_PATH" -o -d "$OLD_VENV_PATH" ]; then
+  if [ -d "$VENV_PATH" ] || OldVenvExists; then
     # If the selected Bootstrap function isn't a noop and it differs from the
     # previously used version
     if [ -n "$BOOTSTRAP_VERSION" -a "$BOOTSTRAP_VERSION" != "$PREV_BOOTSTRAP_VERSION" ]; then
@@ -445,7 +449,8 @@ if [ "$1" = "--le-auto-phase2" ]; then
       if [ \( "$NONINTERACTIVE" = 1 \) -o \( \( -t 0 \) -a \( -t 1 \) \) ]; then
         if [ -d "$VENV_PATH" ]; then
           rm -rf "$VENV_PATH"
-        else  # OLD_VENV_PATH exists
+        fi
+        if OldVenvExists; then
           rm -rf "$OLD_VENV_PATH"
           ln -s "$VENV_PATH" "$OLD_VENV_PATH"
         fi
@@ -573,7 +578,7 @@ else
   # package). Phase 2 checks the version of the locally installed certbot.
 
   if [ ! -f "$VENV_BIN/letsencrypt" ]; then
-    if [ -z "$OLD_VENV_PATH" -o ! -f "$OLD_VENV_PATH/bin/letsencrypt" ]; then
+    if OldVenvExists; then
       if [ "$HELP" = 1 ]; then
         echo "$USAGE"
         exit 0
