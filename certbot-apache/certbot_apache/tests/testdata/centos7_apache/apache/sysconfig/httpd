@@ -14,7 +14,7 @@
 # To pass additional options (for instance, -D definitions) to the
 # httpd binary at startup, set OPTIONS here.
 #
-OPTIONS="-D mock_define -D mock_define_too -D mock_value=TRUE -DMOCK_NOSEP -DNOSEP_TWO=NOSEP_VAL"
+OPTIONS="-D mock_define -D mock_define_too -D mock_value=TRUE"
 
 #
 # This setting ensures the httpd process is started in the "C" locale

@@ -1,7 +1,6 @@
 """Tests for acme.challenges."""
 import unittest
 
-import josepy as jose
 import mock
 import OpenSSL
 import requests
@@ -9,6 +8,7 @@ import requests
 from six.moves.urllib import parse as urllib_parse  # pylint: disable=import-error
 
 from acme import errors
+from acme import jose
 from acme import test_util
 
 CERT = test_util.load_comparable_cert('cert.pem')

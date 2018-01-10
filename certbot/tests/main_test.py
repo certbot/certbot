@@ -11,9 +11,10 @@ import unittest
 import datetime
 import pytz
 
-import josepy as jose
 import six
 from six.moves import reload_module  # pylint: disable=import-error
+
+from acme import jose
 
 from certbot import account
 from certbot import cli
@@ -298,29 +299,25 @@ class RevokeTest(test_util.TempDirTestCase):
         self._call()
         self.assertFalse(mock_delete.called)
 
-class DeleteIfAppropriateTest(test_util.ConfigTestCase):
+class DeleteIfAppropriateTest(unittest.TestCase):
     """Tests for certbot.main._delete_if_appropriate """
+
+    def setUp(self):
+        self.config = mock.Mock()
+        self.config.namespace = mock.Mock()
+        self.config.namespace.noninteractive_mode = False
 
     def _call(self, mock_config):
         from certbot.main import _delete_if_appropriate
         _delete_if_appropriate(mock_config)
 
-    def _test_delete_opt_out_common(self, mock_get_utility):
-        with mock.patch('certbot.cert_manager.delete') as mock_delete:
-            self._call(self.config)
-        mock_delete.assert_not_called()
-        self.assertTrue(mock_get_utility().add_message.called)
-
+    @mock.patch('certbot.cert_manager.delete')
     @test_util.patch_get_utility()
-    def test_delete_flag_opt_out(self, mock_get_utility):
-        self.config.delete_after_revoke = False
-        self._test_delete_opt_out_common(mock_get_utility)
-
-    @test_util.patch_get_utility()
-    def test_delete_prompt_opt_out(self, mock_get_utility):
+    def test_delete_opt_out(self, mock_get_utility, mock_delete):
         util_mock = mock_get_utility()
         util_mock.yesno.return_value = False
-        self._test_delete_opt_out_common(mock_get_utility)
+        self._call(self.config)
+        mock_delete.assert_not_called()
 
     # pylint: disable=too-many-arguments
     @mock.patch('certbot.storage.renewal_file_for_certname')
@@ -400,28 +397,6 @@ class DeleteIfAppropriateTest(test_util.ConfigTestCase):
         mock_match_and_check_overlaps.return_value = ""
         self._call(config)
         self.assertEqual(mock_delete.call_count, 1)
-
-    # pylint: disable=too-many-arguments
-    @mock.patch('certbot.storage.renewal_file_for_certname')
-    @mock.patch('certbot.cert_manager.match_and_check_overlaps')
-    @mock.patch('certbot.storage.full_archive_path')
-    @mock.patch('certbot.cert_manager.cert_path_to_lineage')
-    @mock.patch('certbot.cert_manager.delete')
-    @test_util.patch_get_utility()
-    def test_opt_in_deletion(self, mock_get_utility, mock_delete,
-            mock_cert_path_to_lineage, mock_full_archive_dir,
-            mock_match_and_check_overlaps, mock_renewal_file_for_certname):
-        # pylint: disable = unused-argument
-        config = self.config
-        config.namespace.delete_after_revoke = True
-        config.cert_path = "/some/reasonable/path"
-        config.certname = ""
-        mock_cert_path_to_lineage.return_value = "example.com"
-        mock_full_archive_dir.return_value = ""
-        mock_match_and_check_overlaps.return_value = ""
-        self._call(config)
-        self.assertEqual(mock_delete.call_count, 1)
-        self.assertFalse(mock_get_utility().yesno.called)
 
     # pylint: disable=too-many-arguments
     @mock.patch('certbot.storage.renewal_file_for_certname')

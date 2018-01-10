@@ -1,26 +1,17 @@
-#!/bin/bash -e
-# pip installs packages using pinned package versions. If CERTBOT_OLDEST is set
-# to 1, a combination of tools/oldest_constraints.txt and
-# tools/dev_constraints.txt is used, otherwise, a combination of certbot-auto's
-# requirements file and tools/dev_constraints.txt is used. The other file
-# always takes precedence over tools/dev_constraints.txt.
+#!/bin/sh -e
+# pip installs packages using pinned package versions
 
 # get the root of the Certbot repo
-tools_dir=$(dirname $("$(dirname $0)/readlink.py" $0))
-dev_constraints="$tools_dir/dev_constraints.txt"
-merge_reqs="$tools_dir/merge_requirements.py"
-test_constraints=$(mktemp)
-trap "rm -f $test_constraints" EXIT
-
-if [ "$CERTBOT_OLDEST" = 1 ]; then
-    cp "$tools_dir/oldest_constraints.txt" "$test_constraints"
-else
-    repo_root=$(dirname "$tools_dir")
-    certbot_requirements="$repo_root/letsencrypt-auto-source/pieces/dependency-requirements.txt"
-    sed -n -e 's/^\([^[:space:]]*==[^[:space:]]*\).*$/\1/p' "$certbot_requirements" > "$test_constraints"
-fi
+my_path=$("$(dirname $0)/readlink.py" $0)
+repo_root=$(dirname $(dirname $my_path))
+requirements="$repo_root/letsencrypt-auto-source/pieces/dependency-requirements.txt"
+certbot_auto_constraints=$(mktemp)
+trap "rm -f $certbot_auto_constraints" EXIT
+# extract pinned requirements without hashes
+sed -n -e 's/^\([^[:space:]]*==[^[:space:]]*\).*$/\1/p' $requirements > $certbot_auto_constraints
+dev_constraints="$(dirname $my_path)/pip_constraints.txt"
 
 set -x
 
 # install the requested packages using the pinned requirements as constraints
-pip install -q --constraint <("$merge_reqs" "$dev_constraints" "$test_constraints") "$@"
+pip install -q --constraint $certbot_auto_constraints --constraint $dev_constraints "$@"

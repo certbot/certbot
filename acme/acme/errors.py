@@ -1,5 +1,5 @@
 """ACME errors."""
-from josepy import errors as jose_errors
+from acme.jose import errors as jose_errors
 
 
 class Error(Exception):

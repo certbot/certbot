@@ -5,9 +5,10 @@ import pkg_resources
 import tempfile
 import unittest
 
-import josepy as jose
 import mock
 import zope.component
+
+from acme import jose
 
 from certbot import configuration
 

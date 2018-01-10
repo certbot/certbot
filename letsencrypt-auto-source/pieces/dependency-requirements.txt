@@ -105,16 +105,9 @@ idna==2.5 \
 ipaddress==1.0.16 \
     --hash=sha256:935712800ce4760701d89ad677666cd52691fd2f6f0b340c8b4239a3c17988a5 \
     --hash=sha256:5a3182b322a706525c46282ca6f064d27a02cffbd449f9f47416f1dc96aa71b0
-josepy==1.0.1 \
-    --hash=sha256:354a3513038a38bbcd27c97b7c68a8f3dfaff0a135b20a92c6db4cc4ea72915e \
-    --hash=sha256:9f48b88ca37f0244238b1cc77723989f7c54f7b90b2eee6294390bacfe870acc
 linecache2==1.0.0 \
     --hash=sha256:e78be9c0a0dfcbac712fe04fbf92b96cddae80b1b842f24248214c8496f006ef \
     --hash=sha256:4b26ff4e7110db76eeb6f5a7b64a82623839d595c2038eeda662f2a2db78e97c
-# Using an older version of mock here prevents regressions of #5276.
-mock==1.3.0 \
-    --hash=sha256:3f573a18be94de886d1191f27c168427ef693e8dcfcecf95b170577b2eb69cbb \
-    --hash=sha256:1e247dbecc6ce057299eb7ee019ad68314bb93152e81d9a6110d35f4d5eca0f6
 ordereddict==1.1 \
     --hash=sha256:1c35b4ac206cef2d24816c89f89cf289dd3d38cf7c449bb3fab7bf6d43f01b1f
 packaging==16.8 \
@@ -191,3 +184,7 @@ zope.interface==4.1.3 \
     --hash=sha256:928138365245a0e8869a5999fbcc2a45475a0a6ed52a494d60dbdc540335fedd \
     --hash=sha256:0d841ba1bb840eea0e6489dc5ecafa6125554971f53b5acb87764441e61bceba \
     --hash=sha256:b09c8c1d47b3531c400e0195697f1414a63221de6ef478598a4f1460f7d9a392
+# Using an older version of mock here prevents regressions of #5276.
+mock==1.3.0 \
+    --hash=sha256:3f573a18be94de886d1191f27c168427ef693e8dcfcecf95b170577b2eb69cbb \
+    --hash=sha256:1e247dbecc6ce057299eb7ee019ad68314bb93152e81d9a6110d35f4d5eca0f6

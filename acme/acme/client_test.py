@@ -5,12 +5,12 @@ import unittest
 
 from six.moves import http_client  # pylint: disable=import-error
 
-import josepy as jose
 import mock
 import requests
 
 from acme import challenges
 from acme import errors
+from acme import jose
 from acme import jws as acme_jws
 from acme import messages
 from acme import messages_test

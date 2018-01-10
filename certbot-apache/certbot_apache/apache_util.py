@@ -93,8 +93,4 @@ def parse_define_file(filepath, varname):
         if v == "-D" and len(a_opts) >= i+2:
             var_parts = a_opts[i+1].partition("=")
             return_vars[var_parts[0]] = var_parts[2]
-        elif len(v) > 2 and v.startswith("-D"):
-            # Found var with no whitespace separator
-            var_parts = v[2:].partition("=")
-            return_vars[var_parts[0]] = var_parts[2]
     return return_vars

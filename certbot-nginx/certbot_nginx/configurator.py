@@ -182,7 +182,7 @@ class NginxConfigurator(common.Installer):
         self.parser.add_server_directives(vhost,
                                           cert_directives, replace=True)
         logger.info("Deployed Certificate to VirtualHost %s for %s",
-                    vhost.filep, ", ".join(vhost.names))
+                    vhost.filep, vhost.names)
 
         self.save_notes += ("Changed vhost at %s with addresses of %s\n" %
                             (vhost.filep,

@@ -49,7 +49,6 @@ class GentooParser(parser.ApacheParser):
     def update_runtime_variables(self):
         """ Override for update_runtime_variables for custom parsing """
         self.parse_sysconfig_var()
-        self.update_modules()
 
     def parse_sysconfig_var(self):
         """ Parses Apache CLI options from Gentoo configuration file """
@@ -57,10 +56,3 @@ class GentooParser(parser.ApacheParser):
                                                 "APACHE2_OPTS")
         for k in defines.keys():
             self.variables[k] = defines[k]
-
-    def update_modules(self):
-        """Get loaded modules from httpd process, and add them to DOM"""
-        mod_cmd = [self.configurator.constant("apache_cmd"), "modules"]
-        matches = self.parse_from_subprocess(mod_cmd, r"(.*)_module")
-        for mod in matches:
-            self.add_mod(mod.strip())

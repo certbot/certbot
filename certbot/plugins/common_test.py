@@ -5,11 +5,11 @@ import shutil
 import tempfile
 import unittest
 
-import josepy as jose
 import mock
 import OpenSSL
 
 from acme import challenges
+from acme import jose
 
 from certbot import achallenges
 from certbot import crypto_util

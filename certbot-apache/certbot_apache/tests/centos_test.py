@@ -118,8 +118,6 @@ class MultipleVhostsTestCentOS(util.ApacheTest):
         self.assertTrue("mock_define_too" in self.config.parser.variables.keys())
         self.assertTrue("mock_value" in self.config.parser.variables.keys())
         self.assertEqual("TRUE", self.config.parser.variables["mock_value"])
-        self.assertTrue("MOCK_NOSEP" in self.config.parser.variables.keys())
-        self.assertEqual("NOSEP_VAL", self.config.parser.variables["NOSEP_TWO"])
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

@@ -8,10 +8,10 @@ import unittest
 import six
 from six.moves import socketserver  #type: ignore  # pylint: disable=import-error
 
-import josepy as jose
 import OpenSSL
 
 from acme import errors
+from acme import jose
 from acme import test_util
 
 

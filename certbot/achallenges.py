@@ -19,9 +19,8 @@ Note, that all annotated challenges act as a proxy objects::
 """
 import logging
 
-import josepy as jose
-
 from acme import challenges
+from acme import jose
 
 
 logger = logging.getLogger(__name__)

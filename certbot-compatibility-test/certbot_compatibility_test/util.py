@@ -6,8 +6,7 @@ import re
 import shutil
 import tarfile
 
-import josepy as jose
-
+from acme import jose
 from acme import test_util
 from certbot import constants
 

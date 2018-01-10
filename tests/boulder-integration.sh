@@ -345,14 +345,9 @@ common auth --must-staple --domains "must-staple.le.wtf"
 openssl x509 -in "${root}/conf/live/must-staple.le.wtf/cert.pem" -text | grep '1.3.6.1.5.5.7.1.24'
 
 # revoke by account key
-common revoke --cert-path "$root/conf/live/le.wtf/cert.pem" --delete-after-revoke
+common revoke --cert-path "$root/conf/live/le.wtf/cert.pem"
 # revoke renewed
-common revoke --cert-path "$root/conf/live/le1.wtf/cert.pem" --no-delete-after-revoke
-if [ ! -d "$root/conf/live/le1.wtf" ]; then
-    echo "cert deleted when --no-delete-after-revoke was used!"
-    exit 1
-fi
-common delete --cert-name le1.wtf
+common revoke --cert-path "$root/conf/live/le1.wtf/cert.pem"
 # revoke by cert key
 common revoke --cert-path "$root/conf/live/le2.wtf/cert.pem" \
     --key-path "$root/conf/live/le2.wtf/privkey.pem"
