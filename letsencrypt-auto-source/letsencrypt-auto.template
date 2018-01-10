@@ -441,6 +441,10 @@ if [ "$1" = "--le-auto-phase2" ]; then
   shift 1  # the --le-auto-phase2 arg
   SetPrevBootstrapVersion
 
+  if [ -z "$PHASE_1_VERSION" -a "$USE_PYTHON_3" = 1 ]; then
+    unset LE_PYTHON
+  fi
+
   INSTALLED_VERSION="none"
   if [ -d "$VENV_PATH" ]; then
     # If the selected Bootstrap function isn't a noop and it differs from the
@@ -567,6 +571,7 @@ else
   # upgrading. Phase 1 checks the version of the latest release of
   # certbot-auto (which is always the same as that of the certbot
   # package). Phase 2 checks the version of the locally installed certbot.
+  export PHASE_1_VERSION="$LE_AUTO_VERSION"
 
   if [ ! -f "$VENV_BIN/letsencrypt" ]; then
     if [ -z "$OLD_VENV_PATH" -o ! -f "$OLD_VENV_PATH/bin/letsencrypt" ]; then
