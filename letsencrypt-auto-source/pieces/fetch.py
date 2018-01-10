@@ -50,7 +50,7 @@ class HttpsGetter(object):
         # Based on pip 1.4.1's URLOpener
         # This verifies certs on only Python >=2.7.9, and when NO_CERT_VERIFY isn't set.
         if environ.get('NO_CERT_VERIFY') == '1' and hasattr(ssl, 'SSLContext'):
-            self._opener = build_opener(HTTPSHandler(context=create_CERT_NONE_context()))
+            self._opener = build_opener(HTTPSHandler(context=cert_none_context()))
         else:
             self._opener = build_opener(HTTPSHandler())
         # Strip out HTTPHandler to prevent MITM spoof:
@@ -88,7 +88,7 @@ def latest_stable_version(get):
     # The regex is a sufficient regex for picking out prereleases for most
     # packages, LE included.
     return str(max(LooseVersion(r) for r
-                   in iter(metadata['releases'].keys())
+                   in metadata['releases'].keys()
                    if re.match('^[0-9.]+$', r)))
 
 
@@ -120,7 +120,7 @@ def verified_new_le_auto(get, tag, temp_dir):
                             "certbot-auto.", exc)
 
 
-def create_CERT_NONE_context():
+def cert_none_context():
     """Create a SSLContext object to not check hostname."""
     # PROTOCOL_TLS isn't available before 2.7.13 but this code is for 2.7.9+, so use this.
     context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)

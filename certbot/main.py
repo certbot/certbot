@@ -4,6 +4,7 @@ import functools
 import logging.handlers
 import os
 import sys
+import warnings
 
 import configobj
 import josepy as jose
@@ -1217,9 +1218,17 @@ def main(cli_args=sys.argv[1:]):
         # Let plugins_cmd be run as un-privileged user.
         if config.func != plugins_cmd:
             raise
-    if sys.version_info[:2] == (3, 3):
-        logger.warning("Python 3.3 support will be dropped in the next release "
-                    "of Certbot - please upgrade your Python version.")
+    deprecation_fmt = (
+        "Python %s.%s support will be dropped in the next "
+        "release of Certbot - please upgrade your Python version.")
+    # We use the warnings system for Python 2.6 and logging for Python 3
+    # because DeprecationWarnings are only reported by default in Python <= 2.6
+    # and warnings can be disabled by the user.
+    if sys.version_info[:2] == (2, 6):
+        warning = deprecation_fmt % sys.version_info[:2]
+        warnings.warn(warning, DeprecationWarning)
+    elif sys.version_info[:2] == (3, 3):
+        logger.warning(deprecation_fmt, *sys.version_info[:2])
 
     set_displayer(config)
 
