@@ -246,11 +246,15 @@ DeprecationBootstrap() {
   fi
 }
 
+MIN_PYTHON_VERSION="2.6"
+MIN_PYVER=$(echo "$MIN_PYTHON_VERSION" | sed 's/\.//')
 # Sets LE_PYTHON to Python version string and PYVER to the first two
 # digits of the python version
 DeterminePythonVersion() {
   # Arguments: "NOCRASH" if we shouldn't crash if we don't find a good python
-  if [ -n "$USE_PYTHON_3" ]; then
+  #
+  # If no Python is found, PYVER is set to 0.
+  if [ "$USE_PYTHON_3" = 1 ]; then
     for LE_PYTHON in "$LE_PYTHON" python3; do
       # Break (while keeping the LE_PYTHON value) if found.
       $EXISTS "$LE_PYTHON" > /dev/null && break
@@ -273,10 +277,12 @@ DeterminePythonVersion() {
   export LE_PYTHON
 
   PYVER=`"$LE_PYTHON" -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//'`
-  if [ "$PYVER" -lt 26 ]; then
-    error "You have an ancient version of Python entombed in your operating system..."
-    error "This isn't going to work; you'll need at least version 2.6."
-    exit 1
+  if [ "$PYVER" -lt "$MIN_PYVER" ]; then
+    if [ "$1" != "NOCRASH" ]; then
+      error "You have an ancient version of Python entombed in your operating system..."
+      error "This isn't going to work; you'll need at least version $MIN_PYTHON_VERSION."
+      exit 1
+    fi
   fi
 }
 
@@ -437,7 +443,7 @@ InitializeRPMCommonBase() {
       sleep 1s
       /bin/echo -ne "\e[0K\rEnabling the EPEL repository in 2 seconds..."
       sleep 1s
-      /bin/echo -e "\e[0K\rEnabling the EPEL repository in 1 seconds..."
+      /bin/echo -e "\e[0K\rEnabling the EPEL repository in 1 second..."
       sleep 1s
     fi
     if ! $TOOL install $YES_FLAG $QUIET_FLAG epel-release; then
@@ -775,6 +781,9 @@ elif [ -f /etc/mageia-release ]; then
   }
   BOOTSTRAP_VERSION="BootstrapMageiaCommon $BOOTSTRAP_MAGEIA_COMMON_VERSION"
 elif [ -f /etc/redhat-release ]; then
+  # Run DeterminePythonVersion to decide on the basis of available Python versions
+  # whether to use 2.x or 3.x on RedHat-like systems.
+  # Then, revert LE_PYTHON to its previous state.
   prev_le_python="$LE_PYTHON"
   unset LE_PYTHON
   DeterminePythonVersion "NOCRASH"
@@ -1476,7 +1485,7 @@ class HttpsGetter(object):
         # Based on pip 1.4.1's URLOpener
         # This verifies certs on only Python >=2.7.9, and when NO_CERT_VERIFY isn't set.
         if environ.get('NO_CERT_VERIFY') == '1' and hasattr(ssl, 'SSLContext'):
-            self._opener = build_opener(HTTPSHandler(context=create_CERT_NONE_context()))
+            self._opener = build_opener(HTTPSHandler(context=cert_none_context()))
         else:
             self._opener = build_opener(HTTPSHandler())
         # Strip out HTTPHandler to prevent MITM spoof:
@@ -1514,7 +1523,7 @@ def latest_stable_version(get):
     # The regex is a sufficient regex for picking out prereleases for most
     # packages, LE included.
     return str(max(LooseVersion(r) for r
-                   in iter(metadata['releases'].keys())
+                   in metadata['releases'].keys()
                    if re.match('^[0-9.]+$', r)))
 
 
@@ -1546,7 +1555,7 @@ def verified_new_le_auto(get, tag, temp_dir):
                             "certbot-auto.", exc)
 
 
-def create_CERT_NONE_context():
+def cert_none_context():
     """Create a SSLContext object to not check hostname."""
     # PROTOCOL_TLS isn't available before 2.7.13 but this code is for 2.7.9+, so use this.
     context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
@@ -1575,8 +1584,10 @@ if __name__ == '__main__':
 
 UNLIKELY_EOF
     # ---------------------------------------------------------------------------
-    DeterminePythonVersion
-    if ! REMOTE_VERSION=`"$LE_PYTHON" "$TEMP_DIR/fetch.py" --latest-version` ; then
+    DeterminePythonVersion "NOCRASH"
+    if [ "$PYVER" -lt "$MIN_PYVER" ]; then
+      error "WARNING: couldn't find Python $MIN_PYTHON_VERSION+ to check for updates."
+    elif ! REMOTE_VERSION=`"$LE_PYTHON" "$TEMP_DIR/fetch.py" --latest-version` ; then
       error "WARNING: unable to check for updates."
     elif [ "$LE_AUTO_VERSION" != "$REMOTE_VERSION" ]; then
       say "Upgrading certbot-auto $LE_AUTO_VERSION to $REMOTE_VERSION..."
