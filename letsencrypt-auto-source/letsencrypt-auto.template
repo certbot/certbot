@@ -436,7 +436,11 @@ TempDir() {
   mktemp -d 2>/dev/null || mktemp -d -t 'le'  # Linux || macOS
 }
 
-
+# Returns 0 if a letsencrypt installation exists at $OLD_VENV_PATH, otherwise,
+# returns a non-zero number.
+OldVenvExists() {
+    [ -n "$OLD_VENV_PATH" -a -f "$OLD_VENV_PATH/bin/letsencrypt" ]
+}
 
 if [ "$1" = "--le-auto-phase2" ]; then
   # Phase 2: Create venv, install LE, and run.
@@ -449,13 +453,21 @@ if [ "$1" = "--le-auto-phase2" ]; then
   fi
 
   INSTALLED_VERSION="none"
-  if [ -d "$VENV_PATH" ]; then
+  if [ -d "$VENV_PATH" ] || OldVenvExists; then
     # If the selected Bootstrap function isn't a noop and it differs from the
     # previously used version
     if [ -n "$BOOTSTRAP_VERSION" -a "$BOOTSTRAP_VERSION" != "$PREV_BOOTSTRAP_VERSION" ]; then
       # if non-interactive mode or stdin and stdout are connected to a terminal
       if [ \( "$NONINTERACTIVE" = 1 \) -o \( \( -t 0 \) -a \( -t 1 \) \) ]; then
-        rm -rf "$VENV_PATH"
+        if [ -d "$VENV_PATH" ]; then
+          rm -rf "$VENV_PATH"
+        fi
+        # In the case the old venv was just a symlink to the new one,
+        # OldVenvExists is now false because we deleted the venv at VENV_PATH.
+        if OldVenvExists; then
+          rm -rf "$OLD_VENV_PATH"
+          ln -s "$VENV_PATH" "$OLD_VENV_PATH"
+        fi
         RerunWithArgs "$@"
       else
         error "Skipping upgrade because new OS dependencies may need to be installed."
@@ -465,6 +477,10 @@ if [ "$1" = "--le-auto-phase2" ]; then
         error "install any required packages."
         # Set INSTALLED_VERSION to be the same so we don't update the venv
         INSTALLED_VERSION="$LE_AUTO_VERSION"
+        # Continue to use OLD_VENV_PATH if the new venv doesn't exist
+        if [ ! -d "$VENV_PATH" ]; then
+          VENV_BIN="$OLD_VENV_PATH/bin"
+        fi
       fi
     elif [ -f "$VENV_BIN/letsencrypt" ]; then
       # --version output ran through grep due to python-cryptography DeprecationWarnings
@@ -577,7 +593,7 @@ else
   export PHASE_1_VERSION="$LE_AUTO_VERSION"
 
   if [ ! -f "$VENV_BIN/letsencrypt" ]; then
-    if [ -z "$OLD_VENV_PATH" -o ! -f "$OLD_VENV_PATH/bin/letsencrypt" ]; then
+    if ! OldVenvExists; then
       if [ "$HELP" = 1 ]; then
         echo "$USAGE"
         exit 0
