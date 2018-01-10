@@ -80,7 +80,7 @@ if [ $(python -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//') -eq 26 ];
     fi
     # Create a 2nd venv at the new path to ensure we properly handle this case
     export VENV_PATH="/opt/eff.org/certbot/venv"
-    if ! sudo ./letsencrypt-auto -v --debug --version --no-self-upgrade 2>&1 | grep 0.5.0 ; then
+    if ! sudo -E ./letsencrypt-auto -v --debug --version --no-self-upgrade 2>&1 | grep 0.5.0 ; then
         echo second installation appeared to fail
         exit 1
     fi
