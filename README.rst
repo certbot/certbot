@@ -148,25 +148,24 @@ Current Features
 
 * Supports multiple web servers:
 
-  - apache/2.x
-  - nginx/0.8.48+
-  - webroot (adds files to webroot directories in order to prove control of
-    domains and obtain certs)
-  - standalone (runs its own simple webserver to prove you control a domain)
-  - other server software via `third party plugins <https://certbot.eff.org/docs/using.html#third-party-plugins>`_
+  - apache/2.x
+  - nginx/0.8.48+
+  - webroot (adds files to webroot directories in order to prove control of
+    domains and obtain certs)
+  - standalone (runs its own simple webserver to prove you control a domain)
+  - other server software via `third party plugins <https://certbot.eff.org/docs/using.html#third-party-plugins>`_
 
 * The private key is generated locally on your system.
-* Can talk to the Let's Encrypt CA or optionally to other ACME
-  compliant services.
+* Can talk to the Let's Encrypt CA or optionally to other ACME-compliant services.
 * Can get domain-validated (DV) certificates.
 * Can revoke certificates.
 * Adjustable RSA key bit-length (2048 (default), 4096, ...).
 * Can optionally install a http -> https redirect, so your site effectively
-  runs https only (Apache only)
+  runs HTTPS only (Apache only)
 * Fully automated.
 * Configuration changes are logged and can be reverted.
 * Supports an interactive text UI, or can be driven entirely from the
-  command line.
+  command line.
 * Free and Open Source Software, made with Python.
 
 .. Do not modify this comment unless you know what you're doing. tag:features-end
