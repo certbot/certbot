@@ -676,23 +676,33 @@ class MultipleVhostsTest(util.ApacheTest):
         self.config._add_name_vhost_if_necessary(self.vh_truth[0])
         self.assertEqual(self.config.add_name_vhost.call_count, 2)
 
+    @mock.patch("certbot_apache.configurator.http_01.ApacheHttp01.perform")
     @mock.patch("certbot_apache.configurator.tls_sni_01.ApacheTlsSni01.perform")
     @mock.patch("certbot_apache.configurator.ApacheConfigurator.restart")
-    def test_perform(self, mock_restart, mock_perform):
+    def test_perform(self, mock_restart, mock_tls_perform, mock_http_perform):
         # Only tests functionality specific to configurator.perform
         # Note: As more challenges are offered this will have to be expanded
-        account_key, achall1, achall2 = self.get_achalls()
+        account_key, achalls = self.get_key_and_achalls()
 
-        expected = [
-            achall1.response(account_key),
-            achall2.response(account_key),
-        ]
+        all_expected = []
+        http_expected = []
+        tls_expected = []
+        for achall in achalls:
+            response = achall.response(account_key)
+            if isinstance(achall.chall, challenges.HTTP01):
+                http_expected.append(response)
+            else:
+                tls_expected.append(response)
+            all_expected.append(response)
 
-        mock_perform.return_value = expected
-        responses = self.config.perform([achall1, achall2])
+        mock_http_perform.return_value = http_expected
+        mock_tls_perform.return_value = tls_expected
 
-        self.assertEqual(mock_perform.call_count, 1)
-        self.assertEqual(responses, expected)
+        responses = self.config.perform(achalls)
+
+        self.assertEqual(mock_http_perform.call_count, 1)
+        self.assertEqual(mock_tls_perform.call_count, 1)
+        self.assertEqual(responses, all_expected)
 
         self.assertEqual(mock_restart.call_count, 1)
 
@@ -700,30 +710,38 @@ class MultipleVhostsTest(util.ApacheTest):
     @mock.patch("certbot_apache.parser.ApacheParser._get_runtime_cfg")
     def test_cleanup(self, mock_cfg, mock_restart):
         mock_cfg.return_value = ""
-        _, achall1, achall2 = self.get_achalls()
+        _, achalls = self.get_key_and_achalls()
+        self.config.http_doer = mock.MagicMock()
 
-        self.config._chall_out.add(achall1)  # pylint: disable=protected-access
-        self.config._chall_out.add(achall2)  # pylint: disable=protected-access
+        for achall in achalls:
+            self.config._chall_out.add(achall)  # pylint: disable=protected-access
 
-        self.config.cleanup([achall1])
-        self.assertFalse(mock_restart.called)
-
-        self.config.cleanup([achall2])
-        self.assertTrue(mock_restart.called)
+        for i, achall in enumerate(achalls):
+            self.config.cleanup([achall])
+            if i == len(achalls) - 1:
+                self.assertTrue(mock_restart.called)
+                self.assertTrue(self.config.http_doer.cleanup.called)
+            else:
+                self.assertFalse(mock_restart.called)
+                self.assertFalse(self.config.http_doer.cleanup.called)
 
     @mock.patch("certbot_apache.configurator.ApacheConfigurator.restart")
     @mock.patch("certbot_apache.parser.ApacheParser._get_runtime_cfg")
     def test_cleanup_no_errors(self, mock_cfg, mock_restart):
         mock_cfg.return_value = ""
-        _, achall1, achall2 = self.get_achalls()
+        _, achalls = self.get_key_and_achalls()
+        self.config.http_doer = mock.MagicMock()
 
-        self.config._chall_out.add(achall1)  # pylint: disable=protected-access
+        for achall in achalls:
+            self.config._chall_out.add(achall)  # pylint: disable=protected-access
 
-        self.config.cleanup([achall2])
+        self.config.cleanup([achalls[-1]])
         self.assertFalse(mock_restart.called)
+        self.assertFalse(self.config.http_doer.cleanup.called)
 
-        self.config.cleanup([achall1, achall2])
+        self.config.cleanup(achalls)
         self.assertTrue(mock_restart.called)
+        self.assertTrue(self.config.http_doer.cleanup.called)
 
     @mock.patch("certbot.util.run_script")
     def test_get_version(self, mock_script):
@@ -1151,7 +1169,7 @@ class MultipleVhostsTest(util.ApacheTest):
         not_rewriterule = "NotRewriteRule ^ ..."
         self.assertFalse(self.config._sift_rewrite_rule(not_rewriterule))
 
-    def get_achalls(self):
+    def get_key_and_achalls(self):
         """Return testing achallenges."""
         account_key = self.rsa512jwk
         achall1 = achallenges.KeyAuthorizationAnnotatedChallenge(
@@ -1166,8 +1184,12 @@ class MultipleVhostsTest(util.ApacheTest):
                     token=b"uqnaPzxtrndteOqtrXb0Asl5gOJfWAnnx6QJyvcmlDU"),
                 "pending"),
             domain="certbot.demo", account_key=account_key)
+        achall3 = achallenges.KeyAuthorizationAnnotatedChallenge(
+            challb=acme_util.chall_to_challb(
+                challenges.HTTP01(token=(b'x' * 16)), "pending"),
+            domain="example.org", account_key=account_key)
 
-        return account_key, achall1, achall2
+        return account_key, (achall1, achall2, achall3)
 
     def test_make_addrs_sni_ready(self):
         self.config.version = (2, 2)

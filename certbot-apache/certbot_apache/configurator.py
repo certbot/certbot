@@ -24,9 +24,10 @@ from certbot_apache import apache_util
 from certbot_apache import augeas_configurator
 from certbot_apache import constants
 from certbot_apache import display_ops
-from certbot_apache import tls_sni_01
+from certbot_apache import http_01
 from certbot_apache import obj
 from certbot_apache import parser
+from certbot_apache import tls_sni_01
 
 from collections import defaultdict
 
@@ -162,6 +163,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self._enhance_func = {"redirect": self._enable_redirect,
                               "ensure-http-header": self._set_http_header,
                               "staple-ocsp": self._enable_ocsp_stapling}
+
+        # This will be set during the perform function
+        self.http_doer = None
 
     @property
     def mod_ssl_conf(self):
@@ -1855,7 +1859,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     ###########################################################################
     def get_chall_pref(self, unused_domain):  # pylint: disable=no-self-use
         """Return list of challenge preferences."""
-        return [challenges.TLSSNI01]
+        return [challenges.TLSSNI01, challenges.HTTP01]
 
     def perform(self, achalls):
         """Perform the configuration related challenge.
@@ -1867,16 +1871,21 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         self._chall_out.update(achalls)
         responses = [None] * len(achalls)
-        chall_doer = tls_sni_01.ApacheTlsSni01(self)
+        self.http_doer = http_01.ApacheHttp01(self)
+        sni_doer = tls_sni_01.ApacheTlsSni01(self)
 
         for i, achall in enumerate(achalls):
             # Currently also have chall_doer hold associated index of the
             # challenge. This helps to put all of the responses back together
             # when they are all complete.
-            chall_doer.add_chall(achall, i)
+            if isinstance(achall.chall, challenges.HTTP01):
+                self.http_doer.add_chall(achall, i)
+            else:  # tls-sni-01
+                sni_doer.add_chall(achall, i)
 
-        sni_response = chall_doer.perform()
-        if sni_response:
+        http_response = self.http_doer.perform()
+        sni_response = sni_doer.perform()
+        if http_response or sni_response:
             # Must reload in order to activate the challenges.
             # Handled here because we may be able to load up other challenge
             # types
@@ -1886,13 +1895,17 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             # of identifying when the new configuration is being used.
             time.sleep(3)
 
-            # Go through all of the challenges and assign them to the proper
-            # place in the responses return value. All responses must be in the
-            # same order as the original challenges.
-            for i, resp in enumerate(sni_response):
-                responses[chall_doer.indices[i]] = resp
+            self._update_responses(responses, http_response, self.http_doer)
+            self._update_responses(responses, sni_response, sni_doer)
 
         return responses
+
+    def _update_responses(self, responses, chall_response, chall_doer):
+        # Go through all of the challenges and assign them to the proper
+        # place in the responses return value. All responses must be in the
+        # same order as the original challenges.
+        for i, resp in enumerate(chall_response):
+            responses[chall_doer.indices[i]] = resp
 
     def cleanup(self, achalls):
         """Revert all challenges."""
@@ -1903,6 +1916,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             self.revert_challenge_config()
             self.restart()
             self.parser.reset_modules()
+            self.http_doer.cleanup()
 
     def install_ssl_options_conf(self, options_ssl, options_ssl_digest):
         """Copy Certbot's SSL options file into the system's config dir if required."""

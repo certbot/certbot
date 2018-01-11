@@ -1,6 +1,6 @@
 """Test for certbot_apache.tls_sni_01."""
-import unittest
 import shutil
+import unittest
 
 import mock
 
