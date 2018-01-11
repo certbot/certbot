@@ -524,7 +524,7 @@ def _is_ssl_on_directive(entry):
 def _add_directives(directives, replace, block):
     """Adds or replaces directives in a config block.
 
-    When replace=False, it's an error to try and add a directive that already
+    When replace=False, it's an error to try and add a nonrepeatable directive that already
     exists in the config block with a conflicting value.
 
     When replace=True and a directive with the same name already exists in the
@@ -545,7 +545,7 @@ def _add_directives(directives, replace, block):
 
 
 INCLUDE = 'include'
-REPEATABLE_DIRECTIVES = set(['server_name', 'listen', INCLUDE])
+REPEATABLE_DIRECTIVES = set(['server_name', 'listen', INCLUDE, 'location'])
 COMMENT = ' managed by Certbot'
 COMMENT_BLOCK = [' ', '#', COMMENT]
 
