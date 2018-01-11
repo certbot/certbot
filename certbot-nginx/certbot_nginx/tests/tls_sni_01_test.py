@@ -20,7 +20,7 @@ from certbot_nginx.tests import util
 class TlsSniPerformTest(util.NginxTest):
     """Test the NginxTlsSni01 challenge."""
 
-    account_key = common_test.TLSSNI01Test.auth_key
+    account_key = common_test.AUTH_KEY
     achalls = [
         achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=acme_util.chall_to_challb(
