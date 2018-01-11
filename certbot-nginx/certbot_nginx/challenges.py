@@ -76,7 +76,7 @@ class NginxChallengePerformer(common.ChallengePerformer):
 
         for achall in self.achalls:
             vhost = self.configurator.choose_vhost(achall.domain, create_if_no_match=True)
-
+            addrs_to_add = None
             if vhost is not None and vhost.addrs:
                 if ssl:
                     addrs_to_add = vhost.addrs
