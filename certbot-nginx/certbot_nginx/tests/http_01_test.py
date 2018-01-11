@@ -30,7 +30,7 @@ class HttpPerformTest(util.NginxTest):
                     token=b"\xba\xa9\xda?<m\xaewmx\xea\xad\xadv\xf4\x02\xc9y"
                           b"\x80\xe2_X\t\xe7\xc7\xa4\t\xca\xf7&\x945"
                 ), "pending"),
-            domain="another.alias", account_key=account_key),
+            domain="ipv6.com", account_key=account_key),
         achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=acme_util.chall_to_challb(
                 challenges.HTTP01(
@@ -41,7 +41,7 @@ class HttpPerformTest(util.NginxTest):
         achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=acme_util.chall_to_challb(
                 challenges.HTTP01(token=b"kNdwjxOeX0I_A8DXt9Msmg"), "pending"),
-            domain="sslon.com", account_key=account_key),
+            domain="migration.com", account_key=account_key),
     ]
 
     def setUp(self):

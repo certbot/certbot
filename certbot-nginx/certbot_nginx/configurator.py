@@ -412,7 +412,7 @@ class NginxConfigurator(common.Installer):
         Rank by how well these match target_name.
 
         :param str target_name: The name to match
-        :param str port: port number
+        :param str port: port number as a string
         :returns: list of dicts containing the vhost, the matching name, and
             the numerical rank
         :rtype: list
