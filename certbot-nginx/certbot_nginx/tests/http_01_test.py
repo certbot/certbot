@@ -53,7 +53,7 @@ class HttpPerformTest(util.NginxTest):
             self.config_path, self.config_dir, self.work_dir, self.logs_dir)
 
         from certbot_nginx import http_01
-        self.sni = http_01.NginxHttp01(config)
+        self.http01 = http_01.NginxHttp01(config)
 
     def tearDown(self):
         shutil.rmtree(self.temp_dir)
@@ -61,15 +61,15 @@ class HttpPerformTest(util.NginxTest):
         shutil.rmtree(self.work_dir)
 
     def test_perform0(self):
-        responses = self.sni.perform()
+        responses = self.http01.perform()
         self.assertEqual([], responses)
 
     @mock.patch("certbot_nginx.configurator.NginxConfigurator.save")
     def test_perform1(self, mock_save):
-        self.sni.add_chall(self.achalls[0])
+        self.http01.add_chall(self.achalls[0])
         response = self.achalls[0].response(self.account_key)
 
-        responses = self.sni.perform()
+        responses = self.http01.perform()
 
         self.assertEqual([response], responses)
         self.assertEqual(mock_save.call_count, 1)
@@ -77,29 +77,29 @@ class HttpPerformTest(util.NginxTest):
     def test_perform2(self):
         acme_responses = []
         for achall in self.achalls:
-            self.sni.add_chall(achall)
+            self.http01.add_chall(achall)
             acme_responses.append(achall.response(self.account_key))
 
-        sni_responses = self.sni.perform()
+        sni_responses = self.http01.perform()
 
         self.assertEqual(len(sni_responses), 4)
         for i in six.moves.range(4):
             self.assertEqual(sni_responses[i], acme_responses[i])
 
     def test_mod_config(self):
-        self.sni.add_chall(self.achalls[0])
-        self.sni.add_chall(self.achalls[2])
+        self.http01.add_chall(self.achalls[0])
+        self.http01.add_chall(self.achalls[2])
 
-        self.sni._mod_config()  # pylint: disable=protected-access
+        self.http01._mod_config()  # pylint: disable=protected-access
 
-        self.sni.configurator.save()
+        self.http01.configurator.save()
 
-        self.sni.configurator.parser.load()
+        self.http01.configurator.parser.load()
 
-        http = self.sni.configurator.parser.parsed[
-            self.sni.configurator.parser.config_root][-1]
+        http = self.http01.configurator.parser.parsed[
+            self.http01.configurator.parser.config_root][-1]
 
-        vhosts = self.sni.configurator.parser.get_vhosts()
+        vhosts = self.http01.configurator.parser.get_vhosts()
 
         for vhost in vhosts:
             pass
