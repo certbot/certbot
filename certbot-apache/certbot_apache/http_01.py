@@ -45,6 +45,10 @@ Alias /.well-known/acme-challenge {0}
         # About to make temporary changes to the config
         self.configurator.save("Changes before challenge setup", True)
 
+        self.configurator.ensure_listen(str(
+            self.configurator.config.http01_port))
+        self.prepare_http01_modules()
+
         responses = self._set_up_challenges()
         self._mod_config()
         # Save reversible changes
@@ -56,6 +60,13 @@ Alias /.well-known/acme-challenge {0}
         """Cleanup the challenge directory."""
         shutil.rmtree(self.challenge_dir, ignore_errors=True)
         self.challenge_dir = None
+
+    def prepare_http01_modules(self):
+        """Make sure that we have the needed modules available for http01"""
+
+        if self.configurator.conf("handle-modules"):
+            if "alias_module" not in self.configurator.parser.modules:
+                self.configurator.enable_mod("alias", temp=True)
 
     def _mod_config(self):
         self.configurator.parser.add_include(

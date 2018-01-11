@@ -1,4 +1,5 @@
 """Test for certbot_apache.http_01."""
+import mock
 import os
 import unittest
 
@@ -53,10 +54,20 @@ class ApacheHttp01Test(util.ApacheTest):
                     account_key=self.account_key))
 
         from certbot_apache.http_01 import ApacheHttp01
+        self.config.parser.modules.add("mod_alias.c")
+        self.config.parser.modules.add("alias_module")
         self.http = ApacheHttp01(self.config)
 
     def test_empty_perform(self):
         self.assertFalse(self.http.perform())
+
+    @mock.patch("certbot_apache.configurator.ApacheConfigurator.enable_mod")
+    def test_add_alias_module(self, mock_enmod):
+        self.config.parser.modules.remove("alias_module")
+        self.config.parser.modules.remove("mod_alias.c")
+        self.http.prepare_http01_modules()
+        self.assertTrue(mock_enmod.called)
+        self.assertEqual(mock_enmod.call_args[0][0], "alias")
 
     def common_perform_test(self, achalls):
         """Tests perform with the given achalls."""

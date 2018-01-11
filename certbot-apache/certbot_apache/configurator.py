@@ -740,27 +740,39 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
 
-        # If nonstandard port, add service definition for matching
-        if port != "443":
+        self.prepare_https_modules(temp)
+        self.ensure_listen(port, https=True)
+
+    def ensure_listen(self, port, https=False):
+        """Make sure that Apache is listening on the port. Checks if the
+        Listen statement for the port already exists, and adds it to the
+        configuration if necessary.
+
+        :param str port: Port number to check and add Listen for if not in
+            place already
+        :param bool https: If the port will be used for HTTPS
+
+        """
+
+        # If HTTPS requested for nonstandard port, add service definition
+        if https and port != "443":
             port_service = "%s %s" % (port, "https")
         else:
             port_service = port
 
-        self.prepare_https_modules(temp)
         # Check for Listen <port>
         # Note: This could be made to also look for ip:443 combo
         listens = [self.parser.get_arg(x).split()[0] for
                    x in self.parser.find_dir("Listen")]
-
-        # In case no Listens are set (which really is a broken apache config)
-        if not listens:
-            listens = ["80"]
 
         # Listen already in place
         if self._has_port_already(listens, port):
             return
 
         listen_dirs = set(listens)
+
+        if not listens:
+            listen_dirs.add(port_service)
 
         for listen in listens:
             # For any listen statement, check if the machine also listens on
@@ -776,11 +788,39 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 if "%s:%s" % (ip, port_service) not in listen_dirs and (
                    "%s:%s" % (ip, port_service) not in listen_dirs):
                     listen_dirs.add("%s:%s" % (ip, port_service))
-        self._add_listens(listen_dirs, listens, port)
+        if https:
+            self._add_listens_https(listen_dirs, listens, port)
+        else:
+            self._add_listens_http(listen_dirs, listens, port)
 
-    def _add_listens(self, listens, listens_orig, port):
-        """Helper method for prepare_server_https to figure out which new
-        listen statements need adding
+    def _add_listens_http(self, listens, listens_orig, port):
+        """Helper method for ensure_listen to figure out which new
+        listen statements need adding for listening HTTP on port
+
+        :param set listens: Set of all needed Listen statements
+        :param list listens_orig: List of existing listen statements
+        :param string port: Port number we're adding
+        """
+
+        new_listens = listens.difference(listens_orig)
+
+        if port in new_listens:
+            # We have wildcard, skip the rest
+            self.parser.add_dir(parser.get_aug_path(self.parser.loc["listen"]),
+                                "Listen", port)
+            self.save_notes += "Added Listen %s directive to %s\n" % (
+                port, self.parser.loc["listen"])
+        else:
+            for listen in new_listens:
+                self.parser.add_dir(parser.get_aug_path(
+                    self.parser.loc["listen"]), "Listen", listen.split(" "))
+                self.save_notes += ("Added Listen %s directive to "
+                                    "%s\n") % (listen,
+                                               self.parser.loc["listen"])
+
+    def _add_listens_https(self, listens, listens_orig, port):
+        """Helper method for ensure_listen to figure out which new
+        listen statements need adding for listening HTTPS on port
 
         :param set listens: Set of all needed Listen statements
         :param list listens_orig: List of existing listen statements

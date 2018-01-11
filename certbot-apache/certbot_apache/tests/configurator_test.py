@@ -424,6 +424,43 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertTrue(self.config.parser.find_dir(
             "NameVirtualHost", "*:80"))
 
+    def test_add_listen_80(self):
+        mock_find = mock.Mock()
+        mock_add_dir = mock.Mock()
+        mock_find.return_value = []
+        self.config.parser.find_dir = mock_find
+        self.config.parser.add_dir = mock_add_dir
+        self.config.ensure_listen("80")
+        self.assertTrue(mock_add_dir.called)
+        self.assertTrue(mock_find.called)
+        self.assertEqual(mock_add_dir.call_args[0][1], "Listen")
+        self.assertEqual(mock_add_dir.call_args[0][2], "80")
+
+    def test_add_listen_80_named(self):
+        mock_find = mock.Mock()
+        mock_find.return_value = ["test1", "test2", "test3"]
+        mock_get = mock.Mock()
+        mock_get.side_effect = ["1.2.3.4:80", "[::1]:80", "1.1.1.1:443"]
+        mock_add_dir = mock.Mock()
+
+        self.config.parser.find_dir = mock_find
+        self.config.parser.get_arg = mock_get
+        self.config.parser.add_dir = mock_add_dir
+
+        self.config.ensure_listen("80")
+        self.assertEqual(mock_add_dir.call_count, 0)
+
+        # Reset return lists and inputs
+        mock_add_dir.reset_mock()
+        mock_get.side_effect = ["1.2.3.4:80", "[::1]:80", "1.1.1.1:443"]
+
+        # Test
+        self.config.ensure_listen("8080")
+        self.assertEqual(mock_add_dir.call_count, 3)
+        self.assertTrue(mock_add_dir.called)
+        self.assertEqual(mock_add_dir.call_args[0][1], "Listen")
+        self.assertEqual(mock_add_dir.call_args[0][2], ['1.2.3.4:8080'])
+
     def test_prepare_server_https(self):
         mock_enable = mock.Mock()
         self.config.enable_mod = mock_enable
@@ -435,7 +472,6 @@ class MultipleVhostsTest(util.ApacheTest):
         # This will test the Add listen
         self.config.parser.find_dir = mock_find
         self.config.parser.add_dir_to_ifmodssl = mock_add_dir
-
         self.config.prepare_server_https("443")
         # Changing the order these modules are enabled breaks the reverter
         self.assertEqual(mock_enable.call_args_list[0][0][0], "socache_shmcb")
