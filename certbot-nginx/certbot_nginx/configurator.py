@@ -25,8 +25,7 @@ from certbot.plugins import common
 from certbot_nginx import constants
 from certbot_nginx import nginxparser
 from certbot_nginx import parser
-from certbot_nginx import tls_sni_01
-from certbot_nginx import http_01
+from certbot_nginx import challenges as nginx_challenges
 
 
 logger = logging.getLogger(__name__)
@@ -854,8 +853,8 @@ class NginxConfigurator(common.Installer):
         """
         self._chall_out += len(achalls)
         responses = [None] * len(achalls)
-        sni_doer = tls_sni_01.NginxTlsSni01(self)
-        http_doer = http_01.NginxHttp01(self)
+        sni_doer = nginx_challenges.NginxTlsSni01(self)
+        http_doer = nginx_challenges.NginxHttp01(self)
 
         for i, achall in enumerate(achalls):
             # Currently also have chall_doer hold associated index of the

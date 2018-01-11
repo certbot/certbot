@@ -290,7 +290,7 @@ class NginxConfiguratorTest(util.NginxTest):
                            ]],
                          parsed_migration_conf[0])
 
-    @mock.patch("certbot_nginx.configurator.tls_sni_01.NginxTlsSni01.perform")
+    @mock.patch("certbot_nginx.configurator.nginx_challenges.NginxTlsSni01.perform")
     @mock.patch("certbot_nginx.configurator.NginxConfigurator.restart")
     @mock.patch("certbot_nginx.configurator.NginxConfigurator.revert_challenge_config")
     def test_perform_and_cleanup(self, mock_revert, mock_restart, mock_perform):

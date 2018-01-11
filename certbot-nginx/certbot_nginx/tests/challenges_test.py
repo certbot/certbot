@@ -1,4 +1,4 @@
-"""Tests for certbot_nginx.tls_sni_01"""
+"""Tests for certbot_nginx.challenges"""
 import unittest
 import shutil
 
@@ -52,8 +52,8 @@ class TlsSniPerformTest(util.NginxTest):
         config = util.get_nginx_configurator(
             self.config_path, self.config_dir, self.work_dir, self.logs_dir)
 
-        from certbot_nginx import tls_sni_01
-        self.sni = tls_sni_01.NginxTlsSni01(config)
+        from certbot_nginx import challenges as nginx_challenges
+        self.sni = nginx_challenges.NginxTlsSni01(config)
 
     def tearDown(self):
         shutil.rmtree(self.temp_dir)
