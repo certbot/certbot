@@ -3,15 +3,9 @@
 import logging
 import os
 
-import six
-
 from acme import challenges
 
-from certbot import errors
 from certbot.plugins import common
-
-from certbot_nginx import obj
-from certbot_nginx import nginxparser
 
 
 logger = logging.getLogger(__name__)
@@ -36,9 +30,6 @@ class NginxHttp01(common.ChallengePerformer):
         optional utility.
 
     """
-
-    def __init__(self, configurator):
-        super(NginxHttp01, self).__init__(configurator)
 
     def perform(self):
         """Perform a challenge on Nginx.
