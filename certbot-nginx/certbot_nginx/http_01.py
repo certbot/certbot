@@ -93,7 +93,8 @@ class NginxHttp01(common.ChallengePerformer):
             :class:`certbot.achallenges.KeyAuthorizationAnnotatedChallenge`
 
         """
-        vhost = self.configurator.choose_vhost(achall.domain, create_if_no_match=True)
+        vhost = self.configurator.choose_redirect_vhost(achall.domain,
+            self.configurator.config.http01_port, create_if_no_match=True)
         validation = achall.validation(achall.account_key)
         validation_path = self._get_validation_path(achall)
 
