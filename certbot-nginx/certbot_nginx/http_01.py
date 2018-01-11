@@ -94,7 +94,7 @@ class NginxHttp01(common.ChallengePerformer):
 
         """
         vhost = self.configurator.choose_redirect_vhost(achall.domain,
-            self.configurator.config.http01_port, create_if_no_match=True)
+            '%i' % self.configurator.config.http01_port, create_if_no_match=True)
         validation = achall.validation(achall.account_key)
         validation_path = self._get_validation_path(achall)
 
