@@ -8,12 +8,10 @@ import six
 from acme import challenges
 
 from certbot import achallenges
-from certbot import errors
 
 from certbot.plugins import common_test
 from certbot.tests import acme_util
 
-from certbot_nginx import obj
 from certbot_nginx.tests import util
 
 
@@ -96,13 +94,10 @@ class HttpPerformTest(util.NginxTest):
 
         self.http01.configurator.parser.load()
 
-        http = self.http01.configurator.parser.parsed[
-            self.http01.configurator.parser.config_root][-1]
+        # vhosts = self.http01.configurator.parser.get_vhosts()
 
-        vhosts = self.http01.configurator.parser.get_vhosts()
-
-        for vhost in vhosts:
-            pass
+        # for vhost in vhosts:
+        #     pass
             # if the name matches
             # check that the location block is in there and is correct
 

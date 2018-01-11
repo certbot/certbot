@@ -3,15 +3,9 @@
 import logging
 import os
 
-import six
-
 from acme import challenges
 
-from certbot import errors
 from certbot.plugins import common
-
-from certbot_nginx import obj
-from certbot_nginx import nginxparser
 
 
 logger = logging.getLogger(__name__)
@@ -36,9 +30,6 @@ class NginxHttp01(common.ChallengePerformer):
         optional utility.
 
     """
-
-    def __init__(self, configurator):
-        super(NginxHttp01, self).__init__(configurator)
 
     def perform(self):
         """Perform a challenge on Nginx.
@@ -102,7 +93,8 @@ class NginxHttp01(common.ChallengePerformer):
             :class:`certbot.achallenges.KeyAuthorizationAnnotatedChallenge`
 
         """
-        vhost = self.configurator.choose_vhost(achall.domain, create_if_no_match=True)
+        vhost = self.configurator.choose_redirect_vhost(achall.domain,
+            self.configurator.config.http01_port, create_if_no_match=True)
         validation = achall.validation(achall.account_key)
         validation_path = self._get_validation_path(achall)
 
