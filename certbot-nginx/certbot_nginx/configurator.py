@@ -209,7 +209,8 @@ class NginxConfigurator(common.Installer):
 
         :param str target_name: domain name
         :param bool create_if_no_match: If we should create a new vhost from default
-            when there is no match found
+            when there is no match found. If we can't choose a default, raise a
+            MisconfigurationError.
 
         :returns: ssl vhost associated with name
         :rtype: :class:`~certbot_nginx.obj.VirtualHost`
