@@ -209,10 +209,14 @@ def set_by_cli(var):
             plugin_selection.cli_plugin_requests(detector))
 
     if not isinstance(getattr(detector, var), _Default):
+        logger.debug("Var %s=%s (set by user)." % (
+            var, getattr(detector, var)))
         return True
 
     for modifier in VAR_MODIFIERS.get(var, []):
         if set_by_cli(modifier):
+            logger.debug("Var %s=%s (set by user)." % (
+                var, VAR_MODIFIERS.get(var, [])))
             return True
 
     return False
