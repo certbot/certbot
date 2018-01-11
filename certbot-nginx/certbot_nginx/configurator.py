@@ -865,7 +865,7 @@ class NginxConfigurator(common.Installer):
             else:  # tls-sni-01
                 sni_doer.add_chall(achall, i)
 
-        sni_response = sni_doer.perform() # TODO(ebp): do we add the bucket line twice?
+        sni_response = sni_doer.perform()
         http_response = http_doer.perform()
         # Must restart in order to activate the challenges.
         # Handled here because we may be able to load up other challenge types
