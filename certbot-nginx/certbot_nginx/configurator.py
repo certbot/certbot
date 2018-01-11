@@ -394,6 +394,7 @@ class NginxConfigurator(common.Installer):
         vhost = self._select_best_name_match(matches)
         if not vhost:
             if create_if_no_match:
+                import ipdb; ipdb.set_trace()
                 vhost = self._vhost_from_duplicated_default(target_name)
             else:
                 # No matches. Raise a misconfiguration error.
