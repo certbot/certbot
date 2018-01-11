@@ -19,6 +19,37 @@ logger = logging.getLogger(__name__)
 class NginxChallengePerformer(common.ChallengePerformer):
     """Additional helper methods for Nginx challenge performers."""
 
+    def perform(self):
+        """Perform all added challenges.
+
+        :returns: challenge respones
+        :rtype: `list` of `acme.challenges.KeyAuthorizationChallengeResponse`
+
+
+        """
+        raise NotImplementedError()
+
+    def _make_server_block(self, achall, addrs):
+        """Creates a server block for a challenge.
+
+        :param achall: Annotated HTTP-01 challenge
+        :type achall:
+            :class:`certbot.achallenges.KeyAuthorizationAnnotatedChallenge`
+
+        :param list addrs: addresses of challenged domain
+            :class:`list` of type :class:`~nginx.obj.Addr`
+
+        :returns: server block for the challenge host
+        :rtype: list
+
+        """
+        raise NotImplementedError()
+
+    @property
+    def _challenge_conf(self):
+        """Location of the challenge config file"""
+        raise NotImplementedError()
+
     def _listen_addresses(self, default_addr, ipv6_addr, port):
         """Finds addresses for each challenge block to listen on.
 
@@ -70,7 +101,7 @@ class NginxChallengePerformer(common.ChallengePerformer):
         # Add the 'include' statement for the challenges if it doesn't exist
         # already in the main config
         included = False
-        include_directive = ['\n', 'include', ' ', self.challenge_conf]
+        include_directive = ['\n', 'include', ' ', self._challenge_conf]
         root = self.configurator.parser.config_root
 
         bucket_directive = ['\n', 'server_names_hash_bucket_size', ' ', '128']
@@ -102,17 +133,13 @@ class NginxChallengePerformer(common.ChallengePerformer):
         config = nginxparser.UnspacedList(config)
 
         self.configurator.reverter.register_file_creation(
-            True, self.challenge_conf)
+            True, self._challenge_conf)
 
-        with open(self.challenge_conf, "w") as new_conf:
+        with open(self._challenge_conf, "w") as new_conf:
             nginxparser.dump(config, new_conf)
 
-    def _make_base_block(self, achall, addrs):
+    def _make_base_block(self, addrs):
         """Creates a baseline server block that listens and logs for a challenge.
-
-        :param achall: Annotated challenge
-        :type achall:
-            :class:`certbot.achallenges.KeyAuthorizationAnnotatedChallenge`
 
         :param list addrs: addresses of challenged domain
             :class:`list` of type :class:`~nginx.obj.Addr`
@@ -160,6 +187,11 @@ class NginxHttp01(NginxChallengePerformer):
         self.challenge_conf = os.path.join(
             configurator.config.config_dir, "le_http_01_cert_challenge.conf")
 
+    @property
+    def _challenge_conf(self):
+        """Location of the challenge config file"""
+        return self.challenge_conf
+
     def perform(self):
         """Perform a challenge on Nginx.
 
@@ -204,7 +236,7 @@ class NginxHttp01(NginxChallengePerformer):
         :rtype: list
 
         """
-        block = self._make_base_block(achall, addrs)
+        block = self._make_base_block(addrs)
         validation = achall.validation(achall.account_key)
         validation_path = self._get_validation_path(achall)
 
@@ -236,6 +268,11 @@ class NginxTlsSni01(common.TLSSNI01, NginxChallengePerformer):
     :param str challenge_conf: location of the challenge config file
 
     """
+
+    @property
+    def _challenge_conf(self):
+        """Location of the challenge config file"""
+        return self.challenge_conf
 
     def perform(self):
         """Perform a challenge on Nginx.
@@ -282,7 +319,7 @@ class NginxTlsSni01(common.TLSSNI01, NginxChallengePerformer):
         document_root = os.path.join(
             self.configurator.config.work_dir, "tls_sni_01_page")
 
-        block = self._make_base_block(achall, addrs)
+        block = self._make_base_block(addrs)
 
         block.extend([['server_name', ' ',
                        achall.response(achall.account_key).z_domain.decode('ascii')],
