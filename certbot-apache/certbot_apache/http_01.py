@@ -58,7 +58,8 @@ Alias /.well-known/acme-challenge {0}
 
     def cleanup(self):
         """Cleanup the challenge directory."""
-        shutil.rmtree(self.challenge_dir, ignore_errors=True)
+        if self.challenge_dir:
+            shutil.rmtree(self.challenge_dir, ignore_errors=True)
         self.challenge_dir = None
 
     def prepare_http01_modules(self):
