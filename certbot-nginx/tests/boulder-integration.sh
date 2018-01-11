@@ -33,7 +33,7 @@ test_deployment_and_rollback() {
 
 certbot_test_nginx --domains nginx.wtf run
 test_deployment_and_rollback
-certbot_test_nginx --force-renewal --preferred-challenges http
+certbot_test_nginx --domains nginx.wtf --force-renewal --preferred-challenges http
 test_deployment_and_rollback
 
 # note: not reached if anything above fails, hence "killall" at the
