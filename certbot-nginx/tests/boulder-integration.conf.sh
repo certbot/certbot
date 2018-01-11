@@ -52,7 +52,7 @@ http {
     listen 8081;
     # IPv6.
     listen [::]:8081 default ipv6only=on;
-    server_name nginx.wtf;
+    server_name nginx.wtf nginx2.wtf;
 
     root $root/webroot;
 
