@@ -776,7 +776,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         for listen in listens:
             # For any listen statement, check if the machine also listens on
-            # Port 443. If not, add such a listen statement.
+            # the given port. If not, add such a listen statement.
             if len(listen.split(":")) == 1:
                 # Its listening to all interfaces
                 if port not in listen_dirs and port_service not in listen_dirs:

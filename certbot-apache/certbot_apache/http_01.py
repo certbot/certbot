@@ -65,8 +65,14 @@ Alias /.well-known/acme-challenge {0}
         """Make sure that we have the needed modules available for http01"""
 
         if self.configurator.conf("handle-modules"):
-            if "alias_module" not in self.configurator.parser.modules:
-                self.configurator.enable_mod("alias", temp=True)
+            needed_modules = ["alias"]
+            if self.configurator.version < (2, 4):
+                needed_modules.append("authz_host")
+            else:
+                needed_modules.append("authz_core")
+            for mod in needed_modules:
+                if mod + "_module" not in self.configurator.parser.modules:
+                    self.configurator.enable_mod(mod, temp=True)
 
     def _mod_config(self):
         self.configurator.parser.add_include(

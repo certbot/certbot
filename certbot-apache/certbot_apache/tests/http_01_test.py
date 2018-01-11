@@ -40,7 +40,6 @@ class ApacheHttp01Test(util.ApacheTest):
 
     def setUp(self, *args, **kwargs):
         super(ApacheHttp01Test, self).setUp(*args, **kwargs)
-        self.maxDiff = None
 
         self.account_key = self.rsa512jwk
         self.achalls = []
@@ -53,21 +52,51 @@ class ApacheHttp01Test(util.ApacheTest):
                     domain="example{0}.com".format(i),
                     account_key=self.account_key))
 
+        modules = ["alias", "authz_core", "authz_host"]
+        for mod in modules:
+            self.config.parser.modules.add("mod_{0}.c".format(mod))
+            self.config.parser.modules.add(mod + "_module")
+
         from certbot_apache.http_01 import ApacheHttp01
-        self.config.parser.modules.add("mod_alias.c")
-        self.config.parser.modules.add("alias_module")
         self.http = ApacheHttp01(self.config)
 
     def test_empty_perform(self):
         self.assertFalse(self.http.perform())
 
     @mock.patch("certbot_apache.configurator.ApacheConfigurator.enable_mod")
-    def test_add_alias_module(self, mock_enmod):
+    def test_enable_modules_22(self, mock_enmod):
+        self.config.version = (2, 2)
+        self.config.parser.modules.remove("authz_host_module")
+        self.config.parser.modules.remove("mod_authz_host.c")
+
+        enmod_calls = self.common_enable_modules_test(mock_enmod)
+        self.assertEqual(enmod_calls[0][0][0], "authz_host")
+
+    @mock.patch("certbot_apache.configurator.ApacheConfigurator.enable_mod")
+    def test_enable_modules_24(self, mock_enmod):
+        self.config.parser.modules.remove("authz_core_module")
+        self.config.parser.modules.remove("mod_authz_core.c")
+
+        enmod_calls = self.common_enable_modules_test(mock_enmod)
+        self.assertEqual(enmod_calls[0][0][0], "authz_core")
+
+    def common_enable_modules_test(self, mock_enmod):
+        """Tests enabling mod_alias and other modules."""
         self.config.parser.modules.remove("alias_module")
         self.config.parser.modules.remove("mod_alias.c")
+
         self.http.prepare_http01_modules()
+
         self.assertTrue(mock_enmod.called)
-        self.assertEqual(mock_enmod.call_args[0][0], "alias")
+        calls = mock_enmod.call_args_list
+        other_calls = []
+        for call in calls:
+            if "alias" != call[0][0]:
+                other_calls.append(call)
+
+        # If these lists are equal, we never enabled mod_alias
+        self.assertNotEqual(calls, other_calls)
+        return other_calls
 
     def common_perform_test(self, achalls):
         """Tests perform with the given achalls."""
