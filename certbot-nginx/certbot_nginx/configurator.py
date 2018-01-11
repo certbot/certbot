@@ -392,17 +392,8 @@ class NginxConfigurator(common.Installer):
         """
         matches = self._get_redirect_ranked_matches(target_name, port)
         vhost = self._select_best_name_match(matches)
-        if not vhost:
-            if create_if_no_match:
-                vhost = self._vhost_from_duplicated_default(target_name)
-            else:
-                # No matches. Raise a misconfiguration error.
-                raise errors.MisconfigurationError(
-                            ("Cannot find a VirtualHost matching domain %s. "
-                             "In order for Certbot to correctly perform the challenge "
-                             "please add a corresponding server_name directive to your "
-                             "nginx configuration: "
-                             "https://nginx.org/en/docs/http/server_names.html") % (target_name))
+        if not vhost and create_if_no_match:
+            vhost = self._vhost_from_duplicated_default(target_name)
         return vhost
 
     def _get_redirect_ranked_matches(self, target_name, port):
