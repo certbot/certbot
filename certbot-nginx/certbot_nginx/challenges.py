@@ -50,26 +50,40 @@ class NginxChallengePerformer(common.ChallengePerformer):
         """Location of the challenge config file"""
         raise NotImplementedError() # pragma: no cover
 
-    def _listen_addresses(self, default_addr, ipv6_addr, port):
+    def _listen_addresses(self, ssl):
         """Finds addresses for each challenge block to listen on.
 
-        :param string default_addr: default listen directive argument for ipv4
-        :param string ipv6_addr: default listen directive argument for ipv6
-        :param int port: port to check for ipv6 usage
+        :param bool ssl: True if we should listen on ssl addresses
 
         :returns: list of lists of :class:`certbot_nginx.obj.Addr` to apply
         :rtype: list
 
         """
         addresses = []
+        if ssl:
+            default_addr = "{0} ssl".format(
+                self.configurator.config.tls_sni_01_port)
+            ipv6_addr = "[::]:{0} ssl".format(
+                self.configurator.config.tls_sni_01_port)
+            port = self.configurator.config.tls_sni_01_port
+        else:
+            default_addr = "%s" % self.configurator.config.http01_port
+            ipv6_addr = "[::]:{0}".format(
+                self.configurator.config.http01_port)
+            port = self.configurator.config.http01_port
+
         ipv6, ipv6only = self.configurator.ipv6_info(port)
 
         for achall in self.achalls:
             vhost = self.configurator.choose_vhost(achall.domain, create_if_no_match=True)
 
             if vhost is not None and vhost.addrs:
-                non_ssl_addrs = (addr for addr in vhost.addrs if not addr.ssl)
-                addresses.append(list(non_ssl_addrs))
+                if ssl:
+                    addrs_to_add = vhost.addrs
+                else:
+                    addrs_to_add = (addr for addr in vhost.addrs if not addr.ssl)
+            if addrs_to_add:
+                addresses.append(list(addrs_to_add))
             else:
                 if ipv6:
                     # If IPv6 is active in Nginx configuration
@@ -202,12 +216,7 @@ class NginxHttp01(NginxChallengePerformer):
         if not self.achalls:
             return []
 
-        default_addr = "%s" % self.configurator.config.http01_port
-        ipv6_addr = "[::]:{0}".format(
-                        self.configurator.config.http01_port)
-
-        addresses = self._listen_addresses(default_addr, ipv6_addr,
-            self.configurator.config.http01_port)
+        addresses = self._listen_addresses(False)
 
         responses = [x.response(x.account_key) for x in self.achalls]
 
@@ -284,12 +293,7 @@ class NginxTlsSni01(common.TLSSNI01, NginxChallengePerformer):
         if not self.achalls:
             return []
 
-        default_addr = "{0} ssl".format(
-            self.configurator.config.tls_sni_01_port)
-        ipv6_addr = "[::]:{0} ssl".format(
-            self.configurator.config.tls_sni_01_port)
-        addresses = self._listen_addresses(default_addr, ipv6_addr,
-            self.configurator.config.tls_sni_01_port)
+        addresses = self._listen_addresses(True)
 
         # Create challenge certs
         responses = [self._setup_challenge_cert(x) for x in self.achalls]
