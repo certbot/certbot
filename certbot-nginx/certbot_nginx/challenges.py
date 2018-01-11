@@ -27,7 +27,7 @@ class NginxChallengePerformer(common.ChallengePerformer):
 
 
         """
-        raise NotImplementedError()
+        raise NotImplementedError() # pragma: no cover
 
     def _make_server_block(self, achall, addrs):
         """Creates a server block for a challenge.
@@ -43,12 +43,12 @@ class NginxChallengePerformer(common.ChallengePerformer):
         :rtype: list
 
         """
-        raise NotImplementedError()
+        raise NotImplementedError() # pragma: no cover
 
     @property
     def _challenge_conf(self):
         """Location of the challenge config file"""
-        raise NotImplementedError()
+        raise NotImplementedError() # pragma: no cover
 
     def _listen_addresses(self, default_addr, ipv6_addr, port):
         """Finds addresses for each challenge block to listen on.
