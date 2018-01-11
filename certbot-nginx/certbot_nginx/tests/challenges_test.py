@@ -16,11 +16,17 @@ from certbot.tests import acme_util
 from certbot_nginx import obj
 from certbot_nginx.tests import util
 
-
 class ChallengePerformTest(object):
-    """Abstract base class."""
+# pylint: disable=no-member
+    """Abstract base class. Must have ivars:
+         - chall_doer
+         - achalls
+         - account_key
+       And must also inherit from util.NginxTest.
+    """
 
     def tearDown(self):
+    # pylint: disable=missing-docstring
         shutil.rmtree(self.temp_dir)
         shutil.rmtree(self.config_dir)
         shutil.rmtree(self.work_dir)
