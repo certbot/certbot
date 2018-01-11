@@ -16,8 +16,8 @@ from six.moves import xrange  # pylint: disable=redefined-builtin, import-error
 class TlsSniPerformTest(util.ApacheTest):
     """Test the ApacheTlsSni01 challenge."""
 
-    auth_key = common_test.TLSSNI01Test.auth_key
-    achalls = common_test.TLSSNI01Test.achalls
+    auth_key = common_test.AUTH_KEY
+    achalls = common_test.ACHALLS
 
     def setUp(self):  # pylint: disable=arguments-differ
         super(TlsSniPerformTest, self).setUp()
