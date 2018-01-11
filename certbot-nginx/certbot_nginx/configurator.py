@@ -26,6 +26,7 @@ from certbot_nginx import constants
 from certbot_nginx import nginxparser
 from certbot_nginx import parser
 from certbot_nginx import tls_sni_01
+from certbot_nginx import http_01
 
 
 logger = logging.getLogger(__name__)
@@ -840,7 +841,7 @@ class NginxConfigurator(common.Installer):
     ###########################################################################
     def get_chall_pref(self, unused_domain):  # pylint: disable=no-self-use
         """Return list of challenge preferences."""
-        return [challenges.TLSSNI01]
+        return [challenges.TLSSNI01, challenges.HTTP01]
 
     # Entry point in main.py for performing challenges
     def perform(self, achalls):
@@ -851,9 +852,10 @@ class NginxConfigurator(common.Installer):
         outstanding challenges will have to be designed better.
 
         """
+        # TEMPORARILY MODIFIED FOR TESTING
         self._chall_out += len(achalls)
         responses = [None] * len(achalls)
-        chall_doer = tls_sni_01.NginxTlsSni01(self)
+        chall_doer = http_01.NginxHttp01(self)
 
         for i, achall in enumerate(achalls):
             # Currently also have chall_doer hold associated index of the
