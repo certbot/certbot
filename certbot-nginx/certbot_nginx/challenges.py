@@ -243,7 +243,7 @@ class NginxHttp01(NginxChallengePerformer):
         block.extend([['server_name', ' ', achall.domain],
                       [['location', ' ', '=', ' ', validation_path],
                         [['default_type', ' ', 'text/plain'],
-                         ['return', ' ', '200', ' ', validation.encode()]]]])
+                         ['return', ' ', '200', ' ', validation]]]])
         return [['server'], block]
 
 
