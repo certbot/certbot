@@ -852,18 +852,22 @@ class NginxConfigurator(common.Installer):
         outstanding challenges will have to be designed better.
 
         """
-        # TEMPORARILY MODIFIED FOR TESTING
         self._chall_out += len(achalls)
         responses = [None] * len(achalls)
-        chall_doer = http_01.NginxHttp01(self)
+        sni_doer = tls_sni_01.NginxTlsSni01(self)
+        http_doer = http_01.NginxHttp01(self)
 
         for i, achall in enumerate(achalls):
             # Currently also have chall_doer hold associated index of the
             # challenge. This helps to put all of the responses back together
             # when they are all complete.
-            chall_doer.add_chall(achall, i)
+            if isinstance(achall.chall, challenges.HTTP01):
+                http_doer.add_chall(achall, i)
+            else:  # tls-sni-01
+                sni_doer.add_chall(achall, i)
 
-        sni_response = chall_doer.perform()
+        sni_response = sni_doer.perform() # TODO(ebp): do we add the bucket line twice?
+        http_response = http_doer.perform()
         # Must restart in order to activate the challenges.
         # Handled here because we may be able to load up other challenge types
         self.restart()
@@ -871,8 +875,9 @@ class NginxConfigurator(common.Installer):
         # Go through all of the challenges and assign them to the proper place
         # in the responses return value. All responses must be in the same order
         # as the original challenges.
-        for i, resp in enumerate(sni_response):
-            responses[chall_doer.indices[i]] = resp
+        for chall_response, chall_doer in ((sni_response, sni_doer), (http_response, http_doer)):
+            for i, resp in enumerate(chall_response):
+                responses[chall_doer.indices[i]] = resp
 
         return responses
 
