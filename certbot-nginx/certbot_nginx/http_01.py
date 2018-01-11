@@ -101,16 +101,6 @@ class NginxHttp01(common.ChallengePerformer):
         location_directive = [[['location', ' ', '=', ' ', validation_path],
                                [['default_type', ' ', 'text/plain'],
                                 ['return', ' ', '200', ' ', validation]]]]
-        log_directives = [# access and error logs necessary for
-                          # integration testing (non-root)
-                          ['access_log', ' ', os.path.join(
-                              self.configurator.config.work_dir, 'access.log')],
-                          ['error_log', ' ', os.path.join(
-                              self.configurator.config.work_dir, 'error.log')]
-                          ]
 
         self.configurator.parser.add_server_directives(vhost,
             location_directive, replace=False)
-        if False: # TODO: detect if we're integration testing
-            self.configurator.parser.add_server_directives(vhost,
-                log_directives, replace=False)
