@@ -164,7 +164,7 @@ class NginxHttp01(common.ChallengePerformer):
         :rtype: list
 
         """
-        response, validation = achall.response_and_validation()
+        validation = achall.validation(achall.account_key)
         validation_path = self._get_validation_path(achall)
         block = [['listen', ' ', addr.to_string(include_default=False)] for addr in addrs]
 
