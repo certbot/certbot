@@ -261,9 +261,9 @@ class NginxConfigurator(common.Installer):
                     ipv6only_present = True
         return (ipv6_active, ipv6only_present)
 
-    def _vhost_from_duplicated_default(self, domain):
+    def _vhost_from_duplicated_default(self, domain, port=None):
         if self.new_vhost is None:
-            default_vhost = self._get_default_vhost()
+            default_vhost = self._get_default_vhost(port)
             self.new_vhost = self.parser.duplicate_vhost(default_vhost, delete_default=True)
             self.new_vhost.names = set()
 
@@ -278,15 +278,16 @@ class NginxConfigurator(common.Installer):
             name_block[0].append(name)
         self.parser.add_server_directives(vhost, name_block, replace=True)
 
-    def _get_default_vhost(self):
+    def _get_default_vhost(self, port):
         vhost_list = self.parser.get_vhosts()
         # if one has default_server set, return that one
         default_vhosts = []
         for vhost in vhost_list:
             for addr in vhost.addrs:
                 if addr.default:
-                    default_vhosts.append(vhost)
-                    break
+                    if port is None or self._port_matches(port, addr.get_port()):
+                        default_vhosts.append(vhost)
+                        break
 
         if len(default_vhosts) == 1:
             return default_vhosts[0]
@@ -393,8 +394,16 @@ class NginxConfigurator(common.Installer):
         matches = self._get_redirect_ranked_matches(target_name, port)
         vhost = self._select_best_name_match(matches)
         if not vhost and create_if_no_match:
-            vhost = self._vhost_from_duplicated_default(target_name)
+            vhost = self._vhost_from_duplicated_default(target_name, port=port)
         return vhost
+
+    def _port_matches(self, test_port, matching_port):
+        # test_port is a number, matching is a number or "" or None
+        if matching_port == "" or matching_port is None:
+            # if no port is specified, Nginx defaults to listening on port 80.
+            return test_port == self.DEFAULT_LISTEN_PORT
+        else:
+            return test_port == matching_port
 
     def _get_redirect_ranked_matches(self, target_name, port):
         """Gets a ranked list of plaintextish port-listening vhosts matching target_name
@@ -410,13 +419,6 @@ class NginxConfigurator(common.Installer):
 
         """
         all_vhosts = self.parser.get_vhosts()
-        def _port_matches(test_port, matching_port):
-            # test_port is a number, matching is a number or "" or None
-            if matching_port == "" or matching_port is None:
-                # if no port is specified, Nginx defaults to listening on port 80.
-                return test_port == self.DEFAULT_LISTEN_PORT
-            else:
-                return test_port == matching_port
 
         def _vhost_matches(vhost, port):
             found_matching_port = False
@@ -426,7 +428,7 @@ class NginxConfigurator(common.Installer):
                 found_matching_port = (port == self.DEFAULT_LISTEN_PORT)
             else:
                 for addr in vhost.addrs:
-                    if _port_matches(port, addr.get_port()) and addr.ssl == False:
+                    if self._port_matches(port, addr.get_port()) and addr.ssl == False:
                         found_matching_port = True
 
             if found_matching_port:
