@@ -100,7 +100,7 @@ class NginxConfiguratorTest(util.NginxTest):
             errors.PluginError, self.config.enhance, 'myhost', 'unknown_enhancement')
 
     def test_get_chall_pref(self):
-        self.assertEqual([challenges.TLSSNI01],
+        self.assertEqual([challenges.TLSSNI01, challenges.HTTP01],
                          self.config.get_chall_pref('myhost'))
 
     def test_save(self):
@@ -291,9 +291,11 @@ class NginxConfiguratorTest(util.NginxTest):
                          parsed_migration_conf[0])
 
     @mock.patch("certbot_nginx.configurator.tls_sni_01.NginxTlsSni01.perform")
+    @mock.patch("certbot_nginx.configurator.http_01.NginxHttp01.perform")
     @mock.patch("certbot_nginx.configurator.NginxConfigurator.restart")
     @mock.patch("certbot_nginx.configurator.NginxConfigurator.revert_challenge_config")
-    def test_perform_and_cleanup(self, mock_revert, mock_restart, mock_perform):
+    def test_perform_and_cleanup(self, mock_revert, mock_restart, mock_http_perform,
+        mock_tls_perform):
         # Only tests functionality specific to configurator.perform
         # Note: As more challenges are offered this will have to be expanded
         achall1 = achallenges.KeyAuthorizationAnnotatedChallenge(
@@ -304,7 +306,7 @@ class NginxConfiguratorTest(util.NginxTest):
             ), domain="localhost", account_key=self.rsa512jwk)
         achall2 = achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=messages.ChallengeBody(
-                chall=challenges.TLSSNI01(token=b"m8TdO1qik4JVFtgPPurJmg"),
+                chall=challenges.HTTP01(token=b"m8TdO1qik4JVFtgPPurJmg"),
                 uri="https://ca.org/chall1_uri",
                 status=messages.Status("pending"),
             ), domain="example.com", account_key=self.rsa512jwk)
@@ -314,10 +316,12 @@ class NginxConfiguratorTest(util.NginxTest):
             achall2.response(self.rsa512jwk),
         ]
 
-        mock_perform.return_value = expected
+        mock_tls_perform.return_value = expected[:1]
+        mock_http_perform.return_value = expected[1:]
         responses = self.config.perform([achall1, achall2])
 
-        self.assertEqual(mock_perform.call_count, 1)
+        self.assertEqual(mock_tls_perform.call_count, 1)
+        self.assertEqual(mock_http_perform.call_count, 1)
         self.assertEqual(responses, expected)
 
         self.config.cleanup([achall1, achall2])
