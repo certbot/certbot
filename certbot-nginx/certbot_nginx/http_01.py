@@ -8,6 +8,9 @@ from acme import challenges
 from certbot import errors
 from certbot.plugins import common
 
+from certbot_nginx import obj
+from certbot_nginx import nginxparser
+
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +35,13 @@ class NginxHttp01(common.ChallengePerformer):
 
     """
 
+    def __init__(self, configurator):
+        super(NginxHttp01, self).__init__(configurator)
+        self.challenge_conf = os.path.join(
+            configurator.config.config_dir, "le_http_01_cert_challenge.conf")
+        self._ipv6 = None
+        self._ipv6only = None
+
     def perform(self):
         """Perform a challenge on Nginx.
 
@@ -52,8 +62,16 @@ class NginxHttp01(common.ChallengePerformer):
 
         return responses
 
-    def _add_bucket_directive(self):
-        """Modifies Nginx config to include server_names_hash_bucket_size directive."""
+    def _mod_config(self):
+        """Modifies Nginx config to include server_names_hash_bucket_size directive
+           and server challenge blocks.
+
+        :raises .MisconfigurationError:
+            Unable to find a suitable HTTP block in which to include
+            authenticator hosts.
+        """
+        included = False
+        include_directive = ['\n', 'include', ' ', self.challenge_conf]
         root = self.configurator.parser.config_root
 
         bucket_directive = ['\n', 'server_names_hash_bucket_size', ' ', '128']
@@ -72,21 +90,82 @@ class NginxHttp01(common.ChallengePerformer):
                     posn += 1
                 if not found_bucket:
                     body.insert(0, bucket_directive)
+                if include_directive not in body:
+                    body.insert(0, include_directive)
+                included = True
                 break
+        if not included:
+            raise errors.MisconfigurationError(
+                'Certbot could not find a block to include '
+                'challenges in %s.' % root)
+        config = [self._make_or_mod_server_block(achall) for achall in self.achalls]
+        config = [x for x in config if x is not None]
+        config = nginxparser.UnspacedList(config)
 
-    def _mod_config(self):
-        """Modifies Nginx config to handle challenges.
+        self.configurator.reverter.register_file_creation(
+            True, self.challenge_conf)
 
+        with open(self.challenge_conf, "w") as new_conf:
+            nginxparser.dump(config, new_conf)
+
+    def _default_listen_addresses(self):
+        """Finds addresses for a challenge block to listen on.
+        :returns: list of :class:`certbot_nginx.obj.Addr` to apply
+        :rtype: list
         """
-        self._add_bucket_directive()
+        addresses = []
+        default_addr = "%s" % self.configurator.config.http01_port
+        ipv6_addr = "[::]:{0}".format(
+            self.configurator.config.http01_port)
+        port = self.configurator.config.http01_port
 
-        for achall in self.achalls:
-            self._mod_server_block(achall)
+        if self._ipv6 is None or self._ipv6only is None:
+            self._ipv6, self._ipv6only = self.configurator.ipv6_info(port)
+        ipv6, ipv6only = self._ipv6, self._ipv6only
+
+        if ipv6:
+            # If IPv6 is active in Nginx configuration
+            if not ipv6only:
+                # If ipv6only=on is not already present in the config
+                ipv6_addr = ipv6_addr + " ipv6only=on"
+            addresses = [obj.Addr.fromstring(default_addr),
+                         obj.Addr.fromstring(ipv6_addr)]
+            logger.info(("Using default addresses %s and %s for authentication."),
+                        default_addr,
+                        ipv6_addr)
+        else:
+            addresses = [obj.Addr.fromstring(default_addr)]
+            logger.info("Using default address %s for authentication.",
+                        default_addr)
+        return addresses
 
     def _get_validation_path(self, achall):
         return os.sep + os.path.join(challenges.HTTP01.URI_ROOT_PATH, achall.chall.encode("token"))
 
-    def _mod_server_block(self, achall):
+    def _make_server_block(self, achall):
+        """Creates a server block for a challenge.
+        :param achall: Annotated HTTP-01 challenge
+        :type achall:
+            :class:`certbot.achallenges.KeyAuthorizationAnnotatedChallenge`
+        :param list addrs: addresses of challenged domain
+            :class:`list` of type :class:`~nginx.obj.Addr`
+        :returns: server block for the challenge host
+        :rtype: list
+        """
+        addrs = self._default_listen_addresses()
+        block = [['listen', ' ', addr.to_string(include_default=False)] for addr in addrs]
+
+        validation = achall.validation(achall.account_key)
+        validation_path = self._get_validation_path(achall)
+
+        block.extend([['server_name', ' ', achall.domain],
+                      [['location', ' ', '=', ' ', validation_path],
+                        [['default_type', ' ', 'text/plain'],
+                         ['return', ' ', '200', ' ', validation]]]])
+        # TODO: do we want to return something else if they otherwise access this block?
+        return [['server'], block]
+
+    def _make_or_mod_server_block(self, achall):
         """Modifies a server block to respond to a challenge.
 
         :param achall: Annotated HTTP-01 challenge
@@ -94,8 +173,15 @@ class NginxHttp01(common.ChallengePerformer):
             :class:`certbot.achallenges.KeyAuthorizationAnnotatedChallenge`
 
         """
-        vhost = self.configurator.choose_redirect_vhost(achall.domain,
-            '%i' % self.configurator.config.http01_port, create_if_no_match=True)
+        try:
+            vhost = self.configurator.choose_redirect_vhost(achall.domain,
+                '%i' % self.configurator.config.http01_port, create_if_no_match=True)
+        except errors.MisconfigurationError:
+            # Couldn't find either a matching name+port server block
+            # or a port+default_server block, so create a dummy block
+            return self._make_server_block(achall)
+
+        # Modify existing server block
         validation = achall.validation(achall.account_key)
         validation_path = self._get_validation_path(achall)
 
