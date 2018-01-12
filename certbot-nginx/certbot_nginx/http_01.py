@@ -5,6 +5,7 @@ import os
 
 from acme import challenges
 
+from certbot import errors
 from certbot.plugins import common
 
 
@@ -93,8 +94,13 @@ class NginxHttp01(common.ChallengePerformer):
             :class:`certbot.achallenges.KeyAuthorizationAnnotatedChallenge`
 
         """
-        vhost = self.configurator.choose_redirect_vhost(achall.domain,
-            '%i' % self.configurator.config.http01_port, create_if_no_match=True)
+        try:
+            vhost = self.configurator.choose_redirect_vhost(achall.domain,
+                '%i' % self.configurator.config.http01_port, create_if_no_match=True)
+        except errors.MisconfigurationError:
+            # Couldn't find either a matching name+port server block
+            # or a port+default_server block, so create a dummy block
+
         validation = achall.validation(achall.account_key)
         validation_path = self._get_validation_path(achall)
 
