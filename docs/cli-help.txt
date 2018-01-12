@@ -444,6 +444,8 @@ plugins:
                         using LuaDNS for DNS). (default: False)
   --dns-nsone           Obtain certificates using a DNS TXT record (if you are
                         using NS1 for DNS). (default: False)
+  --dns-ovh             Obtain certificates using a DNS TXT record (if you are
+                        using NS1 for OVH). (default: False)
   --dns-rfc2136         Obtain certificates using a DNS TXT record (if you are
                         using BIND for DNS). (default: False)
   --dns-route53         Obtain certificates using a DNS TXT record (if you are
@@ -578,6 +580,16 @@ dns-nsone:
                         record. (default: 30)
   --dns-nsone-credentials DNS_NSONE_CREDENTIALS
                         NS1 credentials file. (default: None)
+
+dns-ovh:
+  Obtain certificates using a DNS TXT record (if you are using OVH for DNS).
+
+  --dns-ovh-propagation-seconds DNS_OVH_PROPAGATION_SECONDS
+                        The number of seconds to wait for DNS to propagate
+                        before asking the ACME server to verify the DNS
+                        record. (default: 30)
+  --dns-ovh-credentials DNS_OVH_CREDENTIALS
+                        OVH credentials file. (default: None)
 
 dns-rfc2136:
   Obtain certificates using a DNS TXT record (if you are using BIND for
