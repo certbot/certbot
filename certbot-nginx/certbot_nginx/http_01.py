@@ -5,6 +5,7 @@ import os
 
 from acme import challenges
 
+from certbot import errors
 from certbot.plugins import common
 
 
