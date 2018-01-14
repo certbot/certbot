@@ -100,6 +100,8 @@ class ApacheHttp01Test(util.ApacheTest):
 
     def common_perform_test(self, achalls):
         """Tests perform with the given achalls."""
+        challenge_dir = self.http.challenge_dir
+        self.assertFalse(os.path.exists(challenge_dir))
         for achall in achalls:
             self.http.add_chall(achall)
 
@@ -114,9 +116,7 @@ class ApacheHttp01Test(util.ApacheTest):
         for achall in achalls:
             self._test_challenge_file(achall)
 
-        challenge_dir = self.http.challenge_dir
-        self.http.cleanup()
-        self.assertFalse(os.path.exists(challenge_dir))
+        self.assertTrue(os.path.exists(challenge_dir))
 
     def _test_challenge_conf(self):
         self.assertEqual(
