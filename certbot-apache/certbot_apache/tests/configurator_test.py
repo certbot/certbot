@@ -747,7 +747,6 @@ class MultipleVhostsTest(util.ApacheTest):
     def test_cleanup(self, mock_cfg, mock_restart):
         mock_cfg.return_value = ""
         _, achalls = self.get_key_and_achalls()
-        self.config.http_doer = mock.MagicMock()
 
         for achall in achalls:
             self.config._chall_out.add(achall)  # pylint: disable=protected-access
@@ -756,10 +755,8 @@ class MultipleVhostsTest(util.ApacheTest):
             self.config.cleanup([achall])
             if i == len(achalls) - 1:
                 self.assertTrue(mock_restart.called)
-                self.assertTrue(self.config.http_doer.cleanup.called)
             else:
                 self.assertFalse(mock_restart.called)
-                self.assertFalse(self.config.http_doer.cleanup.called)
 
     @mock.patch("certbot_apache.configurator.ApacheConfigurator.restart")
     @mock.patch("certbot_apache.parser.ApacheParser._get_runtime_cfg")
@@ -773,11 +770,9 @@ class MultipleVhostsTest(util.ApacheTest):
 
         self.config.cleanup([achalls[-1]])
         self.assertFalse(mock_restart.called)
-        self.assertFalse(self.config.http_doer.cleanup.called)
 
         self.config.cleanup(achalls)
         self.assertTrue(mock_restart.called)
-        self.assertTrue(self.config.http_doer.cleanup.called)
 
     @mock.patch("certbot.util.run_script")
     def test_get_version(self, mock_script):

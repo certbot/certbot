@@ -1956,7 +1956,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             self.revert_challenge_config()
             self.restart()
             self.parser.reset_modules()
-            self.http_doer.cleanup()
 
     def install_ssl_options_conf(self, options_ssl, options_ssl_digest):
         """Copy Certbot's SSL options file into the system's config dir if required."""

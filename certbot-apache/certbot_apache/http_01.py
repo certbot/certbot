@@ -1,8 +1,6 @@
 """A class that performs HTTP-01 challenges for Apache"""
 import logging
 import os
-import shutil
-import tempfile
 
 from certbot.plugins import common
 
@@ -35,7 +33,9 @@ Alias /.well-known/acme-challenge {0}
         self.challenge_conf = os.path.join(
             self.configurator.conf("challenge-location"),
             "le_http_01_challenge.conf")
-        self.challenge_dir = None
+        self.challenge_dir = os.path.join(
+            self.configurator.config.work_dir,
+            "http_challenges")
 
     def perform(self):
         """Perform all HTTP-01 challenges."""
@@ -55,12 +55,6 @@ Alias /.well-known/acme-challenge {0}
         self.configurator.save("HTTP Challenge", True)
 
         return responses
-
-    def cleanup(self):
-        """Cleanup the challenge directory."""
-        if self.challenge_dir:
-            shutil.rmtree(self.challenge_dir, ignore_errors=True)
-        self.challenge_dir = None
 
     def prepare_http01_modules(self):
         """Make sure that we have the needed modules available for http01"""
@@ -92,8 +86,9 @@ Alias /.well-known/acme-challenge {0}
             new_conf.write(config_text)
 
     def _set_up_challenges(self):
-        self.challenge_dir = tempfile.mkdtemp()
-        os.chmod(self.challenge_dir, 0o755)
+        if not os.path.isdir(self.challenge_dir):
+            os.makedirs(self.challenge_dir)
+            os.chmod(self.challenge_dir, 0o755)
 
         responses = []
         for achall in self.achalls:
@@ -105,8 +100,10 @@ Alias /.well-known/acme-challenge {0}
         response, validation = achall.response_and_validation()
 
         name = os.path.join(self.challenge_dir, achall.chall.encode("token"))
+
         with open(name, 'wb') as f:
             f.write(validation.encode())
+            self.configurator.reverter.register_file_creation(True, name)
         os.chmod(name, 0o644)
 
         return response
