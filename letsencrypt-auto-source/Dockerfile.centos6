@@ -5,9 +5,13 @@ FROM centos:6
 
 RUN yum install -y epel-release
 
-# Install pip, sudo and nose:
+# Install pip and sudo:
 RUN yum install -y python-pip sudo
-RUN pip install nose
+# Use pipstrap to update to a stable and tested version of pip
+COPY ./pieces/pipstrap.py /opt
+RUN /opt/pipstrap.py
+# Pin pytest version for increased stability
+RUN pip install pytest==3.2.5
 
 # Add an unprivileged user:
 RUN useradd --create-home --home-dir /home/lea --shell /bin/bash --groups wheel --uid 1000 lea
@@ -29,4 +33,5 @@ COPY . /home/lea/certbot/letsencrypt-auto-source
 USER lea
 WORKDIR /home/lea
 
-CMD ["nosetests", "-v", "-s", "certbot/letsencrypt-auto-source/tests"]
+RUN sudo chmod +x certbot/letsencrypt-auto-source/tests/centos6_tests.sh
+CMD sudo certbot/letsencrypt-auto-source/tests/centos6_tests.sh

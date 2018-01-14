@@ -40,7 +40,7 @@ cover () {
   elif [ "$1" = "certbot_dns_rfc2136" ]; then
     min=99
   elif [ "$1" = "certbot_dns_route53" ]; then
-    min=99
+    min=92
   elif [ "$1" = "certbot_nginx" ]; then
     min=97
   elif [ "$1" = "letshelp_certbot" ]; then
@@ -50,17 +50,13 @@ cover () {
     exit 1
   fi
 
-  # "-c /dev/null" makes sure setup.cfg is not loaded (multiple
-  # --with-cover add up, --cover-erase must not be set for coveralls
-  # to get all the data); --with-cover scopes coverage to only
-  # specific package, positional argument scopes tests only to
-  # specific package directory; --cover-tests makes sure every tests
-  # is run (c.f. #403)
-  nosetests -c /dev/null --with-cover --cover-tests --cover-package  \
-            "$1" --cover-min-percentage="$min" "$1"
+  pkg_dir=$(echo "$1" | tr _ -)
+  pytest="$(dirname $0)/tools/pytest.sh"
+  "$pytest" --cov "$pkg_dir" --cov-append --cov-report= --pyargs "$1"
+  coverage report --fail-under="$min" --include="$pkg_dir/*" --show-missing
 }
 
-rm -f .coverage  # --cover-erase is off, make sure stats are correct
+rm -f .coverage  # --cov-append is on, make sure stats are correct
 for pkg in $pkgs
 do
   cover $pkg

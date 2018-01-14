@@ -11,8 +11,6 @@ import six
 
 from certbot import errors
 
-from certbot_apache import constants
-
 logger = logging.getLogger(__name__)
 
 
@@ -40,14 +38,9 @@ class ApacheParser(object):
         # issues with aug.load() after adding new files / defines to parse tree
         self.configurator = configurator
 
-        # This uses the binary, so it can be done first.
-        # https://httpd.apache.org/docs/2.4/mod/core.html#define
-        # https://httpd.apache.org/docs/2.4/mod/core.html#ifdefine
-        # This only handles invocation parameters and Define directives!
+        self.modules = set()
         self.parser_paths = {}
         self.variables = {}
-        if version >= (2, 4):
-            self.update_runtime_variables()
 
         self.aug = aug
         # Find configuration root and make sure augeas can parse it.
@@ -55,24 +48,26 @@ class ApacheParser(object):
         self.loc = {"root": self._find_config_root()}
         self.parse_file(self.loc["root"])
 
+        if version >= (2, 4):
+            # Look up variables from httpd and add to DOM if not already parsed
+            self.update_runtime_variables()
+
         # This problem has been fixed in Augeas 1.0
         self.standardize_excl()
 
-        # Temporarily set modules to be empty, so that find_dirs can work
-        # https://httpd.apache.org/docs/2.4/mod/core.html#ifmodule
-        # This needs to come before locations are set.
-        self.modules = set()
-        self.init_modules()
+        # Parse LoadModule directives from configuration files
+        self.parse_modules()
 
         # Set up rest of locations
         self.loc.update(self._set_locations())
 
+        # list of the active include paths, before modifications
         self.existing_paths = copy.deepcopy(self.parser_paths)
 
         # Must also attempt to parse additional virtual host root
         if vhostroot:
             self.parse_file(os.path.abspath(vhostroot) + "/" +
-                            constants.os_constant("vhost_files"))
+                            self.configurator.constant("vhost_files"))
 
         # check to see if there were unparsed define statements
         if version < (2, 4):
@@ -103,50 +98,61 @@ class ApacheParser(object):
                 # Create a new path
                 self.existing_paths[new_dir] = [new_file]
 
-    def init_modules(self):
+    def add_mod(self, mod_name):
+        """Shortcut for updating parser modules."""
+        if mod_name + "_module" not in self.modules:
+            self.modules.add(mod_name + "_module")
+        if "mod_" + mod_name + ".c" not in self.modules:
+            self.modules.add("mod_" + mod_name + ".c")
+
+    def reset_modules(self):
+        """Reset the loaded modules list. This is called from cleanup to clear
+        temporarily loaded modules."""
+        self.modules = set()
+        self.update_modules()
+        self.parse_modules()
+
+    def parse_modules(self):
         """Iterates on the configuration until no new modules are loaded.
 
         ..todo:: This should be attempted to be done with a binary to avoid
             the iteration issue.  Else... parse and enable mods at same time.
 
         """
-        # Since modules are being initiated... clear existing set.
-        self.modules = set()
+        mods = set()
         matches = self.find_dir("LoadModule")
-
         iterator = iter(matches)
         # Make sure prev_size != cur_size for do: while: iteration
         prev_size = -1
 
-        while len(self.modules) != prev_size:
-            prev_size = len(self.modules)
+        while len(mods) != prev_size:
+            prev_size = len(mods)
 
             for match_name, match_filename in six.moves.zip(
                     iterator, iterator):
                 mod_name = self.get_arg(match_name)
                 mod_filename = self.get_arg(match_filename)
                 if mod_name and mod_filename:
-                    self.modules.add(mod_name)
-                    self.modules.add(os.path.basename(mod_filename)[:-2] + "c")
+                    mods.add(mod_name)
+                    mods.add(os.path.basename(mod_filename)[:-2] + "c")
                 else:
                     logger.debug("Could not read LoadModule directive from " +
                                  "Augeas path: {0}".format(match_name[6:]))
+        self.modules.update(mods)
 
     def update_runtime_variables(self):
-        """"
+        """Update Includes, Defines and Includes from httpd config dump data"""
+        self.update_defines()
+        self.update_includes()
+        self.update_modules()
 
-        .. note:: Compile time variables (apache2ctl -V) are not used within
-            the dynamic configuration files.  These should not be parsed or
-            interpreted.
-
-        .. todo:: Create separate compile time variables...
-            simply for arg_get()
-
-        """
-        stdout = self._get_runtime_cfg()
+    def update_defines(self):
+        """Get Defines from httpd process"""
 
         variables = dict()
-        matches = re.compile(r"Define: ([^ \n]*)").findall(stdout)
+        define_cmd = [self.configurator.constant("apache_cmd"), "-t", "-D",
+                      "DUMP_RUN_CFG"]
+        matches = self.parse_from_subprocess(define_cmd, r"Define: ([^ \n]*)")
         try:
             matches.remove("DUMP_RUN_CFG")
         except ValueError:
@@ -163,15 +169,54 @@ class ApacheParser(object):
 
         self.variables = variables
 
-    def _get_runtime_cfg(self):  # pylint: disable=no-self-use
-        """Get runtime configuration info.
+    def update_includes(self):
+        """Get includes from httpd process, and add them to DOM if needed"""
 
-        :returns: stdout from DUMP_RUN_CFG
+        # Find_dir iterates over configuration for Include and IncludeOptional
+        # directives to make sure we see the full include tree present in the
+        # configuration files
+        _ = self.find_dir("Include")
+
+        inc_cmd = [self.configurator.constant("apache_cmd"), "-t", "-D",
+                   "DUMP_INCLUDES"]
+        matches = self.parse_from_subprocess(inc_cmd, r"\(.*\) (.*)")
+        if matches:
+            for i in matches:
+                if not self.parsed_in_current(i):
+                    self.parse_file(i)
+
+    def update_modules(self):
+        """Get loaded modules from httpd process, and add them to DOM"""
+
+        mod_cmd = [self.configurator.constant("apache_cmd"), "-t", "-D",
+                       "DUMP_MODULES"]
+        matches = self.parse_from_subprocess(mod_cmd, r"(.*)_module")
+        for mod in matches:
+            self.add_mod(mod.strip())
+
+    def parse_from_subprocess(self, command, regexp):
+        """Get values from stdout of subprocess command
+
+        :param list command: Command to run
+        :param str regexp: Regexp for parsing
+
+        :returns: list parsed from command output
+        :rtype: list
+
+        """
+        stdout = self._get_runtime_cfg(command)
+        return re.compile(regexp).findall(stdout)
+
+    def _get_runtime_cfg(self, command):  # pylint: disable=no-self-use
+        """Get runtime configuration info.
+        :param command: Command to run
+
+        :returns: stdout from command
 
         """
         try:
             proc = subprocess.Popen(
-                constants.os_constant("define_cmd"),
+                command,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 universal_newlines=True)
@@ -180,10 +225,10 @@ class ApacheParser(object):
         except (OSError, ValueError):
             logger.error(
                 "Error running command %s for runtime parameters!%s",
-                constants.os_constant("define_cmd"), os.linesep)
+                command, os.linesep)
             raise errors.MisconfigurationError(
                 "Error accessing loaded Apache parameters: %s",
-                constants.os_constant("define_cmd"))
+                command)
         # Small errors that do not impede
         if proc.returncode != 0:
             logger.warning("Error in checking parameter list: %s", stderr)

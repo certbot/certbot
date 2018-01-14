@@ -1,10 +1,10 @@
 """Tests for acme.messages."""
 import unittest
 
+import josepy as jose
 import mock
 
 from acme import challenges
-from acme import jose
 from acme import test_util
 
 
@@ -70,6 +70,12 @@ class ErrorTest(unittest.TestCase):
         from acme.messages import Error, is_acme_error
         self.assertTrue(is_acme_error(Error.with_code('badCSR')))
         self.assertRaises(ValueError, Error.with_code, 'not an ACME error code')
+
+    def test_str(self):
+        self.assertEqual(
+            str(self.error),
+            u"{0.typ} :: {0.description} :: {0.detail} :: {0.title}"
+            .format(self.error))
 
 
 class ConstantTest(unittest.TestCase):
@@ -276,6 +282,9 @@ class ChallengeBodyTest(unittest.TestCase):
             'type': 'urn:ietf:params:acme:error:serverInternal',
             'detail': 'Unable to communicate with DNS server',
         }
+
+    def test_encode(self):
+        self.assertEqual(self.challb.encode('uri'), self.challb.uri)
 
     def test_to_partial_json(self):
         self.assertEqual(self.jobj_to, self.challb.to_partial_json())

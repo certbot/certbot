@@ -4,13 +4,15 @@ from setuptools import setup
 from setuptools import find_packages
 
 
-version = '0.20.0.dev0'
+version = '0.21.0.dev0'
 
 # Please update tox.ini when modifying dependency version requirements
 install_requires = [
     # load_pem_private/public_key (>=0.6)
     # rsa_recover_prime_factors (>=0.8)
     'cryptography>=0.8',
+    # formerly known as acme.jose:
+    'josepy>=1.0.0',
     # Connection.set_tlsext_host_name (>=0.13)
     'mock',
     'PyOpenSSL>=0.13',
@@ -31,7 +33,8 @@ if sys.version_info < (2, 7):
     ])
 
 dev_extras = [
-    'nose',
+    'pytest',
+    'pytest-xdist',
     'tox',
 ]
 
@@ -72,11 +75,6 @@ setup(
     extras_require={
         'dev': dev_extras,
         'docs': docs_extras,
-    },
-    entry_points={
-        'console_scripts': [
-            'jws = acme.jose.jws:CLI.run',
-        ],
     },
     test_suite='acme',
 )

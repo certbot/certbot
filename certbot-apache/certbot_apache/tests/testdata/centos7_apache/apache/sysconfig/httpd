@@ -1,0 +1,25 @@
+#
+# This file can be used to set additional environment variables for
+# the httpd process, or pass additional options to the httpd
+# executable.
+#
+# Note: With previous versions of httpd, the MPM could be changed by
+# editing an "HTTPD" variable here.  With the current version, that
+# variable is now ignored.  The MPM is a loadable module, and the
+# choice of MPM can be changed by editing the configuration file
+# /etc/httpd/conf.modules.d/00-mpm.conf.
+# 
+
+#
+# To pass additional options (for instance, -D definitions) to the
+# httpd binary at startup, set OPTIONS here.
+#
+OPTIONS="-D mock_define -D mock_define_too -D mock_value=TRUE -DMOCK_NOSEP -DNOSEP_TWO=NOSEP_VAL"
+
+#
+# This setting ensures the httpd process is started in the "C" locale
+# by default.  (Some modules will not behave correctly if
+# case-sensitive string comparisons are performed in a different
+# locale.)
+#
+LANG=C

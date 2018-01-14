@@ -828,11 +828,11 @@ class HelpfulArgumentParser(object):
             return dict([(t, t == chosen_topic) for t in self.help_topics])
 
 def _add_all_groups(helpful):
-    helpful.add_group("automation", description="Arguments for automating execution & other tweaks")
+    helpful.add_group("automation", description="Flags for automating execution & other tweaks")
     helpful.add_group("security", description="Security parameters & server settings")
     helpful.add_group("testing",
         description="The following flags are meant for testing and integration purposes only.")
-    helpful.add_group("paths", description="Arguments changing execution paths & servers")
+    helpful.add_group("paths", description="Flags for changing execution paths & servers")
     helpful.add_group("manage",
         description="Various subcommands and flags are available for managing your certificates:",
         verbs=["certificates", "delete", "renew", "revoke", "update_symlinks"])
@@ -1226,6 +1226,18 @@ def _create_subparsers(helpful):
                                                    key=constants.REVOCATION_REASONS.get)),
                 action=_EncodeReasonAction, default=flag_default("reason"),
                 help="Specify reason for revoking certificate. (default: unspecified)")
+    helpful.add("revoke",
+                "--delete-after-revoke", action="store_true",
+                default=flag_default("delete_after_revoke"),
+                help="Delete certificates after revoking them.")
+    helpful.add("revoke",
+                "--no-delete-after-revoke", action="store_false",
+                dest="delete_after_revoke",
+                default=flag_default("delete_after_revoke"),
+                help="Do not delete certificates after revoking them. This "
+                     "option should be used with caution because the 'renew' "
+                     "subcommand will attempt to renew undeleted revoked "
+                     "certificates.")
     helpful.add("rollback",
                 "--checkpoints", type=int, metavar="N",
                 default=flag_default("rollback_checkpoints"),
