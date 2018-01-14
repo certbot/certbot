@@ -18,6 +18,7 @@ class DovecotParserTest(unittest.TestCase):
         parsed = self.parser_instance.parse_string(string).asList()
 
         result = [list(string[0:-1])]
+
         self.assertEqual(parsed, result)
 
     def test_empty_block(self):
@@ -152,6 +153,7 @@ class DovecotParserTest(unittest.TestCase):
             parsed = self.parser_instance.parse_file('test').asList()
 
             result = [['x', ' ', '=', ' ', 'y']]
+
             self.assertEqual(parsed, result)
 
 if __name__ == "__main__":
