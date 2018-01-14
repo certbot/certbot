@@ -101,9 +101,9 @@ Alias /.well-known/acme-challenge {0}
 
         name = os.path.join(self.challenge_dir, achall.chall.encode("token"))
 
+        self.configurator.reverter.register_file_creation(True, name)
         with open(name, 'wb') as f:
             f.write(validation.encode())
-            self.configurator.reverter.register_file_creation(True, name)
         os.chmod(name, 0o644)
 
         return response
