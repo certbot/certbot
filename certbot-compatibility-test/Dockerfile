@@ -8,8 +8,8 @@ MAINTAINER Brad Warren <bmw@eff.org>
 
 # TODO: Install non-default Python versions for tox.
 # TODO: Install Apache/Nginx for plugin development.
-COPY certbot-auto /opt/certbot/src/certbot-auto
-RUN /opt/certbot/src/certbot-auto -n --os-packages-only
+COPY letsencrypt-auto-source /opt/certbot/src/letsencrypt-auto-source
+RUN /opt/certbot/src/letsencrypt-auto-source/letsencrypt-auto --os-packages-only
 
 # the above is not likely to change, so by putting it further up the
 # Dockerfile we make sure we cache as much as possible
@@ -29,16 +29,18 @@ COPY acme /opt/certbot/src/acme/
 COPY certbot-apache /opt/certbot/src/certbot-apache/
 COPY certbot-nginx /opt/certbot/src/certbot-nginx/
 COPY certbot-compatibility-test /opt/certbot/src/certbot-compatibility-test/
+COPY tools /opt/certbot/src/tools
 
 RUN virtualenv --no-site-packages -p python2 /opt/certbot/venv && \
     /opt/certbot/venv/bin/pip install -U setuptools && \
-    /opt/certbot/venv/bin/pip install -U pip && \
-    /opt/certbot/venv/bin/pip install \
-    -e /opt/certbot/src/acme \
-    -e /opt/certbot/src \
-    -e /opt/certbot/src/certbot-apache \
-    -e /opt/certbot/src/certbot-nginx \
-    -e /opt/certbot/src/certbot-compatibility-test
+    /opt/certbot/venv/bin/pip install -U pip
+ENV PATH /opt/certbot/venv/bin:$PATH
+RUN /opt/certbot/src/tools/pip_install_editable.sh \
+    /opt/certbot/src/acme \
+    /opt/certbot/src \
+    /opt/certbot/src/certbot-apache \
+    /opt/certbot/src/certbot-nginx \
+    /opt/certbot/src/certbot-compatibility-test
 
 # install in editable mode (-e) to save space: it's not possible to
 # "rm -rf /opt/certbot/src" (it's stays in the underlaying image);
@@ -46,5 +48,3 @@ RUN virtualenv --no-site-packages -p python2 /opt/certbot/venv && \
 # bash" and investigate, apply patches, etc.
 
 WORKDIR /opt/certbot/src/certbot-compatibility-test/certbot_compatibility_test/testdata
-
-ENV PATH /opt/certbot/venv/bin:$PATH

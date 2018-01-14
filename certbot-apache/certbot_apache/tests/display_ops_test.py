@@ -43,13 +43,10 @@ class SelectVhostTest(unittest.TestCase):
     @certbot_util.patch_get_utility()
     def test_more_info_cancel(self, mock_util):
         mock_util().menu.side_effect = [
-            (display_util.HELP, 1),
-            (display_util.HELP, 0),
             (display_util.CANCEL, -1),
         ]
 
         self.assertEqual(None, self._call(self.vhosts))
-        self.assertEqual(mock_util().notification.call_count, 2)
 
     def test_no_vhosts(self):
         self.assertEqual(self._call([]), None)

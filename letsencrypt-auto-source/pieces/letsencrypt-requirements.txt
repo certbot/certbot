@@ -1,0 +1,10 @@
+# Contains the requirements for the letsencrypt package.
+#
+# Since the letsencrypt package depends on certbot and using pip with hashes
+# requires that all installed packages have hashes listed, this allows
+# dependency-requirements.txt to be used without requiring a hash for a
+# (potentially unreleased) Certbot package.
+
+letsencrypt==0.7.0 \
+    --hash=sha256:105a5fb107e45bcd0722eb89696986dcf5f08a86a321d6aef25a0c7c63375ade \
+    --hash=sha256:c36e532c486a7e92155ee09da54b436a3c420813ec1c590b98f635d924720de9

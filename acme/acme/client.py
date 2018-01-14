@@ -11,6 +11,7 @@ import six
 from six.moves import http_client  # pylint: disable=import-error
 
 import OpenSSL
+import re
 import requests
 import sys
 
@@ -519,7 +520,12 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         self._default_timeout = timeout
 
     def __del__(self):
-        self.session.close()
+        # Try to close the session, but don't show exceptions to the
+        # user if the call to close() fails. See #4840.
+        try:
+            self.session.close()
+        except Exception:  # pylint: disable=broad-except
+            pass
 
     def _wrap_in_jws(self, obj, nonce):
         """Wrap `JSONDeSerializable` object in JWS.
@@ -564,6 +570,9 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         except ValueError:
             jobj = None
 
+        if response.status_code == 409:
+            raise errors.ConflictError(response.headers.get('Location'))
+
         if not response.ok:
             if jobj is not None:
                 if response_ct != cls.JSON_ERROR_CONTENT_TYPE:
@@ -591,6 +600,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         return response
 
     def _send_request(self, method, url, *args, **kwargs):
+        # pylint: disable=too-many-locals
         """Send HTTP request.
 
         Makes sure that `verify_ssl` is respected. Logs request and
@@ -616,7 +626,32 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         kwargs.setdefault('headers', {})
         kwargs['headers'].setdefault('User-Agent', self.user_agent)
         kwargs.setdefault('timeout', self._default_timeout)
-        response = self.session.request(method, url, *args, **kwargs)
+        try:
+            response = self.session.request(method, url, *args, **kwargs)
+        except requests.exceptions.RequestException as e:
+            # pylint: disable=pointless-string-statement
+            """Requests response parsing
+
+            The requests library emits exceptions with a lot of extra text.
+            We parse them with a regexp to raise a more readable exceptions.
+
+            Example:
+            HTTPSConnectionPool(host='acme-v01.api.letsencrypt.org',
+            port=443): Max retries exceeded with url: /directory
+            (Caused by NewConnectionError('
+            <requests.packages.urllib3.connection.VerifiedHTTPSConnection
+            object at 0x108356c50>: Failed to establish a new connection:
+            [Errno 65] No route to host',))"""
+
+            # pylint: disable=line-too-long
+            err_regex = r".*host='(\S*)'.*Max retries exceeded with url\: (\/\w*).*(\[Errno \d+\])([A-Za-z ]*)"
+            m = re.match(err_regex, str(e))
+            if m is None:
+                raise # pragma: no cover
+            else:
+                host, path, _err_no, err_msg = m.groups()
+                raise ValueError("Requesting {0}{1}:{2}".format(host, path, err_msg))
+
         # If content is DER, log the base64 of it instead of raw bytes, to keep
         # binary data out of the logs.
         if response.headers.get("Content-Type") == DER_CONTENT_TYPE:

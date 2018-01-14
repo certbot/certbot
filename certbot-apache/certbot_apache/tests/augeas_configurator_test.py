@@ -31,7 +31,7 @@ class AugeasConfiguratorTest(util.ApacheTest):
 
     def test_bad_parse(self):
         # pylint: disable=protected-access
-        self.config.parser._parse_file(os.path.join(
+        self.config.parser.parse_file(os.path.join(
             self.config.parser.root, "conf-available", "bad_conf_file.conf"))
         self.assertRaises(
             errors.PluginError, self.config.check_parsing_errors, "httpd.aug")

@@ -1,3 +1,7 @@
+# If new packages are installed by BootstrapArchCommon below, this version
+# number must be increased.
+BOOTSTRAP_ARCH_COMMON_VERSION=1
+
 BootstrapArchCommon() {
   # Tested with:
   #   - ArchLinux (x86_64)
@@ -18,17 +22,17 @@ BootstrapArchCommon() {
   "
 
   # pacman -T exits with 127 if there are missing dependencies
-  missing=$($SUDO pacman -T $deps) || true
+  missing=$(pacman -T $deps) || true
 
   if [ "$ASSUME_YES" = 1 ]; then
     noconfirm="--noconfirm"
   fi
 
   if [ "$missing" ]; then
-    if [ "$QUIET" = 1]; then
-      $SUDO pacman -S --needed $missing $noconfirm > /dev/null
+    if [ "$QUIET" = 1 ]; then
+      pacman -S --needed $missing $noconfirm > /dev/null
     else
-      $SUDO pacman -S --needed $missing $noconfirm
+      pacman -S --needed $missing $noconfirm
     fi
   fi
 }

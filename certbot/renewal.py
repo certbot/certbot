@@ -31,7 +31,8 @@ logger = logging.getLogger(__name__)
 STR_CONFIG_ITEMS = ["config_dir", "logs_dir", "work_dir", "user_agent",
                     "server", "account", "authenticator", "installer",
                     "standalone_supported_challenges", "renew_hook",
-                    "pre_hook", "post_hook", "ecdsa_curve", "key_types"]
+                    "pre_hook", "post_hook", "tls_sni_01_address",
+                    "http01_address", "ecdsa_curve", "key_types"]
 INT_CONFIG_ITEMS = ["rsa_key_size", "tls_sni_01_port", "http01_port"]
 BOOL_CONFIG_ITEMS = ["must_staple", "allow_subset_of_names"]
 
@@ -108,7 +109,7 @@ def _restore_webroot_config(config, renewalparams):
     elif "webroot_path" in renewalparams:
         logger.debug("Ancient renewal conf file without webroot-map, restoring webroot-path")
         wp = renewalparams["webroot_path"]
-        if isinstance(wp, str):  # prior to 0.1.0, webroot_path was a string
+        if isinstance(wp, six.string_types):  # prior to 0.1.0, webroot_path was a string
             wp = [wp]
         config.webroot_path = wp
 
@@ -194,7 +195,7 @@ def _restore_pref_challs(unused_name, value):
     # If pref_challs has only one element, configobj saves the value
     # with a trailing comma so it's parsed as a list. If this comma is
     # removed by the user, the value is parsed as a str.
-    value = [value] if isinstance(value, str) else value
+    value = [value] if isinstance(value, six.string_types) else value
     return cli.parse_preferred_challenges(value)
 
 
@@ -320,6 +321,12 @@ def _renew_describe_results(config, renew_successes, renew_failures,
 
     out = []
     notify = out.append
+    disp = zope.component.getUtility(interfaces.IDisplay)
+
+    def notify_error(err):
+        """Notify and log errors."""
+        notify(err)
+        logger.error(err)
 
     if config.dry_run:
         notify("** DRY RUN: simulating 'certbot renew' close to cert expiry")
@@ -338,14 +345,14 @@ def _renew_describe_results(config, renew_successes, renew_failures,
                "have been renewed:")
         notify(report(renew_successes, "success"))
     elif renew_failures and not renew_successes:
-        notify("All renewal attempts failed. The following certs could not be "
-               "renewed:")
-        notify(report(renew_failures, "failure"))
+        notify_error("All renewal attempts failed. The following certs could "
+               "not be renewed:")
+        notify_error(report(renew_failures, "failure"))
     elif renew_failures and renew_successes:
         notify("The following certs were successfully renewed:")
-        notify(report(renew_successes, "success"))
-        notify("\nThe following certs could not be renewed:")
-        notify(report(renew_failures, "failure"))
+        notify(report(renew_successes, "success") + "\n")
+        notify_error("The following certs could not be renewed:")
+        notify_error(report(renew_failures, "failure"))
 
     if parse_failures:
         notify("\nAdditionally, the following renewal configuration files "
@@ -356,9 +363,7 @@ def _renew_describe_results(config, renew_successes, renew_failures,
         notify("** DRY RUN: simulating 'certbot renew' close to cert expiry")
         notify("**          (The test certificates above have not been saved.)")
 
-    if config.quiet and not (renew_failures or parse_failures):
-        return
-    print("\n".join(out))
+    disp.notification("\n".join(out), wrap=False)
 
 
 def handle_renewal_request(config):
@@ -372,8 +377,8 @@ def handle_renewal_request(config):
                            "renewing all installed certificates that are due "
                            "to be renewed or renewing a single certificate specified "
                            "by its name. If you would like to renew specific "
-                           "certificates by their domains, use the certonly "
-                           "command. The renew verb may provide other options "
+                           "certificates by their domains, use the certonly command "
+                           "instead. The renew verb may provide other options "
                            "for selecting certificates to renew in the future.")
 
     if config.certname:
@@ -389,14 +394,16 @@ def handle_renewal_request(config):
         disp = zope.component.getUtility(interfaces.IDisplay)
         disp.notification("Processing " + renewal_file, pause=False)
         lineage_config = copy.deepcopy(config)
+        lineagename = storage.lineagename_for_filename(renewal_file)
 
         # Note that this modifies config (to add back the configuration
         # elements from within the renewal configuration file).
         try:
             renewal_candidate = _reconstitute(lineage_config, renewal_file)
         except Exception as e:  # pylint: disable=broad-except
-            logger.warning("Renewal configuration file %s produced an "
-                           "unexpected error: %s. Skipping.", renewal_file, e)
+            logger.warning("Renewal configuration file %s (cert: %s) "
+                           "produced an unexpected error: %s. Skipping.",
+                           renewal_file, lineagename, e)
             logger.debug("Traceback was:\n%s", traceback.format_exc())
             parse_failures.append(renewal_file)
             continue
@@ -422,8 +429,9 @@ def handle_renewal_request(config):
                     renew_skipped.append(renewal_candidate.fullchain)
         except Exception as e:  # pylint: disable=broad-except
             # obtain_cert (presumably) encountered an unanticipated problem.
-            logger.warning("Attempting to renew cert from %s produced an "
-                           "unexpected error: %s. Skipping.", renewal_file, e)
+            logger.warning("Attempting to renew cert (%s) from %s produced an "
+                           "unexpected error: %s. Skipping.", lineagename,
+                               renewal_file, e)
             logger.debug("Traceback was:\n%s", traceback.format_exc())
             renew_failures.append(renewal_candidate.fullchain)
 

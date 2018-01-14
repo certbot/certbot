@@ -18,24 +18,17 @@ import certbot.tests.util as test_util
 
 
 KEY = test_util.load_vector("rsa512_key.pem")
-CSR_SAN = test_util.load_vector("csr-san.pem")
+CSR_SAN = test_util.load_vector("csr-san_512.pem")
 
 
-class ConfigHelper(object):
-    """Creates a dummy object to imitate a namespace object
-
-        Example: cfg = ConfigHelper(redirect=True, hsts=False, uir=False)
-        will result in: cfg.redirect=True, cfg.hsts=False, etc.
-    """
-    def __init__(self, **kwds):
-        self.__dict__.update(kwds)
-
-
-class RegisterTest(unittest.TestCase):
+class RegisterTest(test_util.ConfigTestCase):
     """Tests for certbot.client.register."""
 
     def setUp(self):
-        self.config = mock.MagicMock(rsa_key_size=1024, register_unsafely_without_email=False)
+        super(RegisterTest, self).setUp()
+        self.config.rsa_key_size = 1024
+        self.config.register_unsafely_without_email = False
+        self.config.email = "alias@example.com"
         self.account_storage = account.AccountMemoryStorage()
         self.tos_cb = mock.MagicMock()
 
@@ -83,6 +76,7 @@ class RegisterTest(unittest.TestCase):
     @mock.patch("certbot.account.report_new_account")
     def test_email_invalid_noninteractive(self, _rep):
         from acme import messages
+        self.config.noninteractive_mode = True
         msg = "DNS problem: NXDOMAIN looking up MX for example.com"
         mx_err = messages.Error.with_code('invalidContact', detail=msg)
         with mock.patch("certbot.client.acme_client.Client") as mock_client:
@@ -117,15 +111,13 @@ class RegisterTest(unittest.TestCase):
         self.assertFalse(mock_handle.called)
 
 
-class ClientTestCommon(unittest.TestCase):
+class ClientTestCommon(test_util.ConfigTestCase):
     """Common base class for certbot.client.Client tests."""
     def setUp(self):
-        self.config = mock.MagicMock(
-            no_verify_ssl=False,
-            config_dir="/etc/letsencrypt",
-            work_dir="/var/lib/letsencrypt",
-            allow_subset_of_names=False,
-            key_types="rsa")
+        super(ClientTestCommon, self).setUp()
+        self.config.no_verify_ssl = False
+        self.config.allow_subset_of_names = False
+        self.config.key_types = "rsa"
 
         # pylint: disable=star-args
         self.account = mock.MagicMock(**{"key.pem": KEY})
@@ -146,7 +138,7 @@ class ClientTest(ClientTestCommon):
         super(ClientTest, self).setUp()
 
         self.config.allow_subset_of_names = False
-        self.config.config_dir = "/etc/letsencrypt"
+        self.config.dry_run = False
         self.eg_domains = ["example.com", "www.example.com"]
 
     def test_init_acme_verify_ssl(self):
@@ -244,6 +236,7 @@ class ClientTest(ClientTestCommon):
         self.assertEqual(1, mock_get_utility().notification.call_count)
 
     @mock.patch("certbot.client.crypto_util")
+<<<<<<< HEAD
     @test_util.patch_get_utility()
     def test_obtain_certificate_rsa(self, unused_mock_get_utility,
                                     mock_crypto_util):
@@ -327,6 +320,39 @@ class ClientTest(ClientTestCommon):
         mock_crypto_util.init_save_csr.return_value = csr
         mock_crypto_util.save_key.return_value = mock.sentinel.key
         domains = ["example.com", "www.example.com"]
+=======
+    def test_obtain_certificate(self, mock_crypto_util):
+        csr = util.CSR(form="pem", file=None, data=CSR_SAN)
+        mock_crypto_util.init_save_csr.return_value = csr
+        mock_crypto_util.init_save_key.return_value = mock.sentinel.key
+
+        self._test_obtain_certificate_common(mock.sentinel.key, csr)
+
+        mock_crypto_util.init_save_key.assert_called_once_with(
+            self.config.rsa_key_size, self.config.key_dir)
+        mock_crypto_util.init_save_csr.assert_called_once_with(
+            mock.sentinel.key, self.eg_domains, self.config.csr_dir)
+
+    @mock.patch("certbot.client.crypto_util")
+    @mock.patch("certbot.client.acme_crypto_util")
+    def test_obtain_certificate_dry_run(self, mock_acme_crypto, mock_crypto):
+        csr = util.CSR(form="pem", file=None, data=CSR_SAN)
+        mock_acme_crypto.make_csr.return_value = CSR_SAN
+        mock_crypto.make_key.return_value = mock.sentinel.key_pem
+        key = util.Key(file=None, pem=mock.sentinel.key_pem)
+
+        self.client.config.dry_run = True
+        self._test_obtain_certificate_common(key, csr)
+
+        mock_crypto.make_key.assert_called_once_with(self.config.rsa_key_size)
+        mock_acme_crypto.make_csr.assert_called_once_with(
+            mock.sentinel.key_pem, self.eg_domains, self.config.must_staple)
+        mock_crypto.init_save_key.assert_not_called()
+        mock_crypto.init_save_csr.assert_not_called()
+
+    def _test_obtain_certificate_common(self, key, csr):
+        self._mock_obtain_certificate()
+>>>>>>> master
 
         # return_value is essentially set to (None, None) in
         # _mock_obtain_certificate(), which breaks this test.
@@ -335,7 +361,7 @@ class ClientTest(ClientTestCommon):
         authzr = []
 
         # domain ordering should not be affected by authorization order
-        for domain in reversed(domains):
+        for domain in reversed(self.eg_domains):
             authzr.append(
                 mock.MagicMock(
                     body=mock.MagicMock(
@@ -344,14 +370,19 @@ class ClientTest(ClientTestCommon):
 
         self.client.auth_handler.get_authorizations.return_value = authzr
 
-        self.assertEqual(
-            self.client.obtain_certificate(domains),
-            (mock.sentinel.certr, mock.sentinel.chain, mock.sentinel.key, csr))
+        with test_util.patch_get_utility():
+            result = self.client.obtain_certificate(self.eg_domains)
 
+<<<<<<< HEAD
         mock_crypto_util.save_key.assert_called_once_with(
             mock_crypto_util.make_key_ecdsa(), self.config.key_dir)
         mock_crypto_util.init_save_csr.assert_called_once_with(
             mock.sentinel.key, domains, self.config.csr_dir)
+=======
+        self.assertEqual(
+            result,
+            (mock.sentinel.certr, mock.sentinel.chain, key, csr))
+>>>>>>> master
         self._check_obtain_certificate()
 
     @mock.patch("certbot.client.crypto_util")
@@ -434,14 +465,14 @@ class ClientTest(ClientTestCommon):
     @mock.patch("certbot.cli.helpful_parser")
     def test_save_certificate(self, mock_parser):
         # pylint: disable=too-many-locals
-        certs = ["matching_cert.pem", "cert.pem", "cert-san.pem"]
+        certs = ["cert_512.pem", "cert-san_512.pem"]
         tmp_path = tempfile.mkdtemp()
         os.chmod(tmp_path, 0o755)  # TODO: really??
 
         certr = mock.MagicMock(body=test_util.load_comparable_cert(certs[0]))
-        chain_cert = [test_util.load_comparable_cert(certs[1]),
-                      test_util.load_comparable_cert(certs[2])]
-        candidate_cert_path = os.path.join(tmp_path, "certs", "cert.pem")
+        chain_cert = [test_util.load_comparable_cert(certs[0]),
+                      test_util.load_comparable_cert(certs[1])]
+        candidate_cert_path = os.path.join(tmp_path, "certs", "cert_512.pem")
         candidate_chain_path = os.path.join(tmp_path, "chains", "chain.pem")
         candidate_fullchain_path = os.path.join(tmp_path, "chains", "fullchain.pem")
         mock_parser.verb = "certonly"
@@ -466,8 +497,8 @@ class ClientTest(ClientTestCommon):
 
         with open(chain_path, "rb") as chain_file:
             chain_contents = chain_file.read()
-        self.assertEqual(chain_contents, test_util.load_vector(certs[1]) +
-                         test_util.load_vector(certs[2]))
+        self.assertEqual(chain_contents, test_util.load_vector(certs[0]) +
+                         test_util.load_vector(certs[1]))
 
         shutil.rmtree(tmp_path)
 

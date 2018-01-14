@@ -51,19 +51,32 @@ class NginxTlsSni01(common.TLSSNI01):
         default_addr = "{0} ssl".format(
             self.configurator.config.tls_sni_01_port)
 
-        for achall in self.achalls:
-            vhost = self.configurator.choose_vhost(achall.domain)
-            if vhost is None:
-                logger.error(
-                    "No nginx vhost exists with server_name matching: %s. "
-                    "Please specify server_names in the Nginx config.",
-                    achall.domain)
-                return None
+        ipv6, ipv6only = self.configurator.ipv6_info(
+            self.configurator.config.tls_sni_01_port)
 
-            if vhost.addrs:
+        for achall in self.achalls:
+            vhost = self.configurator.choose_vhost(achall.domain, raise_if_no_match=False)
+
+            if vhost is not None and vhost.addrs:
                 addresses.append(list(vhost.addrs))
             else:
-                addresses.append([obj.Addr.fromstring(default_addr)])
+                if ipv6:
+                    # If IPv6 is active in Nginx configuration
+                    ipv6_addr = "[::]:{0} ssl".format(
+                        self.configurator.config.tls_sni_01_port)
+                    if not ipv6only:
+                        # If ipv6only=on is not already present in the config
+                        ipv6_addr = ipv6_addr + " ipv6only=on"
+                    addresses.append([obj.Addr.fromstring(default_addr),
+                                      obj.Addr.fromstring(ipv6_addr)])
+                    logger.info(("Using default addresses %s and %s for " +
+                                 "TLSSNI01 authentication."),
+                                default_addr,
+                                ipv6_addr)
+                else:
+                    addresses.append([obj.Addr.fromstring(default_addr)])
+                    logger.info("Using default address %s for TLSSNI01 authentication.",
+                                default_addr)
 
         # Create challenge certs
         responses = [self._setup_challenge_cert(x) for x in self.achalls]
@@ -91,7 +104,7 @@ class NginxTlsSni01(common.TLSSNI01):
         # already in the main config
         included = False
         include_directive = ['\n', 'include', ' ', self.challenge_conf]
-        root = self.configurator.parser.loc["root"]
+        root = self.configurator.parser.config_root
 
         bucket_directive = ['\n', 'server_names_hash_bucket_size', ' ', '128']
 
@@ -115,9 +128,8 @@ class NginxTlsSni01(common.TLSSNI01):
                 break
         if not included:
             raise errors.MisconfigurationError(
-                'LetsEncrypt could not find an HTTP block to include '
+                'Certbot could not find an HTTP block to include '
                 'TLS-SNI-01 challenges in %s.' % root)
-
         config = [self._make_server_block(pair[0], pair[1])
                   for pair in six.moves.zip(self.achalls, ll_addrs)]
         config = nginxparser.UnspacedList(config)
@@ -157,6 +169,6 @@ class NginxTlsSni01(common.TLSSNI01):
                           self.configurator.config.work_dir, 'error.log')],
                       ['ssl_certificate', ' ', self.get_cert_path(achall)],
                       ['ssl_certificate_key', ' ', self.get_key_path(achall)],
-                      [['location', ' ', '/'], [['root', ' ', document_root]]]] +
-                     self.configurator.parser.loc["ssl_options"])
+                      ['include', ' ', self.configurator.mod_ssl_conf],
+                      [['location', ' ', '/'], [['root', ' ', document_root]]]])
         return [['server'], block]

@@ -13,11 +13,13 @@ from certbot import util
 import certbot.tests.util as test_util
 
 RSA256_KEY = test_util.load_vector('rsa256_key.pem')
+RSA256_KEY_PATH = test_util.vector_path('rsa256_key.pem')
 RSA512_KEY = test_util.load_vector('rsa512_key.pem')
-CERT_PATH = test_util.vector_path('cert.pem')
-CERT = test_util.load_vector('cert.pem')
-SAN_CERT = test_util.load_vector('cert-san.pem')
-
+RSA2048_KEY_PATH = test_util.vector_path('rsa2048_key.pem')
+CERT_PATH = test_util.vector_path('cert_512.pem')
+CERT = test_util.load_vector('cert_512.pem')
+SS_CERT_PATH = test_util.vector_path('cert_2048.pem')
+SS_CERT = test_util.load_vector('cert_2048.pem')
 
 class SaveKeyTest(test_util.TempDirTestCase):
     """Tests for certbot.crypto_util.save_key."""
@@ -26,8 +28,7 @@ class SaveKeyTest(test_util.TempDirTestCase):
 
         logging.disable(logging.CRITICAL)
         zope.component.provideUtility(
-            mock.Mock(strict_permissions=True, dry_run=False),
-            interfaces.IConfig)
+            mock.Mock(strict_permissions=True), interfaces.IConfig)
 
     def tearDown(self):
         super(SaveKeyTest, self).tearDown()
@@ -53,12 +54,11 @@ class InitSaveCSRTest(test_util.TempDirTestCase):
         super(InitSaveCSRTest, self).setUp()
 
         zope.component.provideUtility(
-            mock.Mock(strict_permissions=True, dry_run=False),
-            interfaces.IConfig)
+            mock.Mock(strict_permissions=True), interfaces.IConfig)
 
     @mock.patch('acme.crypto_util.make_csr')
     @mock.patch('certbot.crypto_util.util.make_or_verify_dir')
-    def test_success(self, unused_mock_verify, mock_csr):
+    def test_it(self, unused_mock_verify, mock_csr):
         from certbot.crypto_util import init_save_csr
 
         mock_csr.return_value = b'csr_pem'
@@ -68,22 +68,6 @@ class InitSaveCSRTest(test_util.TempDirTestCase):
 
         self.assertEqual(csr.data, b'csr_pem')
         self.assertTrue('csr-certbot.pem' in csr.file)
-
-    @mock.patch('acme.crypto_util.make_csr')
-    @mock.patch('certbot.crypto_util.util.make_or_verify_dir')
-    def test_success_dry_run(self, unused_mock_verify, mock_csr):
-        from certbot.crypto_util import init_save_csr
-
-        zope.component.provideUtility(
-            mock.Mock(strict_permissions=True, dry_run=True),
-            interfaces.IConfig)
-        mock_csr.return_value = b'csr_pem'
-
-        csr = init_save_csr(
-            mock.Mock(pem='dummy_key'), 'example.com', self.tempdir)
-
-        self.assertEqual(csr.data, b'csr_pem')
-        self.assertTrue(csr.file is None)
 
 
 class ValidCSRTest(unittest.TestCase):
@@ -95,13 +79,13 @@ class ValidCSRTest(unittest.TestCase):
         return valid_csr(csr)
 
     def test_valid_pem_true(self):
-        self.assertTrue(self._call(test_util.load_vector('csr.pem')))
+        self.assertTrue(self._call(test_util.load_vector('csr_512.pem')))
 
     def test_valid_pem_san_true(self):
-        self.assertTrue(self._call(test_util.load_vector('csr-san.pem')))
+        self.assertTrue(self._call(test_util.load_vector('csr-san_512.pem')))
 
     def test_valid_der_false(self):
-        self.assertFalse(self._call(test_util.load_vector('csr.der')))
+        self.assertFalse(self._call(test_util.load_vector('csr_512.der')))
 
     def test_empty_false(self):
         self.assertFalse(self._call(''))
@@ -120,11 +104,11 @@ class CSRMatchesPubkeyTest(unittest.TestCase):
 
     def test_valid_true(self):
         self.assertTrue(self._call(
-            test_util.load_vector('csr.pem'), RSA512_KEY))
+            test_util.load_vector('csr_512.pem'), RSA512_KEY))
 
     def test_invalid_false(self):
         self.assertFalse(self._call(
-            test_util.load_vector('csr.pem'), RSA256_KEY))
+            test_util.load_vector('csr_512.pem'), RSA256_KEY))
 
 
 class ImportCSRFileTest(unittest.TestCase):
@@ -136,34 +120,34 @@ class ImportCSRFileTest(unittest.TestCase):
         return import_csr_file(*args, **kwargs)
 
     def test_der_csr(self):
-        csrfile = test_util.vector_path('csr.der')
-        data = test_util.load_vector('csr.der')
-        data_pem = test_util.load_vector('csr.pem')
+        csrfile = test_util.vector_path('csr_512.der')
+        data = test_util.load_vector('csr_512.der')
+        data_pem = test_util.load_vector('csr_512.pem')
 
         self.assertEqual(
             (OpenSSL.crypto.FILETYPE_PEM,
              util.CSR(file=csrfile,
                       data=data_pem,
                       form="pem"),
-             ["example.com"],),
+             ["Example.com"],),
             self._call(csrfile, data))
 
     def test_pem_csr(self):
-        csrfile = test_util.vector_path('csr.pem')
-        data = test_util.load_vector('csr.pem')
+        csrfile = test_util.vector_path('csr_512.pem')
+        data = test_util.load_vector('csr_512.pem')
 
         self.assertEqual(
             (OpenSSL.crypto.FILETYPE_PEM,
              util.CSR(file=csrfile,
                       data=data,
                       form="pem"),
-             ["example.com"],),
+             ["Example.com"],),
             self._call(csrfile, data))
 
     def test_bad_csr(self):
         self.assertRaises(errors.Error, self._call,
-                          test_util.vector_path('cert.pem'),
-                          test_util.load_vector('cert.pem'))
+                          test_util.vector_path('cert_512.pem'),
+                          test_util.load_vector('cert_512.pem'))
 
 
 class MakeKeyRSATest(unittest.TestCase):  # pylint: disable=too-few-public-methods
@@ -193,6 +177,103 @@ class MakeKeyECDSATest(unittest.TestCase):
         self.assertRaises(Exception, make_key_ecdsa, curve="P-123")
 
 
+class VerifyCertSetup(unittest.TestCase):
+    """Refactoring for verification tests."""
+
+    def setUp(self):
+        super(VerifyCertSetup, self).setUp()
+
+        self.renewable_cert = mock.MagicMock()
+        self.renewable_cert.cert = SS_CERT_PATH
+        self.renewable_cert.chain = SS_CERT_PATH
+        self.renewable_cert.privkey = RSA2048_KEY_PATH
+        self.renewable_cert.fullchain = test_util.vector_path('cert_fullchain_2048.pem')
+
+        self.bad_renewable_cert = mock.MagicMock()
+        self.bad_renewable_cert.chain = SS_CERT_PATH
+        self.bad_renewable_cert.cert = SS_CERT_PATH
+        self.bad_renewable_cert.fullchain = SS_CERT_PATH
+
+
+class VerifyRenewableCertTest(VerifyCertSetup):
+    """Tests for certbot.crypto_util.verify_renewable_cert."""
+
+    def setUp(self):
+        super(VerifyRenewableCertTest, self).setUp()
+
+    def _call(self, renewable_cert):
+        from certbot.crypto_util import verify_renewable_cert
+        return verify_renewable_cert(renewable_cert)
+
+    def test_verify_renewable_cert(self):
+        self.assertEqual(None, self._call(self.renewable_cert))
+
+    @mock.patch('certbot.crypto_util.verify_renewable_cert_sig', side_effect=errors.Error(""))
+    def test_verify_renewable_cert_failure(self, unused_verify_renewable_cert_sign):
+        self.assertRaises(errors.Error, self._call, self.bad_renewable_cert)
+
+
+class VerifyRenewableCertSigTest(VerifyCertSetup):
+    """Tests for certbot.crypto_util.verify_renewable_cert."""
+
+    def setUp(self):
+        super(VerifyRenewableCertSigTest, self).setUp()
+
+    def _call(self, renewable_cert):
+        from certbot.crypto_util import verify_renewable_cert_sig
+        return verify_renewable_cert_sig(renewable_cert)
+
+    def test_cert_sig_match(self):
+        self.assertEqual(None, self._call(self.renewable_cert))
+
+    def test_cert_sig_mismatch(self):
+        self.bad_renewable_cert.cert = test_util.vector_path('cert_512_bad.pem')
+        self.assertRaises(errors.Error, self._call, self.bad_renewable_cert)
+
+
+class VerifyFullchainTest(VerifyCertSetup):
+    """Tests for certbot.crypto_util.verify_fullchain."""
+
+    def setUp(self):
+        super(VerifyFullchainTest, self).setUp()
+
+    def _call(self, renewable_cert):
+        from certbot.crypto_util import verify_fullchain
+        return verify_fullchain(renewable_cert)
+
+    def test_fullchain_matches(self):
+        self.assertEqual(None, self._call(self.renewable_cert))
+
+    def test_fullchain_mismatch(self):
+        self.assertRaises(errors.Error, self._call, self.bad_renewable_cert)
+
+    def test_fullchain_ioerror(self):
+        self.bad_renewable_cert.chain = "dog"
+        self.assertRaises(errors.Error, self._call, self.bad_renewable_cert)
+
+
+class VerifyCertMatchesPrivKeyTest(VerifyCertSetup):
+    """Tests for certbot.crypto_util.verify_cert_matches_priv_key."""
+
+    def setUp(self):
+        super(VerifyCertMatchesPrivKeyTest, self).setUp()
+
+    def _call(self, renewable_cert):
+        from certbot.crypto_util import verify_cert_matches_priv_key
+        return verify_cert_matches_priv_key(renewable_cert.cert, renewable_cert.privkey)
+
+    def test_cert_priv_key_match(self):
+        self.renewable_cert.cert = SS_CERT_PATH
+        self.renewable_cert.privkey = RSA2048_KEY_PATH
+        self.assertEqual(None, self._call(self.renewable_cert))
+
+    def test_cert_priv_key_mismatch(self):
+        self.bad_renewable_cert.privkey = RSA256_KEY_PATH
+        self.bad_renewable_cert.cert = SS_CERT_PATH
+
+        self.assertRaises(errors.Error, self._call, self.bad_renewable_cert)
+
+
 class ValidPrivkeyTest(unittest.TestCase):
     """Tests for certbot.crypto_util.valid_privkey."""
 
@@ -202,7 +283,7 @@ class ValidPrivkeyTest(unittest.TestCase):
         return valid_privkey(privkey)
 
     def test_valid_true(self):
-        self.assertTrue(self._call(RSA256_KEY))
+        self.assertTrue(self._call(RSA512_KEY))
 
     def test_empty_false(self):
         self.assertFalse(self._call(''))
@@ -220,12 +301,12 @@ class GetSANsFromCertTest(unittest.TestCase):
         return get_sans_from_cert(*args, **kwargs)
 
     def test_single(self):
-        self.assertEqual([], self._call(test_util.load_vector('cert.pem')))
+        self.assertEqual([], self._call(test_util.load_vector('cert_512.pem')))
 
     def test_san(self):
         self.assertEqual(
             ['example.com', 'www.example.com'],
-            self._call(test_util.load_vector('cert-san.pem')))
+            self._call(test_util.load_vector('cert-san_512.pem')))
 
 
 class GetNamesFromCertTest(unittest.TestCase):
@@ -239,19 +320,19 @@ class GetNamesFromCertTest(unittest.TestCase):
     def test_single(self):
         self.assertEqual(
             ['example.com'],
-            self._call(test_util.load_vector('cert.pem')))
+            self._call(test_util.load_vector('cert_512.pem')))
 
     def test_san(self):
         self.assertEqual(
             ['example.com', 'www.example.com'],
-            self._call(test_util.load_vector('cert-san.pem')))
+            self._call(test_util.load_vector('cert-san_512.pem')))
 
     def test_common_name_sans_order(self):
         # Tests that the common name comes first
         # followed by the SANS in alphabetical order
         self.assertEqual(
             ['example.com'] + ['{0}.example.com'.format(c) for c in 'abcd'],
-            self._call(test_util.load_vector('cert-5sans.pem')))
+            self._call(test_util.load_vector('cert-5sans_512.pem')))
 
     def test_parse_non_cert(self):
         self.assertRaises(OpenSSL.crypto.Error, self._call, "hello there")
@@ -290,6 +371,15 @@ class NotAfterTest(unittest.TestCase):
         from certbot.crypto_util import notAfter
         self.assertEqual(notAfter(CERT_PATH).isoformat(),
                          '2014-12-18T22:34:45+00:00')
+
+
+class Sha256sumTest(unittest.TestCase):
+    """Tests for certbot.crypto_util.notAfter"""
+
+    def test_sha256sum(self):
+        from certbot.crypto_util import sha256sum
+        self.assertEqual(sha256sum(CERT_PATH),
+            '914ffed8daf9e2c99d90ac95c77d54f32cbd556672facac380f0c063498df84e')
 
 
 if __name__ == '__main__':

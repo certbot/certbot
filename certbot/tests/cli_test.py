@@ -3,6 +3,7 @@ import argparse
 import unittest
 import os
 import tempfile
+import copy
 
 import mock
 import six
@@ -14,6 +15,8 @@ from certbot import cli
 from certbot import constants
 from certbot import errors
 from certbot.plugins import disco
+
+import certbot.tests.util as test_util
 
 from certbot.tests.util import TempDirTestCase
 
@@ -40,7 +43,7 @@ class TestReadFile(TempDirTestCase):
 
 
 
-class ParseTest(unittest.TestCase):
+class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     '''Test the cli args entrypoint'''
 
     _multiprocess_can_split_ = True
@@ -49,24 +52,41 @@ class ParseTest(unittest.TestCase):
         reload_module(cli)
 
     @staticmethod
-    def parse(*args, **kwargs):
+    def _unmocked_parse(*args, **kwargs):
         """Get result of cli.prepare_and_parse_args."""
         return cli.prepare_and_parse_args(PLUGINS, *args, **kwargs)
+
+    @staticmethod
+    def parse(*args, **kwargs):
+        """Mocks zope.component.getUtility and calls _unmocked_parse."""
+        with test_util.patch_get_utility():
+            return ParseTest._unmocked_parse(*args, **kwargs)
 
     def _help_output(self, args):
         "Run a command, and return the output string for scrutiny"
 
         output = six.StringIO()
+
+        def write_msg(message, *args, **kwargs): # pylint: disable=missing-docstring,unused-argument
+            output.write(message)
+
         with mock.patch('certbot.main.sys.stdout', new=output):
-            with mock.patch('certbot.main.sys.stderr'):
-                self.assertRaises(SystemExit, self.parse, args, output)
+            with test_util.patch_get_utility() as mock_get_utility:
+                mock_get_utility().notification.side_effect = write_msg
+                with mock.patch('certbot.main.sys.stderr'):
+                    self.assertRaises(SystemExit, self._unmocked_parse, args, output)
+
         return output.getvalue()
 
     @mock.patch("certbot.cli.flag_default")
     def test_cli_ini_domains(self, mock_flag_default):
         tmp_config = tempfile.NamedTemporaryFile()
         # use a shim to get ConfigArgParse to pick up tmp_config
-        shim = lambda v: constants.CLI_DEFAULTS[v] if v != "config_files" else [tmp_config.name]
+        shim = (
+                lambda v: copy.deepcopy(constants.CLI_DEFAULTS[v])
+                if v != "config_files"
+                else [tmp_config.name]
+                )
         mock_flag_default.side_effect = shim
 
         namespace = self.parse(["certonly"])
@@ -103,12 +123,13 @@ class ParseTest(unittest.TestCase):
         self._help_output(['--help'])  # assert SystemExit is raised here
         out = self._help_output(['--help', 'all'])
         self.assertTrue("--configurator" in out)
-        self.assertTrue("how a cert is deployed" in out)
+        self.assertTrue("how a certificate is deployed" in out)
         self.assertTrue("--webroot-path" in out)
         self.assertTrue("--text" not in out)
         self.assertTrue("--dialog" not in out)
         self.assertTrue("%s" not in out)
         self.assertTrue("{0}" not in out)
+        self.assertTrue("--renew-hook" not in out)
 
         out = self._help_output(['-h', 'nginx'])
         if "nginx" in PLUGINS:
@@ -161,7 +182,7 @@ class ParseTest(unittest.TestCase):
 
         out = self._help_output(['help', 'all'])
         self.assertTrue("--configurator" in out)
-        self.assertTrue("how a cert is deployed" in out)
+        self.assertTrue("how a certificate is deployed" in out)
         self.assertTrue("--webroot-path" in out)
         self.assertTrue("--text" not in out)
         self.assertTrue("--dialog" not in out)
@@ -211,7 +232,10 @@ class ParseTest(unittest.TestCase):
         self.assertEqual(namespace.pref_challs, expected)
 
         short_args = ['--preferred-challenges', 'jumping-over-the-moon']
-        self.assertRaises(argparse.ArgumentTypeError, self.parse, short_args)
+        # argparse.ArgumentError makes argparse print more information
+        # to stderr and call sys.exit()
+        with mock.patch('sys.stderr'):
+            self.assertRaises(SystemExit, self.parse, short_args)
 
     def test_server_flag(self):
         namespace = self.parse('--server example.com'.split())
@@ -320,6 +344,76 @@ class ParseTest(unittest.TestCase):
         self.assertRaises(
             errors.Error, self.parse, "-n --force-interactive".split())
 
+    def test_deploy_hook_conflict(self):
+        with mock.patch("certbot.cli.sys.stderr"):
+            self.assertRaises(SystemExit, self.parse,
+                              "--renew-hook foo --deploy-hook bar".split())
+
+    def test_deploy_hook_matches_renew_hook(self):
+        value = "foo"
+        namespace = self.parse(["--renew-hook", value,
+                                "--deploy-hook", value,
+                                "--disable-hook-validation"])
+        self.assertEqual(namespace.deploy_hook, value)
+        self.assertEqual(namespace.renew_hook, value)
+
+    def test_deploy_hook_sets_renew_hook(self):
+        value = "foo"
+        namespace = self.parse(
+            ["--deploy-hook", value, "--disable-hook-validation"])
+        self.assertEqual(namespace.deploy_hook, value)
+        self.assertEqual(namespace.renew_hook, value)
+
+    def test_renew_hook_conflict(self):
+        with mock.patch("certbot.cli.sys.stderr"):
+            self.assertRaises(SystemExit, self.parse,
+                              "--deploy-hook foo --renew-hook bar".split())
+
+    def test_renew_hook_matches_deploy_hook(self):
+        value = "foo"
+        namespace = self.parse(["--deploy-hook", value,
+                                "--renew-hook", value,
+                                "--disable-hook-validation"])
+        self.assertEqual(namespace.deploy_hook, value)
+        self.assertEqual(namespace.renew_hook, value)
+
+    def test_renew_hook_does_not_set_renew_hook(self):
+        value = "foo"
+        namespace = self.parse(
+            ["--renew-hook", value, "--disable-hook-validation"])
+        self.assertEqual(namespace.deploy_hook, None)
+        self.assertEqual(namespace.renew_hook, value)
+
+    def test_max_log_backups_error(self):
+        with mock.patch('certbot.cli.sys.stderr'):
+            self.assertRaises(
+                SystemExit, self.parse, "--max-log-backups foo".split())
+            self.assertRaises(
+                SystemExit, self.parse, "--max-log-backups -42".split())
+
+    def test_max_log_backups_success(self):
+        value = "42"
+        namespace = self.parse(["--max-log-backups", value])
+        self.assertEqual(namespace.max_log_backups, int(value))
+
+    def test_unchanging_defaults(self):
+        namespace = self.parse([])
+        self.assertEqual(namespace.domains, [])
+        self.assertEqual(namespace.pref_challs, [])
+
+        namespace.pref_challs = [challenges.HTTP01.typ]
+        namespace.domains = ['example.com']
+
+        namespace = self.parse([])
+        self.assertEqual(namespace.domains, [])
+        self.assertEqual(namespace.pref_challs, [])
+
+    def test_no_directory_hooks_set(self):
+        self.assertFalse(self.parse(["--no-directory-hooks"]).directory_hooks)
+
+    def test_no_directory_hooks_unset(self):
+        self.assertTrue(self.parse([]).directory_hooks)
+
 
 class DefaultTest(unittest.TestCase):
     """Tests for certbot.cli._Default."""
@@ -349,6 +443,10 @@ class SetByCliTest(unittest.TestCase):
 
     def setUp(self):
         reload_module(cli)
+
+    def test_deploy_hook(self):
+        self.assertTrue(_call_set_by_cli(
+            'renew_hook', '--deploy-hook foo'.split(), 'renew'))
 
     def test_webroot_map(self):
         args = '-w /var/www/html -d example.com'.split()
@@ -394,9 +492,10 @@ class SetByCliTest(unittest.TestCase):
 
 def _call_set_by_cli(var, args, verb):
     with mock.patch('certbot.cli.helpful_parser') as mock_parser:
-        mock_parser.args = args
-        mock_parser.verb = verb
-        return cli.set_by_cli(var)
+        with test_util.patch_get_utility():
+            mock_parser.args = args
+            mock_parser.verb = verb
+            return cli.set_by_cli(var)
 
 
 if __name__ == '__main__':

@@ -10,6 +10,8 @@ RUN useradd --create-home --home-dir /home/lea --shell /bin/bash --groups sudo -
 RUN apt-get update && \
     apt-get -q -y install python-pip sudo openssl && \
     apt-get clean
+
+ENV PIP_INDEX_URL https://pypi.python.org/simple
 RUN pip install nose
 
 # Let that user sudo:

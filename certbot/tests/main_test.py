@@ -23,8 +23,6 @@ from certbot import configuration
 from certbot import crypto_util
 from certbot import errors
 from certbot import main
-from certbot import renewal
-from certbot import storage
 from certbot import util
 
 from certbot.plugins import disco
@@ -32,11 +30,13 @@ from certbot.plugins import manual
 
 import certbot.tests.util as test_util
 
-CERT_PATH = test_util.vector_path('cert.pem')
-CERT = test_util.vector_path('cert.pem')
-CSR = test_util.vector_path('csr.der')
+CERT_PATH = test_util.vector_path('cert_512.pem')
+CERT = test_util.vector_path('cert_512.pem')
+CSR = test_util.vector_path('csr_512.der')
 KEY = test_util.vector_path('rsa256_key.pem')
-JWK = jose.JWKRSA.load(test_util.load_vector("rsa512_key_2.pem"))
+JWK = jose.JWKRSA.load(test_util.load_vector('rsa512_key.pem'))
+RSA2048_KEY_PATH = test_util.vector_path('rsa2048_key.pem')
+SS_CERT_PATH = test_util.vector_path('cert_2048.pem')
 
 
 class TestHandleIdenticalCerts(unittest.TestCase):
@@ -164,9 +164,7 @@ class CertonlyTest(unittest.TestCase):
         self.assertTrue(mock_report_cert.call_count == 2)
 
         # error in _ask_user_to_confirm_new_names
-        util_mock = mock.Mock()
-        util_mock.yesno.return_value = False
-        self.mock_get_utility.return_value = util_mock
+        self.mock_get_utility().yesno.return_value = False
         self.assertRaises(errors.ConfigurationError, self._call,
             ('certonly --webroot -d example.com -d test.com --cert-name example.com').split())
 
@@ -225,7 +223,7 @@ class RevokeTest(test_util.TempDirTestCase):
 
         shutil.copy(CERT_PATH, self.tempdir)
         self.tmp_cert_path = os.path.abspath(os.path.join(self.tempdir,
-            'cert.pem'))
+            'cert_512.pem'))
 
         self.patches = [
             mock.patch('acme.client.Client', autospec=True),
@@ -265,8 +263,11 @@ class RevokeTest(test_util.TempDirTestCase):
         from certbot.main import revoke
         revoke(config, plugins)
 
+    @mock.patch('certbot.main._delete_if_appropriate')
     @mock.patch('certbot.main.client.acme_client')
-    def test_revoke_with_reason(self, mock_acme_client):
+    def test_revoke_with_reason(self, mock_acme_client,
+            mock_delete_if_appropriate):
+        mock_delete_if_appropriate.return_value = False
         mock_revoke = mock_acme_client.Client().revoke
         expected = []
         for reason, code in constants.REVOCATION_REASONS.items():
@@ -276,8 +277,10 @@ class RevokeTest(test_util.TempDirTestCase):
             expected.append(mock.call(mock.ANY, code))
         self.assertEqual(expected, mock_revoke.call_args_list)
 
-    def test_revocation_success(self):
+    @mock.patch('certbot.main._delete_if_appropriate')
+    def test_revocation_success(self, mock_delete_if_appropriate):
         self._call()
+        mock_delete_if_appropriate.return_value = False
         self.mock_success_revoke.assert_called_once_with(self.tmp_cert_path)
 
     def test_revocation_error(self):
@@ -286,17 +289,207 @@ class RevokeTest(test_util.TempDirTestCase):
         self.assertRaises(acme_errors.ClientError, self._call)
         self.mock_success_revoke.assert_not_called()
 
+    @mock.patch('certbot.main._delete_if_appropriate')
+    @mock.patch('certbot.cert_manager.delete')
+    @test_util.patch_get_utility()
+    def test_revocation_with_prompt(self, mock_get_utility,
+            mock_delete, mock_delete_if_appropriate):
+        mock_get_utility().yesno.return_value = False
+        mock_delete_if_appropriate.return_value = False
+        self._call()
+        self.assertFalse(mock_delete.called)
 
-class DetermineAccountTest(unittest.TestCase):
+class DeleteIfAppropriateTest(unittest.TestCase):
+    """Tests for certbot.main._delete_if_appropriate """
+
+    def setUp(self):
+        self.config = mock.Mock()
+        self.config.namespace = mock.Mock()
+        self.config.namespace.noninteractive_mode = False
+
+    def _call(self, mock_config):
+        from certbot.main import _delete_if_appropriate
+        _delete_if_appropriate(mock_config)
+
+    @mock.patch('certbot.cert_manager.delete')
+    @test_util.patch_get_utility()
+    def test_delete_opt_out(self, mock_get_utility, mock_delete):
+        util_mock = mock_get_utility()
+        util_mock.yesno.return_value = False
+        self._call(self.config)
+        mock_delete.assert_not_called()
+
+    # pylint: disable=too-many-arguments
+    @mock.patch('certbot.storage.renewal_file_for_certname')
+    @mock.patch('certbot.cert_manager.delete')
+    @mock.patch('certbot.cert_manager.match_and_check_overlaps')
+    @mock.patch('certbot.storage.full_archive_path')
+    @mock.patch('certbot.cert_manager.cert_path_to_lineage')
+    @test_util.patch_get_utility()
+    def test_overlapping_archive_dirs(self, mock_get_utility,
+            mock_cert_path_to_lineage, mock_archive,
+            mock_match_and_check_overlaps, mock_delete,
+            mock_renewal_file_for_certname):
+        # pylint: disable = unused-argument
+        config = self.config
+        config.cert_path = "/some/reasonable/path"
+        config.certname = ""
+        mock_cert_path_to_lineage.return_value = "example.com"
+        mock_match_and_check_overlaps.side_effect = errors.OverlappingMatchFound()
+        self._call(config)
+        mock_delete.assert_not_called()
+
+    # pylint: disable=too-many-arguments
+    @mock.patch('certbot.storage.renewal_file_for_certname')
+    @mock.patch('certbot.cert_manager.match_and_check_overlaps')
+    @mock.patch('certbot.storage.full_archive_path')
+    @mock.patch('certbot.cert_manager.delete')
+    @mock.patch('certbot.storage.cert_path_for_cert_name')
+    @test_util.patch_get_utility()
+    def test_cert_name_only(self, mock_get_utility,
+            mock_cert_path_for_cert_name, mock_delete, mock_archive,
+            mock_overlapping_archive_dirs, mock_renewal_file_for_certname):
+        # pylint: disable = unused-argument
+        config = self.config
+        config.certname = "example.com"
+        config.cert_path = ""
+        mock_cert_path_for_cert_name.return_value = "/some/reasonable/path"
+        mock_overlapping_archive_dirs.return_value = False
+        self._call(config)
+        mock_delete.assert_called_once()
+
+    # pylint: disable=too-many-arguments
+    @mock.patch('certbot.storage.renewal_file_for_certname')
+    @mock.patch('certbot.cert_manager.match_and_check_overlaps')
+    @mock.patch('certbot.storage.full_archive_path')
+    @mock.patch('certbot.cert_manager.delete')
+    @mock.patch('certbot.cert_manager.cert_path_to_lineage')
+    @test_util.patch_get_utility()
+    def test_cert_path_only(self, mock_get_utility,
+            mock_cert_path_to_lineage, mock_delete, mock_archive,
+            mock_overlapping_archive_dirs, mock_renewal_file_for_certname):
+        # pylint: disable = unused-argument
+        config = self.config
+        config.cert_path = "/some/reasonable/path"
+        config.certname = ""
+        mock_cert_path_to_lineage.return_value = "example.com"
+        mock_overlapping_archive_dirs.return_value = False
+        self._call(config)
+        mock_delete.assert_called_once()
+
+    # pylint: disable=too-many-arguments
+    @mock.patch('certbot.storage.renewal_file_for_certname')
+    @mock.patch('certbot.cert_manager.match_and_check_overlaps')
+    @mock.patch('certbot.storage.full_archive_path')
+    @mock.patch('certbot.cert_manager.cert_path_to_lineage')
+    @mock.patch('certbot.cert_manager.delete')
+    @test_util.patch_get_utility()
+    def test_noninteractive_deletion(self, mock_get_utility, mock_delete,
+            mock_cert_path_to_lineage, mock_full_archive_dir,
+            mock_match_and_check_overlaps, mock_renewal_file_for_certname):
+        # pylint: disable = unused-argument
+        config = self.config
+        config.namespace.noninteractive_mode = True
+        config.cert_path = "/some/reasonable/path"
+        config.certname = ""
+        mock_cert_path_to_lineage.return_value = "example.com"
+        mock_full_archive_dir.return_value = ""
+        mock_match_and_check_overlaps.return_value = ""
+        self._call(config)
+        mock_delete.assert_called_once()
+
+    # pylint: disable=too-many-arguments
+    @mock.patch('certbot.storage.renewal_file_for_certname')
+    @mock.patch('certbot.cert_manager.match_and_check_overlaps')
+    @mock.patch('certbot.storage.full_archive_path')
+    @mock.patch('certbot.cert_manager.delete')
+    @mock.patch('certbot.cert_manager.cert_path_to_lineage')
+    @test_util.patch_get_utility()
+    def test_certname_and_cert_path_match(self, mock_get_utility,
+            mock_cert_path_to_lineage, mock_delete, mock_archive,
+            mock_overlapping_archive_dirs, mock_renewal_file_for_certname):
+        # pylint: disable = unused-argument
+        config = self.config
+        config.certname = "example.com"
+        config.cert_path = "/some/reasonable/path"
+        mock_cert_path_to_lineage.return_value = config.certname
+        mock_overlapping_archive_dirs.return_value = False
+        self._call(config)
+        mock_delete.assert_called_once()
+
+    # pylint: disable=too-many-arguments
+    @mock.patch('certbot.cert_manager.match_and_check_overlaps')
+    @mock.patch('certbot.storage.full_archive_path')
+    @mock.patch('certbot.cert_manager.delete')
+    @mock.patch('certbot.cert_manager.human_readable_cert_info')
+    @mock.patch('certbot.storage.RenewableCert')
+    @mock.patch('certbot.storage.renewal_file_for_certname')
+    @mock.patch('certbot.cert_manager.cert_path_to_lineage')
+    @test_util.patch_get_utility()
+    def test_certname_and_cert_path_mismatch(self, mock_get_utility,
+            mock_cert_path_to_lineage, mock_renewal_file_for_certname,
+            mock_RenewableCert, mock_human_readable_cert_info,
+            mock_delete, mock_archive, mock_overlapping_archive_dirs):
+        # pylint: disable=unused-argument
+        config = self.config
+        config.certname = "example.com"
+        config.cert_path = "/some/reasonable/path"
+        mock_cert_path_to_lineage = "something else"
+        mock_RenewableCert.return_value = mock.Mock()
+        mock_human_readable_cert_info.return_value = ""
+        mock_overlapping_archive_dirs.return_value = False
+        from certbot.display import util as display_util
+        util_mock = mock_get_utility()
+        util_mock.menu.return_value = (display_util.OK, 0)
+        self._call(config)
+        mock_delete.assert_called_once()
+
+    # pylint: disable=too-many-arguments
+    @mock.patch('certbot.cert_manager.match_and_check_overlaps')
+    @mock.patch('certbot.storage.full_archive_path')
+    @mock.patch('certbot.cert_manager.delete')
+    @mock.patch('certbot.cert_manager.human_readable_cert_info')
+    @mock.patch('certbot.storage.RenewableCert')
+    @mock.patch('certbot.storage.renewal_file_for_certname')
+    @mock.patch('certbot.cert_manager.cert_path_to_lineage')
+    @test_util.patch_get_utility()
+    def test_noninteractive_certname_cert_path_mismatch(self, mock_get_utility,
+            mock_cert_path_to_lineage, mock_renewal_file_for_certname,
+            mock_RenewableCert, mock_human_readable_cert_info,
+            mock_delete, mock_archive, mock_overlapping_archive_dirs):
+        # pylint: disable=unused-argument
+        config = self.config
+        config.certname = "example.com"
+        config.cert_path = "/some/reasonable/path"
+        mock_cert_path_to_lineage.return_value = "some-reasonable-path.com"
+        mock_RenewableCert.return_value = mock.Mock()
+        mock_human_readable_cert_info.return_value = ""
+        mock_overlapping_archive_dirs.return_value = False
+        # Test for non-interactive mode
+        util_mock = mock_get_utility()
+        util_mock.menu.side_effect = errors.MissingCommandlineFlag("Oh no.")
+        self.assertRaises(errors.Error, self._call, config)
+        mock_delete.assert_not_called()
+
+    @mock.patch('certbot.cert_manager.delete')
+    @test_util.patch_get_utility()
+    def test_no_certname_or_cert_path(self, mock_get_utility, mock_delete):
+        # pylint: disable=unused-argument
+        config = self.config
+        config.certname = None
+        config.cert_path = None
+        self.assertRaises(errors.Error, self._call, config)
+        mock_delete.assert_not_called()
+
+
+class DetermineAccountTest(test_util.ConfigTestCase):
     """Tests for certbot.main._determine_account."""
 
     def setUp(self):
-        self.args = mock.MagicMock(account=None, email=None,
-                                   config_dir="unused_config",
-                                   logs_dir="unused_logs",
-                                   work_dir="unused_work",
-                                   register_unsafely_without_email=False)
-        self.config = configuration.NamespaceConfig(self.args)
+        super(DetermineAccountTest, self).setUp()
+        self.config.account = None
+        self.config.email = None
+        self.config.register_unsafely_without_email = False
         self.accs = [mock.MagicMock(id='x'), mock.MagicMock(id='y')]
         self.account_storage = account.AccountMemoryStorage()
         # For use in saving accounts: fake out the new_authz URL.
@@ -357,19 +550,16 @@ class DetermineAccountTest(unittest.TestCase):
         self.assertEqual('other email', self.config.email)
 
 
-class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-methods
+class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-methods
     """Tests for different commands."""
 
     def setUp(self):
         super(MainTest, self).setUp()
 
-        self.config_dir = os.path.join(self.tempdir, 'config')
-        self.work_dir = os.path.join(self.tempdir, 'work')
-        self.logs_dir = os.path.join(self.tempdir, 'logs')
-        os.mkdir(self.logs_dir)
-        self.standard_args = ['--config-dir', self.config_dir,
-                              '--work-dir', self.work_dir,
-                              '--logs-dir', self.logs_dir, '--text']
+        os.mkdir(self.config.logs_dir)
+        self.standard_args = ['--config-dir', self.config.config_dir,
+                              '--work-dir', self.config.work_dir,
+                              '--logs-dir', self.config.logs_dir, '--text']
 
     def tearDown(self):
         # Reset globals in cli
@@ -410,8 +600,6 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
                 finally:
                     output = toy_out.getvalue() or toy_err.getvalue()
                     self.assertTrue("certbot" in output, "Output is {0}".format(output))
-        toy_out.close()
-        toy_err.close()
 
     def _cli_missing_flag(self, args, message):
         "Ensure that a particular error raises a missing cli flag error containing message"
@@ -548,7 +736,32 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
         ifaces = []
         plugins = mock_disco.PluginsRegistry.find_all()
 
-        _, stdout, _, _ = self._call(['plugins'])
+        stdout = six.StringIO()
+        with test_util.patch_get_utility_with_stdout(stdout=stdout):
+            _, stdout, _, _ = self._call(['plugins'], stdout)
+
+        plugins.visible.assert_called_once_with()
+        plugins.visible().ifaces.assert_called_once_with(ifaces)
+        filtered = plugins.visible().ifaces()
+        self.assertEqual(stdout.getvalue().strip(), str(filtered))
+
+    @mock.patch('certbot.main.plugins_disco')
+    @mock.patch('certbot.main.cli.HelpfulArgumentParser.determine_help_topics')
+    def test_plugins_no_args_unprivileged(self, _det, mock_disco):
+        ifaces = []
+        plugins = mock_disco.PluginsRegistry.find_all()
+
+        def throw_error(directory, mode, uid, strict):
+            """Raises error.Error."""
+            _, _, _, _ = directory, mode, uid, strict
+            raise errors.Error()
+
+        stdout = six.StringIO()
+        with mock.patch('certbot.util.set_up_core_dir') as mock_set_up_core_dir:
+            with test_util.patch_get_utility_with_stdout(stdout=stdout):
+                mock_set_up_core_dir.side_effect = throw_error
+                _, stdout, _, _ = self._call(['plugins'], stdout)
+
         plugins.visible.assert_called_once_with()
         plugins.visible().ifaces.assert_called_once_with(ifaces)
         filtered = plugins.visible().ifaces()
@@ -560,7 +773,10 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
         ifaces = []
         plugins = mock_disco.PluginsRegistry.find_all()
 
-        _, stdout, _, _ = self._call(['plugins', '--init'])
+        stdout = six.StringIO()
+        with test_util.patch_get_utility_with_stdout(stdout=stdout):
+            _, stdout, _, _ = self._call(['plugins', '--init'], stdout)
+
         plugins.visible.assert_called_once_with()
         plugins.visible().ifaces.assert_called_once_with(ifaces)
         filtered = plugins.visible().ifaces()
@@ -574,7 +790,11 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
     def test_plugins_prepare(self, _det, mock_disco):
         ifaces = []
         plugins = mock_disco.PluginsRegistry.find_all()
-        _, stdout, _, _ = self._call(['plugins', '--init', '--prepare'])
+
+        stdout = six.StringIO()
+        with test_util.patch_get_utility_with_stdout(stdout=stdout):
+            _, stdout, _, _ = self._call(['plugins', '--init', '--prepare'], stdout)
+
         plugins.visible.assert_called_once_with()
         plugins.visible().ifaces.assert_called_once_with(ifaces)
         filtered = plugins.visible().ifaces()
@@ -647,7 +867,7 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
         self.assertRaises(
             errors.Error, self._call,
             'certonly --csr {0}'.format(
-                test_util.vector_path('csr-nonames.pem')).split())
+                test_util.vector_path('csr-nonames_512.pem')).split())
 
     def test_csr_with_inconsistent_domains(self):
         self.assertRaises(
@@ -680,11 +900,12 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
     @test_util.patch_get_utility()
     def test_certonly_new_request_success(self, mock_get_utility, mock_notAfter):
         cert_path = '/etc/letsencrypt/live/foo.bar'
+        key_path = '/etc/letsencrypt/live/baz.qux'
         date = '1970-01-01'
         mock_notAfter().date.return_value = date
 
         mock_lineage = mock.MagicMock(cert=cert_path, fullchain=cert_path,
-                                      fullchain_path=cert_path)
+                                      fullchain_path=cert_path, key_path=key_path)
         mock_client = mock.MagicMock()
         mock_client.obtain_and_enroll_certificate.return_value = mock_lineage
         self._certonly_new_request_common(mock_client)
@@ -693,6 +914,7 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
         cert_msg = mock_get_utility().add_message.call_args_list[0][0][0]
         self.assertTrue(cert_path in cert_msg)
         self.assertTrue(date in cert_msg)
+        self.assertTrue(key_path in cert_msg)
         self.assertTrue(
             'donate' in mock_get_utility().add_message.call_args[0][0])
 
@@ -703,9 +925,10 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
                           self._certonly_new_request_common, mock_client)
 
     def _test_renewal_common(self, due_for_renewal, extra_args, log_out=None,
-                             args=None, should_renew=True, error_expected=False):
+                             args=None, should_renew=True, error_expected=False,
+                                 quiet_mode=False):
         # pylint: disable=too-many-locals,too-many-arguments
-        cert_path = test_util.vector_path('cert.pem')
+        cert_path = test_util.vector_path('cert_512.pem')
         chain_path = '/etc/letsencrypt/live/foo.bar/fullchain.pem'
         mock_lineage = mock.MagicMock(cert=cert_path, fullchain=chain_path,
                                       cert_path=cert_path, fullchain_path=chain_path)
@@ -715,15 +938,23 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
         mock_certr = mock.MagicMock()
         mock_key = mock.MagicMock(pem='pem_key')
         mock_client = mock.MagicMock()
-        stdout = None
+        stdout = six.StringIO()
         mock_client.obtain_certificate.return_value = (mock_certr, 'chain',
                                                        mock_key, 'csr')
+
+        def write_msg(message, *args, **kwargs):
+            """Write message to stdout."""
+            _, _ = args, kwargs
+            stdout.write(message)
+
         try:
             with mock.patch('certbot.cert_manager.find_duplicative_certs') as mock_fdc:
                 mock_fdc.return_value = (mock_lineage, None)
                 with mock.patch('certbot.main._init_le_client') as mock_init:
                     mock_init.return_value = mock_client
                     with test_util.patch_get_utility() as mock_get_utility:
+                        if not quiet_mode:
+                            mock_get_utility().notification.side_effect = write_msg
                         with mock.patch('certbot.main.renewal.OpenSSL') as mock_ssl:
                             mock_latest = mock.MagicMock()
                             mock_latest.get_issuer.return_value = "Fake fake"
@@ -734,7 +965,7 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
                                 if extra_args:
                                     args += extra_args
                                 try:
-                                    ret, stdout, _, _ = self._call(args)
+                                    ret, stdout, _, _ = self._call(args, stdout)
                                     if ret:
                                         print("Returned", ret)
                                         raise AssertionError(ret)
@@ -754,7 +985,7 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
             raise
         finally:
             if log_out:
-                with open(os.path.join(self.logs_dir, "letsencrypt.log")) as lf:
+                with open(os.path.join(self.config.logs_dir, "letsencrypt.log")) as lf:
                     self.assertTrue(log_out in lf.read())
 
         return mock_lineage, mock_get_utility, stdout
@@ -786,58 +1017,45 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
 
     def _dump_log(self):
         print("Logs:")
-        log_path = os.path.join(self.logs_dir, "letsencrypt.log")
+        log_path = os.path.join(self.config.logs_dir, "letsencrypt.log")
         if os.path.exists(log_path):
             with open(log_path) as lf:
                 print(lf.read())
 
     def test_renew_verb(self):
-        test_util.make_lineage(self, 'sample-renewal.conf')
+        test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
         args = ["renew", "--dry-run", "-tvv"]
         self._test_renewal_common(True, [], args=args, should_renew=True)
 
     def test_quiet_renew(self):
-        test_util.make_lineage(self, 'sample-renewal.conf')
+        test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
         args = ["renew", "--dry-run"]
         _, _, stdout = self._test_renewal_common(True, [], args=args, should_renew=True)
         out = stdout.getvalue()
         self.assertTrue("renew" in out)
 
         args = ["renew", "--dry-run", "-q"]
-        _, _, stdout = self._test_renewal_common(True, [], args=args, should_renew=True)
+        _, _, stdout = self._test_renewal_common(True, [], args=args,
+                                                 should_renew=True, quiet_mode=True)
         out = stdout.getvalue()
         self.assertEqual("", out)
 
     def test_renew_hook_validation(self):
-        test_util.make_lineage(self, 'sample-renewal.conf')
+        test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
         args = ["renew", "--dry-run", "--post-hook=no-such-command"]
         self._test_renewal_common(True, [], args=args, should_renew=False,
                                   error_expected=True)
 
     def test_renew_no_hook_validation(self):
-        test_util.make_lineage(self, 'sample-renewal.conf')
+        test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
         args = ["renew", "--dry-run", "--post-hook=no-such-command",
                 "--disable-hook-validation"]
         with mock.patch("certbot.hooks.post_hook"):
             self._test_renewal_common(True, [], args=args, should_renew=True,
                                       error_expected=False)
 
-    @mock.patch("certbot.cli.set_by_cli")
-    def test_ancient_webroot_renewal_conf(self, mock_set_by_cli):
-        mock_set_by_cli.return_value = False
-        rc_path = test_util.make_lineage(self, 'sample-renewal-ancient.conf')
-        args = mock.MagicMock(account=None, config_dir=self.config_dir,
-                              logs_dir=self.logs_dir, work_dir=self.work_dir,
-                              email=None, webroot_path=None)
-        config = configuration.NamespaceConfig(args)
-        lineage = storage.RenewableCert(rc_path, config)
-        renewalparams = lineage.configuration["renewalparams"]
-        # pylint: disable=protected-access
-        renewal._restore_webroot_config(config, renewalparams)
-        self.assertEqual(config.webroot_path, ["/var/www/"])
-
     def test_renew_verb_empty_config(self):
-        rd = os.path.join(self.config_dir, 'renewal')
+        rd = os.path.join(self.config.config_dir, 'renewal')
         if not os.path.exists(rd):
             os.makedirs(rd)
         with open(os.path.join(rd, 'empty.conf'), 'w'):
@@ -846,7 +1064,7 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
         self._test_renewal_common(False, [], args=args, should_renew=False, error_expected=True)
 
     def test_renew_with_certname(self):
-        test_util.make_lineage(self, 'sample-renewal.conf')
+        test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
         self._test_renewal_common(True, [], should_renew=True,
             args=['renew', '--dry-run', '--cert-name', 'sample-renewal'])
 
@@ -856,7 +1074,7 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
             error_expected=True)
 
     def _make_dummy_renewal_config(self):
-        renewer_configs_dir = os.path.join(self.config_dir, 'renewal')
+        renewer_configs_dir = os.path.join(self.config.config_dir, 'renewal')
         os.makedirs(renewer_configs_dir)
         with open(os.path.join(renewer_configs_dir, 'test.conf'), 'w') as f:
             f.write("My contents don't matter")
@@ -974,7 +1192,7 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
         chain = 'chain'
         mock_client = mock.MagicMock()
         mock_client.obtain_certificate_from_csr.return_value = (certr, chain)
-        cert_path = '/etc/letsencrypt/live/example.com/cert.pem'
+        cert_path = '/etc/letsencrypt/live/example.com/cert_512.pem'
         full_path = '/etc/letsencrypt/live/example.com/fullchain.pem'
         mock_client.save_certificate.return_value = cert_path, None, full_path
         with mock.patch('certbot.main._init_le_client') as mock_init:
@@ -1001,6 +1219,7 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
         mock_get_utility = self._test_certonly_csr_common()
         cert_msg = mock_get_utility().add_message.call_args_list[0][0][0]
         self.assertTrue('fullchain.pem' in cert_msg)
+        self.assertFalse('Your key file has been saved at' in cert_msg)
         self.assertTrue(
             'donate' in mock_get_utility().add_message.call_args[0][0])
 
@@ -1010,23 +1229,35 @@ class MainTest(test_util.TempDirTestCase):  # pylint: disable=too-many-public-me
         self.assertTrue(
             'dry run' in mock_get_utility().add_message.call_args[0][0])
 
+    @mock.patch('certbot.main._delete_if_appropriate')
     @mock.patch('certbot.main.client.acme_client')
-    def test_revoke_with_key(self, mock_acme_client):
+    def test_revoke_with_key(self, mock_acme_client,
+            mock_delete_if_appropriate):
+        mock_delete_if_appropriate.return_value = False
         server = 'foo.bar'
-        self._call_no_clientmock(['--cert-path', CERT, '--key-path', KEY,
+        self._call_no_clientmock(['--cert-path', SS_CERT_PATH, '--key-path', RSA2048_KEY_PATH,
                                  '--server', server, 'revoke'])
-        with open(KEY, 'rb') as f:
+        with open(RSA2048_KEY_PATH, 'rb') as f:
             mock_acme_client.Client.assert_called_once_with(
                 server, key=jose.JWK.load(f.read()), net=mock.ANY)
-        with open(CERT, 'rb') as f:
+        with open(SS_CERT_PATH, 'rb') as f:
             cert = crypto_util.pyopenssl_load_certificate(f.read())[0]
             mock_revoke = mock_acme_client.Client().revoke
             mock_revoke.assert_called_once_with(
                     jose.ComparableX509(cert),
                     mock.ANY)
 
+    def test_revoke_with_key_mismatch(self):
+        server = 'foo.bar'
+        self.assertRaises(errors.Error, self._call_no_clientmock,
+            ['--cert-path', CERT, '--key-path', KEY,
+                                 '--server', server, 'revoke'])
+
+    @mock.patch('certbot.main._delete_if_appropriate')
     @mock.patch('certbot.main._determine_account')
-    def test_revoke_without_key(self, mock_determine_account):
+    def test_revoke_without_key(self, mock_determine_account,
+            mock_delete_if_appropriate):
+        mock_delete_if_appropriate.return_value = False
         mock_determine_account.return_value = (mock.MagicMock(), None)
         _, _, _, client = self._call(['--cert-path', CERT, 'revoke'])
         with open(CERT) as f:
@@ -1127,7 +1358,7 @@ class UnregisterTest(unittest.TestCase):
     def test_abort_unregister(self):
         self.mocks['account'].AccountFileStorage.return_value = mock.Mock()
 
-        util_mock = self.mocks['get_utility'].return_value
+        util_mock = self.mocks['get_utility']()
         util_mock.yesno.return_value = False
 
         config = mock.Mock()
@@ -1171,6 +1402,28 @@ class UnregisterTest(unittest.TestCase):
         m = "Could not find existing account to deactivate."
         self.assertEqual(res, m)
         self.assertFalse(cb_client.acme.deactivate_registration.called)
+
+
+class MakeOrVerifyNeededDirs(test_util.ConfigTestCase):
+    """Tests for certbot.main.make_or_verify_needed_dirs."""
+
+    @mock.patch("certbot.main.util")
+    def test_it(self, mock_util):
+        main.make_or_verify_needed_dirs(self.config)
+        for core_dir in (self.config.config_dir, self.config.work_dir,):
+            mock_util.set_up_core_dir.assert_any_call(
+                core_dir, constants.CONFIG_DIRS_MODE,
+                os.geteuid(), self.config.strict_permissions
+            )
+
+        hook_dirs = (self.config.renewal_pre_hooks_dir,
+                     self.config.renewal_deploy_hooks_dir,
+                     self.config.renewal_post_hooks_dir,)
+        for hook_dir in hook_dirs:
+            # default mode of 755 is used
+            mock_util.make_or_verify_dir.assert_any_call(
+                hook_dir, uid=os.geteuid(),
+                strict=self.config.strict_permissions)
 
 
 if __name__ == '__main__':

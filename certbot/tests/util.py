@@ -3,6 +3,7 @@
 .. warning:: This module is not part of the public API.
 
 """
+import multiprocessing
 import os
 import pkg_resources
 import shutil
@@ -13,12 +14,16 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 import mock
 import OpenSSL
+import six
+from six.moves import reload_module  # pylint: disable=import-error
 
 from acme import jose
 
 from certbot import constants
 from certbot import interfaces
 from certbot import storage
+from certbot import util
+from certbot import configuration
 
 from certbot.display import util as display_util
 
@@ -106,12 +111,13 @@ def skip_unless(condition, reason):  # pragma: no cover
         return lambda cls: None
 
 
-def make_lineage(self, testfile):
+def make_lineage(config_dir, testfile):
     """Creates a lineage defined by testfile.
 
     This creates the archive, live, and renewal directories if
     necessary and creates a simple lineage.
 
+    :param str config_dir: path to the configuration directory
     :param str testfile: configuration file to base the lineage on
 
     :returns: path to the renewal conf file for the created lineage
@@ -121,11 +127,11 @@ def make_lineage(self, testfile):
     lineage_name = testfile[:-len('.conf')]
 
     conf_dir = os.path.join(
-        self.config_dir, constants.RENEWAL_CONFIGS_DIR)
+        config_dir, constants.RENEWAL_CONFIGS_DIR)
     archive_dir = os.path.join(
-        self.config_dir, constants.ARCHIVE_DIR, lineage_name)
+        config_dir, constants.ARCHIVE_DIR, lineage_name)
     live_dir = os.path.join(
-        self.config_dir, constants.LIVE_DIR, lineage_name)
+        config_dir, constants.LIVE_DIR, lineage_name)
 
     for directory in (archive_dir, conf_dir, live_dir,):
         if not os.path.exists(directory):
@@ -140,11 +146,11 @@ def make_lineage(self, testfile):
         os.symlink(os.path.join(archive_dir, '{0}1.pem'.format(kind)),
                    os.path.join(live_dir, '{0}.pem'.format(kind)))
 
-    conf_path = os.path.join(self.config_dir, conf_dir, testfile)
+    conf_path = os.path.join(config_dir, conf_dir, testfile)
     with open(vector_path(testfile)) as src:
         with open(conf_path, 'w') as dst:
             dst.writelines(
-                line.replace('MAGICDIR', self.config_dir) for line in src)
+                line.replace('MAGICDIR', config_dir) for line in src)
 
     return conf_path
 
@@ -164,12 +170,36 @@ def patch_get_utility(target='zope.component.getUtility'):
     return mock.patch(target, new_callable=_create_get_utility_mock)
 
 
+def patch_get_utility_with_stdout(target='zope.component.getUtility',
+                                  stdout=None):
+    """Patch zope.component.getUtility to use a special mock IDisplay.
+
+    The mock IDisplay works like a regular mock object, except it also
+    also asserts that methods are called with valid arguments.
+
+    The `message` argument passed to the IDisplay methods is passed to
+    stdout's write method.
+
+    :param str target: path to patch
+    :param object stdout: object to write standard output to; it is
+        expected to have a `write` method
+
+    :returns: mock zope.component.getUtility
+    :rtype: mock.MagicMock
+
+    """
+    stdout = stdout if stdout else six.StringIO()
+
+    freezable_mock = _create_get_utility_mock_with_stdout(stdout)
+    return mock.patch(target, new=freezable_mock)
+
+
 class FreezableMock(object):
     """Mock object with the ability to freeze attributes.
 
     This class works like a regular mock.MagicMock object, except
-    attributes and behavior can be set and frozen so they cannot be
-    changed during tests.
+    attributes and behavior set before the object is frozen cannot
+    be changed during tests.
 
     If a func argument is provided to the constructor, this function
     is called first when an instance of FreezableMock is called,
@@ -177,10 +207,12 @@ class FreezableMock(object):
     value of func is ignored.
 
     """
-    def __init__(self, frozen=False, func=None):
+    def __init__(self, frozen=False, func=None, return_value=mock.sentinel.DEFAULT):
         self._frozen_set = set() if frozen else set(('freeze',))
         self._func = func
         self._mock = mock.MagicMock()
+        if return_value != mock.sentinel.DEFAULT:
+            self.return_value = return_value
         self._frozen = frozen
 
     def freeze(self):
@@ -198,17 +230,38 @@ class FreezableMock(object):
                 return object.__getattribute__(self, name)
             except AttributeError:
                 return False
+        elif name in ('return_value', 'side_effect',):
+            return getattr(object.__getattribute__(self, '_mock'), name)
         elif name == '_frozen_set' or name in self._frozen_set:
             return object.__getattribute__(self, name)
         else:
             return getattr(object.__getattribute__(self, '_mock'), name)
 
     def __setattr__(self, name, value):
+        """ Before it is frozen, attributes are set on the FreezableMock
+        instance and added to the _frozen_set. Attributes in the _frozen_set
+        cannot be changed after the FreezableMock is frozen. In this case,
+        they are set on the underlying _mock.
+
+        In cases of return_value and side_effect, these attributes are always
+        passed through to the instance's _mock and added to the _frozen_set
+        before the object is frozen.
+
+        """
         if self._frozen:
-            return setattr(self._mock, name, value)
-        elif name != '_frozen_set':
+            if name in self._frozen_set:
+                raise AttributeError('Cannot change frozen attribute ' + name)
+            else:
+                return setattr(self._mock, name, value)
+
+        if name != '_frozen_set':
             self._frozen_set.add(name)
-        return object.__setattr__(self, name, value)
+
+        if name in ('return_value', 'side_effect'):
+            return setattr(self._mock, name, value)
+
+        else:
+            return object.__setattr__(self, name, value)
 
 
 def _create_get_utility_mock():
@@ -218,7 +271,37 @@ def _create_get_utility_mock():
             frozen_mock = FreezableMock(frozen=True, func=_assert_valid_call)
             setattr(display, name, frozen_mock)
     display.freeze()
-    return mock.MagicMock(return_value=display)
+    return FreezableMock(frozen=True, return_value=display)
+
+
+def _create_get_utility_mock_with_stdout(stdout):
+    def _write_msg(message, *unused_args, **unused_kwargs):
+        """Write to message to stdout.
+        """
+        if message:
+            stdout.write(message)
+
+    def mock_method(*args, **kwargs):
+        """
+        Mock function for IDisplay methods.
+        """
+        _assert_valid_call(args, kwargs)
+        _write_msg(*args, **kwargs)
+
+
+    display = FreezableMock()
+    for name in interfaces.IDisplay.names():  # pylint: disable=no-member
+        if name == 'notification':
+            frozen_mock = FreezableMock(frozen=True,
+                                        func=_write_msg)
+            setattr(display, name, frozen_mock)
+        else:
+            frozen_mock = FreezableMock(frozen=True,
+                                        func=mock_method)
+            setattr(display, name, frozen_mock)
+    display.freeze()
+
+    return FreezableMock(frozen=True, return_value=display)
 
 
 def _assert_valid_call(*args, **kwargs):
@@ -241,3 +324,64 @@ class TempDirTestCase(unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.tempdir)
+
+class ConfigTestCase(TempDirTestCase):
+    """Test class which sets up a NamespaceConfig object.
+
+    """
+    def setUp(self):
+        super(ConfigTestCase, self).setUp()
+        self.config = configuration.NamespaceConfig(
+            mock.MagicMock(**constants.CLI_DEFAULTS)
+        )
+        self.config.verb = "certonly"
+        self.config.config_dir = os.path.join(self.tempdir, 'config')
+        self.config.work_dir = os.path.join(self.tempdir, 'work')
+        self.config.logs_dir = os.path.join(self.tempdir, 'logs')
+        self.config.cert_path = constants.CLI_DEFAULTS['auth_cert_path']
+        self.config.fullchain_path = constants.CLI_DEFAULTS['auth_chain_path']
+        self.config.chain_path = constants.CLI_DEFAULTS['auth_chain_path']
+        self.config.server = "example.com"
+
+def lock_and_call(func, lock_path):
+    """Grab a lock for lock_path and call func.
+
+    :param callable func: object to call after acquiring the lock
+    :param str lock_path: path to file or directory to lock
+
+    """
+    # Reload module to reset internal _LOCKS dictionary
+    reload_module(util)
+
+    # start child and wait for it to grab the lock
+    cv = multiprocessing.Condition()
+    cv.acquire()
+    child_args = (cv, lock_path,)
+    child = multiprocessing.Process(target=hold_lock, args=child_args)
+    child.start()
+    cv.wait()
+
+    # call func and terminate the child
+    func()
+    cv.notify()
+    cv.release()
+    child.join()
+    assert child.exitcode == 0
+
+
+def hold_lock(cv, lock_path):  # pragma: no cover
+    """Acquire a file lock at lock_path and wait to release it.
+
+    :param multiprocessing.Condition cv: condition for synchronization
+    :param str lock_path: path to the file lock
+
+    """
+    from certbot import lock
+    if os.path.isdir(lock_path):
+        my_lock = lock.lock_dir(lock_path)
+    else:
+        my_lock = lock.LockFile(lock_path)
+    cv.acquire()
+    cv.notify()
+    cv.wait()
+    my_lock.release()

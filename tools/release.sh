@@ -44,8 +44,14 @@ export GPG_TTY=$(tty)
 # port for a local Python Package Index (used in testing)
 PORT=${PORT:-1234}
 
-# subpackages to be released
-SUBPKGS=${SUBPKGS:-"acme certbot-apache certbot-nginx"}
+# subpackages to be released (the way developers think about them)
+SUBPKGS_IN_AUTO_NO_CERTBOT="acme certbot-apache certbot-nginx"
+SUBPKGS_NOT_IN_AUTO="certbot-dns-cloudflare certbot-dns-cloudxns certbot-dns-digitalocean certbot-dns-dnsimple certbot-dns-dnsmadeeasy certbot-dns-google certbot-dns-luadns certbot-dns-nsone certbot-dns-rfc2136 certbot-dns-route53"
+
+# subpackages to be released (the way the script thinks about them)
+SUBPKGS_IN_AUTO="certbot $SUBPKGS_IN_AUTO_NO_CERTBOT"
+SUBPKGS_NO_CERTBOT="$SUBPKGS_IN_AUTO_NO_CERTBOT $SUBPKGS_NOT_IN_AUTO"
+SUBPKGS="$SUBPKGS_IN_AUTO $SUBPKGS_NOT_IN_AUTO"
 subpkgs_modules="$(echo $SUBPKGS | sed s/-/_/g)"
 # certbot_compatibility_test is not packaged because:
 # - it is not meant to be used by anyone else than Certbot devs
@@ -83,21 +89,22 @@ git checkout "$RELEASE_BRANCH"
 
 SetVersion() {
     ver="$1"
-    for pkg_dir in $SUBPKGS certbot-compatibility-test
+    # bumping Certbot's version number is done differently
+    for pkg_dir in $SUBPKGS_NO_CERTBOT certbot-compatibility-test
     do
       sed -i "s/^version.*/version = '$ver'/" $pkg_dir/setup.py
     done
     sed -i "s/^__version.*/__version__ = '$ver'/" certbot/__init__.py
 
     # interactive user input
-    git add -p certbot $SUBPKGS certbot-compatibility-test
+    git add -p $SUBPKGS certbot-compatibility-test
 
 }
 
 SetVersion "$version"
 
 echo "Preparing sdists and wheels"
-for pkg_dir in . $SUBPKGS
+for pkg_dir in . $SUBPKGS_NO_CERTBOT
 do
   cd $pkg_dir
 
@@ -118,7 +125,7 @@ done
 
 mkdir "dist.$version"
 mv dist "dist.$version/certbot"
-for pkg_dir in $SUBPKGS
+for pkg_dir in $SUBPKGS_NO_CERTBOT
 do
   mv $pkg_dir/dist "dist.$version/$pkg_dir/"
 done
@@ -140,7 +147,7 @@ pip install -U pip
 pip install \
   --no-cache-dir \
   --extra-index-url http://localhost:$PORT \
-  certbot $SUBPKGS
+  $SUBPKGS
 # stop local PyPI
 kill $!
 cd ~-
@@ -160,28 +167,25 @@ mkdir kgs
 kgs="kgs/$version"
 pip freeze | tee $kgs
 pip install nose
-for module in certbot $subpkgs_modules ; do
+for module in $subpkgs_modules ; do
     echo testing $module
     nosetests $module
 done
 cd ~-
 
 # pin pip hashes of the things we just built
-for pkg in acme certbot certbot-apache certbot-nginx ; do
+for pkg in $SUBPKGS_IN_AUTO ; do
     echo $pkg==$version \\
     pip hash dist."$version/$pkg"/*.{whl,gz} | grep "^--hash" | python2 -c 'from sys import stdin; input = stdin.read(); print "   ", input.replace("\n--hash", " \\\n    --hash"),'
-done > /tmp/hashes.$$
+done > letsencrypt-auto-source/pieces/certbot-requirements.txt
 deactivate
 
-if ! wc -l /tmp/hashes.$$ | grep -qE "^\s*12 " ; then
+# there should be one requirement specifier and two hashes for each subpackage
+expected_count=$(expr $(echo $SUBPKGS_IN_AUTO | wc -w) \* 3)
+if ! wc -l letsencrypt-auto-source/pieces/certbot-requirements.txt | grep -qE "^\s*$expected_count " ; then
     echo Unexpected pip hash output
     exit 1
 fi
-
-# perform hideous surgery on requirements.txt...
-head -n -12 letsencrypt-auto-source/pieces/letsencrypt-auto-requirements.txt > /tmp/req.$$
-cat /tmp/hashes.$$ >> /tmp/req.$$
-cp /tmp/req.$$ letsencrypt-auto-source/pieces/letsencrypt-auto-requirements.txt
 
 # ensure we have the latest built version of leauto
 letsencrypt-auto-source/build.py

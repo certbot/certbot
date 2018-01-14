@@ -2,6 +2,315 @@
 
 Certbot adheres to [Semantic Versioning](http://semver.org/).
 
+## 0.19.0 - 2017-10-04
+
+### Added
+
+* Certbot now has renewal hook directories where executable files can be placed
+  for Certbot to run with the renew subcommand. Pre-hooks, deploy-hooks, and
+  post-hooks can be specified in the renewal-hooks/pre, renewal-hooks/deploy,
+  and renewal-hooks/post directories respectively in Certbot's configuration
+  directory (which is /etc/letsencrypt by default). Certbot will automatically
+  create these directories when it is run if they do not already exist.
+* After revoking a certificate with the revoke subcommand, Certbot will offer
+  to delete the lineage associated with the certificate. When Certbot is run
+  with --non-interactive, it will automatically try to delete the associated
+  lineage.
+* When using Certbot's Google Cloud DNS plugin on Google Compute Engine, you no
+  longer have to provide a credential file to Certbot if you have configured
+  sufficient permissions for the instance which Certbot can automatically
+  obtain using Google's metadata service.
+
+### Changed
+
+* When deleting certificates interactively using the delete subcommand, Certbot
+  will now allow you to select multiple lineages to be deleted at once.
+* Certbot's Apache plugin no longer always parses Apache's sites-available on
+  Debian based systems and instead only parses virtual hosts included in your
+  Apache configuration. You can provide an additional directory for Certbot to
+  parse using the command line flag --apache-vhost-root.
+
+### Fixed
+
+* The plugins subcommand can now be run without root access.
+* certbot-auto now includes a timeout when updating itself so it no longer
+  hangs indefinitely when it is unable to connect to the external server.
+* An issue where Certbot's Apache plugin would sometimes fail to deploy a
+  certificate on Debian based systems if mod_ssl wasn't already enabled has
+  been resolved.
+* A bug in our Docker image where the certificates subcommand could not report
+  if certificates maintained by Certbot had been revoked has been fixed.
+* Certbot's RFC 2136 DNS plugin (for use with software like BIND) now properly
+  performs DNS challenges when the domain being verified contains a CNAME
+  record.
+
+More details about these changes can be found on our GitHub repo:
+https://github.com/certbot/certbot/milestone/43?closed=1
+
+## 0.18.2 - 2017-09-20
+
+### Fixed
+
+* An issue where Certbot's ACME module would raise an AttributeError trying to
+  create self-signed certificates when used with pyOpenSSL 17.3.0 has been
+  resolved. For Certbot users with this version of pyOpenSSL, this caused
+  Certbot to crash when performing a TLS SNI challenge or when the Nginx plugin
+  tried to create an SSL server block.
+
+More details about these changes can be found on our GitHub repo:
+https://github.com/certbot/certbot/milestone/46?closed=1
+
+## 0.18.1 - 2017-09-08
+
+### Fixed
+
+* If certbot-auto was running as an unprivileged user and it upgraded from
+  0.17.0 to 0.18.0, it would crash with a permissions error and would need to
+  be run again to successfully complete the upgrade. This has been fixed and
+  certbot-auto should upgrade cleanly to 0.18.1.
+* Certbot usually uses "certbot-auto" or "letsencrypt-auto" in error messages
+  and the User-Agent string instead of "certbot" when you are using one of
+  these wrapper scripts. Proper detection of this was broken with Certbot's new
+  installation path in /opt in 0.18.0 but this problem has been resolved.
+
+More details about these changes can be found on our GitHub repo:
+https://github.com/certbot/certbot/milestone/45?closed=1
+
+## 0.18.0 - 2017-09-06
+
+### Added
+
+* The Nginx plugin now configures Nginx to use 2048-bit Diffie-Hellman
+  parameters. Java 6 clients do not support Diffie-Hellman parameters larger
+  than 1024 bits, so if you need to support these clients you will need to
+  manually modify your Nginx configuration after using the Nginx installer.
+
+### Changed
+
+* certbot-auto now installs Certbot in directories under `/opt/eff.org`. If you
+  had an existing installation from certbot-auto, a symlink is created to the
+  new directory. You can configure certbot-auto to use a different path by
+  setting the environment variable VENV_PATH.
+* The Nginx plugin can now be selected in Certbot's interactive output.
+* Output verbosity of renewal failures when running with `--quiet` has been
+  reduced.
+* The default revocation reason shown in Certbot help output now is a human
+  readable string instead of a numerical code.
+* Plugin selection is now included in normal terminal output.
+
+### Fixed
+
+* A newer version of ConfigArgParse is now installed when using certbot-auto
+  causing values set to false in a Certbot INI configuration file to be handled
+  intuitively. Setting a boolean command line flag to false is equivalent to
+  not including it in the configuration file at all.
+* New naming conventions preventing certbot-auto from installing OS
+  dependencies on Fedora 26 have been resolved.
+
+More details about these changes can be found on our GitHub repo:
+https://github.com/certbot/certbot/milestone/42?closed=1
+
+## 0.17.0 - 2017-08-02
+
+### Added
+
+* Support in our nginx plugin for modifying SSL server blocks that do
+  not contain certificate or key directives.
+* A `--max-log-backups` flag to allow users to configure or even completely
+  disable Certbot's built in log rotation.
+* A `--user-agent-comment` flag to allow people who build tools around Certbot
+  to differentiate their user agent string by adding a comment to its default
+  value.
+
+### Changed
+
+* Due to some awesome work by
+  [cryptography project](https://github.com/pyca/cryptography), compilation can
+  now be avoided on most systems when using certbot-auto. This eliminates many
+  problems people have had in the past such as running out of memory, having
+  invalid headers/libraries, and changes to the OS packages on their system
+  after compilation breaking Certbot.
+* The `--renew-hook` flag has been hidden in favor of `--deploy-hook`. This new
+  flag works exactly the same way except it is always run when a certificate is
+  issued rather than just when it is renewed.
+* We have started printing deprecation warnings in certbot-auto for
+  experimentally supported systems with OS packages available.
+* A certificate lineage's name is included in error messages during renewal.
+
+### Fixed
+
+* Encoding errors that could occur when parsing error messages from the ACME
+  server containing Unicode have been resolved.
+* certbot-auto no longer prints misleading messages about there being a newer
+  pip version available when installation fails.
+* Certbot's ACME library now properly extracts domains from critical SAN
+  extensions.
+
+More details about these changes can be found on our GitHub repo:
+https://github.com/certbot/certbot/issues?q=is%3Aissue+milestone%3A0.17.0+is%3Aclosed
+
+## 0.16.0 - 2017-07-05
+
+### Added
+
+* A plugin for performing DNS challenges using dynamic DNS updates as defined
+  in RFC 2316. This plugin is packaged separately from Certbot and is available
+  at https://pypi.python.org/pypi/certbot-dns-rfc2136. It supports Python 2.6,
+  2.7, and 3.3+. At this time, there isn't a good way to install this plugin
+  when using certbot-auto, but this should change in the near future.
+* Plugins for performing DNS challenges for the providers
+  [DNS Made Easy](https://pypi.python.org/pypi/certbot-dns-dnsmadeeasy) and
+  [LuaDNS](https://pypi.python.org/pypi/certbot-dns-luadns). These plugins are
+  packaged separately from Certbot and support Python 2.7 and 3.3+. Currently,
+  there isn't a good way to install these plugins when using certbot-auto,
+  but that should change soon.
+* Support for performing TLS-SNI-01 challenges when using the manual plugin.
+* Automatic detection of Arch Linux in the Apache plugin providing better
+  default settings for the plugin.
+
+### Changed
+
+* The text of the interactive question about whether a redirect from HTTP to
+  HTTPS should be added by Certbot has been rewritten to better explain the
+  choices to the user.
+* Simplified HTTP challenge instructions in the manual plugin.
+
+### Fixed
+
+* Problems performing a dry run when using the Nginx plugin have been fixed.
+* Resolved an issue where certbot-dns-digitalocean's test suite would sometimes
+  fail when ran using Python 3.
+* On some systems, previous versions of certbot-auto would error out with a
+  message about a missing hash for setuptools. This has been fixed.
+* A bug where Certbot would sometimes not print a space at the end of an
+  interactive prompt has been resolved.
+* Nonfatal tracebacks are no longer shown in rare cases where Certbot
+  encounters an exception trying to close its TCP connection with the ACME
+  server.
+
+More details about these changes can be found on our GitHub repo:
+https://github.com/certbot/certbot/issues?q=is%3Aissue+milestone%3A0.16.0+is%3Aclosed
+
+## 0.15.0 - 2017-06-08
+
+### Added
+
+* Plugins for performing DNS challenges for popular providers. Like the Apache
+  and Nginx plugins, these plugins are packaged separately and not included in
+  Certbot by default. So far, we have plugins for
+  [Amazon Route 53](https://pypi.python.org/pypi/certbot-dns-route53),
+  [Cloudflare](https://pypi.python.org/pypi/certbot-dns-cloudflare),
+  [DigitalOcean](https://pypi.python.org/pypi/certbot-dns-digitalocean), and
+  [Google Cloud](https://pypi.python.org/pypi/certbot-dns-google) which all
+  work on Python 2.6, 2.7, and 3.3+. Additionally, we have plugins for
+  [CloudXNS](https://pypi.python.org/pypi/certbot-dns-cloudxns),
+  [DNSimple](https://pypi.python.org/pypi/certbot-dns-dnsimple),
+  [NS1](https://pypi.python.org/pypi/certbot-dns-nsone) which work on Python
+  2.7 and 3.3+ (and not 2.6). Currently, there isn't a good way to install
+  these plugins when using `certbot-auto`, but that should change soon.
+* IPv6 support in the standalone plugin. When performing a challenge, the
+  standalone plugin automatically handles listening for IPv4/IPv6 traffic based
+  on the configuration of your system.
+* A mechanism for keeping your Apache and Nginx SSL/TLS configuration up to
+  date. When the Apache or Nginx plugins are used, they place SSL/TLS
+  configuration options in the root of Certbot's config directory
+  (`/etc/letsencrypt` by default). Now when a new version of these plugins run
+  on your system, they will automatically update the file to the newest
+  version if it is unmodified. If you manually modified the file, Certbot will
+  display a warning giving you a path to the updated file which you can use as
+  a reference to manually update your modified copy.
+* `--http-01-address` and `--tls-sni-01-address` flags for controlling the
+  address Certbot listens on when using the standalone plugin.
+* The command `certbot certificates` that lists certificates managed by Certbot
+  now performs additional validity checks to notify you if your files have
+  become corrupted.
+
+### Changed
+
+* Messages custom hooks print to `stdout` are now displayed by Certbot when not
+  running in `--quiet` mode.
+* `jwk` and `alg` fields in JWS objects have been moved into the protected
+  header causing Certbot to more closely follow the latest version of the ACME
+  spec.
+
+### Fixed
+
+* Permissions on renewal configuration files are now properly preserved when
+  they are updated.
+* A bug causing Certbot to display strange defaults in its help output when
+  using Python <= 2.7.4 has been fixed.
+* Certbot now properly handles mixed case domain names found in custom CSRs.
+* A number of poorly worded prompts and error messages.
+
+### Removed
+
+* Support for OpenSSL 1.0.0 in `certbot-auto` has been removed as we now pin a
+  newer version of `cryptography` which dropped support for this version.
+
+More details about these changes can be found on our GitHub repo:
+https://github.com/certbot/certbot/issues?q=is%3Aissue+milestone%3A0.15.0+is%3Aclosed
+
+## 0.14.2 - 2017-05-25
+
+### Fixed
+
+* Certbot 0.14.0 included a bug where Certbot would create a temporary log file
+(usually in /tmp) if the program exited during argument parsing. If a user
+provided -h/--help/help, --version, or an invalid command line argument,
+Certbot would create this temporary log file. This was especially bothersome to
+certbot-auto users as certbot-auto runs `certbot --version` internally to see
+if the script needs to upgrade causing it to create at least one of these files
+on every run. This problem has been resolved.
+
+More details about this change can be found on our GitHub repo:
+https://github.com/certbot/certbot/issues?q=is%3Aissue+milestone%3A0.14.2+is%3Aclosed
+
+## 0.14.1 - 2017-05-16
+
+### Fixed
+
+* Certbot now works with configargparse 0.12.0.
+* Issues with the Apache plugin and Augeas 1.7+ have been resolved.
+* A problem where the Nginx plugin would fail to install certificates on
+systems that had the plugin's SSL/TLS options file from 7+ months ago has been
+fixed.
+
+More details about these changes can be found on our GitHub repo:
+https://github.com/certbot/certbot/issues?q=is%3Aissue+milestone%3A0.14.1+is%3Aclosed
+
+## 0.14.0 - 2017-05-04
+
+### Added
+
+* Python 3.3+ support for all Certbot packages. `certbot-auto` still currently
+only supports Python 2, but the `acme`, `certbot`, `certbot-apache`, and
+`certbot-nginx` packages on PyPI now fully support Python 2.6, 2.7, and 3.3+.
+* Certbot's Apache plugin now handles multiple virtual hosts per file.
+* Lockfiles to prevent multiple versions of Certbot running simultaneously.
+
+### Changed
+
+* When converting an HTTP virtual host to HTTPS in Apache, Certbot only copies
+the virtual host rather than the entire contents of the file it's contained
+in.
+* The Nginx plugin now includes SSL/TLS directives in a separate file located
+in Certbot's configuration directory rather than copying the contents of the
+file into every modified `server` block.
+
+### Fixed
+
+* Ensure logging is configured before parts of Certbot attempt to log any
+messages.
+* Support for the `--quiet` flag in `certbot-auto`.
+* Reverted a change made in a previous release to make the `acme` and `certbot`
+packages always depend on `argparse`. This dependency is conditional again on
+the user's Python version.
+* Small bugs in the Nginx plugin such as properly handling empty `server`
+blocks and setting `server_names_hash_bucket_size` during challenges.
+
+As always, a more complete list of changes can be found on GitHub:
+https://github.com/certbot/certbot/issues?q=is%3Aissue+milestone%3A0.14.0+is%3Aclosed
+
 ## 0.13.0 - 2017-04-06
 
 ### Added

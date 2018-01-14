@@ -66,7 +66,7 @@ class TlsSniPerformTest(util.NginxTest):
         self.sni.add_chall(self.achalls[1])
         mock_choose.return_value = None
         result = self.sni.perform()
-        self.assertTrue(result is None)
+        self.assertFalse(result is None)
 
     def test_perform0(self):
         responses = self.sni.perform()
@@ -89,7 +89,7 @@ class TlsSniPerformTest(util.NginxTest):
 
         # Make sure challenge config is included in main config
         http = self.sni.configurator.parser.parsed[
-            self.sni.configurator.parser.loc["root"]][-1]
+            self.sni.configurator.parser.config_root][-1]
         self.assertTrue(
             util.contains_at_depth(http, ['include', self.sni.challenge_conf], 1))
 
@@ -112,7 +112,7 @@ class TlsSniPerformTest(util.NginxTest):
                 mock_setup_cert.call_args_list[index], mock.call(achall))
 
         http = self.sni.configurator.parser.parsed[
-            self.sni.configurator.parser.loc["root"]][-1]
+            self.sni.configurator.parser.config_root][-1]
         self.assertTrue(['include', self.sni.challenge_conf] in http[1])
         self.assertFalse(
             util.contains_at_depth(http, ['server_name', 'another.alias'], 3))
@@ -125,10 +125,10 @@ class TlsSniPerformTest(util.NginxTest):
         self.sni.add_chall(self.achalls[0])
         self.sni.add_chall(self.achalls[2])
 
-        v_addr1 = [obj.Addr("69.50.225.155", "9000", True, False),
-                   obj.Addr("127.0.0.1", "", False, False)]
-        v_addr2 = [obj.Addr("myhost", "", False, True)]
-        v_addr2_print = [obj.Addr("myhost", "", False, False)]
+        v_addr1 = [obj.Addr("69.50.225.155", "9000", True, False, False, False),
+                   obj.Addr("127.0.0.1", "", False, False, False, False)]
+        v_addr2 = [obj.Addr("myhost", "", False, True, False, False)]
+        v_addr2_print = [obj.Addr("myhost", "", False, False, False, False)]
         ll_addr = [v_addr1, v_addr2]
         self.sni._mod_config(ll_addr)  # pylint: disable=protected-access
 
@@ -137,7 +137,7 @@ class TlsSniPerformTest(util.NginxTest):
         self.sni.configurator.parser.load()
 
         http = self.sni.configurator.parser.parsed[
-            self.sni.configurator.parser.loc["root"]][-1]
+            self.sni.configurator.parser.config_root][-1]
         self.assertTrue(['include', self.sni.challenge_conf] in http[1])
 
         vhosts = self.sni.configurator.parser.get_vhosts()
@@ -154,7 +154,7 @@ class TlsSniPerformTest(util.NginxTest):
         self.assertEqual(len(vhs), 2)
 
     def test_mod_config_fail(self):
-        root = self.sni.configurator.parser.loc["root"]
+        root = self.sni.configurator.parser.config_root
         self.sni.configurator.parser.parsed[root] = [['include', 'foo.conf']]
         # pylint: disable=protected-access
         self.assertRaises(

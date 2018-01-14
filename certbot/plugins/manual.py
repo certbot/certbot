@@ -9,7 +9,36 @@ from acme import challenges
 from certbot import interfaces
 from certbot import errors
 from certbot import hooks
+from certbot import reverter
 from certbot.plugins import common
+
+
+class ManualTlsSni01(common.TLSSNI01):
+    """TLS-SNI-01 authenticator for the Manual plugin
+
+    :ivar configurator: Authenticator object
+    :type configurator: :class:`~certbot.plugins.manual.Authenticator`
+
+    :ivar list achalls: Annotated
+        class:`~certbot.achallenges.KeyAuthorizationAnnotatedChallenge`
+        challenges
+
+    :param list indices: Meant to hold indices of challenges in a
+        larger array. NginxTlsSni01 is capable of solving many challenges
+        at once which causes an indexing issue within NginxConfigurator
+        who must return all responses in order.  Imagine NginxConfigurator
+        maintaining state about where all of the http-01 Challenges,
+        TLS-SNI-01 Challenges belong in the response array.  This is an
+        optional utility.
+
+    :param str challenge_conf: location of the challenge config file
+    """
+
+    def perform(self):
+        """Create the SSL certificates and private keys"""
+
+        for achall in self.achalls:
+            self._setup_challenge_cert(achall)
 
 
 @zope.interface.implementer(interfaces.IAuthenticator)
@@ -28,42 +57,49 @@ class Authenticator(common.Plugin):
     long_description = (
         'Authenticate through manual configuration or custom shell scripts. '
         'When using shell scripts, an authenticator script must be provided. '
-        'The environment variables available to this script are '
-        '$CERTBOT_DOMAIN which contains the domain being authenticated, '
-        '$CERTBOT_VALIDATION which is the validation string, and '
-        '$CERTBOT_TOKEN which is the filename of the resource requested when '
-        'performing an HTTP-01 challenge. An additional cleanup script can '
-        'also be provided and can use the additional variable '
-        '$CERTBOT_AUTH_OUTPUT which contains the stdout output from the auth '
-        'script.')
+        'The environment variables available to this script depend on the '
+        'type of challenge. $CERTBOT_DOMAIN will always contain the domain '
+        'being authenticated. For HTTP-01 and DNS-01, $CERTBOT_VALIDATION '
+        'is the validation string, and $CERTBOT_TOKEN is the filename of the '
+        'resource requested when performing an HTTP-01 challenge. When '
+        'performing a TLS-SNI-01 challenge, $CERTBOT_SNI_DOMAIN will contain '
+        'the SNI name for which the ACME server expects to be presented with '
+        'the self-signed certificate located at $CERTBOT_CERT_PATH. The '
+        'secret key needed to complete the TLS handshake is located at '
+        '$CERTBOT_KEY_PATH. An additional cleanup script can also be '
+        'provided and can use the additional variable $CERTBOT_AUTH_OUTPUT '
+        'which contains the stdout output from the auth script.')
     _DNS_INSTRUCTIONS = """\
 Please deploy a DNS TXT record under the name
 {domain} with the following value:
 
 {validation}
 
-Once this is deployed,"""
+Before continuing, verify the record is deployed."""
     _HTTP_INSTRUCTIONS = """\
-Make sure your web server displays the following content at
-{uri} before continuing:
+Create a file containing just this data:
 
 {validation}
 
-If you don't have HTTP server configured, you can run the following
-command on the target server (as root):
+And make it available on your web server at this URL:
 
-mkdir -p /tmp/certbot/public_html/{achall.URI_ROOT_PATH}
-cd /tmp/certbot/public_html
-printf "%s" {validation} > {achall.URI_ROOT_PATH}/{encoded_token}
-# run only once per server:
-$(command -v python2 || command -v python2.7 || command -v python2.6) -c \\
-"import BaseHTTPServer, SimpleHTTPServer; \\
-s = BaseHTTPServer.HTTPServer(('', {port}), SimpleHTTPServer.SimpleHTTPRequestHandler); \\
-s.serve_forever()" """
+{uri}
+"""
+    _TLSSNI_INSTRUCTIONS = """\
+Configure the service listening on port {port} to present the certificate
+{cert}
+using the secret key
+{key}
+when it receives a TLS ClientHello with the SNI extension set to
+{sni_domain}
+"""
 
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
+        self.reverter = reverter.Reverter(self.config)
+        self.reverter.recovery_routine()
         self.env = dict()
+        self.tls_sni_01 = None
 
     @classmethod
     def add_parser_arguments(cls, add):
@@ -98,11 +134,10 @@ s.serve_forever()" """
 
     def get_chall_pref(self, domain):
         # pylint: disable=missing-docstring,no-self-use,unused-argument
-        return [challenges.HTTP01, challenges.DNS01]
+        return [challenges.HTTP01, challenges.DNS01, challenges.TLSSNI01]
 
     def perform(self, achalls):  # pylint: disable=missing-docstring
         self._verify_ip_logging_ok()
-
         if self.conf('auth-hook'):
             perform_achall = self._perform_achall_with_script
         else:
@@ -110,6 +145,12 @@ s.serve_forever()" """
 
         responses = []
         for achall in achalls:
+            if isinstance(achall.chall, challenges.TLSSNI01):
+                # Make a new ManualTlsSni01 instance for each challenge
+                # because the manual plugin deals with one challenge at a time.
+                self.tls_sni_01 = ManualTlsSni01(self)
+                self.tls_sni_01.add_chall(achall)
+                self.tls_sni_01.perform()
             perform_achall(achall)
             responses.append(achall.response(achall.account_key))
         return responses
@@ -135,6 +176,16 @@ s.serve_forever()" """
             env['CERTBOT_TOKEN'] = achall.chall.encode('token')
         else:
             os.environ.pop('CERTBOT_TOKEN', None)
+        if isinstance(achall.chall, challenges.TLSSNI01):
+            env['CERTBOT_CERT_PATH'] = self.tls_sni_01.get_cert_path(achall)
+            env['CERTBOT_KEY_PATH'] = self.tls_sni_01.get_key_path(achall)
+            env['CERTBOT_SNI_DOMAIN'] = self.tls_sni_01.get_z_domain(achall)
+            os.environ.pop('CERTBOT_VALIDATION', None)
+            env.pop('CERTBOT_VALIDATION')
+        else:
+            os.environ.pop('CERTBOT_CERT_PATH', None)
+            os.environ.pop('CERTBOT_KEY_PATH', None)
+            os.environ.pop('CERTBOT_SNI_DOMAIN', None)
         os.environ.update(env)
         _, out = hooks.execute(self.conf('auth-hook'))
         env['CERTBOT_AUTH_OUTPUT'] = out.strip()
@@ -147,11 +198,17 @@ s.serve_forever()" """
                 achall=achall, encoded_token=achall.chall.encode('token'),
                 port=self.config.http01_port,
                 uri=achall.chall.uri(achall.domain), validation=validation)
-        else:
-            assert isinstance(achall.chall, challenges.DNS01)
+        elif isinstance(achall.chall, challenges.DNS01):
             msg = self._DNS_INSTRUCTIONS.format(
                 domain=achall.validation_domain_name(achall.domain),
                 validation=validation)
+        else:
+            assert isinstance(achall.chall, challenges.TLSSNI01)
+            msg = self._TLSSNI_INSTRUCTIONS.format(
+                cert=self.tls_sni_01.get_cert_path(achall),
+                key=self.tls_sni_01.get_key_path(achall),
+                port=self.config.tls_sni_01_port,
+                sni_domain=self.tls_sni_01.get_z_domain(achall))
         display = zope.component.getUtility(interfaces.IDisplay)
         display.notification(msg, wrap=False, force_interactive=True)
 
@@ -163,3 +220,4 @@ s.serve_forever()" """
                     os.environ.pop('CERTBOT_TOKEN', None)
                 os.environ.update(env)
                 hooks.execute(self.conf('cleanup-hook'))
+        self.reverter.recovery_routine()

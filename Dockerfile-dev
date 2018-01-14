@@ -23,7 +23,7 @@ WORKDIR /opt/certbot/src
 # TODO: Install Apache/Nginx for plugin development.
 COPY letsencrypt-auto-source/letsencrypt-auto /opt/certbot/src/letsencrypt-auto-source/letsencrypt-auto
 RUN /opt/certbot/src/letsencrypt-auto-source/letsencrypt-auto --os-packages-only && \
-    apt-get install python3-dev -y && \
+    apt-get install python3-dev git -y && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* \
            /tmp/* \

@@ -4,6 +4,7 @@ import glob
 import logging
 import os
 import re
+import stat
 
 import configobj
 import parsedatetime
@@ -47,6 +48,21 @@ def renewal_file_for_certname(config, certname):
         raise errors.CertStorageError("No certificate found with name {0} (expected "
             "{1}).".format(certname, path))
     return path
+
+
+def cert_path_for_cert_name(config, cert_name):
+    """ If `--cert-name` was specified, but you need a value for `--cert-path`.
+
+    :param `configuration.NamespaceConfig` config: parsed command line arguments
+    :param str cert_name: cert name.
+
+    """
+    cert_name_implied_conf = renewal_file_for_certname(config, cert_name)
+    fullchain_path = configobj.ConfigObj(cert_name_implied_conf)["fullchain"]
+    with open(fullchain_path) as f:
+        cert_path = (fullchain_path, f.read())
+    return cert_path
+
 
 def config_with_defaults(config=None):
     """Merge supplied config, if provided, on top of builtin defaults."""
@@ -117,9 +133,19 @@ def write_renewal_config(o_filename, n_filename, archive_dir, target, relevant_d
     # TODO: add human-readable comments explaining other available
     #       parameters
     logger.debug("Writing new config %s.", n_filename)
+
+    # Ensure that the file exists
+    open(n_filename, 'a').close()
+
+    # Copy permissions from the old version of the file, if it exists.
+    if os.path.exists(o_filename):
+        current_permissions = stat.S_IMODE(os.lstat(o_filename).st_mode)
+        os.chmod(n_filename, current_permissions)
+
     with open(n_filename, "wb") as f:
         config.write(outfile=f)
     return config
+
 
 def rename_renewal_config(prev_name, new_name, cli_config):
     """Renames cli_config.certname's config to cli_config.new_certname.
@@ -175,8 +201,15 @@ def get_link_target(link):
     :returns: Absolute path to the target of link
     :rtype: str
 
+    :raises .CertStorageError: If link does not exists.
+
     """
-    target = os.readlink(link)
+    try:
+        target = os.readlink(link)
+    except OSError:
+        raise errors.CertStorageError(
+            "Expected {0} to be a symlink".format(link))
+
     if not os.path.isabs(target):
         target = os.path.join(os.path.dirname(link), target)
     return os.path.abspath(target)
@@ -228,7 +261,7 @@ def _relpath_from_file(archive_dir, from_file):
     """Path to a directory from a file"""
     return os.path.relpath(archive_dir, os.path.dirname(from_file))
 
-def _full_archive_path(config_obj, cli_config, lineagename):
+def full_archive_path(config_obj, cli_config, lineagename):
     """Returns the full archive path for a lineagename
 
     Uses cli_config to determine archive path if not available from config_obj.
@@ -253,7 +286,7 @@ def delete_files(config, certname):
     """
     renewal_filename = renewal_file_for_certname(config, certname)
     # file exists
-    full_default_archive_dir = _full_archive_path(None, config, certname)
+    full_default_archive_dir = full_archive_path(None, config, certname)
     full_default_live_dir = _full_live_path(config, certname)
     try:
         renewal_config = configobj.ConfigObj(renewal_filename)
@@ -305,7 +338,7 @@ def delete_files(config, certname):
 
     # archive directory
     try:
-        archive_path = _full_archive_path(renewal_config, config, certname)
+        archive_path = full_archive_path(renewal_config, config, certname)
         shutil.rmtree(archive_path)
         logger.debug("Removed %s", archive_path)
     except OSError:
@@ -432,7 +465,7 @@ class RenewableCert(object):
     @property
     def archive_dir(self):
         """Returns the default or specified archive directory"""
-        return _full_archive_path(self.configuration,
+        return full_archive_path(self.configuration,
             self.cli_config, self.lineagename)
 
     def relative_archive_dir(self, from_file):
@@ -974,7 +1007,7 @@ class RenewableCert(object):
         # lineagename will now potentially be modified based on which
         # renewal configuration file could actually be created
         lineagename = lineagename_for_filename(config_filename)
-        archive = _full_archive_path(None, cli_config, lineagename)
+        archive = full_archive_path(None, cli_config, lineagename)
         live_dir = _full_live_path(cli_config, lineagename)
         if os.path.exists(archive):
             raise errors.CertStorageError(

@@ -20,7 +20,8 @@ from os.path import dirname, join
 import re
 from subprocess import check_call, CalledProcessError
 from sys import argv, exit
-from urllib2 import build_opener, HTTPHandler, HTTPSHandler, HTTPError
+from urllib2 import build_opener, HTTPHandler, HTTPSHandler
+from urllib2 import HTTPError, URLError
 
 PUBLIC_KEY = environ.get('LE_AUTO_PUBLIC_KEY', """-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA6MR8W/galdxnpGqBsYbq
@@ -56,7 +57,9 @@ class HttpsGetter(object):
 
         """
         try:
-            return self._opener.open(url).read()
+            # socket module docs say default timeout is None: that is, no
+            # timeout
+            return self._opener.open(url, timeout=30).read()
         except (HTTPError, IOError) as exc:
             raise ExpectedError("Couldn't download %s." % url, exc)
 

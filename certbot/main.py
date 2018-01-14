@@ -1,9 +1,11 @@
 """Certbot main entry point."""
 from __future__ import print_function
+import functools
 import logging.handlers
 import os
 import sys
 
+import configobj
 import zope.component
 
 from acme import jose
@@ -25,6 +27,7 @@ from certbot import interfaces
 from certbot import log
 from certbot import renewal
 from certbot import reporter
+from certbot import storage
 from certbot import util
 
 from certbot.display import util as display_util, ops as display_ops
@@ -82,6 +85,8 @@ def _get_and_save_cert(le_client, config, domains=None, certname=None, lineage=N
             lineage = le_client.obtain_and_enroll_certificate(domains, certname)
             if lineage is False:
                 raise errors.Error("Certificate could not be obtained")
+            elif lineage is not None:
+                hooks.deploy_hook(config, lineage.names(), lineage.live_dir)
     finally:
         hooks.post_hook(config)
 
@@ -161,14 +166,13 @@ def _handle_identical_cert_request(config, lineage):
                "Renew & replace the cert (limit ~5 per 7 days)"]
 
     display = zope.component.getUtility(interfaces.IDisplay)
-    response = display.menu(question, choices, "OK", "Cancel",
+    response = display.menu(question, choices,
                             default=0, force_interactive=True)
     if response[0] == display_util.CANCEL:
         # TODO: Add notification related to command-line options for
         #       skipping the menu for this case.
         raise errors.Error(
-            "User chose to cancel the operation and may "
-            "reinvoke the client.")
+            "Operation canceled. You may re-run the client.")
     elif response[1] == 0:
         return "reinstall", lineage
     elif response[1] == 1:
@@ -254,12 +258,14 @@ def _ask_user_to_confirm_new_names(config, new_domains, certname, old_domains):
     """
     if config.renew_with_new_domains:
         return
-    msg = ("Confirm that you intend to update certificate {0} "
-           "to include domains {1}. Note that it previously "
-           "contained domains {2}.".format(
+
+    msg = ("You are updating certificate {0} to include domains: {1}{br}{br}"
+           "It previously included domains: {2}{br}{br}"
+           "Did you intend to make this change?".format(
                certname,
-               new_domains,
-               old_domains))
+               ", ".join(new_domains),
+               ", ".join(old_domains),
+               br=os.linesep))
     obj = zope.component.getUtility(interfaces.IDisplay)
     if not obj.yesno(msg, "Update cert", "Cancel", default=True):
         raise errors.ConfigurationError("Specified mismatched cert name and domains.")
@@ -290,11 +296,12 @@ def _find_domains_or_certname(config, installer):
     return domains, certname
 
 
-def _report_new_cert(config, cert_path, fullchain_path):
+def _report_new_cert(config, cert_path, fullchain_path, key_path=None):
     """Reports the creation of a new certificate to the user.
 
     :param str cert_path: path to cert
     :param str fullchain_path: path to full chain
+    :param str key_path: path to private key, if available
 
     """
     if config.dry_run:
@@ -309,13 +316,17 @@ def _report_new_cert(config, cert_path, fullchain_path):
     # (Nginx and Apache2.4) will want.
 
     verbswitch = ' with the "certonly" option' if config.verb == "run" else ""
+    privkey_statement = 'Your key file has been saved at:{br}{0}{br}'.format(
+            key_path, br=os.linesep) if key_path else ""
     # XXX Perhaps one day we could detect the presence of known old webservers
     # and say something more informative here.
-    msg = ('Congratulations! Your certificate and chain have been saved at {0}.'
-           ' Your cert will expire on {1}. To obtain a new or tweaked version of this '
-           'certificate in the future, simply run {2} again{3}. '
-           'To non-interactively renew *all* of your certificates, run "{2} renew"'
-           .format(fullchain_path, expiry, cli.cli_command, verbswitch))
+    msg = ('Congratulations! Your certificate and chain have been saved at:{br}'
+           '{0}{br}{1}'
+           'Your cert will expire on {2}. To obtain a new or tweaked version of this '
+           'certificate in the future, simply run {3} again{4}. '
+           'To non-interactively renew *all* of your certificates, run "{3} renew"'
+           .format(fullchain_path, privkey_statement, expiry, cli.cli_command, verbswitch,
+               br=os.linesep))
     reporter_util.add_message(msg, reporter_util.MEDIUM_PRIORITY)
 
 
@@ -374,6 +385,92 @@ def _determine_account(config):
 
     config.account = acc.id
     return acc, acme
+
+
+def _delete_if_appropriate(config): # pylint: disable=too-many-locals,too-many-branches
+    """Does the user want to delete their now-revoked certs? If run in non-interactive mode,
+    deleting happens automatically, unless if both `--cert-name` and `--cert-path` were
+    specified with conflicting values.
+
+    :param `configuration.NamespaceConfig` config: parsed command line arguments
+
+    :raises `error.Errors`: If anything goes wrong, including bad user input, if an overlapping
+        archive dir is found for the specified lineage, etc ...
+    """
+    display = zope.component.getUtility(interfaces.IDisplay)
+    reporter_util = zope.component.getUtility(interfaces.IReporter)
+
+    msg = ("Would you like to delete the cert(s) you just revoked?")
+    attempt_deletion = display.yesno(msg, yes_label="Yes (recommended)", no_label="No",
+            force_interactive=True, default=True)
+
+    if not attempt_deletion:
+        reporter_util.add_message("Not deleting revoked certs.", reporter_util.LOW_PRIORITY)
+        return
+
+    if not (config.certname or config.cert_path):
+        raise errors.Error('At least one of --cert-path or --cert-name must be specified.')
+
+    if config.certname and config.cert_path:
+        # first, check if certname and cert_path imply the same certs
+        implied_cert_name = cert_manager.cert_path_to_lineage(config)
+
+        if implied_cert_name != config.certname:
+            cert_path_implied_cert_name = cert_manager.cert_path_to_lineage(config)
+            cert_path_implied_conf = storage.renewal_file_for_certname(config,
+                    cert_path_implied_cert_name)
+            cert_path_cert = storage.RenewableCert(cert_path_implied_conf, config)
+            cert_path_info = cert_manager.human_readable_cert_info(config, cert_path_cert,
+                    skip_filter_checks=True)
+
+            cert_name_implied_conf = storage.renewal_file_for_certname(config, config.certname)
+            cert_name_cert = storage.RenewableCert(cert_name_implied_conf, config)
+            cert_name_info = cert_manager.human_readable_cert_info(config, cert_name_cert)
+
+            msg = ("You specified conflicting values for --cert-path and --cert-name. "
+                    "Which did you mean to select?")
+            choices = [cert_path_info, cert_name_info]
+            try:
+                code, index = display.menu(msg,
+                        choices, ok_label="Select", force_interactive=True)
+            except errors.MissingCommandlineFlag:
+                error_msg = ('To run in non-interactive mode, you must either specify only one of '
+                '--cert-path or --cert-name, or both must point to the same certificate lineages.')
+                raise errors.Error(error_msg)
+
+            if code != display_util.OK or not index in range(0, len(choices)):
+                raise errors.Error("User ended interaction.")
+
+            if index == 0:
+                config.certname = cert_path_implied_cert_name
+            else:
+                config.cert_path = storage.cert_path_for_cert_name(config, config.certname)
+
+    elif config.cert_path:
+        config.certname = cert_manager.cert_path_to_lineage(config)
+
+    else: # if only config.certname was specified
+        config.cert_path = storage.cert_path_for_cert_name(config, config.certname)
+
+    # don't delete if the archive_dir is used by some other lineage
+    archive_dir = storage.full_archive_path(
+            configobj.ConfigObj(storage.renewal_file_for_certname(config, config.certname)),
+            config, config.certname)
+    try:
+        cert_manager.match_and_check_overlaps(config, [lambda x: archive_dir],
+            lambda x: x.archive_dir, lambda x: x)
+    except errors.OverlappingMatchFound:
+        msg = ('Not deleting revoked certs due to overlapping archive dirs. More than '
+                'one lineage is using {0}'.format(archive_dir))
+        reporter_util.add_message(''.join(msg), reporter_util.MEDIUM_PRIORITY)
+        return
+    except Exception as e:
+        msg = ('config.default_archive_dir: {0}, config.live_dir: {1}, archive_dir: {2},'
+        'original exception: {3}')
+        msg = msg.format(config.default_archive_dir, config.live_dir, archive_dir, e)
+        raise errors.Error(msg)
+
+    cert_manager.delete(config)
 
 
 def _init_le_client(config, authenticator, installer):
@@ -484,7 +581,7 @@ def install(config, plugins):
     _install_cert(config, le_client, domains)
 
 
-def plugins_cmd(config, plugins):  # TODO: Use IDisplay rather than print
+def plugins_cmd(config, plugins):
     """List server software plugins."""
     logger.debug("Expected interfaces: %s", config.ifaces)
 
@@ -492,8 +589,10 @@ def plugins_cmd(config, plugins):  # TODO: Use IDisplay rather than print
     filtered = plugins.visible().ifaces(ifaces)
     logger.debug("Filtered plugins: %r", filtered)
 
+    notify = functools.partial(zope.component.getUtility(
+        interfaces.IDisplay).notification, pause=False)
     if not config.init and not config.prepare:
-        print(str(filtered))
+        notify(str(filtered))
         return
 
     filtered.init(config)
@@ -501,13 +600,13 @@ def plugins_cmd(config, plugins):  # TODO: Use IDisplay rather than print
     logger.debug("Verified plugins: %r", verified)
 
     if not config.prepare:
-        print(str(verified))
+        notify(str(verified))
         return
 
     verified.prepare()
     available = verified.available()
     logger.debug("Prepared plugins: %s", available)
-    print(str(available))
+    notify(str(available))
 
 
 def rollback(config, plugins):
@@ -559,6 +658,7 @@ def revoke(config, unused_plugins):  # TODO: coop with renewal config
     if config.key_path is not None:  # revocation by cert key
         logger.debug("Revoking %s using cert key %s",
                      config.cert_path[0], config.key_path[0])
+        crypto_util.verify_cert_matches_priv_key(config.cert_path[0], config.key_path[0])
         key = jose.JWK.load(config.key_path[1])
     else:  # revocation by account key
         logger.debug("Revoking %s using Account Key", config.cert_path[0])
@@ -570,6 +670,7 @@ def revoke(config, unused_plugins):  # TODO: coop with renewal config
 
     try:
         acme.revoke(jose.ComparableX509(cert), config.reason)
+        _delete_if_appropriate(config)
     except acme_errors.ClientError as e:
         return str(e)
 
@@ -598,7 +699,8 @@ def run(config, plugins):  # pylint: disable=too-many-branches,too-many-locals
 
     cert_path = new_lineage.cert_path if new_lineage else None
     fullchain_path = new_lineage.fullchain_path if new_lineage else None
-    _report_new_cert(config, cert_path, fullchain_path)
+    key_path = new_lineage.key_path if new_lineage else None
+    _report_new_cert(config, cert_path, fullchain_path, key_path)
 
     _install_cert(config, le_client, domains, new_lineage)
 
@@ -635,6 +737,7 @@ def renew_cert(config, plugins, lineage):
     except errors.PluginSelectionError as e:
         logger.info("Could not choose appropriate plugin: %s", e)
         raise
+
     le_client = _init_le_client(config, auth, installer)
 
     _get_and_save_cert(le_client, config, lineage=lineage)
@@ -663,6 +766,7 @@ def certonly(config, plugins):
     except errors.PluginSelectionError as e:
         logger.info("Could not choose appropriate plugin: %s", e)
         raise
+
     le_client = _init_le_client(config, auth, installer)
 
     if config.csr:
@@ -683,7 +787,8 @@ def certonly(config, plugins):
 
     cert_path = lineage.cert_path if lineage else None
     fullchain_path = lineage.fullchain_path if lineage else None
-    _report_new_cert(config, cert_path, fullchain_path)
+    key_path = lineage.key_path if lineage else None
+    _report_new_cert(config, cert_path, fullchain_path, key_path)
     _suggest_donation_if_appropriate(config)
 
 def renew(config, unused_plugins):
@@ -695,11 +800,19 @@ def renew(config, unused_plugins):
 
 
 def make_or_verify_needed_dirs(config):
-    """Create or verify existence of config and work directories"""
-    util.make_or_verify_core_dir(config.config_dir, constants.CONFIG_DIRS_MODE,
-                            os.geteuid(), config.strict_permissions)
-    util.make_or_verify_core_dir(config.work_dir, constants.CONFIG_DIRS_MODE,
-                            os.geteuid(), config.strict_permissions)
+    """Create or verify existence of config, work, and hook directories."""
+    util.set_up_core_dir(config.config_dir, constants.CONFIG_DIRS_MODE,
+                         os.geteuid(), config.strict_permissions)
+    util.set_up_core_dir(config.work_dir, constants.CONFIG_DIRS_MODE,
+                         os.geteuid(), config.strict_permissions)
+
+    hook_dirs = (config.renewal_pre_hooks_dir,
+                 config.renewal_deploy_hooks_dir,
+                 config.renewal_post_hooks_dir,)
+    for hook_dir in hook_dirs:
+        util.make_or_verify_dir(hook_dir,
+                                uid=os.geteuid(),
+                                strict=config.strict_permissions)
 
 
 def set_displayer(config):
@@ -730,8 +843,14 @@ def main(cli_args=sys.argv[1:]):
     config = configuration.NamespaceConfig(args)
     zope.component.provideUtility(config)
 
-    log.post_arg_parse_setup(config)
-    make_or_verify_needed_dirs(config)
+    try:
+        log.post_arg_parse_setup(config)
+        make_or_verify_needed_dirs(config)
+    except errors.Error:
+        # Let plugins_cmd be run as un-privileged user.
+        if config.func != plugins_cmd:
+            raise
+
     set_displayer(config)
 
     # Reporter

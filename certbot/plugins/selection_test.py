@@ -1,4 +1,5 @@
 """Tests for letsencrypt.plugins.selection"""
+import os
 import sys
 import unittest
 
@@ -115,6 +116,7 @@ class ChoosePluginTest(unittest.TestCase):
                                                                False))
         self.mock_apache = mock.Mock(
             description_with_name="a", misconfigured=True)
+        self.mock_apache.name = "apache"
         self.mock_stand = mock.Mock(
             description_with_name="s", misconfigured=False)
         self.mock_stand.init().more_info.return_value = "standalone"
@@ -137,15 +139,35 @@ class ChoosePluginTest(unittest.TestCase):
     @test_util.patch_get_utility("certbot.plugins.selection.z_util")
     def test_more_info(self, mock_util):
         mock_util().menu.side_effect = [
-            (display_util.HELP, 0),
-            (display_util.HELP, 1),
             (display_util.OK, 1),
         ]
 
         self.assertEqual(self.mock_stand, self._call())
-        self.assertEqual(mock_util().notification.call_count, 2)
 
     @test_util.patch_get_utility("certbot.plugins.selection.z_util")
     def test_no_choice(self, mock_util):
         mock_util().menu.return_value = (display_util.CANCEL, 0)
         self.assertTrue(self._call() is None)
+
+    @test_util.patch_get_utility("certbot.plugins.selection.z_util")
+    def test_new_interaction_avoidance(self, mock_util):
+        mock_nginx = mock.Mock(
+            description_with_name="n", misconfigured=False)
+        mock_nginx.init().more_info.return_value = "nginx plugin"
+        mock_nginx.name = "nginx"
+        self.plugins[1] = mock_nginx
+        mock_util().menu.return_value = (display_util.CANCEL, 0)
+
+        unset_cb_auto = os.environ.get("CERTBOT_AUTO") is None
+        if unset_cb_auto:
+            os.environ["CERTBOT_AUTO"] = "foo"
+        try:
+            self._call()
+        finally:
+            if unset_cb_auto:
+                del os.environ["CERTBOT_AUTO"]
+
+        self.assertTrue("default" in mock_util().menu.call_args[1])
+
+if __name__ == "__main__":
+    unittest.main()  # pragma: no cover

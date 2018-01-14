@@ -12,6 +12,12 @@ from certbot import constants
 from certbot import errors
 from certbot import interfaces
 
+try:
+    from collections import OrderedDict
+except ImportError:  # pragma: no cover
+    # OrderedDict was added in Python 2.7
+    from ordereddict import OrderedDict  # pylint: disable=import-error
+
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +28,16 @@ class PluginEntryPoint(object):
     PREFIX_FREE_DISTRIBUTIONS = [
         "certbot",
         "certbot-apache",
+        "certbot-dns-cloudflare",
+        "certbot-dns-cloudxns",
+        "certbot-dns-digitalocean",
+        "certbot-dns-dnsimple",
+        "certbot-dns-dnsmadeeasy",
+        "certbot-dns-google",
+        "certbot-dns-luadns",
+        "certbot-dns-nsone",
+        "certbot-dns-rfc2136",
+        "certbot-dns-route53",
         "certbot-nginx",
     ]
     """Distributions for which prefix will be omitted."""
@@ -168,7 +184,11 @@ class PluginsRegistry(collections.Mapping):
     """Plugins registry."""
 
     def __init__(self, plugins):
-        self._plugins = plugins
+        # plugins are sorted so the same order is used between runs.
+        # This prevents deadlock caused by plugins acquiring a lock
+        # and ensures at least one concurrent Certbot instance will run
+        # successfully.
+        self._plugins = OrderedDict(sorted(six.iteritems(plugins)))
 
     @classmethod
     def find_all(cls):
