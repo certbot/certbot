@@ -305,7 +305,8 @@ class MultipleVhostsTest(util.ApacheTest):
 
     def test_non_default_vhosts(self):
         # pylint: disable=protected-access
-        self.assertEqual(len(self.config._non_default_vhosts()), 8)
+        vhosts = self.config._non_default_vhosts(self.config.vhosts)
+        self.assertEqual(len(vhosts), 8)
 
     def test_deploy_cert_enable_new_vhost(self):
         # Create
