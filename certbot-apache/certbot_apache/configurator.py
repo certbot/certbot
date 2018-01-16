@@ -436,6 +436,18 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 return True
         return False
 
+    def find_best_http_vhost(self, target):
+        """Returns non-HTTPS vhost objects found from the Apache config
+
+        :param str target: Domain name of the desired VirtualHost
+
+        :returns: VirtualHost object that's the best match for target name
+        :rtype: `obj.VirtualHost` or None
+        """
+        nonssl_vhosts = [i for i in self.vhosts if not i.ssl]
+        return self._find_best_vhost(target, nonssl_vhosts)
+
+
     def _find_best_vhost(self, target_name, vhosts=None):
         """Finds the best vhost for a target_name.
 
@@ -508,7 +520,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                   virtual host addresses
         :rtype: set
 
-        """
+    """
         all_names = set()
 
         vhost_macro = []
