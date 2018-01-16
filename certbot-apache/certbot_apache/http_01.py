@@ -9,24 +9,12 @@ logger = logging.getLogger(__name__)
 class ApacheHttp01(common.TLSSNI01):
     """Class that performs HTPP-01 challenges within the Apache configurator."""
 
-    CONFIG_TEMPLATE24 = """\
-Alias /.well-known/acme-challenge {0}
-
-<Directory {0} >
-    Require all granted
-</Directory>
-
-"""
-
-    CONFIG_TEMPLATE22 = """\
-Alias /.well-known/acme-challenge {0}
-
-<Directory {0} >
-    Order allow,deny
-    Allow from all
-</Directory>
-
-"""
+    CONFIG_TEMPLATE = """\
+        Alias /.well-known/acme-challenge {0}"
+        <IfModule mod_proxy.c>
+            ProxyPass "/.well-known/acme-challenge" !
+        </IfModule>
+    """
 
     def __init__(self, *args, **kwargs):
         super(ApacheHttp01, self).__init__(*args, **kwargs)
@@ -75,15 +63,16 @@ Alias /.well-known/acme-challenge {0}
         self.configurator.reverter.register_file_creation(
             True, self.challenge_conf)
 
-        if self.configurator.version < (2, 4):
-            config_template = self.CONFIG_TEMPLATE22
-        else:
-            config_template = self.CONFIG_TEMPLATE24
-        config_text = config_template.format(self.challenge_dir)
+        config_text = self.CONFIG_TEMPLATE.format(self.challenge_dir)
 
         logger.debug("writing a config file with text:\n %s", config_text)
         with open(self.challenge_conf, "w") as new_conf:
             new_conf.write(config_text)
+
+        # Set up temporary directives that disable directives potentially
+        # interfering with the challenge validation
+        self._set_up_challenge_overrides()
+
 
     def _set_up_challenges(self):
         if not os.path.isdir(self.challenge_dir):
@@ -107,3 +96,40 @@ Alias /.well-known/acme-challenge {0}
         os.chmod(name, 0o644)
 
         return response
+
+    def _set_up_challenge_overrides(self):
+        """Set up overrides for all challenge vhosts"""
+        for chall in self.achalls:
+            vh = self.configurator.find_best_http_vhost(chall.domain)
+            if vh:
+                self._set_up_directory_directive(vh)
+                self._set_up_rewrite_directives(vh)
+
+    def _set_up_rewrite_directives(self, vhost):
+        """Creates mod_rewrite in VirtualHost"""
+
+        if self.configurator.version < (2, 4):
+            rewrite_rule = ["(.*)", self.challenge_dir+"$1", "[L,S=9999]"]
+        else:
+            rewrite_rule = ["(.*)", self.challenge_dir+"$1", "[END]"]
+
+        self.configurator.parser.add_dir(vhost.path, "RewriteEngine", "on")
+        self.configurator.parser.add_dir(vhost.path, "RewriteRule", rewrite_rule)
+
+    def _set_up_directory_directive(self, vhost):
+        """Creates <Directory> directive for the challenge directory"""
+
+        self.configurator.aug.insert(vhost.path + "/arg", "Directory", False)
+        self.configurator.aug.set(vhost.path + "/Directory[1]/arg",
+                                  self.challenge_dir)
+        if self.configurator.version < (2, 4):
+            self.configurator.parser.add_dir(vhost.path+"/Directory[1]",
+                                             "Order", ["allow", "deny"])
+            self.configurator.parser.add_dir(vhost.path+"/Directory[1]",
+                                             "Allow", ["from", "all"])
+
+        else:
+            self.configurator.parser.add_dir(vhost.path+"/Directory[1]",
+                                             "Require", ["all", "granted"])
+
+
