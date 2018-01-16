@@ -656,6 +656,8 @@ def _add_directive(block, directive, replace, insert_at_top):
 
     if can_append(location, directive_name):
         if insert_at_top:
+            # Add a newline so the comment doesn't comment
+            # out existing directives
             block.insert(0, nginxparser.UnspacedList('\n'))
             block.insert(0, directive)
             comment_directive(block, 0)
