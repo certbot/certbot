@@ -134,7 +134,7 @@ class ApacheHttp01Test(util.ApacheTest):
         for achall in achalls:
             self._test_challenge_file(achall)
 
-        for vhost in vhosts):
+        for vhost in vhosts:
             matches = self.config.parser.find_dir("Include",
                                                   self.http.challenge_conf,
                                                   vhost.path)
