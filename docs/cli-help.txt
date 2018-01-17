@@ -445,7 +445,7 @@ plugins:
   --dns-nsone           Obtain certificates using a DNS TXT record (if you are
                         using NS1 for DNS). (default: False)
   --dns-ovh             Obtain certificates using a DNS TXT record (if you are
-                        using NS1 for OVH). (default: False)
+                        using OVH for DNS). (default: False)
   --dns-rfc2136         Obtain certificates using a DNS TXT record (if you are
                         using BIND for DNS). (default: False)
   --dns-route53         Obtain certificates using a DNS TXT record (if you are
