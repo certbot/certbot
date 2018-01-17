@@ -81,7 +81,7 @@ class ApacheHttp01(common.TLSSNI01):
             if vh:
                 self._set_up_include_directive(vh)
             else:
-                for vhost in self._relevant_vhosts():
+                for vh in self._relevant_vhosts():
                     self._set_up_include_directive(vh)
 
         self.configurator.reverter.register_file_creation(
