@@ -14,7 +14,7 @@ class ApacheHttp01(common.TLSSNI01):
         RewriteRule ^/\.well-known/acme-challenge/([A-Za-z0-9-_=]+)$ {0}/$1 [L,S=9999]
 
         <Directory {0}>
-            Order allow deny
+            Order Allow,Deny
             Allow from all
         </Directory>
     """
