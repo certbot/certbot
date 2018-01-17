@@ -65,7 +65,7 @@ class ApacheHttp01(common.TLSSNI01):
         """Make sure that we have the needed modules available for http01"""
 
         if self.configurator.conf("handle-modules"):
-            needed_modules = ["alias"]
+            needed_modules = ["rewrite"]
             if self.configurator.version < (2, 4):
                 needed_modules.append("authz_host")
             else:
