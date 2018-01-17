@@ -260,11 +260,19 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertRaises(
             errors.PluginError, self.config.choose_vhost, "none.com")
 
-    def test_find_best_http_vhost(self):
+    def test_find_best_http_vhost_default(self):
         vh = obj.VirtualHost(
             "fp", "ap", set([obj.Addr.fromstring("_default_:80")]), False, True)
         self.config.vhosts = [vh]
         self.assertEqual(self.config.find_best_http_vhost("foo.bar", False), vh)
+
+    def test_find_best_http_vhost_port(self):
+        port = "8080"
+        vh = obj.VirtualHost(
+            "fp", "ap", set([obj.Addr.fromstring("*:" + port)]),
+            False, True, "encryption-example.demo")
+        self.config.vhosts.append(vh)
+        self.assertEqual(self.config.find_best_http_vhost("foo.bar", False, port), vh)
 
     def test_findbest_continues_on_short_domain(self):
         # pylint: disable=protected-access
