@@ -61,7 +61,7 @@ class ApacheHttp01Test(util.ApacheTest):
                     break
             else:  # pragma: no cover
                 # If we didn't find a domain, we shouldn't continue the test.
-                self.assertTrue(False, "No usable vhost found")
+                self.fail("No usable vhost found")
 
             self.achalls.append(
                 achallenges.KeyAuthorizationAnnotatedChallenge(
