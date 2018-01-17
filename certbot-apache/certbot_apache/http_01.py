@@ -11,7 +11,7 @@ class ApacheHttp01(common.TLSSNI01):
 
     CONFIG_TEMPLATE22 = """\
         RewriteEngine on
-        RewriteRule ^/\.well-known/acme-challenge/([A-Za-z0-9-_=]+)$ {0}/$1 [L,S=9999]
+        RewriteRule ^/\.well-known/acme-challenge/([A-Za-z0-9-_=]+)$ {0}/$1 [L]
 
         <Directory {0}>
             Order Allow,Deny
