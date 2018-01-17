@@ -43,13 +43,23 @@ class ApacheHttp01Test(util.ApacheTest):
 
         self.account_key = self.rsa512jwk
         self.achalls = []
+        vhost_index = 0
         for i in range(NUM_ACHALLS):
-            if self.config.vhosts[i].name:
-                domain = self.config.vhosts[i].name
-            elif self.config.vhosts[i].aliases:
-                domain = next(iter(self.config.vhost[i].aliases))
-            else:
-                self.assertTrue(False, "No names in vhost.")
+            domain = None
+            # Find a vhost with a name/alias we can use
+            for j in range(vhost_index + 1, len(self.config.vhosts)):
+                vhost = self.config.vhosts[j]
+                if vhost.name:
+                    domain = vhost.name
+                elif vhost.aliases:
+                    domain = next(iter(vhost.aliases))
+                if domain:
+                    vhost_index = j + 1
+                    break
+            else:  # pragma: no cover
+                # If we didn't find a domain, we shouldn't continue the test.
+                self.assertTrue(False, "No usable vhost found")
+
             self.achalls.append(
                 achallenges.KeyAuthorizationAnnotatedChallenge(
                     challb=acme_util.chall_to_challb(
