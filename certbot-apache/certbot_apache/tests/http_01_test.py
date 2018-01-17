@@ -22,8 +22,9 @@ class ApacheHttp01TestMeta(type):
         def _gen_test(num_achalls, minor_version):
             def _test(self):
                 achalls = self.achalls[:num_achalls]
+                vhosts = self.vhosts[:num_achalls]
                 self.config.version = (2, minor_version)
-                self.common_perform_test(achalls)
+                self.common_perform_test(achalls, vhosts)
             return _test
 
         for i in range(1, NUM_ACHALLS + 1):
@@ -43,6 +44,7 @@ class ApacheHttp01Test(util.ApacheTest):
 
         self.account_key = self.rsa512jwk
         self.achalls = []
+        self.vhosts = []
         vhost_index = 0
         for i in range(NUM_ACHALLS):
             domain = None
@@ -54,6 +56,7 @@ class ApacheHttp01Test(util.ApacheTest):
                 elif vhost.aliases:
                     domain = next(iter(vhost.aliases))
                 if domain:
+                    self.vhosts.append(vhost)
                     vhost_index = j + 1
                     break
             else:  # pragma: no cover
@@ -113,7 +116,7 @@ class ApacheHttp01Test(util.ApacheTest):
         self.assertNotEqual(calls, other_calls)
         return other_calls
 
-    def common_perform_test(self, achalls):
+    def common_perform_test(self, achalls, vhosts):
         """Tests perform with the given achalls."""
         challenge_dir = self.http.challenge_dir
         self.assertFalse(os.path.exists(challenge_dir))
@@ -131,13 +134,15 @@ class ApacheHttp01Test(util.ApacheTest):
         for achall in achalls:
             self._test_challenge_file(achall)
 
+        for vhost in vhosts):
+            matches = self.config.parser.find_dir("Include",
+                                                  self.http.challenge_conf,
+                                                  vhost.path)
+            self.assertEqual(len(matches), 1)
+
         self.assertTrue(os.path.exists(challenge_dir))
 
     def _test_challenge_conf(self):
-        self.assertEqual(
-            len(self.config.parser.find_dir(
-                "Include", self.http.challenge_conf)), 1)
-
         with open(self.http.challenge_conf) as f:
             conf_contents = f.read()
 
