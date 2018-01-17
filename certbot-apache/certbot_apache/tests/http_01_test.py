@@ -64,7 +64,7 @@ class ApacheHttp01Test(util.ApacheTest):
             self.achalls.append(
                 achallenges.KeyAuthorizationAnnotatedChallenge(
                     challb=acme_util.chall_to_challb(
-                        challenges.HTTP01(token=((chr(ord('a') + i) * 16))),
+                        challenges.HTTP01(token=((chr(ord('a') + i).encode() * 16))),
                         "pending"),
                     domain=domain, account_key=self.account_key))
 
