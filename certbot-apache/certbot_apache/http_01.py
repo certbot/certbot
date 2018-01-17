@@ -99,7 +99,7 @@ class ApacheHttp01(common.TLSSNI01):
             new_conf.write(config_text)
 
     def _relevant_vhosts(self):
-        http01_port = self.configurator.config.http01_port
+        http01_port = str(self.configurator.config.http01_port)
         relevant_vhosts = []
         for vhost in self.configurator.vhosts:
             if any(a.is_wildcard() or a.get_port() == http01_port for a in vhost.addrs):

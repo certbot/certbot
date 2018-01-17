@@ -141,8 +141,10 @@ class ApacheHttp01Test(util.ApacheTest):
         self.common_perform_test(achalls, vhosts)
 
     def test_no_vhost(self):
+        for achall in self.achalls:
+            self.http.add_chall(achall)
         self.config.config.http01_port = 12345
-        self.assertRaises(errors.PluginError, self.http.perform, self.achalls)
+        self.assertRaises(errors.PluginError, self.http.perform)
 
     def common_perform_test(self, achalls, vhosts):
         """Tests perform with the given achalls."""
