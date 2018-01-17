@@ -9,14 +9,6 @@ logger = logging.getLogger(__name__)
 class ApacheHttp01(common.TLSSNI01):
     """Class that performs HTTP-01 challenges within the Apache configurator."""
 
-    CONFIG_TEMPLATE_COMMON = """\
-        Alias /.well-known/acme-challenge {0}"
-
-        <IfModule mod_proxy.c>
-            ProxyPass "/.well-known/acme-challenge" !
-        </IfModule>
-    """
-
     CONFIG_TEMPLATE22 = """\
         <IfModule mod_rewrite.c>
             RewriteEngine on
@@ -92,9 +84,9 @@ class ApacheHttp01(common.TLSSNI01):
             True, self.challenge_conf)
 
         if self.configurator.version < (2, 4):
-            config_template = self.CONFIG_TEMPLATE_COMMON + self.CONFIG_TEMPLATE22
+            config_template = self.CONFIG_TEMPLATE22
         else:
-            config_template = self.CONFIG_TEMPLATE_COMMON + self.CONFIG_TEMPLATE24
+            config_template = self.CONFIG_TEMPLATE24
 
         config_text = config_template.format(self.challenge_dir)
 
