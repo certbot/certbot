@@ -6,6 +6,7 @@ import unittest
 from acme import challenges
 
 from certbot import achallenges
+from certbot import errors
 
 from certbot.tests import acme_util
 
@@ -138,6 +139,10 @@ class ApacheHttp01Test(util.ApacheTest):
                     "pending"),
                 domain="something.nonexistent", account_key=self.account_key)]
         self.common_perform_test(achalls, vhosts)
+
+    def test_no_vhost(self):
+        self.config.config.http01_port = 12345
+        self.assertRaises(errors.PluginError, self.http.perform, self.achalls)
 
     def common_perform_test(self, achalls, vhosts):
         """Tests perform with the given achalls."""
