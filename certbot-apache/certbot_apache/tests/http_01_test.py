@@ -6,6 +6,7 @@ import unittest
 from acme import challenges
 
 from certbot import achallenges
+from certbot import errors
 
 from certbot.tests import acme_util
 
@@ -63,7 +64,7 @@ class ApacheHttp01Test(util.ApacheTest):
             self.achalls.append(
                 achallenges.KeyAuthorizationAnnotatedChallenge(
                     challb=acme_util.chall_to_challb(
-                        challenges.HTTP01(token=((chr(ord('a') + i) * 16))),
+                        challenges.HTTP01(token=((chr(ord('a') + i).encode() * 16))),
                         "pending"),
                     domain=domain, account_key=self.account_key))
 
@@ -138,6 +139,12 @@ class ApacheHttp01Test(util.ApacheTest):
                     "pending"),
                 domain="something.nonexistent", account_key=self.account_key)]
         self.common_perform_test(achalls, vhosts)
+
+    def test_no_vhost(self):
+        for achall in self.achalls:
+            self.http.add_chall(achall)
+        self.config.config.http01_port = 12345
+        self.assertRaises(errors.PluginError, self.http.perform)
 
     def common_perform_test(self, achalls, vhosts):
         """Tests perform with the given achalls."""
