@@ -52,7 +52,7 @@ class ApacheHttp01Test(util.ApacheTest):
                     domain="example{0}.com".format(i),
                     account_key=self.account_key))
 
-        modules = ["alias", "authz_core", "authz_host"]
+        modules = ["rewrite", "authz_core", "authz_host"]
         for mod in modules:
             self.config.parser.modules.add("mod_{0}.c".format(mod))
             self.config.parser.modules.add(mod + "_module")
@@ -81,9 +81,9 @@ class ApacheHttp01Test(util.ApacheTest):
         self.assertEqual(enmod_calls[0][0][0], "authz_core")
 
     def common_enable_modules_test(self, mock_enmod):
-        """Tests enabling mod_alias and other modules."""
-        self.config.parser.modules.remove("alias_module")
-        self.config.parser.modules.remove("mod_alias.c")
+        """Tests enabling mod_rewrite and other modules."""
+        self.config.parser.modules.remove("rewrite_module")
+        self.config.parser.modules.remove("mod_rewrite.c")
 
         self.http.prepare_http01_modules()
 
@@ -91,10 +91,10 @@ class ApacheHttp01Test(util.ApacheTest):
         calls = mock_enmod.call_args_list
         other_calls = []
         for call in calls:
-            if "alias" != call[0][0]:
+            if "rewrite" != call[0][0]:
                 other_calls.append(call)
 
-        # If these lists are equal, we never enabled mod_alias
+        # If these lists are equal, we never enabled mod_rewrite
         self.assertNotEqual(calls, other_calls)
         return other_calls
 
