@@ -436,18 +436,22 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 return True
         return False
 
-    def find_best_http_vhost(self, target, filter_defaults):
+    def find_best_http_vhost(self, target, filter_defaults, port="80"):
         """Returns non-HTTPS vhost objects found from the Apache config
 
         :param str target: Domain name of the desired VirtualHost
         :param bool filter_defaults: whether _default_ vhosts should be
             included if it is the best match
+        :param str port: port number the vhost should be listening on
 
         :returns: VirtualHost object that's the best match for target name
         :rtype: `obj.VirtualHost` or None
         """
-        nonssl_vhosts = [i for i in self.vhosts if not i.ssl]
-        return self._find_best_vhost(target, nonssl_vhosts, filter_defaults)
+        filtered_vhosts = []
+        for vhost in self.vhosts:
+            if any(a.is_wildcard() or a.get_port() == port for a in vhost.addrs) and not vhost.ssl:
+                filtered_vhosts.append(vhost)
+        return self._find_best_vhost(target, filtered_vhosts, filter_defaults)
 
     def _find_best_vhost(self, target_name, vhosts=None, filter_defaults=True):
         """Finds the best vhost for a target_name.
