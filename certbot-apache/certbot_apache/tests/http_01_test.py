@@ -141,9 +141,9 @@ class ApacheHttp01Test(util.ApacheTest):
         with open(self.http.challenge_conf) as f:
             conf_contents = f.read()
 
-        alias_fmt = "Alias /.well-known/acme-challenge {0}"
-        alias = alias_fmt.format(self.http.challenge_dir)
-        self.assertTrue(alias in conf_contents)
+        self.assertTrue("RewriteEngine on" in conf_contents)
+        self.assertTrue("RewriteRule" in conf_contents)
+        self.assertTrue(self.http.challenge_dir in conf_contents)
         if self.config.version < (2, 4):
             self.assertTrue("Allow from all" in conf_contents)
         else:
