@@ -51,10 +51,7 @@ class ApacheHttp01Test(util.ApacheTest):
             # Find a vhost with a name/alias we can use
             for j in range(vhost_index + 1, len(self.config.vhosts)):
                 vhost = self.config.vhosts[j]
-                if vhost.name:
-                    domain = vhost.name
-                elif vhost.aliases:
-                    domain = next(iter(vhost.aliases))
+                domain = vhost.name if vhost.name else next(iter(vhost.aliases), None)
                 if domain:
                     self.vhosts.append(vhost)
                     vhost_index = j + 1
