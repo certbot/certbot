@@ -114,7 +114,7 @@ class ApacheHttp01Test(util.ApacheTest):
         return other_calls
 
     def test_same_vhost(self):
-        vhost = self.config.vhosts[3]
+        vhost = next(v for v in self.config.vhosts if v.name == "certbot.demo")
         achalls = [
             achallenges.KeyAuthorizationAnnotatedChallenge(
                 challb=acme_util.chall_to_challb(
