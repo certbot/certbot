@@ -155,10 +155,15 @@ class NginxHttp01(common.ChallengePerformer):
         addrs = self._default_listen_addresses()
         block = [['listen', ' ', addr.to_string(include_default=False)] for addr in addrs]
 
+        # Ensure we 404 on any other request by setting a root
+        document_root = os.path.join(
+            self.configurator.config.work_dir, "http_01_nonexistent")
+
         validation = achall.validation(achall.account_key)
         validation_path = self._get_validation_path(achall)
 
         block.extend([['server_name', ' ', achall.domain],
+                      ['root', ' ', document_root],
                       [['location', ' ', '=', ' ', validation_path],
                         [['default_type', ' ', 'text/plain'],
                          ['return', ' ', '200', ' ', validation]]]])
