@@ -45,28 +45,19 @@ class ApacheHttp01Test(util.ApacheTest):
 
         self.account_key = self.rsa512jwk
         self.achalls = []
-        self.vhosts = []
-        vhost_index = 0
-        for i in range(NUM_ACHALLS):
-            domain = None
-            # Find a vhost with a name/alias we can use
-            for j in range(vhost_index + 1, len(self.config.vhosts)):
-                vhost = self.config.vhosts[j]
-                domain = vhost.name if vhost.name else next(iter(vhost.aliases), None)
-                if domain:
-                    self.vhosts.append(vhost)
-                    vhost_index = j + 1
-                    break
-            else:  # pragma: no cover
-                # If we didn't find a domain, we shouldn't continue the test.
-                self.fail("No usable vhost found")
+        vh_truth = util.get_vh_truth(
+            self.temp_dir, "debian_apache_2_4/multiple_vhosts")
+        # Takes the vhosts for encryption-example.demo, certbot.demo, and
+        # vhost.in.rootconf
+        self.vhosts = [vh_truth[0], vh_truth[3], vh_truth[10]]
 
+        for i in range(NUM_ACHALLS):
             self.achalls.append(
                 achallenges.KeyAuthorizationAnnotatedChallenge(
                     challb=acme_util.chall_to_challb(
                         challenges.HTTP01(token=((chr(ord('a') + i).encode() * 16))),
                         "pending"),
-                    domain=domain, account_key=self.account_key))
+                    domain=self.vhosts[i].name, account_key=self.account_key))
 
         modules = ["rewrite", "authz_core", "authz_host"]
         for mod in modules:
