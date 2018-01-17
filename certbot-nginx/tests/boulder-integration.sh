@@ -49,8 +49,8 @@ test_deployment_and_rollback nginx4.wtf
 # No matching server block; default_server does not exist
 export default_server=""
 reload_nginx
-nginx -c $nginx_root/nginx.conf -T 2>/dev/null | grep "default_server"
 sleep 5
+nginx -c $nginx_root/nginx.conf -T 2>/dev/null | grep "default_server"
 if [ "$?" -eq 0 ]; then
     echo "Failed to remove default_server"
     exit 1
