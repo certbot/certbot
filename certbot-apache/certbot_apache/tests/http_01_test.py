@@ -113,6 +113,22 @@ class ApacheHttp01Test(util.ApacheTest):
         self.assertNotEqual(calls, other_calls)
         return other_calls
 
+    def test_same_vhost(self):
+        vhost = self.config.vhosts[3]
+        achalls = [
+            achallenges.KeyAuthorizationAnnotatedChallenge(
+                challb=acme_util.chall_to_challb(
+                    challenges.HTTP01(token=(('a' * 16))),
+                    "pending"),
+                domain=vhost.name, account_key=self.account_key),
+            achallenges.KeyAuthorizationAnnotatedChallenge(
+                challb=acme_util.chall_to_challb(
+                    challenges.HTTP01(token=(('a' * 16))),
+                    "pending"),
+                domain=iter(next(vhost.aliases)), account_key=self.account_key)
+        ]
+        self.common_perform_test(achalls, [vhost])
+
     def common_perform_test(self, achalls, vhosts):
         """Tests perform with the given achalls."""
         challenge_dir = self.http.challenge_dir
