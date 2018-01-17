@@ -165,10 +165,10 @@ class ApacheHttp01Test(util.ApacheTest):
             self._test_challenge_file(achall)
 
         for vhost in vhosts:
-            matches = self.config.parser.find_dir("Include",
-                                                  self.http.challenge_conf,
-                                                  vhost.path)
             if not vhost.ssl:
+                matches = self.config.parser.find_dir("Include",
+                                                      self.http.challenge_conf,
+                                                      vhost.path)
                 self.assertEqual(len(matches), 1)
 
         self.assertTrue(os.path.exists(challenge_dir))

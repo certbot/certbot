@@ -107,8 +107,10 @@ class ApacheHttp01(common.TLSSNI01):
                     relevant_vhosts.append(vhost)
         if not relevant_vhosts:
             raise errors.PluginError(
-                "Unable to find a virtual host listening on port {0}."
-                " Please add one.".format(http01_port))
+                "Unable to find a virtual host listening on port {0} which is"
+                " currently needed for Certbot to prove to the CA that you"
+                " control your domain. Please add a virtual host for port"
+                " {0}.".format(http01_port))
 
         return relevant_vhosts
 
