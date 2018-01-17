@@ -36,6 +36,7 @@ class ApacheHttp01(common.TLSSNI01):
         self.challenge_dir = os.path.join(
             self.configurator.config.work_dir,
             "http_challenges")
+        self.moded_vhosts = set()
 
     def perform(self):
         """Perform all HTTP-01 challenges."""
@@ -71,14 +72,16 @@ class ApacheHttp01(common.TLSSNI01):
                     self.configurator.enable_mod(mod, temp=True)
 
     def _mod_config(self):
-        moded_vhosts = set()
         for chall in self.achalls:
             vh = self.configurator.find_best_http_vhost(
                 chall.domain, filter_defaults=False,
                 port=str(self.configurator.config.http01_port))
-            if vh and vh not in moded_vhosts:
+            if vh:
                 self._set_up_include_directive(vh)
-                moded_vhosts.add(vh)
+            else:
+                for vh in self.configurator.vhosts:
+                    if not vh.ssl:
+                        self._set_up_include_directive(vh)
 
         self.configurator.reverter.register_file_creation(
             True, self.challenge_conf)
@@ -121,5 +124,11 @@ class ApacheHttp01(common.TLSSNI01):
     def _set_up_include_directive(self, vhost):
         """Includes override configuration to the beginning of VirtualHost.
         Note that this include isn't added to Augeas search tree"""
-        self.configurator.parser.add_dir_beginning(vhost.path, "Include",
-                                                   self.challenge_conf)
+
+        if vhost not in self.moded_vhosts:
+            logger.debug(
+                "Adding a temporary challenge validation Include for name: %s " +
+                "in: %s", vhost.name, vhost.filep)
+            self.configurator.parser.add_dir_beginning(
+                vhost.path, "Include", self.challenge_conf)
+            self.moded_vhosts.add(vhost)

@@ -129,6 +129,16 @@ class ApacheHttp01Test(util.ApacheTest):
         ]
         self.common_perform_test(achalls, [vhost])
 
+    def test_anonymous_vhost(self):
+        vhosts = [v for v in self.config.vhosts if not v.ssl]
+        achalls = [
+            achallenges.KeyAuthorizationAnnotatedChallenge(
+                challb=acme_util.chall_to_challb(
+                    challenges.HTTP01(token=((b'a' * 16))),
+                    "pending"),
+                domain="something.nonexistent", account_key=self.account_key)]
+        self.common_perform_test(achalls, vhosts)
+
     def common_perform_test(self, achalls, vhosts):
         """Tests perform with the given achalls."""
         challenge_dir = self.http.challenge_dir
