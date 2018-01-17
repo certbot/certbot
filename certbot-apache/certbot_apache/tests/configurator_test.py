@@ -264,7 +264,7 @@ class MultipleVhostsTest(util.ApacheTest):
         vh = obj.VirtualHost(
             "fp", "ap", set([obj.Addr.fromstring("_default_:80")]), False, True)
         self.config.vhosts = [vh]
-        self.assertEqual(self.config.find_best_http_vhost("foo.bar", False))
+        self.assertEqual(self.config.find_best_http_vhost("foo.bar", False), vh)
 
     def test_findbest_continues_on_short_domain(self):
         # pylint: disable=protected-access
