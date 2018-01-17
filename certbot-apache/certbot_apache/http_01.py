@@ -9,31 +9,19 @@ logger = logging.getLogger(__name__)
 class ApacheHttp01(common.TLSSNI01):
     """Class that performs HTTP-01 challenges within the Apache configurator."""
 
-    CONFIG_TEMPLATE_COMMON = """\
-        Alias /.well-known/acme-challenge {0}"
-
-        <IfModule mod_proxy.c>
-            ProxyPass "/.well-known/acme-challenge" !
-        </IfModule>
-    """
-
     CONFIG_TEMPLATE22 = """\
-        <IfModule mod_rewrite.c>
-            RewriteEngine on
-            RewriteRule /.well-known/acme-challenge/(.*) {0}/$1 [L,S=9999]
-        </IfModule>
+        RewriteEngine on
+        RewriteRule ^/\\.well-known/acme-challenge/([A-Za-z0-9-_=]+)$ {0}/$1 [L]
 
         <Directory {0}>
-            Order allow deny
+            Order Allow,Deny
             Allow from all
         </Directory>
     """
 
     CONFIG_TEMPLATE24 = """\
-        <IfModule mod_rewrite.c>
-            RewriteEngine on
-            RewriteRule /.well-known/acme-challenge/(.*) {0}/$1 [END]
-        </IfModule>
+        RewriteEngine on
+        RewriteRule ^/\\.well-known/acme-challenge/([A-Za-z0-9-_=]+)$ {0}/$1 [END]
 
         <Directory {0}>
             Require all granted
@@ -73,7 +61,7 @@ class ApacheHttp01(common.TLSSNI01):
         """Make sure that we have the needed modules available for http01"""
 
         if self.configurator.conf("handle-modules"):
-            needed_modules = ["alias"]
+            needed_modules = ["rewrite"]
             if self.configurator.version < (2, 4):
                 needed_modules.append("authz_host")
             else:
@@ -83,18 +71,22 @@ class ApacheHttp01(common.TLSSNI01):
                     self.configurator.enable_mod(mod, temp=True)
 
     def _mod_config(self):
+        moded_vhosts = set()
         for chall in self.achalls:
-            vh = self.configurator.find_best_http_vhost(chall.domain)
-            if vh:
+            vh = self.configurator.find_best_http_vhost(
+                chall.domain, filter_defaults=False,
+                port=str(self.configurator.config.http01_port))
+            if vh and vh not in moded_vhosts:
                 self._set_up_include_directive(vh)
+                moded_vhosts.add(vh)
 
         self.configurator.reverter.register_file_creation(
             True, self.challenge_conf)
 
         if self.configurator.version < (2, 4):
-            config_template = self.CONFIG_TEMPLATE_COMMON + self.CONFIG_TEMPLATE22
+            config_template = self.CONFIG_TEMPLATE22
         else:
-            config_template = self.CONFIG_TEMPLATE_COMMON + self.CONFIG_TEMPLATE24
+            config_template = self.CONFIG_TEMPLATE24
 
         config_text = config_template.format(self.challenge_dir)
 

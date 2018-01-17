@@ -436,19 +436,24 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 return True
         return False
 
-    def find_best_http_vhost(self, target):
+    def find_best_http_vhost(self, target, filter_defaults, port="80"):
         """Returns non-HTTPS vhost objects found from the Apache config
 
         :param str target: Domain name of the desired VirtualHost
+        :param bool filter_defaults: whether _default_ vhosts should be
+            included if it is the best match
+        :param str port: port number the vhost should be listening on
 
         :returns: VirtualHost object that's the best match for target name
         :rtype: `obj.VirtualHost` or None
         """
-        nonssl_vhosts = [i for i in self.vhosts if not i.ssl]
-        return self._find_best_vhost(target, nonssl_vhosts)
+        filtered_vhosts = []
+        for vhost in self.vhosts:
+            if any(a.is_wildcard() or a.get_port() == port for a in vhost.addrs) and not vhost.ssl:
+                filtered_vhosts.append(vhost)
+        return self._find_best_vhost(target, filtered_vhosts, filter_defaults)
 
-
-    def _find_best_vhost(self, target_name, vhosts=None):
+    def _find_best_vhost(self, target_name, vhosts=None, filter_defaults=True):
         """Finds the best vhost for a target_name.
 
         This does not upgrade a vhost to HTTPS... it only finds the most
@@ -457,6 +462,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :param str target_name: domain handled by the desired vhost
         :param vhosts: vhosts to consider
         :type vhosts: `collections.Iterable` of :class:`~certbot_apache.obj.VirtualHost`
+        :param bool filter_defaults: whether a vhost with a _default_
+            addr is acceptable
 
         :returns: VHost or None
 
@@ -497,8 +504,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         # No winners here... is there only one reasonable vhost?
         if best_candidate is None:
-            # reasonable == Not all _default_ addrs
-            vhosts = self._non_default_vhosts(vhosts)
+            if filter_defaults:
+                vhosts = self._non_default_vhosts(vhosts)
             # remove mod_macro hosts from reasonable vhosts
             reasonable_vhosts = [vh for vh
                                  in vhosts if vh.modmacro is False]
@@ -520,7 +527,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                   virtual host addresses
         :rtype: set
 
-    """
+        """
         all_names = set()
 
         vhost_macro = []
