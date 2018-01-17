@@ -101,7 +101,7 @@ class ApacheHttp01(common.TLSSNI01):
     def _relevant_vhosts(self):
         http01_port = self.configurator.config.http01_port
         relevant_vhosts = []
-        for vhost in self.vhosts:
+        for vhost in self.configurator.vhosts:
             if any(a.is_wildcard() or a.get_port() == http01_port for a in vhost.addrs):
                 if not vhost.ssl:
                     relevant_vhosts.append(vhost)
