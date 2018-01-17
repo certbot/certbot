@@ -2,6 +2,8 @@
 import logging
 import os
 
+from certbot import errors
+
 from certbot.plugins import common
 
 logger = logging.getLogger(__name__)
@@ -79,9 +81,8 @@ class ApacheHttp01(common.TLSSNI01):
             if vh:
                 self._set_up_include_directive(vh)
             else:
-                for vh in self.configurator.vhosts:
-                    if not vh.ssl:
-                        self._set_up_include_directive(vh)
+                for vh in self._relevant_vhosts():
+                    self._set_up_include_directive(vh)
 
         self.configurator.reverter.register_file_creation(
             True, self.challenge_conf)
@@ -97,6 +98,19 @@ class ApacheHttp01(common.TLSSNI01):
         with open(self.challenge_conf, "w") as new_conf:
             new_conf.write(config_text)
 
+    def _relevant_vhosts(self):
+        http01_port = str(self.configurator.config.http01_port)
+        relevant_vhosts = []
+        for vhost in self.configurator.vhosts:
+            if any(a.is_wildcard() or a.get_port() == http01_port for a in vhost.addrs):
+                if not vhost.ssl:
+                    relevant_vhosts.append(vhost)
+        if not relevant_vhosts:
+            raise errors.PluginError(
+                "Unable to find a virtual host listening on port {0}."
+                " Please add one.".format(http01_port))
+
+        return relevant_vhosts
 
     def _set_up_challenges(self):
         if not os.path.isdir(self.challenge_dir):
