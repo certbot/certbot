@@ -10,10 +10,8 @@ class ApacheHttp01(common.TLSSNI01):
     """Class that performs HTTP-01 challenges within the Apache configurator."""
 
     CONFIG_TEMPLATE22 = """\
-        <IfModule mod_rewrite.c>
-            RewriteEngine on
-            RewriteRule /.well-known/acme-challenge/(.*) {0}/$1 [L,S=9999]
-        </IfModule>
+        RewriteEngine on
+        RewriteRule /.well-known/acme-challenge/(.*) {0}/$1 [L,S=9999]
 
         <Directory {0}>
             Order allow deny
@@ -22,10 +20,8 @@ class ApacheHttp01(common.TLSSNI01):
     """
 
     CONFIG_TEMPLATE24 = """\
-        <IfModule mod_rewrite.c>
-            RewriteEngine on
-            RewriteRule /.well-known/acme-challenge/(.*) {0}/$1 [END]
-        </IfModule>
+        RewriteEngine on
+        RewriteRule /.well-known/acme-challenge/(.*) {0}/$1 [END]
 
         <Directory {0}>
             Require all granted
