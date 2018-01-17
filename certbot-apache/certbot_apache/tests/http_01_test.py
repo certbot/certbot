@@ -44,13 +44,18 @@ class ApacheHttp01Test(util.ApacheTest):
         self.account_key = self.rsa512jwk
         self.achalls = []
         for i in range(NUM_ACHALLS):
+            if self.config.vhosts[i].name:
+                domain = self.config.vhosts[i].name
+            elif self.config.vhosts[i].aliases:
+                domain = next(iter(self.config.vhost[i].aliases))
+            else:
+                self.assertTrue(False, "No names in vhost.")
             self.achalls.append(
                 achallenges.KeyAuthorizationAnnotatedChallenge(
                     challb=acme_util.chall_to_challb(
                         challenges.HTTP01(token=((chr(ord('a') + i) * 16))),
                         "pending"),
-                    domain="example{0}.com".format(i),
-                    account_key=self.account_key))
+                    domain=domain, account_key=self.account_key))
 
         modules = ["rewrite", "authz_core", "authz_host"]
         for mod in modules:
