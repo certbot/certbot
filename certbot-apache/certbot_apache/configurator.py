@@ -520,7 +520,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                   virtual host addresses
         :rtype: set
 
-    """
+        """
         all_names = set()
 
         vhost_macro = []
