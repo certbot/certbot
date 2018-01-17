@@ -261,8 +261,8 @@ class MultipleVhostsTest(util.ApacheTest):
             errors.PluginError, self.config.choose_vhost, "none.com")
 
     def test_find_best_http_vhost(self):
-        vh = obj.VirtualHost("
-            fp", "ap", set([obj.Addr.fromstring("_default_:80")]), False, True)
+        vh = obj.VirtualHost(
+            "fp", "ap", set([obj.Addr.fromstring("_default_:80")]), False, True)
         self.config.vhosts = [vh]
         self.assertEqual(self.config.find_best_http_vhost("foo.bar", False))
 
