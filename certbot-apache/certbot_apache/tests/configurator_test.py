@@ -126,7 +126,7 @@ class MultipleVhostsTest(util.ApacheTest):
         names = self.config.get_all_names()
         self.assertEqual(names, set(
             ["certbot.demo", "ocspvhost.com", "encryption-example.demo",
-             "nonsym.link", "vhost.in.rootconf"]
+             "nonsym.link", "vhost.in.rootconf", "www.certbot.demo"]
         ))
 
     @certbot_util.patch_get_utility()
@@ -146,7 +146,7 @@ class MultipleVhostsTest(util.ApacheTest):
 
         names = self.config.get_all_names()
         # Names get filtered, only 5 are returned
-        self.assertEqual(len(names), 7)
+        self.assertEqual(len(names), 8)
         self.assertTrue("zombo.com" in names)
         self.assertTrue("google.com" in names)
         self.assertTrue("certbot.demo" in names)
