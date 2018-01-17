@@ -164,9 +164,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                               "ensure-http-header": self._set_http_header,
                               "staple-ocsp": self._enable_ocsp_stapling}
 
-        # This will be set during the perform function
-        self.http_doer = None
-
     @property
     def mod_ssl_conf(self):
         """Full absolute path to SSL configuration file."""
@@ -439,11 +436,34 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 return True
         return False
 
-    def _find_best_vhost(self, target_name):
+    def find_best_http_vhost(self, target, filter_defaults, port="80"):
+        """Returns non-HTTPS vhost objects found from the Apache config
+
+        :param str target: Domain name of the desired VirtualHost
+        :param bool filter_defaults: whether _default_ vhosts should be
+            included if it is the best match
+        :param str port: port number the vhost should be listening on
+
+        :returns: VirtualHost object that's the best match for target name
+        :rtype: `obj.VirtualHost` or None
+        """
+        filtered_vhosts = []
+        for vhost in self.vhosts:
+            if any(a.is_wildcard() or a.get_port() == port for a in vhost.addrs) and not vhost.ssl:
+                filtered_vhosts.append(vhost)
+        return self._find_best_vhost(target, filtered_vhosts, filter_defaults)
+
+    def _find_best_vhost(self, target_name, vhosts=None, filter_defaults=True):
         """Finds the best vhost for a target_name.
 
         This does not upgrade a vhost to HTTPS... it only finds the most
         appropriate vhost for the given target_name.
+
+        :param str target_name: domain handled by the desired vhost
+        :param vhosts: vhosts to consider
+        :type vhosts: `collections.Iterable` of :class:`~certbot_apache.obj.VirtualHost`
+        :param bool filter_defaults: whether a vhost with a _default_
+            addr is acceptable
 
         :returns: VHost or None
 
@@ -456,7 +476,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Points 1 - Address name with no SSL
         best_candidate = None
         best_points = 0
-        for vhost in self.vhosts:
+
+        if vhosts is None:
+            vhosts = self.vhosts
+
+        for vhost in vhosts:
             if vhost.modmacro is True:
                 continue
             names = vhost.get_names()
@@ -480,8 +504,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         # No winners here... is there only one reasonable vhost?
         if best_candidate is None:
-            # reasonable == Not all _default_ addrs
-            vhosts = self._non_default_vhosts()
+            if filter_defaults:
+                vhosts = self._non_default_vhosts(vhosts)
             # remove mod_macro hosts from reasonable vhosts
             reasonable_vhosts = [vh for vh
                                  in vhosts if vh.modmacro is False]
@@ -490,9 +514,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         return best_candidate
 
-    def _non_default_vhosts(self):
+    def _non_default_vhosts(self, vhosts):
         """Return all non _default_ only vhosts."""
-        return [vh for vh in self.vhosts if not all(
+        return [vh for vh in vhosts if not all(
             addr.get_addr() == "_default_" for addr in vh.addrs
         )]
 
@@ -1911,7 +1935,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         self._chall_out.update(achalls)
         responses = [None] * len(achalls)
-        self.http_doer = http_01.ApacheHttp01(self)
+        http_doer = http_01.ApacheHttp01(self)
         sni_doer = tls_sni_01.ApacheTlsSni01(self)
 
         for i, achall in enumerate(achalls):
@@ -1919,11 +1943,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             # challenge. This helps to put all of the responses back together
             # when they are all complete.
             if isinstance(achall.chall, challenges.HTTP01):
-                self.http_doer.add_chall(achall, i)
+                http_doer.add_chall(achall, i)
             else:  # tls-sni-01
                 sni_doer.add_chall(achall, i)
 
-        http_response = self.http_doer.perform()
+        http_response = http_doer.perform()
         sni_response = sni_doer.perform()
         if http_response or sni_response:
             # Must reload in order to activate the challenges.
@@ -1935,7 +1959,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             # of identifying when the new configuration is being used.
             time.sleep(3)
 
-            self._update_responses(responses, http_response, self.http_doer)
+            self._update_responses(responses, http_response, http_doer)
             self._update_responses(responses, sni_response, sni_doer)
 
         return responses

@@ -126,7 +126,7 @@ class MultipleVhostsTest(util.ApacheTest):
         names = self.config.get_all_names()
         self.assertEqual(names, set(
             ["certbot.demo", "ocspvhost.com", "encryption-example.demo",
-             "nonsym.link", "vhost.in.rootconf"]
+             "nonsym.link", "vhost.in.rootconf", "www.certbot.demo"]
         ))
 
     @certbot_util.patch_get_utility()
@@ -146,7 +146,7 @@ class MultipleVhostsTest(util.ApacheTest):
 
         names = self.config.get_all_names()
         # Names get filtered, only 5 are returned
-        self.assertEqual(len(names), 7)
+        self.assertEqual(len(names), 8)
         self.assertTrue("zombo.com" in names)
         self.assertTrue("google.com" in names)
         self.assertTrue("certbot.demo" in names)
@@ -260,6 +260,20 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertRaises(
             errors.PluginError, self.config.choose_vhost, "none.com")
 
+    def test_find_best_http_vhost_default(self):
+        vh = obj.VirtualHost(
+            "fp", "ap", set([obj.Addr.fromstring("_default_:80")]), False, True)
+        self.config.vhosts = [vh]
+        self.assertEqual(self.config.find_best_http_vhost("foo.bar", False), vh)
+
+    def test_find_best_http_vhost_port(self):
+        port = "8080"
+        vh = obj.VirtualHost(
+            "fp", "ap", set([obj.Addr.fromstring("*:" + port)]),
+            False, True, "encryption-example.demo")
+        self.config.vhosts.append(vh)
+        self.assertEqual(self.config.find_best_http_vhost("foo.bar", False, port), vh)
+
     def test_findbest_continues_on_short_domain(self):
         # pylint: disable=protected-access
         chosen_vhost = self.config._find_best_vhost("purple.com")
@@ -305,7 +319,8 @@ class MultipleVhostsTest(util.ApacheTest):
 
     def test_non_default_vhosts(self):
         # pylint: disable=protected-access
-        self.assertEqual(len(self.config._non_default_vhosts()), 8)
+        vhosts = self.config._non_default_vhosts(self.config.vhosts)
+        self.assertEqual(len(vhosts), 8)
 
     def test_deploy_cert_enable_new_vhost(self):
         # Create

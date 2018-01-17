@@ -2,31 +2,33 @@
 import logging
 import os
 
+from certbot import errors
+
 from certbot.plugins import common
 
 logger = logging.getLogger(__name__)
 
 class ApacheHttp01(common.TLSSNI01):
-    """Class that performs HTPP-01 challenges within the Apache configurator."""
-
-    CONFIG_TEMPLATE24 = """\
-Alias /.well-known/acme-challenge {0}
-
-<Directory {0} >
-    Require all granted
-</Directory>
-
-"""
+    """Class that performs HTTP-01 challenges within the Apache configurator."""
 
     CONFIG_TEMPLATE22 = """\
-Alias /.well-known/acme-challenge {0}
+        RewriteEngine on
+        RewriteRule ^/\\.well-known/acme-challenge/([A-Za-z0-9-_=]+)$ {0}/$1 [L]
 
-<Directory {0} >
-    Order allow,deny
-    Allow from all
-</Directory>
+        <Directory {0}>
+            Order Allow,Deny
+            Allow from all
+        </Directory>
+    """
 
-"""
+    CONFIG_TEMPLATE24 = """\
+        RewriteEngine on
+        RewriteRule ^/\\.well-known/acme-challenge/([A-Za-z0-9-_=]+)$ {0}/$1 [END]
+
+        <Directory {0}>
+            Require all granted
+        </Directory>
+    """
 
     def __init__(self, *args, **kwargs):
         super(ApacheHttp01, self).__init__(*args, **kwargs)
@@ -36,6 +38,7 @@ Alias /.well-known/acme-challenge {0}
         self.challenge_dir = os.path.join(
             self.configurator.config.work_dir,
             "http_challenges")
+        self.moded_vhosts = set()
 
     def perform(self):
         """Perform all HTTP-01 challenges."""
@@ -50,6 +53,7 @@ Alias /.well-known/acme-challenge {0}
         self.prepare_http01_modules()
 
         responses = self._set_up_challenges()
+
         self._mod_config()
         # Save reversible changes
         self.configurator.save("HTTP Challenge", True)
@@ -60,7 +64,7 @@ Alias /.well-known/acme-challenge {0}
         """Make sure that we have the needed modules available for http01"""
 
         if self.configurator.conf("handle-modules"):
-            needed_modules = ["alias"]
+            needed_modules = ["rewrite"]
             if self.configurator.version < (2, 4):
                 needed_modules.append("authz_host")
             else:
@@ -70,8 +74,16 @@ Alias /.well-known/acme-challenge {0}
                     self.configurator.enable_mod(mod, temp=True)
 
     def _mod_config(self):
-        self.configurator.parser.add_include(
-            self.configurator.parser.loc["default"], self.challenge_conf)
+        for chall in self.achalls:
+            vh = self.configurator.find_best_http_vhost(
+                chall.domain, filter_defaults=False,
+                port=str(self.configurator.config.http01_port))
+            if vh:
+                self._set_up_include_directive(vh)
+            else:
+                for vh in self._relevant_vhosts():
+                    self._set_up_include_directive(vh)
+
         self.configurator.reverter.register_file_creation(
             True, self.challenge_conf)
 
@@ -79,11 +91,28 @@ Alias /.well-known/acme-challenge {0}
             config_template = self.CONFIG_TEMPLATE22
         else:
             config_template = self.CONFIG_TEMPLATE24
+
         config_text = config_template.format(self.challenge_dir)
 
         logger.debug("writing a config file with text:\n %s", config_text)
         with open(self.challenge_conf, "w") as new_conf:
             new_conf.write(config_text)
+
+    def _relevant_vhosts(self):
+        http01_port = str(self.configurator.config.http01_port)
+        relevant_vhosts = []
+        for vhost in self.configurator.vhosts:
+            if any(a.is_wildcard() or a.get_port() == http01_port for a in vhost.addrs):
+                if not vhost.ssl:
+                    relevant_vhosts.append(vhost)
+        if not relevant_vhosts:
+            raise errors.PluginError(
+                "Unable to find a virtual host listening on port {0} which is"
+                " currently needed for Certbot to prove to the CA that you"
+                " control your domain. Please add a virtual host for port"
+                " {0}.".format(http01_port))
+
+        return relevant_vhosts
 
     def _set_up_challenges(self):
         if not os.path.isdir(self.challenge_dir):
@@ -107,3 +136,15 @@ Alias /.well-known/acme-challenge {0}
         os.chmod(name, 0o644)
 
         return response
+
+    def _set_up_include_directive(self, vhost):
+        """Includes override configuration to the beginning of VirtualHost.
+        Note that this include isn't added to Augeas search tree"""
+
+        if vhost not in self.moded_vhosts:
+            logger.debug(
+                "Adding a temporary challenge validation Include for name: %s " +
+                "in: %s", vhost.name, vhost.filep)
+            self.configurator.parser.add_dir_beginning(
+                vhost.path, "Include", self.challenge_conf)
+            self.moded_vhosts.add(vhost)
