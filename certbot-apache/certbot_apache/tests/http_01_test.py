@@ -118,12 +118,12 @@ class ApacheHttp01Test(util.ApacheTest):
         achalls = [
             achallenges.KeyAuthorizationAnnotatedChallenge(
                 challb=acme_util.chall_to_challb(
-                    challenges.HTTP01(token=(('a' * 16))),
+                    challenges.HTTP01(token=((b'a' * 16))),
                     "pending"),
                 domain=vhost.name, account_key=self.account_key),
             achallenges.KeyAuthorizationAnnotatedChallenge(
                 challb=acme_util.chall_to_challb(
-                    challenges.HTTP01(token=(('a' * 16))),
+                    challenges.HTTP01(token=((b'b' * 16))),
                     "pending"),
                 domain=next(iter(vhost.aliases)), account_key=self.account_key)
         ]
