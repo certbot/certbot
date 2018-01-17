@@ -73,7 +73,7 @@ class ApacheHttp01(common.TLSSNI01):
     def _mod_config(self):
         moded_vhosts = set()
         for chall in self.achalls:
-            vh = self.configurator.find_best_http_vhost(chall.domain)
+            vh = self.configurator.find_best_http_vhost(chall.domain, filter_defaults=False)
             if vh and vh not in moded_vhosts:
                 self._set_up_include_directive(vh)
                 moded_vhosts.add(vh)
