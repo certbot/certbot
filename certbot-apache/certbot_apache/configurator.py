@@ -449,7 +449,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         nonssl_vhosts = [i for i in self.vhosts if not i.ssl]
         return self._find_best_vhost(target, nonssl_vhosts, filter_defaults)
 
-    def _find_best_vhost(self, target_name, vhosts=None, filter_defaults=False):
+    def _find_best_vhost(self, target_name, vhosts=None, filter_defaults=True):
         """Finds the best vhost for a target_name.
 
         This does not upgrade a vhost to HTTPS... it only finds the most
