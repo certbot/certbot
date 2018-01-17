@@ -74,7 +74,7 @@ class ApacheHttp01(common.TLSSNI01):
         moded_vhosts = set()
         for chall in self.achalls:
             vh = self.configurator.find_best_http_vhost(chall.domain)
-            if vh and vh not in moded_vhosts
+            if vh and vh not in moded_vhosts:
                 self._set_up_include_directive(vh)
                 moded_vhosts.add(vh)
 
