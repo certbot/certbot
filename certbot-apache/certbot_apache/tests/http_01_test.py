@@ -125,7 +125,7 @@ class ApacheHttp01Test(util.ApacheTest):
                 challb=acme_util.chall_to_challb(
                     challenges.HTTP01(token=(('a' * 16))),
                     "pending"),
-                domain=iter(next(vhost.aliases)), account_key=self.account_key)
+                domain=next(iter(vhost.aliases)), account_key=self.account_key)
         ]
         self.common_perform_test(achalls, [vhost])
 
