@@ -103,6 +103,7 @@ def get_apache_configurator(  # pylint: disable=too-many-arguments, too-many-loc
         apache_challenge_location=config_path,
         backup_dir=backups,
         config_dir=config_dir,
+        http01_port=80,
         temp_checkpoint_dir=os.path.join(work_dir, "temp_checkpoints"),
         in_progress_dir=os.path.join(backups, "IN_PROGRESS"),
         work_dir=work_dir)
@@ -169,7 +170,7 @@ def get_vh_truth(temp_dir, config_name):
                 os.path.join(prefix, "certbot.conf"),
                 os.path.join(aug_pre, "certbot.conf/VirtualHost"),
                 set([obj.Addr.fromstring("*:80")]), False, True,
-                "certbot.demo"),
+                "certbot.demo", aliases=["www.certbot.demo"]),
             obj.VirtualHost(
                 os.path.join(prefix, "mod_macro-example.conf"),
                 os.path.join(aug_pre,

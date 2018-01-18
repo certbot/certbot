@@ -51,7 +51,8 @@ cover () {
   fi
 
   pkg_dir=$(echo "$1" | tr _ -)
-  pytest --cov "$pkg_dir" --cov-append --cov-report= --numprocesses auto --pyargs "$1"
+  pytest="$(dirname $0)/tools/pytest.sh"
+  "$pytest" --cov "$pkg_dir" --cov-append --cov-report= --pyargs "$1"
   coverage report --fail-under="$min" --include="$pkg_dir/*" --show-missing
 }
 
