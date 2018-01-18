@@ -1,4 +1,4 @@
-#!/bin/sh -xe
+#!/bin/bash -xe
 # prerequisite: apt-get install --no-install-recommends nginx-light openssl
 
 . ./tests/integration/_common.sh
@@ -49,9 +49,7 @@ test_deployment_and_rollback nginx4.wtf
 # No matching server block; default_server does not exist
 export default_server=""
 reload_nginx
-sleep 5
-nginx -c $nginx_root/nginx.conf -T 2>/dev/null | grep "default_server"
-if [ "$?" -eq 0 ]; then
+if nginx -c $nginx_root/nginx.conf -T 2>/dev/null | grep "default_server"; then
     echo "Failed to remove default_server"
     exit 1
 fi
