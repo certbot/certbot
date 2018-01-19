@@ -66,7 +66,8 @@ to serve all files under specified web root ({0})."""
         super(Authenticator, self).__init__(*args, **kwargs)
         self.full_roots = {}
         self.performed = collections.defaultdict(set)
-        self._created_dirs = [] # TODO sydli: stack this
+        # stack of dirs successfully created by this authenticator
+        self._created_dirs = []
 
     def prepare(self):  # pylint: disable=missing-docstring
         pass
@@ -163,26 +164,28 @@ to serve all files under specified web root ({0})."""
             # Umask is used instead of chmod to ensure the client can also
             # run as non-root (GH #1795)
             old_umask = os.umask(0o022)
-            stat_path = os.stat(path)
-            for prefix in sorted(util.get_prefixes(self.full_roots[name]), key=len):
-                try:
-                    # This is coupled with the "umask" call above because
-                    # os.makedirs's "mode" parameter may not always work:
-                    # https://stackoverflow.com/questions/5231901/permission-problems-when-creating-a-dir-with-os-makedirs-python
-                    os.mkdir(prefix, 0o0755)
-                    self._created_dirs.append(prefix)
-                    # Set owner as parent directory if possible
+            try:
+                stat_path = os.stat(path)
+                for prefix in sorted(util.get_prefixes(self.full_roots[name]), key=len):
                     try:
-                        os.chown(prefix, stat_path.st_uid, stat_path.st_gid)
+                        # This is coupled with the "umask" call above because
+                        # os.makedirs's "mode" parameter may not always work:
+                        # https://stackoverflow.com/questions/5231901/permission-problems-when-creating-a-dir-with-os-makedirs-python
+                        os.mkdir(prefix, 0o0755)
+                        self._created_dirs.append(prefix)
+                        # Set owner as parent directory if possible
+                        try:
+                            os.chown(prefix, stat_path.st_uid, stat_path.st_gid)
+                        except OSError as exception:
+                            logger.info("Unable to change owner and uid of webroot directory")
+                            logger.debug("Error was: %s", exception)
                     except OSError as exception:
-                        logger.info("Unable to change owner and uid of webroot directory")
-                        logger.debug("Error was: %s", exception)
-                except OSError as exception:
-                    if exception.errno != errno.EEXIST:
-                        raise errors.PluginError(
-                            "Couldn't create root for {0} http-01 "
-                            "challenge responses: {1}", name, exception)
-            os.umask(old_umask)
+                        if exception.errno != errno.EEXIST:
+                            raise errors.PluginError(
+                                "Couldn't create root for {0} http-01 "
+                                "challenge responses: {1}", name, exception)
+	    finally:
+	        os.umask(old_umask)
 
     def _get_validation_path(self, root_path, achall):
         return os.path.join(root_path, achall.chall.encode("token"))
@@ -218,7 +221,7 @@ to serve all files under specified web root ({0})."""
 
         while len(self._created_dirs) > 0:
             path = self._created_dirs.pop()
-	    try:
+            try:
                 os.rmdir(path)
             except OSError as exc:
                 logger.info("Unable to clean up challenge directory %s", path)

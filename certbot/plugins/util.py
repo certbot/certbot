@@ -9,14 +9,14 @@ logger = logging.getLogger(__name__)
 def get_prefixes(path):
     """Retrieves all possible path prefixes of a path, in descending order
     of length. For instance,
-        /a/b/c => ['/a/b/c/', '/a/b/c', '/a/b', '/a', '/']
+        /a/b/c/ => ['/a/b/c/', '/a/b/c', '/a/b', '/a', '/']
     """
     prefix = path
     prefixes = []
     while len(prefix) > 0:
         prefixes.append(prefix)
         prefix, _ = os.path.split(prefix)
-        # Break once we hit '/'
+        # break once we hit '/'
         if prefix == prefixes[-1]:
             break
     return prefixes
