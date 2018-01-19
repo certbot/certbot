@@ -256,13 +256,13 @@ class IConfig(zope.interface.Interface):
         "user; only needed if your config is somewhere unsafe like /tmp/."
         "This is a boolean")
 
-    server_tls_updates = zope.interface.Attribute(
-        "If updates to the server's TLS configuration should be"
-        " performed by the installer.")
+    disable_server_tls_updates = zope.interface.Attribute(
+        "If updates to the server's TLS configuration performed by the installer"
+        " should be disabled.")
 
-    installer_updates = zope.interface.Attribute(
-        "If updates provided by installer enhancements should be performed"
-        " when Certbot is being run with \"renew\" verb.")
+    disable_renew_updates = zope.interface.Attribute(
+        "If updates provided by installer enhancements when Certbot is being run"
+        " with \"renew\" verb should be disabled.")
 
 class IInstaller(IPlugin):
     """Generic Certbot Installer Interface.
@@ -679,14 +679,14 @@ class ServerTLSUpdater(object):
     and keys used by the server.
 
     An installer can determine if TLS server updates are enabled by checking
-    :attr:`IConfig.server_tls_updates`.
+    :attr:`IConfig.disable_server_tls_updates`.
 
     """
 
     __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
-    def server_tls_updates(self, domain, lineage=None, *args, **kwargs):
+    def server_tls_updates(self, domain, *args, **kwargs):
         """Set the server's TLS config to latest recommended version.
 
         This function will only be called if the user hasn't disabled TLS

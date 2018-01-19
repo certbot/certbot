@@ -1074,12 +1074,6 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         "security", "--rsa-key-size", type=int, metavar="N",
         default=flag_default("rsa_key_size"), help=config_help("rsa_key_size"))
     helpful.add(
-        "security", "--disable-installer-updates", action="store_false",
-        default=flag_default("installer_updates"), dest="installer_updates",
-        help="Disable any automatic updates to your server configuration that"
-        " would otherwise be done by the selected installer plugin, and"
-        " triggered by the \"renew\" verb.")
-    helpful.add(
         "security", "--must-staple", action="store_true",
         dest="must_staple", default=flag_default("must_staple"),
         help=config_help("must_staple"))
@@ -1123,8 +1117,9 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         help="Require that all configuration files are owned by the current "
              "user; only needed if your config is somewhere unsafe like /tmp/")
     helpful.add(
-        "security", "--dangerously-disable-server-tls-updates", action="store_false",
-        default=flag_default("server_tls_updates"), dest="server_tls_updates",
+        "security", "--dangerously-disable-server-tls-updates", action="store_true",
+        default=flag_default("disable_server_tls_updates"),
+        dest="disable_server_tls_updates",
         help="Disable any updates to your server's TLS configuration"
         " other than setting the certificate and key to be used when"
         " Certbot installs a new certificate. Using this flag is"
@@ -1188,6 +1183,13 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         default=flag_default("directory_hooks"), dest="directory_hooks",
         help="Disable running executables found in Certbot's hook directories"
         " during renewal. (default: False)")
+    helpful.add(
+        "renew", "--disable-renew-updates", action="store_true",
+        default=flag_default("disable_renew_updates"), dest="disable_renew_updates",
+        help="Disable automatic updates to your server configuration that"
+        " would otherwise be done by the selected installer plugin, and"
+        " triggered by the \"renew\" verb. This setting does not apply to"
+        " important TLS configuration updates.")
 
     helpful.add_deprecated_argument("--agree-dev-preview", 0)
     helpful.add_deprecated_argument("--dialog", 0)

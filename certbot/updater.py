@@ -44,7 +44,8 @@ def run_renewal_deployer(lineage, installer, config):
     :returns: `None`
     :rtype: None
     """
-    if config.installer_updates and isinstance(installer, interfaces.RenewDeployer):
+    if not config.disable_renew_updates and isinstance(installer,
+                                                       interfaces.RenewDeployer):
         installer.renew_deploy(lineage)
 
 def _run_updaters(lineage, installer, config):
@@ -61,9 +62,9 @@ def _run_updaters(lineage, installer, config):
     :rtype: None
     """
     for domain in lineage.names():
-        if config.server_tls_updates:
+        if not config.disable_server_tls_updates:
             if isinstance(installer, interfaces.ServerTLSUpdater):
                 installer.server_tls_updates(domain)
-        if config.installer_updates:
+        if not config.disable_renew_updates:
             if isinstance(installer, interfaces.GenericUpdater):
                 installer.generic_updates(domain)

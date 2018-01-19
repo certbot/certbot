@@ -192,7 +192,7 @@ def choose_configurator_plugins(config, plugins, verb):  # pylint: disable=too-m
             installer = pick_installer(config, req_inst, plugins)
         if need_auth:
             authenticator = pick_authenticator(config, req_auth, plugins)
-    if installer is not None:
+    if installer is not None and verb != "renew":
         verify_enhancements_supported(config, installer)
 
     logger.debug("Selected authenticator %s and installer %s", authenticator, installer)
@@ -226,7 +226,7 @@ def verify_enhancements_supported(config, installer):
     :raises errors.MisconfigurationError: configuration conflict
 
     """
-    if not config.server_tls_updates:
+    if config.disable_server_tls_updates:
         flag = "--dangerously-disable-server-tls-updates"
         if isinstance(installer, interfaces.ServerTLSUpdater):
             verified = z_util(interfaces.IDisplay).yesno(
