@@ -5,6 +5,7 @@ import mock
 from certbot import errors
 from certbot import interfaces
 from certbot import main
+from certbot import updater
 
 from certbot.plugins import selection
 
@@ -87,39 +88,33 @@ class RenewUpdaterTest(unittest.TestCase):
         mock_select.return_value = (mock_tls_installer, None)
         with mock.patch('certbot.main._init_le_client'):
             main.renew_cert(config, None, mock.MagicMock())
-        #self.assertEqual(mock_tls_installer.callcounter.call_count, 2)
         self.assertTrue(mock_tls_installer.restart.called)
 
         mock_tls_installer.restart.reset_mock()
         mock_tls_installer.callcounter.reset_mock()
-        mock_tls_installer.renewed = []
 
-        main.run_renewal_updaters(config, None, lineage)
-        #self.assertEqual(mock_tls_installer.callcounter.call_count, 2)
+        updater.run_renewal_updaters(config, None, lineage)
         self.assertFalse(mock_tls_installer.restart.called)
 
         # Generic Updater
         mock_select.return_value = (mock_generic_updater, None)
         with mock.patch('certbot.main._init_le_client'):
             main.renew_cert(config, None, mock.MagicMock())
-        #self.assertEqual(mock_generic_updater.callcounter.call_count, 2)
         self.assertTrue(mock_generic_updater.restart.called)
 
         mock_generic_updater.restart.reset_mock()
         mock_generic_updater.callcounter.reset_mock()
-        mock_generic_updater.renewed = []
 
-        main.run_renewal_updaters(config, None, lineage)
+        updater.run_renewal_updaters(config, None, lineage)
         self.assertEqual(mock_generic_updater.callcounter.call_count, 2)
         self.assertFalse(mock_generic_updater.restart.called)
-        self.assertFalse(any(mock_generic_updater.renewed))
 
     def test_renew_deployer(self):
         config = self.get_config({"installer_updates": True})
         lineage = mock.MagicMock()
         lineage.names.return_value = ['firstdomain', 'seconddomain']
         mock_deployer = self.renew_deployer
-        main._run_renewal_deployer(lineage, mock_deployer, config)
+        updater.run_renewal_deployer(lineage, mock_deployer, config)
         self.assertTrue(mock_deployer.callcounter.called_with(lineage))
 
 

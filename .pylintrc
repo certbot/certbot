@@ -225,7 +225,7 @@ single-line-if-stmt=no
 no-space-check=trailing-comma
 
 # Maximum number of lines in a module
-max-module-lines=1300
+max-module-lines=1250
 
 # String used as indentation unit. This is usually " " (4 spaces) or "\t" (1
 # tab).

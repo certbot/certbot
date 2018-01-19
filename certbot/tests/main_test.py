@@ -22,6 +22,7 @@ from certbot import configuration
 from certbot import crypto_util
 from certbot import errors
 from certbot import main
+from certbot import updater
 from certbot import util
 
 from certbot.plugins import disco
@@ -1373,7 +1374,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         mock_choose.side_effect = errors.PluginSelectionError
         self.assertRaises(errors.PluginSelectionError, main.renew_cert,
                           None, None, None)
-        self.assertRaises(errors.PluginSelectionError, main.run_renewal_updaters,
+        self.assertRaises(errors.PluginSelectionError, updater.run_renewal_updaters,
                           None, None, None)
 
 class UnregisterTest(unittest.TestCase):

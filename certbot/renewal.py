@@ -12,13 +12,14 @@ import zope.component
 import OpenSSL
 
 from certbot import cli
-
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
 from certbot import util
 from certbot import hooks
 from certbot import storage
+from certbot import updater
+
 from certbot.plugins import disco as plugins_disco
 
 logger = logging.getLogger(__name__)
@@ -427,7 +428,8 @@ def handle_renewal_request(config):
                 else:
                     renew_skipped.append(renewal_candidate.fullchain)
                 # Run updater interface methods
-                main.run_renewal_updaters(lineage_config, plugins, renewal_candidate)
+                updater.run_renewal_updaters(lineage_config, plugins,
+                                             renewal_candidate)
         except Exception as e:  # pylint: disable=broad-except
             # obtain_cert (presumably) encountered an unanticipated problem.
             logger.warning("Attempting to renew cert (%s) from %s produced an "
