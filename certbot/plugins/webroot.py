@@ -184,8 +184,8 @@ to serve all files under specified web root ({0})."""
                             raise errors.PluginError(
                                 "Couldn't create root for {0} http-01 "
                                 "challenge responses: {1}", name, exception)
-	    finally:
-	        os.umask(old_umask)
+            finally:
+                os.umask(old_umask)
 
     def _get_validation_path(self, root_path, achall):
         return os.path.join(root_path, achall.chall.encode("token"))
