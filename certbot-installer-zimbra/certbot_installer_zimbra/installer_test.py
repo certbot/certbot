@@ -15,28 +15,33 @@ from certbot_installer_zimbra.installer import ZimbraInstaller
 class ZimbraInstallerTest(unittest.TestCase):
 
     def setUp(self):
-        self.temp_dir, self.config_dir, self.work_dir = common.dir_setup('opt_zimbra', 'certbot_installer_zimbra')
+        self.temp_dir, self.config_dir, self.work_dir = common.dir_setup(
+            'opt_zimbra', 'certbot_installer_zimbra')
         self.logs_dir = tempfile.mkdtemp('logs')
         backups = os.path.join(self.work_dir, "backups")
 
         self.zimbra_root = self.temp_dir
 
         with mock.patch("certbot_installer_zimbra.installer.util.exe_exists") as mock_exe_exists:
-            with mock.patch('certbot_installer_zimbra.installer.pwd.getpwnam') as mock_getpwnam:
-                with mock.patch('certbot_installer_zimbra.installer.util.lock_dir_until_exit') as mock_lock_dir_until_exit:
-                    with mock.patch('certbot_installer_zimbra.installer.ZimbraInstaller._exec_zimbra') as mock_exec_zimbra:
+            with mock.patch(
+                'certbot_installer_zimbra.installer.pwd.getpwnam') as mock_getpwnam:
+                with mock.patch('certbot_installer_zimbra.installer.util'
+                    '.lock_dir_until_exit') as mock_lock_dir_until_exit:
+                    with mock.patch('certbot_installer_zimbra.installer.ZimbraInstaller'
+                        '._exec_zimbra') as mock_exec_zimbra:
                         mock_lock_dir_until_exit.return_value = True
                         mock_exe_exists.return_value = True
                         mock_getpwnam.return_value = mock.MagicMock(
-                            pw_name = 'zimbra',
-                            pw_uid = 999,
-                            pw_gid = 999,
-                            pw_dir = self.zimbra_root
+                            pw_name='zimbra',
+                            pw_uid=999,
+                            pw_gid=999,
+                            pw_dir=self.zimbra_root
                         )
+                        mock_exec_zimbra.return_value = None
 
                         self.installer = ZimbraInstaller(
                             config=mock.MagicMock(
-                                zimbra_zimbra_root = self.zimbra_root,
+                                zimbra_zimbra_root=self.zimbra_root,
                                 config_dir=self.config_dir,
                                 work_dir=self.work_dir,
                                 logs_dir=self.logs_dir,
@@ -61,8 +66,4 @@ class ZimbraInstallerTest(unittest.TestCase):
         mock_getpwnam.side_effect = KeyError()
         self.assertRaises(
             errors.NoInstallationError, self.installer.prepare)
-
-    def test_prepare(self):
-        self.assertEquals(os.path.join(self.zimbra_root, 'certbot-tmp'), self.installer.zimbra_temp_path)
-        self.assertEquals(os.path.join(self.zimbra_root, 'ssl/zimbra/commercial'), self.installer.zimbra_cert_path)
 

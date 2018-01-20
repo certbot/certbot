@@ -19,10 +19,26 @@ logger = logging.getLogger(__name__)
 @zope.interface.implementer(interfaces.IInstaller)
 @zope.interface.provider(interfaces.IPluginFactory)
 class ZimbraInstaller(common.Installer):
+    """Zimbra installer
+    """
+
     description = "Zimbra Mail Server plugin - Alpha"
 
     def __init__(self, *args, **kwargs):
         super(ZimbraInstaller, self).__init__(*args, **kwargs)
+
+        self._zimbra_temp_path = None
+        self._zimbra_temp_crt = None
+        self._zimbra_temp_key = None
+        self._zimbra_temp_ca = None
+
+        self._zimbra_cert_path = None
+        self._zimbra_cert_crt = None
+        self._zimbra_cert_key = None
+        self._zimbra_cert_ca = None
+
+        self._zimbra_user = None
+        self._deploy_cert = None
 
     @classmethod
     def add_parser_arguments(cls, add):
@@ -58,19 +74,19 @@ class ZimbraInstaller(common.Installer):
             raise errors.PluginError(
                 'Unable to lock %s', self.conf('zimbra-root'))
 
-        self.zimbra_temp_path = os.path.join(self.conf('zimbra-root'), 'certbot-tmp')
-        self.zimbra_temp_crt = os.path.join(self.zimbra_temp_path, 'commercial.crt')
-        self.zimbra_temp_key = os.path.join(self.zimbra_temp_path, 'commercial.key')
-        self.zimbra_temp_ca = os.path.join(self.zimbra_temp_path, 'commercial_ca.crt')
+        self._zimbra_temp_path = os.path.join(self.conf('zimbra-root'), 'certbot-tmp')
+        self._zimbra_temp_crt = os.path.join(self._zimbra_temp_path, 'commercial.crt')
+        self._zimbra_temp_key = os.path.join(self._zimbra_temp_path, 'commercial.key')
+        self._zimbra_temp_ca = os.path.join(self._zimbra_temp_path, 'commercial_ca.crt')
 
-        self.zimbra_cert_path = os.path.join(self.conf('zimbra-root'), 'ssl/zimbra/commercial')
-        self.zimbra_cert_crt = os.path.join(self.zimbra_cert_path, 'commercial.crt')
-        self.zimbra_cert_key = os.path.join(self.zimbra_cert_path, 'commercial.key')
-        self.zimbra_cert_ca = os.path.join(self.zimbra_cert_path, 'commercial_ca.crt')
+        self._zimbra_cert_path = os.path.join(self.conf('zimbra-root'), 'ssl/zimbra/commercial')
+        self._zimbra_cert_crt = os.path.join(self._zimbra_cert_path, 'commercial.crt')
+        self._zimbra_cert_key = os.path.join(self._zimbra_cert_path, 'commercial.key')
+        self._zimbra_cert_ca = os.path.join(self._zimbra_cert_path, 'commercial_ca.crt')
 
         try:
-            self.zimbra_user = pwd.getpwnam('zimbra')
-        except KeyError as e:
+            self._zimbra_user = pwd.getpwnam('zimbra')
+        except KeyError:
             raise errors.PluginError("Zimbra user not found")
 
         self._exec_zimbra(['bin/zmcontrol', '-v'])
@@ -94,6 +110,7 @@ class ZimbraInstaller(common.Installer):
         """
         return []
 
+    #pylint: disable=unused-argument
     def deploy_cert(self, domain, cert_path, key_path, chain_path, fullchain_path):
         """Deploy certificate.
 
@@ -125,6 +142,7 @@ class ZimbraInstaller(common.Installer):
         """
         return []
 
+    #pylint: disable=unused-argument
     def enhance(self, domain, enhancement, options=None):
         """Perform a configuration enhancement.
 
@@ -164,38 +182,39 @@ class ZimbraInstaller(common.Installer):
         :raises .PluginError: when save is unsuccessful
 
         """
-        save_files = [self.zimbra_cert_crt, self.zimbra_cert_key, self.zimbra_cert_ca]
+        save_files = [self._zimbra_cert_crt, self._zimbra_cert_key, self._zimbra_cert_ca]
         self.add_to_checkpoint(save_files, "", temporary)
 
         # Copy the certificate and deploy
-        if os.path.isdir(self.zimbra_temp_path):
-            shutil.rmtree(self.zimbra_temp_path)
+        if os.path.isdir(self._zimbra_temp_path):
+            shutil.rmtree(self._zimbra_temp_path)
 
-        util.make_or_verify_dir(self.zimbra_temp_path, mode=0o755, uid=self.zimbra_user.pw_uid)
-        shutil.copyfile(self._deploy_cert['cert_path'], self.zimbra_temp_crt)
-        shutil.copyfile(self._deploy_cert['key_path'], self.zimbra_temp_key)
-        shutil.copyfile(self._deploy_cert['chain_path'], self.zimbra_temp_ca)
-        os.chown(self.zimbra_temp_crt, self.zimbra_user.pw_uid, self.zimbra_user.pw_gid)
-        os.chown(self.zimbra_temp_key, self.zimbra_user.pw_uid, self.zimbra_user.pw_gid)
-        os.chown(self.zimbra_temp_ca, self.zimbra_user.pw_uid, self.zimbra_user.pw_gid)
+        util.make_or_verify_dir(self._zimbra_temp_path, mode=0o755, uid=self._zimbra_user.pw_uid)
+        shutil.copyfile(self._deploy_cert['cert_path'], self._zimbra_temp_crt)
+        shutil.copyfile(self._deploy_cert['key_path'], self._zimbra_temp_key)
+        shutil.copyfile(self._deploy_cert['chain_path'], self._zimbra_temp_ca)
+        os.chown(self._zimbra_temp_crt, self._zimbra_user.pw_uid, self._zimbra_user.pw_gid)
+        os.chown(self._zimbra_temp_key, self._zimbra_user.pw_uid, self._zimbra_user.pw_gid)
+        os.chown(self._zimbra_temp_ca, self._zimbra_user.pw_uid, self._zimbra_user.pw_gid)
 
-        if os.path.isfile(self.zimbra_cert_crt):
-            os.remove(self.zimbra_cert_crt)
-        if os.path.isfile(self.zimbra_cert_key):
-            os.remove(self.zimbra_cert_key)
-        if os.path.isfile(self.zimbra_cert_ca):
-            os.remove(self.zimbra_cert_ca)
+        if os.path.isfile(self._zimbra_cert_crt):
+            os.remove(self._zimbra_cert_crt)
+        if os.path.isfile(self._zimbra_cert_key):
+            os.remove(self._zimbra_cert_key)
+        if os.path.isfile(self._zimbra_cert_ca):
+            os.remove(self._zimbra_cert_ca)
 
-        shutil.copyfile(self._deploy_cert['cert_path'], self.zimbra_cert_crt)
-        shutil.copyfile(self._deploy_cert['key_path'], self.zimbra_cert_key)
-        shutil.copyfile(self._deploy_cert['chain_path'], self.zimbra_cert_ca)
-        os.chown(self.zimbra_cert_crt, self.zimbra_user.pw_uid, self.zimbra_user.pw_gid)
-        os.chown(self.zimbra_cert_key, self.zimbra_user.pw_uid, self.zimbra_user.pw_gid)
-        os.chown(self.zimbra_cert_ca, self.zimbra_user.pw_uid, self.zimbra_user.pw_gid)
+        shutil.copyfile(self._deploy_cert['cert_path'], self._zimbra_cert_crt)
+        shutil.copyfile(self._deploy_cert['key_path'], self._zimbra_cert_key)
+        shutil.copyfile(self._deploy_cert['chain_path'], self._zimbra_cert_ca)
+        os.chown(self._zimbra_cert_crt, self._zimbra_user.pw_uid, self._zimbra_user.pw_gid)
+        os.chown(self._zimbra_cert_key, self._zimbra_user.pw_uid, self._zimbra_user.pw_gid)
+        os.chown(self._zimbra_cert_ca, self._zimbra_user.pw_uid, self._zimbra_user.pw_gid)
 
-        self._exec_zimbra(['bin/zmcertmgr', 'deploycrt', 'comm', self.zimbra_temp_crt, self.zimbra_temp_ca])
+        self._exec_zimbra(['bin/zmcertmgr', 'deploycrt', 'comm',
+            self._zimbra_temp_crt, self._zimbra_temp_ca])
 
-        shutil.rmtree(self.zimbra_temp_path)
+        shutil.rmtree(self._zimbra_temp_path)
 
         if title and not temporary:
             self.finalize_checkpoint(title)
@@ -237,10 +256,17 @@ class ZimbraInstaller(common.Installer):
         self._exec_zimbra(['bin/zmcontrol', 'restart'])
 
     def _exec_zimbra(self, args):
-        def subprocess_preexec():
-            os.setgid(self.zimbra_user.pw_gid)
-            os.setuid(self.zimbra_user.pw_uid)
+        """Execute a command with the zimbra user and home directory
 
-        child = subprocess.Popen(args, preexec_fn=subprocess_preexec, cwd=self.conf('zimbra-root'), stdout=subprocess.PIPE)
+        :param list args: command and arguments
+        """
+        def subprocess_preexec():
+            """Set the user and group id before executing command
+            """
+            os.setgid(self._zimbra_user.pw_gid)
+            os.setuid(self._zimbra_user.pw_uid)
+
+        child = subprocess.Popen(args, preexec_fn=subprocess_preexec,
+            cwd=self.conf('zimbra-root'), stdout=subprocess.PIPE)
         child.wait()
 
