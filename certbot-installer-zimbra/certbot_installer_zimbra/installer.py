@@ -182,7 +182,12 @@ class ZimbraInstaller(common.Installer):
         :raises .PluginError: when save is unsuccessful
 
         """
-        save_files = [self._zimbra_cert_crt, self._zimbra_cert_key, self._zimbra_cert_ca]
+        save_files = []
+        if os.path.isfile(self._zimbra_cert_crt) and os.path.isfile(self._zimbra_cert_key):
+            save_files.append(self._zimbra_cert_crt)
+            save_files.append(self._zimbra_cert_key)
+        if os.path.isfile(self._zimbra_cert_ca):
+            save_files.append(self._zimbra_cert_ca)
         self.add_to_checkpoint(save_files, "", temporary)
 
         # Copy the certificate and deploy
