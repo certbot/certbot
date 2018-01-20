@@ -105,6 +105,7 @@ class NginxConfigurator(common.Installer):
         self.parser = None
         self.version = version
         self._enhance_func = {"redirect": self._enable_redirect,
+                              "ensure-http-header": self._set_http_header,
                               "staple-ocsp": self._enable_ocsp_stapling}
 
         self.reverter.recovery_routine()
@@ -621,7 +622,7 @@ class NginxConfigurator(common.Installer):
     ##################################
     def supported_enhancements(self):  # pylint: disable=no-self-use
         """Returns currently supported enhancements."""
-        return ['redirect', 'staple-ocsp']
+        return ['redirect', 'ensure-http-header', 'staple-ocsp']
 
     def enhance(self, domain, enhancement, options=None):
         """Enhance configuration.
@@ -646,6 +647,57 @@ class NginxConfigurator(common.Installer):
     def _has_certbot_redirect(self, vhost, domain):
         test_redirect_block = _test_block_from_block(_redirect_block_for_domain(domain))
         return vhost.contains_list(test_redirect_block)
+
+    def _should_break_block(self, vhost):
+        # if host has both SSL and non-SSL addrs, we should break this block!
+        return vhost.ssl and any([not addr.ssl for addr in vhost.addrs])
+
+    def _set_http_header(self, domain, header_substring):
+        """Enables header identified by header_substring on domain.
+
+        If the vhost is listening plaintextishly, separates out the relevant
+        directives into a new server block, and only add header directive to
+        HTTPS block.
+
+        :param str domain: the domain to enable header for.
+        :param str header_substring: String to uniquely identify a header.
+                        e.g. Strict-Transport-Security, Upgrade-Insecure-Requests
+        :returns: Success
+        :raises .errors.PluginError: If no viable HTTPS host can be created or
+            set with header header_substring.
+        """
+        vhost = self.choose_vhost(domain)
+        if vhost.has_header(header_substring):
+            raise errors.PluginEnhancementAlreadyPresent(
+                "Existing %s header" % (header_substring))
+
+        if vhost is None:
+            # this should never happen, since enhancements occur after
+            # setting certs!
+            raise errors.PluginError(
+                "Unable to find corresponding HTTP host for enhancement.")
+
+        # if there is no separate SSL vhost, break the vhost into two blocks:
+        if self._should_break_block(vhost):
+            http_vhost = self.parser.duplicate_vhost(vhost,
+                             only_directives=['listen', 'server_name'])
+
+            def _ssl_match_func(directive):
+                return 'ssl' in directive
+
+            def _no_ssl_match_func(directive):
+                return 'ssl' not in directive
+
+            # remove all ssl addresses from the new block
+            self.parser.remove_server_directives(http_vhost, 'listen', match_func=_ssl_match_func)
+
+            # remove all non-ssl addresses from the existing block
+            self.parser.remove_server_directives(vhost, 'listen', match_func=_no_ssl_match_func)
+
+        header_directives = [
+            ['\n    ', 'add_header', header_substring] + constants.HEADER_ARGS[header_substring],
+            ['\n']]
+        self.parser.add_server_directives(vhost, header_directives, replace=False)
 
     def _add_redirect_block(self, vhost, domain):
         """Add redirect directive to vhost
