@@ -648,7 +648,7 @@ class RenewDeployer(object):
     __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
-    def renew_deploy(self, domain, lineage, *args, **kwargs):
+    def renew_deploy(self, lineage, *args, **kwargs):
         """Perform any update types defined by the installer.
 
         If an installer is a subclass of the class containing this method, this
@@ -656,9 +656,7 @@ class RenewDeployer(object):
         update defined by the installer should be run conditionally, the
         installer needs to handle checking the conditions itself.
 
-        This method is called once for each domain in lineage.
-
-        :param str domain: domain in the lineage being updated
+        This method is called once for each lineage renewed
 
         :param lineage: Certificate lineage object that is set if certificate
             was renewed on this run.
@@ -694,7 +692,4 @@ class ServerTLSUpdater(object):
 
         :param str domain: domain in the lineage being updated
 
-        :param lineage: Certificate lineage object that is set if certificate
-            was renewed on this run.
-        :type lineage: storage.RenewableCert
         """
