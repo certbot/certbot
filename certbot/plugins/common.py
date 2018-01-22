@@ -101,7 +101,110 @@ class Plugin(object):
     def conf(self, var):
         """Find a configuration value for variable ``var``."""
         return getattr(self.config, self.dest(var))
-# other
+
+
+class PluginStorage(object):
+    """Class implementing storage functionality for plugins"""
+
+    def __init__(self, config, classkey):
+        """Initializes PluginStorage object storing required configuration
+        options.
+
+        :param .configuration.NamespaceConfig config: Configuration object
+        :param str classkey: class name to use as root key in storage file
+
+        :returns: Plugin storage object
+        :rtype: dict
+
+        :raises .errors.PluginStorageError: when unable to open or read the file
+        """
+        try:
+            self.storagepath = os.path.join(config.config_dir, "pluginstorage.json")
+            self._data = self.load()
+        except AttributeError:
+            self.storagepath = None
+        self.classkey = classkey
+
+    def load(self):
+        """Reads PluginStorage content from the disk to a dict structure
+
+        :returns: Plugin storage object
+        :rtype: dict
+
+        :raises .errors.PluginStorageError: when unable to open or read the file
+        """
+
+        data = dict()
+        filedata = ""
+        try:
+            with open(self.storagepath, 'r') as fh:
+                filedata = fh.read()
+        except IOError as e:
+            errmsg = "Could not read PluginStorage data file: {0} : {1}".format(
+                self.storagepath, str(e))
+            if os.path.isfile(self.storagepath):
+                # Only error out if file exists, but cannot be read
+                logger.error(errmsg)
+                raise errors.PluginStorageError(errmsg)
+        except TypeError:
+            # This happens if storagepath is not set, eg. None
+            raise errors.PluginStorageError("Could not open PluginStorage")
+        try:
+            data = json.loads(filedata)
+        except ValueError:
+            if len(filedata) == 0:
+                logger.debug("Plugin storage file %s was empty, no values loaded",
+                             self.storagepath)
+            else:
+                errmsg = "PluginStorage file {0} is corrupted.".format(
+                    self.storagepath)
+                logger.error(errmsg)
+                raise errors.PluginStorageError(errmsg)
+        return data
+
+    def save(self):
+        """Saves PluginStorage content to disk
+
+        :raises .errors.PluginStorageError: when unable to serialize the data
+            or write it to the filesystem
+        """
+        try:
+            serialized = json.dumps(self._data)
+        except TypeError as e:
+            errmsg = "Could not serialize PluginStorage data: {0}".format(
+                str(e))
+            logger.error(errmsg)
+            raise errors.PluginStorageError(errmsg)
+        try:
+            with os.fdopen(os.open(self.storagepath,
+                                   os.O_WRONLY | os.O_CREAT, 0o600), 'w') as fh:
+                fh.truncate()
+                fh.write(serialized)
+        except IOError as e:
+            errmsg = "Could not write PluginStorage data to file {0} : {1}".format(
+                self.storagepath, str(e))
+            logger.error(errmsg)
+            raise errors.PluginStorageError(errmsg)
+
+    def put(self, key, value):
+        """Put configuration value to PluginStorage
+
+        :param str key: Key to store the value to
+        :param value: Data to store
+        """
+        if not self.classkey in self._data.keys():
+            self._data[self.classkey] = dict()
+        self._data[self.classkey][key] = value
+
+    def fetch(self, key):
+        """Get configuration value from PluginStorage
+
+        :param str key: Key to get value from the storage
+        """
+        try:
+            return self._data[self.classkey][key]
+        except KeyError:
+            return None
 
 
 class Installer(Plugin):
@@ -317,133 +420,55 @@ class Addr(object):
         return result
 
 
-class PluginStorage(object):
-    """Class implementing storage functionality for plugins"""
+class ChallengePerformer(object):
+    """Abstract base for challenge performers.
 
-    def __init__(self, config, classkey):
-        """Initializes PluginStorage object storing required configuration
-        options.
+    :ivar configurator: Authenticator and installer plugin
+    :ivar achalls: Annotated challenges
+    :vartype achalls: `list` of `.KeyAuthorizationAnnotatedChallenge`
+    :ivar indices: Holds the indices of challenges from a larger array
+        so the user of the class doesn't have to.
+    :vartype indices: `list` of `int`
 
-        :param .configuration.NamespaceConfig config: Configuration object
-        :param str classkey: class name to use as root key in storage file
-
-        :returns: Plugin storage object
-        :rtype: dict
-
-        :raises .errors.PluginStorageError: when unable to open or read the file
-        """
-        try:
-            self.storagepath = os.path.join(config.config_dir, "pluginstorage.json")
-            self._data = self.load()
-        except AttributeError:
-            self.storagepath = None
-        self.classkey = classkey
-
-    def load(self):
-        """Reads PluginStorage content from the disk to a dict structure
-
-        :returns: Plugin storage object
-        :rtype: dict
-
-        :raises .errors.PluginStorageError: when unable to open or read the file
-        """
-
-        data = dict()
-        filedata = ""
-        try:
-            with open(self.storagepath, 'r') as fh:
-                filedata = fh.read()
-        except IOError as e:
-            errmsg = "Could not read PluginStorage data file: {0} : {1}".format(
-                self.storagepath, str(e))
-            if os.path.isfile(self.storagepath):
-                # Only error out if file exists, but cannot be read
-                logger.error(errmsg)
-                raise errors.PluginStorageError(errmsg)
-        except TypeError:
-            # This happens if storagepath is not set, eg. None
-            raise errors.PluginStorageError("Could not open PluginStorage")
-        try:
-            data = json.loads(filedata)
-        except ValueError:
-            if len(filedata) == 0:
-                logger.debug("Plugin storage file %s was empty, no values loaded",
-                             self.storagepath)
-            else:
-                errmsg = "PluginStorage file {0} is corrupted.".format(
-                    self.storagepath)
-                logger.error(errmsg)
-                raise errors.PluginStorageError(errmsg)
-        return data
-
-    def save(self):
-        """Saves PluginStorage content to disk
-
-        :raises .errors.PluginStorageError: when unable to serialize the data
-            or write it to the filesystem
-        """
-        try:
-            serialized = json.dumps(self._data)
-        except TypeError as e:
-            errmsg = "Could not serialize PluginStorage data: {0}".format(
-                str(e))
-            logger.error(errmsg)
-            raise errors.PluginStorageError(errmsg)
-        try:
-            with os.fdopen(os.open(self.storagepath,
-                                   os.O_WRONLY | os.O_CREAT, 0o600), 'w') as fh:
-                fh.truncate()
-                fh.write(serialized)
-        except IOError as e:
-            errmsg = "Could not write PluginStorage data to file {0} : {1}".format(
-                self.storagepath, str(e))
-            logger.error(errmsg)
-            raise errors.PluginStorageError(errmsg)
-
-    def put(self, key, value):
-        """Put configuration value to PluginStorage
-
-        :param str key: Key to store the value to
-        :param value: Data to store
-        """
-        if not self.classkey in self._data.keys():
-            self._data[self.classkey] = dict()
-        self._data[self.classkey][key] = value
-
-    def fetch(self, key):
-        """Get configuration value from PluginStorage
-
-        :param str key: Key to get value from the storage
-        """
-        try:
-            return self._data[self.classkey][key]
-        except KeyError:
-            return None
-
-
-class TLSSNI01(object):
-    """Abstract base for TLS-SNI-01 challenge performers"""
+    """
 
     def __init__(self, configurator):
         self.configurator = configurator
         self.achalls = []
         self.indices = []
-        self.challenge_conf = os.path.join(
-            configurator.config.config_dir, "le_tls_sni_01_cert_challenge.conf")
-        # self.completed = 0
 
     def add_chall(self, achall, idx=None):
-        """Add challenge to TLSSNI01 object to perform at once.
+        """Store challenge to be performed when perform() is called.
 
         :param .KeyAuthorizationAnnotatedChallenge achall: Annotated
-            TLSSNI01 challenge.
-
+            challenge.
         :param int idx: index to challenge in a larger array
 
         """
         self.achalls.append(achall)
         if idx is not None:
             self.indices.append(idx)
+
+    def perform(self):
+        """Perform all added challenges.
+
+        :returns: challenge respones
+        :rtype: `list` of `acme.challenges.KeyAuthorizationChallengeResponse`
+
+
+        """
+        raise NotImplementedError()
+
+
+class TLSSNI01(ChallengePerformer):
+    # pylint: disable=abstract-method
+    """Abstract base for TLS-SNI-01 challenge performers"""
+
+    def __init__(self, configurator):
+        super(TLSSNI01, self).__init__(configurator)
+        self.challenge_conf = os.path.join(
+            configurator.config.config_dir, "le_tls_sni_01_cert_challenge.conf")
+        # self.completed = 0
 
     def get_cert_path(self, achall):
         """Returns standardized name for challenge certificate.

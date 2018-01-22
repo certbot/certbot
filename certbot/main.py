@@ -4,6 +4,7 @@ import functools
 import logging.handlers
 import os
 import sys
+import warnings
 
 import configobj
 import josepy as jose
@@ -536,9 +537,11 @@ def _delete_if_appropriate(config): # pylint: disable=too-many-locals,too-many-b
     display = zope.component.getUtility(interfaces.IDisplay)
     reporter_util = zope.component.getUtility(interfaces.IReporter)
 
-    msg = ("Would you like to delete the cert(s) you just revoked?")
-    attempt_deletion = display.yesno(msg, yes_label="Yes (recommended)", no_label="No",
-            force_interactive=True, default=True)
+    attempt_deletion = config.delete_after_revoke
+    if attempt_deletion is None:
+        msg = ("Would you like to delete the cert(s) you just revoked?")
+        attempt_deletion = display.yesno(msg, yes_label="Yes (recommended)", no_label="No",
+                force_interactive=True, default=True)
 
     if not attempt_deletion:
         reporter_util.add_message("Not deleting revoked certs.", reporter_util.LOW_PRIORITY)
@@ -1215,9 +1218,17 @@ def main(cli_args=sys.argv[1:]):
         # Let plugins_cmd be run as un-privileged user.
         if config.func != plugins_cmd:
             raise
-    if sys.version_info[:2] == (3, 3):
-        logger.warning("Python 3.3 support will be dropped in the next release "
-                    "of Certbot - please upgrade your Python version.")
+    deprecation_fmt = (
+        "Python %s.%s support will be dropped in the next "
+        "release of Certbot - please upgrade your Python version.")
+    # We use the warnings system for Python 2.6 and logging for Python 3
+    # because DeprecationWarnings are only reported by default in Python <= 2.6
+    # and warnings can be disabled by the user.
+    if sys.version_info[:2] == (2, 6):
+        warning = deprecation_fmt % sys.version_info[:2]
+        warnings.warn(warning, DeprecationWarning)
+    elif sys.version_info[:2] == (3, 3):
+        logger.warning(deprecation_fmt, *sys.version_info[:2])
 
     set_displayer(config)
 

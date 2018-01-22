@@ -332,6 +332,23 @@ class ApacheParser(object):
         else:
             self.aug.set(aug_conf_path + "/directive[last()]/arg", args)
 
+    def add_dir_beginning(self, aug_conf_path, dirname, args):
+        """Adds the directive to the beginning of defined aug_conf_path.
+
+        :param str aug_conf_path: Augeas configuration path to add directive
+        :param str dirname: Directive to add
+        :param args: Value of the directive. ie. Listen 443, 443 is arg
+        :type args: list or str
+        """
+        first_dir = aug_conf_path + "/directive[1]"
+        self.aug.insert(first_dir, "directive", True)
+        self.aug.set(first_dir, dirname)
+        if isinstance(args, list):
+            for i, value in enumerate(args, 1):
+                self.aug.set(first_dir + "/arg[%d]" % (i), value)
+        else:
+            self.aug.set(first_dir + "/arg", args)
+
     def find_dir(self, directive, arg=None, start=None, exclude=True):
         """Finds directive in the configuration.
 

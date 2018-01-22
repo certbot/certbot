@@ -18,6 +18,17 @@ from certbot import errors
 from certbot.tests import acme_util
 from certbot.tests import util as test_util
 
+AUTH_KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
+ACHALLS = [
+    achallenges.KeyAuthorizationAnnotatedChallenge(
+        challb=acme_util.chall_to_challb(
+            challenges.TLSSNI01(token=b'token1'), "pending"),
+        domain="encryption-example.demo", account_key=AUTH_KEY),
+    achallenges.KeyAuthorizationAnnotatedChallenge(
+        challb=acme_util.chall_to_challb(
+            challenges.TLSSNI01(token=b'token2'), "pending"),
+        domain="certbot.demo", account_key=AUTH_KEY),
+]
 
 class NamespaceFunctionsTest(unittest.TestCase):
     """Tests for certbot.plugins.common.*_namespace functions."""
@@ -265,20 +276,26 @@ class AddrTest(unittest.TestCase):
         self.assertEqual(set_c, set_d)
 
 
+class ChallengePerformerTest(unittest.TestCase):
+    """Tests for certbot.plugins.common.ChallengePerformer."""
+
+    def setUp(self):
+        configurator = mock.MagicMock()
+
+        from certbot.plugins.common import ChallengePerformer
+        self.performer = ChallengePerformer(configurator)
+
+    def test_add_chall(self):
+        self.performer.add_chall(ACHALLS[0], 0)
+        self.assertEqual(1, len(self.performer.achalls))
+        self.assertEqual([0], self.performer.indices)
+
+    def test_perform(self):
+        self.assertRaises(NotImplementedError, self.performer.perform)
+
+
 class TLSSNI01Test(unittest.TestCase):
     """Tests for certbot.plugins.common.TLSSNI01."""
-
-    auth_key = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
-    achalls = [
-        achallenges.KeyAuthorizationAnnotatedChallenge(
-            challb=acme_util.chall_to_challb(
-                challenges.TLSSNI01(token=b'token1'), "pending"),
-            domain="encryption-example.demo", account_key=auth_key),
-        achallenges.KeyAuthorizationAnnotatedChallenge(
-            challb=acme_util.chall_to_challb(
-                challenges.TLSSNI01(token=b'token2'), "pending"),
-            domain="certbot.demo", account_key=auth_key),
-    ]
 
     def setUp(self):
         self.tempdir = tempfile.mkdtemp()
@@ -291,11 +308,6 @@ class TLSSNI01Test(unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.tempdir)
-
-    def test_add_chall(self):
-        self.sni.add_chall(self.achalls[0], 0)
-        self.assertEqual(1, len(self.sni.achalls))
-        self.assertEqual([0], self.sni.indices)
 
     def test_setup_challenge_cert(self):
         # This is a helper function that can be used for handling
@@ -329,7 +341,7 @@ class TLSSNI01Test(unittest.TestCase):
             OpenSSL.crypto.dump_privatekey(OpenSSL.crypto.FILETYPE_PEM, key))
 
     def test_get_z_domain(self):
-        achall = self.achalls[0]
+        achall = ACHALLS[0]
         self.assertEqual(self.sni.get_z_domain(achall),
             achall.response(achall.account_key).z_domain.decode("utf-8"))
 
