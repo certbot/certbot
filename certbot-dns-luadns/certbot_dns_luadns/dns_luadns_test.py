@@ -1,6 +1,8 @@
 """Tests for certbot_dns_luadns.dns_luadns."""
 
 import os
+import shutil
+import tempfile
 import unittest
 
 import mock
@@ -25,14 +27,19 @@ class AuthenticatorTest(test_util.TempDirTestCase,
         path = os.path.join(self.tempdir, 'file.ini')
         dns_test_common.write({"luadns_email": EMAIL, "luadns_token": TOKEN}, path)
 
+        self.config_dir = tempfile.mkdtemp()
         self.config = mock.MagicMock(luadns_credentials=path,
-                                     luadns_propagation_seconds=0)  # don't wait during tests
+                                     luadns_propagation_seconds=0,  # don't wait during tests
+                                     config_dir=self.config_dir)
 
         self.auth = Authenticator(self.config, "luadns")
 
         self.mock_client = mock.MagicMock()
         # _get_luadns_client | pylint: disable=protected-access
         self.auth._get_luadns_client = mock.MagicMock(return_value=self.mock_client)
+
+    def tearDown(self):
+        shutil.rmtree(self.config_dir)
 
 
 class LuaDNSLexiconClientTest(unittest.TestCase, dns_test_common_lexicon.BaseLexiconClientTest):

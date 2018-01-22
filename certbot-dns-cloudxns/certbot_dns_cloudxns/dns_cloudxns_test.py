@@ -1,6 +1,8 @@
 """Tests for certbot_dns_cloudxns.dns_cloudxns."""
 
 import os
+import shutil
+import tempfile
 import unittest
 
 import mock
@@ -29,14 +31,18 @@ class AuthenticatorTest(test_util.TempDirTestCase,
         path = os.path.join(self.tempdir, 'file.ini')
         dns_test_common.write({"cloudxns_api_key": API_KEY, "cloudxns_secret_key": SECRET}, path)
 
+        self.config_dir = tempfile.mkdtemp()
         self.config = mock.MagicMock(cloudxns_credentials=path,
-                                     cloudxns_propagation_seconds=0)  # don't wait during tests
-
+                                     cloudxns_propagation_seconds=0, # don't wait during tests
+                                     config_dir=self.config_dir)
         self.auth = Authenticator(self.config, "cloudxns")
 
         self.mock_client = mock.MagicMock()
         # _get_cloudxns_client | pylint: disable=protected-access
         self.auth._get_cloudxns_client = mock.MagicMock(return_value=self.mock_client)
+
+    def tearDown(self):
+        shutil.rmtree(self.config_dir)
 
 
 class CloudXNSLexiconClientTest(unittest.TestCase, dns_test_common_lexicon.BaseLexiconClientTest):

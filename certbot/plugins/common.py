@@ -47,7 +47,7 @@ class Plugin(object):
     def __init__(self, config, name):
         self.config = config
         self.name = name
-        self.storage = PluginStorage(self.config.namespace.config_dir, name)
+        self.storage = PluginStorage(self.config, name)
 
     @jose_util.abstractclassmethod
     def add_parser_arguments(cls, add):
@@ -320,11 +320,11 @@ class Addr(object):
 class PluginStorage(object):
     """Class implementing storage functionality for plugins"""
 
-    def __init__(self, path, classkey):
+    def __init__(self, config, classkey):
         """Initializes PluginStorage object storing required configuration
         options.
 
-        :param str path: directory path for the storage file
+        :param .configuration.NamespaceConfig config: Configuration object
         :param str classkey: class name to use as root key in storage file
 
         :returns: Plugin storage object
@@ -332,10 +332,12 @@ class PluginStorage(object):
 
         :raises .errors.PluginStorageError: when unable to open or read the file
         """
-
-        self.storagepath = os.path.join(path, "pluginstorage.json")
+        try:
+            self.storagepath = os.path.join(config.config_dir, "pluginstorage.json")
+            self._data = self.load()
+        except AttributeError:
+            self.storagepath = None
         self.classkey = classkey
-        self._data = self.load()
 
     def load(self):
         """Reads PluginStorage content from the disk to a dict structure
@@ -358,6 +360,9 @@ class PluginStorage(object):
                 # Only error out if file exists, but cannot be read
                 logger.error(errmsg)
                 raise errors.PluginStorageError(errmsg)
+        except TypeError:
+            # This happens if storagepath is not set, eg. None
+            raise errors.PluginStorageError("Could not open PluginStorage")
         try:
             data = json.loads(filedata)
         except ValueError:

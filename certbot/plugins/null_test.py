@@ -1,4 +1,6 @@
 """Tests for certbot.plugins.null."""
+import shutil
+import tempfile
 import unittest
 import six
 
@@ -10,7 +12,12 @@ class InstallerTest(unittest.TestCase):
 
     def setUp(self):
         from certbot.plugins.null import Installer
-        self.installer = Installer(config=mock.MagicMock(), name="null")
+        self.config_dir = tempfile.mkdtemp()
+        self.config = mock.MagicMock(config_dir=self.config_dir)
+        self.installer = Installer(config=self.config, name="null")
+
+    def tearDown(self):
+        shutil.rmtree(self.config_dir)
 
     def test_it(self):
         self.assertTrue(isinstance(self.installer.more_info(), six.string_types))

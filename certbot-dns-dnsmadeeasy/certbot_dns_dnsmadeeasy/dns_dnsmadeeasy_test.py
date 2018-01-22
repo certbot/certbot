@@ -1,6 +1,8 @@
 """Tests for certbot_dns_dnsmadeeasy.dns_dnsmadeeasy."""
 
 import os
+import shutil
+import tempfile
 import unittest
 
 import mock
@@ -28,14 +30,19 @@ class AuthenticatorTest(test_util.TempDirTestCase,
                                "dnsmadeeasy_secret_key": SECRET_KEY},
                               path)
 
+        self.config_dir = tempfile.mkdtemp()
         self.config = mock.MagicMock(dnsmadeeasy_credentials=path,
-                                     dnsmadeeasy_propagation_seconds=0)  # don't wait during tests
+                                     dnsmadeeasy_propagation_seconds=0,  # don't wait during tests
+                                     config_dir=self.config_dir)
 
         self.auth = Authenticator(self.config, "dnsmadeeasy")
 
         self.mock_client = mock.MagicMock()
         # _get_dnsmadeeasy_client | pylint: disable=protected-access
         self.auth._get_dnsmadeeasy_client = mock.MagicMock(return_value=self.mock_client)
+
+    def tearDown(self):
+        shutil.rmtree(self.config_dir)
 
 
 class DNSMadeEasyLexiconClientTest(unittest.TestCase,

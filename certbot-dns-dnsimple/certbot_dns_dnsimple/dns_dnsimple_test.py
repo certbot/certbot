@@ -1,6 +1,8 @@
 """Tests for certbot_dns_dnsimple.dns_dnsimple."""
 
 import os
+import shutil
+import tempfile
 import unittest
 
 import mock
@@ -24,14 +26,19 @@ class AuthenticatorTest(test_util.TempDirTestCase,
         path = os.path.join(self.tempdir, 'file.ini')
         dns_test_common.write({"dnsimple_token": TOKEN}, path)
 
+        self.config_dir = tempfile.mkdtemp()
         self.config = mock.MagicMock(dnsimple_credentials=path,
-                                     dnsimple_propagation_seconds=0)  # don't wait during tests
+                                     dnsimple_propagation_seconds=0,  # don't wait during tests
+                                     config_dir=self.config_dir)
 
         self.auth = Authenticator(self.config, "dnsimple")
 
         self.mock_client = mock.MagicMock()
         # _get_dnsimple_client | pylint: disable=protected-access
         self.auth._get_dnsimple_client = mock.MagicMock(return_value=self.mock_client)
+
+    def tearDown(self):
+        shutil.rmtree(self.config_dir)
 
 
 class DNSimpleLexiconClientTest(unittest.TestCase, dns_test_common_lexicon.BaseLexiconClientTest):
