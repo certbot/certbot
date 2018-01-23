@@ -19,6 +19,10 @@ class ApacheHttp01(common.TLSSNI01):
             Order Allow,Deny
             Allow from all
         </Directory>
+        <Location /.well-known/acme-challenge>
+            Order Allow,Deny
+            Allow from all
+        </Location>
     """
 
     CONFIG_TEMPLATE24 = """\
@@ -28,6 +32,9 @@ class ApacheHttp01(common.TLSSNI01):
         <Directory {0}>
             Require all granted
         </Directory>
+        <Location /.well-known/acme-challenge>
+            Require all granted
+        </Location>
     """
 
     def __init__(self, *args, **kwargs):
@@ -146,5 +153,7 @@ class ApacheHttp01(common.TLSSNI01):
                 "Adding a temporary challenge validation Include for name: %s " +
                 "in: %s", vhost.name, vhost.filep)
             self.configurator.parser.add_dir_beginning(
+                vhost.path, "Include", self.challenge_conf)
+            self.configurator.parser.add_dir(
                 vhost.path, "Include", self.challenge_conf)
             self.moded_vhosts.add(vhost)
