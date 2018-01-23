@@ -46,7 +46,7 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
     :ivar .ClientNetwork net: Client network.
     """
 
-    def __init__(self, directory, net=None):
+    def __init__(self, directory, net):
         """Initialize.
 
         :param .messages.Directory directory: Directory Resource
@@ -238,8 +238,8 @@ class Client(ClientBase):
 
     """
 
-    def __init__(self, directory, key, account=None, acme_version=1, alg=jose.RS256,
-                 verify_ssl=True, net=None):
+    def __init__(self, directory, key, alg=jose.RS256, verify_ssl=True,
+                 net=None):
         """Initialize.
 
         :param directory: Directory Resource (`.messages.Directory`) or
@@ -530,15 +530,6 @@ class ClientV2(ClientBase):
         supplied, it will be initialized using `key`, `alg` and
         `verify_ssl`.
     """
-
-    def __init__(self, directory, net):
-        """Initialize.
-
-        :param directory: Directory Resource (`.messages.Directory`) or
-            URI from which the resource will be downloaded.
-        :ivar .ClientNetwork net: Client network.
-        """
-        super(ClientV2, self).__init__(directory=directory, net=net)
 
     def new_account(self, new_account):
         """Register.
