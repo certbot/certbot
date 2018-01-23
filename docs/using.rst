@@ -891,6 +891,12 @@ in the config file.
 Log Rotation
 ============
 
+.. note:: Some distributions, including Debian and Ubuntu, disable
+   certbot's internal log rotation in favor of a more traditional
+   logrotate script.  If you are using a distribution's packages and
+   want to alter the log rotation, check `/etc/logrotate.d/` for a
+   certbot rotation script.
+
 By default certbot stores status logs in ``/var/log/letsencrypt``. By default
 certbot will begin rotating logs once there are 1000 logs in the log directory.
 Meaning that once 1000 files are in ``/var/log/letsencrypt`` Certbot will delete
