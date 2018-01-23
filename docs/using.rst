@@ -410,6 +410,13 @@ Renewing certificates
    days). Make sure you renew the certificates at least once in 3
    months.
 
+.. seealso:: Many of the certbot clients obtained through a
+   distribution come with automatic renewal out of the box,
+   such as Debian and Ubuntu versions installed through `apt`,
+   CentOS/RHEL 7 through EPEL, etc.  See `Automated Renewals`_
+   for more details, or consult your distribution's
+   documentation.
+
 As of version 0.10.0, Certbot supports a ``renew`` action to check
 all installed certificates for impending expiry and attempt to renew
 them. The simplest form is simply
@@ -611,6 +618,30 @@ The following commands could be used to specify where these files are located::
   sed -i 's,/etc/letsencrypt/live/example.com,/home/user/me/certbot,g' /etc/letsencrypt/renewal/example.com.conf
   certbot update_symlinks
 
+Automated Renewals
+------------------
+
+Many Linux distributions provide automated renewal when you use the
+packages installed through their system package manager.  The
+following table is an *incomplete* list of distributions which do so,
+as well as their methods for doing so.
+
+If you are not sure whether or not your system has this already
+automated, refer to your distribution's documentation, or check your
+system's crontab and systemd timers.
+
+.. csv-table:: Distributions with Automated Renewal
+   :header: "Distribution Name", "Distribution Version", "Automation Method"
+
+   "CentOS", "EPEL 7", "systemd"
+   "Debian", "jessie", "cron, systemd"
+   "Debian", "stretch", "cron, systemd"
+   "Debian", "testing/sid", "cron, systemd"
+   "Fedora", "26", "systemd"
+   "Fedora", "27", "systemd"
+   "RHEL", "EPEL 7", "systemd"
+   "Ubuntu", "17.10", "cron, systemd"
+   "Ubuntu", "certbot PPA", "cron, systemd"
 
 .. _where-certs:
 
