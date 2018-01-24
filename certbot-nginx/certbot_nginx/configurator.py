@@ -748,7 +748,7 @@ class NginxConfigurator(common.Installer):
             raise errors.PluginError(
                 "Unable to run %s -V" % self.conf('ctl'))
 
-        version_regex = re.compile(r"nginx/([0-9\.]*)", re.IGNORECASE)
+        version_regex = re.compile(r"(openresty|nginx)/([0-9\.]*)", re.IGNORECASE)
         version_matches = version_regex.findall(text)
 
         sni_regex = re.compile(r"TLS SNI support enabled", re.IGNORECASE)
@@ -765,7 +765,11 @@ class NginxConfigurator(common.Installer):
         if not sni_matches:
             raise errors.PluginError("Nginx build doesn't support SNI")
 
-        nginx_version = tuple([int(i) for i in version_matches[0].split(".")])
+        product_name, product_version = version_matches[0]
+        if product_name is not 'nginx':
+            logger.warning("NGINX derivative %s is not officially supported by certbot", product_name)
+
+        nginx_version = tuple([int(i) for i in product_version.split(".")])
 
         # nginx < 0.8.48 uses machine hostname as default server_name instead of
         # the empty string
