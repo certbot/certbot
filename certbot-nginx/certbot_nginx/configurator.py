@@ -618,8 +618,8 @@ class NginxConfigurator(common.Installer):
         redirect_block = [[
             ['\n    ', 'if', ' ', '($scheme', ' ', '!=', ' ', '"https")'],
             [['\n        ', 'if', ' ', '($host', ' ', '=', ' ', '"{0}")'.format(domain)],
-            [['\n            ', 'return', ' ', '301', ' ', 'https://$host$request_uri'],
-            '\n        '],
+            [[['\n            ', 'return', ' ', '301', ' ', 'https://$host$request_uri'],
+            '\n        ']],
             '\n    ']],
             ['\n']]
 
