@@ -569,7 +569,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         :raises .ClientError: If revocation is unsuccessful.
 
         """
-        response = self.net.post(self.directory[messages.Revocation],
+        response = self.net.post(self.directory.revoke_cert,
                                  messages.Revocation(
                                      certificate=cert,
                                      reason=rsn),
