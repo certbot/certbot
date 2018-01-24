@@ -615,13 +615,22 @@ class NginxConfigurator(common.Installer):
                 self.DEFAULT_LISTEN_PORT)
             return
 
-        redirect_block = [[
-            ['\n    ', 'if', ' ', '($scheme', ' ', '!=', ' ', '"https")'],
-            [['\n        ', 'if', ' ', '($host', ' ', '=', ' ', '"{0}")'.format(domain)],
-            [[['\n            ', 'return', ' ', '301', ' ', 'https://$host$request_uri'],
+        redirect_block = [
+            [['\n    ', 'if', ' ', '($scheme', ' ', '!=', ' ', '"https")'],
+            [[['\n        ', 'if', ' ', '($host', ' ', '=', ' ', '"{0}")'.format(domain)],
+            [['\n            ', 'return', ' ', '301', ' ', 'https://$host$request_uri'],
             '\n        ']],
             '\n    ']],
-            ['\n']]
+            ['\n']
+        ]
+
+        #redirect_block = [[
+        #    ['\n    ', 'if', ' ', '($scheme', ' ', '!=', ' ', '"https")'],
+        #    [['\n        ', 'if', ' ', '($host', ' ', '=', ' ', '"{0}")'.format(domain)],
+        #    [[['\n            ', 'return', ' ', '301', ' ', 'https://$host$request_uri'],
+        #    '\n        ']],
+        #    '\n    ']],
+        #    ['\n']]
 
         self.parser.add_server_directives(
             vhost, redirect_block, replace=False)
