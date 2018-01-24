@@ -615,38 +615,16 @@ class NginxConfigurator(common.Installer):
                 self.DEFAULT_LISTEN_PORT)
             return
 
-        if vhost.ssl:
-            new_vhost = self.parser.duplicate_vhost(vhost,
-                only_directives=['listen', 'server_name'])
+        redirect_block = [[
+            ['\n    ', 'if', ' ', '($scheme', ' ', '!=', ' ', '"https")'],
+            [['\n        ', 'if', ' ', '($host', ' ', '=', ' ', '"{0}")'.format(domain)],
+            [[['\n            ', 'return', ' ', '301', ' ', 'https://$host$request_uri'],
+            '\n        ']],
+            ['\n    ']]],
+            ['\n']]
 
-            def _ssl_match_func(directive):
-                return 'ssl' in directive
-
-            def _no_ssl_match_func(directive):
-                return 'ssl' not in directive
-
-            # remove all ssl addresses from the new block
-            self.parser.remove_server_directives(new_vhost, 'listen', match_func=_ssl_match_func)
-
-            # remove all non-ssl addresses from the existing block
-            self.parser.remove_server_directives(vhost, 'listen', match_func=_no_ssl_match_func)
-
-            vhost = new_vhost
-
-        if self._has_certbot_redirect(vhost):
-            logger.info("Traffic on port %s already redirecting to ssl in %s",
-                self.DEFAULT_LISTEN_PORT, vhost.filep)
-        elif vhost.has_redirect():
-            if not self._has_certbot_redirect_comment(vhost):
-                self._add_redirect_block(vhost, active=False)
-            logger.info("The appropriate server block is already redirecting "
-                        "traffic. To enable redirect anyway, uncomment the "
-                        "redirect lines in %s.", vhost.filep)
-        else:
-            # Redirect plaintextish host to https
-            self._add_redirect_block(vhost, active=True)
-            logger.info("Redirecting all traffic on port %s to ssl in %s",
-                self.DEFAULT_LISTEN_PORT, vhost.filep)
+        self.parser.add_server_directives(
+            vhost, redirect_block, replace=False)
 
     def _enable_ocsp_stapling(self, domain, chain_path):
         """Include OCSP response in TLS handshake
