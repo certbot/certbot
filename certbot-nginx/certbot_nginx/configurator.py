@@ -579,7 +579,7 @@ class NginxConfigurator(common.Installer):
             redirect_block = _redirect_comment_block_for_domain(domain)
 
         self.parser.add_server_directives(
-            vhost, redirect_block, replace=False)
+            vhost, redirect_block, replace=False, insert_at_top=True)
 
     def _enable_redirect(self, domain, unused_options):
         """Redirect all equivalent HTTP traffic to ssl_vhost.
@@ -623,6 +623,10 @@ class NginxConfigurator(common.Installer):
             # remove all non-ssl addresses from the existing block
             self.parser.remove_server_directives(vhost, 'listen', match_func=_no_ssl_match_func)
 
+            # Add this at the bottom to get the right order of directives
+            return_404_directive = [['\n    ', 'return', ' ', '404'], ['\n']]
+            self.parser.add_server_directives(new_vhost, return_404_directive, replace=False)
+
             vhost = new_vhost
 
         if self._has_certbot_redirect(vhost, domain):
@@ -639,11 +643,6 @@ class NginxConfigurator(common.Installer):
             self._add_redirect_block(vhost, domain, active=True)
             logger.info("Redirecting all traffic on port %s to ssl in %s",
                 self.DEFAULT_LISTEN_PORT, vhost.filep)
-
-        # Add this at the bottom to get the right order of directives
-        if new_vhost is not None:
-            return_404_directive = [['\n    ', 'return', ' ', '404'], ['\n']]
-            self.parser.add_server_directives(vhost, return_404_directive, replace=False)
 
     def _enable_ocsp_stapling(self, domain, chain_path):
         """Include OCSP response in TLS handshake
