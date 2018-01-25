@@ -626,7 +626,7 @@ class NginxConfigurator(common.Installer):
                 self.DEFAULT_LISTEN_PORT, vhost.filep)
         else:
             # Redirect plaintextish host to https
-            self._add_redirect_block(vhost, domain, active=True)
+            self._add_redirect_block(vhost, domain)
             logger.info("Redirecting all traffic on port %s to ssl in %s",
                 self.DEFAULT_LISTEN_PORT, vhost.filep)
 
