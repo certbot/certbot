@@ -28,13 +28,6 @@ class PluginStorageTest(unittest.TestCase):
         shutil.rmtree(self.config_dir)
 
     def test_load_errors(self):
-        # Init plugin with empty config.config_dir
-        self.assertRaises(errors.PluginStorageError,
-                          self.plugin_cls,
-                          mock.MagicMock(),
-                          name="failplugin")
-
-
         with open(os.path.join(self.config_dir, "pluginstorage.json"), "w") as fh:
             fh.write("dummy")
 
@@ -75,6 +68,12 @@ class PluginStorageTest(unittest.TestCase):
                               "mockplugin")
             self.assertTrue("is corrupted" in mock_log.call_args[0][0])
 
+    def test_save_no_storagepath(self):
+        with mock.patch("certbot.plugins.common.logger.error") as mock_log:
+            self.plugin.storage.storagepath = None
+            self.assertRaises(errors.PluginStorageError,
+                              self.plugin.storage.save)
+            self.assertTrue("Unable to save" in mock_log.call_args[0][0])
 
     def test_save_errors(self):
         with mock.patch("certbot.plugins.common.logger.error") as mock_log:

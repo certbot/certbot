@@ -118,11 +118,13 @@ class PluginStorage(object):
 
         :raises .errors.PluginStorageError: when unable to open or read the file
         """
-        try:
+
+        if hasattr(config, "config_dir") and os.path.isdir(config.config_dir):
             self.storagepath = os.path.join(config.config_dir, "pluginstorage.json")
             self._data = self.load()
-        except AttributeError:
+        else:
             self.storagepath = None
+
         self.classkey = classkey
 
     def load(self):
@@ -168,6 +170,10 @@ class PluginStorage(object):
         :raises .errors.PluginStorageError: when unable to serialize the data
             or write it to the filesystem
         """
+        if not self.storagepath:
+            errmsg = "Unable to save, problem with configuration directory"
+            logger.error(errmsg)
+            raise errors.PluginStorageError(errmsg)
         try:
             serialized = json.dumps(self._data)
         except TypeError as e:
