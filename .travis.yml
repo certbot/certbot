@@ -10,7 +10,7 @@ before_install:
   # in a Travis cron, but with a different set of tests than master has
   # in .travis.yml.
   - cp .travis.yml /tmp/travis.yml
-  - git pull origin master --strategy=recursive --strategy-option=theirs --no-edit
+  - git pull origin 0.21.x --strategy=recursive --strategy-option=theirs --no-edit
   - if ! git diff .travis.yml /tmp/travis.yml ; then echo "Please merge master into test-everything"; exit 1; fi
   - '([ $TRAVIS_OS_NAME == linux ] && dpkg -s libaugeas0) || (brew update && brew install augeas python3 && brew upgrade python && brew link python)'
 
