@@ -193,15 +193,6 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
 
         return False
 
-    def has_redirect(self):
-        """Determine if this vhost has a redirecting statement
-        """
-        for directive_name in REDIRECT_DIRECTIVES:
-            found = _find_directive(self.raw, directive_name)
-            if found is not None:
-                return True
-        return False
-
     def contains_list(self, test):
         """Determine if raw server block contains test list at top level
         """
