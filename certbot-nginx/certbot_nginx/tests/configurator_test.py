@@ -18,6 +18,8 @@ from certbot.tests import util as certbot_test_util
 from certbot_nginx import constants
 from certbot_nginx import obj
 from certbot_nginx import parser
+from certbot_nginx.configurator import _redirect_block_for_domain
+from certbot_nginx.nginxparser import UnspacedList
 from certbot_nginx.tests import util
 
 
@@ -447,9 +449,6 @@ class NginxConfiguratorTest(util.NginxTest):
     def test_redirect_enhance(self):
         # Test that we successfully add a redirect when there is
         # a listen directive
-        from certbot_nginx.configurator import _redirect_block_for_domain
-        from certbot_nginx.nginxparser import UnspacedList
-
         expected = UnspacedList(_redirect_block_for_domain("www.example.com"))[0]
 
         example_conf = self.config.parser.abs_path('sites-enabled/example.com')
@@ -522,9 +521,6 @@ class NginxConfiguratorTest(util.NginxTest):
         example_conf = self.config.parser.abs_path('sites-enabled/example.com')
         self.config.enhance("example.com", "redirect")
         self.config.enhance("example.org", "redirect")
-
-        from certbot_nginx.configurator import _redirect_block_for_domain
-        from certbot_nginx.nginxparser import UnspacedList
 
         expected1 = UnspacedList(_redirect_block_for_domain("example.com"))[0]
         expected2 = UnspacedList(_redirect_block_for_domain("example.org"))[0]
@@ -692,9 +688,6 @@ class NginxConfiguratorTest(util.NginxTest):
         self.config.save()
 
         self.config.parser.load()
-
-        from certbot_nginx.configurator import _redirect_block_for_domain
-        from certbot_nginx.nginxparser import UnspacedList
 
         expected = UnspacedList(_redirect_block_for_domain("www.nomatch.com"))[0]
 
