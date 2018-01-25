@@ -300,13 +300,8 @@ DeterminePythonVersion() {
 # Set Bootstrap to the function that installs OS dependencies on this system
 # and BOOTSTRAP_VERSION to the unique identifier for the current version of
 # that function. If Bootstrap is set to a function that doesn't install any
-# packages (either because --no-bootstrap was included on the command line or
-# we don't know how to bootstrap on this system), BOOTSTRAP_VERSION is not set.
-if [ "$NO_BOOTSTRAP" = 1 ]; then
-  Bootstrap() {
-    :
-  }
-elif [ -f /etc/debian_version ]; then
+# packages BOOTSTRAP_VERSION is not set.
+if [ -f /etc/debian_version ]; then
   Bootstrap() {
     BootstrapMessage "Debian-based OSes"
     BootstrapDebCommon
@@ -400,6 +395,17 @@ else
     error "for more info."
     exit 1
   }
+fi
+
+# We handle this case after determining the normal bootstrap version to allow
+# variables like USE_PYTHON_3 to be properly set. As described above, if the
+# Bootstrap function doesn't install any packages, BOOTSTRAP_VERSION should not
+# be set so we unset it here.
+if [ "$NO_BOOTSTRAP" = 1 ]; then
+  Bootstrap() {
+    :
+  }
+  unset BOOTSTRAP_VERSION
 fi
 
 # Sets PREV_BOOTSTRAP_VERSION to the identifier for the bootstrap script used
