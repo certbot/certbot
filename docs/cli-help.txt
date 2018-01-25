@@ -107,9 +107,9 @@ optional arguments:
                         case, and to know when to deprecate support for past
                         Python versions and flags. If you wish to hide this
                         information from the Let's Encrypt server, set this to
-                        "". (default: CertbotACMEClient/0.21.0 (certbot;
-                        Ubuntu 16.04.3 LTS) Authenticator/XXX Installer/YYY
-                        (SUBCOMMAND; flags: FLAGS) Py/2.7.12). The flags
+                        "". (default: CertbotACMEClient/0.21.1 (certbot;
+                        darwin 10.13.3) Authenticator/XXX Installer/YYY
+                        (SUBCOMMAND; flags: FLAGS) Py/2.7.14). The flags
                         encoded in the user agent are: --duplicate, --force-
                         renew, --allow-subset-of-names, -n, and whether any
                         hooks are set.
@@ -448,11 +448,9 @@ apache:
   Apache Web Server plugin - Beta
 
   --apache-enmod APACHE_ENMOD
-                        Path to the Apache 'a2enmod' binary. (default:
-                        a2enmod)
+                        Path to the Apache 'a2enmod' binary. (default: None)
   --apache-dismod APACHE_DISMOD
-                        Path to the Apache 'a2dismod' binary. (default:
-                        a2dismod)
+                        Path to the Apache 'a2dismod' binary. (default: None)
   --apache-le-vhost-ext APACHE_LE_VHOST_EXT
                         SSL vhost configuration extension. (default: -le-
                         ssl.conf)
@@ -466,13 +464,13 @@ apache:
                         /var/log/apache2)
   --apache-challenge-location APACHE_CHALLENGE_LOCATION
                         Directory path for challenge configuration. (default:
-                        /etc/apache2)
+                        /etc/apache2/other)
   --apache-handle-modules APACHE_HANDLE_MODULES
                         Let installer handle enabling required modules for
-                        you.(Only Ubuntu/Debian currently) (default: True)
+                        you.(Only Ubuntu/Debian currently) (default: False)
   --apache-handle-sites APACHE_HANDLE_SITES
                         Let installer handle enabling sites for you.(Only
-                        Ubuntu/Debian currently) (default: True)
+                        Ubuntu/Debian currently) (default: False)
 
 certbot-route53:auth:
   Obtain certificates using a DNS TXT record (if you are using AWS Route53
