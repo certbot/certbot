@@ -31,16 +31,6 @@ from certbot_nginx import http_01
 
 logger = logging.getLogger(__name__)
 
-REDIRECT_BLOCK = [
-    ['\n    ', 'return', ' ', '301', ' ', 'https://$host$request_uri'],
-    ['\n']
-]
-
-REDIRECT_COMMENT_BLOCK = [
-    ['\n    ', '#', ' Redirect non-https traffic to https'],
-    ['\n    ', '#', ' return 301 https://$host$request_uri;'],
-    ['\n']
-]
 
 @zope.interface.implementer(interfaces.IAuthenticator, interfaces.IInstaller)
 @zope.interface.provider(interfaces.IPluginFactory)
@@ -571,24 +561,17 @@ class NginxConfigurator(common.Installer):
             logger.warning("Failed %s for %s", enhancement, domain)
             raise
 
-    def _has_certbot_redirect(self, vhost):
-        test_redirect_block = _test_block_from_block(REDIRECT_BLOCK)
+    def _has_certbot_redirect(self, vhost, domain):
+        test_redirect_block = _test_block_from_block(_redirect_block_for_domain(domain))
         return vhost.contains_list(test_redirect_block)
 
-    def _has_certbot_redirect_comment(self, vhost):
-        test_redirect_comment_block = _test_block_from_block(REDIRECT_COMMENT_BLOCK)
-        return vhost.contains_list(test_redirect_comment_block)
-
-    def _add_redirect_block(self, vhost, active=True):
+    def _add_redirect_block(self, vhost, domain):
         """Add redirect directive to vhost
         """
-        if active:
-            redirect_block = REDIRECT_BLOCK
-        else:
-            redirect_block = REDIRECT_COMMENT_BLOCK
+        redirect_block = _redirect_block_for_domain(domain)
 
         self.parser.add_server_directives(
-            vhost, redirect_block, replace=False)
+            vhost, redirect_block, replace=False, insert_at_top=True)
 
     def _enable_redirect(self, domain, unused_options):
         """Redirect all equivalent HTTP traffic to ssl_vhost.
@@ -615,6 +598,7 @@ class NginxConfigurator(common.Installer):
                 self.DEFAULT_LISTEN_PORT)
             return
 
+        new_vhost = None
         if vhost.ssl:
             new_vhost = self.parser.duplicate_vhost(vhost,
                 only_directives=['listen', 'server_name'])
@@ -631,20 +615,18 @@ class NginxConfigurator(common.Installer):
             # remove all non-ssl addresses from the existing block
             self.parser.remove_server_directives(vhost, 'listen', match_func=_no_ssl_match_func)
 
+            # Add this at the bottom to get the right order of directives
+            return_404_directive = [['\n    ', 'return', ' ', '404']]
+            self.parser.add_server_directives(new_vhost, return_404_directive, replace=False)
+
             vhost = new_vhost
 
-        if self._has_certbot_redirect(vhost):
+        if self._has_certbot_redirect(vhost, domain):
             logger.info("Traffic on port %s already redirecting to ssl in %s",
                 self.DEFAULT_LISTEN_PORT, vhost.filep)
-        elif vhost.has_redirect():
-            if not self._has_certbot_redirect_comment(vhost):
-                self._add_redirect_block(vhost, active=False)
-            logger.info("The appropriate server block is already redirecting "
-                        "traffic. To enable redirect anyway, uncomment the "
-                        "redirect lines in %s.", vhost.filep)
         else:
             # Redirect plaintextish host to https
-            self._add_redirect_block(vhost, active=True)
+            self._add_redirect_block(vhost, domain)
             logger.info("Redirecting all traffic on port %s to ssl in %s",
                 self.DEFAULT_LISTEN_PORT, vhost.filep)
 
@@ -906,6 +888,14 @@ def _test_block_from_block(block):
     test_block = nginxparser.UnspacedList(block)
     parser.comment_directive(test_block, 0)
     return test_block[:-1]
+
+def _redirect_block_for_domain(domain):
+    redirect_block = [[
+        ['\n    ', 'if', ' ', '($host', ' ', '=', ' ', '%s)' % domain, ' '],
+        [['\n        ', 'return', ' ', '301', ' ', 'https://$host$request_uri'],
+        '\n    ']],
+        ['\n']]
+    return redirect_block
 
 def nginx_restart(nginx_ctl, nginx_conf):
     """Restarts the Nginx Server.
