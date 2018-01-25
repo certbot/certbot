@@ -891,9 +891,10 @@ def _test_block_from_block(block):
 
 def _redirect_block_for_domain(domain):
     redirect_block = [[
-        ['\n    ', 'if', ' ', '($host', ' ', '=', ' ', '%s)' % domain],
-        [['\n        ', 'return', ' ', '301', ' ', 'https://$host$request_uri']]
-    ]]
+        ['\n    ', 'if', ' ', '($host', ' ', '=', ' ', '%s)' % domain, ' '],
+        [['\n        ', 'return', ' ', '301', ' ', 'https://$host$request_uri'],
+        '\n    ']],
+        ['\n']]
     return redirect_block
 
 def nginx_restart(nginx_ctl, nginx_conf):

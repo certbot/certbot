@@ -496,7 +496,7 @@ class NginxConfiguratorTest(util.NginxTest):
                ['listen', '127.0.0.1'],
                ['server_name', '.example.com'],
                ['server_name', 'example.*'],
-               ['return', '404'], ['#', ' managed by Certbot'], [], []]]],
+               ['return', '404'], ['#', ' managed by Certbot'], [], [], []]]],
             generated_conf)
 
     @mock.patch('certbot_nginx.obj.VirtualHost.contains_list')
