@@ -606,6 +606,7 @@ class NginxConfigurator(common.Installer):
                 self.DEFAULT_LISTEN_PORT)
             return
 
+        new_vhost = None
         if vhost.ssl:
             new_vhost = self.parser.duplicate_vhost(vhost,
                 only_directives=['listen', 'server_name'])
@@ -638,6 +639,11 @@ class NginxConfigurator(common.Installer):
             self._add_redirect_block(vhost, domain, active=True)
             logger.info("Redirecting all traffic on port %s to ssl in %s",
                 self.DEFAULT_LISTEN_PORT, vhost.filep)
+
+        # Add this at the bottom to get the right order of directives
+        if new_vhost is not None:
+            return_404_directive = [['\n    ', 'return', ' ', '404'], ['\n']]
+            self.parser.add_server_directives(vhost, return_404_directive, replace=False)
 
     def _enable_ocsp_stapling(self, domain, chain_path):
         """Include OCSP response in TLS handshake
