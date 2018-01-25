@@ -216,15 +216,3 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
         for a in self.addrs:
             if not a.ipv6:
                 return True
-
-def _find_directive(directives, directive_name):
-    """Find a directive of type directive_name in directives
-    """
-    if not directives or isinstance(directives, six.string_types) or len(directives) == 0:
-        return None
-
-    if directives[0] == directive_name:
-        return directives
-
-    matches = (_find_directive(line, directive_name) for line in directives)
-    return next((m for m in matches if m is not None), None)
