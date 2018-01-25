@@ -904,13 +904,9 @@ def _test_block_from_block(block):
     parser.comment_directive(test_block, 0)
     return test_block[:-1]
 
-def _regex_for_domain(domain):
-    # plus closing paren
-    return '"^(%s)$")' % domain.replace(".", "\\.")
-
 def _redirect_block_for_domain(domain):
     redirect_block = [[
-        ['\n    ', 'if', ' ', '($host', ' ', '~*', ' ', _regex_for_domain(domain)],
+        ['\n    ', 'if', ' ', '($host', ' ', '=', ' ', '%s)' % domain],
         [['\n        ', 'return', ' ', '301', ' ', 'https://$host$request_uri'],
         '\n    ']],
         ['\n']]
@@ -919,7 +915,7 @@ def _redirect_block_for_domain(domain):
 def _redirect_comment_block_for_domain(domain):
     redirect_comment_block = [
         ['\n    ', '#', ' Redirect non-https traffic to https'],
-        ['\n    ', '#', ' if ($host ~* %s {' % _regex_for_domain(domain)],
+        ['\n    ', '#', ' if ($host = %s) {' % domain],
         ['\n    ', '#', '     return 301 https://$host$request_uri;'],
         ['\n    ', '#', ' } # managed by Certbot'],
         ['\n']
