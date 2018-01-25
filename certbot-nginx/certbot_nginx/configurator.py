@@ -616,7 +616,7 @@ class NginxConfigurator(common.Installer):
             self.parser.remove_server_directives(vhost, 'listen', match_func=_no_ssl_match_func)
 
             # Add this at the bottom to get the right order of directives
-            return_404_directive = [['\n    ', 'return', ' ', '404'], ['\n']]
+            return_404_directive = [['\n    ', 'return', ' ', '404']]
             self.parser.add_server_directives(new_vhost, return_404_directive, replace=False)
 
             vhost = new_vhost
@@ -892,9 +892,8 @@ def _test_block_from_block(block):
 def _redirect_block_for_domain(domain):
     redirect_block = [[
         ['\n    ', 'if', ' ', '($host', ' ', '=', ' ', '%s)' % domain],
-        [['\n        ', 'return', ' ', '301', ' ', 'https://$host$request_uri'],
-        '\n    ']],
-        ['\n']]
+        [['\n        ', 'return', ' ', '301', ' ', 'https://$host$request_uri']]
+    ]]
     return redirect_block
 
 def nginx_restart(nginx_ctl, nginx_conf):
