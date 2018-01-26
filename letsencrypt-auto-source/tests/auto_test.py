@@ -287,8 +287,8 @@ class AutoTests(TestCase):
                 self.assertTrue(re.match(r'letsencrypt \d+\.\d+\.\d+',
                                 err.strip().splitlines()[-1]))
                 # Make a few assertions to test the validity of the next tests:
-                self.assertTrue('Upgrading certbot-auto ' in out)
-                self.assertTrue('Creating virtual environment...' in out)
+                self.assertIn('Upgrading certbot-auto ', out)
+                self.assertIn('Creating virtual environment...', out)
 
                 # Now we have le-auto 99.9.9  and LE 99.9.9 installed. This
                 # conveniently sets us up to test the next 2 cases.
@@ -296,8 +296,8 @@ class AutoTests(TestCase):
                 # Test when neither phase-1 upgrade nor phase-2 upgrade is
                 # needed (probably a common case):
                 out, err = run_letsencrypt_auto()
-                self.assertFalse('Upgrading certbot-auto ' in out)
-                self.assertFalse('Creating virtual environment...' in out)
+                self.assertNotIn('Upgrading certbot-auto ', out)
+                self.assertNotIn('Creating virtual environment...', out)
 
     def test_phase2_upgrade(self):
         """Test a phase-2 upgrade without a phase-1 upgrade."""
@@ -312,8 +312,8 @@ class AutoTests(TestCase):
                 # Create venv saving the correct bootstrap script version
                 out, err = run_le_auto(le_auto_path, venv_dir, base_url,
                                        PIP_FIND_LINKS=pip_find_links)
-                self.assertFalse('Upgrading certbot-auto ' in out)
-                self.assertTrue('Creating virtual environment...' in out)
+                self.assertNotIn('Upgrading certbot-auto ', out)
+                self.assertIn('Creating virtual environment...', out)
                 with open(join(venv_dir, BOOTSTRAP_FILENAME)) as f:
                     bootstrap_version = f.read()
 
@@ -329,8 +329,8 @@ class AutoTests(TestCase):
                 out, err = run_le_auto(le_auto_path, venv_dir, base_url,
                                        PIP_FIND_LINKS=pip_find_links)
 
-                self.assertFalse('Upgrading certbot-auto ' in out)
-                self.assertTrue('Creating virtual environment...' in out)
+                self.assertNotIn('Upgrading certbot-auto ', out)
+                self.assertIn('Creating virtual environment...', out)
 
     def test_openssl_failure(self):
         """Make sure we stop if the openssl signature check fails."""
