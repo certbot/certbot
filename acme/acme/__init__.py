@@ -13,7 +13,7 @@ supported version: `draft-ietf-acme-01`_.
 import sys
 import warnings
 
-for (major, minor) in [(2, 6), (3, 3)]:
+for (major, minor) in [(3, 3)]:
     if sys.version_info[:2] == (major, minor):
         warnings.warn(
                 "Python {0}.{1} support will be dropped in the next release of "

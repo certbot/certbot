@@ -5,7 +5,6 @@ import logging
 import os
 import re
 import socket
-import sys
 
 import OpenSSL
 
@@ -130,8 +129,7 @@ def probe_sni(name, host, port=443, timeout=300,
     context = OpenSSL.SSL.Context(method)
     context.set_timeout(timeout)
 
-    socket_kwargs = {} if sys.version_info < (2, 7) else {
-        'source_address': source_address}
+    socket_kwargs = {'source_address': source_address}
 
     host_protocol_agnostic = None if host == '::' or host == '0' else host
 

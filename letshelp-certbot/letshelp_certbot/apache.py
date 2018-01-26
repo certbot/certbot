@@ -5,7 +5,6 @@ from __future__ import print_function
 
 import argparse
 import atexit
-import contextlib
 import os
 import re
 import shutil
@@ -302,8 +301,7 @@ def main():
     make_and_verify_selection(args.server_root, tempdir)
 
     tarpath = os.path.join(tempdir, "config.tar.gz")
-    # contextlib.closing used for py26 support
-    with contextlib.closing(tarfile.open(tarpath, mode="w:gz")) as tar:
+    with tarfile.open(tarpath, mode="w:gz") as tar:
         tar.add(tempdir, arcname=".")
 
     # TODO: Submit tarpath
