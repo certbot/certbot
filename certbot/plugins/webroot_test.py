@@ -212,7 +212,24 @@ class AuthenticatorTest(unittest.TestCase):
         # Ensure we don't "clean up" directories that previously existed
         self.assertFalse(os.path.exists(self.validation_path))
         self.assertFalse(os.path.exists(self.root_challenge_path))
-        self.assertTrue(os.path.exists(self.partial_root_challenge_path))
+
+    def test_perform_cleanup_multiple_challenges(self):
+        bingo_achall = achallenges.KeyAuthorizationAnnotatedChallenge(
+            challb=acme_util.chall_to_challb(
+                challenges.HTTP01(token=b"bingo"), "pending"),
+            domain="thing.com", account_key=KEY)
+
+        bingo_validation_path = "YmluZ28"
+        os.mkdir(self.partial_root_challenge_path)
+        self.auth.prepare()
+        self.auth.perform([bingo_achall, self.achall])
+
+        self.auth.cleanup([self.achall])
+        self.assertFalse(os.path.exists(bingo_validation_path))
+        self.assertTrue(os.path.exists(self.root_challenge_path))
+        self.auth.cleanup([bingo_achall])
+        self.assertFalse(os.path.exists(self.validation_path))
+        self.assertFalse(os.path.exists(self.root_challenge_path))
 
     def test_cleanup_leftovers(self):
         self.auth.prepare()

@@ -169,8 +169,8 @@ to serve all files under specified web root ({0})."""
                 for prefix in sorted(util.get_prefixes(self.full_roots[name]), key=len):
                     try:
                         # This is coupled with the "umask" call above because
-                        # os.makedirs's "mode" parameter may not always work:
-                        # https://stackoverflow.com/questions/5231901/permission-problems-when-creating-a-dir-with-os-makedirs-python
+                        # os.mkdir's "mode" parameter may not always work:
+                        # https://docs.python.org/3/library/os.html#os.mkdir
                         os.mkdir(prefix, 0o0755)
                         self._created_dirs.append(prefix)
                         # Set owner as parent directory if possible
@@ -219,13 +219,16 @@ to serve all files under specified web root ({0})."""
                 os.remove(validation_path)
                 self.performed[root_path].remove(achall)
 
+        not_removed = []
         while len(self._created_dirs) > 0:
             path = self._created_dirs.pop()
             try:
                 os.rmdir(path)
             except OSError as exc:
-                logger.info("Unable to clean up challenge directory %s", path)
+                not_removed.insert(0, path)
+                logger.info("Challenge directory %s was not empty, didn't remove", path)
                 logger.debug("Error was: %s", exc)
+        self._created_dirs = not_removed
         logger.debug("All challenges cleaned up")
 
 
