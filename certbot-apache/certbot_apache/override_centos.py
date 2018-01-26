@@ -20,7 +20,7 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
         logs_root="/var/log/httpd",
         version_cmd=['apachectl', '-v'],
         apache_cmd="apachectl",
-        restart_cmd=['apachectl', 'graceful'],
+        restart_cmd=['apachectl', 'restart'],
         conftest_cmd=['apachectl', 'configtest'],
         enmod=None,
         dismod=None,
