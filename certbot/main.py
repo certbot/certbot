@@ -1217,13 +1217,6 @@ def main(cli_args=sys.argv[1:]):
         # Let plugins_cmd be run as un-privileged user.
         if config.func != plugins_cmd:
             raise
-    deprecation_fmt = (
-        "Python %s.%s support will be dropped in the next "
-        "release of Certbot - please upgrade your Python version.")
-    # We use logging for Python 3 because DeprecationWarnings are only reported
-    # by default in Python <= 2.6 and warnings can be disabled by the user.
-    if sys.version_info[:2] == (3, 3):
-        logger.warning(deprecation_fmt, *sys.version_info[:2])
 
     set_displayer(config)
 
