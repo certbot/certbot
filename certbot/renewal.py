@@ -4,6 +4,7 @@ import copy
 import itertools
 import logging
 import os
+import sys
 import traceback
 
 import six
@@ -33,7 +34,7 @@ STR_CONFIG_ITEMS = ["config_dir", "logs_dir", "work_dir", "user_agent",
                     "pre_hook", "post_hook", "tls_sni_01_address",
                     "http01_address"]
 INT_CONFIG_ITEMS = ["rsa_key_size", "tls_sni_01_port", "http01_port"]
-BOOL_CONFIG_ITEMS = ["must_staple", "allow_subset_of_names"]
+BOOL_CONFIG_ITEMS = ["must_staple", "allow_subset_of_names", "autorenew"]
 
 CONFIG_ITEMS = set(itertools.chain(
     BOOL_CONFIG_ITEMS, INT_CONFIG_ITEMS, STR_CONFIG_ITEMS, ('pref_challs',)))
@@ -362,7 +363,7 @@ def _renew_describe_results(config, renew_successes, renew_failures,
     disp.notification("\n".join(out), wrap=False)
 
 
-def handle_renewal_request(config):
+def handle_renewal_request(config): # pylint: disable=too-many-locals,too-many-branches
     """Examine each lineage; renew if due and report results"""
 
     # This is trivially False if config.domains is empty
@@ -407,6 +408,16 @@ def handle_renewal_request(config):
         try:
             if renewal_candidate is None:
                 parse_failures.append(renewal_file)
+            elif lineage_config.certname  and cli.set_by_cli('autorenew'):
+                # Update renewal config file and exit.
+                symlinks = dict((kind, renewal_candidate.configuration[kind])
+                                for kind in storage.ALL_FOUR)
+                storage.update_configuration(lineagename,
+                        renewal_candidate.archive_dir, symlinks, lineage_config)
+                disp.notification("{} auto renewal for {}".format(
+                    "Enabled" if config.autorenew else "Disabled",
+                    lineagename))
+                sys.exit(0)
             else:
                 # XXX: ensure that each call here replaces the previous one
                 zope.component.provideUtility(lineage_config)

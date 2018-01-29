@@ -37,6 +37,7 @@ CLI_DEFAULTS = dict(
     expand=False,
     renew_by_default=False,
     renew_with_new_domains=False,
+    autorenew=True,
     allow_subset_of_names=False,
     tos=False,
     account=None,
