@@ -1,9 +1,8 @@
 """Very low-level dovecot config parser based on pyparsing."""
-
 from pyparsing import (
     alphanums, restOfLine,
-    Literal, Dict, Forward, Group, LineEnd, Optional,
-    OneOrMore, ParserElement, Word, ZeroOrMore
+    Literal, Forward, Group, LineEnd, Optional,
+    OneOrMore, ParserElement, White, Word, ZeroOrMore
 )
 
 class DovecotParser(object):
@@ -14,38 +13,49 @@ class DovecotParser(object):
     # Here, we're setting default whitespace characters to ` ` and `\t`,
     # excluding `\n` since a new line is used as a delimeter for dovecot
     # configuration itself
-    ParserElement.setDefaultWhitespaceChars(' \t')
+    ParserElement.setDefaultWhitespaceChars('')
 
-    newline = LineEnd().suppress()
+    newline = LineEnd()
+    same_line_space = Optional(Word(' \t').leaveWhitespace())
+    space = Optional(White().leaveWhitespace())
 
     # Defining comments
-    comment = Group(Literal('#') + restOfLine)
-    comment_line = comment + OneOrMore(newline)
+    comment = space + Literal('#') + restOfLine
 
     # Defining key and value pair
-    key = Word(alphanums) + (Literal('=').suppress())
+    key = Word(alphanums) + same_line_space + (Literal('='))
 
-    value_group = (OneOrMore(Optional(Literal(',')).suppress()
-                   + Word(alphanums)) + Optional(comment))
+    value_group = OneOrMore(
+        same_line_space
+        + Optional(Literal(',') + same_line_space)
+        + Word(alphanums)
+    )
 
-    key_value_pair = Dict(Group(key + value_group)) + newline
+    key_value_pair = (
+        space + key + value_group + same_line_space
+    )
 
     # Defining includes
     # Order matters. It's a first item match.
-    include = Dict(Group(
-        (Literal('!include_try') | Literal('!include'))
-        + OneOrMore(Word(alphanums + "_/-?!")) + newline
-    ))
+    include = (
+        space
+        + (Literal('!include_try') | Literal('!include'))
+        + OneOrMore(same_line_space
+        + Word(alphanums + "_/-?!"))
+        + same_line_space
+    )
 
     # Defining a block
     block = Forward()
 
-    item = comment_line | block | key_value_pair | include
+    item = Group(comment | block | key_value_pair | include) + newline.suppress()
 
-    block_title = Word(alphanums)
+    block_title = Group(
+        space + Word(alphanums) + same_line_space
+        + Literal('{') + same_line_space + newline.suppress()
+    )
 
-    left_brace = Literal('{').suppress() + Optional(comment)
-    right_brace = Literal('}').suppress() + Optional(comment)
+    right_brace = Group(space + Literal('}') + same_line_space + Optional(comment))
 
     # The use of the OneOrMore(newline) here is actually not an assumption.
     # Dovecot requires every { to be followed by a new line, and every } to
@@ -56,14 +66,16 @@ class DovecotParser(object):
     # the choice to make sure all key value pairs in addition to { are
     # followed by a new line. This should maintain that  } is also always
     # preceded by a new line.
-    block_body = (left_brace + OneOrMore(newline)
-                  + ZeroOrMore(item)
-                  + ZeroOrMore(newline)
-                  + right_brace + OneOrMore(newline))
+    block_body = (Group(
+                        ZeroOrMore(item)
+                  ) + right_brace)
 
-    block << OneOrMore(Dict(Group(block_title + block_body)))
+    # Blocks contain of a list containing 3 lists. The first item is the
+    # block name, while the second item is a list of the block contents,
+    # and the third is the right brace and spaces surrounding it
+    block << OneOrMore(block_title + block_body)
 
-    result = ZeroOrMore(item)
+    result = ZeroOrMore(item) + space
 
     def parse_file(self, f):
         """Parses from a file.
@@ -88,6 +100,3 @@ class DovecotParser(object):
         """
 
         return self.result.parseString(text)
-
-# d = DovecotParser()
-# print d.parse_file('file')['#']
