@@ -171,12 +171,6 @@ class VirtualHostTest(unittest.TestCase):
                                  'enabled: False'])
         self.assertEqual(stringified, str(self.vhost1))
 
-    def test_has_redirect(self):
-        self.assertTrue(self.vhost1.has_redirect())
-        self.assertTrue(self.vhost2.has_redirect())
-        self.assertTrue(self.vhost3.has_redirect())
-        self.assertFalse(self.vhost4.has_redirect())
-
     def test_has_header(self):
         self.assertTrue(self.vhost_has_hsts.has_header('Strict-Transport-Security'))
         self.assertFalse(self.vhost_has_hsts.has_header('Bogus-Header'))
