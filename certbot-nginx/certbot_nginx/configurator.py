@@ -677,22 +677,10 @@ class NginxConfigurator(common.Installer):
             raise errors.PluginError(
                 "Unable to find corresponding HTTP host for enhancement.")
 
-        # if there is no separate SSL vhost, break the vhost into two blocks:
+        # if there is no separate SSL vhost, break the vhost into two blocks and
+        # choose the SSL vhost.
         if self._should_break_block(vhost):
-            http_vhost = self.parser.duplicate_vhost(vhost,
-                             only_directives=['listen', 'server_name'])
-
-            def _ssl_match_func(directive):
-                return 'ssl' in directive
-
-            def _no_ssl_match_func(directive):
-                return 'ssl' not in directive
-
-            # remove all ssl addresses from the new block
-            self.parser.remove_server_directives(http_vhost, 'listen', match_func=_ssl_match_func)
-
-            # remove all non-ssl addresses from the existing block
-            self.parser.remove_server_directives(vhost, 'listen', match_func=_no_ssl_match_func)
+            _, vhost = self._split_block(vhost)
 
         header_directives = [
             ['\n    ', 'add_header', header_substring] + constants.HEADER_ARGS[header_substring],
@@ -706,6 +694,31 @@ class NginxConfigurator(common.Installer):
 
         self.parser.add_server_directives(
             vhost, redirect_block, replace=False, insert_at_top=True)
+
+    def _split_block(self, vhost):
+        """Splits this "virtual host" (i.e. this nginx server block) into
+        separate HTTP and HTTPS blocks.
+
+        :param vhost: The "virtual host" (i.e. nginx server block) to break up into two.
+        :type vhost: :class:`~certbot_nginx.obj.VirtualHost`
+        :returns: tuple (http_vhost, https_vhost)
+        :rtype: tuple of type :class:`~certbot_nginx.obj.VirtualHost`
+        """
+        http_vhost = self.parser.duplicate_vhost(vhost,
+                     only_directives=['listen', 'server_name'])
+
+        def _ssl_match_func(directive):
+            return 'ssl' in directive
+
+        def _no_ssl_match_func(directive):
+            return 'ssl' not in directive
+
+        # remove all ssl addresses from the new block
+        self.parser.remove_server_directives(http_vhost, 'listen', match_func=_ssl_match_func)
+
+        # remove all non-ssl addresses from the existing block
+        self.parser.remove_server_directives(vhost, 'listen', match_func=_no_ssl_match_func)
+        return http_vhost, vhost
 
     def _enable_redirect(self, domain, unused_options):
         """Redirect all equivalent HTTP traffic to ssl_vhost.
@@ -746,28 +759,15 @@ class NginxConfigurator(common.Installer):
         :param `~obj.Vhost` vhost: vhost to enable redirect for
         """
 
-        new_vhost = None
+        http_vhost = None
         if vhost.ssl:
-            new_vhost = self.parser.duplicate_vhost(vhost,
-                only_directives=['listen', 'server_name'])
-
-            def _ssl_match_func(directive):
-                return 'ssl' in directive
-
-            def _no_ssl_match_func(directive):
-                return 'ssl' not in directive
-
-            # remove all ssl addresses from the new block
-            self.parser.remove_server_directives(new_vhost, 'listen', match_func=_ssl_match_func)
-
-            # remove all non-ssl addresses from the existing block
-            self.parser.remove_server_directives(vhost, 'listen', match_func=_no_ssl_match_func)
+            http_vhost, _ = self._split_block(vhost)
 
             # Add this at the bottom to get the right order of directives
             return_404_directive = [['\n    ', 'return', ' ', '404']]
-            self.parser.add_server_directives(new_vhost, return_404_directive, replace=False)
+            self.parser.add_server_directives(http_vhost, return_404_directive, replace=False)
 
-            vhost = new_vhost
+            vhost = http_vhost
 
         if self._has_certbot_redirect(vhost, domain):
             logger.info("Traffic on port %s already redirecting to ssl in %s",
