@@ -538,7 +538,7 @@ class NginxConfiguratorTest(util.NginxTest):
                ['listen', '127.0.0.1'],
                ['server_name', '.example.com'],
                ['server_name', 'example.*'],
-               [],  ['#', ' managed by Certbot'], 
+               [], ['#', ' managed by Certbot'],
                ['ssl_certificate', 'example/fullchain.pem'], ['#', ' managed by Certbot'],
                ['ssl_certificate_key', 'example/key.pem'], ['#', ' managed by Certbot'],
                ['include', self.config.mod_ssl_conf], ['#', ' managed by Certbot'],
