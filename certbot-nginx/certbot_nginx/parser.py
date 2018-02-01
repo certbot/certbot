@@ -377,6 +377,7 @@ class NginxParser(object):
                     del directive[directive.index('default_server')]
         return new_vhost
 
+
 def _parse_ssl_options(ssl_options):
     if ssl_options is not None:
         try:
@@ -667,6 +668,9 @@ def _add_directive(block, directive, replace, insert_at_top):
     elif block[location] != directive:
         raise errors.MisconfigurationError(err_fmt.format(directive, block[location]))
 
+def _is_certbot_comment(directive):
+    return '#' in directive and COMMENT in directive
+
 def _remove_directives(directive_name, match_func, block):
     """Removes directives of name directive_name from a config block if match_func matches.
     """
@@ -674,6 +678,9 @@ def _remove_directives(directive_name, match_func, block):
         location = _find_location(block, directive_name, match_func=match_func)
         if location is None:
             return
+        # if the directive was made by us, remove the comment following
+        if location + 1 < len(block) and _is_certbot_comment(block[location + 1]):
+            del block[location + 1]
         del block[location]
 
 def _apply_global_addr_ssl(addr_to_ssl, parsed_server):

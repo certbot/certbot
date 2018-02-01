@@ -191,6 +191,32 @@ class NginxParserTest(util.NginxTest): #pylint: disable=too-many-public-methods
                           ['server_name', '*.www.foo.com', '*.www.example.com']]
         self.assertTrue(nparser.has_ssl_on_directive(mock_vhost))
 
+
+    def test_remove_server_directives(self):
+        nparser = parser.NginxParser(self.config_path)
+        mock_vhost = obj.VirtualHost(nparser.abs_path('nginx.conf'),
+                                     None, None, None,
+                                     set(['localhost',
+                                           r'~^(www\.)?(example|bar)\.']),
+                                     None, [10, 1, 9])
+        example_com = nparser.abs_path('sites-enabled/example.com')
+        names = set(['.example.com', 'example.*'])
+        mock_vhost.filep = example_com
+        mock_vhost.names = names
+        mock_vhost.path = [0]
+        nparser.add_server_directives(mock_vhost,
+                                      [['foo', 'bar'], ['ssl_certificate',
+                                                        '/etc/ssl/cert2.pem']],
+                                      replace=False)
+        nparser.remove_server_directives(mock_vhost, 'foo')
+        nparser.remove_server_directives(mock_vhost, 'ssl_certificate')
+        self.assertEqual(nparser.parsed[example_com],
+            [[['server'], [['listen', '69.50.225.155:9000'],
+                           ['listen', '127.0.0.1'],
+                           ['server_name', '.example.com'],
+                           ['server_name', 'example.*'],
+                           []]]])
+
     def test_add_server_directives(self):
         nparser = parser.NginxParser(self.config_path)
         mock_vhost = obj.VirtualHost(nparser.abs_path('nginx.conf'),

@@ -705,11 +705,19 @@ class NginxConfigurator(common.Installer):
         def _ssl_match_func(directive):
             return 'ssl' in directive
 
+        def _ssl_config_match_func(directive):
+            return self.mod_ssl_conf in directive
+
         def _no_ssl_match_func(directive):
             return 'ssl' not in directive
 
-        # remove all ssl addresses from the new block
+        # remove all ssl addresses and related directives from the new block
+        ssl_directives = ['ssl_certificate', 'ssl_certificate_key', 'ssl_dhparam']
+        for directive in ssl_directives:
+            self.parser.remove_server_directives(http_vhost, directive)
         self.parser.remove_server_directives(http_vhost, 'listen', match_func=_ssl_match_func)
+        self.parser.remove_server_directives(http_vhost, 'include',
+                                             match_func=_ssl_config_match_func)
 
         # remove all non-ssl addresses from the existing block
         self.parser.remove_server_directives(vhost, 'listen', match_func=_no_ssl_match_func)
