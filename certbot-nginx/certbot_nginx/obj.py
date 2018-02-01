@@ -199,7 +199,9 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
                      self.ssl, self.enabled))
 
     def has_header(self, header_name):
-        """Determine if this vhost has a redirecting statement
+        """Determine if this server block has a particular header set.
+        :param str header_name: The name of the header to check for, e.g.
+            'Strict-Transport-Security'
         """
         found = _find_directive(self.raw, ADD_HEADER_DIRECTIVE, header_name)
         return found is not None

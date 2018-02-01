@@ -648,10 +648,6 @@ class NginxConfigurator(common.Installer):
         test_redirect_block = _test_block_from_block(_redirect_block_for_domain(domain))
         return vhost.contains_list(test_redirect_block)
 
-    def _should_break_block(self, vhost):
-        # if host has both SSL and non-SSL addrs, we should break this block!
-        return vhost.ssl and any([not addr.ssl for addr in vhost.addrs])
-
     def _set_http_header(self, domain, header_substring):
         """Enables header identified by header_substring on domain.
 
@@ -667,19 +663,17 @@ class NginxConfigurator(common.Installer):
             set with header header_substring.
         """
         vhost = self.choose_vhost(domain)
+        if vhost is None:
+            raise errors.PluginError(
+                "Unable to find corresponding HTTPS host for enhancement.")
+
         if vhost.has_header(header_substring):
             raise errors.PluginEnhancementAlreadyPresent(
                 "Existing %s header" % (header_substring))
 
-        if vhost is None:
-            # this should never happen, since enhancements occur after
-            # setting certs!
-            raise errors.PluginError(
-                "Unable to find corresponding HTTP host for enhancement.")
-
-        # if there is no separate SSL vhost, break the vhost into two blocks and
-        # choose the SSL vhost.
-        if self._should_break_block(vhost):
+        # if there is no separate SSL block, break the block into two and
+        # choose the SSL block.
+        if vhost.ssl and any([not addr.ssl for addr in vhost.addrs]):
             _, vhost = self._split_block(vhost)
 
         header_directives = [
@@ -695,17 +689,18 @@ class NginxConfigurator(common.Installer):
         self.parser.add_server_directives(
             vhost, redirect_block, replace=False, insert_at_top=True)
 
-    def _split_block(self, vhost):
+    def _split_block(self, vhost, only_directives=None):
         """Splits this "virtual host" (i.e. this nginx server block) into
         separate HTTP and HTTPS blocks.
 
-        :param vhost: The "virtual host" (i.e. nginx server block) to break up into two.
+        :param vhost: The server block to break up into two.
+        :param list only_directives: If this exists, only duplicate these directives
+            when splitting the block.
         :type vhost: :class:`~certbot_nginx.obj.VirtualHost`
         :returns: tuple (http_vhost, https_vhost)
         :rtype: tuple of type :class:`~certbot_nginx.obj.VirtualHost`
         """
-        http_vhost = self.parser.duplicate_vhost(vhost,
-                     only_directives=['listen', 'server_name'])
+        http_vhost = self.parser.duplicate_vhost(vhost, only_directives=only_directives)
 
         def _ssl_match_func(directive):
             return 'ssl' in directive
@@ -761,7 +756,7 @@ class NginxConfigurator(common.Installer):
 
         http_vhost = None
         if vhost.ssl:
-            http_vhost, _ = self._split_block(vhost)
+            http_vhost, _ = self._split_block(vhost, ['listen', 'server_name'])
 
             # Add this at the bottom to get the right order of directives
             return_404_directive = [['\n    ', 'return', ' ', '404']]
