@@ -473,8 +473,13 @@ class MultipleVhostsTest(util.ApacheTest):
         self.config.ensure_listen("8080")
         self.assertEqual(mock_add_dir.call_count, 3)
         self.assertTrue(mock_add_dir.called)
-        self.assertEqual(mock_add_dir.call_args[0][1], "Listen")
-        self.assertEqual(mock_add_dir.call_args[0][2], ['1.2.3.4:8080'])
+        call_args_list = [list(mock_add_dir.call_args_list[i][0][1:]) for i in
+                range(3)]
+        self.assertEqual(
+            sorted(call_args_list),
+            sorted([["Listen", ["1.2.3.4:8080"]],
+                    ["Listen", ["[::1]:8080"]],
+                    ["Listen", ["1.1.1.1:8080"]]]))
 
     def test_prepare_server_https(self):
         mock_enable = mock.Mock()
