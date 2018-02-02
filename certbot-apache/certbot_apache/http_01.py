@@ -11,30 +11,43 @@ logger = logging.getLogger(__name__)
 class ApacheHttp01(common.TLSSNI01):
     """Class that performs HTTP-01 challenges within the Apache configurator."""
 
-    CONFIG_TEMPLATE22 = """\
+    CONFIG_TEMPLATE22_PRE = """\
         RewriteEngine on
         RewriteRule ^/\\.well-known/acme-challenge/([A-Za-z0-9-_=]+)$ {0}/$1 [L]
 
+    """
+    CONFIG_TEMPLATE22_POST = """\
         <Directory {0}>
             Order Allow,Deny
             Allow from all
         </Directory>
+        <Location /.well-known/acme-challenge>
+            Order Allow,Deny
+            Allow from all
+        </Location>
     """
 
-    CONFIG_TEMPLATE24 = """\
+    CONFIG_TEMPLATE24_PRE = """\
         RewriteEngine on
         RewriteRule ^/\\.well-known/acme-challenge/([A-Za-z0-9-_=]+)$ {0}/$1 [END]
-
+    """
+    CONFIG_TEMPLATE24_POST = """\
         <Directory {0}>
             Require all granted
         </Directory>
+        <Location /.well-known/acme-challenge>
+            Require all granted
+        </Location>
     """
 
     def __init__(self, *args, **kwargs):
         super(ApacheHttp01, self).__init__(*args, **kwargs)
-        self.challenge_conf = os.path.join(
+        self.challenge_conf_pre = os.path.join(
             self.configurator.conf("challenge-location"),
-            "le_http_01_challenge.conf")
+            "le_http_01_challenge_pre.conf")
+        self.challenge_conf_post = os.path.join(
+            self.configurator.conf("challenge-location"),
+            "le_http_01_challenge_post.conf")
         self.challenge_dir = os.path.join(
             self.configurator.config.work_dir,
             "http_challenges")
@@ -79,24 +92,32 @@ class ApacheHttp01(common.TLSSNI01):
                 chall.domain, filter_defaults=False,
                 port=str(self.configurator.config.http01_port))
             if vh:
-                self._set_up_include_directive(vh)
+                self._set_up_include_directives(vh)
             else:
                 for vh in self._relevant_vhosts():
-                    self._set_up_include_directive(vh)
+                    self._set_up_include_directives(vh)
 
         self.configurator.reverter.register_file_creation(
-            True, self.challenge_conf)
+            True, self.challenge_conf_pre)
+        self.configurator.reverter.register_file_creation(
+            True, self.challenge_conf_post)
 
         if self.configurator.version < (2, 4):
-            config_template = self.CONFIG_TEMPLATE22
+            config_template_pre = self.CONFIG_TEMPLATE22_PRE
+            config_template_post = self.CONFIG_TEMPLATE22_POST
         else:
-            config_template = self.CONFIG_TEMPLATE24
+            config_template_pre = self.CONFIG_TEMPLATE24_PRE
+            config_template_post = self.CONFIG_TEMPLATE24_POST
 
-        config_text = config_template.format(self.challenge_dir)
+        config_text_pre = config_template_pre.format(self.challenge_dir)
+        config_text_post = config_template_post.format(self.challenge_dir)
 
-        logger.debug("writing a config file with text:\n %s", config_text)
-        with open(self.challenge_conf, "w") as new_conf:
-            new_conf.write(config_text)
+        logger.debug("writing a pre config file with text:\n %s", config_text_pre)
+        with open(self.challenge_conf_pre, "w") as new_conf:
+            new_conf.write(config_text_pre)
+        logger.debug("writing a post config file with text:\n %s", config_text_post)
+        with open(self.challenge_conf_post, "w") as new_conf:
+            new_conf.write(config_text_post)
 
     def _relevant_vhosts(self):
         http01_port = str(self.configurator.config.http01_port)
@@ -137,14 +158,17 @@ class ApacheHttp01(common.TLSSNI01):
 
         return response
 
-    def _set_up_include_directive(self, vhost):
-        """Includes override configuration to the beginning of VirtualHost.
-        Note that this include isn't added to Augeas search tree"""
+    def _set_up_include_directives(self, vhost):
+        """Includes override configuration to the beginning and to the end of
+        VirtualHost. Note that this include isn't added to Augeas search tree"""
 
         if vhost not in self.moded_vhosts:
             logger.debug(
                 "Adding a temporary challenge validation Include for name: %s " +
                 "in: %s", vhost.name, vhost.filep)
             self.configurator.parser.add_dir_beginning(
-                vhost.path, "Include", self.challenge_conf)
+                vhost.path, "Include", self.challenge_conf_pre)
+            self.configurator.parser.add_dir(
+                vhost.path, "Include", self.challenge_conf_post)
+
             self.moded_vhosts.add(vhost)
