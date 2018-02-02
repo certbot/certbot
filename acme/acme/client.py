@@ -248,10 +248,7 @@ class Client(ClientBase):
         """
         # pylint: disable=too-many-arguments
         self.key = key
-        self.account = account
-        self.acme_version = acme_version
-        self.net = ClientNetwork(key, account=account, acme_version=acme_version,
-            alg=alg, verify_ssl=verify_ssl) if net is None else net
+        self.net = ClientNetwork(key, alg=alg, verify_ssl=verify_ssl) if net is None else net
 
         if isinstance(directory, six.string_types):
             directory = messages.Directory.from_json(

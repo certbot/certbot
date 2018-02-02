@@ -106,7 +106,7 @@ class ClientTest(unittest.TestCase):
 
     def test_new_account_v2(self):
         directory = messages.Directory({
-            "new-account": 'https://www.letsencrypt-demo.org/acme/new-account',
+            "newAccount": 'https://www.letsencrypt-demo.org/acme/new-account',
         })
         from acme.client import ClientV2
         client = ClientV2(directory=directory, net=self.net)
