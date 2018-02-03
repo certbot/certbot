@@ -230,8 +230,6 @@ class Client(ClientBase):
 
     :ivar messages.Directory directory:
     :ivar key: `.JWK` (private)
-    :ivar account: `.Registration` (private)
-    :ivar acme_version: `int` (private)
     :ivar alg: `.JWASignature`
     :ivar bool verify_ssl: Verify SSL certificates?
     :ivar .ClientNetwork net: Client network. Useful for testing. If not
@@ -526,9 +524,7 @@ class ClientV2(ClientBase):
     """ACME client for a v2 API.
 
     :ivar messages.Directory directory:
-    :ivar .ClientNetwork net: Client network. Useful for testing. If not
-        supplied, it will be initialized using `key`, `alg` and
-        `verify_ssl`.
+    :ivar .ClientNetwork net: Client network.
     """
 
     def __init__(self, directory, net):
@@ -549,7 +545,8 @@ class ClientV2(ClientBase):
         :rtype: `.RegistrationResource`
 
         """
-        response = self.net.post(self.directory['newAccount'], new_account)
+        response = self.net.post(self.directory['newAccount'], new_account,
+            acme_version=2)
         # "Instance of 'Field' has no key/contact member" bug:
         # pylint: disable=no-member
         return self._regr_from_response(response)
