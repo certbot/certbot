@@ -44,6 +44,7 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
 
     :ivar messages.Directory directory:
     :ivar .ClientNetwork net: Client network.
+    :ivar int acme_version: ACME protocol version. 1 or 2.
     """
 
     def __init__(self, directory, net, acme_version):
@@ -51,9 +52,11 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
 
         :param .messages.Directory directory: Directory Resource
         :param .ClientNetwork net: Client network.
+        :param int acme_version: ACME protocol version. 1 or 2.
         """
         self.directory = directory
         self.net = net
+        self.acme_version = acme_version
 
     @classmethod
     def _regr_from_response(cls, response, uri=None, terms_of_service=None):
@@ -66,7 +69,7 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
             terms_of_service=terms_of_service)
 
     def _send_recv_regr(self, regr, body):
-        response = self.net.post(regr.uri, body)
+        response = self.net.post(regr.uri, body, acme_version=self.acme_version)
 
         # TODO: Boulder returns httplib.ACCEPTED
         #assert response.status_code == httplib.OK
@@ -138,7 +141,8 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
         :raises .UnexpectedUpdate:
 
         """
-        response = self.net.post(challb.uri, response)
+        response = self.net.post(challb.uri, response,
+            acme_version=self.acme_version)
         try:
             authzr_uri = response.links['up']['url']
         except KeyError:
@@ -214,7 +218,8 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
                                  messages.Revocation(
                                      certificate=cert,
                                      reason=rsn),
-                                 content_type=None)
+                                 content_type=None,
+                                 acme_version=self.acme_version)
         if response.status_code != http_client.OK:
             raise errors.ClientError(
                 'Successful revocation must return HTTP OK status')
@@ -264,7 +269,8 @@ class Client(ClientBase):
 
         """
         new_reg = messages.NewRegistration() if new_reg is None else new_reg
-        response = self.net.post(self.directory[new_reg], new_reg)
+        response = self.net.post(self.directory[new_reg], new_reg,
+            acme_version=1)
         # TODO: handle errors
         assert response.status_code == http_client.CREATED
 
@@ -300,7 +306,8 @@ class Client(ClientBase):
         if new_authzr_uri is not None:
             logger.debug("request_challenges with new_authzr_uri deprecated.")
         new_authz = messages.NewAuthorization(identifier=identifier)
-        response = self.net.post(self.directory.new_authz, new_authz)
+        response = self.net.post(self.directory.new_authz, new_authz,
+          acme_version=1)
         # TODO: handle errors
         assert response.status_code == http_client.CREATED
         return self._authzr_from_response(response, identifier)
@@ -346,7 +353,8 @@ class Client(ClientBase):
             self.directory.new_cert,
             req,
             content_type=content_type,
-            headers={'Accept': content_type})
+            headers={'Accept': content_type},
+            acme_version=1)
 
         cert_chain_uri = response.links.get('up', {}).get('url')
 

@@ -159,20 +159,23 @@ class ClientTest(unittest.TestCase):
         self.client.request_challenges(self.identifier)
         self.net.post.assert_called_once_with(
             self.directory.new_authz,
-            messages.NewAuthorization(identifier=self.identifier))
+            messages.NewAuthorization(identifier=self.identifier),
+            acme_version=1)
 
     def test_request_challenges_deprecated_arg(self):
         self._prepare_response_for_request_challenges()
         self.client.request_challenges(self.identifier, new_authzr_uri="hi")
         self.net.post.assert_called_once_with(
             self.directory.new_authz,
-            messages.NewAuthorization(identifier=self.identifier))
+            messages.NewAuthorization(identifier=self.identifier),
+            acme_version=1)
 
     def test_request_challenges_custom_uri(self):
         self._prepare_response_for_request_challenges()
         self.client.request_challenges(self.identifier)
         self.net.post.assert_called_once_with(
-            'https://www.letsencrypt-demo.org/acme/new-authz', mock.ANY)
+            'https://www.letsencrypt-demo.org/acme/new-authz', mock.ANY,
+            acme_version=1)
 
     def test_request_challenges_unexpected_update(self):
         self._prepare_response_for_request_challenges()
@@ -434,7 +437,8 @@ class ClientTest(unittest.TestCase):
     def test_revoke(self):
         self.client.revoke(self.certr.body, self.rsn)
         self.net.post.assert_called_once_with(
-            self.directory[messages.Revocation], mock.ANY, content_type=None)
+            self.directory[messages.Revocation], mock.ANY, content_type=None,
+            acme_version=1)
 
     def test_revocation_payload(self):
         obj = messages.Revocation(certificate=self.certr.body, reason=self.rsn)
