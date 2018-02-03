@@ -51,11 +51,9 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
 
         :param .messages.Directory directory: Directory Resource
         :param .ClientNetwork net: Client network.
-        :param int acme_version: ACME version. 1 or 2.
         """
         self.directory = directory
         self.net = net
-        self.acme_version = 1
 
     @classmethod
     def _regr_from_response(cls, response, uri=None, terms_of_service=None):
