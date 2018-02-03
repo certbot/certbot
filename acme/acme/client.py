@@ -46,14 +46,16 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
     :ivar .ClientNetwork net: Client network.
     """
 
-    def __init__(self, directory, net):
+    def __init__(self, directory, net, acme_version):
         """Initialize.
 
         :param .messages.Directory directory: Directory Resource
         :param .ClientNetwork net: Client network.
+        :param int acme_version: ACME version. 1 or 2.
         """
         self.directory = directory
         self.net = net
+        self.acme_version = 1
 
     @classmethod
     def _regr_from_response(cls, response, uri=None, terms_of_service=None):
@@ -253,7 +255,8 @@ class Client(ClientBase):
         if isinstance(directory, six.string_types):
             directory = messages.Directory.from_json(
                 self.net.get(directory).json())
-        super(Client, self).__init__(directory=directory, net=net)
+        super(Client, self).__init__(directory=directory,
+            net=net, acme_version=1)
 
     def register(self, new_reg=None):
         """Register.
@@ -528,6 +531,15 @@ class ClientV2(ClientBase):
         `verify_ssl`.
     """
 
+    def __init__(self, directory, net):
+        """Initialize.
+
+        :param .messages.Directory directory: Directory Resource
+        :param .ClientNetwork net: Client network.
+        """
+        super(ClientV2, self).__init__(directory=directory,
+            net=net, acme_version=2)
+
     def new_account(self, new_account):
         """Register.
 
@@ -572,7 +584,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         except Exception:  # pylint: disable=broad-except
             pass
 
-    def _wrap_in_jws(self, obj, nonce, url):
+    def _wrap_in_jws(self, obj, nonce, url, acme_version):
         """Wrap `JSONDeSerializable` object in JWS.
 
         .. todo:: Implement ``acmePath``.
@@ -589,8 +601,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
             "alg": self.alg,
             "nonce": nonce
         }
-        if self.acme_version == 2:
-            # new ACME spec
+        if acme_version == 2:
             kwargs["url"] = url
             if self.account is not None:
                 kwargs["kid"] = self.account["uri"]
@@ -769,8 +780,9 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
             else:
                 raise
 
-    def _post_once(self, url, obj, content_type=JOSE_CONTENT_TYPE, **kwargs):
-        data = self._wrap_in_jws(obj, self._get_nonce(url), url)
+    def _post_once(self, url, obj, content_type=JOSE_CONTENT_TYPE,
+            acme_version=1, **kwargs):
+        data = self._wrap_in_jws(obj, self._get_nonce(url), url, acme_version)
         kwargs.setdefault('headers', {'Content-Type': content_type})
         response = self._send_request('POST', url, data=data, **kwargs)
         self._add_nonce(response)
