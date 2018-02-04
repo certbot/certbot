@@ -613,6 +613,15 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
             self._call([])
             self.assertEqual(1, mock_run.call_count)
 
+    def test_install_only_doesnt_run(self):
+        with mock.patch('certbot.main.run') as mock_run:
+            try:
+                main.main(["--install-only"])
+            except SystemExit:
+                pass
+            finally:
+                self.assertEqual(0, mock_run.call_count)
+
     def test_version_string_program_name(self):
         toy_out = six.StringIO()
         toy_err = six.StringIO()

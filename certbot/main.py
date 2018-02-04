@@ -1209,6 +1209,8 @@ def main(cli_args=sys.argv[1:]):
     # note: arg parser internally handles --help (and exits afterwards)
     args = cli.prepare_and_parse_args(plugins, cli_args)
     config = configuration.NamespaceConfig(args)
+    if config.install_only:
+        return
     zope.component.provideUtility(config)
 
     try:
