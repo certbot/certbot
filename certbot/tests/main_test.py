@@ -592,11 +592,30 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
 
         super(MainTest, self).tearDown()
 
-    def _call(self, args, stdout=None):
-        "Run the cli with output streams and actual client mocked out"
-        with mock.patch('certbot.main.client') as client:
-            ret, stdout, stderr = self._call_no_clientmock(args, stdout)
-            return ret, stdout, stderr, client
+    def _call(self, args, stdout=None, mockisfile=False):
+        """Run the cli with output streams, actual client and optionally
+        os.path.isfile() mocked out"""
+
+        if mockisfile:
+            orig_open = os.path.isfile
+            def mock_isfile(fn, *args, **kwargs):
+                """Mock os.path.isfile()"""
+                if (fn.endswith("cert") or
+                    fn.endswith("chain") or
+                    fn.endswith("privkey")):
+                    return True
+                else:
+                    return orig_open(fn, *args, **kwargs)
+
+            with mock.patch("os.path.isfile") as mock_if:
+                mock_if.side_effect = mock_isfile
+                with mock.patch('certbot.main.client') as client:
+                    ret, stdout, stderr = self._call_no_clientmock(args, stdout)
+                    return ret, stdout, stderr, client
+        else:
+            with mock.patch('certbot.main.client') as client:
+                ret, stdout, stderr = self._call_no_clientmock(args, stdout)
+                return ret, stdout, stderr, client
 
     def _call_no_clientmock(self, args, stdout=None):
         "Run the client with output streams mocked out"
@@ -679,10 +698,9 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
     @mock.patch('certbot.main.plug_sel.record_chosen_plugins')
     @mock.patch('certbot.main.plug_sel.pick_installer')
     def test_installer_selection(self, mock_pick_installer, _rec):
-        with mock.patch("os.path.isfile", return_value=True):
-            self._call(['install', '--domains', 'foo.bar', '--cert-path', 'cert',
-                        '--key-path', 'key', '--chain-path', 'chain'])
-            self.assertEqual(mock_pick_installer.call_count, 1)
+        self._call(['install', '--domains', 'foo.bar', '--cert-path', 'cert',
+                    '--key-path', 'privkey', '--chain-path', 'chain'], mockisfile=True)
+        self.assertEqual(mock_pick_installer.call_count, 1)
 
     @mock.patch('certbot.main._install_cert')
     @mock.patch('certbot.main.plug_sel.record_chosen_plugins')
@@ -691,14 +709,14 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         mock_lineage = mock.MagicMock(cert_path="/tmp/cert", chain_path="/tmp/chain",
                                       fullchain_path="/tmp/chain",
                                       key_path="/tmp/privkey")
+
         with mock.patch("certbot.cert_manager.lineage_for_certname") as mock_getlin:
             mock_getlin.return_value = mock_lineage
-            with mock.patch("os.path.isfile", return_value=True):
-                self._call(['install', '--cert-name', 'whatever'])
-                call_config = mock_install.call_args[0][0]
-                self.assertEqual(call_config.cert_path, "/tmp/cert")
-                self.assertEqual(call_config.fullchain_path, "/tmp/chain")
-                self.assertEqual(call_config.key_path, "/tmp/privkey")
+            self._call(['install', '--cert-name', 'whatever'], mockisfile=True)
+            call_config = mock_install.call_args[0][0]
+            self.assertEqual(call_config.cert_path, "/tmp/cert")
+            self.assertEqual(call_config.fullchain_path, "/tmp/chain")
+            self.assertEqual(call_config.key_path, "/tmp/privkey")
 
     @mock.patch('certbot.main._install_cert')
     @mock.patch('certbot.main.plug_sel.record_chosen_plugins')
@@ -709,21 +727,21 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
                                       key_path="/tmp/privkey")
         with mock.patch("certbot.cert_manager.lineage_for_certname") as mock_getlin:
             mock_getlin.return_value = mock_lineage
-            with mock.patch("os.path.isfile", return_value=True):
-                self._call(['install', '--cert-name', 'whatever',
-                            '--key-path', '/tmp/overriding_key_path'])
-                call_config = mock_install.call_args[0][0]
-                self.assertEqual(call_config.cert_path, "/tmp/cert")
-                self.assertEqual(call_config.fullchain_path, "/tmp/chain")
-                self.assertEqual(call_config.key_path, "/tmp/overriding_key_path")
+            self._call(['install', '--cert-name', 'whatever',
+                        '--key-path', '/tmp/overriding_privkey'], mockisfile=True)
+            call_config = mock_install.call_args[0][0]
+            self.assertEqual(call_config.cert_path, "/tmp/cert")
+            self.assertEqual(call_config.fullchain_path, "/tmp/chain")
+            self.assertEqual(call_config.key_path, "/tmp/overriding_privkey")
+
             mock_install.reset()
-            with mock.patch("os.path.isfile", return_value=True):
-                self._call(['install', '--cert-name', 'whatever',
-                            '--cert-path', '/tmp/overriding_cert_path'])
-                call_config = mock_install.call_args[0][0]
-                self.assertEqual(call_config.cert_path, "/tmp/overriding_cert_path")
-                self.assertEqual(call_config.fullchain_path, "/tmp/chain")
-                self.assertEqual(call_config.key_path, "/tmp/privkey")
+
+            self._call(['install', '--cert-name', 'whatever',
+                        '--cert-path', '/tmp/overriding_cert'], mockisfile=True)
+            call_config = mock_install.call_args[0][0]
+            self.assertEqual(call_config.cert_path, "/tmp/overriding_cert")
+            self.assertEqual(call_config.fullchain_path, "/tmp/chain")
+            self.assertEqual(call_config.key_path, "/tmp/privkey")
 
     @mock.patch('certbot.main.plug_sel.record_chosen_plugins')
     @mock.patch('certbot.main.plug_sel.pick_installer')

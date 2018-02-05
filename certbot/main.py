@@ -1,4 +1,5 @@
 """Certbot main entry point."""
+# pylint: disable=too-many-lines
 from __future__ import print_function
 import functools
 import logging.handlers
@@ -792,9 +793,7 @@ def install(config, plugins):
     else:
         raise errors.ConfigurationError("Path to certificate or key was not defined. "
             "If your certificate is managed by Certbot, please use --cert-name "
-            "to define which certificate you would like to install. "
-            "Alternatively you can use both --key-path and --cert-path to install a "
-            "custom certificate.")
+            "to define which certificate you would like to install.")
 
 def _populate_from_certname(config):
     """Helper function for install to populate missing config values from lineage
