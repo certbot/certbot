@@ -679,9 +679,68 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
     @mock.patch('certbot.main.plug_sel.record_chosen_plugins')
     @mock.patch('certbot.main.plug_sel.pick_installer')
     def test_installer_selection(self, mock_pick_installer, _rec):
-        self._call(['install', '--domains', 'foo.bar', '--cert-path', 'cert',
-                    '--key-path', 'key', '--chain-path', 'chain'])
-        self.assertEqual(mock_pick_installer.call_count, 1)
+        with mock.patch("os.path.isfile", return_value=True):
+            self._call(['install', '--domains', 'foo.bar', '--cert-path', 'cert',
+                        '--key-path', 'key', '--chain-path', 'chain'])
+            self.assertEqual(mock_pick_installer.call_count, 1)
+
+    @mock.patch('certbot.main._install_cert')
+    @mock.patch('certbot.main.plug_sel.record_chosen_plugins')
+    @mock.patch('certbot.main.plug_sel.pick_installer')
+    def test_installer_certname(self, _inst, _rec, mock_install):
+        mock_lineage = mock.MagicMock(cert_path="/tmp/cert", chain_path="/tmp/chain",
+                                      fullchain_path="/tmp/chain",
+                                      key_path="/tmp/privkey")
+        with mock.patch("certbot.cert_manager.lineage_for_certname") as mock_getlin:
+            mock_getlin.return_value = mock_lineage
+            with mock.patch("os.path.isfile", return_value=True):
+                self._call(['install', '--cert-name', 'whatever'])
+                call_config = mock_install.call_args[0][0]
+                self.assertEqual(call_config.cert_path, "/tmp/cert")
+                self.assertEqual(call_config.fullchain_path, "/tmp/chain")
+                self.assertEqual(call_config.key_path, "/tmp/privkey")
+
+    @mock.patch('certbot.main._install_cert')
+    @mock.patch('certbot.main.plug_sel.record_chosen_plugins')
+    @mock.patch('certbot.main.plug_sel.pick_installer')
+    def test_installer_param_override(self, _inst, _rec, mock_install):
+        mock_lineage = mock.MagicMock(cert_path="/tmp/cert", chain_path="/tmp/chain",
+                                      fullchain_path="/tmp/chain",
+                                      key_path="/tmp/privkey")
+        with mock.patch("certbot.cert_manager.lineage_for_certname") as mock_getlin:
+            mock_getlin.return_value = mock_lineage
+            with mock.patch("os.path.isfile", return_value=True):
+                self._call(['install', '--cert-name', 'whatever',
+                            '--key-path', '/tmp/overriding_key_path'])
+                call_config = mock_install.call_args[0][0]
+                self.assertEqual(call_config.cert_path, "/tmp/cert")
+                self.assertEqual(call_config.fullchain_path, "/tmp/chain")
+                self.assertEqual(call_config.key_path, "/tmp/overriding_key_path")
+            mock_install.reset()
+            with mock.patch("os.path.isfile", return_value=True):
+                self._call(['install', '--cert-name', 'whatever',
+                            '--cert-path', '/tmp/overriding_cert_path'])
+                call_config = mock_install.call_args[0][0]
+                self.assertEqual(call_config.cert_path, "/tmp/overriding_cert_path")
+                self.assertEqual(call_config.fullchain_path, "/tmp/chain")
+                self.assertEqual(call_config.key_path, "/tmp/privkey")
+
+    @mock.patch('certbot.main.plug_sel.record_chosen_plugins')
+    @mock.patch('certbot.main.plug_sel.pick_installer')
+    def test_installer_param_error(self, _inst, _rec):
+        self.assertRaises(errors.ConfigurationError,
+                          self._call,
+                          ['install', '--key-path', '/tmp/key_path'])
+        self.assertRaises(errors.ConfigurationError,
+                          self._call,
+                          ['install', '--cert-path', '/tmp/key_path'])
+        self.assertRaises(errors.ConfigurationError,
+                          self._call,
+                          ['install'])
+        self.assertRaises(errors.ConfigurationError,
+                          self._call,
+                          ['install', '--cert-name', 'notfound',
+                           '--key-path', 'invalid'])
 
     @mock.patch('certbot.main._report_new_cert')
     @mock.patch('certbot.util.exe_exists')
