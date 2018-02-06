@@ -559,15 +559,27 @@ class ClientV2(ClientBase):
 
 
 class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
-    """Client network."""
+    """Wrapper around requests that signs POSTs for authentication.
+
+    Also adds user agent, and handles Content-Type.
+    """
     JSON_CONTENT_TYPE = 'application/json'
     JOSE_CONTENT_TYPE = 'application/jose+json'
     JSON_ERROR_CONTENT_TYPE = 'application/problem+json'
     REPLAY_NONCE_HEADER = 'Replay-Nonce'
 
+    """Initialize.
+
+    :param  key: Account private key
+    :param messages.Registration account: Account object. Required if you are
+            planning to use .post() with acme_version=2.
+    :param josepy.JWASignature alg: Algoritm to use in signing JWS.
+    :param bool verify_ssl: Whether to verify certificates on SSL connections.
+    :param str user_agent: String to send as User-Agent header.
+    :param float timeout: Timeout for requests.
+    """
     def __init__(self, key, account=None, alg=jose.RS256, verify_ssl=True,
-                 user_agent='acme-python', timeout=DEFAULT_NETWORK_TIMEOUT,
-                 acme_version=1):
+                 user_agent='acme-python', timeout=DEFAULT_NETWORK_TIMEOUT):
         # pylint: disable=too-many-arguments
         self.key = key
         self.account = account
@@ -577,7 +589,6 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         self.user_agent = user_agent
         self.session = requests.Session()
         self._default_timeout = timeout
-        self.acme_version = acme_version
 
     def __del__(self):
         # Try to close the session, but don't show exceptions to the
