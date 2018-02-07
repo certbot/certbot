@@ -574,8 +574,9 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
     """Initialize.
 
     :param  key: Account private key
-    :param messages.Registration account: Account object. Required if you are
-            planning to use .post() with acme_version=2.
+    :param messages.RegistrationResource account: RegistrationResource object. Required if you are
+            planning to use .post() with acme_version=2 for anything other than creating a new
+            account; may be set later after registering.
     :param josepy.JWASignature alg: Algoritm to use in signing JWS.
     :param bool verify_ssl: Whether to verify certificates on SSL connections.
     :param str user_agent: String to send as User-Agent header.
