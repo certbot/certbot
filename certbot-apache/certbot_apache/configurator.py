@@ -1374,7 +1374,20 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             raise errors.PluginError(
                 "Unsupported enhancement: {0}".format(enhancement))
         try:
-            func(self.choose_vhost(domain), options)
+            # Temp value tells choose_vhost to not to create a new SSL vhost if
+            # one is not found.
+            vhost = self.choose_vhost(domain, temp=True)
+            if not vhost.ssl:
+                msg_tmpl = ("Certbot was not able to find SSL VirtualHost for a "
+                       "domain {0} for enabling enhancement \"{1}\". The requested "
+                       "enhancement was not configured.")
+                if options:
+                    msg = msg_tmpl.format(domain, options)
+                else:
+                    msg = msg_tmpl.format(domain, enhancement)
+                logger.warning(msg)
+            else:
+                func(vhost, options)
         except errors.PluginError:
             logger.warning("Failed %s for %s", enhancement, domain)
             raise

@@ -382,7 +382,7 @@ def _ask_user_to_confirm_new_names(config, new_domains, certname, old_domains):
     if not obj.yesno(msg, "Update cert", "Cancel", default=True):
         raise errors.ConfigurationError("Specified mismatched cert name and domains.")
 
-def _find_domains_or_certname(config, installer):
+def _find_domains_or_certname(config, installer, question=None):
     """Retrieve domains and certname from config or user input.
 
     :param config: Configuration object
@@ -391,6 +391,8 @@ def _find_domains_or_certname(config, installer):
     :param installer: Installer object
     :type installer: interfaces.IInstaller
 
+    :param `str` question: Overriding dialog question to ask the user if asked
+        to choose from domain names.
 
     :returns: Two-part tuple of domains and certname
     :rtype: `tuple` of list of `str` and `str`
@@ -411,7 +413,7 @@ def _find_domains_or_certname(config, installer):
     # that certname might not have existed, or there was a problem.
     # try to get domains from the user.
     if not domains:
-        domains = display_ops.choose_names(installer)
+        domains = display_ops.choose_names(installer, question)
 
     if not domains and not certname:
         raise errors.Error("Please specify --domains, or --installer that "
@@ -821,6 +823,32 @@ def plugins_cmd(config, plugins):
     available = verified.available()
     logger.debug("Prepared plugins: %s", available)
     notify(str(available))
+
+def enhance(config, plugins):
+    """Add security enhancements to existing configuration
+
+    :param config: Configuration object
+    :type config: interfaces.IConfig
+
+    :param plugins: List of plugins
+    :type plugins: `list` of `str`
+
+    :returns: `None`
+    :rtype: None
+
+    """
+    # XXX: staple-ocsp should instruct user to rerun certbot to enable
+    # must-staple extension
+    try:
+        installer, _ = plug_sel.choose_configurator_plugins(config, plugins, "enhance")
+    except errors.PluginSelectionError as e:
+        return str(e)
+    le_client = _init_le_client(config, authenticator=None, installer=installer)
+    domains, _ = _find_domains_or_certname(config, installer,
+                                           "Which domain names would you like to "
+                                           "enable the selected enhancements for?")
+
+    le_client.enhance_config(domains, None, ask_redirect=False)
 
 
 def rollback(config, plugins):
