@@ -36,13 +36,25 @@ from certbot.plugins import selection as plugin_selection
 
 logger = logging.getLogger(__name__)
 
+def _acme_version_from_directory(directory):
+    try:
+        nonce_field = directory['newNonce']
+    except KeyError:
+        return 1
+    return 2
 
-def acme_from_config_key(config, key):
+
+def acme_from_config_key(config, key, regr=None):
     "Wrangle ACME client construction"
     # TODO: Allow for other alg types besides RS256
-    net = acme_client.ClientNetwork(key, verify_ssl=(not config.no_verify_ssl),
+    net = acme_client.ClientNetwork(key, account=regr, verify_ssl=(not config.no_verify_ssl),
                                     user_agent=determine_user_agent(config))
-    return acme_client.Client(config.server, key=key, net=net)
+    directory = messages.Directory.from_json(net.get(config.server).json())
+    acme_version = _acme_version_from_directory(directory)
+    if acme_version == 1:
+        return acme_client.Client(directory, key=key, net=net)
+    else:
+        return acme_client.ClientV2(directory, net=net)
 
 
 def determine_user_agent(config):
@@ -232,7 +244,7 @@ class Client(object):
 
         # Initialize ACME if account is provided
         if acme is None and self.account is not None:
-            acme = acme_from_config_key(config, self.account.key)
+            acme = acme_from_config_key(config, self.account.key, self.account.regr)
         self.acme = acme
 
         if auth is not None:

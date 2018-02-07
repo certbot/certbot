@@ -95,6 +95,7 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
         update = regr.body if update is None else update
         body = messages.UpdateRegistration(**dict(update))
         updated_regr = self._send_recv_regr(regr, body=body)
+        self.net.account = updated_regr
         return updated_regr
 
     def deactivate_registration(self, regr):
@@ -555,7 +556,9 @@ class ClientV2(ClientBase):
             acme_version=2)
         # "Instance of 'Field' has no key/contact member" bug:
         # pylint: disable=no-member
-        return self._regr_from_response(response)
+        regr = self._regr_from_response(response)
+        self.net.account = regr
+        return regr
 
 
 class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
