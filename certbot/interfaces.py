@@ -632,7 +632,7 @@ class GenericUpdater(object):
 
         This method is called once for each domain.
 
-        :param str domain: domain in the lineage being updated
+        :param str domain: domain to handle the updates for
 
         """
 
@@ -649,12 +649,12 @@ class RenewDeployer(object):
 
     @abc.abstractmethod
     def renew_deploy(self, lineage, *args, **kwargs):
-        """Perform any update types defined by the installer.
+        """Perform updates defined by installer when a certificate has been renewed
 
         If an installer is a subclass of the class containing this method, this
-        function will always be called when "certbot renew" is run. If the
-        update defined by the installer should be run conditionally, the
-        installer needs to handle checking the conditions itself.
+        function will always be called when a certficate has been renewed by
+        running "certbot renew". For example if a plugin needs to copy a
+        certificate over, or change configuration based on the new certificate.
 
         This method is called once for each lineage renewed
 
@@ -668,15 +668,16 @@ class RenewDeployer(object):
 class ServerTLSUpdater(object):
     """Interface for updating a server's TLS configuration.
 
-    An installer that wants to perform TLS server updates according to this
+    An installer that wants to perform TLS configuration updates according to this
     interface must not only be a subclass but must respect the disablement of
-    server side TLS updates if done so by the user when performing other
-    installer functions. For example, if server TLS updates are disabled and
+    server side TLS configuration changes if done so by the user when performing
+    other installer functions. For example, if server TLS configuration updates
+    defined by command line parameter or configuration file are disabled and
     :func:`IInstaller.deploy_cert` is called, the plugin must not modify an
     existing TLS configuration in any way other than changing the certificates
     and keys used by the server.
 
-    An installer can determine if TLS server updates are enabled by checking
+    An installer can determine if TLS configuration updates are enabled by checking
     :attr:`IConfig.disable_server_tls_updates`.
 
     """
@@ -687,9 +688,11 @@ class ServerTLSUpdater(object):
     def server_tls_updates(self, domain, *args, **kwargs):
         """Set the server's TLS config to latest recommended version.
 
+        If an installer is a subclass of the class containing this method, this
+        function will always be called when "certbot renew" is run.
         This function will only be called if the user hasn't disabled TLS
         server updates.
 
-        :param str domain: domain in the lineage being updated
+        :param str domain: domain to handle the updates for
 
         """
