@@ -32,7 +32,7 @@ a new plugin is introduced.
 .. code-block:: shell
 
    cd certbot
-   ./certbot-auto --os-packages-only
+   sudo ./certbot-auto --os-packages-only
    ./tools/venv.sh
 
 Then in each shell where you're working on the client, do:
