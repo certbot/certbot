@@ -1,6 +1,7 @@
 """ACME client API."""
 import base64
 import collections
+import cryptography
 import datetime
 from email.utils import parsedate_tz
 import heapq
@@ -16,7 +17,6 @@ import re
 import requests
 import sys
 
-from acme import crypto_util
 from acme import errors
 from acme import jws
 from acme import messages
@@ -563,18 +563,23 @@ class ClientV2(ClientBase):
         :returns: List of Authorization Resources.
         :rtype: `list` of `.AuthorizationResource`
         """
-        csr = OpenSSL.crypto.load_certificate_request(OpenSSL.crypto.FILETYPE_PEM, csr_pem)
-        wrapped_csr = jose.ComparableX509(csr)
+        csr = cryptography.x509.load_pem_x509_csr(csr_pem,
+            cryptography.hazmat.backends.default_backend())
+        san_extension = next(ext for ext in csr.extensions
+            if ext.oid == cryptography.x509.oid.ExtensionOID.SUBJECT_ALTERNATIVE_NAME)
+        dnsNames = san_extension.value.get_values_for_type(cryptography.x509.DNSName)
+
         identifiers = []
-        for name in crypto_util._pyopenssl_cert_or_req_san(csr):
+        for name in dnsNames:
             identifiers.append(messages.Identifier(typ=messages.IDENTIFIER_FQDN,
                 value=name))
         order = messages.NewOrder(identifiers=identifiers)
         response = self.net.post(self.directory['newOrder'], order)
-        order_response = self._order_resource_from_response(response, csr=wrapped_csr)
+        order_response = self._order_resource_from_response(
+            response, csr_pem=csr_pem)
         return order_response
 
-    def _order_resource_from_response(self, response, uri=None, csr=None):
+    def _order_resource_from_response(self, response, uri=None, csr_pem=None):
         body = messages.Order.from_json(response.json())
         authorizations = []
         for url in body.authorizations:
@@ -589,7 +594,7 @@ class ClientV2(ClientBase):
             uri=response.headers.get('Location', uri),
             fullchain_pem=fullchain_pem,
             authorizations=authorizations,
-            csr=csr)
+            csr_pem=csr_pem)
 
     def poll_order_and_request_issuance(self, orderr, max_time=datetime.timedelta(seconds=90)):
         """Poll Order Resource for status."""
@@ -610,7 +615,11 @@ class ClientV2(ClientBase):
                             (authzr.body.identifier.value, chall.error))
                 raise Exception("failed authorization: %s" % authzr.body)
         latest = self._order_resource_from_response(self.net.get(orderr.uri), uri=orderr.uri)
-        self.net.post(latest.body.finalize, messages.CertificateRequest(csr=orderr.csr))
+
+        csr = OpenSSL.crypto.load_certificate_request(
+            OpenSSL.crypto.FILETYPE_PEM, orderr.csr_pem)
+        wrapped_csr = messages.CertificateRequest(csr=jose.ComparableX509(csr))
+        self.net.post(latest.body.finalize, wrapped_csr)
         while datetime.datetime.now() < deadline:
             time.sleep(1)
             latest = self._order_resource_from_response(self.net.get(orderr.uri), uri=orderr.uri)
