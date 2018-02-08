@@ -661,8 +661,8 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
 
     """Initialize.
 
-    :param  key: Account private key
-    :param messages.Registration account: Account object. Required if you are
+    :param josepy.JWK key: Account private key
+    :param messages.RegistrationResource account: Account object. Required if you are
             planning to use .post() with acme_version=2.
     :param josepy.JWASignature alg: Algoritm to use in signing JWS.
     :param bool verify_ssl: Whether to verify certificates on SSL connections.
@@ -694,10 +694,10 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
 
         .. todo:: Implement ``acmePath``.
 
-        :param .JSONDeSerializable obj:
+        :param josepy.JSONDeSerializable obj:
         :param str url: The URL to which this object will be POSTed
         :param bytes nonce:
-        :rtype: `.JWS`
+        :rtype: `josepy.JWS`
 
         """
         jobj = obj.json_dumps(indent=2).encode()
