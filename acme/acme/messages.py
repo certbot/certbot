@@ -1,6 +1,5 @@
 """ACME protocol messages."""
 import collections
-import re
 import six
 
 import josepy as jose

@@ -10,13 +10,13 @@ import time
 import six
 from six.moves import http_client  # pylint: disable=import-error
 
-import crypto_util
 import josepy as jose
 import OpenSSL
 import re
 import requests
 import sys
 
+from acme import crypto_util
 from acme import errors
 from acme import jws
 from acme import messages
@@ -574,37 +574,6 @@ class ClientV2(ClientBase):
         order_response = self._order_resource_from_response(response, csr=wrapped_csr)
         return order_response
 
-    def poll_order_and_request_issuance(self, orderr):
-        """Poll Order Resource for status.
-
-        :param orderr: Order Resource
-        :type orderr: `.OrderResource`
-
-        :returns: Updated Order Resource
-
-        :rtype: (`.OrderResource`)
-
-        """
-        while True:
-            response = self.net.get(orderr.uri)
-            latest = self._order_resource_from_response(response, uri=orderr.uri)
-            if any([a.body.status == messages.STATUS_PENDING for a in latest.authorizations]):
-                time.sleep(1)
-            else:
-                break
-        for authz in latest.authorizations:
-            if authz.body.status != messages.STATUS_VALID:
-                for chall in authz.body.challenges:
-                    if chall.error != None:
-                        raise Exception("failed challenge for %s: %s" %
-                            (authz.body.identifier.value, chall.error))
-                raise Exception("failed authorization: %s" % authz.body)
-        while latest.fullchain_pem is None:
-            time.sleep(1)
-            response = self.net.get(orderr.uri)
-            latest = self._order_resource_from_response(response, uri=orderr.uri)
-        return latest
-
     def _order_resource_from_response(self, response, uri=None, csr=None):
         body = messages.Order.from_json(response.json())
         authorizations = []
@@ -646,7 +615,7 @@ class ClientV2(ClientBase):
             time.sleep(1)
             latest = self._order_resource_from_response(self.net.get(orderr.uri), uri=orderr.uri)
             if latest.fullchain_pem is not None:
-               return latest
+                return latest
         return None
 
 class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
