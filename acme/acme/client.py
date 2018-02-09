@@ -95,7 +95,6 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
         update = regr.body if update is None else update
         body = messages.UpdateRegistration(**dict(update))
         updated_regr = self._send_recv_regr(regr, body=body)
-        self.net.account = updated_regr
         return updated_regr
 
     def deactivate_registration(self, regr):
@@ -556,9 +555,25 @@ class ClientV2(ClientBase):
             acme_version=2)
         # "Instance of 'Field' has no key/contact member" bug:
         # pylint: disable=no-member
-        regr = self._regr_from_response(response)
-        self.net.account = regr
-        return regr
+        return self._regr_from_response(response)
+
+
+class MultiVersionClient(object):
+
+    def __init__(self, net, key, server):
+        directory = messages.Directory.from_json(net.get(server).json())
+        acme_version = self._acme_version_from_directory(directory)
+        if acme_version == 1:
+            self.client = Client(directory, key=key, net=net)
+        else:
+            self.client = ClientV2(directory, net=net)
+
+    def _acme_version_from_directory(self, directory):
+        try:
+            nonce_field = directory['newNonce']
+        except KeyError:
+            return 1
+        return 2
 
 
 class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
@@ -574,9 +589,8 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
     """Initialize.
 
     :param  key: Account private key
-    :param messages.RegistrationResource account: RegistrationResource object. Required if you are
-            planning to use .post() with acme_version=2 for anything other than creating a new
-            account; may be set later after registering.
+    :param messages.Registration account: Account object. Required if you are
+            planning to use .post() with acme_version=2.
     :param josepy.JWASignature alg: Algoritm to use in signing JWS.
     :param bool verify_ssl: Whether to verify certificates on SSL connections.
     :param str user_agent: String to send as User-Agent header.

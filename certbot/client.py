@@ -36,25 +36,13 @@ from certbot.plugins import selection as plugin_selection
 
 logger = logging.getLogger(__name__)
 
-def _acme_version_from_directory(directory):
-    try:
-        nonce_field = directory['newNonce']
-    except KeyError:
-        return 1
-    return 2
-
 
 def acme_from_config_key(config, key, regr=None):
     "Wrangle ACME client construction"
     # TODO: Allow for other alg types besides RS256
     net = acme_client.ClientNetwork(key, account=regr, verify_ssl=(not config.no_verify_ssl),
                                     user_agent=determine_user_agent(config))
-    directory = messages.Directory.from_json(net.get(config.server).json())
-    acme_version = _acme_version_from_directory(directory)
-    if acme_version == 1:
-        return acme_client.Client(directory, key=key, net=net)
-    else:
-        return acme_client.ClientV2(directory, net=net)
+    return acme_client.MultiVersionClient(net, key, config.server)
 
 
 def determine_user_agent(config):
