@@ -95,6 +95,7 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
         update = regr.body if update is None else update
         body = messages.UpdateRegistration(**dict(update))
         updated_regr = self._send_recv_regr(regr, body=body)
+        self.net.account = updated_regr
         return updated_regr
 
     def deactivate_registration(self, regr):
@@ -555,8 +556,9 @@ class ClientV2(ClientBase):
             acme_version=2)
         # "Instance of 'Field' has no key/contact member" bug:
         # pylint: disable=no-member
-        return self._regr_from_response(response)
-
+        regr = self._regr_from_response(response)
+        self.net.account = regr
+        return regr
 
 class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
     """Wrapper around requests that signs POSTs for authentication.
@@ -571,8 +573,9 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
     """Initialize.
 
     :param  key: Account private key
-    :param messages.Registration account: Account object. Required if you are
-            planning to use .post() with acme_version=2.
+    :param messages.RegistrationResource account: Account object. Required if you are
+            planning to use .post() with acme_version=2 for anything other than creating a new
+            account; may be set later after registering.
     :param josepy.JWASignature alg: Algoritm to use in signing JWS.
     :param bool verify_ssl: Whether to verify certificates on SSL connections.
     :param str user_agent: String to send as User-Agent header.
