@@ -562,8 +562,8 @@ class MultiVersionClient(object):
 
     def __init__(self, net, key, server):
         directory = messages.Directory.from_json(net.get(server).json())
-        acme_version = self._acme_version_from_directory(directory)
-        if acme_version == 1:
+        self.acme_version = self._acme_version_from_directory(directory)
+        if self.acme_version == 1:
             self.client = Client(directory, key=key, net=net)
         else:
             self.client = ClientV2(directory, net=net)
@@ -574,6 +574,73 @@ class MultiVersionClient(object):
         except KeyError:
             return 1
         return 2
+
+    def register(self, *args, **kwargs):
+        if self.acme_version == 1:
+            self.client.register(*args, **kwargs)
+        else:
+            self.client.new_account(*args, **kwargs)
+
+    def new_account(self, *args, **kwargs):
+        self.register(*args, **kwargs)
+
+    def agree_to_tos(self, *args, **kwargs):
+        if self.acme_version == 1:
+            self.client.agree_to_tos(*args, **kwargs)
+
+    def request_challenges(self, *args, **kwargs):
+        if self.acme_version == 1:
+            self.client.request_challenges(*args, **kwargs)
+
+    def request_domain_challenges(self, *args, **kwargs):
+        if self.acme_version == 1:
+            self.client.request_domain_challenges(*args, **kwargs)
+
+    def request_issuance(self, *args, **kwargs):
+        if self.acme_version == 1:
+            self.client.request_issuance(*args, **kwargs)
+
+    def poll_and_request_issuance(self, *args, **kwargs):
+        if self.acme_version == 1:
+            self.client.poll_and_request_issuance(*args, **kwargs)
+
+    def check_cert(self, *args, **kwargs):
+        if self.acme_version == 1:
+            self.client.check_cert(*args, **kwargs)
+
+    def refresh(self, *args, **kwargs):
+        if self.acme_version == 1:
+            self.client.refresh(*args, **kwargs)
+
+    def fetch_chain(self, *args, **kwargs):
+        if self.acme_version == 1:
+            self.client.fetch_chain(*args, **kwargs)
+
+    ######################
+    # Shared methods #
+    ######################
+
+    def update_registration(self, *args, **kwargs):
+        self.client.update_registration(*args, **kwargs)
+
+    def deactivate_registration(self, *args, **kwargs):
+        self.client.deactivate_registration(*args, **kwargs)
+
+    def query_registration(self, *args, **kwargs):
+        self.client.query_registration(*args, **kwargs)
+
+    def answer_challenge(self, *args, **kwargs):
+        self.client.answer_challenge(*args, **kwargs)
+
+    @classmethod
+    def retry_after(cls, *args, **kwargs):
+        class(cls).retry_after(*args, **kwargs)
+
+    def poll(self, *args, **kwargs):
+        self.client.poll(*args, **kwargs)
+
+    def revoke(self, *args, **kwargs):
+        self.client.revoke(*args, **kwargs)
 
 
 class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
