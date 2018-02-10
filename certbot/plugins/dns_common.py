@@ -25,17 +25,23 @@ class OverrideChallengeAction(argparse.Action):
 
     def __init__(self, *args, **kwargs):
         super(OverrideChallengeAction, self).__init__(*args, **kwargs)
-        self.challenge_map = {}
         self.dest = kwargs['dest']
         self.dest_map = self.dest + "_map"
 
     def __call__(self, parser, namespace, override_chall, option_string=None):
+        challenge_map = getattr(namespace, self.dest_map)
+
+        # For all domains before this override, set challenge map entry
+        # to previous override (or default if none was given yet).
+
         for domain in namespace.domains:
-            self.challenge_map.setdefault(domain,
-                                          getattr(namespace, self.dest))
+            challenge_map.setdefault(domain,
+                                     getattr(namespace, self.dest))
+
+        # All subsequent domains are getting the specified value as
+        # challenge override.
+
         setattr(namespace, self.dest, override_chall)
-        if not hasattr(namespace, self.dest_map):
-            setattr(namespace, self.dest_map, self.challenge_map)
 
 
 @zope.interface.implementer(interfaces.IAuthenticator)
@@ -47,6 +53,13 @@ class DNSAuthenticator(common.Plugin):
         super(DNSAuthenticator, self).__init__(config, name)
 
         self._attempt_cleanup = False
+
+    @classmethod
+    def inject_parser_options(cls, parser, name):
+        super(DNSAuthenticator, cls).inject_parser_options(parser, name)
+        challenge_map_opt = common.dest_namespace(name) + "override_challenge_map"
+        parser.set_defaults(**{challenge_map_opt: {}})  # pylint: disable=star-args
+
 
     @classmethod
     def add_parser_arguments(cls, add, default_propagation_seconds=10):  # pylint: disable=arguments-differ

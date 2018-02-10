@@ -17,6 +17,12 @@ DOMAIN = 'example.com'
 KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 
 
+def dns_challenge(domain):
+    """Return a DNS-01 challenge for the given domain."""
+
+    return achallenges.KeyAuthorizationAnnotatedChallenge(
+        challb=acme_util.DNS01, domain=domain, account_key=KEY)
+
 class BaseAuthenticatorTest(TestCase):
     """
     A base test class to reduce duplication between test code for DNS Authenticator Plugins.
@@ -26,8 +32,7 @@ class BaseAuthenticatorTest(TestCase):
      * That the authenticator is stored as self.auth (set by call to configure)
     """
 
-    achall = achallenges.KeyAuthorizationAnnotatedChallenge(
-        challb=acme_util.DNS01, domain=DOMAIN, account_key=KEY)
+    achall = dns_challenge(DOMAIN)
 
     def test_more_info(self):
         self.assertTrue(isinstance(self.auth.more_info(), six.string_types))

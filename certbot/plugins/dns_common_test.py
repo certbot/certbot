@@ -15,25 +15,26 @@ from certbot.plugins import dns_test_common
 from certbot.tests import util
 
 
+class _FakeDNSAuthenticator(dns_common.DNSAuthenticator):
+    _setup_credentials = mock.MagicMock()
+    _perform = mock.MagicMock()
+    _cleanup = mock.MagicMock()
+
+    def __init__(self, *args, **kwargs):
+        # pylint: disable=protected-access
+        super(_FakeDNSAuthenticator, self).__init__(*args, **kwargs)
+
+    def more_info(self):  # pylint: disable=missing-docstring,no-self-use
+        return 'A fake authenticator for testing.'
+
+
 class DNSAuthenticatorTest(util.TempDirTestCase, dns_test_common.BaseAuthenticatorTest):
     # pylint: disable=protected-access
-
-    class _FakeDNSAuthenticator(dns_common.DNSAuthenticator):
-        _setup_credentials = mock.MagicMock()
-        _perform = mock.MagicMock()
-        _cleanup = mock.MagicMock()
-
-        def __init__(self, *args, **kwargs):
-            # pylint: disable=protected-access
-            super(DNSAuthenticatorTest._FakeDNSAuthenticator, self).__init__(*args, **kwargs)
-
-        def more_info(self):  # pylint: disable=missing-docstring,no-self-use
-            return 'A fake authenticator for testing.'
 
     def setUp(self):
         super(DNSAuthenticatorTest, self).setUp()
 
-        self.configure(DNSAuthenticatorTest._FakeDNSAuthenticator(self.config, "fake"),
+        self.configure(_FakeDNSAuthenticator(self.config, "fake"),
                        {"config_key": 1, "other_key": None, "file_path": None})
 
         self.parser = argparse.ArgumentParser()
@@ -59,35 +60,6 @@ class DNSAuthenticatorTest(util.TempDirTestCase, dns_test_common.BaseAuthenticat
         vdn = self.auth.validation_domain_name(self.achall)
 
         self.assertEqual(vdn, self.achall.validation_domain_name(self.achall.domain))
-
-    def test_validation_domain_name_cname(self):
-        # Validation domain name with override
-
-        vdn = self.achall.validation_domain_name(self.achall.domain)
-        other_target = "alt-challenge.example.com"
-
-        # Current override-challenge is the last override given on the
-        # command line.
-
-        self.config.fake_override_challenge = other_target
-
-        # Domain before first override: present in map with {acme}
-
-        self.config.fake_override_challenge_map = {'example.com': '{acme}'}
-        self.assertEqual(self.auth.validation_domain_name(self.achall), vdn)
-
-        # Domains after first override, before second override: present in
-        # map with some other value.
-
-        self.config.fake_override_challenge_map = \
-            {'example.com': '{domain}.dyn-challenges'}
-        self.assertEqual(self.auth.validation_domain_name(self.achall),
-                         'example.com.dyn-challenges')
-
-        # Domains after last override: not present in map
-
-        self.config.fake_override_challenge_map = {}
-        self.assertEqual(self.auth.validation_domain_name(self.achall), other_target)
 
     @util.patch_get_utility()
     def test_prompt(self, mock_get_utility):
@@ -155,18 +127,69 @@ class DNSAuthenticatorTest(util.TempDirTestCase, dns_test_common.BaseAuthenticat
         self.assertEqual(credentials.conf("test"), "value")
 
 
-    def test_override_challenge_action(self):
-        args = self.parser.parse_args(
-            ["-d", "d0.com",
-             "--fake-override-challenge", "c1.com",
-             "-d", "d1.com",
-             "--fake-override-challenge", "c2.com",
-             "-d", "d2.com"])
+class ChallengeOverrideAuthenticatorTest(util.TempDirTestCase):
 
-        self.assertEqual(args.fake_override_challenge_map,
+    def setUp(self):
+        super(ChallengeOverrideAuthenticatorTest, self).setUp()
+
+        self.parser = argparse.ArgumentParser()
+        self.parser.add_argument("-d", "--domains",
+                                 action="append", default=[])
+        _FakeDNSAuthenticator.inject_parser_options(self.parser, "fake")
+
+    def parse_args(self, *args):  # pylint: disable=missing-docstring
+        # pylint: disable=attribute-defined-outside-init
+        self.auth = _FakeDNSAuthenticator(self.parser.parse_args(args), "fake")
+
+    def vdn(self, domain):  # pylint: disable=missing-docstring
+        return self.auth.validation_domain_name(dns_test_common.dns_challenge(domain))
+
+    def test_no_override(self):
+        dom = "no-override.com"
+        self.parse_args("-d", dom)
+
+        # Check that override map is present and empty
+
+        self.assertEqual(self.auth.conf("override-challenge-map"), {})
+
+        # Check that challenge override is set to the default name
+
+        self.assertEqual(self.auth.conf("override-challenge"), "{acme}")
+
+        # Check that the computed validation domain name is the default name
+
+        self.assertEqual(self.vdn(dom), "_acme-challenge." + dom)
+
+    def test_override_challenge(self):
+        self.parse_args(
+            "-d", "d0.com",
+            "--fake-override-challenge", "c1.com",
+            "-d", "d1.com",
+            "--fake-override-challenge", "c2.com",
+            "-d", "d2.com")
+
+        # Check contents of override map
+
+        self.assertEqual(self.auth.conf("override-challenge-map"),
                          {"d0.com": "{acme}",
                           "d1.com": "c1.com"})
-        self.assertEqual(args.fake_override_challenge, "c2.com")
+
+        # Check last value of challenge override
+
+        self.assertEqual(self.auth.conf("override-challenge"), "c2.com")
+
+        # Domain before first override gets default challenge
+
+        self.assertEqual(self.vdn("d0.com"), "_acme-challenge.d0.com")
+
+        # Domain after first override and before second gets first override
+
+        self.assertEqual(self.vdn("d1.com"), "c1.com")
+
+        # Domain after second (and last) override gets second override
+
+        self.assertEqual(self.vdn("d2.com"), "c2.com")
+
 
 class CredentialsConfigurationTest(util.TempDirTestCase):
     class _MockLoggingHandler(logging.Handler):
