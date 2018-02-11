@@ -78,7 +78,9 @@ class DNSAuthenticator(common.Plugin):
                  'location. The specified value may include "{domain}" '
                  'and "{acme}" format strings, which will respectively '
                  'expand to the domain being requested, and the corresponding '
-                 'standard ACME challenge location.')
+                 'standard ACME challenge location. For instance, when '
+                 'requesting "example.com", {domain} is "example.com", and '
+                 '{acme} is "_acme-challenge.example.com".')
 
     def validation_domain_name(self, achall):  # pylint: disable=missing-docstring
 
