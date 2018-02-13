@@ -474,7 +474,11 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertEqual(mock_add_dir.call_count, 3)
         self.assertTrue(mock_add_dir.called)
         self.assertEqual(mock_add_dir.call_args[0][1], "Listen")
-        self.assertEqual(mock_add_dir.call_args[0][2], ['1.2.3.4:8080'])
+        call_found = False
+        for mock_call in mock_add_dir.mock_calls:
+            if mock_call[1][2] == ['1.2.3.4:8080']:
+                call_found = True
+        self.assertTrue(call_found)
 
     def test_prepare_server_https(self):
         mock_enable = mock.Mock()
