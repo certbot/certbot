@@ -974,9 +974,6 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         version="%(prog)s {0}".format(certbot.__version__),
         help="show program's version number and exit")
     helpful.add(
-        "automation", "--install-only", action="store_true",
-        help="Install and upgrade Certbot without running it.")
-    helpful.add(
         ["automation", "renew"],
         "--force-renewal", "--renew-by-default", dest="renew_by_default",
         action="store_true", default=flag_default("renew_by_default"),
