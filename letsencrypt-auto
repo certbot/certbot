@@ -246,7 +246,7 @@ DeprecationBootstrap() {
   fi
 }
 
-MIN_PYTHON_VERSION="2.7"
+MIN_PYTHON_VERSION="2.6"
 MIN_PYVER=$(echo "$MIN_PYTHON_VERSION" | sed 's/\.//')
 # Sets LE_PYTHON to Python version string and PYVER to the first two
 # digits of the python version
@@ -781,11 +781,20 @@ elif [ -f /etc/redhat-release ]; then
   prev_le_python="$LE_PYTHON"
   unset LE_PYTHON
   DeterminePythonVersion "NOCRASH"
-  Bootstrap() {
-    BootstrapMessage "RedHat-based OSes"
-    BootstrapRpmCommon
-  }
-  BOOTSTRAP_VERSION="BootstrapRpmCommon $BOOTSTRAP_RPM_COMMON_VERSION"
+  if [ "$PYVER" -eq 26 ]; then
+    Bootstrap() {
+      BootstrapMessage "RedHat-based OSes that will use Python3"
+      BootstrapRpmPython3
+    }
+    USE_PYTHON_3=1
+    BOOTSTRAP_VERSION="BootstrapRpmPython3 $BOOTSTRAP_RPM_PYTHON3_VERSION"
+  else
+    Bootstrap() {
+      BootstrapMessage "RedHat-based OSes"
+      BootstrapRpmCommon
+    }
+    BOOTSTRAP_VERSION="BootstrapRpmCommon $BOOTSTRAP_RPM_COMMON_VERSION"
+  fi
   LE_PYTHON="$prev_le_python"
 elif [ -f /etc/os-release ] && `grep -q openSUSE /etc/os-release` ; then
   Bootstrap() {
@@ -956,10 +965,18 @@ if [ "$1" = "--le-auto-phase2" ]; then
     say "Creating virtual environment..."
     DeterminePythonVersion
     rm -rf "$VENV_PATH"
-    if [ "$VERBOSE" = 1 ]; then
-      "$LE_PYTHON" -m venv "$VENV_PATH"
+    if [ "$PYVER" -le 27 ]; then
+      if [ "$VERBOSE" = 1 ]; then
+        virtualenv --no-site-packages --python "$LE_PYTHON" "$VENV_PATH"
+      else
+        virtualenv --no-site-packages --python "$LE_PYTHON" "$VENV_PATH" > /dev/null
+      fi
     else
-      "$LE_PYTHON" -m venv "$VENV_PATH" > /dev/null
+      if [ "$VERBOSE" = 1 ]; then
+        "$LE_PYTHON" -m venv "$VENV_PATH"
+      else
+        "$LE_PYTHON" -m venv "$VENV_PATH" > /dev/null
+      fi
     fi
 
     if [ -n "$BOOTSTRAP_VERSION" ]; then
@@ -1201,7 +1218,7 @@ UNLIKELY_EOF
 Embed this in your project, and your VCS checkout is all you have to trust. In
 a post-peep era, this lets you claw your way to a hash-checking version of pip,
 with which you can install the rest of your dependencies safely. All it assumes
-is Python 2.7 or better and *some* version of pip already installed. If
+is Python 2.6 or better and *some* version of pip already installed. If
 anything goes wrong, it will exit with a non-zero status code.
 
 """
@@ -1241,7 +1258,7 @@ except ImportError:
                 cmd = popenargs[0]
             raise CalledProcessError(retcode, cmd)
         return output
-from sys import exit
+from sys import exit, version_info
 from tempfile import mkdtemp
 try:
     from urllib2 import build_opener, HTTPHandler, HTTPSHandler
@@ -1257,7 +1274,16 @@ __version__ = 1, 3, 0
 PIP_VERSION = '9.0.1'
 
 
-PACKAGES = [
+# wheel has a conditional dependency on argparse:
+maybe_argparse = (
+    [('https://pypi.python.org/packages/18/dd/'
+      'e617cfc3f6210ae183374cd9f6a26b20514bbb5a792af97949c5aacddf0f/'
+      'argparse-1.4.0.tar.gz',
+      '62b089a55be1d8949cd2bc7e0df0bddb9e028faefc8c32038cc84862aefdd6e4')]
+    if version_info < (2, 7, 0) else [])
+
+
+PACKAGES = maybe_argparse + [
     # Pip has no dependencies, as it vendors everything:
     ('https://pypi.python.org/packages/11/b6/'
      'abcb525026a4be042b486df43905d6893fb04f05aac21c32c638e939e447/'
