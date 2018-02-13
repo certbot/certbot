@@ -157,7 +157,7 @@ class DirectoryTest(unittest.TestCase):
             'meta': {
                 'terms-of-service': 'https://example.com/acme/terms',
                 'website': 'https://www.example.com/',
-                'caa-identities': ['example.com'],
+                'caaIdentities': ['example.com'],
             },
         })
 

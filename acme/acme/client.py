@@ -234,8 +234,8 @@ class Client(ClientBase):
        instances of `.DeserializationError` raised in `from_json()`.
 
     :ivar messages.Directory directory:
-    :ivar key: `.JWK` (private)
-    :ivar alg: `.JWASignature`
+    :ivar key: `josepy.JWK` (private)
+    :ivar alg: `josepy.JWASignature`
     :ivar bool verify_ssl: Verify SSL certificates?
     :ivar .ClientNetwork net: Client network. Useful for testing. If not
         supplied, it will be initialized using `key`, `alg` and
@@ -532,9 +532,7 @@ class ClientV2(ClientBase):
     """ACME client for a v2 API.
 
     :ivar messages.Directory directory:
-    :ivar .ClientNetwork net: Client network. Useful for testing. If not
-        supplied, it will be initialized using `key`, `alg` and
-        `verify_ssl`.
+    :ivar .ClientNetwork net: Client network.
     """
 
     def __init__(self, directory, net):
@@ -543,7 +541,8 @@ class ClientV2(ClientBase):
         :param .messages.Directory directory: Directory Resource
         :param .ClientNetwork net: Client network.
         """
-        super(ClientV2, self).__init__(directory=directory, net=net)
+        super(ClientV2, self).__init__(directory=directory,
+            net=net, acme_version=2)
 
     def new_account(self, new_account):
         """Register.
@@ -553,7 +552,8 @@ class ClientV2(ClientBase):
         :returns: Registration Resource.
         :rtype: `.RegistrationResource`
         """
-        response = self.net.post(self.directory['newAccount'], new_account)
+        response = self.net.post(self.directory['newAccount'], new_account,
+            acme_version=2)
         # "Instance of 'Field' has no key/contact member" bug:
         # pylint: disable=no-member
         return self._regr_from_response(response)
@@ -638,19 +638,18 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
     JSON_ERROR_CONTENT_TYPE = 'application/problem+json'
     REPLAY_NONCE_HEADER = 'Replay-Nonce'
 
+    """Initialize.
+
+    :param josepy.JWK key: Account private key
+    :param messages.RegistrationResource account: Account object. Required if you are
+            planning to use .post() with acme_version=2.
+    :param josepy.JWASignature alg: Algoritm to use in signing JWS.
+    :param bool verify_ssl: Whether to verify certificates on SSL connections.
+    :param str user_agent: String to send as User-Agent header.
+    :param float timeout: Timeout for requests.
+    """
     def __init__(self, key, account=None, alg=jose.RS256, verify_ssl=True,
                  user_agent='acme-python', timeout=DEFAULT_NETWORK_TIMEOUT):
-        """Initialize.
-
-        :param  key: Account private key
-        :param messages.RegistrationResource account: Account object. Required if you are
-                planning to use .post() with acme_version=2 for anything other than creating a new
-                account; may be set later after registering.
-        :param josepy.JWASignature alg: Algoritm to use in signing JWS.
-        :param bool verify_ssl: Whether to verify certificates on SSL connections.
-        :param str user_agent: String to send as User-Agent header.
-        :param float timeout: Timeout for requests.
-        """
         # pylint: disable=too-many-arguments
         self.key = key
         self.account = account
@@ -674,10 +673,10 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
 
         .. todo:: Implement ``acmePath``.
 
-        :param .JSONDeSerializable obj:
+        :param josepy.JSONDeSerializable obj:
         :param str url: The URL to which this object will be POSTed
         :param bytes nonce:
-        :rtype: `.JWS`
+        :rtype: `josepy.JWS`
 
         """
         jobj = obj.json_dumps(indent=2).encode()
