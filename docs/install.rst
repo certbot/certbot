@@ -116,7 +116,7 @@ certbot-auto_ method, which enables you to use installer plugins
 that cover both of those hard topics.
 
 If you're still not convinced and have decided to use this method,
-from the server that the domain you're requesting a cert for resolves
+from the server that the domain you're requesting a certficate for resolves
 to, `install Docker`_, then issue the following command:
 
 .. code-block:: shell

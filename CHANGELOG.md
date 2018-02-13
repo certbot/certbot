@@ -2,6 +2,24 @@
 
 Certbot adheres to [Semantic Versioning](http://semver.org/).
 
+## 0.21.1 - 2018-01-25
+
+### Fixed
+
+* When creating an HTTP to HTTPS redirect in Nginx, we now ensure the Host
+  header of the request is set to an expected value before redirecting users to
+  the domain found in the header. The previous way Certbot configured Nginx
+  redirects was a potential security issue which you can read more about at
+  https://community.letsencrypt.org/t/security-issue-with-redirects-added-by-certbots-nginx-plugin/51493.
+* Fixed a problem where Certbot's Apache plugin could fail HTTP-01 challenges
+  if basic authentication is configured for the domain you request a
+  certificate for.
+* certbot-auto --no-bootstrap now properly tries to use Python 3.4 on RHEL 6
+  based systems rather than Python 2.6.
+
+More details about these changes can be found on our GitHub repo:
+https://github.com/certbot/certbot/milestone/49?closed=1
+
 ## 0.21.0 - 2018-01-17
 
 ### Added

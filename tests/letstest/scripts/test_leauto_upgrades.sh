@@ -64,11 +64,32 @@ iQIDAQAB
 -----END PUBLIC KEY-----
 "
 
-if ! ./letsencrypt-auto -v --debug --version || ! diff letsencrypt-auto letsencrypt-auto-source/letsencrypt-auto ; then
+if ./letsencrypt-auto -v --debug --version | grep "WARNING: couldn't find Python" ; then
+    echo "Had problems checking for updates!"
+    exit 1
+fi
+
+EXPECTED_VERSION=$(grep -m1 LE_AUTO_VERSION certbot-auto | cut -d\" -f2)
+if ! /opt/eff.org/certbot/venv/bin/letsencrypt --version 2>&1 | grep "$EXPECTED_VERSION" ; then
     echo upgrade appeared to fail
     exit 1
 fi
 
+if ! diff letsencrypt-auto letsencrypt-auto-source/letsencrypt-auto ; then
+    echo letsencrypt-auto and letsencrypt-auto-source/letsencrypt-auto differ
+    exit 1
+fi
+
+if [ "$RUN_PYTHON3_TESTS" = 1 ]; then
+    if ! command -v python3; then
+        echo "Python3 wasn't properly installed"
+        exit 1
+    fi
+    if [ "$(/opt/eff.org/certbot/venv/bin/python -V 2>&1 | cut -d" " -f 2 | cut -d. -f1)" != 3 ]; then
+        echo "Python3 wasn't used in venv!"
+        exit 1
+    fi
+fi
 echo upgrade appeared to be successful
 
 if [ "$(tools/readlink.py ${XDG_DATA_HOME:-~/.local/share}/letsencrypt)" != "/opt/eff.org/certbot/venv" ]; then

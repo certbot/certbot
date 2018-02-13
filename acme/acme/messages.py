@@ -251,6 +251,7 @@ class Registration(ResourceBody):
     contact = jose.Field('contact', omitempty=True, default=())
     agreement = jose.Field('agreement', omitempty=True)
     status = jose.Field('status', omitempty=True)
+    terms_of_service_agreed = jose.Field('terms-of-service-agreed', omitempty=True)
 
     phone_prefix = 'tel:'
     email_prefix = 'mailto:'
