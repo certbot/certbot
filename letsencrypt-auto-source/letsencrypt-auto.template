@@ -47,6 +47,7 @@ Help for certbot itself cannot be provided until it is installed.
   --no-bootstrap                            do not install OS dependencies
   --no-self-upgrade                         do not download updates
   --os-packages-only                        install OS dependencies and exit
+  --install-only                            install certbot, upgrade if needed, and exit
   -v, --verbose                             provide more output
   -q, --quiet                               provide only update/error output;
                                             implies --non-interactive
@@ -60,6 +61,8 @@ for arg in "$@" ; do
       DEBUG=1;;
     --os-packages-only)
       OS_PACKAGES_ONLY=1;;
+    --install-only)
+      INSTALL_ONLY=1;;
     --no-self-upgrade)
       # Do not upgrade this script (also prevents client upgrades, because each
       # copy of the script pins a hash of the python client)
@@ -587,6 +590,12 @@ UNLIKELY_EOF
 
     say "Installation succeeded."
   fi
+
+  if ["$INSTALL_ONLY" = 1 ]; then
+    say "Certbot is installed."
+    exit 0
+  fi
+
   "$VENV_BIN/letsencrypt" "$@"
 
 else
