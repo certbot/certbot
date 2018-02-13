@@ -106,10 +106,10 @@ class ClientTest(unittest.TestCase):
 
     def test_new_account_v2(self):
         directory = messages.Directory({
-            "new-account": 'https://www.letsencrypt-demo.org/acme/new-account',
+            "newAccount": 'https://www.letsencrypt-demo.org/acme/new-account',
         })
         from acme.client import ClientV2
-        client = ClientV2(directory=directory, net=self.net)
+        client = ClientV2(directory, self.net)
         self.response.status_code = http_client.CREATED
         self.response.json.return_value = self.regr.body.to_json()
         self.response.headers['Location'] = self.regr.uri
@@ -159,20 +159,23 @@ class ClientTest(unittest.TestCase):
         self.client.request_challenges(self.identifier)
         self.net.post.assert_called_once_with(
             self.directory.new_authz,
-            messages.NewAuthorization(identifier=self.identifier))
+            messages.NewAuthorization(identifier=self.identifier),
+            acme_version=1)
 
     def test_request_challenges_deprecated_arg(self):
         self._prepare_response_for_request_challenges()
         self.client.request_challenges(self.identifier, new_authzr_uri="hi")
         self.net.post.assert_called_once_with(
             self.directory.new_authz,
-            messages.NewAuthorization(identifier=self.identifier))
+            messages.NewAuthorization(identifier=self.identifier),
+            acme_version=1)
 
     def test_request_challenges_custom_uri(self):
         self._prepare_response_for_request_challenges()
         self.client.request_challenges(self.identifier)
         self.net.post.assert_called_once_with(
-            'https://www.letsencrypt-demo.org/acme/new-authz', mock.ANY)
+            'https://www.letsencrypt-demo.org/acme/new-authz', mock.ANY,
+            acme_version=1)
 
     def test_request_challenges_unexpected_update(self):
         self._prepare_response_for_request_challenges()
@@ -434,7 +437,8 @@ class ClientTest(unittest.TestCase):
     def test_revoke(self):
         self.client.revoke(self.certr.body, self.rsn)
         self.net.post.assert_called_once_with(
-            self.directory[messages.Revocation], mock.ANY, content_type=None)
+            self.directory[messages.Revocation], mock.ANY, content_type=None,
+            acme_version=1)
 
     def test_revocation_payload(self):
         obj = messages.Revocation(certificate=self.certr.body, reason=self.rsn)
@@ -485,17 +489,18 @@ class ClientNetworkTest(unittest.TestCase):
     def test_wrap_in_jws(self):
         # pylint: disable=protected-access
         jws_dump = self.net._wrap_in_jws(
-            MockJSONDeSerializable('foo'), nonce=b'Tg', url="url")
+            MockJSONDeSerializable('foo'), nonce=b'Tg', url="url",
+            acme_version=1)
         jws = acme_jws.JWS.json_loads(jws_dump)
         self.assertEqual(json.loads(jws.payload.decode()), {'foo': 'foo'})
         self.assertEqual(jws.signature.combined.nonce, b'Tg')
 
     def test_wrap_in_jws_v2(self):
         self.net.account = {'uri': 'acct-uri'}
-        self.net.acme_version = 2
         # pylint: disable=protected-access
         jws_dump = self.net._wrap_in_jws(
-            MockJSONDeSerializable('foo'), nonce=b'Tg', url="url")
+            MockJSONDeSerializable('foo'), nonce=b'Tg', url="url",
+            acme_version=2)
         jws = acme_jws.JWS.json_loads(jws_dump)
         self.assertEqual(json.loads(jws.payload.decode()), {'foo': 'foo'})
         self.assertEqual(jws.signature.combined.nonce, b'Tg')
@@ -732,13 +737,13 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
         self.assertEqual(self.checked_response, self.net.post(
             'uri', self.obj, content_type=self.content_type))
         self.net._wrap_in_jws.assert_called_once_with(
-            self.obj, jose.b64decode(self.all_nonces.pop()), "uri")
+            self.obj, jose.b64decode(self.all_nonces.pop()), "uri", 1)
 
         self.available_nonces = []
         self.assertRaises(errors.MissingNonce, self.net.post,
                           'uri', self.obj, content_type=self.content_type)
         self.net._wrap_in_jws.assert_called_with(
-            self.obj, jose.b64decode(self.all_nonces.pop()), "uri")
+            self.obj, jose.b64decode(self.all_nonces.pop()), "uri", 1)
 
     def test_post_wrong_initial_nonce(self):  # HEAD
         self.available_nonces = [b'f', jose.b64encode(b'good')]

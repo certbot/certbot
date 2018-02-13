@@ -417,7 +417,7 @@ class RenewableCert(object):
         conf_version = self.configuration.get("version")
         if (conf_version is not None and
                 util.get_strict_version(conf_version) > CURRENT_VERSION):
-            logger.warning(
+            logger.info(
                 "Attempting to parse the version %s renewal configuration "
                 "file found at %s with version %s of Certbot. This might not "
                 "work.", conf_version, config_filename, certbot.__version__)

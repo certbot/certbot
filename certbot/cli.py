@@ -207,13 +207,15 @@ def set_by_cli(var):
         # propagate plugin requests: eg --standalone modifies config.authenticator
         detector.authenticator, detector.installer = (
             plugin_selection.cli_plugin_requests(detector))
-        logger.debug("Default Detector is %r", detector)
 
     if not isinstance(getattr(detector, var), _Default):
+        logger.debug("Var %s=%s (set by user).", var, getattr(detector, var))
         return True
 
     for modifier in VAR_MODIFIERS.get(var, []):
         if set_by_cli(modifier):
+            logger.debug("Var %s=%s (set by user).",
+                var, VAR_MODIFIERS.get(var, []))
             return True
 
     return False
@@ -1220,6 +1222,18 @@ def _create_subparsers(helpful):
                                                    key=constants.REVOCATION_REASONS.get)),
                 action=_EncodeReasonAction, default=flag_default("reason"),
                 help="Specify reason for revoking certificate. (default: unspecified)")
+    helpful.add("revoke",
+                "--delete-after-revoke", action="store_true",
+                default=flag_default("delete_after_revoke"),
+                help="Delete certificates after revoking them.")
+    helpful.add("revoke",
+                "--no-delete-after-revoke", action="store_false",
+                dest="delete_after_revoke",
+                default=flag_default("delete_after_revoke"),
+                help="Do not delete certificates after revoking them. This "
+                     "option should be used with caution because the 'renew' "
+                     "subcommand will attempt to renew undeleted revoked "
+                     "certificates.")
     helpful.add("rollback",
                 "--checkpoints", type=int, metavar="N",
                 default=flag_default("rollback_checkpoints"),
