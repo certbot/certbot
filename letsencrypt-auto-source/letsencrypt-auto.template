@@ -591,7 +591,7 @@ UNLIKELY_EOF
     say "Installation succeeded."
   fi
 
-  if ["$INSTALL_ONLY" = 1 ]; then
+  if [ "$INSTALL_ONLY" = 1 ]; then
     say "Certbot is installed."
     exit 0
   fi
