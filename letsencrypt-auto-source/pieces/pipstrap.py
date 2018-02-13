@@ -4,7 +4,7 @@
 Embed this in your project, and your VCS checkout is all you have to trust. In
 a post-peep era, this lets you claw your way to a hash-checking version of pip,
 with which you can install the rest of your dependencies safely. All it assumes
-is Python 2.7 or better and *some* version of pip already installed. If
+is Python 2.6 or better and *some* version of pip already installed. If
 anything goes wrong, it will exit with a non-zero status code.
 
 """
@@ -44,7 +44,7 @@ except ImportError:
                 cmd = popenargs[0]
             raise CalledProcessError(retcode, cmd)
         return output
-from sys import exit
+from sys import exit, version_info
 from tempfile import mkdtemp
 try:
     from urllib2 import build_opener, HTTPHandler, HTTPSHandler
@@ -60,7 +60,16 @@ __version__ = 1, 3, 0
 PIP_VERSION = '9.0.1'
 
 
-PACKAGES = [
+# wheel has a conditional dependency on argparse:
+maybe_argparse = (
+    [('https://pypi.python.org/packages/18/dd/'
+      'e617cfc3f6210ae183374cd9f6a26b20514bbb5a792af97949c5aacddf0f/'
+      'argparse-1.4.0.tar.gz',
+      '62b089a55be1d8949cd2bc7e0df0bddb9e028faefc8c32038cc84862aefdd6e4')]
+    if version_info < (2, 7, 0) else [])
+
+
+PACKAGES = maybe_argparse + [
     # Pip has no dependencies, as it vendors everything:
     ('https://pypi.python.org/packages/11/b6/'
      'abcb525026a4be042b486df43905d6893fb04f05aac21c32c638e939e447/'
