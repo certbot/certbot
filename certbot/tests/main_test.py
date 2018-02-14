@@ -926,7 +926,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
 
     def _test_renewal_common(self, due_for_renewal, extra_args, log_out=None,
                              args=None, should_renew=True, error_expected=False,
-                                 quiet_mode=False):
+                                 quiet_mode=False, expiry_date=datetime.datetime.now()):
         # pylint: disable=too-many-locals,too-many-arguments
         cert_path = test_util.vector_path('cert_512.pem')
         chain_path = '/etc/letsencrypt/live/foo.bar/fullchain.pem'
@@ -959,7 +959,8 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
                             mock_latest = mock.MagicMock()
                             mock_latest.get_issuer.return_value = "Fake fake"
                             mock_ssl.crypto.load_certificate.return_value = mock_latest
-                            with mock.patch('certbot.main.renewal.crypto_util'):
+                            with mock.patch('certbot.main.renewal.crypto_util') as mock_crypto_util:
+                                mock_crypto_util.notAfter.return_value = expiry_date
                                 if not args:
                                     args = ['-d', 'isnot.org', '-a', 'standalone', 'certonly']
                                 if extra_args:
@@ -1026,6 +1027,16 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
         args = ["renew", "--dry-run", "-tvv"]
         self._test_renewal_common(True, [], args=args, should_renew=True)
+
+    @mock.patch('certbot.renewal.should_renew')
+    def test_renew_skips_recent_certs(self, should_renew):
+        should_renew.return_value = False
+        test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
+        expiry = datetime.datetime.now() + datetime.timedelta(days=90)
+        _, _, stdout = self._test_renewal_common(False, extra_args=None, should_renew=False,
+                                                 args=['renew'], expiry_date=expiry)
+        self.assertTrue('No renewals were attempted.' in stdout.getvalue())
+        self.assertTrue('The following certs are not due for renewal yet:' in stdout.getvalue())
 
     def test_quiet_renew(self):
         test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
