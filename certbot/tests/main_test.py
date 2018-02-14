@@ -642,10 +642,6 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         self._cli_missing_flag(args, "specify a plugin")
         args.extend(['--standalone', '-d', 'eg.is'])
         self._cli_missing_flag(args, "register before running")
-        with mock.patch('certbot.main._get_and_save_cert'):
-            with mock.patch('certbot.main.client.acme_from_config_key'):
-                args.extend(['--email', 'io@io.is'])
-                self._cli_missing_flag(args, "--agree-tos")
 
     @mock.patch('certbot.main._report_new_cert')
     @mock.patch('certbot.main.client.acme_client.Client')
