@@ -732,6 +732,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
             call_config = mock_install.call_args[0][0]
             self.assertEqual(call_config.cert_path, "/tmp/cert")
             self.assertEqual(call_config.fullchain_path, "/tmp/chain")
+            self.assertEqual(call_config.chain_path, "/tmp/chain")
             self.assertEqual(call_config.key_path, "/tmp/overriding_privkey")
 
             mock_install.reset()
