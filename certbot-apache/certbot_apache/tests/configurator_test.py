@@ -335,6 +335,33 @@ class MultipleVhostsTest(util.ApacheTest):
             "example/cert_chain.pem", "example/fullchain.pem")
         self.assertTrue(ssl_vhost.enabled)
 
+    def test_no_duplicate_include(self):
+        def mock_find_dir(directive, argument, _):
+            """Mock method for parser.find_dir"""
+            if directive == "Include" and argument.endswith("options-ssl-apache.conf"):
+                return ["/path/to/whatever"]
+
+        mock_add = mock.MagicMock()
+        self.config.parser.add_dir = mock_add
+        self.config._add_dummy_ssl_directives(self.vh_truth[0])  # pylint: disable=protected-access
+        tried_to_add = False
+        for a in mock_add.call_args_list:
+            if a[0][1] == "Include" and a[0][2] == self.config.mod_ssl_conf:
+                tried_to_add = True
+        # Include should be added, find_dir is not patched, and returns falsy
+        self.assertTrue(tried_to_add)
+
+        self.config.parser.find_dir = mock_find_dir
+        mock_add.reset_mock()
+
+        self.config._add_dummy_ssl_directives(self.vh_truth[0])  # pylint: disable=protected-access
+        tried_to_add = []
+        for a in mock_add.call_args_list:
+            tried_to_add.append(a[0][1] == "Include" and
+                                a[0][2] == self.config.mod_ssl_conf)
+        # Include shouldn't be added, as patched find_dir "finds" existing one
+        self.assertFalse(any(tried_to_add))
+
     def test_deploy_cert(self):
         self.config.parser.modules.add("ssl_module")
         self.config.parser.modules.add("mod_ssl.c")
