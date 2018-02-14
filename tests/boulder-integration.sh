@@ -251,7 +251,7 @@ openssl x509 -in "${root}/csr/chain.pem" -text
 
 common --domains le3.wtf install \
        --cert-path "${root}/csr/cert.pem" \
-       --key-path "${root}/csr/key.pem"
+       --key-path "${root}/key.pem"
 
 CheckCertCount() {
     CERTCOUNT=`ls "${root}/conf/archive/$1/cert"* | wc -l`
