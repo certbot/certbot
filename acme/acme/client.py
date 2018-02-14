@@ -576,20 +576,20 @@ class BackwardsCompatibleClientV2(object):
 
     def new_account_and_tos(self, regr=None, tos_cb=None):
         def assess_tos(tos):
-            if tos_cb is not None and not tos_cb(regr.terms_of_service):
+            if tos_cb is not None and not tos_cb(tos):
                 raise errors.Error(
                     "Registration cannot proceed without accepting "
                     "Terms of Service.")
         if self.acme_version == 1:
-            # if tos in directory
-            # else if tos not in directory
             regr = self.client.register(regr)
             if regr.terms_of_service is not None:
                 assess_tos(regr.terms_of_service)
                 return self.client.agree_to_tos(regr)
         else:
-            assess_tos(self.directory['termsOfService'])
-            regr.update(terms_of_service_agreed=True)
+            assert regr is not None
+            if "terms_of_service_v2" in self.directory.meta:
+                assess_tos(self.directory.meta.terms_of_service_v2)
+                regr.update(terms_of_service_agreed=True)
             return self.client.new_account(regr)
 
     def _acme_version_from_directory(self, directory):
