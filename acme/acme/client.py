@@ -561,8 +561,8 @@ class ClientV2(ClientBase):
 class BackwardsCompatibleClientV2(object):
 
     def __init__(self, net, key, server):
-        self.directory = messages.Directory.from_json(net.get(server).json())
-        self.acme_version = self._acme_version_from_directory(self.directory)
+        directory = messages.Directory.from_json(net.get(server).json())
+        self.acme_version = self._acme_version_from_directory(directory)
         if self.acme_version == 1:
             self.client = Client(directory, key=key, net=net)
         else:
@@ -590,8 +590,8 @@ class BackwardsCompatibleClientV2(object):
                 return self.client.agree_to_tos(regr)
         else:
             assert regr is not None
-            if "terms_of_service_v2" in self.directory.meta:
-                assess_tos(self.directory.meta.terms_of_service_v2)
+            if "terms_of_service_v2" in self.client.directory.meta:
+                assess_tos(self.client.directory.meta.terms_of_service_v2)
                 regr.update(terms_of_service_agreed=True)
             return self.client.new_account(regr)
 

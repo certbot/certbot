@@ -225,7 +225,7 @@ class RevokeTest(test_util.TempDirTestCase):
             'cert_512.pem'))
 
         self.patches = [
-            mock.patch('acme.client.Client', autospec=True),
+            mock.patch('acme.client.BackwardsCompatibleClientV2'),
             mock.patch('certbot.client.Client'),
             mock.patch('certbot.main._determine_account'),
             mock.patch('certbot.main.display_ops.success_revocation')
@@ -267,7 +267,7 @@ class RevokeTest(test_util.TempDirTestCase):
     def test_revoke_with_reason(self, mock_acme_client,
             mock_delete_if_appropriate):
         mock_delete_if_appropriate.return_value = False
-        mock_revoke = mock_acme_client.Client().revoke
+        mock_revoke = mock_acme_client.BackwardsCompatibleClientV2().revoke
         expected = []
         for reason, code in constants.REVOCATION_REASONS.items():
             self._call("--reason " + reason)
@@ -674,7 +674,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
             ua = "bandersnatch"
             args += ["--user-agent", ua]
             self._call_no_clientmock(args)
-            acme_net.assert_called_once_with(mock.ANY, verify_ssl=True, user_agent=ua)
+            acme_net.assert_called_once_with(mock.ANY, account=mock.ANY, verify_ssl=True, user_agent=ua)
 
     @mock.patch('certbot.main.plug_sel.record_chosen_plugins')
     @mock.patch('certbot.main.plug_sel.pick_installer')
@@ -1263,11 +1263,11 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         self._call_no_clientmock(['--cert-path', SS_CERT_PATH, '--key-path', RSA2048_KEY_PATH,
                                  '--server', server, 'revoke'])
         with open(RSA2048_KEY_PATH, 'rb') as f:
-            mock_acme_client.Client.assert_called_once_with(
-                server, key=jose.JWK.load(f.read()), net=mock.ANY)
+            mock_acme_client.BackwardsCompatibleClientV2.assert_called_once_with(
+                mock.ANY, jose.JWK.load(f.read()), server)
         with open(SS_CERT_PATH, 'rb') as f:
             cert = crypto_util.pyopenssl_load_certificate(f.read())[0]
-            mock_revoke = mock_acme_client.Client().revoke
+            mock_revoke = mock_acme_client.BackwardsCompatibleClientV2().revoke
             mock_revoke.assert_called_once_with(
                     jose.ComparableX509(cert),
                     mock.ANY)
