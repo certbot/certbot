@@ -165,7 +165,7 @@ def register(config, account_storage, tos_cb=None):
     regr = perform_registration(acme, config)
 
     if regr.terms_of_service is not None:
-        if tos_cb is not None and not tos_cb(regr):
+        if tos_cb is not None and not tos_cb(regr.terms_of_service):
             raise errors.Error(
                 "Registration cannot proceed without accepting "
                 "Terms of Service.")

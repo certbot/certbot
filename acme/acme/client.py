@@ -558,15 +558,39 @@ class ClientV2(ClientBase):
         return self._regr_from_response(response)
 
 
-class MultiVersionClient(object):
+class BackwardsCompatibleClientV2(object):
 
     def __init__(self, net, key, server):
-        directory = messages.Directory.from_json(net.get(server).json())
+        self.directory = messages.Directory.from_json(net.get(server).json())
         self.acme_version = self._acme_version_from_directory(directory)
         if self.acme_version == 1:
             self.client = Client(directory, key=key, net=net)
         else:
             self.client = ClientV2(directory, net=net)
+
+    def __getattr__(self, name):
+        if name in dir(ClientBase):
+            return getattr(self.client, name)
+        else:
+            raise AttributeError
+
+    def new_account_and_tos(self, regr=None, tos_cb=None):
+        def assess_tos(tos):
+            if tos_cb is not None and not tos_cb(regr.terms_of_service):
+                raise errors.Error(
+                    "Registration cannot proceed without accepting "
+                    "Terms of Service.")
+        if self.acme_version == 1:
+            # if tos in directory
+            # else if tos not in directory
+            regr = self.client.register(regr)
+            if regr.terms_of_service is not None:
+                assess_tos(regr.terms_of_service)
+                return self.client.agree_to_tos(regr)
+        else:
+            assess_tos(self.directory['termsOfService'])
+            regr.update(terms_of_service_agreed=True)
+            return self.client.new_account(regr)
 
     def _acme_version_from_directory(self, directory):
         try:
@@ -574,73 +598,6 @@ class MultiVersionClient(object):
         except KeyError:
             return 1
         return 2
-
-    def register(self, *args, **kwargs):
-        if self.acme_version == 1:
-            return self.client.register(*args, **kwargs)
-        else:
-            return self.client.new_account(*args, **kwargs)
-
-    def new_account(self, *args, **kwargs):
-        return self.register(*args, **kwargs)
-
-    def agree_to_tos(self, *args, **kwargs):
-        if self.acme_version == 1:
-            return self.client.agree_to_tos(*args, **kwargs)
-
-    def request_challenges(self, *args, **kwargs):
-        if self.acme_version == 1:
-            return self.client.request_challenges(*args, **kwargs)
-
-    def request_domain_challenges(self, *args, **kwargs):
-        if self.acme_version == 1:
-            return self.client.request_domain_challenges(*args, **kwargs)
-
-    def request_issuance(self, *args, **kwargs):
-        if self.acme_version == 1:
-            return self.client.request_issuance(*args, **kwargs)
-
-    def poll_and_request_issuance(self, *args, **kwargs):
-        if self.acme_version == 1:
-            return self.client.poll_and_request_issuance(*args, **kwargs)
-
-    def check_cert(self, *args, **kwargs):
-        if self.acme_version == 1:
-            return self.client.check_cert(*args, **kwargs)
-
-    def refresh(self, *args, **kwargs):
-        if self.acme_version == 1:
-            return self.client.refresh(*args, **kwargs)
-
-    def fetch_chain(self, *args, **kwargs):
-        if self.acme_version == 1:
-            return self.client.fetch_chain(*args, **kwargs)
-
-    ######################
-    # Shared methods #
-    ######################
-
-    def update_registration(self, *args, **kwargs):
-        return self.client.update_registration(*args, **kwargs)
-
-    def deactivate_registration(self, *args, **kwargs):
-        return self.client.deactivate_registration(*args, **kwargs)
-
-    def query_registration(self, *args, **kwargs):
-        return self.client.query_registration(*args, **kwargs)
-
-    def answer_challenge(self, *args, **kwargs):
-        return self.client.answer_challenge(*args, **kwargs)
-
-    @classmethod
-    def retry_after(cls, *args, **kwargs):
-        return type(cls).retry_after(*args, **kwargs)
-
-    def poll(self, *args, **kwargs):
-        return self.client.poll(*args, **kwargs)
-
-    def revoke(self, *args, **kwargs):
-        return self.client.revoke(*args, **kwargs)
 
 
 class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
