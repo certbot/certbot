@@ -674,7 +674,8 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
             ua = "bandersnatch"
             args += ["--user-agent", ua]
             self._call_no_clientmock(args)
-            acme_net.assert_called_once_with(mock.ANY, account=mock.ANY, verify_ssl=True, user_agent=ua)
+            acme_net.assert_called_once_with(mock.ANY, account=mock.ANY, verify_ssl=True,
+                user_agent=ua)
 
     @mock.patch('certbot.main.plug_sel.record_chosen_plugins')
     @mock.patch('certbot.main.plug_sel.pick_installer')

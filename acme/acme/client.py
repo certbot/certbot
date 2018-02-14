@@ -569,7 +569,9 @@ class BackwardsCompatibleClientV2(object):
             self.client = ClientV2(directory, net=net)
 
     def __getattr__(self, name):
-        if name in dir(ClientBase):
+        if name in vars(self.client).keys():
+            return getattr(self.client, name)
+        elif name in dir(ClientBase):
             return getattr(self.client, name)
         # temporary, for breaking changes into smaller pieces
         elif name in dir(Client):
@@ -597,7 +599,7 @@ class BackwardsCompatibleClientV2(object):
 
     def _acme_version_from_directory(self, directory):
         try:
-            nonce_field = directory['newNonce']
+            nonce_field = directory['newNonce'] # pylint: disable=unused-variable
         except KeyError:
             return 1
         return 2
