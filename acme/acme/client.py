@@ -562,7 +562,7 @@ class BackwardsCompatibleClientV2(object):
 
     def __init__(self, net, key, server):
         self.directory = messages.Directory.from_json(net.get(server).json())
-        self.acme_version = self._acme_version_from_directory(directory)
+        self.acme_version = self._acme_version_from_directory(self.directory)
         if self.acme_version == 1:
             self.client = Client(directory, key=key, net=net)
         else:
@@ -570,6 +570,9 @@ class BackwardsCompatibleClientV2(object):
 
     def __getattr__(self, name):
         if name in dir(ClientBase):
+            return getattr(self.client, name)
+        # temporary, for breaking changes into smaller pieces
+        elif name in dir(Client):
             return getattr(self.client, name)
         else:
             raise AttributeError

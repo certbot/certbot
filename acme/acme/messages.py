@@ -172,6 +172,7 @@ class Directory(jose.JSONDeSerializable):
     class Meta(jose.JSONObjectWithFields):
         """Directory Meta."""
         terms_of_service = jose.Field('terms-of-service', omitempty=True)
+        terms_of_service_v2 = jose.Field('termsOfService', omitempty=True)
         website = jose.Field('website', omitempty=True)
         caa_identities = jose.Field('caa-identities', omitempty=True)
 
@@ -251,7 +252,7 @@ class Registration(ResourceBody):
     contact = jose.Field('contact', omitempty=True, default=())
     agreement = jose.Field('agreement', omitempty=True)
     status = jose.Field('status', omitempty=True)
-    terms_of_service_agreed = jose.Field('terms-of-service-agreed', omitempty=True)
+    terms_of_service_agreed = jose.Field('termsOfServiceAgreed', omitempty=True)
 
     phone_prefix = 'tel:'
     email_prefix = 'mailto:'
