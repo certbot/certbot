@@ -608,11 +608,10 @@ class BackwardsCompatibleClientV2(object):
             return self.client.new_account(regr)
 
     def _acme_version_from_directory(self, directory):
-        try:
-            nonce_field = directory['newNonce'] # pylint: disable=unused-variable
-        except KeyError:
+        if hasattr(directory, 'newNonce'):
+            return 2
+        else:
             return 1
-        return 2
 
 
 class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
