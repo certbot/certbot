@@ -503,9 +503,12 @@ def _determine_account(config):
                        "server at {1}".format(
                            terms_of_service, config.server))
                 obj = zope.component.getUtility(interfaces.IDisplay)
-                return obj.yesno(msg, "Agree", "Cancel",
+                result = obj.yesno(msg, "Agree", "Cancel",
                                  cli_flag="--agree-tos", force_interactive=True)
-
+                if not result:
+                    raise errors.Error(
+                        "Registration cannot proceed without accepting "
+                        "Terms of Service.")
             try:
                 acc, acme = client.register(
                     config, account_storage, tos_cb=_tos_cb)

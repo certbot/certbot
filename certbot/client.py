@@ -162,14 +162,7 @@ def register(config, account_storage, tos_cb=None):
             backend=default_backend())))
     acme = acme_from_config_key(config, key)
     # TODO: add phone?
-    regr = perform_registration(acme, config)
-
-    if regr.terms_of_service is not None:
-        if tos_cb is not None and not tos_cb(regr.terms_of_service):
-            raise errors.Error(
-                "Registration cannot proceed without accepting "
-                "Terms of Service.")
-        regr = acme.agree_to_tos(regr)
+    regr = perform_registration(acme, config, tos_cb)
 
     acc = account.Account(regr, key)
     account.report_new_account(config)
@@ -180,7 +173,7 @@ def register(config, account_storage, tos_cb=None):
     return acc, acme
 
 
-def perform_registration(acme, config):
+def perform_registration(acme, config, tos_cb):
     """
     Actually register new account, trying repeatedly if there are email
     problems
@@ -192,7 +185,8 @@ def perform_registration(acme, config):
     :rtype: `acme.messages.RegistrationResource`
     """
     try:
-        return acme.register(messages.NewRegistration.from_data(email=config.email))
+        return acme.new_account_and_tos(messages.NewRegistration.from_data(email=config.email),
+            tos_cb)
     except messages.Error as e:
         if e.code == "invalidEmail" or e.code == "invalidContact":
             if config.noninteractive_mode:
@@ -202,7 +196,7 @@ def perform_registration(acme, config):
                 raise errors.Error(msg)
             else:
                 config.email = display_ops.get_email(invalid=True)
-                return perform_registration(acme, config)
+                return perform_registration(acme, config, tos_cb)
         else:
             raise
 

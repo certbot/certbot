@@ -30,28 +30,24 @@ class RegisterTest(test_util.ConfigTestCase):
         self.config.register_unsafely_without_email = False
         self.config.email = "alias@example.com"
         self.account_storage = account.AccountMemoryStorage()
-        self.tos_cb = mock.MagicMock()
 
     def _call(self):
         from certbot.client import register
-        return register(self.config, self.account_storage, self.tos_cb)
+        tos_cb = mock.MagicMock()
+        return register(self.config, self.account_storage, tos_cb)
 
     def test_no_tos(self):
         with mock.patch("certbot.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
-            mock_client.register().terms_of_service = "http://tos"
+            mock_client.new_account_and_tos().terms_of_service = "http://tos"
             with mock.patch("certbot.eff.handle_subscription") as mock_handle:
                 with mock.patch("certbot.account.report_new_account"):
-                    self.tos_cb.return_value = False
+                    mock_client().new_account_and_tos.side_effect = errors.Error
                     self.assertRaises(errors.Error, self._call)
                     self.assertFalse(mock_handle.called)
 
-                    self.tos_cb.return_value = True
+                    mock_client().new_account_and_tos.side_effect = None
                     self._call()
                     self.assertTrue(mock_handle.called)
-
-                    self.tos_cb = None
-                    self._call()
-                    self.assertEqual(mock_handle.call_count, 2)
 
     def test_it(self):
         with mock.patch("certbot.client.acme_client.BackwardsCompatibleClientV2"):
@@ -68,7 +64,7 @@ class RegisterTest(test_util.ConfigTestCase):
         mx_err = messages.Error.with_code('invalidContact', detail=msg)
         with mock.patch("certbot.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
             with mock.patch("certbot.eff.handle_subscription") as mock_handle:
-                mock_client().register.side_effect = [mx_err, mock.MagicMock()]
+                mock_client().new_account_and_tos.side_effect = [mx_err, mock.MagicMock()]
                 self._call()
                 self.assertEqual(mock_get_email.call_count, 1)
                 self.assertTrue(mock_handle.called)
@@ -81,7 +77,7 @@ class RegisterTest(test_util.ConfigTestCase):
         mx_err = messages.Error.with_code('invalidContact', detail=msg)
         with mock.patch("certbot.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
             with mock.patch("certbot.eff.handle_subscription"):
-                mock_client().register.side_effect = [mx_err, mock.MagicMock()]
+                mock_client().new_account_and_tos.side_effect = [mx_err, mock.MagicMock()]
                 self.assertRaises(errors.Error, self._call)
 
     def test_needs_email(self):
@@ -106,7 +102,7 @@ class RegisterTest(test_util.ConfigTestCase):
         mx_err = messages.Error(detail=msg, typ="malformed", title="title")
         with mock.patch("certbot.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
             with mock.patch("certbot.eff.handle_subscription") as mock_handle:
-                mock_client().register.side_effect = [mx_err, mock.MagicMock()]
+                mock_client().new_account_and_tos.side_effect = [mx_err, mock.MagicMock()]
                 self.assertRaises(messages.Error, self._call)
         self.assertFalse(mock_handle.called)
 

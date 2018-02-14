@@ -579,12 +579,11 @@ class BackwardsCompatibleClientV2(object):
         else:
             raise AttributeError
 
-    def new_account_and_tos(self, regr=None, tos_cb=None):
+    def new_account_and_tos(self, regr=None, check_tos_cb=None):
+        # check_tos_cb should raise an error if we want to error
         def assess_tos(tos):
-            if tos_cb is not None and not tos_cb(tos):
-                raise errors.Error(
-                    "Registration cannot proceed without accepting "
-                    "Terms of Service.")
+            if check_tos_cb is not None:
+                check_tos_cb(tos)
         if self.acme_version == 1:
             regr = self.client.register(regr)
             if regr.terms_of_service is not None:
