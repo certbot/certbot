@@ -559,6 +559,12 @@ class ClientV2(ClientBase):
 
 
 class BackwardsCompatibleClientV2(object):
+    """ACME client wrapper that tends towards V2-style calls, but
+       supports V1 servers.
+
+       :ivar int acme_version:
+       :ivar .ClientBase client: either Client or ClientV2
+    """
 
     def __init__(self, net, key, server):
         directory = messages.Directory.from_json(net.get(server).json())
@@ -580,19 +586,24 @@ class BackwardsCompatibleClientV2(object):
             raise AttributeError
 
     def new_account_and_tos(self, regr=None, check_tos_cb=None):
-        # check_tos_cb should raise an error if we want to error
-        def assess_tos(tos):
+        """Combined register and agree_tos for V1, new_account for V2
+
+        :param .NewRegistration new_account:
+        :param function check_tos_cb: callback that raises an error if
+            the check does not work
+        """
+        def _assess_tos(tos):
             if check_tos_cb is not None:
                 check_tos_cb(tos)
         if self.acme_version == 1:
             regr = self.client.register(regr)
             if regr.terms_of_service is not None:
-                assess_tos(regr.terms_of_service)
+                _assess_tos(regr.terms_of_service)
                 return self.client.agree_to_tos(regr)
         else:
             assert regr is not None
             if "terms_of_service_v2" in self.client.directory.meta:
-                assess_tos(self.client.directory.meta.terms_of_service_v2)
+                _assess_tos(self.client.directory.meta.terms_of_service_v2)
                 regr.update(terms_of_service_agreed=True)
             return self.client.new_account(regr)
 
