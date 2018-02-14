@@ -490,13 +490,13 @@ class Order(ResourceBody):
     """Order Resource Body.
 
     :ivar buffer csr: CSR in pem format.
-    :ivar string status:
-    :ivar list of string authorizations:
-    :ivar datetime.datetime expires:
-
+    :ivar acme.messages.Status status:
+    :ivar list of string authorizations: URLs of authorizations.
+    :ivar datetime.datetime expires: When the order expires.
     """
     identifiers = jose.Field('identifiers', omitempty=True)
-    status = jose.Field('status', omitempty=True, default=None)
+    status = jose.Field('status', decoder=Status.from_json,
+                        omitempty=True, default=STATUS_PENDING)
     authorizations = jose.Field('authorizations', omitempty=True)
     certificate = jose.Field('certificate', omitempty=True)
     finalize = jose.Field('finalize', omitempty=True)
@@ -506,7 +506,11 @@ class OrderResource(ResourceWithURI):
     """Order Resource.
 
     :ivar acme.messages.Order body:
-
+    :ivar list of acme.messages.AuthorizationResource authorizations:
+        Fully-fetched AuthorizationResource objects.
+    :ivar string csr_pem: The CSR this Order will be finalized with.
+    :ivar string fullchain_pem: The fetched contents of the certificate URL
+        produced once the order was finalized, if it's present.
     """
     body = jose.Field('body', decoder=Order.from_json)
     csr_pem = jose.Field('csr_pem', omitempty=True)

@@ -597,10 +597,15 @@ class ClientV2(ClientBase):
             authorizations=authorizations,
             csr_pem=csr_pem)
 
-    def poll_order_and_request_issuance(self, orderr, max_time=datetime.timedelta(seconds=90)):
+    def poll_and_finalize(self, orderr, deadline=None):
+        if deadline is None:
+            deadline = datetime.datetime.now() + datetime.timedelta(seconds=90)
+        orderr = self.poll_authorizations(orderr, deadline)
+        return self.finalize_order(orderr, deadline)
+
+    def poll_authorizations(self, orderr, deadline):
         """Poll Order Resource for status."""
         responses = []
-        deadline = datetime.datetime.now() + max_time
         for url in orderr.body.authorizations:
             while datetime.datetime.now() < deadline:
                 time.sleep(1)
@@ -615,8 +620,9 @@ class ClientV2(ClientBase):
                         raise Exception("failed challenge for %s: %s" %
                             (authzr.body.identifier.value, chall.error))
                 raise Exception("failed authorization: %s" % authzr.body)
-        latest = self._order_resource_from_response(self.net.get(orderr.uri), uri=orderr.uri)
+        return self._order_resource_from_response(self.net.get(orderr.uri), uri=orderr.uri)
 
+    def finalize_order(self, orderr, deadline):
         csr = OpenSSL.crypto.load_certificate_request(
             OpenSSL.crypto.FILETYPE_PEM, orderr.csr_pem)
         wrapped_csr = messages.CertificateRequest(csr=jose.ComparableX509(csr))
