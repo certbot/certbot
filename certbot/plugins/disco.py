@@ -39,6 +39,7 @@ class PluginEntryPoint(object):
         "certbot-dns-rfc2136",
         "certbot-dns-route53",
         "certbot-nginx",
+        "certbot-postfix",
     ]
     """Distributions for which prefix will be omitted."""
 

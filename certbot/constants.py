@@ -64,7 +64,7 @@ RENEWER_DEFAULTS = dict(
 """Defaults for renewer script."""
 
 
-ENHANCEMENTS = ["redirect", "http-header", "ocsp-stapling", "spdy"]
+ENHANCEMENTS = ["redirect", "ensure-http-header", "ocsp-stapling", "spdy", "starttls-policy"]
 """List of possible :class:`certbot.interfaces.IInstaller`
 enhancements.
 
