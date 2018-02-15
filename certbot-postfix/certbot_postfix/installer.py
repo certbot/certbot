@@ -17,23 +17,34 @@ from certbot_postfix import postconf
 import starttls_policy
 
 POLICY_FILENAME = "starttls_everywhere_policy"
-CA_FILENAME = "starttls_everywhere_CAfile"
 
-acceptable_security_levels = ("may", "encrypt")
-acceptable_cipher_levels = ("medium", "high")
+CA_CERTS_PATH = "/etc/ssl/certs/"
 
-default_server_vars = {
+# If the value of a default VAR is a tuple, then the values which
+# come LATER in the tuple are more strict/more secure.
+# Certbot will default to the first value in the tuple, but will
+# not override "more secure" settings.
+
+ACCEPTABLE_SECURITY_LEVELS = ("may", "encrypt")
+ACCEPTABLE_CIPHER_LEVELS = ("medium", "high")
+
+TLS_VERSIONS = ("SSLv2", "SSLv3", "TLSv1", "TLSv1.1", "TLSv1.2")
+# Should NOT use SSLv2/3.
+ACCEPTABLE_TLS_VERSIONS = ("TLSv1", "TLSv1.1", "TLSv1.2")
+
+# Default variables for a secure MTA server [receiver].
+DEFAULT_SERVER_VARS = {
     "smtpd_tls_mandatory_protocols": "!SSLv2, !SSLv3",
     "smtpd_tls_protocols": "!SSLv2, !SSLv3",
-    "smtpd_tls_security_level": acceptable_security_levels,
-    "smtpd_tls_ciphers": acceptable_cipher_levels,
+    "smtpd_tls_security_level": ACCEPTABLE_SECURITY_LEVELS,
+    "smtpd_tls_ciphers": ACCEPTABLE_CIPHER_LEVELS,
     "smtpd_tls_eecdh_grade": "strong",
 }
 
-    # "smtpd_tls_received_header": "yes",
-default_client_vars = {
-    "smtp_tls_security_level": acceptable_security_levels,
-    "smtp_tls_ciphers": acceptable_cipher_levels,
+# Default variables for a secure MTA client [sender].
+DEFAULT_CLIENT_VARS = {
+    "smtp_tls_security_level": ACCEPTABLE_SECURITY_LEVELS,
+    "smtp_tls_ciphers": ACCEPTABLE_CIPHER_LEVELS,
 }
 
 logger = logging.getLogger(__name__)
@@ -44,15 +55,14 @@ class Installer(plugins_common.Installer):
     """Certbot installer plugin for Postfix.
 
     :ivar str config_dir: Postfix configuration directory to modify
-    :ivar dict proposed_changes: configuration parameters and values to
-        be written to the Postfix config when save() is called
     :ivar list save_notes: documentation for proposed changes. This is
         cleared and stored in Certbot checkpoints when save() is called
-
+    :ivar postconf: Wrapper for Postfix configuration command-line tool.
+    :ivar policy: A Policy object using which we can query
+    :ivar policy_file: TLS policy file in a format that Postfix expects.
     """
 
     description = "Configure TLS with the Postfix MTA"
-    # Default algorithm is RSA; once we can support EC lineages, turn that on
 
     @classmethod
     def add_parser_arguments(cls, add):
@@ -63,46 +73,75 @@ class Installer(plugins_common.Installer):
             "default configuration paths.")
         add("config-utility", default="postconf",
             help="Path to the 'postconf' executable.")
-        add("policy-file", default="config.json")
+        add("policy-file", help="Name of the policy file that we should write to in config-dir.",
+                           default=POLICY_FILENAME)
 
     def __init__(self, *args, **kwargs):
         super(Installer, self).__init__(*args, **kwargs)
         self.config_dir = None
         self.postconf = None
-        # self.proposed_changes = {}
         self.save_notes = []
         self.policy = None
-        self.policy_lines = []
         self.policy_file = None
-        self.postfix_policy_file = None
 
-    def set_domainwise_tls_policies(self, fopen=open):
+    def _get_formatted_protocols(min_tls_version, delimiter=":"):
+        """Enforces the minimum TLS version in a way that Postfix can understand. For instance,
+        if the min_tls_version is TLS1.1, then Postfix expects: "!SSLv2:!SSLv3:!TLSv1"
+
+        :param str min_tls_version: SSL/TLS version that we expect to be in ACCEPTABLE_TLS_VERSIONS.
+        :param str delimiter: delimiter for the SSL/TLS declarations.
+        :rtype str: Protocol declaration, formatted correctly in a Postfix-y way. For instance:
+            TLSv1.1 => !SSLv2:!SSLv3:!TLSv1
+            TLSv1   => !SSLv2:!SSLv3
+        """
+        if min_tls_version not in TLS_VERSIONS or min_tls_version not in ACCEPTABLE_TLS_VERSIONS:
+            return None
+        return delimiter.join(["!" + version for version in TLS_VERSIONS[0:TLS_VERSIONS.index(min_tls_version)]])
+
+    def _get_formatted_policy_for_domain(address_domain, mx_list, policy):
+        """Parses TLS policy specification into a format that Postfix expects. In particular:
+            <domain> <tls_security_level> protocols=<protocols>
+        For instance, let's say we have an entry for mail.example.com with a minimum TLS version of 1.1:
+            mail.example.com encrypt protocols=!SSLv2:!SSLv3:!TLSv1
+        :param address_domain str: The domain we're configuring this policy for.
+        :param mx_list str: A list of MX entries that we have to configure for this domain.
+        :param policy: The STARTTLS Policy object that specifies the TLS policy for each domain
+        :rtype str: Properly formatted Postfix TLS policy specification for this domain.
+        """
+        mx_list = properties.accept_mx_domains
+        if len(mx_list) > 1:
+            # TODO (sydneyli): Add support.
+            logger.warn('Lists of multiple accept-mx-domains not yet supported.')
+            logger.warn('Using MX {} for {}'.format(mx_list[0], address_domain))
+            logger.warn('Ignoring: {}'.format(', '.join(mx_list[1:])))
+        mx_domain = mx_list[0]
+        mx_policy = self.policy.get_tls_policy(mx_domain)
+        entry = address_domain + " encrypt"
+        protocols_value = _get_formatted_protocols(min_tls_version)
+        if protocols_value is not None:
+            entry += " protocols=" + protocols_value
+        else:
+            logger.warn('Unknown minimum TLS version: {} '.format(
+                mx_policy.min_tls_version))
+        return entry
+
+    def write_domainwise_tls_policies(self, fopen=open):
+        """Writes domainwise tls policies to self.policy_file in a format that Postfix
+        can parse.
+        """
+        policy_lines = []
         all_acceptable_mxs = self.policy.acceptable_mxs
         for address_domain, properties in all_acceptable_mxs.items():
             mx_list = properties.accept_mx_domains
-            if len(mx_list) > 1:
-                logger.warn('Lists of multiple accept-mx-domains not yet '
-                            'supported.')
-                logger.warn('Using MX {} for {}'.format(mx_list[0],
-                                                        address_domain)
-                           )
-                logger.warn('Ignoring: {}'.format(', '.join(mx_list[1:])))
-            mx_domain = mx_list[0]
-            mx_policy = self.policy.get_tls_policy(mx_domain)
-            entry = address_domain + " encrypt"
-            if mx_policy.min_tls_version.lower() == "tlsv1":
-                entry += " protocols=!SSLv2:!SSLv3"
-            elif mx_policy.min_tls_version.lower() == "tlsv1.1":
-                entry += " protocols=!SSLv2:!SSLv3:!TLSv1"
-            elif mx_policy.min_tls_version.lower() == "tlsv1.2":
-                entry += " protocols=!SSLv2:!SSLv3:!TLSv1:!TLSv1.1"
-            else:
-                logger.warn('Unknown minimum TLS version: {} '.format(
-                    mx_policy.min_tls_version)
-                )
-            self.policy_lines.append(entry)
+            policy_lines.append(_get_formatted_policy_for_domain(address_domain, mx_list, self.policy)
         with fopen(self.policy_file, "w") as f:
-            f.write("\n".join(self.policy_lines) + "\n")
+            f.write("\n".join(policy_lines) + "\n")
+
+    def _ensure_ca_certificates_exist(self):
+        # TODO (sydneyli): Ensure `ca-certificates` is installed correctly, or that
+        # /etc/ssl/certs/ even has certificates in it, probably via a sanity check using
+        # `openssl` command?
+        pass
 
     def prepare(self):
         """Prepare the installer.
@@ -118,17 +157,17 @@ class Installer(plugins_common.Installer):
         for param in ("ctl", "config_utility",):
             self._verify_executable_is_available(param)
         # Set initially here so we can grab configuration directory if needed.
+        self._ensure_ca_certificates_exist()
         self.postconf = postconf.ConfigMain(self.conf('config-utility'))
         self._set_config_dir()
         self.postfix = util.PostfixUtil(self.config_dir)
         self.policy_file = self.conf("policy-file")
         self.policy = starttls_policy.Config()
-        self.policy.load_from_json_file(self.policy_file)
+        self.policy.load_default()
         self._check_version()
         self.postfix.test()
         self._lock_config_dir()
-        self.postfix_policy_file = os.path.join(self.config_dir, POLICY_FILENAME)
-        self.ca_file = os.path.join(self.config_dir, CA_FILENAME)
+        self.policy_file = os.path.join(self.config_dir, POLICY_FILENAME)
         self.postconf = postconf.ConfigMain(self.conf('config-utility'), self.config_dir)
 
     def _verify_executable_is_available(self, config_name):
@@ -249,17 +288,12 @@ class Installer(plugins_common.Installer):
         self.save_notes.append("Configuring TLS for {0}".format(domain))
         self.postconf.set("smtpd_tls_cert_file", fullchain_path)
         self.postconf.set("smtpd_tls_key_file", key_path)
-        self._set_vars(default_server_vars)
-        self._set_vars(default_client_vars)
-        self.set_domainwise_tls_policies()
-        policy_cf_entry = "texthash:" + self.postfix_policy_file
+        self._set_vars(DEFAULT_SERVER_VARS)
+        self._set_vars(DEFAULT_CLIENT_VARS)
+        self.write_domainwise_tls_policies()
+        policy_cf_entry = "texthash:" + self.policy_file
         self.postconf.set("smtp_tls_policy_maps", policy_cf_entry)
-        self.postconf.set("smtp_tls_CAfile", self.ca_file)
-        self._update_CAfile()
-
-    def _update_CAfile(self):
-        # TODO (sydneyli): Discover this directory or ask for user input.
-        os.system("cat /usr/share/ca-certificates/mozilla/*.crt > " + self.ca_file)
+        self.postconf.set("smtp_tls_CApath", CA_CERTS_PATH)
 
     def enhance(self, domain, enhancement, options=None):
         """Raises an exception for request for unsupported enhancement.
