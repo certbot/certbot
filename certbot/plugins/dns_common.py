@@ -56,7 +56,31 @@ class DNSAuthenticator(common.Plugin):
 
     @classmethod
     def inject_parser_options(cls, parser, name):
+        """Set up argument parsing for this DNS plugin.
+
+        This is called by the plugin management framework to set up
+        the argument parser.
+
+        :param ArgumentParser parser: (Almost) top-level CLI parser.
+        :param str name: Unique plugin name.
+        """
+
+        # The inherited method will call add_parser_arguments to set up
+        # the parser of each argument.
+
         super(DNSAuthenticator, cls).inject_parser_options(parser, name)
+
+        # Create an additional entry in the parser namespace for the
+        # override-challenge map. This is an initiallyt empty dict associating
+        # each requested certificate domain with the corresponding challenge
+        # override (see help for --dns-<plugin>-override-challenge).
+
+        # Use set_default to provide this dict as an entry in the namespace
+        # object returned by the parser. Note that set_default uses keyword
+        # arguments to determine the name of the entry to be set, and
+        # here the name is dynamically computed (depending on the plugin
+        # name), which is why we need to use ** syntax.
+
         challenge_map_opt = common.dest_namespace(name) + "override_challenge_map"
         parser.set_defaults(**{challenge_map_opt: {}})  # pylint: disable=star-args
 
