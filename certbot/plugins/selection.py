@@ -210,7 +210,7 @@ def choose_configurator_plugins(config, plugins, verb):  # pylint: disable=too-m
 def verify_enhancements_supported(config, installer):
     """Verify the requested enhancements are supported by the installer.
 
-    If the discouraged --dangerously-disable-server-tls-updates flag is
+    If the discouraged --dangerously-disable-tls-configuration-updates flag is
     set, we try to verify with the user that this behavior was desired
     and not set accidentally through a copied command line or
     configuration file.
@@ -226,9 +226,9 @@ def verify_enhancements_supported(config, installer):
     :raises errors.MisconfigurationError: configuration conflict
 
     """
-    if config.disable_server_tls_updates:
-        flag = "--dangerously-disable-server-tls-updates"
-        if isinstance(installer, interfaces.ServerTLSUpdater):
+    if config.disable_tls_configuration_updates:
+        flag = "--dangerously-disable-tls-configuration-updates"
+        if isinstance(installer, interfaces.ServerTLSConfigurationUpdater):
             verified = z_util(interfaces.IDisplay).yesno(
                 "You have requested Certbot disable TLS updates by"
                 " setting {0} on the command line or in a configuration"

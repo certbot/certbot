@@ -13,17 +13,17 @@ import certbot.tests.util as test_util
 
 
 class RenewUpdaterTest(unittest.TestCase):
-    """Tests for interfaces.ServerTLSUpdater and
+    """Tests for interfaces.ServerTLSConfigurationUpdater and
     interfaces.GenericUpdater"""
 
     def setUp(self):
-        class MockInstallerTLSUpdater(interfaces.ServerTLSUpdater):
-            """Mock class that implements ServerTLSUpdater"""
+        class MockInstallerTLSUpdater(interfaces.ServerTLSConfigurationUpdater):
+            """Mock class that implements ServerTLSConfigurationUpdater"""
             def __init__(self, *args, **kwargs):
                 # pylint: disable=unused-argument
                 self.restart = mock.MagicMock()
                 self.callcounter = mock.MagicMock()
-            def server_tls_updates(self, domain, *args, **kwargs):
+            def tls_configuration_updates(self, domain, *args, **kwargs):
                 self.callcounter(*args, **kwargs)
 
         class MockInstallerGenericUpdater(interfaces.GenericUpdater):
@@ -57,7 +57,7 @@ class RenewUpdaterTest(unittest.TestCase):
     @mock.patch('certbot.plugins.selection.z_util')
     def test_verify_enhancements_tlsupdater(self, mock_z):
         mock_z().yesno.return_value = False
-        config = self.get_config({"server_tls_updates": False})
+        config = self.get_config({"tls_configuration_updates": False})
         self.assertRaises(errors.Error,
                           selection.verify_enhancements_supported,
                           config, self.tls_installer)
@@ -65,7 +65,7 @@ class RenewUpdaterTest(unittest.TestCase):
         mock_z().yesno.return_value = True
         selection.verify_enhancements_supported(config, self.tls_installer)
 
-        # Plugin does not implement ServerTLSUpdater
+        # Plugin does not implement ServerTLSConfigurationUpdater
         self.assertRaises(errors.PluginSelectionError,
                           selection.verify_enhancements_supported,
                           config, self.generic_updater)
@@ -75,7 +75,7 @@ class RenewUpdaterTest(unittest.TestCase):
     @mock.patch('certbot.plugins.selection.choose_configurator_plugins')
     @test_util.patch_get_utility()
     def test_server_updates(self, _, mock_select, mock_getsave):
-        config = self.get_config({"disable_server_tls_updates": False,
+        config = self.get_config({"disable_tls_configuration_updates": False,
                                   "disable_renew_updates": False})
 
         lineage = mock.MagicMock()

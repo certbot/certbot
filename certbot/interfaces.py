@@ -256,7 +256,7 @@ class IConfig(zope.interface.Interface):
         "user; only needed if your config is somewhere unsafe like /tmp/."
         "This is a boolean")
 
-    disable_server_tls_updates = zope.interface.Attribute(
+    disable_tls_configuration_updates = zope.interface.Attribute(
         "If updates to the server's TLS configuration performed by the installer"
         " should be disabled.")
 
@@ -617,6 +617,10 @@ class GenericUpdater(object):
     This class allows plugins to perform types of updates that Certbot hasn't
     defined (yet).
 
+    To make use of this interface, the installer should implement the interface
+    methods, and interfaces.GenericUpdater.register(InstallerClass) should
+    be called from the installer code.
+
     """
 
     __metaclass__ = abc.ABCMeta
@@ -643,6 +647,9 @@ class RenewDeployer(object):
     This class allows plugins to perform types of updates that need to run at
     lineage renewal that Certbot hasn't defined (yet).
 
+    To make use of this interface, the installer should implement the interface
+    methods, and interfaces.RenewDeployer.register(InstallerClass) should
+    be called from the installer code.
     """
 
     __metaclass__ = abc.ABCMeta
@@ -665,7 +672,7 @@ class RenewDeployer(object):
         """
 
 
-class ServerTLSUpdater(object):
+class ServerTLSConfigurationUpdater(object):
     """Interface for updating a server's TLS configuration.
 
     An installer that wants to perform TLS configuration updates according to this
@@ -677,15 +684,19 @@ class ServerTLSUpdater(object):
     existing TLS configuration in any way other than changing the certificates
     and keys used by the server.
 
+    To make use of this interface, the installer should implement the interface
+    methods, and interfaces.ServerTLSConfigurationUpdater.register(InstallerClass)
+    should be called from the installer code.
+
     An installer can determine if TLS configuration updates are enabled by checking
-    :attr:`IConfig.disable_server_tls_updates`.
+    :attr:`IConfig.disable_tls_configuration_updates`.
 
     """
 
     __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
-    def server_tls_updates(self, domain, *args, **kwargs):
+    def tls_configuration_updates(self, domain, *args, **kwargs):
         """Set the server's TLS config to latest recommended version.
 
         If an installer is a subclass of the class containing this method, this

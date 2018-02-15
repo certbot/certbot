@@ -1117,9 +1117,10 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         help="Require that all configuration files are owned by the current "
              "user; only needed if your config is somewhere unsafe like /tmp/")
     helpful.add(
-        "security", "--dangerously-disable-server-tls-updates", action="store_true",
-        default=flag_default("disable_server_tls_updates"),
-        dest="disable_server_tls_updates",
+        "security", "--dangerously-disable-tls-configuration-updates",
+        action="store_true",
+        default=flag_default("disable_tls_configuration_updates"),
+        dest="disable_tls_configuration_updates",
         help="Disable any updates to your server's TLS configuration"
         " other than setting the certificate and key to be used when"
         " Certbot installs a new certificate. Using this flag is"
@@ -1187,9 +1188,10 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         "renew", "--disable-renew-updates", action="store_true",
         default=flag_default("disable_renew_updates"), dest="disable_renew_updates",
         help="Disable automatic updates to your server configuration that"
-        " would otherwise be done by the selected installer plugin, and"
-        " triggered by the \"renew\" verb. This setting does not apply to"
-        " important TLS configuration updates.")
+        " would otherwise be done by the selected installer plugin, and triggered"
+        " when the user executes \"certbot renew\", regardless of if the certificate"
+        " is renewed. This setting does not apply to important TLS configuration"
+        " updates.")
 
     helpful.add_deprecated_argument("--agree-dev-preview", 0)
     helpful.add_deprecated_argument("--dialog", 0)
