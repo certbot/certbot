@@ -562,7 +562,7 @@ class BackwardsCompatibleClientV2(object):
     """ACME client wrapper that tends towards V2-style calls, but
        supports V1 servers.
 
-       :ivar int acme_version:
+       :ivar int acme_version: 1 or 2, corresponding to the Let's Encrypt endpoint
        :ivar .ClientBase client: either Client or ClientV2
     """
 
@@ -575,7 +575,7 @@ class BackwardsCompatibleClientV2(object):
             self.client = ClientV2(directory, net=net)
 
     def __getattr__(self, name):
-        if name in vars(self.client).keys():
+        if name in vars(self.client):
             return getattr(self.client, name)
         elif name in dir(ClientBase):
             return getattr(self.client, name)
@@ -585,11 +585,11 @@ class BackwardsCompatibleClientV2(object):
         else:
             raise AttributeError
 
-    def new_account_and_tos(self, regr=None, check_tos_cb=None):
+    def new_account_and_tos(self, regr, check_tos_cb=None):
         """Combined register and agree_tos for V1, new_account for V2
 
-        :param .NewRegistration new_account:
-        :param function check_tos_cb: callback that raises an error if
+        :param .NewRegistration regr:
+        :param callable check_tos_cb: callback that raises an error if
             the check does not work
         """
         def _assess_tos(tos):
@@ -601,10 +601,9 @@ class BackwardsCompatibleClientV2(object):
                 _assess_tos(regr.terms_of_service)
                 return self.client.agree_to_tos(regr)
         else:
-            assert regr is not None
             if "terms_of_service_v2" in self.client.directory.meta:
                 _assess_tos(self.client.directory.meta.terms_of_service_v2)
-                regr.update(terms_of_service_agreed=True)
+                regr = regr.update(terms_of_service_agreed=True)
             return self.client.new_account(regr)
 
     def _acme_version_from_directory(self, directory):
