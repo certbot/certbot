@@ -586,12 +586,23 @@ class ClientV2(ClientBase):
             authorizations.append(self._authzr_from_response(self.net.get(url)))
         return messages.OrderResource(
             body=body,
-            uri=response.headers.get('Location', uri),
-            fullchain_pem=fullchain_pem,
+            uri=response.headers.get('Location'),
             authorizations=authorizations,
             csr_pem=csr_pem)
 
     def poll_and_finalize(self, orderr, deadline=None):
+        """Poll authorizations and finalize the order.
+
+        If no deadline is provided, this method will timeout after 90
+        seconds.
+
+        :param messages.OrderResource orderr: order to finalize
+        :param datetime.datetime deadline: when to stop polling and timeout
+
+        :returns: finalized order
+        :rtype: messages.OrderResource
+
+        """
         if deadline is None:
             deadline = datetime.datetime.now() + datetime.timedelta(seconds=90)
         orderr = self.poll_authorizations(orderr, deadline)
@@ -609,8 +620,8 @@ class ClientV2(ClientBase):
                 time.sleep(1)
         # If we didn't get a response for every authorization, we fell through
         # the bottom of the loop due to hitting the deadline.
-        if len(responses) > orderr.body.authorizations:
-            raise TimeoutError()
+        if len(responses) < len(orderr.body.authorizations):
+            raise errors.TimeoutError()
         failed = []
         for authzr in responses:
             if authzr.body.status != messages.STATUS_VALID:
@@ -618,24 +629,33 @@ class ClientV2(ClientBase):
                     if chall.error != None:
                         failed.append(authzr)
         if len(failed) > 0:
-            raise ValidationError(failed)
+            raise errors.ValidationError(failed)
         return orderr.update(authorizations=responses)
 
     def finalize_order(self, orderr, deadline):
+        """Finalize an order and obtain a certificate.
+
+        :param messages.OrderResource orderr: order to finalize
+        :param datetime.datetime deadline: when to stop polling and timeout
+
+        :returns: finalized order
+        :rtype: messages.OrderResource
+
+        """
         csr = OpenSSL.crypto.load_certificate_request(
             OpenSSL.crypto.FILETYPE_PEM, orderr.csr_pem)
         wrapped_csr = messages.CertificateRequest(csr=jose.ComparableX509(csr))
-        self.net.post(latest.body.finalize, wrapped_csr)
+        self.net.post(orderr.body.finalize, wrapped_csr)
         while datetime.datetime.now() < deadline:
             time.sleep(1)
             response = self.net.get(orderr.uri)
             body = messages.Order.from_json(response.json())
             if body.error is not None:
-                raise IssuanceError(body.error)
+                raise errors.IssuanceError(body.error)
             if body.certificate is not None:
                 certificate_response = self.net.get(body.certificate).text
-                return orderr.update(fullchain_pem=certificate_response)
-        raise TimeoutError()
+                return orderr.update(body=body, fullchain_pem=certificate_response)
+        raise errors.TimeoutError()
 
 
 class BackwardsCompatibleClientV2(object):

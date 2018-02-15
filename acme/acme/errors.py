@@ -89,7 +89,7 @@ class ValidationError(Error):
     """
     def __init__(self, failed_authzrs):
         self.failed_authzrs = failed_authzrs
-        super(ClientError, self).__init__()
+        super(ValidationError, self).__init__()
 
 class TimeoutError(Error):
     """Error for when polling an authorization or an order times out."""
@@ -103,6 +103,7 @@ class IssuanceError(Error):
         :param messages.Error error: The error provided by the server.
         """
         self.error = error
+        super(IssuanceError, self).__init__()
 
 class ConflictError(ClientError):
     """Error for when the server returns a 409 (Conflict) HTTP status.

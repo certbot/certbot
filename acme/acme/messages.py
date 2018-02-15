@@ -509,9 +509,6 @@ class Revocation(jose.JSONObjectWithFields):
 class Order(ResourceBody):
     """Order Resource Body.
 
-    .. note:: Parsing of identifiers on response doesn't work right now; to make
-        it work we would need to set up the equivalent of Identifier.from_json, but
-        for a list.
     :ivar list of .Identifier: List of identifiers for the certificate.
     :ivar acme.messages.Status status:
     :ivar list of str authorizations: URLs of authorizations.
@@ -529,6 +526,10 @@ class Order(ResourceBody):
     finalize = jose.Field('finalize', omitempty=True)
     expires = fields.RFC3339Field('expires', omitempty=True)
     error = jose.Field('error', omitempty=True, decoder=Error.from_json)
+
+    @identifiers.decoder
+    def identifiers(value):  # pylint: disable=missing-docstring,no-self-argument
+        return tuple(Identifier.from_json(identifier) for identifier in value)
 
 class OrderResource(ResourceWithURI):
     """Order Resource.
