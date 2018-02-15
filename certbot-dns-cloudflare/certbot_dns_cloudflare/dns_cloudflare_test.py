@@ -35,7 +35,7 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
     def test_perform(self):
         self.auth.perform([self.achall])
 
-        expected = [mock.call.add_txt_record(DOMAIN, '_acme-challenge.'+DOMAIN, mock.ANY, mock.ANY)]
+        expected = [mock.call.add_txt_record('_acme-challenge.'+DOMAIN, mock.ANY, mock.ANY)]
         self.assertEqual(expected, self.mock_client.mock_calls)
 
     def test_cleanup(self):
@@ -43,7 +43,7 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         self.auth._attempt_cleanup = True
         self.auth.cleanup([self.achall])
 
-        expected = [mock.call.del_txt_record(DOMAIN, '_acme-challenge.'+DOMAIN, mock.ANY)]
+        expected = [mock.call.del_txt_record('_acme-challenge.'+DOMAIN, mock.ANY)]
         self.assertEqual(expected, self.mock_client.mock_calls)
 
 
@@ -65,7 +65,7 @@ class CloudflareClientTest(unittest.TestCase):
     def test_add_txt_record(self):
         self.cf.zones.get.return_value = [{'id': self.zone_id}]
 
-        self.cloudflare_client.add_txt_record(DOMAIN, self.record_name, self.record_content,
+        self.cloudflare_client.add_txt_record(self.record_name, self.record_content,
                                               self.record_ttl)
 
         self.cf.zones.dns_records.post.assert_called_with(self.zone_id, data=mock.ANY)
@@ -85,7 +85,7 @@ class CloudflareClientTest(unittest.TestCase):
         self.assertRaises(
             errors.PluginError,
             self.cloudflare_client.add_txt_record,
-            DOMAIN, self.record_name, self.record_content, self.record_ttl)
+            self.record_name, self.record_content, self.record_ttl)
 
     def test_add_txt_record_error_during_zone_lookup(self):
         self.cf.zones.get.side_effect = API_ERROR
@@ -93,7 +93,7 @@ class CloudflareClientTest(unittest.TestCase):
         self.assertRaises(
             errors.PluginError,
             self.cloudflare_client.add_txt_record,
-            DOMAIN, self.record_name, self.record_content, self.record_ttl)
+            self.record_name, self.record_content, self.record_ttl)
 
     def test_add_txt_record_zone_not_found(self):
         self.cf.zones.get.return_value = []
@@ -101,13 +101,13 @@ class CloudflareClientTest(unittest.TestCase):
         self.assertRaises(
             errors.PluginError,
             self.cloudflare_client.add_txt_record,
-            DOMAIN, self.record_name, self.record_content, self.record_ttl)
+            self.record_name, self.record_content, self.record_ttl)
 
     def test_del_txt_record(self):
         self.cf.zones.get.return_value = [{'id': self.zone_id}]
         self.cf.zones.dns_records.get.return_value = [{'id': self.record_id}]
 
-        self.cloudflare_client.del_txt_record(DOMAIN, self.record_name, self.record_content)
+        self.cloudflare_client.del_txt_record(self.record_name, self.record_content)
 
         expected = [mock.call.zones.get(params=mock.ANY),
                     mock.call.zones.dns_records.get(self.zone_id, params=mock.ANY),
@@ -124,14 +124,14 @@ class CloudflareClientTest(unittest.TestCase):
     def test_del_txt_record_error_during_zone_lookup(self):
         self.cf.zones.get.side_effect = API_ERROR
 
-        self.cloudflare_client.del_txt_record(DOMAIN, self.record_name, self.record_content)
+        self.cloudflare_client.del_txt_record(self.record_name, self.record_content)
 
     def test_del_txt_record_error_during_delete(self):
         self.cf.zones.get.return_value = [{'id': self.zone_id}]
         self.cf.zones.dns_records.get.return_value = [{'id': self.record_id}]
         self.cf.zones.dns_records.delete.side_effect = API_ERROR
 
-        self.cloudflare_client.del_txt_record(DOMAIN, self.record_name, self.record_content)
+        self.cloudflare_client.del_txt_record(self.record_name, self.record_content)
         expected = [mock.call.zones.get(params=mock.ANY),
                     mock.call.zones.dns_records.get(self.zone_id, params=mock.ANY),
                     mock.call.zones.dns_records.delete(self.zone_id, self.record_id)]
@@ -142,7 +142,7 @@ class CloudflareClientTest(unittest.TestCase):
         self.cf.zones.get.return_value = [{'id': self.zone_id}]
         self.cf.zones.dns_records.get.side_effect = API_ERROR
 
-        self.cloudflare_client.del_txt_record(DOMAIN, self.record_name, self.record_content)
+        self.cloudflare_client.del_txt_record(self.record_name, self.record_content)
         expected = [mock.call.zones.get(params=mock.ANY),
                     mock.call.zones.dns_records.get(self.zone_id, params=mock.ANY)]
 
@@ -152,7 +152,7 @@ class CloudflareClientTest(unittest.TestCase):
         self.cf.zones.get.return_value = [{'id': self.zone_id}]
         self.cf.zones.dns_records.get.return_value = []
 
-        self.cloudflare_client.del_txt_record(DOMAIN, self.record_name, self.record_content)
+        self.cloudflare_client.del_txt_record(self.record_name, self.record_content)
         expected = [mock.call.zones.get(params=mock.ANY),
                     mock.call.zones.dns_records.get(self.zone_id, params=mock.ANY)]
 
@@ -161,7 +161,7 @@ class CloudflareClientTest(unittest.TestCase):
     def test_del_txt_record_no_zone(self):
         self.cf.zones.get.return_value = [{'id': None}]
 
-        self.cloudflare_client.del_txt_record(DOMAIN, self.record_name, self.record_content)
+        self.cloudflare_client.del_txt_record(self.record_name, self.record_content)
         expected = [mock.call.zones.get(params=mock.ANY)]
 
         self.assertEqual(expected, self.cf.mock_calls)

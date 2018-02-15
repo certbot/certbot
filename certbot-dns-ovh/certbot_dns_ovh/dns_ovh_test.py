@@ -41,8 +41,12 @@ class AuthenticatorTest(test_util.TempDirTestCase,
 
 
 class OVHLexiconClientTest(unittest.TestCase, dns_test_common_lexicon.BaseLexiconClientTest):
-    DOMAIN_NOT_FOUND = Exception('Domain example.com not found')
-    LOGIN_ERROR = HTTPError('403 Client Error: Forbidden for url: https://eu.api.ovh.com/1.0/...')
+
+    def domain_not_found(self, domain):
+        return Exception('Domain {0} not found'.format(domain))
+
+    def login_error(self, domain):
+        return HTTPError('403 Client Error: Forbidden for url: https://eu.api.ovh.com/1.0/...')
 
     def setUp(self):
         from certbot_dns_ovh.dns_ovh import _OVHLexiconClient

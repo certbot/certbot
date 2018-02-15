@@ -34,7 +34,8 @@ class AuthenticatorTest(test_util.TempDirTestCase,
 
 class LuaDNSLexiconClientTest(unittest.TestCase, dns_test_common_lexicon.BaseLexiconClientTest):
 
-    LOGIN_ERROR = HTTPError("401 Client Error: Unauthorized for url: ...")
+    def login_error(self, domain):
+        return HTTPError("401 Client Error: Unauthorized for url: {0}".format(domain))
 
     def setUp(self):
         from certbot_dns_luadns.dns_luadns import _LuaDNSLexiconClient

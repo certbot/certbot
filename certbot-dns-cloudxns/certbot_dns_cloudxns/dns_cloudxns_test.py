@@ -4,15 +4,10 @@ import os
 import unittest
 
 import mock
-from requests.exceptions import HTTPError, RequestException
 
 from certbot.plugins import dns_test_common
 from certbot.plugins import dns_test_common_lexicon
 from certbot.tests import util as test_util
-
-DOMAIN_NOT_FOUND = Exception('No domain found')
-GENERIC_ERROR = RequestException
-LOGIN_ERROR = HTTPError('400 Client Error: ...')
 
 API_KEY = 'foo'
 SECRET = 'bar'

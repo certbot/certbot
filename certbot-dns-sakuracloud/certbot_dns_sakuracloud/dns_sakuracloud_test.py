@@ -8,7 +8,6 @@ from requests.exceptions import HTTPError
 
 from certbot.plugins import dns_test_common
 from certbot.plugins import dns_test_common_lexicon
-from certbot.plugins.dns_test_common import DOMAIN
 from certbot.tests import util as test_util
 
 API_TOKEN = '00000000-0000-0000-0000-000000000000'
@@ -37,8 +36,12 @@ class AuthenticatorTest(test_util.TempDirTestCase,
 
 class SakuraCloudLexiconClientTest(unittest.TestCase,
                                    dns_test_common_lexicon.BaseLexiconClientTest):
-    DOMAIN_NOT_FOUND = HTTPError('404 Client Error: Not Found for url: {0}.'.format(DOMAIN))
-    LOGIN_ERROR = HTTPError('401 Client Error: Unauthorized for url: {0}.'.format(DOMAIN))
+
+    def domain_not_found(self, domain):
+        return HTTPError('404 Client Error: Not Found for url: {0}.'.format(domain))
+
+    def login_error(self, domain):
+        return HTTPError('401 Client Error: Unauthorized for url: {0}.'.format(domain))
 
     def setUp(self):
         from certbot_dns_sakuracloud.dns_sakuracloud import _SakuraCloudLexiconClient

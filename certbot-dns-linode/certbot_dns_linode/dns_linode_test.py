@@ -30,7 +30,8 @@ class AuthenticatorTest(test_util.TempDirTestCase,
 
 class LinodeLexiconClientTest(unittest.TestCase, dns_test_common_lexicon.BaseLexiconClientTest):
 
-    DOMAIN_NOT_FOUND = Exception('Domain not found')
+    def domain_not_found(self, domain):
+        return Exception('Domain not found')
 
     def setUp(self):
         from certbot_dns_linode.dns_linode import _LinodeLexiconClient

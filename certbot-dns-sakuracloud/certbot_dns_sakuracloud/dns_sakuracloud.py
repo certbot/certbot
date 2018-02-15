@@ -52,12 +52,10 @@ class Authenticator(dns_common.DNSAuthenticator):
         )
 
     def _perform(self, domain, validation_name, validation):
-        self._get_sakuracloud_client().add_txt_record(
-            domain, validation_name, validation)
+        self._get_sakuracloud_client().add_txt_record(validation_name, validation)
 
     def _cleanup(self, domain, validation_name, validation):
-        self._get_sakuracloud_client().del_txt_record(
-            domain, validation_name, validation)
+        self._get_sakuracloud_client().del_txt_record(validation_name, validation)
 
     def _get_sakuracloud_client(self):
         return _SakuraCloudLexiconClient(
