@@ -174,7 +174,7 @@ class Directory(jose.JSONDeSerializable):
         _terms_of_service = jose.Field('terms-of-service', omitempty=True)
         _terms_of_service_v2 = jose.Field('termsOfService', omitempty=True)
         website = jose.Field('website', omitempty=True)
-        caa_identities = jose.Field('caa-identities', omitempty=True)
+        caa_identities = jose.Field('caaIdentities', omitempty=True)
 
         def __init__(self, **kwargs):
             kwargs = dict((self._internal_name(k), v) for k, v in kwargs.items())
@@ -504,3 +504,49 @@ class Revocation(jose.JSONObjectWithFields):
     certificate = jose.Field(
         'certificate', decoder=jose.decode_cert, encoder=jose.encode_cert)
     reason = jose.Field('reason')
+
+
+class Order(ResourceBody):
+    """Order Resource Body.
+
+    .. note:: Parsing of identifiers on response doesn't work right now; to make
+        it work we would need to set up the equivalent of Identifier.from_json, but
+        for a list.
+    :ivar list of .Identifier: List of identifiers for the certificate.
+    :ivar acme.messages.Status status:
+    :ivar list of str authorizations: URLs of authorizations.
+    :ivar str certificate: URL to download certificate as a fullchain PEM.
+    :ivar str finalize: URL to POST to to request issuance once all
+        authorizations have "valid" status.
+    :ivar datetime.datetime expires: When the order expires.
+    :ivar .Error error: Any error that occurred during finalization, if applicable.
+    """
+    identifiers = jose.Field('identifiers', omitempty=True)
+    status = jose.Field('status', decoder=Status.from_json,
+                        omitempty=True, default=STATUS_PENDING)
+    authorizations = jose.Field('authorizations', omitempty=True)
+    certificate = jose.Field('certificate', omitempty=True)
+    finalize = jose.Field('finalize', omitempty=True)
+    expires = fields.RFC3339Field('expires', omitempty=True)
+    error = jose.Field('error', omitempty=True, decoder=Error.from_json)
+
+class OrderResource(ResourceWithURI):
+    """Order Resource.
+
+    :ivar acme.messages.Order body:
+    :ivar str csr_pem: The CSR this Order will be finalized with.
+    :ivar list of acme.messages.AuthorizationResource authorizations:
+        Fully-fetched AuthorizationResource objects.
+    :ivar str fullchain_pem: The fetched contents of the certificate URL
+        produced once the order was finalized, if it's present.
+    """
+    body = jose.Field('body', decoder=Order.from_json)
+    csr_pem = jose.Field('csr_pem', omitempty=True)
+    authorizations = jose.Field('authorizations')
+    fullchain_pem = jose.Field('fullchain_pem', omitempty=True)
+
+@Directory.register
+class NewOrder(Order):
+    """New order."""
+    resource_type = 'new-order'
+    resource = fields.Resource(resource_type)
