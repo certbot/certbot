@@ -489,10 +489,17 @@ class Revocation(jose.JSONObjectWithFields):
 class Order(ResourceBody):
     """Order Resource Body.
 
-    :ivar buffer csr: CSR in pem format.
+    .. note:: Parsing of identifiers on response doesn't work right now; to make
+        it work we would need to set up the equivalent of Identifier.from_json, but
+        for a list.
+    :ivar list of .Identifier: List of identifiers for the certificate.
     :ivar acme.messages.Status status:
-    :ivar list of string authorizations: URLs of authorizations.
+    :ivar list of str authorizations: URLs of authorizations.
+    :ivar str certificate: URL to download certificate as a fullchain PEM.
+    :ivar str finalize: URL to POST to to request issuance once all
+        authorizations have "valid" status.
     :ivar datetime.datetime expires: When the order expires.
+    :ivar .Error error: Any error that occurred during finalization, if applicable.
     """
     identifiers = jose.Field('identifiers', omitempty=True)
     status = jose.Field('status', decoder=Status.from_json,
@@ -501,15 +508,16 @@ class Order(ResourceBody):
     certificate = jose.Field('certificate', omitempty=True)
     finalize = jose.Field('finalize', omitempty=True)
     expires = fields.RFC3339Field('expires', omitempty=True)
+    error = jose.Field('error', omitempty=True, decoder=Error.from_json)
 
 class OrderResource(ResourceWithURI):
     """Order Resource.
 
     :ivar acme.messages.Order body:
+    :ivar str csr_pem: The CSR this Order will be finalized with.
     :ivar list of acme.messages.AuthorizationResource authorizations:
         Fully-fetched AuthorizationResource objects.
-    :ivar string csr_pem: The CSR this Order will be finalized with.
-    :ivar string fullchain_pem: The fetched contents of the certificate URL
+    :ivar str fullchain_pem: The fetched contents of the certificate URL
         produced once the order was finalized, if it's present.
     """
     body = jose.Field('body', decoder=Order.from_json)
