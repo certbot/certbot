@@ -18,13 +18,14 @@ from certbot.tests import util as certbot_test_util
 from certbot_nginx import constants
 from certbot_nginx import obj
 from certbot_nginx import parser
+from certbot_nginx.configurator import _redirect_block_for_domain
+from certbot_nginx.nginxparser import UnspacedList
 from certbot_nginx.tests import util
 
 
 class NginxConfiguratorTest(util.NginxTest):
     """Test a semi complex vhost configuration."""
 
-    _multiprocess_can_split_ = True
 
     def setUp(self):
         super(NginxConfiguratorTest, self).setUp()
@@ -46,7 +47,7 @@ class NginxConfiguratorTest(util.NginxTest):
 
     def test_prepare(self):
         self.assertEqual((1, 6, 2), self.config.version)
-        self.assertEqual(8, len(self.config.parser.parsed))
+        self.assertEqual(10, len(self.config.parser.parsed))
 
     @mock.patch("certbot_nginx.configurator.util.exe_exists")
     @mock.patch("certbot_nginx.configurator.subprocess.Popen")
@@ -90,7 +91,7 @@ class NginxConfiguratorTest(util.NginxTest):
         self.assertEqual(names, set(
             ["155.225.50.69.nephoscale.net", "www.example.org", "another.alias",
              "migration.com", "summer.com", "geese.com", "sslon.com",
-             "globalssl.com", "globalsslsetssl.com"]))
+             "globalssl.com", "globalsslsetssl.com", "ipv6.com", "ipv6ssl.com"]))
 
     def test_supported_enhancements(self):
         self.assertEqual(['redirect', 'staple-ocsp'],
@@ -101,7 +102,7 @@ class NginxConfiguratorTest(util.NginxTest):
             errors.PluginError, self.config.enhance, 'myhost', 'unknown_enhancement')
 
     def test_get_chall_pref(self):
-        self.assertEqual([challenges.TLSSNI01],
+        self.assertEqual([challenges.TLSSNI01, challenges.HTTP01],
                          self.config.get_chall_pref('myhost'))
 
     def test_save(self):
@@ -132,6 +133,7 @@ class NginxConfiguratorTest(util.NginxTest):
         server_conf = set(['somename', 'another.alias', 'alias'])
         example_conf = set(['.example.com', 'example.*'])
         foo_conf = set(['*.www.foo.com', '*.www.example.com'])
+        ipv6_conf = set(['ipv6.com'])
 
         results = {'localhost': localhost_conf,
                    'alias': server_conf,
@@ -140,7 +142,8 @@ class NginxConfiguratorTest(util.NginxTest):
                    'www.example.com': example_conf,
                    'test.www.example.com': foo_conf,
                    'abc.www.foo.com': foo_conf,
-                   'www.bar.co.uk': localhost_conf}
+                   'www.bar.co.uk': localhost_conf,
+                   'ipv6.com': ipv6_conf}
 
         conf_path = {'localhost': "etc_nginx/nginx.conf",
                    'alias': "etc_nginx/nginx.conf",
@@ -149,7 +152,8 @@ class NginxConfiguratorTest(util.NginxTest):
                    'www.example.com': "etc_nginx/sites-enabled/example.com",
                    'test.www.example.com': "etc_nginx/foo.conf",
                    'abc.www.foo.com': "etc_nginx/foo.conf",
-                   'www.bar.co.uk': "etc_nginx/nginx.conf"}
+                   'www.bar.co.uk': "etc_nginx/nginx.conf",
+                   'ipv6.com': "etc_nginx/sites-enabled/ipv6.com"}
 
         bad_results = ['www.foo.com', 'example', 't.www.bar.co',
                        '69.255.225.155']
@@ -160,10 +164,23 @@ class NginxConfiguratorTest(util.NginxTest):
 
             self.assertEqual(results[name], vhost.names)
             self.assertEqual(conf_path[name], path)
+            # IPv6 specific checks
+            if name == "ipv6.com":
+                self.assertTrue(vhost.ipv6_enabled())
+                # Make sure that we have SSL enabled also for IPv6 addr
+                self.assertTrue(
+                    any([True for x in vhost.addrs if x.ssl and x.ipv6]))
 
         for name in bad_results:
             self.assertRaises(errors.MisconfigurationError,
                               self.config.choose_vhost, name)
+
+    def test_ipv6only(self):
+        # ipv6_info: (ipv6_active, ipv6only_present)
+        self.assertEquals((True, False), self.config.ipv6_info("80"))
+        # Port 443 has ipv6only=on because of ipv6ssl.com vhost
+        self.assertEquals((True, True), self.config.ipv6_info("443"))
+
 
     def test_more_info(self):
         self.assertTrue('nginx.conf' in self.config.more_info())
@@ -276,9 +293,11 @@ class NginxConfiguratorTest(util.NginxTest):
                          parsed_migration_conf[0])
 
     @mock.patch("certbot_nginx.configurator.tls_sni_01.NginxTlsSni01.perform")
+    @mock.patch("certbot_nginx.configurator.http_01.NginxHttp01.perform")
     @mock.patch("certbot_nginx.configurator.NginxConfigurator.restart")
     @mock.patch("certbot_nginx.configurator.NginxConfigurator.revert_challenge_config")
-    def test_perform_and_cleanup(self, mock_revert, mock_restart, mock_perform):
+    def test_perform_and_cleanup(self, mock_revert, mock_restart, mock_http_perform,
+        mock_tls_perform):
         # Only tests functionality specific to configurator.perform
         # Note: As more challenges are offered this will have to be expanded
         achall1 = achallenges.KeyAuthorizationAnnotatedChallenge(
@@ -289,7 +308,7 @@ class NginxConfiguratorTest(util.NginxTest):
             ), domain="localhost", account_key=self.rsa512jwk)
         achall2 = achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=messages.ChallengeBody(
-                chall=challenges.TLSSNI01(token=b"m8TdO1qik4JVFtgPPurJmg"),
+                chall=challenges.HTTP01(token=b"m8TdO1qik4JVFtgPPurJmg"),
                 uri="https://ca.org/chall1_uri",
                 status=messages.Status("pending"),
             ), domain="example.com", account_key=self.rsa512jwk)
@@ -299,10 +318,12 @@ class NginxConfiguratorTest(util.NginxTest):
             achall2.response(self.rsa512jwk),
         ]
 
-        mock_perform.return_value = expected
+        mock_tls_perform.return_value = expected[:1]
+        mock_http_perform.return_value = expected[1:]
         responses = self.config.perform([achall1, achall2])
 
-        self.assertEqual(mock_perform.call_count, 1)
+        self.assertEqual(mock_tls_perform.call_count, 1)
+        self.assertEqual(mock_http_perform.call_count, 1)
         self.assertEqual(responses, expected)
 
         self.config.cleanup([achall1, achall2])
@@ -428,10 +449,7 @@ class NginxConfiguratorTest(util.NginxTest):
     def test_redirect_enhance(self):
         # Test that we successfully add a redirect when there is
         # a listen directive
-        expected = [
-            ['if', '($scheme', '!=', '"https") '],
-            [['return', '301', 'https://$host$request_uri']]
-        ]
+        expected = UnspacedList(_redirect_block_for_domain("www.example.com"))[0]
 
         example_conf = self.config.parser.abs_path('sites-enabled/example.com')
         self.config.enhance("www.example.com", "redirect")
@@ -444,66 +462,52 @@ class NginxConfiguratorTest(util.NginxTest):
         migration_conf = self.config.parser.abs_path('sites-enabled/migration.com')
         self.config.enhance("migration.com", "redirect")
 
+        expected = UnspacedList(_redirect_block_for_domain("migration.com"))[0]
+
         generated_conf = self.config.parser.parsed[migration_conf]
         self.assertTrue(util.contains_at_depth(generated_conf, expected, 2))
 
+    def test_split_for_redirect(self):
+        example_conf = self.config.parser.abs_path('sites-enabled/example.com')
+        self.config.deploy_cert(
+            "example.org",
+            "example/cert.pem",
+            "example/key.pem",
+            "example/chain.pem",
+            "example/fullchain.pem")
+        self.config.enhance("www.example.com", "redirect")
+        generated_conf = self.config.parser.parsed[example_conf]
+        self.assertEqual(
+            [[['server'], [
+               ['server_name', '.example.com'],
+               ['server_name', 'example.*'], [],
+               ['listen', '5001', 'ssl'], ['#', ' managed by Certbot'],
+               ['ssl_certificate', 'example/fullchain.pem'], ['#', ' managed by Certbot'],
+               ['ssl_certificate_key', 'example/key.pem'], ['#', ' managed by Certbot'],
+               ['include', self.config.mod_ssl_conf], ['#', ' managed by Certbot'],
+               ['ssl_dhparam', self.config.ssl_dhparams], ['#', ' managed by Certbot'],
+               [], []]],
+             [['server'], [
+               [['if', '($host', '=', 'www.example.com)'], [
+                 ['return', '301', 'https://$host$request_uri']]],
+               ['#', ' managed by Certbot'], [],
+               ['listen', '69.50.225.155:9000'],
+               ['listen', '127.0.0.1'],
+               ['server_name', '.example.com'],
+               ['server_name', 'example.*'],
+               ['return', '404'], ['#', ' managed by Certbot'], [], [], []]]],
+            generated_conf)
+
     @mock.patch('certbot_nginx.obj.VirtualHost.contains_list')
-    @mock.patch('certbot_nginx.obj.VirtualHost.has_redirect')
-    def test_certbot_redirect_exists(self, mock_has_redirect, mock_contains_list):
+    def test_certbot_redirect_exists(self, mock_contains_list):
         # Test that we add no redirect statement if there is already a
         # redirect in the block that is managed by certbot
         # Has a certbot redirect
-        mock_has_redirect.return_value = True
         mock_contains_list.return_value = True
         with mock.patch("certbot_nginx.configurator.logger") as mock_logger:
             self.config.enhance("www.example.com", "redirect")
             self.assertEqual(mock_logger.info.call_args[0][0],
                 "Traffic on port %s already redirecting to ssl in %s")
-
-    @mock.patch('certbot_nginx.obj.VirtualHost.contains_list')
-    @mock.patch('certbot_nginx.obj.VirtualHost.has_redirect')
-    def test_non_certbot_redirect_exists(self, mock_has_redirect, mock_contains_list):
-        # Test that we add a redirect as a comment if there is already a
-        # redirect-class statement in the block that isn't managed by certbot
-        example_conf = self.config.parser.abs_path('sites-enabled/example.com')
-
-        # Has a non-Certbot redirect, and has no existing comment
-        mock_contains_list.return_value = False
-        mock_has_redirect.return_value = True
-        with mock.patch("certbot_nginx.configurator.logger") as mock_logger:
-            self.config.enhance("www.example.com", "redirect")
-            self.assertEqual(mock_logger.info.call_args[0][0],
-                "The appropriate server block is already redirecting "
-                "traffic. To enable redirect anyway, uncomment the "
-                "redirect lines in %s.")
-            generated_conf = self.config.parser.parsed[example_conf]
-            expected = [
-                ['#', ' Redirect non-https traffic to https'],
-                ['#', ' if ($scheme != "https") {'],
-                ['#', '     return 301 https://$host$request_uri;'],
-                ['#', ' } # managed by Certbot']
-            ]
-            for line in expected:
-                self.assertTrue(util.contains_at_depth(generated_conf, line, 2))
-
-    @mock.patch('certbot_nginx.obj.VirtualHost.contains_list')
-    @mock.patch('certbot_nginx.obj.VirtualHost.has_redirect')
-    @mock.patch('certbot_nginx.configurator.NginxConfigurator._has_certbot_redirect_comment')
-    @mock.patch('certbot_nginx.configurator.NginxConfigurator._add_redirect_block')
-    def test_redirect_comment_exists(self, mock_add_redirect_block,
-        mock_has_cb_redirect_comment, mock_has_redirect, mock_contains_list):
-        # Test that we add nothing if there is a non-Certbot redirect and a
-        # preexisting comment
-        # Has a non-Certbot redirect and a comment
-        mock_has_redirect.return_value = True
-        mock_contains_list.return_value = False # self._has_certbot_redirect(vhost):
-        mock_has_cb_redirect_comment.return_value = True
-
-        # assert _add_redirect_block not called
-        with mock.patch("certbot_nginx.configurator.logger") as mock_logger:
-            self.config.enhance("www.example.com", "redirect")
-            self.assertFalse(mock_add_redirect_block.called)
-            self.assertTrue(mock_logger.info.called)
 
     def test_redirect_dont_enhance(self):
         # Test that we don't accidentally add redirect to ssl-only block
@@ -511,6 +515,19 @@ class NginxConfiguratorTest(util.NginxTest):
             self.config.enhance("geese.com", "redirect")
         self.assertEqual(mock_logger.info.call_args[0][0],
                 'No matching insecure server blocks listening on port %s found.')
+
+    def test_double_redirect(self):
+        # Test that we add one redirect for each domain
+        example_conf = self.config.parser.abs_path('sites-enabled/example.com')
+        self.config.enhance("example.com", "redirect")
+        self.config.enhance("example.org", "redirect")
+
+        expected1 = UnspacedList(_redirect_block_for_domain("example.com"))[0]
+        expected2 = UnspacedList(_redirect_block_for_domain("example.org"))[0]
+
+        generated_conf = self.config.parser.parsed[example_conf]
+        self.assertTrue(util.contains_at_depth(generated_conf, expected1, 2))
+        self.assertTrue(util.contains_at_depth(generated_conf, expected2, 2))
 
     def test_staple_ocsp_bad_version(self):
         self.config.version = (1, 3, 1)
@@ -541,6 +558,149 @@ class NginxConfiguratorTest(util.NginxTest):
             generated_conf, ['ssl_stapling', 'on'], 2))
         self.assertTrue(util.contains_at_depth(
             generated_conf, ['ssl_stapling_verify', 'on'], 2))
+
+    def test_deploy_no_match_default_set(self):
+        default_conf = self.config.parser.abs_path('sites-enabled/default')
+        foo_conf = self.config.parser.abs_path('foo.conf')
+        del self.config.parser.parsed[foo_conf][2][1][0][1][0] # remove default_server
+        self.config.version = (1, 3, 1)
+
+        self.config.deploy_cert(
+            "www.nomatch.com",
+            "example/cert.pem",
+            "example/key.pem",
+            "example/chain.pem",
+            "example/fullchain.pem")
+        self.config.save()
+
+        self.config.parser.load()
+
+        parsed_default_conf = util.filter_comments(self.config.parser.parsed[default_conf])
+
+        self.assertEqual([[['server'],
+                           [['listen', 'myhost', 'default_server'],
+                            ['listen', 'otherhost', 'default_server'],
+                            ['server_name', 'www.example.org'],
+                            [['location', '/'],
+                             [['root', 'html'],
+                              ['index', 'index.html', 'index.htm']]]]],
+                          [['server'],
+                           [['listen', 'myhost'],
+                            ['listen', 'otherhost'],
+                            ['server_name', 'www.nomatch.com'],
+                            [['location', '/'],
+                             [['root', 'html'],
+                              ['index', 'index.html', 'index.htm']]],
+                            ['listen', '5001', 'ssl'],
+                            ['ssl_certificate', 'example/fullchain.pem'],
+                            ['ssl_certificate_key', 'example/key.pem'],
+                            ['include', self.config.mod_ssl_conf],
+                            ['ssl_dhparam', self.config.ssl_dhparams]]]],
+                         parsed_default_conf)
+
+        self.config.deploy_cert(
+            "nomatch.com",
+            "example/cert.pem",
+            "example/key.pem",
+            "example/chain.pem",
+            "example/fullchain.pem")
+        self.config.save()
+
+        self.config.parser.load()
+
+        parsed_default_conf = util.filter_comments(self.config.parser.parsed[default_conf])
+
+        self.assertTrue(util.contains_at_depth(parsed_default_conf, "nomatch.com", 3))
+
+    def test_deploy_no_match_default_set_multi_level_path(self):
+        default_conf = self.config.parser.abs_path('sites-enabled/default')
+        foo_conf = self.config.parser.abs_path('foo.conf')
+        del self.config.parser.parsed[default_conf][0][1][0]
+        del self.config.parser.parsed[default_conf][0][1][0]
+        self.config.version = (1, 3, 1)
+
+        self.config.deploy_cert(
+            "www.nomatch.com",
+            "example/cert.pem",
+            "example/key.pem",
+            "example/chain.pem",
+            "example/fullchain.pem")
+        self.config.save()
+
+        self.config.parser.load()
+
+        parsed_foo_conf = util.filter_comments(self.config.parser.parsed[foo_conf])
+
+        self.assertEqual([['server'],
+                          [['listen', '*:80', 'ssl'],
+                          ['server_name', 'www.nomatch.com'],
+                          ['root', '/home/ubuntu/sites/foo/'],
+                          [['location', '/status'], [[['types'], [['image/jpeg', 'jpg']]]]],
+                          [['location', '~', 'case_sensitive\\.php$'], [['index', 'index.php'],
+                           ['root', '/var/root']]],
+                          [['location', '~*', 'case_insensitive\\.php$'], []],
+                          [['location', '=', 'exact_match\\.php$'], []],
+                          [['location', '^~', 'ignore_regex\\.php$'], []],
+                          ['ssl_certificate', 'example/fullchain.pem'],
+                          ['ssl_certificate_key', 'example/key.pem']]],
+                         parsed_foo_conf[1][1][1])
+
+    def test_deploy_no_match_no_default_set(self):
+        default_conf = self.config.parser.abs_path('sites-enabled/default')
+        foo_conf = self.config.parser.abs_path('foo.conf')
+        del self.config.parser.parsed[default_conf][0][1][0]
+        del self.config.parser.parsed[default_conf][0][1][0]
+        del self.config.parser.parsed[foo_conf][2][1][0][1][0]
+        self.config.version = (1, 3, 1)
+
+        self.assertRaises(errors.MisconfigurationError, self.config.deploy_cert,
+            "www.nomatch.com", "example/cert.pem", "example/key.pem",
+            "example/chain.pem", "example/fullchain.pem")
+
+    def test_deploy_no_match_fail_multiple_defaults(self):
+        self.config.version = (1, 3, 1)
+        self.assertRaises(errors.MisconfigurationError, self.config.deploy_cert,
+            "www.nomatch.com", "example/cert.pem", "example/key.pem",
+            "example/chain.pem", "example/fullchain.pem")
+
+    def test_deploy_no_match_add_redirect(self):
+        default_conf = self.config.parser.abs_path('sites-enabled/default')
+        foo_conf = self.config.parser.abs_path('foo.conf')
+        del self.config.parser.parsed[foo_conf][2][1][0][1][0] # remove default_server
+        self.config.version = (1, 3, 1)
+
+        self.config.deploy_cert(
+            "www.nomatch.com",
+            "example/cert.pem",
+            "example/key.pem",
+            "example/chain.pem",
+            "example/fullchain.pem")
+
+        self.config.deploy_cert(
+            "nomatch.com",
+            "example/cert.pem",
+            "example/key.pem",
+            "example/chain.pem",
+            "example/fullchain.pem")
+
+        self.config.enhance("www.nomatch.com", "redirect")
+
+        self.config.save()
+
+        self.config.parser.load()
+
+        expected = UnspacedList(_redirect_block_for_domain("www.nomatch.com"))[0]
+
+        generated_conf = self.config.parser.parsed[default_conf]
+        self.assertTrue(util.contains_at_depth(generated_conf, expected, 2))
+
+    @mock.patch('certbot.reverter.logger')
+    @mock.patch('certbot_nginx.parser.NginxParser.load')
+    def test_parser_reload_after_config_changes(self, mock_parser_load, unused_mock_logger):
+        self.config.recovery_routine()
+        self.config.revert_challenge_config()
+        self.config.rollback_checkpoints()
+        self.assertTrue(mock_parser_load.call_count == 3)
 
 class InstallSslOptionsConfTest(util.NginxTest):
     """Test that the options-ssl-nginx.conf file is installed and updated properly."""

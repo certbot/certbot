@@ -1,6 +1,6 @@
 """Test for certbot_apache.tls_sni_01."""
-import unittest
 import shutil
+import unittest
 
 import mock
 
@@ -16,14 +16,15 @@ from six.moves import xrange  # pylint: disable=redefined-builtin, import-error
 class TlsSniPerformTest(util.ApacheTest):
     """Test the ApacheTlsSni01 challenge."""
 
-    auth_key = common_test.TLSSNI01Test.auth_key
-    achalls = common_test.TLSSNI01Test.achalls
+    auth_key = common_test.AUTH_KEY
+    achalls = common_test.ACHALLS
 
     def setUp(self):  # pylint: disable=arguments-differ
         super(TlsSniPerformTest, self).setUp()
 
         config = util.get_apache_configurator(
-            self.config_path, self.vhost_path, self.config_dir, self.work_dir)
+            self.config_path, self.vhost_path, self.config_dir,
+            self.work_dir)
         config.config.tls_sni_01_port = 443
 
         from certbot_apache import tls_sni_01
@@ -41,8 +42,8 @@ class TlsSniPerformTest(util.ApacheTest):
     @mock.patch("certbot.util.exe_exists")
     @mock.patch("certbot.util.run_script")
     def test_perform1(self, _, mock_exists):
-        mock_register = mock.Mock()
-        self.sni.configurator.reverter.register_undo_command = mock_register
+        self.sni.configurator.parser.modules.add("socache_shmcb_module")
+        self.sni.configurator.parser.modules.add("ssl_module")
 
         mock_exists.return_value = True
         self.sni.configurator.parser.update_runtime_variables = mock.Mock()
@@ -55,10 +56,6 @@ class TlsSniPerformTest(util.ApacheTest):
         self.sni._setup_challenge_cert = mock_setup_cert
 
         responses = self.sni.perform()
-
-        # Make sure that register_undo_command was called into temp directory.
-        self.assertEqual(True, mock_register.call_args[0][0])
-
         mock_setup_cert.assert_called_once_with(achall)
 
         # Check to make sure challenge config path is included in apache config
@@ -71,7 +68,7 @@ class TlsSniPerformTest(util.ApacheTest):
     def test_perform2(self):
         # Avoid load module
         self.sni.configurator.parser.modules.add("ssl_module")
-
+        self.sni.configurator.parser.modules.add("socache_shmcb_module")
         acme_responses = []
         for achall in self.achalls:
             self.sni.add_chall(achall)
@@ -81,7 +78,8 @@ class TlsSniPerformTest(util.ApacheTest):
         # pylint: disable=protected-access
         self.sni._setup_challenge_cert = mock_setup_cert
 
-        with mock.patch("certbot_apache.configurator.ApacheConfigurator.enable_mod"):
+        with mock.patch(
+            "certbot_apache.override_debian.DebianConfigurator.enable_mod"):
             sni_responses = self.sni.perform()
 
         self.assertEqual(mock_setup_cert.call_count, 2)

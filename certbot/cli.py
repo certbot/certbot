@@ -142,14 +142,14 @@ def report_config_interaction(modified, modifiers):
     between config options.
 
     :param modified: config options that can be modified by modifiers
-    :type modified: iterable or str
+    :type modified: iterable or str (string_types)
     :param modifiers: config options that modify modified
-    :type modifiers: iterable or str
+    :type modifiers: iterable or str (string_types)
 
     """
-    if isinstance(modified, str):
+    if isinstance(modified, six.string_types):
         modified = (modified,)
-    if isinstance(modifiers, str):
+    if isinstance(modifiers, six.string_types):
         modifiers = (modifiers,)
 
     for var in modified:
@@ -207,13 +207,15 @@ def set_by_cli(var):
         # propagate plugin requests: eg --standalone modifies config.authenticator
         detector.authenticator, detector.installer = (
             plugin_selection.cli_plugin_requests(detector))
-        logger.debug("Default Detector is %r", detector)
 
     if not isinstance(getattr(detector, var), _Default):
+        logger.debug("Var %s=%s (set by user).", var, getattr(detector, var))
         return True
 
     for modifier in VAR_MODIFIERS.get(var, []):
         if set_by_cli(modifier):
+            logger.debug("Var %s=%s (set by user).",
+                var, VAR_MODIFIERS.get(var, []))
             return True
 
     return False
@@ -477,7 +479,7 @@ class HelpfulArgumentParser(object):
         if isinstance(help1, bool) and isinstance(help2, bool):
             self.help_arg = help1 or help2
         else:
-            self.help_arg = help1 if isinstance(help1, str) else help2
+            self.help_arg = help1 if isinstance(help1, six.string_types) else help2
 
         short_usage = self._usage_string(plugins, self.help_arg)
 
@@ -828,11 +830,11 @@ class HelpfulArgumentParser(object):
             return dict([(t, t == chosen_topic) for t in self.help_topics])
 
 def _add_all_groups(helpful):
-    helpful.add_group("automation", description="Arguments for automating execution & other tweaks")
+    helpful.add_group("automation", description="Flags for automating execution & other tweaks")
     helpful.add_group("security", description="Security parameters & server settings")
     helpful.add_group("testing",
         description="The following flags are meant for testing and integration purposes only.")
-    helpful.add_group("paths", description="Arguments changing execution paths & servers")
+    helpful.add_group("paths", description="Flags for changing execution paths & servers")
     helpful.add_group("manage",
         description="Various subcommands and flags are available for managing your certificates:",
         verbs=["certificates", "delete", "renew", "revoke", "update_symlinks"])
@@ -1220,6 +1222,18 @@ def _create_subparsers(helpful):
                                                    key=constants.REVOCATION_REASONS.get)),
                 action=_EncodeReasonAction, default=flag_default("reason"),
                 help="Specify reason for revoking certificate. (default: unspecified)")
+    helpful.add("revoke",
+                "--delete-after-revoke", action="store_true",
+                default=flag_default("delete_after_revoke"),
+                help="Delete certificates after revoking them.")
+    helpful.add("revoke",
+                "--no-delete-after-revoke", action="store_false",
+                dest="delete_after_revoke",
+                default=flag_default("delete_after_revoke"),
+                help="Do not delete certificates after revoking them. This "
+                     "option should be used with caution because the 'renew' "
+                     "subcommand will attempt to renew undeleted revoked "
+                     "certificates.")
     helpful.add("rollback",
                 "--checkpoints", type=int, metavar="N",
                 default=flag_default("rollback_checkpoints"),
@@ -1264,14 +1278,13 @@ def _paths_parser(helpful):
     elif verb == "revoke":
         add(section, "--cert-path", type=read_file, required=True, help=cph)
     else:
-        add(section, "--cert-path", type=os.path.abspath,
-            help=cph, required=(verb == "install"))
+        add(section, "--cert-path", type=os.path.abspath, help=cph)
 
     section = "paths"
     if verb in ("install", "revoke"):
         section = verb
     # revoke --key-path reads a file, install --key-path takes a string
-    add(section, "--key-path", required=(verb == "install"),
+    add(section, "--key-path",
         type=((verb == "revoke" and read_file) or os.path.abspath),
         help="Path to private key for certificate installation "
              "or revocation (if account key is missing)")

@@ -20,14 +20,6 @@ cleanup_and_exit() {
         echo Kill server subprocess, left running by abnormal exit
         kill $SERVER_STILL_RUNNING
     fi
-    # Dump boulder logs in case they contain useful debugging information.
-    : "------------------ ------------------ ------------------"
-    : "------------------ begin boulder logs ------------------"
-    : "------------------ ------------------ ------------------"
-    docker logs boulder_boulder_1
-    : "------------------ ------------------ ------------------"
-    : "------------------  end boulder logs  ------------------"
-    : "------------------ ------------------ ------------------"
     if [ -f "$HOOK_DIRS_TEST" ]; then
         rm -f "$HOOK_DIRS_TEST"
     fi
@@ -259,7 +251,7 @@ openssl x509 -in "${root}/csr/chain.pem" -text
 
 common --domains le3.wtf install \
        --cert-path "${root}/csr/cert.pem" \
-       --key-path "${root}/csr/key.pem"
+       --key-path "${root}/key.pem"
 
 CheckCertCount() {
     CERTCOUNT=`ls "${root}/conf/archive/$1/cert"* | wc -l`
@@ -353,9 +345,14 @@ common auth --must-staple --domains "must-staple.le.wtf"
 openssl x509 -in "${root}/conf/live/must-staple.le.wtf/cert.pem" -text | grep '1.3.6.1.5.5.7.1.24'
 
 # revoke by account key
-common revoke --cert-path "$root/conf/live/le.wtf/cert.pem"
+common revoke --cert-path "$root/conf/live/le.wtf/cert.pem" --delete-after-revoke
 # revoke renewed
-common revoke --cert-path "$root/conf/live/le1.wtf/cert.pem"
+common revoke --cert-path "$root/conf/live/le1.wtf/cert.pem" --no-delete-after-revoke
+if [ ! -d "$root/conf/live/le1.wtf" ]; then
+    echo "cert deleted when --no-delete-after-revoke was used!"
+    exit 1
+fi
+common delete --cert-name le1.wtf
 # revoke by cert key
 common revoke --cert-path "$root/conf/live/le2.wtf/cert.pem" \
     --key-path "$root/conf/live/le2.wtf/privkey.pem"

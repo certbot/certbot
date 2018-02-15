@@ -23,42 +23,14 @@ from certbot import util
 from certbot.plugins import common
 
 from certbot_nginx import constants
-from certbot_nginx import tls_sni_01
+from certbot_nginx import nginxparser
 from certbot_nginx import parser
+from certbot_nginx import tls_sni_01
+from certbot_nginx import http_01
 
 
 logger = logging.getLogger(__name__)
 
-REDIRECT_BLOCK = [[
-    ['\n    ', 'if', ' ', '($scheme', ' ', '!=', ' ', '"https") '],
-    [['\n        ', 'return', ' ', '301', ' ', 'https://$host$request_uri'],
-     '\n    ']
-], ['\n']]
-
-TEST_REDIRECT_BLOCK = [
-    [
-        ['if', '($scheme', '!=', '"https")'],
-        [
-            ['return', '301', 'https://$host$request_uri']
-        ]
-    ],
-    ['#', ' managed by Certbot']
-]
-
-REDIRECT_COMMENT_BLOCK = [
-    ['\n    ', '#', ' Redirect non-https traffic to https'],
-    ['\n    ', '#', ' if ($scheme != "https") {'],
-    ['\n    ', '#', "     return 301 https://$host$request_uri;"],
-    ['\n    ', '#', " } # managed by Certbot"],
-    ['\n']
-]
-
-TEST_REDIRECT_COMMENT_BLOCK = [
-    ['#', ' Redirect non-https traffic to https'],
-    ['#', ' if ($scheme != "https") {'],
-    ['#', "     return 301 https://$host$request_uri;"],
-    ['#', " } # managed by Certbot"],
-]
 
 @zope.interface.implementer(interfaces.IAuthenticator, interfaces.IInstaller)
 @zope.interface.provider(interfaces.IPluginFactory)
@@ -116,6 +88,9 @@ class NginxConfigurator(common.Installer):
 
         # Files to save
         self.save_notes = ""
+
+        # For creating new vhosts if no names match
+        self.new_vhost = None
 
         # Add number of outstanding challenges
         self._chall_out = 0
@@ -191,14 +166,14 @@ class NginxConfigurator(common.Installer):
                 "The nginx plugin currently requires --fullchain-path to "
                 "install a cert.")
 
-        vhost = self.choose_vhost(domain)
-        cert_directives = [['\n', 'ssl_certificate', ' ', fullchain_path],
-                           ['\n', 'ssl_certificate_key', ' ', key_path]]
+        vhost = self.choose_vhost(domain, create_if_no_match=True)
+        cert_directives = [['\n    ', 'ssl_certificate', ' ', fullchain_path],
+                           ['\n    ', 'ssl_certificate_key', ' ', key_path]]
 
         self.parser.add_server_directives(vhost,
                                           cert_directives, replace=True)
         logger.info("Deployed Certificate to VirtualHost %s for %s",
-                    vhost.filep, vhost.names)
+                    vhost.filep, ", ".join(vhost.names))
 
         self.save_notes += ("Changed vhost at %s with addresses of %s\n" %
                             (vhost.filep,
@@ -209,7 +184,7 @@ class NginxConfigurator(common.Installer):
     #######################
     # Vhost parsing methods
     #######################
-    def choose_vhost(self, target_name):
+    def choose_vhost(self, target_name, create_if_no_match=False):
         """Chooses a virtual host based on the given domain name.
 
         .. note:: This makes the vhost SSL-enabled if it isn't already. Follows
@@ -223,6 +198,9 @@ class NginxConfigurator(common.Installer):
             hostname. Currently we just ignore this.
 
         :param str target_name: domain name
+        :param bool create_if_no_match: If we should create a new vhost from default
+            when there is no match found. If we can't choose a default, raise a
+            MisconfigurationError.
 
         :returns: ssl vhost associated with name
         :rtype: :class:`~certbot_nginx.obj.VirtualHost`
@@ -233,19 +211,81 @@ class NginxConfigurator(common.Installer):
         matches = self._get_ranked_matches(target_name)
         vhost = self._select_best_name_match(matches)
         if not vhost:
-            # No matches. Raise a misconfiguration error.
-            raise errors.MisconfigurationError(
-                        ("Cannot find a VirtualHost matching domain %s. "
-                         "In order for Certbot to correctly perform the challenge "
-                         "please add a corresponding server_name directive to your "
-                         "nginx configuration: "
-                         "https://nginx.org/en/docs/http/server_names.html") % (target_name))
-        else:
-            # Note: if we are enhancing with ocsp, vhost should already be ssl.
-            if not vhost.ssl:
-                self._make_server_ssl(vhost)
+            if create_if_no_match:
+                vhost = self._vhost_from_duplicated_default(target_name)
+            else:
+                # No matches. Raise a misconfiguration error.
+                raise errors.MisconfigurationError(
+                            ("Cannot find a VirtualHost matching domain %s. "
+                             "In order for Certbot to correctly perform the challenge "
+                             "please add a corresponding server_name directive to your "
+                             "nginx configuration: "
+                             "https://nginx.org/en/docs/http/server_names.html") % (target_name))
+        # Note: if we are enhancing with ocsp, vhost should already be ssl.
+        if not vhost.ssl:
+            self._make_server_ssl(vhost)
 
         return vhost
+
+    def ipv6_info(self, port):
+        """Returns tuple of booleans (ipv6_active, ipv6only_present)
+        ipv6_active is true if any server block listens ipv6 address in any port
+
+        ipv6only_present is true if ipv6only=on option exists in any server
+        block ipv6 listen directive for the specified port.
+
+        :param str port: Port to check ipv6only=on directive for
+
+        :returns: Tuple containing information if IPv6 is enabled in the global
+            configuration, and existence of ipv6only directive for specified port
+        :rtype: tuple of type (bool, bool)
+        """
+        vhosts = self.parser.get_vhosts()
+        ipv6_active = False
+        ipv6only_present = False
+        for vh in vhosts:
+            for addr in vh.addrs:
+                if addr.ipv6:
+                    ipv6_active = True
+                if addr.ipv6only and addr.get_port() == port:
+                    ipv6only_present = True
+        return (ipv6_active, ipv6only_present)
+
+    def _vhost_from_duplicated_default(self, domain, port=None):
+        if self.new_vhost is None:
+            default_vhost = self._get_default_vhost(port)
+            self.new_vhost = self.parser.duplicate_vhost(default_vhost, delete_default=True)
+            self.new_vhost.names = set()
+
+        self._add_server_name_to_vhost(self.new_vhost, domain)
+        return self.new_vhost
+
+    def _add_server_name_to_vhost(self, vhost, domain):
+        vhost.names.add(domain)
+        name_block = [['\n    ', 'server_name']]
+        for name in vhost.names:
+            name_block[0].append(' ')
+            name_block[0].append(name)
+        self.parser.add_server_directives(vhost, name_block, replace=True)
+
+    def _get_default_vhost(self, port):
+        vhost_list = self.parser.get_vhosts()
+        # if one has default_server set, return that one
+        default_vhosts = []
+        for vhost in vhost_list:
+            for addr in vhost.addrs:
+                if addr.default:
+                    if port is None or self._port_matches(port, addr.get_port()):
+                        default_vhosts.append(vhost)
+                        break
+
+        if len(default_vhosts) == 1:
+            return default_vhosts[0]
+
+        # TODO: present a list of vhosts for user to choose from
+
+        raise errors.MisconfigurationError("Could not automatically find a matching server"
+            " block. Set the `server_name` directive to use the Nginx installer.")
 
     def _get_ranked_matches(self, target_name):
         """Returns a ranked list of vhosts that match target_name.
@@ -319,7 +359,7 @@ class NginxConfigurator(common.Installer):
         return sorted(matches, key=lambda x: x['rank'])
 
 
-    def choose_redirect_vhost(self, target_name, port):
+    def choose_redirect_vhost(self, target_name, port, create_if_no_match=False):
         """Chooses a single virtual host for redirect enhancement.
 
         Chooses the vhost most closely matching target_name that is
@@ -333,12 +373,27 @@ class NginxConfigurator(common.Installer):
 
         :param str target_name: domain name
         :param str port: port number
+        :param bool create_if_no_match: If we should create a new vhost from default
+            when there is no match found. If we can't choose a default, raise a
+            MisconfigurationError.
+
         :returns: vhost associated with name
         :rtype: :class:`~certbot_nginx.obj.VirtualHost`
 
         """
         matches = self._get_redirect_ranked_matches(target_name, port)
-        return self._select_best_name_match(matches)
+        vhost = self._select_best_name_match(matches)
+        if not vhost and create_if_no_match:
+            vhost = self._vhost_from_duplicated_default(target_name, port=port)
+        return vhost
+
+    def _port_matches(self, test_port, matching_port):
+        # test_port is a number, matching is a number or "" or None
+        if matching_port == "" or matching_port is None:
+            # if no port is specified, Nginx defaults to listening on port 80.
+            return test_port == self.DEFAULT_LISTEN_PORT
+        else:
+            return test_port == matching_port
 
     def _get_redirect_ranked_matches(self, target_name, port):
         """Gets a ranked list of plaintextish port-listening vhosts matching target_name
@@ -347,20 +402,13 @@ class NginxConfigurator(common.Installer):
         Rank by how well these match target_name.
 
         :param str target_name: The name to match
-        :param str port: port number
+        :param str port: port number as a string
         :returns: list of dicts containing the vhost, the matching name, and
             the numerical rank
         :rtype: list
 
         """
         all_vhosts = self.parser.get_vhosts()
-        def _port_matches(test_port, matching_port):
-            # test_port is a number, matching is a number or "" or None
-            if matching_port == "" or matching_port is None:
-                # if no port is specified, Nginx defaults to listening on port 80.
-                return test_port == self.DEFAULT_LISTEN_PORT
-            else:
-                return test_port == matching_port
 
         def _vhost_matches(vhost, port):
             found_matching_port = False
@@ -370,7 +418,7 @@ class NginxConfigurator(common.Installer):
                 found_matching_port = (port == self.DEFAULT_LISTEN_PORT)
             else:
                 for addr in vhost.addrs:
-                    if _port_matches(port, addr.get_port()) and addr.ssl == False:
+                    if self._port_matches(port, addr.get_port()) and addr.ssl == False:
                         found_matching_port = True
 
             if found_matching_port:
@@ -405,9 +453,12 @@ class NginxConfigurator(common.Installer):
                     all_names.add(host)
                 elif not common.private_ips_regex.match(host):
                     # If it isn't a private IP, do a reverse DNS lookup
-                    # TODO: IPv6 support
                     try:
-                        socket.inet_aton(host)
+                        if addr.ipv6:
+                            host = addr.get_ipv6_exploded()
+                            socket.inet_pton(socket.AF_INET6, host)
+                        else:
+                            socket.inet_pton(socket.AF_INET, host)
                         all_names.add(socket.gethostbyaddr(host)[0])
                     except (socket.error, socket.herror, socket.timeout):
                         continue
@@ -433,26 +484,47 @@ class NginxConfigurator(common.Installer):
     def _make_server_ssl(self, vhost):
         """Make a server SSL.
 
-        Make a server SSL based on server_name and filename by adding a
-        ``listen IConfig.tls_sni_01_port ssl`` directive to the server block.
-
-        .. todo:: Maybe this should create a new block instead of modifying
-            the existing one?
+        Make a server SSL by adding new listen and SSL directives.
 
         :param vhost: The vhost to add SSL to.
         :type vhost: :class:`~certbot_nginx.obj.VirtualHost`
 
         """
+        ipv6info = self.ipv6_info(self.config.tls_sni_01_port)
+        ipv6_block = ['']
+        ipv4_block = ['']
+
         # If the vhost was implicitly listening on the default Nginx port,
         # have it continue to do so.
         if len(vhost.addrs) == 0:
             listen_block = [['\n    ', 'listen', ' ', self.DEFAULT_LISTEN_PORT]]
             self.parser.add_server_directives(vhost, listen_block, replace=False)
 
+        if vhost.ipv6_enabled():
+            ipv6_block = ['\n    ',
+                          'listen',
+                          ' ',
+                          '[::]:{0}'.format(self.config.tls_sni_01_port),
+                          ' ',
+                          'ssl']
+            if not ipv6info[1]:
+                # ipv6only=on is absent in global config
+                ipv6_block.append(' ')
+                ipv6_block.append('ipv6only=on')
+
+        if vhost.ipv4_enabled():
+            ipv4_block = ['\n    ',
+                          'listen',
+                          ' ',
+                          '{0}'.format(self.config.tls_sni_01_port),
+                          ' ',
+                          'ssl']
+
         snakeoil_cert, snakeoil_key = self._get_snakeoil_paths()
 
         ssl_block = ([
-            ['\n    ', 'listen', ' ', '{0} ssl'.format(self.config.tls_sni_01_port)],
+            ipv6_block,
+            ipv4_block,
             ['\n    ', 'ssl_certificate', ' ', snakeoil_cert],
             ['\n    ', 'ssl_certificate_key', ' ', snakeoil_key],
             ['\n    ', 'include', ' ', self.mod_ssl_conf],
@@ -489,27 +561,23 @@ class NginxConfigurator(common.Installer):
             logger.warning("Failed %s for %s", enhancement, domain)
             raise
 
-    def _has_certbot_redirect(self, vhost):
-        return vhost.contains_list(TEST_REDIRECT_BLOCK)
+    def _has_certbot_redirect(self, vhost, domain):
+        test_redirect_block = _test_block_from_block(_redirect_block_for_domain(domain))
+        return vhost.contains_list(test_redirect_block)
 
-    def _has_certbot_redirect_comment(self, vhost):
-        return vhost.contains_list(TEST_REDIRECT_COMMENT_BLOCK)
-
-    def _add_redirect_block(self, vhost, active=True):
+    def _add_redirect_block(self, vhost, domain):
         """Add redirect directive to vhost
         """
-        if active:
-            redirect_block = REDIRECT_BLOCK
-        else:
-            redirect_block = REDIRECT_COMMENT_BLOCK
+        redirect_block = _redirect_block_for_domain(domain)
 
         self.parser.add_server_directives(
-            vhost, redirect_block, replace=False)
+            vhost, redirect_block, replace=False, insert_at_top=True)
 
     def _enable_redirect(self, domain, unused_options):
         """Redirect all equivalent HTTP traffic to ssl_vhost.
 
-        Add rewrite directive to non https traffic
+        If the vhost is listening plaintextishly, separate out the
+        relevant directives into a new server block and add a rewrite directive.
 
         .. note:: This function saves the configuration
 
@@ -522,26 +590,45 @@ class NginxConfigurator(common.Installer):
         vhost = None
         # If there are blocks listening plaintextishly on self.DEFAULT_LISTEN_PORT,
         # choose the most name-matching one.
+
         vhost = self.choose_redirect_vhost(domain, port)
 
         if vhost is None:
             logger.info("No matching insecure server blocks listening on port %s found.",
                 self.DEFAULT_LISTEN_PORT)
+            return
+
+        new_vhost = None
+        if vhost.ssl:
+            new_vhost = self.parser.duplicate_vhost(vhost,
+                only_directives=['listen', 'server_name'])
+
+            def _ssl_match_func(directive):
+                return 'ssl' in directive
+
+            def _no_ssl_match_func(directive):
+                return 'ssl' not in directive
+
+            # remove all ssl addresses from the new block
+            self.parser.remove_server_directives(new_vhost, 'listen', match_func=_ssl_match_func)
+
+            # remove all non-ssl addresses from the existing block
+            self.parser.remove_server_directives(vhost, 'listen', match_func=_no_ssl_match_func)
+
+            # Add this at the bottom to get the right order of directives
+            return_404_directive = [['\n    ', 'return', ' ', '404']]
+            self.parser.add_server_directives(new_vhost, return_404_directive, replace=False)
+
+            vhost = new_vhost
+
+        if self._has_certbot_redirect(vhost, domain):
+            logger.info("Traffic on port %s already redirecting to ssl in %s",
+                self.DEFAULT_LISTEN_PORT, vhost.filep)
         else:
-            if self._has_certbot_redirect(vhost):
-                logger.info("Traffic on port %s already redirecting to ssl in %s",
-                    self.DEFAULT_LISTEN_PORT, vhost.filep)
-            elif vhost.has_redirect():
-                if not self._has_certbot_redirect_comment(vhost):
-                    self._add_redirect_block(vhost, active=False)
-                logger.info("The appropriate server block is already redirecting "
-                            "traffic. To enable redirect anyway, uncomment the "
-                            "redirect lines in %s.", vhost.filep)
-            else:
-                # Redirect plaintextish host to https
-                self._add_redirect_block(vhost, active=True)
-                logger.info("Redirecting all traffic on port %s to ssl in %s",
-                    self.DEFAULT_LISTEN_PORT, vhost.filep)
+            # Redirect plaintextish host to https
+            self._add_redirect_block(vhost, domain)
+            logger.info("Redirecting all traffic on port %s to ssl in %s",
+                self.DEFAULT_LISTEN_PORT, vhost.filep)
 
     def _enable_ocsp_stapling(self, domain, chain_path):
         """Include OCSP response in TLS handshake
@@ -715,6 +802,7 @@ class NginxConfigurator(common.Installer):
 
         """
         super(NginxConfigurator, self).recovery_routine()
+        self.new_vhost = None
         self.parser.load()
 
     def revert_challenge_config(self):
@@ -724,6 +812,7 @@ class NginxConfigurator(common.Installer):
 
         """
         self.revert_temporary_config()
+        self.new_vhost = None
         self.parser.load()
 
     def rollback_checkpoints(self, rollback=1):
@@ -736,6 +825,7 @@ class NginxConfigurator(common.Installer):
 
         """
         super(NginxConfigurator, self).rollback_checkpoints(rollback)
+        self.new_vhost = None
         self.parser.load()
 
     ###########################################################################
@@ -743,7 +833,7 @@ class NginxConfigurator(common.Installer):
     ###########################################################################
     def get_chall_pref(self, unused_domain):  # pylint: disable=no-self-use
         """Return list of challenge preferences."""
-        return [challenges.TLSSNI01]
+        return [challenges.TLSSNI01, challenges.HTTP01]
 
     # Entry point in main.py for performing challenges
     def perform(self, achalls):
@@ -756,15 +846,20 @@ class NginxConfigurator(common.Installer):
         """
         self._chall_out += len(achalls)
         responses = [None] * len(achalls)
-        chall_doer = tls_sni_01.NginxTlsSni01(self)
+        sni_doer = tls_sni_01.NginxTlsSni01(self)
+        http_doer = http_01.NginxHttp01(self)
 
         for i, achall in enumerate(achalls):
             # Currently also have chall_doer hold associated index of the
             # challenge. This helps to put all of the responses back together
             # when they are all complete.
-            chall_doer.add_chall(achall, i)
+            if isinstance(achall.chall, challenges.HTTP01):
+                http_doer.add_chall(achall, i)
+            else:  # tls-sni-01
+                sni_doer.add_chall(achall, i)
 
-        sni_response = chall_doer.perform()
+        sni_response = sni_doer.perform()
+        http_response = http_doer.perform()
         # Must restart in order to activate the challenges.
         # Handled here because we may be able to load up other challenge types
         self.restart()
@@ -772,8 +867,9 @@ class NginxConfigurator(common.Installer):
         # Go through all of the challenges and assign them to the proper place
         # in the responses return value. All responses must be in the same order
         # as the original challenges.
-        for i, resp in enumerate(sni_response):
-            responses[chall_doer.indices[i]] = resp
+        for chall_response, chall_doer in ((sni_response, sni_doer), (http_response, http_doer)):
+            for i, resp in enumerate(chall_response):
+                responses[chall_doer.indices[i]] = resp
 
         return responses
 
@@ -787,6 +883,19 @@ class NginxConfigurator(common.Installer):
             self.revert_challenge_config()
             self.restart()
 
+
+def _test_block_from_block(block):
+    test_block = nginxparser.UnspacedList(block)
+    parser.comment_directive(test_block, 0)
+    return test_block[:-1]
+
+def _redirect_block_for_domain(domain):
+    redirect_block = [[
+        ['\n    ', 'if', ' ', '($host', ' ', '=', ' ', '%s)' % domain, ' '],
+        [['\n        ', 'return', ' ', '301', ' ', 'https://$host$request_uri'],
+        '\n    ']],
+        ['\n']]
+    return redirect_block
 
 def nginx_restart(nginx_ctl, nginx_conf):
     """Restarts the Nginx Server.

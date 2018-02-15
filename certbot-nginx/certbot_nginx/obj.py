@@ -34,10 +34,13 @@ class Addr(common.Addr):
     UNSPECIFIED_IPV4_ADDRESSES = ('', '*', '0.0.0.0')
     CANONICAL_UNSPECIFIED_ADDRESS = UNSPECIFIED_IPV4_ADDRESSES[0]
 
-    def __init__(self, host, port, ssl, default):
+    def __init__(self, host, port, ssl, default, ipv6, ipv6only):
+        # pylint: disable=too-many-arguments
         super(Addr, self).__init__((host, port))
         self.ssl = ssl
         self.default = default
+        self.ipv6 = ipv6
+        self.ipv6only = ipv6only
         self.unspecified_address = host in self.UNSPECIFIED_IPV4_ADDRESSES
 
     @classmethod
@@ -46,6 +49,8 @@ class Addr(common.Addr):
         parts = str_addr.split(' ')
         ssl = False
         default = False
+        ipv6 = False
+        ipv6only = False
         host = ''
         port = ''
 
@@ -56,15 +61,25 @@ class Addr(common.Addr):
         if addr.startswith('unix:'):
             return None
 
-        tup = addr.partition(':')
-        if re.match(r'^\d+$', tup[0]):
-            # This is a bare port, not a hostname. E.g. listen 80
-            host = ''
-            port = tup[0]
+        # IPv6 check
+        ipv6_match = re.match(r'\[.*\]', addr)
+        if ipv6_match:
+            ipv6 = True
+            # IPv6 handling
+            host = ipv6_match.group()
+            # The rest of the addr string will be the port, if any
+            port = addr[ipv6_match.end()+1:]
         else:
-            # This is a host-port tuple. E.g. listen 127.0.0.1:*
-            host = tup[0]
-            port = tup[2]
+            # IPv4 handling
+            tup = addr.partition(':')
+            if re.match(r'^\d+$', tup[0]):
+                # This is a bare port, not a hostname. E.g. listen 80
+                host = ''
+                port = tup[0]
+            else:
+                # This is a host-port tuple. E.g. listen 127.0.0.1:*
+                host = tup[0]
+                port = tup[2]
 
         # The rest of the parts are options; we only care about ssl and default
         while len(parts) > 0:
@@ -73,8 +88,10 @@ class Addr(common.Addr):
                 ssl = True
             elif nextpart == 'default_server':
                 default = True
+            elif nextpart == "ipv6only=on":
+                ipv6only = True
 
-        return cls(host, port, ssl, default)
+        return cls(host, port, ssl, default, ipv6, ipv6only)
 
     def to_string(self, include_default=True):
         """Return string representation of Addr"""
@@ -114,8 +131,6 @@ class Addr(common.Addr):
                                 self.tup[1]), self.ipv6) == \
                    common.Addr((other.CANONICAL_UNSPECIFIED_ADDRESS,
                                 other.tup[1]), other.ipv6)
-        # Nginx plugin currently doesn't support IPv6 but this will
-        # future-proof it
         return super(Addr, self).__eq__(other)
 
     def __eq__(self, other):
@@ -178,31 +193,26 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
 
         return False
 
-    def has_redirect(self):
-        """Determine if this vhost has a redirecting statement
-        """
-        for directive_name in REDIRECT_DIRECTIVES:
-            found = _find_directive(self.raw, directive_name)
-            if found is not None:
-                return True
-        return False
-
     def contains_list(self, test):
         """Determine if raw server block contains test list at top level
         """
-        for i in six.moves.range(0, len(self.raw) - len(test)):
+        for i in six.moves.range(0, len(self.raw) - len(test) + 1):
             if self.raw[i:i + len(test)] == test:
                 return True
         return False
 
-def _find_directive(directives, directive_name):
-    """Find a directive of type directive_name in directives
-    """
-    if not directives or isinstance(directives, str) or len(directives) == 0:
-        return None
+    def ipv6_enabled(self):
+        """Return true if one or more of the listen directives in vhost supports
+        IPv6"""
+        for a in self.addrs:
+            if a.ipv6:
+                return True
 
-    if directives[0] == directive_name:
-        return directives
-
-    matches = (_find_directive(line, directive_name) for line in directives)
-    return next((m for m in matches if m is not None), None)
+    def ipv4_enabled(self):
+        """Return true if one or more of the listen directives in vhost are IPv4
+        only"""
+        if self.addrs is None or len(self.addrs) == 0:
+            return True
+        for a in self.addrs:
+            if not a.ipv6:
+                return True

@@ -2,6 +2,105 @@
 
 Certbot adheres to [Semantic Versioning](http://semver.org/).
 
+## 0.21.1 - 2018-01-25
+
+### Fixed
+
+* When creating an HTTP to HTTPS redirect in Nginx, we now ensure the Host
+  header of the request is set to an expected value before redirecting users to
+  the domain found in the header. The previous way Certbot configured Nginx
+  redirects was a potential security issue which you can read more about at
+  https://community.letsencrypt.org/t/security-issue-with-redirects-added-by-certbots-nginx-plugin/51493.
+* Fixed a problem where Certbot's Apache plugin could fail HTTP-01 challenges
+  if basic authentication is configured for the domain you request a
+  certificate for.
+* certbot-auto --no-bootstrap now properly tries to use Python 3.4 on RHEL 6
+  based systems rather than Python 2.6.
+
+More details about these changes can be found on our GitHub repo:
+https://github.com/certbot/certbot/milestone/49?closed=1
+
+## 0.21.0 - 2018-01-17
+
+### Added
+
+* Support for the HTTP-01 challenge type was added to our Apache and Nginx
+  plugins. For those not aware, Let's Encrypt disabled the TLS-SNI-01 challenge
+  type which was what was previously being used by our Apache and Nginx plugins
+  last week due to a security issue. For more information about Let's Encrypt's
+  change, click
+  [here](https://community.letsencrypt.org/t/2018-01-11-update-regarding-acme-tls-sni-and-shared-hosting-infrastructure/50188).
+  Our Apache and Nginx plugins will automatically switch to use HTTP-01 so no
+  changes need to be made to your Certbot configuration, however, you should
+  make sure your server is accessible on port 80 and isn't behind an external
+  proxy doing things like redirecting all traffic from HTTP to HTTPS. HTTP to
+  HTTPS redirects inside Apache and Nginx are fine.
+* IPv6 support was added to the Nginx plugin.
+* Support for automatically creating server blocks based on the default server
+  block was added to the Nginx plugin.
+* The flags --delete-after-revoke and --no-delete-after-revoke were added
+  allowing users to control whether the revoke subcommand also deletes the
+  certificates it is revoking.
+
+### Changed
+
+* We deprecated support for Python 2.6 and Python 3.3 in Certbot and its ACME
+  library. Support for these versions of Python will be removed in the next
+  major release of Certbot. If you are using certbot-auto on a RHEL 6 based
+  system, it will guide you through the process of installing Python 3.
+* We split our implementation of JOSE (Javascript Object Signing and
+  Encryption) out of our ACME library and into a separate package named josepy.
+  This package is available on [PyPI](https://pypi.python.org/pypi/josepy) and
+  on [GitHub](https://github.com/certbot/josepy).
+* We updated the ciphersuites used in Apache to the new [values recommended by
+  Mozilla](https://wiki.mozilla.org/Security/Server_Side_TLS#Intermediate_compatibility_.28default.29).
+  The major change here is adding ChaCha20 to the list of supported
+  ciphersuites.
+
+### Fixed
+
+* An issue with our Apache plugin on Gentoo due to differences in their
+  apache2ctl command have been resolved.
+
+More details about these changes can be found on our GitHub repo:
+https://github.com/certbot/certbot/milestone/47?closed=1
+
+## 0.20.0 - 2017-12-06
+
+### Added
+
+* Certbot's ACME library now recognizes URL fields in challenge objects in
+  preparation for Let's Encrypt's new ACME endpoint. The value is still
+  accessible in our ACME library through the name "uri".
+
+### Changed
+
+* The Apache plugin now parses some distro specific Apache configuration files
+  on non-Debian systems allowing it to get a clearer picture on the running
+  configuration. Internally, these changes were structured so that external
+  contributors can easily write patches to make the plugin work in new Apache
+  configurations.
+* Certbot better reports network failures by removing information about
+  connection retries from the error output.
+* An unnecessary question when using Certbot's webroot plugin interactively has
+  been removed.
+
+### Fixed
+
+* Certbot's NGINX plugin no longer sometimes incorrectly reports that it was
+  unable to deploy a HTTP->HTTPS redirect when requesting Certbot to enable a
+  redirect for multiple domains.
+* Problems where the Apache plugin was failing to find directives and
+  duplicating existing directives on openSUSE have been resolved.
+* An issue running the test shipped with Certbot and some our DNS plugins with
+  older versions of mock have been resolved.
+* On some systems, users reported strangely interleaved output depending on
+  when stdout and stderr were flushed. This problem was resolved by having
+  Certbot regularly flush these streams.
+
+More details about these changes can be found on our GitHub repo:
+https://github.com/certbot/certbot/milestone/44?closed=1
+
 ## 0.19.0 - 2017-10-04
 
 ### Added

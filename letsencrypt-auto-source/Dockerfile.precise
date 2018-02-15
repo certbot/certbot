@@ -6,11 +6,16 @@ FROM ubuntu:precise
 # Add an unprivileged user:
 RUN useradd --create-home --home-dir /home/lea --shell /bin/bash --groups sudo --uid 1000 lea
 
-# Install pip, sudo, openssl, and nose:
+# Install pip, sudo, and openssl:
 RUN apt-get update && \
     apt-get -q -y install python-pip sudo openssl && \
     apt-get clean
-RUN pip install nose
+
+# Use pipstrap to update to a stable and tested version of pip
+COPY ./pieces/pipstrap.py /opt
+RUN /opt/pipstrap.py
+# Pin pytest version for increased stability
+RUN pip install pytest==3.2.5
 
 # Let that user sudo:
 RUN sed -i.bkp -e \
@@ -28,4 +33,4 @@ COPY . /home/lea/certbot/letsencrypt-auto-source
 USER lea
 WORKDIR /home/lea
 
-CMD ["nosetests", "-v", "-s", "certbot/letsencrypt-auto-source/tests"]
+CMD ["pytest", "-v", "-s", "certbot/letsencrypt-auto-source/tests"]

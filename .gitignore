@@ -35,3 +35,9 @@ tests/letstest/*.pem
 tests/letstest/venv/
 
 .venv
+
+# pytest cache
+.cache
+
+# docker files
+.docker

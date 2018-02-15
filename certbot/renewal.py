@@ -108,7 +108,7 @@ def _restore_webroot_config(config, renewalparams):
     elif "webroot_path" in renewalparams:
         logger.debug("Ancient renewal conf file without webroot-map, restoring webroot-path")
         wp = renewalparams["webroot_path"]
-        if isinstance(wp, str):  # prior to 0.1.0, webroot_path was a string
+        if isinstance(wp, six.string_types):  # prior to 0.1.0, webroot_path was a string
             wp = [wp]
         config.webroot_path = wp
 
@@ -194,7 +194,7 @@ def _restore_pref_challs(unused_name, value):
     # If pref_challs has only one element, configobj saves the value
     # with a trailing comma so it's parsed as a list. If this comma is
     # removed by the user, the value is parsed as a str.
-    value = [value] if isinstance(value, str) else value
+    value = [value] if isinstance(value, six.string_types) else value
     return cli.parse_preferred_challenges(value)
 
 
@@ -425,7 +425,10 @@ def handle_renewal_request(config):
                     main.renew_cert(lineage_config, plugins, renewal_candidate)
                     renew_successes.append(renewal_candidate.fullchain)
                 else:
-                    renew_skipped.append(renewal_candidate.fullchain)
+                    expiry = crypto_util.notAfter(renewal_candidate.version(
+                        "cert", renewal_candidate.latest_common_version()))
+                    renew_skipped.append("%s expires on %s" % (renewal_candidate.fullchain,
+                                         expiry.strftime("%Y-%m-%d")))
         except Exception as e:  # pylint: disable=broad-except
             # obtain_cert (presumably) encountered an unanticipated problem.
             logger.warning("Attempting to renew cert (%s) from %s produced an "

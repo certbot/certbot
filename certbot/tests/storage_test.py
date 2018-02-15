@@ -43,7 +43,6 @@ class BaseRenewableCertTest(test_util.ConfigTestCase):
     your test.  Check :class:`.cli_test.DuplicateCertTest` for an example.
 
     """
-    _multiprocess_can_split_ = True
 
     def setUp(self):
         from certbot import storage
@@ -159,8 +158,8 @@ class RenewableCertTests(BaseRenewableCertTest):
 
         with mock.patch("certbot.storage.logger") as mock_logger:
             storage.RenewableCert(self.config_file.filename, self.config)
-        self.assertTrue(mock_logger.warning.called)
-        self.assertTrue("version" in mock_logger.warning.call_args[0][0])
+        self.assertTrue(mock_logger.info.called)
+        self.assertTrue("version" in mock_logger.info.call_args[0][0])
 
     def test_consistent(self):
         # pylint: disable=too-many-statements,protected-access

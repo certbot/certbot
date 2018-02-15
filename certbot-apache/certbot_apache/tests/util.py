@@ -1,13 +1,13 @@
 """Common utilities for certbot_apache."""
 import os
+import shutil
 import sys
 import unittest
 
 import augeas
+import josepy as jose
 import mock
 import zope.component
-
-from acme import jose
 
 from certbot.display import util as display_util
 
@@ -16,7 +16,7 @@ from certbot.plugins import common
 from certbot.tests import util as test_util
 
 from certbot_apache import configurator
-from certbot_apache import constants
+from certbot_apache import entrypoint
 from certbot_apache import obj
 
 
@@ -38,6 +38,9 @@ class ApacheTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
         self.rsa512jwk = jose.JWKRSA.load(test_util.load_vector(
             "rsa512_key.pem"))
 
+        self.config = get_apache_configurator(self.config_path, vhost_root,
+                                              self.config_dir, self.work_dir)
+
         # Make sure all vhosts in sites-enabled are symlinks (Python packaging
         # does not preserve symlinks)
         sites_enabled = os.path.join(self.config_path, "sites-enabled")
@@ -55,8 +58,13 @@ class ApacheTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
                     os.path.pardir, "sites-available", vhost_basename)
                 os.symlink(target, vhost)
 
+    def tearDown(self):
+        shutil.rmtree(self.temp_dir)
+        shutil.rmtree(self.config_dir)
+        shutil.rmtree(self.work_dir)
 
-class ParserTest(ApacheTest):  # pytlint: disable=too-few-public-methods
+
+class ParserTest(ApacheTest):
 
     def setUp(self, test_dir="debian_apache_2_4/multiple_vhosts",
               config_root="debian_apache_2_4/multiple_vhosts/apache2",
@@ -72,12 +80,16 @@ class ParserTest(ApacheTest):  # pytlint: disable=too-few-public-methods
         with mock.patch("certbot_apache.parser.ApacheParser."
                         "update_runtime_variables"):
             self.parser = ApacheParser(
-                self.aug, self.config_path, self.vhost_path)
+                self.aug, self.config_path, self.vhost_path,
+                configurator=self.config)
 
 
-def get_apache_configurator(
+def get_apache_configurator(  # pylint: disable=too-many-arguments, too-many-locals
         config_path, vhost_path,
-        config_dir, work_dir, version=(2, 4, 7), conf=None):
+        config_dir, work_dir, version=(2, 4, 7),
+        conf=None,
+        os_info="generic",
+        conf_vhost_path=None):
     """Create an Apache Configurator with the specified options.
 
     :param conf: Function that returns binary paths. self.conf in Configurator
@@ -86,31 +98,47 @@ def get_apache_configurator(
     backups = os.path.join(work_dir, "backups")
     mock_le_config = mock.MagicMock(
         apache_server_root=config_path,
-        apache_vhost_root=vhost_path,
-        apache_le_vhost_ext=constants.os_constant("le_vhost_ext"),
+        apache_vhost_root=conf_vhost_path,
+        apache_le_vhost_ext="-le-ssl.conf",
         apache_challenge_location=config_path,
         backup_dir=backups,
         config_dir=config_dir,
+        http01_port=80,
         temp_checkpoint_dir=os.path.join(work_dir, "temp_checkpoints"),
         in_progress_dir=os.path.join(backups, "IN_PROGRESS"),
         work_dir=work_dir)
 
-    with mock.patch("certbot_apache.configurator.util.run_script"):
-        with mock.patch("certbot_apache.configurator.util."
-                        "exe_exists") as mock_exe_exists:
-            mock_exe_exists.return_value = True
-            with mock.patch("certbot_apache.parser.ApacheParser."
-                            "update_runtime_variables"):
-                config = configurator.ApacheConfigurator(
-                    config=mock_le_config,
-                    name="apache",
-                    version=version)
-                # This allows testing scripts to set it a bit more quickly
-                if conf is not None:
-                    config.conf = conf  # pragma: no cover
+    orig_os_constant = configurator.ApacheConfigurator(mock_le_config,
+                                                       name="apache",
+                                                       version=version).constant
 
-                config.prepare()
+    def mock_os_constant(key, vhost_path=vhost_path):
+        """Mock default vhost path"""
+        if key == "vhost_root":
+            return vhost_path
+        else:
+            return orig_os_constant(key)
 
+    with mock.patch("certbot_apache.configurator.ApacheConfigurator.constant") as mock_cons:
+        mock_cons.side_effect = mock_os_constant
+        with mock.patch("certbot_apache.configurator.util.run_script"):
+            with mock.patch("certbot_apache.configurator.util."
+                            "exe_exists") as mock_exe_exists:
+                mock_exe_exists.return_value = True
+                with mock.patch("certbot_apache.parser.ApacheParser."
+                                "update_runtime_variables"):
+                    try:
+                        config_class = entrypoint.OVERRIDE_CLASSES[os_info]
+                    except KeyError:
+                        config_class = configurator.ApacheConfigurator
+                    config = config_class(config=mock_le_config, name="apache",
+                        version=version)
+                    # This allows testing scripts to set it a bit more
+                    # quickly
+                    if conf is not None:
+                        config.conf = conf  # pragma: no cover
+
+                    config.prepare()
     return config
 
 
@@ -142,7 +170,7 @@ def get_vh_truth(temp_dir, config_name):
                 os.path.join(prefix, "certbot.conf"),
                 os.path.join(aug_pre, "certbot.conf/VirtualHost"),
                 set([obj.Addr.fromstring("*:80")]), False, True,
-                "certbot.demo"),
+                "certbot.demo", aliases=["www.certbot.demo"]),
             obj.VirtualHost(
                 os.path.join(prefix, "mod_macro-example.conf"),
                 os.path.join(aug_pre,

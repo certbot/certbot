@@ -116,7 +116,7 @@ certbot-auto_ method, which enables you to use installer plugins
 that cover both of those hard topics.
 
 If you're still not convinced and have decided to use this method,
-from the server that the domain you're requesting a cert for resolves
+from the server that the domain you're requesting a certficate for resolves
 to, `install Docker`_, then issue the following command:
 
 .. code-block:: shell
@@ -156,7 +156,7 @@ If you run Debian Stretch or Debian Sid, you can install certbot packages.
    sudo apt-get install certbot python-certbot-apache
 
 If you don't want to use the Apache plugin, you can omit the
-``python-certbot-apache`` package.
+``python-certbot-apache`` package. Or you can install ``python-certbot-nginx`` instead.
 
 Packages exist for Debian Jessie via backports. First you'll have to follow the
 instructions at http://backports.debian.org/Instructions/ to enable the Jessie backports

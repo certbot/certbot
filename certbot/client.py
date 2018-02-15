@@ -5,13 +5,13 @@ import platform
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa
+import josepy as jose
 import OpenSSL
 import zope.component
 
 from acme import client as acme_client
 from acme import crypto_util as acme_crypto_util
 from acme import errors as acme_errors
-from acme import jose
 from acme import messages
 
 import certbot
@@ -556,11 +556,11 @@ class Client(object):
             self.installer.rollback_checkpoints()
             self.installer.restart()
         except:
-            # TODO: suggest letshelp-letsencrypt here
             reporter.add_message(
                 "An error occurred and we failed to restore your config and "
-                "restart your server. Please submit a bug report to "
-                "https://github.com/letsencrypt/letsencrypt",
+                "restart your server. Please post to "
+                "https://community.letsencrypt.org/c/server-config "
+                "with details about your configuration and this error you received.",
                 reporter.HIGH_PRIORITY)
             raise
         reporter.add_message(success_msg, reporter.HIGH_PRIORITY)

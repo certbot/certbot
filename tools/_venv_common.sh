@@ -15,10 +15,10 @@ mv $VENV_NAME "$VENV_NAME.$(date +%s).bak" || true
 virtualenv --no-site-packages --setuptools $VENV_NAME $VENV_ARGS
 . ./$VENV_NAME/bin/activate
 
-# Separately install setuptools and pip to make sure following
-# invocations use latest
-pip install -U pip
-pip install -U setuptools
+# Use pipstrap to update Python packaging tools to only update to a well tested
+# version and to work around https://github.com/pypa/pip/issues/4817 on older
+# systems.
+python letsencrypt-auto-source/pieces/pipstrap.py
 ./tools/pip_install.sh "$@"
 
 set +x

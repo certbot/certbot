@@ -9,7 +9,7 @@ import OpenSSL
 import pkg_resources
 import zope.interface
 
-from acme.jose import util as jose_util
+from josepy import util as jose_util
 
 from certbot import constants
 from certbot import crypto_util
@@ -251,7 +251,7 @@ class Addr(object):
         """Normalized representation of addr/port tuple
         """
         if self.ipv6:
-            return (self._normalize_ipv6(self.tup[0]), self.tup[1])
+            return (self.get_ipv6_exploded(), self.tup[1])
         return self.tup
 
     def __eq__(self, other):
@@ -315,29 +315,55 @@ class Addr(object):
         return result
 
 
-class TLSSNI01(object):
-    """Abstract base for TLS-SNI-01 challenge performers"""
+class ChallengePerformer(object):
+    """Abstract base for challenge performers.
+
+    :ivar configurator: Authenticator and installer plugin
+    :ivar achalls: Annotated challenges
+    :vartype achalls: `list` of `.KeyAuthorizationAnnotatedChallenge`
+    :ivar indices: Holds the indices of challenges from a larger array
+        so the user of the class doesn't have to.
+    :vartype indices: `list` of `int`
+
+    """
 
     def __init__(self, configurator):
         self.configurator = configurator
         self.achalls = []
         self.indices = []
-        self.challenge_conf = os.path.join(
-            configurator.config.config_dir, "le_tls_sni_01_cert_challenge.conf")
-        # self.completed = 0
 
     def add_chall(self, achall, idx=None):
-        """Add challenge to TLSSNI01 object to perform at once.
+        """Store challenge to be performed when perform() is called.
 
         :param .KeyAuthorizationAnnotatedChallenge achall: Annotated
-            TLSSNI01 challenge.
-
+            challenge.
         :param int idx: index to challenge in a larger array
 
         """
         self.achalls.append(achall)
         if idx is not None:
             self.indices.append(idx)
+
+    def perform(self):
+        """Perform all added challenges.
+
+        :returns: challenge respones
+        :rtype: `list` of `acme.challenges.KeyAuthorizationChallengeResponse`
+
+
+        """
+        raise NotImplementedError()
+
+
+class TLSSNI01(ChallengePerformer):
+    # pylint: disable=abstract-method
+    """Abstract base for TLS-SNI-01 challenge performers"""
+
+    def __init__(self, configurator):
+        super(TLSSNI01, self).__init__(configurator)
+        self.challenge_conf = os.path.join(
+            configurator.config.config_dir, "le_tls_sni_01_cert_challenge.conf")
+        # self.completed = 0
 
     def get_cert_path(self, achall):
         """Returns standardized name for challenge certificate.
