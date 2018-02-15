@@ -171,10 +171,30 @@ class Directory(jose.JSONDeSerializable):
 
     class Meta(jose.JSONObjectWithFields):
         """Directory Meta."""
-        terms_of_service = jose.Field('terms-of-service', omitempty=True)
-        terms_of_service_v2 = jose.Field('termsOfService', omitempty=True)
+        _terms_of_service = jose.Field('terms-of-service', omitempty=True)
+        _terms_of_service_v2 = jose.Field('termsOfService', omitempty=True)
         website = jose.Field('website', omitempty=True)
         caa_identities = jose.Field('caa-identities', omitempty=True)
+
+        def __init__(self, **kwargs):
+            kwargs = dict((self._internal_name(k), v) for k, v in kwargs.items())
+            # pylint: disable=star-args
+            super(Directory.Meta, self).__init__(**kwargs)
+
+        @property
+        def terms_of_service(self):
+            """URL for the CA TOS"""
+            return self._terms_of_service or self._terms_of_service_v2
+
+        def __iter__(self):
+            # When iterating over fields, use the external name 'terms_of_service' instead of
+            # the internal '_terms_of_service'.
+            for name in super(Directory.Meta, self).__iter__():
+                yield name[1:] if name == '_terms_of_service' else name
+
+        def _internal_name(self, name):
+            return '_' + name if name == 'terms_of_service' else name
+
 
     @classmethod
     def _canon_key(cls, key):
