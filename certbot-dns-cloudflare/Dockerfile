@@ -1,4 +1,5 @@
-FROM certbot/certbot:rolling
+ARG CACHE_TAG=latest
+FROM certbot/certbot:${CACHE_TAG}
 
 COPY . src/certbot-dns-cloudflare
 
