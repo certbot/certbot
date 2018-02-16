@@ -1,6 +1,7 @@
 """ACME client API."""
 import base64
 import collections
+import cryptography
 import datetime
 from email.utils import parsedate_tz
 import heapq
@@ -119,11 +120,11 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
         """
         return self._send_recv_regr(regr, messages.UpdateRegistration())
 
-    def _authzr_from_response(self, response, identifier, uri=None):
+    def _authzr_from_response(self, response, identifier=None, uri=None):
         authzr = messages.AuthorizationResource(
             body=messages.Authorization.from_json(response.json()),
             uri=response.headers.get('Location', uri))
-        if authzr.body.identifier != identifier:
+        if identifier is not None and authzr.body.identifier != identifier:
             raise errors.UnexpectedUpdate(authzr)
         return authzr
 
@@ -233,8 +234,8 @@ class Client(ClientBase):
        instances of `.DeserializationError` raised in `from_json()`.
 
     :ivar messages.Directory directory:
-    :ivar key: `.JWK` (private)
-    :ivar alg: `.JWASignature`
+    :ivar key: `josepy.JWK` (private)
+    :ivar alg: `josepy.JWASignature`
     :ivar bool verify_ssl: Verify SSL certificates?
     :ivar .ClientNetwork net: Client network. Useful for testing. If not
         supplied, it will be initialized using `key`, `alg` and
@@ -550,7 +551,6 @@ class ClientV2(ClientBase):
 
         :returns: Registration Resource.
         :rtype: `.RegistrationResource`
-
         """
         response = self.net.post(self.directory['newAccount'], new_account,
             acme_version=2)
@@ -559,6 +559,104 @@ class ClientV2(ClientBase):
         regr = self._regr_from_response(response)
         self.net.account = regr
         return regr
+
+    def new_order(self, csr_pem):
+        """Request a new Order object from the server.
+
+        :param str csr_pem: A CSR in PEM format.
+
+        :returns: The newly created order.
+        :rtype: OrderResource
+        """
+        csr = cryptography.x509.load_pem_x509_csr(csr_pem,
+            cryptography.hazmat.backends.default_backend())
+        san_extension = next(ext for ext in csr.extensions
+            if ext.oid == cryptography.x509.oid.ExtensionOID.SUBJECT_ALTERNATIVE_NAME)
+        dnsNames = san_extension.value.get_values_for_type(cryptography.x509.DNSName)
+
+        identifiers = []
+        for name in dnsNames:
+            identifiers.append(messages.Identifier(typ=messages.IDENTIFIER_FQDN,
+                value=name))
+        order = messages.NewOrder(identifiers=identifiers)
+        response = self.net.post(self.directory['newOrder'], order)
+        body = messages.Order.from_json(response.json())
+        authorizations = []
+        for url in body.authorizations:
+            authorizations.append(self._authzr_from_response(self.net.get(url)))
+        return messages.OrderResource(
+            body=body,
+            uri=response.headers.get('Location'),
+            authorizations=authorizations,
+            csr_pem=csr_pem)
+
+    def poll_and_finalize(self, orderr, deadline=None):
+        """Poll authorizations and finalize the order.
+
+        If no deadline is provided, this method will timeout after 90
+        seconds.
+
+        :param messages.OrderResource orderr: order to finalize
+        :param datetime.datetime deadline: when to stop polling and timeout
+
+        :returns: finalized order
+        :rtype: messages.OrderResource
+
+        """
+        if deadline is None:
+            deadline = datetime.datetime.now() + datetime.timedelta(seconds=90)
+        orderr = self.poll_authorizations(orderr, deadline)
+        return self.finalize_order(orderr, deadline)
+
+    def poll_authorizations(self, orderr, deadline):
+        """Poll Order Resource for status."""
+        responses = []
+        for url in orderr.body.authorizations:
+            while datetime.datetime.now() < deadline:
+                authzr = self._authzr_from_response(self.net.get(url), uri=url)
+                if authzr.body.status != messages.STATUS_PENDING:
+                    responses.append(authzr)
+                    break
+                time.sleep(1)
+        # If we didn't get a response for every authorization, we fell through
+        # the bottom of the loop due to hitting the deadline.
+        if len(responses) < len(orderr.body.authorizations):
+            raise errors.TimeoutError()
+        failed = []
+        for authzr in responses:
+            if authzr.body.status != messages.STATUS_VALID:
+                for chall in authzr.body.challenges:
+                    if chall.error != None:
+                        failed.append(authzr)
+        if len(failed) > 0:
+            raise errors.ValidationError(failed)
+        return orderr.update(authorizations=responses)
+
+    def finalize_order(self, orderr, deadline):
+        """Finalize an order and obtain a certificate.
+
+        :param messages.OrderResource orderr: order to finalize
+        :param datetime.datetime deadline: when to stop polling and timeout
+
+        :returns: finalized order
+        :rtype: messages.OrderResource
+
+        """
+        csr = OpenSSL.crypto.load_certificate_request(
+            OpenSSL.crypto.FILETYPE_PEM, orderr.csr_pem)
+        wrapped_csr = messages.CertificateRequest(csr=jose.ComparableX509(csr))
+        self.net.post(orderr.body.finalize, wrapped_csr)
+        while datetime.datetime.now() < deadline:
+            time.sleep(1)
+            response = self.net.get(orderr.uri)
+            body = messages.Order.from_json(response.json())
+            if body.error is not None:
+                raise errors.IssuanceError(body.error)
+            if body.certificate is not None:
+                certificate_response = self.net.get(body.certificate).text
+                return orderr.update(body=body, fullchain_pem=certificate_response)
+        raise errors.TimeoutError()
+
 
 class BackwardsCompatibleClientV2(object):
     """ACME client wrapper that tends towards V2-style calls, but
@@ -628,10 +726,10 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
 
     """Initialize.
 
-    :param  key: Account private key
+    :param josepy.JWK key: Account private key
     :param messages.RegistrationResource account: Account object. Required if you are
-            planning to use .post() with acme_version=2 for anything other than creating a new
-            account; may be set later after registering.
+            planning to use .post() with acme_version=2 for anything other than
+            creating a new account; may be set later after registering.
     :param josepy.JWASignature alg: Algoritm to use in signing JWS.
     :param bool verify_ssl: Whether to verify certificates on SSL connections.
     :param str user_agent: String to send as User-Agent header.
@@ -662,10 +760,10 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
 
         .. todo:: Implement ``acmePath``.
 
-        :param .JSONDeSerializable obj:
+        :param josepy.JSONDeSerializable obj:
         :param str url: The URL to which this object will be POSTed
         :param bytes nonce:
-        :rtype: `.JWS`
+        :rtype: `josepy.JWS`
 
         """
         jobj = obj.json_dumps(indent=2).encode()
