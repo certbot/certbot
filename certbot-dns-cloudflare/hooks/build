@@ -1,0 +1,2 @@
+#!/bin/bash
+docker build --build-arg BUILD_DATE="$CACHE_TAG" -t "$IMAGE_NAME" .
