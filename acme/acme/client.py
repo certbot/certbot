@@ -1,7 +1,6 @@
 """ACME client API."""
 import base64
 import collections
-import cryptography
 import datetime
 from email.utils import parsedate_tz
 import heapq
@@ -11,6 +10,7 @@ import time
 import six
 from six.moves import http_client  # pylint: disable=import-error
 
+import cryptography.x509
 import josepy as jose
 import OpenSSL
 import re
