@@ -188,7 +188,6 @@ def make_csr(private_key_pem, domains, must_staple=False):
 
 def _pyopenssl_cert_or_req_all_names(loaded_cert_or_req):
     common_name = loaded_cert_or_req.get_subject().CN
-    # pylint: disable=protected-access
     sans = _pyopenssl_cert_or_req_san(loaded_cert_or_req)
 
     if common_name is None:
