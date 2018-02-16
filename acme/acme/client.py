@@ -1,7 +1,6 @@
 """ACME client API."""
 import base64
 import collections
-import cryptography
 import datetime
 from email.utils import parsedate_tz
 import heapq
@@ -570,6 +569,7 @@ class ClientV2(ClientBase):
         :rtype: OrderResource
         """
         csr = OpenSSL.crypto.load_certificate_request(OpenSSL.crypto.FILETYPE_PEM, csr_pem)
+        # pylint: disable=protected-access
         dnsNames = crypto_util._pyopenssl_cert_or_req_all_names(csr)
 
         identifiers = []

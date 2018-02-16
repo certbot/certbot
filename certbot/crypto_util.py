@@ -340,6 +340,7 @@ def _get_names_from_cert_or_req(cert_or_req, load_func, typ):
 
 
 def _get_names_from_loaded_cert_or_req(loaded_cert_or_req):
+    # pylint: disable=protected-access
     return acme_crypto_util._pyopenssl_cert_or_req_all_names(loaded_cert_or_req)
 
 
