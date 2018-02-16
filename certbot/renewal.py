@@ -434,7 +434,7 @@ def handle_renewal_request(config):
             # obtain_cert (presumably) encountered an unanticipated problem.
             logger.warning("Attempting to renew cert (%s) from %s produced an "
                            "unexpected error: %s. Skipping. "
-                           "Fore more information please check: %",
+                           "For more information please check: %",
                            lineagename, renewal_file, e, constants.WEBROOT_URL)
             logger.debug("Traceback was:\n%s", traceback.format_exc())
             renew_failures.append(renewal_candidate.fullchain)
