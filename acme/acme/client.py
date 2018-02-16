@@ -570,7 +570,7 @@ class ClientV2(ClientBase):
         :rtype: OrderResource
         """
         csr = OpenSSL.crypto.load_certificate_request(OpenSSL.crypto.FILETYPE_PEM, csr_pem)
-        dnsNames = crypto_util._pyopenssl_cert_or_req_san(csr)
+        dnsNames = crypto_util._pyopenssl_cert_or_req_all_names(csr)
 
         identifiers = []
         for name in dnsNames:

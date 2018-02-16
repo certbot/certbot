@@ -186,6 +186,16 @@ def make_csr(private_key_pem, domains, must_staple=False):
     return OpenSSL.crypto.dump_certificate_request(
         OpenSSL.crypto.FILETYPE_PEM, csr)
 
+def _pyopenssl_cert_or_req_all_names(loaded_cert_or_req):
+    common_name = loaded_cert_or_req.get_subject().CN
+    # pylint: disable=protected-access
+    sans = _pyopenssl_cert_or_req_san(loaded_cert_or_req)
+
+    if common_name is None:
+        return sans
+    else:
+        return [common_name] + [d for d in sans if d != common_name]
+
 def _pyopenssl_cert_or_req_san(cert_or_req):
     """Get Subject Alternative Names from certificate or CSR using pyOpenSSL.
 

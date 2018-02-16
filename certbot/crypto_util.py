@@ -340,14 +340,7 @@ def _get_names_from_cert_or_req(cert_or_req, load_func, typ):
 
 
 def _get_names_from_loaded_cert_or_req(loaded_cert_or_req):
-    common_name = loaded_cert_or_req.get_subject().CN
-    # pylint: disable=protected-access
-    sans = acme_crypto_util._pyopenssl_cert_or_req_san(loaded_cert_or_req)
-
-    if common_name is None:
-        return sans
-    else:
-        return [common_name] + [d for d in sans if d != common_name]
+    return acme_crypto_util._pyopenssl_cert_or_req_all_names(loaded_cert_or_req)
 
 
 def get_names_from_cert(csr, typ=OpenSSL.crypto.FILETYPE_PEM):
