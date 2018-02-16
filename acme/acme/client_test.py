@@ -34,7 +34,7 @@ DIRECTORY_V1 = messages.Directory({
 
 DIRECTORY_V2 = messages.Directory({
     'newAccount': 'https://www.letsencrypt-demo.org/acme/new-account',
-    'newNonce': 'https://acme-staging-v02.api.letsencrypt.org/acme/new-nonce'
+    'newNonce': 'https://www.letsencrypt-demo.org/acme/new-nonce'
 })
 
 
@@ -87,9 +87,6 @@ class ClientTestBase(unittest.TestCase):
 
 class BackwardsCompatibleClientV2Test(ClientTestBase):
     """Tests for  acme.client.BackwardsCompatibleClientV2."""
-
-    def setUp(self):
-        super(BackwardsCompatibleClientV2Test, self).setUp()
 
     def _init(self):
         uri = 'http://www.letsencrypt-demo.org/directory'
