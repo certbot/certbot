@@ -142,10 +142,10 @@ class BackwardsCompatibleClientV2Test(ClientTestBase):
         with mock.patch('acme.client.ClientV2') as mock_client:
             mock_client().directory.meta.__contains__.return_value = True
             client = self._init()
-            def tos_cb(tos):
+            def _tos_cb(tos):
                 raise errors.Error
             self.assertRaises(errors.Error, client.new_account_and_tos,
-                self.new_reg, tos_cb)
+                self.new_reg, _tos_cb)
             mock_client().new_account.assert_not_called()
 
         # v1 yes tos
