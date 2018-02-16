@@ -9,7 +9,7 @@ WORKDIR /opt/certbot/src
 # TODO: Install Apache/Nginx for plugin development.
 COPY . .
 RUN apt-get update && \
-    apt-get install apache2 git nginx-light python3-dev -y && \
+    apt-get install apache2 git nginx-light -y && \
     letsencrypt-auto-source/letsencrypt-auto --os-packages-only && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* \
