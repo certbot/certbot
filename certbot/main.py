@@ -496,17 +496,20 @@ def _determine_account(config):
             if config.email is None and not config.register_unsafely_without_email:
                 config.email = display_ops.get_email()
 
-            def _tos_cb(regr):
+            def _tos_cb(terms_of_service):
                 if config.tos:
                     return True
                 msg = ("Please read the Terms of Service at {0}. You "
                        "must agree in order to register with the ACME "
                        "server at {1}".format(
-                           regr.terms_of_service, config.server))
+                           terms_of_service, config.server))
                 obj = zope.component.getUtility(interfaces.IDisplay)
-                return obj.yesno(msg, "Agree", "Cancel",
+                result = obj.yesno(msg, "Agree", "Cancel",
                                  cli_flag="--agree-tos", force_interactive=True)
-
+                if not result:
+                    raise errors.Error(
+                        "Registration cannot proceed without accepting "
+                        "Terms of Service.")
             try:
                 acc, acme = client.register(
                     config, account_storage, tos_cb=_tos_cb)

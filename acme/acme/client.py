@@ -560,6 +560,62 @@ class ClientV2(ClientBase):
         self.net.account = regr
         return regr
 
+class BackwardsCompatibleClientV2(object):
+    """ACME client wrapper that tends towards V2-style calls, but
+       supports V1 servers.
+
+       :ivar int acme_version: 1 or 2, corresponding to the Let's Encrypt endpoint
+       :ivar .ClientBase client: either Client or ClientV2
+    """
+
+    def __init__(self, net, key, server):
+        directory = messages.Directory.from_json(net.get(server).json())
+        self.acme_version = self._acme_version_from_directory(directory)
+        if self.acme_version == 1:
+            self.client = Client(directory, key=key, net=net)
+        else:
+            self.client = ClientV2(directory, net=net)
+
+    def __getattr__(self, name):
+        if name in vars(self.client):
+            return getattr(self.client, name)
+        elif name in dir(ClientBase):
+            return getattr(self.client, name)
+        # temporary, for breaking changes into smaller pieces
+        elif name in dir(Client):
+            return getattr(self.client, name)
+        else:
+            raise AttributeError()
+
+    def new_account_and_tos(self, regr, check_tos_cb=None):
+        """Combined register and agree_tos for V1, new_account for V2
+
+        :param .NewRegistration regr:
+        :param callable check_tos_cb: callback that raises an error if
+            the check does not work
+        """
+        def _assess_tos(tos):
+            if check_tos_cb is not None:
+                check_tos_cb(tos)
+        if self.acme_version == 1:
+            regr = self.client.register(regr)
+            if regr.terms_of_service is not None:
+                _assess_tos(regr.terms_of_service)
+                return self.client.agree_to_tos(regr)
+            return regr
+        else:
+            if "terms_of_service" in self.client.directory.meta:
+                _assess_tos(self.client.directory.meta.terms_of_service)
+                regr = regr.update(terms_of_service_agreed=True)
+            return self.client.new_account(regr)
+
+    def _acme_version_from_directory(self, directory):
+        if hasattr(directory, 'newNonce'):
+            return 2
+        else:
+            return 1
+
+
 class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
     """Wrapper around requests that signs POSTs for authentication.
 

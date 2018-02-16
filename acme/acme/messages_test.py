@@ -165,6 +165,13 @@ class DirectoryTest(unittest.TestCase):
         from acme.messages import Directory
         Directory.from_json({'foo': 'bar'})
 
+    def test_iter_meta(self):
+        result = False
+        for k in self.dir.meta:
+            if k == 'terms_of_service':
+                result = self.dir.meta[k] == 'https://example.com/acme/terms'
+        self.assertTrue(result)
+
 
 class RegistrationTest(unittest.TestCase):
     """Tests for acme.messages.Registration."""
