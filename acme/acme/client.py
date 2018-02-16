@@ -583,7 +583,7 @@ class BackwardsCompatibleClientV2(object):
         elif name in dir(Client):
             return getattr(self.client, name)
         else:
-            raise AttributeError
+            raise AttributeError()
 
     def new_account_and_tos(self, regr, check_tos_cb=None):
         """Combined register and agree_tos for V1, new_account for V2
@@ -600,6 +600,7 @@ class BackwardsCompatibleClientV2(object):
             if regr.terms_of_service is not None:
                 _assess_tos(regr.terms_of_service)
                 return self.client.agree_to_tos(regr)
+            return regr
         else:
             if "terms_of_service" in self.client.directory.meta:
                 _assess_tos(self.client.directory.meta.terms_of_service)

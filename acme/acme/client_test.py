@@ -21,10 +21,25 @@ CERT_DER = test_util.load_vector('cert.der')
 KEY = jose.JWKRSA.load(test_util.load_vector('rsa512_key.pem'))
 KEY2 = jose.JWKRSA.load(test_util.load_vector('rsa256_key.pem'))
 
+DIRECTORY_V1 = messages.Directory({
+    messages.NewRegistration:
+        'https://www.letsencrypt-demo.org/acme/new-reg',
+    messages.Revocation:
+        'https://www.letsencrypt-demo.org/acme/revoke-cert',
+    messages.NewAuthorization:
+        'https://www.letsencrypt-demo.org/acme/new-authz',
+    messages.CertificateRequest:
+        'https://www.letsencrypt-demo.org/acme/new-cert',
+})
 
-class ClientTest(unittest.TestCase):
-    """Tests for  acme.client.Client."""
-    # pylint: disable=too-many-instance-attributes,too-many-public-methods
+DIRECTORY_V2 = messages.Directory({
+    'newAccount': 'https://www.letsencrypt-demo.org/acme/new-account',
+    'newNonce': 'https://acme-staging-v02.api.letsencrypt.org/acme/new-nonce'
+})
+
+
+class ClientTestBase(unittest.TestCase):
+    """Base for tests in acme.client."""
 
     def setUp(self):
         self.response = mock.MagicMock(
@@ -32,21 +47,6 @@ class ClientTest(unittest.TestCase):
         self.net = mock.MagicMock()
         self.net.post.return_value = self.response
         self.net.get.return_value = self.response
-
-        self.directory = messages.Directory({
-            messages.NewRegistration:
-                'https://www.letsencrypt-demo.org/acme/new-reg',
-            messages.Revocation:
-                'https://www.letsencrypt-demo.org/acme/revoke-cert',
-            messages.NewAuthorization:
-                'https://www.letsencrypt-demo.org/acme/new-authz',
-            messages.CertificateRequest:
-                'https://www.letsencrypt-demo.org/acme/new-cert',
-        })
-
-        from acme.client import Client
-        self.client = Client(
-            directory=self.directory, key=KEY, alg=jose.RS256, net=self.net)
 
         self.identifier = messages.Identifier(
             typ=messages.IDENTIFIER_FQDN, value='example.com')
@@ -84,6 +84,127 @@ class ClientTest(unittest.TestCase):
         # Reason code for revocation
         self.rsn = 1
 
+
+class BackwardsCompatibleClientV2Test(ClientTestBase):
+    """Tests for  acme.client.BackwardsCompatibleClientV2."""
+
+    def setUp(self):
+        super(BackwardsCompatibleClientV2Test, self).setUp()
+
+    def _init(self):
+        uri = 'http://www.letsencrypt-demo.org/directory'
+        from acme.client import BackwardsCompatibleClientV2
+        return BackwardsCompatibleClientV2(net=self.net,
+            key=KEY, server=uri)
+
+    def test_init_downloads_directory(self):
+        uri = 'http://www.letsencrypt-demo.org/directory'
+        from acme.client import BackwardsCompatibleClientV2
+        BackwardsCompatibleClientV2(net=self.net,
+            key=KEY, server=uri)
+        self.net.get.assert_called_once_with(uri)
+
+    def test_init_acme_version(self):
+        self.response.json.return_value = DIRECTORY_V1.to_json()
+        client = self._init()
+        self.assertEqual(client.acme_version, 1)
+
+        self.response.json.return_value = DIRECTORY_V2.to_json()
+        client = self._init()
+        self.assertEqual(client.acme_version, 2)
+
+    def test_forwarding(self):
+        self.response.json.return_value = DIRECTORY_V1.to_json()
+        client = self._init()
+        self.assertEqual(client.directory, client.client.directory)
+        self.assertEqual(client.key, KEY)
+        # delete this line once we finish migrating to new API:
+        self.assertEqual(client.register, client.client.register)
+        self.assertEqual(client.update_registration, client.client.update_registration)
+        self.assertRaises(AttributeError, client.__getattr__, 'nonexistent')
+        self.assertRaises(AttributeError, client.__getattr__, 'new_account_and_tos')
+        self.assertRaises(AttributeError, client.__getattr__, 'new_account')
+
+    def test_new_account_and_tos(self):
+        # v2 no tos
+        self.response.json.return_value = DIRECTORY_V2.to_json()
+        with mock.patch('acme.client.ClientV2') as mock_client:
+            client = self._init()
+            client.new_account_and_tos(self.new_reg)
+            mock_client().new_account.assert_called_with(self.new_reg)
+
+        # v2 tos good
+        with mock.patch('acme.client.ClientV2') as mock_client:
+            mock_client().directory.meta.__contains__.return_value = True
+            client = self._init()
+            client.new_account_and_tos(self.new_reg, lambda x: True)
+            mock_client().new_account.assert_called_with(
+                self.new_reg.update(terms_of_service_agreed=True))
+
+        # v2 tos bad
+        with mock.patch('acme.client.ClientV2') as mock_client:
+            mock_client().directory.meta.__contains__.return_value = True
+            client = self._init()
+            def tos_cb(tos):
+                raise errors.Error
+            self.assertRaises(errors.Error, client.new_account_and_tos,
+                self.new_reg, tos_cb)
+            mock_client().new_account.assert_not_called()
+
+        # v1 yes tos
+        self.response.json.return_value = DIRECTORY_V1.to_json()
+        with mock.patch('acme.client.Client') as mock_client:
+            regr = mock.MagicMock(terms_of_service="TOS")
+            mock_client().register.return_value = regr
+            client = self._init()
+            client.new_account_and_tos(self.new_reg)
+            mock_client().register.assert_called_once_with(self.new_reg)
+            mock_client().agree_to_tos.assert_called_once_with(regr)
+
+        # v1 no tos
+        with mock.patch('acme.client.Client') as mock_client:
+            regr = mock.MagicMock(terms_of_service=None)
+            mock_client().register.return_value = regr
+            client = self._init()
+            client.new_account_and_tos(self.new_reg)
+            mock_client().register.assert_called_once_with(self.new_reg)
+            mock_client().agree_to_tos.assert_not_called()
+
+
+class ClientV2Test(ClientTestBase):
+    """Tests for acme.client.ClientV2."""
+    # pylint: disable=too-many-instance-attributes,too-many-public-methods
+
+    def setUp(self):
+        super(ClientV2Test, self).setUp()
+        from acme.client import ClientV2
+        self.directory = DIRECTORY_V2
+        self.client = ClientV2(directory=self.directory, net=self.net)
+
+    def test_new_account_v2(self):
+        self.response.status_code = http_client.CREATED
+        self.response.json.return_value = self.regr.body.to_json()
+        self.response.headers['Location'] = self.regr.uri
+
+        self.regr = messages.RegistrationResource(
+            body=messages.Registration(
+                contact=self.contact, key=KEY.public_key()),
+            uri='https://www.letsencrypt-demo.org/acme/reg/1')
+
+        self.assertEqual(self.regr, self.client.new_account(self.regr))
+
+
+class ClientTest(ClientTestBase):
+    """Tests for acme.client.Client."""
+    # pylint: disable=too-many-instance-attributes,too-many-public-methods
+
+    def setUp(self):
+        super(ClientTest, self).setUp()
+        from acme.client import Client
+        self.directory = DIRECTORY_V1
+        self.client = Client(
+            directory=self.directory, key=KEY, alg=jose.RS256, net=self.net)
+
     def test_init_downloads_directory(self):
         uri = 'http://www.letsencrypt-demo.org/directory'
         from acme.client import Client
@@ -103,23 +224,6 @@ class ClientTest(unittest.TestCase):
 
         self.assertEqual(self.regr, self.client.register(self.new_reg))
         # TODO: test POST call arguments
-
-    def test_new_account_v2(self):
-        directory = messages.Directory({
-            "newAccount": 'https://www.letsencrypt-demo.org/acme/new-account',
-        })
-        from acme.client import ClientV2
-        client = ClientV2(directory, self.net)
-        self.response.status_code = http_client.CREATED
-        self.response.json.return_value = self.regr.body.to_json()
-        self.response.headers['Location'] = self.regr.uri
-
-        self.regr = messages.RegistrationResource(
-            body=messages.Registration(
-                contact=self.contact, key=KEY.public_key()),
-            uri='https://www.letsencrypt-demo.org/acme/reg/1')
-
-        self.assertEqual(self.regr, client.new_account(self.regr))
 
     def test_update_registration(self):
         # "Instance of 'Field' has no to_json/update member" bug:
