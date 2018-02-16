@@ -20,6 +20,7 @@ from certbot import util
 from certbot import hooks
 from certbot import storage
 from certbot.plugins import disco as plugins_disco
+from certbot import constants
 
 logger = logging.getLogger(__name__)
 
@@ -432,8 +433,9 @@ def handle_renewal_request(config):
         except Exception as e:  # pylint: disable=broad-except
             # obtain_cert (presumably) encountered an unanticipated problem.
             logger.warning("Attempting to renew cert (%s) from %s produced an "
-                           "unexpected error: %s. Skipping.", lineagename,
-                               renewal_file, e)
+                           "unexpected error: %s. Skipping. "
+                           "Fore more information please check: %",
+                           lineagename, renewal_file, e, constants.WEBROOT_URL)
             logger.debug("Traceback was:\n%s", traceback.format_exc())
             renew_failures.append(renewal_candidate.fullchain)
 
