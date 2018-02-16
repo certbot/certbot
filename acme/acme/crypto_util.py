@@ -1,10 +1,9 @@
 """Crypto utilities."""
 import binascii
 import contextlib
-from cryptography.hazmat.backends import default_backend
-from cryptography import x509
 import logging
 import os
+import re
 import socket
 import sys
 
@@ -187,27 +186,6 @@ def make_csr(private_key_pem, domains, must_staple=False):
     return OpenSSL.crypto.dump_certificate_request(
         OpenSSL.crypto.FILETYPE_PEM, csr)
 
-
-def _sans_from_cert_or_csr(cert_or_csr):
-    extensions = cert_or_csr.extensions
-    san_extension = next((ext for ext in extensions
-            if ext.oid == x509.oid.ExtensionOID.SUBJECT_ALTERNATIVE_NAME), None)
-    if san_extension is None:
-        return []
-    dnsNames = san_extension.value.get_values_for_type(x509.DNSName)
-    return dnsNames
-
-
-def sans_from_cert_pem(cert_pem):
-    cert = x509.load_pem_x509_certificate(cert_pem, default_backend())
-    return _sans_from_cert_or_csr(cert)
-
-
-def sans_from_csr_pem(csr_pem):
-    csr = x509.load_pem_x509_csr(csr_pem, default_backend())
-    return _sans_from_cert_or_csr(csr)
-
-
 def _pyopenssl_cert_or_req_san(cert_or_req):
     """Get Subject Alternative Names from certificate or CSR using pyOpenSSL.
 
@@ -223,15 +201,31 @@ def _pyopenssl_cert_or_req_san(cert_or_req):
     :rtype: `list` of `unicode`
 
     """
-    # dump cert to pem
+    # This function finds SANs by dumping the certificate/CSR to text and
+    # searching for "X509v3 Subject Alternative Name" in the text. This method
+    # is used to support PyOpenSSL version 0.13 where the
+    # `_subjectAltNameString` and `get_extensions` methods are not available
+    # for CSRs.
+
+    # constants based on PyOpenSSL certificate/CSR text dump
+    part_separator = ":"
+    parts_separator = ", "
+    prefix = "DNS" + part_separator
+
     if isinstance(cert_or_req, OpenSSL.crypto.X509):
-        dump_func = OpenSSL.crypto.dump_certificate
-        names_func = sans_from_cert_pem
+        func = OpenSSL.crypto.dump_certificate
     else:
-        dump_func = OpenSSL.crypto.dump_certificate_request
-        names_func = sans_from_csr_pem
-    cert_or_csr_pem = dump_func(OpenSSL.crypto.FILETYPE_PEM, cert_or_req)
-    return names_func(cert_or_csr_pem)
+        func = OpenSSL.crypto.dump_certificate_request
+    text = func(OpenSSL.crypto.FILETYPE_TEXT, cert_or_req).decode("utf-8")
+    # WARNING: this function does not support multiple SANs extensions.
+    # Multiple X509v3 extensions of the same type is disallowed by RFC 5280.
+    match = re.search(r"X509v3 Subject Alternative Name:(?: critical)?\s*(.*)", text)
+    # WARNING: this function assumes that no SAN can include
+    # parts_separator, hence the split!
+    sans_parts = [] if match is None else match.group(1).split(parts_separator)
+
+    return [part.split(part_separator)[1]
+            for part in sans_parts if part.startswith(prefix)]
 
 
 def gen_ss_cert(key, domains, not_before=None,
