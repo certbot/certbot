@@ -520,10 +520,10 @@ def enforce_le_validity(domain):
 
     """
     domain = enforce_domain_sanity(domain)
-    if not re.match("^[A-Za-z0-9.-]*$", domain):
+    if not re.match("^[A-Za-z0-9.\-_]*$", domain):
         raise errors.ConfigurationError(
             "{0} contains an invalid character. "
-            "Valid characters are A-Z, a-z, 0-9, ., and -.".format(domain))
+            "Valid characters are A-Z, a-z, 0-9, ., _ and -.".format(domain))
 
     labels = domain.split(".")
     if len(labels) < 2:
