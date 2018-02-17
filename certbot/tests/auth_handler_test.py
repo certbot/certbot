@@ -57,8 +57,8 @@ class ChallengeFactoryTest(unittest.TestCase):
             errors.Error, self.handler._challenge_factory, "failure.com", [0])
 
 
-class GetAuthorizationsTest(unittest.TestCase):
-    """get_authorizations test.
+class HandleAuthorizationsTest(unittest.TestCase):
+    """handle_authorizations test.
 
     This tests everything except for all functions under _poll_challenges.
 
@@ -92,12 +92,11 @@ class GetAuthorizationsTest(unittest.TestCase):
 
     @mock.patch("certbot.auth_handler.AuthHandler._poll_challenges")
     def test_name1_tls_sni_01_1(self, mock_poll):
-        self.mock_net.request_domain_challenges.side_effect = functools.partial(
-            gen_dom_authzr, challs=acme_util.CHALLENGES)
-
         mock_poll.side_effect = self._validate_all
 
-        authzr = self.handler.get_authorizations(["0"])
+        authzr = gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES)
+        mock_order = mock.MagicMock(authorizations=[authzr])
+        authzr = self.handler.handle_authorizations(mock_order)
 
         self.assertEqual(self.mock_net.answer_challenge.call_count, 1)
 
@@ -115,14 +114,13 @@ class GetAuthorizationsTest(unittest.TestCase):
 
     @mock.patch("certbot.auth_handler.AuthHandler._poll_challenges")
     def test_name1_tls_sni_01_1_http_01_1_dns_1(self, mock_poll):
-        self.mock_net.request_domain_challenges.side_effect = functools.partial(
-            gen_dom_authzr, challs=acme_util.CHALLENGES, combos=False)
-
         mock_poll.side_effect = self._validate_all
         self.mock_auth.get_chall_pref.return_value.append(challenges.HTTP01)
         self.mock_auth.get_chall_pref.return_value.append(challenges.DNS01)
 
-        authzr = self.handler.get_authorizations(["0"])
+        authzr = gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES)
+        mock_order = mock.MagicMock(authorizations=[authzr])
+        authzr = self.handler.handle_authorizations(mock_order)
 
         self.assertEqual(self.mock_net.answer_challenge.call_count, 3)
 
@@ -146,7 +144,11 @@ class GetAuthorizationsTest(unittest.TestCase):
 
         mock_poll.side_effect = self._validate_all
 
-        authzr = self.handler.get_authorizations(["0", "1", "2"])
+        authzrs = [gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES),
+                   gen_dom_authzr(domain="1", challs=acme_util.CHALLENGES),
+                   gen_dom_authzr(domain="2", challs=acme_util.CHALLENGES)]
+        mock_order = mock.MagicMock(authorizations=authzrs)
+        authzr = self.handler.handle_authorizations(mock_order)
 
         self.assertEqual(self.mock_net.answer_challenge.call_count, 3)
 
@@ -169,31 +171,33 @@ class GetAuthorizationsTest(unittest.TestCase):
     def test_debug_challenges(self, mock_poll):
         zope.component.provideUtility(
             mock.Mock(debug_challenges=True), interfaces.IConfig)
-        self.mock_net.request_domain_challenges.side_effect = functools.partial(
-            gen_dom_authzr, challs=acme_util.CHALLENGES)
+        authzrs = [gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES)]
+        mock_order = mock.MagicMock(authorizations=authzrs)
 
         mock_poll.side_effect = self._validate_all
 
-        self.handler.get_authorizations(["0"])
+        self.handler.handle_authorizations(mock_order)
 
         self.assertEqual(self.mock_net.answer_challenge.call_count, 1)
         self.assertEqual(self.mock_display.notification.call_count, 1)
 
     def test_perform_failure(self):
-        self.mock_net.request_domain_challenges.side_effect = functools.partial(
-            gen_dom_authzr, challs=acme_util.CHALLENGES)
+        authzrs = [gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES)]
+        mock_order = mock.MagicMock(authorizations=authzrs)
+
         self.mock_auth.perform.side_effect = errors.AuthorizationError
 
         self.assertRaises(
-            errors.AuthorizationError, self.handler.get_authorizations, ["0"])
+            errors.AuthorizationError, self.handler.handle_authorizations, mock_order)
 
     def test_no_domains(self):
-        self.assertRaises(errors.AuthorizationError, self.handler.get_authorizations, [])
+        mock_order = mock.MagicMock(authorizations=[])
+        self.assertRaises(errors.AuthorizationError, self.handler.handle_authorizations, mock_order)
 
     @mock.patch("certbot.auth_handler.AuthHandler._poll_challenges")
     def test_preferred_challenge_choice(self, mock_poll):
-        self.mock_net.request_domain_challenges.side_effect = functools.partial(
-            gen_dom_authzr, challs=acme_util.CHALLENGES)
+        authzrs = [gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES)]
+        mock_order = mock.MagicMock(authorizations=authzrs)
 
         mock_poll.side_effect = self._validate_all
         self.mock_auth.get_chall_pref.return_value.append(challenges.HTTP01)
@@ -201,20 +205,20 @@ class GetAuthorizationsTest(unittest.TestCase):
         self.handler.pref_challs.extend((challenges.HTTP01.typ,
                                          challenges.DNS01.typ,))
 
-        self.handler.get_authorizations(["0"])
+        self.handler.handle_authorizations(mock_order)
 
         self.assertEqual(self.mock_auth.cleanup.call_count, 1)
         self.assertEqual(
             self.mock_auth.cleanup.call_args[0][0][0].typ, "http-01")
 
     def test_preferred_challenges_not_supported(self):
-        self.mock_net.request_domain_challenges.side_effect = functools.partial(
-            gen_dom_authzr, challs=acme_util.CHALLENGES)
+        authzrs = [gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES)]
+        mock_order = mock.MagicMock(authorizations=authzrs)
         self.handler.pref_challs.append(challenges.HTTP01.typ)
         self.assertRaises(
-            errors.AuthorizationError, self.handler.get_authorizations, ["0"])
+            errors.AuthorizationError, self.handler.handle_authorizations, mock_order)
 
-    def _validate_all(self, unused_1, unused_2):
+    def _validate_all(self, unused_1):
         for dom in six.iterkeys(self.handler.authzr):
             azr = self.handler.authzr[dom]
             self.handler.authzr[dom] = acme_util.gen_authzr(
