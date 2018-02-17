@@ -1,7 +1,6 @@
 """ACME client API."""
 import base64
 import collections
-import cryptography
 import datetime
 from email.utils import parsedate_tz
 import heapq
@@ -17,6 +16,7 @@ import re
 import requests
 import sys
 
+from acme import crypto_util
 from acme import errors
 from acme import jws
 from acme import messages
@@ -568,11 +568,9 @@ class ClientV2(ClientBase):
         :returns: The newly created order.
         :rtype: OrderResource
         """
-        csr = cryptography.x509.load_pem_x509_csr(csr_pem,
-            cryptography.hazmat.backends.default_backend())
-        san_extension = next(ext for ext in csr.extensions
-            if ext.oid == cryptography.x509.oid.ExtensionOID.SUBJECT_ALTERNATIVE_NAME)
-        dnsNames = san_extension.value.get_values_for_type(cryptography.x509.DNSName)
+        csr = OpenSSL.crypto.load_certificate_request(OpenSSL.crypto.FILETYPE_PEM, csr_pem)
+        # pylint: disable=protected-access
+        dnsNames = crypto_util._pyopenssl_cert_or_req_all_names(csr)
 
         identifiers = []
         for name in dnsNames:
