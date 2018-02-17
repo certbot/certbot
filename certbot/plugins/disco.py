@@ -5,18 +5,14 @@ import logging
 import pkg_resources
 import six
 
+from collections import OrderedDict
+
 import zope.interface
 import zope.interface.verify
 
 from certbot import constants
 from certbot import errors
 from certbot import interfaces
-
-try:
-    from collections import OrderedDict
-except ImportError:  # pragma: no cover
-    # OrderedDict was added in Python 2.7
-    from ordereddict import OrderedDict  # pylint: disable=import-error
 
 
 logger = logging.getLogger(__name__)
