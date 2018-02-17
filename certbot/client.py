@@ -260,7 +260,7 @@ class Client(object):
         logger.debug("CSR: %s", csr)
 
         if authzr is None:
-            authzr = self.auth_handler.get_authorizations(csr)
+            authzr = self.auth_handler.get_authorizations(csr.data)
 
         certr = self.acme.request_issuance(
             jose.ComparableX509(
@@ -316,7 +316,7 @@ class Client(object):
             csr = crypto_util.init_save_csr(key, domains, self.config.csr_dir)
 
         authzr = self.auth_handler.get_authorizations(
-                csr,
+                csr.data,
                 self.config.allow_subset_of_names)
 
         certr, chain = self.obtain_certificate_from_csr(
