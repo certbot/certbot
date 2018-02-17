@@ -29,6 +29,10 @@ matrix:
       env: TOXENV=py27-oldest
       sudo: required
       services: docker
+    - python: "3.4"
+      env: TOXENV=py34
+      sudo: required
+      services: docker
     - python: "3.6"
       env: TOXENV=py36
       sudo: required
