@@ -1064,7 +1064,7 @@ def _csr_get_and_save_cert(config, le_client):
 
     """
     csr, _ = config.actual_csr
-    certr, chain = le_client.obtain_certificate_from_csr(config.domains, csr)
+    certr, chain = le_client.obtain_certificate_from_csr(csr)
     if config.dry_run:
         logger.debug(
             "Dry run: skipping saving certificate to %s", config.cert_path)

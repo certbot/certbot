@@ -671,6 +671,7 @@ class BackwardsCompatibleClientV2(object):
             self.client = Client(directory, key=key, net=net)
         else:
             self.client = ClientV2(directory, net=net)
+            self.orderr = None
 
     def __getattr__(self, name):
         if name in vars(self.client):
@@ -704,6 +705,19 @@ class BackwardsCompatibleClientV2(object):
                 _assess_tos(self.client.directory.meta.terms_of_service)
                 regr = regr.update(terms_of_service_agreed=True)
             return self.client.new_account(regr)
+
+    def request_authorizations(self, csr_pem):
+        if self.acme_version == 1:
+            csr = OpenSSL.crypto.load_certificate_request(OpenSSL.crypto.FILETYPE_PEM, csr_pem)
+            # pylint: disable=protected-access
+            dnsNames = crypto_util._pyopenssl_cert_or_req_all_names(csr)
+            authorizations = []
+            for domain in dnsNames:
+                authorizations.append(self.client.request_domain_challenges(domain))
+            return authorizations
+        else:
+            self.orderr = self.client.new_order(csr_pem)
+            return self.orderr.authorizations
 
     def _acme_version_from_directory(self, directory):
         if hasattr(directory, 'newNonce'):

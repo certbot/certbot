@@ -235,13 +235,9 @@ class Client(object):
         else:
             self.auth_handler = None
 
-    def obtain_certificate_from_csr(self, domains, csr, authzr=None):
+    def obtain_certificate_from_csr(self, csr, authzr=None):
         """Obtain certificate.
 
-        Internal function with precondition that `domains` are
-        consistent with identifiers present in the `csr`.
-
-        :param list domains: Domain names.
         :param .util.CSR csr: PEM-encoded Certificate Signing
             Request. The key used to generate this CSR can be different
             than `authkey`.
@@ -261,10 +257,10 @@ class Client(object):
         if self.account.regr is None:
             raise errors.Error("Please register with the ACME server first.")
 
-        logger.debug("CSR: %s, domains: %s", csr, domains)
+        logger.debug("CSR: %s", csr)
 
         if authzr is None:
-            authzr = self.auth_handler.get_authorizations(domains)
+            authzr = self.auth_handler.get_authorizations(csr)
 
         certr = self.acme.request_issuance(
             jose.ComparableX509(
@@ -307,13 +303,6 @@ class Client(object):
         :rtype: tuple
 
         """
-        authzr = self.auth_handler.get_authorizations(
-                domains,
-                self.config.allow_subset_of_names)
-
-        auth_domains = set(a.body.identifier.value for a in authzr)
-        domains = [d for d in domains if d in auth_domains]
-
         # Create CSR from names
         if self.config.dry_run:
             key = util.Key(file=None,
@@ -326,8 +315,12 @@ class Client(object):
                 self.config.rsa_key_size, self.config.key_dir)
             csr = crypto_util.init_save_csr(key, domains, self.config.csr_dir)
 
+        authzr = self.auth_handler.get_authorizations(
+                csr,
+                self.config.allow_subset_of_names)
+
         certr, chain = self.obtain_certificate_from_csr(
-            domains, csr, authzr=authzr)
+            csr, authzr=authzr)
 
         return certr, chain, key, csr
 
