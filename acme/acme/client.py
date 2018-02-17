@@ -671,7 +671,6 @@ class BackwardsCompatibleClientV2(object):
             self.client = Client(directory, key=key, net=net)
         else:
             self.client = ClientV2(directory, net=net)
-            self.orderr = None
 
     def __getattr__(self, name):
         if name in vars(self.client):
@@ -706,16 +705,16 @@ class BackwardsCompatibleClientV2(object):
                 regr = regr.update(terms_of_service_agreed=True)
             return self.client.new_account(regr)
 
-    def request_authorizations(self, csr_pem):
-        """Request authorizations for the domains in csr_pem.
+    def new_order(self, csr_pem):
+        """Request a new Order object from the server.
 
-        Calls request_domain_challenges for each domain for V1, and
-        calls new_order and saves the result for V2.
+        If using ACMEv1, returns a dummy OrderResource with only
+        the authorizations field filled in.
 
         :param str csr_pem: A CSR in PEM format.
 
-        :returns: List of Authorization Resources.
-        :rtype: list of `.AuthorizationResource`
+        :returns: The newly created order.
+        :rtype: OrderResource
         """
         if self.acme_version == 1:
             csr = OpenSSL.crypto.load_certificate_request(OpenSSL.crypto.FILETYPE_PEM, csr_pem)
@@ -724,10 +723,9 @@ class BackwardsCompatibleClientV2(object):
             authorizations = []
             for domain in dnsNames:
                 authorizations.append(self.client.request_domain_challenges(domain))
-            return authorizations
+            return messages.OrderResource(authorizations=authorizations)
         else:
-            self.orderr = self.client.new_order(csr_pem)
-            return self.orderr.authorizations
+            return self.client.new_order(csr_pem)
 
     def _acme_version_from_directory(self, directory):
         if hasattr(directory, 'newNonce'):

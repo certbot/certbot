@@ -235,14 +235,12 @@ class Client(object):
         else:
             self.auth_handler = None
 
-    def obtain_certificate_from_csr(self, csr, authzr=None):
+    def obtain_certificate_from_csr(self, csr):
         """Obtain certificate.
 
         :param .util.CSR csr: PEM-encoded Certificate Signing
             Request. The key used to generate this CSR can be different
             than `authkey`.
-        :param list authzr: List of
-            :class:`acme.messages.AuthorizationResource`
 
         :returns: `.CertificateResource` and certificate chain (as
             returned by `.fetch_chain`).
@@ -259,8 +257,8 @@ class Client(object):
 
         logger.debug("CSR: %s", csr)
 
-        if authzr is None:
-            authzr = self.auth_handler.get_authorizations(csr.data)
+        orderr = self.acme.new_order(csr.data)
+        authzr = self.auth_handler.handle_authorizations(orderr)
 
         certr = self.acme.request_issuance(
             jose.ComparableX509(
@@ -315,12 +313,7 @@ class Client(object):
                 self.config.rsa_key_size, self.config.key_dir)
             csr = crypto_util.init_save_csr(key, domains, self.config.csr_dir)
 
-        authzr = self.auth_handler.get_authorizations(
-                csr.data,
-                self.config.allow_subset_of_names)
-
-        certr, chain = self.obtain_certificate_from_csr(
-            csr, authzr=authzr)
+        certr, chain = self.obtain_certificate_from_csr(csr)
 
         return certr, chain, key, csr
 

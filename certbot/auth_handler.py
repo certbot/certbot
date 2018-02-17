@@ -48,12 +48,11 @@ class AuthHandler(object):
         # List must be used to keep responses straight.
         self.achalls = []
 
-    def get_authorizations(self, csr_pem, best_effort=False):
+    def handle_authorizations(self, orderr):
         """Retrieve all authorizations for challenges.
 
-        :param list csr_pem: CSR containing domains for authorization
-        :param bool best_effort: Whether or not all authorizations are
-             required (this is useful in renewal)
+        :param acme.messages.OrderResource orderr: must have
+            authorizations filled in
 
         :returns: List of authorization resources
         :rtype: list
@@ -62,7 +61,7 @@ class AuthHandler(object):
             authorizations
 
         """
-        authzrs = self.acme.request_authorizations(csr_pem)
+        authzrs = orderr.authorizations
         for authzr in authzrs:
             self.authzr[authzr.body.identifier.value] = authzr
         domains = self.authzr.keys()
@@ -80,7 +79,7 @@ class AuthHandler(object):
                        'Pass "-v" for more info about challenges.', pause=True)
 
             # Send all Responses - this modifies achalls
-            self._respond(resp, best_effort)
+            self._respond(resp)
 
         # Just make sure all decisions are complete.
         self.verify_authzr_complete()
@@ -124,7 +123,7 @@ class AuthHandler(object):
 
         return resp
 
-    def _respond(self, resp, best_effort):
+    def _respond(self, resp):
         """Send/Receive confirmation of all challenges.
 
         .. note:: This method also cleans up the auth_handler state.
@@ -137,7 +136,7 @@ class AuthHandler(object):
 
         # Check for updated status...
         try:
-            self._poll_challenges(chall_update, best_effort)
+            self._poll_challenges(chall_update)
         finally:
             # This removes challenges from self.achalls
             self._cleanup_challenges(active_achalls)
@@ -169,7 +168,7 @@ class AuthHandler(object):
         return active_achalls
 
     def _poll_challenges(
-            self, chall_update, best_effort, min_sleep=3, max_rounds=15):
+            self, chall_update, min_sleep=3, max_rounds=15):
         """Wait for all challenge results to be determined."""
         dom_to_check = set(chall_update.keys())
         comp_domains = set()
@@ -190,14 +189,8 @@ class AuthHandler(object):
                         chall_update[domain].remove(achall)
                 # We failed some challenges... damage control
                 else:
-                    if best_effort:
-                        comp_domains.add(domain)
-                        logger.warning(
-                            "Challenge failed for domain %s",
-                            domain)
-                    else:
-                        all_failed_achalls.update(
-                            updated for _, updated in failed_achalls)
+                    all_failed_achalls.update(
+                        updated for _, updated in failed_achalls)
 
             if all_failed_achalls:
                 _report_failed_challs(all_failed_achalls)
