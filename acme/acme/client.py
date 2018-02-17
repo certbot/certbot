@@ -707,6 +707,16 @@ class BackwardsCompatibleClientV2(object):
             return self.client.new_account(regr)
 
     def request_authorizations(self, csr_pem):
+        """Request authorizations for the domains in csr_pem.
+
+        Calls request_domain_challenges for each domain for V1, and
+        calls new_order and saves the result for V2.
+
+        :param str csr_pem: A CSR in PEM format.
+
+        :returns: List of Authorization Resources.
+        :rtype: list of `.AuthorizationResource`
+        """
         if self.acme_version == 1:
             csr = OpenSSL.crypto.load_certificate_request(OpenSSL.crypto.FILETYPE_PEM, csr_pem)
             # pylint: disable=protected-access
