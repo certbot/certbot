@@ -1269,7 +1269,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                             "insert_cert_file_path")
         self.parser.add_dir(vh_path, "SSLCertificateKeyFile",
                             "insert_key_file_path")
-        self.parser.add_dir(vh_path, "Include", self.mod_ssl_conf)
+        # Only include the TLS configuration if not already included
+        existing_inc = self.parser.find_dir("Include", self.mod_ssl_conf, vh_path)
+        if not existing_inc:
+            self.parser.add_dir(vh_path, "Include", self.mod_ssl_conf)
 
     def _add_servername_alias(self, target_name, vhost):
         vh_path = vhost.path

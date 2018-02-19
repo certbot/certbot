@@ -1290,14 +1290,13 @@ def _paths_parser(helpful):
     elif verb == "revoke":
         add(section, "--cert-path", type=read_file, required=True, help=cph)
     else:
-        add(section, "--cert-path", type=os.path.abspath,
-            help=cph, required=(verb == "install"))
+        add(section, "--cert-path", type=os.path.abspath, help=cph)
 
     section = "paths"
     if verb in ("install", "revoke"):
         section = verb
     # revoke --key-path reads a file, install --key-path takes a string
-    add(section, "--key-path", required=(verb == "install"),
+    add(section, "--key-path",
         type=((verb == "revoke" and read_file) or os.path.abspath),
         help="Path to private key for certificate installation "
              "or revocation (if account key is missing)")

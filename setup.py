@@ -41,6 +41,7 @@ install_requires = [
     'ConfigArgParse>=0.9.3',
     'configobj',
     'cryptography>=1.2',  # load_pem_x509_certificate
+    'josepy',
     'mock',
     'parsedatetime>=1.3',  # Calendar.parseDT
     'pyrfc3339',
