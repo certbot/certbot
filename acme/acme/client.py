@@ -16,6 +16,7 @@ import re
 import requests
 import sys
 
+from acme import crypto_util
 from acme import errors
 from acme import jws
 from acme import messages
@@ -39,39 +40,24 @@ DEFAULT_NETWORK_TIMEOUT = 45
 DER_CONTENT_TYPE = 'application/pkix-cert'
 
 
-class Client(object):  # pylint: disable=too-many-instance-attributes
-    """ACME client.
-
-    .. todo::
-       Clean up raised error types hierarchy, document, and handle (wrap)
-       instances of `.DeserializationError` raised in `from_json()`.
+class ClientBase(object):  # pylint: disable=too-many-instance-attributes
+    """ACME client base object.
 
     :ivar messages.Directory directory:
-    :ivar key: `.JWK` (private)
-    :ivar alg: `.JWASignature`
-    :ivar bool verify_ssl: Verify SSL certificates?
-    :ivar .ClientNetwork net: Client network. Useful for testing. If not
-        supplied, it will be initialized using `key`, `alg` and
-        `verify_ssl`.
-
+    :ivar .ClientNetwork net: Client network.
+    :ivar int acme_version: ACME protocol version. 1 or 2.
     """
 
-    def __init__(self, directory, key, alg=jose.RS256, verify_ssl=True,
-                 net=None):
+    def __init__(self, directory, net, acme_version):
         """Initialize.
 
-        :param directory: Directory Resource (`.messages.Directory`) or
-            URI from which the resource will be downloaded.
-
+        :param .messages.Directory directory: Directory Resource
+        :param .ClientNetwork net: Client network.
+        :param int acme_version: ACME protocol version. 1 or 2.
         """
-        self.key = key
-        self.net = ClientNetwork(key, alg, verify_ssl) if net is None else net
-
-        if isinstance(directory, six.string_types):
-            self.directory = messages.Directory.from_json(
-                self.net.get(directory).json())
-        else:
-            self.directory = directory
+        self.directory = directory
+        self.net = net
+        self.acme_version = acme_version
 
     @classmethod
     def _regr_from_response(cls, response, uri=None, terms_of_service=None):
@@ -83,28 +69,8 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
             uri=response.headers.get('Location', uri),
             terms_of_service=terms_of_service)
 
-    def register(self, new_reg=None):
-        """Register.
-
-        :param .NewRegistration new_reg:
-
-        :returns: Registration Resource.
-        :rtype: `.RegistrationResource`
-
-        """
-        new_reg = messages.NewRegistration() if new_reg is None else new_reg
-        assert isinstance(new_reg, messages.NewRegistration)
-
-        response = self.net.post(self.directory[new_reg], new_reg)
-        # TODO: handle errors
-        assert response.status_code == http_client.CREATED
-
-        # "Instance of 'Field' has no key/contact member" bug:
-        # pylint: disable=no-member
-        return self._regr_from_response(response)
-
     def _send_recv_regr(self, regr, body):
-        response = self.net.post(regr.uri, body)
+        response = self.net.post(regr.uri, body, acme_version=self.acme_version)
 
         # TODO: Boulder returns httplib.ACCEPTED
         #assert response.status_code == httplib.OK
@@ -130,6 +96,7 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         update = regr.body if update is None else update
         body = messages.UpdateRegistration(**dict(update))
         updated_regr = self._send_recv_regr(regr, body=body)
+        self.net.account = updated_regr
         return updated_regr
 
     def deactivate_registration(self, regr):
@@ -153,64 +120,13 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         """
         return self._send_recv_regr(regr, messages.UpdateRegistration())
 
-    def agree_to_tos(self, regr):
-        """Agree to the terms-of-service.
-
-        Agree to the terms-of-service in a Registration Resource.
-
-        :param regr: Registration Resource.
-        :type regr: `.RegistrationResource`
-
-        :returns: Updated Registration Resource.
-        :rtype: `.RegistrationResource`
-
-        """
-        return self.update_registration(
-            regr.update(body=regr.body.update(agreement=regr.terms_of_service)))
-
-    def _authzr_from_response(self, response, identifier, uri=None):
+    def _authzr_from_response(self, response, identifier=None, uri=None):
         authzr = messages.AuthorizationResource(
             body=messages.Authorization.from_json(response.json()),
             uri=response.headers.get('Location', uri))
-        if authzr.body.identifier != identifier:
+        if identifier is not None and authzr.body.identifier != identifier:
             raise errors.UnexpectedUpdate(authzr)
         return authzr
-
-    def request_challenges(self, identifier, new_authzr_uri=None):
-        """Request challenges.
-
-        :param .messages.Identifier identifier: Identifier to be challenged.
-        :param str new_authzr_uri: Deprecated. Do not use.
-
-        :returns: Authorization Resource.
-        :rtype: `.AuthorizationResource`
-
-        """
-        if new_authzr_uri is not None:
-            logger.debug("request_challenges with new_authzr_uri deprecated.")
-        new_authz = messages.NewAuthorization(identifier=identifier)
-        response = self.net.post(self.directory.new_authz, new_authz)
-        # TODO: handle errors
-        assert response.status_code == http_client.CREATED
-        return self._authzr_from_response(response, identifier)
-
-    def request_domain_challenges(self, domain, new_authzr_uri=None):
-        """Request challenges for domain names.
-
-        This is simply a convenience function that wraps around
-        `request_challenges`, but works with domain names instead of
-        generic identifiers. See ``request_challenges`` for more
-        documentation.
-
-        :param str domain: Domain name to be challenged.
-        :param str new_authzr_uri: Deprecated. Do not use.
-
-        :returns: Authorization Resource.
-        :rtype: `.AuthorizationResource`
-
-        """
-        return self.request_challenges(messages.Identifier(
-            typ=messages.IDENTIFIER_FQDN, value=domain), new_authzr_uri)
 
     def answer_challenge(self, challb, response):
         """Answer challenge.
@@ -227,7 +143,8 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
         :raises .UnexpectedUpdate:
 
         """
-        response = self.net.post(challb.uri, response)
+        response = self.net.post(challb.uri, response,
+            acme_version=self.acme_version)
         try:
             authzr_uri = response.links['up']['url']
         except KeyError:
@@ -288,6 +205,133 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
             response, authzr.body.identifier, authzr.uri)
         return updated_authzr, response
 
+    def revoke(self, cert, rsn):
+        """Revoke certificate.
+
+        :param .ComparableX509 cert: `OpenSSL.crypto.X509` wrapped in
+            `.ComparableX509`
+
+        :param int rsn: Reason code for certificate revocation.
+
+        :raises .ClientError: If revocation is unsuccessful.
+
+        """
+        response = self.net.post(self.directory[messages.Revocation],
+                                 messages.Revocation(
+                                     certificate=cert,
+                                     reason=rsn),
+                                 content_type=None,
+                                 acme_version=self.acme_version)
+        if response.status_code != http_client.OK:
+            raise errors.ClientError(
+                'Successful revocation must return HTTP OK status')
+
+class Client(ClientBase):
+    """ACME client for a v1 API.
+
+    .. todo::
+       Clean up raised error types hierarchy, document, and handle (wrap)
+       instances of `.DeserializationError` raised in `from_json()`.
+
+    :ivar messages.Directory directory:
+    :ivar key: `josepy.JWK` (private)
+    :ivar alg: `josepy.JWASignature`
+    :ivar bool verify_ssl: Verify SSL certificates?
+    :ivar .ClientNetwork net: Client network. Useful for testing. If not
+        supplied, it will be initialized using `key`, `alg` and
+        `verify_ssl`.
+
+    """
+
+    def __init__(self, directory, key, alg=jose.RS256, verify_ssl=True,
+                 net=None):
+        """Initialize.
+
+        :param directory: Directory Resource (`.messages.Directory`) or
+            URI from which the resource will be downloaded.
+
+        """
+        # pylint: disable=too-many-arguments
+        self.key = key
+        self.net = ClientNetwork(key, alg=alg, verify_ssl=verify_ssl) if net is None else net
+
+        if isinstance(directory, six.string_types):
+            directory = messages.Directory.from_json(
+                self.net.get(directory).json())
+        super(Client, self).__init__(directory=directory,
+            net=net, acme_version=1)
+
+    def register(self, new_reg=None):
+        """Register.
+
+        :param .NewRegistration new_reg:
+
+        :returns: Registration Resource.
+        :rtype: `.RegistrationResource`
+
+        """
+        new_reg = messages.NewRegistration() if new_reg is None else new_reg
+        response = self.net.post(self.directory[new_reg], new_reg,
+            acme_version=1)
+        # TODO: handle errors
+        assert response.status_code == http_client.CREATED
+
+        # "Instance of 'Field' has no key/contact member" bug:
+        # pylint: disable=no-member
+        return self._regr_from_response(response)
+
+    def agree_to_tos(self, regr):
+        """Agree to the terms-of-service.
+
+        Agree to the terms-of-service in a Registration Resource.
+
+        :param regr: Registration Resource.
+        :type regr: `.RegistrationResource`
+
+        :returns: Updated Registration Resource.
+        :rtype: `.RegistrationResource`
+
+        """
+        return self.update_registration(
+            regr.update(body=regr.body.update(agreement=regr.terms_of_service)))
+
+    def request_challenges(self, identifier, new_authzr_uri=None):
+        """Request challenges.
+
+        :param .messages.Identifier identifier: Identifier to be challenged.
+        :param str new_authzr_uri: Deprecated. Do not use.
+
+        :returns: Authorization Resource.
+        :rtype: `.AuthorizationResource`
+
+        """
+        if new_authzr_uri is not None:
+            logger.debug("request_challenges with new_authzr_uri deprecated.")
+        new_authz = messages.NewAuthorization(identifier=identifier)
+        response = self.net.post(self.directory.new_authz, new_authz,
+          acme_version=1)
+        # TODO: handle errors
+        assert response.status_code == http_client.CREATED
+        return self._authzr_from_response(response, identifier)
+
+    def request_domain_challenges(self, domain, new_authzr_uri=None):
+        """Request challenges for domain names.
+
+        This is simply a convenience function that wraps around
+        `request_challenges`, but works with domain names instead of
+        generic identifiers. See ``request_challenges`` for more
+        documentation.
+
+        :param str domain: Domain name to be challenged.
+        :param str new_authzr_uri: Deprecated. Do not use.
+
+        :returns: Authorization Resource.
+        :rtype: `.AuthorizationResource`
+
+        """
+        return self.request_challenges(messages.Identifier(
+            typ=messages.IDENTIFIER_FQDN, value=domain), new_authzr_uri)
+
     def request_issuance(self, csr, authzrs):
         """Request issuance.
 
@@ -311,7 +355,8 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
             self.directory.new_cert,
             req,
             content_type=content_type,
-            headers={'Accept': content_type})
+            headers={'Accept': content_type},
+            acme_version=1)
 
         cert_chain_uri = response.links.get('up', {}).get('url')
 
@@ -481,37 +526,218 @@ class Client(object):  # pylint: disable=too-many-instance-attributes
                 "Recursion limit reached. Didn't get {0}".format(uri))
         return chain
 
-    def revoke(self, cert, rsn):
-        """Revoke certificate.
 
-        :param .ComparableX509 cert: `OpenSSL.crypto.X509` wrapped in
-            `.ComparableX509`
 
-        :param int rsn: Reason code for certificate revocation.
+class ClientV2(ClientBase):
+    """ACME client for a v2 API.
 
-        :raises .ClientError: If revocation is unsuccessful.
+    :ivar messages.Directory directory:
+    :ivar .ClientNetwork net: Client network.
+    """
+
+    def __init__(self, directory, net):
+        """Initialize.
+
+        :param .messages.Directory directory: Directory Resource
+        :param .ClientNetwork net: Client network.
+        """
+        super(ClientV2, self).__init__(directory=directory,
+            net=net, acme_version=2)
+
+    def new_account(self, new_account):
+        """Register.
+
+        :param .NewRegistration new_account:
+
+        :returns: Registration Resource.
+        :rtype: `.RegistrationResource`
+        """
+        response = self.net.post(self.directory['newAccount'], new_account,
+            acme_version=2)
+        # "Instance of 'Field' has no key/contact member" bug:
+        # pylint: disable=no-member
+        regr = self._regr_from_response(response)
+        self.net.account = regr
+        return regr
+
+    def new_order(self, csr_pem):
+        """Request a new Order object from the server.
+
+        :param str csr_pem: A CSR in PEM format.
+
+        :returns: The newly created order.
+        :rtype: OrderResource
+        """
+        csr = OpenSSL.crypto.load_certificate_request(OpenSSL.crypto.FILETYPE_PEM, csr_pem)
+        # pylint: disable=protected-access
+        dnsNames = crypto_util._pyopenssl_cert_or_req_all_names(csr)
+
+        identifiers = []
+        for name in dnsNames:
+            identifiers.append(messages.Identifier(typ=messages.IDENTIFIER_FQDN,
+                value=name))
+        order = messages.NewOrder(identifiers=identifiers)
+        response = self.net.post(self.directory['newOrder'], order)
+        body = messages.Order.from_json(response.json())
+        authorizations = []
+        for url in body.authorizations:
+            authorizations.append(self._authzr_from_response(self.net.get(url)))
+        return messages.OrderResource(
+            body=body,
+            uri=response.headers.get('Location'),
+            authorizations=authorizations,
+            csr_pem=csr_pem)
+
+    def poll_and_finalize(self, orderr, deadline=None):
+        """Poll authorizations and finalize the order.
+
+        If no deadline is provided, this method will timeout after 90
+        seconds.
+
+        :param messages.OrderResource orderr: order to finalize
+        :param datetime.datetime deadline: when to stop polling and timeout
+
+        :returns: finalized order
+        :rtype: messages.OrderResource
 
         """
-        response = self.net.post(self.directory[messages.Revocation],
-                                 messages.Revocation(
-                                     certificate=cert,
-                                     reason=rsn),
-                                 content_type=None)
-        if response.status_code != http_client.OK:
-            raise errors.ClientError(
-                'Successful revocation must return HTTP OK status')
+        if deadline is None:
+            deadline = datetime.datetime.now() + datetime.timedelta(seconds=90)
+        orderr = self.poll_authorizations(orderr, deadline)
+        return self.finalize_order(orderr, deadline)
+
+    def poll_authorizations(self, orderr, deadline):
+        """Poll Order Resource for status."""
+        responses = []
+        for url in orderr.body.authorizations:
+            while datetime.datetime.now() < deadline:
+                authzr = self._authzr_from_response(self.net.get(url), uri=url)
+                if authzr.body.status != messages.STATUS_PENDING:
+                    responses.append(authzr)
+                    break
+                time.sleep(1)
+        # If we didn't get a response for every authorization, we fell through
+        # the bottom of the loop due to hitting the deadline.
+        if len(responses) < len(orderr.body.authorizations):
+            raise errors.TimeoutError()
+        failed = []
+        for authzr in responses:
+            if authzr.body.status != messages.STATUS_VALID:
+                for chall in authzr.body.challenges:
+                    if chall.error != None:
+                        failed.append(authzr)
+        if len(failed) > 0:
+            raise errors.ValidationError(failed)
+        return orderr.update(authorizations=responses)
+
+    def finalize_order(self, orderr, deadline):
+        """Finalize an order and obtain a certificate.
+
+        :param messages.OrderResource orderr: order to finalize
+        :param datetime.datetime deadline: when to stop polling and timeout
+
+        :returns: finalized order
+        :rtype: messages.OrderResource
+
+        """
+        csr = OpenSSL.crypto.load_certificate_request(
+            OpenSSL.crypto.FILETYPE_PEM, orderr.csr_pem)
+        wrapped_csr = messages.CertificateRequest(csr=jose.ComparableX509(csr))
+        self.net.post(orderr.body.finalize, wrapped_csr)
+        while datetime.datetime.now() < deadline:
+            time.sleep(1)
+            response = self.net.get(orderr.uri)
+            body = messages.Order.from_json(response.json())
+            if body.error is not None:
+                raise errors.IssuanceError(body.error)
+            if body.certificate is not None:
+                certificate_response = self.net.get(body.certificate).text
+                return orderr.update(body=body, fullchain_pem=certificate_response)
+        raise errors.TimeoutError()
+
+
+class BackwardsCompatibleClientV2(object):
+    """ACME client wrapper that tends towards V2-style calls, but
+       supports V1 servers.
+
+       :ivar int acme_version: 1 or 2, corresponding to the Let's Encrypt endpoint
+       :ivar .ClientBase client: either Client or ClientV2
+    """
+
+    def __init__(self, net, key, server):
+        directory = messages.Directory.from_json(net.get(server).json())
+        self.acme_version = self._acme_version_from_directory(directory)
+        if self.acme_version == 1:
+            self.client = Client(directory, key=key, net=net)
+        else:
+            self.client = ClientV2(directory, net=net)
+
+    def __getattr__(self, name):
+        if name in vars(self.client):
+            return getattr(self.client, name)
+        elif name in dir(ClientBase):
+            return getattr(self.client, name)
+        # temporary, for breaking changes into smaller pieces
+        elif name in dir(Client):
+            return getattr(self.client, name)
+        else:
+            raise AttributeError()
+
+    def new_account_and_tos(self, regr, check_tos_cb=None):
+        """Combined register and agree_tos for V1, new_account for V2
+
+        :param .NewRegistration regr:
+        :param callable check_tos_cb: callback that raises an error if
+            the check does not work
+        """
+        def _assess_tos(tos):
+            if check_tos_cb is not None:
+                check_tos_cb(tos)
+        if self.acme_version == 1:
+            regr = self.client.register(regr)
+            if regr.terms_of_service is not None:
+                _assess_tos(regr.terms_of_service)
+                return self.client.agree_to_tos(regr)
+            return regr
+        else:
+            if "terms_of_service" in self.client.directory.meta:
+                _assess_tos(self.client.directory.meta.terms_of_service)
+                regr = regr.update(terms_of_service_agreed=True)
+            return self.client.new_account(regr)
+
+    def _acme_version_from_directory(self, directory):
+        if hasattr(directory, 'newNonce'):
+            return 2
+        else:
+            return 1
 
 
 class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
-    """Client network."""
+    """Wrapper around requests that signs POSTs for authentication.
+
+    Also adds user agent, and handles Content-Type.
+    """
     JSON_CONTENT_TYPE = 'application/json'
     JOSE_CONTENT_TYPE = 'application/jose+json'
     JSON_ERROR_CONTENT_TYPE = 'application/problem+json'
     REPLAY_NONCE_HEADER = 'Replay-Nonce'
 
-    def __init__(self, key, alg=jose.RS256, verify_ssl=True,
+    """Initialize.
+
+    :param josepy.JWK key: Account private key
+    :param messages.RegistrationResource account: Account object. Required if you are
+            planning to use .post() with acme_version=2 for anything other than
+            creating a new account; may be set later after registering.
+    :param josepy.JWASignature alg: Algoritm to use in signing JWS.
+    :param bool verify_ssl: Whether to verify certificates on SSL connections.
+    :param str user_agent: String to send as User-Agent header.
+    :param float timeout: Timeout for requests.
+    """
+    def __init__(self, key, account=None, alg=jose.RS256, verify_ssl=True,
                  user_agent='acme-python', timeout=DEFAULT_NETWORK_TIMEOUT):
+        # pylint: disable=too-many-arguments
         self.key = key
+        self.account = account
         self.alg = alg
         self.verify_ssl = verify_ssl
         self._nonces = set()
@@ -527,21 +753,29 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         except Exception:  # pylint: disable=broad-except
             pass
 
-    def _wrap_in_jws(self, obj, nonce):
+    def _wrap_in_jws(self, obj, nonce, url, acme_version):
         """Wrap `JSONDeSerializable` object in JWS.
 
         .. todo:: Implement ``acmePath``.
 
-        :param .JSONDeSerializable obj:
+        :param josepy.JSONDeSerializable obj:
+        :param str url: The URL to which this object will be POSTed
         :param bytes nonce:
-        :rtype: `.JWS`
+        :rtype: `josepy.JWS`
 
         """
         jobj = obj.json_dumps(indent=2).encode()
         logger.debug('JWS payload:\n%s', jobj)
-        return jws.JWS.sign(
-            payload=jobj, key=self.key, alg=self.alg,
-            nonce=nonce).json_dumps(indent=2)
+        kwargs = {
+            "alg": self.alg,
+            "nonce": nonce
+        }
+        if acme_version == 2:
+            kwargs["url"] = url
+            kwargs["kid"] = self.account["uri"]
+        kwargs["key"] = self.key
+        # pylint: disable=star-args
+        return jws.JWS.sign(jobj, **kwargs).json_dumps(indent=2)
 
     @classmethod
     def _check_response(cls, response, content_type=None):
@@ -714,8 +948,9 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
             else:
                 raise
 
-    def _post_once(self, url, obj, content_type=JOSE_CONTENT_TYPE, **kwargs):
-        data = self._wrap_in_jws(obj, self._get_nonce(url))
+    def _post_once(self, url, obj, content_type=JOSE_CONTENT_TYPE,
+            acme_version=1, **kwargs):
+        data = self._wrap_in_jws(obj, self._get_nonce(url), url, acme_version)
         kwargs.setdefault('headers', {'Content-Type': content_type})
         response = self._send_request('POST', url, data=data, **kwargs)
         self._add_nonce(response)

@@ -83,6 +83,28 @@ class PollError(ClientError):
         return '{0}(exhausted={1!r}, updated={2!r})'.format(
             self.__class__.__name__, self.exhausted, self.updated)
 
+class ValidationError(Error):
+    """Error for authorization failures. Contains a list of authorization
+    resources, each of which is invalid and should have an error field.
+    """
+    def __init__(self, failed_authzrs):
+        self.failed_authzrs = failed_authzrs
+        super(ValidationError, self).__init__()
+
+class TimeoutError(Error):
+    """Error for when polling an authorization or an order times out."""
+
+class IssuanceError(Error):
+    """Error sent by the server after requesting issuance of a certificate."""
+
+    def __init__(self, error):
+        """Initialize.
+
+        :param messages.Error error: The error provided by the server.
+        """
+        self.error = error
+        super(IssuanceError, self).__init__()
+
 class ConflictError(ClientError):
     """Error for when the server returns a 409 (Conflict) HTTP status.
 

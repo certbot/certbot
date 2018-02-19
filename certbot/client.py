@@ -37,12 +37,12 @@ from certbot.plugins import selection as plugin_selection
 logger = logging.getLogger(__name__)
 
 
-def acme_from_config_key(config, key):
+def acme_from_config_key(config, key, regr=None):
     "Wrangle ACME client construction"
     # TODO: Allow for other alg types besides RS256
-    net = acme_client.ClientNetwork(key, verify_ssl=(not config.no_verify_ssl),
+    net = acme_client.ClientNetwork(key, account=regr, verify_ssl=(not config.no_verify_ssl),
                                     user_agent=determine_user_agent(config))
-    return acme_client.Client(config.server, key=key, net=net)
+    return acme_client.BackwardsCompatibleClientV2(net, key, config.server)
 
 
 def determine_user_agent(config):
@@ -162,14 +162,7 @@ def register(config, account_storage, tos_cb=None):
             backend=default_backend())))
     acme = acme_from_config_key(config, key)
     # TODO: add phone?
-    regr = perform_registration(acme, config)
-
-    if regr.terms_of_service is not None:
-        if tos_cb is not None and not tos_cb(regr):
-            raise errors.Error(
-                "Registration cannot proceed without accepting "
-                "Terms of Service.")
-        regr = acme.agree_to_tos(regr)
+    regr = perform_registration(acme, config, tos_cb)
 
     acc = account.Account(regr, key)
     account.report_new_account(config)
@@ -180,7 +173,7 @@ def register(config, account_storage, tos_cb=None):
     return acc, acme
 
 
-def perform_registration(acme, config):
+def perform_registration(acme, config, tos_cb):
     """
     Actually register new account, trying repeatedly if there are email
     problems
@@ -192,7 +185,8 @@ def perform_registration(acme, config):
     :rtype: `acme.messages.RegistrationResource`
     """
     try:
-        return acme.register(messages.NewRegistration.from_data(email=config.email))
+        return acme.new_account_and_tos(messages.NewRegistration.from_data(email=config.email),
+            tos_cb)
     except messages.Error as e:
         if e.code == "invalidEmail" or e.code == "invalidContact":
             if config.noninteractive_mode:
@@ -202,7 +196,7 @@ def perform_registration(acme, config):
                 raise errors.Error(msg)
             else:
                 config.email = display_ops.get_email(invalid=True)
-                return perform_registration(acme, config)
+                return perform_registration(acme, config, tos_cb)
         else:
             raise
 
@@ -232,7 +226,7 @@ class Client(object):
 
         # Initialize ACME if account is provided
         if acme is None and self.account is not None:
-            acme = acme_from_config_key(config, self.account.key)
+            acme = acme_from_config_key(config, self.account.key, self.account.regr)
         self.acme = acme
 
         if auth is not None:
@@ -556,11 +550,11 @@ class Client(object):
             self.installer.rollback_checkpoints()
             self.installer.restart()
         except:
-            # TODO: suggest letshelp-letsencrypt here
             reporter.add_message(
                 "An error occurred and we failed to restore your config and "
-                "restart your server. Please submit a bug report to "
-                "https://github.com/letsencrypt/letsencrypt",
+                "restart your server. Please post to "
+                "https://community.letsencrypt.org/c/server-config "
+                "with details about your configuration and this error you received.",
                 reporter.HIGH_PRIORITY)
             raise
         reporter.add_message(success_msg, reporter.HIGH_PRIORITY)

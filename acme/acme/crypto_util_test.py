@@ -65,6 +65,30 @@ class SSLSocketAndProbeSNITest(unittest.TestCase):
     #    self.assertRaises(errors.Error, self._probe, b'bar')
 
 
+class PyOpenSSLCertOrReqAllNamesTest(unittest.TestCase):
+    """Test for acme.crypto_util._pyopenssl_cert_or_req_all_names."""
+
+    @classmethod
+    def _call(cls, loader, name):
+        # pylint: disable=protected-access
+        from acme.crypto_util import _pyopenssl_cert_or_req_all_names
+        return _pyopenssl_cert_or_req_all_names(loader(name))
+
+    def _call_cert(self, name):
+        return self._call(test_util.load_cert, name)
+
+    def test_cert_one_san_no_common(self):
+        self.assertEqual(self._call_cert('cert-nocn.der'),
+                         ['no-common-name.badssl.com'])
+
+    def test_cert_no_sans_yes_common(self):
+        self.assertEqual(self._call_cert('cert.pem'), ['example.com'])
+
+    def test_cert_two_sans_yes_common(self):
+        self.assertEqual(self._call_cert('cert-san.pem'),
+                         ['example.com', 'www.example.com'])
+
+
 class PyOpenSSLCertOrReqSANTest(unittest.TestCase):
     """Test for acme.crypto_util._pyopenssl_cert_or_req_san."""
 

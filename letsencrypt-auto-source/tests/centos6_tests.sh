@@ -69,5 +69,13 @@ fi
 echo "PASSED: Successfully upgraded to Python3 when only Python2.6 is present."
 echo ""
 
+export VENV_PATH=$(mktemp -d)
+"$LE_AUTO" -n --no-bootstrap --no-self-upgrade --version >/dev/null 2>&1
+if [ "$($VENV_PATH/bin/python -V 2>&1 | cut -d" " -f2 | cut -d. -f1)" != 3 ]; then
+  echo "Python 3 wasn't used with --no-bootstrap!"
+  exit 1
+fi
+unset VENV_PATH
+
 # test using python3
 pytest -v -s certbot/letsencrypt-auto-source/tests
