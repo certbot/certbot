@@ -1,4 +1,5 @@
 """Certbot main entry point."""
+# pylint: disable=too-many-lines
 from __future__ import print_function
 import functools
 import logging.handlers
@@ -837,17 +838,22 @@ def enhance(config, plugins):
     :rtype: None
 
     """
-    # XXX: staple-ocsp should instruct user to rerun certbot to enable
-    # must-staple extension
+    supported_enhancements = ["hsts", "redirect", "staple", "uir"]
+    # Check that at least one enhancement was requested on command line
+    if not any([getattr(config, enh) for enh in supported_enhancements]):
+        msg = ("Please specify one or more enhancement types to configure. To list "
+               "the available enhancement types, run:\n\n%s --help enhance\n")
+        logger.warning(msg, sys.argv[0])
+        raise errors.MisconfigurationError("No enhancements requested, exiting.")
+
     try:
         installer, _ = plug_sel.choose_configurator_plugins(config, plugins, "enhance")
     except errors.PluginSelectionError as e:
         return str(e)
     le_client = _init_le_client(config, authenticator=None, installer=installer)
-    domains, _ = _find_domains_or_certname(config, installer,
-                                           "Which domain names would you like to "
-                                           "enable the selected enhancements for?")
-
+    domain_question = ("Which domain names would you like to enable the selected "
+                       "enhancements for")
+    domains, _ = _find_domains_or_certname(config, installer, domain_question)
     le_client.enhance_config(domains, None, ask_redirect=False)
 
 

@@ -147,6 +147,7 @@ def record_chosen_plugins(config, plugins, auth, inst):
 
 
 def choose_configurator_plugins(config, plugins, verb):
+    # pylint: disable=too-many-branches
     """
     Figure out which configurator we're going to use, modifies
     config.authenticator and config.installer strings to reflect that choice if
@@ -160,8 +161,8 @@ def choose_configurator_plugins(config, plugins, verb):
 
     req_auth, req_inst = cli_plugin_requests(config)
 
-    installer_question= ("How would you like to authenticate and install "
-                         "certificates?")
+    installer_question = ("How would you like to authenticate and install "
+                          "certificates?")
 
     # Which plugins do we need?
     if verb == "run":

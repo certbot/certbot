@@ -886,7 +886,8 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              "flag to 0 disables log rotation entirely, causing "
              "Certbot to always append to the same log file.")
     helpful.add(
-        [None, "automation", "run", "certonly", "enhance"], "-n", "--non-interactive", "--noninteractive",
+        [None, "automation", "run", "certonly", "enhance"],
+        "-n", "--non-interactive", "--noninteractive",
         dest="noninteractive_mode", action="store_true",
         default=flag_default("noninteractive_mode"),
         help="Run without ever asking for user input. This may require "
