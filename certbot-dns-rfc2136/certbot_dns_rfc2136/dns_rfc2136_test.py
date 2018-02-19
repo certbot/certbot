@@ -1,8 +1,6 @@
 """Tests for certbot_dns_rfc2136.dns_rfc2136."""
 
 import os
-import shutil
-import tempfile
 import unittest
 
 import dns.flags
@@ -31,19 +29,14 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         path = os.path.join(self.tempdir, 'file.ini')
         dns_test_common.write(VALID_CONFIG, path)
 
-        self.config_dir = tempfile.mkdtemp()
         self.config = mock.MagicMock(rfc2136_credentials=path,
-                                     rfc2136_propagation_seconds=0,  # don't wait during tests
-                                     config_dir=self.config_dir)
+                                     rfc2136_propagation_seconds=0)  # don't wait during tests
 
         self.auth = Authenticator(self.config, "rfc2136")
 
         self.mock_client = mock.MagicMock()
         # _get_rfc2136_client | pylint: disable=protected-access
         self.auth._get_rfc2136_client = mock.MagicMock(return_value=self.mock_client)
-
-    def tearDown(self):
-        shutil.rmtree(self.config_dir)
 
     def test_perform(self):
         self.auth.perform([self.achall])

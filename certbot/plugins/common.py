@@ -47,7 +47,6 @@ class Plugin(object):
     def __init__(self, config, name):
         self.config = config
         self.name = name
-        self.storage = PluginStorage(self.config, name)
 
     @jose_util.abstractclassmethod
     def add_parser_arguments(cls, add):
@@ -119,13 +118,22 @@ class PluginStorage(object):
         :raises .errors.PluginStorageError: when unable to open or read the file
         """
 
-        if hasattr(config, "config_dir") and os.path.isdir(config.config_dir):
-            self.storagepath = os.path.join(config.config_dir, "pluginstorage.json")
+        self.config = config
+        self.classkey = classkey
+        self.initialized = False
+        self._data = None
+        self.storagepath = None
+
+    def initialize_storage(self):
+        """Initializes PluginStorage data and reads current state from the disk
+        if the storage json exists."""
+
+        if hasattr(self.config, "config_dir") and os.path.isdir(self.config.config_dir):
+            self.storagepath = os.path.join(self.config.config_dir, ".pluginstorage.json")
             self._data = self.load()
         else:
             self.storagepath = None
-
-        self.classkey = classkey
+        self.initialized = True
 
     def load(self):
         """Reads PluginStorage content from the disk to a dict structure
@@ -135,7 +143,6 @@ class PluginStorage(object):
 
         :raises .errors.PluginStorageError: when unable to open or read the file
         """
-
         data = dict()
         filedata = ""
         try:
@@ -170,10 +177,11 @@ class PluginStorage(object):
         :raises .errors.PluginStorageError: when unable to serialize the data
             or write it to the filesystem
         """
-        if not self.storagepath:
+        if not self.initialized or not self.storagepath:
             errmsg = "Unable to save, problem with configuration directory"
             logger.error(errmsg)
             raise errors.PluginStorageError(errmsg)
+
         try:
             serialized = json.dumps(self._data)
         except TypeError as e:
@@ -198,6 +206,9 @@ class PluginStorage(object):
         :param str key: Key to store the value to
         :param value: Data to store
         """
+        if not self.initialized:
+            self.initialize_storage()
+
         if not self.classkey in self._data.keys():
             self._data[self.classkey] = dict()
         self._data[self.classkey][key] = value
@@ -207,6 +218,9 @@ class PluginStorage(object):
 
         :param str key: Key to get value from the storage
         """
+        if not self.initialized:
+            self.initialize_storage()
+
         try:
             return self._data[self.classkey][key]
         except KeyError:
@@ -221,6 +235,7 @@ class Installer(Plugin):
     """
     def __init__(self, *args, **kwargs):
         super(Installer, self).__init__(*args, **kwargs)
+        self.storage = PluginStorage(self.config, self.name)
         self.reverter = reverter.Reverter(self.config)
 
     def add_to_checkpoint(self, save_files, save_notes, temporary=False):

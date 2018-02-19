@@ -1,8 +1,6 @@
 """Tests for certbot_dns_cloudflare.dns_cloudflare."""
 
 import os
-import shutil
-import tempfile
 import unittest
 
 import CloudFlare
@@ -28,19 +26,14 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         path = os.path.join(self.tempdir, 'file.ini')
         dns_test_common.write({"cloudflare_email": EMAIL, "cloudflare_api_key": API_KEY}, path)
 
-        self.config_dir = tempfile.mkdtemp()
         self.config = mock.MagicMock(cloudflare_credentials=path,
-                                     cloudflare_propagation_seconds=0,
-                                     config_dir=self.config_dir)  # don't wait during tests
+                                     cloudflare_propagation_seconds=0)  # don't wait during tests
 
         self.auth = Authenticator(self.config, "cloudflare")
 
         self.mock_client = mock.MagicMock()
         # _get_cloudflare_client | pylint: disable=protected-access
         self.auth._get_cloudflare_client = mock.MagicMock(return_value=self.mock_client)
-
-    def tearDown(self):
-        shutil.rmtree(self.config_dir)
 
     def test_perform(self):
         self.auth.perform([self.achall])

@@ -35,7 +35,6 @@ class AuthenticatorTest(unittest.TestCase):
 
     def setUp(self):
         from certbot.plugins.webroot import Authenticator
-        self.config_dir = tempfile.mkdtemp()
         self.path = tempfile.mkdtemp()
         self.partial_root_challenge_path = os.path.join(
             self.path, ".well-known")
@@ -44,14 +43,12 @@ class AuthenticatorTest(unittest.TestCase):
         self.validation_path = os.path.join(
             self.root_challenge_path,
             "ZXZhR3hmQURzNnBTUmIyTEF2OUlaZjE3RHQzanV4R0orUEN0OTJ3citvQQ")
-        self.config = mock.MagicMock(config_dir=self.config_dir,
-                                     webroot_path=self.path,
+        self.config = mock.MagicMock(webroot_path=self.path,
                                      webroot_map={"thing.com": self.path})
         self.auth = Authenticator(self.config, "webroot")
 
     def tearDown(self):
         shutil.rmtree(self.path)
-        shutil.rmtree(self.config_dir)
 
     def test_more_info(self):
         more_info = self.auth.more_info()

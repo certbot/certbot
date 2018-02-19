@@ -1,8 +1,6 @@
 """Tests for certbot_dns_google.dns_google."""
 
 import os
-import shutil
-import tempfile
 import unittest
 
 import mock
@@ -31,20 +29,14 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         open(path, "wb").close()
 
         super(AuthenticatorTest, self).setUp()
-
-        self.config_dir = tempfile.mkdtemp()
         self.config = mock.MagicMock(google_credentials=path,
-                                     google_propagation_seconds=0,  # don't wait during tests
-                                     config_dir=self.config_dir)
+                                     google_propagation_seconds=0)  # don't wait during tests
 
         self.auth = Authenticator(self.config, "google")
 
         self.mock_client = mock.MagicMock()
         # _get_google_client | pylint: disable=protected-access
         self.auth._get_google_client = mock.MagicMock(return_value=self.mock_client)
-
-    def tearDown(self):
-        shutil.rmtree(self.config_dir)
 
     def test_perform(self):
         self.auth.perform([self.achall])

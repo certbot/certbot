@@ -1,8 +1,6 @@
 """Tests for certbot.plugins.disco."""
 import functools
-import shutil
 import string
-import tempfile
 import unittest
 
 import mock
@@ -41,13 +39,8 @@ class PluginEntryPointTest(unittest.TestCase):
         self.ep3 = pkg_resources.EntryPoint(
             "ep3", "a.ep3", dist=mock.MagicMock(key="p3"))
 
-        self.config_dir = tempfile.mkdtemp()
-
         from certbot.plugins.disco import PluginEntryPoint
         self.plugin_ep = PluginEntryPoint(EP_SA)
-
-    def tearDown(self):
-        shutil.rmtree(self.config_dir)
 
     def test_entry_point_to_plugin_name(self):
         from certbot.plugins.disco import PluginEntryPoint
@@ -102,7 +95,7 @@ class PluginEntryPointTest(unittest.TestCase):
         self.assertTrue(self.plugin_ep.plugin_cls is standalone.Authenticator)
 
     def test_init(self):
-        config = mock.MagicMock(config_dir=self.config_dir)
+        config = mock.MagicMock()
         plugin = self.plugin_ep.init(config=config)
         self.assertTrue(self.plugin_ep.initialized)
         self.assertTrue(plugin.config is config)
@@ -141,7 +134,7 @@ class PluginEntryPointTest(unittest.TestCase):
             self.assertFalse(self.plugin_ep.verify((iface1, iface3)))
 
     def test_prepare(self):
-        config = mock.MagicMock(config_dir=self.config_dir)
+        config = mock.MagicMock()
         self.plugin_ep.init(config=config)
         self.plugin_ep.prepare()
         self.assertTrue(self.plugin_ep.prepared)

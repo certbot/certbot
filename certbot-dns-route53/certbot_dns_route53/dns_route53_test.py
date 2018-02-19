@@ -1,7 +1,5 @@
 """Tests for certbot_dns_route53.dns_route53.Authenticator"""
 
-import tempfile
-import shutil
 import unittest
 
 import mock
@@ -20,13 +18,9 @@ class AuthenticatorTest(unittest.TestCase, dns_test_common.BaseAuthenticatorTest
 
         super(AuthenticatorTest, self).setUp()
 
-        self.config_dir = tempfile.mkdtemp()
-        self.config = mock.MagicMock(config_dir=self.config_dir)
+        self.config = mock.MagicMock()
 
         self.auth = Authenticator(self.config, "route53")
-
-    def tearDown(self):
-        shutil.rmtree(self.config_dir)
 
     def test_perform(self):
         self.auth._change_txt_record = mock.MagicMock()
@@ -121,13 +115,9 @@ class ClientTest(unittest.TestCase):
 
         super(ClientTest, self).setUp()
 
-        self.config_dir = tempfile.mkdtemp()
-        self.config = mock.MagicMock(config_dir=self.config_dir)
+        self.config = mock.MagicMock()
 
         self.client = Authenticator(self.config, "route53")
-
-    def tearDown(self):
-        shutil.rmtree(self.config_dir)
 
     def test_find_zone_id_for_domain(self):
         self.client.r53.get_paginator = mock.MagicMock()

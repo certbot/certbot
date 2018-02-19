@@ -57,13 +57,9 @@ class PluginTest(unittest.TestCase):
             def add_parser_arguments(cls, add):
                 add("foo-bar", dest="different_to_foo_bar", x=1, y=None)
 
-        self.config_dir = tempfile.mkdtemp()
         self.plugin_cls = MockPlugin
-        self.config = mock.MagicMock(config_dir=self.config_dir)
+        self.config = mock.MagicMock()
         self.plugin = MockPlugin(config=self.config, name="mock")
-
-    def tearDown(self):
-        shutil.rmtree(self.config_dir)
 
     def test_init(self):
         self.assertEqual("mock", self.plugin.name)

@@ -1,8 +1,6 @@
 """Tests for certbot.plugins.standalone."""
 import argparse
-import shutil
 import socket
-import tempfile
 import unittest
 
 import josepy as jose
@@ -123,16 +121,12 @@ class AuthenticatorTest(unittest.TestCase):
 
     def setUp(self):
         from certbot.plugins.standalone import Authenticator
-        self.config_dir = tempfile.mkdtemp()
+
         self.config = mock.MagicMock(
             tls_sni_01_port=get_open_port(), http01_port=get_open_port(),
-            standalone_supported_challenges="tls-sni-01,http-01",
-            config_dir=self.config_dir)
+            standalone_supported_challenges="tls-sni-01,http-01")
         self.auth = Authenticator(self.config, name="standalone")
         self.auth.servers = mock.MagicMock()
-
-    def tearDown(self):
-        shutil.rmtree(self.config_dir)
 
     def test_supported_challenges(self):
         self.assertEqual(self.auth.supported_challenges,
