@@ -166,7 +166,6 @@ class ClientTest(ClientTestCommon):
                                          mock_logger):
         self._mock_obtain_certificate()
         test_csr = util.CSR(form="pem", file=None, data=CSR_SAN)
-        auth_handler = self.client.auth_handler
 
         self.assertEqual(
             (mock.sentinel.certr, mock.sentinel.chain),
@@ -191,7 +190,6 @@ class ClientTest(ClientTestCommon):
         self.acme.fetch_chain.side_effect = [acme_errors.Error,
                                              mock.sentinel.chain]
         test_csr = util.CSR(form="der", file=None, data=CSR_SAN)
-        auth_handler = self.client.auth_handler
 
         self.assertEqual(
             (mock.sentinel.certr, mock.sentinel.chain),
@@ -204,7 +202,6 @@ class ClientTest(ClientTestCommon):
         self._mock_obtain_certificate()
         self.acme.fetch_chain.side_effect = acme_errors.Error
         test_csr = util.CSR(form="der", file=None, data=CSR_SAN)
-        auth_handler = self.client.auth_handler
 
         self.assertRaises(
             acme_errors.Error,
