@@ -218,7 +218,7 @@ class HandleAuthorizationsTest(unittest.TestCase):
         self.assertRaises(
             errors.AuthorizationError, self.handler.handle_authorizations, mock_order)
 
-    def _validate_all(self, unused_1):
+    def _validate_all(self, unused_1, unused_2):
         for dom in six.iterkeys(self.handler.authzr):
             azr = self.handler.authzr[dom]
             self.handler.authzr[dom] = acme_util.gen_authzr(

@@ -235,12 +235,13 @@ class Client(object):
         else:
             self.auth_handler = None
 
-    def obtain_certificate_from_csr(self, csr):
+    def obtain_certificate_from_csr(self, csr, best_effort=False):
         """Obtain certificate.
 
         :param .util.CSR csr: PEM-encoded Certificate Signing
             Request. The key used to generate this CSR can be different
             than `authkey`.
+        :param bool best_effort: Whether or not all authorizations are required
 
         :returns: `.CertificateResource` and certificate chain (as
             returned by `.fetch_chain`).
@@ -258,7 +259,11 @@ class Client(object):
         logger.debug("CSR: %s", csr)
 
         orderr = self.acme.new_order(csr.data)
-        authzr = self.auth_handler.handle_authorizations(orderr)
+        authzr = self.auth_handler.handle_authorizations(orderr, best_effort)
+        if best_effort:
+            # TODO: check if we passed all authorizations, and if not,
+            #       create a new order and try again, possibly in a loop
+            pass
 
         certr = self.acme.request_issuance(
             jose.ComparableX509(
@@ -313,7 +318,7 @@ class Client(object):
                 self.config.rsa_key_size, self.config.key_dir)
             csr = crypto_util.init_save_csr(key, domains, self.config.csr_dir)
 
-        certr, chain = self.obtain_certificate_from_csr(csr)
+        certr, chain = self.obtain_certificate_from_csr(csr, self.config.allow_subset_of_names)
 
         return certr, chain, key, csr
 
