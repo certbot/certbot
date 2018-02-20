@@ -194,8 +194,8 @@ class AuthHandler(object):
                     if best_effort:
                         comp_domains.add(domain)
                         logger.warning(
-                             "Challenge failed for domain %s",
-                             domain)
+                            "Challenge failed for domain %s",
+                            domain)
                     else:
                         all_failed_achalls.update(
                             updated for _, updated in failed_achalls)
