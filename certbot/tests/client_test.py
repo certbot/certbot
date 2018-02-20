@@ -201,7 +201,6 @@ class ClientTest(ClientTestCommon):
         self.acme.fetch_chain.side_effect = [acme_errors.Error,
                                              mock.sentinel.chain]
         test_csr = util.CSR(form="der", file=None, data=CSR_SAN)
-        auth_handler = self.client.auth_handler
 
         orderr = self.acme.new_order(test_csr.data)
         self.assertEqual(
@@ -216,7 +215,6 @@ class ClientTest(ClientTestCommon):
         self._mock_obtain_certificate()
         self.acme.fetch_chain.side_effect = acme_errors.Error
         test_csr = util.CSR(form="der", file=None, data=CSR_SAN)
-        auth_handler = self.client.auth_handler
 
         orderr = self.acme.new_order(test_csr.data)
         self.assertRaises(
