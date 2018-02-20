@@ -325,8 +325,8 @@ class Client(object):
 
         if successful_domains != domains:
             if not self.config.dry_run:
-                # TODO: delete keys
-                pass
+                os.remove(key.file)
+                os.remove(csr.file)
             return self.obtain_certificate(successful_domains)
         else:
             certr, chain = self.obtain_certificate_from_csr(csr, orderr)
