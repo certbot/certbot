@@ -118,7 +118,7 @@ class HandleAuthorizationsTest(unittest.TestCase):
         self.mock_auth.get_chall_pref.return_value.append(challenges.HTTP01)
         self.mock_auth.get_chall_pref.return_value.append(challenges.DNS01)
 
-        authzr = gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES)
+        authzr = gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES, combos=False)
         mock_order = mock.MagicMock(authorizations=[authzr])
         authzr = self.handler.handle_authorizations(mock_order)
 
