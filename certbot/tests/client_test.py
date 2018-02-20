@@ -141,16 +141,17 @@ class ClientTest(ClientTestCommon):
 
     def _mock_obtain_certificate(self):
         self.client.auth_handler = mock.MagicMock()
-        self.client.auth_handler.get_authorizations.return_value = [None]
+        self.client.auth_handler.handle_authorizations.return_value = [None]
         self.acme.request_issuance.return_value = mock.sentinel.certr
         self.acme.fetch_chain.return_value = mock.sentinel.chain
+        self.acme.new_order.return_value = mock.sentinel.orderr
 
     def _check_obtain_certificate(self):
-        self.client.auth_handler.get_authorizations.assert_called_once_with(
-            self.eg_domains,
+        self.client.auth_handler.handle_authorizations.assert_called_once_with(
+            mock.sentinel.orderr,
             self.config.allow_subset_of_names)
 
-        authzr = self.client.auth_handler.get_authorizations()
+        authzr = self.client.auth_handler.handle_authorizations()
 
         self.acme.request_issuance.assert_called_once_with(
             jose.ComparableX509(OpenSSL.crypto.load_certificate_request(
@@ -167,31 +168,19 @@ class ClientTest(ClientTestCommon):
         test_csr = util.CSR(form="pem", file=None, data=CSR_SAN)
         auth_handler = self.client.auth_handler
 
-        authzr = auth_handler.get_authorizations(self.eg_domains, False)
         self.assertEqual(
             (mock.sentinel.certr, mock.sentinel.chain),
             self.client.obtain_certificate_from_csr(
-                self.eg_domains,
                 test_csr,
-                authzr=authzr))
+                best_effort=False))
         # and that the cert was obtained correctly
         self._check_obtain_certificate()
-
-        # Test for authzr=None
-        self.assertEqual(
-            (mock.sentinel.certr, mock.sentinel.chain),
-            self.client.obtain_certificate_from_csr(
-                self.eg_domains,
-                test_csr,
-                authzr=None))
-        auth_handler.get_authorizations.assert_called_with(self.eg_domains)
 
         # Test for no auth_handler
         self.client.auth_handler = None
         self.assertRaises(
             errors.Error,
             self.client.obtain_certificate_from_csr,
-            self.eg_domains,
             test_csr)
         mock_logger.warning.assert_called_once_with(mock.ANY)
 
@@ -204,13 +193,10 @@ class ClientTest(ClientTestCommon):
         test_csr = util.CSR(form="der", file=None, data=CSR_SAN)
         auth_handler = self.client.auth_handler
 
-        authzr = auth_handler.get_authorizations(self.eg_domains, False)
         self.assertEqual(
             (mock.sentinel.certr, mock.sentinel.chain),
             self.client.obtain_certificate_from_csr(
-                self.eg_domains,
-                test_csr,
-                authzr=authzr))
+                test_csr))
         self.assertEqual(1, mock_get_utility().notification.call_count)
 
     @test_util.patch_get_utility()
@@ -220,13 +206,10 @@ class ClientTest(ClientTestCommon):
         test_csr = util.CSR(form="der", file=None, data=CSR_SAN)
         auth_handler = self.client.auth_handler
 
-        authzr = auth_handler.get_authorizations(self.eg_domains, False)
         self.assertRaises(
             acme_errors.Error,
             self.client.obtain_certificate_from_csr,
-            self.eg_domains,
-            test_csr,
-            authzr=authzr)
+            test_csr)
         self.assertEqual(1, mock_get_utility().notification.call_count)
 
     @mock.patch("certbot.client.crypto_util")
@@ -276,7 +259,7 @@ class ClientTest(ClientTestCommon):
                         identifier=mock.MagicMock(
                             value=domain))))
 
-        self.client.auth_handler.get_authorizations.return_value = authzr
+        self.client.auth_handler.handle_authorizations.return_value = authzr
 
         with test_util.patch_get_utility():
             result = self.client.obtain_certificate(self.eg_domains)
