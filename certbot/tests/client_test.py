@@ -113,6 +113,7 @@ class ClientTestCommon(test_util.ConfigTestCase):
         super(ClientTestCommon, self).setUp()
         self.config.no_verify_ssl = False
         self.config.allow_subset_of_names = False
+        self.config.key_types = "rsa"
 
         # pylint: disable=star-args
         self.account = mock.MagicMock(**{"key.pem": KEY})
@@ -127,6 +128,7 @@ class ClientTestCommon(test_util.ConfigTestCase):
 
 
 class ClientTest(ClientTestCommon):
+    # pylint: disable=too-many-public-methods
     """Tests for certbot.client.Client."""
     def setUp(self):
         super(ClientTest, self).setUp()
@@ -230,6 +232,91 @@ class ClientTest(ClientTestCommon):
         self.assertEqual(1, mock_get_utility().notification.call_count)
 
     @mock.patch("certbot.client.crypto_util")
+<<<<<<< HEAD
+    @test_util.patch_get_utility()
+    def test_obtain_certificate_rsa(self, unused_mock_get_utility,
+                                    mock_crypto_util):
+        self._mock_obtain_certificate()
+
+        csr = util.CSR(form="pem", file=None, data=CSR_SAN)
+        mock_crypto_util.init_save_csr.return_value = csr
+        mock_crypto_util.save_key.return_value = mock.sentinel.key
+        domains = ["example.com", "www.example.com"]
+
+        # return_value is essentially set to (None, None) in
+        # _mock_obtain_certificate(), which breaks this test.
+        # Thus fixed by the next line.
+
+        authzr = []
+
+        for domain in domains:
+            authzr.append(
+                mock.MagicMock(
+                    body=mock.MagicMock(
+                        identifier=mock.MagicMock(
+                            value=domain))))
+
+        self.client.auth_handler.get_authorizations.return_value = authzr
+
+        self.assertEqual(
+            self.client.obtain_certificate(domains),
+            (mock.sentinel.certr, mock.sentinel.chain, mock.sentinel.key, csr))
+
+        mock_crypto_util.save_key.assert_called_once_with(
+            mock_crypto_util.make_key_rsa(), self.config.key_dir)
+        mock_crypto_util.init_save_csr.assert_called_once_with(
+            mock.sentinel.key, domains, self.config.csr_dir)
+        self._check_obtain_certificate()
+
+    @mock.patch("certbot.client.crypto_util")
+    @test_util.patch_get_utility()
+    def test_obtain_certificate_ecdsa_p256(self, unused_mock_get_utility,
+                                           mock_crypto_util):
+        self._mock_obtain_certificate()
+
+        self.config.key_types = "ecdsa"
+        self.config.ecdsa_curve = "p-256"
+        csr = util.CSR(form="pem", file=None, data=CSR_SAN)
+        mock_crypto_util.init_save_csr.return_value = csr
+        mock_crypto_util.save_key.return_value = mock.sentinel.key
+        domains = ["example.com", "www.example.com"]
+
+        # return_value is essentially set to (None, None) in
+        # _mock_obtain_certificate(), which breaks this test.
+        # Thus fixed by the next line.
+
+        authzr = []
+
+        for domain in domains:
+            authzr.append(
+                mock.MagicMock(
+                    body=mock.MagicMock(
+                        identifier=mock.MagicMock(
+                            value=domain))))
+
+        self.client.auth_handler.get_authorizations.return_value = authzr
+
+        self.assertEqual(
+            self.client.obtain_certificate(domains),
+            (mock.sentinel.certr, mock.sentinel.chain, mock.sentinel.key, csr))
+
+        mock_crypto_util.save_key.assert_called_once_with(
+            mock_crypto_util.make_key_ecdsa(), self.config.key_dir)
+        mock_crypto_util.init_save_csr.assert_called_once_with(
+            mock.sentinel.key, domains, self.config.csr_dir)
+        self._check_obtain_certificate()
+
+    @mock.patch("certbot.client.crypto_util")
+    def test_obtain_certificate_ecdsa_p384(self, mock_crypto_util):
+        self._mock_obtain_certificate()
+
+        self.config.key_types = "ecdsa"
+        self.config.ecdsa_curve = "p-384"
+        csr = util.CSR(form="der", file=None, data=CSR_SAN)
+        mock_crypto_util.init_save_csr.return_value = csr
+        mock_crypto_util.save_key.return_value = mock.sentinel.key
+        domains = ["example.com", "www.example.com"]
+=======
     def test_obtain_certificate(self, mock_crypto_util):
         csr = util.CSR(form="pem", file=None, data=CSR_SAN)
         mock_crypto_util.init_save_csr.return_value = csr
@@ -261,6 +348,7 @@ class ClientTest(ClientTestCommon):
 
     def _test_obtain_certificate_common(self, key, csr):
         self._mock_obtain_certificate()
+>>>>>>> master
 
         # return_value is essentially set to (None, None) in
         # _mock_obtain_certificate(), which breaks this test.
@@ -281,10 +369,73 @@ class ClientTest(ClientTestCommon):
         with test_util.patch_get_utility():
             result = self.client.obtain_certificate(self.eg_domains)
 
+<<<<<<< HEAD
+        mock_crypto_util.save_key.assert_called_once_with(
+            mock_crypto_util.make_key_ecdsa(), self.config.key_dir)
+        mock_crypto_util.init_save_csr.assert_called_once_with(
+            mock.sentinel.key, domains, self.config.csr_dir)
+=======
         self.assertEqual(
             result,
             (mock.sentinel.certr, mock.sentinel.chain, key, csr))
+>>>>>>> master
         self._check_obtain_certificate()
+
+    @mock.patch("certbot.client.crypto_util")
+    def test_obtain_certificate_multi_alg(self, mock_crypto_util):
+        self._mock_obtain_certificate()
+
+        self.config.key_types = "ecdsa rsa"
+        csr = util.CSR(form="der", file=None, data=CSR_SAN)
+        mock_crypto_util.init_save_csr.return_value = csr
+        mock_crypto_util.save_key.return_value = mock.sentinel.key
+        domains = ["example.com", "www.example.com"]
+
+        # return_value is essentially set to (None, None) in
+        # _mock_obtain_certificate(), which breaks this test.
+        # Thus fixed by the next line.
+
+        authzr = []
+
+        for domain in domains:
+            authzr.append(
+                mock.MagicMock(
+                    body=mock.MagicMock(
+                        identifier=mock.MagicMock(
+                            value=domain))))
+
+        self.client.auth_handler.get_authorizations.return_value = authzr
+
+        self.assertRaises(errors.Error,
+            self.client.obtain_certificate, domains)
+
+    @mock.patch("certbot.client.crypto_util")
+    def test_obtain_certificate_unsupported_alg(self, mock_crypto_util):
+        self._mock_obtain_certificate()
+
+        self.config.key_types = "nonexistingalgo"
+        csr = util.CSR(form="der", file=None, data=CSR_SAN)
+        mock_crypto_util.init_save_csr.return_value = csr
+        mock_crypto_util.save_key.return_value = mock.sentinel.key
+        domains = ["example.com", "www.example.com"]
+
+        # return_value is essentially set to (None, None) in
+        # _mock_obtain_certificate(), which breaks this test.
+        # Thus fixed by the next line.
+
+        authzr = []
+
+        for domain in domains:
+            authzr.append(
+                mock.MagicMock(
+                    body=mock.MagicMock(
+                        identifier=mock.MagicMock(
+                            value=domain))))
+
+        self.client.auth_handler.get_authorizations.return_value = authzr
+
+        self.assertRaises(errors.Error,
+            self.client.obtain_certificate, domains)
 
     @mock.patch('certbot.client.Client.obtain_certificate')
     @mock.patch('certbot.storage.RenewableCert.new_lineage')

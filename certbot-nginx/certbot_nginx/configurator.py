@@ -468,8 +468,9 @@ class NginxConfigurator(common.Installer):
     def _get_snakeoil_paths(self):
         # TODO: generate only once
         tmp_dir = os.path.join(self.config.work_dir, "snakeoil")
-        le_key = crypto_util.init_save_key(
-            key_size=1024, key_dir=tmp_dir, keyname="key.pem")
+        le_pem = crypto_util.make_key_rsa(1024)
+        le_key = crypto_util.save_key(
+            key_pem=le_pem, key_dir=tmp_dir, keyname="key.pem")
         key = OpenSSL.crypto.load_privatekey(
             OpenSSL.crypto.FILETYPE_PEM, le_key.pem)
         cert = acme_crypto_util.gen_ss_cert(key, domains=[socket.gethostname()])

@@ -27,11 +27,12 @@ logger = logging.getLogger(__name__)
 # file's renewalparams and actually used in the client configuration
 # during the renewal process. We have to record their types here because
 # the renewal configuration process loses this information.
+
 STR_CONFIG_ITEMS = ["config_dir", "logs_dir", "work_dir", "user_agent",
                     "server", "account", "authenticator", "installer",
                     "standalone_supported_challenges", "renew_hook",
                     "pre_hook", "post_hook", "tls_sni_01_address",
-                    "http01_address"]
+                    "http01_address", "ecdsa_curve", "key_types"]
 INT_CONFIG_ITEMS = ["rsa_key_size", "tls_sni_01_port", "http01_port"]
 BOOL_CONFIG_ITEMS = ["must_staple", "allow_subset_of_names"]
 

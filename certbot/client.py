@@ -306,6 +306,8 @@ class Client(object):
             (`.util.CSR`).
         :rtype: tuple
 
+        :raises ValueError: If unable to generate the key.
+
         """
         authzr = self.auth_handler.get_authorizations(
                 domains,
@@ -315,15 +317,46 @@ class Client(object):
         domains = [d for d in domains if d in auth_domains]
 
         # Create CSR from names
+
+        # Validate self.config.key_types:
+
+        # TODO Get list of supported key types from Boulder?
+        valid_key_types = ["rsa", "ecdsa"]
+
+        key_types = self.config.key_types.split()
+
+        if len(key_types) != 1:
+            raise errors.Error("Currently, only one key type is supported.")
+
+        for key in key_types:
+            if key.lower() not in valid_key_types:
+                raise errors.Error("Key algorithm not valid, try \"RSA\" or \"ECDSA\".")
+
+        # TODO: Implement the issuance of multiple certificates with different keys
+        key_algo = key_types[0]
+
+        # Envoke the proper function for the requested key type
+        try:
+            if key_algo.lower() == "rsa":
+                logger.info("Generating %d bits RSA key", self.config.rsa_key_size)
+                key_pem = crypto_util.make_key_rsa(self.config.rsa_key_size)
+            elif key_algo.lower() == "ecdsa":
+                logger.info("Generating ECDSA key with curve %s", self.config.ecdsa_curve)
+                key_pem = crypto_util.make_key_ecdsa(self.config.ecdsa_curve)
+            else:
+                raise errors.Error("Key algorithm not valid, try \"RSA\" or \"ECDSA\".")
+        except ValueError as err:
+            logger.exception(err)
+            raise err
+
         if self.config.dry_run:
-            key = util.Key(file=None,
-                           pem=crypto_util.make_key(self.config.rsa_key_size))
+            key = util.Key(file=None, pem=key_pem)
             csr = util.CSR(file=None, form="pem",
                            data=acme_crypto_util.make_csr(
-                               key.pem, domains, self.config.must_staple))
+                           key.pem, domains, self.config.must_staple))
         else:
-            key = crypto_util.init_save_key(
-                self.config.rsa_key_size, self.config.key_dir)
+            key = crypto_util.save_key(
+                key_pem, self.config.key_dir)
             csr = crypto_util.init_save_csr(key, domains, self.config.csr_dir)
 
         certr, chain = self.obtain_certificate_from_csr(

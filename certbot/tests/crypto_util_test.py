@@ -12,7 +12,6 @@ from certbot import interfaces
 from certbot import util
 import certbot.tests.util as test_util
 
-
 RSA256_KEY = test_util.load_vector('rsa256_key.pem')
 RSA256_KEY_PATH = test_util.vector_path('rsa256_key.pem')
 RSA512_KEY = test_util.load_vector('rsa512_key.pem')
@@ -22,37 +21,30 @@ CERT = test_util.load_vector('cert_512.pem')
 SS_CERT_PATH = test_util.vector_path('cert_2048.pem')
 SS_CERT = test_util.load_vector('cert_2048.pem')
 
-class InitSaveKeyTest(test_util.TempDirTestCase):
-    """Tests for certbot.crypto_util.init_save_key."""
+class SaveKeyTest(test_util.TempDirTestCase):
+    """Tests for certbot.crypto_util.save_key."""
     def setUp(self):
-        super(InitSaveKeyTest, self).setUp()
+        super(SaveKeyTest, self).setUp()
 
         logging.disable(logging.CRITICAL)
         zope.component.provideUtility(
             mock.Mock(strict_permissions=True), interfaces.IConfig)
 
     def tearDown(self):
-        super(InitSaveKeyTest, self).tearDown()
+        super(SaveKeyTest, self).tearDown()
 
         logging.disable(logging.NOTSET)
 
     @classmethod
-    def _call(cls, key_size, key_dir):
-        from certbot.crypto_util import init_save_key
-        return init_save_key(key_size, key_dir, 'key-certbot.pem')
+    def _call(cls, key_pem, key_dir):
+        from certbot.crypto_util import save_key
+        return save_key(key_pem, key_dir, 'key-certbot.pem')
 
-    @mock.patch('certbot.crypto_util.make_key')
-    def test_success(self, mock_make):
-        mock_make.return_value = b'key_pem'
-        key = self._call(1024, self.tempdir)
-        self.assertEqual(key.pem, b'key_pem')
+    def test_success(self):
+        key = self._call(RSA512_KEY, self.tempdir)
+        self.assertEqual(key.pem, RSA512_KEY)
         self.assertTrue('key-certbot.pem' in key.file)
         self.assertTrue(os.path.exists(os.path.join(self.tempdir, key.file)))
-
-    @mock.patch('certbot.crypto_util.make_key')
-    def test_key_failure(self, mock_make):
-        mock_make.side_effect = ValueError
-        self.assertRaises(ValueError, self._call, 431, self.tempdir)
 
 
 class InitSaveCSRTest(test_util.TempDirTestCase):
@@ -158,14 +150,31 @@ class ImportCSRFileTest(unittest.TestCase):
                           test_util.load_vector('cert_512.pem'))
 
 
-class MakeKeyTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
-    """Tests for certbot.crypto_util.make_key."""
+class MakeKeyRSATest(unittest.TestCase):  # pylint: disable=too-few-public-methods
+    """Tests for certbot.crypto_util.make_key_rsa."""
 
     def test_it(self):  # pylint: disable=no-self-use
-        from certbot.crypto_util import make_key
+        from certbot.crypto_util import make_key_rsa
         # Do not test larger keys as it takes too long.
         OpenSSL.crypto.load_privatekey(
-            OpenSSL.crypto.FILETYPE_PEM, make_key(1024))
+            OpenSSL.crypto.FILETYPE_PEM, make_key_rsa(1024))
+
+
+class MakeKeyECDSATest(unittest.TestCase):
+    """Tests for certbot.crypto_util.make_key_ecdsa."""
+
+    def test_it(self):
+        from certbot.crypto_util import make_key_ecdsa
+        from cryptography.hazmat.backends import default_backend
+        from cryptography.hazmat.primitives.serialization import load_pem_private_key
+        from cryptography.hazmat.primitives.asymmetric import ec
+        self.assertTrue(isinstance(load_pem_private_key(
+            make_key_ecdsa(curve="P-256"), password=None, backend=default_backend()),
+            ec.EllipticCurvePrivateKey))
+        self.assertTrue(isinstance(load_pem_private_key(
+            make_key_ecdsa(curve="P-384"), password=None, backend=default_backend()),
+            ec.EllipticCurvePrivateKey))
+        self.assertRaises(Exception, make_key_ecdsa, curve="P-123")
 
 
 class VerifyCertSetup(unittest.TestCase):

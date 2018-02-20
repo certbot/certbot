@@ -22,44 +22,41 @@ from certbot import errors
 from certbot import interfaces
 from certbot import util
 
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import ec
 
 logger = logging.getLogger(__name__)
 
 
 # High level functions
-def init_save_key(key_size, key_dir, keyname="key-certbot.pem"):
+def save_key(key_pem, key_dir, keyname="key-certbot.pem"):
     """Initializes and saves a privkey.
 
-    Inits key and saves it in PEM format on the filesystem.
+    Saves a generated private key in PEM format on the filesystem.
 
     .. note:: keyname is the attempted filename, it may be different if a file
         already exists at the path.
 
-    :param int key_size: RSA key size in bits
+    :param str key_pem: The PEM encoded private key to save
     :param str key_dir: Key save directory.
     :param str keyname: Filename of key
 
     :returns: Key
     :rtype: :class:`certbot.util.Key`
 
-    :raises ValueError: If unable to generate the key given key_size.
-
     """
-    try:
-        key_pem = make_key(key_size)
-    except ValueError as err:
-        logger.exception(err)
-        raise err
 
     config = zope.component.getUtility(interfaces.IConfig)
     # Save file
     util.make_or_verify_dir(key_dir, 0o700, os.geteuid(),
                             config.strict_permissions)
+
     key_f, key_path = util.unique_file(
         os.path.join(key_dir, keyname), 0o600, "wb")
     with key_f:
         key_f.write(key_pem)
-    logger.debug("Generating key (%d bits): %s", key_size, key_path)
+    logger.debug("Saving private key: %s", key_path)
 
     return util.Key(key_path, key_pem)
 
@@ -169,7 +166,7 @@ def import_csr_file(csrfile, data):
     return PEM, util.CSR(file=csrfile, data=data_pem, form="pem"), domains
 
 
-def make_key(bits):
+def make_key_rsa(bits):
     """Generate PEM encoded RSA key.
 
     :param int bits: Number of bits, at least 1024.
@@ -182,6 +179,30 @@ def make_key(bits):
     key = OpenSSL.crypto.PKey()
     key.generate_key(OpenSSL.crypto.TYPE_RSA, bits)
     return OpenSSL.crypto.dump_privatekey(OpenSSL.crypto.FILETYPE_PEM, key)
+
+
+def make_key_ecdsa(curve):
+    """Generate PEM encoded ECDSA key.
+
+    :param str curve: The ECDSA curve used (currently P-256 [prime256v1] or P-384 [secp384r1])
+
+    :returns: new ECDSA key in PEM form with the specified curve
+    :rtype: str
+
+    """
+
+    if curve.lower() == "p-256":
+        private_key = ec.generate_private_key(ec.SECP256R1(), default_backend())
+    elif curve.lower() == "p-384":
+        private_key = ec.generate_private_key(ec.SECP384R1(), default_backend())
+    else:
+        raise errors.Error(
+            "Elliptic curve for ECDSA keypair generation not recognised. Current allowed curves "
+            "are \"P-256\" or \"P-384\".")
+
+    return private_key.private_bytes(
+        encoding=serialization.Encoding.PEM, format=serialization.PrivateFormat.TraditionalOpenSSL,
+        encryption_algorithm=serialization.NoEncryption())
 
 
 def valid_privkey(privkey):
