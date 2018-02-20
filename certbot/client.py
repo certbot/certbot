@@ -260,10 +260,8 @@ class Client(object):
 
         orderr = self.acme.new_order(csr.data)
         authzr = self.auth_handler.handle_authorizations(orderr, best_effort)
-        if best_effort:
-            # TODO: check if we passed all authorizations, and if not,
-            #       create a new order and try again, possibly in a loop
-            pass
+        # TODO: check if we passed all authorizations, and if not,
+        #       create a new order and try again, possibly in a loop
 
         certr = self.acme.request_issuance(
             jose.ComparableX509(
