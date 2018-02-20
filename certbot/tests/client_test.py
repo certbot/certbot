@@ -170,7 +170,6 @@ class ClientTest(ClientTestCommon):
         auth_handler = self.client.auth_handler
 
         orderr = self.acme.new_order(test_csr.data)
-        authzr = auth_handler.handle_authorizations(orderr, False)
         self.assertEqual(
             (mock.sentinel.certr, mock.sentinel.chain),
             self.client.obtain_certificate_from_csr(
@@ -205,7 +204,6 @@ class ClientTest(ClientTestCommon):
         auth_handler = self.client.auth_handler
 
         orderr = self.acme.new_order(test_csr.data)
-        authzr = auth_handler.handle_authorizations(orderr, False)
         self.assertEqual(
             (mock.sentinel.certr, mock.sentinel.chain),
             self.client.obtain_certificate_from_csr(
@@ -221,7 +219,6 @@ class ClientTest(ClientTestCommon):
         auth_handler = self.client.auth_handler
 
         orderr = self.acme.new_order(test_csr.data)
-        authzr = auth_handler.handle_authorizations(orderr, False)
         self.assertRaises(
             acme_errors.Error,
             self.client.obtain_certificate_from_csr,
