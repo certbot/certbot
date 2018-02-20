@@ -161,6 +161,21 @@ class BackwardsCompatibleClientV2Test(ClientTestBase):
             mock_client().register.assert_called_once_with(self.new_reg)
             mock_client().agree_to_tos.assert_not_called()
 
+    def test_new_order_v1(self):
+        self.response.json.return_value = DIRECTORY_V1.to_json()
+        with mock.patch('acme.client.Client') as mock_client:
+            client = self._init()
+
+    def test_new_order_v2(self):
+        self.response.json.return_value = DIRECTORY_V2.to_json()
+        mock_csr_pem = mock.MagicMock()
+        with mock.patch('acme.client.ClientV2') as mock_client:
+            client = self._init()
+            client.new_order(mock_csr_pem)
+            mock_client().new_order.assert_called_once_with(mock_csr_pem)
+
+
+
 
 class ClientTest(ClientTestBase):
     """Tests for acme.client.Client."""
