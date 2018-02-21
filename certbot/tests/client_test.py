@@ -170,6 +170,7 @@ class ClientTest(ClientTestCommon):
         auth_handler = self.client.auth_handler
 
         orderr = self.acme.new_order(test_csr.data)
+        auth_handler.handle_authorizations(orderr)
         self.assertEqual(
             (mock.sentinel.certr, mock.sentinel.chain),
             self.client.obtain_certificate_from_csr(
