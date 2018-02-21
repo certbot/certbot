@@ -164,7 +164,7 @@ class BackwardsCompatibleClientV2Test(ClientTestBase):
     @mock.patch('OpenSSL.crypto.load_certificate_request')
     @mock.patch('acme.crypto_util._pyopenssl_cert_or_req_all_names')
     def test_new_order_v1(self, mock__pyopenssl_cert_or_req_all_names,
-        mock_load_certificate_request):
+        unused_mock_load_certificate_request):
         self.response.json.return_value = DIRECTORY_V1.to_json()
         mock__pyopenssl_cert_or_req_all_names.return_value = ['example.com', 'www.example.com']
         mock_csr_pem = mock.MagicMock()
