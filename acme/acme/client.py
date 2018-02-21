@@ -749,7 +749,7 @@ class BackwardsCompatibleClientV2(object):
                 try:
                     chain = self.client.fetch_chain(certr)
                     break
-                except acme_errors.Error:
+                except errors.Error:
                     time.sleep(1)
 
             if chain is None:

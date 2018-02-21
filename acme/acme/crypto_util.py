@@ -8,6 +8,8 @@ import socket
 import sys
 
 import OpenSSL
+import josepy as jose
+
 
 from acme import errors
 
@@ -280,3 +282,23 @@ def gen_ss_cert(key, domains, not_before=None,
     cert.set_pubkey(key)
     cert.sign(key, "sha256")
     return cert
+
+def dump_pyopenssl_chain(chain, filetype=OpenSSL.crypto.FILETYPE_PEM):
+    """Dump certificate chain into a bundle.
+
+    :param list chain: List of `OpenSSL.crypto.X509` (or wrapped in
+        :class:`josepy.util.ComparableX509`).
+
+    """
+    # XXX: returns empty string when no chain is available, which
+    # shuts up RenewableCert, but might not be the best solution...
+
+    def _dump_cert(cert):
+        if isinstance(cert, jose.ComparableX509):
+            # pylint: disable=protected-access
+            cert = cert.wrapped
+        return OpenSSL.crypto.dump_certificate(filetype, cert)
+
+    # assumes that OpenSSL.crypto.dump_certificate includes ending
+    # newline character
+    return b"".join(_dump_cert(cert) for cert in chain)

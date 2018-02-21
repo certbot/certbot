@@ -1,4 +1,5 @@
 """Certbot client API."""
+import datetime
 import logging
 import os
 import platform
@@ -11,7 +12,6 @@ import zope.component
 
 from acme import client as acme_client
 from acme import crypto_util as acme_crypto_util
-from acme import errors as acme_errors
 from acme import messages
 
 import certbot
@@ -274,10 +274,9 @@ class Client(object):
 
         :param list domains: domains to get a certificate
 
-        :returns: `.CertificateResource`, certificate chain (as
-            returned by `.fetch_chain`), and newly generated private key
-            (`.util.Key`) and DER-encoded Certificate Signing Request
-            (`.util.CSR`).
+        :returns: :returns: certificate as PEM string, chain as PEM string,
+            newly generated private key (`.util.Key`), and DER-encoded
+            Certificate Signing Request (`.util.CSR`).
         :rtype: tuple
 
         """
@@ -305,9 +304,9 @@ class Client(object):
                 os.remove(csr.file)
             return self.obtain_certificate(successful_domains)
         else:
-            certr, chain = self.obtain_certificate_from_csr(csr, orderr)
+            cert, chain = self.obtain_certificate_from_csr(csr, orderr)
 
-            return certr, chain, key, csr
+            return cert, chain, key, csr
 
     # pylint: disable=no-member
     def obtain_and_enroll_certificate(self, domains, certname):
@@ -326,7 +325,7 @@ class Client(object):
             be obtained, or None if doing a successful dry run.
 
         """
-        certr, chain, key, _ = self.obtain_certificate(domains)
+        cert, chain, key, _ = self.obtain_certificate(domains)
 
         if (self.config.config_dir != constants.CLI_DEFAULTS["config_dir"] or
                 self.config.work_dir != constants.CLI_DEFAULTS["work_dir"]):
@@ -341,9 +340,8 @@ class Client(object):
             return None
         else:
             return storage.RenewableCert.new_lineage(
-                new_name, OpenSSL.crypto.dump_certificate(
-                    OpenSSL.crypto.FILETYPE_PEM, certr.body.wrapped),
-                key.pem, crypto_util.dump_pyopenssl_chain(chain),
+                new_name, cert,
+                key.pem, chain,
                 self.config)
 
     def save_certificate(self, cert_pem, chain_pem,
