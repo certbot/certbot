@@ -261,9 +261,8 @@ class Client(object):
         if orderr is None:
             orderr = self.acme.new_order(csr.data)
             authzr = self.auth_handler.handle_authorizations(orderr)
-        else:
-            authzr = orderr.authorizations
-
+            orderr = orderr.update(authorizations=authzr)
+        authzr = orderr.authorizations
 
         certr = self.acme.request_issuance(
             jose.ComparableX509(
@@ -320,6 +319,7 @@ class Client(object):
 
         orderr = self.acme.new_order(csr.data)
         authzr = self.auth_handler.handle_authorizations(orderr, self.config.allow_subset_of_names)
+        orderr = orderr.update(authorizations=authzr)
         auth_domains = set(a.body.identifier.value for a in authzr)
         successful_domains = [d for d in domains if d in auth_domains]
 
