@@ -48,12 +48,13 @@ class AuthHandler(object):
         # List must be used to keep responses straight.
         self.achalls = []
 
-    def get_authorizations(self, domains, best_effort=False):
+    def handle_authorizations(self, orderr, best_effort=False):
         """Retrieve all authorizations for challenges.
 
-        :param list domains: Domains for authorization
+        :param acme.messages.OrderResource orderr: must have
+            authorizations filled in
         :param bool best_effort: Whether or not all authorizations are
-             required (this is useful in renewal)
+            required (this is useful in renewal)
 
         :returns: List of authorization resources
         :rtype: list
@@ -62,8 +63,10 @@ class AuthHandler(object):
             authorizations
 
         """
-        for domain in domains:
-            self.authzr[domain] = self.acme.request_domain_challenges(domain)
+        authzrs = orderr.authorizations
+        for authzr in authzrs:
+            self.authzr[authzr.body.identifier.value] = authzr
+        domains = self.authzr.keys()
 
         self._choose_challenges(domains)
         config = zope.component.getUtility(interfaces.IConfig)

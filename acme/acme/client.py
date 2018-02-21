@@ -705,6 +705,28 @@ class BackwardsCompatibleClientV2(object):
                 regr = regr.update(terms_of_service_agreed=True)
             return self.client.new_account(regr)
 
+    def new_order(self, csr_pem):
+        """Request a new Order object from the server.
+
+        If using ACMEv1, returns a dummy OrderResource with only
+        the authorizations field filled in.
+
+        :param str csr_pem: A CSR in PEM format.
+
+        :returns: The newly created order.
+        :rtype: OrderResource
+        """
+        if self.acme_version == 1:
+            csr = OpenSSL.crypto.load_certificate_request(OpenSSL.crypto.FILETYPE_PEM, csr_pem)
+            # pylint: disable=protected-access
+            dnsNames = crypto_util._pyopenssl_cert_or_req_all_names(csr)
+            authorizations = []
+            for domain in dnsNames:
+                authorizations.append(self.client.request_domain_challenges(domain))
+            return messages.OrderResource(authorizations=authorizations)
+        else:
+            return self.client.new_order(csr_pem)
+
     def _acme_version_from_directory(self, directory):
         if hasattr(directory, 'newNonce'):
             return 2
