@@ -147,10 +147,13 @@ class ClientTest(ClientTestCommon):
         self.acme.fetch_chain.return_value = mock.sentinel.chain
         self.acme.new_order.return_value = self.eg_order
 
-    def _check_obtain_certificate(self):
-        self.client.auth_handler.handle_authorizations.assert_called_once_with(
-            self.eg_order,
-            self.config.allow_subset_of_names)
+    def _check_obtain_certificate(self, auth_count=1):
+        if auth_count == 1:
+            self.client.auth_handler.handle_authorizations.assert_called_once_with(
+                self.eg_order,
+                self.config.allow_subset_of_names)
+        else:
+            self.assertEqual(self.client.auth_handler.handle_authorizations.call_count, auth_count)
 
         authzr = self.client.auth_handler.handle_authorizations()
 
@@ -239,6 +242,21 @@ class ClientTest(ClientTestCommon):
             mock.sentinel.key, self.eg_domains, self.config.csr_dir)
 
     @mock.patch("certbot.client.crypto_util")
+    @mock.patch("os.remove")
+    def test_obtain_certificate_partial_success(self, mock_remove, mock_crypto_util):
+        csr = util.CSR(form="pem", file=mock.sentinel.csr_file, data=CSR_SAN)
+        key = util.CSR(form="pem", file=mock.sentinel.key_file, data=CSR_SAN)
+        mock_crypto_util.init_save_csr.return_value = csr
+        mock_crypto_util.init_save_key.return_value = key
+
+        authzr = self._authzr_from_domains(["example.com"])
+        self._test_obtain_certificate_common(key, csr, authzr_ret=authzr, auth_count=2)
+
+        self.assertEqual(mock_crypto_util.init_save_key.call_count, 2)
+        self.assertEqual(mock_crypto_util.init_save_csr.call_count, 2)
+        self.assertEqual(mock_remove.call_count, 2)
+
+    @mock.patch("certbot.client.crypto_util")
     @mock.patch("certbot.client.acme_crypto_util")
     def test_obtain_certificate_dry_run(self, mock_acme_crypto, mock_crypto):
         csr = util.CSR(form="pem", file=None, data=CSR_SAN)
@@ -255,22 +273,25 @@ class ClientTest(ClientTestCommon):
         mock_crypto.init_save_key.assert_not_called()
         mock_crypto.init_save_csr.assert_not_called()
 
-    def _test_obtain_certificate_common(self, key, csr):
-        self._mock_obtain_certificate()
-
-        # return_value is essentially set to (None, None) in
-        # _mock_obtain_certificate(), which breaks this test.
-        # Thus fixed by the next line.
-
+    def _authzr_from_domains(self, domains):
         authzr = []
 
         # domain ordering should not be affected by authorization order
-        for domain in reversed(self.eg_domains):
+        for domain in reversed(domains):
             authzr.append(
                 mock.MagicMock(
                     body=mock.MagicMock(
                         identifier=mock.MagicMock(
                             value=domain))))
+        return authzr
+
+    def _test_obtain_certificate_common(self, key, csr, authzr_ret=None, auth_count=1):
+        self._mock_obtain_certificate()
+
+        # return_value is essentially set to (None, None) in
+        # _mock_obtain_certificate(), which breaks this test.
+        # Thus fixed by the next line.
+        authzr = authzr_ret or self._authzr_from_domains(self.eg_domains)
 
         self.eg_order.authorizations = authzr
         self.client.auth_handler.handle_authorizations.return_value = authzr
@@ -281,7 +302,7 @@ class ClientTest(ClientTestCommon):
         self.assertEqual(
             result,
             (mock.sentinel.certr, mock.sentinel.chain, key, csr))
-        self._check_obtain_certificate()
+        self._check_obtain_certificate(auth_count)
 
     @mock.patch('certbot.client.Client.obtain_certificate')
     @mock.patch('certbot.storage.RenewableCert.new_lineage')
