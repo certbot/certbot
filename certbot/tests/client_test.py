@@ -294,6 +294,7 @@ class ClientTest(ClientTestCommon):
         authzr = authzr_ret or self._authzr_from_domains(self.eg_domains)
 
         self.eg_order.authorizations = authzr
+        self.eg_order.update().authorizations = authzr
         self.client.auth_handler.handle_authorizations.return_value = authzr
 
         with test_util.patch_get_utility():
