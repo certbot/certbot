@@ -723,9 +723,47 @@ class BackwardsCompatibleClientV2(object):
             authorizations = []
             for domain in dnsNames:
                 authorizations.append(self.client.request_domain_challenges(domain))
-            return messages.OrderResource(authorizations=authorizations)
+            return messages.OrderResource(authorizations=authorizations, csr_pem=csr_pem)
         else:
             return self.client.new_order(csr_pem)
+
+    def finalize_order(self, orderr, deadline):
+        """Finalize an order and obtain a certificate.
+
+        :param messages.OrderResource orderr: order to finalize
+        :param datetime.datetime deadline: when to stop polling and timeout
+
+        :returns: finalized order
+        :rtype: messages.OrderResource
+
+        """
+        if self.acme_version == 1:
+            csr_pem = orderr.csr_pem
+            certr = self.client.request_issuance(
+                jose.ComparableX509(
+                    OpenSSL.crypto.load_certificate_request(OpenSSL.crypto.FILETYPE_PEM, csr_pem)),
+                    orderr.authorizations)
+
+            chain = None
+            while datetime.datetime.now() < deadline:
+                try:
+                    chain = self.client.fetch_chain(certr)
+                    break
+                except acme_errors.Error:
+                    time.sleep(1)
+
+            if chain is None:
+                raise errors.Error(
+                    'Failed to fetch chain. You should not deploy the generated '
+                    'certificate, please rerun the command for a new one.')
+
+            cert = OpenSSL.crypto.dump_certificate(
+                    OpenSSL.crypto.FILETYPE_PEM, certr.body.wrapped)
+            chain = crypto_util.dump_pyopenssl_chain(chain)
+
+            return orderr.update(fullchain_pem=(cert + chain))
+        else:
+            return self.client.finalize_order(orderr, deadline)
 
     def _acme_version_from_directory(self, directory):
         if hasattr(directory, 'newNonce'):

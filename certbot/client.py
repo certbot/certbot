@@ -243,8 +243,7 @@ class Client(object):
             than `authkey`.
         :param acme.messages.OrderResource orderr: contains authzrs
 
-        :returns: `.CertificateResource` and certificate chain (as
-            returned by `.fetch_chain`).
+        :returns: certificate and chain as PEM strings
         :rtype: tuple
 
         """
@@ -264,32 +263,9 @@ class Client(object):
             orderr = orderr.update(authorizations=authzr)
         authzr = orderr.authorizations
 
-        certr = self.acme.request_issuance(
-            jose.ComparableX509(
-                OpenSSL.crypto.load_certificate_request(OpenSSL.crypto.FILETYPE_PEM, csr.data)),
-                authzr)
-
-        notify = zope.component.getUtility(interfaces.IDisplay).notification
-        retries = 0
-        chain = None
-
-        while retries <= 1:
-            if retries:
-                notify('Failed to fetch chain, please check your network '
-                       'and continue', pause=True)
-            try:
-                chain = self.acme.fetch_chain(certr)
-                break
-            except acme_errors.Error:
-                logger.debug('Failed to fetch chain', exc_info=True)
-                retries += 1
-
-        if chain is None:
-            raise acme_errors.Error(
-                'Failed to fetch chain. You should not deploy the generated '
-                'certificate, please rerun the command for a new one.')
-
-        return certr, chain
+        deadline = datetime.datetime.now() + datetime.timedelta(seconds=90)
+        orderr = self.acme.finalize_order(orderr, deadline)
+        return crypto_util.cert_and_chain_from_fullchain(orderr.fullchain_pem)
 
     def obtain_certificate(self, domains):
         """Obtains a certificate from the ACME server.
@@ -370,14 +346,12 @@ class Client(object):
                 key.pem, crypto_util.dump_pyopenssl_chain(chain),
                 self.config)
 
-    def save_certificate(self, certr, chain_cert,
+    def save_certificate(self, cert_pem, chain_pem,
                          cert_path, chain_path, fullchain_path):
         """Saves the certificate received from the ACME server.
 
-        :param certr: ACME "certificate" resource.
-        :type certr: :class:`acme.messages.Certificate`
-
-        :param list chain_cert:
+        :param str cert_pem:
+        :param str chain_pem:
         :param str cert_path: Candidate path to a certificate.
         :param str chain_path: Candidate path to a certificate chain.
         :param str fullchain_path: Candidate path to a full cert chain.
@@ -394,8 +368,6 @@ class Client(object):
                 os.path.dirname(path), 0o755, os.geteuid(),
                 self.config.strict_permissions)
 
-        cert_pem = OpenSSL.crypto.dump_certificate(
-            OpenSSL.crypto.FILETYPE_PEM, certr.body.wrapped)
 
         cert_file, abs_cert_path = _open_pem_file('cert_path', cert_path)
 
@@ -406,20 +378,15 @@ class Client(object):
         logger.info("Server issued certificate; certificate written to %s",
                     abs_cert_path)
 
-        if not chain_cert:
-            return abs_cert_path, None, None
-        else:
-            chain_pem = crypto_util.dump_pyopenssl_chain(chain_cert)
+        chain_file, abs_chain_path =\
+                _open_pem_file('chain_path', chain_path)
+        fullchain_file, abs_fullchain_path =\
+                _open_pem_file('fullchain_path', fullchain_path)
 
-            chain_file, abs_chain_path =\
-                    _open_pem_file('chain_path', chain_path)
-            fullchain_file, abs_fullchain_path =\
-                    _open_pem_file('fullchain_path', fullchain_path)
+        _save_chain(chain_pem, chain_file)
+        _save_chain(cert_pem + chain_pem, fullchain_file)
 
-            _save_chain(chain_pem, chain_file)
-            _save_chain(cert_pem + chain_pem, fullchain_file)
-
-            return abs_cert_path, abs_chain_path, abs_fullchain_path
+        return abs_cert_path, abs_chain_path, abs_fullchain_path
 
     def deploy_certificate(self, domains, privkey_path,
                            cert_path, chain_path, fullchain_path):
