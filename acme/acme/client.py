@@ -829,7 +829,8 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         }
         if acme_version == 2:
             kwargs["url"] = url
-            kwargs["kid"] = self.account["uri"]
+            if self.account is not None:
+                kwargs["kid"] = self.account["uri"]
         kwargs["key"] = self.key
         # pylint: disable=star-args
         return jws.JWS.sign(jobj, **kwargs).json_dumps(indent=2)
