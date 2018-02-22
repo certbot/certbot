@@ -6,9 +6,8 @@ import unittest
 
 import mock
 
-from acme import errors as acme_errors
-
 from certbot import account
+from certbot import errors
 from certbot import util
 
 import certbot.tests.util as test_util
