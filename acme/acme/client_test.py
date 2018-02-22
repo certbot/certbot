@@ -133,8 +133,6 @@ class BackwardsCompatibleClientV2Test(ClientTestBase):
         client = self._init()
         self.assertEqual(client.directory, client.client.directory)
         self.assertEqual(client.key, KEY)
-        # delete this line once we finish migrating to new API:
-        self.assertEqual(client.register, client.client.register)
         self.assertEqual(client.update_registration, client.client.update_registration)
         self.assertRaises(AttributeError, client.__getattr__, 'nonexistent')
         self.assertRaises(AttributeError, client.__getattr__, 'new_account_and_tos')

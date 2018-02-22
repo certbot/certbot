@@ -677,9 +677,6 @@ class BackwardsCompatibleClientV2(object):
             return getattr(self.client, name)
         elif name in dir(ClientBase):
             return getattr(self.client, name)
-        # temporary, for breaking changes into smaller pieces
-        elif name in dir(Client):
-            return getattr(self.client, name)
         else:
             raise AttributeError()
 
