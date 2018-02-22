@@ -148,7 +148,6 @@ def setup_log_file_handler(config, logfile, fmt):
     handler.doRollover()  # TODO: creates empty letsencrypt.log.1 file
     handler.setLevel(logging.DEBUG)
     handler_formatter = logging.Formatter(fmt=fmt)
-    handler_formatter.converter = time.gmtime  # don't use localtime
     handler.setFormatter(handler_formatter)
     return handler, log_file_path
 
