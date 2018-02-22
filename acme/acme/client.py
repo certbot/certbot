@@ -884,9 +884,9 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
                     'Ignoring wrong Content-Type (%r) for JSON decodable '
                     'response', response_ct)
 
-            if content_type == cls.JSON_CONTENT_TYPE and jobj is None:
-                raise errors.ClientError(
-                    'Unexpected response Content-Type: {0}'.format(response_ct))
+            #if content_type == cls.JSON_CONTENT_TYPE and jobj is None:
+            #    raise errors.ClientError(
+            #        'Unexpected response Content-Type: {0}'.format(response_ct))
 
         return response
 

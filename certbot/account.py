@@ -224,7 +224,7 @@ class AccountFileStorage(interfaces.AccountStorage):
             with open(self._regr_path(account_dir_path), "w") as regr_file:
                 regr = account.regr
                 with_uri = RegistrationResourceWithNewAuthzrURI(
-                    new_authzr_uri=acme.directory.new_authz,
+                    new_authzr_uri="foo.bar"
                     body=regr.body,
                     uri=regr.uri,
                     terms_of_service=regr.terms_of_service)

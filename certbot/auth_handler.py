@@ -431,8 +431,9 @@ def _find_dumb_path(challbs, preferences):
                           if isinstance(challb.chall, pref_c)), False)
         if supported:
             path.append(i)
-        else:
-            _report_no_chall_path()
+
+    if not path:
+        _report_no_chall_path()
 
     return path
 
