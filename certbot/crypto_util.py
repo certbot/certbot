@@ -440,7 +440,7 @@ def cert_and_chain_from_fullchain(fullchain_pem):
     :param str fullchain_pem: concatenated cert + chain
 
     :returns: tuple of string cert_pem and chain_pem
-    :rytpe: tuple
+    :rtype: tuple
     """
     cert = OpenSSL.crypto.dump_certificate(OpenSSL.crypto.FILETYPE_PEM,
         OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM, fullchain_pem))
