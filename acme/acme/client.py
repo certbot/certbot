@@ -753,7 +753,7 @@ class BackwardsCompatibleClientV2(object):
                     time.sleep(1)
 
             if chain is None:
-                raise errors.Error(
+                raise errors.TimeoutError(
                     'Failed to fetch chain. You should not deploy the generated '
                     'certificate, please rerun the command for a new one.')
 
