@@ -82,6 +82,11 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
             response, uri=regr.uri,
             terms_of_service=regr.terms_of_service)
 
+    def post(self, *args, **kwargs):
+        """Wrapper around self.net.post that adds the acme_version."""
+        kwargs['acme_version'] = self.acme_version
+        return self.net.post(*args, **kwargs)
+
     def update_registration(self, regr, update=None):
         """Update registration.
 
@@ -143,8 +148,7 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
         :raises .UnexpectedUpdate:
 
         """
-        response = self.net.post(challb.uri, response,
-            acme_version=self.acme_version)
+        response = self.post(challb.uri, response)
         try:
             authzr_uri = response.links['up']['url']
         except KeyError:
@@ -216,12 +220,11 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
         :raises .ClientError: If revocation is unsuccessful.
 
         """
-        response = self.net.post(self.directory[messages.Revocation],
+        response = self.post(self.directory[messages.Revocation],
                                  messages.Revocation(
                                      certificate=cert,
                                      reason=rsn),
-                                 content_type=None,
-                                 acme_version=self.acme_version)
+                                 content_type=None)
         if response.status_code != http_client.OK:
             raise errors.ClientError(
                 'Successful revocation must return HTTP OK status')
@@ -271,8 +274,7 @@ class Client(ClientBase):
 
         """
         new_reg = messages.NewRegistration() if new_reg is None else new_reg
-        response = self.net.post(self.directory[new_reg], new_reg,
-            acme_version=1)
+        response = self.post(self.directory[new_reg], new_reg)
         # TODO: handle errors
         assert response.status_code == http_client.CREATED
 
@@ -308,8 +310,7 @@ class Client(ClientBase):
         if new_authzr_uri is not None:
             logger.debug("request_challenges with new_authzr_uri deprecated.")
         new_authz = messages.NewAuthorization(identifier=identifier)
-        response = self.net.post(self.directory.new_authz, new_authz,
-          acme_version=1)
+        response = self.post(self.directory.new_authz, new_authz)
         # TODO: handle errors
         assert response.status_code == http_client.CREATED
         return self._authzr_from_response(response, identifier)
@@ -351,12 +352,11 @@ class Client(ClientBase):
         req = messages.CertificateRequest(csr=csr)
 
         content_type = DER_CONTENT_TYPE  # TODO: add 'cert_type 'argument
-        response = self.net.post(
+        response = self.post(
             self.directory.new_cert,
             req,
             content_type=content_type,
-            headers={'Accept': content_type},
-            acme_version=1)
+            headers={'Accept': content_type})
 
         cert_chain_uri = response.links.get('up', {}).get('url')
 
@@ -552,8 +552,7 @@ class ClientV2(ClientBase):
         :returns: Registration Resource.
         :rtype: `.RegistrationResource`
         """
-        response = self.net.post(self.directory['newAccount'], new_account,
-            acme_version=2)
+        response = self.post(self.directory['newAccount'], new_account)
         # "Instance of 'Field' has no key/contact member" bug:
         # pylint: disable=no-member
         regr = self._regr_from_response(response)
@@ -577,7 +576,7 @@ class ClientV2(ClientBase):
             identifiers.append(messages.Identifier(typ=messages.IDENTIFIER_FQDN,
                 value=name))
         order = messages.NewOrder(identifiers=identifiers)
-        response = self.net.post(self.directory['newOrder'], order)
+        response = self.post(self.directory['newOrder'], order)
         body = messages.Order.from_json(response.json())
         authorizations = []
         for url in body.authorizations:
@@ -643,7 +642,7 @@ class ClientV2(ClientBase):
         csr = OpenSSL.crypto.load_certificate_request(
             OpenSSL.crypto.FILETYPE_PEM, orderr.csr_pem)
         wrapped_csr = messages.CertificateRequest(csr=jose.ComparableX509(csr))
-        self.net.post(orderr.body.finalize, wrapped_csr)
+        self.post(orderr.body.finalize, wrapped_csr)
         while datetime.datetime.now() < deadline:
             time.sleep(1)
             response = self.net.get(orderr.uri)
