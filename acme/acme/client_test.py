@@ -223,7 +223,7 @@ class BackwardsCompatibleClientV2Test(ClientTestBase):
 
         mock_client().request_issuance.return_value = self.certr
         mock_client().fetch_chain.return_value = self.chain
-        mock_client().fetch_chain.side_effect = [errors.Error, mock.DEFAULT]
+        mock_client().fetch_chain.side_effect = [errors.Error, self.chain]
 
         deadline = datetime.datetime(9999, 9, 9)
         client = self._init()
