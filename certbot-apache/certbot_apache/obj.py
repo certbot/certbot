@@ -167,6 +167,9 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
                 active="Yes" if self.enabled else "No",
                 modmacro="Yes" if self.modmacro else "No"))
 
+    def display_repr(self):
+        return str(self)
+
     def __eq__(self, other):
         if isinstance(other, self.__class__):
             return (self.filep == other.filep and self.path == other.path and

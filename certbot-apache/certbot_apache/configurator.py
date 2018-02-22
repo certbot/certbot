@@ -5,6 +5,7 @@ import logging
 import os
 import pkg_resources
 import re
+import six
 import socket
 import time
 
@@ -152,6 +153,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.assoc = dict()
         # Outstanding challenges
         self._chall_out = set()
+        # List of vhosts configured for wildcard certificates on this run.
+        # used by deploy_cert() and enhance()
+        self.wildcard_vhosts = list()
         # Maps enhancements to vhosts we've enabled the enhancement for
         self._enhanced_vhosts = defaultdict(set)
 
@@ -262,6 +266,21 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             self.aug, self.conf("server-root"), self.conf("vhost-root"),
             self.version, configurator=self)
 
+    def wildcard_domain(self, domain):
+        """
+        Checks if domain is a wildcard domain
+
+        :param str domain: Domain to check
+
+        :returns: If the domain is wildcard domain
+        :rtype: bool
+        """
+        if isinstance(domain, six.text_type):
+            wildcard_marker = u"*."
+        else:
+            wildcard_marker = b"*."
+        return domain.startswith(wildcard_marker)
+
     def deploy_cert(self, domain, cert_path, key_path,
                     chain_path=None, fullchain_path=None):
         """Deploys certificate to specified virtual host.
@@ -280,9 +299,89 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             a lack of directives
 
         """
-        # Choose vhost before (possible) enabling of mod_ssl, to keep the
-        # vhost choice namespace similar with the pre-validation one.
-        vhost = self.choose_vhost(domain)
+        if self.wildcard_domain(domain):
+            # Ask user which VHosts to support.
+            # Returned objects are guaranteed to be ssl vhosts
+            deploy_vhosts = self.choose_vhosts_wildcard(domain, create_ssl=True)
+            for vhost in deploy_vhosts:
+                self._deploy_cert(vhost, cert_path, key_path,
+                                  chain_path, fullchain_path)
+                self.wildcard_vhosts.append(vhost)
+        else:
+            vhost = self.choose_vhost(domain)
+            self._deploy_cert(vhost, cert_path, key_path, chain_path, fullchain_path)
+
+    def vhosts_for_wildcard(self, domain):
+        """
+        Get VHost objects for every VirtualHost that the user wants to handle
+        with the wildcard certificate.
+        """
+
+        # Collect all vhosts that match the name
+        matched = set()
+        for vhost in self.vhosts:
+            for name in vhost.get_names():
+                if self._in_wildcard_scope(name, domain):
+                    matched.add(vhost)
+
+        return list(matched)
+
+    def _in_wildcard_scope(self, name, domain):
+        """
+        Helper method for vhosts_for_wildcard() that makes sure that the domain
+        is in the scope of wildcard domain.
+
+        eg. in scope: domain = *.wild.card, name = 1.wild.card
+        not in scope: domain = *.wild.card, name = 1.2.wild.card
+        """
+        if len(name.split(".")) == len(domain.split(".")):
+            return fnmatch.fnmatch(name, domain)
+
+
+    def choose_vhosts_wildcard(self, domain, create_ssl=True):
+        """Prompts user to choose vhosts to install a wildcard certificate for"""
+
+        # Get all vhosts that are covered by the wildcard domain
+        vhosts = self.vhosts_for_wildcard(domain)
+
+        # Go through the vhosts, making sure that we cover all the names
+        # present, but preferring the SSL vhosts
+        filtered_vhosts = dict()
+        for vhost in vhosts:
+            for name in vhost.get_names():
+                if vhost.ssl:
+                    # Always prefer SSL vhosts
+                    filtered_vhosts[name] = vhost
+                elif name not in filtered_vhosts.keys():
+                    # Add if not in list previously
+                    filtered_vhosts[name] = vhost
+
+        # Only unique VHost objects
+        dialog_input = set([vhost for vhost in filtered_vhosts.values()])
+
+        # Ask the user which of names to enable, expect list of names back
+        dialog_output = display_ops.select_vhost_multiple(list(dialog_input))
+
+        # Make sure we create SSL vhosts for the ones that are HTTP only
+        # if requested.
+        return_vhosts = list()
+        for vhost in dialog_output:
+            if not vhost.ssl and create_ssl:
+                return_vhosts.append(self.make_vhost_ssl(vhost))
+            else:
+                return_vhosts.append(vhost)
+
+        return return_vhosts
+
+
+    def _deploy_cert(self, vhost, cert_path, key_path, chain_path, fullchain_path):
+        """
+        Helper function for deploy_cert() that handles the actual deployment
+        this exists because we might want to do multiple deployments per
+        domain originally passed for deploy_cert(). This is especially true
+        with wildcard certificates
+        """
+
 
         # This is done first so that ssl module is enabled and cert_path,
         # cert_key... can all be parsed appropriately
@@ -311,7 +410,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             raise errors.PluginError(
                 "Unable to find cert and/or key directives")
 
-        logger.info("Deploying Certificate for %s to VirtualHost %s", domain, vhost.filep)
+        logger.info("Deploying Certificate to VirtualHost %s", vhost.filep)
 
         if self.version < (2, 4, 8) or (chain_path and not fullchain_path):
             # install SSLCertificateFile, SSLCertificateKeyFile,
@@ -327,8 +426,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                                          "version of Apache")
         else:
             if not fullchain_path:
-                raise errors.PluginError("Please provide the --fullchain-path\
- option pointing to your full chain file")
+                raise errors.PluginError("Please provide the --fullchain-path "
+                                         "option pointing to your full chain file")
             set_cert_path = fullchain_path
             self.aug.set(path["cert_path"][-1], fullchain_path)
             self.aug.set(path["cert_key"][-1], key_path)
@@ -1377,7 +1476,12 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             raise errors.PluginError(
                 "Unsupported enhancement: {0}".format(enhancement))
         try:
-            func(self.choose_vhost(domain), options)
+            # Handle virtualhosts configured for a wildcard certificate
+            if self.wildcard_domain(domain) and self.wildcard_vhosts:
+                for vhost in self.wildcard_vhosts:
+                    func(vhost, options)
+            else:
+                func(self.choose_vhost(domain), options)
         except errors.PluginError:
             logger.warning("Failed %s for %s", enhancement, domain)
             raise

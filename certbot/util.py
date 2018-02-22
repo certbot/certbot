@@ -552,16 +552,6 @@ def enforce_domain_sanity(domain):
     :returns: The domain cast to `str`, with ASCII-only contents
     :rtype: str
     """
-    if isinstance(domain, six.text_type):
-        wildcard_marker = u"*."
-    else:
-        wildcard_marker = b"*."
-
-    # Check if there's a wildcard domain
-    if domain.startswith(wildcard_marker):
-        raise errors.ConfigurationError(
-            "Wildcard domains are not supported: {0}".format(domain))
-
     # Unicode
     try:
         if isinstance(domain, six.binary_type):
