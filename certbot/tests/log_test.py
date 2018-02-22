@@ -156,7 +156,7 @@ class SetupLogFileHandlerTest(test_util.ConfigTestCase):
         handler.close()
 
         self.assertEqual(handler.level, logging.DEBUG)
-        self.assertEqual(handler.formatter.converter, time.gmtime)
+        self.assertEqual(handler.formatter.converter, time.localtime)
 
         expected_path = os.path.join(self.config.logs_dir, log_file)
         self.assertEqual(log_path, expected_path)
