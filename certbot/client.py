@@ -212,8 +212,8 @@ class Client(object):
     :ivar .IAuthenticator auth: Prepared (`.IAuthenticator.prepare`)
         authenticator that can solve ACME challenges.
     :ivar .IInstaller installer: Installer.
-    :ivar acme.client.Client acme: Optional ACME client API handle.
-       You might already have one from `register`.
+    :ivar acme.client.BackwardsCompatibleClientV2 acme: Optional ACME
+        client API handle. You might already have one from `register`.
 
     """
 

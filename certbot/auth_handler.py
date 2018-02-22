@@ -24,7 +24,7 @@ class AuthHandler(object):
         :class:`~acme.challenges.Challenge` types
     :type auth: :class:`certbot.interfaces.IAuthenticator`
 
-    :ivar acme.client.Client acme: ACME client API.
+    :ivar acme.client.BackwardsCompatibleClientV2 acme: ACME client API.
 
     :ivar account: Client's Account
     :type account: :class:`certbot.account.Account`
@@ -100,10 +100,16 @@ class AuthHandler(object):
         """Retrieve necessary challenges to satisfy server."""
         logger.info("Performing the following challenges:")
         for dom in domains:
+            dom_challenges = self.authzr[dom].body.challenges
+            if self.acme.acme_version == 1:
+                combinations = self.authzr[dom].body.combinations
+            else:
+                combinations = tuple((i,) for i in range(len(dom_challenges)))
+
             path = gen_challenge_path(
-                self.authzr[dom].body.challenges,
+                dom_challenges,
                 self._get_chall_pref(dom),
-                self.authzr[dom].body.combinations)
+                combinations)
 
             dom_achalls = self._challenge_factory(
                 dom, path)

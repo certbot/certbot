@@ -81,6 +81,7 @@ class HandleAuthorizationsTest(unittest.TestCase):
 
         self.mock_account = mock.Mock(key=util.Key("file_path", "PEM"))
         self.mock_net = mock.MagicMock(spec=acme_client.Client)
+        self.mock_net.acme_version = 1
 
         self.handler = AuthHandler(
             self.mock_auth, self.mock_net, self.mock_account, [])

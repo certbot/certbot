@@ -660,10 +660,21 @@ class ClientV2(ClientBase):
 
 class BackwardsCompatibleClientV2(object):
     """ACME client wrapper that tends towards V2-style calls, but
-       supports V1 servers.
+    supports V1 servers.
 
-       :ivar int acme_version: 1 or 2, corresponding to the Let's Encrypt endpoint
-       :ivar .ClientBase client: either Client or ClientV2
+    .. note:: While this class handles the majority of the differences
+        between versions of the ACME protocol, if you need to support an
+        ACME server based on version 3 or older of the IETF ACME draft
+        that uses combinations in authorizations (or lack thereof) to
+        signal that the client needs to complete something other than
+        any single challenge in the authorization to make it valid, the
+        user of this class needs to understand and handle these
+        differences themselves.  This does not apply to either of Let's
+        Encrypt's endpoints where successfully completing any challenge
+        in an authorization will make it valid.
+
+    :ivar int acme_version: 1 or 2, corresponding to the Let's Encrypt endpoint
+    :ivar .ClientBase client: either Client or ClientV2
     """
 
     def __init__(self, net, key, server):
