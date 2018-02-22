@@ -274,7 +274,7 @@ class Client(object):
 
         :param list domains: domains to get a certificate
 
-        :returns: :returns: certificate as PEM string, chain as PEM string,
+        :returns: certificate as PEM string, chain as PEM string,
             newly generated private key (`.util.Key`), and DER-encoded
             Certificate Signing Request (`.util.CSR`).
         :rtype: tuple
