@@ -580,7 +580,7 @@ class ClientV2(ClientBase):
         body = messages.Order.from_json(response.json())
         authorizations = []
         for url in body.authorizations:
-            authorizations.append(self._authzr_from_response(self.net.get(url)))
+            authorizations.append(self._authzr_from_response(self.net.get(url), uri=url))
         return messages.OrderResource(
             body=body,
             uri=response.headers.get('Location'),
