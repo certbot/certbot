@@ -1228,7 +1228,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
 
     def test_renew_with_bad_domain(self):
         renewalparams = {'authenticator': 'webroot'}
-        names = ['exámple.com']
+        names = ['uniçodé.com']
         self._test_renew_common(renewalparams=renewalparams, error_expected=True,
                                 names=names, assert_oc_called=False)
 

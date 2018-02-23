@@ -8,6 +8,7 @@ from six.moves import http_client  # pylint: disable=import-error
 
 import josepy as jose
 import mock
+import OpenSSL
 import requests
 
 from acme import challenges
@@ -82,6 +83,29 @@ class ClientTestBase(unittest.TestCase):
 class BackwardsCompatibleClientV2Test(ClientTestBase):
     """Tests for  acme.client.BackwardsCompatibleClientV2."""
 
+    def setUp(self):
+        super(BackwardsCompatibleClientV2Test, self).setUp()
+        # contains a loaded cert
+        self.certr = messages.CertificateResource(
+            body=messages_test.CERT)
+
+        loaded = OpenSSL.crypto.load_certificate(
+            OpenSSL.crypto.FILETYPE_PEM, CERT_SAN_PEM)
+        wrapped = jose.ComparableX509(loaded)
+        self.chain = [wrapped, wrapped]
+
+        self.cert_pem = OpenSSL.crypto.dump_certificate(
+            OpenSSL.crypto.FILETYPE_PEM, messages_test.CERT.wrapped)
+
+        single_chain = OpenSSL.crypto.dump_certificate(
+            OpenSSL.crypto.FILETYPE_PEM, loaded)
+        self.chain_pem = single_chain + single_chain
+
+        self.fullchain_pem = self.cert_pem + self.chain_pem
+
+        self.orderr = messages.OrderResource(
+            csr_pem=CSR_SAN_PEM)
+
     def _init(self):
         uri = 'http://www.letsencrypt-demo.org/directory'
         from acme.client import BackwardsCompatibleClientV2
@@ -109,8 +133,6 @@ class BackwardsCompatibleClientV2Test(ClientTestBase):
         client = self._init()
         self.assertEqual(client.directory, client.client.directory)
         self.assertEqual(client.key, KEY)
-        # delete this line once we finish migrating to new API:
-        self.assertEqual(client.register, client.client.register)
         self.assertEqual(client.update_registration, client.client.update_registration)
         self.assertRaises(AttributeError, client.__getattr__, 'nonexistent')
         self.assertRaises(AttributeError, client.__getattr__, 'new_account_and_tos')
@@ -160,6 +182,74 @@ class BackwardsCompatibleClientV2Test(ClientTestBase):
             client.new_account_and_tos(self.new_reg)
             mock_client().register.assert_called_once_with(self.new_reg)
             mock_client().agree_to_tos.assert_not_called()
+
+    @mock.patch('OpenSSL.crypto.load_certificate_request')
+    @mock.patch('acme.crypto_util._pyopenssl_cert_or_req_all_names')
+    def test_new_order_v1(self, mock__pyopenssl_cert_or_req_all_names,
+        unused_mock_load_certificate_request):
+        self.response.json.return_value = DIRECTORY_V1.to_json()
+        mock__pyopenssl_cert_or_req_all_names.return_value = ['example.com', 'www.example.com']
+        mock_csr_pem = mock.MagicMock()
+        with mock.patch('acme.client.Client') as mock_client:
+            mock_client().request_domain_challenges.return_value = mock.sentinel.auth
+            client = self._init()
+            orderr = client.new_order(mock_csr_pem)
+            self.assertEqual(orderr.authorizations, [mock.sentinel.auth, mock.sentinel.auth])
+
+    def test_new_order_v2(self):
+        self.response.json.return_value = DIRECTORY_V2.to_json()
+        mock_csr_pem = mock.MagicMock()
+        with mock.patch('acme.client.ClientV2') as mock_client:
+            client = self._init()
+            client.new_order(mock_csr_pem)
+            mock_client().new_order.assert_called_once_with(mock_csr_pem)
+
+    @mock.patch('acme.client.Client')
+    def test_finalize_order_v1_success(self, mock_client):
+        self.response.json.return_value = DIRECTORY_V1.to_json()
+
+        mock_client().request_issuance.return_value = self.certr
+        mock_client().fetch_chain.return_value = self.chain
+
+        deadline = datetime.datetime(9999, 9, 9)
+        client = self._init()
+        result = client.finalize_order(self.orderr, deadline)
+        self.assertEqual(result.fullchain_pem, self.fullchain_pem)
+        mock_client().fetch_chain.assert_called_once_with(self.certr)
+
+    @mock.patch('acme.client.Client')
+    def test_finalize_order_v1_fetch_chain_error(self, mock_client):
+        self.response.json.return_value = DIRECTORY_V1.to_json()
+
+        mock_client().request_issuance.return_value = self.certr
+        mock_client().fetch_chain.return_value = self.chain
+        mock_client().fetch_chain.side_effect = [errors.Error, self.chain]
+
+        deadline = datetime.datetime(9999, 9, 9)
+        client = self._init()
+        result = client.finalize_order(self.orderr, deadline)
+        self.assertEqual(result.fullchain_pem, self.fullchain_pem)
+        self.assertEqual(mock_client().fetch_chain.call_count, 2)
+
+    @mock.patch('acme.client.Client')
+    def test_finalize_order_v1_timeout(self, mock_client):
+        self.response.json.return_value = DIRECTORY_V1.to_json()
+
+        mock_client().request_issuance.return_value = self.certr
+
+        deadline = deadline = datetime.datetime.now() - datetime.timedelta(seconds=60)
+        client = self._init()
+        self.assertRaises(errors.TimeoutError, client.finalize_order,
+            self.orderr, deadline)
+
+    def test_finalize_order_v2(self):
+        self.response.json.return_value = DIRECTORY_V2.to_json()
+        mock_orderr = mock.MagicMock()
+        mock_deadline = mock.MagicMock()
+        with mock.patch('acme.client.ClientV2') as mock_client:
+            client = self._init()
+            client.finalize_order(mock_orderr, mock_deadline)
+            mock_client().finalize_order.assert_called_once_with(mock_orderr, mock_deadline)
 
 
 class ClientTest(ClientTestBase):

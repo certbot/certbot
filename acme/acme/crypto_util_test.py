@@ -225,5 +225,33 @@ class MakeCSRTest(unittest.TestCase):
             self.assertEqual(len(must_staple_exts), 1,
                 "Expected exactly one Must Staple extension")
 
+
+class DumpPyopensslChainTest(unittest.TestCase):
+    """Test for dump_pyopenssl_chain."""
+
+    @classmethod
+    def _call(cls, loaded):
+        # pylint: disable=protected-access
+        from acme.crypto_util import dump_pyopenssl_chain
+        return dump_pyopenssl_chain(loaded)
+
+    def test_dump_pyopenssl_chain(self):
+        names = ['cert.pem', 'cert-san.pem', 'cert-idnsans.pem']
+        loaded = [test_util.load_cert(name) for name in names]
+        length = sum(
+            len(OpenSSL.crypto.dump_certificate(OpenSSL.crypto.FILETYPE_PEM, cert))
+            for cert in loaded)
+        self.assertEqual(len(self._call(loaded)), length)
+
+    def test_dump_pyopenssl_chain_wrapped(self):
+        names = ['cert.pem', 'cert-san.pem', 'cert-idnsans.pem']
+        loaded = [test_util.load_cert(name) for name in names]
+        wrap_func = jose.ComparableX509
+        wrapped = [wrap_func(cert) for cert in loaded]
+        dump_func = OpenSSL.crypto.dump_certificate
+        length = sum(len(dump_func(OpenSSL.crypto.FILETYPE_PEM, cert)) for cert in loaded)
+        self.assertEqual(len(self._call(wrapped)), length)
+
+
 if __name__ == '__main__':
     unittest.main()  # pragma: no cover
