@@ -298,7 +298,7 @@ class Client(object):
         auth_domains = set(a.body.identifier.value for a in authzr)
         successful_domains = [d for d in domains if d in auth_domains]
 
-        if successful_domains != domains:
+        if self.config.allow_subset_of_names and successful_domains != domains:
             if not self.config.dry_run:
                 os.remove(key.file)
                 os.remove(csr.file)
