@@ -19,9 +19,7 @@ install_requires = [
     'pyrfc3339',
     'pytz',
     'requests[security]>=2.4.1',  # security extras added in 2.4.1
-    # For pkg_resources. >=1.0 so pip resolves it to a version cryptography
-    # will tolerate; see #2599:
-    'setuptools>=1.0',
+    'setuptools',
     'six>=1.9.0',  # needed for python_2_unicode_compatible
 ]
 
