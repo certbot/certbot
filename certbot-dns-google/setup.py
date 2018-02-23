@@ -15,9 +15,7 @@ install_requires = [
     'mock',
     # for oauth2client.service_account.ServiceAccountCredentials
     'oauth2client>=2.0',
-    # For pkg_resources. >=1.0 so pip resolves it to a version cryptography
-    # will tolerate; see #2599:
-    'setuptools>=1.0',
+    'setuptools',
     'zope.interface',
     # already a dependency of google-api-python-client, but added for consistency
     'httplib2'
