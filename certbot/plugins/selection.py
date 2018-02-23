@@ -161,8 +161,12 @@ def choose_configurator_plugins(config, plugins, verb):
 
     req_auth, req_inst = cli_plugin_requests(config)
 
-    installer_question = ("How would you like to authenticate and install "
-                          "certificates?")
+    if verb == "enhance":
+        installer_question = ("Which plugin would you like to use for adding "
+                              "security enhancements to your configuration?")
+    else:
+        installer_question = ("How would you like to authenticate and install "
+                              "certificates?")
 
     # Which plugins do we need?
     if verb == "run":

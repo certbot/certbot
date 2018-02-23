@@ -875,7 +875,7 @@ def enhance(config, plugins):
     :rtype: None
 
     """
-    supported_enhancements = ["hsts", "redirect", "staple", "uir"]
+    supported_enhancements = ["hsts", "redirect", "uir"]
     # Check that at least one enhancement was requested on command line
     if not any([getattr(config, enh) for enh in supported_enhancements]):
         msg = ("Please specify one or more enhancement types to configure. To list "

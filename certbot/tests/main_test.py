@@ -1588,7 +1588,7 @@ class EnhanceTest(unittest.TestCase):
                                       '-d', 'another.tld', '--redirect',
                                       '--hsts'])
             req_enh = ["redirect", "hsts"]
-            not_req_enh = ["staple", "uir"]
+            not_req_enh = ["uir"]
             self.assertTrue(mock_client.enhance_config.called)
             self.assertTrue(
                 all([getattr(mock_client.config, e) for e in req_enh]))

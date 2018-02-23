@@ -1384,10 +1384,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 msg_tmpl = ("Certbot was not able to find SSL VirtualHost for a "
                        "domain {0} for enabling enhancement \"{1}\". The requested "
                        "enhancement was not configured.")
+                msg_enhancement = enhancement
                 if options:
-                    msg = msg_tmpl.format(domain, options)
-                else:
-                    msg = msg_tmpl.format(domain, enhancement)
+                    msg_enhancement += ": " + options
+                msg = msg_tmpl.format(domain, msg_enhancement)
                 logger.warning(msg)
             else:
                 func(vhost, options)
