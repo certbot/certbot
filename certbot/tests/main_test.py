@@ -1,3 +1,4 @@
+# coding=utf-8
 """Tests for certbot.main."""
 # pylint: disable=too-many-lines
 from __future__ import print_function
@@ -939,11 +940,6 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         self.assertRaises(errors.ConfigurationError,
                           self._call,
                           ['-d', (('a' * 50) + '.') * 10])
-        # Wildcard
-        self.assertRaises(errors.ConfigurationError,
-                          self._call,
-                          ['-d', '*.wildcard.tld'])
-
         # Bare IP address (this is actually a different error message now)
         self.assertRaises(errors.ConfigurationError,
                           self._call,
@@ -1232,7 +1228,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
 
     def test_renew_with_bad_domain(self):
         renewalparams = {'authenticator': 'webroot'}
-        names = ['*.example.com']
+        names = ['exámple.com']
         self._test_renew_common(renewalparams=renewalparams, error_expected=True,
                                 names=names, assert_oc_called=False)
 

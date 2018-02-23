@@ -153,9 +153,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.assoc = dict()
         # Outstanding challenges
         self._chall_out = set()
-        # List of vhosts configured for wildcard certificates on this run.
+        # List of vhosts configured per wildcard domain on this run.
         # used by deploy_cert() and enhance()
-        self.wildcard_vhosts = list()
+        self.wildcard_vhosts = dict()
         # Maps enhancements to vhosts we've enabled the enhancement for
         self._enhanced_vhosts = defaultdict(set)
 
@@ -306,7 +306,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             for vhost in deploy_vhosts:
                 self._deploy_cert(vhost, cert_path, key_path,
                                   chain_path, fullchain_path)
-                self.wildcard_vhosts.append(vhost)
+                if domain not in self.wildcard_vhosts.keys():
+                    self.wildcard_vhosts[domain] = list()
+                self.wildcard_vhosts[domain].append(vhost)
         else:
             vhost = self.choose_vhost(domain)
             self._deploy_cert(vhost, cert_path, key_path, chain_path, fullchain_path)
@@ -1476,10 +1478,16 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             raise errors.PluginError(
                 "Unsupported enhancement: {0}".format(enhancement))
         try:
-            # Handle virtualhosts configured for a wildcard certificate
-            if self.wildcard_domain(domain) and self.wildcard_vhosts:
-                for vhost in self.wildcard_vhosts:
-                    func(vhost, options)
+            if self.wildcard_domain(domain):
+                # Handle virtualhosts configured for a wildcard domain
+                if domain in self.wildcard_vhosts.keys():
+                    # Vhosts for a wildcard domain were already selected
+                    for vhost in self.wildcard_vhosts[domain]:
+                        func(vhost, options)
+                else:
+                    # Ask which Vhosts to enhance for wildcard domain
+                    for vhost in self.choose_vhosts_wildcard(domain, create_ssl=False):
+                        func(vhost, options)
             else:
                 func(self.choose_vhost(domain), options)
         except errors.PluginError:
