@@ -92,6 +92,10 @@ class NginxConfigurator(common.Installer):
         # For creating new vhosts if no names match
         self.new_vhost = None
 
+        # List of vhosts configured per wildcard domain on this run.
+        # used by deploy_cert() and enhance()
+        self.wildcard_vhosts = {}
+
         # Add number of outstanding challenges
         self._chall_out = 0
 
@@ -146,6 +150,21 @@ class NginxConfigurator(common.Installer):
             raise errors.PluginError(
                 'Unable to lock %s', self.conf('server-root'))
 
+    def _wildcard_domain(self, domain):
+        """
+        Checks if domain is a wildcard domain
+
+        :param str domain: Domain to check
+
+        :returns: If the domain is wildcard domain
+        :rtype: bool
+        """
+        if isinstance(domain, six.text_type):
+            wildcard_marker = u"*."
+        else:
+            wildcard_marker = b"*."
+        return domain.startswith(wildcard_marker)
+
     # Entry point in main.py for installing cert
     def deploy_cert(self, domain, cert_path, key_path,
                     chain_path=None, fullchain_path=None):
@@ -166,14 +185,23 @@ class NginxConfigurator(common.Installer):
                 "The nginx plugin currently requires --fullchain-path to "
                 "install a cert.")
 
-        vhost = self.choose_vhost(domain, create_if_no_match=True)
+        vhosts = self.choose_vhosts(domain, create_if_no_match=True)
+        for vhost in vhosts:
+            self._deploy_cert(vhost, cert_path, key_path, chain_path, fullchain_path)
+
+    def _deploy_cert(self, vhost, cert_path, key_path, chain_path, fullchain_path):
+        """
+        Helper function for deploy_cert() that handles the actual deployment
+        this exists because we might want to do multiple deployments per
+        domain originally passed for deploy_cert(). This is especially true
+        with wildcard certificates
+        """
         cert_directives = [['\n    ', 'ssl_certificate', ' ', fullchain_path],
                            ['\n    ', 'ssl_certificate_key', ' ', key_path]]
 
         self.parser.add_server_directives(vhost,
                                           cert_directives, replace=True)
-        logger.info("Deployed Certificate to VirtualHost %s for %s",
-                    vhost.filep, ", ".join(vhost.names))
+        logger.info("Deploying Certificate to VirtualHost %s", vhost.filep)
 
         self.save_notes += ("Changed vhost at %s with addresses of %s\n" %
                             (vhost.filep,
@@ -181,10 +209,74 @@ class NginxConfigurator(common.Installer):
         self.save_notes += "\tssl_certificate %s\n" % fullchain_path
         self.save_notes += "\tssl_certificate_key %s\n" % key_path
 
+    def _vhosts_for_wildcard(self, domain):
+        """
+        Get VHost objects for every VirtualHost that the user wants to handle
+        with the wildcard certificate.
+        """
+
+        # Collect all vhosts that match the name
+        matched = set()
+        for vhost in self.vhosts:
+            for name in vhost.get_names():
+                if self._in_wildcard_scope(name, domain):
+                    matched.add(vhost)
+
+        return list(matched)
+
+    def _in_wildcard_scope(self, name, domain):
+        """
+        Helper method for _vhosts_for_wildcard() that makes sure that the domain
+        is in the scope of wildcard domain.
+
+        eg. in scope: domain = *.wild.card, name = 1.wild.card
+        not in scope: domain = *.wild.card, name = 1.2.wild.card
+        """
+        if len(name.split(".")) == len(domain.split(".")):
+            return fnmatch.fnmatch(name, domain)
+
+
+    def _choose_vhosts_wildcard(self, domain):
+        """Prompts user to choose vhosts to install a wildcard certificate for"""
+
+        # Caching!
+        if domain in self.wildcard_vhosts:
+            # Vhosts for a wildcard domain were already selected
+            return self.wildcard_vhosts[domain]
+
+        # Get all vhosts that are covered by the wildcard domain
+        vhosts = self._vhosts_for_wildcard(domain)
+
+        # Go through the vhosts, making sure that we cover all the names
+        # present, but preferring the SSL vhosts
+        filtered_vhosts = {}
+        for vhost in vhosts:
+            for name in vhost.get_names():
+                if vhost.ssl:
+                    # Always prefer SSL vhosts
+                    filtered_vhosts[name] = vhost
+                elif name not in filtered_vhosts:
+                    # Add if not in list previously
+                    filtered_vhosts[name] = vhost
+
+        # Only unique VHost objects
+        dialog_input = set([vhost for vhost in filtered_vhosts.values()])
+
+        # Ask the user which of names to enable, expect list of names back
+        dialog_output = display_ops.select_vhost_multiple(list(dialog_input))
+        return_vhosts = list(dialog_output)
+
+        for vhost in return_vhosts:
+            if target_name not in self.wildcard_vhosts:
+                self.wildcard_vhosts[target_name] = []
+            self.wildcard_vhosts[target_name].append(vhost)
+
+        return return_vhosts
+
     #######################
     # Vhost parsing methods
     #######################
-    def choose_vhost(self, target_name, create_if_no_match=False):
+    def choose_vhosts(self, target_name, create_if_no_match=False):
         """Chooses a virtual host based on the given domain name.
 
         .. note:: This makes the vhost SSL-enabled if it isn't already. Follows
@@ -206,13 +298,16 @@ class NginxConfigurator(common.Installer):
         :rtype: :class:`~certbot_nginx.obj.VirtualHost`
 
         """
-        vhost = None
-
-        matches = self._get_ranked_matches(target_name)
-        vhost = self._select_best_name_match(matches)
-        if not vhost:
+        if self._wildcard_domain(target_name):
+            # Ask user which VHosts to support.
+            # Returned objects are guaranteed to be ssl vhosts
+            vhosts = self._choose_vhosts_wildcard(target_name)
+        else:
+            matches = self._get_ranked_matches(target_name)
+            vhosts = [self._select_best_name_match(matches)]
+        if not vhosts:
             if create_if_no_match:
-                vhost = self._vhost_from_duplicated_default(target_name)
+                [vhosts] = self._vhost_from_duplicated_default(target_name)
             else:
                 # No matches. Raise a misconfiguration error.
                 raise errors.MisconfigurationError(
@@ -222,10 +317,11 @@ class NginxConfigurator(common.Installer):
                              "nginx configuration: "
                              "https://nginx.org/en/docs/http/server_names.html") % (target_name))
         # Note: if we are enhancing with ocsp, vhost should already be ssl.
-        if not vhost.ssl:
-            self._make_server_ssl(vhost)
+        for vhost in vhosts:
+            if not vhost.ssl:
+                self._make_server_ssl(vhost)
 
-        return vhost
+        return vhosts
 
     def ipv6_info(self, port):
         """Returns tuple of booleans (ipv6_active, ipv6only_present)
