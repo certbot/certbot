@@ -94,7 +94,8 @@ class NginxConfigurator(common.Installer):
 
         # List of vhosts configured per wildcard domain on this run.
         # used by deploy_cert() and enhance()
-        self.wildcard_vhosts = {}
+        self._wildcard_vhosts = {}
+        self._wildcard_redirect_vhosts = {}
 
         # Add number of outstanding challenges
         self._chall_out = 0
@@ -235,14 +236,56 @@ class NginxConfigurator(common.Installer):
         if len(name.split(".")) == len(domain.split(".")):
             return fnmatch.fnmatch(name, domain)
 
+    def _choose_vhosts_wildcard(self, domain, prefer_ssl):
+        """Prompts user to choose vhosts to install a wildcard certificate for"""
+        if prefer_ssl:
+            vhosts_cache = self._wildcard_vhosts
+            preference_test = lambda x: x.ssl
+        else:
+            vhosts_cache = self._wildcard_redirect_vhosts
+            preference_test = lambda x: not x.ssl
 
-    def _choose_vhosts_wildcard(self, domain):
+        # Caching!
+        if domain in vhosts_cache:
+            # Vhosts for a wildcard domain were already selected
+            return vhosts_cache[domain]
+
+        # Get all vhosts that are covered by the wildcard domain
+        vhosts = self._vhosts_for_wildcard(domain)
+
+        # Go through the vhosts, making sure that we cover all the names
+        # present, but preferring the SSL or non-SSL vhosts
+        filtered_vhosts = {}
+        for vhost in vhosts:
+            for name in vhost.get_names():
+                if preference_test(vhost):
+                    # Prefer either SSL or non-SSL vhosts
+                    filtered_vhosts[name] = vhost
+                elif name not in filtered_vhosts:
+                    # Add if not in list previously
+                    filtered_vhosts[name] = vhost
+
+        # Only unique VHost objects
+        dialog_input = set([vhost for vhost in filtered_vhosts.values()])
+
+        # Ask the user which of names to enable, expect list of names back
+        dialog_output = display_ops.select_vhost_multiple(list(dialog_input))
+        return_vhosts = list(dialog_output)
+
+        for vhost in return_vhosts:
+            if target_name not in vhosts_cache:
+                vhosts_cache[target_name] = []
+            vhosts_cache[target_name].append(vhost)
+
+        return return_vhosts
+
+    def _choose_redirect_vhosts_wildcard(self, domain):
         """Prompts user to choose vhosts to install a wildcard certificate for"""
 
         # Caching!
-        if domain in self.wildcard_vhosts:
+        if domain in self._wildcard_redirect_vhosts:
             # Vhosts for a wildcard domain were already selected
-            return self.wildcard_vhosts[domain]
+            return self._wildcard_redirect_vhosts[domain]
 
         # Get all vhosts that are covered by the wildcard domain
         vhosts = self._vhosts_for_wildcard(domain)
@@ -267,9 +310,9 @@ class NginxConfigurator(common.Installer):
         return_vhosts = list(dialog_output)
 
         for vhost in return_vhosts:
-            if target_name not in self.wildcard_vhosts:
-                self.wildcard_vhosts[target_name] = []
-            self.wildcard_vhosts[target_name].append(vhost)
+            if target_name not in self._wildcard_redirect_vhosts:
+                self._wildcard_redirect_vhosts[target_name] = []
+            self._wildcard_redirect_vhosts[target_name].append(vhost)
 
         return return_vhosts
 
@@ -294,14 +337,13 @@ class NginxConfigurator(common.Installer):
             when there is no match found. If we can't choose a default, raise a
             MisconfigurationError.
 
-        :returns: ssl vhost associated with name
-        :rtype: :class:`~certbot_nginx.obj.VirtualHost`
+        :returns: ssl vhosts associated with name
+        :rtype: list of :class:`~certbot_nginx.obj.VirtualHost`
 
         """
         if self._wildcard_domain(target_name):
             # Ask user which VHosts to support.
-            # Returned objects are guaranteed to be ssl vhosts
-            vhosts = self._choose_vhosts_wildcard(target_name)
+            vhosts = self._choose_vhosts_wildcard(target_name, prefer_ssl=True)
         else:
             matches = self._get_ranked_matches(target_name)
             vhosts = [self._select_best_name_match(matches)]
@@ -455,7 +497,7 @@ class NginxConfigurator(common.Installer):
         return sorted(matches, key=lambda x: x['rank'])
 
 
-    def choose_redirect_vhost(self, target_name, port, create_if_no_match=False):
+    def choose_redirect_vhosts(self, target_name, port, create_if_no_match=False):
         """Chooses a single virtual host for redirect enhancement.
 
         Chooses the vhost most closely matching target_name that is
@@ -473,15 +515,19 @@ class NginxConfigurator(common.Installer):
             when there is no match found. If we can't choose a default, raise a
             MisconfigurationError.
 
-        :returns: vhost associated with name
-        :rtype: :class:`~certbot_nginx.obj.VirtualHost`
+        :returns: vhosts associated with name
+        :rtype: list of :class:`~certbot_nginx.obj.VirtualHost`
 
         """
-        matches = self._get_redirect_ranked_matches(target_name, port)
-        vhost = self._select_best_name_match(matches)
-        if not vhost and create_if_no_match:
-            vhost = self._vhost_from_duplicated_default(target_name, port=port)
-        return vhost
+        if self._wildcard_domain(target_name):
+            # Ask user which VHosts to enhance.
+            vhosts = self._choose_vhosts_wildcard(target_name, prefer_ssl=False)
+        else:
+            matches = self._get_redirect_ranked_matches(target_name, port)
+            vhosts = [self._select_best_name_match(matches)]
+        if not vhosts and create_if_no_match:
+            vhosts = [self._vhost_from_duplicated_default(target_name, port=port)]
+        return [vhosts]
 
     def _port_matches(self, test_port, matching_port):
         # test_port is a number, matching is a number or "" or None
@@ -734,7 +780,18 @@ class NginxConfigurator(common.Installer):
         :type chain_path: `str` or `None`
 
         """
-        vhost = self.choose_vhost(domain)
+        vhosts = self.choose_vhosts(domain)
+        for vhost in vhosts:
+            self._enable_ocsp_stapling_single(vhost, chain_path)
+
+    def _enable_ocsp_stapling_single(self, vhost, chain_path):
+        """Include OCSP response in TLS handshake
+
+        :param str vhost: vhost to enable OCSP response for
+        :param chain_path: chain file path
+        :type chain_path: `str` or `None`
+
+        """
         if self.version < (1, 3, 7):
             raise errors.PluginError("Version 1.3.7 or greater of nginx "
                                      "is needed to enable OCSP stapling")
