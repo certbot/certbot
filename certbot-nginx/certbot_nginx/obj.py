@@ -216,3 +216,15 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
         for a in self.addrs:
             if not a.ipv6:
                 return True
+
+    def display_repr(self):
+        """Return a representation of VHost to be used in dialog"""
+        return (
+            "File: {filename}\n"
+            "Addresses: {addrs}\n"
+            "Names: {names}\n"
+            "HTTPS: {https}\n\n".format(
+                filename=self.filep,
+                addrs=", ".join(str(addr) for addr in self.addrs),
+                names=", ".join(self.get_names()),
+                https="Yes" if self.ssl else "No"))

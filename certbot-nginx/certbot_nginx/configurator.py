@@ -23,6 +23,7 @@ from certbot import util
 from certbot.plugins import common
 
 from certbot_nginx import constants
+from certbot_nginx import display_ops
 from certbot_nginx import nginxparser
 from certbot_nginx import parser
 from certbot_nginx import tls_sni_01
@@ -751,7 +752,7 @@ class NginxConfigurator(common.Installer):
         .. note:: This function saves the configuration
 
         :param str domain: domain to enable redirect for
-        :param blank vhost: vhost to enable redirect for
+        :param `~obj.Vhost` vhost: vhost to enable redirect for
         """
 
         new_vhost = None
