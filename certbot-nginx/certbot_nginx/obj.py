@@ -226,5 +226,5 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
             "HTTPS: {https}\n\n".format(
                 filename=self.filep,
                 addrs=", ".join(str(addr) for addr in self.addrs),
-                names=", ".join(self.get_names()),
+                names=", ".join(self.names),
                 https="Yes" if self.ssl else "No"))
