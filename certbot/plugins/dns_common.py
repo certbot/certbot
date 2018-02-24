@@ -130,11 +130,15 @@ class DNSAuthenticator(common.Plugin):
 
         responses = []
         for achall in achalls:
-            domain = achall.domain
             validation_domain_name = self.validation_domain_name(achall)
             validation = achall.validation(achall.account_key)
 
-            self._perform(domain, validation_domain_name, validation)
+            # Note: achall.domain used to be passed as the first parameter to _perform.
+            # However, validation_domain_name may be overridden and be unrelated to the
+            # original domain (with _acme-challenge.<domain> being a CNAME). We now pass
+            # validation_domain_name for both parameters to avoid confusion in plugins.
+
+            self._perform(validation_domain_name, validation_domain_name, validation)
             responses.append(achall.response(achall.account_key))
 
         # DNS updates take time to propagate and checking to see if the update has occurred is not
@@ -149,11 +153,13 @@ class DNSAuthenticator(common.Plugin):
     def cleanup(self, achalls):  # pylint: disable=missing-docstring
         if self._attempt_cleanup:
             for achall in achalls:
-                domain = achall.domain
                 validation_domain_name = self.validation_domain_name(achall)
                 validation = achall.validation(achall.account_key)
 
-                self._cleanup(domain, validation_domain_name, validation)
+                # Note: achall.domain used to be passed as the first parameter to _cleanup,
+                # see discussion in perform above.
+
+                self._cleanup(validation_domain_name, validation_domain_name, validation)
 
     @abc.abstractmethod
     def _setup_credentials(self):  # pragma: no cover
@@ -167,7 +173,11 @@ class DNSAuthenticator(common.Plugin):
         """
         Performs a dns-01 challenge by creating a DNS TXT record.
 
-        :param str domain: The domain being validated.
+        Note: the two parameters domain and validation_domain_name always
+        have the same value. "domain" is retained for backwards compatibility,
+        but should be ignored; plugins should only reference validation_domain_name.
+
+        :param str domain: The validation record domain name.
         :param str validation_domain_name: The validation record domain name.
         :param str validation: The validation record content.
         :raises errors.PluginError: If the challenge cannot be performed
@@ -181,7 +191,11 @@ class DNSAuthenticator(common.Plugin):
 
         Fails gracefully if no such record exists.
 
-        :param str domain: The domain being validated.
+        Note: the two parameters domain and validation_domain_name always
+        have the same value. "domain" is retained for backwards compatibility,
+        but should be ignored; plugins should only reference validation_domain_name.
+
+        :param str domain: The validation record domain name.
         :param str validation_domain_name: The validation record domain name.
         :param str validation: The validation record content.
         """

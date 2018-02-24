@@ -45,14 +45,20 @@ class DNSAuthenticatorTest(util.TempDirTestCase, dns_test_common.BaseAuthenticat
     def test_perform(self):
         self.auth.perform([self.achall])
 
-        self.auth._perform.assert_called_once_with(dns_test_common.DOMAIN, mock.ANY, mock.ANY)
+        self.auth._perform.assert_called_once_with(
+            "_acme-challenge." + dns_test_common.DOMAIN,
+            "_acme-challenge." + dns_test_common.DOMAIN,
+            mock.ANY)
 
     def test_cleanup(self):
         self.auth._attempt_cleanup = True
 
         self.auth.cleanup([self.achall])
 
-        self.auth._cleanup.assert_called_once_with(dns_test_common.DOMAIN, mock.ANY, mock.ANY)
+        self.auth._cleanup.assert_called_once_with(
+            "_acme-challenge." + dns_test_common.DOMAIN,
+            "_acme-challenge." + dns_test_common.DOMAIN,
+            mock.ANY)
 
     def test_validation_domain_name(self):
         # Validation domain name without override
