@@ -524,7 +524,7 @@ class NginxConfigurator(common.Installer):
             vhosts = self._choose_vhosts_wildcard(target_name, prefer_ssl=False)
         else:
             matches = self._get_redirect_ranked_matches(target_name, port)
-            vhosts = [self._select_best_name_match(matches)]
+            vhosts = [x for x in [self._select_best_name_match(matches)]if x is not None]
         if not vhosts and create_if_no_match:
             vhosts = [self._vhost_from_duplicated_default(target_name, port=port)]
         return vhosts
