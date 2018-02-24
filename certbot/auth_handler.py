@@ -232,7 +232,7 @@ class AuthHandler(object):
         original_aauthzr = self.aauthzrs[index]
         updated_authzr, _ = self.acme.poll(original_aauthzr.authzr)
         self.aauthzrs[index] = AnnotatedAuthzr(updated_authzr, original_aauthzr.achalls)
-        if updated_authzr == messages.STATUS_VALID:
+        if updated_authzr.body.status == messages.STATUS_VALID:
             return achalls, []
 
         # Note: if the whole authorization is invalid, the individual failed

@@ -46,6 +46,15 @@ class ChallengeFactoryTest(unittest.TestCase):
         self.assertEqual(
             [achall.chall for achall in achalls], [acme_util.TLSSNI01])
 
+    def test_unrecognized(self):
+        authzr = acme_util.gen_authzr(
+             messages.STATUS_PENDING, "test",
+             [mock.Mock(chall="chall", typ="unrecognized")],
+             [messages.STATUS_PENDING])
+
+        self.assertRaises(
+             errors.Error, self.handler._challenge_factory, authzr, [0])
+
 
 class HandleAuthorizationsTest(unittest.TestCase):
     """handle_authorizations test.
