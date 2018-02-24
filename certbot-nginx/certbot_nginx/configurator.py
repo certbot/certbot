@@ -269,8 +269,7 @@ class NginxConfigurator(common.Installer):
         dialog_input = set([vhost for vhost in filtered_vhosts.values()])
 
         # Ask the user which of names to enable, expect list of names back
-        dialog_output = display_ops.select_vhost_multiple(list(dialog_input))
-        return_vhosts = list(dialog_output)
+        return_vhosts = display_ops.select_vhost_multiple(list(dialog_input))
 
         for vhost in return_vhosts:
             if target_name not in vhosts_cache:
@@ -346,10 +345,11 @@ class NginxConfigurator(common.Installer):
             vhosts = self._choose_vhosts_wildcard(target_name, prefer_ssl=True)
         else:
             matches = self._get_ranked_matches(target_name)
-            vhosts = [self._select_best_name_match(matches)]
+            vhosts = [x for x in [self._select_best_name_match(matches)] if x is not None]
         if not vhosts:
             if create_if_no_match:
-                [vhosts] = self._vhost_from_duplicated_default(target_name)
+                # result will not be [None] because it errors on failure
+                vhosts = [self._vhost_from_duplicated_default(target_name)]
             else:
                 # No matches. Raise a misconfiguration error.
                 raise errors.MisconfigurationError(
@@ -527,7 +527,7 @@ class NginxConfigurator(common.Installer):
             vhosts = [self._select_best_name_match(matches)]
         if not vhosts and create_if_no_match:
             vhosts = [self._vhost_from_duplicated_default(target_name, port=port)]
-        return [vhosts]
+        return vhosts
 
     def _port_matches(self, test_port, matching_port):
         # test_port is a number, matching is a number or "" or None
@@ -729,16 +729,30 @@ class NginxConfigurator(common.Installer):
         """
 
         port = self.DEFAULT_LISTEN_PORT
-        vhost = None
         # If there are blocks listening plaintextishly on self.DEFAULT_LISTEN_PORT,
         # choose the most name-matching one.
 
-        vhost = self.choose_redirect_vhost(domain, port)
+        vhosts = self.choose_redirect_vhosts(domain, port)
 
-        if vhost is None:
+        if not vhosts:
             logger.info("No matching insecure server blocks listening on port %s found.",
                 self.DEFAULT_LISTEN_PORT)
             return
+
+        for vhost in vhosts:
+            self._enable_redirect_single(domain, vhost)
+
+    def _enable_redirect_single(self, domain, vhost):
+        """Redirect all equivalent HTTP traffic to ssl_vhost.
+
+        If the vhost is listening plaintextishly, separate out the
+        relevant directives into a new server block and add a rewrite directive.
+
+        .. note:: This function saves the configuration
+
+        :param str domain: domain to enable redirect for
+        :param blank vhost: vhost to enable redirect for
+        """
 
         new_vhost = None
         if vhost.ssl:

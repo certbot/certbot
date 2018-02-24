@@ -128,7 +128,7 @@ class NginxConfiguratorTest(util.NginxTest):
                             ['#', parser.COMMENT]]]],
                          parsed[0])
 
-    def test_choose_vhost(self):
+    def test_choose_vhosts(self):
         localhost_conf = set(['localhost', r'~^(www\.)?(example|bar)\.'])
         server_conf = set(['somename', 'another.alias', 'alias'])
         example_conf = set(['.example.com', 'example.*'])
@@ -159,7 +159,7 @@ class NginxConfiguratorTest(util.NginxTest):
                        '69.255.225.155']
 
         for name in results:
-            vhost = self.config.choose_vhost(name)
+            vhost = self.config.choose_vhosts(name)[0]
             path = os.path.relpath(vhost.filep, self.temp_dir)
 
             self.assertEqual(results[name], vhost.names)
@@ -173,7 +173,7 @@ class NginxConfiguratorTest(util.NginxTest):
 
         for name in bad_results:
             self.assertRaises(errors.MisconfigurationError,
-                              self.config.choose_vhost, name)
+                              self.config.choose_vhosts, name)
 
     def test_ipv6only(self):
         # ipv6_info: (ipv6_active, ipv6only_present)
