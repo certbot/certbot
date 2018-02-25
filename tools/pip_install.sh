@@ -1,7 +1,4 @@
-#!/usr/bin/env bash
-
-set -e
-
+#!/bin/sh -e
 # pip installs packages using pinned package versions. If CERTBOT_OLDEST is set
 # to 1, a combination of tools/oldest_constraints.txt and
 # tools/dev_constraints.txt is used, otherwise, a combination of certbot-auto's
@@ -26,4 +23,6 @@ fi
 set -x
 
 # install the requested packages using the pinned requirements as constraints
-pip install -q --constraint <("$merge_reqs" "$dev_constraints" "$test_constraints") "$@"
+constraint_path="$(mktemp)"
+"$merge_reqs" "$dev_constraints" "$test_constraints" > "$constraint_path"
+pip install -q --constraint "$constraint_path" "$@"
