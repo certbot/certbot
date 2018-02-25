@@ -1,4 +1,7 @@
-#!/bin/bash -e
+#!/usr/bin/env bash
+
+set -e
+
 # pip installs packages using pinned package versions. If CERTBOT_OLDEST is set
 # to 1, a combination of tools/oldest_constraints.txt and
 # tools/dev_constraints.txt is used, otherwise, a combination of certbot-auto's
