@@ -9,8 +9,9 @@
 tools_dir=$(dirname $("$(dirname $0)/readlink.py" $0))
 dev_constraints="$tools_dir/dev_constraints.txt"
 merge_reqs="$tools_dir/merge_requirements.py"
-test_constraints=$(mktemp)
-trap "rm -f $test_constraints" EXIT
+test_constraints="$(mktemp)"
+final_constraints="$(mktemp)"
+trap 'rm -f -- "$test_constraints" "$final_constraints"' EXIT
 
 if [ "$CERTBOT_OLDEST" = 1 ]; then
     cp "$tools_dir/oldest_constraints.txt" "$test_constraints"
@@ -23,6 +24,5 @@ fi
 set -x
 
 # install the requested packages using the pinned requirements as constraints
-constraint_path="$(mktemp)"
-"$merge_reqs" "$dev_constraints" "$test_constraints" > "$constraint_path"
-pip install -q --constraint "$constraint_path" "$@"
+"$merge_reqs" "$dev_constraints" "$test_constraints" > "$final_constraints"
+pip install -q --constraint "$final_constraints" "$@"
