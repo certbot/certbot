@@ -222,11 +222,26 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
         :raises .ClientError: If revocation is unsuccessful.
 
         """
-        response = self._post(self.directory[messages.Revocation],
-                                 messages.Revocation(
-                                     certificate=cert,
-                                     reason=rsn),
-                                 content_type=None)
+        return self._revoke(cert, rsn, self.directory[messages.Revocation])
+
+    def _revoke(self, cert, rsn, url):
+        """Revoke certificate.
+
+        :param .ComparableX509 cert: `OpenSSL.crypto.X509` wrapped in
+            `.ComparableX509`
+
+        :param int rsn: Reason code for certificate revocation.
+
+        :param str url: ACME URL to post to
+
+        :raises .ClientError: If revocation is unsuccessful.
+
+        """
+        response = self._post(url,
+                              messages.Revocation(
+                                certificate=cert,
+                                reason=rsn),
+                                content_type=None)
         if response.status_code != http_client.OK:
             raise errors.ClientError(
                 'Successful revocation must return HTTP OK status')
