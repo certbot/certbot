@@ -40,6 +40,7 @@ DIRECTORY_V2 = messages.Directory({
     'newAccount': 'https://www.letsencrypt-demo.org/acme/new-account',
     'newNonce': 'https://www.letsencrypt-demo.org/acme/new-nonce',
     'newOrder': 'https://www.letsencrypt-demo.org/acme/new-order',
+    'revokeCert': 'https://www.letsencrypt-demo.org/acme/revoke-cert',
 })
 
 
@@ -78,6 +79,9 @@ class ClientTestBase(unittest.TestCase):
             challenges=(challb,), combinations=None)
         self.authzr = messages.AuthorizationResource(
             body=self.authz, uri=authzr_uri)
+
+        # Reason code for revocation
+        self.rsn = 1
 
 
 class BackwardsCompatibleClientV2Test(ClientTestBase):
@@ -270,9 +274,6 @@ class ClientTest(ClientTestBase):
             body=messages_test.CERT, authzrs=(self.authzr,),
             uri='https://www.letsencrypt-demo.org/acme/cert/1',
             cert_chain_uri='https://www.letsencrypt-demo.org/ca')
-
-        # Reason code for revocation
-        self.rsn = 1
 
         from acme.client import Client
         self.client = Client(
@@ -751,6 +752,12 @@ class ClientV2Test(ClientTestBase):
     def test_finalize_order_timeout(self):
         deadline = datetime.datetime.now() - datetime.timedelta(seconds=60)
         self.assertRaises(errors.TimeoutError, self.client.finalize_order, self.orderr, deadline)
+
+    def test_revoke(self):
+        self.client.revoke(messages_test.CERT, self.rsn)
+        self.net.post.assert_called_once_with(
+            self.directory["revokeCert"], mock.ANY, content_type=None,
+            acme_version=2)
 
 
 class MockJSONDeSerializable(jose.JSONDeSerializable):
