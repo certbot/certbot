@@ -24,7 +24,7 @@ class AuthHandler(object):
         :class:`~acme.challenges.Challenge` types
     :type auth: :class:`certbot.interfaces.IAuthenticator`
 
-    :ivar acme.client.Client acme: ACME client API.
+    :ivar acme.client.BackwardsCompatibleClientV2 acme: ACME client API.
 
     :ivar account: Client's Account
     :type account: :class:`certbot.account.Account`
@@ -48,12 +48,13 @@ class AuthHandler(object):
         # List must be used to keep responses straight.
         self.achalls = []
 
-    def get_authorizations(self, domains, best_effort=False):
+    def handle_authorizations(self, orderr, best_effort=False):
         """Retrieve all authorizations for challenges.
 
-        :param list domains: Domains for authorization
+        :param acme.messages.OrderResource orderr: must have
+            authorizations filled in
         :param bool best_effort: Whether or not all authorizations are
-             required (this is useful in renewal)
+            required (this is useful in renewal)
 
         :returns: List of authorization resources
         :rtype: list
@@ -62,8 +63,10 @@ class AuthHandler(object):
             authorizations
 
         """
-        for domain in domains:
-            self.authzr[domain] = self.acme.request_domain_challenges(domain)
+        authzrs = orderr.authorizations
+        for authzr in authzrs:
+            self.authzr[authzr.body.identifier.value] = authzr
+        domains = self.authzr.keys()
 
         self._choose_challenges(domains)
         config = zope.component.getUtility(interfaces.IConfig)
@@ -97,10 +100,16 @@ class AuthHandler(object):
         """Retrieve necessary challenges to satisfy server."""
         logger.info("Performing the following challenges:")
         for dom in domains:
+            dom_challenges = self.authzr[dom].body.challenges
+            if self.acme.acme_version == 1:
+                combinations = self.authzr[dom].body.combinations
+            else:
+                combinations = tuple((i,) for i in range(len(dom_challenges)))
+
             path = gen_challenge_path(
-                self.authzr[dom].body.challenges,
+                dom_challenges,
                 self._get_chall_pref(dom),
-                self.authzr[dom].body.combinations)
+                combinations)
 
             dom_achalls = self._challenge_factory(
                 dom, path)

@@ -157,13 +157,20 @@ class DirectoryTest(unittest.TestCase):
             'meta': {
                 'terms-of-service': 'https://example.com/acme/terms',
                 'website': 'https://www.example.com/',
-                'caa-identities': ['example.com'],
+                'caaIdentities': ['example.com'],
             },
         })
 
     def test_from_json_deserialization_unknown_key_success(self):  # pylint: disable=no-self-use
         from acme.messages import Directory
         Directory.from_json({'foo': 'bar'})
+
+    def test_iter_meta(self):
+        result = False
+        for k in self.dir.meta:
+            if k == 'terms_of_service':
+                result = self.dir.meta[k] == 'https://example.com/acme/terms'
+        self.assertTrue(result)
 
 
 class RegistrationTest(unittest.TestCase):
@@ -399,6 +406,22 @@ class RevocationTest(unittest.TestCase):
     def test_from_json_hashable(self):
         from acme.messages import Revocation
         hash(Revocation.from_json(self.rev.to_json()))
+
+
+class OrderResourceTest(unittest.TestCase):
+    """Tests for acme.messages.OrderResource."""
+
+    def setUp(self):
+        from acme.messages import OrderResource
+        self.regr = OrderResource(
+            body=mock.sentinel.body, uri=mock.sentinel.uri)
+
+    def test_to_partial_json(self):
+        self.assertEqual(self.regr.to_json(), {
+            'body': mock.sentinel.body,
+            'uri': mock.sentinel.uri,
+            'authorizations': None,
+        })
 
 
 if __name__ == '__main__':

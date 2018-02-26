@@ -276,7 +276,7 @@ class NginxParser(object):
 
         return False
 
-    def add_server_directives(self, vhost, directives, replace):
+    def add_server_directives(self, vhost, directives, replace, insert_at_top=False):
         """Add or replace directives in the server block identified by vhost.
 
         This method modifies vhost to be fully consistent with the new directives.
@@ -293,10 +293,12 @@ class NginxParser(object):
             whose information we use to match on
         :param list directives: The directives to add
         :param bool replace: Whether to only replace existing directives
+        :param bool insert_at_top: True if the directives need to be inserted at the top
+            of the server block instead of the bottom
 
         """
         self._modify_server_directives(vhost,
-            functools.partial(_add_directives, directives, replace))
+            functools.partial(_add_directives, directives, replace, insert_at_top))
 
     def remove_server_directives(self, vhost, directive_name, match_func=None):
         """Remove all directives of type directive_name.
@@ -521,10 +523,10 @@ def _is_ssl_on_directive(entry):
             len(entry) == 2 and entry[0] == 'ssl' and
             entry[1] == 'on')
 
-def _add_directives(directives, replace, block):
+def _add_directives(directives, replace, insert_at_top, block):
     """Adds or replaces directives in a config block.
 
-    When replace=False, it's an error to try and add a directive that already
+    When replace=False, it's an error to try and add a nonrepeatable directive that already
     exists in the config block with a conflicting value.
 
     When replace=True and a directive with the same name already exists in the
@@ -535,17 +537,18 @@ def _add_directives(directives, replace, block):
 
     :param list directives: The new directives.
     :param bool replace: Described above.
+    :param bool insert_at_top: Described above.
     :param list block: The block to replace in
 
     """
     for directive in directives:
-        _add_directive(block, directive, replace)
+        _add_directive(block, directive, replace, insert_at_top)
     if block and '\n' not in block[-1]:  # could be "   \n  " or ["\n"] !
         block.append(nginxparser.UnspacedList('\n'))
 
 
 INCLUDE = 'include'
-REPEATABLE_DIRECTIVES = set(['server_name', 'listen', INCLUDE])
+REPEATABLE_DIRECTIVES = set(['server_name', 'listen', INCLUDE, 'location', 'rewrite'])
 COMMENT = ' managed by Certbot'
 COMMENT_BLOCK = [' ', '#', COMMENT]
 
@@ -597,7 +600,7 @@ def _find_location(block, directive_name, match_func=None):
     return next((index for index, line in enumerate(block) \
         if line and line[0] == directive_name and (match_func is None or match_func(line))), None)
 
-def _add_directive(block, directive, replace):
+def _add_directive(block, directive, replace, insert_at_top):
     """Adds or replaces a single directive in a config block.
 
     See _add_directives for more documentation.
@@ -619,7 +622,7 @@ def _add_directive(block, directive, replace):
             block[location] = directive
             comment_directive(block, location)
             return
-    # Append directive. Fail if the name is not a repeatable directive name,
+    # Append or prepend directive. Fail if the name is not a repeatable directive name,
     # and there is already a copy of that directive with a different value
     # in the config file.
 
@@ -652,8 +655,15 @@ def _add_directive(block, directive, replace):
                     _comment_out_directive(block, included_dir_loc, directive[1])
 
     if can_append(location, directive_name):
-        block.append(directive)
-        comment_directive(block, len(block) - 1)
+        if insert_at_top:
+            # Add a newline so the comment doesn't comment
+            # out existing directives
+            block.insert(0, nginxparser.UnspacedList('\n'))
+            block.insert(0, directive)
+            comment_directive(block, 0)
+        else:
+            block.append(directive)
+            comment_directive(block, len(block) - 1)
     elif block[location] != directive:
         raise errors.MisconfigurationError(err_fmt.format(directive, block[location]))
 
