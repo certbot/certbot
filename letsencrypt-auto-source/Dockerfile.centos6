@@ -5,13 +5,7 @@ FROM centos:6
 
 RUN yum install -y epel-release
 
-# Install pip and sudo:
-RUN yum install -y python-pip sudo
-# Use pipstrap to update to a stable and tested version of pip
-COPY ./pieces/pipstrap.py /opt
-RUN /opt/pipstrap.py
-# Pin pytest version for increased stability
-RUN pip install pytest==3.2.5
+RUN yum install -y sudo
 
 # Add an unprivileged user:
 RUN useradd --create-home --home-dir /home/lea --shell /bin/bash --groups wheel --uid 1000 lea
