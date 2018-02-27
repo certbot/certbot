@@ -156,7 +156,6 @@ class AuthHandler(object):
         try:
             self._poll_challenges(chall_update, best_effort)
         finally:
-            # This removes challenges from self.achalls
             self._cleanup_challenges(active_achalls)
 
     def _send_responses(self, resps, chall_update):
