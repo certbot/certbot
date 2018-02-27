@@ -25,7 +25,7 @@ certbot_test_no_force_renew () {
         --source $sources \
         --omit $omit_patterns \
         $(command -v certbot) \
-            --server "${SERVER:-http://localhost:4000/directory}" \
+            --server "${SERVER:-http://localhost:4001/directory}" \
             --no-verify-ssl \
             --tls-sni-01-port $tls_sni_01_port \
             --http-01-port $http_01_port \
