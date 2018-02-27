@@ -155,7 +155,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self._chall_out = set()
         # List of vhosts configured per wildcard domain on this run.
         # used by deploy_cert() and enhance()
-        self.wildcard_vhosts = dict()
+        self._wildcard_vhosts = dict()
         # Maps enhancements to vhosts we've enabled the enhancement for
         self._enhanced_vhosts = defaultdict(set)
 
@@ -266,7 +266,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             self.aug, self.conf("server-root"), self.conf("vhost-root"),
             self.version, configurator=self)
 
-    def wildcard_domain(self, domain):
+    def _wildcard_domain(self, domain):
         """
         Checks if domain is a wildcard domain
 
@@ -299,21 +299,35 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             a lack of directives
 
         """
-        if self.wildcard_domain(domain):
-            # Ask user which VHosts to support.
-            # Returned objects are guaranteed to be ssl vhosts
-            deploy_vhosts = self.choose_vhosts_wildcard(domain, create_ssl=True)
-            for vhost in deploy_vhosts:
-                self._deploy_cert(vhost, cert_path, key_path,
-                                  chain_path, fullchain_path)
-                if domain not in self.wildcard_vhosts.keys():
-                    self.wildcard_vhosts[domain] = list()
-                self.wildcard_vhosts[domain].append(vhost)
-        else:
-            vhost = self.choose_vhost(domain)
+        vhosts = self.choose_vhosts(domain)
+        for vhost in vhosts:
             self._deploy_cert(vhost, cert_path, key_path, chain_path, fullchain_path)
 
-    def vhosts_for_wildcard(self, domain):
+    def choose_vhosts(self, domain, cached=False, create_if_no_ssl=True):
+        """
+        Finds VirtualHosts that can be used with the provided domain
+
+        :param str domain: Domain name to match VirtualHosts to
+        :param bool cached: Return VHosts from a list cached previously on this
+            execution.
+        :param bool create_if_no_ssl: If found VirtualHost doesn't have a HTTPS
+            counterpart, should one get created
+
+        :returns: List of VirtualHosts or None
+        :rtype: `list` of :class:`~certbot_apache.obj.VirtualHost`
+        """
+
+        if self._wildcard_domain(domain):
+            if cached and domain in self._wildcard_vhosts:
+                # Vhosts for a wildcard domain were already selected
+                return self._wildcard_vhosts[domain]
+            # Ask user which VHosts to support.
+            # Returned objects are guaranteed to be ssl vhosts
+            return self._choose_vhosts_wildcard(domain, create_if_no_ssl)
+        else:
+            return [self.choose_vhost(domain)]
+
+    def _vhosts_for_wildcard(self, domain):
         """
         Get VHost objects for every VirtualHost that the user wants to handle
         with the wildcard certificate.
@@ -330,7 +344,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
     def _in_wildcard_scope(self, name, domain):
         """
-        Helper method for vhosts_for_wildcard() that makes sure that the domain
+        Helper method for _vhosts_for_wildcard() that makes sure that the domain
         is in the scope of wildcard domain.
 
         eg. in scope: domain = *.wild.card, name = 1.wild.card
@@ -340,11 +354,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             return fnmatch.fnmatch(name, domain)
 
 
-    def choose_vhosts_wildcard(self, domain, create_ssl=True):
+    def _choose_vhosts_wildcard(self, domain, create_ssl=True):
         """Prompts user to choose vhosts to install a wildcard certificate for"""
 
         # Get all vhosts that are covered by the wildcard domain
-        vhosts = self.vhosts_for_wildcard(domain)
+        vhosts = self._vhosts_for_wildcard(domain)
 
         # Go through the vhosts, making sure that we cover all the names
         # present, but preferring the SSL vhosts
@@ -354,7 +368,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 if vhost.ssl:
                     # Always prefer SSL vhosts
                     filtered_vhosts[name] = vhost
-                elif name not in filtered_vhosts.keys():
+                elif name not in filtered_vhosts:
                     # Add if not in list previously
                     filtered_vhosts[name] = vhost
 
@@ -373,6 +387,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             else:
                 return_vhosts.append(vhost)
 
+        self._wildcard_vhosts[domain] = return_vhosts
         return return_vhosts
 
 
@@ -1477,19 +1492,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         except KeyError:
             raise errors.PluginError(
                 "Unsupported enhancement: {0}".format(enhancement))
+
+        vhosts = self.choose_vhosts(domain, cached=True, create_if_no_ssl=False)
         try:
-            if self.wildcard_domain(domain):
-                # Handle virtualhosts configured for a wildcard domain
-                if domain in self.wildcard_vhosts.keys():
-                    # Vhosts for a wildcard domain were already selected
-                    for vhost in self.wildcard_vhosts[domain]:
-                        func(vhost, options)
-                else:
-                    # Ask which Vhosts to enhance for wildcard domain
-                    for vhost in self.choose_vhosts_wildcard(domain, create_ssl=False):
-                        func(vhost, options)
-            else:
-                func(self.choose_vhost(domain), options)
+            for vhost in vhosts:
+                func(vhost, options)
         except errors.PluginError:
             logger.warning("Failed %s for %s", enhancement, domain)
             raise
