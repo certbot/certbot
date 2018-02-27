@@ -77,10 +77,5 @@ if [ "$($VENV_PATH/bin/python -V 2>&1 | cut -d" " -f2 | cut -d. -f1)" != 3 ]; th
 fi
 unset VENV_PATH
 
-# test using python2.7
-source /opt/rh/python27/enable
-# Use pipstrap to update to a stable and tested version of pip
-certbot/letsencryot-auto-source/pieces/pipstrap.py
-# Pin pytest version for increased stability
-pip install pytest==3.2.5
+# test using python3
 pytest -v -s certbot/letsencrypt-auto-source/tests
