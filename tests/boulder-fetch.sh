@@ -16,6 +16,7 @@ FAKE_DNS=$(ifconfig docker0 | grep "inet addr:" | cut -d: -f2 | awk '{ print $1}
 [ -z "$FAKE_DNS" ] && FAKE_DNS=$(ip addr show dev docker0 | grep "inet " | xargs | cut -d ' ' -f 2 | cut -d '/' -f 1)
 [ -z "$FAKE_DNS" ] && echo Unable to find the IP for docker0 && exit 1
 sed -i "s/FAKE_DNS: .*/FAKE_DNS: ${FAKE_DNS}/" docker-compose.yml
+sed -i 's/BOULDER_CONFIG_DIR: .*/BOULDER_CONFIG_DIR: test\/config-next/' docker-compose.yml
 docker-compose up -d
 
 set +x  # reduce verbosity while waiting for boulder
