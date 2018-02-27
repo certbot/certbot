@@ -982,11 +982,11 @@ def revoke(config, unused_plugins):  # TODO: coop with renewal config
                      config.cert_path[0], config.key_path[0])
         crypto_util.verify_cert_matches_priv_key(config.cert_path[0], config.key_path[0])
         key = jose.JWK.load(config.key_path[1])
+        acme = client.acme_from_config_key(config, key)
     else:  # revocation by account key
         logger.debug("Revoking %s using Account Key", config.cert_path[0])
         acc, _ = _determine_account(config)
-        key = acc.key
-    acme = client.acme_from_config_key(config, key)
+        acme = client.acme_from_config_key(config, acc.key, acc.regr)
     cert = crypto_util.pyopenssl_load_certificate(config.cert_path[1])[0]
     logger.debug("Reason code for revocation: %s", config.reason)
 
