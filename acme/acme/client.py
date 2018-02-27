@@ -211,19 +211,6 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
             response, authzr.body.identifier, authzr.uri)
         return updated_authzr, response
 
-    def revoke(self, cert, rsn):
-        """Revoke certificate.
-
-        :param .ComparableX509 cert: `OpenSSL.crypto.X509` wrapped in
-            `.ComparableX509`
-
-        :param int rsn: Reason code for certificate revocation.
-
-        :raises .ClientError: If revocation is unsuccessful.
-
-        """
-        return self._revoke(cert, rsn, self.directory[messages.Revocation])
-
     def _revoke(self, cert, rsn, url):
         """Revoke certificate.
 
@@ -543,6 +530,18 @@ class Client(ClientBase):
                 "Recursion limit reached. Didn't get {0}".format(uri))
         return chain
 
+    def revoke(self, cert, rsn):
+        """Revoke certificate.
+
+        :param .ComparableX509 cert: `OpenSSL.crypto.X509` wrapped in
+            `.ComparableX509`
+
+        :param int rsn: Reason code for certificate revocation.
+
+        :raises .ClientError: If revocation is unsuccessful.
+
+        """
+        return self._revoke(cert, rsn, self.directory[messages.Revocation])
 
 
 class ClientV2(ClientBase):
@@ -802,6 +801,19 @@ class BackwardsCompatibleClientV2(object):
             return orderr.update(fullchain_pem=(cert + chain))
         else:
             return self.client.finalize_order(orderr, deadline)
+
+    def revoke(self, cert, rsn):
+        """Revoke certificate.
+
+        :param .ComparableX509 cert: `OpenSSL.crypto.X509` wrapped in
+            `.ComparableX509`
+
+        :param int rsn: Reason code for certificate revocation.
+
+        :raises .ClientError: If revocation is unsuccessful.
+
+        """
+        return self.client.revoke(cert, rsn)
 
     def _acme_version_from_directory(self, directory):
         if hasattr(directory, 'newNonce'):

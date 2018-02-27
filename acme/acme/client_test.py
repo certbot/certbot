@@ -255,6 +255,19 @@ class BackwardsCompatibleClientV2Test(ClientTestBase):
             client.finalize_order(mock_orderr, mock_deadline)
             mock_client().finalize_order.assert_called_once_with(mock_orderr, mock_deadline)
 
+    def test_revoke(self):
+        self.response.json.return_value = DIRECTORY_V1.to_json()
+        with mock.patch('acme.client.Client') as mock_client:
+            client = self._init()
+            client.revoke(messages_test.CERT, self.rsn)
+        mock_client().revoke.assert_called_once_with(messages_test.CERT, self.rsn)
+
+        self.response.json.return_value = DIRECTORY_V2.to_json()
+        with mock.patch('acme.client.ClientV2') as mock_client:
+            client = self._init()
+            client.revoke(messages_test.CERT, self.rsn)
+        mock_client().revoke.assert_called_once_with(messages_test.CERT, self.rsn)
+
 
 class ClientTest(ClientTestBase):
     """Tests for acme.client.Client."""
