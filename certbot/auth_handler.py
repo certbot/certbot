@@ -433,7 +433,7 @@ def _find_smart_path(challbs, preferences, combinations):
         combo_total = 0
 
     if not best_combo:
-        _report_no_chall_path()
+        _report_no_chall_path(challbs)
 
     return best_combo
 
@@ -454,15 +454,23 @@ def _find_dumb_path(challbs, preferences):
         if supported:
             path.append(i)
         else:
-            _report_no_chall_path()
+            _report_no_chall_path(challbs)
 
     return path
 
 
-def _report_no_chall_path():
-    """Logs and raises an error that no satisfiable chall path exists."""
+def _report_no_chall_path(challbs):
+    """Logs and raises an error that no satisfiable chall path exists.
+
+    :param challbs: challenges from the authorization that can't be satisfied
+
+    """
     msg = ("Client with the currently selected authenticator does not support "
            "any combination of challenges that will satisfy the CA.")
+    if len(challbs) == 1 and isinstance(challbs[0].chall, challenges.DNS01):
+        msg += (
+            " You may need to use an authenticator "
+            "plugin that can do challenges over DNS.")
     logger.fatal(msg)
     raise errors.AuthorizationError(msg)
 

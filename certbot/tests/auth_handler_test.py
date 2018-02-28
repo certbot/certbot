@@ -272,6 +272,12 @@ class HandleAuthorizationsTest(unittest.TestCase):
         self.mock_net.acme_version = 2
         self._test_preferred_challenges_not_supported_common(combos=False)
 
+    def test_dns_only_challenge_not_supported(self):
+        authzrs = [gen_dom_authzr(domain="0", challs=[acme_util.DNS01])]
+        mock_order = mock.MagicMock(authorizations=authzrs)
+        self.assertRaises(
+            errors.AuthorizationError, self.handler.handle_authorizations, mock_order)
+
     def _validate_all(self, unused_1, unused_2):
         for i, aauthzr in enumerate(self.handler.aauthzrs):
             azr = aauthzr.authzr
