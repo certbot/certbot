@@ -1408,6 +1408,15 @@ class MultipleVhostsTest(util.ApacheTest):
             self.assertEquals(len(mock_dep.call_args_list), 1)
             self.assertEqual(self.vh_truth[7], mock_dep.call_args_list[0][0][0])
 
+    @mock.patch("certbot_apache.display_ops.select_vhost_multiple")
+    def test_deploy_cert_wildcard_no_vhosts(self, mock_dialog):
+        # pylint: disable=protected-access
+        mock_dialog.return_value = []
+        self.assertRaises(errors.PluginError,
+                          self.config.deploy_cert,
+                          "*.wild.cat", "/tmp/path", "/tmp/path",
+                           "/tmp/path", "/tmp/path")
+
     @mock.patch("certbot_apache.configurator.ApacheConfigurator._choose_vhosts_wildcard")
     def test_enhance_wildcard_after_install(self, mock_choose):
         # pylint: disable=protected-access

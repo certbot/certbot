@@ -376,6 +376,14 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Ask the user which of names to enable, expect list of names back
         dialog_output = display_ops.select_vhost_multiple(list(dialog_input))
 
+        if not dialog_output:
+            logger.error(
+                "No vhost exists with servername or alias for domain %s. "
+                "No vhost was selected. Please specify ServerName or ServerAlias "
+                "in the Apache config.",
+                domain)
+            raise errors.PluginError("No vhost selected")
+
         # Make sure we create SSL vhosts for the ones that are HTTP only
         # if requested.
         return_vhosts = list()
@@ -505,7 +513,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             logger.error(
                 "No vhost exists with servername or alias of %s. "
                 "No vhost was selected. Please specify ServerName or ServerAlias "
-                "in the Apache config, or split vhosts into separate files.",
+                "in the Apache config.",
                 target_name)
             raise errors.PluginError("No vhost selected")
         elif temp:
