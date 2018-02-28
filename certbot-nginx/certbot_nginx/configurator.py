@@ -61,6 +61,9 @@ class NginxConfigurator(common.Installer):
 
     DEFAULT_LISTEN_PORT = '80'
 
+    # SSL directives that Certbot can add when installing a new certificate.
+    SSL_DIRECTIVES = ['ssl_certificate', 'ssl_certificate_key', 'ssl_dhparam']
+
     @classmethod
     def add_parser_arguments(cls, add):
         add("server-root", default=constants.CLI_DEFAULTS["server_root"],
@@ -712,8 +715,7 @@ class NginxConfigurator(common.Installer):
             return 'ssl' not in directive
 
         # remove all ssl addresses and related directives from the new block
-        ssl_directives = ['ssl_certificate', 'ssl_certificate_key', 'ssl_dhparam']
-        for directive in ssl_directives:
+        for directive in self.SSL_DIRECTIVES:
             self.parser.remove_server_directives(http_vhost, directive)
         self.parser.remove_server_directives(http_vhost, 'listen', match_func=_ssl_match_func)
         self.parser.remove_server_directives(http_vhost, 'include',
