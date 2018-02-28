@@ -294,15 +294,12 @@ def renew_cert(config, domains, le_client, lineage):
     _avoid_invalidating_lineage(config, lineage, original_server)
     if not domains:
         domains = lineage.names()
-    new_certr, new_chain, new_key, _ = le_client.obtain_certificate(domains)
+    new_cert, new_chain, new_key, _ = le_client.obtain_certificate(domains)
     if config.dry_run:
         logger.debug("Dry run: skipping updating lineage at %s",
                     os.path.dirname(lineage.cert))
     else:
         prior_version = lineage.latest_common_version()
-        new_cert = OpenSSL.crypto.dump_certificate(
-            OpenSSL.crypto.FILETYPE_PEM, new_certr.body.wrapped)
-        new_chain = crypto_util.dump_pyopenssl_chain(new_chain)
         # TODO: Check return value of save_successor
         lineage.save_successor(prior_version, new_cert, new_key.pem, new_chain, config)
         lineage.update_all_links_to(lineage.latest_common_version())
@@ -425,7 +422,10 @@ def handle_renewal_request(config):
                     main.renew_cert(lineage_config, plugins, renewal_candidate)
                     renew_successes.append(renewal_candidate.fullchain)
                 else:
-                    renew_skipped.append(renewal_candidate.fullchain)
+                    expiry = crypto_util.notAfter(renewal_candidate.version(
+                        "cert", renewal_candidate.latest_common_version()))
+                    renew_skipped.append("%s expires on %s" % (renewal_candidate.fullchain,
+                                         expiry.strftime("%Y-%m-%d")))
         except Exception as e:  # pylint: disable=broad-except
             # obtain_cert (presumably) encountered an unanticipated problem.
             logger.warning("Attempting to renew cert (%s) from %s produced an "

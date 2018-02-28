@@ -66,6 +66,23 @@ class BasicParserTest(util.ParserTest):
         for i, match in enumerate(matches):
             self.assertEqual(self.parser.aug.get(match), str(i + 1))
 
+    def test_add_dir_beginning(self):
+        aug_default = "/files" + self.parser.loc["default"]
+        self.parser.add_dir_beginning(aug_default,
+                                      "AddDirectiveBeginning",
+                                      "testBegin")
+
+        self.assertTrue(
+            self.parser.find_dir("AddDirectiveBeginning", "testBegin", aug_default))
+
+        self.assertEqual(
+            self.parser.aug.get(aug_default+"/directive[1]"),
+                                "AddDirectiveBeginning")
+        self.parser.add_dir_beginning(aug_default, "AddList", ["1", "2", "3", "4"])
+        matches = self.parser.find_dir("AddList", None, aug_default)
+        for i, match in enumerate(matches):
+            self.assertEqual(self.parser.aug.get(match), str(i + 1))
+
     def test_empty_arg(self):
         self.assertEquals(None,
                           self.parser.get_arg("/files/whatever/nonexistent"))
