@@ -152,20 +152,6 @@ class NginxConfigurator(common.Installer):
             raise errors.PluginError(
                 'Unable to lock %s', self.conf('server-root'))
 
-    def _wildcard_domain(self, domain):
-        """
-        Checks if domain is a wildcard domain
-
-        :param str domain: Domain to check
-
-        :returns: If the domain is wildcard domain
-        :rtype: bool
-        """
-        if isinstance(domain, six.text_type):
-            wildcard_marker = u"*."
-        else:
-            wildcard_marker = b"*."
-        return domain.startswith(wildcard_marker)
 
     # Entry point in main.py for installing cert
     def deploy_cert(self, domain, cert_path, key_path,
@@ -341,7 +327,7 @@ class NginxConfigurator(common.Installer):
         :rtype: list of :class:`~certbot_nginx.obj.VirtualHost`
 
         """
-        if self._wildcard_domain(target_name):
+        if _wildcard_domain(target_name):
             # Ask user which VHosts to support.
             vhosts = self._choose_vhosts_wildcard(target_name, prefer_ssl=True)
         else:
@@ -520,7 +506,7 @@ class NginxConfigurator(common.Installer):
         :rtype: list of :class:`~certbot_nginx.obj.VirtualHost`
 
         """
-        if self._wildcard_domain(target_name):
+        if _wildcard_domain(target_name):
             # Ask user which VHosts to enhance.
             vhosts = self._choose_vhosts_wildcard(target_name, prefer_ssl=False)
         else:
@@ -1057,13 +1043,38 @@ def _test_block_from_block(block):
     parser.comment_directive(test_block, 0)
     return test_block[:-1]
 
+
+def _wildcard_domain(domain):
+        """
+        Checks if domain is a wildcard domain
+
+        :param str domain: Domain to check
+
+        :returns: If the domain is wildcard domain
+        :rtype: bool
+        """
+        if isinstance(domain, six.text_type):
+            wildcard_marker = u"*."
+        else:
+            wildcard_marker = b"*."
+        return domain.startswith(wildcard_marker)
+
+
 def _redirect_block_for_domain(domain):
+    updated_domain = domain
+    match_symbol = '='
+    if _wildcard_domain(domain):
+        match_symbol = '~'
+        updated_domain = updated_domain.replace('.', '\.')
+        updated_domain = updated_domain.replace('*', '.+')
+        updated_domain = '^' + updated_domain + '$'
     redirect_block = [[
-        ['\n    ', 'if', ' ', '($host', ' ', '=', ' ', '%s)' % domain, ' '],
+        ['\n    ', 'if', ' ', '($host', ' ', match_symbol, ' ', '%s)' % updated_domain, ' '],
         [['\n        ', 'return', ' ', '301', ' ', 'https://$host$request_uri'],
         '\n    ']],
         ['\n']]
     return redirect_block
+
 
 def nginx_restart(nginx_ctl, nginx_conf):
     """Restarts the Nginx Server.
