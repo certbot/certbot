@@ -426,6 +426,10 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         namespace = self.parse(["--no-delete-after-revoke"])
         self.assertFalse(namespace.delete_after_revoke)
 
+    def test_allow_subset_with_wildcard(self):
+        self.assertRaises(errors.Error, self.parse,
+                          "--allow-subset-of-names -d *.example.org".split())
+
 
 class DefaultTest(unittest.TestCase):
     """Tests for certbot.cli._Default."""

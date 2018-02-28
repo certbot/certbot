@@ -601,6 +601,24 @@ def enforce_domain_sanity(domain):
     return domain
 
 
+def is_wildcard_domain(domain):
+    """"Is domain a wildcard domain?
+
+    :param damain: domain to check
+    :type domain: `bytes` or `str` or `unicode`
+
+    :returns: True if domain is a wildcard, otherwise, False
+    :rtype: bool
+
+    """
+    if isinstance(domain, six.text_type):
+        wildcard_marker = u"*."
+    else:
+        wildcard_marker = b"*."
+
+    return domain.startswith(wildcard_marker)
+
+
 def get_strict_version(normalized):
     """Converts a normalized version to a strict version.
 

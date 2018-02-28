@@ -298,7 +298,12 @@ class Client(object):
         auth_domains = set(a.body.identifier.value for a in authzr)
         successful_domains = [d for d in domains if d in auth_domains]
 
-        if successful_domains != domains:
+        # allow_subset_of_names is currently disabled for wildcard
+        # certificates. The reason for this and checking allow_subset_of_names
+        # below is because successful_domains == domains is never true if
+        # domains contains a wildcard because the ACME spec forbids identifiers
+        # in authzs from containing a wildcard character.
+        if self.config.allow_subset_of_names and successful_domains != domains:
             if not self.config.dry_run:
                 os.remove(key.file)
                 os.remove(csr.file)
