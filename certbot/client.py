@@ -12,6 +12,7 @@ import zope.component
 
 from acme import client as acme_client
 from acme import crypto_util as acme_crypto_util
+from acme import errors as acme_errors
 from acme import messages
 
 import certbot
@@ -258,10 +259,7 @@ class Client(object):
         logger.debug("CSR: %s", csr)
 
         if orderr is None:
-            orderr = self.acme.new_order(csr.data)
-            authzr = self.auth_handler.handle_authorizations(orderr)
-            orderr = orderr.update(authorizations=authzr)
-        authzr = orderr.authorizations
+            orderr = self._get_order_and_authorizations(csr.data, best_effort=False)
 
         deadline = datetime.datetime.now() + datetime.timedelta(seconds=90)
         orderr = self.acme.finalize_order(orderr, deadline)
@@ -292,9 +290,8 @@ class Client(object):
                 self.config.rsa_key_size, self.config.key_dir)
             csr = crypto_util.init_save_csr(key, domains, self.config.csr_dir)
 
-        orderr = self.acme.new_order(csr.data)
-        authzr = self.auth_handler.handle_authorizations(orderr, self.config.allow_subset_of_names)
-        orderr = orderr.update(authorizations=authzr)
+        orderr = self._get_order_and_authorizations(csr.data, self.config.allow_subset_of_names)
+        authzr = orderr.authorizations
         auth_domains = set(a.body.identifier.value for a in authzr)
         successful_domains = [d for d in domains if d in auth_domains]
 
@@ -312,6 +309,25 @@ class Client(object):
             cert, chain = self.obtain_certificate_from_csr(csr, orderr)
 
             return cert, chain, key, csr
+
+    def _get_order_and_authorizations(self, csr_pem, best_effort):
+        """Request an new order and complete its authorizations.
+
+        :param str csr_pem: A CSR in PEM format.
+        :param bool best_effort: True if failing to complete all
+            authorizations should raise an exception
+
+        :returns: order resource containing its completed authorizations
+        :rtype: acme.messages.OrderResource
+
+        """
+        try:
+            orderr = self.acme.new_order(csr_pem)
+        except acme_errors.WildcardUnsupportedError:
+            raise errors.Error("The currently selected ACME CA endpoint does"
+                               " not support issuing wildcard certificates.")
+        authzr = self.auth_handler.handle_authorizations(orderr, best_effort)
+        return orderr.update(authorizations=authzr)
 
     # pylint: disable=no-member
     def obtain_and_enroll_certificate(self, domains, certname):
