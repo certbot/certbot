@@ -17,7 +17,7 @@ certbot_test () {
 }
 
 # Use local ACMEv2 endpoint if requested and SERVER isn't already set.
-if [ "${BOULDER_INTEGRATION:-v1}" = "v2" -a -n "${SERVER:+x}" ]; then
+if [ "${BOULDER_INTEGRATION:-v1}" = "v2" -a -z "${SERVER:+x}" ]; then
     SERVER="http://localhost:4001/directory"
 fi
 
