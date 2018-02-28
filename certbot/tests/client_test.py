@@ -222,6 +222,7 @@ class ClientTest(ClientTestCommon):
             mock.sentinel.chain)
 
         authzr = self._authzr_from_domains(["example.com"])
+        self.config.allow_subset_of_names = True
         self._test_obtain_certificate_common(key, csr, authzr_ret=authzr, auth_count=2)
 
         self.assertEqual(mock_crypto_util.init_save_key.call_count, 2)
