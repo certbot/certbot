@@ -1367,11 +1367,11 @@ class MultipleVhostsTest(util.ApacheTest):
         # pylint: disable=protected-access
         mock_path = "certbot_apache.display_ops.select_vhost_multiple"
         with mock.patch(mock_path) as mock_select_vhs:
-            mock_select_vhs.return_value = [self.vh_truth[3]]
+            mock_select_vhs.return_value = [self.vh_truth[1]]
             vhs = self.config._choose_vhosts_wildcard("*.certbot.demo",
                                                      create_ssl=False)
             self.assertFalse(mock_makessl.called)
-            self.assertEquals(vhs[0], self.vh_truth[3])
+            self.assertEquals(vhs[0], self.vh_truth[1])
 
     @mock.patch("certbot_apache.configurator.ApacheConfigurator._vhosts_for_wildcard")
     @mock.patch("certbot_apache.configurator.ApacheConfigurator.make_vhost_ssl")

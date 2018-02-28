@@ -303,13 +303,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         for vhost in vhosts:
             self._deploy_cert(vhost, cert_path, key_path, chain_path, fullchain_path)
 
-    def choose_vhosts(self, domain, cached=False, create_if_no_ssl=True):
+    def choose_vhosts(self, domain, create_if_no_ssl=True):
         """
         Finds VirtualHosts that can be used with the provided domain
 
         :param str domain: Domain name to match VirtualHosts to
-        :param bool cached: Return VHosts from a list cached previously on this
-            execution.
         :param bool create_if_no_ssl: If found VirtualHost doesn't have a HTTPS
             counterpart, should one get created
 
@@ -318,7 +316,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
 
         if self._wildcard_domain(domain):
-            if cached and domain in self._wildcard_vhosts:
+            if domain in self._wildcard_vhosts:
                 # Vhosts for a wildcard domain were already selected
                 return self._wildcard_vhosts[domain]
             # Ask user which VHosts to support.
@@ -368,7 +366,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 if vhost.ssl:
                     # Always prefer SSL vhosts
                     filtered_vhosts[name] = vhost
-                elif name not in filtered_vhosts:
+                elif name not in filtered_vhosts and create_ssl:
                     # Add if not in list previously
                     filtered_vhosts[name] = vhost
 
@@ -382,7 +380,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # if requested.
         return_vhosts = list()
         for vhost in dialog_output:
-            if not vhost.ssl and create_ssl:
+            if not vhost.ssl:
                 return_vhosts.append(self.make_vhost_ssl(vhost))
             else:
                 return_vhosts.append(vhost)
@@ -1493,7 +1491,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             raise errors.PluginError(
                 "Unsupported enhancement: {0}".format(enhancement))
 
-        vhosts = self.choose_vhosts(domain, cached=True, create_if_no_ssl=False)
+        vhosts = self.choose_vhosts(domain, create_if_no_ssl=False)
         try:
             for vhost in vhosts:
                 func(vhost, options)

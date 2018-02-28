@@ -173,7 +173,7 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
             "File: {filename}\n"
             "Addresses: {addrs}\n"
             "Names: {names}\n"
-            "HTTPS: {https}\n\n".format(
+            "HTTPS: {https}\n".format(
                 filename=self.filep,
                 addrs=", ".join(str(addr) for addr in self.addrs),
                 names=", ".join(self.get_names()),
