@@ -785,6 +785,7 @@ class NginxConfiguratorTest(util.NginxTest):
 
     @mock.patch("certbot_nginx.display_ops.select_vhost_multiple")
     def test_enhance_wildcard_double_redirect(self, mock_dialog):
+      # pylint: disable=protected-access
         vhost = [x for x in self.config.parser.get_vhosts()
             if 'summer.com' in x.names][0]
         self.config._wildcard_redirect_vhosts["*.com"] = [vhost]
