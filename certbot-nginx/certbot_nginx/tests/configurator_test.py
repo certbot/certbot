@@ -181,6 +181,18 @@ class NginxConfiguratorTest(util.NginxTest):
         # Port 443 has ipv6only=on because of ipv6ssl.com vhost
         self.assertEquals((True, True), self.config.ipv6_info("443"))
 
+    def test_ipv6only_detection(self):
+        self.config.version = (1, 3, 1)
+
+        self.config.deploy_cert(
+            "ipv6.com",
+            "example/cert.pem",
+            "example/key.pem",
+            "example/chain.pem",
+            "example/fullchain.pem")
+
+        for addr in self.config.choose_vhost("ipv6.com").addrs:
+            self.assertFalse(addr.ipv6only)
 
     def test_more_info(self):
         self.assertTrue('nginx.conf' in self.config.more_info())
