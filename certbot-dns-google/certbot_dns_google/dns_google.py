@@ -224,4 +224,7 @@ class _GoogleClient(object):
         if r.status != 200:
             raise ValueError("Invalid status code: {0}".format(r))
 
-        return content
+        if isinstance(content, bytes):
+            return content.decode()
+        else:
+            return content

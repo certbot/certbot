@@ -140,5 +140,5 @@ class DebianConfigurator(configurator.ApacheConfigurator):
                 "a2dismod are configured correctly for certbot.")
 
         self.reverter.register_undo_command(
-            temp, [self.conf("dismod"), mod_name])
+            temp, [self.conf("dismod"), "-f", mod_name])
         util.run_script([self.conf("enmod"), mod_name])

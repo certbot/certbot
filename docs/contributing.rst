@@ -32,10 +32,13 @@ a new plugin is introduced.
 .. code-block:: shell
 
    cd certbot
-   ./certbot-auto --os-packages-only
+   sudo ./certbot-auto --os-packages-only
    ./tools/venv.sh
 
-Then in each shell where you're working on the client, do:
+You can now run the copy of Certbot from git either by executing
+``venv/bin/certbot``, or by activating the virtual environment. If you're
+actively modifying and testing the code, you may want to run commands like this in
+each shell where you're working:
 
 .. code-block:: shell
 
@@ -43,7 +46,8 @@ Then in each shell where you're working on the client, do:
    export SERVER=https://acme-staging.api.letsencrypt.org/directory
    source tests/integration/_common.sh
 
-After that, your shell will be using the virtual environment, and you run the
+After that, your shell will be using the virtual environment, your copy of
+Certbot will default to requesting test (staging) certificates, and you run the
 client by typing `certbot` or `certbot_test`. The latter is an alias that
 includes several flags useful for testing. For instance, it sets various output
 directories to point to /tmp/, and uses non-privileged ports for challenges, so
@@ -418,7 +422,7 @@ OS-level dependencies can be installed like so:
 In general...
 
 * ``sudo`` is required as a suggested way of running privileged process
-* `Python`_ 2.6/2.7 is required
+* `Python`_ 2.7 is required
 * `Augeas`_ is required for the Python bindings
 * ``virtualenv`` and ``pip`` are used for managing other python library
   dependencies

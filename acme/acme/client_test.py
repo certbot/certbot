@@ -1,4 +1,5 @@
 """Tests for acme.client."""
+import copy
 import datetime
 import json
 import unittest
@@ -7,6 +8,7 @@ from six.moves import http_client  # pylint: disable=import-error
 
 import josepy as jose
 import mock
+import OpenSSL
 import requests
 
 from acme import challenges
@@ -18,13 +20,32 @@ from acme import test_util
 
 
 CERT_DER = test_util.load_vector('cert.der')
+CERT_SAN_PEM = test_util.load_vector('cert-san.pem')
+CSR_SAN_PEM = test_util.load_vector('csr-san.pem')
 KEY = jose.JWKRSA.load(test_util.load_vector('rsa512_key.pem'))
 KEY2 = jose.JWKRSA.load(test_util.load_vector('rsa256_key.pem'))
 
+DIRECTORY_V1 = messages.Directory({
+    messages.NewRegistration:
+        'https://www.letsencrypt-demo.org/acme/new-reg',
+    messages.Revocation:
+        'https://www.letsencrypt-demo.org/acme/revoke-cert',
+    messages.NewAuthorization:
+        'https://www.letsencrypt-demo.org/acme/new-authz',
+    messages.CertificateRequest:
+        'https://www.letsencrypt-demo.org/acme/new-cert',
+})
 
-class ClientTest(unittest.TestCase):
-    """Tests for  acme.client.Client."""
-    # pylint: disable=too-many-instance-attributes,too-many-public-methods
+DIRECTORY_V2 = messages.Directory({
+    'newAccount': 'https://www.letsencrypt-demo.org/acme/new-account',
+    'newNonce': 'https://www.letsencrypt-demo.org/acme/new-nonce',
+    'newOrder': 'https://www.letsencrypt-demo.org/acme/new-order',
+    'revokeCert': 'https://www.letsencrypt-demo.org/acme/revoke-cert',
+})
+
+
+class ClientTestBase(unittest.TestCase):
+    """Base for tests in acme.client."""
 
     def setUp(self):
         self.response = mock.MagicMock(
@@ -32,21 +53,6 @@ class ClientTest(unittest.TestCase):
         self.net = mock.MagicMock()
         self.net.post.return_value = self.response
         self.net.get.return_value = self.response
-
-        self.directory = messages.Directory({
-            messages.NewRegistration:
-                'https://www.letsencrypt-demo.org/acme/new-reg',
-            messages.Revocation:
-                'https://www.letsencrypt-demo.org/acme/revoke-cert',
-            messages.NewAuthorization:
-                'https://www.letsencrypt-demo.org/acme/new-authz',
-            messages.CertificateRequest:
-                'https://www.letsencrypt-demo.org/acme/new-cert',
-        })
-
-        from acme.client import Client
-        self.client = Client(
-            directory=self.directory, key=KEY, alg=jose.RS256, net=self.net)
 
         self.identifier = messages.Identifier(
             typ=messages.IDENTIFIER_FQDN, value='example.com')
@@ -57,8 +63,7 @@ class ClientTest(unittest.TestCase):
             contact=self.contact, key=KEY.public_key())
         self.new_reg = messages.NewRegistration(**dict(reg))
         self.regr = messages.RegistrationResource(
-            body=reg, uri='https://www.letsencrypt-demo.org/acme/reg/1',
-            terms_of_service='https://www.letsencrypt-demo.org/tos')
+            body=reg, uri='https://www.letsencrypt-demo.org/acme/reg/1')
 
         # Authorization
         authzr_uri = 'https://www.letsencrypt-demo.org/acme/authz/1'
@@ -75,14 +80,217 @@ class ClientTest(unittest.TestCase):
         self.authzr = messages.AuthorizationResource(
             body=self.authz, uri=authzr_uri)
 
+        # Reason code for revocation
+        self.rsn = 1
+
+
+class BackwardsCompatibleClientV2Test(ClientTestBase):
+    """Tests for  acme.client.BackwardsCompatibleClientV2."""
+
+    def setUp(self):
+        super(BackwardsCompatibleClientV2Test, self).setUp()
+        # contains a loaded cert
+        self.certr = messages.CertificateResource(
+            body=messages_test.CERT)
+
+        loaded = OpenSSL.crypto.load_certificate(
+            OpenSSL.crypto.FILETYPE_PEM, CERT_SAN_PEM)
+        wrapped = jose.ComparableX509(loaded)
+        self.chain = [wrapped, wrapped]
+
+        self.cert_pem = OpenSSL.crypto.dump_certificate(
+            OpenSSL.crypto.FILETYPE_PEM, messages_test.CERT.wrapped)
+
+        single_chain = OpenSSL.crypto.dump_certificate(
+            OpenSSL.crypto.FILETYPE_PEM, loaded)
+        self.chain_pem = single_chain + single_chain
+
+        self.fullchain_pem = self.cert_pem + self.chain_pem
+
+        self.orderr = messages.OrderResource(
+            csr_pem=CSR_SAN_PEM)
+
+    def _init(self):
+        uri = 'http://www.letsencrypt-demo.org/directory'
+        from acme.client import BackwardsCompatibleClientV2
+        return BackwardsCompatibleClientV2(net=self.net,
+            key=KEY, server=uri)
+
+    def test_init_downloads_directory(self):
+        uri = 'http://www.letsencrypt-demo.org/directory'
+        from acme.client import BackwardsCompatibleClientV2
+        BackwardsCompatibleClientV2(net=self.net,
+            key=KEY, server=uri)
+        self.net.get.assert_called_once_with(uri)
+
+    def test_init_acme_version(self):
+        self.response.json.return_value = DIRECTORY_V1.to_json()
+        client = self._init()
+        self.assertEqual(client.acme_version, 1)
+
+        self.response.json.return_value = DIRECTORY_V2.to_json()
+        client = self._init()
+        self.assertEqual(client.acme_version, 2)
+
+    def test_forwarding(self):
+        self.response.json.return_value = DIRECTORY_V1.to_json()
+        client = self._init()
+        self.assertEqual(client.directory, client.client.directory)
+        self.assertEqual(client.key, KEY)
+        self.assertEqual(client.update_registration, client.client.update_registration)
+        self.assertRaises(AttributeError, client.__getattr__, 'nonexistent')
+        self.assertRaises(AttributeError, client.__getattr__, 'new_account_and_tos')
+        self.assertRaises(AttributeError, client.__getattr__, 'new_account')
+
+    def test_new_account_and_tos(self):
+        # v2 no tos
+        self.response.json.return_value = DIRECTORY_V2.to_json()
+        with mock.patch('acme.client.ClientV2') as mock_client:
+            client = self._init()
+            client.new_account_and_tos(self.new_reg)
+            mock_client().new_account.assert_called_with(self.new_reg)
+
+        # v2 tos good
+        with mock.patch('acme.client.ClientV2') as mock_client:
+            mock_client().directory.meta.__contains__.return_value = True
+            client = self._init()
+            client.new_account_and_tos(self.new_reg, lambda x: True)
+            mock_client().new_account.assert_called_with(
+                self.new_reg.update(terms_of_service_agreed=True))
+
+        # v2 tos bad
+        with mock.patch('acme.client.ClientV2') as mock_client:
+            mock_client().directory.meta.__contains__.return_value = True
+            client = self._init()
+            def _tos_cb(tos):
+                raise errors.Error
+            self.assertRaises(errors.Error, client.new_account_and_tos,
+                self.new_reg, _tos_cb)
+            mock_client().new_account.assert_not_called()
+
+        # v1 yes tos
+        self.response.json.return_value = DIRECTORY_V1.to_json()
+        with mock.patch('acme.client.Client') as mock_client:
+            regr = mock.MagicMock(terms_of_service="TOS")
+            mock_client().register.return_value = regr
+            client = self._init()
+            client.new_account_and_tos(self.new_reg)
+            mock_client().register.assert_called_once_with(self.new_reg)
+            mock_client().agree_to_tos.assert_called_once_with(regr)
+
+        # v1 no tos
+        with mock.patch('acme.client.Client') as mock_client:
+            regr = mock.MagicMock(terms_of_service=None)
+            mock_client().register.return_value = regr
+            client = self._init()
+            client.new_account_and_tos(self.new_reg)
+            mock_client().register.assert_called_once_with(self.new_reg)
+            mock_client().agree_to_tos.assert_not_called()
+
+    @mock.patch('OpenSSL.crypto.load_certificate_request')
+    @mock.patch('acme.crypto_util._pyopenssl_cert_or_req_all_names')
+    def test_new_order_v1(self, mock__pyopenssl_cert_or_req_all_names,
+        unused_mock_load_certificate_request):
+        self.response.json.return_value = DIRECTORY_V1.to_json()
+        mock__pyopenssl_cert_or_req_all_names.return_value = ['example.com', 'www.example.com']
+        mock_csr_pem = mock.MagicMock()
+        with mock.patch('acme.client.Client') as mock_client:
+            mock_client().request_domain_challenges.return_value = mock.sentinel.auth
+            client = self._init()
+            orderr = client.new_order(mock_csr_pem)
+            self.assertEqual(orderr.authorizations, [mock.sentinel.auth, mock.sentinel.auth])
+
+    def test_new_order_v2(self):
+        self.response.json.return_value = DIRECTORY_V2.to_json()
+        mock_csr_pem = mock.MagicMock()
+        with mock.patch('acme.client.ClientV2') as mock_client:
+            client = self._init()
+            client.new_order(mock_csr_pem)
+            mock_client().new_order.assert_called_once_with(mock_csr_pem)
+
+    @mock.patch('acme.client.Client')
+    def test_finalize_order_v1_success(self, mock_client):
+        self.response.json.return_value = DIRECTORY_V1.to_json()
+
+        mock_client().request_issuance.return_value = self.certr
+        mock_client().fetch_chain.return_value = self.chain
+
+        deadline = datetime.datetime(9999, 9, 9)
+        client = self._init()
+        result = client.finalize_order(self.orderr, deadline)
+        self.assertEqual(result.fullchain_pem, self.fullchain_pem)
+        mock_client().fetch_chain.assert_called_once_with(self.certr)
+
+    @mock.patch('acme.client.Client')
+    def test_finalize_order_v1_fetch_chain_error(self, mock_client):
+        self.response.json.return_value = DIRECTORY_V1.to_json()
+
+        mock_client().request_issuance.return_value = self.certr
+        mock_client().fetch_chain.return_value = self.chain
+        mock_client().fetch_chain.side_effect = [errors.Error, self.chain]
+
+        deadline = datetime.datetime(9999, 9, 9)
+        client = self._init()
+        result = client.finalize_order(self.orderr, deadline)
+        self.assertEqual(result.fullchain_pem, self.fullchain_pem)
+        self.assertEqual(mock_client().fetch_chain.call_count, 2)
+
+    @mock.patch('acme.client.Client')
+    def test_finalize_order_v1_timeout(self, mock_client):
+        self.response.json.return_value = DIRECTORY_V1.to_json()
+
+        mock_client().request_issuance.return_value = self.certr
+
+        deadline = deadline = datetime.datetime.now() - datetime.timedelta(seconds=60)
+        client = self._init()
+        self.assertRaises(errors.TimeoutError, client.finalize_order,
+            self.orderr, deadline)
+
+    def test_finalize_order_v2(self):
+        self.response.json.return_value = DIRECTORY_V2.to_json()
+        mock_orderr = mock.MagicMock()
+        mock_deadline = mock.MagicMock()
+        with mock.patch('acme.client.ClientV2') as mock_client:
+            client = self._init()
+            client.finalize_order(mock_orderr, mock_deadline)
+            mock_client().finalize_order.assert_called_once_with(mock_orderr, mock_deadline)
+
+    def test_revoke(self):
+        self.response.json.return_value = DIRECTORY_V1.to_json()
+        with mock.patch('acme.client.Client') as mock_client:
+            client = self._init()
+            client.revoke(messages_test.CERT, self.rsn)
+        mock_client().revoke.assert_called_once_with(messages_test.CERT, self.rsn)
+
+        self.response.json.return_value = DIRECTORY_V2.to_json()
+        with mock.patch('acme.client.ClientV2') as mock_client:
+            client = self._init()
+            client.revoke(messages_test.CERT, self.rsn)
+        mock_client().revoke.assert_called_once_with(messages_test.CERT, self.rsn)
+
+
+class ClientTest(ClientTestBase):
+    """Tests for acme.client.Client."""
+    # pylint: disable=too-many-instance-attributes,too-many-public-methods
+
+    def setUp(self):
+        super(ClientTest, self).setUp()
+
+        self.directory = DIRECTORY_V1
+
+        # Registration
+        self.regr = self.regr.update(
+            terms_of_service='https://www.letsencrypt-demo.org/tos')
+
         # Request issuance
         self.certr = messages.CertificateResource(
             body=messages_test.CERT, authzrs=(self.authzr,),
             uri='https://www.letsencrypt-demo.org/acme/cert/1',
             cert_chain_uri='https://www.letsencrypt-demo.org/ca')
 
-        # Reason code for revocation
-        self.rsn = 1
+        from acme.client import Client
+        self.client = Client(
+            directory=self.directory, key=KEY, alg=jose.RS256, net=self.net)
 
     def test_init_downloads_directory(self):
         uri = 'http://www.letsencrypt-demo.org/directory'
@@ -142,20 +350,23 @@ class ClientTest(unittest.TestCase):
         self.client.request_challenges(self.identifier)
         self.net.post.assert_called_once_with(
             self.directory.new_authz,
-            messages.NewAuthorization(identifier=self.identifier))
+            messages.NewAuthorization(identifier=self.identifier),
+            acme_version=1)
 
     def test_request_challenges_deprecated_arg(self):
         self._prepare_response_for_request_challenges()
         self.client.request_challenges(self.identifier, new_authzr_uri="hi")
         self.net.post.assert_called_once_with(
             self.directory.new_authz,
-            messages.NewAuthorization(identifier=self.identifier))
+            messages.NewAuthorization(identifier=self.identifier),
+            acme_version=1)
 
     def test_request_challenges_custom_uri(self):
         self._prepare_response_for_request_challenges()
         self.client.request_challenges(self.identifier)
         self.net.post.assert_called_once_with(
-            'https://www.letsencrypt-demo.org/acme/new-authz', mock.ANY)
+            'https://www.letsencrypt-demo.org/acme/new-authz', mock.ANY,
+            acme_version=1)
 
     def test_request_challenges_unexpected_update(self):
         self._prepare_response_for_request_challenges()
@@ -417,7 +628,8 @@ class ClientTest(unittest.TestCase):
     def test_revoke(self):
         self.client.revoke(self.certr.body, self.rsn)
         self.net.post.assert_called_once_with(
-            self.directory[messages.Revocation], mock.ANY, content_type=None)
+            self.directory[messages.Revocation], mock.ANY, content_type=None,
+            acme_version=1)
 
     def test_revocation_payload(self):
         obj = messages.Revocation(certificate=self.certr.body, reason=self.rsn)
@@ -432,9 +644,151 @@ class ClientTest(unittest.TestCase):
             self.certr,
             self.rsn)
 
+class ClientV2Test(ClientTestBase):
+    """Tests for acme.client.ClientV2."""
+
+    def setUp(self):
+        super(ClientV2Test, self).setUp()
+
+        self.directory = DIRECTORY_V2
+
+        from acme.client import ClientV2
+        self.client = ClientV2(self.directory, self.net)
+
+        self.new_reg = self.new_reg.update(terms_of_service_agreed=True)
+
+        self.authzr_uri2 = 'https://www.letsencrypt-demo.org/acme/authz/2'
+        self.authz2 = self.authz.update(identifier=messages.Identifier(
+            typ=messages.IDENTIFIER_FQDN, value='www.example.com'),
+            status=messages.STATUS_PENDING)
+        self.authzr2 = messages.AuthorizationResource(
+            body=self.authz2, uri=self.authzr_uri2)
+
+        self.order = messages.Order(
+            identifiers=(self.authz.identifier, self.authz2.identifier),
+            status=messages.STATUS_PENDING,
+            authorizations=(self.authzr.uri, self.authzr_uri2),
+            finalize='https://www.letsencrypt-demo.org/acme/acct/1/order/1/finalize')
+        self.orderr = messages.OrderResource(
+            body=self.order,
+            uri='https://www.letsencrypt-demo.org/acme/acct/1/order/1',
+            authorizations=[self.authzr, self.authzr2], csr_pem=CSR_SAN_PEM)
+
+    def test_new_account(self):
+        self.response.status_code = http_client.CREATED
+        self.response.json.return_value = self.regr.body.to_json()
+        self.response.headers['Location'] = self.regr.uri
+
+        self.assertEqual(self.regr, self.client.new_account(self.new_reg))
+
+    def test_new_order(self):
+        order_response = copy.deepcopy(self.response)
+        order_response.status_code = http_client.CREATED
+        order_response.json.return_value = self.order.to_json()
+        order_response.headers['Location'] = self.orderr.uri
+        self.net.post.return_value = order_response
+
+        authz_response = copy.deepcopy(self.response)
+        authz_response.json.return_value = self.authz.to_json()
+        authz_response.headers['Location'] = self.authzr.uri
+        authz_response2 = self.response
+        authz_response2.json.return_value = self.authz2.to_json()
+        authz_response2.headers['Location'] = self.authzr2.uri
+        self.net.get.side_effect = (authz_response, authz_response2)
+
+        self.assertEqual(self.client.new_order(CSR_SAN_PEM), self.orderr)
+
+    @mock.patch('acme.client.datetime')
+    def test_poll_and_finalize(self, mock_datetime):
+        mock_datetime.datetime.now.return_value = datetime.datetime(2018, 2, 15)
+        mock_datetime.timedelta = datetime.timedelta
+        expected_deadline = mock_datetime.datetime.now() + datetime.timedelta(seconds=90)
+
+        self.client.poll_authorizations = mock.Mock(return_value=self.orderr)
+        self.client.finalize_order = mock.Mock(return_value=self.orderr)
+
+        self.assertEqual(self.client.poll_and_finalize(self.orderr), self.orderr)
+        self.client.poll_authorizations.assert_called_once_with(self.orderr, expected_deadline)
+        self.client.finalize_order.assert_called_once_with(self.orderr, expected_deadline)
+
+    @mock.patch('acme.client.datetime')
+    def test_poll_authorizations_timeout(self, mock_datetime):
+        now_side_effect = [datetime.datetime(2018, 2, 15),
+                           datetime.datetime(2018, 2, 16),
+                           datetime.datetime(2018, 2, 17)]
+        mock_datetime.datetime.now.side_effect = now_side_effect
+        self.response.json.side_effect = [
+            self.authz.to_json(), self.authz2.to_json(), self.authz2.to_json()]
+
+        self.assertRaises(
+            errors.TimeoutError, self.client.poll_authorizations, self.orderr, now_side_effect[1])
+
+    def test_poll_authorizations_failure(self):
+        deadline = datetime.datetime(9999, 9, 9)
+        challb = self.challr.body.update(status=messages.STATUS_INVALID,
+                                         error=messages.Error.with_code('unauthorized'))
+        authz = self.authz.update(status=messages.STATUS_INVALID, challenges=(challb,))
+        self.response.json.return_value = authz.to_json()
+
+        self.assertRaises(
+            errors.ValidationError, self.client.poll_authorizations, self.orderr, deadline)
+
+    def test_poll_authorizations_success(self):
+        deadline = datetime.datetime(9999, 9, 9)
+        updated_authz2 = self.authz2.update(status=messages.STATUS_VALID)
+        updated_authzr2 = messages.AuthorizationResource(
+            body=updated_authz2, uri=self.authzr_uri2)
+        updated_orderr = self.orderr.update(authorizations=[self.authzr, updated_authzr2])
+
+        self.response.json.side_effect = (
+            self.authz.to_json(), self.authz2.to_json(), updated_authz2.to_json())
+        self.assertEqual(self.client.poll_authorizations(self.orderr, deadline), updated_orderr)
+
+    def test_finalize_order_success(self):
+        updated_order = self.order.update(
+            certificate='https://www.letsencrypt-demo.org/acme/cert/')
+        updated_orderr = self.orderr.update(body=updated_order, fullchain_pem=CERT_SAN_PEM)
+
+        self.response.json.return_value = updated_order.to_json()
+        self.response.text = CERT_SAN_PEM
+
+        deadline = datetime.datetime(9999, 9, 9)
+        self.assertEqual(self.client.finalize_order(self.orderr, deadline), updated_orderr)
+
+    def test_finalize_order_error(self):
+        updated_order = self.order.update(error=messages.Error.with_code('unauthorized'))
+        self.response.json.return_value = updated_order.to_json()
+
+        deadline = datetime.datetime(9999, 9, 9)
+        self.assertRaises(errors.IssuanceError, self.client.finalize_order, self.orderr, deadline)
+
+    def test_finalize_order_timeout(self):
+        deadline = datetime.datetime.now() - datetime.timedelta(seconds=60)
+        self.assertRaises(errors.TimeoutError, self.client.finalize_order, self.orderr, deadline)
+
+    def test_revoke(self):
+        self.client.revoke(messages_test.CERT, self.rsn)
+        self.net.post.assert_called_once_with(
+            self.directory["revokeCert"], mock.ANY, content_type=None,
+            acme_version=2)
+
+
+class MockJSONDeSerializable(jose.JSONDeSerializable):
+    # pylint: disable=missing-docstring
+    def __init__(self, value):
+        self.value = value
+
+    def to_partial_json(self):
+        return {'foo': self.value}
+
+    @classmethod
+    def from_json(cls, value):
+        pass  # pragma: no cover
+
 
 class ClientNetworkTest(unittest.TestCase):
     """Tests for acme.client.ClientNetwork."""
+    # pylint: disable=too-many-public-methods
 
     def setUp(self):
         self.verify_ssl = mock.MagicMock()
@@ -453,24 +807,26 @@ class ClientNetworkTest(unittest.TestCase):
         self.assertTrue(self.net.verify_ssl is self.verify_ssl)
 
     def test_wrap_in_jws(self):
-        class MockJSONDeSerializable(jose.JSONDeSerializable):
-            # pylint: disable=missing-docstring
-            def __init__(self, value):
-                self.value = value
-
-            def to_partial_json(self):
-                return {'foo': self.value}
-
-            @classmethod
-            def from_json(cls, value):
-                pass  # pragma: no cover
-
         # pylint: disable=protected-access
         jws_dump = self.net._wrap_in_jws(
-            MockJSONDeSerializable('foo'), nonce=b'Tg')
+            MockJSONDeSerializable('foo'), nonce=b'Tg', url="url",
+            acme_version=1)
         jws = acme_jws.JWS.json_loads(jws_dump)
         self.assertEqual(json.loads(jws.payload.decode()), {'foo': 'foo'})
         self.assertEqual(jws.signature.combined.nonce, b'Tg')
+
+    def test_wrap_in_jws_v2(self):
+        self.net.account = {'uri': 'acct-uri'}
+        # pylint: disable=protected-access
+        jws_dump = self.net._wrap_in_jws(
+            MockJSONDeSerializable('foo'), nonce=b'Tg', url="url",
+            acme_version=2)
+        jws = acme_jws.JWS.json_loads(jws_dump)
+        self.assertEqual(json.loads(jws.payload.decode()), {'foo': 'foo'})
+        self.assertEqual(jws.signature.combined.nonce, b'Tg')
+        self.assertEqual(jws.signature.combined.kid, u'acct-uri')
+        self.assertEqual(jws.signature.combined.url, u'url')
+
 
     def test_check_response_not_ok_jobj_no_error(self):
         self.response.ok = False
@@ -701,13 +1057,13 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
         self.assertEqual(self.checked_response, self.net.post(
             'uri', self.obj, content_type=self.content_type))
         self.net._wrap_in_jws.assert_called_once_with(
-            self.obj, jose.b64decode(self.all_nonces.pop()))
+            self.obj, jose.b64decode(self.all_nonces.pop()), "uri", 1)
 
         self.available_nonces = []
         self.assertRaises(errors.MissingNonce, self.net.post,
                           'uri', self.obj, content_type=self.content_type)
         self.net._wrap_in_jws.assert_called_with(
-            self.obj, jose.b64decode(self.all_nonces.pop()))
+            self.obj, jose.b64decode(self.all_nonces.pop()), "uri", 1)
 
     def test_post_wrong_initial_nonce(self):  # HEAD
         self.available_nonces = [b'f', jose.b64encode(b'good')]
