@@ -285,7 +285,7 @@ class ClientTest(ClientTestCommon):
     @mock.patch('certbot.storage.RenewableCert.new_lineage')
     def test_obtain_and_enroll_certificate(self,
         mock_storage, mock_obtain_certificate):
-        domains = ["example.com", "www.example.com"]
+        domains = ["*.example.com", "example.com"]
         mock_obtain_certificate.return_value = (mock.MagicMock(),
             mock.MagicMock(), mock.MagicMock(), None)
 
@@ -293,12 +293,14 @@ class ClientTest(ClientTestCommon):
         self.assertTrue(self.client.obtain_and_enroll_certificate(domains, "example_cert"))
 
         self.assertTrue(self.client.obtain_and_enroll_certificate(domains, None))
+        self.assertTrue(self.client.obtain_and_enroll_certificate(domains[1:], None))
 
         self.client.config.dry_run = True
 
         self.assertFalse(self.client.obtain_and_enroll_certificate(domains, None))
 
-        self.assertTrue(mock_storage.call_count == 2)
+        names = [call[0][0] for call in mock_storage.call_args_list]
+        self.assertEqual(names, ["example_cert", "example.com", "example.com"])
 
     @mock.patch("certbot.cli.helpful_parser")
     def test_save_certificate(self, mock_parser):
