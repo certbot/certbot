@@ -311,11 +311,11 @@ class Client(object):
             return cert, chain, key, csr
 
     def _get_order_and_authorizations(self, csr_pem, best_effort):
-        """Request an new order and complete its authorizations.
+        """Request a new order and complete its authorizations.
 
         :param str csr_pem: A CSR in PEM format.
         :param bool best_effort: True if failing to complete all
-            authorizations should raise an exception
+            authorizations should not raise an exception
 
         :returns: order resource containing its completed authorizations
         :rtype: acme.messages.OrderResource
