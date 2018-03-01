@@ -1,5 +1,4 @@
 """Nginx Configuration"""
-import fnmatch
 import logging
 import os
 import re
