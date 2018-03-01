@@ -270,6 +270,11 @@ class NginxConfigurator(common.Installer):
     #######################
     # Vhost parsing methods
     #######################
+    def _choose_vhost_single(self, target_name):
+        matches = self._get_ranked_matches(target_name)
+        vhosts = [x for x in [self._select_best_name_match(matches)] if x is not None]
+        return vhosts
+
     def choose_vhosts(self, target_name, create_if_no_match=False):
         """Chooses a virtual host based on the given domain name.
 
@@ -296,8 +301,7 @@ class NginxConfigurator(common.Installer):
             # Ask user which VHosts to support.
             vhosts = self._choose_vhosts_wildcard(target_name, prefer_ssl=True)
         else:
-            matches = self._get_ranked_matches(target_name)
-            vhosts = [x for x in [self._select_best_name_match(matches)] if x is not None]
+            vhosts = self._choose_vhost_single(target_name)
         if not vhosts:
             if create_if_no_match:
                 # result will not be [None] because it errors on failure
@@ -646,7 +650,6 @@ class NginxConfigurator(common.Installer):
             documentation for appropriate parameter.
 
         """
-        domain = "*.funkydog.space"
         try:
             return self._enhance_func[enhancement](domain, options)
         except (KeyError, ValueError):
