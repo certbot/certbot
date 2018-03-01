@@ -793,7 +793,7 @@ class NginxConfiguratorTest(util.NginxTest):
                                                 prefer_ssl=False,
                                                 no_ssl_filter_port='80')
             # Check that the dialog was called with only port 80 vhosts
-            self.assertEqual(len(mock_select_vhs.call_args[0][0]), 2)
+            self.assertEqual(len(mock_select_vhs.call_args[0][0]), 4)
 
 
 class InstallSslOptionsConfTest(util.NginxTest):

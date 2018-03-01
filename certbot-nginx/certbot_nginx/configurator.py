@@ -199,32 +199,6 @@ class NginxConfigurator(common.Installer):
         self.save_notes += "\tssl_certificate %s\n" % fullchain_path
         self.save_notes += "\tssl_certificate_key %s\n" % key_path
 
-    def _vhosts_for_wildcard(self, domain):
-        """
-        Get VHost objects for every VirtualHost that the user wants to handle
-        with the wildcard certificate.
-        """
-
-        # Collect all vhosts that match the name
-        matched = set()
-        for vhost in self.parser.get_vhosts():
-            for name in vhost.names:
-                if self._in_wildcard_scope(name, domain):
-                    matched.add(vhost)
-
-        return list(matched)
-
-    def _in_wildcard_scope(self, name, domain):
-        """
-        Helper method for _vhosts_for_wildcard() that makes sure that the domain
-        is in the scope of wildcard domain.
-
-        eg. in scope: domain = *.wild.card, name = 1.wild.card
-        not in scope: domain = *.wild.card, name = 1.2.wild.card
-        """
-        if len(name.split(".")) == len(domain.split(".")):
-            return fnmatch.fnmatch(name, domain)
-
     def _choose_vhosts_wildcard(self, domain, prefer_ssl, no_ssl_filter_port=None):
         """Prompts user to choose vhosts to install a wildcard certificate for"""
         if prefer_ssl:
@@ -239,8 +213,8 @@ class NginxConfigurator(common.Installer):
             # Vhosts for a wildcard domain were already selected
             return vhosts_cache[domain]
 
-        # Get all vhosts that are covered by the wildcard domain
-        vhosts = self._vhosts_for_wildcard(domain)
+        # Get all vhosts whether or not they are covered by the wildcard domain
+        vhosts = self.parser.get_vhosts()
 
         # Go through the vhosts, making sure that we cover all the names
         # present, but preferring the SSL or non-SSL vhosts
