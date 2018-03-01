@@ -128,7 +128,7 @@ class NginxConfiguratorTest(util.NginxTest):
                             ['#', parser.COMMENT]]]],
                          parsed[0])
 
-    def test_choose_vhost(self):
+    def test_choose_vhosts(self):
         localhost_conf = set(['localhost', r'~^(www\.)?(example|bar)\.'])
         server_conf = set(['somename', 'another.alias', 'alias'])
         example_conf = set(['.example.com', 'example.*'])
@@ -159,7 +159,7 @@ class NginxConfiguratorTest(util.NginxTest):
                        '69.255.225.155']
 
         for name in results:
-            vhost = self.config.choose_vhost(name)
+            vhost = self.config.choose_vhosts(name)[0]
             path = os.path.relpath(vhost.filep, self.temp_dir)
 
             self.assertEqual(results[name], vhost.names)
@@ -173,7 +173,7 @@ class NginxConfiguratorTest(util.NginxTest):
 
         for name in bad_results:
             self.assertRaises(errors.MisconfigurationError,
-                              self.config.choose_vhost, name)
+                              self.config.choose_vhosts, name)
 
     def test_ipv6only(self):
         # ipv6_info: (ipv6_active, ipv6only_present)
@@ -713,6 +713,100 @@ class NginxConfiguratorTest(util.NginxTest):
         self.config.revert_challenge_config()
         self.config.rollback_checkpoints()
         self.assertTrue(mock_parser_load.call_count == 3)
+
+    def test_choose_vhosts_wildcard(self):
+        # pylint: disable=protected-access
+        mock_path = "certbot_nginx.display_ops.select_vhost_multiple"
+        with mock.patch(mock_path) as mock_select_vhs:
+            vhost = [x for x in self.config.parser.get_vhosts()
+              if 'summer.com' in x.names][0]
+            mock_select_vhs.return_value = [vhost]
+            vhs = self.config._choose_vhosts_wildcard("*.com",
+                                                     prefer_ssl=True)
+            # Check that the dialog was called with migration.com
+            self.assertTrue(vhost in mock_select_vhs.call_args[0][0])
+
+            # And the actual returned values
+            self.assertEquals(len(vhs), 1)
+            self.assertEqual(vhs[0], vhost)
+
+    def test_choose_vhosts_wildcard_redirect(self):
+        # pylint: disable=protected-access
+        mock_path = "certbot_nginx.display_ops.select_vhost_multiple"
+        with mock.patch(mock_path) as mock_select_vhs:
+            vhost = [x for x in self.config.parser.get_vhosts()
+              if 'summer.com' in x.names][0]
+            mock_select_vhs.return_value = [vhost]
+            vhs = self.config._choose_vhosts_wildcard("*.com",
+                                                     prefer_ssl=False)
+            # Check that the dialog was called with migration.com
+            self.assertTrue(vhost in mock_select_vhs.call_args[0][0])
+
+            # And the actual returned values
+            self.assertEquals(len(vhs), 1)
+            self.assertEqual(vhs[0], vhost)
+
+    def test_deploy_cert_wildcard(self):
+        # pylint: disable=protected-access
+        mock_choose_vhosts = mock.MagicMock()
+        vhost = [x for x in self.config.parser.get_vhosts()
+            if 'geese.com' in x.names][0]
+        mock_choose_vhosts.return_value = [vhost]
+        self.config._choose_vhosts_wildcard = mock_choose_vhosts
+        mock_d = "certbot_nginx.configurator.NginxConfigurator._deploy_cert"
+        with mock.patch(mock_d) as mock_dep:
+            self.config.deploy_cert("*.com", "/tmp/path",
+                                    "/tmp/path", "/tmp/path", "/tmp/path")
+            self.assertTrue(mock_dep.called)
+            self.assertEquals(len(mock_dep.call_args_list), 1)
+            self.assertEqual(vhost, mock_dep.call_args_list[0][0][0])
+
+    @mock.patch("certbot_nginx.display_ops.select_vhost_multiple")
+    def test_deploy_cert_wildcard_no_vhosts(self, mock_dialog):
+        # pylint: disable=protected-access
+        mock_dialog.return_value = []
+        self.assertRaises(errors.PluginError,
+                          self.config.deploy_cert,
+                          "*.wild.cat", "/tmp/path", "/tmp/path",
+                           "/tmp/path", "/tmp/path")
+
+    @mock.patch("certbot_nginx.display_ops.select_vhost_multiple")
+    def test_enhance_wildcard_ocsp_after_install(self, mock_dialog):
+        # pylint: disable=protected-access
+        vhost = [x for x in self.config.parser.get_vhosts()
+            if 'geese.com' in x.names][0]
+        self.config._wildcard_vhosts["*.com"] = [vhost]
+        self.config.enhance("*.com", "staple-ocsp", "example/chain.pem")
+        self.assertFalse(mock_dialog.called)
+
+    @mock.patch("certbot_nginx.display_ops.select_vhost_multiple")
+    def test_enhance_wildcard_redirect_or_ocsp_no_install(self, mock_dialog):
+        vhost = [x for x in self.config.parser.get_vhosts()
+            if 'summer.com' in x.names][0]
+        mock_dialog.return_value = [vhost]
+        self.config.enhance("*.com", "staple-ocsp", "example/chain.pem")
+        self.assertTrue(mock_dialog.called)
+
+    @mock.patch("certbot_nginx.display_ops.select_vhost_multiple")
+    def test_enhance_wildcard_double_redirect(self, mock_dialog):
+      # pylint: disable=protected-access
+        vhost = [x for x in self.config.parser.get_vhosts()
+            if 'summer.com' in x.names][0]
+        self.config._wildcard_redirect_vhosts["*.com"] = [vhost]
+        self.config.enhance("*.com", "redirect")
+        self.assertFalse(mock_dialog.called)
+
+    def test_choose_vhosts_wildcard_no_ssl_filter_port(self):
+        # pylint: disable=protected-access
+        mock_path = "certbot_nginx.display_ops.select_vhost_multiple"
+        with mock.patch(mock_path) as mock_select_vhs:
+            mock_select_vhs.return_value = []
+            self.config._choose_vhosts_wildcard("*.com",
+                                                prefer_ssl=False,
+                                                no_ssl_filter_port='80')
+            # Check that the dialog was called with only port 80 vhosts
+            self.assertEqual(len(mock_select_vhs.call_args[0][0]), 4)
+
 
 class InstallSslOptionsConfTest(util.NginxTest):
     """Test that the options-ssl-nginx.conf file is installed and updated properly."""
