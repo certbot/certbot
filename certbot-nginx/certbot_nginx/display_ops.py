@@ -23,7 +23,7 @@ def select_vhost_multiple(vhosts):
     tags_list = [vhost.display_repr() for vhost in vhosts]
     while True:
         code, names = zope.component.getUtility(interfaces.IDisplay).checklist(
-            "Which server blocks would you like to install the wildcard certificate for?",
+            "Which server blocks would you like to modify?",
             tags=tags_list, force_interactive=True)
         if code == display_util.OK:
             return_vhosts = _reversemap_vhosts(names, vhosts)
