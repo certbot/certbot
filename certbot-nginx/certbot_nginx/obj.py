@@ -193,6 +193,11 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
 
         return False
 
+    def __hash__(self):
+        return hash((self.filep, self.path,
+                     tuple(self.addrs), tuple(self.names),
+                     self.ssl, self.enabled))
+
     def contains_list(self, test):
         """Determine if raw server block contains test list at top level
         """
