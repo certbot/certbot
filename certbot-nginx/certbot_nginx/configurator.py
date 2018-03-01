@@ -1001,7 +1001,7 @@ def _redirect_block_for_domain(domain):
     if util.is_wildcard_domain(domain):
         match_symbol = '~'
         updated_domain = updated_domain.replace('.', r'\.')
-        updated_domain = updated_domain.replace('*', '.+')
+        updated_domain = updated_domain.replace('*', '[^.]+')
         updated_domain = '^' + updated_domain + '$'
     redirect_block = [[
         ['\n    ', 'if', ' ', '($host', ' ', match_symbol, ' ', '%s)' % updated_domain, ' '],
