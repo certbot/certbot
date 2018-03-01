@@ -240,6 +240,9 @@ class NginxConfigurator(common.Installer):
             configuration, and existence of ipv6only directive for specified port
         :rtype: tuple of type (bool, bool)
         """
+        # port should be a string, but it's easy to mess up, so let's
+        # make sure it is one
+        port = str(port)
         vhosts = self.parser.get_vhosts()
         ipv6_active = False
         ipv6only_present = False
@@ -490,7 +493,7 @@ class NginxConfigurator(common.Installer):
         :type vhost: :class:`~certbot_nginx.obj.VirtualHost`
 
         """
-        ipv6info = self.ipv6_info(str(self.config.tls_sni_01_port))
+        ipv6info = self.ipv6_info(self.config.tls_sni_01_port)
         ipv6_block = ['']
         ipv4_block = ['']
 
