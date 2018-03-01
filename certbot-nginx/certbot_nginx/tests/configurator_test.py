@@ -789,9 +789,9 @@ class NginxConfiguratorTest(util.NginxTest):
         mock_path = "certbot_nginx.display_ops.select_vhost_multiple"
         with mock.patch(mock_path) as mock_select_vhs:
             mock_select_vhs.return_value = []
-            vhs = self.config._choose_vhosts_wildcard("*.com",
-                                                     prefer_ssl=False,
-                                                     no_ssl_filter_port='80')
+            self.config._choose_vhosts_wildcard("*.com",
+                                                prefer_ssl=False,
+                                                no_ssl_filter_port='80')
             # Check that the dialog was called with only port 80 vhosts
             self.assertEqual(len(mock_select_vhs.call_args[0][0]), 2)
 
