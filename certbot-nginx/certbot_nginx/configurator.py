@@ -311,6 +311,9 @@ class NginxConfigurator(common.Installer):
             configuration, and existence of ipv6only directive for specified port
         :rtype: tuple of type (bool, bool)
         """
+        # port should be a string, but it's easy to mess up, so let's
+        # make sure it is one
+        port = str(port)
         vhosts = self.parser.get_vhosts()
         ipv6_active = False
         ipv6only_present = False
