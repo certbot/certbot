@@ -490,7 +490,7 @@ class NginxConfigurator(common.Installer):
         :type vhost: :class:`~certbot_nginx.obj.VirtualHost`
 
         """
-        ipv6info = self.ipv6_info(self.config.tls_sni_01_port)
+        ipv6info = self.ipv6_info(str(self.config.tls_sni_01_port))
         ipv6_block = ['']
         ipv4_block = ['']
 
