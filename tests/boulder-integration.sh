@@ -432,7 +432,7 @@ done
 
 # Test ACMEv2-only features
 if [ "${BOULDER_INTEGRATION:-v1}" = "v2" ]; then
-    common -a manual -d *.le4.wtf,le4.wtf --preferred-challenges dns \
+    common -a manual -d '*.le4.wtf,le4.wtf' --preferred-challenges dns \
         --manual-auth-hook ./tests/manual-dns-auth.sh
 fi
 
