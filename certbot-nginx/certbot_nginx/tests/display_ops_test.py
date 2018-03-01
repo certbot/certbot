@@ -1,16 +1,10 @@
 """Test certbot_apache.display_ops."""
 import unittest
 
-import mock
-
-from certbot import errors
-
 from certbot.display import util as display_util
 
 from certbot.tests import util as certbot_util
 
-from certbot_nginx import nginxparser
-from certbot_nginx import obj
 from certbot_nginx import parser
 
 from certbot_nginx.display_ops import select_vhost_multiple

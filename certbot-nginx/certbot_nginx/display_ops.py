@@ -1,10 +1,8 @@
 """Contains UI methods for Nginx operations."""
 import logging
-import os
 
 import zope.component
 
-from certbot import errors
 from certbot import interfaces
 
 import certbot.display.util as display_util

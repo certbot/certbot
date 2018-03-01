@@ -179,6 +179,7 @@ class NginxConfigurator(common.Installer):
             self._deploy_cert(vhost, cert_path, key_path, chain_path, fullchain_path)
 
     def _deploy_cert(self, vhost, cert_path, key_path, chain_path, fullchain_path):
+        # pylint: disable=unused-argument
         """
         Helper function for deploy_cert() that handles the actual deployment
         this exists because we might want to do multiple deployments per
@@ -645,6 +646,7 @@ class NginxConfigurator(common.Installer):
             documentation for appropriate parameter.
 
         """
+        domain = "*.funkydog.space"
         try:
             return self._enhance_func[enhancement](domain, options)
         except (KeyError, ValueError):
@@ -1009,19 +1011,19 @@ def _test_block_from_block(block):
 
 
 def _wildcard_domain(domain):
-        """
-        Checks if domain is a wildcard domain
+    """
+    Checks if domain is a wildcard domain
 
-        :param str domain: Domain to check
+    :param str domain: Domain to check
 
-        :returns: If the domain is wildcard domain
-        :rtype: bool
-        """
-        if isinstance(domain, six.text_type):
-            wildcard_marker = u"*."
-        else:
-            wildcard_marker = b"*."
-        return domain.startswith(wildcard_marker)
+    :returns: If the domain is wildcard domain
+    :rtype: bool
+    """
+    if isinstance(domain, six.text_type):
+        wildcard_marker = u"*."
+    else:
+        wildcard_marker = b"*."
+    return domain.startswith(wildcard_marker)
 
 
 def _redirect_block_for_domain(domain):
@@ -1029,7 +1031,7 @@ def _redirect_block_for_domain(domain):
     match_symbol = '='
     if _wildcard_domain(domain):
         match_symbol = '~'
-        updated_domain = updated_domain.replace('.', '\.')
+        updated_domain = updated_domain.replace('.', r'\.')
         updated_domain = updated_domain.replace('*', '.+')
         updated_domain = '^' + updated_domain + '$'
     redirect_block = [[
