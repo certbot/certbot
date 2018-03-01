@@ -1,4 +1,5 @@
 """Nginx Configuration"""
+import fnmatch
 import logging
 import os
 import re
@@ -205,8 +206,8 @@ class NginxConfigurator(common.Installer):
 
         # Collect all vhosts that match the name
         matched = set()
-        for vhost in self.vhosts:
-            for name in vhost.get_names():
+        for vhost in self.parser.get_vhosts():
+            for name in vhost.names:
                 if self._in_wildcard_scope(name, domain):
                     matched.add(vhost)
 
@@ -244,7 +245,7 @@ class NginxConfigurator(common.Installer):
         # present, but preferring the SSL or non-SSL vhosts
         filtered_vhosts = {}
         for vhost in vhosts:
-            for name in vhost.get_names():
+            for name in vhost.names:
                 if preference_test(vhost):
                     # Prefer either SSL or non-SSL vhosts
                     filtered_vhosts[name] = vhost
@@ -259,46 +260,9 @@ class NginxConfigurator(common.Installer):
         return_vhosts = display_ops.select_vhost_multiple(list(dialog_input))
 
         for vhost in return_vhosts:
-            if target_name not in vhosts_cache:
-                vhosts_cache[target_name] = []
-            vhosts_cache[target_name].append(vhost)
-
-        return return_vhosts
-
-    def _choose_redirect_vhosts_wildcard(self, domain):
-        """Prompts user to choose vhosts to install a wildcard certificate for"""
-
-        # Caching!
-        if domain in self._wildcard_redirect_vhosts:
-            # Vhosts for a wildcard domain were already selected
-            return self._wildcard_redirect_vhosts[domain]
-
-        # Get all vhosts that are covered by the wildcard domain
-        vhosts = self._vhosts_for_wildcard(domain)
-
-        # Go through the vhosts, making sure that we cover all the names
-        # present, but preferring the SSL vhosts
-        filtered_vhosts = {}
-        for vhost in vhosts:
-            for name in vhost.get_names():
-                if vhost.ssl:
-                    # Always prefer SSL vhosts
-                    filtered_vhosts[name] = vhost
-                elif name not in filtered_vhosts:
-                    # Add if not in list previously
-                    filtered_vhosts[name] = vhost
-
-        # Only unique VHost objects
-        dialog_input = set([vhost for vhost in filtered_vhosts.values()])
-
-        # Ask the user which of names to enable, expect list of names back
-        dialog_output = display_ops.select_vhost_multiple(list(dialog_input))
-        return_vhosts = list(dialog_output)
-
-        for vhost in return_vhosts:
-            if target_name not in self._wildcard_redirect_vhosts:
-                self._wildcard_redirect_vhosts[target_name] = []
-            self._wildcard_redirect_vhosts[target_name].append(vhost)
+            if domain not in vhosts_cache:
+                vhosts_cache[domain] = []
+            vhosts_cache[domain].append(vhost)
 
         return return_vhosts
 
