@@ -191,7 +191,7 @@ class NginxConfiguratorTest(util.NginxTest):
             "example/chain.pem",
             "example/fullchain.pem")
 
-        for addr in self.config.choose_vhost("ipv6.com").addrs:
+        for addr in self.config.choose_vhosts("ipv6.com")[0].addrs:
             self.assertFalse(addr.ipv6only)
 
     def test_more_info(self):
