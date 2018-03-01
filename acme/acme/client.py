@@ -318,8 +318,8 @@ class Client(ClientBase):
 
         if identifier.value.startswith("*"):
             raise errors.WildcardUnsupportedError(
-                "Requesting an authorization for a wildcard"
-                " name is forbidden by the ACME protocol.")
+                "Requesting an authorization for a wildcard name is"
+                " forbidden by this version of the ACME protocol.")
 
         new_authz = messages.NewAuthorization(identifier=identifier)
         response = self._post(self.directory.new_authz, new_authz)
