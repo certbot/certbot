@@ -184,7 +184,7 @@ class ClientTest(ClientTestCommon):
             self.client.obtain_certificate_from_csr(
                 test_csr,
                 orderr=None))
-        auth_handler.handle_authorizations.assert_called_with(self.eg_order)
+        auth_handler.handle_authorizations.assert_called_with(self.eg_order, False)
 
         # Test for no auth_handler
         self.client.auth_handler = None

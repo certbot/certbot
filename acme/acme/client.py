@@ -310,9 +310,17 @@ class Client(ClientBase):
         :returns: Authorization Resource.
         :rtype: `.AuthorizationResource`
 
+        :raises errors.WildcardUnsupportedError: if a wildcard is requested
+
         """
         if new_authzr_uri is not None:
             logger.debug("request_challenges with new_authzr_uri deprecated.")
+
+        if identifier.value.startswith("*"):
+            raise errors.WildcardUnsupportedError(
+                "Requesting an authorization for a wildcard name is"
+                " forbidden by this version of the ACME protocol.")
+
         new_authz = messages.NewAuthorization(identifier=identifier)
         response = self._post(self.directory.new_authz, new_authz)
         # TODO: handle errors
@@ -332,6 +340,8 @@ class Client(ClientBase):
 
         :returns: Authorization Resource.
         :rtype: `.AuthorizationResource`
+
+        :raises errors.WildcardUnsupportedError: if a wildcard is requested
 
         """
         return self.request_challenges(messages.Identifier(
@@ -752,6 +762,10 @@ class BackwardsCompatibleClientV2(object):
 
         :returns: The newly created order.
         :rtype: OrderResource
+
+        :raises errors.WildcardUnsupportedError: if a wildcard domain is
+            requested but unsupported by the ACME version
+
         """
         if self.acme_version == 1:
             csr = OpenSSL.crypto.load_certificate_request(OpenSSL.crypto.FILETYPE_PEM, csr_pem)
