@@ -194,7 +194,7 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
         return False
 
     def __hash__(self):
-        return hash((self.filep, self.path,
+        return hash((self.filep, tuple(self.path),
                      tuple(self.addrs), tuple(self.names),
                      self.ssl, self.enabled))
 
