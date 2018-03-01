@@ -225,7 +225,7 @@ class NginxConfigurator(common.Installer):
         if len(name.split(".")) == len(domain.split(".")):
             return fnmatch.fnmatch(name, domain)
 
-    def _choose_vhosts_wildcard(self, domain, prefer_ssl):
+    def _choose_vhosts_wildcard(self, domain, prefer_ssl, no_ssl_filter_port=None):
         """Prompts user to choose vhosts to install a wildcard certificate for"""
         if prefer_ssl:
             vhosts_cache = self._wildcard_vhosts
@@ -246,6 +246,10 @@ class NginxConfigurator(common.Installer):
         # present, but preferring the SSL or non-SSL vhosts
         filtered_vhosts = {}
         for vhost in vhosts:
+            # Ensure we're listening non-sslishly on no_ssl_filter_port
+            if no_ssl_filter_port is not None:
+                if not self._vhost_listening_on_port_no_ssl(vhost, no_ssl_filter_port):
+                    continue
             for name in vhost.names:
                 if preference_test(vhost):
                     # Prefer either SSL or non-SSL vhosts
@@ -477,7 +481,8 @@ class NginxConfigurator(common.Installer):
         """
         if util.is_wildcard_domain(target_name):
             # Ask user which VHosts to enhance.
-            vhosts = self._choose_vhosts_wildcard(target_name, prefer_ssl=False)
+            vhosts = self._choose_vhosts_wildcard(target_name, prefer_ssl=False,
+                no_ssl_filter_port=port)
         else:
             matches = self._get_redirect_ranked_matches(target_name, port)
             vhosts = [x for x in [self._select_best_name_match(matches)]if x is not None]
@@ -492,6 +497,23 @@ class NginxConfigurator(common.Installer):
             return test_port == self.DEFAULT_LISTEN_PORT
         else:
             return test_port == matching_port
+
+    def _vhost_listening_on_port_no_ssl(self, vhost, port):
+        found_matching_port = False
+        if len(vhost.addrs) == 0:
+            # if there are no listen directives at all, Nginx defaults to
+            # listening on port 80.
+            found_matching_port = (port == self.DEFAULT_LISTEN_PORT)
+        else:
+            for addr in vhost.addrs:
+                if self._port_matches(port, addr.get_port()) and addr.ssl == False:
+                    found_matching_port = True
+
+        if found_matching_port:
+            # make sure we don't have an 'ssl on' directive
+            return not self.parser.has_ssl_on_directive(vhost)
+        else:
+            return False
 
     def _get_redirect_ranked_matches(self, target_name, port):
         """Gets a ranked list of plaintextish port-listening vhosts matching target_name
@@ -509,21 +531,7 @@ class NginxConfigurator(common.Installer):
         all_vhosts = self.parser.get_vhosts()
 
         def _vhost_matches(vhost, port):
-            found_matching_port = False
-            if len(vhost.addrs) == 0:
-                # if there are no listen directives at all, Nginx defaults to
-                # listening on port 80.
-                found_matching_port = (port == self.DEFAULT_LISTEN_PORT)
-            else:
-                for addr in vhost.addrs:
-                    if self._port_matches(port, addr.get_port()) and addr.ssl == False:
-                        found_matching_port = True
-
-            if found_matching_port:
-                # make sure we don't have an 'ssl on' directive
-                return not self.parser.has_ssl_on_directive(vhost)
-            else:
-                return False
+            return self._vhost_listening_on_port_no_ssl(vhost, port)
 
         matching_vhosts = [vhost for vhost in all_vhosts if _vhost_matches(vhost, port)]
 
