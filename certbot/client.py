@@ -338,7 +338,14 @@ class Client(object):
                 "Non-standard path(s), might not work with crontab installed "
                 "by your operating system package manager")
 
-        new_name = certname if certname else domains[0]
+        if certname:
+            new_name = certname
+        elif util.is_wildcard_domain(domains[0]):
+            # Don't make files and directories starting with *.
+            new_name = domains[0][2:]
+        else:
+            new_name = domains[0]
+
         if self.config.dry_run:
             logger.debug("Dry run: Skipping creating new lineage for %s",
                         new_name)
