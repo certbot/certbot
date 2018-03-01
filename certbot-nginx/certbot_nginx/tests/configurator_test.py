@@ -19,7 +19,6 @@ from certbot_nginx import constants
 from certbot_nginx import obj
 from certbot_nginx import parser
 from certbot_nginx.configurator import _redirect_block_for_domain
-from certbot_nginx.configurator import _wildcard_domain
 from certbot_nginx.nginxparser import UnspacedList
 from certbot_nginx.tests import util
 
@@ -702,13 +701,6 @@ class NginxConfiguratorTest(util.NginxTest):
         self.config.revert_challenge_config()
         self.config.rollback_checkpoints()
         self.assertTrue(mock_parser_load.call_count == 3)
-
-    def test_wildcard_domain(self):
-        # pylint: disable=protected-access
-        cases = {u"*.example.org": True, b"*.x.example.org": True,
-                 u"a.example.org": False, b"a.x.example.org": False}
-        for key in cases.keys():
-            self.assertEqual(_wildcard_domain(key), cases[key])
 
     def test_choose_vhosts_wildcard(self):
         # pylint: disable=protected-access

@@ -297,7 +297,7 @@ class NginxConfigurator(common.Installer):
         :rtype: list of :class:`~certbot_nginx.obj.VirtualHost`
 
         """
-        if _wildcard_domain(target_name):
+        if util.is_wildcard_domain(target_name):
             # Ask user which VHosts to support.
             vhosts = self._choose_vhosts_wildcard(target_name, prefer_ssl=True)
         else:
@@ -475,7 +475,7 @@ class NginxConfigurator(common.Installer):
         :rtype: list of :class:`~certbot_nginx.obj.VirtualHost`
 
         """
-        if _wildcard_domain(target_name):
+        if util.is_wildcard_domain(target_name):
             # Ask user which VHosts to enhance.
             vhosts = self._choose_vhosts_wildcard(target_name, prefer_ssl=False)
         else:
@@ -1013,26 +1013,10 @@ def _test_block_from_block(block):
     return test_block[:-1]
 
 
-def _wildcard_domain(domain):
-    """
-    Checks if domain is a wildcard domain
-
-    :param str domain: Domain to check
-
-    :returns: If the domain is wildcard domain
-    :rtype: bool
-    """
-    if isinstance(domain, six.text_type):
-        wildcard_marker = u"*."
-    else:
-        wildcard_marker = b"*."
-    return domain.startswith(wildcard_marker)
-
-
 def _redirect_block_for_domain(domain):
     updated_domain = domain
     match_symbol = '='
-    if _wildcard_domain(domain):
+    if util.is_wildcard_domain(domain):
         match_symbol = '~'
         updated_domain = updated_domain.replace('.', r'\.')
         updated_domain = updated_domain.replace('*', '.+')
