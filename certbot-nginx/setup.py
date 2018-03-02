@@ -8,8 +8,11 @@ version = '0.22.0.dev0'
 
 # Please update tox.ini when modifying dependency version requirements
 install_requires = [
-    'acme=={0}'.format(version),
-    'certbot=={0}'.format(version),
+    # This plugin works with an older version of acme, but Certbot does not.
+    # 0.22.0 is specified here to work around
+    # https://github.com/pypa/pip/issues/988.
+    'acme>=0.22.0',
+    'certbot>=0.22.0',
     'mock',
     'PyOpenSSL',
     'pyparsing>=1.5.5',  # Python3 support; perhaps unnecessary?

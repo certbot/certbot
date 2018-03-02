@@ -8,8 +8,8 @@ version = '0.22.0.dev0'
 
 # Please update tox.ini when modifying dependency version requirements
 install_requires = [
-    'acme=={0}'.format(version),
-    'certbot=={0}'.format(version),
+    'acme>=0.21.1',
+    'certbot>=0.21.1',
     'cloudflare>=1.5.1',
     'mock',
     'setuptools',
