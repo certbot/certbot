@@ -47,6 +47,7 @@ Help for certbot itself cannot be provided until it is installed.
   --no-bootstrap                            do not install OS dependencies
   --no-self-upgrade                         do not download updates
   --os-packages-only                        install OS dependencies and exit
+  --install-only                            install certbot, upgrade if needed, and exit
   -v, --verbose                             provide more output
   -q, --quiet                               provide only update/error output;
                                             implies --non-interactive
@@ -60,6 +61,8 @@ for arg in "$@" ; do
       DEBUG=1;;
     --os-packages-only)
       OS_PACKAGES_ONLY=1;;
+    --install-only)
+      INSTALL_ONLY=1;;
     --no-self-upgrade)
       # Do not upgrade this script (also prevents client upgrades, because each
       # copy of the script pins a hash of the python client)
@@ -246,7 +249,7 @@ DeprecationBootstrap() {
   fi
 }
 
-MIN_PYTHON_VERSION="2.6"
+MIN_PYTHON_VERSION="2.7"
 MIN_PYVER=$(echo "$MIN_PYTHON_VERSION" | sed 's/\.//')
 # Sets LE_PYTHON to Python version string and PYVER to the first two
 # digits of the python version
@@ -274,7 +277,6 @@ DeterminePythonVersion() {
       return 0
     fi
   fi
-  export LE_PYTHON
 
   PYVER=`"$LE_PYTHON" -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//'`
   if [ "$PYVER" -lt "$MIN_PYVER" ]; then
@@ -301,13 +303,8 @@ DeterminePythonVersion() {
 # Set Bootstrap to the function that installs OS dependencies on this system
 # and BOOTSTRAP_VERSION to the unique identifier for the current version of
 # that function. If Bootstrap is set to a function that doesn't install any
-# packages (either because --no-bootstrap was included on the command line or
-# we don't know how to bootstrap on this system), BOOTSTRAP_VERSION is not set.
-if [ "$NO_BOOTSTRAP" = 1 ]; then
-  Bootstrap() {
-    :
-  }
-elif [ -f /etc/debian_version ]; then
+# packages BOOTSTRAP_VERSION is not set.
+if [ -f /etc/debian_version ]; then
   Bootstrap() {
     BootstrapMessage "Debian-based OSes"
     BootstrapDebCommon
@@ -340,7 +337,7 @@ elif [ -f /etc/redhat-release ]; then
     }
     BOOTSTRAP_VERSION="BootstrapRpmCommon $BOOTSTRAP_RPM_COMMON_VERSION"
   fi
-  export LE_PYTHON="$prev_le_python"
+  LE_PYTHON="$prev_le_python"
 elif [ -f /etc/os-release ] && `grep -q openSUSE /etc/os-release` ; then
   Bootstrap() {
     BootstrapMessage "openSUSE-based OSes"
@@ -403,6 +400,17 @@ else
   }
 fi
 
+# We handle this case after determining the normal bootstrap version to allow
+# variables like USE_PYTHON_3 to be properly set. As described above, if the
+# Bootstrap function doesn't install any packages, BOOTSTRAP_VERSION should not
+# be set so we unset it here.
+if [ "$NO_BOOTSTRAP" = 1 ]; then
+  Bootstrap() {
+    :
+  }
+  unset BOOTSTRAP_VERSION
+fi
+
 # Sets PREV_BOOTSTRAP_VERSION to the identifier for the bootstrap script used
 # to install OS dependencies on this system. PREV_BOOTSTRAP_VERSION isn't set
 # if it is unknown how OS dependencies were installed on this system.
@@ -437,7 +445,11 @@ TempDir() {
   mktemp -d 2>/dev/null || mktemp -d -t 'le'  # Linux || macOS
 }
 
-
+# Returns 0 if a letsencrypt installation exists at $OLD_VENV_PATH, otherwise,
+# returns a non-zero number.
+OldVenvExists() {
+    [ -n "$OLD_VENV_PATH" -a -f "$OLD_VENV_PATH/bin/letsencrypt" ]
+}
 
 if [ "$1" = "--le-auto-phase2" ]; then
   # Phase 2: Create venv, install LE, and run.
@@ -445,14 +457,26 @@ if [ "$1" = "--le-auto-phase2" ]; then
   shift 1  # the --le-auto-phase2 arg
   SetPrevBootstrapVersion
 
+  if [ -z "$PHASE_1_VERSION" -a "$USE_PYTHON_3" = 1 ]; then
+    unset LE_PYTHON
+  fi
+
   INSTALLED_VERSION="none"
-  if [ -d "$VENV_PATH" ]; then
+  if [ -d "$VENV_PATH" ] || OldVenvExists; then
     # If the selected Bootstrap function isn't a noop and it differs from the
     # previously used version
     if [ -n "$BOOTSTRAP_VERSION" -a "$BOOTSTRAP_VERSION" != "$PREV_BOOTSTRAP_VERSION" ]; then
       # if non-interactive mode or stdin and stdout are connected to a terminal
       if [ \( "$NONINTERACTIVE" = 1 \) -o \( \( -t 0 \) -a \( -t 1 \) \) ]; then
-        rm -rf "$VENV_PATH"
+        if [ -d "$VENV_PATH" ]; then
+          rm -rf "$VENV_PATH"
+        fi
+        # In the case the old venv was just a symlink to the new one,
+        # OldVenvExists is now false because we deleted the venv at VENV_PATH.
+        if OldVenvExists; then
+          rm -rf "$OLD_VENV_PATH"
+          ln -s "$VENV_PATH" "$OLD_VENV_PATH"
+        fi
         RerunWithArgs "$@"
       else
         error "Skipping upgrade because new OS dependencies may need to be installed."
@@ -462,6 +486,10 @@ if [ "$1" = "--le-auto-phase2" ]; then
         error "install any required packages."
         # Set INSTALLED_VERSION to be the same so we don't update the venv
         INSTALLED_VERSION="$LE_AUTO_VERSION"
+        # Continue to use OLD_VENV_PATH if the new venv doesn't exist
+        if [ ! -d "$VENV_PATH" ]; then
+          VENV_BIN="$OLD_VENV_PATH/bin"
+        fi
       fi
     elif [ -f "$VENV_BIN/letsencrypt" ]; then
       # --version output ran through grep due to python-cryptography DeprecationWarnings
@@ -562,6 +590,12 @@ UNLIKELY_EOF
 
     say "Installation succeeded."
   fi
+
+  if [ "$INSTALL_ONLY" = 1 ]; then
+    say "Certbot is installed."
+    exit 0
+  fi
+
   "$VENV_BIN/letsencrypt" "$@"
 
 else
@@ -571,9 +605,10 @@ else
   # upgrading. Phase 1 checks the version of the latest release of
   # certbot-auto (which is always the same as that of the certbot
   # package). Phase 2 checks the version of the locally installed certbot.
+  export PHASE_1_VERSION="$LE_AUTO_VERSION"
 
   if [ ! -f "$VENV_BIN/letsencrypt" ]; then
-    if [ -z "$OLD_VENV_PATH" -o ! -f "$OLD_VENV_PATH/bin/letsencrypt" ]; then
+    if ! OldVenvExists; then
       if [ "$HELP" = 1 ]; then
         echo "$USAGE"
         exit 0
