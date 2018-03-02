@@ -9,11 +9,17 @@
 tools_dir=$(dirname $("$(dirname $0)/readlink.py" $0))
 dev_constraints="$tools_dir/dev_constraints.txt"
 merge_reqs="$tools_dir/merge_requirements.py"
+requirements=""
 test_constraints=$(mktemp)
 trap "rm -f $test_constraints" EXIT
 
 if [ "$CERTBOT_OLDEST" = 1 ]; then
+    if [ "$1" != "-e" -o "$#" -ne "2" ]; then
+        echo "When CERTBOT_OLDEST is set, this script must be run with a single -e <path> argument."
+        exit 1
+    fi
     cp "$tools_dir/oldest_constraints.txt" "$test_constraints"
+    requirements="-r$2/local-oldest-requirements.txt"
 else
     repo_root=$(dirname "$tools_dir")
     certbot_requirements="$repo_root/letsencrypt-auto-source/pieces/dependency-requirements.txt"
@@ -23,4 +29,4 @@ fi
 set -x
 
 # install the requested packages using the pinned requirements as constraints
-pip install -q --constraint <("$merge_reqs" "$dev_constraints" "$test_constraints") "$@"
+pip install -q --constraint <("$merge_reqs" "$dev_constraints" "$test_constraints") $requirements "$@"
