@@ -19,6 +19,10 @@ if [ "$CERTBOT_OLDEST" = 1 ]; then
     # remove any extras such as [dev]
     pkg_dir=$(echo $2 | cut -f1 -d\[)  # remove any extras such as [dev]
     requirements="$pkg_dir/local-oldest-requirements.txt"
+    # packages like acme don't have any local oldest requirements
+    if [ ! -f "$requirements" ]; then
+        unset requirements
+    fi
     cp "$tools_dir/oldest_constraints.txt" "$test_constraints"
 else
     repo_root=$(dirname "$tools_dir")
