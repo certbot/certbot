@@ -11,8 +11,8 @@ install_requires = [
     # This plugin works with an older version of acme, but Certbot does not.
     # 0.22.0 is specified here to work around
     # https://github.com/pypa/pip/issues/988.
-    'acme>=0.22.0',
-    'certbot>=0.22.0',
+    'acme>0.21.1',
+    'certbot>0.21.1',
     'mock',
     'PyOpenSSL',
     'pyparsing>=1.5.5',  # Python3 support; perhaps unnecessary?
