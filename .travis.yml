@@ -20,42 +20,30 @@ matrix:
       env: TOXENV=py27_install BOULDER_INTEGRATION=v2
       sudo: required
       services: docker
-    - python: "2.7"
-      env: TOXENV=cover FYI="this also tests py27"
-    - sudo: required
-      env: TOXENV=nginx_compat
-      services: docker
-      before_install:
-      addons:
-    - python: "2.7"
-      env: TOXENV=lint
-    - python: "2.7"
-      env: TOXENV=py27-oldest
+    - python: "3.4"
+      env: TOXENV=py34 BOULDER_INTEGRATION=v1
       sudo: required
       services: docker
     - python: "3.4"
-      env: TOXENV=py34
+      env: TOXENV=py34 BOULDER_INTEGRATION=v2
+      sudo: required
+      services: docker
+    - python: "3.5"
+      env: TOXENV=py34 BOULDER_INTEGRATION=v1
+      sudo: required
+      services: docker
+    - python: "3.5"
+      env: TOXENV=py34 BOULDER_INTEGRATION=v2
       sudo: required
       services: docker
     - python: "3.6"
-      env: TOXENV=py36
+      env: TOXENV=py34 BOULDER_INTEGRATION=v1
       sudo: required
       services: docker
-    - sudo: required
-      env: TOXENV=apache_compat
-      services: docker
-      before_install:
-      addons:
-    - sudo: required
-      env: TOXENV=le_auto_trusty
-      services: docker
-      before_install:
-      addons:
-    - python: "2.7"
-      env: TOXENV=apacheconftest
+    - python: "3.6"
+      env: TOXENV=py34 BOULDER_INTEGRATION=v2
       sudo: required
-    - python: "2.7"
-      env: TOXENV=nginxroundtrip
+      services: docker
 
 
 # Only build pushes to the master branch, PRs, and branches beginning with
@@ -100,9 +88,3 @@ after_success: '[ "$TOXENV" == "cover" ] && coveralls'
 
 notifications:
   email: false
-  irc:
-    channels:
-      - secure: "SGWZl3ownKx9xKVV2VnGt7DqkTmutJ89oJV9tjKhSs84kLijU6EYdPnllqISpfHMTxXflNZuxtGo0wTDYHXBuZL47w1O32W6nzuXdra5zC+i4sYQwYULUsyfOv9gJX8zWAULiK0Z3r0oho45U+FR5ZN6TPCidi8/eGU+EEPwaAw="
-    on_success: never
-    on_failure: always
-    use_notice: true
