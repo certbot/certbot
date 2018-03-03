@@ -376,6 +376,13 @@ class ClientTest(ClientTestBase):
             errors.UnexpectedUpdate, self.client.request_challenges,
             self.identifier)
 
+    def test_request_challenges_wildcard(self):
+        wildcard_identifier = messages.Identifier(
+            typ=messages.IDENTIFIER_FQDN, value='*.example.org')
+        self.assertRaises(
+            errors.WildcardUnsupportedError, self.client.request_challenges,
+            wildcard_identifier)
+
     def test_request_domain_challenges(self):
         self.client.request_challenges = mock.MagicMock()
         self.assertEqual(
