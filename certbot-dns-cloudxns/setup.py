@@ -16,6 +16,11 @@ install_requires = [
     'zope.interface',
 ]
 
+dev_extras = [
+    'pytest',
+    'pytest-xdist',
+]
+
 docs_extras = [
     'Sphinx>=1.0',  # autodoc_member_order = 'bysource', autodoc_default_flags
     'sphinx_rtd_theme',
@@ -55,6 +60,7 @@ setup(
     include_package_data=True,
     install_requires=install_requires,
     extras_require={
+        'dev': dev_extras,
         'docs': docs_extras,
     },
     entry_points={
