@@ -34,6 +34,8 @@ version = meta['version']
 # specified here to avoid masking the more specific request requirements in
 # acme. See https://github.com/pypa/pip/issues/988 for more info.
 install_requires = [
+    # Remember to update local-oldest-requirements.txt when changing the
+    # minimum acme version.
     'acme>0.21.1',
     # We technically need ConfigArgParse 0.10.0 for Python 2.6 support, but
     # saying so here causes a runtime error against our temporary fork of 0.9.3

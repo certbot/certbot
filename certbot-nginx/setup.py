@@ -6,7 +6,8 @@ from setuptools import find_packages
 
 version = '0.22.0.dev0'
 
-# Please update tox.ini when modifying dependency version requirements
+# Remember to update local-oldest-requirements.txt when changing the minimum
+# acme/certbot version.
 install_requires = [
     # This plugin works with an older version of acme, but Certbot does not.
     # 0.22.0 is specified here to work around
