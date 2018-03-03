@@ -70,7 +70,7 @@ class Authenticator(dns_common.DNSAuthenticator):
         self._get_google_client().add_txt_record(domain, validation_name, validation, self.ttl)
 
     def _cleanup(self, domain, validation_name, validation):
-        self._get_google_client().del_txt_record(domain, validation_name, self.ttl)
+        self._get_google_client().del_txt_record(domain, validation_name, validation, self.ttl)
 
     def _get_google_client(self):
         return _GoogleClient(self.conf('credentials'))
@@ -108,12 +108,13 @@ class _GoogleClient(object):
         zone_id = self._find_managed_zone_id(domain)
 
         record_contents = self.get_existing_txt_rrset(zone_id, record_name)
+        add_records = record_contents[:]
 
-        # We need to remove old records and re-add them as a part of the list
-        if record_contents:
-            self.del_txt_record(domain, record_name, record_ttl)
+        if "\""+record_content+"\"" in record_contents:
+            # The process was interrupted previously and validation token exists
+            return
 
-        record_contents.append(record_content)
+        add_records.append(record_content)
 
         data = {
             "kind": "dns#change",
@@ -122,11 +123,23 @@ class _GoogleClient(object):
                     "kind": "dns#resourceRecordSet",
                     "type": "TXT",
                     "name": record_name + ".",
-                    "rrdatas": record_contents,
+                    "rrdatas": add_records,
                     "ttl": record_ttl,
                 },
             ],
         }
+
+        if record_contents:
+            # We need to remove old records in the same request
+            data["deletions"] = [
+                {
+                    "kind": "dns#resourceRecordSet",
+                    "type": "TXT",
+                    "name": record_name + ".",
+                    "rrdatas": record_contents,
+                    "ttl": record_ttl,
+                },
+            ]
 
         changes = self.dns.changes()  # changes | pylint: disable=no-member
 
@@ -145,12 +158,13 @@ class _GoogleClient(object):
             raise errors.PluginError('Error communicating with the Google Cloud DNS API: {0}'
                                      .format(e))
 
-    def del_txt_record(self, domain, record_name, record_ttl):
+    def del_txt_record(self, domain, record_name, record_content, record_ttl):
         """
         Delete a TXT record using the supplied information.
 
         :param str domain: The domain to use to look up the managed zone.
         :param str record_name: The record name (typically beginning with '_acme-challenge.').
+        :param str record_content: The record content (typically the challenge validation).
         :param int record_ttl: The record TTL (number of seconds that the record may be cached).
         :raises certbot.errors.PluginError: if an error occurs communicating with the Google API
         """
@@ -162,8 +176,6 @@ class _GoogleClient(object):
             return
 
         record_contents = self.get_existing_txt_rrset(zone_id, record_name)
-        if not record_contents:
-            return
 
         data = {
             "kind": "dns#change",
@@ -178,6 +190,20 @@ class _GoogleClient(object):
             ],
         }
 
+        # Remove the record being deleted from the list
+        readd_contents = [r for r in record_contents if r != "\"" + record_content + "\""]
+        if readd_contents:
+            # We need to remove old records in the same request
+            data["additions"] = [
+                {
+                    "kind": "dns#resourceRecordSet",
+                    "type": "TXT",
+                    "name": record_name + ".",
+                    "rrdatas": readd_contents,
+                    "ttl": record_ttl,
+                },
+            ]
+
         changes = self.dns.changes()  # changes | pylint: disable=no-member
 
         try:
@@ -185,7 +211,6 @@ class _GoogleClient(object):
             request.execute()
         except googleapiclient_errors.Error as e:
             logger.warn('Encountered error deleting TXT record: %s', e)
-
 
     def get_existing_txt_rrset(self, zone_id, record_name):
         """

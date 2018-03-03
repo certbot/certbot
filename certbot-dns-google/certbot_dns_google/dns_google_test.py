@@ -49,7 +49,7 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         self.auth._attempt_cleanup = True
         self.auth.cleanup([self.achall])
 
-        expected = [mock.call.del_txt_record(DOMAIN, '_acme-challenge.'+DOMAIN, mock.ANY)]
+        expected = [mock.call.del_txt_record(DOMAIN, '_acme-challenge.'+DOMAIN, mock.ANY, mock.ANY)]
         self.assertEqual(expected, self.mock_client.mock_calls)
 
     @mock.patch('httplib2.Http.request', side_effect=ServerNotFoundError)
@@ -76,7 +76,7 @@ class GoogleClientTest(unittest.TestCase):
 
         mock_rrs = mock.MagicMock()
         rrsets = {"rrsets": [{"name": "_acme-challenge.example.org.", "type": "TXT",
-                              "rrdatas": ["example-txt-contents"]}]}
+                              "rrdatas": ["\"example-txt-contents\""]}]}
         mock_rrs.list.return_value.execute.return_value = rrsets
         mock_changes = mock.MagicMock()
 
@@ -146,15 +146,25 @@ class GoogleClientTest(unittest.TestCase):
     @mock.patch('certbot_dns_google.dns_google.open',
                 mock.mock_open(read_data='{"project_id": "' + PROJECT_ID + '"}'), create=True)
     def test_add_txt_record_delete_old(self, unused_credential_mock):
-        client, unused_changes = self._setUp_client_with_mock(
+        client, changes = self._setUp_client_with_mock(
             [{'managedZones': [{'id': self.zone}]}])
-        mock_delete = mock.MagicMock()
-        client.del_txt_record = mock_delete
         mock_get_rrs = "certbot_dns_google.dns_google._GoogleClient.get_existing_txt_rrset"
         with mock.patch(mock_get_rrs) as mock_rrs:
             mock_rrs.return_value = ["sample-txt-contents"]
             client.add_txt_record(DOMAIN, self.record_name, self.record_content, self.record_ttl)
-            self.assertTrue(mock_delete.called)
+            self.assertTrue(changes.create.called)
+            self.assertTrue("sample-txt-contents" in
+                changes.create.call_args_list[0][1]["body"]["deletions"][0]["rrdatas"])
+
+    @mock.patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_name')
+    @mock.patch('certbot_dns_google.dns_google.open',
+                mock.mock_open(read_data='{"project_id": "' + PROJECT_ID + '"}'), create=True)
+    def test_add_txt_record_noop(self, unused_credential_mock):
+        client, changes = self._setUp_client_with_mock(
+            [{'managedZones': [{'id': self.zone}]}])
+        client.add_txt_record(DOMAIN, "_acme-challenge.example.org",
+                              "example-txt-contents", self.record_ttl)
+        self.assertFalse(changes.create.called)
 
     @mock.patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_name')
     @mock.patch('certbot_dns_google.dns_google.open',
@@ -193,8 +203,10 @@ class GoogleClientTest(unittest.TestCase):
 
         mock_get_rrs = "certbot_dns_google.dns_google._GoogleClient.get_existing_txt_rrset"
         with mock.patch(mock_get_rrs) as mock_rrs:
-            mock_rrs.return_value = [self.record_content]
-            client.del_txt_record(DOMAIN, self.record_name, self.record_ttl)
+            mock_rrs.return_value = ["\"sample-txt-contents\"",
+                                     "\"example-txt-contents\""]
+            client.del_txt_record(DOMAIN, "_acme-challenge.example.org",
+                                "example-txt-contents", self.record_ttl)
 
         expected_body = {
             "kind": "dns#change",
@@ -202,8 +214,17 @@ class GoogleClientTest(unittest.TestCase):
                 {
                     "kind": "dns#resourceRecordSet",
                     "type": "TXT",
-                    "name": self.record_name + ".",
-                    "rrdatas": [self.record_content, ],
+                    "name": "_acme-challenge.example.org.",
+                    "rrdatas": ["\"sample-txt-contents\"", "\"example-txt-contents\""],
+                    "ttl": self.record_ttl,
+                },
+            ],
+            "additions": [
+                {
+                    "kind": "dns#resourceRecordSet",
+                    "type": "TXT",
+                    "name": "_acme-challenge.example.org.",
+                    "rrdatas": ["\"sample-txt-contents\"", ],
                     "ttl": self.record_ttl,
                 },
             ],
@@ -219,21 +240,7 @@ class GoogleClientTest(unittest.TestCase):
     def test_del_txt_record_error_during_zone_lookup(self, unused_credential_mock):
         client, unused_changes = self._setUp_client_with_mock(API_ERROR)
 
-        client.del_txt_record(DOMAIN, self.record_name, self.record_ttl)
-
-    @mock.patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_name')
-    @mock.patch('certbot_dns_google.dns_google.open',
-                mock.mock_open(read_data='{"project_id": "' + PROJECT_ID + '"}'), create=True)
-    def test_del_txt_record_noop(self, unused_credential_mock):
-        client, unused_changes = self._setUp_client_with_mock(
-            [{'managedZones': [{'id': self.zone}]}])
-        changes_mock = mock.MagicMock()
-        client.dns.changes = changes_mock
-        mock_get_rrs = "certbot_dns_google.dns_google._GoogleClient.get_existing_txt_rrset"
-        with mock.patch(mock_get_rrs) as mock_rrs:
-            mock_rrs.return_value = []
-            client.del_txt_record(DOMAIN, self.record_name, self.record_ttl)
-            self.assertFalse(changes_mock.called)
+        client.del_txt_record(DOMAIN, self.record_name, self.record_content, self.record_ttl)
 
     @mock.patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_name')
     @mock.patch('certbot_dns_google.dns_google.open',
@@ -242,7 +249,7 @@ class GoogleClientTest(unittest.TestCase):
         client, unused_changes = self._setUp_client_with_mock([{'managedZones': []},
                                                                {'managedZones': []}])
 
-        client.del_txt_record(DOMAIN, self.record_name, self.record_ttl)
+        client.del_txt_record(DOMAIN, self.record_name, self.record_content, self.record_ttl)
 
     @mock.patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_name')
     @mock.patch('certbot_dns_google.dns_google.open',
@@ -251,10 +258,7 @@ class GoogleClientTest(unittest.TestCase):
         client, changes = self._setUp_client_with_mock([{'managedZones': [{'id': self.zone}]}])
         changes.create.side_effect = API_ERROR
 
-        mock_get_rrs = "certbot_dns_google.dns_google._GoogleClient.get_existing_txt_rrset"
-        with mock.patch(mock_get_rrs) as mock_rrs:
-            mock_rrs.return_value = ["sample-txt-contents"]
-            client.del_txt_record(DOMAIN, self.record_name, self.record_ttl)
+        client.del_txt_record(DOMAIN, self.record_name, self.record_content, self.record_ttl)
 
     @mock.patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_name')
     @mock.patch('certbot_dns_google.dns_google.open',
@@ -264,7 +268,7 @@ class GoogleClientTest(unittest.TestCase):
             [{'managedZones': [{'id': self.zone}]}])
         # Record name mocked in setUp
         found = client.get_existing_txt_rrset(self.zone, "_acme-challenge.example.org")
-        self.assertEquals(found, ["example-txt-contents"])
+        self.assertEquals(found, ["\"example-txt-contents\""])
         not_found = client.get_existing_txt_rrset(self.zone, "nonexistent.tld")
         self.assertEquals(not_found, [])
 
