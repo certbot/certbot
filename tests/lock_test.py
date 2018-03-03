@@ -44,7 +44,7 @@ def set_up():
     :rtype: `tuple` of `list`
 
     """
-    logging.basicConfig(format='%(message)s', level=logging.INFO)
+    logging.basicConfig(format='%(message)s', level=logging.DEBUG)
     config_dir, logs_dir, work_dir, nginx_dir = set_up_dirs()
     command = set_up_command(config_dir, logs_dir, work_dir, nginx_dir)
 
