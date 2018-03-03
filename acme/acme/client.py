@@ -795,8 +795,8 @@ class BackwardsCompatibleClientV2(object):
                     'certificate, please rerun the command for a new one.')
 
             cert = OpenSSL.crypto.dump_certificate(
-                    OpenSSL.crypto.FILETYPE_PEM, certr.body.wrapped)
-            chain = crypto_util.dump_pyopenssl_chain(chain)
+                    OpenSSL.crypto.FILETYPE_PEM, certr.body.wrapped).decode()
+            chain = crypto_util.dump_pyopenssl_chain(chain).decode()
 
             return orderr.update(fullchain_pem=(cert + chain))
         else:
