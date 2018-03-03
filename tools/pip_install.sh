@@ -16,7 +16,9 @@ if [ "$CERTBOT_OLDEST" = 1 ]; then
         echo "When CERTBOT_OLDEST is set, this script must be run with a single -e <path> argument."
         exit 1
     fi
-    requirements="$2/local-oldest-requirements.txt"
+    # remove any extras such as [dev]
+    pkg_dir=$(echo $2 | cut -f1 -d\[)  # remove any extras such as [dev]
+    requirements="$pkg_dir/local-oldest-requirements.txt"
     cp "$tools_dir/oldest_constraints.txt" "$test_constraints"
 else
     repo_root=$(dirname "$tools_dir")
