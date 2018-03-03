@@ -16,11 +16,6 @@ install_requires = [
     'zope.interface',
 ]
 
-dev_extras = [
-    'pytest',
-    'pytest-xdist',
-]
-
 setup(
     name='certbot-dns-route53',
     version=version,
@@ -54,9 +49,6 @@ setup(
     include_package_data=True,
     install_requires=install_requires,
     keywords=['certbot', 'route53', 'aws'],
-    extras_require={
-        'dev': dev_extras,
-    },
     entry_points={
         'certbot.plugins': [
             'dns-route53 = certbot_dns_route53.dns_route53:Authenticator',
