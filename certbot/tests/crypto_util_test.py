@@ -377,8 +377,8 @@ class CertAndChainFromFullchainTest(unittest.TestCase):
     """Tests for certbot.crypto_util.cert_and_chain_from_fullchain"""
 
     def test_cert_and_chain_from_fullchain(self):
-        cert_pem = CERT
-        chain_pem = CERT + SS_CERT
+        cert_pem = CERT.decode()
+        chain_pem = cert_pem + SS_CERT.decode()
         fullchain_pem = cert_pem + chain_pem
         from certbot.crypto_util import cert_and_chain_from_fullchain
         cert_out, chain_out = cert_and_chain_from_fullchain(fullchain_pem)
