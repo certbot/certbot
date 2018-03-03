@@ -1,2 +1,2 @@
--e acme/
--e .
+-e acme[dev]/
+-e .[dev]
