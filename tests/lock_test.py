@@ -20,6 +20,8 @@ logger = logging.getLogger(__name__)
 
 def main():
     """Run the lock tests."""
+    if not util.exe_exists('certbot'):
+        sys.exit("no certbot?!")
     dirs, base_cmd = set_up()
     for subcommand in ('certonly', 'install', 'renew', 'run',):
         logger.info('Testing subcommand: %s', subcommand)
