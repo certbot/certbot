@@ -179,7 +179,7 @@ class ClientTest(unittest.TestCase):
     def test_change_txt_record(self):
         self.client._find_zone_id_for_domain = mock.MagicMock()
         self.client._get_validation_rrset = mock.MagicMock(
-            return_value = []
+            return_value=[]
         )
         self.client.r53.change_resource_record_sets = mock.MagicMock(
             return_value={"ChangeInfo": {"Id": 1}})
