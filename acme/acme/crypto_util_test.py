@@ -194,9 +194,9 @@ class MakeCSRTest(unittest.TestCase):
         self.assertTrue(b'--END CERTIFICATE REQUEST--' in csr_pem)
         csr = OpenSSL.crypto.load_certificate_request(
             OpenSSL.crypto.FILETYPE_PEM, csr_pem)
-        # In pyopenssl 0.13 (used with TOXENV=py26-oldest and py27-oldest), csr
-        # objects don't have a get_extensions() method, so we skip this test if
-        # the method isn't available.
+        # In pyopenssl 0.13 (used with TOXENV=py27-oldest), csr objects don't
+        # have a get_extensions() method, so we skip this test if the method
+        # isn't available.
         if hasattr(csr, 'get_extensions'):
             self.assertEquals(len(csr.get_extensions()), 1)
             self.assertEquals(csr.get_extensions()[0].get_data(),
@@ -212,9 +212,9 @@ class MakeCSRTest(unittest.TestCase):
         csr = OpenSSL.crypto.load_certificate_request(
             OpenSSL.crypto.FILETYPE_PEM, csr_pem)
 
-        # In pyopenssl 0.13 (used with TOXENV=py26-oldest and py27-oldest), csr
-        # objects don't have a get_extensions() method, so we skip this test if
-        # the method isn't available.
+        # In pyopenssl 0.13 (used with TOXENV=py27-oldest), csr objects don't
+        # have a get_extensions() method, so we skip this test if the method
+        # isn't available.
         if hasattr(csr, 'get_extensions'):
             self.assertEquals(len(csr.get_extensions()), 2)
             # NOTE: Ideally we would filter by the TLS Feature OID, but
@@ -224,6 +224,34 @@ class MakeCSRTest(unittest.TestCase):
                 if e.get_data() == b"0\x03\x02\x01\x05"]
             self.assertEqual(len(must_staple_exts), 1,
                 "Expected exactly one Must Staple extension")
+
+
+class DumpPyopensslChainTest(unittest.TestCase):
+    """Test for dump_pyopenssl_chain."""
+
+    @classmethod
+    def _call(cls, loaded):
+        # pylint: disable=protected-access
+        from acme.crypto_util import dump_pyopenssl_chain
+        return dump_pyopenssl_chain(loaded)
+
+    def test_dump_pyopenssl_chain(self):
+        names = ['cert.pem', 'cert-san.pem', 'cert-idnsans.pem']
+        loaded = [test_util.load_cert(name) for name in names]
+        length = sum(
+            len(OpenSSL.crypto.dump_certificate(OpenSSL.crypto.FILETYPE_PEM, cert))
+            for cert in loaded)
+        self.assertEqual(len(self._call(loaded)), length)
+
+    def test_dump_pyopenssl_chain_wrapped(self):
+        names = ['cert.pem', 'cert-san.pem', 'cert-idnsans.pem']
+        loaded = [test_util.load_cert(name) for name in names]
+        wrap_func = jose.ComparableX509
+        wrapped = [wrap_func(cert) for cert in loaded]
+        dump_func = OpenSSL.crypto.dump_certificate
+        length = sum(len(dump_func(OpenSSL.crypto.FILETYPE_PEM, cert)) for cert in loaded)
+        self.assertEqual(len(self._call(wrapped)), length)
+
 
 if __name__ == '__main__':
     unittest.main()  # pragma: no cover

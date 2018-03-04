@@ -223,12 +223,17 @@ class AccountFileStorage(interfaces.AccountStorage):
         try:
             with open(self._regr_path(account_dir_path), "w") as regr_file:
                 regr = account.regr
-                with_uri = RegistrationResourceWithNewAuthzrURI(
-                    new_authzr_uri=acme.directory.new_authz,
-                    body=regr.body,
-                    uri=regr.uri,
-                    terms_of_service=regr.terms_of_service)
-                regr_file.write(with_uri.json_dumps())
+                # If we have a value for new-authz, save it for forwards
+                # compatibility with older versions of Certbot. If we don't
+                # have a value for new-authz, this is an ACMEv2 directory where
+                # an older version of Certbot won't work anyway.
+                if hasattr(acme.directory, "new-authz"):
+                    regr = RegistrationResourceWithNewAuthzrURI(
+                        new_authzr_uri=acme.directory.new_authz,
+                        body=regr.body,
+                        uri=regr.uri,
+                        terms_of_service=regr.terms_of_service)
+                regr_file.write(regr.json_dumps())
             if not regr_only:
                 with util.safe_open(self._key_path(account_dir_path),
                                     "w", chmod=0o400) as key_file:

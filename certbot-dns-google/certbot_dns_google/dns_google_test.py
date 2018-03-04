@@ -223,9 +223,13 @@ class GoogleClientTest(unittest.TestCase):
         response = DummyResponse()
         response.status = 200
 
-        with mock.patch('httplib2.Http.request', return_value=(response, 1234)):
+        with mock.patch('httplib2.Http.request', return_value=(response, 'test-test-1')):
             project_id = _GoogleClient.get_project_id()
-            self.assertEqual(project_id, 1234)
+            self.assertEqual(project_id, 'test-test-1')
+
+        with mock.patch('httplib2.Http.request', return_value=(response, b'test-test-1')):
+            project_id = _GoogleClient.get_project_id()
+            self.assertEqual(project_id, 'test-test-1')
 
         failed_response = DummyResponse()
         failed_response.status = 404
