@@ -178,6 +178,9 @@ class ClientTest(unittest.TestCase):
 
     def test_change_txt_record(self):
         self.client._find_zone_id_for_domain = mock.MagicMock()
+        self.client._get_validation_rrset = mock.MagicMock(
+            return_value = []
+        )
         self.client.r53.change_resource_record_sets = mock.MagicMock(
             return_value={"ChangeInfo": {"Id": 1}})
 
@@ -185,6 +188,57 @@ class ClientTest(unittest.TestCase):
 
         call_count = self.client.r53.change_resource_record_sets.call_count
         self.assertEqual(call_count, 1)
+
+    def test_change_txt_record_multirecord(self):
+        self.client._find_zone_id_for_domain = mock.MagicMock()
+        self.client._get_validation_rrset = mock.MagicMock()
+        self.client._get_validation_rrset.return_value = [
+            {"Value": "\"pre-existing-value\""},
+            {"Value": "\"pre-existing-value-two\""},
+        ]
+        self.client.r53.change_resource_record_sets = mock.MagicMock(
+            return_value={"ChangeInfo": {"Id": 1}})
+
+        self.client._change_txt_record("DELETE", DOMAIN, "pre-existing-value")
+
+        call_count = self.client.r53.change_resource_record_sets.call_count
+        call_args = self.client.r53.change_resource_record_sets.call_args_list[0][1]
+        call_args_batch = call_args["ChangeBatch"]["Changes"][0]
+        self.assertEqual(call_args_batch["Action"], "UPSERT")
+        self.assertEqual(
+            call_args_batch["ResourceRecordSet"]["ResourceRecords"],
+            [{"Value": "\"pre-existing-value-two\""}])
+
+        self.assertEqual(call_count, 1)
+
+    def test_get_validation_rrset(self):
+        self.client.r53.list_resource_record_sets = mock.MagicMock(
+            return_value={"ResourceRecordSets": [
+                {"Name": "_acme-challenge.example.org.",
+                 "Type": "TXT",
+                 "ResourceRecords": [
+                     {"Value": "\"validation-token\""},
+                     {"Value": "\"another-validation-token\""},
+                 ],
+                },
+                {"Name": "_acme-challenge.example.org.",
+                 "Type": "NS",
+                 "ResourceRecords": [
+                     {"Value": "ns1.example.com"},
+                 ],
+                }
+            ]})
+        rrset = self.client._get_validation_rrset("zoneid",
+            "_acme-challenge.example.org")
+        self.assertEquals(len(rrset), 2)
+        self.assertTrue({"Value": "\"another-validation-token\""} in rrset)
+
+    def test_get_validation_rrset_empty(self):
+        self.client.r53.list_resource_record_sets = mock.MagicMock(
+            return_value={"ResourceRecordSets": []})
+        rrset = self.client._get_validation_rrset("zoneid",
+            "_acme-challenge.example.org")
+        self.assertEquals(rrset, [])
 
     def test_wait_for_change(self):
         self.client.r53.get_change = mock.MagicMock(
