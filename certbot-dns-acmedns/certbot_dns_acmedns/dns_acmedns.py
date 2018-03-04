@@ -4,11 +4,13 @@ import logging
 import requests
 import time
 
+import zope.component
 import zope.interface
 
 from certbot import errors
 from certbot import interfaces
 from certbot.plugins import dns_common
+from certbot.plugins import common
 
 logger = logging.getLogger(__name__)
 
@@ -26,11 +28,13 @@ class Authenticator(dns_common.DNSAuthenticator):
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
         # Override propagation delay, as it's not needed for ACME-DNS
+        self.storage = common.PluginStorage(self.config, self.name)
         self.config.dns_acmedns_propagation_seconds = 0
         self.domain_map = self.storage.fetch("domain_map")
         self.acmedns_url = self.config.dns_acmedns_url
-        import ipdb;ipdb.set_trace()
-        self.force_register = self.config.dns_acmedns_force-register
+        self.force_register = self.config.dns_acmedns_force_register
+        # List of created accounts on this run, needed for force-register
+        self._created = []
         if not self.domain_map:
             # Pre-existing domain_map not found, initialize it
             self.domain_map = dict()
@@ -39,7 +43,8 @@ class Authenticator(dns_common.DNSAuthenticator):
     def add_parser_arguments(cls, add):  # pylint: disable=arguments-differ
         super(Authenticator, cls).add_parser_arguments(add)
         add('url', help='URL to ACME-DNS instance root')
-        add('force-register', help='Force registering acme-dns account (ignore saved)')
+        add('force-register', action="store_true", default=False,
+            help='Force registering acme-dns account (ignore saved)')
 
     def more_info(self):  # pylint: disable=missing-docstring,no-self-use
         return ('This plugin handles DNS challenge validation using ACME-DNS service. '
@@ -47,23 +52,24 @@ class Authenticator(dns_common.DNSAuthenticator):
                 'for each of your domain names. You will be prompted to manually create '
                 'a CNAME record for each of your domains. This is a one time only action.')
 
-    def _perform(self, domain, _validation_name, validation):
+    def _perform(self, domain, validation_name, validation):
         acc = None
-        if not self.force_register:
-            acc = self.get_account(domain)
+        if not self.force_register or domain in self._created:
+            acc = self.get_account(validation_name)
         if not acc:
             # Handle new account creation and storage
             acmedns_client = self._get_acmedns_client(self.acmedns_url)
             acc = acmedns_client.register_account()
+            self._created.append(domain)
             acc['acmedns_url'] = self.acmedns_url
-            self.domain_map[domain] = acc
+            self.domain_map[validation_name] = acc
             self.storage.put("domain_map", self.domain_map)
             self.display_instructions(domain, acc)
         else:
             acmedns_client = self._get_acmedns_client(acc['acmedns_url'])
         acmedns_client.update_txt_record(acc, validation)
         self.storage.save()
-        time.sleep(2)
+
 
     def _get_acmedns_client(self, url):
         return _AcmeDnsClient(url)
@@ -71,7 +77,7 @@ class Authenticator(dns_common.DNSAuthenticator):
     def display_instructions(self, domain, account):
         msg = ("Please add the following CNAME record to your main DNS zone for domain "
               "{0}:\n\n _acme-challenge.{0} CNAME {1}".format(domain, account['fulldomain']))
-        print(msg)
+        zope.component.getUtility(interfaces.IDisplay).notification(msg, pause=True)
 
     def get_account(self, domain):
         """

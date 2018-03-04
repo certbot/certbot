@@ -134,8 +134,9 @@ def choose_plugin(prepared, question):
         else:
             return None
 
-noninstaller_plugins = ["webroot", "manual", "standalone", "dns-cloudflare", "dns-cloudxns",
-                        "dns-digitalocean", "dns-dnsimple", "dns-dnsmadeeasy", "dns-google",
+noninstaller_plugins = ["webroot", "manual", "standalone", "dns-acmedns",
+                        "dns-cloudflare", "dns-cloudxns", "dns-digitalocean",
+                        "dns-dnsimple", "dns-dnsmadeeasy", "dns-google",
                         "dns-luadns", "dns-nsone", "dns-rfc2136", "dns-route53"]
 
 def record_chosen_plugins(config, plugins, auth, inst):
@@ -243,6 +244,8 @@ def cli_plugin_requests(config):  # pylint: disable=too-many-branches
         req_auth = set_configurator(req_auth, "webroot")
     if config.manual:
         req_auth = set_configurator(req_auth, "manual")
+    if config.dns_acmedns:
+        req_auth = set_configurator(req_auth, "dns-acmedns")
     if config.dns_cloudflare:
         req_auth = set_configurator(req_auth, "dns-cloudflare")
     if config.dns_cloudxns:
