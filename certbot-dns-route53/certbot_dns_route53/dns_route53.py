@@ -85,8 +85,28 @@ class Authenticator(dns_common.DNSAuthenticator):
         zones.sort(key=lambda z: len(z[0]), reverse=True)
         return zones[0][1]
 
+    def _get_validation_rrset(self, zone_id, validation_domain_name):
+        validation_domain_name += "."
+        records = self.r53.list_resource_record_sets(HostedZoneId=zone_id)
+        for record in records["ResourceRecordSets"]:
+            if record["Name"] == validation_domain_name and record["Type"] == "TXT":
+                return record["ResourceRecords"]
+        return []
+
     def _change_txt_record(self, action, validation_domain_name, validation):
         zone_id = self._find_zone_id_for_domain(validation_domain_name)
+
+        rrecords = self._get_validation_rrset(zone_id, validation_domain_name)
+        challenge = {"Value": '"{0}"'.format(validation)}
+        if action == "DELETE":
+            if len(rrecords) > 1:
+                # Need to update instead, as we're not deleting the rrset
+                action = "UPSERT"
+                # Remove the record being deleted from the list
+                rrecords = [rr for rr in rrecords if rr != challenge]
+        else:
+            if challenge not in rrecords:
+                rrecords.append(challenge)
 
         response = self.r53.change_resource_record_sets(
             HostedZoneId=zone_id,
@@ -99,11 +119,7 @@ class Authenticator(dns_common.DNSAuthenticator):
                             "Name": validation_domain_name,
                             "Type": "TXT",
                             "TTL": self.ttl,
-                            "ResourceRecords": [
-                                # For some reason TXT records need to be
-                                # manually quoted.
-                                {"Value": '"{0}"'.format(validation)}
-                            ],
+                            "ResourceRecords": rrecords,
                         }
                     }
                 ]
