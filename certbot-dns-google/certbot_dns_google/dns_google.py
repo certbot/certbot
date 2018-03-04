@@ -223,8 +223,8 @@ class _GoogleClient(object):
         :rtype: `list` of `string`
 
         """
-        request = self.dns.resourceRecordSets().list(managedZone=zone_id,
-                                                     project=self.project_id)
+        rrs_request = self.dns.resourceRecordSets()
+        request = rrs_request.list(managedZone=zone_id, project=self.project_id)
         response = request.execute()
         # Add dot as the API returns absolute domains
         record_name += "."
