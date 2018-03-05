@@ -1,6 +1,8 @@
 """DNS Authenticator using RFC 2136 Dynamic Updates."""
 import logging
 
+import socket
+
 import dns.flags
 import dns.message
 import dns.name
@@ -89,7 +91,7 @@ class _RFC2136Client(object):
     Encapsulates all communication with the target DNS server.
     """
     def __init__(self, server, key_name, key_secret, key_algorithm):
-        self.server = server
+        self.server = socket.gethostbyname(server)
         self.keyring = dns.tsigkeyring.from_text({
             key_name: key_secret
         })
@@ -218,4 +220,3 @@ class _RFC2136Client(object):
         except Exception as e:
             raise errors.PluginError('Encountered error when making query: {0}'
                                      .format(e))
-
