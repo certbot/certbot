@@ -24,7 +24,7 @@ matrix:
     - python: "2.7"
       env: TOXENV=lint
     - python: "2.7"
-      env: TOXENV=py27-oldest BOULDER_INTEGRATION=1
+      env: TOXENV=py27-oldest BOULDER_INTEGRATION=v1
       sudo: required
       services: docker
     - python: "2.7"
@@ -76,15 +76,15 @@ matrix:
       env: TOXENV=apacheconftest
       sudo: required
     - python: "3.4"
-      env: TOXENV=py34 BOULDER_INTEGRATION=1
+      env: TOXENV=py34 BOULDER_INTEGRATION=v1
       sudo: required
       services: docker
     - python: "3.5"
-      env: TOXENV=py35 BOULDER_INTEGRATION=1
+      env: TOXENV=py35 BOULDER_INTEGRATION=v1
       sudo: required
       services: docker
     - python: "3.6"
-      env: TOXENV=py36 BOULDER_INTEGRATION=1
+      env: TOXENV=py36 BOULDER_INTEGRATION=v1
       sudo: required
       services: docker
     - python: "2.7"
