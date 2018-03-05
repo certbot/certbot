@@ -99,10 +99,10 @@ class BackwardsCompatibleClientV2Test(ClientTestBase):
         self.chain = [wrapped, wrapped]
 
         self.cert_pem = OpenSSL.crypto.dump_certificate(
-            OpenSSL.crypto.FILETYPE_PEM, messages_test.CERT.wrapped)
+            OpenSSL.crypto.FILETYPE_PEM, messages_test.CERT.wrapped).decode()
 
         single_chain = OpenSSL.crypto.dump_certificate(
-            OpenSSL.crypto.FILETYPE_PEM, loaded)
+            OpenSSL.crypto.FILETYPE_PEM, loaded).decode()
         self.chain_pem = single_chain + single_chain
 
         self.fullchain_pem = self.cert_pem + self.chain_pem

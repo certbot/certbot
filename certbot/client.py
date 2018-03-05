@@ -244,7 +244,7 @@ class Client(object):
             than `authkey`.
         :param acme.messages.OrderResource orderr: contains authzrs
 
-        :returns: certificate and chain as PEM strings
+        :returns: certificate and chain as PEM byte strings
         :rtype: tuple
 
         """
@@ -263,7 +263,8 @@ class Client(object):
 
         deadline = datetime.datetime.now() + datetime.timedelta(seconds=90)
         orderr = self.acme.finalize_order(orderr, deadline)
-        return crypto_util.cert_and_chain_from_fullchain(orderr.fullchain_pem)
+        cert, chain = crypto_util.cert_and_chain_from_fullchain(orderr.fullchain_pem)
+        return cert.encode(), chain.encode()
 
     def obtain_certificate(self, domains):
         """Obtains a certificate from the ACME server.
