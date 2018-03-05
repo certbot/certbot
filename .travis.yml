@@ -12,7 +12,7 @@ before_install:
   - cp .travis.yml /tmp/travis.yml
   - git pull origin master --strategy=recursive --strategy-option=theirs --no-edit
   - if ! git diff .travis.yml /tmp/travis.yml ; then echo "Please merge master into test-everything"; exit 1; fi
-  - '([ $TRAVIS_OS_NAME == linux ] && dpkg -s libaugeas0) || (brew update && brew install augeas python3 && brew upgrade python && brew link python)'
+  - '([ $TRAVIS_OS_NAME == linux ] && dpkg -s libaugeas0) || (brew update && brew install augeas && brew upgrade python python3 && brew link python)'
 
 before_script:
   - 'if [ $TRAVIS_OS_NAME = osx ] ; then ulimit -n 1024 ; fi'
