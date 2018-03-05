@@ -1,9 +1,12 @@
 #!/bin/bash -e
 # pip installs packages using pinned package versions. If CERTBOT_OLDEST is set
-# to 1, a combination of tools/oldest_constraints.txt and
-# tools/dev_constraints.txt is used, otherwise, a combination of certbot-auto's
-# requirements file and tools/dev_constraints.txt is used. The other file
-# always takes precedence over tools/dev_constraints.txt.
+# to 1, a combination of tools/oldest_constraints.txt,
+# tools/dev_constraints.txt, and local-oldest-requirements.txt contained in the
+# top level of the package's directory is used, otherwise, a combination of
+# certbot-auto's requirements file and tools/dev_constraints.txt is used. The
+# other file always takes precedence over tools/dev_constraints.txt. If
+# CERTBOT_OLDEST is set, this script must be run with `-e <package-name>` and
+# no other arguments.
 
 # get the root of the Certbot repo
 tools_dir=$(dirname $("$(dirname $0)/readlink.py" $0))
@@ -16,7 +19,6 @@ if [ "$CERTBOT_OLDEST" = 1 ]; then
         echo "When CERTBOT_OLDEST is set, this script must be run with a single -e <path> argument."
         exit 1
     fi
-    # remove any extras such as [dev]
     pkg_dir=$(echo $2 | cut -f1 -d\[)  # remove any extras such as [dev]
     requirements="$pkg_dir/local-oldest-requirements.txt"
     # packages like acme don't have any local oldest requirements
