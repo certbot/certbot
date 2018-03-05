@@ -13,11 +13,11 @@ before_script:
 matrix:
   include:
     - python: "2.7"
-      env: TOXENV=py27_install BOULDER_INTEGRATION=v1
+      env: TOXENV=py27-nginx-oldest BOULDER_INTEGRATION=v1
       sudo: required
       services: docker
     - python: "2.7"
-      env: TOXENV=py27_install BOULDER_INTEGRATION=v2
+      env: TOXENV=py27-nginx-oldest BOULDER_INTEGRATION=v2
       sudo: required
       services: docker
 
