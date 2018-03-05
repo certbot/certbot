@@ -35,6 +35,8 @@ matrix:
       env: TOXENV=py27_install BOULDER_INTEGRATION=v1
       sudo: required
       services: docker
+    - python: "2.7"
+      env: TOXENV='py27-{acme,apache,certbot,dns,nginx}-oldest'
     - sudo: required
       env: TOXENV=apache_compat
       services: docker

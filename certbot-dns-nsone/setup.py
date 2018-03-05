@@ -6,10 +6,11 @@ from setuptools import find_packages
 
 version = '0.22.0.dev0'
 
-# Please update tox.ini when modifying dependency version requirements
+# Remember to update local-oldest-requirements.txt when changing the minimum
+# acme/certbot version.
 install_requires = [
-    'acme=={0}'.format(version),
-    'certbot=={0}'.format(version),
+    'acme>=0.21.1',
+    'certbot>=0.21.1',
     'dns-lexicon',
     'mock',
     'setuptools',
