@@ -107,6 +107,15 @@ class _GoogleClient(object):
 
         zone_id = self._find_managed_zone_id(domain)
 
+        record_contents = self.get_existing_txt_rrset(zone_id, record_name)
+        add_records = record_contents[:]
+
+        if "\""+record_content+"\"" in record_contents:
+            # The process was interrupted previously and validation token exists
+            return
+
+        add_records.append(record_content)
+
         data = {
             "kind": "dns#change",
             "additions": [
@@ -114,11 +123,23 @@ class _GoogleClient(object):
                     "kind": "dns#resourceRecordSet",
                     "type": "TXT",
                     "name": record_name + ".",
-                    "rrdatas": [record_content, ],
+                    "rrdatas": add_records,
                     "ttl": record_ttl,
                 },
             ],
         }
+
+        if record_contents:
+            # We need to remove old records in the same request
+            data["deletions"] = [
+                {
+                    "kind": "dns#resourceRecordSet",
+                    "type": "TXT",
+                    "name": record_name + ".",
+                    "rrdatas": record_contents,
+                    "ttl": record_ttl,
+                },
+            ]
 
         changes = self.dns.changes()  # changes | pylint: disable=no-member
 
@@ -154,6 +175,8 @@ class _GoogleClient(object):
             logger.warn('Error finding zone. Skipping cleanup.')
             return
 
+        record_contents = self.get_existing_txt_rrset(zone_id, record_name)
+
         data = {
             "kind": "dns#change",
             "deletions": [
@@ -161,11 +184,25 @@ class _GoogleClient(object):
                     "kind": "dns#resourceRecordSet",
                     "type": "TXT",
                     "name": record_name + ".",
-                    "rrdatas": [record_content, ],
+                    "rrdatas": record_contents,
                     "ttl": record_ttl,
                 },
             ],
         }
+
+        # Remove the record being deleted from the list
+        readd_contents = [r for r in record_contents if r != "\"" + record_content + "\""]
+        if readd_contents:
+            # We need to remove old records in the same request
+            data["additions"] = [
+                {
+                    "kind": "dns#resourceRecordSet",
+                    "type": "TXT",
+                    "name": record_name + ".",
+                    "rrdatas": readd_contents,
+                    "ttl": record_ttl,
+                },
+            ]
 
         changes = self.dns.changes()  # changes | pylint: disable=no-member
 
@@ -174,6 +211,28 @@ class _GoogleClient(object):
             request.execute()
         except googleapiclient_errors.Error as e:
             logger.warn('Encountered error deleting TXT record: %s', e)
+
+    def get_existing_txt_rrset(self, zone_id, record_name):
+        """
+        Get existing TXT records from the RRset for the record name.
+
+        :param str zone_id: The ID of the managed zone.
+        :param str record_name: The record name (typically beginning with '_acme-challenge.').
+
+        :returns: List of TXT record values
+        :rtype: `list` of `string`
+
+        """
+        rrs_request = self.dns.resourceRecordSets()  # pylint: disable=no-member
+        request = rrs_request.list(managedZone=zone_id, project=self.project_id)
+        response = request.execute()
+        # Add dot as the API returns absolute domains
+        record_name += "."
+        if response:
+            for rr in response["rrsets"]:
+                if rr["name"] == record_name and rr["type"] == "TXT":
+                    return rr["rrdatas"]
+        return []
 
     def _find_managed_zone_id(self, domain):
         """
