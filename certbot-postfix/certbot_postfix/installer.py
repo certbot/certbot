@@ -14,7 +14,7 @@ from certbot.plugins import util as plugins_util
 from certbot_postfix import util
 from certbot_postfix import postconf
 
-import starttls_policy
+# import starttls_policy
 
 POLICY_FILENAME = "starttls_everywhere_policy"
 
@@ -48,6 +48,19 @@ DEFAULT_CLIENT_VARS = {
 }
 
 logger = logging.getLogger(__name__)
+
+def _report_master_overrides_less_secure(acceptable):
+    def _report_master_overrides(name, overrides):
+        for override in overrides:
+            if override not in acceptable:
+                print("Warning: Parameter %s is overridden as less-secure option %s " + 
+                      "for service %s in master configuration file!" %
+                      (name, override[1], override[0]))
+
+def _report_master_overrides(name, overrides):
+    for override in overrides:
+        print("Warning: Parameter %s is overridden as %s for service %s in master configuration file!" %
+                (name, override[1], override[0]))
 
 @zope.interface.implementer(interfaces.IInstaller)
 @zope.interface.provider(interfaces.IPluginFactory)
@@ -110,7 +123,7 @@ class Installer(plugins_common.Installer):
         """
         mx_list = properties.accept_mx_domains
         if len(mx_list) > 1:
-            # TODO (sydneyli): Add support.
+            # TODO (sydneyli): Add support for multiple accept-mx-domains.
             logger.warn('Lists of multiple accept-mx-domains not yet supported.')
             logger.warn('Using MX {} for {}'.format(mx_list[0], address_domain))
             logger.warn('Ignoring: {}'.format(', '.join(mx_list[1:])))
@@ -133,7 +146,7 @@ class Installer(plugins_common.Installer):
         all_acceptable_mxs = self.policy.acceptable_mxs
         for address_domain, properties in all_acceptable_mxs.items():
             mx_list = properties.accept_mx_domains
-            policy_lines.append(_get_formatted_policy_for_domain(address_domain, mx_list, self.policy)
+            policy_lines.append(_get_formatted_policy_for_domain(address_domain, mx_list, self.policy))
         with fopen(self.policy_file, "w") as f:
             f.write("\n".join(policy_lines) + "\n")
 
@@ -162,8 +175,8 @@ class Installer(plugins_common.Installer):
         self._set_config_dir()
         self.postfix = util.PostfixUtil(self.config_dir)
         self.policy_file = self.conf("policy-file")
-        self.policy = starttls_policy.Config()
-        self.policy.load_default()
+        # self.policy = starttls_policy.Config()
+        # self.policy.load_default()
         self._check_version()
         self.postfix.test()
         self._lock_config_dir()
@@ -263,12 +276,14 @@ class Installer(plugins_common.Installer):
     def _set_vars(self, var_dict):
         """Sets all parameters in var_dict to config file.
         """
-        for param, value in var_dict.iteritems():
-            if isinstance(value, tuple):
-                if self.postconf.get(param) not in value:
-                    self.postconf.set(param, value[0])
+        for param, acceptable in var_dict.iteritems():
+            if isinstance(acceptable, tuple):
+                if self.postconf.get(param) not in acceptable:
+                    self.postconf.set(param, acceptable[0],
+                        _report_master_overrides_less_secure(acceptable))
             else:
-                self.postconf.set(param, value)
+                self.postconf.set(param, acceptable,
+                    _report_master_overrides_less_secure([acceptable]))
 
     def deploy_cert(self, domain, cert_path,
                     key_path, chain_path, fullchain_path):
@@ -286,14 +301,16 @@ class Installer(plugins_common.Installer):
         """
         # pylint: disable=unused-argument
         self.save_notes.append("Configuring TLS for {0}".format(domain))
-        self.postconf.set("smtpd_tls_cert_file", fullchain_path)
-        self.postconf.set("smtpd_tls_key_file", key_path)
+        self.postconf.set("smtpd_tls_cert_file", fullchain_path, check_override=_report_master_overrides)
+        self.postconf.set("smtpd_tls_key_file", key_path, _report_master_overrides)
         self._set_vars(DEFAULT_SERVER_VARS)
         self._set_vars(DEFAULT_CLIENT_VARS)
-        self.write_domainwise_tls_policies()
-        policy_cf_entry = "texthash:" + self.policy_file
-        self.postconf.set("smtp_tls_policy_maps", policy_cf_entry)
-        self.postconf.set("smtp_tls_CApath", CA_CERTS_PATH)
+        # self.write_domainwise_tls_policies()
+        # policy_cf_entry = "texthash:" + self.policy_file
+        # self.postconf.set("smtp_tls_policy_maps", policy_cf_entry)
+        self.postconf.set("smtp_tls_CApath", CA_CERTS_PATH, _report_master_overrides) 
+        # Check master overrides
+        # postconf.check_master_overrides()
 
     def enhance(self, domain, enhancement, options=None):
         """Raises an exception for request for unsupported enhancement.

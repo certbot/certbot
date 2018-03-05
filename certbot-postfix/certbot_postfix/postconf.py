@@ -17,6 +17,10 @@ class ConfigMain(util.PostfixUtilBase):
     def __init__(self, executable, config_dir=None):
         util.PostfixUtilBase.__init__(self, executable, config_dir)
         self._db = {}
+        # List of current master.cf overrides from Postfix config. Dictionary
+        # of parameter name => list of tuples (service name, paramter value)
+        # Note: We should never modify master without explicit permission.
+        self._master_db = {}
         self._read_from_conf()
 
     def _read_from_conf(self):
@@ -27,6 +31,14 @@ class ConfigMain(util.PostfixUtilBase):
             if not value:
                 value = ""
             self._db[name] = value
+        out = self._get_output('-P') # get master parameters
+        for name, value in _parse_main_output(out):
+            service, param_name = name.rsplit("/")
+            if not value:
+                value = ""
+            if param_name not in _master_db:
+                self._master_db[param_name] = []
+            self._master_db[param_name].append( (service, value) )
 
     def get_default(self, name):
         """Retrieves default value of parameter |name| from postfix parameters.
@@ -45,9 +57,23 @@ class ConfigMain(util.PostfixUtilBase):
         if name in self._updated:
             return self._updated[name]
         return self._db[name]
+    
+    def get_master_overrides(self, name):
+        """Retrieves list of overrides for parameter |name| in postfix's Master config
+        file. 
+            :returns: List of tuples (service, value), meaning that parameter |name|
+                      is overridden as |value| for |service|.
+            :rtype `list` of `tuple` of `str: 
+        """
+        if name in self._master_db:
+            return self._master_db[name]
+        return None
 
-    def set(self, name, value):
+    def set(self, name, value, check_override=None):
         """Sets parameter |name| to |value|.
+        If |name| is overridden by a particular service in `master.cf`, calls
+        `check_override` on |name|, and the set of overrides.
+
         Note that this function does not flush these parameter values to main.cf;
         To do that, use |flush|.
             :param str name: The name of the parameter to set.
@@ -55,6 +81,10 @@ class ConfigMain(util.PostfixUtilBase):
         """
         if name not in self._db:
             return # TODO: error here
+        # Check to see if this parameter is overridden by master.
+        overrides = self.get_master_overrides(name)
+        if check_override is not None and overrides is not None:
+            check_override(name, overrides)
         # We've updated this name before.
         if name in self._updated:
             if value == self._updated[name]:
@@ -77,10 +107,14 @@ class ConfigMain(util.PostfixUtilBase):
         args = ['-e']
         for name, value in self._updated.iteritems():
             args.append('{0}={1}'.format(name, value))
+        #TODO (sydli) bugfix: Reset _updated after flushing :)
         try:
-            return self._get_output(args)
+            self._get_output(args)
         except:
             raise errors.PluginError("Unable to save to Postfix config!")
+        for name, value in self._updated.iteritems():
+            self._db[name] = value
+        self._updated = {}
 
     def _call(self, extra_args=None):
         """Runs Postconf and returns the result.
@@ -102,7 +136,6 @@ class ConfigMain(util.PostfixUtilBase):
                 all_extra_args.extend(args_list)
 
         return super(ConfigMain, self)._call(all_extra_args)
-
 
 def _parse_main_output(output):
     """Parses the raw output from Postconf about main.cf.

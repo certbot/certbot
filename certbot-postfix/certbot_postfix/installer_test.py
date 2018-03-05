@@ -283,7 +283,7 @@ class MockPostconf(object):
         if name == "mail_version":
             return "3.2.3"
         return None
-    def set(self, name, value):
+    def set(self, name, value, check_override=None):
         self._db[name] = value
     def flush(self):
         pass
