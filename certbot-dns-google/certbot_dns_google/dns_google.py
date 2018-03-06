@@ -179,7 +179,7 @@ class _GoogleClient(object):
 
         record_contents = self.get_existing_txt_rrset(zone_id, record_name)
         if record_contents is None:
-            record_contents = [record_content]
+            record_contents = ["\"" + record_content + "\""]
 
         data = {
             "kind": "dns#change",
