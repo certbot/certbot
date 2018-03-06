@@ -62,6 +62,45 @@ def _report_master_overrides(name, overrides):
         print("Warning: Parameter %s is overridden as %s for service %s in master configuration file!" %
                 (name, override[1], override[0]))
 
+def _get_formatted_protocols(min_tls_version, delimiter=":"):
+    """Enforces the minimum TLS version in a way that Postfix can understand. For instance,
+    if the min_tls_version is TLS1.1, then Postfix expects: "!SSLv2:!SSLv3:!TLSv1"
+
+    :param str min_tls_version: SSL/TLS version that we expect to be in ACCEPTABLE_TLS_VERSIONS.
+    :param str delimiter: delimiter for the SSL/TLS declarations.
+    :rtype str: Protocol declaration, formatted correctly in a Postfix-y way. For instance:
+        TLSv1.1 => !SSLv2:!SSLv3:!TLSv1
+        TLSv1   => !SSLv2:!SSLv3
+    """
+    if min_tls_version not in TLS_VERSIONS or min_tls_version not in ACCEPTABLE_TLS_VERSIONS:
+        return None
+    return delimiter.join(["!" + version for version in TLS_VERSIONS[0:TLS_VERSIONS.index(min_tls_version)]])
+
+def _get_formatted_policy_for_domain(address_domain, tls_policy):
+    """Parses TLS policy specification into a format that Postfix expects. In particular:
+        <domain> <tls_security_level> protocols=<protocols>
+    For instance, let's say we have an entry for mail.example.com with a minimum TLS version of 1.1:
+        mail.example.com encrypt protocols=!SSLv2:!SSLv3:!TLSv1
+    :param address_domain str: The domain we're configuring this policy for.
+    :param tls_policy dict: TLS policy information.
+    :rtype str: Properly formatted Postfix TLS policy specification for this domain.
+    """
+    mx_list = tls_policy['mxs']
+    # TODO(sydneyli): enable `verify` mode.
+    if len(mx_list) == 0:
+        matches = ""
+    else:
+        matches = ':'.join(mx_list)
+    entry = address_domain + " secure " + matches
+    protocols_value = _get_formatted_protocols(tls_policy['min-tls-version'])
+    if protocols_value is not None:
+        entry += " protocols=" + protocols_value
+    else:
+        logger.warn('Unknown minimum TLS version: {} '.format(
+            mx_policy.min_tls_version))
+    return entry
+
+
 @zope.interface.implementer(interfaces.IInstaller)
 @zope.interface.provider(interfaces.IPluginFactory)
 class Installer(plugins_common.Installer):
@@ -96,45 +135,6 @@ class Installer(plugins_common.Installer):
         self.save_notes = []
         self.policy = None
         self.policy_file = None
-
-    def _get_formatted_protocols(min_tls_version, delimiter=":"):
-        """Enforces the minimum TLS version in a way that Postfix can understand. For instance,
-        if the min_tls_version is TLS1.1, then Postfix expects: "!SSLv2:!SSLv3:!TLSv1"
-
-        :param str min_tls_version: SSL/TLS version that we expect to be in ACCEPTABLE_TLS_VERSIONS.
-        :param str delimiter: delimiter for the SSL/TLS declarations.
-        :rtype str: Protocol declaration, formatted correctly in a Postfix-y way. For instance:
-            TLSv1.1 => !SSLv2:!SSLv3:!TLSv1
-            TLSv1   => !SSLv2:!SSLv3
-        """
-        if min_tls_version not in TLS_VERSIONS or min_tls_version not in ACCEPTABLE_TLS_VERSIONS:
-            return None
-        return delimiter.join(["!" + version for version in TLS_VERSIONS[0:TLS_VERSIONS.index(min_tls_version)]])
-
-    def _get_formatted_policy_for_domain(address_domain, tls_policy):
-        """Parses TLS policy specification into a format that Postfix expects. In particular:
-            <domain> <tls_security_level> protocols=<protocols>
-        For instance, let's say we have an entry for mail.example.com with a minimum TLS version of 1.1:
-            mail.example.com encrypt protocols=!SSLv2:!SSLv3:!TLSv1
-        :param address_domain str: The domain we're configuring this policy for.
-        :param tls_policy dict: TLS policy information.
-        :rtype str: Properly formatted Postfix TLS policy specification for this domain.
-        """
-        mx_list = tls_policy['mxs']
-        # TODO(sydneyli): enable `verify` mode.
-        if len(mx_list) == 0:
-            matches = ""
-        else:
-            matches = ':'.join(mx_list)
-        entry = address_domain + " secure " + matches
-        protocols_value = _get_formatted_protocols(tls_policy['min-tls-version'])
-        if protocols_value is not None:
-            entry += " protocols=" + protocols_value
-        else:
-            logger.warn('Unknown minimum TLS version: {} '.format(
-                mx_policy.min_tls_version))
-        return entry
-
 
     def write_domainwise_tls_policies(self, fopen=open):
         """Writes domainwise tls policies to self.policy_file in a format that Postfix
@@ -306,8 +306,6 @@ class Installer(plugins_common.Installer):
         policy_cf_entry = "texthash:" + self.policy_file
         self.postconf.set("smtp_tls_policy_maps", policy_cf_entry)
         self.postconf.set("smtp_tls_CApath", CA_CERTS_PATH, _report_master_overrides) 
-        # Check master overrides
-        # postconf.check_master_overrides()
 
     def enhance(self, domain, enhancement, options=None):
         """Raises an exception for request for unsupported enhancement.
