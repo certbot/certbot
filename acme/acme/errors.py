@@ -115,3 +115,6 @@ class ConflictError(ClientError):
         self.location = location
         super(ConflictError, self).__init__()
 
+
+class WildcardUnsupportedError(Error):
+    """Error for when a wildcard is requested but is unsupported by ACME CA."""

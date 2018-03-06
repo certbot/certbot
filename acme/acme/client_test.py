@@ -99,10 +99,10 @@ class BackwardsCompatibleClientV2Test(ClientTestBase):
         self.chain = [wrapped, wrapped]
 
         self.cert_pem = OpenSSL.crypto.dump_certificate(
-            OpenSSL.crypto.FILETYPE_PEM, messages_test.CERT.wrapped)
+            OpenSSL.crypto.FILETYPE_PEM, messages_test.CERT.wrapped).decode()
 
         single_chain = OpenSSL.crypto.dump_certificate(
-            OpenSSL.crypto.FILETYPE_PEM, loaded)
+            OpenSSL.crypto.FILETYPE_PEM, loaded).decode()
         self.chain_pem = single_chain + single_chain
 
         self.fullchain_pem = self.cert_pem + self.chain_pem
@@ -375,6 +375,13 @@ class ClientTest(ClientTestBase):
         self.assertRaises(
             errors.UnexpectedUpdate, self.client.request_challenges,
             self.identifier)
+
+    def test_request_challenges_wildcard(self):
+        wildcard_identifier = messages.Identifier(
+            typ=messages.IDENTIFIER_FQDN, value='*.example.org')
+        self.assertRaises(
+            errors.WildcardUnsupportedError, self.client.request_challenges,
+            wildcard_identifier)
 
     def test_request_domain_challenges(self):
         self.client.request_challenges = mock.MagicMock()
