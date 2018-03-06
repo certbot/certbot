@@ -190,6 +190,7 @@ class PluginsRegistry(collections.Mapping):
     def find_all(cls):
         """Find plugins using setuptools entry points."""
         plugins = {}
+        # pylint: disable=not-callable
         entry_points = itertools.chain(
             pkg_resources.iter_entry_points(
                 constants.SETUPTOOLS_PLUGINS_ENTRY_POINT),
