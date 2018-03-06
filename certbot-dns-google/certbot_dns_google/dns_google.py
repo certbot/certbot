@@ -225,13 +225,19 @@ class _GoogleClient(object):
         """
         rrs_request = self.dns.resourceRecordSets()  # pylint: disable=no-member
         request = rrs_request.list(managedZone=zone_id, project=self.project_id)
-        response = request.execute()
         # Add dot as the API returns absolute domains
         record_name += "."
-        if response:
-            for rr in response["rrsets"]:
-                if rr["name"] == record_name and rr["type"] == "TXT":
-                    return rr["rrdatas"]
+        try:
+            response = request.execute()
+        except googleapiclient_errors.Error:
+            logger.info("Unable to list existing records. If you're "
+                        "requesting a wildcard certificate, this might not work.")
+            logger.debug("Error was:", exc_info=True)
+        else:
+            if response:
+                for rr in response["rrsets"]:
+                    if rr["name"] == record_name and rr["type"] == "TXT":
+                        return rr["rrdatas"]
         return []
 
     def _find_managed_zone_id(self, domain):
