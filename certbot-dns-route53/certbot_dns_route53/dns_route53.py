@@ -1,4 +1,5 @@
 """Certbot Route53 authenticator plugin."""
+import collections
 import logging
 import time
 
@@ -33,6 +34,7 @@ class Authenticator(dns_common.DNSAuthenticator):
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
         self.r53 = boto3.client("route53")
+        self._resource_records = collections.defaultdict(list)
 
     def more_info(self):  # pylint: disable=missing-docstring,no-self-use
         return "Solve a DNS01 challenge using AWS Route53"
@@ -85,28 +87,22 @@ class Authenticator(dns_common.DNSAuthenticator):
         zones.sort(key=lambda z: len(z[0]), reverse=True)
         return zones[0][1]
 
-    def _get_validation_rrset(self, zone_id, validation_domain_name):
-        validation_domain_name += "."
-        records = self.r53.list_resource_record_sets(HostedZoneId=zone_id)
-        for record in records["ResourceRecordSets"]:
-            if record["Name"] == validation_domain_name and record["Type"] == "TXT":
-                return record["ResourceRecords"]
-        return []
-
     def _change_txt_record(self, action, validation_domain_name, validation):
         zone_id = self._find_zone_id_for_domain(validation_domain_name)
 
-        rrecords = self._get_validation_rrset(zone_id, validation_domain_name)
+        rrecords = self._resource_records[validation_domain_name]
         challenge = {"Value": '"{0}"'.format(validation)}
         if action == "DELETE":
-            if len(rrecords) > 1:
+            # Remove the record being deleted from the list of tracked records
+            rrecords.remove(challenge)
+            if rrecords:
                 # Need to update instead, as we're not deleting the rrset
                 action = "UPSERT"
-                # Remove the record being deleted from the list
-                rrecords = [rr for rr in rrecords if rr != challenge]
+            else:
+                # Create a new list containing the record to use with DELETE
+                rrecords = [challenge]
         else:
-            if challenge not in rrecords:
-                rrecords.append(challenge)
+            rrecords.append(challenge)
 
         response = self.r53.change_resource_record_sets(
             HostedZoneId=zone_id,
