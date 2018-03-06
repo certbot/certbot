@@ -187,10 +187,11 @@ want to use the Apache plugin, it has to be installed separately:
    emerge -av app-crypt/certbot
    emerge -av app-crypt/certbot-apache
 
-When using the Apache plugin, you will run into a "cannot find a cert or key
-directive" error if you're sporting the default Gentoo ``httpd.conf``.
-You can fix this by commenting out two lines in ``/etc/apache2/httpd.conf``
-as follows:
+When using the Apache plugin, you will run into a "cannot find an
+SSLCertificateFile directive" or "cannot find an SSLCertificateKeyFile
+directive for certificate" error if you're sporting the default Gentoo
+``httpd.conf``. You can fix this by commenting out two lines in
+``/etc/apache2/httpd.conf`` as follows:
 
 Change
 
@@ -240,4 +241,3 @@ whole process is described in the :doc:`contributing`.
    e.g. ``sudo python setup.py install``, ``sudo pip install``, ``sudo
    ./venv/bin/...``. These modes of operation might corrupt your operating
    system and are **not supported** by the Certbot team!
-
