@@ -30,6 +30,7 @@ for an account with the following permissions:
 * ``dns.resourceRecordSets.create``
 * ``dns.resourceRecordSets.delete``
 * ``dns.resourceRecordSets.list``
+* ``dns.resourceRecordSets.update``
 
 Google provides instructions for `creating a service account <https://developers
 .google.com/identity/protocols/OAuth2ServiceAccount#creatinganaccount>`_ and
