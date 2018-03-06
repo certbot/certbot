@@ -6,9 +6,9 @@ from certbot import errors
 from certbot import util as certbot_util
 from certbot.plugins import util as plugins_util
 
-
 logger = logging.getLogger(__name__)
 
+COMMAND = "postfix"
 
 class PostfixUtilBase(object):
     """A base class for wrapping Postfix command line utilities."""
@@ -22,9 +22,16 @@ class PostfixUtilBase(object):
         :raises .NoInstallationError: when the executable isn't found
 
         """
+        self.executable = executable
         verify_exe_exists(executable)
+        self._set_base_command(config_dir)
 
-        self._base_command = [executable]
+    def update_dir(self, config_dir):
+        self.config_dir = config_dir
+        self._set_base_command(config_dir)
+
+    def _set_base_command(self, config_dir):
+        self._base_command = [self.executable]
         if config_dir is not None:
             self._base_command.extend(('-c', config_dir,))
 
@@ -59,6 +66,77 @@ class PostfixUtilBase(object):
         """
         return self._call(extra_args)[0]
 
+class PostfixUtil(PostfixUtilBase):
+    """Wrapper around Postfix CLI tool.
+    """
+    
+    def __init__(self, config_dir=None):
+        PostfixUtilBase.__init__(self, COMMAND, config_dir)
+
+    def test(self):
+        """Make sure the configuration is valid.
+
+        :raises .MisconfigurationError: if the config is invalid
+        """
+        try:
+            self._call(["check"])
+        except subprocess.CalledProcessError as e:
+            print e
+            raise errors.MisconfigurationError(
+                "Postfix failed internal configuration check.")
+
+    def restart(self):
+        """Restart or refresh the server content.
+
+        :raises .PluginError: when server cannot be restarted
+
+        """
+        logger.info("Reloading Postfix configuration...")
+        if self._is_running():
+            self._reload()
+        else:
+            self._start()
+
+
+    def _is_running(self):
+        """Is Postfix currently running?
+
+        Uses the 'postfix status' command to determine if Postfix is
+        currently running using the specified configuration files.
+
+        :returns: True if Postfix is running, otherwise, False
+        :rtype: bool
+
+        """
+        try:
+            self._call(["status"])
+        except subprocess.CalledProcessError:
+            return False
+        return True
+
+    def _start(self):
+        """Instructions Postfix to start running.
+
+        :raises .PluginError: when Postfix cannot start
+
+        """
+        try:
+            self._call(["start"])
+        except subprocess.CalledProcessError:
+            raise errors.PluginError("Postfix failed to start")
+
+    def _reload(self):
+        """Instructs Postfix to reload its configuration.
+
+        If Postfix isn't currently running, this method will fail.
+
+        :raises .PluginError: when Postfix cannot reload
+        """
+        try:
+            self._call(["reload"])
+        except subprocess.CalledProcessError:
+            raise errors.PluginError(
+                "Postfix failed to reload its configuration")
 
 def check_all_output(*args, **kwargs):
     """A version of subprocess.check_output that also captures stderr.
@@ -123,75 +201,3 @@ def verify_exe_exists(exe):
         raise errors.NoInstallationError(
             "Cannot find executable '{0}'.".format(exe))
 
-
-def check_call(*args, **kwargs):
-    """A simple wrapper of subprocess.check_call that logs errors.
-
-    :param tuple args: positional arguments to subprocess.check_call
-    :param dict kargs: keyword arguments to subprocess.check_call
-
-    :raises subprocess.CalledProcessError: if the call fails
-
-    """
-    try:
-        subprocess.check_call(*args, **kwargs)
-    except subprocess.CalledProcessError:
-        cmd = _get_cmd(*args, **kwargs)
-        logger.debug("%s exited with a non-zero status.",
-                     "".join(cmd), exc_info=True)
-        raise
-
-
-def check_output(*args, **kwargs):
-    """Backported version of subprocess.check_output for Python 2.6+.
-
-    This is the same as subprocess.check_output from newer versions of
-    Python, except:
-
-    1. The return value is a string rather than a byte string. To
-    accomplish this, the caller cannot set the parameter
-    universal_newlines.
-    2. If the command exits with a nonzero status, output is not
-    included in the raised subprocess.CalledProcessError because
-    subprocess.CalledProcessError on Python 2.6 does not support this.
-    Instead, the failure including the output is logged.
-
-    :param tuple args: positional arguments for Popen
-    :param dict kwargs: keyword arguments for Popen
-
-    :returns: data printed to stdout
-    :rtype: str
-
-    :raises ValueError: if arguments are invalid
-    :raises subprocess.CalledProcessError: if the command fails
-
-    """
-    for keyword in ('stdout', 'universal_newlines',):
-        if keyword in kwargs:
-            raise ValueError(
-                keyword + ' argument not allowed, it will be overridden.')
-
-    kwargs['stdout'] = subprocess.PIPE
-    kwargs['universal_newlines'] = True
-
-    process = subprocess.Popen(*args, **kwargs)
-    output, unused_err = process.communicate()
-    retcode = process.poll()
-    if retcode:
-        cmd = _get_cmd(*args, **kwargs)
-        logger.debug(
-            "'%s' exited with %d. Output was:\n%s",
-            cmd, retcode, output, exc_info=True)
-        raise subprocess.CalledProcessError(retcode, cmd)
-    return output
-
-
-def _get_cmd(*args, **kwargs):
-    """Return the command from Popen args.
-
-    :param tuple args: Popen args
-    :param dict kwargs: Popen kwargs
-
-    """
-    cmd = kwargs.get('args')
-    return args[0] if cmd is None else cmd
