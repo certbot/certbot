@@ -270,7 +270,7 @@ class GoogleClientTest(unittest.TestCase):
         found = client.get_existing_txt_rrset(self.zone, "_acme-challenge.example.org")
         self.assertEquals(found, ["\"example-txt-contents\""])
         not_found = client.get_existing_txt_rrset(self.zone, "nonexistent.tld")
-        self.assertEquals(not_found, [])
+        self.assertEquals(not_found, None)
 
     @mock.patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_name')
     @mock.patch('certbot_dns_google.dns_google.open',

@@ -108,6 +108,8 @@ class _GoogleClient(object):
         zone_id = self._find_managed_zone_id(domain)
 
         record_contents = self.get_existing_txt_rrset(zone_id, record_name)
+        if record_contents is None:
+            record_contents = []
         add_records = record_contents[:]
 
         if "\""+record_content+"\"" in record_contents:
@@ -176,6 +178,8 @@ class _GoogleClient(object):
             return
 
         record_contents = self.get_existing_txt_rrset(zone_id, record_name)
+        if record_contents is None:
+            record_contents = [record_content]
 
         data = {
             "kind": "dns#change",
@@ -216,11 +220,14 @@ class _GoogleClient(object):
         """
         Get existing TXT records from the RRset for the record name.
 
+        If an error occurs while requesting the record set, it is suppressed
+        and None is returned.
+
         :param str zone_id: The ID of the managed zone.
         :param str record_name: The record name (typically beginning with '_acme-challenge.').
 
-        :returns: List of TXT record values
-        :rtype: `list` of `string`
+        :returns: List of TXT record values or None
+        :rtype: `list` of `string` or `None`
 
         """
         rrs_request = self.dns.resourceRecordSets()  # pylint: disable=no-member
@@ -238,7 +245,7 @@ class _GoogleClient(object):
                 for rr in response["rrsets"]:
                     if rr["name"] == record_name and rr["type"] == "TXT":
                         return rr["rrdatas"]
-        return []
+        return None
 
     def _find_managed_zone_id(self, domain):
         """
