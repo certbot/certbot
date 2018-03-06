@@ -11,10 +11,10 @@ from certbot import util as certbot_util
 from certbot.plugins import common as plugins_common
 from certbot.plugins import util as plugins_util
 
-from certbot_postfix import util
 from certbot_postfix import postconf
+from certbot_postfix import util
 
-# import starttls_policy
+from policylist import policy
 
 POLICY_FILENAME = "starttls_everywhere_policy"
 
@@ -111,26 +111,23 @@ class Installer(plugins_common.Installer):
             return None
         return delimiter.join(["!" + version for version in TLS_VERSIONS[0:TLS_VERSIONS.index(min_tls_version)]])
 
-    def _get_formatted_policy_for_domain(address_domain, mx_list, policy):
+    def _get_formatted_policy_for_domain(address_domain, tls_policy):
         """Parses TLS policy specification into a format that Postfix expects. In particular:
             <domain> <tls_security_level> protocols=<protocols>
         For instance, let's say we have an entry for mail.example.com with a minimum TLS version of 1.1:
             mail.example.com encrypt protocols=!SSLv2:!SSLv3:!TLSv1
         :param address_domain str: The domain we're configuring this policy for.
-        :param mx_list str: A list of MX entries that we have to configure for this domain.
-        :param policy: The STARTTLS Policy object that specifies the TLS policy for each domain
+        :param tls_policy dict: TLS policy information.
         :rtype str: Properly formatted Postfix TLS policy specification for this domain.
         """
-        mx_list = properties.accept_mx_domains
-        if len(mx_list) > 1:
-            # TODO (sydneyli): Add support for multiple accept-mx-domains.
-            logger.warn('Lists of multiple accept-mx-domains not yet supported.')
-            logger.warn('Using MX {} for {}'.format(mx_list[0], address_domain))
-            logger.warn('Ignoring: {}'.format(', '.join(mx_list[1:])))
-        mx_domain = mx_list[0]
-        mx_policy = self.policy.get_tls_policy(mx_domain)
-        entry = address_domain + " encrypt"
-        protocols_value = _get_formatted_protocols(min_tls_version)
+        mx_list = tls_policy['mxs']
+        # TODO(sydneyli): enable `verify` mode.
+        if len(mx_list) == 0:
+            matches = ""
+        else:
+            matches = ':'.join(mx_list)
+        entry = address_domain + " secure " + matches
+        protocols_value = _get_formatted_protocols(tls_policy['min-tls-version'])
         if protocols_value is not None:
             entry += " protocols=" + protocols_value
         else:
@@ -138,15 +135,15 @@ class Installer(plugins_common.Installer):
                 mx_policy.min_tls_version))
         return entry
 
+
     def write_domainwise_tls_policies(self, fopen=open):
         """Writes domainwise tls policies to self.policy_file in a format that Postfix
         can parse.
         """
         policy_lines = []
-        all_acceptable_mxs = self.policy.acceptable_mxs
-        for address_domain, properties in all_acceptable_mxs.items():
-            mx_list = properties.accept_mx_domains
-            policy_lines.append(_get_formatted_policy_for_domain(address_domain, mx_list, self.policy))
+        all_tls_policies = self.policy.tls_policies
+        for address_domain, tls_policy in all_tls_policies.items():
+            policy_lines.append(_get_formatted_policy_for_domain(address_domain, tls_policy))
         with fopen(self.policy_file, "w") as f:
             f.write("\n".join(policy_lines) + "\n")
 
@@ -175,8 +172,8 @@ class Installer(plugins_common.Installer):
         self._set_config_dir()
         self.postfix = util.PostfixUtil(self.config_dir)
         self.policy_file = self.conf("policy-file")
-        # self.policy = starttls_policy.Config()
-        # self.policy.load_default()
+        self.policy = policy.Config()
+        self.policy.load()
         self._check_version()
         self.postfix.test()
         self._lock_config_dir()
@@ -305,9 +302,9 @@ class Installer(plugins_common.Installer):
         self.postconf.set("smtpd_tls_key_file", key_path, _report_master_overrides)
         self._set_vars(DEFAULT_SERVER_VARS)
         self._set_vars(DEFAULT_CLIENT_VARS)
-        # self.write_domainwise_tls_policies()
-        # policy_cf_entry = "texthash:" + self.policy_file
-        # self.postconf.set("smtp_tls_policy_maps", policy_cf_entry)
+        self.write_domainwise_tls_policies()
+        policy_cf_entry = "texthash:" + self.policy_file
+        self.postconf.set("smtp_tls_policy_maps", policy_cf_entry)
         self.postconf.set("smtp_tls_CApath", CA_CERTS_PATH, _report_master_overrides) 
         # Check master overrides
         # postconf.check_master_overrides()
