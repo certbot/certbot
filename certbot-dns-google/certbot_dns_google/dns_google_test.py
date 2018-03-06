@@ -270,7 +270,19 @@ class GoogleClientTest(unittest.TestCase):
         found = client.get_existing_txt_rrset(self.zone, "_acme-challenge.example.org")
         self.assertEquals(found, ["\"example-txt-contents\""])
         not_found = client.get_existing_txt_rrset(self.zone, "nonexistent.tld")
-        self.assertEquals(not_found, [])
+        self.assertEquals(not_found, None)
+
+    @mock.patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_name')
+    @mock.patch('certbot_dns_google.dns_google.open',
+                mock.mock_open(read_data='{"project_id": "' + PROJECT_ID + '"}'), create=True)
+    def test_get_existing_fallback(self, unused_credential_mock):
+        client, unused_changes = self._setUp_client_with_mock(
+            [{'managedZones': [{'id': self.zone}]}])
+        mock_execute = client.dns.resourceRecordSets.return_value.list.return_value.execute
+        mock_execute.side_effect = API_ERROR
+
+        rrset = client.get_existing_txt_rrset(self.zone, "_acme-challenge.example.org")
+        self.assertFalse(rrset)
 
     def test_get_project_id(self):
         from certbot_dns_google.dns_google import _GoogleClient
