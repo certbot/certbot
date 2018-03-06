@@ -110,7 +110,7 @@ class Installer(plugins_common.Installer):
     :ivar list save_notes: documentation for proposed changes. This is
         cleared and stored in Certbot checkpoints when save() is called
     :ivar postconf: Wrapper for Postfix configuration command-line tool.
-    :ivar policy: A Policy object using which we can query
+    :ivar policy: A STARTTLS Policy object to query per-domain TLS policies.
     :ivar policy_file: TLS policy file in a format that Postfix expects.
     """
 
