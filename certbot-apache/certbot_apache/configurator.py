@@ -197,7 +197,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if not util.exe_exists(restart_cmd):
             if not path_surgery(restart_cmd):
                 raise errors.NoInstallationError(
-                    'Cannot find Apache control command {0}'.format(restart_cmd))
+                  'Cannot find Apache control command {0}'.format(restart_cmd))
 
         # Make sure configuration is valid
         self.config_test()
@@ -311,10 +311,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 "Unable to find an SSLCertificateFile directive")
         elif not path["cert_key"]:
             logger.warning(
-                "Cannot find an SSLCertificateKeyFile directive for certificate in %s. "
-                "VirtualHost was not modified", vhost.path)
+                "Cannot find an SSLCertificateKeyFile directive for "
+                "certificate in %s. VirtualHost was not modified", vhost.path)
             raise errors.PluginError(
-                "Unable to find an SSLCertificateKeyFile directive for certificate")
+                "Unable to find an SSLCertificateKeyFile directive for "
+                "certificate")
 
         logger.info(
             "Deploying Certificate for %s to VirtualHost %s",
@@ -398,8 +399,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if vhost is None:
             logger.error(
                 "No vhost exists with servername or alias of %s. "
-                "No vhost was selected. Please specify ServerName or ServerAlias "
-                "in the Apache config, or split vhosts into separate files.", target_name)
+                "No vhost was selected. Please specify ServerName or "
+                "ServerAlias in the Apache config, or split vhosts into "
+                "separate files.", target_name)
             raise errors.PluginError("No vhost selected")
         elif temp:
             return vhost
@@ -984,7 +986,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             vh_p = self._get_new_vh_path(orig_matches, new_matches)
             if not vh_p:
                 raise errors.PluginError(
-                    "Could not reverse map the HTTPS VirtualHost to the original")
+                 "Could not reverse map the HTTPS VirtualHost to the original")
 
         # Update Addresses
         self._update_ssl_vhosts_addrs(vh_p)
@@ -1447,8 +1449,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             self.aug.remove(
                 re.sub(r"/\w*$", "", stapling_cache_aug_path[0]))
 
-        self.parser.add_dir_to_ifmodssl(ssl_vhost_aug_path, "SSLStaplingCache", [
-                                        "shmcb:/var/run/apache2/stapling_cache(128000)"])
+        self.parser.add_dir_to_ifmodssl(ssl_vhost_aug_path, "SSLStaplingCache",
+                            ["shmcb:/var/run/apache2/stapling_cache(128000)"])
 
         msg = "OCSP Stapling was enabled on SSL Vhost: %s.\n" % (
             ssl_vhost.filep)
@@ -2001,7 +2003,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             self.parser.reset_modules()
 
     def install_ssl_options_conf(self, options_ssl, options_ssl_digest):
-        """Copy Certbot's SSL options file into the system's config dir if required."""
+        """Copy Certbot's SSL options file into the system's config dir if
+        required."""
 
         # XXX if we ever try to enforce a local privilege boundary (eg, running
         # certbot for unprivileged users via setuid), this function will need
