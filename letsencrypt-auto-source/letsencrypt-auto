@@ -1216,7 +1216,7 @@ UNLIKELY_EOF
     # -------------------------------------------------------------------------
     cat << "UNLIKELY_EOF" > "$TEMP_DIR/pipstrap.py"
 #!/usr/bin/env python
-"""A small script that can act as a trust root for installing pip 8
+"""A small script that can act as a trust root for installing pip >=8
 
 Embed this in your project, and your VCS checkout is all you have to trust. In
 a post-peep era, this lets you claw your way to a hash-checking version of pip,
@@ -1274,7 +1274,7 @@ except ImportError:
     from urllib.parse import urlparse  # 3.4
 
 
-__version__ = 1, 5, 0
+__version__ = 1, 5, 1
 PIP_VERSION = '9.0.1'
 DEFAULT_INDEX_BASE = 'https://pypi.python.org'
 
@@ -1287,14 +1287,11 @@ maybe_argparse = (
     if version_info < (2, 7, 0) else [])
 
 
-# Pip has no dependencies, as it vendors everything:
-PIP_PACKAGE = [
+PACKAGES = maybe_argparse + [
+    # Pip has no dependencies, as it vendors everything:
     ('11/b6/abcb525026a4be042b486df43905d6893fb04f05aac21c32c638e939e447/'
      'pip-{0}.tar.gz'.format(PIP_VERSION),
-     '09f243e1a7b461f654c26a725fa373211bb7ff17a9300058b205c61658ca940d')]
-
-
-OTHER_PACKAGES = maybe_argparse + [
+     '09f243e1a7b461f654c26a725fa373211bb7ff17a9300058b205c61658ca940d'),
     # This version of setuptools has only optional dependencies:
     ('59/88/2f3990916931a5de6fa9706d6d75eb32ee8b78627bb2abaab7ed9e6d0622/'
      'setuptools-29.0.1.tar.gz',
@@ -1379,21 +1376,16 @@ def main():
     index_base = get_index_base()
     temp = mkdtemp(prefix='pipstrap-')
     try:
-        # We download and install pip first, then the rest, to avoid the bug
-        # https://github.com/certbot/certbot/issues/4938.
-        pip_downloads, other_downloads = [
-            [hashed_download(index_base + '/packages/' + path,
-                             temp,
-                             digest)
-             for path, digest in packages]
-            for packages in (PIP_PACKAGE, OTHER_PACKAGES)]
-        for downloads in (pip_downloads, other_downloads):
-            check_output('pip install --no-index --no-deps -U ' +
-                         # Disable cache since we're not using it and it
-                         # otherwise sometimes throws permission warnings:
-                         ('--no-cache-dir ' if has_pip_cache else '') +
-                         ' '.join(quote(d) for d in downloads),
-                         shell=True)
+        downloads = [hashed_download(index_base + '/packages/' + path,
+                                     temp,
+                                     digest)
+                     for path, digest in PACKAGES]
+        check_output('pip install --no-index --no-deps -U ' +
+                     # Disable cache since we're not using it and it otherwise
+                     # sometimes throws permission warnings:
+                     ('--no-cache-dir ' if has_pip_cache else '') +
+                     ' '.join(quote(d) for d in downloads),
+                     shell=True)
     except HashError as exc:
         print(exc)
     except Exception:
