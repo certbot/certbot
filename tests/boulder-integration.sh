@@ -243,9 +243,14 @@ CheckRenewHook $certname
 # with fail.
 common -a manual -d dns1.le.wtf,fail.dns1.le.wtf \
     --allow-subset-of-names \
-    --preferred-challenges dns \
+    --preferred-challenges dns,tls-sni \
     --manual-auth-hook ./tests/manual-dns-auth.sh \
     --manual-cleanup-hook ./tests/manual-dns-cleanup.sh
+
+if common certificates | grep "fail\.dns1\.le\.wtf"; then
+    echo "certificate should not have been issued for domain!" >&2
+    exit 1
+fi
 
 common certonly --cert-name newname -d newname.le.wtf
 
