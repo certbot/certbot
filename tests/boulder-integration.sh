@@ -239,6 +239,14 @@ common -a manual -d dns.le.wtf --preferred-challenges dns,tls-sni run \
     --renew-hook 'echo deploy >> "$HOOK_TEST"'
 CheckRenewHook $certname
 
+# manual-dns-auth.sh will skip completing the challenge for domains that begin
+# with fail.
+common -a manual -d dns1.le.wtf,fail.dns1.le.wtf \
+    --allow-subset-of-names \
+    --preferred-challenges dns \
+    --manual-auth-hook ./tests/manual-dns-auth.sh \
+    --manual-cleanup-hook ./tests/manual-dns-cleanup.sh
+
 common certonly --cert-name newname -d newname.le.wtf
 
 export CSR_PATH="${root}/csr.der" KEY_PATH="${root}/key.pem" \
