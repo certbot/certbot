@@ -74,10 +74,15 @@ class GoogleClientTest(unittest.TestCase):
         mock_mz = mock.MagicMock()
         mock_mz.list.return_value.execute.side_effect = zone_request_side_effect
 
+        mock_rrs = mock.MagicMock()
+        rrsets = {"rrsets": [{"name": "_acme-challenge.example.org.", "type": "TXT",
+                              "rrdatas": ["\"example-txt-contents\""]}]}
+        mock_rrs.list.return_value.execute.return_value = rrsets
         mock_changes = mock.MagicMock()
 
         client.dns.managedZones = mock.MagicMock(return_value=mock_mz)
         client.dns.changes = mock.MagicMock(return_value=mock_changes)
+        client.dns.resourceRecordSets = mock.MagicMock(return_value=mock_rrs)
 
         return client, mock_changes
 
@@ -140,6 +145,30 @@ class GoogleClientTest(unittest.TestCase):
     @mock.patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_name')
     @mock.patch('certbot_dns_google.dns_google.open',
                 mock.mock_open(read_data='{"project_id": "' + PROJECT_ID + '"}'), create=True)
+    def test_add_txt_record_delete_old(self, unused_credential_mock):
+        client, changes = self._setUp_client_with_mock(
+            [{'managedZones': [{'id': self.zone}]}])
+        mock_get_rrs = "certbot_dns_google.dns_google._GoogleClient.get_existing_txt_rrset"
+        with mock.patch(mock_get_rrs) as mock_rrs:
+            mock_rrs.return_value = ["sample-txt-contents"]
+            client.add_txt_record(DOMAIN, self.record_name, self.record_content, self.record_ttl)
+            self.assertTrue(changes.create.called)
+            self.assertTrue("sample-txt-contents" in
+                changes.create.call_args_list[0][1]["body"]["deletions"][0]["rrdatas"])
+
+    @mock.patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_name')
+    @mock.patch('certbot_dns_google.dns_google.open',
+                mock.mock_open(read_data='{"project_id": "' + PROJECT_ID + '"}'), create=True)
+    def test_add_txt_record_noop(self, unused_credential_mock):
+        client, changes = self._setUp_client_with_mock(
+            [{'managedZones': [{'id': self.zone}]}])
+        client.add_txt_record(DOMAIN, "_acme-challenge.example.org",
+                              "example-txt-contents", self.record_ttl)
+        self.assertFalse(changes.create.called)
+
+    @mock.patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_name')
+    @mock.patch('certbot_dns_google.dns_google.open',
+                mock.mock_open(read_data='{"project_id": "' + PROJECT_ID + '"}'), create=True)
     def test_add_txt_record_error_during_zone_lookup(self, unused_credential_mock):
         client, unused_changes = self._setUp_client_with_mock(API_ERROR)
 
@@ -172,7 +201,12 @@ class GoogleClientTest(unittest.TestCase):
     def test_del_txt_record(self, unused_credential_mock):
         client, changes = self._setUp_client_with_mock([{'managedZones': [{'id': self.zone}]}])
 
-        client.del_txt_record(DOMAIN, self.record_name, self.record_content, self.record_ttl)
+        mock_get_rrs = "certbot_dns_google.dns_google._GoogleClient.get_existing_txt_rrset"
+        with mock.patch(mock_get_rrs) as mock_rrs:
+            mock_rrs.return_value = ["\"sample-txt-contents\"",
+                                     "\"example-txt-contents\""]
+            client.del_txt_record(DOMAIN, "_acme-challenge.example.org",
+                                "example-txt-contents", self.record_ttl)
 
         expected_body = {
             "kind": "dns#change",
@@ -180,8 +214,17 @@ class GoogleClientTest(unittest.TestCase):
                 {
                     "kind": "dns#resourceRecordSet",
                     "type": "TXT",
-                    "name": self.record_name + ".",
-                    "rrdatas": [self.record_content, ],
+                    "name": "_acme-challenge.example.org.",
+                    "rrdatas": ["\"sample-txt-contents\"", "\"example-txt-contents\""],
+                    "ttl": self.record_ttl,
+                },
+            ],
+            "additions": [
+                {
+                    "kind": "dns#resourceRecordSet",
+                    "type": "TXT",
+                    "name": "_acme-challenge.example.org.",
+                    "rrdatas": ["\"sample-txt-contents\"", ],
                     "ttl": self.record_ttl,
                 },
             ],
@@ -216,6 +259,30 @@ class GoogleClientTest(unittest.TestCase):
         changes.create.side_effect = API_ERROR
 
         client.del_txt_record(DOMAIN, self.record_name, self.record_content, self.record_ttl)
+
+    @mock.patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_name')
+    @mock.patch('certbot_dns_google.dns_google.open',
+                mock.mock_open(read_data='{"project_id": "' + PROJECT_ID + '"}'), create=True)
+    def test_get_existing(self, unused_credential_mock):
+        client, unused_changes = self._setUp_client_with_mock(
+            [{'managedZones': [{'id': self.zone}]}])
+        # Record name mocked in setUp
+        found = client.get_existing_txt_rrset(self.zone, "_acme-challenge.example.org")
+        self.assertEquals(found, ["\"example-txt-contents\""])
+        not_found = client.get_existing_txt_rrset(self.zone, "nonexistent.tld")
+        self.assertEquals(not_found, None)
+
+    @mock.patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_name')
+    @mock.patch('certbot_dns_google.dns_google.open',
+                mock.mock_open(read_data='{"project_id": "' + PROJECT_ID + '"}'), create=True)
+    def test_get_existing_fallback(self, unused_credential_mock):
+        client, unused_changes = self._setUp_client_with_mock(
+            [{'managedZones': [{'id': self.zone}]}])
+        mock_execute = client.dns.resourceRecordSets.return_value.list.return_value.execute
+        mock_execute.side_effect = API_ERROR
+
+        rrset = client.get_existing_txt_rrset(self.zone, "_acme-challenge.example.org")
+        self.assertFalse(rrset)
 
     def test_get_project_id(self):
         from certbot_dns_google.dns_google import _GoogleClient

@@ -233,6 +233,7 @@ certname="dns.le.wtf"
 common -a manual -d dns.le.wtf --preferred-challenges dns,tls-sni run \
     --cert-name $certname \
     --manual-auth-hook ./tests/manual-dns-auth.sh \
+    --manual-cleanup-hook ./tests/manual-dns-cleanup.sh \
     --pre-hook 'echo wtf2.pre >> "$HOOK_TEST"' \
     --post-hook 'echo wtf2.post >> "$HOOK_TEST"' \
     --renew-hook 'echo deploy >> "$HOOK_TEST"'
@@ -433,7 +434,8 @@ done
 # Test ACMEv2-only features
 if [ "${BOULDER_INTEGRATION:-v1}" = "v2" ]; then
     common -a manual -d '*.le4.wtf,le4.wtf' --preferred-challenges dns \
-        --manual-auth-hook ./tests/manual-dns-auth.sh
+        --manual-auth-hook ./tests/manual-dns-auth.sh \
+        --manual-cleanup-hook ./tests/manual-dns-cleanup.sh
 fi
 
 # Most CI systems set this variable to true.
@@ -443,4 +445,4 @@ then
     . ./certbot-nginx/tests/boulder-integration.sh
 fi
 
-coverage report --fail-under 63 -m
+coverage report --fail-under 67 -m
