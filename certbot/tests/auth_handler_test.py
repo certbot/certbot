@@ -101,7 +101,7 @@ class HandleAuthorizationsTest(unittest.TestCase):
         self.assertEqual(self.mock_net.answer_challenge.call_count, 1)
 
         self.assertEqual(mock_poll.call_count, 1)
-        chall_update = mock_poll.call_args[0][0]
+        chall_update = mock_poll.call_args[0][1]
         self.assertEqual(list(six.iterkeys(chall_update)), [0])
         self.assertEqual(len(chall_update.values()), 1)
 
@@ -132,7 +132,7 @@ class HandleAuthorizationsTest(unittest.TestCase):
         self.assertEqual(self.mock_net.answer_challenge.call_count, 3)
 
         self.assertEqual(mock_poll.call_count, 1)
-        chall_update = mock_poll.call_args[0][0]
+        chall_update = mock_poll.call_args[0][1]
         self.assertEqual(list(six.iterkeys(chall_update)), [0])
         self.assertEqual(len(chall_update.values()), 1)
 
@@ -158,7 +158,7 @@ class HandleAuthorizationsTest(unittest.TestCase):
         self.assertEqual(self.mock_net.answer_challenge.call_count, 1)
 
         self.assertEqual(mock_poll.call_count, 1)
-        chall_update = mock_poll.call_args[0][0]
+        chall_update = mock_poll.call_args[0][1]
         self.assertEqual(list(six.iterkeys(chall_update)), [0])
         self.assertEqual(len(chall_update.values()), 1)
 
@@ -187,7 +187,7 @@ class HandleAuthorizationsTest(unittest.TestCase):
 
         # Check poll call
         self.assertEqual(mock_poll.call_count, 1)
-        chall_update = mock_poll.call_args[0][0]
+        chall_update = mock_poll.call_args[0][1]
         self.assertEqual(len(list(six.iterkeys(chall_update))), 3)
         self.assertTrue(0 in list(six.iterkeys(chall_update)))
         self.assertEqual(len(chall_update[0]), 1)
@@ -278,8 +278,8 @@ class HandleAuthorizationsTest(unittest.TestCase):
         self.assertRaises(
             errors.AuthorizationError, self.handler.handle_authorizations, mock_order)
 
-    def _validate_all(self, unused_1, unused_2):
-        for i, aauthzr in enumerate(self.handler.aauthzrs):
+    def _validate_all(self, aauthzrs, unused_1, unused_2):
+        for i, aauthzr in enumerate(aauthzrs):
             azr = aauthzr.authzr
             updated_azr = acme_util.gen_authzr(
                 messages.STATUS_VALID,
@@ -287,7 +287,7 @@ class HandleAuthorizationsTest(unittest.TestCase):
                 [challb.chall for challb in azr.body.challenges],
                 [messages.STATUS_VALID] * len(azr.body.challenges),
                 azr.body.combinations)
-            self.handler.aauthzrs[i] = type(aauthzr)(updated_azr, aauthzr.achalls)
+            aauthzrs[i] = type(aauthzr)(updated_azr, aauthzr.achalls)
 
 
 class PollChallengesTest(unittest.TestCase):
@@ -304,19 +304,21 @@ class PollChallengesTest(unittest.TestCase):
             None, self.mock_net, mock.Mock(key="mock_key"), [])
 
         self.doms = ["0", "1", "2"]
-        self.handler.aauthzrs.append(AnnotatedAuthzr(acme_util.gen_authzr(
-            messages.STATUS_PENDING, self.doms[0],
-            [acme_util.HTTP01, acme_util.TLSSNI01],
-            [messages.STATUS_PENDING] * 2, False), []))
-        self.handler.aauthzrs.append(AnnotatedAuthzr(acme_util.gen_authzr(
-            messages.STATUS_PENDING, self.doms[1],
-            acme_util.CHALLENGES, [messages.STATUS_PENDING] * 3, False), []))
-        self.handler.aauthzrs.append(AnnotatedAuthzr(acme_util.gen_authzr(
-            messages.STATUS_PENDING, self.doms[2],
-            acme_util.CHALLENGES, [messages.STATUS_PENDING] * 3, False), []))
+        self.aauthzrs = [
+            AnnotatedAuthzr(acme_util.gen_authzr(
+                messages.STATUS_PENDING, self.doms[0],
+                [acme_util.HTTP01, acme_util.TLSSNI01],
+                [messages.STATUS_PENDING] * 2, False), []),
+            AnnotatedAuthzr(acme_util.gen_authzr(
+                messages.STATUS_PENDING, self.doms[1],
+                acme_util.CHALLENGES, [messages.STATUS_PENDING] * 3, False), []),
+            AnnotatedAuthzr(acme_util.gen_authzr(
+                messages.STATUS_PENDING, self.doms[2],
+                acme_util.CHALLENGES, [messages.STATUS_PENDING] * 3, False), [])
+        ]
 
         self.chall_update = {}
-        for i, aauthzr in enumerate(self.handler.aauthzrs):
+        for i, aauthzr in enumerate(self.aauthzrs):
             self.chall_update[i] = [
                 challb_to_achall(challb, mock.Mock(key="dummy_key"), self.doms[i])
                 for challb in aauthzr.authzr.body.challenges]
@@ -324,17 +326,17 @@ class PollChallengesTest(unittest.TestCase):
     @mock.patch("certbot.auth_handler.time")
     def test_poll_challenges(self, unused_mock_time):
         self.mock_net.poll.side_effect = self._mock_poll_solve_one_valid
-        self.handler._poll_challenges(self.chall_update, False)
+        self.handler._poll_challenges(self.aauthzrs, self.chall_update, False)
 
-        for aauthzr in self.handler.aauthzrs:
+        for aauthzr in self.aauthzrs:
             self.assertEqual(aauthzr.authzr.body.status, messages.STATUS_VALID)
 
     @mock.patch("certbot.auth_handler.time")
     def test_poll_challenges_failure_best_effort(self, unused_mock_time):
         self.mock_net.poll.side_effect = self._mock_poll_solve_one_invalid
-        self.handler._poll_challenges(self.chall_update, True)
+        self.handler._poll_challenges(self.aauthzrs, self.chall_update, True)
 
-        for aauthzr in self.handler.aauthzrs:
+        for aauthzr in self.aauthzrs:
             self.assertEqual(aauthzr.authzr.body.status, messages.STATUS_PENDING)
 
     @mock.patch("certbot.auth_handler.time")
@@ -343,7 +345,7 @@ class PollChallengesTest(unittest.TestCase):
         self.mock_net.poll.side_effect = self._mock_poll_solve_one_invalid
         self.assertRaises(
             errors.AuthorizationError, self.handler._poll_challenges,
-            self.chall_update, False)
+            self.aauthzrs, self.chall_update, False)
 
     @mock.patch("certbot.auth_handler.time")
     def test_unable_to_find_challenge_status(self, unused_mock_time):
@@ -353,11 +355,11 @@ class PollChallengesTest(unittest.TestCase):
             challb_to_achall(acme_util.DNS01_P, "key", self.doms[0]))
         self.assertRaises(
             errors.AuthorizationError, self.handler._poll_challenges,
-            self.chall_update, False)
+            self.aauthzrs, self.chall_update, False)
 
     def test_verify_authzr_failure(self):
-        self.assertRaises(
-            errors.AuthorizationError, self.handler.verify_authzr_complete)
+        self.assertRaises(errors.AuthorizationError,
+                          self.handler.verify_authzr_complete, self.aauthzrs)
 
     def _mock_poll_solve_one_valid(self, authzr):
         # Pending here because my dummy script won't change the full status.
