@@ -2,6 +2,62 @@
 
 Certbot adheres to [Semantic Versioning](http://semver.org/).
 
+## 0.22.0 - 2018-03-07
+
+### Added
+
+* Support for obtaining wildcard certificates and a newer version of the ACME
+  protocol such as the one implemented by Let's Encrypt's upcoming ACMEv2
+  endpoint was added Certbot and its ACME library. Certbot still works with
+  older ACME versions and will automatically change the version of the protocol
+  used based on the version the ACME CA implements.
+* The Apache and Nginx plugins are now able to automatically install a wildcard
+  certificate to multiple virtual hosts that you select from your server
+  configuration.
+* The `certbot install` command now accepts the `--cert-name` flag for
+  selecting a certificate.
+* `acme.client.BackwardsCompatibleClientV2` was added to Certbot's ACME library
+  which automatically handles most of the differences between new and old ACME
+  versions. `acme.client.ClientV2` is also available for people who only want
+  to support one version of the protocol or want to handle the differences
+  between versions themselves.
+* certbot-auto now supports the flag --install-only which has the script
+  install Certbot and its dependencies and exit without invoking Certbot.
+* Support for issuing a single certificate for a wildcard and base domain was
+  added to our Google Cloud DNS plugin. To do this, we now require your API
+  credentials have additional permissions, however, your credentials will
+  already have these permissions unless you defined a custom role with fewer
+  permissions than the standard DNS administrator role provided by Google.
+  These permissions are also only needed for the case described above so it
+  will continue to work for existing users. For more information about the
+  permissions changes, see the documentation in the plugin.
+
+### Changed
+
+* We have broken lockstep between our ACME library, Certbot, and its plugins.
+  This means that the different components do not need to be the same version
+  to work together like they did previously. This makes packaging easier
+  because not every piece of Certbot needs to be repackaged to ship a change to
+  a subset of its components.
+* Support for Python 2.6 and Python 3.3 has been removed from ACME, Certbot,
+  Certbot's plugins, and certbot-auto. If you are using certbot-auto on a RHEL
+  6 based system, it will walk you through the process of installing Certbot
+  with Python 3 and refuse to upgrade to a newer version of Certbot until you
+  have done so.
+* Certbot's components now work with older versions of setuptools to simplify
+  packaging for EPEL 7.
+
+### Fixed
+
+* Issues caused by Certbot's Nginx plugin adding multiple ipv6only directives
+  has been resolved.
+* A problem where Certbot's Apache plugin would add redundant include
+  directives for the TLS configuration managed by Certbot has been fixed.
+* Certbot's webroot plugin now properly deletes any directories it creates.
+
+More details about these changes can be found on our GitHub repo:
+https://github.com/certbot/certbot/milestone/48?closed=1
+
 ## 0.21.1 - 2018-01-25
 
 ### Fixed
