@@ -239,19 +239,6 @@ common -a manual -d dns.le.wtf --preferred-challenges dns,tls-sni run \
     --renew-hook 'echo deploy >> "$HOOK_TEST"'
 CheckRenewHook $certname
 
-# manual-dns-auth.sh will skip completing the challenge for domains that begin
-# with fail.
-common -a manual -d dns1.le.wtf,fail.dns1.le.wtf \
-    --allow-subset-of-names \
-    --preferred-challenges dns,tls-sni \
-    --manual-auth-hook ./tests/manual-dns-auth.sh \
-    --manual-cleanup-hook ./tests/manual-dns-cleanup.sh
-
-if common certificates | grep "fail\.dns1\.le\.wtf"; then
-    echo "certificate should not have been issued for domain!" >&2
-    exit 1
-fi
-
 common certonly --cert-name newname -d newname.le.wtf
 
 export CSR_PATH="${root}/csr.der" KEY_PATH="${root}/key.pem" \
@@ -339,6 +326,19 @@ CheckDirHooks 1
 # test with overlapping directory hooks in the renewal conf files
 common renew --cert-name le2.wtf
 CheckDirHooks 1
+
+# manual-dns-auth.sh will skip completing the challenge for domains that begin
+# with fail.
+common -a manual -d dns1.le.wtf,fail.dns1.le.wtf \
+    --allow-subset-of-names \
+    --preferred-challenges dns,tls-sni \
+    --manual-auth-hook ./tests/manual-dns-auth.sh \
+    --manual-cleanup-hook ./tests/manual-dns-cleanup.sh
+
+if common certificates | grep "fail\.dns1\.le\.wtf"; then
+    echo "certificate should not have been issued for domain!" >&2
+    exit 1
+fi
 
 # ECDSA
 openssl ecparam -genkey -name secp384r1 -out "${root}/privkey-p384.pem"
