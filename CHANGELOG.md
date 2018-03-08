@@ -8,7 +8,7 @@ Certbot adheres to [Semantic Versioning](http://semver.org/).
 
 * Support for obtaining wildcard certificates and a newer version of the ACME
   protocol such as the one implemented by Let's Encrypt's upcoming ACMEv2
-  endpoint was added Certbot and its ACME library. Certbot still works with
+  endpoint was added to Certbot and its ACME library. Certbot still works with
   older ACME versions and will automatically change the version of the protocol
   used based on the version the ACME CA implements.
 * The Apache and Nginx plugins are now able to automatically install a wildcard
