@@ -10,13 +10,13 @@ Welcome to certbot-dns-rfc2136's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+.. automodule:: certbot_dns_rfc2136
+   :members:
+
 .. toctree::
    :maxdepth: 1
 
    api
-
-.. automodule:: certbot_dns_rfc2136
-   :members:
 
 
 
