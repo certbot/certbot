@@ -177,7 +177,7 @@ class _RFC2136Client(object):
         :raises certbot.errors.PluginError: if no SOA record can be found.
         """
 
-        domain_name_guesses = dns_common.base_domain_name_guesses(domain_name)
+        domain_name_guesses = dns_common.base_domain_name_guesses('_acme-challenge' + domain_name)
 
         # Loop through until we find an authoritative SOA record
         for guess in domain_name_guesses:
