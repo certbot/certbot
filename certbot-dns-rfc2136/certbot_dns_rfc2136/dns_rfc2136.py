@@ -94,7 +94,7 @@ class _RFC2136Client(object):
         try:
             self.server = self._get_ip_for_hostname(server)
         except Exception as e:
-            raise errors.PluginError("Failed to resolv {0}".format(server))
+            raise errors.PluginError("Failed to resolv {0}: {1}".format(server, e))
 
         self.keyring = dns.tsigkeyring.from_text({
             key_name: key_secret
