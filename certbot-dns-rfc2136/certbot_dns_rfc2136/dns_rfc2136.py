@@ -90,7 +90,7 @@ class _RFC2136Client(object):
     Encapsulates all communication with the target DNS server.
     """
     def __init__(self, server, key_name, key_secret, key_algorithm):
-        self.server = socket.getaddrinfo(server,53)[0][4][0];
+        self.server = socket.getaddrinfo(server, 53)[0][4][0]
         self.keyring = dns.tsigkeyring.from_text({
             key_name: key_secret
         })
