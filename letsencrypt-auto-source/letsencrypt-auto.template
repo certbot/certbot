@@ -249,7 +249,7 @@ DeprecationBootstrap() {
   fi
 }
 
-MIN_PYTHON_VERSION="2.6"
+MIN_PYTHON_VERSION="2.7"
 MIN_PYVER=$(echo "$MIN_PYTHON_VERSION" | sed 's/\.//')
 # Sets LE_PYTHON to Python version string and PYVER to the first two
 # digits of the python version

@@ -57,11 +57,6 @@ def load_cert(*names):
     return OpenSSL.crypto.load_certificate(loader, load_vector(*names))
 
 
-def load_comparable_cert(*names):
-    """Load ComparableX509 cert."""
-    return jose.ComparableX509(load_cert(*names))
-
-
 def load_csr(*names):
     """Load certificate request."""
     loader = _guess_loader(

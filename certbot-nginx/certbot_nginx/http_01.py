@@ -179,12 +179,16 @@ class NginxHttp01(common.ChallengePerformer):
 
         """
         try:
-            vhost = self.configurator.choose_redirect_vhost(achall.domain,
+            vhosts = self.configurator.choose_redirect_vhosts(achall.domain,
                 '%i' % self.configurator.config.http01_port, create_if_no_match=True)
         except errors.MisconfigurationError:
             # Couldn't find either a matching name+port server block
             # or a port+default_server block, so create a dummy block
             return self._make_server_block(achall)
+
+        # len is max 1 because Nginx doesn't authenticate wildcards
+        # if len were or vhosts None, we would have errored
+        vhost = vhosts[0]
 
         # Modify existing server block
         validation = achall.validation(achall.account_key)

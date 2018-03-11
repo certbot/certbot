@@ -373,5 +373,18 @@ class Sha256sumTest(unittest.TestCase):
             '914ffed8daf9e2c99d90ac95c77d54f32cbd556672facac380f0c063498df84e')
 
 
+class CertAndChainFromFullchainTest(unittest.TestCase):
+    """Tests for certbot.crypto_util.cert_and_chain_from_fullchain"""
+
+    def test_cert_and_chain_from_fullchain(self):
+        cert_pem = CERT.decode()
+        chain_pem = cert_pem + SS_CERT.decode()
+        fullchain_pem = cert_pem + chain_pem
+        from certbot.crypto_util import cert_and_chain_from_fullchain
+        cert_out, chain_out = cert_and_chain_from_fullchain(fullchain_pem)
+        self.assertEqual(cert_out, cert_pem)
+        self.assertEqual(chain_out, chain_pem)
+
+
 if __name__ == '__main__':
     unittest.main()  # pragma: no cover

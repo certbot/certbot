@@ -5,7 +5,6 @@ import functools
 import logging.handlers
 import os
 import sys
-import warnings
 
 import configobj
 import josepy as jose
@@ -1016,11 +1015,11 @@ def revoke(config, unused_plugins):  # TODO: coop with renewal config
                      config.cert_path[0], config.key_path[0])
         crypto_util.verify_cert_matches_priv_key(config.cert_path[0], config.key_path[0])
         key = jose.JWK.load(config.key_path[1])
+        acme = client.acme_from_config_key(config, key)
     else:  # revocation by account key
         logger.debug("Revoking %s using Account Key", config.cert_path[0])
         acc, _ = _determine_account(config)
-        key = acc.key
-    acme = client.acme_from_config_key(config, key)
+        acme = client.acme_from_config_key(config, acc.key, acc.regr)
     cert = crypto_util.pyopenssl_load_certificate(config.cert_path[1])[0]
     logger.debug("Reason code for revocation: %s", config.reason)
 
@@ -1097,13 +1096,13 @@ def _csr_get_and_save_cert(config, le_client):
 
     """
     csr, _ = config.actual_csr
-    certr, chain = le_client.obtain_certificate_from_csr(config.domains, csr)
+    cert, chain = le_client.obtain_certificate_from_csr(csr)
     if config.dry_run:
         logger.debug(
             "Dry run: skipping saving certificate to %s", config.cert_path)
         return None, None
     cert_path, _, fullchain_path = le_client.save_certificate(
-            certr, chain, config.cert_path, config.chain_path, config.fullchain_path)
+            cert, chain, config.cert_path, config.chain_path, config.fullchain_path)
     return cert_path, fullchain_path
 
 def renew_cert(config, plugins, lineage):
@@ -1289,17 +1288,6 @@ def main(cli_args=sys.argv[1:]):
         # Let plugins_cmd be run as un-privileged user.
         if config.func != plugins_cmd:
             raise
-    deprecation_fmt = (
-        "Python %s.%s support will be dropped in the next "
-        "release of Certbot - please upgrade your Python version.")
-    # We use the warnings system for Python 2.6 and logging for Python 3
-    # because DeprecationWarnings are only reported by default in Python <= 2.6
-    # and warnings can be disabled by the user.
-    if sys.version_info[:2] == (2, 6):
-        warning = deprecation_fmt % sys.version_info[:2]
-        warnings.warn(warning, DeprecationWarning)
-    elif sys.version_info[:2] == (3, 3):
-        logger.warning(deprecation_fmt, *sys.version_info[:2])
 
     set_displayer(config)
 

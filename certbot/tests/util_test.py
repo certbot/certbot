@@ -487,6 +487,26 @@ class EnforceDomainSanityTest(unittest.TestCase):
         self._call('this.is.xn--ls8h.tld')
 
 
+class IsWildcardDomainTest(unittest.TestCase):
+    """Tests for is_wildcard_domain."""
+
+    def setUp(self):
+        self.wildcard = u"*.example.org"
+        self.no_wildcard = u"example.org"
+
+    def _call(self, domain):
+        from certbot.util import is_wildcard_domain
+        return is_wildcard_domain(domain)
+
+    def test_no_wildcard(self):
+        self.assertFalse(self._call(self.no_wildcard))
+        self.assertFalse(self._call(self.no_wildcard.encode()))
+
+    def test_wildcard(self):
+        self.assertTrue(self._call(self.wildcard))
+        self.assertTrue(self._call(self.wildcard.encode()))
+
+
 class OsInfoTest(unittest.TestCase):
     """Test OS / distribution detection"""
 

@@ -1363,6 +1363,106 @@ class MultipleVhostsTest(util.ApacheTest):
                           self.config.enable_mod,
                           "whatever")
 
+    def test_wildcard_domain(self):
+        # pylint: disable=protected-access
+        cases = {u"*.example.org": True, b"*.x.example.org": True,
+                 u"a.example.org": False, b"a.x.example.org": False}
+        for key in cases.keys():
+            self.assertEqual(self.config._wildcard_domain(key), cases[key])
+
+    def test_choose_vhosts_wildcard(self):
+        # pylint: disable=protected-access
+        mock_path = "certbot_apache.display_ops.select_vhost_multiple"
+        with mock.patch(mock_path) as mock_select_vhs:
+            mock_select_vhs.return_value = [self.vh_truth[3]]
+            vhs = self.config._choose_vhosts_wildcard("*.certbot.demo",
+                                                     create_ssl=True)
+            # Check that the dialog was called with one vh: certbot.demo
+            self.assertEquals(mock_select_vhs.call_args[0][0][0], self.vh_truth[3])
+            self.assertEquals(len(mock_select_vhs.call_args_list), 1)
+
+            # And the actual returned values
+            self.assertEquals(len(vhs), 1)
+            self.assertTrue(vhs[0].name == "certbot.demo")
+            self.assertTrue(vhs[0].ssl)
+
+            self.assertFalse(vhs[0] == self.vh_truth[3])
+
+    @mock.patch("certbot_apache.configurator.ApacheConfigurator.make_vhost_ssl")
+    def test_choose_vhosts_wildcard_no_ssl(self, mock_makessl):
+        # pylint: disable=protected-access
+        mock_path = "certbot_apache.display_ops.select_vhost_multiple"
+        with mock.patch(mock_path) as mock_select_vhs:
+            mock_select_vhs.return_value = [self.vh_truth[1]]
+            vhs = self.config._choose_vhosts_wildcard("*.certbot.demo",
+                                                     create_ssl=False)
+            self.assertFalse(mock_makessl.called)
+            self.assertEquals(vhs[0], self.vh_truth[1])
+
+    @mock.patch("certbot_apache.configurator.ApacheConfigurator._vhosts_for_wildcard")
+    @mock.patch("certbot_apache.configurator.ApacheConfigurator.make_vhost_ssl")
+    def test_choose_vhosts_wildcard_already_ssl(self, mock_makessl, mock_vh_for_w):
+        # pylint: disable=protected-access
+        # Already SSL vhost
+        mock_vh_for_w.return_value = [self.vh_truth[7]]
+        mock_path = "certbot_apache.display_ops.select_vhost_multiple"
+        with mock.patch(mock_path) as mock_select_vhs:
+            mock_select_vhs.return_value = [self.vh_truth[7]]
+            vhs = self.config._choose_vhosts_wildcard("whatever",
+                                                     create_ssl=True)
+            self.assertEquals(mock_select_vhs.call_args[0][0][0], self.vh_truth[7])
+            self.assertEquals(len(mock_select_vhs.call_args_list), 1)
+            # Ensure that make_vhost_ssl was not called, vhost.ssl == true
+            self.assertFalse(mock_makessl.called)
+
+            # And the actual returned values
+            self.assertEquals(len(vhs), 1)
+            self.assertTrue(vhs[0].ssl)
+            self.assertEquals(vhs[0], self.vh_truth[7])
+
+
+    def test_deploy_cert_wildcard(self):
+        # pylint: disable=protected-access
+        mock_choose_vhosts = mock.MagicMock()
+        mock_choose_vhosts.return_value = [self.vh_truth[7]]
+        self.config._choose_vhosts_wildcard = mock_choose_vhosts
+        mock_d = "certbot_apache.configurator.ApacheConfigurator._deploy_cert"
+        with mock.patch(mock_d) as mock_dep:
+            self.config.deploy_cert("*.wildcard.example.org", "/tmp/path",
+                                    "/tmp/path", "/tmp/path", "/tmp/path")
+            self.assertTrue(mock_dep.called)
+            self.assertEquals(len(mock_dep.call_args_list), 1)
+            self.assertEqual(self.vh_truth[7], mock_dep.call_args_list[0][0][0])
+
+    @mock.patch("certbot_apache.display_ops.select_vhost_multiple")
+    def test_deploy_cert_wildcard_no_vhosts(self, mock_dialog):
+        # pylint: disable=protected-access
+        mock_dialog.return_value = []
+        self.assertRaises(errors.PluginError,
+                          self.config.deploy_cert,
+                          "*.wild.cat", "/tmp/path", "/tmp/path",
+                           "/tmp/path", "/tmp/path")
+
+    @mock.patch("certbot_apache.configurator.ApacheConfigurator._choose_vhosts_wildcard")
+    def test_enhance_wildcard_after_install(self, mock_choose):
+        # pylint: disable=protected-access
+        self.config.parser.modules.add("mod_ssl.c")
+        self.config.parser.modules.add("headers_module")
+        self.config._wildcard_vhosts["*.certbot.demo"] = [self.vh_truth[3]]
+        self.config.enhance("*.certbot.demo", "ensure-http-header",
+                            "Upgrade-Insecure-Requests")
+        self.assertFalse(mock_choose.called)
+
+    @mock.patch("certbot_apache.configurator.ApacheConfigurator._choose_vhosts_wildcard")
+    def test_enhance_wildcard_no_install(self, mock_choose):
+        mock_choose.return_value = [self.vh_truth[3]]
+        self.config.parser.modules.add("mod_ssl.c")
+        self.config.parser.modules.add("headers_module")
+        self.config.enhance("*.certbot.demo", "ensure-http-header",
+                            "Upgrade-Insecure-Requests")
+        self.assertTrue(mock_choose.called)
+
+
 class AugeasVhostsTest(util.ApacheTest):
     """Test vhosts with illegal names dependent on augeas version."""
     # pylint: disable=protected-access
