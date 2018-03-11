@@ -40,6 +40,7 @@ DIRECTORY_V2 = messages.Directory({
     'newAccount': 'https://www.letsencrypt-demo.org/acme/new-account',
     'newNonce': 'https://www.letsencrypt-demo.org/acme/new-nonce',
     'newOrder': 'https://www.letsencrypt-demo.org/acme/new-order',
+    'revokeCert': 'https://www.letsencrypt-demo.org/acme/revoke-cert',
 })
 
 
@@ -79,6 +80,9 @@ class ClientTestBase(unittest.TestCase):
         self.authzr = messages.AuthorizationResource(
             body=self.authz, uri=authzr_uri)
 
+        # Reason code for revocation
+        self.rsn = 1
+
 
 class BackwardsCompatibleClientV2Test(ClientTestBase):
     """Tests for  acme.client.BackwardsCompatibleClientV2."""
@@ -95,10 +99,10 @@ class BackwardsCompatibleClientV2Test(ClientTestBase):
         self.chain = [wrapped, wrapped]
 
         self.cert_pem = OpenSSL.crypto.dump_certificate(
-            OpenSSL.crypto.FILETYPE_PEM, messages_test.CERT.wrapped)
+            OpenSSL.crypto.FILETYPE_PEM, messages_test.CERT.wrapped).decode()
 
         single_chain = OpenSSL.crypto.dump_certificate(
-            OpenSSL.crypto.FILETYPE_PEM, loaded)
+            OpenSSL.crypto.FILETYPE_PEM, loaded).decode()
         self.chain_pem = single_chain + single_chain
 
         self.fullchain_pem = self.cert_pem + self.chain_pem
@@ -251,6 +255,19 @@ class BackwardsCompatibleClientV2Test(ClientTestBase):
             client.finalize_order(mock_orderr, mock_deadline)
             mock_client().finalize_order.assert_called_once_with(mock_orderr, mock_deadline)
 
+    def test_revoke(self):
+        self.response.json.return_value = DIRECTORY_V1.to_json()
+        with mock.patch('acme.client.Client') as mock_client:
+            client = self._init()
+            client.revoke(messages_test.CERT, self.rsn)
+        mock_client().revoke.assert_called_once_with(messages_test.CERT, self.rsn)
+
+        self.response.json.return_value = DIRECTORY_V2.to_json()
+        with mock.patch('acme.client.ClientV2') as mock_client:
+            client = self._init()
+            client.revoke(messages_test.CERT, self.rsn)
+        mock_client().revoke.assert_called_once_with(messages_test.CERT, self.rsn)
+
 
 class ClientTest(ClientTestBase):
     """Tests for acme.client.Client."""
@@ -270,9 +287,6 @@ class ClientTest(ClientTestBase):
             body=messages_test.CERT, authzrs=(self.authzr,),
             uri='https://www.letsencrypt-demo.org/acme/cert/1',
             cert_chain_uri='https://www.letsencrypt-demo.org/ca')
-
-        # Reason code for revocation
-        self.rsn = 1
 
         from acme.client import Client
         self.client = Client(
@@ -361,6 +375,13 @@ class ClientTest(ClientTestBase):
         self.assertRaises(
             errors.UnexpectedUpdate, self.client.request_challenges,
             self.identifier)
+
+    def test_request_challenges_wildcard(self):
+        wildcard_identifier = messages.Identifier(
+            typ=messages.IDENTIFIER_FQDN, value='*.example.org')
+        self.assertRaises(
+            errors.WildcardUnsupportedError, self.client.request_challenges,
+            wildcard_identifier)
 
     def test_request_domain_challenges(self):
         self.client.request_challenges = mock.MagicMock()
@@ -614,8 +635,7 @@ class ClientTest(ClientTestBase):
     def test_revoke(self):
         self.client.revoke(self.certr.body, self.rsn)
         self.net.post.assert_called_once_with(
-            self.directory[messages.Revocation], mock.ANY, content_type=None,
-            acme_version=1)
+            self.directory[messages.Revocation], mock.ANY, acme_version=1)
 
     def test_revocation_payload(self):
         obj = messages.Revocation(certificate=self.certr.body, reason=self.rsn)
@@ -751,6 +771,11 @@ class ClientV2Test(ClientTestBase):
     def test_finalize_order_timeout(self):
         deadline = datetime.datetime.now() - datetime.timedelta(seconds=60)
         self.assertRaises(errors.TimeoutError, self.client.finalize_order, self.orderr, deadline)
+
+    def test_revoke(self):
+        self.client.revoke(messages_test.CERT, self.rsn)
+        self.net.post.assert_called_once_with(
+            self.directory["revokeCert"], mock.ANY, acme_version=2)
 
 
 class MockJSONDeSerializable(jose.JSONDeSerializable):

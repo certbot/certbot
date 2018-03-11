@@ -940,7 +940,6 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         self.assertRaises(errors.ConfigurationError,
                           self._call,
                           ['-d', (('a' * 50) + '.') * 10])
-
         # Bare IP address (this is actually a different error message now)
         self.assertRaises(errors.ConfigurationError,
                           self._call,

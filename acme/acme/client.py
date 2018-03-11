@@ -211,7 +211,7 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
             response, authzr.body.identifier, authzr.uri)
         return updated_authzr, response
 
-    def revoke(self, cert, rsn):
+    def _revoke(self, cert, rsn, url):
         """Revoke certificate.
 
         :param .ComparableX509 cert: `OpenSSL.crypto.X509` wrapped in
@@ -219,14 +219,15 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
 
         :param int rsn: Reason code for certificate revocation.
 
+        :param str url: ACME URL to post to
+
         :raises .ClientError: If revocation is unsuccessful.
 
         """
-        response = self._post(self.directory[messages.Revocation],
-                                 messages.Revocation(
-                                     certificate=cert,
-                                     reason=rsn),
-                                 content_type=None)
+        response = self._post(url,
+                              messages.Revocation(
+                                certificate=cert,
+                                reason=rsn))
         if response.status_code != http_client.OK:
             raise errors.ClientError(
                 'Successful revocation must return HTTP OK status')
@@ -308,9 +309,17 @@ class Client(ClientBase):
         :returns: Authorization Resource.
         :rtype: `.AuthorizationResource`
 
+        :raises errors.WildcardUnsupportedError: if a wildcard is requested
+
         """
         if new_authzr_uri is not None:
             logger.debug("request_challenges with new_authzr_uri deprecated.")
+
+        if identifier.value.startswith("*"):
+            raise errors.WildcardUnsupportedError(
+                "Requesting an authorization for a wildcard name is"
+                " forbidden by this version of the ACME protocol.")
+
         new_authz = messages.NewAuthorization(identifier=identifier)
         response = self._post(self.directory.new_authz, new_authz)
         # TODO: handle errors
@@ -330,6 +339,8 @@ class Client(ClientBase):
 
         :returns: Authorization Resource.
         :rtype: `.AuthorizationResource`
+
+        :raises errors.WildcardUnsupportedError: if a wildcard is requested
 
         """
         return self.request_challenges(messages.Identifier(
@@ -528,6 +539,18 @@ class Client(ClientBase):
                 "Recursion limit reached. Didn't get {0}".format(uri))
         return chain
 
+    def revoke(self, cert, rsn):
+        """Revoke certificate.
+
+        :param .ComparableX509 cert: `OpenSSL.crypto.X509` wrapped in
+            `.ComparableX509`
+
+        :param int rsn: Reason code for certificate revocation.
+
+        :raises .ClientError: If revocation is unsuccessful.
+
+        """
+        return self._revoke(cert, rsn, self.directory[messages.Revocation])
 
 
 class ClientV2(ClientBase):
@@ -657,6 +680,19 @@ class ClientV2(ClientBase):
                 return orderr.update(body=body, fullchain_pem=certificate_response)
         raise errors.TimeoutError()
 
+    def revoke(self, cert, rsn):
+        """Revoke certificate.
+
+        :param .ComparableX509 cert: `OpenSSL.crypto.X509` wrapped in
+            `.ComparableX509`
+
+        :param int rsn: Reason code for certificate revocation.
+
+        :raises .ClientError: If revocation is unsuccessful.
+
+        """
+        return self._revoke(cert, rsn, self.directory['revokeCert'])
+
 
 class BackwardsCompatibleClientV2(object):
     """ACME client wrapper that tends towards V2-style calls, but
@@ -725,6 +761,10 @@ class BackwardsCompatibleClientV2(object):
 
         :returns: The newly created order.
         :rtype: OrderResource
+
+        :raises errors.WildcardUnsupportedError: if a wildcard domain is
+            requested but unsupported by the ACME version
+
         """
         if self.acme_version == 1:
             csr = OpenSSL.crypto.load_certificate_request(OpenSSL.crypto.FILETYPE_PEM, csr_pem)
@@ -768,12 +808,25 @@ class BackwardsCompatibleClientV2(object):
                     'certificate, please rerun the command for a new one.')
 
             cert = OpenSSL.crypto.dump_certificate(
-                    OpenSSL.crypto.FILETYPE_PEM, certr.body.wrapped)
-            chain = crypto_util.dump_pyopenssl_chain(chain)
+                    OpenSSL.crypto.FILETYPE_PEM, certr.body.wrapped).decode()
+            chain = crypto_util.dump_pyopenssl_chain(chain).decode()
 
             return orderr.update(fullchain_pem=(cert + chain))
         else:
             return self.client.finalize_order(orderr, deadline)
+
+    def revoke(self, cert, rsn):
+        """Revoke certificate.
+
+        :param .ComparableX509 cert: `OpenSSL.crypto.X509` wrapped in
+            `.ComparableX509`
+
+        :param int rsn: Reason code for certificate revocation.
+
+        :raises .ClientError: If revocation is unsuccessful.
+
+        """
+        return self.client.revoke(cert, rsn)
 
     def _acme_version_from_directory(self, directory):
         if hasattr(directory, 'newNonce'):

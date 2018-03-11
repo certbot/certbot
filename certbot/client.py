@@ -12,6 +12,7 @@ import zope.component
 
 from acme import client as acme_client
 from acme import crypto_util as acme_crypto_util
+from acme import errors as acme_errors
 from acme import messages
 
 import certbot
@@ -243,7 +244,7 @@ class Client(object):
             than `authkey`.
         :param acme.messages.OrderResource orderr: contains authzrs
 
-        :returns: certificate and chain as PEM strings
+        :returns: certificate and chain as PEM byte strings
         :rtype: tuple
 
         """
@@ -258,14 +259,12 @@ class Client(object):
         logger.debug("CSR: %s", csr)
 
         if orderr is None:
-            orderr = self.acme.new_order(csr.data)
-            authzr = self.auth_handler.handle_authorizations(orderr)
-            orderr = orderr.update(authorizations=authzr)
-        authzr = orderr.authorizations
+            orderr = self._get_order_and_authorizations(csr.data, best_effort=False)
 
         deadline = datetime.datetime.now() + datetime.timedelta(seconds=90)
         orderr = self.acme.finalize_order(orderr, deadline)
-        return crypto_util.cert_and_chain_from_fullchain(orderr.fullchain_pem)
+        cert, chain = crypto_util.cert_and_chain_from_fullchain(orderr.fullchain_pem)
+        return cert.encode(), chain.encode()
 
     def obtain_certificate(self, domains):
         """Obtains a certificate from the ACME server.
@@ -292,13 +291,17 @@ class Client(object):
                 self.config.rsa_key_size, self.config.key_dir)
             csr = crypto_util.init_save_csr(key, domains, self.config.csr_dir)
 
-        orderr = self.acme.new_order(csr.data)
-        authzr = self.auth_handler.handle_authorizations(orderr, self.config.allow_subset_of_names)
-        orderr = orderr.update(authorizations=authzr)
+        orderr = self._get_order_and_authorizations(csr.data, self.config.allow_subset_of_names)
+        authzr = orderr.authorizations
         auth_domains = set(a.body.identifier.value for a in authzr)
         successful_domains = [d for d in domains if d in auth_domains]
 
-        if successful_domains != domains:
+        # allow_subset_of_names is currently disabled for wildcard
+        # certificates. The reason for this and checking allow_subset_of_names
+        # below is because successful_domains == domains is never true if
+        # domains contains a wildcard because the ACME spec forbids identifiers
+        # in authzs from containing a wildcard character.
+        if self.config.allow_subset_of_names and successful_domains != domains:
             if not self.config.dry_run:
                 os.remove(key.file)
                 os.remove(csr.file)
@@ -307,6 +310,25 @@ class Client(object):
             cert, chain = self.obtain_certificate_from_csr(csr, orderr)
 
             return cert, chain, key, csr
+
+    def _get_order_and_authorizations(self, csr_pem, best_effort):
+        """Request a new order and complete its authorizations.
+
+        :param str csr_pem: A CSR in PEM format.
+        :param bool best_effort: True if failing to complete all
+            authorizations should not raise an exception
+
+        :returns: order resource containing its completed authorizations
+        :rtype: acme.messages.OrderResource
+
+        """
+        try:
+            orderr = self.acme.new_order(csr_pem)
+        except acme_errors.WildcardUnsupportedError:
+            raise errors.Error("The currently selected ACME CA endpoint does"
+                               " not support issuing wildcard certificates.")
+        authzr = self.auth_handler.handle_authorizations(orderr, best_effort)
+        return orderr.update(authorizations=authzr)
 
     # pylint: disable=no-member
     def obtain_and_enroll_certificate(self, domains, certname):
@@ -333,7 +355,14 @@ class Client(object):
                 "Non-standard path(s), might not work with crontab installed "
                 "by your operating system package manager")
 
-        new_name = certname if certname else domains[0]
+        if certname:
+            new_name = certname
+        elif util.is_wildcard_domain(domains[0]):
+            # Don't make files and directories starting with *.
+            new_name = domains[0][2:]
+        else:
+            new_name = domains[0]
+
         if self.config.dry_run:
             logger.debug("Dry run: Skipping creating new lineage for %s",
                         new_name)
