@@ -115,13 +115,17 @@ these make much sense to you, you should definitely use the
 certbot-auto_ method, which enables you to use installer plugins
 that cover both of those hard topics.
 
-If you're still not convinced and have decided to use this method,
-from the server that the domain you're requesting a certficate for resolves
-to, `install Docker`_, then issue the following command:
+If you're still not convinced and have decided to use this method, from
+the server that the domain you're requesting a certficate for resolves
+to, `install Docker`_, then issue a command like the one found below. If
+you are using Certbot with the :ref:`Standalone` plugin, you will need
+to make the port it uses accessible from outside of the container by
+including something like ``-p 80:80`` on the command line before
+``certbot/certbot``.
 
 .. code-block:: shell
 
-   sudo docker run -it --rm -p 443:443 -p 80:80 --name certbot \
+   sudo docker run -it --rm --name certbot \
                -v "/etc/letsencrypt:/etc/letsencrypt" \
                -v "/var/lib/letsencrypt:/var/lib/letsencrypt" \
                certbot/certbot certonly

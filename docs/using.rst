@@ -141,6 +141,8 @@ the ``--nginx`` flag on the commandline.
 
    certbot --nginx
 
+.. _standalone:
+
 Standalone
 ----------
 
