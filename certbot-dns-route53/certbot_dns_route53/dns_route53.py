@@ -42,14 +42,28 @@ class Authenticator(dns_common.DNSAuthenticator):
     def _setup_credentials(self):
         pass
 
-    def _perform(self, domain, validation_domain_name, validation):
-        try:
-            change_id = self._change_txt_record("UPSERT", validation_domain_name, validation)
+    def perform(self, achalls):
+        self._attempt_cleanup = True
 
+        change_ids = [
+            self._change_txt_record("UPSERT",
+              achall.validation_domain_name(achall.domain),
+              achall.validation(achall.account_key))
+            for achall in achalls
+        ]
+
+        for change_id in change_ids:
             self._wait_for_change(change_id)
         except (NoCredentialsError, ClientError) as e:
             logger.debug('Encountered error during perform: %s', e, exc_info=True)
             raise errors.PluginError("\n".join([str(e), INSTRUCTIONS]))
+
+        # Sleep for at least the TTL, to ensure that any records cached by
+        # the ACME server after previous validation attempts are gone. In
+        # most cases we'll need to wait at least this long for the Route53
+        # records to propagate, so this doesn't delay us much.
+        time.sleep(TTL)
+        return [achall.response(achall.account_key) for achall in achalls]
 
     def _cleanup(self, domain, validation_domain_name, validation):
         try:
