@@ -101,7 +101,6 @@ class _RFC2136Client(object):
         """
         Add a TXT record using the supplied information.
 
-        :param str domain: The domain to use to find the closest SOA.
         :param str record_name: The record name (typically beginning with '_acme-challenge.').
         :param str record_content: The record content (typically the challenge validation).
         :param int record_ttl: The record TTL (number of seconds that the record may be cached).
@@ -137,7 +136,6 @@ class _RFC2136Client(object):
         """
         Delete a TXT record using the supplied information.
 
-        :param str domain: The domain to use to find the closest SOA.
         :param str record_name: The record name (typically beginning with '_acme-challenge.').
         :param str record_content: The record content (typically the challenge validation).
         :param int record_ttl: The record TTL (number of seconds that the record may be cached).
