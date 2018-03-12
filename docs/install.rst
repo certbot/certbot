@@ -135,6 +135,15 @@ Running Certbot with the ``certonly`` command will obtain a certificate and plac
 within Docker, you must install the certificate manually according to the procedure
 recommended by the provider of your webserver.
 
+There are also Docker images for each of Certbot's DNS plugins available
+at https://hub.docker.com/u/certbot which automate doing domain
+validation over DNS for popular providers. To use one, just replace
+``certbot/certbot`` in command above with the name of the image you want
+to use. For example, to use Certbot's plugin for Amazon Route 53, you'd
+use ``certbot/dns-route53``. You may also need to add flags to Certbot
+and/or mount additional directories to provide access to your DNS API
+credentials. See the documentation for each DNS plugin for more info.
+
 For more information about the layout
 of the ``/etc/letsencrypt`` directory, see :ref:`where-certs`.
 
