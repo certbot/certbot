@@ -45,15 +45,16 @@ class Authenticator(dns_common.DNSAuthenticator):
     def perform(self, achalls):
         self._attempt_cleanup = True
 
-        change_ids = [
-            self._change_txt_record("UPSERT",
-              achall.validation_domain_name(achall.domain),
-              achall.validation(achall.account_key))
-            for achall in achalls
-        ]
+        try:
+            change_ids = [
+                self._change_txt_record("UPSERT",
+                  achall.validation_domain_name(achall.domain),
+                  achall.validation(achall.account_key))
+                for achall in achalls
+            ]
 
-        for change_id in change_ids:
-            self._wait_for_change(change_id)
+            for change_id in change_ids:
+                self._wait_for_change(change_id)
         except (NoCredentialsError, ClientError) as e:
             logger.debug('Encountered error during perform: %s', e, exc_info=True)
             raise errors.PluginError("\n".join([str(e), INSTRUCTIONS]))
