@@ -58,7 +58,7 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         dns_test_common.write(config, self.config.rfc2136_credentials)
 
         self.assertRaises(errors.PluginError,
-                          self.auth.perform,
+                          self.auth.perform,DOMAIN,
                           [self.achall])
 
     def test_valid_algorithm_passes(self):
@@ -107,7 +107,7 @@ class RFC2136ClientTest(unittest.TestCase):
         self.assertRaises(
             errors.PluginError,
             self.rfc2136_client.add_txt_record,
-            DOMAIN, "bar", "baz", 42)
+             "bar", "baz", 42)
 
     @mock.patch("dns.query.tcp")
     def test_del_txt_record(self, query_mock):
