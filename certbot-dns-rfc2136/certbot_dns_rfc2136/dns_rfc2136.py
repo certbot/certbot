@@ -185,7 +185,7 @@ class _RFC2136Client(object):
                 return guess
 
         raise errors.PluginError('Unable to determine base domain for {0} using names: {1}.'
-                                 .format(domain_name, domain_name_guesses))
+                                 .format(record_name, domain_name_guesses))
 
     def _query_soa(self, domain_name):
         """
