@@ -58,7 +58,7 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         dns_test_common.write(config, self.config.rfc2136_credentials)
 
         self.assertRaises(errors.PluginError,
-                          self.auth.perform,DOMAIN,
+                          self.auth.perform,
                           [self.achall])
 
     def test_valid_algorithm_passes(self):
