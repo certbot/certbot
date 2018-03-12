@@ -142,7 +142,8 @@ validation over DNS for popular providers. To use one, just replace
 to use. For example, to use Certbot's plugin for Amazon Route 53, you'd
 use ``certbot/dns-route53``. You may also need to add flags to Certbot
 and/or mount additional directories to provide access to your DNS API
-credentials. See the documentation for each DNS plugin for more info.
+credentials. See the :ref:`DNS plugin documentation <dns_plugins>`  for
+more info.
 
 For more information about the layout
 of the ``/etc/letsencrypt`` directory, see :ref:`where-certs`.
