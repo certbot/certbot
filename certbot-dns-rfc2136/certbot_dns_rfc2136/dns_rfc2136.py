@@ -106,7 +106,7 @@ class _RFC2136Client(object):
         :raises certbot.errors.PluginError: if an error occurs communicating with the DNS server
         """
 
-        domain = self._find_domain(domain_name)
+        domain = self._find_domain(record_name)
 
         n = dns.name.from_text(record_name)
         o = dns.name.from_text(domain)
@@ -142,7 +142,7 @@ class _RFC2136Client(object):
         :raises certbot.errors.PluginError: if an error occurs communicating with the DNS server
         """
 
-        domain = self._find_domain(domain_name)
+        domain = self._find_domain(record_name)
 
         n = dns.name.from_text(record_name)
         o = dns.name.from_text(domain)
@@ -167,17 +167,17 @@ class _RFC2136Client(object):
             raise errors.PluginError('Received response from server: {0}'
                                      .format(dns.rcode.to_text(rcode)))
 
-    def _find_domain(self, domain_name):
+    def _find_domain(self, record_name):
         """
         Find the closest domain with an SOA record for a given domain name.
 
-        :param str domain_name: The domain name for which to find the closest SOA record.
+        :param str record_name: The record name for which to find the closest SOA record.
         :returns: The domain, if found.
         :rtype: str
         :raises certbot.errors.PluginError: if no SOA record can be found.
         """
 
-        domain_name_guesses = dns_common.base_domain_name_guesses(domain_name)
+        domain_name_guesses = dns_common.base_domain_name_guesses(record_name)
 
         # Loop through until we find an authoritative SOA record
         for guess in domain_name_guesses:
