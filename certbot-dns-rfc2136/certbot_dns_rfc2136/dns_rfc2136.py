@@ -71,10 +71,12 @@ class Authenticator(dns_common.DNSAuthenticator):
         )
 
     def _perform(self, domain, validation_name, validation):
-        self._get_rfc2136_client().add_txt_record(domain, validation_name, validation, self.ttl)
+        self._get_rfc2136_client().add_txt_record(validation_name, validation, self.ttl)
+        dummy = domain
 
     def _cleanup(self, domain, validation_name, validation):
-        self._get_rfc2136_client().del_txt_record(domain, validation_name, validation)
+        self._get_rfc2136_client().del_txt_record(validation_name, validation)
+        dummy = domain
 
     def _get_rfc2136_client(self):
         return _RFC2136Client(self.credentials.conf('server'),
@@ -95,7 +97,7 @@ class _RFC2136Client(object):
         })
         self.algorithm = key_algorithm
 
-    def add_txt_record(self, domain_name, record_name, record_content, record_ttl):
+    def add_txt_record(self, record_name, record_content, record_ttl):
         """
         Add a TXT record using the supplied information.
 
@@ -131,7 +133,7 @@ class _RFC2136Client(object):
             raise errors.PluginError('Received response from server: {0}'
                                      .format(dns.rcode.to_text(rcode)))
 
-    def del_txt_record(self, domain_name, record_name, record_content):
+    def del_txt_record(self, record_name, record_content):
         """
         Delete a TXT record using the supplied information.
 
