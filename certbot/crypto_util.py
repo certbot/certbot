@@ -14,7 +14,6 @@ import six
 import zope.component
 from cryptography.hazmat.backends import default_backend
 from cryptography import x509
-import josepy as jose
 
 from acme import crypto_util as acme_crypto_util
 
@@ -340,14 +339,8 @@ def _get_names_from_cert_or_req(cert_or_req, load_func, typ):
 
 
 def _get_names_from_loaded_cert_or_req(loaded_cert_or_req):
-    common_name = loaded_cert_or_req.get_subject().CN
     # pylint: disable=protected-access
-    sans = acme_crypto_util._pyopenssl_cert_or_req_san(loaded_cert_or_req)
-
-    if common_name is None:
-        return sans
-    else:
-        return [common_name] + [d for d in sans if d != common_name]
+    return acme_crypto_util._pyopenssl_cert_or_req_all_names(loaded_cert_or_req)
 
 
 def get_names_from_cert(csr, typ=OpenSSL.crypto.FILETYPE_PEM):
@@ -373,16 +366,7 @@ def dump_pyopenssl_chain(chain, filetype=OpenSSL.crypto.FILETYPE_PEM):
     """
     # XXX: returns empty string when no chain is available, which
     # shuts up RenewableCert, but might not be the best solution...
-
-    def _dump_cert(cert):
-        if isinstance(cert, jose.ComparableX509):
-            # pylint: disable=protected-access
-            cert = cert.wrapped
-        return OpenSSL.crypto.dump_certificate(filetype, cert)
-
-    # assumes that OpenSSL.crypto.dump_certificate includes ending
-    # newline character
-    return b"".join(_dump_cert(cert) for cert in chain)
+    return acme_crypto_util.dump_pyopenssl_chain(chain, filetype)
 
 
 def notBefore(cert_path):
@@ -449,3 +433,17 @@ def sha256sum(filename):
     with open(filename, 'rb') as f:
         sha256.update(f.read())
     return sha256.hexdigest()
+
+def cert_and_chain_from_fullchain(fullchain_pem):
+    """Split fullchain_pem into cert_pem and chain_pem
+
+    :param str fullchain_pem: concatenated cert + chain
+
+    :returns: tuple of string cert_pem and chain_pem
+    :rtype: tuple
+
+    """
+    cert = OpenSSL.crypto.dump_certificate(OpenSSL.crypto.FILETYPE_PEM,
+        OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM, fullchain_pem)).decode()
+    chain = fullchain_pem[len(cert):]
+    return (cert, chain)

@@ -18,6 +18,8 @@ from certbot.tests import util as certbot_test_util
 from certbot_nginx import constants
 from certbot_nginx import obj
 from certbot_nginx import parser
+from certbot_nginx.configurator import _redirect_block_for_domain
+from certbot_nginx.nginxparser import UnspacedList
 from certbot_nginx.tests import util
 
 
@@ -126,7 +128,7 @@ class NginxConfiguratorTest(util.NginxTest):
                             ['#', parser.COMMENT]]]],
                          parsed[0])
 
-    def test_choose_vhost(self):
+    def test_choose_vhosts(self):
         localhost_conf = set(['localhost', r'~^(www\.)?(example|bar)\.'])
         server_conf = set(['somename', 'another.alias', 'alias'])
         example_conf = set(['.example.com', 'example.*'])
@@ -157,7 +159,7 @@ class NginxConfiguratorTest(util.NginxTest):
                        '69.255.225.155']
 
         for name in results:
-            vhost = self.config.choose_vhost(name)
+            vhost = self.config.choose_vhosts(name)[0]
             path = os.path.relpath(vhost.filep, self.temp_dir)
 
             self.assertEqual(results[name], vhost.names)
@@ -171,7 +173,7 @@ class NginxConfiguratorTest(util.NginxTest):
 
         for name in bad_results:
             self.assertRaises(errors.MisconfigurationError,
-                              self.config.choose_vhost, name)
+                              self.config.choose_vhosts, name)
 
     def test_ipv6only(self):
         # ipv6_info: (ipv6_active, ipv6only_present)
@@ -179,6 +181,18 @@ class NginxConfiguratorTest(util.NginxTest):
         # Port 443 has ipv6only=on because of ipv6ssl.com vhost
         self.assertEquals((True, True), self.config.ipv6_info("443"))
 
+    def test_ipv6only_detection(self):
+        self.config.version = (1, 3, 1)
+
+        self.config.deploy_cert(
+            "ipv6.com",
+            "example/cert.pem",
+            "example/key.pem",
+            "example/chain.pem",
+            "example/fullchain.pem")
+
+        for addr in self.config.choose_vhosts("ipv6.com")[0].addrs:
+            self.assertFalse(addr.ipv6only)
 
     def test_more_info(self):
         self.assertTrue('nginx.conf' in self.config.more_info())
@@ -447,7 +461,7 @@ class NginxConfiguratorTest(util.NginxTest):
     def test_redirect_enhance(self):
         # Test that we successfully add a redirect when there is
         # a listen directive
-        expected = ['return', '301', 'https://$host$request_uri']
+        expected = UnspacedList(_redirect_block_for_domain("www.example.com"))[0]
 
         example_conf = self.config.parser.abs_path('sites-enabled/example.com')
         self.config.enhance("www.example.com", "redirect")
@@ -459,6 +473,8 @@ class NginxConfiguratorTest(util.NginxTest):
         # no listen directive
         migration_conf = self.config.parser.abs_path('sites-enabled/migration.com')
         self.config.enhance("migration.com", "redirect")
+
+        expected = UnspacedList(_redirect_block_for_domain("migration.com"))[0]
 
         generated_conf = self.config.parser.parsed[migration_conf]
         self.assertTrue(util.contains_at_depth(generated_conf, expected, 2))
@@ -484,100 +500,26 @@ class NginxConfiguratorTest(util.NginxTest):
                ['ssl_dhparam', self.config.ssl_dhparams], ['#', ' managed by Certbot'],
                [], []]],
              [['server'], [
+               [['if', '($host', '=', 'www.example.com)'], [
+                 ['return', '301', 'https://$host$request_uri']]],
+               ['#', ' managed by Certbot'], [],
                ['listen', '69.50.225.155:9000'],
                ['listen', '127.0.0.1'],
                ['server_name', '.example.com'],
                ['server_name', 'example.*'],
-               ['return', '301', 'https://$host$request_uri'], ['#', ' managed by Certbot'],
-               [], []]]],
+               ['return', '404'], ['#', ' managed by Certbot'], [], [], []]]],
             generated_conf)
 
     @mock.patch('certbot_nginx.obj.VirtualHost.contains_list')
-    @mock.patch('certbot_nginx.obj.VirtualHost.has_redirect')
-    def test_certbot_redirect_exists(self, mock_has_redirect, mock_contains_list):
+    def test_certbot_redirect_exists(self, mock_contains_list):
         # Test that we add no redirect statement if there is already a
         # redirect in the block that is managed by certbot
         # Has a certbot redirect
-        mock_has_redirect.return_value = True
         mock_contains_list.return_value = True
         with mock.patch("certbot_nginx.configurator.logger") as mock_logger:
             self.config.enhance("www.example.com", "redirect")
             self.assertEqual(mock_logger.info.call_args[0][0],
                 "Traffic on port %s already redirecting to ssl in %s")
-
-    @mock.patch('certbot_nginx.obj.VirtualHost.contains_list')
-    @mock.patch('certbot_nginx.obj.VirtualHost.has_redirect')
-    def test_non_certbot_redirect_exists(self, mock_has_redirect, mock_contains_list):
-        # Test that we add a redirect as a comment if there is already a
-        # redirect-class statement in the block that isn't managed by certbot
-        example_conf = self.config.parser.abs_path('sites-enabled/example.com')
-
-        # Has a non-Certbot redirect, and has no existing comment
-        mock_contains_list.return_value = False
-        mock_has_redirect.return_value = True
-        with mock.patch("certbot_nginx.configurator.logger") as mock_logger:
-            self.config.enhance("www.example.com", "redirect")
-            self.assertEqual(mock_logger.info.call_args[0][0],
-                "The appropriate server block is already redirecting "
-                "traffic. To enable redirect anyway, uncomment the "
-                "redirect lines in %s.")
-            generated_conf = self.config.parser.parsed[example_conf]
-            expected = [
-                ['#', ' Redirect non-https traffic to https'],
-                ['#', ' return 301 https://$host$request_uri;'],
-            ]
-            for line in expected:
-                self.assertTrue(util.contains_at_depth(generated_conf, line, 2))
-
-    @mock.patch('certbot_nginx.obj.VirtualHost.contains_list')
-    @mock.patch('certbot_nginx.obj.VirtualHost.has_redirect')
-    def test_non_certbot_redirect_exists_has_ssl_copy(self, mock_has_redirect, mock_contains_list):
-        # Test that we add a redirect as a comment if there is already a
-        # redirect-class statement in the block that isn't managed by certbot
-        example_conf = self.config.parser.abs_path('sites-enabled/example.com')
-
-        self.config.deploy_cert(
-            "example.org",
-            "example/cert.pem",
-            "example/key.pem",
-            "example/chain.pem",
-            "example/fullchain.pem")
-
-        # Has a non-Certbot redirect, and has no existing comment
-        mock_contains_list.return_value = False
-        mock_has_redirect.return_value = True
-        with mock.patch("certbot_nginx.configurator.logger") as mock_logger:
-            self.config.enhance("www.example.com", "redirect")
-            self.assertEqual(mock_logger.info.call_args[0][0],
-                "The appropriate server block is already redirecting "
-                "traffic. To enable redirect anyway, uncomment the "
-                "redirect lines in %s.")
-            generated_conf = self.config.parser.parsed[example_conf]
-            expected = [
-                ['#', ' Redirect non-https traffic to https'],
-                ['#', ' return 301 https://$host$request_uri;'],
-            ]
-            for line in expected:
-                self.assertTrue(util.contains_at_depth(generated_conf, line, 2))
-
-    @mock.patch('certbot_nginx.obj.VirtualHost.contains_list')
-    @mock.patch('certbot_nginx.obj.VirtualHost.has_redirect')
-    @mock.patch('certbot_nginx.configurator.NginxConfigurator._has_certbot_redirect_comment')
-    @mock.patch('certbot_nginx.configurator.NginxConfigurator._add_redirect_block')
-    def test_redirect_comment_exists(self, mock_add_redirect_block,
-        mock_has_cb_redirect_comment, mock_has_redirect, mock_contains_list):
-        # Test that we add nothing if there is a non-Certbot redirect and a
-        # preexisting comment
-        # Has a non-Certbot redirect and a comment
-        mock_has_redirect.return_value = True
-        mock_contains_list.return_value = False # self._has_certbot_redirect(vhost):
-        mock_has_cb_redirect_comment.return_value = True
-
-        # assert _add_redirect_block not called
-        with mock.patch("certbot_nginx.configurator.logger") as mock_logger:
-            self.config.enhance("www.example.com", "redirect")
-            self.assertFalse(mock_add_redirect_block.called)
-            self.assertTrue(mock_logger.info.called)
 
     def test_redirect_dont_enhance(self):
         # Test that we don't accidentally add redirect to ssl-only block
@@ -586,22 +528,18 @@ class NginxConfiguratorTest(util.NginxTest):
         self.assertEqual(mock_logger.info.call_args[0][0],
                 'No matching insecure server blocks listening on port %s found.')
 
-    def test_no_double_redirect(self):
-        # Test that we don't also add the commented redirect if we've just added
-        # a redirect to that vhost this run
+    def test_double_redirect(self):
+        # Test that we add one redirect for each domain
         example_conf = self.config.parser.abs_path('sites-enabled/example.com')
         self.config.enhance("example.com", "redirect")
         self.config.enhance("example.org", "redirect")
 
-        unexpected = [
-            ['#', ' Redirect non-https traffic to https'],
-            ['#', ' if ($scheme != "https") {'],
-            ['#', '     return 301 https://$host$request_uri;'],
-            ['#', ' } # managed by Certbot']
-        ]
+        expected1 = UnspacedList(_redirect_block_for_domain("example.com"))[0]
+        expected2 = UnspacedList(_redirect_block_for_domain("example.org"))[0]
+
         generated_conf = self.config.parser.parsed[example_conf]
-        for line in unexpected:
-            self.assertFalse(util.contains_at_depth(generated_conf, line, 2))
+        self.assertTrue(util.contains_at_depth(generated_conf, expected1, 2))
+        self.assertTrue(util.contains_at_depth(generated_conf, expected2, 2))
 
     def test_staple_ocsp_bad_version(self):
         self.config.version = (1, 3, 1)
@@ -763,7 +701,7 @@ class NginxConfiguratorTest(util.NginxTest):
 
         self.config.parser.load()
 
-        expected = ['return', '301', 'https://$host$request_uri']
+        expected = UnspacedList(_redirect_block_for_domain("www.nomatch.com"))[0]
 
         generated_conf = self.config.parser.parsed[default_conf]
         self.assertTrue(util.contains_at_depth(generated_conf, expected, 2))
@@ -775,6 +713,100 @@ class NginxConfiguratorTest(util.NginxTest):
         self.config.revert_challenge_config()
         self.config.rollback_checkpoints()
         self.assertTrue(mock_parser_load.call_count == 3)
+
+    def test_choose_vhosts_wildcard(self):
+        # pylint: disable=protected-access
+        mock_path = "certbot_nginx.display_ops.select_vhost_multiple"
+        with mock.patch(mock_path) as mock_select_vhs:
+            vhost = [x for x in self.config.parser.get_vhosts()
+              if 'summer.com' in x.names][0]
+            mock_select_vhs.return_value = [vhost]
+            vhs = self.config._choose_vhosts_wildcard("*.com",
+                                                     prefer_ssl=True)
+            # Check that the dialog was called with migration.com
+            self.assertTrue(vhost in mock_select_vhs.call_args[0][0])
+
+            # And the actual returned values
+            self.assertEquals(len(vhs), 1)
+            self.assertEqual(vhs[0], vhost)
+
+    def test_choose_vhosts_wildcard_redirect(self):
+        # pylint: disable=protected-access
+        mock_path = "certbot_nginx.display_ops.select_vhost_multiple"
+        with mock.patch(mock_path) as mock_select_vhs:
+            vhost = [x for x in self.config.parser.get_vhosts()
+              if 'summer.com' in x.names][0]
+            mock_select_vhs.return_value = [vhost]
+            vhs = self.config._choose_vhosts_wildcard("*.com",
+                                                     prefer_ssl=False)
+            # Check that the dialog was called with migration.com
+            self.assertTrue(vhost in mock_select_vhs.call_args[0][0])
+
+            # And the actual returned values
+            self.assertEquals(len(vhs), 1)
+            self.assertEqual(vhs[0], vhost)
+
+    def test_deploy_cert_wildcard(self):
+        # pylint: disable=protected-access
+        mock_choose_vhosts = mock.MagicMock()
+        vhost = [x for x in self.config.parser.get_vhosts()
+            if 'geese.com' in x.names][0]
+        mock_choose_vhosts.return_value = [vhost]
+        self.config._choose_vhosts_wildcard = mock_choose_vhosts
+        mock_d = "certbot_nginx.configurator.NginxConfigurator._deploy_cert"
+        with mock.patch(mock_d) as mock_dep:
+            self.config.deploy_cert("*.com", "/tmp/path",
+                                    "/tmp/path", "/tmp/path", "/tmp/path")
+            self.assertTrue(mock_dep.called)
+            self.assertEquals(len(mock_dep.call_args_list), 1)
+            self.assertEqual(vhost, mock_dep.call_args_list[0][0][0])
+
+    @mock.patch("certbot_nginx.display_ops.select_vhost_multiple")
+    def test_deploy_cert_wildcard_no_vhosts(self, mock_dialog):
+        # pylint: disable=protected-access
+        mock_dialog.return_value = []
+        self.assertRaises(errors.PluginError,
+                          self.config.deploy_cert,
+                          "*.wild.cat", "/tmp/path", "/tmp/path",
+                           "/tmp/path", "/tmp/path")
+
+    @mock.patch("certbot_nginx.display_ops.select_vhost_multiple")
+    def test_enhance_wildcard_ocsp_after_install(self, mock_dialog):
+        # pylint: disable=protected-access
+        vhost = [x for x in self.config.parser.get_vhosts()
+            if 'geese.com' in x.names][0]
+        self.config._wildcard_vhosts["*.com"] = [vhost]
+        self.config.enhance("*.com", "staple-ocsp", "example/chain.pem")
+        self.assertFalse(mock_dialog.called)
+
+    @mock.patch("certbot_nginx.display_ops.select_vhost_multiple")
+    def test_enhance_wildcard_redirect_or_ocsp_no_install(self, mock_dialog):
+        vhost = [x for x in self.config.parser.get_vhosts()
+            if 'summer.com' in x.names][0]
+        mock_dialog.return_value = [vhost]
+        self.config.enhance("*.com", "staple-ocsp", "example/chain.pem")
+        self.assertTrue(mock_dialog.called)
+
+    @mock.patch("certbot_nginx.display_ops.select_vhost_multiple")
+    def test_enhance_wildcard_double_redirect(self, mock_dialog):
+      # pylint: disable=protected-access
+        vhost = [x for x in self.config.parser.get_vhosts()
+            if 'summer.com' in x.names][0]
+        self.config._wildcard_redirect_vhosts["*.com"] = [vhost]
+        self.config.enhance("*.com", "redirect")
+        self.assertFalse(mock_dialog.called)
+
+    def test_choose_vhosts_wildcard_no_ssl_filter_port(self):
+        # pylint: disable=protected-access
+        mock_path = "certbot_nginx.display_ops.select_vhost_multiple"
+        with mock.patch(mock_path) as mock_select_vhs:
+            mock_select_vhs.return_value = []
+            self.config._choose_vhosts_wildcard("*.com",
+                                                prefer_ssl=False,
+                                                no_ssl_filter_port='80')
+            # Check that the dialog was called with only port 80 vhosts
+            self.assertEqual(len(mock_select_vhs.call_args[0][0]), 4)
+
 
 class InstallSslOptionsConfTest(util.NginxTest):
     """Test that the options-ssl-nginx.conf file is installed and updated properly."""

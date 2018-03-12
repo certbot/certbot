@@ -193,14 +193,10 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
 
         return False
 
-    def has_redirect(self):
-        """Determine if this vhost has a redirecting statement
-        """
-        for directive_name in REDIRECT_DIRECTIVES:
-            found = _find_directive(self.raw, directive_name)
-            if found is not None:
-                return True
-        return False
+    def __hash__(self):
+        return hash((self.filep, tuple(self.path),
+                     tuple(self.addrs), tuple(self.names),
+                     self.ssl, self.enabled))
 
     def contains_list(self, test):
         """Determine if raw server block contains test list at top level
@@ -226,14 +222,14 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
             if not a.ipv6:
                 return True
 
-def _find_directive(directives, directive_name):
-    """Find a directive of type directive_name in directives
-    """
-    if not directives or isinstance(directives, six.string_types) or len(directives) == 0:
-        return None
-
-    if directives[0] == directive_name:
-        return directives
-
-    matches = (_find_directive(line, directive_name) for line in directives)
-    return next((m for m in matches if m is not None), None)
+    def display_repr(self):
+        """Return a representation of VHost to be used in dialog"""
+        return (
+            "File: {filename}\n"
+            "Addresses: {addrs}\n"
+            "Names: {names}\n"
+            "HTTPS: {https}\n".format(
+                filename=self.filep,
+                addrs=", ".join(str(addr) for addr in self.addrs),
+                names=", ".join(self.names),
+                https="Yes" if self.ssl else "No"))

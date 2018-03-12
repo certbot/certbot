@@ -47,6 +47,7 @@ Help for certbot itself cannot be provided until it is installed.
   --no-bootstrap                            do not install OS dependencies
   --no-self-upgrade                         do not download updates
   --os-packages-only                        install OS dependencies and exit
+  --install-only                            install certbot, upgrade if needed, and exit
   -v, --verbose                             provide more output
   -q, --quiet                               provide only update/error output;
                                             implies --non-interactive
@@ -60,6 +61,8 @@ for arg in "$@" ; do
       DEBUG=1;;
     --os-packages-only)
       OS_PACKAGES_ONLY=1;;
+    --install-only)
+      INSTALL_ONLY=1;;
     --no-self-upgrade)
       # Do not upgrade this script (also prevents client upgrades, because each
       # copy of the script pins a hash of the python client)
@@ -246,7 +249,7 @@ DeprecationBootstrap() {
   fi
 }
 
-MIN_PYTHON_VERSION="2.6"
+MIN_PYTHON_VERSION="2.7"
 MIN_PYVER=$(echo "$MIN_PYTHON_VERSION" | sed 's/\.//')
 # Sets LE_PYTHON to Python version string and PYVER to the first two
 # digits of the python version
@@ -300,13 +303,8 @@ DeterminePythonVersion() {
 # Set Bootstrap to the function that installs OS dependencies on this system
 # and BOOTSTRAP_VERSION to the unique identifier for the current version of
 # that function. If Bootstrap is set to a function that doesn't install any
-# packages (either because --no-bootstrap was included on the command line or
-# we don't know how to bootstrap on this system), BOOTSTRAP_VERSION is not set.
-if [ "$NO_BOOTSTRAP" = 1 ]; then
-  Bootstrap() {
-    :
-  }
-elif [ -f /etc/debian_version ]; then
+# packages BOOTSTRAP_VERSION is not set.
+if [ -f /etc/debian_version ]; then
   Bootstrap() {
     BootstrapMessage "Debian-based OSes"
     BootstrapDebCommon
@@ -400,6 +398,17 @@ else
     error "for more info."
     exit 1
   }
+fi
+
+# We handle this case after determining the normal bootstrap version to allow
+# variables like USE_PYTHON_3 to be properly set. As described above, if the
+# Bootstrap function doesn't install any packages, BOOTSTRAP_VERSION should not
+# be set so we unset it here.
+if [ "$NO_BOOTSTRAP" = 1 ]; then
+  Bootstrap() {
+    :
+  }
+  unset BOOTSTRAP_VERSION
 fi
 
 # Sets PREV_BOOTSTRAP_VERSION to the identifier for the bootstrap script used
@@ -581,6 +590,12 @@ UNLIKELY_EOF
 
     say "Installation succeeded."
   fi
+
+  if [ "$INSTALL_ONLY" = 1 ]; then
+    say "Certbot is installed."
+    exit 0
+  fi
+
   "$VENV_BIN/letsencrypt" "$@"
 
 else

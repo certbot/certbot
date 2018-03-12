@@ -23,6 +23,7 @@ from certbot import util
 from certbot.plugins import common
 
 from certbot_nginx import constants
+from certbot_nginx import display_ops
 from certbot_nginx import nginxparser
 from certbot_nginx import parser
 from certbot_nginx import tls_sni_01
@@ -31,16 +32,6 @@ from certbot_nginx import http_01
 
 logger = logging.getLogger(__name__)
 
-REDIRECT_BLOCK = [
-    ['\n    ', 'return', ' ', '301', ' ', 'https://$host$request_uri'],
-    ['\n']
-]
-
-REDIRECT_COMMENT_BLOCK = [
-    ['\n    ', '#', ' Redirect non-https traffic to https'],
-    ['\n    ', '#', ' return 301 https://$host$request_uri;'],
-    ['\n']
-]
 
 @zope.interface.implementer(interfaces.IAuthenticator, interfaces.IInstaller)
 @zope.interface.provider(interfaces.IPluginFactory)
@@ -102,6 +93,11 @@ class NginxConfigurator(common.Installer):
         # For creating new vhosts if no names match
         self.new_vhost = None
 
+        # List of vhosts configured per wildcard domain on this run.
+        # used by deploy_cert() and enhance()
+        self._wildcard_vhosts = {}
+        self._wildcard_redirect_vhosts = {}
+
         # Add number of outstanding challenges
         self._chall_out = 0
 
@@ -156,6 +152,7 @@ class NginxConfigurator(common.Installer):
             raise errors.PluginError(
                 'Unable to lock %s', self.conf('server-root'))
 
+
     # Entry point in main.py for installing cert
     def deploy_cert(self, domain, cert_path, key_path,
                     chain_path=None, fullchain_path=None):
@@ -176,14 +173,24 @@ class NginxConfigurator(common.Installer):
                 "The nginx plugin currently requires --fullchain-path to "
                 "install a cert.")
 
-        vhost = self.choose_vhost(domain, create_if_no_match=True)
+        vhosts = self.choose_vhosts(domain, create_if_no_match=True)
+        for vhost in vhosts:
+            self._deploy_cert(vhost, cert_path, key_path, chain_path, fullchain_path)
+
+    def _deploy_cert(self, vhost, cert_path, key_path, chain_path, fullchain_path):
+        # pylint: disable=unused-argument
+        """
+        Helper function for deploy_cert() that handles the actual deployment
+        this exists because we might want to do multiple deployments per
+        domain originally passed for deploy_cert(). This is especially true
+        with wildcard certificates
+        """
         cert_directives = [['\n    ', 'ssl_certificate', ' ', fullchain_path],
                            ['\n    ', 'ssl_certificate_key', ' ', key_path]]
 
         self.parser.add_server_directives(vhost,
                                           cert_directives, replace=True)
-        logger.info("Deployed Certificate to VirtualHost %s for %s",
-                    vhost.filep, ", ".join(vhost.names))
+        logger.info("Deploying Certificate to VirtualHost %s", vhost.filep)
 
         self.save_notes += ("Changed vhost at %s with addresses of %s\n" %
                             (vhost.filep,
@@ -191,10 +198,61 @@ class NginxConfigurator(common.Installer):
         self.save_notes += "\tssl_certificate %s\n" % fullchain_path
         self.save_notes += "\tssl_certificate_key %s\n" % key_path
 
+    def _choose_vhosts_wildcard(self, domain, prefer_ssl, no_ssl_filter_port=None):
+        """Prompts user to choose vhosts to install a wildcard certificate for"""
+        if prefer_ssl:
+            vhosts_cache = self._wildcard_vhosts
+            preference_test = lambda x: x.ssl
+        else:
+            vhosts_cache = self._wildcard_redirect_vhosts
+            preference_test = lambda x: not x.ssl
+
+        # Caching!
+        if domain in vhosts_cache:
+            # Vhosts for a wildcard domain were already selected
+            return vhosts_cache[domain]
+
+        # Get all vhosts whether or not they are covered by the wildcard domain
+        vhosts = self.parser.get_vhosts()
+
+        # Go through the vhosts, making sure that we cover all the names
+        # present, but preferring the SSL or non-SSL vhosts
+        filtered_vhosts = {}
+        for vhost in vhosts:
+            # Ensure we're listening non-sslishly on no_ssl_filter_port
+            if no_ssl_filter_port is not None:
+                if not self._vhost_listening_on_port_no_ssl(vhost, no_ssl_filter_port):
+                    continue
+            for name in vhost.names:
+                if preference_test(vhost):
+                    # Prefer either SSL or non-SSL vhosts
+                    filtered_vhosts[name] = vhost
+                elif name not in filtered_vhosts:
+                    # Add if not in list previously
+                    filtered_vhosts[name] = vhost
+
+        # Only unique VHost objects
+        dialog_input = set([vhost for vhost in filtered_vhosts.values()])
+
+        # Ask the user which of names to enable, expect list of names back
+        return_vhosts = display_ops.select_vhost_multiple(list(dialog_input))
+
+        for vhost in return_vhosts:
+            if domain not in vhosts_cache:
+                vhosts_cache[domain] = []
+            vhosts_cache[domain].append(vhost)
+
+        return return_vhosts
+
     #######################
     # Vhost parsing methods
     #######################
-    def choose_vhost(self, target_name, create_if_no_match=False):
+    def _choose_vhost_single(self, target_name):
+        matches = self._get_ranked_matches(target_name)
+        vhosts = [x for x in [self._select_best_name_match(matches)] if x is not None]
+        return vhosts
+
+    def choose_vhosts(self, target_name, create_if_no_match=False):
         """Chooses a virtual host based on the given domain name.
 
         .. note:: This makes the vhost SSL-enabled if it isn't already. Follows
@@ -212,17 +270,19 @@ class NginxConfigurator(common.Installer):
             when there is no match found. If we can't choose a default, raise a
             MisconfigurationError.
 
-        :returns: ssl vhost associated with name
-        :rtype: :class:`~certbot_nginx.obj.VirtualHost`
+        :returns: ssl vhosts associated with name
+        :rtype: list of :class:`~certbot_nginx.obj.VirtualHost`
 
         """
-        vhost = None
-
-        matches = self._get_ranked_matches(target_name)
-        vhost = self._select_best_name_match(matches)
-        if not vhost:
+        if util.is_wildcard_domain(target_name):
+            # Ask user which VHosts to support.
+            vhosts = self._choose_vhosts_wildcard(target_name, prefer_ssl=True)
+        else:
+            vhosts = self._choose_vhost_single(target_name)
+        if not vhosts:
             if create_if_no_match:
-                vhost = self._vhost_from_duplicated_default(target_name)
+                # result will not be [None] because it errors on failure
+                vhosts = [self._vhost_from_duplicated_default(target_name)]
             else:
                 # No matches. Raise a misconfiguration error.
                 raise errors.MisconfigurationError(
@@ -232,10 +292,11 @@ class NginxConfigurator(common.Installer):
                              "nginx configuration: "
                              "https://nginx.org/en/docs/http/server_names.html") % (target_name))
         # Note: if we are enhancing with ocsp, vhost should already be ssl.
-        if not vhost.ssl:
-            self._make_server_ssl(vhost)
+        for vhost in vhosts:
+            if not vhost.ssl:
+                self._make_server_ssl(vhost)
 
-        return vhost
+        return vhosts
 
     def ipv6_info(self, port):
         """Returns tuple of booleans (ipv6_active, ipv6only_present)
@@ -250,6 +311,9 @@ class NginxConfigurator(common.Installer):
             configuration, and existence of ipv6only directive for specified port
         :rtype: tuple of type (bool, bool)
         """
+        # port should be a string, but it's easy to mess up, so let's
+        # make sure it is one
+        port = str(port)
         vhosts = self.parser.get_vhosts()
         ipv6_active = False
         ipv6only_present = False
@@ -369,7 +433,7 @@ class NginxConfigurator(common.Installer):
         return sorted(matches, key=lambda x: x['rank'])
 
 
-    def choose_redirect_vhost(self, target_name, port, create_if_no_match=False):
+    def choose_redirect_vhosts(self, target_name, port, create_if_no_match=False):
         """Chooses a single virtual host for redirect enhancement.
 
         Chooses the vhost most closely matching target_name that is
@@ -387,15 +451,20 @@ class NginxConfigurator(common.Installer):
             when there is no match found. If we can't choose a default, raise a
             MisconfigurationError.
 
-        :returns: vhost associated with name
-        :rtype: :class:`~certbot_nginx.obj.VirtualHost`
+        :returns: vhosts associated with name
+        :rtype: list of :class:`~certbot_nginx.obj.VirtualHost`
 
         """
-        matches = self._get_redirect_ranked_matches(target_name, port)
-        vhost = self._select_best_name_match(matches)
-        if not vhost and create_if_no_match:
-            vhost = self._vhost_from_duplicated_default(target_name, port=port)
-        return vhost
+        if util.is_wildcard_domain(target_name):
+            # Ask user which VHosts to enhance.
+            vhosts = self._choose_vhosts_wildcard(target_name, prefer_ssl=False,
+                no_ssl_filter_port=port)
+        else:
+            matches = self._get_redirect_ranked_matches(target_name, port)
+            vhosts = [x for x in [self._select_best_name_match(matches)]if x is not None]
+        if not vhosts and create_if_no_match:
+            vhosts = [self._vhost_from_duplicated_default(target_name, port=port)]
+        return vhosts
 
     def _port_matches(self, test_port, matching_port):
         # test_port is a number, matching is a number or "" or None
@@ -404,6 +473,23 @@ class NginxConfigurator(common.Installer):
             return test_port == self.DEFAULT_LISTEN_PORT
         else:
             return test_port == matching_port
+
+    def _vhost_listening_on_port_no_ssl(self, vhost, port):
+        found_matching_port = False
+        if len(vhost.addrs) == 0:
+            # if there are no listen directives at all, Nginx defaults to
+            # listening on port 80.
+            found_matching_port = (port == self.DEFAULT_LISTEN_PORT)
+        else:
+            for addr in vhost.addrs:
+                if self._port_matches(port, addr.get_port()) and addr.ssl == False:
+                    found_matching_port = True
+
+        if found_matching_port:
+            # make sure we don't have an 'ssl on' directive
+            return not self.parser.has_ssl_on_directive(vhost)
+        else:
+            return False
 
     def _get_redirect_ranked_matches(self, target_name, port):
         """Gets a ranked list of plaintextish port-listening vhosts matching target_name
@@ -421,21 +507,7 @@ class NginxConfigurator(common.Installer):
         all_vhosts = self.parser.get_vhosts()
 
         def _vhost_matches(vhost, port):
-            found_matching_port = False
-            if len(vhost.addrs) == 0:
-                # if there are no listen directives at all, Nginx defaults to
-                # listening on port 80.
-                found_matching_port = (port == self.DEFAULT_LISTEN_PORT)
-            else:
-                for addr in vhost.addrs:
-                    if self._port_matches(port, addr.get_port()) and addr.ssl == False:
-                        found_matching_port = True
-
-            if found_matching_port:
-                # make sure we don't have an 'ssl on' directive
-                return not self.parser.has_ssl_on_directive(vhost)
-            else:
-                return False
+            return self._vhost_listening_on_port_no_ssl(vhost, port)
 
         matching_vhosts = [vhost for vhost in all_vhosts if _vhost_matches(vhost, port)]
 
@@ -571,24 +643,17 @@ class NginxConfigurator(common.Installer):
             logger.warning("Failed %s for %s", enhancement, domain)
             raise
 
-    def _has_certbot_redirect(self, vhost):
-        test_redirect_block = _test_block_from_block(REDIRECT_BLOCK)
+    def _has_certbot_redirect(self, vhost, domain):
+        test_redirect_block = _test_block_from_block(_redirect_block_for_domain(domain))
         return vhost.contains_list(test_redirect_block)
 
-    def _has_certbot_redirect_comment(self, vhost):
-        test_redirect_comment_block = _test_block_from_block(REDIRECT_COMMENT_BLOCK)
-        return vhost.contains_list(test_redirect_comment_block)
-
-    def _add_redirect_block(self, vhost, active=True):
+    def _add_redirect_block(self, vhost, domain):
         """Add redirect directive to vhost
         """
-        if active:
-            redirect_block = REDIRECT_BLOCK
-        else:
-            redirect_block = REDIRECT_COMMENT_BLOCK
+        redirect_block = _redirect_block_for_domain(domain)
 
         self.parser.add_server_directives(
-            vhost, redirect_block, replace=False)
+            vhost, redirect_block, replace=False, insert_at_top=True)
 
     def _enable_redirect(self, domain, unused_options):
         """Redirect all equivalent HTTP traffic to ssl_vhost.
@@ -604,17 +669,32 @@ class NginxConfigurator(common.Installer):
         """
 
         port = self.DEFAULT_LISTEN_PORT
-        vhost = None
         # If there are blocks listening plaintextishly on self.DEFAULT_LISTEN_PORT,
         # choose the most name-matching one.
 
-        vhost = self.choose_redirect_vhost(domain, port)
+        vhosts = self.choose_redirect_vhosts(domain, port)
 
-        if vhost is None:
+        if not vhosts:
             logger.info("No matching insecure server blocks listening on port %s found.",
                 self.DEFAULT_LISTEN_PORT)
             return
 
+        for vhost in vhosts:
+            self._enable_redirect_single(domain, vhost)
+
+    def _enable_redirect_single(self, domain, vhost):
+        """Redirect all equivalent HTTP traffic to ssl_vhost.
+
+        If the vhost is listening plaintextishly, separate out the
+        relevant directives into a new server block and add a rewrite directive.
+
+        .. note:: This function saves the configuration
+
+        :param str domain: domain to enable redirect for
+        :param `~obj.Vhost` vhost: vhost to enable redirect for
+        """
+
+        new_vhost = None
         if vhost.ssl:
             new_vhost = self.parser.duplicate_vhost(vhost,
                 only_directives=['listen', 'server_name'])
@@ -631,20 +711,18 @@ class NginxConfigurator(common.Installer):
             # remove all non-ssl addresses from the existing block
             self.parser.remove_server_directives(vhost, 'listen', match_func=_no_ssl_match_func)
 
+            # Add this at the bottom to get the right order of directives
+            return_404_directive = [['\n    ', 'return', ' ', '404']]
+            self.parser.add_server_directives(new_vhost, return_404_directive, replace=False)
+
             vhost = new_vhost
 
-        if self._has_certbot_redirect(vhost):
+        if self._has_certbot_redirect(vhost, domain):
             logger.info("Traffic on port %s already redirecting to ssl in %s",
                 self.DEFAULT_LISTEN_PORT, vhost.filep)
-        elif vhost.has_redirect():
-            if not self._has_certbot_redirect_comment(vhost):
-                self._add_redirect_block(vhost, active=False)
-            logger.info("The appropriate server block is already redirecting "
-                        "traffic. To enable redirect anyway, uncomment the "
-                        "redirect lines in %s.", vhost.filep)
         else:
             # Redirect plaintextish host to https
-            self._add_redirect_block(vhost, active=True)
+            self._add_redirect_block(vhost, domain)
             logger.info("Redirecting all traffic on port %s to ssl in %s",
                 self.DEFAULT_LISTEN_PORT, vhost.filep)
 
@@ -656,7 +734,18 @@ class NginxConfigurator(common.Installer):
         :type chain_path: `str` or `None`
 
         """
-        vhost = self.choose_vhost(domain)
+        vhosts = self.choose_vhosts(domain)
+        for vhost in vhosts:
+            self._enable_ocsp_stapling_single(vhost, chain_path)
+
+    def _enable_ocsp_stapling_single(self, vhost, chain_path):
+        """Include OCSP response in TLS handshake
+
+        :param str vhost: vhost to enable OCSP response for
+        :param chain_path: chain file path
+        :type chain_path: `str` or `None`
+
+        """
         if self.version < (1, 3, 7):
             raise errors.PluginError("Version 1.3.7 or greater of nginx "
                                      "is needed to enable OCSP stapling")
@@ -906,6 +995,23 @@ def _test_block_from_block(block):
     test_block = nginxparser.UnspacedList(block)
     parser.comment_directive(test_block, 0)
     return test_block[:-1]
+
+
+def _redirect_block_for_domain(domain):
+    updated_domain = domain
+    match_symbol = '='
+    if util.is_wildcard_domain(domain):
+        match_symbol = '~'
+        updated_domain = updated_domain.replace('.', r'\.')
+        updated_domain = updated_domain.replace('*', '[^.]+')
+        updated_domain = '^' + updated_domain + '$'
+    redirect_block = [[
+        ['\n    ', 'if', ' ', '($host', ' ', match_symbol, ' ', '%s)' % updated_domain, ' '],
+        [['\n        ', 'return', ' ', '301', ' ', 'https://$host$request_uri'],
+        '\n    ']],
+        ['\n']]
+    return redirect_block
+
 
 def nginx_restart(nginx_ctl, nginx_conf):
     """Restarts the Nginx Server.

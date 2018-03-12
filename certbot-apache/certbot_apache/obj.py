@@ -167,6 +167,19 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
                 active="Yes" if self.enabled else "No",
                 modmacro="Yes" if self.modmacro else "No"))
 
+    def display_repr(self):
+        """Return a representation of VHost to be used in dialog"""
+        return (
+            "File: {filename}\n"
+            "Addresses: {addrs}\n"
+            "Names: {names}\n"
+            "HTTPS: {https}\n".format(
+                filename=self.filep,
+                addrs=", ".join(str(addr) for addr in self.addrs),
+                names=", ".join(self.get_names()),
+                https="Yes" if self.ssl else "No"))
+
+
     def __eq__(self, other):
         if isinstance(other, self.__class__):
             return (self.filep == other.filep and self.path == other.path and
