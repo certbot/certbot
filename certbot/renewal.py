@@ -294,15 +294,12 @@ def renew_cert(config, domains, le_client, lineage):
     _avoid_invalidating_lineage(config, lineage, original_server)
     if not domains:
         domains = lineage.names()
-    new_certr, new_chain, new_key, _ = le_client.obtain_certificate(domains)
+    new_cert, new_chain, new_key, _ = le_client.obtain_certificate(domains)
     if config.dry_run:
         logger.debug("Dry run: skipping updating lineage at %s",
                     os.path.dirname(lineage.cert))
     else:
         prior_version = lineage.latest_common_version()
-        new_cert = OpenSSL.crypto.dump_certificate(
-            OpenSSL.crypto.FILETYPE_PEM, new_certr.body.wrapped)
-        new_chain = crypto_util.dump_pyopenssl_chain(new_chain)
         # TODO: Check return value of save_successor
         lineage.save_successor(prior_version, new_cert, new_key.pem, new_chain, config)
         lineage.update_all_links_to(lineage.latest_common_version())

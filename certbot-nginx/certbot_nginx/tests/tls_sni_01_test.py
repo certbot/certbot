@@ -61,10 +61,10 @@ class TlsSniPerformTest(util.NginxTest):
         shutil.rmtree(self.work_dir)
 
     @mock.patch("certbot_nginx.configurator"
-                ".NginxConfigurator.choose_vhost")
+                ".NginxConfigurator.choose_vhosts")
     def test_perform(self, mock_choose):
         self.sni.add_chall(self.achalls[1])
-        mock_choose.return_value = None
+        mock_choose.return_value = []
         result = self.sni.perform()
         self.assertFalse(result is None)
 
