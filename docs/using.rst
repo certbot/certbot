@@ -41,28 +41,30 @@ Plugins that do both can be used with the ``certbot run`` command, which is the 
 when no command is specified. The ``run`` subcommand can also be used to specify
 a combination_ of distinct authenticator and installer plugins.
 
-================================ ==== ==== =============================================================== =============================
-Plugin                           Auth Inst Notes                                                           Challenge types (and port)
-================================ ==== ==== =============================================================== =============================
-apache_                          Y    Y    | Automates obtaining and installing a certificate with Apache  tls-sni-01_ (443)
-                                           | 2.4 on Debian-based distributions with ``libaugeas0`` 1.0+.
-webroot_                         Y    N    | Obtains a certificate by writing to the webroot directory of  http-01_ (80)
-                                           | an already running webserver.
-nginx_                           Y    Y    | Automates obtaining and installing a certificate with Nginx.  tls-sni-01_ (443)
-                                           | Shipped with Certbot 0.9.0.
-standalone_                      Y    N    | Uses a "standalone" webserver to obtain a certificate.        http-01_ (80) or
-                                           | Requires port 80 or 443 to be available. This is useful on    tls-sni-01_ (443)
-                                           | systems with no webserver, or when direct integration with
-                                           | the local webserver is not supported or not desired.
-:ref:`DNS plugins <dns_plugins>` Y    N    | This category of plugins automates obtaining a certificate by dns-01_ (53)
-                                           | modifying DNS records to prove you have control over a
-                                           | domain. Doing domain validation in this way is
-                                           | necessary to obtain certificates from Let's Encrypt.
-manual_                          Y    N    | Helps you obtain a certificate by giving you instructions to  http-01_ (80),
-                                           | perform domain validation yourself. Additionally allows you   dns-01_ (53) or
-                                           | to specify scripts to automate the validation task in a       tls-sni-01_ (443)
-                                           | customized way.
-================================ ==== ==== =============================================================== =============================
+=========== ==== ==== =============================================================== =============================
+Plugin      Auth Inst Notes                                                           Challenge types (and port)
+=========== ==== ==== =============================================================== =============================
+apache_     Y    Y    | Automates obtaining and installing a certificate with Apache  tls-sni-01_ (443)
+                      | 2.4 on Debian-based distributions with ``libaugeas0`` 1.0+.
+webroot_    Y    N    | Obtains a certificate by writing to the webroot directory of  http-01_ (80)
+                      | an already running webserver.
+nginx_      Y    Y    | Automates obtaining and installing a certificate with Nginx.  tls-sni-01_ (443)
+                      | Shipped with Certbot 0.9.0.
+standalone_ Y    N    | Uses a "standalone" webserver to obtain a certificate.        http-01_ (80) or
+                      | Requires port 80 or 443 to be available. This is useful on    tls-sni-01_ (443)
+                      | systems with no webserver, or when direct integration with
+                      | the local webserver is not supported or not desired.
+|dns_plugs| Y    N    | This category of plugins automates obtaining a certificate by dns-01_ (53)
+                      | modifying DNS records to prove you have control over a
+                      | domain. Doing domain validation in this way is
+                      | necessary to obtain certificates from Let's Encrypt.
+manual_     Y    N    | Helps you obtain a certificate by giving you instructions to  http-01_ (80),
+                      | perform domain validation yourself. Additionally allows you   dns-01_ (53) or
+                      | to specify scripts to automate the validation task in a       tls-sni-01_ (443)
+                      | customized way.
+=========== ==== ==== =============================================================== =============================
+
+.. |dns_plugs| replace:: :ref:`DNS plugins <dns_plugins>`
 
 Under the hood, plugins use one of several ACME protocol challenges_ to
 prove you control a domain. The options are http-01_ (which uses port 80),
