@@ -161,6 +161,13 @@ class AuthHandler(object):
         :param aauthzrs: authorizations and the selected annotated challenges
             to try and perform
         :type aauthzrs: `list` of `AnnotatedAuthzr`
+        :param resps: challenge responses from the authenticator where
+            each response at index i corresponds to the annotated
+            challenge at index i in the list returned by
+            :func:`_get_all_achalls`
+        :type resps: `collections.abc.Iterable` of
+            :class:`~acme.challenges.ChallengeResponse` or `False` or
+            `None`
         :param dict chall_update: parameter that is updated to hold
             aauthzr index to list of outstanding solved annotated challenges
 
