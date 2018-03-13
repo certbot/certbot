@@ -120,8 +120,8 @@ the server that the domain you're requesting a certficate for resolves
 to, `install Docker`_, then issue a command like the one found below. If
 you are using Certbot with the :ref:`Standalone` plugin, you will need
 to make the port it uses accessible from outside of the container by
-including something like ``-p 80:80`` on the command line before
-``certbot/certbot``.
+including something like ``-p 80:80`` or ``-p 443:443`` on the command
+line before ``certbot/certbot``.
 
 .. code-block:: shell
 

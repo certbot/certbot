@@ -57,7 +57,8 @@ standalone_ Y    N    | Uses a "standalone" webserver to obtain a certificate.  
 |dns_plugs| Y    N    | This category of plugins automates obtaining a certificate by dns-01_ (53)
                       | modifying DNS records to prove you have control over a
                       | domain. Doing domain validation in this way is
-                      | necessary to obtain wildcard certificates from Let's Encrypt.
+                      | the only way to obtain wildcard certificates from Let's
+                      | Encrypt.
 manual_     Y    N    | Helps you obtain a certificate by giving you instructions to  http-01_ (80),
                       | perform domain validation yourself. Additionally allows you   dns-01_ (53) or
                       | to specify scripts to automate the validation task in a       tls-sni-01_ (443)
