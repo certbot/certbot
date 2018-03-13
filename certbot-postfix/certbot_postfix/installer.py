@@ -180,6 +180,9 @@ class Installer(plugins_common.Installer):
         self.policy_file = os.path.join(self.config_dir, POLICY_FILENAME)
         self.postconf = postconf.ConfigMain(self.conf('config-utility'), self.config_dir)
 
+    def config_test(self):
+        self.postfix.test()
+
     def _verify_executable_is_available(self, config_name):
         """Asserts the program in the specified config param is found.
 
@@ -298,7 +301,7 @@ class Installer(plugins_common.Installer):
         """
         # pylint: disable=unused-argument
         self.save_notes.append("Configuring TLS for {0}".format(domain))
-        self.postconf.set("smtpd_tls_cert_file", fullchain_path, check_override=_report_master_overrides)
+        self.postconf.set("smtpd_tls_cert_file", cert_path, check_override=_report_master_overrides)
         self.postconf.set("smtpd_tls_key_file", key_path, _report_master_overrides)
         self._set_vars(DEFAULT_SERVER_VARS)
         self._set_vars(DEFAULT_CLIENT_VARS)
