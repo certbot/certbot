@@ -482,7 +482,8 @@ class Client(object):
             ("hsts", "ensure-http-header", "Strict-Transport-Security"),
             ("redirect", "redirect", None),
             ("staple", "staple-ocsp", chain_path),
-            ("uir", "ensure-http-header", "Upgrade-Insecure-Requests"),)
+            ("uir", "ensure-http-header", "Upgrade-Insecure-Requests"),
+            ("starttls_policy", "starttls-everywhere", None),)
         supported = self.installer.supported_enhancements()
 
         for config_name, enhancement_name, option in enhancement_info:

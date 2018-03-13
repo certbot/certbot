@@ -14,8 +14,6 @@ from certbot.plugins import util as plugins_util
 from certbot_postfix import postconf
 from certbot_postfix import util
 
-from policylist import policy
-
 POLICY_FILENAME = "starttls_everywhere_policy"
 
 CA_CERTS_PATH = "/etc/ssl/certs/"
@@ -86,7 +84,6 @@ def _get_formatted_policy_for_domain(address_domain, tls_policy):
     :rtype str: Properly formatted Postfix TLS policy specification for this domain.
     """
     mx_list = tls_policy['mxs']
-    # TODO(sydneyli): enable `verify` mode.
     if len(mx_list) == 0:
         matches = ""
     else:
@@ -100,6 +97,17 @@ def _get_formatted_policy_for_domain(address_domain, tls_policy):
             mx_policy.min_tls_version))
     return entry
 
+
+def _write_domainwise_tls_policies(policy, policy_file, fopen=open):
+    """Writes domainwise tls policies to self.policy_file in a format that Postfix
+    can parse.
+    """
+    policy_lines = []
+    all_tls_policies = policy.tls_policies
+    for address_domain, tls_policy in all_tls_policies.items():
+        policy_lines.append(_get_formatted_policy_for_domain(address_domain, tls_policy))
+    with fopen(policy_file, "w") as f:
+        f.write("\n".join(policy_lines) + "\n")
 
 @zope.interface.implementer(interfaces.IInstaller)
 @zope.interface.provider(interfaces.IPluginFactory)
@@ -135,17 +143,7 @@ class Installer(plugins_common.Installer):
         self.save_notes = []
         self.policy = None
         self.policy_file = None
-
-    def write_domainwise_tls_policies(self, fopen=open):
-        """Writes domainwise tls policies to self.policy_file in a format that Postfix
-        can parse.
-        """
-        policy_lines = []
-        all_tls_policies = self.policy.tls_policies
-        for address_domain, tls_policy in all_tls_policies.items():
-            policy_lines.append(_get_formatted_policy_for_domain(address_domain, tls_policy))
-        with fopen(self.policy_file, "w") as f:
-            f.write("\n".join(policy_lines) + "\n")
+        self._enhance_func = {"starttls-everywhere": self._enable_policy_list}
 
     def _ensure_ca_certificates_exist(self):
         # TODO (sydneyli): Ensure `ca-certificates` is installed correctly, or that
@@ -172,8 +170,6 @@ class Installer(plugins_common.Installer):
         self._set_config_dir()
         self.postfix = util.PostfixUtil(self.config_dir)
         self.policy_file = self.conf("policy-file")
-        self.policy = policy.Config()
-        self.policy.load()
         self._check_version()
         self.postfix.test()
         self._lock_config_dir()
@@ -305,10 +301,18 @@ class Installer(plugins_common.Installer):
         self.postconf.set("smtpd_tls_key_file", key_path, _report_master_overrides)
         self._set_vars(DEFAULT_SERVER_VARS)
         self._set_vars(DEFAULT_CLIENT_VARS)
-        self.write_domainwise_tls_policies()
+        self.postconf.set("smtp_tls_CApath", CA_CERTS_PATH, _report_master_overrides) 
+
+    def _enable_policy_list(self, domain, options):
+        try:
+            from policylist import policy
+        except ImportError:
+            raise ImportError('STARTTLS Everywhere policy Python module not installed!')
+        policy = policy.Config()
+        policy.load()
+        _write_domainwise_tls_policies(policy, self.policy_file)
         policy_cf_entry = "texthash:" + self.policy_file
         self.postconf.set("smtp_tls_policy_maps", policy_cf_entry)
-        self.postconf.set("smtp_tls_CApath", CA_CERTS_PATH, _report_master_overrides) 
 
     def enhance(self, domain, enhancement, options=None):
         """Raises an exception for request for unsupported enhancement.
@@ -318,8 +322,14 @@ class Installer(plugins_common.Installer):
 
         """
         # pylint: disable=unused-argument
-        raise errors.PluginError(
-            "Unsupported enhancement: {0}".format(enhancement))
+        try:
+            return self._enhance_func[enhancement](domain, options)
+        except (KeyError, ValueError):
+            raise errors.PluginError(
+                "Unsupported enhancement: {0}".format(enhancement))
+        except errors.PluginError:
+            logger.warning("Failed %s for %s", enhancement, domain)
+            raise
 
     def supported_enhancements(self):
         """Returns a list of supported enhancements.
@@ -327,7 +337,7 @@ class Installer(plugins_common.Installer):
         :rtype: list
 
         """
-        return []
+        return ['starttls-everywhere'] # mta-sts?
 
     def save(self, title=None, temporary=False):
         """Creates backups and writes changes to configuration files.
@@ -352,10 +362,27 @@ class Installer(plugins_common.Installer):
         if title and not temporary:
             self.finalize_checkpoint(title)
 
+    def recovery_routine(self):
+        super(Installer, self).recovery_routine()
+        self.postconf = postconf.ConfigMain(self.conf('config-utility'), self.config_dir)
+
+    def rollback_checkpoints(self, rollback=1):
+        """Rollback saved checkpoints.
+
+        :param int rollback: Number of checkpoints to revert
+
+        :raises .errors.PluginError: If there is a problem with the input or
+            the function is unable to correctly revert the configuration
+
+        """
+        super(Installer, self).rollback_checkpoints(rollback)
+        self.postconf = postconf.ConfigMain(self.conf('config-utility'), self.config_dir)
+
     def restart(self):
         """Restart or refresh the server content.
 
         :raises .PluginError: when server cannot be restarted
         """
         self.postfix.restart()
+
 
