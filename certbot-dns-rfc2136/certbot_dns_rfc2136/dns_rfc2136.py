@@ -70,13 +70,11 @@ class Authenticator(dns_common.DNSAuthenticator):
             self._validate_algorithm
         )
 
-    def _perform(self, domain, validation_name, validation):
+    def _perform(self, _domain, validation_name, validation):
         self._get_rfc2136_client().add_txt_record(validation_name, validation, self.ttl)
-        dummy = domain
 
-    def _cleanup(self, domain, validation_name, validation):
+    def _cleanup(self, _domain, validation_name, validation):
         self._get_rfc2136_client().del_txt_record(validation_name, validation)
-        dummy = domain
 
     def _get_rfc2136_client(self):
         return _RFC2136Client(self.credentials.conf('server'),
