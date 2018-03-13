@@ -54,11 +54,18 @@ standalone_ Y    N    | Uses a "standalone" webserver to obtain a certificate.  
                       | Requires port 80 or 443 to be available. This is useful on    tls-sni-01_ (443)
                       | systems with no webserver, or when direct integration with
                       | the local webserver is not supported or not desired.
+|dns_plugs| Y    N    | This category of plugins automates obtaining a certificate by dns-01_ (53)
+                      | modifying DNS records to prove you have control over a
+                      | domain. Doing domain validation in this way is
+                      | the only way to obtain wildcard certificates from Let's
+                      | Encrypt.
 manual_     Y    N    | Helps you obtain a certificate by giving you instructions to  http-01_ (80),
                       | perform domain validation yourself. Additionally allows you   dns-01_ (53) or
                       | to specify scripts to automate the validation task in a       tls-sni-01_ (443)
                       | customized way.
 =========== ==== ==== =============================================================== =============================
+
+.. |dns_plugs| replace:: :ref:`DNS plugins <dns_plugins>`
 
 Under the hood, plugins use one of several ACME protocol challenges_ to
 prove you control a domain. The options are http-01_ (which uses port 80),
@@ -141,6 +148,8 @@ the ``--nginx`` flag on the commandline.
 
    certbot --nginx
 
+.. _standalone:
+
 Standalone
 ----------
 
@@ -163,6 +172,33 @@ the Internet on the specified port using each requested domain name.
 
 .. note:: The ``--standalone-supported-challenges`` option has been
    deprecated since ``certbot`` version 0.9.0.
+
+.. _dns_plugins:
+
+DNS Plugins
+-----------
+
+If you'd like to obtain a wildcard certificate from Let's Encrypt or run
+``certbot`` on a machine other than your target webserver, you can use one of
+Certbot's DNS plugins.
+
+These plugins are still in the process of being packaged
+by many distributions and cannot currently be installed with ``certbot-auto``.
+If, however, you are comfortable installing the certificates yourself,
+you can run these plugins with :ref:`Docker <docker>`.
+
+Once installed, you can find documentation on how to use each plugin at:
+
+* `certbot-dns-cloudflare <https://certbot-dns-cloudflare.readthedocs.io>`_
+* `certbot-dns-cloudxns <https://certbot-dns-cloudxns.readthedocs.io>`_
+* `certbot-dns-digitalocean <https://certbot-dns-digitalocean.readthedocs.io>`_
+* `certbot-dns-dnsimple <https://certbot-dns-dnsimple.readthedocs.io>`_
+* `certbot-dns-dnsmadeeasy <https://certbot-dns-dnsmadeeasy.readthedocs.io>`_
+* `certbot-dns-google <https://certbot-dns-google.readthedocs.io>`_
+* `certbot-dns-luadns <https://certbot-dns-luadns.readthedocs.io>`_
+* `certbot-dns-nsone <https://certbot-dns-nsone.readthedocs.io>`_
+* `certbot-dns-rfc2136 <https://certbot-dns-rfc2136.readthedocs.io>`_
+* `certbot-dns-route53 <https://certbot-dns-route53.readthedocs.io>`_
 
 Manual
 ------
