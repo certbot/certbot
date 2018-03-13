@@ -844,11 +844,11 @@ By default, Certbot uses Let's Encrypt's initial production server at
 https://acme-v01.api.letsencrypt.org/. You can tell Certbot to use a
 different CA by providing ``--server`` on the command line or in a
 :ref:`configuration file <config-file>` with the URL of the server's
-ACME directory. For example, to test against Let's Encrypt's ACMEv2
-staging server, you would add ``--server
-https://acme-staging-v02.api.letsencrypt.org/directory`` to the command
-line. Certbot will automatically select which version of the ACME
-protocol to use based on the contents served at the provided URL.
+ACME directory. For example, if you would like to use Let's Encrypt's
+new ACMEv2 server, you would add ``--server
+https://acme-v02.api.letsencrypt.org/directory`` to the command line.
+Certbot will automatically select which version of the ACME protocol to
+use based on the contents served at the provided URL.
 
 If you use ``--server`` to specify an ACME CA that implements a newer
 version of the spec, you may be able to obtain a certificate for a
