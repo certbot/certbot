@@ -107,9 +107,9 @@ optional arguments:
                         case, and to know when to deprecate support for past
                         Python versions and flags. If you wish to hide this
                         information from the Let's Encrypt server, set this to
-                        "". (default: CertbotACMEClient/0.21.1 (certbot;
+                        "". (default: CertbotACMEClient/0.22.0 (certbot;
                         darwin 10.13.3) Authenticator/XXX Installer/YYY
-                        (SUBCOMMAND; flags: FLAGS) Py/2.7.14). The flags
+                        (SUBCOMMAND; flags: FLAGS) Py/3.6.4). The flags
                         encoded in the user agent are: --duplicate, --force-
                         renew, --allow-subset-of-names, -n, and whether any
                         hooks are set.
@@ -199,8 +199,8 @@ testing:
 
   --test-cert, --staging
                         Use the staging server to obtain or revoke test
-                        (invalid) certificates; equivalent to --server https
-                        ://acme-staging.api.letsencrypt.org/directory
+                        (invalid) certificates; equivalent to --server
+                        https://acme-staging.api.letsencrypt.org/directory
                         (default: False)
   --debug               Show tracebacks in case of errors, and allow certbot-
                         auto execution on experimental platforms (default:
@@ -308,8 +308,8 @@ renew:
                         of renewed certificate domains (for example,
                         "example.com www.example.com" (default: None)
   --disable-hook-validation
-                        Ordinarily the commands specified for --pre-hook
-                        /--post-hook/--deploy-hook will be checked for
+                        Ordinarily the commands specified for --pre-
+                        hook/--post-hook/--deploy-hook will be checked for
                         validity, to see if the programs being run are in the
                         $PATH, so that mistakes can be caught early, even when
                         the hooks aren't being run just yet. The validation is

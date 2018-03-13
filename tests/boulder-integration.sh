@@ -327,6 +327,19 @@ CheckDirHooks 1
 common renew --cert-name le2.wtf
 CheckDirHooks 1
 
+# manual-dns-auth.sh will skip completing the challenge for domains that begin
+# with fail.
+common -a manual -d dns1.le.wtf,fail.dns1.le.wtf \
+    --allow-subset-of-names \
+    --preferred-challenges dns,tls-sni \
+    --manual-auth-hook ./tests/manual-dns-auth.sh \
+    --manual-cleanup-hook ./tests/manual-dns-cleanup.sh
+
+if common certificates | grep "fail\.dns1\.le\.wtf"; then
+    echo "certificate should not have been issued for domain!" >&2
+    exit 1
+fi
+
 # ECDSA
 openssl ecparam -genkey -name secp384r1 -out "${root}/privkey-p384.pem"
 SAN="DNS:ecdsa.le.wtf" openssl req -new -sha256 \
