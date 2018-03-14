@@ -449,7 +449,7 @@ class MultipleVhostsTest(util.ApacheTest):
         self.config.parser.modules.add("mod_ssl.c")
         self.config.parser.modules.add("socache_shmcb_module")
 
-        def side_effect(*args, **kwargs):
+        def side_effect(*args):
             """Mocks case where an SSLCertificateFile directive can be found
             but an SSLCertificateKeyFile directive is missing."""
             if "SSLCertificateFile" in args:
