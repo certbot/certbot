@@ -665,24 +665,25 @@ class NginxConfigurator(common.Installer):
         :raises .errors.PluginError: If no viable HTTPS host can be created or
             set with header header_substring.
         """
-        vhost = self.choose_vhost(domain)
-        if vhost is None:
+        vhosts = self.choose_vhosts(domain)
+        if not vhosts:
             raise errors.PluginError(
                 "Unable to find corresponding HTTPS host for enhancement.")
+        for vhost in vhosts:
+            if vhost.has_header(header_substring):
+                raise errors.PluginEnhancementAlreadyPresent(
+                    "Existing %s header" % (header_substring))
 
-        if vhost.has_header(header_substring):
-            raise errors.PluginEnhancementAlreadyPresent(
-                "Existing %s header" % (header_substring))
+            # if there is no separate SSL block, break the block into two and
+            # choose the SSL block.
+            if vhost.ssl and any([not addr.ssl for addr in vhost.addrs]):
+                _, vhost = self._split_block(vhost)
 
-        # if there is no separate SSL block, break the block into two and
-        # choose the SSL block.
-        if vhost.ssl and any([not addr.ssl for addr in vhost.addrs]):
-            _, vhost = self._split_block(vhost)
-
-        header_directives = [
-            ['\n    ', 'add_header', header_substring] + constants.HEADER_ARGS[header_substring],
-            ['\n']]
-        self.parser.add_server_directives(vhost, header_directives, replace=False)
+            header_directives = [
+                ['\n    ', 'add_header', ' ', header_substring, ' '] +
+                    constants.HEADER_ARGS[header_substring],
+                ['\n']]
+            self.parser.add_server_directives(vhost, header_directives, replace=False)
 
     def _add_redirect_block(self, vhost, domain):
         """Add redirect directive to vhost
