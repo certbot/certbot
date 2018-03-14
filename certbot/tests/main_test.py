@@ -23,6 +23,7 @@ from certbot import configuration
 from certbot import crypto_util
 from certbot import errors
 from certbot import main
+from certbot import updater
 from certbot import util
 
 from certbot.plugins import disco
@@ -1232,7 +1233,9 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         self._test_renew_common(renewalparams=renewalparams, error_expected=True,
                                 names=names, assert_oc_called=False)
 
-    def test_renew_with_configurator(self):
+    @mock.patch('certbot.plugins.selection.choose_configurator_plugins')
+    def test_renew_with_configurator(self, mock_sel):
+        mock_sel.return_value = (mock.MagicMock(), mock.MagicMock())
         renewalparams = {'authenticator': 'webroot'}
         self._test_renew_common(
             renewalparams=renewalparams, assert_oc_called=True,
@@ -1448,6 +1451,13 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
                             email in mock_utility().add_message.call_args[0][0])
                         self.assertTrue(mock_handle.called)
 
+    @mock.patch('certbot.plugins.selection.choose_configurator_plugins')
+    def test_plugin_selection_error(self, mock_choose):
+        mock_choose.side_effect = errors.PluginSelectionError
+        self.assertRaises(errors.PluginSelectionError, main.renew_cert,
+                          None, None, None)
+        self.assertRaises(errors.PluginSelectionError, updater.run_renewal_updaters,
+                          None, None, None)
 
 class UnregisterTest(unittest.TestCase):
     def setUp(self):
