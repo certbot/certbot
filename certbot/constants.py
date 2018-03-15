@@ -107,7 +107,7 @@ CLI_DEFAULTS = dict(
     dns_route53=False
 
 )
-STAGING_URI = "https://acme-staging.api.letsencrypt.org/directory"
+STAGING_URI = "https://acme-staging-v02.api.letsencrypt.org/directory"
 
 # The set of reasons for revoking a certificate is defined in RFC 5280 in
 # section 5.3.1. The reasons that users are allowed to submit are restricted to

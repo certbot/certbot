@@ -15,7 +15,7 @@ from acme import messages
 logging.basicConfig(level=logging.DEBUG)
 
 
-DIRECTORY_URL = 'https://acme-staging.api.letsencrypt.org/directory'
+DIRECTORY_URL = 'https://acme-staging-v02.api.letsencrypt.org/directory'
 BITS = 2048  # minimum for Boulder
 DOMAIN = 'example1.com'  # example.com is ignored by Boulder
 
