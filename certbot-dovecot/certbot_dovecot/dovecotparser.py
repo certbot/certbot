@@ -20,7 +20,7 @@ class DovecotParser(object):
     space = Optional(White().leaveWhitespace())
 
     # Defining comments
-    comment = space + Literal('#') + restOfLine
+    comment = Group(Literal('#') + restOfLine) + same_line_space
 
     # Defining key and value pair
     key = Word(alphanums) + same_line_space + (Literal('='))
@@ -100,3 +100,40 @@ class DovecotParser(object):
         """
 
         return self.result.parseString(text)
+
+
+class RawDovecotDumper(object):
+    # pylint: disable=too-few-public-methods
+    """A class that dumps dovecot configuration from the provided tree."""
+    def __init__(self, tree):
+        self.tree = tree
+
+    def __iter__(self, tree=None):
+        """Iterates the dumped dovecot content."""
+        tree = tree or self.tree
+
+        for item in tree:
+            for i in self.parseItem(item):
+                yield i
+
+    def __str__(self):
+        """Return the parsed block as a string."""
+        return ''.join(self)
+
+    def parseItem(self, item):
+        """Parses a single item and yields line by line."""
+        if len(item) == 2 and isinstance(item[1], list):
+            # Block
+            yield "".join(item[0]) + '{' + '\n'
+
+            # Yield block contents
+            for i in item[1]:
+                for j in self.parseItem(i):
+                    yield j
+
+            yield '}' + '\n'
+        elif isinstance(item, list):
+            # Not a block
+            yield "".join(item) + '\n'
+        else:
+            yield item
