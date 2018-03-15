@@ -227,8 +227,7 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
         response = self._post(url,
                               messages.Revocation(
                                 certificate=cert,
-                                reason=rsn),
-                                content_type=None)
+                                reason=rsn))
         if response.status_code != http_client.OK:
             raise errors.ClientError(
                 'Successful revocation must return HTTP OK status')
