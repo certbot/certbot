@@ -1,0 +1,1 @@
+"""Certbot dovecot plugin."""
