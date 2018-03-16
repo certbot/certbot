@@ -93,6 +93,10 @@ using the secret key
 when it receives a TLS ClientHello with the SNI extension set to
 {sni_domain}
 """
+    _SUBSEQUENT_CHALLENGE_INSTRUCTIONS = """\
+(This must be set up in addition to the previous challenges; do not remove,
+replace, or undo the previous challenge tasks yet.)
+"""
 
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
@@ -100,6 +104,7 @@ when it receives a TLS ClientHello with the SNI extension set to
         self.reverter.recovery_routine()
         self.env = dict()
         self.tls_sni_01 = None
+        self.subsequent_challenge = False
 
     @classmethod
     def add_parser_arguments(cls, add):
@@ -209,8 +214,11 @@ when it receives a TLS ClientHello with the SNI extension set to
                 key=self.tls_sni_01.get_key_path(achall),
                 port=self.config.tls_sni_01_port,
                 sni_domain=self.tls_sni_01.get_z_domain(achall))
+        if self.subsequent_challenge:
+            msg += _SUBSEQUENT_CHALLENGE_INSTRUCTIONS
         display = zope.component.getUtility(interfaces.IDisplay)
         display.notification(msg, wrap=False, force_interactive=True)
+        self.subsequent_challenge = True
 
     def cleanup(self, achalls):  # pylint: disable=missing-docstring
         if self.conf('cleanup-hook'):
