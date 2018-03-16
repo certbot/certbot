@@ -68,14 +68,21 @@ class Authenticator(common.Plugin):
         'secret key needed to complete the TLS handshake is located at '
         '$CERTBOT_KEY_PATH. An additional cleanup script can also be '
         'provided and can use the additional variable $CERTBOT_AUTH_OUTPUT '
-        'which contains the stdout output from the auth script.')
+        'which contains the stdout output from the auth script. If '
+        'authenticating multiple domains, files/records for earlier '
+        'challenges should not be removed, disabled, or replaced until the '
+        'entire procedure has completed.')
     _DNS_INSTRUCTIONS = """\
 Please deploy a DNS TXT record under the name
 {domain} with the following value:
 
 {validation}
 
-Before continuing, verify the record is deployed."""
+Before continuing, verify the record is deployed.
+
+If authenticating multiple domains, records for earlier challenges should not
+be removed, disabled, or replaced until the entire procedure has completed.
+"""
     _HTTP_INSTRUCTIONS = """\
 Create a file containing just this data:
 
@@ -84,6 +91,9 @@ Create a file containing just this data:
 And make it available on your web server at this URL:
 
 {uri}
+
+If authenticating multiple domains, files for earlier challenges should not be
+removed or replaced until the entire procedure has completed.
 """
     _TLSSNI_INSTRUCTIONS = """\
 Configure the service listening on port {port} to present the certificate
