@@ -43,7 +43,7 @@ each shell where you're working:
 .. code-block:: shell
 
    source ./venv/bin/activate
-   export SERVER=https://acme-staging.api.letsencrypt.org/directory
+   export SERVER=https://acme-staging-v02.api.letsencrypt.org/directory
    source tests/integration/_common.sh
 
 After that, your shell will be using the virtual environment, your copy of
@@ -443,10 +443,10 @@ For squeeze you will need to:
 FreeBSD
 -------
 
-Packages can be installed on FreeBSD using ``pkg``, 
-or any other port-management tool (``portupgrade``, ``portmanager``, etc.) 
-from the pre-built package or can be built and installed from ports. 
-Either way will ensure proper installation of all the dependencies required 
+Packages can be installed on FreeBSD using ``pkg``,
+or any other port-management tool (``portupgrade``, ``portmanager``, etc.)
+from the pre-built package or can be built and installed from ports.
+Either way will ensure proper installation of all the dependencies required
 for the package.
 
 FreeBSD by default uses ``tcsh``. In order to activate virtualenv (see

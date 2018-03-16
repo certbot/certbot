@@ -726,7 +726,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.test_rc.configuration["renewalparams"] = {}
         rp = self.test_rc.configuration["renewalparams"]
         self.assertEqual(self.test_rc.is_test_cert, False)
-        rp["server"] = "https://acme-staging.api.letsencrypt.org/directory"
+        rp["server"] = "https://acme-staging-v02.api.letsencrypt.org/directory"
         self.assertEqual(self.test_rc.is_test_cert, True)
         rp["server"] = "https://staging.someotherca.com/directory"
         self.assertEqual(self.test_rc.is_test_cert, True)
