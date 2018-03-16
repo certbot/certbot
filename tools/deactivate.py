@@ -9,7 +9,7 @@ Private key should be in PKCS#8 PEM form.
 To provide the URL for the ACME server you want to use, set it in the $DIRECTORY
 environment variable, e.g.:
 
-DIRECTORY=https://acme-staging-v02.api.letsencrypt.org/directory python \
+DIRECTORY=https://acme-staging.api.letsencrypt.org/directory python \
     deactivate.py private_key.pem
 """
 import os
