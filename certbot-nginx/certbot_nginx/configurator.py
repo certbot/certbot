@@ -61,6 +61,9 @@ class NginxConfigurator(common.Installer):
 
     DEFAULT_LISTEN_PORT = '80'
 
+    # SSL directives that Certbot can add when installing a new certificate.
+    SSL_DIRECTIVES = ['ssl_certificate', 'ssl_certificate_key', 'ssl_dhparam']
+
     @classmethod
     def add_parser_arguments(cls, add):
         add("server-root", default=constants.CLI_DEFAULTS["server_root"],
@@ -105,6 +108,7 @@ class NginxConfigurator(common.Installer):
         self.parser = None
         self.version = version
         self._enhance_func = {"redirect": self._enable_redirect,
+                              "ensure-http-header": self._set_http_header,
                               "staple-ocsp": self._enable_ocsp_stapling}
 
         self.reverter.recovery_routine()
@@ -621,7 +625,7 @@ class NginxConfigurator(common.Installer):
     ##################################
     def supported_enhancements(self):  # pylint: disable=no-self-use
         """Returns currently supported enhancements."""
-        return ['redirect', 'staple-ocsp']
+        return ['redirect', 'ensure-http-header', 'staple-ocsp']
 
     def enhance(self, domain, enhancement, options=None):
         """Enhance configuration.
@@ -647,6 +651,40 @@ class NginxConfigurator(common.Installer):
         test_redirect_block = _test_block_from_block(_redirect_block_for_domain(domain))
         return vhost.contains_list(test_redirect_block)
 
+    def _set_http_header(self, domain, header_substring):
+        """Enables header identified by header_substring on domain.
+
+        If the vhost is listening plaintextishly, separates out the relevant
+        directives into a new server block, and only add header directive to
+        HTTPS block.
+
+        :param str domain: the domain to enable header for.
+        :param str header_substring: String to uniquely identify a header.
+                        e.g. Strict-Transport-Security, Upgrade-Insecure-Requests
+        :returns: Success
+        :raises .errors.PluginError: If no viable HTTPS host can be created or
+            set with header header_substring.
+        """
+        vhosts = self.choose_vhosts(domain)
+        if not vhosts:
+            raise errors.PluginError(
+                "Unable to find corresponding HTTPS host for enhancement.")
+        for vhost in vhosts:
+            if vhost.has_header(header_substring):
+                raise errors.PluginEnhancementAlreadyPresent(
+                    "Existing %s header" % (header_substring))
+
+            # if there is no separate SSL block, break the block into two and
+            # choose the SSL block.
+            if vhost.ssl and any([not addr.ssl for addr in vhost.addrs]):
+                _, vhost = self._split_block(vhost)
+
+            header_directives = [
+                ['\n    ', 'add_header', ' ', header_substring, ' '] +
+                    constants.HEADER_ARGS[header_substring],
+                ['\n']]
+            self.parser.add_server_directives(vhost, header_directives, replace=False)
+
     def _add_redirect_block(self, vhost, domain):
         """Add redirect directive to vhost
         """
@@ -654,6 +692,39 @@ class NginxConfigurator(common.Installer):
 
         self.parser.add_server_directives(
             vhost, redirect_block, replace=False, insert_at_top=True)
+
+    def _split_block(self, vhost, only_directives=None):
+        """Splits this "virtual host" (i.e. this nginx server block) into
+        separate HTTP and HTTPS blocks.
+
+        :param vhost: The server block to break up into two.
+        :param list only_directives: If this exists, only duplicate these directives
+            when splitting the block.
+        :type vhost: :class:`~certbot_nginx.obj.VirtualHost`
+        :returns: tuple (http_vhost, https_vhost)
+        :rtype: tuple of type :class:`~certbot_nginx.obj.VirtualHost`
+        """
+        http_vhost = self.parser.duplicate_vhost(vhost, only_directives=only_directives)
+
+        def _ssl_match_func(directive):
+            return 'ssl' in directive
+
+        def _ssl_config_match_func(directive):
+            return self.mod_ssl_conf in directive
+
+        def _no_ssl_match_func(directive):
+            return 'ssl' not in directive
+
+        # remove all ssl addresses and related directives from the new block
+        for directive in self.SSL_DIRECTIVES:
+            self.parser.remove_server_directives(http_vhost, directive)
+        self.parser.remove_server_directives(http_vhost, 'listen', match_func=_ssl_match_func)
+        self.parser.remove_server_directives(http_vhost, 'include',
+                                             match_func=_ssl_config_match_func)
+
+        # remove all non-ssl addresses from the existing block
+        self.parser.remove_server_directives(vhost, 'listen', match_func=_no_ssl_match_func)
+        return http_vhost, vhost
 
     def _enable_redirect(self, domain, unused_options):
         """Redirect all equivalent HTTP traffic to ssl_vhost.
@@ -694,28 +765,15 @@ class NginxConfigurator(common.Installer):
         :param `~obj.Vhost` vhost: vhost to enable redirect for
         """
 
-        new_vhost = None
+        http_vhost = None
         if vhost.ssl:
-            new_vhost = self.parser.duplicate_vhost(vhost,
-                only_directives=['listen', 'server_name'])
-
-            def _ssl_match_func(directive):
-                return 'ssl' in directive
-
-            def _no_ssl_match_func(directive):
-                return 'ssl' not in directive
-
-            # remove all ssl addresses from the new block
-            self.parser.remove_server_directives(new_vhost, 'listen', match_func=_ssl_match_func)
-
-            # remove all non-ssl addresses from the existing block
-            self.parser.remove_server_directives(vhost, 'listen', match_func=_no_ssl_match_func)
+            http_vhost, _ = self._split_block(vhost, ['listen', 'server_name'])
 
             # Add this at the bottom to get the right order of directives
             return_404_directive = [['\n    ', 'return', ' ', '404']]
-            self.parser.add_server_directives(new_vhost, return_404_directive, replace=False)
+            self.parser.add_server_directives(http_vhost, return_404_directive, replace=False)
 
-            vhost = new_vhost
+            vhost = http_vhost
 
         if self._has_certbot_redirect(vhost, domain):
             logger.info("Traffic on port %s already redirecting to ssl in %s",
