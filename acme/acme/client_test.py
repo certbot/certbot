@@ -292,6 +292,19 @@ class ClientTest(ClientTestBase):
         self.client = Client(
             directory=self.directory, key=KEY, alg=jose.RS256, net=self.net)
 
+    def test_client_initializer_net_autoinit(self):
+        'Test for bug 5738 in acme 0.22.0 where Client.net ends up as None'
+        from acme.client import Client
+        directory = 'somedir'
+        with mock.patch('acme.client.ClientNetwork') as mock_client_network:
+            client = Client(directory=directory, key=KEY, alg=jose.RS256,
+                            net=None)
+
+            self.assertIsNotNone(client.net)
+            mock_client_network.assert_called_once()
+            mock_client_network().get.assert_called_once_with(directory)
+            mock_client_network().get().json.assert_called_once()
+
     def test_init_downloads_directory(self):
         uri = 'http://www.letsencrypt-demo.org/directory'
         from acme.client import Client
