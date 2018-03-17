@@ -24,7 +24,7 @@ running:
 
 If you're on macOS, we recommend you skip the rest of this section and instead
 run Certbot in Docker. You can find instructions for how to do this :ref:`here
-<docker>`. If you're running on Linux, you can run the following commands to
+<docker-dev>`. If you're running on Linux, you can run the following commands to
 install dependencies and set up a virtual environment where you can run
 Certbot. You will need to repeat this when Certbot's dependencies change or when
 a new plugin is introduced.
@@ -377,7 +377,7 @@ This should generate documentation in the ``docs/_build/html``
 directory.
 
 
-.. _docker:
+.. _docker-dev:
 
 Running the client with Docker
 ==============================

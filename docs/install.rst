@@ -94,6 +94,8 @@ Disable and remove the swapfile once the virtual environment is constructed::
   user@webserver:~$ sudo swapoff /tmp/swapfile
   user@webserver:~$ sudo rm /tmp/swapfile
 
+.. _docker-user:
+
 Running with Docker
 -------------------
 
