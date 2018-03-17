@@ -69,6 +69,29 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         self.auth.perform([self.achall])
 
 
+class DNSLookupTest(unittest.TestCase):
+    def setUp(self):
+        from certbot_dns_rfc2136.dns_rfc2136 import _RFC2136Client
+        self.client = lambda x:  _RFC2136Client(x, NAME, SECRET, dns.tsig.HMAC_MD5)
+
+    def test_ipv4(self):
+        self.client("127.0.0.1")
+
+    def test_ipv6(self):
+        self.client("::1")
+
+    def test_hostname_localhost(self):
+        self.client("localhost")
+
+    def test_invalid_hostname(self):
+        with self.assertRaises(errors.PluginError):
+            self.client("invalid.example.tld")
+
+    def test_invalid_ipv4(self):
+        with self.assertRaises(errors.PluginError):
+            self.client("300.1.1.1")
+
+
 class RFC2136ClientTest(unittest.TestCase):
 
     def setUp(self):
