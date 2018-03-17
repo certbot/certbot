@@ -94,7 +94,7 @@ class _RFC2136Client(object):
         try:
             self.server = self._get_ip_for_hostname(server)
         except Exception as e:
-            raise errors.PluginError("Failed to resolv {0}: {1}".format(server, e))
+            raise errors.PluginError("Failed to resolve {0}: {1}".format(server, e))
 
         self.keyring = dns.tsigkeyring.from_text({
             key_name: key_secret
@@ -175,7 +175,7 @@ class _RFC2136Client(object):
 
     def _get_ip_for_hostname(self, hostname):
         """
-        Get an IP address for a supplied hostnamed.
+        Get an IP address for a supplied hostname.
 
         When the system has IPv6 configured, also IPv6 adresses may be returned
         here.
