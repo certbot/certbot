@@ -10,13 +10,13 @@ Welcome to certbot-dns-dnsimple's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+.. automodule:: certbot_dns_dnsimple
+   :members:
+
 .. toctree::
    :maxdepth: 1
 
    api
-
-.. automodule:: certbot_dns_dnsimple
-   :members:
 
 
 

@@ -23,7 +23,7 @@ fi
 
 certbot_test_no_force_renew () {
     omit_patterns="*/*.egg-info/*,*/dns_common*,*/setup.py,*/test_*,*/tests/*"
-    omit_patterns="$omit_patterns,*_test.py,*_test_*,"
+    omit_patterns="$omit_patterns,*_test.py,*_test_*,certbot-apache/*"
     omit_patterns="$omit_patterns,certbot-compatibility-test/*,certbot-dns*/"
     coverage run \
         --append \

@@ -441,8 +441,9 @@ def cert_and_chain_from_fullchain(fullchain_pem):
 
     :returns: tuple of string cert_pem and chain_pem
     :rtype: tuple
+
     """
     cert = OpenSSL.crypto.dump_certificate(OpenSSL.crypto.FILETYPE_PEM,
-        OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM, fullchain_pem))
-    chain = fullchain_pem[len(cert):]
+        OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM, fullchain_pem)).decode()
+    chain = fullchain_pem[len(cert):].lstrip()
     return (cert, chain)

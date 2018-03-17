@@ -143,6 +143,15 @@ class VirtualHostTest(unittest.TestCase):
             "filp",
             set([Addr.fromstring("localhost")]), False, False,
             set(['localhost']), raw4, [])
+        raw_has_hsts = [
+            ['listen', '69.50.225.155:9000'],
+            ['server_name', 'return.com'],
+            ['add_header', 'always', 'set', 'Strict-Transport-Security', '\"max-age=31536000\"'],
+        ]
+        self.vhost_has_hsts = VirtualHost(
+            "filep",
+            set([Addr.fromstring("localhost")]), False, False,
+            set(['localhost']), raw_has_hsts, [])
 
     def test_eq(self):
         from certbot_nginx.obj import Addr
@@ -161,6 +170,12 @@ class VirtualHostTest(unittest.TestCase):
                                  "names: ['localhost']", 'ssl: False',
                                  'enabled: False'])
         self.assertEqual(stringified, str(self.vhost1))
+
+    def test_has_header(self):
+        self.assertTrue(self.vhost_has_hsts.has_header('Strict-Transport-Security'))
+        self.assertFalse(self.vhost_has_hsts.has_header('Bogus-Header'))
+        self.assertFalse(self.vhost1.has_header('Strict-Transport-Security'))
+        self.assertFalse(self.vhost1.has_header('Bogus-Header'))
 
     def test_contains_list(self):
         from certbot_nginx.obj import VirtualHost

@@ -287,6 +287,9 @@ def dump_pyopenssl_chain(chain, filetype=OpenSSL.crypto.FILETYPE_PEM):
     :param list chain: List of `OpenSSL.crypto.X509` (or wrapped in
         :class:`josepy.util.ComparableX509`).
 
+    :returns: certificate chain bundle
+    :rtype: bytes
+
     """
     # XXX: returns empty string when no chain is available, which
     # shuts up RenewableCert, but might not be the best solution...

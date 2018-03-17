@@ -132,7 +132,6 @@ class ClientTest(ClientTestCommon):
         self.eg_domains = ["example.com", "www.example.com"]
         self.eg_order = mock.MagicMock(
             authorizations=[None],
-            fullchain_pem=mock.sentinel.fullchain_pem,
             csr_pem=mock.sentinel.csr_pem)
 
     def test_init_acme_verify_ssl(self):
@@ -165,8 +164,7 @@ class ClientTest(ClientTestCommon):
         self._mock_obtain_certificate()
         test_csr = util.CSR(form="pem", file=None, data=CSR_SAN)
         auth_handler = self.client.auth_handler
-        mock_crypto_util.cert_and_chain_from_fullchain.return_value = (mock.sentinel.cert,
-            mock.sentinel.chain)
+        self._set_mock_from_fullchain(mock_crypto_util.cert_and_chain_from_fullchain)
 
         orderr = self.acme.new_order(test_csr.data)
         auth_handler.handle_authorizations(orderr, False)
@@ -199,8 +197,7 @@ class ClientTest(ClientTestCommon):
         csr = util.CSR(form="pem", file=None, data=CSR_SAN)
         mock_crypto_util.init_save_csr.return_value = csr
         mock_crypto_util.init_save_key.return_value = mock.sentinel.key
-        mock_crypto_util.cert_and_chain_from_fullchain.return_value = (mock.sentinel.cert,
-            mock.sentinel.chain)
+        self._set_mock_from_fullchain(mock_crypto_util.cert_and_chain_from_fullchain)
 
         self._test_obtain_certificate_common(mock.sentinel.key, csr)
 
@@ -209,7 +206,7 @@ class ClientTest(ClientTestCommon):
         mock_crypto_util.init_save_csr.assert_called_once_with(
             mock.sentinel.key, self.eg_domains, self.config.csr_dir)
         mock_crypto_util.cert_and_chain_from_fullchain.assert_called_once_with(
-            mock.sentinel.fullchain_pem)
+            self.eg_order.fullchain_pem)
 
     @mock.patch("certbot.client.crypto_util")
     @mock.patch("os.remove")
@@ -218,8 +215,7 @@ class ClientTest(ClientTestCommon):
         key = util.CSR(form="pem", file=mock.sentinel.key_file, data=CSR_SAN)
         mock_crypto_util.init_save_csr.return_value = csr
         mock_crypto_util.init_save_key.return_value = key
-        mock_crypto_util.cert_and_chain_from_fullchain.return_value = (mock.sentinel.cert,
-            mock.sentinel.chain)
+        self._set_mock_from_fullchain(mock_crypto_util.cert_and_chain_from_fullchain)
 
         authzr = self._authzr_from_domains(["example.com"])
         self.config.allow_subset_of_names = True
@@ -237,8 +233,7 @@ class ClientTest(ClientTestCommon):
         mock_acme_crypto.make_csr.return_value = CSR_SAN
         mock_crypto.make_key.return_value = mock.sentinel.key_pem
         key = util.Key(file=None, pem=mock.sentinel.key_pem)
-        mock_crypto.cert_and_chain_from_fullchain.return_value = (mock.sentinel.cert,
-            mock.sentinel.chain)
+        self._set_mock_from_fullchain(mock_crypto.cert_and_chain_from_fullchain)
 
         self.client.config.dry_run = True
         self._test_obtain_certificate_common(key, csr)
@@ -249,6 +244,13 @@ class ClientTest(ClientTestCommon):
         mock_crypto.init_save_key.assert_not_called()
         mock_crypto.init_save_csr.assert_not_called()
         self.assertEqual(mock_crypto.cert_and_chain_from_fullchain.call_count, 1)
+
+    def _set_mock_from_fullchain(self, mock_from_fullchain):
+        mock_cert = mock.Mock()
+        mock_cert.encode.return_value = mock.sentinel.cert
+        mock_chain = mock.Mock()
+        mock_chain.encode.return_value = mock.sentinel.chain
+        mock_from_fullchain.return_value = (mock_cert, mock_chain)
 
     def _authzr_from_domains(self, domains):
         authzr = []

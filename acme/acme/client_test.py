@@ -99,10 +99,10 @@ class BackwardsCompatibleClientV2Test(ClientTestBase):
         self.chain = [wrapped, wrapped]
 
         self.cert_pem = OpenSSL.crypto.dump_certificate(
-            OpenSSL.crypto.FILETYPE_PEM, messages_test.CERT.wrapped)
+            OpenSSL.crypto.FILETYPE_PEM, messages_test.CERT.wrapped).decode()
 
         single_chain = OpenSSL.crypto.dump_certificate(
-            OpenSSL.crypto.FILETYPE_PEM, loaded)
+            OpenSSL.crypto.FILETYPE_PEM, loaded).decode()
         self.chain_pem = single_chain + single_chain
 
         self.fullchain_pem = self.cert_pem + self.chain_pem
@@ -298,6 +298,16 @@ class ClientTest(ClientTestBase):
         self.client = Client(
             directory=uri, key=KEY, alg=jose.RS256, net=self.net)
         self.net.get.assert_called_once_with(uri)
+
+    @mock.patch('acme.client.ClientNetwork')
+    def test_init_without_net(self, mock_net):
+        mock_net.return_value = mock.sentinel.net
+        alg = jose.RS256
+        from acme.client import Client
+        self.client = Client(
+            directory=self.directory, key=KEY, alg=alg)
+        mock_net.called_once_with(KEY, alg=alg, verify_ssl=True)
+        self.assertEqual(self.client.net, mock.sentinel.net)
 
     def test_register(self):
         # "Instance of 'Field' has no to_json/update member" bug:
@@ -635,8 +645,7 @@ class ClientTest(ClientTestBase):
     def test_revoke(self):
         self.client.revoke(self.certr.body, self.rsn)
         self.net.post.assert_called_once_with(
-            self.directory[messages.Revocation], mock.ANY, content_type=None,
-            acme_version=1)
+            self.directory[messages.Revocation], mock.ANY, acme_version=1)
 
     def test_revocation_payload(self):
         obj = messages.Revocation(certificate=self.certr.body, reason=self.rsn)
@@ -776,8 +785,7 @@ class ClientV2Test(ClientTestBase):
     def test_revoke(self):
         self.client.revoke(messages_test.CERT, self.rsn)
         self.net.post.assert_called_once_with(
-            self.directory["revokeCert"], mock.ANY, content_type=None,
-            acme_version=2)
+            self.directory["revokeCert"], mock.ANY, acme_version=2)
 
 
 class MockJSONDeSerializable(jose.JSONDeSerializable):

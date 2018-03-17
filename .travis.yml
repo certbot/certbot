@@ -30,7 +30,7 @@ matrix:
     - python: "2.7"
       env: TOXENV=lint
     - python: "2.7"
-      env: TOXENV=py27-oldest
+      env: TOXENV='py27-{acme,apache,certbot,dns,nginx}-oldest'
       sudo: required
       services: docker
     - python: "3.4"
