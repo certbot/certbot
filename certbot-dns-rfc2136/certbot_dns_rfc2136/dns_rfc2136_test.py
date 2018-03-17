@@ -72,7 +72,7 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
 class DNSLookupTest(unittest.TestCase):
     def setUp(self):
         from certbot_dns_rfc2136.dns_rfc2136 import _RFC2136Client
-        self.client = lambda x:  _RFC2136Client(x, NAME, SECRET, dns.tsig.HMAC_MD5)
+        self.client = lambda x: _RFC2136Client(x, NAME, SECRET, dns.tsig.HMAC_MD5)
 
     def test_ipv4(self):
         self.client("127.0.0.1")
