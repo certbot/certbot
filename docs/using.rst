@@ -185,7 +185,8 @@ Certbot's DNS plugins.
 These plugins are still in the process of being packaged
 by many distributions and cannot currently be installed with ``certbot-auto``.
 If, however, you are comfortable installing the certificates yourself,
-you can run these plugins with :ref:`Docker <docker-user>`.
+you can run these plugins with :ref:`Docker <docker-user>`, or by installing the 
+pip package for your chosen plugin directly (eg. ``pip install certbot-dns-cloudflare``).
 
 Once installed, you can find documentation on how to use each plugin at:
 
