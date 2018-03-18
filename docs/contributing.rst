@@ -376,6 +376,9 @@ commands:
 This should generate documentation in the ``docs/_build/html``
 directory.
 
+.. note:: If you skipped the "Getting Started" instructions above,
+  run ``pip install -e .[docs]`` to install Certbot's docs extras modules.
+
 
 .. _docker-dev:
 
