@@ -435,6 +435,7 @@ class Authorization(ResourceBody):
     # be absent'... then acme-spec gives example with 'expires'
     # present... That's confusing!
     expires = fields.RFC3339Field('expires', omitempty=True)
+    wildcard = jose.Field('wildcard', omitempty=True)
 
     @challenges.decoder
     def challenges(value):  # pylint: disable=missing-docstring,no-self-argument
