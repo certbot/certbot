@@ -604,7 +604,7 @@ def enforce_domain_sanity(domain):
 def is_wildcard_domain(domain):
     """"Is domain a wildcard domain?
 
-    :param damain: domain to check
+    :param domain: domain to check
     :type domain: `bytes` or `str` or `unicode`
 
     :returns: True if domain is a wildcard, otherwise, False
