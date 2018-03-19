@@ -118,7 +118,7 @@ class AuthHandler(object):
         """Get Responses for challenges from authenticators."""
         resp = []
         all_achalls = self._get_all_achalls(aauthzrs)
-        with error_handler.ErrorHandler(self._cleanup_challenges, all_achalls):
+        with error_handler.ErrorHandler(self._cleanup_challenges, aauthzrs, all_achalls):
             try:
                 if all_achalls:
                     resp = self.auth.perform(all_achalls)
@@ -294,18 +294,17 @@ class AuthHandler(object):
         chall_prefs.extend(plugin_pref)
         return chall_prefs
 
-    def _cleanup_challenges(self, aauthzrs, achall_list=None):
+    def _cleanup_challenges(self, aauthzrs, achalls):
         """Cleanup challenges.
 
-        If achall_list is not provided, cleanup all achallenges.
+        :param aauthzrs: authorizations and their selected annotated
+            challenges
+        :type aauthzrs: `list` of `AnnotatedAuthzr`
+        :param achalls: annotated challenges to cleanup
+        :type achalls: `list` of :class:`certbot.achallenges.AnnotatedChallenge`
 
         """
         logger.info("Cleaning up challenges")
-
-        if achall_list is None:
-            achalls = self._get_all_achalls(aauthzrs)
-        else:
-            achalls = achall_list
 
         if achalls:
             self.auth.cleanup(achalls)
