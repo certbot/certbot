@@ -58,12 +58,6 @@ class Authenticator(dns_common.DNSAuthenticator):
         except (NoCredentialsError, ClientError) as e:
             logger.debug('Encountered error during perform: %s', e, exc_info=True)
             raise errors.PluginError("\n".join([str(e), INSTRUCTIONS]))
-
-        # Sleep for at least the TTL, to ensure that any records cached by
-        # the ACME server after previous validation attempts are gone. In
-        # most cases we'll need to wait at least this long for the Route53
-        # records to propagate, so this doesn't delay us much.
-        time.sleep(self.ttl)
         return [achall.response(achall.account_key) for achall in achalls]
 
     def _cleanup(self, domain, validation_domain_name, validation):
