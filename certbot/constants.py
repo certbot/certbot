@@ -60,6 +60,7 @@ CLI_DEFAULTS = dict(
     hsts=None,
     uir=None,
     staple=None,
+    starttls_policy=None,
     strict_permissions=False,
     pref_challs=[],
     validate_hooks=True,
@@ -135,7 +136,7 @@ RENEWER_DEFAULTS = dict(
 """Defaults for renewer script."""
 
 
-ENHANCEMENTS = ["redirect", "http-header", "ocsp-stapling", "spdy"]
+ENHANCEMENTS = ["redirect", "http-header", "ocsp-stapling", "spdy", "starttls-everywhere"]
 """List of possible :class:`certbot.interfaces.IInstaller`
 enhancements.
 
