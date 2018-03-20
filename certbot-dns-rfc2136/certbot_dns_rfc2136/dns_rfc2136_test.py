@@ -75,14 +75,18 @@ class DNSLookupTest(unittest.TestCase):
         self.client = lambda x: _RFC2136Client(x, NAME, SECRET, dns.tsig.HMAC_MD5)
 
     def test_ipv4(self):
-        self.client("127.0.0.1")
+        result = self.client("127.0.0.1")
+        self.assertEqual("127.0.0.1", result.server)
 
-    # Travis Ci does not support IPv6 yet, so this test is disabled
-    #def test_ipv6(self):
-    #    self.client("::1")
+    @unittest.skipIf("TRAVIS" in os.environ,
+                     "IPv6 is not always supported in Travis, IPv6 test skipped")
+    def test_ipv6(self):
+        result = self.client("::1")
+        self.assertEqual("::1", result.server)
 
     def test_hostname_localhost(self):
-        self.client("localhost")
+        result = self.client("localhost")
+        self.assertTrue(result.server in ["127.0.0.1", "::1"])
 
     def test_invalid_hostname(self):
         with self.assertRaises(errors.PluginError):
