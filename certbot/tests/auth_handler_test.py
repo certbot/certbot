@@ -278,6 +278,17 @@ class HandleAuthorizationsTest(unittest.TestCase):
         self.assertRaises(
             errors.AuthorizationError, self.handler.handle_authorizations, mock_order)
 
+    def test_perform_error(self):
+        self.mock_auth.perform.side_effect = errors.AuthorizationError
+
+        authzr = gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES, combos=True)
+        mock_order = mock.MagicMock(authorizations=[authzr])
+        self.assertRaises(errors.AuthorizationError, self.handler.handle_authorizations, mock_order)
+
+        self.assertEqual(self.mock_auth.cleanup.call_count, 1)
+        self.assertEqual(
+            self.mock_auth.cleanup.call_args[0][0][0].typ, "tls-sni-01")
+
     def _validate_all(self, aauthzrs, unused_1, unused_2):
         for i, aauthzr in enumerate(aauthzrs):
             azr = aauthzr.authzr
