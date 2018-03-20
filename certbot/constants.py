@@ -122,7 +122,7 @@ REVOCATION_REASONS = {
 
 """Defaults for CLI flags and `.IConfig` attributes."""
 
-QUIET_LOGGING_LEVEL = logging.WARNING
+QUIET_LOGGING_LEVEL = logging.ERROR
 """Logging level to use in quiet mode."""
 
 RENEWER_DEFAULTS = dict(
