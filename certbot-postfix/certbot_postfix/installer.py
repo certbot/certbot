@@ -2,6 +2,7 @@
 import logging
 import os
 import subprocess
+from functools import partial
 
 import zope.interface
 
@@ -47,18 +48,20 @@ DEFAULT_CLIENT_VARS = {
 
 logger = logging.getLogger(__name__)
 
-def _report_master_overrides_less_secure(acceptable):
-    def _report_master_overrides(name, overrides):
-        for override in overrides:
-            if override not in acceptable:
-                print("Warning: Parameter %s is overridden as less-secure option %s " + 
-                      "for service %s in master configuration file!" %
-                      (name, override[1], override[0]))
+def _report_master_overrides(name, overrides, acceptable_overrides=None):
+    """If the value for a parameter |name| is overridden by other services,
+    report a warning to notify the user.
 
-def _report_master_overrides(name, overrides):
+    :param str name: The name of the parameter that is being overridden.
+    :param str overrides: The values that other services are setting for |name|.
+    :param list acceptable_overrides: Override values that are acceptable. For instance, if
+        another service is overriding our parameter with a more secure option, we don't have to warn.
+        If this is set to None, warnings are reported for *all* overrides!
+    """
     for override in overrides:
-        print("Warning: Parameter %s is overridden as %s for service %s in master configuration file!" %
-                (name, override[1], override[0]))
+        if acceptable_overrides is None or override not in acceptable_overrides:
+            logger.warn("Warning: Parameter %s is overridden as %s for service %s in master configuration file!" %
+                    (name, override[1], override[0]))
 
 def _get_formatted_protocols(min_tls_version, delimiter=":"):
     """Enforces the minimum TLS version in a way that Postfix can understand. For instance,
@@ -79,6 +82,7 @@ def _get_formatted_policy_for_domain(address_domain, tls_policy):
         <domain> <tls_security_level> protocols=<protocols>
     For instance, let's say we have an entry for mail.example.com with a minimum TLS version of 1.1:
         mail.example.com encrypt protocols=!SSLv2:!SSLv3:!TLSv1
+
     :param address_domain str: The domain we're configuring this policy for.
     :param tls_policy dict: TLS policy information.
     :rtype str: Properly formatted Postfix TLS policy specification for this domain.
@@ -164,8 +168,9 @@ class Installer(plugins_common.Installer):
         """
         for param in ("ctl", "config_utility",):
             self._verify_executable_is_available(param)
-        # Set initially here so we can grab configuration directory if needed.
         self._ensure_ca_certificates_exist()
+        # Set postconf initially here so we can use `postconf` to set configuration
+        # directory if needed.
         self.postconf = postconf.ConfigMain(self.conf('config-utility'))
         self._set_config_dir()
         self.postfix = util.PostfixUtil(self.config_dir)
@@ -177,6 +182,8 @@ class Installer(plugins_common.Installer):
         self.postconf = postconf.ConfigMain(self.conf('config-utility'), self.config_dir)
 
     def config_test(self):
+        """Test to see that the current Postfix configuration is valid.
+        """
         self.postfix.test()
 
     def _verify_executable_is_available(self, config_name):
@@ -276,10 +283,10 @@ class Installer(plugins_common.Installer):
             if isinstance(acceptable, tuple):
                 if self.postconf.get(param) not in acceptable:
                     self.postconf.set(param, acceptable[0],
-                        _report_master_overrides_less_secure(acceptable))
+                        partial(_report_master_overrides, acceptable_overrides=acceptable))
             else:
                 self.postconf.set(param, acceptable,
-                    _report_master_overrides_less_secure([acceptable]))
+                    partial(_report_master_overrides, acceptable_overrides=acceptable))
 
     def deploy_cert(self, domain, cert_path,
                     key_path, chain_path, fullchain_path):
@@ -297,7 +304,7 @@ class Installer(plugins_common.Installer):
         """
         # pylint: disable=unused-argument
         self.save_notes.append("Configuring TLS for {0}".format(domain))
-        self.postconf.set("smtpd_tls_cert_file", cert_path, check_override=_report_master_overrides)
+        self.postconf.set("smtpd_tls_cert_file", cert_path, _report_master_overrides)
         self.postconf.set("smtpd_tls_key_file", key_path, _report_master_overrides)
         self._set_vars(DEFAULT_SERVER_VARS)
         self._set_vars(DEFAULT_CLIENT_VARS)
@@ -337,7 +344,7 @@ class Installer(plugins_common.Installer):
         :rtype: list
 
         """
-        return ['starttls-everywhere'] # mta-sts?
+        return ['starttls-everywhere'] # TODO(sydneyli): Call this starttls-policy?
 
     def save(self, title=None, temporary=False):
         """Creates backups and writes changes to configuration files.
@@ -384,5 +391,4 @@ class Installer(plugins_common.Installer):
         :raises .PluginError: when server cannot be restarted
         """
         self.postfix.restart()
-
 

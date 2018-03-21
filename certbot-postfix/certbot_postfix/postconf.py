@@ -139,6 +139,10 @@ class ConfigMain(util.PostfixUtilBase):
 
 def _parse_main_output(output):
     """Parses the raw output from Postconf about main.cf.
+    Expects the output to look like:
+
+    name1 = value1
+    name2 = value2
 
     :param str output: data postconf wrote to stdout about main.cf
 
