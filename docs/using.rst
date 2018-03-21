@@ -552,6 +552,12 @@ can run on a regular basis, like every week or every day). In that case,
 you are likely to want to use the ``-q`` or ``--quiet`` quiet flag to
 silence all output except errors.
 
+.. seealso:: Many of the certbot clients obtained through a
+   distribution come with automatic renewal out of the box,
+   such as Debian and Ubuntu versions installed through `apt`,
+   CentOS/RHEL 7 through EPEL, etc.  See `Automated Renewals`_
+   for more details.
+
 If you are manually renewing all of your certificates, the
 ``--force-renewal`` flag may be helpful; it causes the expiration time of
 the certificate(s) to be ignored when considering renewal, and attempts to
@@ -647,6 +653,31 @@ The following commands could be used to specify where these files are located::
   sed -i 's,/etc/letsencrypt/live/example.com,/home/user/me/certbot,g' /etc/letsencrypt/renewal/example.com.conf
   certbot update_symlinks
 
+Automated Renewals
+------------------
+
+Many Linux distributions provide automated renewal when you use the
+packages installed through their system package manager.  The
+following table is an *incomplete* list of distributions which do so,
+as well as their methods for doing so.
+
+If you are not sure whether or not your system has this already
+automated, refer to your distribution's documentation, or check your
+system's crontab (typically in `/etc/crontab/` and `/etc/cron.*/*` and
+systemd timers (`systemctl list-timers`).
+
+.. csv-table:: Distributions with Automated Renewal
+   :header: "Distribution Name", "Distribution Version", "Automation Method"
+
+   "CentOS", "EPEL 7", "systemd"
+   "Debian", "jessie", "cron, systemd"
+   "Debian", "stretch", "cron, systemd"
+   "Debian", "testing/sid", "cron, systemd"
+   "Fedora", "26", "systemd"
+   "Fedora", "27", "systemd"
+   "RHEL", "EPEL 7", "systemd"
+   "Ubuntu", "17.10", "cron, systemd"
+   "Ubuntu", "certbot PPA", "cron, systemd"
 
 .. _where-certs:
 
@@ -888,7 +919,7 @@ Certbot accepts a global configuration file that applies its options to all invo
 of Certbot. Certificate specific configuration choices should be set in the ``.conf``
 files that can be found in ``/etc/letsencrypt/renewal``.
 
-By default no cli.ini file is created, after creating one 
+By default no cli.ini file is created, after creating one
 it is possible to specify the location of this configuration file with
 ``certbot-auto --config cli.ini`` (or shorter ``-c cli.ini``). An
 example configuration file is shown below:
@@ -923,6 +954,12 @@ Meaning that once 1000 files are in ``/var/log/letsencrypt`` Certbot will delete
 the oldest one to make room for new logs. The number of subsequent logs can be
 changed by passing the desired number to the command line flag
 ``--max-log-backups``.
+
+.. note:: Some distributions, including Debian and Ubuntu, disable
+   certbot's internal log rotation in favor of a more traditional
+   logrotate script.  If you are using a distribution's packages and
+   want to alter the log rotation, check `/etc/logrotate.d/` for a
+   certbot rotation script.
 
 .. _command-line:
 
