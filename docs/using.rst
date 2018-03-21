@@ -520,8 +520,7 @@ silence all output except errors.
    distribution come with automatic renewal out of the box,
    such as Debian and Ubuntu versions installed through `apt`,
    CentOS/RHEL 7 through EPEL, etc.  See `Automated Renewals`_
-   for more details, or consult your distribution's
-   documentation.
+   for more details.
 
 If you are manually renewing all of your certificates, the
 ``--force-renewal`` flag may be helpful; it causes the expiration time of
