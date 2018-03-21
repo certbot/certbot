@@ -67,10 +67,9 @@ class AuthHandler(object):
         config = zope.component.getUtility(interfaces.IConfig)
         notify = zope.component.getUtility(interfaces.IDisplay).notification
 
-        # While there are still challenges remaining...
-        while self._has_challenges(aauthzrs):
-            # achalls = self._get_all_achalls(aauthzrs)
-            with error_handler.ExitHandler(self._cleanup_challenges, aauthzrs):
+        with error_handler.ExitHandler(self._cleanup_challenges, aauthzrs):
+            # While there are still challenges remaining...
+            while self._has_challenges(aauthzrs):
                 resp = self._solve_challenges(aauthzrs)
                 logger.info("Waiting for verification...")
                 if config.debug_challenges:
