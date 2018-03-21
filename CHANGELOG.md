@@ -2,6 +2,54 @@
 
 Certbot adheres to [Semantic Versioning](http://semver.org/).
 
+## 0.22.2 - 2018-03-19
+
+### Fixed
+
+* A type error introduced in 0.22.1 that would occur during challenge cleanup
+  when a Certbot plugin raises an exception while trying to complete the
+  challenge was fixed.
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+packages with changes other than their version number were:
+
+* certbot
+
+More details about these changes can be found on our GitHub repo:
+https://github.com/certbot/certbot/milestone/53?closed=1
+
+## 0.22.1 - 2018-03-19
+
+### Changed
+
+* The ACME server used with Certbot's --dry-run and --staging flags is now
+  Let's Encrypt's ACMEv2 staging server which allows people to also test ACMEv2
+  features with these flags.
+
+### Fixed
+
+* The HTTP Content-Type header is now set to the correct value during
+  certificate revocation with new versions of the ACME protocol.
+* When using Certbot with Let's Encrypt's ACMEv2 server, it would add a blank
+  line to the top of chain.pem and between the certificates in fullchain.pem
+  for each lineage. These blank lines have been removed.
+* Resolved a bug that caused Certbot's --allow-subset-of-names flag not to
+  work.
+* Fixed a regression in acme.client.Client that caused the class to not work
+  when it was initialized without a ClientNetwork which is done by some of the
+  other projects using our ACME library.
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+packages with changes other than their version number were:
+
+* acme
+* certbot
+
+More details about these changes can be found on our GitHub repo:
+https://github.com/certbot/certbot/milestone/51?closed=1
+
 ## 0.22.0 - 2018-03-07
 
 ### Added
