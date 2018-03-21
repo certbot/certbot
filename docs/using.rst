@@ -45,7 +45,7 @@ a combination_ of distinct authenticator and installer plugins.
 Plugin      Auth Inst Notes                                                           Challenge types (and port)
 =========== ==== ==== =============================================================== =============================
 apache_     Y    Y    | Automates obtaining and installing a certificate with Apache  tls-sni-01_ (443)
-                      | 2.4 on Debian-based distributions with ``libaugeas0`` 1.0+.
+                      | 2.4 on OSes with ``libaugeas0`` 1.0+.
 webroot_    Y    N    | Obtains a certificate by writing to the webroot directory of  http-01_ (80)
                       | an already running webserver.
 nginx_      Y    Y    | Automates obtaining and installing a certificate with Nginx.  tls-sni-01_ (443)
@@ -87,7 +87,7 @@ Apache
 
 The Apache plugin currently requires an OS with augeas version 1.0; currently `it
 supports
-<https://github.com/certbot/certbot/blob/master/certbot-apache/certbot_apache/constants.py>`_
+<https://github.com/certbot/certbot/blob/master/certbot-apache/certbot_apache/entrypoint.py>`_
 modern OSes based on Debian, Fedora, SUSE, Gentoo and Darwin.
 This automates both obtaining *and* installing certificates on an Apache
 webserver. To specify this plugin on the command line, simply include
