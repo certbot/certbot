@@ -289,6 +289,32 @@ class HandleAuthorizationsTest(unittest.TestCase):
         self.assertEqual(
             self.mock_auth.cleanup.call_args[0][0][0].typ, "tls-sni-01")
 
+    @mock.patch("certbot.auth_handler.AuthHandler._respond")
+    def test_respond_error(self, mock_respond):
+        authzrs = [gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES)]
+        mock_order = mock.MagicMock(authorizations=authzrs)
+        mock_respond.side_effect = errors.AuthorizationError
+
+        self.assertRaises(
+            errors.AuthorizationError, self.handler.handle_authorizations, mock_order)
+        self.assertEqual(self.mock_auth.cleanup.call_count, 1)
+        self.assertEqual(
+            self.mock_auth.cleanup.call_args[0][0][0].typ, "tls-sni-01")
+
+    @mock.patch("certbot.auth_handler.AuthHandler._poll_challenges")
+    @mock.patch("certbot.auth_handler.AuthHandler.verify_authzr_complete")
+    def test_incomplete_authzr_error(self, mock_verify, mock_poll):
+        authzrs = [gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES)]
+        mock_order = mock.MagicMock(authorizations=authzrs)
+        mock_verify.side_effect = errors.AuthorizationError
+        mock_poll.side_effect = self._validate_all
+
+        self.assertRaises(
+            errors.AuthorizationError, self.handler.handle_authorizations, mock_order)
+        self.assertEqual(self.mock_auth.cleanup.call_count, 1)
+        self.assertEqual(
+            self.mock_auth.cleanup.call_args[0][0][0].typ, "tls-sni-01")
+
     def _validate_all(self, aauthzrs, unused_1, unused_2):
         for i, aauthzr in enumerate(aauthzrs):
             azr = aauthzr.authzr

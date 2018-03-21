@@ -47,6 +47,10 @@ class ErrorHandlerTest(unittest.TestCase):
         self.handler = error_handler.ErrorHandler(self.init_func,
                                                   *self.init_args,
                                                   **self.init_kwargs)
+        self.exit_handler = error_handler.ExitHandler(self.init_func,
+                                                      *self.init_args,
+                                                      **self.init_kwargs)
+
         # pylint: disable=protected-access
         self.signals = error_handler._SIGNALS
 
@@ -113,6 +117,22 @@ class ErrorHandlerTest(unittest.TestCase):
             pass
         self.assertFalse(self.init_func.called)
 
+    def test_ignore_regular_exit(self):
+        func = mock.MagicMock()
+        self.handler.register(func)
+        with self.handler:
+            pass
+        self.init_func.assert_not_called()
+        func.assert_not_called()
+
+    def test_exit_handler_calls_cleanup(self):
+        func = mock.MagicMock()
+        self.exit_handler.register(func)
+        with self.exit_handler:
+            pass
+        self.init_func.assert_called_once_with(*self.init_args,
+                                               **self.init_kwargs)
+        func.assert_called_once_with()
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
