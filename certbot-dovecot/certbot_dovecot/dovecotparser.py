@@ -1,6 +1,6 @@
 """Very low-level dovecot config parser based on pyparsing."""
 from pyparsing import (
-    alphanums, restOfLine,
+    printables, restOfLine,
     Literal, Forward, Group, LineEnd, Optional,
     OneOrMore, ParserElement, White, Word, ZeroOrMore
 )
@@ -15,6 +15,18 @@ class DovecotParser(object):
     # configuration itself
     ParserElement.setDefaultWhitespaceChars('')
 
+    # This is printables excluding the following characters: # { } ,
+    allowed_characters = (
+        "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"$%&"
+        "\\'()*+-./:;<=>?@[\\]^_`|~"
+    )
+
+    allowed_characters = printables.replace("=", "")
+    allowed_characters = allowed_characters.replace("{", "")
+    allowed_characters = allowed_characters.replace("}", "")
+    allowed_characters = allowed_characters.replace(",", "")
+    allowed_characters = allowed_characters.replace("#", "")
+
     newline = LineEnd()
     same_line_space = Optional(Word(' \t').leaveWhitespace())
     space = Optional(White().leaveWhitespace())
@@ -23,12 +35,12 @@ class DovecotParser(object):
     comment = space + Literal('#') + restOfLine
 
     # Defining key and value pair
-    key = Word(alphanums) + same_line_space + (Literal('='))
+    key = Word(allowed_characters) + same_line_space + (Literal('='))
 
     value_group = OneOrMore(
         same_line_space
         + Optional(Literal(',') + same_line_space)
-        + Word(alphanums)
+        + Word(allowed_characters)
     )
 
     key_value_pair = (
@@ -40,19 +52,27 @@ class DovecotParser(object):
     include = (
         space
         + (Literal('!include_try') | Literal('!include'))
-        + OneOrMore(same_line_space
-        + Word(alphanums + "_/-?!"))
+        + same_line_space
+        + Word(allowed_characters)
         + same_line_space
     )
 
     # Defining a block
     block = Forward()
 
-    item = Group(comment | block | key_value_pair | include) + newline.suppress()
+    item = Group(
+        comment
+        | block
+        | (key_value_pair + Optional(comment))
+        | (include + Optional(comment))
+    ) + newline.suppress()
 
     block_title = Group(
-        space + Word(alphanums) + same_line_space
-        + Literal('{') + same_line_space + newline.suppress()
+        space + Word(allowed_characters) + same_line_space
+        # Allow title with 2 words
+        + Optional(Word(allowed_characters) + same_line_space)
+        + Literal('{') + same_line_space + Optional(comment)
+        + newline.suppress()
     )
 
     right_brace = Group(space + Literal('}') + same_line_space + Optional(comment))
