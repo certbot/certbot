@@ -41,7 +41,7 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
     def test_perform(self):
         self.auth.perform([self.achall])
 
-        expected = [mock.call.add_txt_record(DOMAIN, '_acme-challenge.'+DOMAIN, mock.ANY, mock.ANY)]
+        expected = [mock.call.add_txt_record('_acme-challenge.'+DOMAIN, mock.ANY, mock.ANY)]
         self.assertEqual(expected, self.mock_client.mock_calls)
 
     def test_cleanup(self):
@@ -49,7 +49,7 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         self.auth._attempt_cleanup = True
         self.auth.cleanup([self.achall])
 
-        expected = [mock.call.del_txt_record(DOMAIN, '_acme-challenge.'+DOMAIN, mock.ANY)]
+        expected = [mock.call.del_txt_record('_acme-challenge.'+DOMAIN, mock.ANY)]
         self.assertEqual(expected, self.mock_client.mock_calls)
 
     def test_invalid_algorithm_raises(self):
@@ -110,7 +110,7 @@ class RFC2136ClientTest(unittest.TestCase):
         # _find_domain | pylint: disable=protected-access
         self.rfc2136_client._find_domain = mock.MagicMock(return_value="example.com")
 
-        self.rfc2136_client.add_txt_record(DOMAIN, "bar", "baz", 42)
+        self.rfc2136_client.add_txt_record("bar", "baz", 42)
 
         query_mock.assert_called_with(mock.ANY, SERVER)
         self.assertTrue("bar. 42 IN TXT \"baz\"" in str(query_mock.call_args[0][0]))
@@ -124,7 +124,7 @@ class RFC2136ClientTest(unittest.TestCase):
         self.assertRaises(
             errors.PluginError,
             self.rfc2136_client.add_txt_record,
-            DOMAIN, "bar", "baz", 42)
+             "bar", "baz", 42)
 
     @mock.patch("dns.query.tcp")
     def test_add_txt_record_server_error(self, query_mock):
@@ -135,7 +135,7 @@ class RFC2136ClientTest(unittest.TestCase):
         self.assertRaises(
             errors.PluginError,
             self.rfc2136_client.add_txt_record,
-            DOMAIN, "bar", "baz", 42)
+             "bar", "baz", 42)
 
     @mock.patch("dns.query.tcp")
     def test_del_txt_record(self, query_mock):
@@ -143,7 +143,7 @@ class RFC2136ClientTest(unittest.TestCase):
         # _find_domain | pylint: disable=protected-access
         self.rfc2136_client._find_domain = mock.MagicMock(return_value="example.com")
 
-        self.rfc2136_client.del_txt_record(DOMAIN, "bar", "baz")
+        self.rfc2136_client.del_txt_record("bar", "baz")
 
         query_mock.assert_called_with(mock.ANY, SERVER)
         self.assertTrue("bar. 0 NONE TXT \"baz\"" in str(query_mock.call_args[0][0]))
@@ -157,7 +157,7 @@ class RFC2136ClientTest(unittest.TestCase):
         self.assertRaises(
             errors.PluginError,
             self.rfc2136_client.del_txt_record,
-            DOMAIN, "bar", "baz")
+             "bar", "baz")
 
     @mock.patch("dns.query.tcp")
     def test_del_txt_record_server_error(self, query_mock):
@@ -168,7 +168,7 @@ class RFC2136ClientTest(unittest.TestCase):
         self.assertRaises(
             errors.PluginError,
             self.rfc2136_client.del_txt_record,
-            DOMAIN, "bar", "baz")
+             "bar", "baz")
 
     def test_find_domain(self):
         # _query_soa | pylint: disable=protected-access

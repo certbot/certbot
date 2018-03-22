@@ -72,11 +72,11 @@ class Authenticator(dns_common.DNSAuthenticator):
             self._validate_algorithm
         )
 
-    def _perform(self, domain, validation_name, validation):
-        self._get_rfc2136_client().add_txt_record(domain, validation_name, validation, self.ttl)
+    def _perform(self, _domain, validation_name, validation):
+        self._get_rfc2136_client().add_txt_record(validation_name, validation, self.ttl)
 
-    def _cleanup(self, domain, validation_name, validation):
-        self._get_rfc2136_client().del_txt_record(domain, validation_name, validation)
+    def _cleanup(self, _domain, validation_name, validation):
+        self._get_rfc2136_client().del_txt_record(validation_name, validation)
 
     def _get_rfc2136_client(self):
         return _RFC2136Client(self.credentials.conf('server'),
@@ -101,18 +101,17 @@ class _RFC2136Client(object):
         })
         self.algorithm = key_algorithm
 
-    def add_txt_record(self, domain_name, record_name, record_content, record_ttl):
+    def add_txt_record(self, record_name, record_content, record_ttl):
         """
         Add a TXT record using the supplied information.
 
-        :param str domain: The domain to use to find the closest SOA.
         :param str record_name: The record name (typically beginning with '_acme-challenge.').
         :param str record_content: The record content (typically the challenge validation).
         :param int record_ttl: The record TTL (number of seconds that the record may be cached).
         :raises certbot.errors.PluginError: if an error occurs communicating with the DNS server
         """
 
-        domain = self._find_domain(domain_name)
+        domain = self._find_domain(record_name)
 
         n = dns.name.from_text(record_name)
         o = dns.name.from_text(domain)
@@ -137,18 +136,17 @@ class _RFC2136Client(object):
             raise errors.PluginError('Received response from server: {0}'
                                      .format(dns.rcode.to_text(rcode)))
 
-    def del_txt_record(self, domain_name, record_name, record_content):
+    def del_txt_record(self, record_name, record_content):
         """
         Delete a TXT record using the supplied information.
 
-        :param str domain: The domain to use to find the closest SOA.
         :param str record_name: The record name (typically beginning with '_acme-challenge.').
         :param str record_content: The record content (typically the challenge validation).
         :param int record_ttl: The record TTL (number of seconds that the record may be cached).
         :raises certbot.errors.PluginError: if an error occurs communicating with the DNS server
         """
 
-        domain = self._find_domain(domain_name)
+        domain = self._find_domain(record_name)
 
         n = dns.name.from_text(record_name)
         o = dns.name.from_text(domain)
@@ -197,17 +195,17 @@ class _RFC2136Client(object):
         # Just return the first address in string representation.
         return results[0][4][0]
 
-    def _find_domain(self, domain_name):
+    def _find_domain(self, record_name):
         """
         Find the closest domain with an SOA record for a given domain name.
 
-        :param str domain_name: The domain name for which to find the closest SOA record.
+        :param str record_name: The record name for which to find the closest SOA record.
         :returns: The domain, if found.
         :rtype: str
         :raises certbot.errors.PluginError: if no SOA record can be found.
         """
 
-        domain_name_guesses = dns_common.base_domain_name_guesses(domain_name)
+        domain_name_guesses = dns_common.base_domain_name_guesses(record_name)
 
         # Loop through until we find an authoritative SOA record
         for guess in domain_name_guesses:
@@ -215,7 +213,7 @@ class _RFC2136Client(object):
                 return guess
 
         raise errors.PluginError('Unable to determine base domain for {0} using names: {1}.'
-                                 .format(domain_name, domain_name_guesses))
+                                 .format(record_name, domain_name_guesses))
 
     def _query_soa(self, domain_name):
         """
