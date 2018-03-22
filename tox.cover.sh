@@ -38,7 +38,7 @@ cover () {
   elif [ "$1" = "certbot_dns_nsone" ]; then
     min=99
   elif [ "$1" = "certbot_dns_ovh" ]; then
-    min=99
+    min=97
   elif [ "$1" = "certbot_dns_rfc2136" ]; then
     min=99
   elif [ "$1" = "certbot_dns_route53" ]; then
