@@ -895,7 +895,7 @@ class NginxConfigurator(common.Installer):
             raise errors.PluginError(
                 "Unable to run %s -V" % self.conf('ctl'))
 
-        version_regex = re.compile(r"nginx/([0-9\.]*)", re.IGNORECASE)
+        version_regex = re.compile(r"nginx version: [^/]+/([0-9\.]*)", re.IGNORECASE)
         version_matches = version_regex.findall(text)
 
         sni_regex = re.compile(r"TLS SNI support enabled", re.IGNORECASE)
