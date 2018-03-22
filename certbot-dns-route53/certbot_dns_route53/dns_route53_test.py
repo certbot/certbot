@@ -1,5 +1,6 @@
 """Tests for certbot_dns_route53.dns_route53.Authenticator"""
 
+import os
 import unittest
 
 import mock
@@ -8,9 +9,15 @@ from botocore.exceptions import NoCredentialsError, ClientError
 from certbot import errors
 from certbot.plugins import dns_test_common
 from certbot.plugins.dns_test_common import DOMAIN
+from certbot.tests import util as test_util
+
+CREDS_FILE = '''[default]
+aws_access_key_id=AKIAIOSFODNN7EXAMPLE
+aws_secret_access_key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+'''
 
 
-class AuthenticatorTest(unittest.TestCase, dns_test_common.BaseAuthenticatorTest):
+class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthenticatorTest):
     # pylint: disable=protected-access
 
     def setUp(self):
@@ -18,7 +25,11 @@ class AuthenticatorTest(unittest.TestCase, dns_test_common.BaseAuthenticatorTest
 
         super(AuthenticatorTest, self).setUp()
 
-        self.config = mock.MagicMock()
+        path = os.path.join(self.tempdir, '.ini')
+        with open(path, "w") as creds_file:
+            creds_file.write(CREDS_FILE)
+
+        self.config = mock.MagicMock(route53_credentials=path)
 
         self.auth = Authenticator(self.config, "route53")
 
@@ -75,7 +86,7 @@ class AuthenticatorTest(unittest.TestCase, dns_test_common.BaseAuthenticatorTest
         self.auth.cleanup([self.achall])
 
 
-class ClientTest(unittest.TestCase):
+class ClientTest(test_util.TempDirTestCase):
     # pylint: disable=protected-access
 
     PRIVATE_ZONE = {
@@ -115,7 +126,11 @@ class ClientTest(unittest.TestCase):
 
         super(ClientTest, self).setUp()
 
-        self.config = mock.MagicMock()
+        path = os.path.join(self.tempdir, '.ini')
+        with open(path, "w") as creds_file:
+            creds_file.write(CREDS_FILE)
+
+        self.config = mock.MagicMock(route53_credentials=path)
 
         self.client = Authenticator(self.config, "route53")
 
