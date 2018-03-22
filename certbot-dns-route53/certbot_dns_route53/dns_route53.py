@@ -6,6 +6,7 @@ import time
 import boto3
 import zope.interface
 from botocore.exceptions import NoCredentialsError, ClientError
+from botocore.credentials import SharedCredentialProvider
 
 from certbot import errors
 from certbot import interfaces
@@ -35,8 +36,20 @@ class Authenticator(dns_common.DNSAuthenticator):
 
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
-        self.r53 = boto3.client("route53")
+        if self.conf("credentials"):
+            creds = SharedCredentialProvider(self.conf("credentials")).load()
+            if creds is None:
+                raise errors.PluginError("Couldn't load AWS credentials")
+            self.r53 = boto3.client("route53",
+                aws_access_key_id=creds.access_key, aws_secret_access_key=creds.secret_key)
+        else:
+            self.r53 = boto3.client("route53")
         self._resource_records = collections.defaultdict(list) # type: DefaultDict[str, List[Dict[str, str]]]
+
+    @classmethod
+    def add_parser_arguments(cls, add):  # pylint: disable=arguments-differ
+        super(Authenticator, cls).add_parser_arguments(add)
+        add('credentials', help='Load AWS credentials from specified file.')
 
     def more_info(self):  # pylint: disable=missing-docstring,no-self-use
         return "Solve a DNS01 challenge using AWS Route53"

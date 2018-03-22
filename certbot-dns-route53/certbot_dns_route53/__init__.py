@@ -12,6 +12,8 @@ Named Arguments
                                           to propagate before asking the ACME
                                           server to verify the DNS record.
                                           (Default: 10)
+``--dns-route53-credentials``             Load AWS credentials from specified
+                                          file. (Default: None)
 ========================================  =====================================
 
 
