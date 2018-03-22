@@ -64,25 +64,39 @@ the required permissions <https://docs.aws.amazon.com/Route53/latest
 
 The `access keys <https://docs.aws.amazon.com/general/latest/gr
 /aws-sec-cred-types.html#access-keys-and-secret-access-keys>`_ for an account
-with these permissions must be supplied in one of the following ways, which are
-discussed in more detail in the Boto3 library's documentation about `configuring
-credentials <https://boto3.readthedocs.io/en/latest/guide/configuration.html
-#best-practices-for-configuring-credentials>`_.
-
-* Using the ``AWS_ACCESS_KEY_ID`` and ``AWS_SECRET_ACCESS_KEY`` environment
-  variables.
-* Using a credentials configuration file at the default location,
-  ``~/.aws/config``.
-* Using a credentials configuration file at a path supplied using the
-  ``AWS_CONFIG_FILE`` environment variable.
+with these permissions should be supplied by setting the
+``--dns-route53-credentials`` option to a credentials file using standard format:
 
 .. code-block:: ini
    :name: config.ini
-   :caption: Example credentials config file:
+   :caption: Example AWS credentials config file:
 
    [default]
    aws_access_key_id=AKIAIOSFODNN7EXAMPLE
    aws_secret_access_key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+
+**It is recommended to set ``--dns-route53-credentials``.** Otherwise Boto3 will
+attempt to obtain credentials using files at ``$HOME`` or from
+environment variables, which can differ at renewals. The following sources will
+be tried (this is discussed in more detail in the Boto3 library's documentation
+about `configuring credentials <https://boto3.readthedocs.io/en/latest
+/guide/configuration.html#best-practices-for-configuring-credentials>`_):
+
+* Using the ``AWS_ACCESS_KEY_ID`` and ``AWS_SECRET_ACCESS_KEY`` environment
+  variables.
+* Using a shared credentials file at the default location,
+  ``~/.aws/credentials``.
+* Using a shared credentials file at a path supplied using the
+  ``AWS_SHARED_CREDENTIALS_FILE`` environment variable.
+* Using a credentials configuration file at the default location,
+  ``~/.aws/config``.
+* Using a credentials configuration file at a path supplied using the
+  ``AWS_CONFIG_FILE`` environment variable..
+
+Finally, if any of the above methods is used, and certbot is running in an EC2
+instance which has an `IAM role attached <https://docs.aws.amazon.com/AWSEC2
+/latest/UserGuide/iam-roles-for-amazon-ec2.html>`_, credentials for that role
+will be used.
 
 .. caution::
    You should protect these API credentials as you would a password. Users who
