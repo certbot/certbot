@@ -67,9 +67,9 @@ class AuthHandler(object):
         config = zope.component.getUtility(interfaces.IConfig)
         notify = zope.component.getUtility(interfaces.IDisplay).notification
 
-        with error_handler.ExitHandler(self._cleanup_challenges, aauthzrs):
-            # While there are still challenges remaining...
-            while self._has_challenges(aauthzrs):
+        # While there are still challenges remaining...
+        while self._has_challenges(aauthzrs):
+            with error_handler.ExitHandler(self._cleanup_challenges, aauthzrs):
                 resp = self._solve_challenges(aauthzrs)
                 logger.info("Waiting for verification...")
                 if config.debug_challenges:
@@ -79,8 +79,8 @@ class AuthHandler(object):
                 # Send all Responses - this modifies achalls
                 self._respond(aauthzrs, resp, best_effort)
 
-            # Just make sure all decisions are complete.
-            self.verify_authzr_complete(aauthzrs)
+        # Just make sure all decisions are complete.
+        self.verify_authzr_complete(aauthzrs)
 
         # Only return valid authorizations
         retVal = [aauthzr.authzr for aauthzr in aauthzrs
@@ -147,13 +147,10 @@ class AuthHandler(object):
         """
         # TODO: chall_update is a dirty hack to get around acme-spec #105
         chall_update = dict()
-        active_achalls = self._send_responses(aauthzrs, resp, chall_update)
+        self._send_responses(aauthzrs, resp, chall_update)
 
         # Check for updated status...
-        try:
-            self._poll_challenges(aauthzrs, chall_update, best_effort)
-        finally:
-            self._cleanup_challenges(aauthzrs, active_achalls)
+        self._poll_challenges(aauthzrs, chall_update, best_effort)
 
     def _send_responses(self, aauthzrs, resps, chall_update):
         """Send responses and make sure errors are handled.

@@ -75,7 +75,6 @@ class ErrorHandler(object):
         elif exec_type is None:
             if not self.call_on_regular_exit:
                 return retval
-            retval = True
         elif exec_type is errors.SignalExit:
             logger.debug("Encountered signals: %s", self.received_signals)
             retval = True

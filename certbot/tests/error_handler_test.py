@@ -47,9 +47,6 @@ class ErrorHandlerTest(unittest.TestCase):
         self.handler = error_handler.ErrorHandler(self.init_func,
                                                   *self.init_args,
                                                   **self.init_kwargs)
-        self.exit_handler = error_handler.ExitHandler(self.init_func,
-                                                      *self.init_args,
-                                                      **self.init_kwargs)
 
         # pylint: disable=protected-access
         self.signals = error_handler._SIGNALS
@@ -117,7 +114,7 @@ class ErrorHandlerTest(unittest.TestCase):
             pass
         self.assertFalse(self.init_func.called)
 
-    def test_ignore_regular_exit(self):
+    def test_regular_exit(self):
         func = mock.MagicMock()
         self.handler.register(func)
         with self.handler:
@@ -125,10 +122,27 @@ class ErrorHandlerTest(unittest.TestCase):
         self.init_func.assert_not_called()
         func.assert_not_called()
 
-    def test_exit_handler_calls_cleanup(self):
+
+class ExitHandlerTest(ErrorHandlerTest):
+    """Tests for certbot.error_handler."""
+
+    def setUp(self):
+        from certbot import error_handler
+
+        self.init_func = mock.MagicMock()
+        self.init_args = set((42,))
+        self.init_kwargs = {'foo': 'bar'}
+        self.handler = error_handler.ExitHandler(self.init_func,
+                                                 *self.init_args,
+                                                 **self.init_kwargs)
+
+        # pylint: disable=protected-access
+        self.signals = error_handler._SIGNALS
+
+    def test_regular_exit(self):
         func = mock.MagicMock()
-        self.exit_handler.register(func)
-        with self.exit_handler:
+        self.handler.register(func)
+        with self.handler:
             pass
         self.init_func.assert_called_once_with(*self.init_args,
                                                **self.init_kwargs)
