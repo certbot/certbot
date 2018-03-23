@@ -38,6 +38,9 @@ class OverlappingMatchFound(Error):
 class LockError(Error):
     """File locking error."""
 
+class LocalPermissionsError(Error):
+    """Necessary access to a directory is denied."""
+
 
 # Auth Handler Errors
 class AuthorizationError(Error):
