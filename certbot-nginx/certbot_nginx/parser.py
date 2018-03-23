@@ -606,7 +606,8 @@ def _is_whitespace_or_comment(directive):
     return len(directive) == 0 or directive[0] == '#'
 
 def _append_directive(block, directive, insert_at_top):
-    directive = nginxparser.UnspacedList(directive)
+    if not isinstance(directive, nginxparser.UnspacedList):
+        directive = nginxparser.UnspacedList(directive)
     if _is_whitespace_or_comment(directive):
         # whitespace or comment
         block.append(directive)
@@ -664,7 +665,8 @@ def _update_directive(block, directive, location):
     comment_directive(block, location)
 
 def _update_or_append_directive(block, directive, insert_at_top):
-    directive = nginxparser.UnspacedList(directive)
+    if not isinstance(directive, nginxparser.UnspacedList):
+        directive = nginxparser.UnspacedList(directive)
     if _is_whitespace_or_comment(directive):
         # whitespace or comment
         block.append(directive)
