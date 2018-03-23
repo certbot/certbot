@@ -277,7 +277,7 @@ class NginxParser(object):
         return False
 
     def add_server_directives(self, vhost, directives, insert_at_top=False):
-        """Add or replace directives in the server block identified by vhost.
+        """Add directives to the server block identified by vhost.
 
         This method modifies vhost to be fully consistent with the new directives.
 
@@ -304,7 +304,7 @@ class NginxParser(object):
 
         ..note :: When a directive with the same name already exists in the
         config block, the first instance will be replaced. Otherwise, the directive
-        will be appended to the config block as in append_server_directives.
+        will be appended/prepended to the config block as in add_server_directives.
 
         ..todo :: Doesn't match server blocks whose server_name directives are
             split across multiple conf files.
