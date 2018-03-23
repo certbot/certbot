@@ -224,7 +224,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         else:
             self.vhostroot = os.path.abspath(self.conf("vhost-root"))
 
-	self._check_permissions(self.vhostroot)
+        self._check_permissions(self.vhostroot)
 
         self.parser = self.get_parser()
 
@@ -261,7 +261,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         return matches
 
     def _check_permissions(self, path):
-	"""Verify permissions for root configuration directory."""
+        """Verify permissions for root configuration directory."""
         if not os.access(path, os.W_OK | os.X_OK):
             raise errors.LocalPermissionsError(
                 ("Certbot cannot write to `{}`. Please use `chmod` to ensure "
