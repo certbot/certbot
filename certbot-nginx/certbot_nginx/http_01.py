@@ -199,9 +199,9 @@ class NginxHttp01(common.ChallengePerformer):
                                 ['return', ' ', '200', ' ', validation]]]]
 
         self.configurator.parser.add_server_directives(vhost,
-            location_directive, replace=False)
+            location_directive)
 
         rewrite_directive = [['rewrite', ' ', '^(/.well-known/acme-challenge/.*)',
                                 ' ', '$1', ' ', 'break']]
         self.configurator.parser.add_server_directives(vhost,
-            rewrite_directive, replace=False, insert_at_top=True)
+            rewrite_directive, insert_at_top=True)
