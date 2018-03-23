@@ -36,7 +36,7 @@ def send_signal(signum):
 
 
 class ErrorHandlerTest(unittest.TestCase):
-    """Tests for certbot.error_handler."""
+    """Tests for certbot.error_handler.ErrorHandler."""
 
     def setUp(self):
         from certbot import error_handler
@@ -124,20 +124,14 @@ class ErrorHandlerTest(unittest.TestCase):
 
 
 class ExitHandlerTest(ErrorHandlerTest):
-    """Tests for certbot.error_handler."""
+    """Tests for certbot.error_handler.ExitHandler."""
 
     def setUp(self):
         from certbot import error_handler
-
-        self.init_func = mock.MagicMock()
-        self.init_args = set((42,))
-        self.init_kwargs = {'foo': 'bar'}
+        super(ExitHandlerTest, self).setUp()
         self.handler = error_handler.ExitHandler(self.init_func,
                                                  *self.init_args,
                                                  **self.init_kwargs)
-
-        # pylint: disable=protected-access
-        self.signals = error_handler._SIGNALS
 
     def test_regular_exit(self):
         func = mock.MagicMock()
