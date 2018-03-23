@@ -77,7 +77,8 @@ class AddrTest(unittest.TestCase):
         from certbot_nginx.obj import Addr
         any_addresses = ("0.0.0.0:80 default_server ssl",
                          "80 default_server ssl",
-                         "*:80 default_server ssl")
+                         "*:80 default_server ssl",
+                         "80 default ssl")
         for first, second in itertools.combinations(any_addresses, 2):
             self.assertEqual(Addr.fromstring(first), Addr.fromstring(second))
 
