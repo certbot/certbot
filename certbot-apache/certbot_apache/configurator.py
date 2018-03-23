@@ -55,9 +55,6 @@ logger = logging.getLogger(__name__)
 # transactional due to the use of register_file_creation()
 
 
-# TODO: Verify permissions on configuration root... it is easier than
-#     checking permissions on each of the relative directories and less error
-#     prone.
 # TODO: Write a server protocol finder. Listen <port> <protocol> or
 #     Protocol <protocol>.  This can verify partial setups are correct
 # TODO: Add directives to sites-enabled... not sites-available.
@@ -186,6 +183,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :raises .errors.NoInstallationError: If Apache configs cannot be found
         :raises .errors.MisconfigurationError: If Apache is misconfigured
         :raises .errors.NotSupportedError: If Apache version is not supported
+	:raises .errors.LocalPermissionsError: If root conf dir is inaccessible
         :raises .errors.PluginError: If there is any other error
 
         """
@@ -226,6 +224,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         else:
             self.vhostroot = os.path.abspath(self.conf("vhost-root"))
 
+	self._check_permissions(self.vhostroot)
+
         self.parser = self.get_parser()
 
         # Check for errors in parsing files with Augeas
@@ -259,6 +259,14 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             return False
         self.aug.remove("/test/path")
         return matches
+
+    def _check_permissions(self, path):
+	"""Verify permissions for root configuration directory."""
+        if not os.access(path, os.W_OK | os.X_OK):
+            raise errors.LocalPermissionsError(
+                ("Certbot cannot write to `{}`. Please use `chmod` to ensure "
+                "full access or run Certbot with root privileges.")
+                .format(path))
 
     def get_parser(self):
         """Initializes the ApacheParser"""
