@@ -192,8 +192,8 @@ class NginxConfigurator(common.Installer):
         cert_directives = [['\n    ', 'ssl_certificate', ' ', fullchain_path],
                            ['\n    ', 'ssl_certificate_key', ' ', key_path]]
 
-        self.parser.add_server_directives(vhost,
-                                          cert_directives, replace=True)
+        self.parser.update_or_add_server_directives(vhost,
+                                          cert_directives)
         logger.info("Deploying Certificate to VirtualHost %s", vhost.filep)
 
         self.save_notes += ("Changed vhost at %s with addresses of %s\n" %
@@ -344,7 +344,7 @@ class NginxConfigurator(common.Installer):
         for name in vhost.names:
             name_block[0].append(' ')
             name_block[0].append(name)
-        self.parser.add_server_directives(vhost, name_block, replace=True)
+        self.parser.update_or_add_server_directives(vhost, name_block)
 
     def _get_default_vhost(self, port):
         vhost_list = self.parser.get_vhosts()
@@ -584,7 +584,7 @@ class NginxConfigurator(common.Installer):
         # have it continue to do so.
         if len(vhost.addrs) == 0:
             listen_block = [['\n    ', 'listen', ' ', self.DEFAULT_LISTEN_PORT]]
-            self.parser.add_server_directives(vhost, listen_block, replace=False)
+            self.parser.add_server_directives(vhost, listen_block)
 
         if vhost.ipv6_enabled():
             ipv6_block = ['\n    ',
@@ -618,7 +618,7 @@ class NginxConfigurator(common.Installer):
         ])
 
         self.parser.add_server_directives(
-            vhost, ssl_block, replace=False)
+            vhost, ssl_block)
 
     ##################################
     # enhancement methods (IInstaller)
@@ -683,7 +683,7 @@ class NginxConfigurator(common.Installer):
                 ['\n    ', 'add_header', ' ', header_substring, ' '] +
                     constants.HEADER_ARGS[header_substring],
                 ['\n']]
-            self.parser.add_server_directives(vhost, header_directives, replace=False)
+            self.parser.add_server_directives(vhost, header_directives)
 
     def _add_redirect_block(self, vhost, domain):
         """Add redirect directive to vhost
@@ -691,7 +691,7 @@ class NginxConfigurator(common.Installer):
         redirect_block = _redirect_block_for_domain(domain)
 
         self.parser.add_server_directives(
-            vhost, redirect_block, replace=False, insert_at_top=True)
+            vhost, redirect_block, insert_at_top=True)
 
     def _split_block(self, vhost, only_directives=None):
         """Splits this "virtual host" (i.e. this nginx server block) into
@@ -771,7 +771,7 @@ class NginxConfigurator(common.Installer):
 
             # Add this at the bottom to get the right order of directives
             return_404_directive = [['\n    ', 'return', ' ', '404']]
-            self.parser.add_server_directives(http_vhost, return_404_directive, replace=False)
+            self.parser.add_server_directives(http_vhost, return_404_directive)
 
             vhost = http_vhost
 
@@ -821,7 +821,7 @@ class NginxConfigurator(common.Installer):
 
         try:
             self.parser.add_server_directives(vhost,
-                                              stapling_directives, replace=False)
+                                              stapling_directives)
         except errors.MisconfigurationError as error:
             logger.debug(error)
             raise errors.PluginError("An error occurred while enabling OCSP "
