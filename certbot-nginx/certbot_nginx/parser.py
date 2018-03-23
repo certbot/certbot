@@ -601,28 +601,19 @@ def _find_location(block, directive_name, match_func=None):
     return next((index for index, line in enumerate(block) \
         if line and line[0] == directive_name and (match_func is None or match_func(line))), None)
 
-def _add_directive(block, directive, replace, insert_at_top):
-    """Adds or replaces a single directive in a config block.
+def _is_whitespace_or_comment(directive):
+    """Is this directive either a whitespace or comment directive?"""
+    return len(directive) == 0 or directive[0] == '#'
 
-    See _add_directives for more documentation.
-
-    """
+def _append_directive(block, directive, insert_at_top):
     directive = nginxparser.UnspacedList(directive)
-    def is_whitespace_or_comment(directive):
-        """Is this directive either a whitespace or comment directive?"""
-        return len(directive) == 0 or directive[0] == '#'
-    if is_whitespace_or_comment(directive):
+    if _is_whitespace_or_comment(directive):
         # whitespace or comment
         block.append(directive)
         return
 
     location = _find_location(block, directive[0])
 
-    if replace:
-        if location is not None:
-            block[location] = directive
-            comment_directive(block, location)
-            return
     # Append or prepend directive. Fail if the name is not a repeatable directive name,
     # and there is already a copy of that directive with a different value
     # in the config file.
@@ -647,7 +638,7 @@ def _add_directive(block, directive, replace, insert_at_top):
         for included_directive in included_directives:
             included_dir_loc = _find_location(block, included_directive[0])
             included_dir_name = included_directive[0]
-            if not is_whitespace_or_comment(included_directive) \
+            if not _is_whitespace_or_comment(included_directive) \
                 and not can_append(included_dir_loc, included_dir_name):
                 if block[included_dir_loc] != included_directive:
                     raise errors.MisconfigurationError(err_fmt.format(included_directive,
@@ -667,6 +658,32 @@ def _add_directive(block, directive, replace, insert_at_top):
             comment_directive(block, len(block) - 1)
     elif block[location] != directive:
         raise errors.MisconfigurationError(err_fmt.format(directive, block[location]))
+
+def _update_directive(block, directive, location):
+    block[location] = directive
+    comment_directive(block, location)
+
+def _update_or_append_directive(block, directive, insert_at_top):
+    directive = nginxparser.UnspacedList(directive)
+    if _is_whitespace_or_comment(directive):
+        # whitespace or comment
+        block.append(directive)
+        return
+
+    location = _find_location(block, directive[0])
+
+    # we can update directive
+    if location is not None:
+        _update_directive(block, directive, location)
+        return
+
+    _append_directive(block, directive, insert_at_top)
+
+def _add_directive(block, directive, replace, insert_at_top):
+    if replace:
+        return _update_or_append_directive(block, directive, insert_at_top)
+    else:
+        return _append_directive(block, directive, insert_at_top)
 
 def _is_certbot_comment(directive):
     return '#' in directive and COMMENT in directive
