@@ -553,7 +553,7 @@ def _add_directives(directives, insert_at_top, block):
 def _update_or_add_directives(directives, insert_at_top, block):
     """Adds or replaces directives in a config block."""
     for directive in directives:
-        _update_or_add_directives(block, directive, insert_at_top)
+        _update_or_add_directive(block, directive, insert_at_top)
     if block and '\n' not in block[-1]:  # could be "   \n  " or ["\n"] !
         block.append(nginxparser.UnspacedList('\n'))
 
