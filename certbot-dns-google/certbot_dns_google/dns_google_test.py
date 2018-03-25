@@ -4,7 +4,9 @@ import os
 import unittest
 
 import mock
+from googleapiclient import discovery
 from googleapiclient.errors import Error
+from googleapiclient.http import HttpMock
 from httplib2 import ServerNotFoundError
 
 from certbot import errors
@@ -68,7 +70,11 @@ class GoogleClientTest(unittest.TestCase):
     def _setUp_client_with_mock(self, zone_request_side_effect):
         from certbot_dns_google.dns_google import _GoogleClient
 
-        client = _GoogleClient(ACCOUNT_JSON_PATH)
+        http_mock = HttpMock('certbot_dns_google/testdata/discovery.json',
+                             {'status': '200'})
+        dns_api = discovery.build('dns', 'v1', http=http_mock)
+
+        client = _GoogleClient(ACCOUNT_JSON_PATH, dns_api)
 
         # Setup
         mock_mz = mock.MagicMock()
