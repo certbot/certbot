@@ -70,8 +70,10 @@ class GoogleClientTest(unittest.TestCase):
     def _setUp_client_with_mock(self, zone_request_side_effect):
         from certbot_dns_google.dns_google import _GoogleClient
 
-        http_mock = HttpMock('certbot_dns_google/testdata/discovery.json',
-                             {'status': '200'})
+        pwd = os.path.dirname(__file__)
+        rel_path = 'testdata/discovery.json'
+        discovery_file = os.path.join(pwd, rel_path)
+        http_mock = HttpMock(discovery_file, {'status': '200'})
         dns_api = discovery.build('dns', 'v1', http=http_mock)
 
         client = _GoogleClient(ACCOUNT_JSON_PATH, dns_api)
