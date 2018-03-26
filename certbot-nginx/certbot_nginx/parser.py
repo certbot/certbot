@@ -391,12 +391,15 @@ class NginxParser(object):
         if remove_singleton_listen_params:
             for addr in new_vhost.addrs:
                 addr.default = False
+                addr.ipv6only = False
             for directive in enclosing_block[new_vhost.path[-1]][1]:
                 if len(directive) > 0 and directive[0] == 'listen':
                     if 'default_server' in directive:
                         del directive[directive.index('default_server')]
                     if 'default' in directive:
                         del directive[directive.index('default')]
+                    if 'ipv6only=on' in directive:
+                        del directive[directive.index('ipv6only=on')]
         return new_vhost
 
 
