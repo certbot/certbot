@@ -14,6 +14,7 @@ class AddrTest(unittest.TestCase):
         self.addr5 = Addr.fromstring("myhost")
         self.addr6 = Addr.fromstring("80 default_server spdy")
         self.addr7 = Addr.fromstring("unix:/var/run/nginx.sock")
+        self.addr8 = Addr.fromstring("*:80 default ssl")
 
     def test_fromstring(self):
         self.assertEqual(self.addr1.get_addr(), "192.168.1.1")
@@ -46,6 +47,8 @@ class AddrTest(unittest.TestCase):
         self.assertFalse(self.addr6.ssl)
         self.assertTrue(self.addr6.default)
 
+        self.assertTrue(self.addr8.default)
+
         self.assertEqual(None, self.addr7)
 
     def test_str(self):
@@ -55,6 +58,7 @@ class AddrTest(unittest.TestCase):
         self.assertEqual(str(self.addr4), "*:80 default_server ssl")
         self.assertEqual(str(self.addr5), "myhost")
         self.assertEqual(str(self.addr6), "80 default_server")
+        self.assertEqual(str(self.addr8), "*:80 default_server ssl")
 
     def test_to_string(self):
         self.assertEqual(self.addr1.to_string(), "192.168.1.1")
@@ -77,7 +81,8 @@ class AddrTest(unittest.TestCase):
         from certbot_nginx.obj import Addr
         any_addresses = ("0.0.0.0:80 default_server ssl",
                          "80 default_server ssl",
-                         "*:80 default_server ssl")
+                         "*:80 default_server ssl",
+                         "80 default ssl")
         for first, second in itertools.combinations(any_addresses, 2):
             self.assertEqual(Addr.fromstring(first), Addr.fromstring(second))
 

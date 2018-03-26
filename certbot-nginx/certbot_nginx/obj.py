@@ -90,6 +90,8 @@ class Addr(common.Addr):
                 ssl = True
             elif nextpart == 'default_server':
                 default = True
+            elif nextpart == 'default':
+                default = True
             elif nextpart == "ipv6only=on":
                 ipv6only = True
 
