@@ -360,8 +360,8 @@ class NginxParser(object):
 
         :param :class:`~certbot_nginx.obj.VirtualHost` vhost_template: The vhost
             whose information we copy
-        :param bool remove_singleton_listen_params: If we should remove default_server
-            from listen directives in the block.
+        :param bool remove_singleton_listen_params: If we should remove parameters
+            from listen directives in the block that can only be used once per address
         :param list only_directives: If it exists, only duplicate the named directives. Only
             looks at first level of depth; does not expand includes.
 
