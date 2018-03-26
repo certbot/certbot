@@ -18,3 +18,7 @@ This plugin can pull in EFF's STARTTLS [policy database](https://github.com/EFFo
 
 Coming soon!
 
+## Testing
+
+Run `./tests/run_tests.sh`. This script spins up two docker containers, a `sender` and a `recipient`. The `sender` tries to send e-mail to the `recipient` under different configuration scenarios. More details can be found at [TESTING.md](TESTING.md).
+
