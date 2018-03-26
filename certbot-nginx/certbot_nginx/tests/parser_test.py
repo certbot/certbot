@@ -448,6 +448,16 @@ class NginxParserTest(util.NginxTest): #pylint: disable=too-many-public-methods
         self.assertEqual(len(default.raw), len(new_vhost_parsed.raw))
         self.assertTrue(next(iter(default.addrs)).super_eq(next(iter(new_vhost_parsed.addrs))))
 
+    def test_duplicate_vhost_remove_ipv6only(self):
+        nparser = parser.NginxParser(self.config_path)
+
+        vhosts = nparser.get_vhosts()
+        default = [x for x in vhosts if 'ipv6ssl' in x.filep][0]
+        new_vhost = nparser.duplicate_vhost(default, remove_singleton_listen_params=True)
+        nparser.filedump(ext='')
+
+        for addr in new_vhost.addrs:
+          self.assertFalse(addr.ipv6only)
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
