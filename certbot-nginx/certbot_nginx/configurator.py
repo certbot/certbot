@@ -332,7 +332,8 @@ class NginxConfigurator(common.Installer):
     def _vhost_from_duplicated_default(self, domain, port=None):
         if self.new_vhost is None:
             default_vhost = self._get_default_vhost(port)
-            self.new_vhost = self.parser.duplicate_vhost(default_vhost, delete_default=True)
+            self.new_vhost = self.parser.duplicate_vhost(default_vhost,
+                remove_singleton_listen_params=True)
             self.new_vhost.names = set()
 
         self._add_server_name_to_vhost(self.new_vhost, domain)

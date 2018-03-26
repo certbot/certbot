@@ -430,7 +430,7 @@ class NginxParserTest(util.NginxTest): #pylint: disable=too-many-public-methods
 
         vhosts = nparser.get_vhosts()
         default = [x for x in vhosts if 'default' in x.filep][0]
-        new_vhost = nparser.duplicate_vhost(default, delete_default=True)
+        new_vhost = nparser.duplicate_vhost(default, remove_singleton_listen_params=True)
         nparser.filedump(ext='')
 
         # check properties of new vhost
