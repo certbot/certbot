@@ -1,8 +1,8 @@
 """Tests for certbot_postfix.installer."""
 import functools
 import os
+import pkg_resources
 import shutil
-import subprocess
 import unittest
 
 import mock
@@ -10,19 +10,19 @@ import mock
 from certbot import errors
 from certbot.tests import util as certbot_test_util
 
-
 class InstallerTest(certbot_test_util.ConfigTestCase):
     # pylint: disable=too-many-public-methods
 
     def setUp(self):
         super(InstallerTest, self).setUp()
+        _config_file = pkg_resources.resource_filename("certbot_postfix.tests",
+                           os.path.join("testdata", "config.json"))
         self.config.postfix_ctl = "postfix"
         self.config.postfix_config_dir = self.tempdir
         self.config.postfix_config_utility = "postconf"
         self.config.postfix_policy_file = os.path.join(self.tempdir, "config.json")
-        shutil.copyfile("test_data/config.json", self.config.postfix_policy_file)
-    
-        self.mock_postfix = MockPostfix()# MockPostfix(self.tempdir, {"mail_version": "3.1.4"})
+        shutil.copyfile(_config_file, self.config.postfix_policy_file)
+        self.mock_postfix = MockPostfix()
         self.mock_postconf = MockPostconf(self.tempdir, {"mail_version": "3.1.4"})
 
     def test_add_parser_arguments(self):
@@ -55,7 +55,6 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
         expected = self.config.postfix_config_dir
         self.config.postfix_config_dir = None
 
-        # self.mock_postfix.set_value("config_directory", expected)
         self.mock_postconf.set("config_directory", expected)
         exe_exists_path = "certbot_postfix.installer.certbot_util.exe_exists"
         with mock.patch(exe_exists_path, return_value=True):
@@ -121,7 +120,8 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
 
     def test_supported_enhancements(self):
         self.assertEqual(
-            self._create_prepared_installer().supported_enhancements(), [])
+            self._create_prepared_installer().supported_enhancements(),
+            ['starttls-everywhere'])
 
     def _create_prepared_installer(self):
         """Creates and returns a new prepared Postfix Installer.
@@ -164,128 +164,56 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
 
         """
 
-        with mock.patch("certbot_postfix.installer.postconf.ConfigMain", return_value=self.mock_postconf):
-            with mock.patch("certbot_postfix.installer.util.PostfixUtil", return_value=self.mock_postfix):
+        with mock.patch("certbot_postfix.installer.postconf.ConfigMain",
+                         return_value=self.mock_postconf):
+            with mock.patch("certbot_postfix.installer.util.PostfixUtil",
+                             return_value=self.mock_postfix):
                 return func(*args, **kwargs)
-
-# TODO (sydli): Remove this object!
-
-class MockPostfix(object):
-    """A callable to mimic Postfix command line utilities.
-
-    This is best used a side effect to a mock object. All calls to
-    'postfix' are noops. For calls to 'postconf', values that are set in
-    the constructor or through mocked out runs of postconf are
-    remembered and properly returned if the installer attempts to fetch
-    the value. If the Postfix installer attempts to obtain a value that
-    hasn't yet been set, a dummy value is returned.
-
-    :ivar str config_path: path to Postfix main.cf file
-
-    """
-    def __init__(self, config_dir, initial_values):
-        """Create Postfix configuration.
-
-        :param str config_dir: path for Postfix config dir
-        :param dict initial_values: initial Postfix config values
-
-        """
-        initial_values["config_directory"] = config_dir
-
-        self.config_path = os.path.join(config_dir, "main.cf")
-        self._write_config(initial_values)
-
-    def __call__(self, args, *unused_args, **unused_kwargs):
-        cmd = os.path.basename(args[0])
-        if cmd == "postfix":
-            return
-        elif cmd != "postconf":  # pragma: no cover
-            assert False, "Unexpected command '{0}'".format(''.join(args))
-
-        output = []
-
-        skip = False
-        for arg in args[1:]:
-            if skip:
-                skip = False
-            elif arg[0] == "-":
-                if arg == "-c":
-                    skip = True
-            elif "=" in arg:
-                name, _, value = arg.partition("=")
-                self.set_value(name, value)
-            else:
-                output.append("{0} = {1}\n".format(arg, self.get_value(arg)))
-
-        return "\n".join(output)
-
-    def get_value(self, name):
-        """Returns the value for the Postfix config parameter name.
-
-        If the value isn't set, an empty string is returned.
-
-        :param str name: name of the Postfix config parameter
-
-        :returns: value of the named parameter
-        :rtype: str
-
-        """
-        return self._read_config().get(name, "")
-
-    def set_value(self, name, value):
-        """Sets the value for a Postfix config parameter.
-
-        :param str name: name of the Postfix config parameter
-        :param str value: value ot set the parameter to
-
-        """
-        config = self._read_config()
-        config[name] = value
-        self._write_config(config)
-
-    def _read_config(self):
-        config = {}
-        with open(self.config_path) as f:
-            for line in f:
-                key, _, value = line.strip().partition(" = ")
-                config[key] = value
-
-        return config
-
-    def _write_config(self, config):
-        with open(self.config_path, "w") as f:
-            f.writelines("{0} = {1}\n".format(key, value)
-                         for key, value in config.items())
 
 class MockPostfix(object):
     """Mock utility for Postfix command-line wrapper.
     """
     def __init__(self):
         pass
+
     def test(self):
+        """Mocks Postfix's 'test' call."""
         pass
+
     def restart(self):
+        """Mocks Postfix's 'reload' call."""
         pass
-        
 
 class MockPostconf(object):
     """Mock utility for Postconf command-line wrapper.
     """
-    def __init__(self, tempdir, init_keys={}):
+    def __init__(self, tempdir, init_keys=None):
         self._db = init_keys
+        if self._db is None:
+            self._db = {}
         self._db['config_directory'] = tempdir
+
     def get(self, name):
-        if name not in self._db: return None
+        """Mocks Postconf object's 'get' call."""
+        if name not in self._db:
+            return None
         return self._db[name]
+
     def get_default(self, name):
+        """Mocks Postconf object's 'get_default' call."""
         if name in self._db:
             return self._db[name]
         if name == "mail_version":
             return "3.2.3"
         return None
+
     def set(self, name, value, check_override=None):
+        """Mocks Postconf object's 'set' call."""
+        # pylint: disable=unused-argument
         self._db[name] = value
+
     def flush(self):
+        """Mocks Postconf object's 'flush' call."""
         pass
 
 if __name__ == '__main__':

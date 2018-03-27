@@ -25,8 +25,13 @@ class PostfixUtilBase(object):
         self.executable = executable
         verify_exe_exists(executable)
         self._set_base_command(config_dir)
+        self.config_dir = None
 
     def update_dir(self, config_dir):
+        """Updates the directory of the configuration files for Postfix.
+
+        :param str config_dir: The path containing the Postfix configuration files.
+        """
         self.config_dir = config_dir
         self._set_base_command(config_dir)
 
@@ -69,7 +74,7 @@ class PostfixUtilBase(object):
 class PostfixUtil(PostfixUtilBase):
     """Wrapper around Postfix CLI tool.
     """
-    
+
     def __init__(self, config_dir=None):
         PostfixUtilBase.__init__(self, COMMAND, config_dir)
 

@@ -1,7 +1,6 @@
 """Certbot installer plugin for Postfix."""
 import logging
 import os
-import subprocess
 from functools import partial
 
 import zope.interface
@@ -53,15 +52,16 @@ def _report_master_overrides(name, overrides, acceptable_overrides=None):
     report a warning to notify the user.
 
     :param str name: The name of the parameter that is being overridden.
-    :param str overrides: The values that other services are setting for |name|.
+    :param list overrides: The values that other services are setting for |name|.
+        Each override is a tuple: (service name, value)
     :param list acceptable_overrides: Override values that are acceptable. For instance, if
-        another service is overriding our parameter with a more secure option, we don't have to warn.
-        If this is set to None, warnings are reported for *all* overrides!
+        another service is overriding our parameter with a more secure option, we don't have
+        to warn. If this is set to None, warnings are reported for *all* overrides!
     """
     for override in overrides:
         if acceptable_overrides is None or override not in acceptable_overrides:
-            logger.warn("Warning: Parameter %s is overridden as %s for service %s in master configuration file!" %
-                    (name, override[1], override[0]))
+            logger.warning("Parameter {0} is overridden as {1} for service {2} in " +
+                           "master configuration file!", name, override[1], override[0])
 
 def _get_formatted_protocols(min_tls_version, delimiter=":"):
     """Enforces the minimum TLS version in a way that Postfix can understand. For instance,
@@ -72,10 +72,13 @@ def _get_formatted_protocols(min_tls_version, delimiter=":"):
     :rtype str: Protocol declaration, formatted correctly in a Postfix-y way. For instance:
         TLSv1.1 => !SSLv2:!SSLv3:!TLSv1
         TLSv1   => !SSLv2:!SSLv3
+
+        Returns None if `min_tls_version` is not a valid or acceptable TLS version.
     """
-    if min_tls_version not in TLS_VERSIONS or min_tls_version not in ACCEPTABLE_TLS_VERSIONS:
+    if min_tls_version not in ACCEPTABLE_TLS_VERSIONS:
         return None
-    return delimiter.join(["!" + version for version in TLS_VERSIONS[0:TLS_VERSIONS.index(min_tls_version)]])
+    return delimiter.join(["!" + version for version in \
+                           TLS_VERSIONS[0:TLS_VERSIONS.index(min_tls_version)]])
 
 def _get_formatted_policy_for_domain(address_domain, tls_policy):
     """Parses TLS policy specification into a format that Postfix expects. In particular:
@@ -97,8 +100,7 @@ def _get_formatted_policy_for_domain(address_domain, tls_policy):
     if protocols_value is not None:
         entry += " protocols=" + protocols_value
     else:
-        logger.warn('Unknown minimum TLS version: {} '.format(
-            mx_policy.min_tls_version))
+        logger.warn('Unknown minimum TLS version: {0}', tls_policy['min_tls_version'])
     return entry
 
 
@@ -146,8 +148,9 @@ class Installer(plugins_common.Installer):
         self.postconf = None
         self.save_notes = []
         self.policy = None
+        self.postfix = None
         self.policy_file = None
-        self._enhance_func = {"starttls-everywhere": self._enable_policy_list}
+        self._enhance_func = {"starttls-policy": self._enable_policy_list}
 
     def _ensure_ca_certificates_exist(self):
         # TODO (sydneyli): Ensure `ca-certificates` is installed correctly, or that
@@ -232,7 +235,7 @@ class Installer(plugins_common.Installer):
         """
         try:
             certbot_util.lock_dir_until_exit(self.config_dir)
-        except (OSError, errors.LockError) as e:
+        except (OSError, errors.LockError):
             logger.debug("Encountered error:", exc_info=True)
             raise errors.PluginError(
                 "Unable to lock %s", self.config_dir)
@@ -308,9 +311,10 @@ class Installer(plugins_common.Installer):
         self.postconf.set("smtpd_tls_key_file", key_path, _report_master_overrides)
         self._set_vars(DEFAULT_SERVER_VARS)
         self._set_vars(DEFAULT_CLIENT_VARS)
-        self.postconf.set("smtp_tls_CApath", CA_CERTS_PATH, _report_master_overrides) 
+        self.postconf.set("smtp_tls_CApath", CA_CERTS_PATH, _report_master_overrides)
 
     def _enable_policy_list(self, domain, options):
+        # pylint: disable=unused-argument
         try:
             from policylist import policy
         except ImportError:
@@ -328,7 +332,6 @@ class Installer(plugins_common.Installer):
             are currently supported
 
         """
-        # pylint: disable=unused-argument
         try:
             return self._enhance_func[enhancement](domain, options)
         except (KeyError, ValueError):
@@ -344,7 +347,7 @@ class Installer(plugins_common.Installer):
         :rtype: list
 
         """
-        return ['starttls-everywhere'] # TODO(sydneyli): Call this starttls-policy?
+        return ['starttls-policy'] # TODO(sydneyli): Call this starttls-policy?
 
     def save(self, title=None, temporary=False):
         """Creates backups and writes changes to configuration files.

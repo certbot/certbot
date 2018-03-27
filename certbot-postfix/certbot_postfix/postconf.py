@@ -1,7 +1,5 @@
 """Classes that wrap the postconf command line utility.
 """
-import collections
-
 from certbot import errors
 from certbot_postfix import util
 
@@ -36,9 +34,9 @@ class ConfigMain(util.PostfixUtilBase):
             service, param_name = name.rsplit("/")
             if not value:
                 value = ""
-            if param_name not in _master_db:
+            if param_name not in self._master_db:
                 self._master_db[param_name] = []
-            self._master_db[param_name].append( (service, value) )
+            self._master_db[param_name].append((service, value))
 
     def get_default(self, name):
         """Retrieves default value of parameter |name| from postfix parameters.
@@ -57,13 +55,13 @@ class ConfigMain(util.PostfixUtilBase):
         if name in self._updated:
             return self._updated[name]
         return self._db[name]
-    
+
     def get_master_overrides(self, name):
         """Retrieves list of overrides for parameter |name| in postfix's Master config
-        file. 
+        file.
             :returns: List of tuples (service, value), meaning that parameter |name|
                       is overridden as |value| for |service|.
-            :rtype `list` of `tuple` of `str: 
+            :rtype `list` of `tuple` of `str:
         """
         if name in self._master_db:
             return self._master_db[name]
