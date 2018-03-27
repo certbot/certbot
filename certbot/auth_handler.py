@@ -69,14 +69,15 @@ class AuthHandler(object):
 
         # While there are still challenges remaining...
         while self._has_challenges(aauthzrs):
-            resp = self._solve_challenges(aauthzrs)
-            logger.info("Waiting for verification...")
-            if config.debug_challenges:
-                notify('Challenges loaded. Press continue to submit to CA. '
-                       'Pass "-v" for more info about challenges.', pause=True)
+            with error_handler.ExitHandler(self._cleanup_challenges, aauthzrs):
+                resp = self._solve_challenges(aauthzrs)
+                logger.info("Waiting for verification...")
+                if config.debug_challenges:
+                    notify('Challenges loaded. Press continue to submit to CA. '
+                           'Pass "-v" for more info about challenges.', pause=True)
 
-            # Send all Responses - this modifies achalls
-            self._respond(aauthzrs, resp, best_effort)
+                # Send all Responses - this modifies achalls
+                self._respond(aauthzrs, resp, best_effort)
 
         # Just make sure all decisions are complete.
         self.verify_authzr_complete(aauthzrs)
@@ -118,14 +119,13 @@ class AuthHandler(object):
         """Get Responses for challenges from authenticators."""
         resp = []
         all_achalls = self._get_all_achalls(aauthzrs)
-        with error_handler.ErrorHandler(self._cleanup_challenges, aauthzrs, all_achalls):
-            try:
-                if all_achalls:
-                    resp = self.auth.perform(all_achalls)
-            except errors.AuthorizationError:
-                logger.critical("Failure in setting up challenges.")
-                logger.info("Attempting to clean up outstanding challenges...")
-                raise
+        try:
+            if all_achalls:
+                resp = self.auth.perform(all_achalls)
+        except errors.AuthorizationError:
+            logger.critical("Failure in setting up challenges.")
+            logger.info("Attempting to clean up outstanding challenges...")
+            raise
 
         assert len(resp) == len(all_achalls)
 
@@ -147,13 +147,10 @@ class AuthHandler(object):
         """
         # TODO: chall_update is a dirty hack to get around acme-spec #105
         chall_update = dict()
-        active_achalls = self._send_responses(aauthzrs, resp, chall_update)
+        self._send_responses(aauthzrs, resp, chall_update)
 
         # Check for updated status...
-        try:
-            self._poll_challenges(aauthzrs, chall_update, best_effort)
-        finally:
-            self._cleanup_challenges(aauthzrs, active_achalls)
+        self._poll_challenges(aauthzrs, chall_update, best_effort)
 
     def _send_responses(self, aauthzrs, resps, chall_update):
         """Send responses and make sure errors are handled.
@@ -294,7 +291,7 @@ class AuthHandler(object):
         chall_prefs.extend(plugin_pref)
         return chall_prefs
 
-    def _cleanup_challenges(self, aauthzrs, achalls):
+    def _cleanup_challenges(self, aauthzrs, achalls=None):
         """Cleanup challenges.
 
         :param aauthzrs: authorizations and their selected annotated
@@ -305,7 +302,8 @@ class AuthHandler(object):
 
         """
         logger.info("Cleaning up challenges")
-
+        if achalls is None:
+            achalls = self._get_all_achalls(aauthzrs)
         if achalls:
             self.auth.cleanup(achalls)
             for achall in achalls:
