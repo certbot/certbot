@@ -549,7 +549,6 @@ def _is_ssl_on_directive(entry):
             len(entry) == 2 and entry[0] == 'ssl' and
             entry[1] == 'on')
 
-
 def _add_directives(directives, insert_at_top, block):
     """Adds directives to a config block."""
     for directive in directives:
