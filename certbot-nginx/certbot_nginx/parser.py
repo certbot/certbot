@@ -354,13 +354,14 @@ class NginxParser(object):
         except errors.MisconfigurationError as err:
             raise errors.MisconfigurationError("Problem in %s: %s" % (filename, str(err)))
 
-    def duplicate_vhost(self, vhost_template, delete_default=False, only_directives=None):
+    def duplicate_vhost(self, vhost_template, remove_singleton_listen_params=False,
+        only_directives=None):
         """Duplicate the vhost in the configuration files.
 
         :param :class:`~certbot_nginx.obj.VirtualHost` vhost_template: The vhost
             whose information we copy
-        :param bool delete_default: If we should remove default_server
-            from listen directives in the block.
+        :param bool remove_singleton_listen_params: If we should remove parameters
+            from listen directives in the block that can only be used once per address
         :param list only_directives: If it exists, only duplicate the named directives. Only
             looks at first level of depth; does not expand includes.
 
@@ -387,15 +388,18 @@ class NginxParser(object):
 
         enclosing_block.append(raw_in_parsed)
         new_vhost.path[-1] = len(enclosing_block) - 1
-        if delete_default:
+        if remove_singleton_listen_params:
             for addr in new_vhost.addrs:
                 addr.default = False
+                addr.ipv6only = False
             for directive in enclosing_block[new_vhost.path[-1]][1]:
                 if len(directive) > 0 and directive[0] == 'listen':
                     if 'default_server' in directive:
                         del directive[directive.index('default_server')]
                     if 'default' in directive:
                         del directive[directive.index('default')]
+                    if 'ipv6only=on' in directive:
+                        del directive[directive.index('ipv6only=on')]
         return new_vhost
 
 
