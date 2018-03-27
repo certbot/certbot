@@ -5,6 +5,7 @@ import logging
 import os
 import pkg_resources
 import re
+import six
 import socket
 import time
 
@@ -152,6 +153,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.assoc = dict()
         # Outstanding challenges
         self._chall_out = set()
+        # List of vhosts configured per wildcard domain on this run.
+        # used by deploy_cert() and enhance()
+        self._wildcard_vhosts = dict()
         # Maps enhancements to vhosts we've enabled the enhancement for
         self._enhanced_vhosts = defaultdict(set)
 
@@ -163,9 +167,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self._enhance_func = {"redirect": self._enable_redirect,
                               "ensure-http-header": self._set_http_header,
                               "staple-ocsp": self._enable_ocsp_stapling}
-
-        # This will be set during the perform function
-        self.http_doer = None
 
     @property
     def mod_ssl_conf(self):
@@ -265,12 +266,27 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             self.aug, self.conf("server-root"), self.conf("vhost-root"),
             self.version, configurator=self)
 
+    def _wildcard_domain(self, domain):
+        """
+        Checks if domain is a wildcard domain
+
+        :param str domain: Domain to check
+
+        :returns: If the domain is wildcard domain
+        :rtype: bool
+        """
+        if isinstance(domain, six.text_type):
+            wildcard_marker = u"*."
+        else:
+            wildcard_marker = b"*."
+        return domain.startswith(wildcard_marker)
+
     def deploy_cert(self, domain, cert_path, key_path,
                     chain_path=None, fullchain_path=None):
         """Deploys certificate to specified virtual host.
 
-        Currently tries to find the last directives to deploy the cert in
-        the VHost associated with the given domain. If it can't find the
+        Currently tries to find the last directives to deploy the certificate
+        in the VHost associated with the given domain. If it can't find the
         directives, it searches the "included" confs. The function verifies
         that it has located the three directives and finally modifies them
         to point to the correct destination. After the certificate is
@@ -283,9 +299,112 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             a lack of directives
 
         """
-        # Choose vhost before (possible) enabling of mod_ssl, to keep the
-        # vhost choice namespace similar with the pre-validation one.
-        vhost = self.choose_vhost(domain)
+        vhosts = self.choose_vhosts(domain)
+        for vhost in vhosts:
+            self._deploy_cert(vhost, cert_path, key_path, chain_path, fullchain_path)
+
+    def choose_vhosts(self, domain, create_if_no_ssl=True):
+        """
+        Finds VirtualHosts that can be used with the provided domain
+
+        :param str domain: Domain name to match VirtualHosts to
+        :param bool create_if_no_ssl: If found VirtualHost doesn't have a HTTPS
+            counterpart, should one get created
+
+        :returns: List of VirtualHosts or None
+        :rtype: `list` of :class:`~certbot_apache.obj.VirtualHost`
+        """
+
+        if self._wildcard_domain(domain):
+            if domain in self._wildcard_vhosts:
+                # Vhosts for a wildcard domain were already selected
+                return self._wildcard_vhosts[domain]
+            # Ask user which VHosts to support.
+            # Returned objects are guaranteed to be ssl vhosts
+            return self._choose_vhosts_wildcard(domain, create_if_no_ssl)
+        else:
+            return [self.choose_vhost(domain)]
+
+    def _vhosts_for_wildcard(self, domain):
+        """
+        Get VHost objects for every VirtualHost that the user wants to handle
+        with the wildcard certificate.
+        """
+
+        # Collect all vhosts that match the name
+        matched = set()
+        for vhost in self.vhosts:
+            for name in vhost.get_names():
+                if self._in_wildcard_scope(name, domain):
+                    matched.add(vhost)
+
+        return list(matched)
+
+    def _in_wildcard_scope(self, name, domain):
+        """
+        Helper method for _vhosts_for_wildcard() that makes sure that the domain
+        is in the scope of wildcard domain.
+
+        eg. in scope: domain = *.wild.card, name = 1.wild.card
+        not in scope: domain = *.wild.card, name = 1.2.wild.card
+        """
+        if len(name.split(".")) == len(domain.split(".")):
+            return fnmatch.fnmatch(name, domain)
+
+
+    def _choose_vhosts_wildcard(self, domain, create_ssl=True):
+        """Prompts user to choose vhosts to install a wildcard certificate for"""
+
+        # Get all vhosts that are covered by the wildcard domain
+        vhosts = self._vhosts_for_wildcard(domain)
+
+        # Go through the vhosts, making sure that we cover all the names
+        # present, but preferring the SSL vhosts
+        filtered_vhosts = dict()
+        for vhost in vhosts:
+            for name in vhost.get_names():
+                if vhost.ssl:
+                    # Always prefer SSL vhosts
+                    filtered_vhosts[name] = vhost
+                elif name not in filtered_vhosts and create_ssl:
+                    # Add if not in list previously
+                    filtered_vhosts[name] = vhost
+
+        # Only unique VHost objects
+        dialog_input = set([vhost for vhost in filtered_vhosts.values()])
+
+        # Ask the user which of names to enable, expect list of names back
+        dialog_output = display_ops.select_vhost_multiple(list(dialog_input))
+
+        if not dialog_output:
+            logger.error(
+                "No vhost exists with servername or alias for domain %s. "
+                "No vhost was selected. Please specify ServerName or ServerAlias "
+                "in the Apache config.",
+                domain)
+            raise errors.PluginError("No vhost selected")
+
+        # Make sure we create SSL vhosts for the ones that are HTTP only
+        # if requested.
+        return_vhosts = list()
+        for vhost in dialog_output:
+            if not vhost.ssl:
+                return_vhosts.append(self.make_vhost_ssl(vhost))
+            else:
+                return_vhosts.append(vhost)
+
+        self._wildcard_vhosts[domain] = return_vhosts
+        return return_vhosts
+
+
+    def _deploy_cert(self, vhost, cert_path, key_path, chain_path, fullchain_path):
+        """
+        Helper function for deploy_cert() that handles the actual deployment
+        this exists because we might want to do multiple deployments per
+        domain originally passed for deploy_cert(). This is especially true
+        with wildcard certificates
+        """
+
 
         # This is done first so that ssl module is enabled and cert_path,
         # cert_key... can all be parsed appropriately
@@ -305,16 +424,22 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             path["chain_path"] = self.parser.find_dir(
                 "SSLCertificateChainFile", None, vhost.path)
 
-        if not path["cert_path"] or not path["cert_key"]:
-            # Throw some can't find all of the directives error"
+        # Handle errors when certificate/key directives cannot be found
+        if not path["cert_path"]:
             logger.warning(
-                "Cannot find a cert or key directive in %s. "
+                "Cannot find an SSLCertificateFile directive in %s. "
                 "VirtualHost was not modified", vhost.path)
-            # Presumably break here so that the virtualhost is not modified
             raise errors.PluginError(
-                "Unable to find cert and/or key directives")
+                "Unable to find an SSLCertificateFile directive")
+        elif not path["cert_key"]:
+            logger.warning(
+                "Cannot find an SSLCertificateKeyFile directive for "
+                "certificate in %s. VirtualHost was not modified", vhost.path)
+            raise errors.PluginError(
+                "Unable to find an SSLCertificateKeyFile directive for "
+                "certificate")
 
-        logger.info("Deploying Certificate for %s to VirtualHost %s", domain, vhost.filep)
+        logger.info("Deploying Certificate to VirtualHost %s", vhost.filep)
 
         if self.version < (2, 4, 8) or (chain_path and not fullchain_path):
             # install SSLCertificateFile, SSLCertificateKeyFile,
@@ -330,8 +455,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                                          "version of Apache")
         else:
             if not fullchain_path:
-                raise errors.PluginError("Please provide the --fullchain-path\
- option pointing to your full chain file")
+                raise errors.PluginError("Please provide the --fullchain-path "
+                                         "option pointing to your full chain file")
             set_cert_path = fullchain_path
             self.aug.set(path["cert_path"][-1], fullchain_path)
             self.aug.set(path["cert_key"][-1], key_path)
@@ -394,7 +519,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             logger.error(
                 "No vhost exists with servername or alias of %s. "
                 "No vhost was selected. Please specify ServerName or ServerAlias "
-                "in the Apache config, or split vhosts into separate files.",
+                "in the Apache config.",
                 target_name)
             raise errors.PluginError("No vhost selected")
         elif temp:
@@ -439,11 +564,34 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 return True
         return False
 
-    def _find_best_vhost(self, target_name):
+    def find_best_http_vhost(self, target, filter_defaults, port="80"):
+        """Returns non-HTTPS vhost objects found from the Apache config
+
+        :param str target: Domain name of the desired VirtualHost
+        :param bool filter_defaults: whether _default_ vhosts should be
+            included if it is the best match
+        :param str port: port number the vhost should be listening on
+
+        :returns: VirtualHost object that's the best match for target name
+        :rtype: `obj.VirtualHost` or None
+        """
+        filtered_vhosts = []
+        for vhost in self.vhosts:
+            if any(a.is_wildcard() or a.get_port() == port for a in vhost.addrs) and not vhost.ssl:
+                filtered_vhosts.append(vhost)
+        return self._find_best_vhost(target, filtered_vhosts, filter_defaults)
+
+    def _find_best_vhost(self, target_name, vhosts=None, filter_defaults=True):
         """Finds the best vhost for a target_name.
 
         This does not upgrade a vhost to HTTPS... it only finds the most
         appropriate vhost for the given target_name.
+
+        :param str target_name: domain handled by the desired vhost
+        :param vhosts: vhosts to consider
+        :type vhosts: `collections.Iterable` of :class:`~certbot_apache.obj.VirtualHost`
+        :param bool filter_defaults: whether a vhost with a _default_
+            addr is acceptable
 
         :returns: VHost or None
 
@@ -456,7 +604,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Points 1 - Address name with no SSL
         best_candidate = None
         best_points = 0
-        for vhost in self.vhosts:
+
+        if vhosts is None:
+            vhosts = self.vhosts
+
+        for vhost in vhosts:
             if vhost.modmacro is True:
                 continue
             names = vhost.get_names()
@@ -480,8 +632,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         # No winners here... is there only one reasonable vhost?
         if best_candidate is None:
-            # reasonable == Not all _default_ addrs
-            vhosts = self._non_default_vhosts()
+            if filter_defaults:
+                vhosts = self._non_default_vhosts(vhosts)
             # remove mod_macro hosts from reasonable vhosts
             reasonable_vhosts = [vh for vh
                                  in vhosts if vh.modmacro is False]
@@ -490,9 +642,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         return best_candidate
 
-    def _non_default_vhosts(self):
+    def _non_default_vhosts(self, vhosts):
         """Return all non _default_ only vhosts."""
-        return [vh for vh in self.vhosts if not all(
+        return [vh for vh in vhosts if not all(
             addr.get_addr() == "_default_" for addr in vh.addrs
         )]
 
@@ -1245,7 +1397,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                             "insert_cert_file_path")
         self.parser.add_dir(vh_path, "SSLCertificateKeyFile",
                             "insert_key_file_path")
-        self.parser.add_dir(vh_path, "Include", self.mod_ssl_conf)
+        # Only include the TLS configuration if not already included
+        existing_inc = self.parser.find_dir("Include", self.mod_ssl_conf, vh_path)
+        if not existing_inc:
+            self.parser.add_dir(vh_path, "Include", self.mod_ssl_conf)
 
     def _add_servername_alias(self, target_name, vhost):
         vh_path = vhost.path
@@ -1349,8 +1504,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         except KeyError:
             raise errors.PluginError(
                 "Unsupported enhancement: {0}".format(enhancement))
+
+        vhosts = self.choose_vhosts(domain, create_if_no_ssl=False)
         try:
-            func(self.choose_vhost(domain), options)
+            for vhost in vhosts:
+                func(vhost, options)
         except errors.PluginError:
             logger.warning("Failed %s for %s", enhancement, domain)
             raise
@@ -1911,7 +2069,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         self._chall_out.update(achalls)
         responses = [None] * len(achalls)
-        self.http_doer = http_01.ApacheHttp01(self)
+        http_doer = http_01.ApacheHttp01(self)
         sni_doer = tls_sni_01.ApacheTlsSni01(self)
 
         for i, achall in enumerate(achalls):
@@ -1919,11 +2077,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             # challenge. This helps to put all of the responses back together
             # when they are all complete.
             if isinstance(achall.chall, challenges.HTTP01):
-                self.http_doer.add_chall(achall, i)
+                http_doer.add_chall(achall, i)
             else:  # tls-sni-01
                 sni_doer.add_chall(achall, i)
 
-        http_response = self.http_doer.perform()
+        http_response = http_doer.perform()
         sni_response = sni_doer.perform()
         if http_response or sni_response:
             # Must reload in order to activate the challenges.
@@ -1935,7 +2093,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             # of identifying when the new configuration is being used.
             time.sleep(3)
 
-            self._update_responses(responses, http_response, self.http_doer)
+            self._update_responses(responses, http_response, http_doer)
             self._update_responses(responses, sni_response, sni_doer)
 
         return responses
@@ -1965,5 +2123,3 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # to be modified.
         return common.install_version_controlled_file(options_ssl, options_ssl_digest,
             self.constant("MOD_SSL_CONF_SRC"), constants.ALL_SSL_OPTIONS_HASHES)
-
-

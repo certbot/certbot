@@ -158,8 +158,8 @@ class RenewableCertTests(BaseRenewableCertTest):
 
         with mock.patch("certbot.storage.logger") as mock_logger:
             storage.RenewableCert(self.config_file.filename, self.config)
-        self.assertTrue(mock_logger.warning.called)
-        self.assertTrue("version" in mock_logger.warning.call_args[0][0])
+        self.assertTrue(mock_logger.info.called)
+        self.assertTrue("version" in mock_logger.info.call_args[0][0])
 
     def test_consistent(self):
         # pylint: disable=too-many-statements,protected-access
@@ -726,7 +726,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.test_rc.configuration["renewalparams"] = {}
         rp = self.test_rc.configuration["renewalparams"]
         self.assertEqual(self.test_rc.is_test_cert, False)
-        rp["server"] = "https://acme-staging.api.letsencrypt.org/directory"
+        rp["server"] = "https://acme-staging-v02.api.letsencrypt.org/directory"
         self.assertEqual(self.test_rc.is_test_cert, True)
         rp["server"] = "https://staging.someotherca.com/directory"
         self.assertEqual(self.test_rc.is_test_cert, True)

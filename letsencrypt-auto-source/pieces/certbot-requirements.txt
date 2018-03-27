@@ -1,12 +1,12 @@
-certbot==0.20.0 \
-    --hash=sha256:c6b6bd288700898d1eb31a65b605e3a5fc10f1e3213ce468207d76a2decb9d35 \
-    --hash=sha256:cabf505b64fb400c4239dcdbaeb882079477eb6a8442268596a8791b9e34de88
-acme==0.20.0 \
-    --hash=sha256:8b0cee192c0d76d6f4045bdb14b3cfd29d9720e0dad2046794a2a555f1eaccb7 \
-    --hash=sha256:45121aed6c8cc2f31896ac1083068dfdeb613f3edeff9576dc0d10632ea5a3d5
-certbot-apache==0.20.0 \
-    --hash=sha256:f7e4dbc154d2e9d1461118b6dd3dbd16f6892da468f060eeaa162aff673347e2 \
-    --hash=sha256:0ba499706451ffbccb172bcf93d6ef4c6cc8599157077a4fa6dfbe5a83c7921f
-certbot-nginx==0.20.0 \
-    --hash=sha256:b6e372e8740b20dd9bd63837646157ac97b3c9a65affd3954571b8e872ae9ecf \
-    --hash=sha256:6379fdf20d9a7651fe30bb8d4b828cbea178cc263d7af5a380fc4508d793b9ae
+certbot==0.22.2 \
+    --hash=sha256:c8c63bdf0fed6258bdbc892454314ec37bcd1c35a7f62524a083d93ccdfc420d \
+    --hash=sha256:e6e3639293e78397f31f7d99e3c63aff82d91e2b0d50d146ee3c77f830464bef
+acme==0.22.2 \
+    --hash=sha256:59a55244612ee305d2caa6bb4cddd400fb60ec841bf011ed29a2899832a682c2 \
+    --hash=sha256:0ecd0ea369f53d5bc744d6e72717f9af2e1ceb558d109dbd433148851027adb4
+certbot-apache==0.22.2 \
+    --hash=sha256:b5340d4b9190358fde8eb6a5be0def37e32014b5142ee79ef5d2319ccbbde754 \
+    --hash=sha256:3cd26912bb5732d917ddf7aad2fe870090d4ece9a408b2c2de8e9723ec99c759
+certbot-nginx==0.22.2 \
+    --hash=sha256:91feef0d879496835d355e82841f92e5ecb5abbf6f23ea0ee5bbb8f5a92b278a \
+    --hash=sha256:b10bf04c1a20cf878d5e0d1877deb0e0780bc31b0ffda08ce7199bbc39d0753b

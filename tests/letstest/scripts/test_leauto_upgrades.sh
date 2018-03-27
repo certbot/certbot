@@ -65,6 +65,7 @@ iQIDAQAB
 "
 
 if [ $(python -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//') -eq 26 ]; then
+    RUN_PYTHON3_TESTS=1
     if command -v python3; then
         echo "Didn't expect Python 3 to be installed!"
         exit 1
@@ -85,11 +86,25 @@ if [ $(python -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//') -eq 26 ];
         exit 1
     fi
     unset VENV_PATH
-    EXPECTED_VERSION=$(grep -m1 LE_AUTO_VERSION certbot-auto | cut -d\" -f2)
-    if ! ./cb-auto -v --debug --version -n 2>&1 | grep "$EXPECTED_VERSION" ; then
-        echo "Certbot didn't upgrade as expected!"
-        exit 1
-    fi
+fi
+
+if ./letsencrypt-auto -v --debug --version | grep "WARNING: couldn't find Python" ; then
+    echo "Had problems checking for updates!"
+    exit 1
+fi
+
+EXPECTED_VERSION=$(grep -m1 LE_AUTO_VERSION certbot-auto | cut -d\" -f2)
+if ! /opt/eff.org/certbot/venv/bin/letsencrypt --version 2>&1 | grep "$EXPECTED_VERSION" ; then
+    echo upgrade appeared to fail
+    exit 1
+fi
+
+if ! diff letsencrypt-auto letsencrypt-auto-source/letsencrypt-auto ; then
+    echo letsencrypt-auto and letsencrypt-auto-source/letsencrypt-auto differ
+    exit 1
+fi
+
+if [ "$RUN_PYTHON3_TESTS" = 1 ]; then
     if ! command -v python3; then
         echo "Python3 wasn't properly installed"
         exit 1
@@ -98,11 +113,7 @@ if [ $(python -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//') -eq 26 ];
         echo "Python3 wasn't used in venv!"
         exit 1
     fi
-elif ! ./letsencrypt-auto -v --debug --version || ! diff letsencrypt-auto letsencrypt-auto-source/letsencrypt-auto ; then
-    echo upgrade appeared to fail
-    exit 1
 fi
-
 echo upgrade appeared to be successful
 
 if [ "$(tools/readlink.py ${XDG_DATA_HOME:-~/.local/share}/letsencrypt)" != "/opt/eff.org/certbot/venv" ]; then

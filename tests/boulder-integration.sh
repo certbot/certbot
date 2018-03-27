@@ -233,6 +233,7 @@ certname="dns.le.wtf"
 common -a manual -d dns.le.wtf --preferred-challenges dns,tls-sni run \
     --cert-name $certname \
     --manual-auth-hook ./tests/manual-dns-auth.sh \
+    --manual-cleanup-hook ./tests/manual-dns-cleanup.sh \
     --pre-hook 'echo wtf2.pre >> "$HOOK_TEST"' \
     --post-hook 'echo wtf2.post >> "$HOOK_TEST"' \
     --renew-hook 'echo deploy >> "$HOOK_TEST"'
@@ -251,7 +252,7 @@ openssl x509 -in "${root}/csr/chain.pem" -text
 
 common --domains le3.wtf install \
        --cert-path "${root}/csr/cert.pem" \
-       --key-path "${root}/csr/key.pem"
+       --key-path "${root}/key.pem"
 
 CheckCertCount() {
     CERTCOUNT=`ls "${root}/conf/archive/$1/cert"* | wc -l`
@@ -325,6 +326,19 @@ CheckDirHooks 1
 # test with overlapping directory hooks in the renewal conf files
 common renew --cert-name le2.wtf
 CheckDirHooks 1
+
+# manual-dns-auth.sh will skip completing the challenge for domains that begin
+# with fail.
+common -a manual -d dns1.le.wtf,fail.dns1.le.wtf \
+    --allow-subset-of-names \
+    --preferred-challenges dns,tls-sni \
+    --manual-auth-hook ./tests/manual-dns-auth.sh \
+    --manual-cleanup-hook ./tests/manual-dns-cleanup.sh
+
+if common certificates | grep "fail\.dns1\.le\.wtf"; then
+    echo "certificate should not have been issued for domain!" >&2
+    exit 1
+fi
 
 # ECDSA
 openssl ecparam -genkey -name secp384r1 -out "${root}/privkey-p384.pem"
@@ -430,6 +444,13 @@ for path in $archive $conf $live; do
     fi
 done
 
+# Test ACMEv2-only features
+if [ "${BOULDER_INTEGRATION:-v1}" = "v2" ]; then
+    common -a manual -d '*.le4.wtf,le4.wtf' --preferred-challenges dns \
+        --manual-auth-hook ./tests/manual-dns-auth.sh \
+        --manual-cleanup-hook ./tests/manual-dns-cleanup.sh
+fi
+
 # Most CI systems set this variable to true.
 # If the tests are running as part of CI, Nginx should be available.
 if ${CI:-false} || type nginx;
@@ -437,4 +458,4 @@ then
     . ./certbot-nginx/tests/boulder-integration.sh
 fi
 
-coverage report --fail-under 64 -m
+coverage report --fail-under 67 -m

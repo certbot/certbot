@@ -6,6 +6,7 @@ import unittest
 from acme import challenges
 
 from certbot import achallenges
+from certbot import errors
 
 from certbot.tests import acme_util
 
@@ -22,8 +23,9 @@ class ApacheHttp01TestMeta(type):
         def _gen_test(num_achalls, minor_version):
             def _test(self):
                 achalls = self.achalls[:num_achalls]
+                vhosts = self.vhosts[:num_achalls]
                 self.config.version = (2, minor_version)
-                self.common_perform_test(achalls)
+                self.common_perform_test(achalls, vhosts)
             return _test
 
         for i in range(1, NUM_ACHALLS + 1):
@@ -43,16 +45,21 @@ class ApacheHttp01Test(util.ApacheTest):
 
         self.account_key = self.rsa512jwk
         self.achalls = []
+        vh_truth = util.get_vh_truth(
+            self.temp_dir, "debian_apache_2_4/multiple_vhosts")
+        # Takes the vhosts for encryption-example.demo, certbot.demo, and
+        # vhost.in.rootconf
+        self.vhosts = [vh_truth[0], vh_truth[3], vh_truth[10]]
+
         for i in range(NUM_ACHALLS):
             self.achalls.append(
                 achallenges.KeyAuthorizationAnnotatedChallenge(
                     challb=acme_util.chall_to_challb(
-                        challenges.HTTP01(token=((chr(ord('a') + i) * 16))),
+                        challenges.HTTP01(token=((chr(ord('a') + i).encode() * 16))),
                         "pending"),
-                    domain="example{0}.com".format(i),
-                    account_key=self.account_key))
+                    domain=self.vhosts[i].name, account_key=self.account_key))
 
-        modules = ["alias", "authz_core", "authz_host"]
+        modules = ["rewrite", "authz_core", "authz_host"]
         for mod in modules:
             self.config.parser.modules.add("mod_{0}.c".format(mod))
             self.config.parser.modules.add(mod + "_module")
@@ -81,9 +88,9 @@ class ApacheHttp01Test(util.ApacheTest):
         self.assertEqual(enmod_calls[0][0][0], "authz_core")
 
     def common_enable_modules_test(self, mock_enmod):
-        """Tests enabling mod_alias and other modules."""
-        self.config.parser.modules.remove("alias_module")
-        self.config.parser.modules.remove("mod_alias.c")
+        """Tests enabling mod_rewrite and other modules."""
+        self.config.parser.modules.remove("rewrite_module")
+        self.config.parser.modules.remove("mod_rewrite.c")
 
         self.http.prepare_http01_modules()
 
@@ -91,14 +98,46 @@ class ApacheHttp01Test(util.ApacheTest):
         calls = mock_enmod.call_args_list
         other_calls = []
         for call in calls:
-            if "alias" != call[0][0]:
+            if "rewrite" != call[0][0]:
                 other_calls.append(call)
 
-        # If these lists are equal, we never enabled mod_alias
+        # If these lists are equal, we never enabled mod_rewrite
         self.assertNotEqual(calls, other_calls)
         return other_calls
 
-    def common_perform_test(self, achalls):
+    def test_same_vhost(self):
+        vhost = next(v for v in self.config.vhosts if v.name == "certbot.demo")
+        achalls = [
+            achallenges.KeyAuthorizationAnnotatedChallenge(
+                challb=acme_util.chall_to_challb(
+                    challenges.HTTP01(token=((b'a' * 16))),
+                    "pending"),
+                domain=vhost.name, account_key=self.account_key),
+            achallenges.KeyAuthorizationAnnotatedChallenge(
+                challb=acme_util.chall_to_challb(
+                    challenges.HTTP01(token=((b'b' * 16))),
+                    "pending"),
+                domain=next(iter(vhost.aliases)), account_key=self.account_key)
+        ]
+        self.common_perform_test(achalls, [vhost])
+
+    def test_anonymous_vhost(self):
+        vhosts = [v for v in self.config.vhosts if not v.ssl]
+        achalls = [
+            achallenges.KeyAuthorizationAnnotatedChallenge(
+                challb=acme_util.chall_to_challb(
+                    challenges.HTTP01(token=((b'a' * 16))),
+                    "pending"),
+                domain="something.nonexistent", account_key=self.account_key)]
+        self.common_perform_test(achalls, vhosts)
+
+    def test_no_vhost(self):
+        for achall in self.achalls:
+            self.http.add_chall(achall)
+        self.config.config.http01_port = 12345
+        self.assertRaises(errors.PluginError, self.http.perform)
+
+    def common_perform_test(self, achalls, vhosts):
         """Tests perform with the given achalls."""
         challenge_dir = self.http.challenge_dir
         self.assertFalse(os.path.exists(challenge_dir))
@@ -116,23 +155,34 @@ class ApacheHttp01Test(util.ApacheTest):
         for achall in achalls:
             self._test_challenge_file(achall)
 
+        for vhost in vhosts:
+            if not vhost.ssl:
+                matches = self.config.parser.find_dir("Include",
+                                                      self.http.challenge_conf_pre,
+                                                      vhost.path)
+                self.assertEqual(len(matches), 1)
+                matches = self.config.parser.find_dir("Include",
+                                                      self.http.challenge_conf_post,
+                                                      vhost.path)
+                self.assertEqual(len(matches), 1)
+
         self.assertTrue(os.path.exists(challenge_dir))
 
     def _test_challenge_conf(self):
-        self.assertEqual(
-            len(self.config.parser.find_dir(
-                "Include", self.http.challenge_conf)), 1)
+        with open(self.http.challenge_conf_pre) as f:
+            pre_conf_contents = f.read()
 
-        with open(self.http.challenge_conf) as f:
-            conf_contents = f.read()
+        with open(self.http.challenge_conf_post) as f:
+            post_conf_contents = f.read()
 
-        alias_fmt = "Alias /.well-known/acme-challenge {0}"
-        alias = alias_fmt.format(self.http.challenge_dir)
-        self.assertTrue(alias in conf_contents)
+        self.assertTrue("RewriteEngine on" in pre_conf_contents)
+        self.assertTrue("RewriteRule" in pre_conf_contents)
+
+        self.assertTrue(self.http.challenge_dir in post_conf_contents)
         if self.config.version < (2, 4):
-            self.assertTrue("Allow from all" in conf_contents)
+            self.assertTrue("Allow from all" in post_conf_contents)
         else:
-            self.assertTrue("Require all granted" in conf_contents)
+            self.assertTrue("Require all granted" in post_conf_contents)
 
     def _test_challenge_file(self, achall):
         name = os.path.join(self.http.challenge_dir, achall.chall.encode("token"))

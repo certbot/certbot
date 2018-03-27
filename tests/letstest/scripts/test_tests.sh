@@ -1,11 +1,13 @@
 #!/bin/sh -xe
 
+LE_AUTO="letsencrypt/letsencrypt-auto-source/letsencrypt-auto"
+LE_AUTO="$LE_AUTO --debug --no-self-upgrade --non-interactive"
 MODULES="acme certbot certbot_apache certbot_nginx"
 VENV_NAME=venv
 
 # *-auto respects VENV_PATH
-letsencrypt/certbot-auto --debug --os-packages-only --non-interactive
-LE_AUTO_SUDO="" VENV_PATH=$VENV_NAME letsencrypt/certbot-auto --debug --no-bootstrap --non-interactive --version
+$LE_AUTO --os-packages-only
+LE_AUTO_SUDO="" VENV_PATH="$VENV_NAME" $LE_AUTO --no-bootstrap --version
 . $VENV_NAME/bin/activate
 
 # change to an empty directory to ensure CWD doesn't affect tests

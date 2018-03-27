@@ -170,7 +170,7 @@ def get_vh_truth(temp_dir, config_name):
                 os.path.join(prefix, "certbot.conf"),
                 os.path.join(aug_pre, "certbot.conf/VirtualHost"),
                 set([obj.Addr.fromstring("*:80")]), False, True,
-                "certbot.demo"),
+                "certbot.demo", aliases=["www.certbot.demo"]),
             obj.VirtualHost(
                 os.path.join(prefix, "mod_macro-example.conf"),
                 os.path.join(aug_pre,

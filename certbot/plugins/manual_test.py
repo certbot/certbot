@@ -93,10 +93,10 @@ class AuthenticatorTest(test_util.TempDirTestCase):
             self.auth.perform(self.achalls),
             [achall.response(achall.account_key) for achall in self.achalls])
         self.assertEqual(
-            self.auth.env[self.dns_achall.domain]['CERTBOT_AUTH_OUTPUT'],
+            self.auth.env[self.dns_achall]['CERTBOT_AUTH_OUTPUT'],
             dns_expected)
         self.assertEqual(
-            self.auth.env[self.http_achall.domain]['CERTBOT_AUTH_OUTPUT'],
+            self.auth.env[self.http_achall]['CERTBOT_AUTH_OUTPUT'],
             http_expected)
         # tls_sni_01 challenge must be perform()ed above before we can
         # get the cert_path and key_path.
@@ -107,7 +107,7 @@ class AuthenticatorTest(test_util.TempDirTestCase):
             self.auth.tls_sni_01.get_z_domain(self.tls_sni_achall),
             'novalidation')
         self.assertEqual(
-            self.auth.env[self.tls_sni_achall.domain]['CERTBOT_AUTH_OUTPUT'],
+            self.auth.env[self.tls_sni_achall]['CERTBOT_AUTH_OUTPUT'],
             tls_sni_expected)
 
     @test_util.patch_get_utility()

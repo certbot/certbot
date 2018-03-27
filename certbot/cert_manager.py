@@ -121,7 +121,28 @@ def domains_for_certname(config, certname):
     return lineage.names() if lineage else None
 
 def find_duplicative_certs(config, domains):
-    """Find existing certs that duplicate the request."""
+    """Find existing certs that match the given domain names.
+
+    This function searches for certificates whose domains are equal to
+    the `domains` parameter and certificates whose domains are a subset
+    of the domains in the `domains` parameter. If multiple certificates
+    are found whose names are a subset of `domains`, the one whose names
+    are the largest subset of `domains` is returned.
+
+    If multiple certificates' domains are an exact match or equally
+    sized subsets, which matching certificates are returned is
+    undefined.
+
+    :param config: Configuration.
+    :type config: :class:`certbot.configuration.NamespaceConfig`
+    :param domains: List of domain names
+    :type domains: `list` of `str`
+
+    :returns: lineages representing the identically matching cert and the
+        largest subset if they exist
+    :rtype: `tuple` of `storage.RenewableCert` or `None`
+
+    """
     def update_certs_for_domain_matches(candidate_lineage, rv):
         """Return cert as identical_names_cert if it matches,
            or subset_names_cert if it matches as subset
