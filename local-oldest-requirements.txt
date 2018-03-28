@@ -1,1 +1,1 @@
--e acme[dev]
+acme[dev]==0.22.0
