@@ -121,7 +121,18 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
     def test_supported_enhancements(self):
         self.assertEqual(
             self._create_prepared_installer().supported_enhancements(),
-            ['starttls-everywhere'])
+            ['starttls-policy'])
+
+    def test_enhance_starttls(self):
+        installer = self._create_prepared_installer()
+        mock_open = mock.mock_open()
+        with mock.patch('certbot_postfix.installer.open', mock_open):
+            installer.enhance("example.org", "starttls-policy")
+        mock_open().write.assert_called_once_with(
+            'yahoo.com secure .yahoodns.net protocols=!SSLv2:!SSLv3:!TLSv1:!TLSv1.1\n' +
+            'eff.org secure .eff.org protocols=!SSLv2:!SSLv3:!TLSv1:!TLSv1.1\n' +
+            'example.com secure mail.example.com:.example.net protocols=!SSLv2:!SSLv3:!TLSv1:!TLSv1.1\n' +
+            'gmail.com secure .mail.google.com protocols=!SSLv2:!SSLv3:!TLSv1:!TLSv1.1\n')
 
     def _create_prepared_installer(self):
         """Creates and returns a new prepared Postfix Installer.

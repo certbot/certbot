@@ -1,0 +1,1 @@
+-e git+https://github.com/sydneyli/starttls-everywhere.git@packaging#egg=starttls_policy&subdirectory=starttls-policy

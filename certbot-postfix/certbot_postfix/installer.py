@@ -90,29 +90,28 @@ def _get_formatted_policy_for_domain(address_domain, tls_policy):
     :param tls_policy dict: TLS policy information.
     :rtype str: Properly formatted Postfix TLS policy specification for this domain.
     """
-    mx_list = tls_policy['mxs']
+    mx_list = tls_policy.mxs
     if len(mx_list) == 0:
         matches = ""
     else:
         matches = ':'.join(mx_list)
     entry = address_domain + " secure " + matches
-    protocols_value = _get_formatted_protocols(tls_policy['min-tls-version'])
+    protocols_value = _get_formatted_protocols(tls_policy.min_tls_version)
     if protocols_value is not None:
         entry += " protocols=" + protocols_value
     else:
-        logger.warn('Unknown minimum TLS version: {0}', tls_policy['min_tls_version'])
+        logger.warning('Unknown minimum TLS version: %s', tls_policy['min_tls_version'])
     return entry
 
 
-def _write_domainwise_tls_policies(policy, policy_file, fopen=open):
+def _write_domainwise_tls_policies(policy, policy_file):
     """Writes domainwise tls policies to self.policy_file in a format that Postfix
     can parse.
     """
     policy_lines = []
-    all_tls_policies = policy.tls_policies
-    for address_domain, tls_policy in all_tls_policies.items():
+    for address_domain, tls_policy in policy.policies_iter():
         policy_lines.append(_get_formatted_policy_for_domain(address_domain, tls_policy))
-    with fopen(policy_file, "w") as f:
+    with open(policy_file, "w") as f:
         f.write("\n".join(policy_lines) + "\n")
 
 @zope.interface.implementer(interfaces.IInstaller)
@@ -316,7 +315,7 @@ class Installer(plugins_common.Installer):
     def _enable_policy_list(self, domain, options):
         # pylint: disable=unused-argument
         try:
-            from policylist import policy
+            from starttls_policy import policy
         except ImportError:
             raise ImportError('STARTTLS Everywhere policy Python module not installed!')
         policy = policy.Config()
@@ -333,10 +332,12 @@ class Installer(plugins_common.Installer):
 
         """
         try:
-            return self._enhance_func[enhancement](domain, options)
-        except (KeyError, ValueError):
+            func = self._enhance_func[enhancement]
+        except (KeyError, ValueError) as e:
             raise errors.PluginError(
                 "Unsupported enhancement: {0}".format(enhancement))
+        try:
+            func(domain, options)
         except errors.PluginError:
             logger.warning("Failed %s for %s", enhancement, domain)
             raise
