@@ -21,113 +21,89 @@ matrix:
   include:
     - python: "2.7"
       env: TOXENV=cover FYI="this also tests py27"
-      before_install:
     - python: "2.7"
       env: TOXENV=lint
-      before_install:
     - python: "2.7"
       env: TOXENV=py27-nginx-oldest BOULDER_INTEGRATION=v1
       sudo: required
       services: docker
-      before_install:
     - python: "2.7"
       env: TOXENV=py27-nginx-oldest BOULDER_INTEGRATION=v2
       sudo: required
       services: docker
-      before_install:
     - python: "2.7"
       env: TOXENV=py27_install BOULDER_INTEGRATION=v2
       sudo: required
       services: docker
-      before_install:
     - python: "2.7"
       env: TOXENV=py27_install BOULDER_INTEGRATION=v1
       sudo: required
       services: docker
-      before_install:
     - python: "2.7"
       env: TOXENV='py27-{acme,apache,certbot,dns}-oldest'
-      before_install:
     - sudo: required
       env: TOXENV=apache_compat
       services: docker
-      before_install:
       addons:
     - sudo: required
       env: TOXENV=nginx_compat
       services: docker
-      before_install:
       addons:
     - sudo: required
       env: TOXENV=le_auto_precise
       services: docker
-      before_install:
       addons:
     - sudo: required
       env: TOXENV=le_auto_trusty
       services: docker
-      before_install:
       addons:
     - sudo: required
       env: TOXENV=le_auto_wheezy
       services: docker
-      before_install:
       addons:
     - sudo: required
       env: TOXENV=le_auto_centos6
       services: docker
-      before_install:
       addons:
     - sudo: required
       env: TOXENV=docker_dev
       services: docker
-      before_install:
       addons:
     - python: "2.7"
       env: TOXENV=apacheconftest
       sudo: required
-      before_install:
     - python: "3.4"
       env: TOXENV=py34 BOULDER_INTEGRATION=v1
       sudo: required
       services: docker
-      before_install:
     - python: "3.4"
       env: TOXENV=py34 BOULDER_INTEGRATION=v2
       sudo: required
       services: docker
-      before_install:
     - python: "3.5"
       env: TOXENV=py35 BOULDER_INTEGRATION=v1
       sudo: required
       services: docker
-      before_install:
     - python: "3.5"
       env: TOXENV=py35 BOULDER_INTEGRATION=v2
       sudo: required
       services: docker
-      before_install:
     - python: "3.6"
       env: TOXENV=py36 BOULDER_INTEGRATION=v1
       sudo: required
       services: docker
-      before_install:
     - python: "3.6"
       env: TOXENV=py36 BOULDER_INTEGRATION=v2
       sudo: required
       services: docker
-      before_install:
     - python: "2.7"
       env: TOXENV=nginxroundtrip
-      before_install:
     - language: generic
       env: TOXENV=py27
       os: osx
-      before_install:
     - language: generic
       env: TOXENV=py36
       os: osx
-      before_install:
 
 
 # Only build pushes to the master branch, PRs, and branches beginning with
