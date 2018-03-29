@@ -62,6 +62,10 @@ matrix:
     - sudo: required
       env: TOXENV=docker_dev
       services: docker
+      addons:
+        apt:
+          packages:  # don't install nginx and apache
+          - libaugeas0
     - python: "2.7"
       env: TOXENV=apacheconftest
       sudo: required
