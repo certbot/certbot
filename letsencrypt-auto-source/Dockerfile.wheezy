@@ -14,7 +14,7 @@ RUN apt-get update && \
 COPY ./pieces/pipstrap.py /opt
 RUN /opt/pipstrap.py
 # Pin pytest version for increased stability
-RUN pip install pytest==3.2.5 six
+RUN pip install pytest==3.2.5 six==1.10.0
 
 # Let that user sudo:
 RUN sed -i.bkp -e \
