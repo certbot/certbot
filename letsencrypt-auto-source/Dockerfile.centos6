@@ -11,7 +11,7 @@ RUN yum install -y python-pip sudo
 COPY ./pieces/pipstrap.py /opt
 RUN /opt/pipstrap.py
 # Pin pytest version for increased stability
-RUN pip install pytest==3.2.5
+RUN pip install pytest==3.2.5 six
 
 # Add an unprivileged user:
 RUN useradd --create-home --home-dir /home/lea --shell /bin/bash --groups wheel --uid 1000 lea
