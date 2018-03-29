@@ -44,31 +44,24 @@ matrix:
     - sudo: required
       env: TOXENV=apache_compat
       services: docker
-      addons:
     - sudo: required
       env: TOXENV=nginx_compat
       services: docker
-      addons:
     - sudo: required
       env: TOXENV=le_auto_precise
       services: docker
-      addons:
     - sudo: required
       env: TOXENV=le_auto_trusty
       services: docker
-      addons:
     - sudo: required
       env: TOXENV=le_auto_wheezy
       services: docker
-      addons:
     - sudo: required
       env: TOXENV=le_auto_centos6
       services: docker
-      addons:
     - sudo: required
       env: TOXENV=docker_dev
       services: docker
-      addons:
     - python: "2.7"
       env: TOXENV=apacheconftest
       sudo: required
