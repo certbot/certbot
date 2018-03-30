@@ -44,38 +44,28 @@ matrix:
     - sudo: required
       env: TOXENV=apache_compat
       services: docker
-      before_install:
-      addons:
     - sudo: required
       env: TOXENV=nginx_compat
       services: docker
-      before_install:
-      addons:
     - sudo: required
       env: TOXENV=le_auto_precise
       services: docker
-      before_install:
-      addons:
     - sudo: required
       env: TOXENV=le_auto_trusty
       services: docker
-      before_install:
-      addons:
     - sudo: required
       env: TOXENV=le_auto_wheezy
       services: docker
-      before_install:
-      addons:
     - sudo: required
       env: TOXENV=le_auto_centos6
       services: docker
-      before_install:
-      addons:
     - sudo: required
       env: TOXENV=docker_dev
       services: docker
-      before_install:
       addons:
+        apt:
+          packages:  # don't install nginx and apache
+          - libaugeas0
     - python: "2.7"
       env: TOXENV=apacheconftest
       sudo: required
