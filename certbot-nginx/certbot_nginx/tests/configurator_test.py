@@ -639,7 +639,7 @@ class NginxConfiguratorTest(util.NginxTest):
         self.assertEqual([[['server'],
                            [['listen', 'myhost', 'default_server'],
                             ['listen', 'otherhost', 'default_server'],
-                            ['server_name', 'www.example.org'],
+                            ['server_name', '"www.example.org"'],
                             [['location', '/'],
                              [['root', 'html'],
                               ['index', 'index.html', 'index.htm']]]]],
