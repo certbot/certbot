@@ -1,0 +1,19 @@
+{
+  "timestamp": "2018-03-30T19:45:16+00:00",
+  "author": "Electronic Frontier Foundation https://eff.org",
+  "expires": "2018-04-30T19:45:16+00:00",
+  "version": "0.1",
+  "pinsets": {
+    "eff": {
+      "static-spki-hashes": [
+        "sha1/B5:68:C5:05:5E:5B:F0:03:93:9F:E1:89:10:21:A7:3E:E3:A9:B0:B9"
+      ]
+    }
+  },
+  "policy-aliases": {
+    "recipient": { "mode": "enforce", "mxs": ["recipient.com"] }
+  },
+  "policies": {
+    "recipient": { "policy-alias": "recipient" }
+  }
+}

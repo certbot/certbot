@@ -16,7 +16,7 @@ from certbot_postfix import util
 
 POLICY_FILENAME = "starttls_everywhere_policy"
 
-CA_CERTS_PATH = "/etc/ssl/certs/"
+CA_CERTS_FILE = "/etc/ssl/certs/ca-certificates.crt"
 
 # If the value of a default VAR is a tuple, then the values which
 # come LATER in the tuple are more strict/more secure.
@@ -94,7 +94,7 @@ def _get_formatted_policy_for_domain(address_domain, tls_policy):
     if len(mx_list) == 0:
         matches = ""
     else:
-        matches = ':'.join(mx_list)
+        matches = 'match=' + ':'.join(mx_list)
     entry = address_domain + " secure " + matches
     protocols_value = _get_formatted_protocols(tls_policy.min_tls_version)
     if protocols_value is not None:
@@ -310,7 +310,7 @@ class Installer(plugins_common.Installer):
         self.postconf.set("smtpd_tls_key_file", key_path, _report_master_overrides)
         self._set_vars(DEFAULT_SERVER_VARS)
         self._set_vars(DEFAULT_CLIENT_VARS)
-        self.postconf.set("smtp_tls_CApath", CA_CERTS_PATH, _report_master_overrides)
+        self.postconf.set("smtp_tls_CAfile", CA_CERTS_FILE, _report_master_overrides)
 
     def _enable_policy_list(self, domain, options):
         # pylint: disable=unused-argument
@@ -318,7 +318,10 @@ class Installer(plugins_common.Installer):
             from starttls_policy import policy
         except ImportError:
             raise ImportError('STARTTLS Everywhere policy Python module not installed!')
-        policy = policy.Config()
+        if options is None:
+            policy = policy.Config()
+        else:
+            policy = policy.Config(options)
         policy.load()
         _write_domainwise_tls_policies(policy, self.policy_file)
         policy_cf_entry = "texthash:" + self.policy_file
