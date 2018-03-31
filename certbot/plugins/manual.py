@@ -189,7 +189,7 @@ when it receives a TLS ClientHello with the SNI extension set to
         os.environ.update(env)
         _, out = hooks.execute(self.conf('auth-hook'))
         env['CERTBOT_AUTH_OUTPUT'] = out.strip()
-        self.env[achall.domain] = env
+        self.env[achall] = env
 
     def _perform_achall_manually(self, achall):
         validation = achall.validation(achall.account_key)
@@ -215,7 +215,7 @@ when it receives a TLS ClientHello with the SNI extension set to
     def cleanup(self, achalls):  # pylint: disable=missing-docstring
         if self.conf('cleanup-hook'):
             for achall in achalls:
-                env = self.env.pop(achall.domain)
+                env = self.env.pop(achall)
                 if 'CERTBOT_TOKEN' not in env:
                     os.environ.pop('CERTBOT_TOKEN', None)
                 os.environ.update(env)

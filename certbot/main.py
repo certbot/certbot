@@ -1,10 +1,10 @@
 """Certbot main entry point."""
+# pylint: disable=too-many-lines
 from __future__ import print_function
 import functools
 import logging.handlers
 import os
 import sys
-import warnings
 
 import configobj
 import josepy as jose
@@ -495,17 +495,20 @@ def _determine_account(config):
             if config.email is None and not config.register_unsafely_without_email:
                 config.email = display_ops.get_email()
 
-            def _tos_cb(regr):
+            def _tos_cb(terms_of_service):
                 if config.tos:
                     return True
                 msg = ("Please read the Terms of Service at {0}. You "
                        "must agree in order to register with the ACME "
                        "server at {1}".format(
-                           regr.terms_of_service, config.server))
+                           terms_of_service, config.server))
                 obj = zope.component.getUtility(interfaces.IDisplay)
-                return obj.yesno(msg, "Agree", "Cancel",
+                result = obj.yesno(msg, "Agree", "Cancel",
                                  cli_flag="--agree-tos", force_interactive=True)
-
+                if not result:
+                    raise errors.Error(
+                        "Registration cannot proceed without accepting "
+                        "Terms of Service.")
             try:
                 acc, acme = client.register(
                     config, account_storage, tos_cb=_tos_cb)
@@ -779,11 +782,45 @@ def install(config, plugins):
     except errors.PluginSelectionError as e:
         return str(e)
 
-    domains, _ = _find_domains_or_certname(config, installer)
-    le_client = _init_le_client(config, authenticator=None, installer=installer)
-    _install_cert(config, le_client, domains)
+    # If cert-path is defined, populate missing (ie. not overridden) values.
+    # Unfortunately this can't be done in argument parser, as certificate
+    # manager needs the access to renewal directory paths
+    if config.certname:
+        config = _populate_from_certname(config)
+    if config.key_path and config.cert_path:
+        _check_certificate_and_key(config)
+        domains, _ = _find_domains_or_certname(config, installer)
+        le_client = _init_le_client(config, authenticator=None, installer=installer)
+        _install_cert(config, le_client, domains)
+    else:
+        raise errors.ConfigurationError("Path to certificate or key was not defined. "
+            "If your certificate is managed by Certbot, please use --cert-name "
+            "to define which certificate you would like to install.")
 
+def _populate_from_certname(config):
+    """Helper function for install to populate missing config values from lineage
+    defined by --cert-name."""
 
+    lineage = cert_manager.lineage_for_certname(config, config.certname)
+    if not lineage:
+        return config
+    if not config.key_path:
+        config.namespace.key_path = lineage.key_path
+    if not config.cert_path:
+        config.namespace.cert_path = lineage.cert_path
+    if not config.chain_path:
+        config.namespace.chain_path = lineage.chain_path
+    if not config.fullchain_path:
+        config.namespace.fullchain_path = lineage.fullchain_path
+    return config
+
+def _check_certificate_and_key(config):
+    if not os.path.isfile(os.path.realpath(config.cert_path)):
+        raise errors.ConfigurationError("Error while reading certificate from path "
+                                       "{0}".format(config.cert_path))
+    if not os.path.isfile(os.path.realpath(config.key_path)):
+        raise errors.ConfigurationError("Error while reading private key from path "
+                                       "{0}".format(config.key_path))
 def plugins_cmd(config, plugins):
     """List server software plugins.
 
@@ -945,11 +982,11 @@ def revoke(config, unused_plugins):  # TODO: coop with renewal config
                      config.cert_path[0], config.key_path[0])
         crypto_util.verify_cert_matches_priv_key(config.cert_path[0], config.key_path[0])
         key = jose.JWK.load(config.key_path[1])
+        acme = client.acme_from_config_key(config, key)
     else:  # revocation by account key
         logger.debug("Revoking %s using Account Key", config.cert_path[0])
         acc, _ = _determine_account(config)
-        key = acc.key
-    acme = client.acme_from_config_key(config, key)
+        acme = client.acme_from_config_key(config, acc.key, acc.regr)
     cert = crypto_util.pyopenssl_load_certificate(config.cert_path[1])[0]
     logger.debug("Reason code for revocation: %s", config.reason)
 
@@ -1026,13 +1063,13 @@ def _csr_get_and_save_cert(config, le_client):
 
     """
     csr, _ = config.actual_csr
-    certr, chain = le_client.obtain_certificate_from_csr(config.domains, csr)
+    cert, chain = le_client.obtain_certificate_from_csr(csr)
     if config.dry_run:
         logger.debug(
             "Dry run: skipping saving certificate to %s", config.cert_path)
         return None, None
     cert_path, _, fullchain_path = le_client.save_certificate(
-            certr, chain, config.cert_path, config.chain_path, config.fullchain_path)
+            cert, chain, config.cert_path, config.chain_path, config.fullchain_path)
     return cert_path, fullchain_path
 
 def renew_cert(config, plugins, lineage):
@@ -1218,17 +1255,6 @@ def main(cli_args=sys.argv[1:]):
         # Let plugins_cmd be run as un-privileged user.
         if config.func != plugins_cmd:
             raise
-    deprecation_fmt = (
-        "Python %s.%s support will be dropped in the next "
-        "release of Certbot - please upgrade your Python version.")
-    # We use the warnings system for Python 2.6 and logging for Python 3
-    # because DeprecationWarnings are only reported by default in Python <= 2.6
-    # and warnings can be disabled by the user.
-    if sys.version_info[:2] == (2, 6):
-        warning = deprecation_fmt % sys.version_info[:2]
-        warnings.warn(warning, DeprecationWarning)
-    elif sys.version_info[:2] == (3, 3):
-        logger.warning(deprecation_fmt, *sys.version_info[:2])
 
     set_displayer(config)
 

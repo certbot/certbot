@@ -158,23 +158,31 @@ class ApacheHttp01Test(util.ApacheTest):
         for vhost in vhosts:
             if not vhost.ssl:
                 matches = self.config.parser.find_dir("Include",
-                                                      self.http.challenge_conf,
+                                                      self.http.challenge_conf_pre,
+                                                      vhost.path)
+                self.assertEqual(len(matches), 1)
+                matches = self.config.parser.find_dir("Include",
+                                                      self.http.challenge_conf_post,
                                                       vhost.path)
                 self.assertEqual(len(matches), 1)
 
         self.assertTrue(os.path.exists(challenge_dir))
 
     def _test_challenge_conf(self):
-        with open(self.http.challenge_conf) as f:
-            conf_contents = f.read()
+        with open(self.http.challenge_conf_pre) as f:
+            pre_conf_contents = f.read()
 
-        self.assertTrue("RewriteEngine on" in conf_contents)
-        self.assertTrue("RewriteRule" in conf_contents)
-        self.assertTrue(self.http.challenge_dir in conf_contents)
+        with open(self.http.challenge_conf_post) as f:
+            post_conf_contents = f.read()
+
+        self.assertTrue("RewriteEngine on" in pre_conf_contents)
+        self.assertTrue("RewriteRule" in pre_conf_contents)
+
+        self.assertTrue(self.http.challenge_dir in post_conf_contents)
         if self.config.version < (2, 4):
-            self.assertTrue("Allow from all" in conf_contents)
+            self.assertTrue("Allow from all" in post_conf_contents)
         else:
-            self.assertTrue("Require all granted" in conf_contents)
+            self.assertTrue("Require all granted" in post_conf_contents)
 
     def _test_challenge_file(self, achall):
         name = os.path.join(self.http.challenge_dir, achall.chall.encode("token"))

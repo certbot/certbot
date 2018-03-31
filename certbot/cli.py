@@ -207,13 +207,15 @@ def set_by_cli(var):
         # propagate plugin requests: eg --standalone modifies config.authenticator
         detector.authenticator, detector.installer = (
             plugin_selection.cli_plugin_requests(detector))
-        logger.debug("Default Detector is %r", detector)
 
     if not isinstance(getattr(detector, var), _Default):
+        logger.debug("Var %s=%s (set by user).", var, getattr(detector, var))
         return True
 
     for modifier in VAR_MODIFIERS.get(var, []):
         if set_by_cli(modifier):
+            logger.debug("Var %s=%s (set by user).",
+                var, VAR_MODIFIERS.get(var, []))
             return True
 
     return False
@@ -596,6 +598,11 @@ class HelpfulArgumentParser(object):
 
         if parsed_args.validate_hooks:
             hooks.validate_hooks(parsed_args)
+
+        if parsed_args.allow_subset_of_names:
+            if any(util.is_wildcard_domain(d) for d in parsed_args.domains):
+                raise errors.Error("Using --allow-subset-of-names with a"
+                                   " wildcard domain is not supported.")
 
         possible_deprecation_warning(parsed_args)
 
@@ -1276,14 +1283,13 @@ def _paths_parser(helpful):
     elif verb == "revoke":
         add(section, "--cert-path", type=read_file, required=True, help=cph)
     else:
-        add(section, "--cert-path", type=os.path.abspath,
-            help=cph, required=(verb == "install"))
+        add(section, "--cert-path", type=os.path.abspath, help=cph)
 
     section = "paths"
     if verb in ("install", "revoke"):
         section = verb
     # revoke --key-path reads a file, install --key-path takes a string
-    add(section, "--key-path", required=(verb == "install"),
+    add(section, "--key-path",
         type=((verb == "revoke" and read_file) or os.path.abspath),
         help="Path to private key for certificate installation "
              "or revocation (if account key is missing)")

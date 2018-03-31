@@ -84,7 +84,7 @@ CLI_DEFAULTS = dict(
     config_dir="/etc/letsencrypt",
     work_dir="/var/lib/letsencrypt",
     logs_dir="/var/log/letsencrypt",
-    server="https://acme-v01.api.letsencrypt.org/directory",
+    server="https://acme-v02.api.letsencrypt.org/directory",
 
     # Plugins parsers
     configurator=None,
@@ -107,7 +107,7 @@ CLI_DEFAULTS = dict(
     dns_route53=False
 
 )
-STAGING_URI = "https://acme-staging.api.letsencrypt.org/directory"
+STAGING_URI = "https://acme-staging-v02.api.letsencrypt.org/directory"
 
 # The set of reasons for revoking a certificate is defined in RFC 5280 in
 # section 5.3.1. The reasons that users are allowed to submit are restricted to
@@ -135,13 +135,13 @@ RENEWER_DEFAULTS = dict(
 """Defaults for renewer script."""
 
 
-ENHANCEMENTS = ["redirect", "http-header", "ocsp-stapling", "spdy"]
+ENHANCEMENTS = ["redirect", "ensure-http-header", "ocsp-stapling", "spdy"]
 """List of possible :class:`certbot.interfaces.IInstaller`
 enhancements.
 
 List of expected options parameters:
 - redirect: None
-- http-header: TODO
+- ensure-http-header: name of header (i.e. Strict-Transport-Security)
 - ocsp-stapling: certificate chain file path
 - spdy: TODO
 

@@ -1,4 +1,5 @@
 """Certbot Route53 authenticator plugin."""
+import collections
 import logging
 import time
 
@@ -33,6 +34,7 @@ class Authenticator(dns_common.DNSAuthenticator):
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
         self.r53 = boto3.client("route53")
+        self._resource_records = collections.defaultdict(list)
 
     def more_info(self):  # pylint: disable=missing-docstring,no-self-use
         return "Solve a DNS01 challenge using AWS Route53"
@@ -88,6 +90,20 @@ class Authenticator(dns_common.DNSAuthenticator):
     def _change_txt_record(self, action, validation_domain_name, validation):
         zone_id = self._find_zone_id_for_domain(validation_domain_name)
 
+        rrecords = self._resource_records[validation_domain_name]
+        challenge = {"Value": '"{0}"'.format(validation)}
+        if action == "DELETE":
+            # Remove the record being deleted from the list of tracked records
+            rrecords.remove(challenge)
+            if rrecords:
+                # Need to update instead, as we're not deleting the rrset
+                action = "UPSERT"
+            else:
+                # Create a new list containing the record to use with DELETE
+                rrecords = [challenge]
+        else:
+            rrecords.append(challenge)
+
         response = self.r53.change_resource_record_sets(
             HostedZoneId=zone_id,
             ChangeBatch={
@@ -99,11 +115,7 @@ class Authenticator(dns_common.DNSAuthenticator):
                             "Name": validation_domain_name,
                             "Type": "TXT",
                             "TTL": self.ttl,
-                            "ResourceRecords": [
-                                # For some reason TXT records need to be
-                                # manually quoted.
-                                {"Value": '"{0}"'.format(validation)}
-                            ],
+                            "ResourceRecords": rrecords,
                         }
                     }
                 ]

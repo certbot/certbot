@@ -335,6 +335,33 @@ class MultipleVhostsTest(util.ApacheTest):
             "example/cert_chain.pem", "example/fullchain.pem")
         self.assertTrue(ssl_vhost.enabled)
 
+    def test_no_duplicate_include(self):
+        def mock_find_dir(directive, argument, _):
+            """Mock method for parser.find_dir"""
+            if directive == "Include" and argument.endswith("options-ssl-apache.conf"):
+                return ["/path/to/whatever"]
+
+        mock_add = mock.MagicMock()
+        self.config.parser.add_dir = mock_add
+        self.config._add_dummy_ssl_directives(self.vh_truth[0])  # pylint: disable=protected-access
+        tried_to_add = False
+        for a in mock_add.call_args_list:
+            if a[0][1] == "Include" and a[0][2] == self.config.mod_ssl_conf:
+                tried_to_add = True
+        # Include should be added, find_dir is not patched, and returns falsy
+        self.assertTrue(tried_to_add)
+
+        self.config.parser.find_dir = mock_find_dir
+        mock_add.reset_mock()
+
+        self.config._add_dummy_ssl_directives(self.vh_truth[0])  # pylint: disable=protected-access
+        tried_to_add = []
+        for a in mock_add.call_args_list:
+            tried_to_add.append(a[0][1] == "Include" and
+                                a[0][2] == self.config.mod_ssl_conf)
+        # Include shouldn't be added, as patched find_dir "finds" existing one
+        self.assertFalse(any(tried_to_add))
+
     def test_deploy_cert(self):
         self.config.parser.modules.add("ssl_module")
         self.config.parser.modules.add("mod_ssl.c")
@@ -414,13 +441,37 @@ class MultipleVhostsTest(util.ApacheTest):
             self.vh_truth[1].path))
 
     def test_deploy_cert_invalid_vhost(self):
+        """For test cases where the `ApacheConfigurator` class' `_deploy_cert`
+        method is called with an invalid vhost parameter. Currently this tests
+        that a PluginError is appropriately raised when important directives
+        are missing in an SSL module."""
         self.config.parser.modules.add("ssl_module")
-        mock_find = mock.MagicMock()
-        mock_find.return_value = []
-        self.config.parser.find_dir = mock_find
+        self.config.parser.modules.add("mod_ssl.c")
+        self.config.parser.modules.add("socache_shmcb_module")
+
+        def side_effect(*args):
+            """Mocks case where an SSLCertificateFile directive can be found
+            but an SSLCertificateKeyFile directive is missing."""
+            if "SSLCertificateFile" in args:
+                return ["example/cert.pem"]
+            else:
+                return []
+
+        mock_find_dir = mock.MagicMock(return_value=[])
+        mock_find_dir.side_effect = side_effect
+
+        self.config.parser.find_dir = mock_find_dir
 
         # Get the default 443 vhost
         self.config.assoc["random.demo"] = self.vh_truth[1]
+
+        self.assertRaises(
+            errors.PluginError, self.config.deploy_cert, "random.demo",
+            "example/cert.pem", "example/key.pem", "example/cert_chain.pem")
+
+        # Remove side_effect to mock case where both SSLCertificateFile
+        # and SSLCertificateKeyFile directives are missing
+        self.config.parser.find_dir.side_effect = None
         self.assertRaises(
             errors.PluginError, self.config.deploy_cert, "random.demo",
             "example/cert.pem", "example/key.pem", "example/cert_chain.pem")
@@ -474,7 +525,11 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertEqual(mock_add_dir.call_count, 3)
         self.assertTrue(mock_add_dir.called)
         self.assertEqual(mock_add_dir.call_args[0][1], "Listen")
-        self.assertEqual(mock_add_dir.call_args[0][2], ['1.2.3.4:8080'])
+        call_found = False
+        for mock_call in mock_add_dir.mock_calls:
+            if mock_call[1][2] == ['1.2.3.4:8080']:
+                call_found = True
+        self.assertTrue(call_found)
 
     def test_prepare_server_https(self):
         mock_enable = mock.Mock()
@@ -1305,6 +1360,106 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertRaises(errors.MisconfigurationError,
                           self.config.enable_mod,
                           "whatever")
+
+    def test_wildcard_domain(self):
+        # pylint: disable=protected-access
+        cases = {u"*.example.org": True, b"*.x.example.org": True,
+                 u"a.example.org": False, b"a.x.example.org": False}
+        for key in cases.keys():
+            self.assertEqual(self.config._wildcard_domain(key), cases[key])
+
+    def test_choose_vhosts_wildcard(self):
+        # pylint: disable=protected-access
+        mock_path = "certbot_apache.display_ops.select_vhost_multiple"
+        with mock.patch(mock_path) as mock_select_vhs:
+            mock_select_vhs.return_value = [self.vh_truth[3]]
+            vhs = self.config._choose_vhosts_wildcard("*.certbot.demo",
+                                                     create_ssl=True)
+            # Check that the dialog was called with one vh: certbot.demo
+            self.assertEquals(mock_select_vhs.call_args[0][0][0], self.vh_truth[3])
+            self.assertEquals(len(mock_select_vhs.call_args_list), 1)
+
+            # And the actual returned values
+            self.assertEquals(len(vhs), 1)
+            self.assertTrue(vhs[0].name == "certbot.demo")
+            self.assertTrue(vhs[0].ssl)
+
+            self.assertFalse(vhs[0] == self.vh_truth[3])
+
+    @mock.patch("certbot_apache.configurator.ApacheConfigurator.make_vhost_ssl")
+    def test_choose_vhosts_wildcard_no_ssl(self, mock_makessl):
+        # pylint: disable=protected-access
+        mock_path = "certbot_apache.display_ops.select_vhost_multiple"
+        with mock.patch(mock_path) as mock_select_vhs:
+            mock_select_vhs.return_value = [self.vh_truth[1]]
+            vhs = self.config._choose_vhosts_wildcard("*.certbot.demo",
+                                                     create_ssl=False)
+            self.assertFalse(mock_makessl.called)
+            self.assertEquals(vhs[0], self.vh_truth[1])
+
+    @mock.patch("certbot_apache.configurator.ApacheConfigurator._vhosts_for_wildcard")
+    @mock.patch("certbot_apache.configurator.ApacheConfigurator.make_vhost_ssl")
+    def test_choose_vhosts_wildcard_already_ssl(self, mock_makessl, mock_vh_for_w):
+        # pylint: disable=protected-access
+        # Already SSL vhost
+        mock_vh_for_w.return_value = [self.vh_truth[7]]
+        mock_path = "certbot_apache.display_ops.select_vhost_multiple"
+        with mock.patch(mock_path) as mock_select_vhs:
+            mock_select_vhs.return_value = [self.vh_truth[7]]
+            vhs = self.config._choose_vhosts_wildcard("whatever",
+                                                     create_ssl=True)
+            self.assertEquals(mock_select_vhs.call_args[0][0][0], self.vh_truth[7])
+            self.assertEquals(len(mock_select_vhs.call_args_list), 1)
+            # Ensure that make_vhost_ssl was not called, vhost.ssl == true
+            self.assertFalse(mock_makessl.called)
+
+            # And the actual returned values
+            self.assertEquals(len(vhs), 1)
+            self.assertTrue(vhs[0].ssl)
+            self.assertEquals(vhs[0], self.vh_truth[7])
+
+
+    def test_deploy_cert_wildcard(self):
+        # pylint: disable=protected-access
+        mock_choose_vhosts = mock.MagicMock()
+        mock_choose_vhosts.return_value = [self.vh_truth[7]]
+        self.config._choose_vhosts_wildcard = mock_choose_vhosts
+        mock_d = "certbot_apache.configurator.ApacheConfigurator._deploy_cert"
+        with mock.patch(mock_d) as mock_dep:
+            self.config.deploy_cert("*.wildcard.example.org", "/tmp/path",
+                                    "/tmp/path", "/tmp/path", "/tmp/path")
+            self.assertTrue(mock_dep.called)
+            self.assertEquals(len(mock_dep.call_args_list), 1)
+            self.assertEqual(self.vh_truth[7], mock_dep.call_args_list[0][0][0])
+
+    @mock.patch("certbot_apache.display_ops.select_vhost_multiple")
+    def test_deploy_cert_wildcard_no_vhosts(self, mock_dialog):
+        # pylint: disable=protected-access
+        mock_dialog.return_value = []
+        self.assertRaises(errors.PluginError,
+                          self.config.deploy_cert,
+                          "*.wild.cat", "/tmp/path", "/tmp/path",
+                           "/tmp/path", "/tmp/path")
+
+    @mock.patch("certbot_apache.configurator.ApacheConfigurator._choose_vhosts_wildcard")
+    def test_enhance_wildcard_after_install(self, mock_choose):
+        # pylint: disable=protected-access
+        self.config.parser.modules.add("mod_ssl.c")
+        self.config.parser.modules.add("headers_module")
+        self.config._wildcard_vhosts["*.certbot.demo"] = [self.vh_truth[3]]
+        self.config.enhance("*.certbot.demo", "ensure-http-header",
+                            "Upgrade-Insecure-Requests")
+        self.assertFalse(mock_choose.called)
+
+    @mock.patch("certbot_apache.configurator.ApacheConfigurator._choose_vhosts_wildcard")
+    def test_enhance_wildcard_no_install(self, mock_choose):
+        mock_choose.return_value = [self.vh_truth[3]]
+        self.config.parser.modules.add("mod_ssl.c")
+        self.config.parser.modules.add("headers_module")
+        self.config.enhance("*.certbot.demo", "ensure-http-header",
+                            "Upgrade-Insecure-Requests")
+        self.assertTrue(mock_choose.called)
+
 
 class AugeasVhostsTest(util.ApacheTest):
     """Test vhosts with illegal names dependent on augeas version."""
