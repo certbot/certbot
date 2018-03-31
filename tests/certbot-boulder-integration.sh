@@ -451,11 +451,4 @@ if [ "${BOULDER_INTEGRATION:-v1}" = "v2" ]; then
         --manual-cleanup-hook ./tests/manual-dns-cleanup.sh
 fi
 
-# Most CI systems set this variable to true.
-# If the tests are running as part of CI, Nginx should be available.
-if ${CI:-false} || type nginx;
-then
-    . ./certbot-nginx/tests/boulder-integration.sh
-fi
-
-coverage report --fail-under 67 -m
+coverage report -m
