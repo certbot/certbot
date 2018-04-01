@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 if [ "$TOXENV" != "py27-nginx-oldest" ]; then
    tests/certbot-boulder-integration.sh
 fi
