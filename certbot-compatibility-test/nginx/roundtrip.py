@@ -8,7 +8,7 @@ from certbot_nginx import nginxparser
 def roundtrip(stuff):
     success = True
     for t in stuff:
-        print t
+        print(t)
         if not os.path.isfile(t):
             continue
         with open(t, "r") as f:

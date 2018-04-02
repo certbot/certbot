@@ -285,8 +285,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                     chain_path=None, fullchain_path=None):
         """Deploys certificate to specified virtual host.
 
-        Currently tries to find the last directives to deploy the cert in
-        the VHost associated with the given domain. If it can't find the
+        Currently tries to find the last directives to deploy the certificate
+        in the VHost associated with the given domain. If it can't find the
         directives, it searches the "included" confs. The function verifies
         that it has located the three directives and finally modifies them
         to point to the correct destination. After the certificate is
@@ -424,14 +424,20 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             path["chain_path"] = self.parser.find_dir(
                 "SSLCertificateChainFile", None, vhost.path)
 
-        if not path["cert_path"] or not path["cert_key"]:
-            # Throw some can't find all of the directives error"
+        # Handle errors when certificate/key directives cannot be found
+        if not path["cert_path"]:
             logger.warning(
-                "Cannot find a cert or key directive in %s. "
+                "Cannot find an SSLCertificateFile directive in %s. "
                 "VirtualHost was not modified", vhost.path)
-            # Presumably break here so that the virtualhost is not modified
             raise errors.PluginError(
-                "Unable to find cert and/or key directives")
+                "Unable to find an SSLCertificateFile directive")
+        elif not path["cert_key"]:
+            logger.warning(
+                "Cannot find an SSLCertificateKeyFile directive for "
+                "certificate in %s. VirtualHost was not modified", vhost.path)
+            raise errors.PluginError(
+                "Unable to find an SSLCertificateKeyFile directive for "
+                "certificate")
 
         logger.info("Deploying Certificate to VirtualHost %s", vhost.filep)
 
@@ -2133,5 +2139,3 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # to be modified.
         return common.install_version_controlled_file(options_ssl, options_ssl_digest,
             self.constant("MOD_SSL_CONF_SRC"), constants.ALL_SSL_OPTIONS_HASHES)
-
-
