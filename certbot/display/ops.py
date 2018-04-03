@@ -86,6 +86,21 @@ def choose_account(accounts):
     else:
         return None
 
+def choose_values(values, question=None):
+    """Display screen to let user pick one or multiple values from the provided
+    list.
+
+    :param list values: Values to select from
+
+    :returns: List of selected values
+    :rtype: list
+    """
+    code, names = z_util(interfaces.IDisplay).checklist(
+        question, tags=values, force_interactive=True)
+    if code == display_util.OK and names:
+        return names
+    else:
+        return []
 
 def choose_names(installer, question=None):
     """Display screen to select domains to validate.

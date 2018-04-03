@@ -46,7 +46,7 @@ def rename_lineage(config):
     """
     disp = zope.component.getUtility(interfaces.IDisplay)
 
-    certname = _get_certnames(config, "rename")[0]
+    certname = get_certnames(config, "rename")[0]
 
     new_certname = config.new_certname
     if not new_certname:
@@ -88,7 +88,7 @@ def certificates(config):
 
 def delete(config):
     """Delete Certbot files associated with a certificate lineage."""
-    certnames = _get_certnames(config, "delete", allow_multiple=True)
+    certnames = get_certnames(config, "delete", allow_multiple=True)
     for certname in certnames:
         storage.delete_files(config, certname)
         disp = zope.component.getUtility(interfaces.IDisplay)
@@ -288,11 +288,7 @@ def human_readable_cert_info(config, cert, skip_filter_checks=False):
                          cert.privkey))
     return "".join(certinfo)
 
-###################
-# Private Helpers
-###################
-
-def _get_certnames(config, verb, allow_multiple=False):
+def get_certnames(config, verb, allow_multiple=False):
     """Get certname from flag, interactively, or error out.
     """
     certname = config.certname
@@ -320,6 +316,10 @@ def _get_certnames(config, verb, allow_multiple=False):
                 raise errors.Error("User ended interaction.")
             certnames = [choices[index]]
     return certnames
+
+###################
+# Private Helpers
+###################
 
 def _report_lines(msgs):
     """Format a results report for a category of single-line renewal outcomes"""

@@ -882,15 +882,21 @@ def enhance(config, plugins):
         logger.warning(msg, sys.argv[0])
         raise errors.MisconfigurationError("No enhancements requested, exiting.")
 
+    if not config.certname:
+        config.certname = cert_manager.get_certnames(config, "enhance",
+                                                     allow_multiple=False)[0]
+    cert_domains = cert_manager.domains_for_certname(config, config.certname)
+    domain_question = ("Which domain names would you like to enable the selected "
+                       "enhancements for?")
+    domains = display_ops.choose_values(cert_domains, domain_question)
+    if not domains:
+        return
     try:
         installer, _ = plug_sel.choose_configurator_plugins(config, plugins, "enhance")
     except errors.PluginSelectionError as e:
         return str(e)
     le_client = _init_le_client(config, authenticator=None, installer=installer)
-    domain_question = ("Which domain names would you like to enable the selected "
-                       "enhancements for")
-    domains, _ = _find_domains_or_certname(config, installer, domain_question)
-    le_client.enhance_config(domains, None, ask_redirect=False)
+    le_client.enhance_config(domains, config.chain_path, ask_redirect=False)
 
 
 def rollback(config, plugins):
