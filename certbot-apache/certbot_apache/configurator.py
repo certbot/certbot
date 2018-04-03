@@ -2000,10 +2000,27 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :raises .errors.MisconfigurationError: If reload fails
 
         """
+        error = ""
         try:
             util.run_script(self.constant("restart_cmd"))
         except errors.SubprocessError as err:
-            raise errors.MisconfigurationError(str(err))
+            logger.info("Unable to restart apache using %s",
+                        self.constant("restart_cmd"))
+            alt_restart = self.constant("restart_cmd_alt")
+            if alt_restart:
+                logger.debug("Trying alternative restart command: %s",
+                             alt_restart)
+                # There is an alternative restart command available
+                # This usually is "restart" verb while original is "graceful"
+                try:
+                    util.run_script(self.constant(
+                        "restart_cmd_alt"))
+                    return
+                except errors.SubprocessError as secerr:
+                    error = str(secerr)
+            else:
+                error = str(err)
+            raise errors.MisconfigurationError(error)
 
     def config_test(self):  # pylint: disable=no-self-use
         """Check the configuration of Apache for errors.
