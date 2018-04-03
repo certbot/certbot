@@ -914,7 +914,7 @@ class NginxConfigurator(common.Installer):
             raise errors.PluginError("Nginx build doesn't support SNI")
 
         product_name, product_version = version_matches[0]
-        if product_name is not 'nginx':
+        if product_name != 'nginx':
             logger.warning("NGINX derivative %s is not officially supported by"
                            " certbot", product_name)
 
