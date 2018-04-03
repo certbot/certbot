@@ -871,23 +871,15 @@ Example usage for DNS-01 (Cloudflare API v4) (for example purposes only, do not 
 Changing the ACME Server
 ========================
 
-By default, Certbot uses Let's Encrypt's initial production server at
-https://acme-v01.api.letsencrypt.org/. You can tell Certbot to use a
+By default, Certbot uses Let's Encrypt's ACMEv2 production server at
+https://acme-v02.api.letsencrypt.org/. You can tell Certbot to use a
 different CA by providing ``--server`` on the command line or in a
 :ref:`configuration file <config-file>` with the URL of the server's
 ACME directory. For example, if you would like to use Let's Encrypt's
-new ACMEv2 server, you would add ``--server
-https://acme-v02.api.letsencrypt.org/directory`` to the command line.
+initial ACMEv1 server, you would add ``--server
+https://acme-v01.api.letsencrypt.org/directory`` to the command line.
 Certbot will automatically select which version of the ACME protocol to
 use based on the contents served at the provided URL.
-
-If you use ``--server`` to specify an ACME CA that implements a newer
-version of the spec, you may be able to obtain a certificate for a
-wildcard domain. Some CAs (such as Let's Encrypt) require that domain
-validation for wildcard domains must be done through modifications to
-DNS records which means that the dns-01_ challenge type must be used. To
-see a list of Certbot plugins that support this challenge type and how
-to use them, see plugins_.
 
 Lock Files
 ==========
