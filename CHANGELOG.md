@@ -2,6 +2,49 @@
 
 Certbot adheres to [Semantic Versioning](http://semver.org/).
 
+## 0.23.0 - 2018-04-03
+
+### Added
+
+* Support for OpenResty was added to the Nginx plugin.
+
+### Changed
+
+* The timestamps in Certbot's logfiles now use the system's local time zone
+  rather than UTC.
+* Certbot's DNS plugins that use Lexicon now rely on Lexicon>=2.2.1 to be able
+  to create and delete multiple TXT records on a single domain.
+* certbot-dns-google's test suite now works without an internet connection.
+
+### Fixed
+
+* Removed a small window that if during which an error occurred, Certbot
+  wouldn't clean up performed challenges.
+* The parameters `default` and `ipv6only` are now removed from `listen`
+  directives when creating a new server block in the Nginx plugin.
+* `server_name` directives enclosed in quotation marks in Nginx are now properly
+  supported.
+* Resolved an issue preventing the Apache plugin from starting Apache when it's
+  not currently running on RHEL and Gentoo based systems.
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+packages with changes other than their version number were:
+
+* certbot
+* certbot-apache
+* certbot-dns-cloudxns
+* certbot-dns-dnsimple
+* certbot-dns-dnsmadeeasy
+* certbot-dns-google
+* certbot-dns-luadns
+* certbot-dns-nsone
+* certbot-dns-rfc2136
+* certbot-nginx
+
+More details about these changes can be found on our GitHub repo:
+https://github.com/certbot/certbot/milestone/50?closed=1
+
 ## 0.22.2 - 2018-03-19
 
 ### Fixed
