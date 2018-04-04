@@ -101,7 +101,6 @@ class StandaloneBindError(Error):
         self.port = port
 
 
-
 class ConfigurationError(Error):
     """Configuration sanity error."""
 
