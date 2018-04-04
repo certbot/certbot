@@ -451,4 +451,4 @@ if [ "${BOULDER_INTEGRATION:-v1}" = "v2" ]; then
         --manual-cleanup-hook ./tests/manual-dns-cleanup.sh
 fi
 
-coverage report --fail-under 65 -m
+coverage report -m
