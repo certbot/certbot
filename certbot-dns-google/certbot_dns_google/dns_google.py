@@ -81,7 +81,7 @@ class _GoogleClient(object):
     Encapsulates all communication with the Google Cloud DNS API.
     """
 
-    def __init__(self, account_json=None):
+    def __init__(self, account_json=None, dns_api=None):
 
         scopes = ['https://www.googleapis.com/auth/ndev.clouddns.readwrite']
         if account_json is not None:
@@ -92,7 +92,12 @@ class _GoogleClient(object):
             credentials = None
             self.project_id = self.get_project_id()
 
-        self.dns = discovery.build('dns', 'v1', credentials=credentials, cache_discovery=False)
+        if not dns_api:
+            self.dns = discovery.build('dns', 'v1',
+                                       credentials=credentials,
+                                       cache_discovery=False)
+        else:
+            self.dns = dns_api
 
     def add_txt_record(self, domain, record_name, record_content, record_ttl):
         """
