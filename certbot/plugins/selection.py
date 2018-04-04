@@ -160,13 +160,11 @@ def choose_configurator_plugins(config, plugins, verb):
     """
 
     req_auth, req_inst = cli_plugin_requests(config)
+    installer_question = None
 
     if verb == "enhance":
-        installer_question = ("Which plugin would you like to use for adding "
-                              "security enhancements to your configuration?")
-    else:
-        installer_question = ("How would you like to authenticate and install "
-                              "certificates?")
+        installer_question = ("Which installer would you like to use to "
+                              "configure the selected enhancements?")
 
     # Which plugins do we need?
     if verb == "run":
@@ -187,10 +185,8 @@ def choose_configurator_plugins(config, plugins, verb):
     if verb == "install" or verb == "enhance":
         need_inst = True
         if config.authenticator:
-            logger.warning("Specifying an authenticator doesn't make sense in install mode")
-        if verb == "enhance":
-            installer_question = ("Which installer would you like to use to "
-                                  "configure the selected enhancements?")
+            logger.warning("Specifying an authenticator doesn't make sense when "
+                           "running Certbot with verb \"%s\"", verb)
     # Try to meet the user's request and/or ask them to pick plugins
     authenticator = installer = None
     if verb == "run" and req_auth == req_inst:

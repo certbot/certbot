@@ -874,13 +874,18 @@ def enhance(config, plugins):
     :rtype: None
 
     """
-    supported_enhancements = ["hsts", "redirect", "uir"]
+    supported_enhancements = ["hsts", "redirect", "uir", "staple"]
     # Check that at least one enhancement was requested on command line
     if not any([getattr(config, enh) for enh in supported_enhancements]):
         msg = ("Please specify one or more enhancement types to configure. To list "
                "the available enhancement types, run:\n\n%s --help enhance\n")
         logger.warning(msg, sys.argv[0])
         raise errors.MisconfigurationError("No enhancements requested, exiting.")
+
+    try:
+        installer, _ = plug_sel.choose_configurator_plugins(config, plugins, "enhance")
+    except errors.PluginSelectionError as e:
+        return str(e)
 
     if not config.certname:
         config.certname = cert_manager.get_certnames(config, "enhance",
@@ -890,11 +895,8 @@ def enhance(config, plugins):
                        "enhancements for?")
     domains = display_ops.choose_values(cert_domains, domain_question)
     if not domains:
-        return
-    try:
-        installer, _ = plug_sel.choose_configurator_plugins(config, plugins, "enhance")
-    except errors.PluginSelectionError as e:
-        return str(e)
+        # To be consistent with the error messages (similar to get_certnames)
+        raise errors.Error("User ended interaction.")
     le_client = _init_le_client(config, authenticator=None, installer=installer)
     le_client.enhance_config(domains, config.chain_path, ask_redirect=False)
 

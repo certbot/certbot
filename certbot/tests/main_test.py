@@ -1605,8 +1605,9 @@ class EnhanceTest(unittest.TestCase):
     def test_user_abort_domains(self, _rec, mock_choose):
         mock_choose.return_value = []
         with mock.patch('certbot.main.plug_sel.pick_installer'):
-            mock_client = self._call(['enhance', '--redirect', '--hsts'])
-            self.assertFalse(mock_client.enhance_config.called)
+            self.assertRaises(errors.Error,
+                              self._call,
+                              ['enhance', '--redirect', '--hsts'])
 
     def test_no_enhancements_defined(self):
         self.assertRaises(errors.MisconfigurationError,

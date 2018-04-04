@@ -1288,7 +1288,7 @@ def _paths_parser(helpful):
         verb = helpful.help_arg
 
     cph = "Path to where certificate is saved (with auth --csr), installed from, or revoked."
-    section = ["paths", "install", "revoke", "certonly", "manage", "enhance"]
+    section = ["paths", "install", "revoke", "certonly", "manage"]
     if verb == "certonly":
         add(section, "--cert-path", type=os.path.abspath,
             default=flag_default("auth_cert_path"), help=cph)
