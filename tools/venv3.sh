@@ -29,5 +29,6 @@ fi
   -e certbot-dns-sakuracloud \
   -e certbot-nginx \
   -e certbot-postfix \
+  -e certbot-sendmail \
   -e letshelp-certbot \
   -e certbot-compatibility-test

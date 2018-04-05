@@ -41,6 +41,7 @@ class PluginEntryPoint(object):
         "certbot-dns-sakuracloud",
         "certbot-nginx",
         "certbot-postfix",
+        "certbot-sendmail",
     ]
     """Distributions for which prefix will be omitted."""
 
