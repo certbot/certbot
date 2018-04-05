@@ -1,7 +1,6 @@
 """Very low-level dovecot config parser based on pyparsing."""
 from pyparsing import (
-    printables, restOfLine,
-    Literal, Forward, Group, LineEnd, Optional,
+    restOfLine, Literal, Forward, Group, LineEnd, Optional,
     OneOrMore, ParserElement, White, Word, ZeroOrMore
 )
 
@@ -15,17 +14,11 @@ class DovecotParser(object):
     # configuration itself
     ParserElement.setDefaultWhitespaceChars('')
 
-    # This is printables excluding the following characters: # { } ,
+    # This is printables excluding the following characters: # { } , =
     allowed_characters = (
         "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"$%&"
-        "\\'()*+-./:;<=>?@[\\]^_`|~"
+        "\\'()*+-./:;<>?@[\\]^_`|~"
     )
-
-    allowed_characters = printables.replace("=", "")
-    allowed_characters = allowed_characters.replace("{", "")
-    allowed_characters = allowed_characters.replace("}", "")
-    allowed_characters = allowed_characters.replace(",", "")
-    allowed_characters = allowed_characters.replace("#", "")
 
     newline = LineEnd()
     same_line_space = Optional(Word(' \t').leaveWhitespace())
