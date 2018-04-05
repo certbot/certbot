@@ -83,6 +83,24 @@ class DovecotConfiguratorTest(unittest.TestCase):
         self.assertEquals(self._doveconf_get("ssl_protocols"), "!SSLv3 !SSLv2")
         self.assertEquals(self._doveconf_get("ssl_dh_parameters_length"), "2048")
 
+    def test_redeploy_cert(self):
+        self.config.deploy_cert(
+            "www.fakenews.com",
+            "fakenews/cert.pem",
+            "fakenews/key.pem",
+            "fakenews/chain.pem",
+            "fakenews/fullchain.pem")
+        self.config.deploy_cert(
+            "www.example.com",
+            "example/cert.pem",
+            "example/key.pem",
+            "example/chain.pem",
+            "example/fullchain.pem")
+        self.assertEquals(self._doveconf_get("ssl"), "yes")
+        self.assertEquals(self._doveconf_get("ssl_cert"), "<example/fullchain.pem")
+        self.assertEquals(self._doveconf_get("ssl_protocols"), "!SSLv3 !SSLv2")
+        self.assertEquals(self._doveconf_get("ssl_dh_parameters_length"), "2048")
+
     def _doveconf_get(self, param):
         try:
             proc = subprocess.Popen(["doveconf", "-c", self.config.dovecot_conf, "-h", param],
