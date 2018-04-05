@@ -84,16 +84,6 @@ class DovecotConfigurator(common.Installer):
         self.version = version
         self.reverter.recovery_routine()
 
-    @property
-    def mod_ssl_conf(self):
-        """Full absolute path to SSL configuration file."""
-        return os.path.join(self.config.config_dir, constants.MOD_SSL_CONF_DEST)
-
-    @property
-    def updated_mod_ssl_conf_digest(self):
-        """Full absolute path to digest of updated SSL configuration file."""
-        return os.path.join(self.config.config_dir, constants.UPDATED_MOD_SSL_CONF_DIGEST)
-
     # This is called in determine_authenticator and determine_installer
     def prepare(self):
         """Prepare the authenticator/installer.
@@ -107,8 +97,6 @@ class DovecotConfigurator(common.Installer):
 
         # Make sure configuration is valid
         self.config_test()
-
-        install_ssl_options_conf(self.mod_ssl_conf, self.updated_mod_ssl_conf_digest)
 
         self.install_ssl_dhparams()
 
@@ -142,14 +130,19 @@ class DovecotConfigurator(common.Installer):
             "ssl = yes",
             "ssl_cert = <{}".format(fullchain_path),
             "ssl_key = <{}".format(key_path),
-            "ssl_dh = <{}".format(self.ssl_dhparams),
-            "!include_try = <{}".format(self.mod_ssl_conf)
+            # TODO (sydli): Use MOD_SSL_CONF like in nginx plugin
+            "ssl_protocols = !SSLv3 !SSLv2",
+            "ssl_prefer_server_ciphers = yes",
+            "ssl_cipher_list = {}".format(constants.SSL_CIPHER_LIST),
+            "ssl_dh_parameters_length = 2048",
         ]
+        if self.version >= (2, 3, 0):
+            directives_to_include.append("ssl_dh = <{}".format(self.ssl_dhparams))
         comment = " # Managed by Certbot"
-        # TODO: make this operation idempotent...
-        directives_to_include = ["{} {}".format(directive, comment) for directive in directives_to_include]
+        # TODO (sydli): make this operation idempotent...
+        directives_to_include = ["{} {}\n".format(directive, comment) for directive in directives_to_include]
         with open(self.dovecot_conf, 'a') as ssl_conf:
-            ssl_conf.writelines()
+            ssl_conf.writelines(directives_to_include)
         logger.info("Deployed Certificate to Dovecot")
         for directive in directives_to_include:
             self.save_notes += "\t{}\n".format(directive)
@@ -192,7 +185,7 @@ class DovecotConfigurator(common.Installer):
 
         """
         try:
-            util.run_script([self.conf('conf_cmd')])
+            util.run_script([self.conf('conf_cmd'), "-c", self.dovecot_conf])
         except errors.SubprocessError as err:
             raise errors.MisconfigurationError(str(err))
 
@@ -274,14 +267,15 @@ class DovecotConfigurator(common.Installer):
             checkpoint
 
         """
-        save_files = set(self.parser.parsed.keys())
-        self.add_to_checkpoint(save_files, self.save_notes, temporary)
-        self.save_notes = ""
+        return None
+        # save_files = set(self.parser.parsed.keys())
+        # self.add_to_checkpoint(save_files, self.save_notes, temporary)
+        # self.save_notes = ""
 
-        # Change 'ext' to something else to not override existing conf files
-        self.parser.filedump(ext='')
-        if title and not temporary:
-            self.finalize_checkpoint(title)
+        # # Change 'ext' to something else to not override existing conf files
+        # self.parser.filedump(ext='')
+        # if title and not temporary:
+        #     self.finalize_checkpoint(title)
 
 def dovecot_restart(dovecot_adm_ctl, dovecot_conf):
     """Restarts Dovecot.
@@ -294,8 +288,3 @@ def dovecot_restart(dovecot_adm_ctl, dovecot_conf):
         proc.communicate()
     except (OSError, ValueError):
         raise errors.MisconfigurationError("dovecot restart failed")
-
-def install_ssl_options_conf(options_ssl, options_ssl_digest):
-    """Copy Certbot's SSL options file into the system's config dir if required."""
-    return common.install_version_controlled_file(options_ssl, options_ssl_digest,
-        constants.MOD_SSL_CONF_SRC, constants.ALL_SSL_OPTIONS_HASHES)
