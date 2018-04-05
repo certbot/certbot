@@ -19,6 +19,8 @@ from certbot import util
 
 from certbot.plugins import common
 
+from certbot_dovecot import constants
+
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +63,7 @@ class DovecotConfigurator(common.Installer):
     @property
     def dovecot_conf(self):
         """Dovecot SSL config file."""
-        return os.path.join(self.conf("server_root"), "conf.d", "10-ssl.conf")
+        return os.path.join(self.conf("server_root"), "dovecot.conf")
 
     def __init__(self, *args, **kwargs):
         """Initialize an Dovecot Configurator.
@@ -146,7 +148,7 @@ class DovecotConfigurator(common.Installer):
         comment = " # Managed by Certbot"
         # TODO: make this operation idempotent...
         directives_to_include = ["{} {}".format(directive, comment) for directive in directives_to_include]
-        with open(, 'a') as ssl_conf:
+        with open(self.dovecot_conf, 'a') as ssl_conf:
             ssl_conf.writelines()
         logger.info("Deployed Certificate to Dovecot")
         for directive in directives_to_include:
@@ -222,42 +224,25 @@ class DovecotConfigurator(common.Installer):
             Unable to find Dovecot version or version is unsupported
 
         """
-        return (2, 2, 27)
-        # try:
-        #     proc = subprocess.Popen(
-        #         [self.conf('ctl'), "--version"],
-        #         stdout=subprocess.PIPE,
-        #         stderr=subprocess.PIPE,
-        #         universal_newlines=True)
-        #     text = proc.communicate()[1]
-        # except (OSError, ValueError) as error:
-        #     logger.debug(error, exc_info=True)
-        #     raise errors.PluginError(
-        #         "Unable to run %s --version" % self.conf('ctl'))
+        try:
+            proc = subprocess.Popen(
+                [self.conf('ctl'), "--version"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                universal_newlines=True)
+            text = proc.communicate()[1]
+        except (OSError, ValueError) as error:
+            logger.debug(error, exc_info=True)
+            raise errors.PluginError(
+                "Unable to run %s --version" % self.conf('ctl'))
 
-        # version_regex = re.compile(r"nginx/([0-9\.]*)", re.IGNORECASE)
-        # version_matches = version_regex.findall(text)
+        version_regex = re.compile(r"([0-9\.]*)", re.IGNORECASE)
+        version_matches = version_regex.findall(text)
 
-        # sni_regex = re.compile(r"TLS SNI support enabled", re.IGNORECASE)
-        # sni_matches = sni_regex.findall(text)
+        if not version_matches:
+            raise errors.PluginError("Unable to find Nginx version")
 
-        # ssl_regex = re.compile(r" --with-http_ssl_module")
-        # ssl_matches = ssl_regex.findall(text)
-
-        # if not version_matches:
-        #     raise errors.PluginError("Unable to find Nginx version")
-        # if not ssl_matches:
-        #     raise errors.PluginError(
-        #         "Nginx build is missing SSL module (--with-http_ssl_module).")
-        # if not sni_matches:
-        #     raise errors.PluginError("Nginx build doesn't support SNI")
-
-        # nginx_version = tuple([int(i) for i in version_matches[0].split(".")])
-
-        # # nginx < 0.8.48 uses machine hostname as default server_name instead of
-        # # the empty string
-        # if nginx_version < (0, 8, 48):
-        #     raise errors.NotSupportedError("Nginx version must be 0.8.48+")
+        version = tuple([int(i) for i in version_matches[0].split(".")])
 
         return version
 
