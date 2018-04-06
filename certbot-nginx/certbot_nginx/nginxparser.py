@@ -101,6 +101,9 @@ class RawNginxDumper(object):
 # Shortcut functions to respect Python's serialization interface
 # (like pyyaml, picker or json)
 
+def loads_raw(source):
+    return RawNginxParser(source).as_list()
+
 def loads(source):
     """Parses from a string.
 
@@ -109,8 +112,10 @@ def loads(source):
     :rtype: list
 
     """
-    return UnspacedList(RawNginxParser(source).as_list())
+    return UnspacedList(loads_raw(source))
 
+def load_raw(_file):
+    return loads_raw(_file.read())
 
 def load(_file):
     """Parses from a file.
@@ -122,6 +127,8 @@ def load(_file):
     """
     return loads(_file.read())
 
+def dumps_raw(blocks):
+    return str(RawNginxDumper(blocks))
 
 def dumps(blocks):
     """Dump to a string.
