@@ -206,6 +206,17 @@ class MakeCSRTest(unittest.TestCase):
                     value=b'DNS:a.example, DNS:b.example',
                 ).get_data(),
             )
+    def test_make_csr_empty_common_name(self):
+        csr_pem = self._call_with_key(["a.example", "b.example"])
+        csr = OpenSSL.crypto.load_certificate_request(
+            OpenSSL.crypto.FILETYPE_PEM, csr_pem)
+        self.assertEquals(csr.get_subject().CN, u'a.example')
+
+    def test_make_csr_with_common_name(self):
+        csr_pem = self._call_with_key(["a.example", "b.example"], common_name=u'b.example')
+        csr = OpenSSL.crypto.load_certificate_request(
+            OpenSSL.crypto.FILETYPE_PEM, csr_pem)
+        self.assertEquals(csr.get_subject().CN, 'b.example')
 
     def test_make_csr_must_staple(self):
         csr_pem = self._call_with_key(["a.example"], must_staple=True)
