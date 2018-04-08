@@ -443,6 +443,8 @@ plugins:
                         using BIND for DNS). (default: False)
   --dns-route53         Obtain certificates using a DNS TXT record (if you are
                         using Route53 for DNS). (default: False)
+  --dns-yandex          Obtain certificates using a DNS TXT record (if you are
+                        using Yandex for DNS). (default: False)
 
 apache:
   Apache Web Server plugin - Beta
@@ -593,6 +595,17 @@ dns-route53:
                         The number of seconds to wait for DNS to propagate
                         before asking the ACME server to verify the DNS
                         record. (default: 10)
+
+dns-yandex:
+  Obtain certificates using a DNS TXT record (if you are using yandex for
+  DNS).
+
+  --dns-yandex-propagation-seconds DNS_YANDEX_PROPAGATION_SECONDS
+                        The number of seconds to wait for DNS to propagate
+                        before asking the ACME server to verify the DNS
+                        record. (default: 30)
+  --dns-yandex-credentials DNS_YANDEX_CREDENTIALS
+                        Yandex credentials INI file. (default: None)
 
 manual:
   Authenticate through manual configuration or custom shell scripts. When

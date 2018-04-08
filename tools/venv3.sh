@@ -22,6 +22,7 @@ fi
   -e certbot-dns-luadns \
   -e certbot-dns-nsone \
   -e certbot-dns-route53 \
+  -e certbot-dns-yandex \
   -e certbot-nginx \
   -e letshelp-certbot \
   -e certbot-compatibility-test
