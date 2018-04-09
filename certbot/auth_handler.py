@@ -189,7 +189,7 @@ class AuthHandler(object):
         return active_achalls
 
     def _poll_challenges(self, aauthzrs, chall_update,
-                         best_effort, min_sleep=3, max_rounds=15):
+                         best_effort, min_sleep=3, max_rounds=30):
         """Wait for all challenge results to be determined."""
         indices_to_check = set(chall_update.keys())
         comp_indices = set()
