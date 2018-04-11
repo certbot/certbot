@@ -17,8 +17,6 @@ class PluginStorage(object):
         :param .configuration.NamespaceConfig config: Configuration object
         :param str classkey: class name to use as root key in storage file
 
-        :returns: Plugin storage object
-
         """
 
         self._config = config
@@ -31,10 +29,9 @@ class PluginStorage(object):
         """Initializes PluginStorage data and reads current state from the disk
         if the storage json exists."""
 
-        if hasattr(self._config, "config_dir") and os.path.isdir(self._config.config_dir):
-            self._storagepath = os.path.join(self._config.config_dir, ".pluginstorage.json")
-            self._load()
-            self._initialized = True
+        self._storagepath = os.path.join(self._config.config_dir, ".pluginstorage.json")
+        self._load()
+        self._initialized = True
 
     def _load(self):
         """Reads PluginStorage content from the disk to a dict structure
@@ -73,7 +70,7 @@ class PluginStorage(object):
             or write it to the filesystem
         """
         if not self._initialized:
-            errmsg = "Unable to save, the PluginStorage was never initialized"
+            errmsg = "Unable to save, no values have been added to PluginStorage."
             logger.error(errmsg)
             raise errors.PluginStorageError(errmsg)
 

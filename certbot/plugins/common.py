@@ -18,7 +18,7 @@ from certbot import interfaces
 from certbot import reverter
 from certbot import util
 
-from certbot.plugins.pluginstorage import PluginStorage
+from certbot.plugins.storage import PluginStorage
 
 logger = logging.getLogger(__name__)
 
