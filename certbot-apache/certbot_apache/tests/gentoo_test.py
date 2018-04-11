@@ -4,6 +4,8 @@ import unittest
 
 import mock
 
+from certbot import errors
+
 from certbot_apache import override_gentoo
 from certbot_apache import obj
 from certbot_apache.tests import util
@@ -122,6 +124,12 @@ class MultipleVhostsTestGentoo(util.ApacheTest):
         self.assertEquals(mock_get.call_count, 1)
         self.assertEquals(len(self.config.parser.modules), 4)
         self.assertTrue("mod_another.c" in self.config.parser.modules)
+
+    @mock.patch("certbot_apache.configurator.util.run_script")
+    def test_alt_restart_works(self, mock_run_script):
+        mock_run_script.side_effect = [None, errors.SubprocessError, None]
+        self.config.restart()
+        self.assertEquals(mock_run_script.call_count, 3)
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

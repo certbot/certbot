@@ -21,6 +21,7 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
         version_cmd=['apachectl', '-v'],
         apache_cmd="apachectl",
         restart_cmd=['apachectl', 'graceful'],
+        restart_cmd_alt=['apachectl', 'restart'],
         conftest_cmd=['apachectl', 'configtest'],
         enmod=None,
         dismod=None,

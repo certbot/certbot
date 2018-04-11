@@ -299,6 +299,16 @@ class ClientTest(ClientTestBase):
             directory=uri, key=KEY, alg=jose.RS256, net=self.net)
         self.net.get.assert_called_once_with(uri)
 
+    @mock.patch('acme.client.ClientNetwork')
+    def test_init_without_net(self, mock_net):
+        mock_net.return_value = mock.sentinel.net
+        alg = jose.RS256
+        from acme.client import Client
+        self.client = Client(
+            directory=self.directory, key=KEY, alg=alg)
+        mock_net.called_once_with(KEY, alg=alg, verify_ssl=True)
+        self.assertEqual(self.client.net, mock.sentinel.net)
+
     def test_register(self):
         # "Instance of 'Field' has no to_json/update member" bug:
         # pylint: disable=no-member

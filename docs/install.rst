@@ -94,6 +94,8 @@ Disable and remove the swapfile once the virtual environment is constructed::
   user@webserver:~$ sudo swapoff /tmp/swapfile
   user@webserver:~$ sudo rm /tmp/swapfile
 
+.. _docker-user:
+
 Running with Docker
 -------------------
 
@@ -115,13 +117,17 @@ these make much sense to you, you should definitely use the
 certbot-auto_ method, which enables you to use installer plugins
 that cover both of those hard topics.
 
-If you're still not convinced and have decided to use this method,
-from the server that the domain you're requesting a certficate for resolves
-to, `install Docker`_, then issue the following command:
+If you're still not convinced and have decided to use this method, from
+the server that the domain you're requesting a certficate for resolves
+to, `install Docker`_, then issue a command like the one found below. If
+you are using Certbot with the :ref:`Standalone` plugin, you will need
+to make the port it uses accessible from outside of the container by
+including something like ``-p 80:80`` or ``-p 443:443`` on the command
+line before ``certbot/certbot``.
 
 .. code-block:: shell
 
-   sudo docker run -it --rm -p 443:443 -p 80:80 --name certbot \
+   sudo docker run -it --rm --name certbot \
                -v "/etc/letsencrypt:/etc/letsencrypt" \
                -v "/var/lib/letsencrypt:/var/lib/letsencrypt" \
                certbot/certbot certonly
@@ -130,6 +136,19 @@ Running Certbot with the ``certonly`` command will obtain a certificate and plac
 ``/etc/letsencrypt/live`` on your system. Because Certonly cannot install the certificate from
 within Docker, you must install the certificate manually according to the procedure
 recommended by the provider of your webserver.
+
+There are also Docker images for each of Certbot's DNS plugins available
+at https://hub.docker.com/u/certbot which automate doing domain
+validation over DNS for popular providers. To use one, just replace
+``certbot/certbot`` in the command above with the name of the image you
+want to use. For example, to use Certbot's plugin for Amazon Route 53,
+you'd use ``certbot/dns-route53``. You may also need to add flags to
+Certbot and/or mount additional directories to provide access to your
+DNS API credentials as specified in the :ref:`DNS plugin documentation
+<dns_plugins>`. If you would like to obtain a wildcard certificate from
+Let's Encrypt's ACMEv2 server, you'll need to include ``--server
+https://acme-v02.api.letsencrypt.org/directory`` on the command line as
+well.
 
 For more information about the layout
 of the ``/etc/letsencrypt`` directory, see :ref:`where-certs`.
@@ -187,10 +206,11 @@ want to use the Apache plugin, it has to be installed separately:
    emerge -av app-crypt/certbot
    emerge -av app-crypt/certbot-apache
 
-When using the Apache plugin, you will run into a "cannot find a cert or key
-directive" error if you're sporting the default Gentoo ``httpd.conf``.
-You can fix this by commenting out two lines in ``/etc/apache2/httpd.conf``
-as follows:
+When using the Apache plugin, you will run into a "cannot find an
+SSLCertificateFile directive" or "cannot find an SSLCertificateKeyFile
+directive for certificate" error if you're sporting the default Gentoo
+``httpd.conf``. You can fix this by commenting out two lines in
+``/etc/apache2/httpd.conf`` as follows:
 
 Change
 
@@ -240,4 +260,3 @@ whole process is described in the :doc:`contributing`.
    e.g. ``sudo python setup.py install``, ``sudo pip install``, ``sudo
    ./venv/bin/...``. These modes of operation might corrupt your operating
    system and are **not supported** by the Certbot team!
-
