@@ -21,6 +21,7 @@ class GentooConfigurator(configurator.ApacheConfigurator):
         version_cmd=['/usr/sbin/apache2', '-v'],
         apache_cmd="apache2ctl",
         restart_cmd=['apache2ctl', 'graceful'],
+        restart_cmd_alt=['apache2ctl', 'restart'],
         conftest_cmd=['apache2ctl', 'configtest'],
         enmod=None,
         dismod=None,

@@ -24,7 +24,7 @@ running:
 
 If you're on macOS, we recommend you skip the rest of this section and instead
 run Certbot in Docker. You can find instructions for how to do this :ref:`here
-<docker>`. If you're running on Linux, you can run the following commands to
+<docker-dev>`. If you're running on Linux, you can run the following commands to
 install dependencies and set up a virtual environment where you can run
 Certbot. You will need to repeat this when Certbot's dependencies change or when
 a new plugin is introduced.
@@ -43,7 +43,7 @@ each shell where you're working:
 .. code-block:: shell
 
    source ./venv/bin/activate
-   export SERVER=https://acme-staging.api.letsencrypt.org/directory
+   export SERVER=https://acme-staging-v02.api.letsencrypt.org/directory
    source tests/integration/_common.sh
 
 After that, your shell will be using the virtual environment, your copy of
@@ -376,8 +376,11 @@ commands:
 This should generate documentation in the ``docs/_build/html``
 directory.
 
+.. note:: If you skipped the "Getting Started" instructions above,
+  run ``pip install -e ".[docs]"`` to install Certbot's docs extras modules.
 
-.. _docker:
+
+.. _docker-dev:
 
 Running the client with Docker
 ==============================
@@ -422,7 +425,7 @@ OS-level dependencies can be installed like so:
 In general...
 
 * ``sudo`` is required as a suggested way of running privileged process
-* `Python`_ 2.6/2.7 is required
+* `Python`_ 2.7 is required
 * `Augeas`_ is required for the Python bindings
 * ``virtualenv`` and ``pip`` are used for managing other python library
   dependencies
@@ -443,10 +446,10 @@ For squeeze you will need to:
 FreeBSD
 -------
 
-Packages can be installed on FreeBSD using ``pkg``, 
-or any other port-management tool (``portupgrade``, ``portmanager``, etc.) 
-from the pre-built package or can be built and installed from ports. 
-Either way will ensure proper installation of all the dependencies required 
+Packages can be installed on FreeBSD using ``pkg``,
+or any other port-management tool (``portupgrade``, ``portmanager``, etc.)
+from the pre-built package or can be built and installed from ports.
+Either way will ensure proper installation of all the dependencies required
 for the package.
 
 FreeBSD by default uses ``tcsh``. In order to activate virtualenv (see

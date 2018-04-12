@@ -25,7 +25,7 @@ API Documentation
    :glob:
 
    api/**" > api.rst
-sed -i -e "s|   :caption: Contents:|   :caption: Contents:\n\n.. toctree::\n   :maxdepth: 1\n\n   api\n\n.. automodule:: ${PROJECT//-/_}\n   :members:|" index.rst
+sed -i -e "s|   :caption: Contents:|   :caption: Contents:\n\n.. automodule:: ${PROJECT//-/_}\n   :members:\n\n.. toctree::\n   :maxdepth: 1\n\n   api|" index.rst
 
 echo "Suggested next steps:
 * Add API docs to: $PROJECT/docs/api/

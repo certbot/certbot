@@ -1,3 +1,4 @@
+# coding=utf-8
 """Tests for certbot.main."""
 # pylint: disable=too-many-lines
 from __future__ import print_function
@@ -225,7 +226,7 @@ class RevokeTest(test_util.TempDirTestCase):
             'cert_512.pem'))
 
         self.patches = [
-            mock.patch('acme.client.Client', autospec=True),
+            mock.patch('acme.client.BackwardsCompatibleClientV2'),
             mock.patch('certbot.client.Client'),
             mock.patch('certbot.main._determine_account'),
             mock.patch('certbot.main.display_ops.success_revocation')
@@ -267,7 +268,7 @@ class RevokeTest(test_util.TempDirTestCase):
     def test_revoke_with_reason(self, mock_acme_client,
             mock_delete_if_appropriate):
         mock_delete_if_appropriate.return_value = False
-        mock_revoke = mock_acme_client.Client().revoke
+        mock_revoke = mock_acme_client.BackwardsCompatibleClientV2().revoke
         expected = []
         for reason, code in constants.REVOCATION_REASONS.items():
             self._call("--reason " + reason)
@@ -661,10 +662,6 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         self._cli_missing_flag(args, "specify a plugin")
         args.extend(['--standalone', '-d', 'eg.is'])
         self._cli_missing_flag(args, "register before running")
-        with mock.patch('certbot.main._get_and_save_cert'):
-            with mock.patch('certbot.main.client.acme_from_config_key'):
-                args.extend(['--email', 'io@io.is'])
-                self._cli_missing_flag(args, "--agree-tos")
 
     @mock.patch('certbot.main._report_new_cert')
     @mock.patch('certbot.main.client.acme_client.Client')
@@ -693,7 +690,8 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
             ua = "bandersnatch"
             args += ["--user-agent", ua]
             self._call_no_clientmock(args)
-            acme_net.assert_called_once_with(mock.ANY, verify_ssl=True, user_agent=ua)
+            acme_net.assert_called_once_with(mock.ANY, account=mock.ANY, verify_ssl=True,
+                user_agent=ua)
 
     @mock.patch('certbot.main.plug_sel.record_chosen_plugins')
     @mock.patch('certbot.main.plug_sel.pick_installer')
@@ -942,11 +940,6 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         self.assertRaises(errors.ConfigurationError,
                           self._call,
                           ['-d', (('a' * 50) + '.') * 10])
-        # Wildcard
-        self.assertRaises(errors.ConfigurationError,
-                          self._call,
-                          ['-d', '*.wildcard.tld'])
-
         # Bare IP address (this is actually a different error message now)
         self.assertRaises(errors.ConfigurationError,
                           self._call,
@@ -1235,7 +1228,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
 
     def test_renew_with_bad_domain(self):
         renewalparams = {'authenticator': 'webroot'}
-        names = ['*.example.com']
+        names = ['uniçodé.com']
         self._test_renew_common(renewalparams=renewalparams, error_expected=True,
                                 names=names, assert_oc_called=False)
 
@@ -1352,11 +1345,11 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         self._call_no_clientmock(['--cert-path', SS_CERT_PATH, '--key-path', RSA2048_KEY_PATH,
                                  '--server', server, 'revoke'])
         with open(RSA2048_KEY_PATH, 'rb') as f:
-            mock_acme_client.Client.assert_called_once_with(
-                server, key=jose.JWK.load(f.read()), net=mock.ANY)
+            mock_acme_client.BackwardsCompatibleClientV2.assert_called_once_with(
+                mock.ANY, jose.JWK.load(f.read()), server)
         with open(SS_CERT_PATH, 'rb') as f:
             cert = crypto_util.pyopenssl_load_certificate(f.read())[0]
-            mock_revoke = mock_acme_client.Client().revoke
+            mock_revoke = mock_acme_client.BackwardsCompatibleClientV2().revoke
             mock_revoke.assert_called_once_with(
                     jose.ComparableX509(cert),
                     mock.ANY)

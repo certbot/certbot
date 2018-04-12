@@ -14,7 +14,7 @@ def serve_forever(port=0):
 
     """
     server = HTTPServer(('', port), SimpleHTTPRequestHandler)
-    print 'Serving HTTP on {0} port {1} ...'.format(*server.server_address)
+    print('Serving HTTP on {0} port {1} ...'.format(*server.server_address))
     sys.stdout.flush()
     server.serve_forever()
 

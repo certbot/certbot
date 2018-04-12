@@ -24,7 +24,6 @@ if os.name != "nt":
         if signal.getsignal(signal_code) != signal.SIG_IGN:
             _SIGNALS.append(signal_code)
 
-
 class ErrorHandler(object):
     """Context manager for running code that must be cleaned up on failure.
 
@@ -55,6 +54,7 @@ class ErrorHandler(object):
 
     """
     def __init__(self, func=None, *args, **kwargs):
+        self.call_on_regular_exit = False
         self.body_executed = False
         self.funcs = []
         self.prev_handlers = {}
@@ -70,8 +70,11 @@ class ErrorHandler(object):
         self.body_executed = True
         retval = False
         # SystemExit is ignored to properly handle forks that don't exec
-        if exec_type in (None, SystemExit):
+        if exec_type is SystemExit:
             return retval
+        elif exec_type is None:
+            if not self.call_on_regular_exit:
+                return retval
         elif exec_type is errors.SignalExit:
             logger.debug("Encountered signals: %s", self.received_signals)
             retval = True
@@ -136,3 +139,15 @@ class ErrorHandler(object):
         for signum in self.received_signals:
             logger.debug("Calling signal %s", signum)
             os.kill(os.getpid(), signum)
+
+class ExitHandler(ErrorHandler):
+    """Context manager for running code that must be cleaned up.
+
+    Subclass of ErrorHandler, with the same usage and parameters.
+    In addition to cleaning up on all signals, also cleans up on
+    regular exit.
+    """
+    def __init__(self, func=None, *args, **kwargs):
+        ErrorHandler.__init__(self, func, *args, **kwargs)
+        self.call_on_regular_exit = True
+
