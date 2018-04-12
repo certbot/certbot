@@ -65,6 +65,10 @@ dev_extras = [
     'wheel',
 ]
 
+dev3_extras = [
+    'mypy',
+]
+
 docs_extras = [
     'repoze.sphinx.autointerface',
     # autodoc_member_order = 'bysource', autodoc_default_flags, and #4686
@@ -110,6 +114,7 @@ setup(
     install_requires=install_requires,
     extras_require={
         'dev': dev_extras,
+        'dev3': dev3_extras,
         'docs': docs_extras,
     },
 
