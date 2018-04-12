@@ -8,7 +8,7 @@ class DovecotParser(object):
     # pylint: disable=expression-not-assigned
     """A class that parses dovecot configuration with pyparsing."""
 
-    # pyparsing automatically uses whitespaces as delimeters for tokens.
+    # pyparsing automatically uses whitespaces as delimiters for tokens.
     # Here, we're setting default whitespace characters to ` ` and `\t`,
     # excluding `\n` since a new line is used as a delimeter for dovecot
     # configuration itself
@@ -21,7 +21,7 @@ class DovecotParser(object):
     )
 
     newline = LineEnd()
-    same_line_space = Optional(Word(' \t').leaveWhitespace())
+    same_line_space = Optional(White(ws=' \t'))
     space = Optional(White().leaveWhitespace())
 
     # Defining comments
