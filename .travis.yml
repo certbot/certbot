@@ -9,9 +9,6 @@ before_install:
   # This is because we want test-everything to test the code in master nightly
   # in a Travis cron, but with a different set of tests than master has
   # in .travis.yml.
-  - cp .travis.yml /tmp/travis.yml
-  - git pull origin master --strategy=recursive --strategy-option=theirs --no-edit
-  - if ! git diff .travis.yml /tmp/travis.yml ; then echo "Please merge master into test-everything"; exit 1; fi
   - '([ $TRAVIS_OS_NAME == linux ] && dpkg -s libaugeas0) || (brew update && brew install augeas && brew upgrade python python3 && brew link python)'
 
 before_script:
@@ -145,9 +142,3 @@ after_success: '[ "$TOXENV" == "cover" ] && coveralls'
 
 notifications:
   email: false
-  irc:
-    channels:
-      - secure: "SGWZl3ownKx9xKVV2VnGt7DqkTmutJ89oJV9tjKhSs84kLijU6EYdPnllqISpfHMTxXflNZuxtGo0wTDYHXBuZL47w1O32W6nzuXdra5zC+i4sYQwYULUsyfOv9gJX8zWAULiK0Z3r0oho45U+FR5ZN6TPCidi8/eGU+EEPwaAw="
-    on_success: never
-    on_failure: always
-    use_notice: true
