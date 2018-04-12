@@ -3,13 +3,10 @@
     "comment": "Sample policy configuration file",
     "expires": 1404677353,
     "timestamp": 1401093333,
-    "tls-policies": {
-        ".valid.example-recipient.com": {
-            "min-tls-version": "TLSv1.1",
+    "policies": {
+        "example-recipient.com": {
             "mode": "enforce",
-            "mxs": [".valid.example-recipient.com"],
-            "require-valid-certificate": true,
-            "tls-report": "https://tls-rpt.example-recipient.org/api/report"
+            "mxs": [".example-recipient.com", "example-recipient.com", "mail.example.com"]
         }
     }
 }

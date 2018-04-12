@@ -1,6 +1,7 @@
 """Certbot installer plugin for Postfix."""
 import logging
 import os
+
 from functools import partial
 
 import zope.interface
@@ -9,110 +10,13 @@ from certbot import errors
 from certbot import interfaces
 from certbot import util as certbot_util
 from certbot.plugins import common as plugins_common
-from certbot.plugins import util as plugins_util
 
+from certbot_postfix import constants
 from certbot_postfix import postconf
 from certbot_postfix import util
 
-POLICY_FILENAME = "starttls_everywhere_policy"
-
-CA_CERTS_FILE = "/etc/ssl/certs/ca-certificates.crt"
-
-# If the value of a default VAR is a tuple, then the values which
-# come LATER in the tuple are more strict/more secure.
-# Certbot will default to the first value in the tuple, but will
-# not override "more secure" settings.
-
-ACCEPTABLE_SECURITY_LEVELS = ("may", "encrypt")
-ACCEPTABLE_CIPHER_LEVELS = ("medium", "high")
-
-TLS_VERSIONS = ("SSLv2", "SSLv3", "TLSv1", "TLSv1.1", "TLSv1.2")
-# Should NOT use SSLv2/3.
-ACCEPTABLE_TLS_VERSIONS = ("TLSv1", "TLSv1.1", "TLSv1.2")
-
-# Default variables for a secure MTA server [receiver].
-DEFAULT_SERVER_VARS = {
-    "smtpd_tls_mandatory_protocols": "!SSLv2, !SSLv3",
-    "smtpd_tls_protocols": "!SSLv2, !SSLv3",
-    "smtpd_tls_security_level": ACCEPTABLE_SECURITY_LEVELS,
-    "smtpd_tls_ciphers": ACCEPTABLE_CIPHER_LEVELS,
-    "smtpd_tls_eecdh_grade": "strong",
-}
-
-# Default variables for a secure MTA client [sender].
-DEFAULT_CLIENT_VARS = {
-    "smtp_tls_security_level": ACCEPTABLE_SECURITY_LEVELS,
-    "smtp_tls_ciphers": ACCEPTABLE_CIPHER_LEVELS,
-}
 
 logger = logging.getLogger(__name__)
-
-def _report_master_overrides(name, overrides, acceptable_overrides=None):
-    """If the value for a parameter |name| is overridden by other services,
-    report a warning to notify the user.
-
-    :param str name: The name of the parameter that is being overridden.
-    :param list overrides: The values that other services are setting for |name|.
-        Each override is a tuple: (service name, value)
-    :param list acceptable_overrides: Override values that are acceptable. For instance, if
-        another service is overriding our parameter with a more secure option, we don't have
-        to warn. If this is set to None, warnings are reported for *all* overrides!
-    """
-    for override in overrides:
-        if acceptable_overrides is None or override not in acceptable_overrides:
-            logger.warning("Parameter {0} is overridden as {1} for service {2} in " +
-                           "master configuration file!", name, override[1], override[0])
-
-def _get_formatted_protocols(min_tls_version, delimiter=":"):
-    """Enforces the minimum TLS version in a way that Postfix can understand. For instance,
-    if the min_tls_version is TLS1.1, then Postfix expects: "!SSLv2:!SSLv3:!TLSv1"
-
-    :param str min_tls_version: SSL/TLS version that we expect to be in ACCEPTABLE_TLS_VERSIONS.
-    :param str delimiter: delimiter for the SSL/TLS declarations.
-    :rtype str: Protocol declaration, formatted correctly in a Postfix-y way. For instance:
-        TLSv1.1 => !SSLv2:!SSLv3:!TLSv1
-        TLSv1   => !SSLv2:!SSLv3
-
-        Returns None if `min_tls_version` is not a valid or acceptable TLS version.
-    """
-    if min_tls_version not in ACCEPTABLE_TLS_VERSIONS:
-        return None
-    return delimiter.join(["!" + version for version in \
-                           TLS_VERSIONS[0:TLS_VERSIONS.index(min_tls_version)]])
-
-def _get_formatted_policy_for_domain(address_domain, tls_policy):
-    """Parses TLS policy specification into a format that Postfix expects. In particular:
-        <domain> <tls_security_level> protocols=<protocols>
-    For instance, let's say we have an entry for mail.example.com with a minimum TLS version of 1.1:
-        mail.example.com encrypt protocols=!SSLv2:!SSLv3:!TLSv1
-
-    :param address_domain str: The domain we're configuring this policy for.
-    :param tls_policy dict: TLS policy information.
-    :rtype str: Properly formatted Postfix TLS policy specification for this domain.
-    """
-    mx_list = tls_policy.mxs
-    if len(mx_list) == 0:
-        matches = ""
-    else:
-        matches = 'match=' + ':'.join(mx_list)
-    entry = address_domain + " secure " + matches
-    protocols_value = _get_formatted_protocols(tls_policy.min_tls_version)
-    if protocols_value is not None:
-        entry += " protocols=" + protocols_value
-    else:
-        logger.warning('Unknown minimum TLS version: %s', tls_policy['min_tls_version'])
-    return entry
-
-
-def _write_domainwise_tls_policies(policy, policy_file):
-    """Writes domainwise tls policies to self.policy_file in a format that Postfix
-    can parse.
-    """
-    policy_lines = []
-    for address_domain, tls_policy in policy.policies_iter():
-        policy_lines.append(_get_formatted_policy_for_domain(address_domain, tls_policy))
-    with open(policy_file, "w") as f:
-        f.write("\n".join(policy_lines) + "\n")
 
 @zope.interface.implementer(interfaces.IInstaller)
 @zope.interface.provider(interfaces.IPluginFactory)
@@ -122,30 +26,48 @@ class Installer(plugins_common.Installer):
     :ivar str config_dir: Postfix configuration directory to modify
     :ivar list save_notes: documentation for proposed changes. This is
         cleared and stored in Certbot checkpoints when save() is called
+
     :ivar postconf: Wrapper for Postfix configuration command-line tool.
+    :type postconf: :class: `certbot_postfix.postconf.ConfigMain`
+
     :ivar policy: A STARTTLS Policy object to query per-domain TLS policies.
-    :ivar policy_file: TLS policy file in a format that Postfix expects.
+    :type policy: :class: `policylist.policy.Config`
+
+    :ivar str policy_file: Path to TLS policy file in a format that Postfix expects.
     """
 
     description = "Configure TLS with the Postfix MTA"
 
     @classmethod
     def add_parser_arguments(cls, add):
-        add("ctl", default="postfix",
+        add("ctl", default=constants.CLI_DEFAULTS["ctl"],
             help="Path to the 'postfix' control program.")
-        add("config-dir", help="Path to the directory containing the "
+        add("config-dir", default=constants.CLI_DEFAULTS["config_dir"],
+            help="Path to the directory containing the "
             "Postfix main.cf file to modify instead of using the "
             "default configuration paths.")
-        add("config-utility", default="postconf",
+        add("config-utility", default=constants.CLI_DEFAULTS["config_utility"],
             help="Path to the 'postconf' executable.")
-        add("policy-file", help="Name of the policy file that we should write to in config-dir.",
-                           default=POLICY_FILENAME)
+        add("policy-file", default=constants.CLI_DEFAULTS["policy_file"],
+            help="Name of the policy file that we should write to in config-dir.")
 
+    def _verify_setup(self):
+        pass
+
+    # TODO (sydli): fix version fetching code
     def __init__(self, *args, **kwargs):
         super(Installer, self).__init__(*args, **kwargs)
-        self.config_dir = None
+        # Verify that all directories and files exist with proper permissions
+        self._verify_setup()
+
+        # Wrapper around postconf commands
+        self.postfix = None
         self.postconf = None
+
+        # Files to save
         self.save_notes = []
+
+        # Variables for starttls-policy enhancement
         self.policy = None
         self.postfix = None
         self.policy_file = None
@@ -168,54 +90,33 @@ class Installer(plugins_common.Installer):
         :raises errors.NotSupportedError: when version is not supported
 
         """
+        # Verify postfix and postconf are installed
         for param in ("ctl", "config_utility",):
-            self._verify_executable_is_available(param)
+            util.verify_exe_exists(self.conf(param),
+                    "Cannot find executable '{0}'. You can provide the "
+                    "path to this command with --{1}".format(
+                        self.conf(param),
+                        self.option_name(param)))
+
+        # Ensure our CA roots exist.
         self._ensure_ca_certificates_exist()
-        # Set postconf initially here so we can use `postconf` to set configuration
-        # directory if needed.
+
+        # Set up CLI tools
+        self.postfix = util.PostfixUtil(self.conf('config-dir'))
         self.postconf = postconf.ConfigMain(self.conf('config-utility'))
-        self._set_config_dir()
-        self.postfix = util.PostfixUtil(self.config_dir)
-        self.policy_file = self.conf("policy-file")
+
+        # Ensure current configuration is valid.
+        self.config_test()
+
+        # Check Postfix version
         self._check_version()
-        self.postfix.test()
         self._lock_config_dir()
-        self.policy_file = os.path.join(self.config_dir, POLICY_FILENAME)
-        self.postconf = postconf.ConfigMain(self.conf('config-utility'), self.config_dir)
+        self.policy_file = os.path.join(self.conf('config-dir'), self.conf('policy-file'))
 
     def config_test(self):
         """Test to see that the current Postfix configuration is valid.
         """
         self.postfix.test()
-
-    def _verify_executable_is_available(self, config_name):
-        """Asserts the program in the specified config param is found.
-
-        :param str config_name: name of the config param
-
-        :raises .NoInstallationError: when the executable isn't found
-
-        """
-        if not certbot_util.exe_exists(self.conf(config_name)):
-            if not plugins_util.path_surgery(self.conf(config_name)):
-                raise errors.NoInstallationError(
-                    "Cannot find executable '{0}'. You can provide the "
-                    "path to this command with --{1}".format(
-                        self.conf(config_name),
-                        self.option_name(config_name)))
-
-    def _set_config_dir(self):
-        """Ensure self.config_dir is set to the correct path.
-
-        If the configuration directory to use was set by the user, we'll
-        use that value, otherwise, we'll find the default path using
-        'postconf'.
-
-        """
-        if self.conf("config-dir") is None:
-            self.config_dir = self.postconf.get("config_directory")
-        else:
-            self.config_dir = self.conf("config-dir")
 
     def _check_version(self):
         """Verifies that the installed Postfix version is supported.
@@ -223,7 +124,7 @@ class Installer(plugins_common.Installer):
         :raises errors.NotSupportedError: if the version is unsupported
 
         """
-        if self._get_version() < (2, 6,):
+        if self._get_version() < constants.MINIMUM_VERSION:
             raise errors.NotSupportedError('Postfix version is too old')
 
     def _lock_config_dir(self):
@@ -233,11 +134,11 @@ class Installer(plugins_common.Installer):
 
         """
         try:
-            certbot_util.lock_dir_until_exit(self.config_dir)
+            certbot_util.lock_dir_until_exit(self.conf('config-dir'))
         except (OSError, errors.LockError):
             logger.debug("Encountered error:", exc_info=True)
             raise errors.PluginError(
-                "Unable to lock %s", self.config_dir)
+                "Unable to lock %s", self.conf('config-dir'))
 
     def more_info(self):
         """Human-readable string to help the user.
@@ -251,7 +152,7 @@ class Installer(plugins_common.Installer):
             "Server root: {root}{0}"
             "Version: {version}".format(
                 os.linesep,
-                root=self.config_dir,
+                root=self.conf('config-dir'),
                 version='.'.join([str(i) for i in self._get_version()]))
         )
 
@@ -285,10 +186,10 @@ class Installer(plugins_common.Installer):
             if isinstance(acceptable, tuple):
                 if self.postconf.get(param) not in acceptable:
                     self.postconf.set(param, acceptable[0],
-                        partial(_report_master_overrides, acceptable_overrides=acceptable))
+                        partial(util.report_master_overrides, acceptable_overrides=acceptable))
             else:
                 self.postconf.set(param, acceptable,
-                    partial(_report_master_overrides, acceptable_overrides=acceptable))
+                    partial(util.report_master_overrides, acceptable_overrides=acceptable))
 
     def deploy_cert(self, domain, cert_path,
                     key_path, chain_path, fullchain_path):
@@ -306,11 +207,14 @@ class Installer(plugins_common.Installer):
         """
         # pylint: disable=unused-argument
         self.save_notes.append("Configuring TLS for {0}".format(domain))
-        self.postconf.set("smtpd_tls_cert_file", cert_path, _report_master_overrides)
-        self.postconf.set("smtpd_tls_key_file", key_path, _report_master_overrides)
-        self._set_vars(DEFAULT_SERVER_VARS)
-        self._set_vars(DEFAULT_CLIENT_VARS)
-        self.postconf.set("smtp_tls_CAfile", CA_CERTS_FILE, _report_master_overrides)
+        self.postconf.set("smtpd_tls_cert_file", cert_path,
+                          check_override=util.report_master_overrides)
+        self.postconf.set("smtpd_tls_key_file", key_path,
+                          check_override=util.report_master_overrides)
+        self._set_vars(constants.DEFAULT_SERVER_VARS)
+        self._set_vars(constants.DEFAULT_CLIENT_VARS)
+        self.postconf.set("smtp_tls_CApath", constants.CA_CERTS_PATH,
+                          check_override=util.report_master_overrides)
 
     def _enable_policy_list(self, domain, options):
         # pylint: disable=unused-argument
@@ -323,7 +227,7 @@ class Installer(plugins_common.Installer):
         else:
             policy = policy.Config(options)
         policy.load()
-        _write_domainwise_tls_policies(policy, self.policy_file)
+        util.write_domainwise_tls_policies(policy, self.policy_file)
         policy_cf_entry = "texthash:" + self.policy_file
         self.postconf.set("smtp_tls_policy_maps", policy_cf_entry)
 
@@ -336,7 +240,7 @@ class Installer(plugins_common.Installer):
         """
         try:
             func = self._enhance_func[enhancement]
-        except (KeyError, ValueError) as e:
+        except (KeyError, ValueError):
             raise errors.PluginError(
                 "Unsupported enhancement: {0}".format(enhancement))
         try:
@@ -366,7 +270,7 @@ class Installer(plugins_common.Installer):
         :raises errors.PluginError: when save is unsuccessful
 
         """
-        save_files = set((os.path.join(self.config_dir, "main.cf"),))
+        save_files = set((os.path.join(self.conf('config-dir'), "main.cf"),))
         self.add_to_checkpoint(save_files,
                                "\n".join(self.save_notes), temporary)
         self.postconf.flush()
@@ -378,7 +282,7 @@ class Installer(plugins_common.Installer):
 
     def recovery_routine(self):
         super(Installer, self).recovery_routine()
-        self.postconf = postconf.ConfigMain(self.conf('config-utility'), self.config_dir)
+        self.postconf = postconf.ConfigMain(self.conf('config-utility'), self.conf('config-dir'))
 
     def rollback_checkpoints(self, rollback=1):
         """Rollback saved checkpoints.
@@ -390,7 +294,7 @@ class Installer(plugins_common.Installer):
 
         """
         super(Installer, self).rollback_checkpoints(rollback)
-        self.postconf = postconf.ConfigMain(self.conf('config-utility'), self.config_dir)
+        self.postconf = postconf.ConfigMain(self.conf('config-utility'), self.conf('config-dir'))
 
     def restart(self):
         """Restart or refresh the server content.

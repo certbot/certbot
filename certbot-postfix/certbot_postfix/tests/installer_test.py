@@ -40,26 +40,12 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
 
         installer_path = "certbot_postfix.installer"
         exe_exists_path = installer_path + ".certbot_util.exe_exists"
-        path_surgery_path = installer_path + ".plugins_util.path_surgery"
+        path_surgery_path = "certbot_postfix.util.plugins_util.path_surgery"
 
         with mock.patch(path_surgery_path, return_value=False):
             with mock.patch(exe_exists_path, return_value=False):
                 self.assertRaises(errors.NoInstallationError,
                                   installer.prepare)
-
-    def test_set_config_dir(self):
-        self.config.postfix_config_dir = os.path.join(self.tempdir, "subdir")
-        os.mkdir(self.config.postfix_config_dir)
-        installer = self._create_installer()
-
-        expected = self.config.postfix_config_dir
-        self.config.postfix_config_dir = None
-
-        self.mock_postconf.set("config_directory", expected)
-        exe_exists_path = "certbot_postfix.installer.certbot_util.exe_exists"
-        with mock.patch(exe_exists_path, return_value=True):
-            self._mock_postfix_and_call(installer.prepare)
-        self.assertEqual(installer.config_dir, expected)
 
     @mock.patch("certbot_postfix.installer.certbot_util.exe_exists")
     def test_old_version(self, mock_exe_exists):
@@ -126,13 +112,12 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
     def test_enhance_starttls(self):
         installer = self._create_prepared_installer()
         mock_open = mock.mock_open()
-        with mock.patch('certbot_postfix.installer.open', mock_open):
-            installer.enhance("example.org", "starttls-policy")
+        with mock.patch('certbot_postfix.installer.util.open', mock_open):
+            installer.enhance("example.org", "starttls-policy", self.config.postfix_policy_file)
         mock_open().write.assert_called_once_with(
-            'yahoo.com secure .yahoodns.net protocols=!SSLv2:!SSLv3:!TLSv1:!TLSv1.1\n' +
-            'eff.org secure .eff.org protocols=!SSLv2:!SSLv3:!TLSv1:!TLSv1.1\n' +
-            'example.com secure mail.example.com:.example.net protocols=!SSLv2:!SSLv3:!TLSv1:!TLSv1.1\n' +
-            'gmail.com secure .mail.google.com protocols=!SSLv2:!SSLv3:!TLSv1:!TLSv1.1\n')
+            'example-recipient.com secure '
+            'match=.example-recipient.com:example-recipient.com:mail.example.com '
+            'protocols=!SSLv2:!SSLv3:!TLSv1:!TLSv1.1\n')
 
     def _create_prepared_installer(self):
         """Creates and returns a new prepared Postfix Installer.
