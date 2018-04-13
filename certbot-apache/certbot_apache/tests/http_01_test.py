@@ -50,7 +50,7 @@ class ApacheHttp01Test(util.ApacheTest):
         self.assertFalse(self.http.perform())
 
     @mock.patch("certbot_apache.configurator.ApacheConfigurator.enable_mod")
-    def test_enable_modules_22(self, mock_enmod):
+    def test_enable_modules_apache_2_2(self, mock_enmod):
         self.config.version = (2, 2)
         self.config.parser.modules.remove("authz_host_module")
         self.config.parser.modules.remove("mod_authz_host.c")
@@ -59,7 +59,7 @@ class ApacheHttp01Test(util.ApacheTest):
         self.assertEqual(enmod_calls[0][0][0], "authz_host")
 
     @mock.patch("certbot_apache.configurator.ApacheConfigurator.enable_mod")
-    def test_enable_modules_24(self, mock_enmod):
+    def test_enable_modules_apache_2_4(self, mock_enmod):
         self.config.parser.modules.remove("authz_core_module")
         self.config.parser.modules.remove("mod_authz_core.c")
 
@@ -116,22 +116,22 @@ class ApacheHttp01Test(util.ApacheTest):
         self.config.config.http01_port = 12345
         self.assertRaises(errors.PluginError, self.http.perform)
 
-    def test_perform_1_achall_22(self):
+    def test_perform_1_achall_apache_2_2(self):
         self.combinations_perform_test(num_achalls=1, minor_version=2)
 
-    def test_perform_1_achall_24(self):
+    def test_perform_1_achall_apache_2_4(self):
         self.combinations_perform_test(num_achalls=1, minor_version=4)
 
-    def test_perform_2_achall_22(self):
+    def test_perform_2_achall_apache_2_2(self):
         self.combinations_perform_test(num_achalls=2, minor_version=2)
 
-    def test_perform_2_achall_24(self):
+    def test_perform_2_achall_apache_2_4(self):
         self.combinations_perform_test(num_achalls=2, minor_version=4)
 
-    def test_perform_3_achall_22(self):
+    def test_perform_3_achall_apache_2_2(self):
         self.combinations_perform_test(num_achalls=3, minor_version=2)
 
-    def test_perform_3_achall_24(self):
+    def test_perform_3_achall_apache_2_4(self):
         self.combinations_perform_test(num_achalls=3, minor_version=4)
 
     def combinations_perform_test(self, num_achalls, minor_version):
