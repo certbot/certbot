@@ -61,6 +61,7 @@ dev_extras = [
     'pytest-xdist',
     'pylint==1.4.2',  # upstream #248
     'tox',
+    'typing',
     'twine',
     'wheel',
 ]
