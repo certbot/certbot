@@ -54,7 +54,7 @@ _INITIAL_PID = os.getpid()
 # the dict are attempted to be cleaned up at program exit. If the
 # program exits before the lock is cleaned up, it is automatically
 # released, but the file isn't deleted.
-_LOCKS = OrderedDict()
+_LOCKS = OrderedDict() # type: OrderedDict[str, lock.LockFile]
 
 
 def run_script(params, log=logger.error):
