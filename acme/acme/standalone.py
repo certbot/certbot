@@ -11,6 +11,7 @@ import threading
 from six.moves import BaseHTTPServer  # type: ignore  # pylint: disable=import-error
 from six.moves import http_client  # pylint: disable=import-error
 from six.moves import socketserver  # type: ignore  # pylint: disable=import-error
+from typing import List # pylint: disable=unused-import
 
 import OpenSSL
 
@@ -66,8 +67,8 @@ class BaseDualNetworkedServers(object):
 
     def __init__(self, ServerClass, server_address, *remaining_args, **kwargs):
         port = server_address[1]
-        self.threads = []
-        self.servers = []
+        self.threads = [] # type: List[threading.Thread]
+        self.servers = [] # type: List[ACMEServerMixin]
 
         # Must try True first.
         # Ubuntu, for example, will fail to bind to IPv4 if we've already bound
@@ -189,7 +190,7 @@ class HTTP01RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
     def __init__(self, *args, **kwargs):
         self.simple_http_resources = kwargs.pop("simple_http_resources", set())
-        socketserver.BaseRequestHandler.__init__(self, *args, **kwargs)
+        BaseHTTPServer.BaseHTTPRequestHandler.__init__(self, *args, **kwargs)
 
     def log_message(self, format, *args):  # pylint: disable=redefined-builtin
         """Log arbitrary message."""
@@ -262,7 +263,7 @@ def simple_tls_sni_01_server(cli_args, forever=True):
 
     certs = {}
 
-    _, hosts, _ = next(os.walk('.'))
+    _, hosts, _ = next(os.walk('.')) # type: ignore # https://github.com/python/mypy/issues/465
     for host in hosts:
         with open(os.path.join(host, "cert.pem")) as cert_file:
             cert_contents = cert_file.read()

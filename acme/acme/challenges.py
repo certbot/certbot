@@ -477,7 +477,7 @@ class TLSSNI01Response(KeyAuthorizationChallengeResponse):
             try:
                 cert = self.probe_cert(domain=domain, **kwargs)
             except errors.Error as error:
-                logger.debug(error, exc_info=True)
+                logger.debug(str(error), exc_info=True)
                 return False
 
         return self.verify_cert(cert)

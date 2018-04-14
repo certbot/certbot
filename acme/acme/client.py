@@ -9,6 +9,7 @@ import time
 
 import six
 from six.moves import http_client  # pylint: disable=import-error
+from typing import Dict, List, Set, Text # pylint: disable=unused-import
 
 import josepy as jose
 import OpenSSL
@@ -415,7 +416,7 @@ class Client(ClientBase):
         """
         # pylint: disable=too-many-locals
         assert max_attempts > 0
-        attempts = collections.defaultdict(int)
+        attempts = collections.defaultdict(int) # type: Dict[messages.AuthorizationResource, int]
         exhausted = set()
 
         # priority queue with datetime.datetime (based on Retry-After) as key,
@@ -529,7 +530,7 @@ class Client(ClientBase):
         :rtype: `list` of `OpenSSL.crypto.X509` wrapped in `.ComparableX509`
 
         """
-        chain = []
+        chain = [] # type: List[jose.ComparableX509]
         uri = certr.cert_chain_uri
         while uri is not None and len(chain) < max_length:
             response, cert = self._get_cert(uri)
@@ -864,7 +865,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         self.account = account
         self.alg = alg
         self.verify_ssl = verify_ssl
-        self._nonces = set()
+        self._nonces = set() # type: Set[Text]
         self.user_agent = user_agent
         self.session = requests.Session()
         self._default_timeout = timeout

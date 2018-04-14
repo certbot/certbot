@@ -7,6 +7,7 @@ import unittest
 
 import six
 from six.moves import socketserver  #type: ignore  # pylint: disable=import-error
+from typing import List # pylint: disable=unused-import
 
 import josepy as jose
 import OpenSSL
@@ -165,7 +166,7 @@ class RandomSnTest(unittest.TestCase):
 
     def setUp(self):
         self.cert_count = 5
-        self.serial_num = []
+        self.serial_num = [] # type: List[int]
         self.key = OpenSSL.crypto.PKey()
         self.key.generate_key(OpenSSL.crypto.TYPE_RSA, 2048)
 

@@ -5,6 +5,7 @@ import json
 import unittest
 
 from six.moves import http_client  # pylint: disable=import-error
+from typing import Dict # pylint: disable=unused-import
 
 import josepy as jose
 import mock
@@ -61,7 +62,8 @@ class ClientTestBase(unittest.TestCase):
         self.contact = ('mailto:cert-admin@example.com', 'tel:+12025551212')
         reg = messages.Registration(
             contact=self.contact, key=KEY.public_key())
-        self.new_reg = messages.NewRegistration(**dict(reg))
+        the_arg = dict(reg) # type: Dict
+        self.new_reg = messages.NewRegistration(**the_arg) # pylint: disable=star-args
         self.regr = messages.RegistrationResource(
             body=reg, uri='https://www.letsencrypt-demo.org/acme/reg/1')
 

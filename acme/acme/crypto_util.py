@@ -8,9 +8,11 @@ import socket
 
 from OpenSSL import SSL, crypto # type: ignore # https://github.com/python/typeshed/issues/2052
 import josepy as jose
+from typing import Callable, Text, Union # pylint: disable=unused-import
 
 
 from acme import errors
+from acme import str_utils
 
 
 logger = logging.getLogger(__name__)
@@ -222,10 +224,11 @@ def _pyopenssl_cert_or_req_san(cert_or_req):
     prefix = "DNS" + part_separator
 
     if isinstance(cert_or_req, crypto.X509):
-        func = crypto.dump_certificate
+        # pylint: disable=line-too-long
+        func = crypto.dump_certificate # type: Union[Callable[[int, crypto.X509Req], bytes], Callable[[int, crypto.X509], bytes]]
     else:
         func = crypto.dump_certificate_request
-    text = func(crypto.FILETYPE_TEXT, cert_or_req).decode("utf-8")
+    text = str_utils.force_text(func(crypto.FILETYPE_TEXT, cert_or_req))
     # WARNING: this function does not support multiple SANs extensions.
     # Multiple X509v3 extensions of the same type is disallowed by RFC 5280.
     match = re.search(r"X509v3 Subject Alternative Name:(?: critical)?\s*(.*)", text)

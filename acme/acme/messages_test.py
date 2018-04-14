@@ -3,6 +3,7 @@ import unittest
 
 import josepy as jose
 import mock
+from typing import Dict # pylint: disable=unused-import
 
 from acme import challenges
 from acme import test_util
@@ -85,7 +86,7 @@ class ConstantTest(unittest.TestCase):
         from acme.messages import _Constant
 
         class MockConstant(_Constant):  # pylint: disable=missing-docstring
-            POSSIBLE_NAMES = {}
+            POSSIBLE_NAMES = {} # type: Dict
 
         self.MockConstant = MockConstant  # pylint: disable=invalid-name
         self.const_a = MockConstant('a')

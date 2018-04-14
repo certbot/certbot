@@ -9,6 +9,7 @@ import unittest
 
 from six.moves import http_client  # pylint: disable=import-error
 from six.moves import socketserver  # type: ignore  # pylint: disable=import-error
+from typing import Set # pylint: disable=unused-import
 
 import josepy as jose
 import mock
@@ -72,7 +73,7 @@ class HTTP01ServerTest(unittest.TestCase):
     def setUp(self):
         self.account_key = jose.JWK.load(
             test_util.load_vector('rsa1024_key.pem'))
-        self.resources = set()
+        self.resources = set() # type: Set
 
         from acme.standalone import HTTP01Server
         self.server = HTTP01Server(('', 0), resources=self.resources)
@@ -201,7 +202,7 @@ class HTTP01DualNetworkedServersTest(unittest.TestCase):
     def setUp(self):
         self.account_key = jose.JWK.load(
             test_util.load_vector('rsa1024_key.pem'))
-        self.resources = set()
+        self.resources = set() # type: Set
 
         from acme.standalone import HTTP01DualNetworkedServers
         self.servers = HTTP01DualNetworkedServers(('', 0), resources=self.resources)
