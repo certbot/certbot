@@ -47,7 +47,6 @@ install_requires = [
     'pyrfc3339',
     'pytz',
     'setuptools',
-    'typing',
     'zope.component',
     'zope.interface',
 ]
