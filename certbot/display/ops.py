@@ -95,10 +95,10 @@ def choose_values(values, question=None):
     :returns: List of selected values
     :rtype: list
     """
-    code, names = z_util(interfaces.IDisplay).checklist(
+    code, items = z_util(interfaces.IDisplay).checklist(
         question, tags=values, force_interactive=True)
-    if code == display_util.OK and names:
-        return names
+    if code == display_util.OK and items:
+        return items
     else:
         return []
 

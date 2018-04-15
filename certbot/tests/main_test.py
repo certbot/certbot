@@ -1559,10 +1559,12 @@ class EnhanceTest(unittest.TestCase):
                     main.enhance(config, plugins)
                     return mock_client # returns the client
 
-    @mock.patch("certbot.main.plug_sel.record_chosen_plugins")
-    @mock.patch("certbot.main.display_ops.choose_values")
-    @mock.patch("certbot.main._find_domains_or_certname")
-    def test_selection_question(self, mock_find, mock_choose, _rec):
+    @mock.patch('certbot.main.plug_sel.record_chosen_plugins')
+    @mock.patch('certbot.cert_manager.lineage_for_certname')
+    @mock.patch('certbot.main.display_ops.choose_values')
+    @mock.patch('certbot.main._find_domains_or_certname')
+    def test_selection_question(self, mock_find, mock_choose, mock_lineage, _rec):
+        mock_lineage.return_value = mock.MagicMock(chain_path="/tmp/nonexistent")
         mock_choose.return_value = ['example.com']
         mock_find.return_value = (None, None)
         with mock.patch('certbot.main.plug_sel.pick_installer') as mock_pick:
@@ -1571,10 +1573,12 @@ class EnhanceTest(unittest.TestCase):
             # Check that the message includes "enhancements"
             self.assertTrue("enhancements" in mock_pick.call_args[0][3])
 
-    @mock.patch("certbot.main.plug_sel.record_chosen_plugins")
-    @mock.patch("certbot.main.display_ops.choose_values")
-    @mock.patch("certbot.main._find_domains_or_certname")
-    def test_selection_auth_warning(self, mock_find, mock_choose, _rec):
+    @mock.patch('certbot.main.plug_sel.record_chosen_plugins')
+    @mock.patch('certbot.cert_manager.lineage_for_certname')
+    @mock.patch('certbot.main.display_ops.choose_values')
+    @mock.patch('certbot.main._find_domains_or_certname')
+    def test_selection_auth_warning(self, mock_find, mock_choose, mock_lineage, _rec):
+        mock_lineage.return_value = mock.MagicMock(chain_path="/tmp/nonexistent")
         mock_choose.return_value = ["example.com"]
         mock_find.return_value = (None, None)
         with mock.patch('certbot.main.plug_sel.pick_installer'):
@@ -1584,9 +1588,11 @@ class EnhanceTest(unittest.TestCase):
                 self.assertTrue("make sense" in mock_log.call_args[0][0])
                 self.assertTrue(mock_client.enhance_config.called)
 
-    @mock.patch("certbot.main.display_ops.choose_values")
-    @mock.patch("certbot.main.plug_sel.record_chosen_plugins")
-    def test_enhance_config_call(self, _rec, mock_choose):
+    @mock.patch('certbot.cert_manager.lineage_for_certname')
+    @mock.patch('certbot.main.display_ops.choose_values')
+    @mock.patch('certbot.main.plug_sel.record_chosen_plugins')
+    def test_enhance_config_call(self, _rec, mock_choose, mock_lineage):
+        mock_lineage.return_value = mock.MagicMock(chain_path="/tmp/nonexistent")
         mock_choose.return_value = ["example.com"]
         with mock.patch('certbot.main.plug_sel.pick_installer'):
             mock_client = self._call(['enhance', '--redirect', '--hsts'])
@@ -1600,8 +1606,22 @@ class EnhanceTest(unittest.TestCase):
             self.assertTrue(
                 "example.com" in mock_client.enhance_config.call_args[0][0])
 
-    @mock.patch("certbot.main.display_ops.choose_values")
-    @mock.patch("certbot.main.plug_sel.record_chosen_plugins")
+    @mock.patch('certbot.cert_manager.lineage_for_certname')
+    @mock.patch('certbot.main.display_ops.choose_values')
+    @mock.patch('certbot.main.plug_sel.record_chosen_plugins')
+    def test_enhance_noninteractive(self, _rec, mock_choose, mock_lineage):
+        mock_lineage.return_value = mock.MagicMock(
+            chain_path="/tmp/nonexistent")
+        mock_choose.return_value = ["example.com"]
+        with mock.patch('certbot.main.plug_sel.pick_installer'):
+            mock_client = self._call(['enhance', '--redirect',
+                                      '--hsts', '--non-interactive'])
+            self.assertTrue(mock_client.enhance_config.called)
+            self.assertFalse(mock_choose.called)
+
+
+    @mock.patch('certbot.main.display_ops.choose_values')
+    @mock.patch('certbot.main.plug_sel.record_chosen_plugins')
     def test_user_abort_domains(self, _rec, mock_choose):
         mock_choose.return_value = []
         with mock.patch('certbot.main.plug_sel.pick_installer'):
@@ -1613,9 +1633,9 @@ class EnhanceTest(unittest.TestCase):
         self.assertRaises(errors.MisconfigurationError,
                           self._call, ['enhance'])
 
-    @mock.patch("certbot.main.plug_sel.choose_configurator_plugins")
-    @mock.patch("certbot.main.display_ops.choose_values")
-    @mock.patch("certbot.main.plug_sel.record_chosen_plugins")
+    @mock.patch('certbot.main.plug_sel.choose_configurator_plugins')
+    @mock.patch('certbot.main.display_ops.choose_values')
+    @mock.patch('certbot.main.plug_sel.record_chosen_plugins')
     def test_plugin_selection_error(self, _rec, mock_choose, mock_pick):
         mock_choose.return_value = ["example.com"]
         mock_pick.return_value = (None, None)

@@ -887,16 +887,23 @@ def enhance(config, plugins):
     except errors.PluginSelectionError as e:
         return str(e)
 
-    if not config.certname:
-        config.certname = cert_manager.get_certnames(config, "enhance",
-                                                     allow_multiple=False)[0]
+    certname_question = ("Which certificate would you like to use to enhance "
+                         "your configuration?")
+    config.certname = cert_manager.get_certnames(
+        config, "enhance", allow_multiple=False,
+        custom_prompt=certname_question)[0]
     cert_domains = cert_manager.domains_for_certname(config, config.certname)
     domain_question = ("Which domain names would you like to enable the selected "
                        "enhancements for?")
-    domains = display_ops.choose_values(cert_domains, domain_question)
+    if config.noninteractive_mode:
+        domains = cert_manager.domains_for_certname(config, config.certname)
+    else:
+        domains = display_ops.choose_values(cert_domains, domain_question)
     if not domains:
-        # To be consistent with the error messages (similar to get_certnames)
-        raise errors.Error("User ended interaction.")
+        raise errors.Error("No domains found to enhance.")
+    if not config.chain_path:
+        lineage = cert_manager.lineage_for_certname(config, config.certname)
+        config.chain_path = lineage.chain_path
     le_client = _init_le_client(config, authenticator=None, installer=installer)
     le_client.enhance_config(domains, config.chain_path, ask_redirect=False)
 
