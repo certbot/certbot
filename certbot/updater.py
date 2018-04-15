@@ -62,9 +62,6 @@ def _run_updaters(lineage, installer, config):
     :rtype: None
     """
     for domain in lineage.names():
-        if not config.disable_tls_configuration_updates:
-            if isinstance(installer, interfaces.ServerTLSConfigurationUpdater):
-                installer.tls_configuration_updates(domain)
         if not config.disable_renew_updates:
             if isinstance(installer, interfaces.GenericUpdater):
                 installer.generic_updates(domain)

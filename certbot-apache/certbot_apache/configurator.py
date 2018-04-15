@@ -2118,3 +2118,4 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         return common.install_version_controlled_file(options_ssl, options_ssl_digest,
             self.constant("MOD_SSL_CONF_SRC"), constants.ALL_SSL_OPTIONS_HASHES)
 
+

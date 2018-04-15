@@ -256,10 +256,6 @@ class IConfig(zope.interface.Interface):
         "user; only needed if your config is somewhere unsafe like /tmp/."
         "This is a boolean")
 
-    disable_tls_configuration_updates = zope.interface.Attribute(
-        "If updates to the server's TLS configuration performed by the installer"
-        " should be disabled.")
-
     disable_renew_updates = zope.interface.Attribute(
         "If updates provided by installer enhancements when Certbot is being run"
         " with \"renew\" verb should be disabled.")
@@ -668,42 +664,5 @@ class RenewDeployer(object):
         :param lineage: Certificate lineage object that is set if certificate
             was renewed on this run.
         :type lineage: storage.RenewableCert
-
-        """
-
-
-class ServerTLSConfigurationUpdater(object):
-    """Interface for updating a server's TLS configuration.
-
-    An installer that wants to perform TLS configuration updates according to this
-    interface must not only be a subclass but must respect the disablement of
-    server side TLS configuration changes if done so by the user when performing
-    other installer functions. For example, if server TLS configuration updates
-    defined by command line parameter or configuration file are disabled and
-    :func:`IInstaller.deploy_cert` is called, the plugin must not modify an
-    existing TLS configuration in any way other than changing the certificates
-    and keys used by the server.
-
-    To make use of this interface, the installer should implement the interface
-    methods, and interfaces.ServerTLSConfigurationUpdater.register(InstallerClass)
-    should be called from the installer code.
-
-    An installer can determine if TLS configuration updates are enabled by checking
-    :attr:`IConfig.disable_tls_configuration_updates`.
-
-    """
-
-    __metaclass__ = abc.ABCMeta
-
-    @abc.abstractmethod
-    def tls_configuration_updates(self, domain, *args, **kwargs):
-        """Set the server's TLS config to latest recommended version.
-
-        If an installer is a subclass of the class containing this method, this
-        function will always be called when "certbot renew" is run.
-        This function will only be called if the user hasn't disabled TLS
-        server updates.
-
-        :param str domain: domain to handle the updates for
 
         """
