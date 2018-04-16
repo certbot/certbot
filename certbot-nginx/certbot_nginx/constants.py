@@ -44,3 +44,7 @@ def os_constant(key):
     :return: value of constant for active os
     """
     return CLI_DEFAULTS[key]
+
+HSTS_ARGS = ['\"max-age=31536000\"', ' ', 'always']
+
+HEADER_ARGS = {'Strict-Transport-Security': HSTS_ARGS}

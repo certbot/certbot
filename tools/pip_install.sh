@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/sh -e
 # pip installs packages using pinned package versions. If CERTBOT_OLDEST is set
 # to 1, a combination of tools/oldest_constraints.txt,
 # tools/dev_constraints.txt, and local-oldest-requirements.txt contained in the
