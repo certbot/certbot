@@ -352,7 +352,7 @@ class Client(object):
 
         if (self.config.config_dir != constants.CLI_DEFAULTS["config_dir"] or
                 self.config.work_dir != constants.CLI_DEFAULTS["work_dir"]):
-            logger.warning(
+            logger.info(
                 "Non-standard path(s), might not work with crontab installed "
                 "by your operating system package manager")
 
