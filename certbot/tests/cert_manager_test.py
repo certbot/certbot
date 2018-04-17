@@ -568,5 +568,101 @@ class MatchAndCheckOverlaps(storage_test.BaseRenewableCertTest):
         self.assertRaises(errors.OverlappingMatchFound, self._call, self.config, None, None, None)
 
 
+class GetCertnameTest(unittest.TestCase):
+    """Tests for certbot.cert_manager."""
+
+    def setUp(self):
+        self.get_utility_patch = test_util.patch_get_utility()
+        self.mock_get_utility = self.get_utility_patch.start()
+        self.config = mock.MagicMock()
+        self.config.certname = None
+
+    def tearDown(self):
+        self.get_utility_patch.stop()
+
+    @mock.patch('certbot.storage.renewal_conf_files')
+    @mock.patch('certbot.storage.lineagename_for_filename')
+    def test_get_certnames(self, mock_name, mock_files):
+        mock_files.return_value = ['example.com.conf']
+        mock_name.return_value = 'example.com'
+        from certbot import cert_manager
+        prompt = "Which certificate would you"
+        self.mock_get_utility().menu.return_value = ('ok', 0)
+        self.assertEquals(
+            cert_manager.get_certnames(
+                self.config, "verb", allow_multiple=False), ['example.com'])
+        self.assertTrue(
+            prompt in self.mock_get_utility().menu.call_args[0][0])
+
+    @mock.patch('certbot.storage.renewal_conf_files')
+    @mock.patch('certbot.storage.lineagename_for_filename')
+    def test_get_certnames_custom_prompt(self, mock_name, mock_files):
+        mock_files.return_value = ['example.com.conf']
+        mock_name.return_value = 'example.com'
+        from certbot import cert_manager
+        prompt = "custom prompt"
+        self.mock_get_utility().menu.return_value = ('ok', 0)
+        self.assertEquals(
+            cert_manager.get_certnames(
+                self.config, "verb", allow_multiple=False, custom_prompt=prompt),
+            ['example.com'])
+        self.assertEquals(self.mock_get_utility().menu.call_args[0][0],
+                          prompt)
+
+    @mock.patch('certbot.storage.renewal_conf_files')
+    @mock.patch('certbot.storage.lineagename_for_filename')
+    def test_get_certnames_user_abort(self, mock_name, mock_files):
+        mock_files.return_value = ['example.com.conf']
+        mock_name.return_value = 'example.com'
+        from certbot import cert_manager
+        self.mock_get_utility().menu.return_value = ('cancel', 0)
+        self.assertRaises(
+            errors.Error,
+            cert_manager.get_certnames,
+            self.config, "erroring_anyway", allow_multiple=False)
+
+    @mock.patch('certbot.storage.renewal_conf_files')
+    @mock.patch('certbot.storage.lineagename_for_filename')
+    def test_get_certnames_allow_multiple(self, mock_name, mock_files):
+        mock_files.return_value = ['example.com.conf']
+        mock_name.return_value = 'example.com'
+        from certbot import cert_manager
+        prompt = "Which certificate(s) would you"
+        self.mock_get_utility().checklist.return_value = ('ok', ['example.com'])
+        self.assertEquals(
+            cert_manager.get_certnames(
+                self.config, "verb", allow_multiple=True), ['example.com'])
+        self.assertTrue(
+            prompt in self.mock_get_utility().checklist.call_args[0][0])
+
+    @mock.patch('certbot.storage.renewal_conf_files')
+    @mock.patch('certbot.storage.lineagename_for_filename')
+    def test_get_certnames_allow_multiple_custom_prompt(self, mock_name, mock_files):
+        mock_files.return_value = ['example.com.conf']
+        mock_name.return_value = 'example.com'
+        from certbot import cert_manager
+        prompt = "custom prompt"
+        self.mock_get_utility().checklist.return_value = ('ok', ['example.com'])
+        self.assertEquals(
+            cert_manager.get_certnames(
+                self.config, "verb", allow_multiple=True, custom_prompt=prompt),
+            ['example.com'])
+        self.assertEquals(
+            self.mock_get_utility().checklist.call_args[0][0],
+            prompt)
+
+    @mock.patch('certbot.storage.renewal_conf_files')
+    @mock.patch('certbot.storage.lineagename_for_filename')
+    def test_get_certnames_allow_multiple_user_abort(self, mock_name, mock_files):
+        mock_files.return_value = ['example.com.conf']
+        mock_name.return_value = 'example.com'
+        from certbot import cert_manager
+        self.mock_get_utility().checklist.return_value = ('cancel', [])
+        self.assertRaises(
+            errors.Error,
+            cert_manager.get_certnames,
+            self.config, "erroring_anyway", allow_multiple=True)
+
+
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
