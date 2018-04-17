@@ -8,7 +8,7 @@ else:
     server_root_tmp = "/etc/nginx"
     
 CLI_DEFAULTS = dict(
-    server_root=server_root_tmp
+    server_root=server_root_tmp,
     ctl="nginx",
 )
 """CLI defaults."""
