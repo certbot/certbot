@@ -216,11 +216,12 @@ class CertificatesTest(BaseCertManagerTest):
         cert.is_test_cert = False
         parsed_certs = [cert]
 
+        mock_config = mock.MagicMock(certname=None, lineagename=None)
+        # pylint: disable=protected-access
+
         # pylint: disable=protected-access
         get_report = lambda: cert_manager._report_human_readable(mock_config, parsed_certs)
 
-        mock_config = mock.MagicMock(certname=None, lineagename=None)
-        # pylint: disable=protected-access
         out = get_report()
         self.assertTrue("INVALID: EXPIRED" in out)
 

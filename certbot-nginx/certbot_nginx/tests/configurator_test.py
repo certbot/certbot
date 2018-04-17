@@ -94,7 +94,7 @@ class NginxConfiguratorTest(util.NginxTest):
              "globalssl.com", "globalsslsetssl.com", "ipv6.com", "ipv6ssl.com"]))
 
     def test_supported_enhancements(self):
-        self.assertEqual(['redirect', 'staple-ocsp'],
+        self.assertEqual(['redirect', 'ensure-http-header', 'staple-ocsp'],
                          self.config.supported_enhancements())
 
     def test_enhance(self):
@@ -113,8 +113,7 @@ class NginxConfiguratorTest(util.NginxTest):
                                      None, [0])
         self.config.parser.add_server_directives(
             mock_vhost,
-            [['listen', ' ', '5001', ' ', 'ssl']],
-            replace=False)
+            [['listen', ' ', '5001', ' ', 'ssl']])
         self.config.save()
 
         # pylint: disable=protected-access
@@ -206,9 +205,9 @@ class NginxConfiguratorTest(util.NginxTest):
             "example/chain.pem",
             None)
 
-    @mock.patch('certbot_nginx.parser.NginxParser.add_server_directives')
-    def test_deploy_cert_raise_on_add_error(self, mock_add_server_directives):
-        mock_add_server_directives.side_effect = errors.MisconfigurationError()
+    @mock.patch('certbot_nginx.parser.NginxParser.update_or_add_server_directives')
+    def test_deploy_cert_raise_on_add_error(self, mock_update_or_add_server_directives):
+        mock_update_or_add_server_directives.side_effect = errors.MisconfigurationError()
         self.assertRaises(
             errors.PluginError,
             self.config.deploy_cert,
@@ -510,6 +509,54 @@ class NginxConfiguratorTest(util.NginxTest):
                ['return', '404'], ['#', ' managed by Certbot'], [], [], []]]],
             generated_conf)
 
+    def test_split_for_headers(self):
+        example_conf = self.config.parser.abs_path('sites-enabled/example.com')
+        self.config.deploy_cert(
+            "example.org",
+            "example/cert.pem",
+            "example/key.pem",
+            "example/chain.pem",
+            "example/fullchain.pem")
+        self.config.enhance("www.example.com", "ensure-http-header", "Strict-Transport-Security")
+        generated_conf = self.config.parser.parsed[example_conf]
+        self.assertEqual(
+            [[['server'], [
+               ['server_name', '.example.com'],
+               ['server_name', 'example.*'], [],
+               ['listen', '5001', 'ssl'], ['#', ' managed by Certbot'],
+               ['ssl_certificate', 'example/fullchain.pem'], ['#', ' managed by Certbot'],
+               ['ssl_certificate_key', 'example/key.pem'], ['#', ' managed by Certbot'],
+               ['include', self.config.mod_ssl_conf], ['#', ' managed by Certbot'],
+               ['ssl_dhparam', self.config.ssl_dhparams], ['#', ' managed by Certbot'],
+               [], [],
+               ['add_header', 'Strict-Transport-Security', '"max-age=31536000"', 'always'],
+               ['#', ' managed by Certbot'],
+               [], []]],
+             [['server'], [
+               ['listen', '69.50.225.155:9000'],
+               ['listen', '127.0.0.1'],
+               ['server_name', '.example.com'],
+               ['server_name', 'example.*'],
+               [], [], []]]],
+            generated_conf)
+
+    def test_http_header_hsts(self):
+        example_conf = self.config.parser.abs_path('sites-enabled/example.com')
+        self.config.enhance("www.example.com", "ensure-http-header",
+                            "Strict-Transport-Security")
+        expected = ['add_header', 'Strict-Transport-Security', '"max-age=31536000"', 'always']
+        generated_conf = self.config.parser.parsed[example_conf]
+        self.assertTrue(util.contains_at_depth(generated_conf, expected, 2))
+
+    def test_http_header_hsts_twice(self):
+        self.config.enhance("www.example.com", "ensure-http-header",
+                            "Strict-Transport-Security")
+        self.assertRaises(
+            errors.PluginEnhancementAlreadyPresent,
+            self.config.enhance, "www.example.com",
+            "ensure-http-header", "Strict-Transport-Security")
+
+
     @mock.patch('certbot_nginx.obj.VirtualHost.contains_list')
     def test_certbot_redirect_exists(self, mock_contains_list):
         # Test that we add no redirect statement if there is already a
@@ -592,7 +639,7 @@ class NginxConfiguratorTest(util.NginxTest):
         self.assertEqual([[['server'],
                            [['listen', 'myhost', 'default_server'],
                             ['listen', 'otherhost', 'default_server'],
-                            ['server_name', 'www.example.org'],
+                            ['server_name', '"www.example.org"'],
                             [['location', '/'],
                              [['root', 'html'],
                               ['index', 'index.html', 'index.htm']]]]],
