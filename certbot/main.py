@@ -893,14 +893,15 @@ def enhance(config, plugins):
         config, "enhance", allow_multiple=False,
         custom_prompt=certname_question)[0]
     cert_domains = cert_manager.domains_for_certname(config, config.certname)
-    domain_question = ("Which domain names would you like to enable the selected "
-                       "enhancements for?")
     if config.noninteractive_mode:
-        domains = cert_manager.domains_for_certname(config, config.certname)
+        domains = cert_domains
     else:
+        domain_question = ("Which domain names would you like to enable the "
+                           "selected enhancements for?")
         domains = display_ops.choose_values(cert_domains, domain_question)
-    if not domains:
-        raise errors.Error("No domains found to enhance.")
+        if not domains:
+            raise errors.Error("User cancelled the domain selection. No domains "
+                               "defined, exiting.")
     if not config.chain_path:
         lineage = cert_manager.lineage_for_certname(config, config.certname)
         config.chain_path = lineage.chain_path
