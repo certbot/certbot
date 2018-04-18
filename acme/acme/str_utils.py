@@ -28,7 +28,9 @@ from typing import Union, Text # pylint: disable=unused-import
 
 def force_text(s, encoding='utf-8'):
     # (Union[Text, bytes], str) -> Text
-    """converts a string to a text string"""
+    """converts a string to a unicode text string
+       use this when reading in data
+    """
     if isinstance(s, six.text_type):
         return s
     elif isinstance(s, bytes):
@@ -38,7 +40,8 @@ def force_text(s, encoding='utf-8'):
 
 def force_bytes(s, encoding='utf-8'):
     # (Union[Text, bytes], str) -> bytes
-    """converts a string to binary string"""
+    """converts a string to binary string
+       use this when sending out some data"""
     if isinstance(s, bytes):
         return s
     elif isinstance(s, six.text_type):
@@ -48,7 +51,8 @@ def force_bytes(s, encoding='utf-8'):
 
 def force_str(s, encoding='utf-8'):
     # (Union[Text, bytes], str) -> str
-    """converts a string to a native string"""
+    """converts a string to a native string
+       use this when sending out some data"""
     if isinstance(s, str):
         return s
     elif isinstance(s, six.text_type):
