@@ -587,7 +587,7 @@ class GetCertnameTest(unittest.TestCase):
         mock_name.return_value = 'example.com'
         from certbot import cert_manager
         prompt = "Which certificate would you"
-        self.mock_get_utility().menu.return_value = ('ok', 0)
+        self.mock_get_utility().menu.return_value = (display_util.OK, 0)
         self.assertEquals(
             cert_manager.get_certnames(
                 self.config, "verb", allow_multiple=False), ['example.com'])
@@ -601,7 +601,7 @@ class GetCertnameTest(unittest.TestCase):
         mock_name.return_value = 'example.com'
         from certbot import cert_manager
         prompt = "custom prompt"
-        self.mock_get_utility().menu.return_value = ('ok', 0)
+        self.mock_get_utility().menu.return_value = (display_util.OK, 0)
         self.assertEquals(
             cert_manager.get_certnames(
                 self.config, "verb", allow_multiple=False, custom_prompt=prompt),
@@ -615,7 +615,7 @@ class GetCertnameTest(unittest.TestCase):
         mock_files.return_value = ['example.com.conf']
         mock_name.return_value = 'example.com'
         from certbot import cert_manager
-        self.mock_get_utility().menu.return_value = ('cancel', 0)
+        self.mock_get_utility().menu.return_value = (display_util.CANCEL, 0)
         self.assertRaises(
             errors.Error,
             cert_manager.get_certnames,
@@ -628,7 +628,8 @@ class GetCertnameTest(unittest.TestCase):
         mock_name.return_value = 'example.com'
         from certbot import cert_manager
         prompt = "Which certificate(s) would you"
-        self.mock_get_utility().checklist.return_value = ('ok', ['example.com'])
+        self.mock_get_utility().checklist.return_value = (display_util.OK,
+                                                          ['example.com'])
         self.assertEquals(
             cert_manager.get_certnames(
                 self.config, "verb", allow_multiple=True), ['example.com'])
@@ -642,7 +643,8 @@ class GetCertnameTest(unittest.TestCase):
         mock_name.return_value = 'example.com'
         from certbot import cert_manager
         prompt = "custom prompt"
-        self.mock_get_utility().checklist.return_value = ('ok', ['example.com'])
+        self.mock_get_utility().checklist.return_value = (display_util.OK,
+                                                          ['example.com'])
         self.assertEquals(
             cert_manager.get_certnames(
                 self.config, "verb", allow_multiple=True, custom_prompt=prompt),
@@ -657,7 +659,7 @@ class GetCertnameTest(unittest.TestCase):
         mock_files.return_value = ['example.com.conf']
         mock_name.return_value = 'example.com'
         from certbot import cert_manager
-        self.mock_get_utility().checklist.return_value = ('cancel', [])
+        self.mock_get_utility().checklist.return_value = (display_util.CANCEL, [])
         self.assertRaises(
             errors.Error,
             cert_manager.get_certnames,
