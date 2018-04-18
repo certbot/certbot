@@ -76,6 +76,7 @@ obtain, install, and renew certificates:
     (default) run   Obtain & install a certificate in your current webserver
     certonly        Obtain or renew a certificate, but do not install it
     renew           Renew all previously obtained certificates that are near expiry
+    enhance         Add security enhancements to your existing configuration
    -d DOMAINS       Comma-separated list of domains to obtain a certificate for
 
   %s
@@ -415,6 +416,12 @@ VERB_HELP = [
                   os.path.join(flag_default("config_dir"), "live"))),
         "usage": "\n\n  certbot update_symlinks [options]\n\n"
     }),
+    ("enhance", {
+        "short": "Add security enhancements to your existing configuration",
+        "opts": ("Helps to harden the TLS configration by adding security enhancements "
+                 "to already existing configuration."),
+        "usage": "\n\n  certbot enhance [options]\n\n"
+    }),
 
 ]
 # VERB_HELP is a list in order to preserve order, but a dict is sometimes useful
@@ -449,6 +456,7 @@ class HelpfulArgumentParser(object):
             "update_symlinks": main.update_symlinks,
             "certificates": main.certificates,
             "delete": main.delete,
+            "enhance": main.enhance,
         }
 
         # Get notification function for printing
@@ -883,21 +891,22 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              "flag to 0 disables log rotation entirely, causing "
              "Certbot to always append to the same log file.")
     helpful.add(
-        [None, "automation", "run", "certonly"], "-n", "--non-interactive", "--noninteractive",
+        [None, "automation", "run", "certonly", "enhance"],
+        "-n", "--non-interactive", "--noninteractive",
         dest="noninteractive_mode", action="store_true",
         default=flag_default("noninteractive_mode"),
         help="Run without ever asking for user input. This may require "
               "additional command line flags; the client will try to explain "
               "which ones are required if it finds one missing")
     helpful.add(
-        [None, "register", "run", "certonly"],
+        [None, "register", "run", "certonly", "enhance"],
         constants.FORCE_INTERACTIVE_FLAG, action="store_true",
         default=flag_default("force_interactive"),
         help="Force Certbot to be interactive even if it detects it's not "
              "being run in a terminal. This flag cannot be used with the "
              "renew subcommand.")
     helpful.add(
-        [None, "run", "certonly", "certificates"],
+        [None, "run", "certonly", "certificates", "enhance"],
         "-d", "--domains", "--domain", dest="domains",
         metavar="DOMAIN", action=_DomainsAction,
         default=flag_default("domains"),
@@ -913,8 +922,8 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              "name. In the case of a name collision it will append a number "
              "like 0001 to the file path name. (default: Ask)")
     helpful.add(
-        [None, "run", "certonly", "manage", "delete", "certificates", "renew"],
-        "--cert-name", dest="certname",
+        [None, "run", "certonly", "manage", "delete", "certificates",
+         "renew", "enhance"], "--cert-name", dest="certname",
         metavar="CERTNAME", default=flag_default("certname"),
         help="Certificate name to apply. This name is used by Certbot for housekeeping "
              "and in file paths; it doesn't affect the content of the certificate itself. "
@@ -1085,7 +1094,8 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         dest="must_staple", default=flag_default("must_staple"),
         help=config_help("must_staple"))
     helpful.add(
-        "security", "--redirect", action="store_true", dest="redirect",
+        ["security", "enhance"],
+        "--redirect", action="store_true", dest="redirect",
         default=flag_default("redirect"),
         help="Automatically redirect all HTTP traffic to HTTPS for the newly "
              "authenticated vhost. (default: Ask)")
@@ -1095,7 +1105,8 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         help="Do not automatically redirect all HTTP traffic to HTTPS for the newly "
              "authenticated vhost. (default: Ask)")
     helpful.add(
-        "security", "--hsts", action="store_true", dest="hsts", default=flag_default("hsts"),
+        ["security", "enhance"],
+        "--hsts", action="store_true", dest="hsts", default=flag_default("hsts"),
         help="Add the Strict-Transport-Security header to every HTTP response."
              " Forcing browser to always use SSL for the domain."
              " Defends against SSL Stripping.")
@@ -1103,7 +1114,8 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         "security", "--no-hsts", action="store_false", dest="hsts",
         default=flag_default("hsts"), help=argparse.SUPPRESS)
     helpful.add(
-        "security", "--uir", action="store_true", dest="uir", default=flag_default("uir"),
+        ["security", "enhance"],
+        "--uir", action="store_true", dest="uir", default=flag_default("uir"),
         help='Add the "Content-Security-Policy: upgrade-insecure-requests"'
              ' header to every HTTP response. Forcing the browser to use'
              ' https:// for every http:// resource.')

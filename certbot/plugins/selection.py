@@ -147,6 +147,7 @@ def record_chosen_plugins(config, plugins, auth, inst):
 
 
 def choose_configurator_plugins(config, plugins, verb):
+    # pylint: disable=too-many-branches
     """
     Figure out which configurator we're going to use, modifies
     config.authenticator and config.installer strings to reflect that choice if
@@ -159,6 +160,11 @@ def choose_configurator_plugins(config, plugins, verb):
     """
 
     req_auth, req_inst = cli_plugin_requests(config)
+    installer_question = None
+
+    if verb == "enhance":
+        installer_question = ("Which installer would you like to use to "
+                              "configure the selected enhancements?")
 
     # Which plugins do we need?
     if verb == "run":
@@ -176,11 +182,11 @@ def choose_configurator_plugins(config, plugins, verb):
         need_inst = need_auth = False
     if verb == "certonly":
         need_auth = True
-    if verb == "install":
+    if verb == "install" or verb == "enhance":
         need_inst = True
         if config.authenticator:
-            logger.warning("Specifying an authenticator doesn't make sense in install mode")
-
+            logger.warning("Specifying an authenticator doesn't make sense when "
+                           "running Certbot with verb \"%s\"", verb)
     # Try to meet the user's request and/or ask them to pick plugins
     authenticator = installer = None
     if verb == "run" and req_auth == req_inst:
@@ -189,7 +195,7 @@ def choose_configurator_plugins(config, plugins, verb):
         authenticator = installer = pick_configurator(config, req_inst, plugins)
     else:
         if need_inst or req_inst:
-            installer = pick_installer(config, req_inst, plugins)
+            installer = pick_installer(config, req_inst, plugins, installer_question)
         if need_auth:
             authenticator = pick_authenticator(config, req_auth, plugins)
     logger.debug("Selected authenticator %s and installer %s", authenticator, installer)

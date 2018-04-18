@@ -466,7 +466,7 @@ class Client(object):
             # sites may have been enabled / final cleanup
             self.installer.restart()
 
-    def enhance_config(self, domains, chain_path):
+    def enhance_config(self, domains, chain_path, ask_redirect=True):
         """Enhance the configuration.
 
         :param list domains: list of domains to configure
@@ -493,8 +493,9 @@ class Client(object):
         for config_name, enhancement_name, option in enhancement_info:
             config_value = getattr(self.config, config_name)
             if enhancement_name in supported:
-                if config_name == "redirect" and config_value is None:
-                    config_value = enhancements.ask(enhancement_name)
+                if ask_redirect:
+                    if config_name == "redirect" and config_value is None:
+                        config_value = enhancements.ask(enhancement_name)
                 if config_value:
                     self.apply_enhancement(domains, enhancement_name, option)
                     enhanced = True
@@ -530,8 +531,12 @@ class Client(object):
                 try:
                     self.installer.enhance(dom, enhancement, options)
                 except errors.PluginEnhancementAlreadyPresent:
-                    logger.warning("Enhancement %s was already set.",
-                            enhancement)
+                    if enhancement == "ensure-http-header":
+                        logger.warning("Enhancement %s was already set.",
+                                options)
+                    else:
+                        logger.warning("Enhancement %s was already set.",
+                                enhancement)
                 except errors.PluginError:
                     logger.warning("Unable to set enhancement %s for %s",
                             enhancement, dom)

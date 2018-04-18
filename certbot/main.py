@@ -382,7 +382,7 @@ def _ask_user_to_confirm_new_names(config, new_domains, certname, old_domains):
     if not obj.yesno(msg, "Update cert", "Cancel", default=True):
         raise errors.ConfigurationError("Specified mismatched cert name and domains.")
 
-def _find_domains_or_certname(config, installer):
+def _find_domains_or_certname(config, installer, question=None):
     """Retrieve domains and certname from config or user input.
 
     :param config: Configuration object
@@ -391,6 +391,8 @@ def _find_domains_or_certname(config, installer):
     :param installer: Installer object
     :type installer: interfaces.IInstaller
 
+    :param `str` question: Overriding dialog question to ask the user if asked
+        to choose from domain names.
 
     :returns: Two-part tuple of domains and certname
     :rtype: `tuple` of list of `str` and `str`
@@ -411,7 +413,7 @@ def _find_domains_or_certname(config, installer):
     # that certname might not have existed, or there was a problem.
     # try to get domains from the user.
     if not domains:
-        domains = display_ops.choose_names(installer)
+        domains = display_ops.choose_names(installer, question)
 
     if not domains and not certname:
         raise errors.Error("Please specify --domains, or --installer that "
@@ -858,6 +860,53 @@ def plugins_cmd(config, plugins):
     available = verified.available()
     logger.debug("Prepared plugins: %s", available)
     notify(str(available))
+
+def enhance(config, plugins):
+    """Add security enhancements to existing configuration
+
+    :param config: Configuration object
+    :type config: interfaces.IConfig
+
+    :param plugins: List of plugins
+    :type plugins: `list` of `str`
+
+    :returns: `None`
+    :rtype: None
+
+    """
+    supported_enhancements = ["hsts", "redirect", "uir", "staple"]
+    # Check that at least one enhancement was requested on command line
+    if not any([getattr(config, enh) for enh in supported_enhancements]):
+        msg = ("Please specify one or more enhancement types to configure. To list "
+               "the available enhancement types, run:\n\n%s --help enhance\n")
+        logger.warning(msg, sys.argv[0])
+        raise errors.MisconfigurationError("No enhancements requested, exiting.")
+
+    try:
+        installer, _ = plug_sel.choose_configurator_plugins(config, plugins, "enhance")
+    except errors.PluginSelectionError as e:
+        return str(e)
+
+    certname_question = ("Which certificate would you like to use to enhance "
+                         "your configuration?")
+    config.certname = cert_manager.get_certnames(
+        config, "enhance", allow_multiple=False,
+        custom_prompt=certname_question)[0]
+    cert_domains = cert_manager.domains_for_certname(config, config.certname)
+    if config.noninteractive_mode:
+        domains = cert_domains
+    else:
+        domain_question = ("Which domain names would you like to enable the "
+                           "selected enhancements for?")
+        domains = display_ops.choose_values(cert_domains, domain_question)
+        if not domains:
+            raise errors.Error("User cancelled the domain selection. No domains "
+                               "defined, exiting.")
+    if not config.chain_path:
+        lineage = cert_manager.lineage_for_certname(config, config.certname)
+        config.chain_path = lineage.chain_path
+    le_client = _init_le_client(config, authenticator=None, installer=installer)
+    le_client.enhance_config(domains, config.chain_path, ask_redirect=False)
 
 
 def rollback(config, plugins):
