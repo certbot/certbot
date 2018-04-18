@@ -58,6 +58,8 @@ def force_str(s, encoding='utf-8'):
     elif isinstance(s, six.text_type):
         return s.encode(encoding)
     elif isinstance(s, bytes):
-        return s.decode(encoding)
+        return s.decode(encoding) # pragma: no cover
+        # this is covered if we run cover using python 3, which has been done manually
+        # we can't just change cover to run with python 3 because then s.encode(encoding) isn't run
     else:
         raise TypeError("force_str expects a string type")
