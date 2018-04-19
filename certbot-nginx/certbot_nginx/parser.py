@@ -1,5 +1,4 @@
 """NginxParser is a member object of the NginxConfigurator class."""
-import abc
 import copy
 import functools
 import glob
@@ -18,48 +17,8 @@ from certbot_nginx import nginxparser
 
 logger = logging.getLogger(__name__)
 
-# add superclass to ensure fancy parser has the same API as the old one
-class Parser:
-    __metaclass__ = abc.ABCMeta
 
-    @abc.abstractmethod
-    def get_vhosts(self):
-        raise NotImplementedError()
-
-    # This method looks liek it's actually internal to parser, so not including it.
-    # @abc.abstractmethod
-    # def parse_server(self, server):
-    #     raise NotImplementedError()
-
-    @abc.abstractmethod
-    def has_ssl_on_directive(self, vhost):
-        raise NotImplementedError()
-
-    @abc.abstractmethod
-    def add_server_directives(self, vhost, directives, replace, insert_at_top=False):
-        raise NotImplementedError()
-
-    @abc.abstractmethod
-    def remove_server_directives(self, vhost, directive_name, match_func=None):
-        raise NotImplementedError()
-
-    @abc.abstractmethod
-    def duplicate_vhost(self, vhost_template, delete_default=False, only_directives=None):
-        raise NotImplementedError()
-
-    @abc.abstractmethod
-    def load(self):
-        raise NotImplementedError()
-
-    @abc.abstractmethod
-    def abs_path(self, path):
-        raise NotImplementedError()
-
-    @abc.abstractmethod
-    def filedump(self, ext='tmp', lazy=True):
-        raise NotImplementedError()
-
-class NginxParser(Parser):
+class NginxParser(object):
     """Class handles the fine details of parsing the Nginx Configuration.
 
     :ivar str root: Normalized absolute path to the server root
