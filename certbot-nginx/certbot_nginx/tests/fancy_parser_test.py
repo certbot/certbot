@@ -169,16 +169,16 @@ class NginxFancyParserTest(util.NginxTest): #pylint: disable=too-many-public-met
                ]])
         mock_vhost = obj.VirtualHost(None, None, None, None, None, fake_bloc, None)
         self.assertFalse(nparser.has_ssl_on_directive(mock_vhost))
-        mock_vhost.raw.parse([['server'], [
+        mock_vhost.raw.parse([['server'], [ # pylint: disable=no-member
                           ['listen', '*:80', 'default_server', 'ssl'],
                           ['server_name', '*.www.foo.com', '*.www.example.com'],
                           ['root', '/home/ubuntu/sites/foo/']]])
         self.assertFalse(nparser.has_ssl_on_directive(mock_vhost))
-        mock_vhost.raw.parse([['server'], [
+        mock_vhost.raw.parse([['server'], [ # pylint: disable=no-member
                           ['listen', '80 ssl'],
                           ['server_name', '*.www.foo.com', '*.www.example.com']]])
         self.assertFalse(nparser.has_ssl_on_directive(mock_vhost))
-        mock_vhost.raw.parse([['server'], [
+        mock_vhost.raw.parse([['server'], [ # pylint: disable=no-member
                           ['listen', '80'],
                           ['ssl', 'on'],
                           ['server_name', '*.www.foo.com', '*.www.example.com']]])
@@ -362,7 +362,6 @@ class NginxFancyParserTest(util.NginxTest): #pylint: disable=too-many-public-met
                    .get_data(include_spaces=True))
         added_re = re.compile(r'\n    hi there;    # managed by Certbot')
         self.assertEqual(1, len(re.findall(added_re, dump)))
-            
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

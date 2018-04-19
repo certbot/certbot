@@ -18,10 +18,15 @@ logger = logging.getLogger(__name__)
 
 class ParseContext(object):
     """ Context information held by parsed objects. """
-    def __init__(self, cwd, filename, parent=None):
+    def __init__(self, cwd, filename, parent=None, parsed_files=None):
         self.cwd = cwd
         self.filename = filename
         self.parent = parent
+        # We still need a global parsed files map so only one reference exists
+        # to each individual file's parsed tree, even when expanding includes.
+        if parsed_files is None:
+            parsed_files = {}
+        self.parsed_files = parsed_files
 
 class WithLists(object):
     """ Abstract base class for "Parsable" objects whose underlying representation
@@ -48,7 +53,7 @@ class WithLists(object):
             return None
         if filename is None:
             filename = self.context.filename
-        return ParseContext(self.context.cwd, filename, self)
+        return ParseContext(self.context.cwd, filename, self, self.context.parsed_files)
 
     def get_tabs(self):
         """ Guess at the number of preceding whitespaces """
@@ -119,7 +124,9 @@ class Statements(WithLists):
             yield elem
 
     def _get_thing(self, match_func):
-        return filter(match_func, self.iterate_expanded())
+        for elem in self.iterate_expanded():
+            if match_func(elem):
+                yield elem
 
     def get_type(self, match_type, match_func=None):
         """ Retrieve objects of a particluar type """
@@ -172,6 +179,7 @@ class Statements(WithLists):
             self._data.insert(found, self._create_contextual_sentence(statement))
 
     def add_statement(self, statement, insert_at_top=False):
+        """ Adds a Statement to the end of this block of statements. """
         if insert_at_top:
             self._data.insert(0, statement)
         else:
@@ -180,7 +188,7 @@ class Statements(WithLists):
     def _add_directive(self, statement, insert_at_top=False):
         if self.contains_directive(statement):
             return
-        self.add_statement(self._create_contextual_sentence(statement))
+        self.add_statement(self._create_contextual_sentence(statement), insert_at_top)
         if statement[0] != '#':
             self.add_statement(certbot_comment(self.context))
 
@@ -215,6 +223,7 @@ class Statements(WithLists):
                 logger.debug("Could not parse file: %s due to %s", context.filename, err)
         statements = Statements(context)
         statements.parse(raw_parsed)
+        context.parsed_files[context.filename] = statements
         return statements
 
 def certbot_comment(context, preceding_spaces=4):
@@ -263,9 +272,7 @@ class Sentence(WithLists):
     @property
     def words(self):
         """ Iterates over words, but without spaces. Like Unspaced List. """
-        def _isnt_space(x):
-            return not x.isspace()
-        return filter(_isnt_space, self._data)
+        return [word.strip('"\'') for word in self._data if not word.isspace()]
 
     def matches_list(self, list_):
         """ Checks to see whether this object matches an unspaced list. """
@@ -302,10 +309,14 @@ class Include(Sentence):
         files = glob.glob(os.path.join(self.context.cwd, self.filename))
         self.parsed = {}
         for f in files:
-            self.parsed[f] = Statements.load_from(self.child_context(f))
+            if f in self.context.parsed_files:
+                self.parsed[f] = self.context.parsed_files[f]
+            else:
+                self.parsed[f] = Statements.load_from(self.child_context(f))
 
     @property
     def filename(self):
+        """ Retrieves the filename that is being included. """
         return self.words[1]
 
 class Bloc(WithLists):
@@ -374,6 +385,7 @@ class ServerBloc(Bloc):
 
     def duplicate(self, only_directives=None, delete_default=False):
         """ Duplicates iteslf into another sibling server block. """
+        # pylint: disable=protected-access
         dup_bloc = copy.deepcopy(self)
         if only_directives is not None:
             dup_contents = dup_bloc.contents.get_type(Sentence,

@@ -470,6 +470,5 @@ class NginxParserTest(util.NginxTest): #pylint: disable=too-many-public-methods
         self.assertTrue(called)
 
 
-
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
