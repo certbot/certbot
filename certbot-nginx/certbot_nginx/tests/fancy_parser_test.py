@@ -13,11 +13,11 @@ from certbot_nginx import parser_obj
 from certbot_nginx.tests import util
 
 
-class NginxFancyParserTest(util.NginxTest): #pylint: disable=too-many-public-methods
+class NginxParserTest(util.NginxTest): #pylint: disable=too-many-public-methods
     """Nginx Parser Test."""
 
     def setUp(self):
-        super(NginxFancyParserTest, self).setUp()
+        super(NginxParserTest, self).setUp()
 
     def tearDown(self):
         shutil.rmtree(self.temp_dir)
@@ -27,22 +27,22 @@ class NginxFancyParserTest(util.NginxTest): #pylint: disable=too-many-public-met
     def test_root_normalized(self):
         path = os.path.join(self.temp_dir, "etc_nginx/////"
                             "ubuntu_nginx/../../etc_nginx")
-        nparser = better_parser.FancyNginxParser(path)
+        nparser = better_parser.NginxParser(path)
         self.assertEqual(nparser.root, self.config_path)
 
     def test_root_absolute(self):
-        nparser = better_parser.FancyNginxParser(os.path.relpath(self.config_path))
+        nparser = better_parser.NginxParser(os.path.relpath(self.config_path))
         self.assertEqual(nparser.root, self.config_path)
 
     def test_root_no_trailing_slash(self):
-        nparser = better_parser.FancyNginxParser(self.config_path + os.path.sep)
+        nparser = better_parser.NginxParser(self.config_path + os.path.sep)
         self.assertEqual(nparser.root, self.config_path)
 
     def test_load(self):
         """Test recursive conf file parsing.
 
         """
-        nparser = better_parser.FancyNginxParser(self.config_path)
+        nparser = better_parser.NginxParser(self.config_path)
         nparser.load()
         self.assertEqual(set([nparser.abs_path(x) for x in
                               ['foo.conf', 'nginx.conf', 'server.conf', 'mime.types',
@@ -64,13 +64,13 @@ class NginxFancyParserTest(util.NginxTest): #pylint: disable=too-many-public-met
                              'sites-enabled/example.com')].get_data())
 
     def test_abs_path(self):
-        nparser = better_parser.FancyNginxParser(self.config_path)
+        nparser = better_parser.NginxParser(self.config_path)
         self.assertEqual('/etc/nginx/*', nparser.abs_path('/etc/nginx/*'))
         self.assertEqual(os.path.join(self.config_path, 'foo/bar/'),
                          nparser.abs_path('foo/bar/'))
 
     def test_filedump(self):
-        nparser = better_parser.FancyNginxParser(self.config_path)
+        nparser = better_parser.NginxParser(self.config_path)
         nparser.filedump('test', lazy=False)
         all_files = glob.glob(nparser.abs_path('sites-enabled/*.test'))
         for f in all_files:
@@ -88,7 +88,7 @@ class NginxFancyParserTest(util.NginxTest): #pylint: disable=too-many-public-met
                          parsed.get_data())
 
     def test_filedump_whitespace(self):
-        nparser = better_parser.FancyNginxParser(self.config_path, 'funky_whitespace.conf')
+        nparser = better_parser.NginxParser(self.config_path, 'funky_whitespace.conf')
         nparser.filedump('test', lazy=False)
         f = 'funky_whitespace.conf'
         self.assertTrue(filecmp.cmp(
@@ -96,7 +96,7 @@ class NginxFancyParserTest(util.NginxTest): #pylint: disable=too-many-public-met
             nparser.abs_path(f)))
 
     def test_get_vhosts_global_ssl(self):
-        nparser = better_parser.FancyNginxParser(self.config_path)
+        nparser = better_parser.NginxParser(self.config_path)
         vhosts = nparser.get_vhosts()
 
         vhost = obj.VirtualHost(nparser.abs_path('sites-enabled/globalssl.com'),
@@ -108,7 +108,7 @@ class NginxFancyParserTest(util.NginxTest): #pylint: disable=too-many-public-met
         self.assertEqual(vhost, globalssl_com)
 
     def test_get_vhosts(self):
-        nparser = better_parser.FancyNginxParser(self.config_path)
+        nparser = better_parser.NginxParser(self.config_path)
         vhosts = nparser.get_vhosts()
 
         vhost1 = obj.VirtualHost(nparser.abs_path('nginx.conf'),
@@ -160,7 +160,7 @@ class NginxFancyParserTest(util.NginxTest): #pylint: disable=too-many-public-met
         self.assertEqual(vhost2, somename)
 
     def test_has_ssl_on_directive(self):
-        nparser = better_parser.FancyNginxParser(self.config_path)
+        nparser = better_parser.NginxParser(self.config_path)
         fake_bloc = parser_obj.ServerBloc(None)
         fake_bloc.parse([['server'],
               [['listen', 'myhost default_server'],
@@ -186,13 +186,12 @@ class NginxFancyParserTest(util.NginxTest): #pylint: disable=too-many-public-met
 
 
     def test_remove_server_directives(self):
-        nparser = better_parser.FancyNginxParser(self.config_path)
+        nparser = better_parser.NginxParser(self.config_path)
         example_com = nparser.abs_path('sites-enabled/example.com')
         example_vhost = [x for x in nparser.get_vhosts() if 'example.com' in x.filep][0]
         nparser.add_server_directives(example_vhost,
                                       [['foo', 'bar'], ['ssl_certificate',
-                                                        '/etc/ssl/cert2.pem']],
-                                      replace=False)
+                                                        '/etc/ssl/cert2.pem']])
         nparser.remove_server_directives(example_vhost, 'foo')
         nparser.remove_server_directives(example_vhost, 'ssl_certificate')
         self.assertEqual(nparser.parsed[example_com].get_data(),
@@ -203,16 +202,10 @@ class NginxFancyParserTest(util.NginxTest): #pylint: disable=too-many-public-met
 
 
     def test_add_server_directives(self):
-        test = parser_obj.Statements(None)
-        test.parse([['  ', 'hi', ' ', 'there'], ['  ', 'what', ' ', 'up']])
-        test.add_directives([['nothing', 'much']])
-        self.assertEqual(test.get_data(True)[-2:],
-            [['\n  ', 'nothing', ' ', 'much'], ['    ', '#', ' managed by Certbot']])
-        nparser = better_parser.FancyNginxParser(self.config_path)
+        nparser = better_parser.NginxParser(self.config_path)
         localhost = [x for x in nparser.get_vhosts() if 'localhost' in x.names][0]
         nparser.add_server_directives(localhost,
-            [['foo', 'bar'], ['ssl_certificate', '/etc/ssl/cert.pem']],
-            replace=False)
+            [['foo', 'bar'], ['ssl_certificate', '/etc/ssl/cert.pem']])
         ssl_re = re.compile(r'\n\s+ssl_certificate /etc/ssl/cert.pem')
         dump = nginxparser.dumps_raw(
             nparser.parsed[nparser.abs_path('nginx.conf')].get_data(include_spaces=True))
@@ -221,10 +214,8 @@ class NginxFancyParserTest(util.NginxTest): #pylint: disable=too-many-public-met
         example_com = [x for x in nparser.get_vhosts() if 'example.com' in x.filep][0]
         nparser.add_server_directives(example_com,
                                       [['foo', 'bar'], ['ssl_certificate',
-                                                        '/etc/ssl/cert2.pem']],
-                                      replace=False)
-        nparser.add_server_directives(example_com, [['foo', 'bar']],
-                                      replace=False)
+                                                        '/etc/ssl/cert2.pem']])
+        nparser.add_server_directives(example_com, [['foo', 'bar']])
         from certbot_nginx.parser import COMMENT
         self.assertEqual(nparser.parsed[nparser.abs_path('sites-enabled/example.com')].get_data(),
             [[['server'], [['listen', '69.50.225.155:9000'],
@@ -235,16 +226,14 @@ class NginxFancyParserTest(util.NginxTest): #pylint: disable=too-many-public-met
                            ['ssl_certificate', '/etc/ssl/cert2.pem'], ['#', COMMENT]]]])
 
     def test_comment_is_repeatable(self):
-        nparser = better_parser.FancyNginxParser(self.config_path)
+        nparser = better_parser.NginxParser(self.config_path)
         example_com = nparser.abs_path('sites-enabled/example.com')
         example_com_vhost = [x for x in nparser.get_vhosts() if 'example.com' in x.filep][0]
         nparser.add_server_directives(example_com_vhost,
-                                      [['#', ' what a nice comment']],
-                                      replace=False)
+                                      [['#', ' what a nice comment']])
         nparser.add_server_directives(example_com_vhost,
                                       [['include', ' ',
-                                      nparser.abs_path('comment_in_file.conf')]],
-                                      replace=False)
+                                      nparser.abs_path('comment_in_file.conf')]])
         from certbot_nginx.parser import COMMENT
         self.assertEqual(nparser.parsed[example_com].get_data(),
             [[['server'], [['listen', '69.50.225.155:9000'],
@@ -258,25 +247,25 @@ class NginxFancyParserTest(util.NginxTest): #pylint: disable=too-many-public-met
 )
 
     def test_replace_server_directives(self):
-        nparser = better_parser.FancyNginxParser(self.config_path)
+        nparser = better_parser.NginxParser(self.config_path)
         example_com = nparser.abs_path('sites-enabled/example.com')
         example_com_vhost = [x for x in nparser.get_vhosts() if 'example.com' in x.filep][0]
-        nparser.add_server_directives(
-            example_com_vhost, [['server_name', 'foobar.com']], replace=True)
+        nparser.update_or_add_server_directives(
+            example_com_vhost, [['server_name', 'foobar.com']])
         from certbot_nginx.parser import COMMENT
         self.assertEqual(
             nparser.parsed[example_com].get_data(),
             [[['server'], [['listen', '69.50.225.155:9000'],
                            ['listen', '127.0.0.1'],
-                           ['server_name', 'foobar.com'], ['#', COMMENT],
+                           ['server_name', 'foobar.com'],
                            ['server_name', 'example.*']]]])
-        nparser.add_server_directives(
-            example_com_vhost, [['ssl_certificate', 'cert.pem']], replace=True)
+        nparser.update_or_add_server_directives(
+            example_com_vhost, [['ssl_certificate', 'cert.pem']])
         self.assertEqual(
             nparser.parsed[example_com].get_data(),
             [[['server'], [['listen', '69.50.225.155:9000'],
                            ['listen', '127.0.0.1'],
-                           ['server_name', 'foobar.com'], ['#', COMMENT],
+                           ['server_name', 'foobar.com'],
                            ['server_name', 'example.*'],
                            ['ssl_certificate', 'cert.pem'], ['#', COMMENT]]]])
 
@@ -334,16 +323,16 @@ class NginxFancyParserTest(util.NginxTest): #pylint: disable=too-many-public-met
         self.assertEqual(len(server.addrs), 0)
 
     def test_duplicate_vhost(self):
-        nparser = better_parser.FancyNginxParser(self.config_path)
+        nparser = better_parser.NginxParser(self.config_path)
         vhosts = nparser.get_vhosts()
         default = [x for x in vhosts if 'default' in x.filep][0]
-        new_vhost = nparser.duplicate_vhost(default, delete_default=True)
+        new_vhost = nparser.duplicate_vhost(default, remove_singleton_listen_params=True)
         nparser.filedump(ext='')
 
         # check properties of new vhost
         self.assertFalse(next(iter(new_vhost.addrs)).default)
         # check that things are written to file correctly
-        new_nparser = better_parser.FancyNginxParser(self.config_path)
+        new_nparser = better_parser.NginxParser(self.config_path)
         new_vhosts = new_nparser.get_vhosts()
         new_defaults = [x for x in new_vhosts if 'default' in x.filep]
         self.assertEqual(len(new_defaults), 2)
@@ -353,10 +342,10 @@ class NginxFancyParserTest(util.NginxTest): #pylint: disable=too-many-public-met
         self.assertTrue(next(iter(default.addrs)).super_eq(next(iter(new_vhost_parsed.addrs))))
 
     def test_contextual_whitespace(self):
-        nparser = better_parser.FancyNginxParser(self.config_path)
+        nparser = better_parser.NginxParser(self.config_path)
         vhosts = nparser.get_vhosts()
         example_com = [x for x in vhosts if 'example.com' in x.filep][0]
-        nparser.add_server_directives(example_com, [['hi', 'there']], replace=False)
+        nparser.add_server_directives(example_com, [['hi', 'there']])
         dump = nginxparser.dumps_raw(
             nparser.parsed[nparser.abs_path('sites-enabled/example.com')]
                    .get_data(include_spaces=True))

@@ -25,7 +25,7 @@ from certbot.plugins import common
 from certbot_nginx import constants
 from certbot_nginx import display_ops
 from certbot_nginx import nginxparser
-from certbot_nginx import parser
+from certbot_nginx import better_parser as parser
 from certbot_nginx import tls_sni_01
 from certbot_nginx import http_01
 
@@ -189,8 +189,8 @@ class NginxConfigurator(common.Installer):
         domain originally passed for deploy_cert(). This is especially true
         with wildcard certificates
         """
-        cert_directives = [['\n    ', 'ssl_certificate', ' ', fullchain_path],
-                           ['\n    ', 'ssl_certificate_key', ' ', key_path]]
+        cert_directives = [['ssl_certificate', fullchain_path],
+                           ['ssl_certificate_key', key_path]]
 
         self.parser.update_or_add_server_directives(vhost,
                                           cert_directives)
@@ -341,9 +341,8 @@ class NginxConfigurator(common.Installer):
 
     def _add_server_name_to_vhost(self, vhost, domain):
         vhost.names.add(domain)
-        name_block = [['\n    ', 'server_name']]
+        name_block = [['server_name']]
         for name in vhost.names:
-            name_block[0].append(' ')
             name_block[0].append(name)
         self.parser.update_or_add_server_directives(vhost, name_block)
 
@@ -578,45 +577,41 @@ class NginxConfigurator(common.Installer):
 
         """
         ipv6info = self.ipv6_info(self.config.tls_sni_01_port)
-        ipv6_block = ['']
-        ipv4_block = ['']
+        ipv6_block = []
+        ipv4_block = []
 
         # If the vhost was implicitly listening on the default Nginx port,
         # have it continue to do so.
         if len(vhost.addrs) == 0:
-            listen_block = [['\n    ', 'listen', ' ', self.DEFAULT_LISTEN_PORT]]
+            listen_block = [['listen', self.DEFAULT_LISTEN_PORT]]
             self.parser.add_server_directives(vhost, listen_block)
 
         if vhost.ipv6_enabled():
-            ipv6_block = ['\n    ',
-                          'listen',
-                          ' ',
+            ipv6_block = ['listen',
                           '[::]:{0}'.format(self.config.tls_sni_01_port),
-                          ' ',
                           'ssl']
             if not ipv6info[1]:
                 # ipv6only=on is absent in global config
-                ipv6_block.append(' ')
                 ipv6_block.append('ipv6only=on')
 
         if vhost.ipv4_enabled():
-            ipv4_block = ['\n    ',
-                          'listen',
-                          ' ',
+            ipv4_block = ['listen',
                           '{0}'.format(self.config.tls_sni_01_port),
-                          ' ',
                           'ssl']
 
         snakeoil_cert, snakeoil_key = self._get_snakeoil_paths()
 
         ssl_block = ([
-            ipv6_block,
-            ipv4_block,
-            ['\n    ', 'ssl_certificate', ' ', snakeoil_cert],
-            ['\n    ', 'ssl_certificate_key', ' ', snakeoil_key],
-            ['\n    ', 'include', ' ', self.mod_ssl_conf],
-            ['\n    ', 'ssl_dhparam', ' ', self.ssl_dhparams],
+            ['ssl_certificate', snakeoil_cert],
+            ['ssl_certificate_key', snakeoil_key],
+            ['include', self.mod_ssl_conf],
+            ['ssl_dhparam', self.ssl_dhparams],
         ])
+        if len(ipv4_block) > 0:
+            ssl_block.insert(0, ipv4_block)
+
+        if len(ipv6_block) > 0:
+            ssl_block.insert(0, ipv6_block)
 
         self.parser.add_server_directives(
             vhost, ssl_block)
@@ -650,7 +645,7 @@ class NginxConfigurator(common.Installer):
 
     def _has_certbot_redirect(self, vhost, domain):
         test_redirect_block = _test_block_from_block(_redirect_block_for_domain(domain))
-        return vhost.contains_list(test_redirect_block)
+        return test_redirect_block in vhost.raw.contents.get_data()
 
     def _set_http_header(self, domain, header_substring):
         """Enables header identified by header_substring on domain.
@@ -681,9 +676,8 @@ class NginxConfigurator(common.Installer):
                 _, vhost = self._split_block(vhost)
 
             header_directives = [
-                ['\n    ', 'add_header', ' ', header_substring, ' '] +
-                    constants.HEADER_ARGS[header_substring],
-                ['\n']]
+                ['add_header', header_substring] +
+                    constants.HEADER_ARGS[header_substring]]
             self.parser.add_server_directives(vhost, header_directives)
 
     def _add_redirect_block(self, vhost, domain):
@@ -692,7 +686,7 @@ class NginxConfigurator(common.Installer):
         redirect_block = _redirect_block_for_domain(domain)
 
         self.parser.add_server_directives(
-            vhost, redirect_block, insert_at_top=True)
+            vhost, redirect_block, insert_at_top=True, is_block=True)
 
     def _split_block(self, vhost, only_directives=None):
         """Splits this "virtual host" (i.e. this nginx server block) into
@@ -766,12 +760,13 @@ class NginxConfigurator(common.Installer):
         :param `~obj.Vhost` vhost: vhost to enable redirect for
         """
 
+        og_vhost = vhost
         http_vhost = None
         if vhost.ssl:
             http_vhost, _ = self._split_block(vhost, ['listen', 'server_name'])
 
             # Add this at the bottom to get the right order of directives
-            return_404_directive = [['\n    ', 'return', ' ', '404']]
+            return_404_directive = [['return', '404']]
             self.parser.add_server_directives(http_vhost, return_404_directive)
 
             vhost = http_vhost
@@ -816,9 +811,9 @@ class NginxConfigurator(common.Installer):
                 "on nginx >= 1.3.7.")
 
         stapling_directives = [
-            ['\n    ', 'ssl_trusted_certificate', ' ', chain_path],
-            ['\n    ', 'ssl_stapling', ' ', 'on'],
-            ['\n    ', 'ssl_stapling_verify', ' ', 'on'], ['\n']]
+            ['ssl_trusted_certificate', chain_path],
+            ['ssl_stapling', 'on'],
+            ['ssl_stapling_verify', 'on']]
 
         try:
             self.parser.add_server_directives(vhost,
@@ -1057,7 +1052,7 @@ class NginxConfigurator(common.Installer):
 
 def _test_block_from_block(block):
     test_block = nginxparser.UnspacedList(block)
-    parser.comment_directive(test_block, 0)
+    # parser.comment_directive(test_block, 0)
     return test_block[:-1]
 
 
@@ -1069,11 +1064,8 @@ def _redirect_block_for_domain(domain):
         updated_domain = updated_domain.replace('.', r'\.')
         updated_domain = updated_domain.replace('*', '[^.]+')
         updated_domain = '^' + updated_domain + '$'
-    redirect_block = [[
-        ['\n    ', 'if', ' ', '($host', ' ', match_symbol, ' ', '%s)' % updated_domain, ' '],
-        [['\n        ', 'return', ' ', '301', ' ', 'https://$host$request_uri'],
-        '\n    ']],
-        ['\n']]
+    redirect_block = [['if', '($host', match_symbol, '%s)' % updated_domain], [
+        ['return', '301', 'https://$host$request_uri']]]
     return redirect_block
 
 

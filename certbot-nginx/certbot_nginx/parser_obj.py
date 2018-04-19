@@ -15,6 +15,7 @@ from certbot_nginx import obj
 logger = logging.getLogger(__name__)
 
 # TODO (sydli) : Flesh out docstrings
+REPEATABLE_DIRECTIVES = set(['server_name', 'listen', 'include', 'rewrite'])
 
 class ParseContext(object):
     """ Context information held by parsed objects. """
@@ -128,6 +129,11 @@ class Statements(WithLists):
             if match_func(elem):
                 yield elem
 
+    def get_thing_shallow(self, match_func):
+        for elem in self._data:
+            if match_func(elem):
+                yield elem
+
     def get_type(self, match_type, match_func=None):
         """ Retrieve objects of a particluar type """
         return self._get_thing(lambda elem: isinstance(elem, match_type) and  \
@@ -145,15 +151,14 @@ class Statements(WithLists):
         """ Retrieves any directive starting with |name|. Expands includes."""
         return self.get_type(Sentence, lambda sentence: sentence[0] == name)
 
-    def _get_directive_index(self, directive, match_func=None):
+    def _get_statement_index(self, match_func):
         """ Retrieves index of first occurrence of |directive| """
         for i, elem in enumerate(self._data):
-            if isinstance(elem, Sentence) and directive == elem[0] and \
-                (match_func is None or match_func(elem)):
+            if isinstance(elem, Sentence) and match_func(elem):
                 return i
         return -1
 
-    def contains_directive(self, statement):
+    def contains_exact_directive(self, statement):
         """ Returns true if |statement| is in this list of statements (+ expands includes)"""
         for elem in self.iterate_expanded():
             if isinstance(elem, Sentence) and elem.matches_list(statement):
@@ -163,20 +168,19 @@ class Statements(WithLists):
     def _create_contextual_sentence(self, statement):
         return Sentence.create_from_context(statement, self.child_context(), self.get_tabs())
 
-    def replace_directives(self, statements):
+    def _create_contextual_bloc(self, statement):
+        return Bloc.create_from_context(statement, self.child_context(), self.get_tabs())
+
+    def replace_statement(self, statement, match_func, insert_at_top=False):
         """ For each statement, checks to see if an exisitng directive of that name
         exists. If so, replace the first occurrence with the statement. Otherwise, just
         add it to this object. """
-        for statement in statements:
-            found = self._get_directive_index(statement[0])
-            if found < 0:
-                self._add_directive(statement)
-                continue
-            if statement[0] == '#':
-                del self._data[found]
-            else:
-                self._data[found] = certbot_comment(self.context)
-            self._data.insert(found, self._create_contextual_sentence(statement))
+        found = self._get_statement_index(match_func)
+        if found < 0:
+            self.add_statement(self._create_contextual_sentence(statement))
+            self.add_statement(certbot_comment(self.context))
+            return
+        self._data[found] = self._create_contextual_sentence(statement)
 
     def add_statement(self, statement, insert_at_top=False):
         """ Adds a Statement to the end of this block of statements. """
@@ -185,31 +189,15 @@ class Statements(WithLists):
         else:
             self._data.append(statement)
 
-    def _add_directive(self, statement, insert_at_top=False):
-        if self.contains_directive(statement):
-            return
-        self.add_statement(self._create_contextual_sentence(statement), insert_at_top)
-        if statement[0] != '#':
-            self.add_statement(certbot_comment(self.context))
-
-    def add_directives(self, statements, insert_at_top=False):
-        """ Add statements to this object. If the exact statement already exists,
-        don't add it.
-
-        doesn't expect spaces between elements in statements """
-        for statement in statements:
-            self._add_directive(statement, insert_at_top)
-
-    def remove_directives(self, directive, match_func=None):
-        """ Removes statements from this object.
-        TODO (sydli): ensure comment removal works.
-        doesn't expect spaces between elements in statements """
-        found = self._get_directive_index(directive, match_func)
+    def remove_statements(self, match_func):
+        """ Removes statements from this object."""
+        found = self._get_statement_index(match_func)
         while found >= 0:
             del self._data[found]
-            if '#' in self._data[found] and ' managed by Certbot' in self._data[found]:
+            if found < len(self._data) and '#' in self._data[found] and \
+                    ' managed by Certbot' in self._data[found]:
                 del self._data[found]
-            found = self._get_directive_index(directive, match_func)
+            found = self._get_statement_index(match_func)
 
     @staticmethod
     def load_from(context):
@@ -253,11 +241,7 @@ class Sentence(WithLists):
         """ Constructs an appropriately spaced statement from an unspaced one.
         no spaces in statement """
         result = Sentence(context)
-        spaced_statement = []
-        for i in reversed(xrange(len(statement))):
-            spaced_statement.insert(0, statement[i])
-            if i > 0 and not statement[i].isspace() and not statement[i-1].isspace():
-                spaced_statement.insert(0, ' ')
+        spaced_statement = _space_list(statement)
         spaced_statement.insert(0, "\n" + tabs)
         # if statement[0] != '#':
         result.parse(spaced_statement)
@@ -319,12 +303,36 @@ class Include(Sentence):
         """ Retrieves the filename that is being included. """
         return self.words[1]
 
+def _space_list(list_):
+    spaced_statement = []
+    for i in reversed(xrange(len(list_))):
+        spaced_statement.insert(0, list_[i])
+        if i > 0 and not list_[i].isspace() and not list_[i-1].isspace():
+            spaced_statement.insert(0, ' ')
+    return spaced_statement
+
 class Bloc(WithLists):
     """ Any sort of bloc, denoted by a block name and curly braces. """
     def __init__(self, context=None):
         super(Bloc, self).__init__(context)
         self.names = None
         self.contents = None
+
+    @staticmethod
+    def create_from_context(raw, context, tabs):
+        """ Constructs an appropriately spaced statement from an unspaced one.
+        no spaces in statement """
+        result = Bloc(context)
+        spaced_name = _space_list(raw[0])
+        spaced_name.insert(0, "\n" + tabs)
+        contents = []
+        for statement in raw[1]:
+            spaced_statement = _space_list(statement)
+            spaced_statement.insert(0, "\n" + tabs + '    ')
+            contents.append(spaced_statement)
+        contents.append('\n' + tabs)
+        result.parse([spaced_name, contents])
+        return result
 
     def parse(self, parse_this):
         """ Expects a list of two! """
@@ -339,62 +347,110 @@ class Bloc(WithLists):
     def get_tabs(self):
         return self.names.get_tabs()
 
+    def _add_directive(self, statement, insert_at_top=False, is_block=False):
+        if self.contents.contains_exact_directive(statement):
+            return
+        if not is_block and statement[0] not in REPEATABLE_DIRECTIVES and len(
+            list(self.contents.get_directives(statement[0]))) > 0:
+            raise errors.MisconfigurationError("Existing %s directive conflicts with %s", 
+                                               statement[0], statement)
+        if not is_block:
+            statement = self.contents._create_contextual_sentence(statement)
+            self.contents.add_statement(statement, insert_at_top)
+            if statement[0] != '#':
+                self.contents.add_statement(certbot_comment(self.child_context()))
+            return
+        statement = self.contents._create_contextual_bloc(statement)
+        self.contents.add_statement(statement, insert_at_top)
+
+    def add_directives(self, statements, insert_at_top=False, is_block=False):
+        """ Add statements to this object. If the exact statement already exists,
+        don't add it.
+
+        doesn't expect spaces between elements in statements """
+        if is_block:
+            self._add_directive(statements, insert_at_top, is_block)
+        else:
+            for statement in statements:
+                self._add_directive(statement, insert_at_top, is_block)
+
+    def replace_directives(self, statements, insert_at_top=False):
+        for statement in statements:
+            self.contents.replace_statement(statement, lambda x: x[0] == statement[0], insert_at_top)
+
+    def remove_directives(self, directive, match_func=None):
+        """ Removes statements from this object."""
+        self.contents.remove_statements(lambda x: x[0] == directive and \
+            (match_func is None or match_func(x)))
+
+
+    def duplicate(self, only_directives=None, remove_singleton_listen_params=False):
+        """ Duplicates iteslf into another sibling server block. """
+        # pylint: disable=protected-access
+        dup_bloc = copy.deepcopy(self)
+        if only_directives is not None:
+            dup_bloc.contents.remove_statements(lambda x: x[0] not in only_directives)
+            # dup_bloc._data[1]._data = list(dup_contents)
+        if remove_singleton_listen_params:
+            for directive in dup_bloc.contents.get_directives('listen'):
+                for word in ['default_server', 'default', 'ipv6only=on']:
+                    if word in directive.words:
+                        directive._data.remove(word)
+        self.context.parent.add_statement(dup_bloc)
+        dup_bloc.context.parent = self.context.parent
+        dup_bloc._update_vhost()
+        return dup_bloc
+
+
 class ServerBloc(Bloc):
     """ This bloc should parallel a vhost! """
+
+    # HOOKS = {
+    #     'listen': _update_addrs,
+    #     'server_name': self._update_names,
+    #     'ssl': self._update_ssl,
+    # }
+
     def __init__(self, context=None):
         super(ServerBloc, self).__init__(context)
         self.addrs = set()
         self.ssl = False
         self.server_names = set()
+        self.vhost = None
 
-    def parse(self, parse_this):
-        super(ServerBloc, self).parse(parse_this)
-        self._process()
-
-    def _process(self):
-        # TODO (sydli): use apply_ssl_to_all_addrs
+    def _update_vhost(self):
         self.addrs = set()
         self.ssl = False
         self.server_names = set()
-        # apply_ssl_to_all_addrs = False
         for listen in self.contents.get_directives('listen'):
             addr = obj.Addr.fromstring(" ".join(listen[1:]))
             if addr:
                 self.addrs.add(addr)
                 if addr.ssl:
                     self.ssl = True
-
         for name in self.contents.get_directives('server_name'):
             self.server_names.update(name[1:])
-
         for ssl in self.contents.get_directives('ssl'):
             if ssl.words[1] == 'on':
                 self.ssl = True
-                # apply_ssl_to_all_addrs = True
 
-    def as_vhost(self, filename):
-        """ Transform this object into a parallel vhost object
-        We might be able to consolidate the two, instead of maintaining separate
-        data structures.
-        """
-        enabled = True  # We only look at enabled vhosts for now
-        self._process()
-        # "raw" and "path" aren't set.
-        return obj.VirtualHost(filename, self.addrs, self.ssl, enabled,
-                               self.server_names, self, None)
+        self.vhost.addrs = self.addrs
+        self.vhost.names = self.server_names
+        self.vhost.ssl = self.ssl
+        self.vhost.raw = self
+    def add_directives(self, statements, insert_at_top=False, is_block=False):
+        super(ServerBloc, self).add_directives(statements, insert_at_top, is_block)
+        self._update_vhost()
+    def replace_directives(self, statements, insert_at_top=False):
+        super(ServerBloc, self).replace_directives(statements, insert_at_top)
+        self._update_vhost()
+    def remove_directives(self, directive, match_func=None):
+        super(ServerBloc, self).remove_directives(directive, match_func)
+        self._update_vhost()
 
-    def duplicate(self, only_directives=None, delete_default=False):
-        """ Duplicates iteslf into another sibling server block. """
-        # pylint: disable=protected-access
-        dup_bloc = copy.deepcopy(self)
-        if only_directives is not None:
-            dup_contents = dup_bloc.contents.get_type(Sentence,
-                lambda directive: directive[0] in only_directives)
-            dup_bloc._data[1] = dup_contents
-        if delete_default:
-            for directive in dup_bloc.contents.get_directives('listen'):
-                if 'default_server' in directive:
-                    del directive._data[directive._data.index('default_server')]
-        self.context.parent.add_statement(dup_bloc)
-        return dup_bloc
+    def parse(self, parse_this):
+        super(ServerBloc, self).parse(parse_this)
+        self.vhost = obj.VirtualHost(self.context.filename if self.context is not None else "",
+            self.addrs, self.ssl, True, self.server_names, self, None)
+        self._update_vhost()
 

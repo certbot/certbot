@@ -14,6 +14,11 @@ logger = logging.getLogger(__name__)
 
 # TODO (sydli): Shouldn't be throwing Misconfiguration errors everywhere. Is there a parsing error?
 
+INCLUDE = 'include'
+REPEATABLE_DIRECTIVES = set(['server_name', 'listen', INCLUDE, 'rewrite'])
+COMMENT = ' managed by Certbot'
+COMMENT_BLOCK = ['#', COMMENT]
+
 class FancyParser(object):
     """ Fancy nginx parser that tries to transform it into an AST of sorts.
     """
@@ -42,7 +47,6 @@ class FancyParser(object):
 
     def load(self):
         """Loads Nginx files into a parsed tree.
-
         """
         self.parsed_root = parser_obj.Statements.load_from(
                                parser_obj.ParseContext(self.root, self.config_root))
@@ -107,7 +111,7 @@ class FancyParser(object):
         vhosts = []
         blocs = self.parsed_root.get_thing_recursive(lambda x: isinstance(x, parser_obj.ServerBloc))
         for server_bloc in blocs:
-            vhosts.append(server_bloc.as_vhost(server_bloc.context.filename))
+            vhosts.append(server_bloc.vhost)
         self._update_vhosts_addrs_global_ssl(vhosts)
         return vhosts
 
@@ -148,15 +152,13 @@ class FancyParser(object):
                 return True
         return False
 
-    def add_server_directives(self, vhost, directives, replace, insert_at_top=False):
-        """Add or replace directives in the server block identified by vhost.
+    def add_server_directives(self, vhost, directives, insert_at_top=False, is_block=False):
+        """Add directives to the server block identified by vhost.
 
         This method modifies vhost to be fully consistent with the new directives.
 
-        ..note :: If replace is True and the directive already exists, the first
-        instance will be replaced. Otherwise, the directive is added.
-        ..note :: If replace is False nothing gets added if an identical
-        block exists already.
+        ..note :: It's an error to try and add a nonrepeatable directive that already
+            exists in the config block with a conflicting value.
 
         ..todo :: Doesn't match server blocks whose server_name directives are
             split across multiple conf files.
@@ -164,16 +166,32 @@ class FancyParser(object):
         :param :class:`~certbot_nginx.obj.VirtualHost` vhost: The vhost
             whose information we use to match on
         :param list directives: The directives to add
-        :param bool replace: Whether to only replace existing directives
         :param bool insert_at_top: True if the directives need to be inserted at the top
             of the server block instead of the bottom
 
-        TODO(sydli): test for insert_at_top
         """
-        if not replace:
-            vhost.raw.contents.add_directives(directives, insert_at_top)
-        else:
-            vhost.raw.contents.replace_directives(directives)
+        vhost.raw.add_directives(directives, insert_at_top, is_block)
+
+    def update_or_add_server_directives(self, vhost, directives, insert_at_top=False):
+        """Add or replace directives in the server block identified by vhost.
+
+        This method modifies vhost to be fully consistent with the new directives.
+
+        ..note :: When a directive with the same name already exists in the
+        config block, the first instance will be replaced. Otherwise, the directive
+        will be appended/prepended to the config block as in add_server_directives.
+
+        ..todo :: Doesn't match server blocks whose server_name directives are
+            split across multiple conf files.
+
+        :param :class:`~certbot_nginx.obj.VirtualHost` vhost: The vhost
+            whose information we use to match on
+        :param list directives: The directives to add
+        :param bool insert_at_top: True if the directives need to be inserted at the top
+            of the server block instead of the bottom
+
+        """
+        vhost.raw.replace_directives(directives, insert_at_top)
 
     def remove_server_directives(self, vhost, directive_name, match_func=None):
         """Remove all directives of type directive_name.
@@ -184,15 +202,16 @@ class FancyParser(object):
         :param callable match_func: Function of the directive that returns true for directives
             to be deleted.
         """
-        vhost.raw.contents.remove_directives(directive_name, match_func)
+        vhost.raw.remove_directives(directive_name, match_func)
 
-    def duplicate_vhost(self, vhost_template, delete_default=False, only_directives=None):
+    def duplicate_vhost(self, vhost_template, remove_singleton_listen_params=False,
+        only_directives=None):
         """Duplicate the vhost in the configuration files.
 
         :param :class:`~certbot_nginx.obj.VirtualHost` vhost_template: The vhost
             whose information we copy
-        :param bool delete_default: If we should remove default_server
-            from listen directives in the block.
+        :param bool remove_singleton_listen_params: If we should remove parameters
+            from listen directives in the block that can only be used once per address
         :param list only_directives: If it exists, only duplicate the named directives. Only
             looks at first level of depth; does not expand includes.
 
@@ -201,10 +220,10 @@ class FancyParser(object):
         """
         # TODO: https://github.com/certbot/certbot/issues/5185
         # put it in the same file as the template, at the same level
-        dup_server_bloc = vhost_template.raw.duplicate(only_directives, delete_default)
-        return dup_server_bloc.as_vhost(vhost_template.filep)
+        dup_server_bloc = vhost_template.raw.duplicate(only_directives, remove_singleton_listen_params)
+        return dup_server_bloc.vhost
 
-class FancyNginxParser(FancyParser):
+class NginxParser(FancyParser):
     """Class handles the fine details of parsing the Nginx Configuration.
 
     :ivar str root: Normalized absolute path to the server root
@@ -213,7 +232,7 @@ class FancyNginxParser(FancyParser):
 
     """
     def __init__(self, root_dir, root_file="nginx.conf"):
-        super(FancyNginxParser, self).__init__(root_dir, root_file)
+        super(NginxParser, self).__init__(root_dir, root_file)
 
 def get_best_match(target_name, names):
     """Finds the best match for target_name out of names using the Nginx

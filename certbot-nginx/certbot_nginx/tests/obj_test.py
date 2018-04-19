@@ -111,13 +111,15 @@ class VirtualHostTest(unittest.TestCase):
     def setUp(self):
         from certbot_nginx.obj import VirtualHost
         from certbot_nginx.obj import Addr
-        raw1 = [
+        from certbot_nginx import parser_obj
+        raw1 = parser_obj.ServerBloc(None)
+        raw1.parse([['server'], [
             ['listen', '69.50.225.155:9000'],
             [['if', '($scheme', '!=', '"https") '],
                 [['return', '301', 'https://$host$request_uri']]
             ],
             ['#', ' managed by Certbot']
-        ]
+        ]])
         self.vhost1 = VirtualHost(
             "filep",
             set([Addr.fromstring("localhost")]), False, False,
@@ -148,11 +150,12 @@ class VirtualHostTest(unittest.TestCase):
             "filp",
             set([Addr.fromstring("localhost")]), False, False,
             set(['localhost']), raw4, [])
-        raw_has_hsts = [
+        raw_has_hsts = parser_obj.ServerBloc(None)
+        raw_has_hsts.parse([['server'], [
             ['listen', '69.50.225.155:9000'],
             ['server_name', 'return.com'],
             ['add_header', 'always', 'set', 'Strict-Transport-Security', '\"max-age=31536000\"'],
-        ]
+        ]])
         self.vhost_has_hsts = VirtualHost(
             "filep",
             set([Addr.fromstring("localhost")]), False, False,
