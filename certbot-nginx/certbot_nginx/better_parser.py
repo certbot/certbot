@@ -107,8 +107,8 @@ class FancyParser(object):
         vhosts = []
         blocs = self.parsed_root.get_thing_recursive(lambda x: isinstance(x, parser_obj.ServerBloc))
         for server_bloc in blocs:
-            vhosts.append(server_bloc.as_vhost(server_bloc.filename))
-        self._update_vhosts_addrs_ssl(vhosts)
+            vhosts.append(server_bloc.as_vhost(server_bloc.context.filename))
+        self._update_vhosts_addrs_global_ssl(vhosts)
         return vhosts
 
     def _build_global_addr_to_ssl(self):
@@ -124,7 +124,7 @@ class FancyParser(object):
                 addr_to_ssl[addr_tuple] = addr.ssl or addr_to_ssl[addr_tuple]
         return addr_to_ssl
 
-    def _update_vhosts_addrs_ssl(self, vhosts):
+    def _update_vhosts_addrs_global_ssl(self, vhosts):
         """Update a list of raw parsed vhosts to include global address sslishness
         """
         addr_to_ssl = self._build_global_addr_to_ssl()
@@ -171,9 +171,9 @@ class FancyParser(object):
         TODO(sydli): test for insert_at_top
         """
         if not replace:
-            vhost.raw.contents.add_statements(directives, insert_at_top)
+            vhost.raw.contents.add_directives(directives, insert_at_top)
         else:
-            vhost.raw.contents.replace_statements(directives)
+            vhost.raw.contents.replace_directives(directives)
 
     def remove_server_directives(self, vhost, directive_name, match_func=None):
         """Remove all directives of type directive_name.
@@ -184,7 +184,7 @@ class FancyParser(object):
         :param callable match_func: Function of the directive that returns true for directives
             to be deleted.
         """
-        vhost.raw.contents.remove_statements(directive_name, match_func)
+        vhost.raw.contents.remove_directives(directive_name, match_func)
 
     def duplicate_vhost(self, vhost_template, delete_default=False, only_directives=None):
         """Duplicate the vhost in the configuration files.

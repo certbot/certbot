@@ -23,16 +23,16 @@ class ParseContext(object):
         self.filename = filename
         self.parent = parent
 
-class Parsable(object):
+class WithLists(object):
     """ Abstract base class for "Parsable" objects whose underlying representation
-    is stored in data. """
+    is a tree of lists. """
 
     __metaclass__ = abc.ABCMeta
 
     def __init__(self, context):
-        self.data = []
+        self._data = []
         self._tabs = None
-        self._context = context
+        self.context = context
 
     @abc.abstractmethod
     def parse(self, raw_list):
@@ -41,28 +41,15 @@ class Parsable(object):
         raw_list. """
         raise NotImplementedError()
 
-    @property
-    def parent(self):
-        """ The object containing this one. If None, thne this object is the root.
-        """
-        return self._context.parent
-
-    @property
-    def filename(self):
-        """ The file that contains this object definition.
-        """
-        return self._context.filename
-
     def child_context(self, filename=None):
         """ Spans a child context (with this object as the parent)
         """
-        if self._context is None:
+        if self.context is None:
             return None
         if filename is None:
-            filename = self._context.filename
-        return ParseContext(self._context.cwd, filename, self)
+            filename = self.context.filename
+        return ParseContext(self.context.cwd, filename, self)
 
-    @abc.abstractmethod
     def get_tabs(self):
         """ Guess at the number of preceding whitespaces """
         if self._tabs is None:
@@ -72,12 +59,12 @@ class Parsable(object):
     def get_data(self, include_spaces=False):
         """ Retrieves readable underlying representaiton. setting include_spaces
         to False is equivalent to the old UnspacedList object. """
-        return [elem.get_data(include_spaces) for elem in self.data]
+        return [elem.get_data(include_spaces) for elem in self._data]
 
-class Statements(Parsable):
+class Statements(WithLists):
     """ A group or list of "Statements". A Statement is either a Block or a Directive.
     """
-    def __init__(self, context=None);
+    def __init__(self, context=None):
         super(Statements, self).__init__(context)
         self._trailing_whitespace = None
 
@@ -106,13 +93,13 @@ class Statements(Parsable):
         if len(parse_this) > 0 and isinstance(parse_this[-1], str) and parse_this[-1].isspace():
             self._trailing_whitespace = parse_this[-1]
             parse_this = parse_this[:-1]
-        self.data = [self._parse_elem(elem) for elem in parse_this]
+        self._data = [self._parse_elem(elem) for elem in parse_this]
 
     def get_tabs(self):
         """ Takes a guess at the tabbing of all contained Statements-- by retrieving the
         tabbing of the first Statement."""
-        if len(self.data) > 0:
-            return self.data[0].get_tabs()
+        if len(self._data) > 0:
+            return self._data[0].get_tabs()
         return ''
 
     def get_data(self, include_spaces=False):
@@ -124,7 +111,7 @@ class Statements(Parsable):
 
     def iterate_expanded(self):
         """ Generator for Statements-- and expands includes automatically.  """
-        for elem in self.data:
+        for elem in self._data:
             if isinstance(elem, Include):
                 for parsed in elem.parsed.values():
                     for sub_elem in parsed.iterate_expanded():
@@ -153,55 +140,67 @@ class Statements(Parsable):
 
     def _get_directive_index(self, directive, match_func=None):
         """ Retrieves index of first occurrence of |directive| """
-        for i, elem in enumerate(self.data):
+        for i, elem in enumerate(self._data):
             if isinstance(elem, Sentence) and directive == elem[0] and \
                 (match_func is None or match_func(elem)):
                 return i
         return -1
 
-    def contains_statement(self, statement):
+    def contains_directive(self, statement):
         """ Returns true if |statement| is in this list of statements (+ expands includes)"""
         for elem in self.iterate_expanded():
             if isinstance(elem, Sentence) and elem.matches_list(statement):
                 return True
         return False
 
-    def replace_statements(self, statements):
+    def _create_contextual_sentence(self, statement):
+        return Sentence.create_from_context(statement, self.child_context(), self.get_tabs())
+
+    def replace_directives(self, statements):
         """ For each statement, checks to see if an exisitng directive of that name
         exists. If so, replace the first occurrence with the statement. Otherwise, just
         add it to this object. """
         for statement in statements:
             found = self._get_directive_index(statement[0])
             if found < 0:
-                self._add_statement(statement)
+                self._add_directive(statement)
                 continue
-            self.data[found] = Sentence.create_from(statement,
-                self.child_context(), self.get_tabs())
+            if statement[0] == '#':
+                del self._data[found]
+            else:
+                self._data[found] = certbot_comment(self.context)
+            self._data.insert(found, self._create_contextual_sentence(statement))
 
-    def _add_statement(self, statement, insert_at_top=False):
-        if self.contains_statement(statement):
-            return
-        sentence = Sentence.create_from(statement, self.child_context(), self.get_tabs())
+    def add_statement(self, statement, insert_at_top=False):
         if insert_at_top:
-            self.data.insert(0, sentence)
+            self._data.insert(0, statement)
         else:
-            self.data.append(sentence)
+            self._data.append(statement)
 
-    def add_statements(self, statements, insert_at_top=False):
+    def _add_directive(self, statement, insert_at_top=False):
+        if self.contains_directive(statement):
+            return
+        self.add_statement(self._create_contextual_sentence(statement))
+        if statement[0] != '#':
+            self.add_statement(certbot_comment(self.context))
+
+    def add_directives(self, statements, insert_at_top=False):
         """ Add statements to this object. If the exact statement already exists,
         don't add it.
 
         doesn't expect spaces between elements in statements """
         for statement in statements:
-            self._add_statement(statement, insert_at_top)
+            self._add_directive(statement, insert_at_top)
 
-    def remove_statements(self, directive, match_func=None):
+    def remove_directives(self, directive, match_func=None):
         """ Removes statements from this object.
         TODO (sydli): ensure comment removal works.
         doesn't expect spaces between elements in statements """
         found = self._get_directive_index(directive, match_func)
         while found >= 0:
-            del self.data[found]
+            del self._data[found]
+            if '#' in self._data[found] and ' managed by Certbot' in self._data[found]:
+                del self._data[found]
             found = self._get_directive_index(directive, match_func)
 
     @staticmethod
@@ -218,9 +217,11 @@ class Statements(Parsable):
         statements.parse(raw_parsed)
         return statements
 
-def certbot_comment(preceding_spaces=1):
+def certbot_comment(context, preceding_spaces=4):
     """ A "Managed by Certbot" comment :) """
-    return [' ' * preceding_spaces, '#', ' managed by Certbot']
+    result = Sentence(context)
+    result.parse([' ' * preceding_spaces, '#', ' managed by Certbot'])
+    return result
 
 def spaces_after_newline(word):
     """ Retrieves number of spaces after final newline in word."""
@@ -229,28 +230,27 @@ def spaces_after_newline(word):
     rindex = word.rfind('\n') # TODO: check \r
     return word[rindex+1:]
 
-class Sentence(Parsable):
+class Sentence(WithLists):
     """ A list of words. Non-whitespace words are  typically separated with some
     amount of whitespace. """
     def parse(self, parse_this):
         """ Expects a list of strings.  """
         if not isinstance(parse_this, list):
             raise errors.MisconfigurationError("Sentence parsing expects a list!")
-        self.data = parse_this
+        self._data = parse_this
 
     @staticmethod
-    def create_from(statement, context, tabs):
+    def create_from_context(statement, context, tabs):
         """ Constructs an appropriately spaced statement from an unspaced one.
         no spaces in statement """
+        result = Sentence(context)
         spaced_statement = []
         for i in reversed(xrange(len(statement))):
             spaced_statement.insert(0, statement[i])
             if i > 0 and not statement[i].isspace() and not statement[i-1].isspace():
                 spaced_statement.insert(0, ' ')
-        spaced_statement.insert(0, tabs)
-        if statement[0] != '#':
-            spaced_statement += certbot_comment()
-        result = Sentence(context)
+        spaced_statement.insert(0, "\n" + tabs)
+        # if statement[0] != '#':
         result.parse(spaced_statement)
         return result
 
@@ -265,7 +265,7 @@ class Sentence(Parsable):
         """ Iterates over words, but without spaces. Like Unspaced List. """
         def _isnt_space(x):
             return not x.isspace()
-        return filter(_isnt_space, self.data)
+        return filter(_isnt_space, self._data)
 
     def matches_list(self, list_):
         """ Checks to see whether this object matches an unspaced list. """
@@ -283,11 +283,11 @@ class Sentence(Parsable):
         """ TODO """
         if not include_spaces:
             return self.words
-        return self.data
+        return self._data
 
     def get_tabs(self):
         """ TODO """
-        return spaces_after_newline(self.data[0])
+        return spaces_after_newline(self._data[0])
 
 class Include(Sentence):
     """ An include statement. """
@@ -299,7 +299,7 @@ class Include(Sentence):
         """ Parsing an include touches disk-- this will fetch the associated
         files and actually parse them all! """
         super(Include, self).parse(parse_this)
-        files = glob.glob(os.path.join(self._context.cwd, self.filename))
+        files = glob.glob(os.path.join(self.context.cwd, self.filename))
         self.parsed = {}
         for f in files:
             self.parsed[f] = Statements.load_from(self.child_context(f))
@@ -308,7 +308,7 @@ class Include(Sentence):
     def filename(self):
         return self.words[1]
 
-class Bloc(Parsable):
+class Bloc(WithLists):
     """ Any sort of bloc, denoted by a block name and curly braces. """
     def __init__(self, context=None):
         super(Bloc, self).__init__(context)
@@ -323,7 +323,7 @@ class Bloc(Parsable):
         self.names.parse(parse_this[0])
         self.contents = Statements(self.child_context())
         self.contents.parse(parse_this[1])
-        self.data = [self.names, self.contents]
+        self._data = [self.names, self.contents]
 
     def get_tabs(self):
         return self.names.get_tabs()
@@ -378,11 +378,11 @@ class ServerBloc(Bloc):
         if only_directives is not None:
             dup_contents = dup_bloc.contents.get_type(Sentence,
                 lambda directive: directive[0] in only_directives)
-            dup_bloc.data[1] = dup_contents
+            dup_bloc._data[1] = dup_contents
         if delete_default:
             for directive in dup_bloc.contents.get_directives('listen'):
                 if 'default_server' in directive:
-                    del directive.data[directive.data.index('default_server')]
-        self.parent.data.append(dup_bloc)
+                    del directive._data[directive._data.index('default_server')]
+        self.context.parent.add_statement(dup_bloc)
         return dup_bloc
 
