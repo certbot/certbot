@@ -102,6 +102,7 @@ class RawNginxDumper(object):
 # (like pyyaml, picker or json)
 
 def loads_raw(source):
+    """ Parses from a string into a raw spaced list """
     return RawNginxParser(source).as_list()
 
 def loads(source):
@@ -115,6 +116,7 @@ def loads(source):
     return UnspacedList(loads_raw(source))
 
 def load_raw(_file):
+    """ Parses raw from a file. """
     return loads_raw(_file.read())
 
 def load(_file):
@@ -128,6 +130,7 @@ def load(_file):
     return loads(_file.read())
 
 def dumps_raw(blocks):
+    """ Dumps from a raw spaced parsed tree into a string """
     return str(RawNginxDumper(blocks))
 
 def dumps(blocks):
