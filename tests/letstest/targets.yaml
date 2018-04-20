@@ -1,16 +1,6 @@
 targets:
   #-----------------------------------------------------------------------------
   #Ubuntu
-  - ami: ami-26d5af4c
-    name: ubuntu15.10
-    type: ubuntu
-    virt: hvm
-    user: ubuntu
-  - ami: ami-d92e6bb3
-    name: ubuntu15.04LTS
-    type: ubuntu
-    virt: hvm
-    user: ubuntu
   - ami: ami-7b89cc11
     name: ubuntu14.04LTS
     type: ubuntu
@@ -20,11 +10,6 @@ targets:
     name: ubuntu14.04LTS_32bit
     type: ubuntu
     virt: pv
-    user: ubuntu
-  - ami: ami-0611546c
-    name: ubuntu12.04LTS
-    type: ubuntu
-    virt: hvm
     user: ubuntu
   #-----------------------------------------------------------------------------
   # Debian
