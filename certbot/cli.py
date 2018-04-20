@@ -482,11 +482,12 @@ class HelpfulArgumentParser(object):
             self.args[0] = '--help'
 
         self.determine_verb()
-        help1 = self.prescan_for_flag("-h", self.help_topics)
-        help2 = self.prescan_for_flag("--help", self.help_topics)
+        help1 = self.find_help_topic("-h", self.help_topics)
+        help2 = self.find_help_topic("--help", self.help_topics)
         if isinstance(help1, bool) and isinstance(help2, bool):
             self.help_arg = help1 or help2
         else:
+            #when is this even possible?
             self.help_arg = help1 if isinstance(help1, six.string_types) else help2
 
         short_usage = self._usage_string(plugins, self.help_arg)
@@ -696,15 +697,15 @@ class HelpfulArgumentParser(object):
 
         self.verb = "run"
 
-    def prescan_for_flag(self, flag, possible_arguments):
+    def find_help_topic(self, flag, possible_arguments):
         """Checks cli input for flags.
 
-        Check for a flag, which accepts a fixed set of possible arguments, in
-        the command line; we will use this information to configure argparse's
-        help correctly.  Return the flag's argument, if it has one that matches
-        the sequence @possible_arguments; otherwise return whether the flag is
-        present.
+        Find the help topic from the commandline. This may be either a
+        subcommand preceding the '-h'/'--help' flag, or an argument to the
+        help flag.
 
+        Help topics must be one of @possible_arguments. To match the subcommand
+        variant it must also be a VERB.
         """
         if flag not in self.args:
             return False
@@ -714,7 +715,11 @@ class HelpfulArgumentParser(object):
             if nxt in possible_arguments:
                 return nxt
         except IndexError:
-            pass
+            # this was not the '--help topic' variant,
+            # check for 'subcommand [options] --help'
+            for sub in self.VERBS.keys():
+                if sub in self.args[:pos] and sub in possible_arguments:
+                    return sub
         return True
 
     def add(self, topics, *args, **kwargs):
@@ -824,7 +829,7 @@ class HelpfulArgumentParser(object):
         """
 
         The user may have requested help on a topic, return a dict of which
-        topics to display. @chosen_topic has prescan_for_flag's return type
+        topics to display. @chosen_topic has find_help_topic's return type
 
         :returns: dict
 
