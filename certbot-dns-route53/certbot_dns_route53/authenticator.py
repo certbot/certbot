@@ -7,7 +7,6 @@ from certbot import interfaces
 from certbot_dns_route53 import dns_route53
 
 
-# pylint: disable=abstract-method
 @zope.interface.implementer(interfaces.IAuthenticator)
 @zope.interface.provider(interfaces.IPluginFactory)
 class Authenticator(dns_route53.Authenticator):
