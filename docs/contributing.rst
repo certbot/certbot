@@ -63,7 +63,7 @@ Find issues to work on
 ----------------------
 
 You can find the open issues in the `github issue tracker`_.  Comparatively
-easy ones are marked `Good Volunteer Task`_.  If you're starting work on
+easy ones are marked `good first issue`_.  If you're starting work on
 something, post a comment to let others know and seek feedback on your plan
 where appropriate.
 
@@ -72,7 +72,7 @@ your pull request must have thorough unit test coverage, pass our
 tests, and be compliant with the :ref:`coding style <coding-style>`.
 
 .. _github issue tracker: https://github.com/certbot/certbot/issues
-.. _Good Volunteer Task: https://github.com/certbot/certbot/issues?q=is%3Aopen+is%3Aissue+label%3A%22Good+Volunteer+Task%22
+.. _good first issue: https://github.com/certbot/certbot/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22
 
 .. _testing:
 
