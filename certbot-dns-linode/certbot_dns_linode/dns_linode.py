@@ -29,7 +29,7 @@ class Authenticator(dns_common.DNSAuthenticator):
 
     @classmethod
     def add_parser_arguments(cls, add):  # pylint: disable=arguments-differ
-        super(Authenticator, cls).add_parser_arguments(add, default_propagation_seconds=930)
+        super(Authenticator, cls).add_parser_arguments(add, default_propagation_seconds=960)
         add('credentials', help='Linode credentials INI file.')
 
     def more_info(self):  # pylint: disable=missing-docstring,no-self-use
