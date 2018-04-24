@@ -8,9 +8,9 @@ Named Arguments
 ---------------
 
 ==========================================  ===================================
-``--dns-linode-credentials``          Linode credentials_ INI file.
+``--dns-linode-credentials``                Linode credentials_ INI file.
                                             (Required)
-``--dns-linode-propagation-seconds``  The number of seconds to wait for
+``--dns-linode-propagation-seconds``        The number of seconds to wait for
                                             DNS to propagate before asking the
                                             ACME server to verify the DNS
                                             record.
@@ -30,11 +30,11 @@ Tokens page <https://cloud.linode.com/settings/api/tokens>`_.
    :caption: Example credentials file:
 
    # Linode API credentials used by Certbot
-   dns_linode_key = 0000111122223333444455556666777788889999aaaabbbbccccddddeeeeffff
+   dns_linode_key = 0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ64
 
 The path to this file can be provided interactively or using the
-``--dns-linode-credentials`` command-line argument. Certbot records the
-path to this file for use during renewal, but does not store the file's contents.
+``--dns-linode-credentials`` command-line argument. Certbot records the path
+to this file for use during renewal, but does not store the file's contents.
 
 .. caution::
    You should protect these API credentials as you would the password to your

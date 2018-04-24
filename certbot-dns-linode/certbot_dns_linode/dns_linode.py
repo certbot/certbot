@@ -11,6 +11,8 @@ from certbot.plugins import dns_common_lexicon
 
 logger = logging.getLogger(__name__)
 
+API_KEY_URL = 'https://manager.linode.com/profile/api'
+
 @zope.interface.implementer(interfaces.IAuthenticator)
 @zope.interface.provider(interfaces.IPluginFactory)
 class Authenticator(dns_common.DNSAuthenticator):
@@ -39,7 +41,7 @@ class Authenticator(dns_common.DNSAuthenticator):
             'credentials',
             'Linode credentials INI file',
             {
-                'key': 'API key for Linode account'
+                'key': 'API key for Linode account, obtained from {0}'.format(API_KEY_URL)
             }
         )
 
