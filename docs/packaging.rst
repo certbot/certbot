@@ -17,6 +17,7 @@ We release packages and upload them to PyPI (wheels and source tarballs).
 - https://pypi.python.org/pypi/certbot-dns-dnsimple
 - https://pypi.python.org/pypi/certbot-dns-dnsmadeeasy
 - https://pypi.python.org/pypi/certbot-dns-google
+- https://pypi.python.org/pypi/certbot-dns-linode
 - https://pypi.python.org/pypi/certbot-dns-luadns
 - https://pypi.python.org/pypi/certbot-dns-nsone
 - https://pypi.python.org/pypi/certbot-dns-rfc2136
@@ -63,6 +64,7 @@ From our official releases:
 - https://www.archlinux.org/packages/community/any/certbot-dns-dnsimple
 - https://www.archlinux.org/packages/community/any/certbot-dns-dnsmadeeasy
 - https://www.archlinux.org/packages/community/any/certbot-dns-google
+- https://www.archlinux.org/packages/community/any/certbot-dns-linode
 - https://www.archlinux.org/packages/community/any/certbot-dns-luadns
 - https://www.archlinux.org/packages/community/any/certbot-dns-nsone
 - https://www.archlinux.org/packages/community/any/certbot-dns-rfc2136

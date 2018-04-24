@@ -203,6 +203,7 @@ Once installed, you can find documentation on how to use each plugin at:
 * `certbot-dns-dnsimple <https://certbot-dns-dnsimple.readthedocs.io>`_
 * `certbot-dns-dnsmadeeasy <https://certbot-dns-dnsmadeeasy.readthedocs.io>`_
 * `certbot-dns-google <https://certbot-dns-google.readthedocs.io>`_
+* `certbot-dns-linode <https://certbot-dns-linode.readthedocs.io>`_
 * `certbot-dns-luadns <https://certbot-dns-luadns.readthedocs.io>`_
 * `certbot-dns-nsone <https://certbot-dns-nsone.readthedocs.io>`_
 * `certbot-dns-rfc2136 <https://certbot-dns-rfc2136.readthedocs.io>`_
