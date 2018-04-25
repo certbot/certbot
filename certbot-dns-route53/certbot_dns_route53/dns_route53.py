@@ -42,7 +42,7 @@ class Authenticator(dns_common.DNSAuthenticator):
     def _setup_credentials(self):
         pass
 
-    def _perform(self, achalls): # pylint: disable=missing-docstring
+    def _perform(self, domain, validation_domain_name, validation): # pylint: disable=missing-docstring
         pass
 
     def perform(self, achalls):
