@@ -31,7 +31,7 @@ if [ -z "$VENV_PATH" ]; then
 fi
 VENV_BIN="$VENV_PATH/bin"
 BOOTSTRAP_VERSION_PATH="$VENV_PATH/certbot-auto-bootstrap-version.txt"
-LE_AUTO_VERSION="0.22.0.dev0"
+LE_AUTO_VERSION="0.24.0.dev0"
 BASENAME=$(basename $0)
 USAGE="Usage: $BASENAME [OPTIONS]
 A self-updating wrapper script for the Certbot ACME client. When run, updates
@@ -1089,7 +1089,7 @@ cryptography==2.0.2 \
     --hash=sha256:01e6e60654df64cca53733cda39446d67100c819c181d403afb120e0d2a71e1b \
     --hash=sha256:d46f4e5d455cb5563685c52ef212696f0a6cc1ea627603218eabbd8a095291d8 \
     --hash=sha256:3780b2663ee7ebb37cb83263326e3cd7f8b2ea439c448539d4b87de12c8d06ab
-enum34==1.1.2 \
+enum34==1.1.2 ; python_version < '3.4' \
     --hash=sha256:2475d7fcddf5951e92ff546972758802de5260bf409319a9f1934e6bbc8b1dc7 \
     --hash=sha256:35907defb0f992b75ab7788f65fedc1cf20ffa22688e0e6f6f12afc06b3ea501
 funcsigs==1.0.2 \
@@ -1199,18 +1199,18 @@ letsencrypt==0.7.0 \
     --hash=sha256:105a5fb107e45bcd0722eb89696986dcf5f08a86a321d6aef25a0c7c63375ade \
     --hash=sha256:c36e532c486a7e92155ee09da54b436a3c420813ec1c590b98f635d924720de9
 
-certbot==0.21.1 \
-    --hash=sha256:08f026078807fbcfd7bfab44c4d827ee287738fefcc86fbe1493ce752d2fdccb \
-    --hash=sha256:e6c8e9b0b5e38834330831d5a91e1c08accdb9b4923855d14d524e7327e6c4ea
-acme==0.21.1 \
-    --hash=sha256:4b2b5ef80c755dfa30eb5c67ab4b4e66e7f205ad922b43170502c5f8d8ef1242 \
-    --hash=sha256:296e8abf4f5a69af1a892416faceea90e15f39e2920bf87beeaad1d6ce70a60b
-certbot-apache==0.21.1 \
-    --hash=sha256:faa4af1033564a0e676d16940775593fb849527b494a15f6a816ad0ed4fa273c \
-    --hash=sha256:0bce4419d4fdabbdda2223cff8db6794c5717632fb9511b00498ec00982a3fa5
-certbot-nginx==0.21.1 \
-    --hash=sha256:3fad3b4722544558ce03132f853e18da5e516013086aaa40f1036aa6667c70a9 \
-    --hash=sha256:55a32afe0950ff49d3118f93035463a46c85c2f399d261123f5fe973afdd4f64
+certbot==0.23.0 \
+    --hash=sha256:66c42cf780ddbf582ecc52aa6a61242450a2650227b436ad0d260685c4ef8a49 \
+    --hash=sha256:6cff4c5da1228661ccaf95195064cb29e6cdf80913193bdb2eb20e164c76053e
+acme==0.23.0 \
+    --hash=sha256:02e9b596bd3bf8f0733d6d43ec2464ac8185a000acb58d2b4fd9e19223bbbf0b \
+    --hash=sha256:08c16635578507f526c338b3418c1147a9f015bf2d366abd51f38918703b4550
+certbot-apache==0.23.0 \
+    --hash=sha256:50077742d2763b7600dfda618eb89c870aeea5e6a4c00f60157877f7a7d81f7c \
+    --hash=sha256:6b7acec243e224de5268d46c2597277586dffa55e838c252b6931c30d549028e
+certbot-nginx==0.23.0 \
+    --hash=sha256:f12c21bbe3eb955ca533f1da96d28c6310378b138e844d83253562e18b6cbb32 \
+    --hash=sha256:cadf14e4bd504d9ce5987a5ec6dbd8e136638e55303ad5dc81dcb723ddd64324
 
 UNLIKELY_EOF
     # -------------------------------------------------------------------------

@@ -19,5 +19,5 @@ for requirement in "$@" ; do
   if [ $pkg = "." ]; then
     pkg="certbot"
   fi
-  "$(dirname $0)/pytest.sh" --pyargs $pkg
+  pytest --numprocesses auto --quiet --pyargs $pkg
 done

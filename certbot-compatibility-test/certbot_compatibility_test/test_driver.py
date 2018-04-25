@@ -10,6 +10,8 @@ import sys
 
 import OpenSSL
 
+from six.moves import xrange  # pylint: disable=import-error,redefined-builtin
+
 from acme import challenges
 from acme import crypto_util
 from acme import messages

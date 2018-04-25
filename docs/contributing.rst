@@ -24,7 +24,7 @@ running:
 
 If you're on macOS, we recommend you skip the rest of this section and instead
 run Certbot in Docker. You can find instructions for how to do this :ref:`here
-<docker>`. If you're running on Linux, you can run the following commands to
+<docker-dev>`. If you're running on Linux, you can run the following commands to
 install dependencies and set up a virtual environment where you can run
 Certbot. You will need to repeat this when Certbot's dependencies change or when
 a new plugin is introduced.
@@ -43,7 +43,7 @@ each shell where you're working:
 .. code-block:: shell
 
    source ./venv/bin/activate
-   export SERVER=https://acme-staging.api.letsencrypt.org/directory
+   export SERVER=https://acme-staging-v02.api.letsencrypt.org/directory
    source tests/integration/_common.sh
 
 After that, your shell will be using the virtual environment, your copy of
@@ -63,7 +63,7 @@ Find issues to work on
 ----------------------
 
 You can find the open issues in the `github issue tracker`_.  Comparatively
-easy ones are marked `Good Volunteer Task`_.  If you're starting work on
+easy ones are marked `good first issue`_.  If you're starting work on
 something, post a comment to let others know and seek feedback on your plan
 where appropriate.
 
@@ -72,7 +72,7 @@ your pull request must have thorough unit test coverage, pass our
 tests, and be compliant with the :ref:`coding style <coding-style>`.
 
 .. _github issue tracker: https://github.com/certbot/certbot/issues
-.. _Good Volunteer Task: https://github.com/certbot/certbot/issues?q=is%3Aopen+is%3Aissue+label%3A%22Good+Volunteer+Task%22
+.. _good first issue: https://github.com/certbot/certbot/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22
 
 .. _testing:
 
@@ -376,8 +376,11 @@ commands:
 This should generate documentation in the ``docs/_build/html``
 directory.
 
+.. note:: If you skipped the "Getting Started" instructions above,
+  run ``pip install -e ".[docs]"`` to install Certbot's docs extras modules.
 
-.. _docker:
+
+.. _docker-dev:
 
 Running the client with Docker
 ==============================
@@ -443,10 +446,10 @@ For squeeze you will need to:
 FreeBSD
 -------
 
-Packages can be installed on FreeBSD using ``pkg``, 
-or any other port-management tool (``portupgrade``, ``portmanager``, etc.) 
-from the pre-built package or can be built and installed from ports. 
-Either way will ensure proper installation of all the dependencies required 
+Packages can be installed on FreeBSD using ``pkg``,
+or any other port-management tool (``portupgrade``, ``portmanager``, etc.)
+from the pre-built package or can be built and installed from ports.
+Either way will ensure proper installation of all the dependencies required
 for the package.
 
 FreeBSD by default uses ``tcsh``. In order to activate virtualenv (see

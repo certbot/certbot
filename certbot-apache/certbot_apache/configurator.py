@@ -285,8 +285,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                     chain_path=None, fullchain_path=None):
         """Deploys certificate to specified virtual host.
 
-        Currently tries to find the last directives to deploy the cert in
-        the VHost associated with the given domain. If it can't find the
+        Currently tries to find the last directives to deploy the certificate
+        in the VHost associated with the given domain. If it can't find the
         directives, it searches the "included" confs. The function verifies
         that it has located the three directives and finally modifies them
         to point to the correct destination. After the certificate is
@@ -323,7 +323,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             # Returned objects are guaranteed to be ssl vhosts
             return self._choose_vhosts_wildcard(domain, create_if_no_ssl)
         else:
-            return [self.choose_vhost(domain)]
+            return [self.choose_vhost(domain, create_if_no_ssl)]
 
     def _vhosts_for_wildcard(self, domain):
         """
@@ -424,14 +424,20 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             path["chain_path"] = self.parser.find_dir(
                 "SSLCertificateChainFile", None, vhost.path)
 
-        if not path["cert_path"] or not path["cert_key"]:
-            # Throw some can't find all of the directives error"
+        # Handle errors when certificate/key directives cannot be found
+        if not path["cert_path"]:
             logger.warning(
-                "Cannot find a cert or key directive in %s. "
+                "Cannot find an SSLCertificateFile directive in %s. "
                 "VirtualHost was not modified", vhost.path)
-            # Presumably break here so that the virtualhost is not modified
             raise errors.PluginError(
-                "Unable to find cert and/or key directives")
+                "Unable to find an SSLCertificateFile directive")
+        elif not path["cert_key"]:
+            logger.warning(
+                "Cannot find an SSLCertificateKeyFile directive for "
+                "certificate in %s. VirtualHost was not modified", vhost.path)
+            raise errors.PluginError(
+                "Unable to find an SSLCertificateKeyFile directive for "
+                "certificate")
 
         logger.info("Deploying Certificate to VirtualHost %s", vhost.filep)
 
@@ -469,20 +475,21 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if chain_path is not None:
             self.save_notes += "\tSSLCertificateChainFile %s\n" % chain_path
 
-    def choose_vhost(self, target_name, temp=False):
+    def choose_vhost(self, target_name, create_if_no_ssl=True):
         """Chooses a virtual host based on the given domain name.
 
         If there is no clear virtual host to be selected, the user is prompted
         with all available choices.
 
-        The returned vhost is guaranteed to have TLS enabled unless temp is
-        True. If temp is True, there is no such guarantee and the result is
-        not cached.
+        The returned vhost is guaranteed to have TLS enabled unless
+        create_if_no_ssl is set to False, in which case there is no such guarantee
+        and the result is not cached.
 
         :param str target_name: domain name
-        :param bool temp: whether the vhost is only used temporarily
+        :param bool create_if_no_ssl: If found VirtualHost doesn't have a HTTPS
+            counterpart, should one get created
 
-        :returns: ssl vhost associated with name
+        :returns: vhost associated with name
         :rtype: :class:`~certbot_apache.obj.VirtualHost`
 
         :raises .errors.PluginError: If no vhost is available or chosen
@@ -495,7 +502,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Try to find a reasonable vhost
         vhost = self._find_best_vhost(target_name)
         if vhost is not None:
-            if temp:
+            if not create_if_no_ssl:
                 return vhost
             if not vhost.ssl:
                 vhost = self.make_vhost_ssl(vhost)
@@ -504,7 +511,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             self.assoc[target_name] = vhost
             return vhost
 
-        return self._choose_vhost_from_list(target_name, temp)
+        # Negate create_if_no_ssl value to indicate if we want a SSL vhost
+        # to get created if a non-ssl vhost is selected.
+        return self._choose_vhost_from_list(target_name, temp=not create_if_no_ssl)
 
     def _choose_vhost_from_list(self, target_name, temp=False):
         # Select a vhost from a list
@@ -1499,7 +1508,20 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             raise errors.PluginError(
                 "Unsupported enhancement: {0}".format(enhancement))
 
-        vhosts = self.choose_vhosts(domain, create_if_no_ssl=False)
+        matched_vhosts = self.choose_vhosts(domain, create_if_no_ssl=False)
+        # We should be handling only SSL vhosts for enhancements
+        vhosts = [vhost for vhost in matched_vhosts if vhost.ssl]
+
+        if not vhosts:
+            msg_tmpl = ("Certbot was not able to find SSL VirtualHost for a "
+                        "domain {0} for enabling enhancement \"{1}\". The requested "
+                        "enhancement was not configured.")
+            msg_enhancement = enhancement
+            if options:
+                msg_enhancement += ": " + options
+            msg = msg_tmpl.format(domain, msg_enhancement)
+            logger.warning(msg)
+            raise errors.PluginError(msg)
         try:
             for vhost in vhosts:
                 func(vhost, options)
@@ -1994,10 +2016,27 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :raises .errors.MisconfigurationError: If reload fails
 
         """
+        error = ""
         try:
             util.run_script(self.constant("restart_cmd"))
         except errors.SubprocessError as err:
-            raise errors.MisconfigurationError(str(err))
+            logger.info("Unable to restart apache using %s",
+                        self.constant("restart_cmd"))
+            alt_restart = self.constant("restart_cmd_alt")
+            if alt_restart:
+                logger.debug("Trying alternative restart command: %s",
+                             alt_restart)
+                # There is an alternative restart command available
+                # This usually is "restart" verb while original is "graceful"
+                try:
+                    util.run_script(self.constant(
+                        "restart_cmd_alt"))
+                    return
+                except errors.SubprocessError as secerr:
+                    error = str(secerr)
+            else:
+                error = str(err)
+            raise errors.MisconfigurationError(error)
 
     def config_test(self):  # pylint: disable=no-self-use
         """Check the configuration of Apache for errors.
@@ -2117,5 +2156,3 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # to be modified.
         return common.install_version_controlled_file(options_ssl, options_ssl_digest,
             self.constant("MOD_SSL_CONF_SRC"), constants.ALL_SSL_OPTIONS_HASHES)
-
-

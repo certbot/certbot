@@ -13,7 +13,7 @@ import pyrfc3339
 import six
 import zope.component
 from cryptography.hazmat.backends import default_backend
-from cryptography import x509
+from cryptography import x509 # type: ignore
 
 from acme import crypto_util as acme_crypto_util
 
@@ -445,5 +445,5 @@ def cert_and_chain_from_fullchain(fullchain_pem):
     """
     cert = OpenSSL.crypto.dump_certificate(OpenSSL.crypto.FILETYPE_PEM,
         OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM, fullchain_pem)).decode()
-    chain = fullchain_pem[len(cert):]
+    chain = fullchain_pem[len(cert):].lstrip()
     return (cert, chain)
