@@ -1,3 +1,4 @@
+"""Setup script for certbot-compatibility-test"""
 import sys
 
 from setuptools import setup

@@ -1,3 +1,4 @@
+"""Setup script for certbot-dns-route53"""
 from distutils.core import setup
 from setuptools import find_packages
 

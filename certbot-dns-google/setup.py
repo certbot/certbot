@@ -1,3 +1,4 @@
+"""Setup script for certbot-dns-google"""
 from setuptools import setup
 from setuptools import find_packages
 

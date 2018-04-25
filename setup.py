@@ -1,3 +1,4 @@
+"""Setup script for Certbot"""
 import codecs
 import os
 import re
