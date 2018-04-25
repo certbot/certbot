@@ -146,7 +146,7 @@ def record_chosen_plugins(config, plugins, auth, inst):
          config.authenticator, config.installer)
 
 
-def choose_configurator_plugins(config, plugins, verb):  # pylint: disable=too-many-branches
+def choose_configurator_plugins(config, plugins, verb):
     """
     Figure out which configurator we're going to use, modifies
     config.authenticator and config.installer strings to reflect that choice if
@@ -192,7 +192,6 @@ def choose_configurator_plugins(config, plugins, verb):  # pylint: disable=too-m
             installer = pick_installer(config, req_inst, plugins)
         if need_auth:
             authenticator = pick_authenticator(config, req_auth, plugins)
-
     logger.debug("Selected authenticator %s and installer %s", authenticator, installer)
 
     # Report on any failures
