@@ -32,6 +32,7 @@ CLI_DEFAULTS = dict(
     register_unsafely_without_email=False,
     update_registration=False,
     email=None,
+    remove_email=False,
     eff_email=None,
     reinstall=False,
     expand=False,

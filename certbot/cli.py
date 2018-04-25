@@ -1007,6 +1007,11 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         default=flag_default("update_registration"), dest="update_registration",
         help=argparse.SUPPRESS)
     helpful.add(
+        "update_account", "--remove-email", action="store_true",
+        default=flag_default("remove_email"),
+        help="With the update_account verb indicates that the user wants to "
+             "remove the email address from the registration.")
+    helpful.add(
         ["register", "update_account", "unregister", "automation"], "-m", "--email",
         default=flag_default("email"),
         help=config_help("email"))

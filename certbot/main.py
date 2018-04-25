@@ -712,20 +712,29 @@ def update_account(config, unused_plugins):
 
     if len(accounts) == 0:
         return "Could not find an existing account to update."
-    if config.email is None:
-        if config.register_unsafely_without_email:
-            return ("--register-unsafely-without-email provided, however, a "
-                    "new e-mail address must\ncurrently be provided when "
-                    "updating a registration.")
-        config.email = display_ops.get_email(optional=False)
+    #if config.email is None:
+    #    if config.register_unsafely_without_email:
+    #        return ("--register-unsafely-without-email provided, however, a "
+    #                "new e-mail address must\ncurrently be provided when "
+    #                "updating a registration.")
+    #    config.email = display_ops.get_email(optional=False)
 
     acc, acme = _determine_account(config)
     cb_client = client.Client(config, acc, None, None, acme=acme)
     # We rely on an exception to interrupt this process if it didn't work.
-    acc_contacts = ['mailto:' + email for email in config.email.split(',')]
+    if config.remove_email:
+        contact = list(acc.regr.body.contact)
+        contact = [c for c in contact if not c.startswith(
+            acc.regr.body.email_prefix)]
+    elif config.email is None:
+        config.email = display_ops.get_email(optional=False)
+        contact = [acc.regr.body.email_prefix + config.email]
+    else:
+        contact = [acc.regr.body.email_prefix + email for email in config.email.split(',')]
+
     prev_regr_uri = acc.regr.uri
     acc.regr = cb_client.acme.update_registration(acc.regr.update(
-        body=acc.regr.body.update(contact=acc_contacts)))
+        body=acc.regr.body.update(contact=contact)))
     # A v1 account being used as a v2 account will result in changing the uri to
     # the v2 uri. Since it's the same object on disk, put it back to the v1 uri
     # so that we can also continue to use the account object with acmev1.

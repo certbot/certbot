@@ -1424,17 +1424,41 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
 
     # TODO: When `certbot register --update-registration` is fully deprecated,
     # delete the following test
-    def test_update_registration_unsafely_deprecated(self):
-        # This test will become obsolete when register --update-registration
-        # supports removing an e-mail address from the account
-        with mock.patch('certbot.main.account') as mocked_account:
-            mocked_storage = mock.MagicMock()
-            mocked_account.AccountFileStorage.return_value = mocked_storage
-            mocked_storage.find_all.return_value = ["an account"]
-            x = self._call_no_clientmock(
-                "register --update-registration "
-                "--register-unsafely-without-email".split())
-            self.assertTrue("--register-unsafely-without-email" in x[0])
+    #def test_update_registration_unsafely(self):
+    #    # This test will become obsolete when register --update-registration
+    #    # supports removing an e-mail address from the account
+    #    with mock.patch('certbot.main.account') as mocked_account:
+    #        mocked_storage = mock.MagicMock()
+    #        mocked_account.AccountFileStorage.return_value = mocked_storage
+    #        mocked_storage.find_all.return_value = ["an account"]
+    #        x = self._call_no_clientmock(
+    #            "register --update-registration "
+    #            "--register-unsafely-without-email".split())
+    #        self.assertTrue("--register-unsafely-without-email" in x[0])
+
+    def test_update_registration_remove_email(self):
+        with mock.patch('certbot.eff.handle_subscription') as mock_handle:
+            with mock.patch('certbot.main._determine_account') as mocked_det:
+                with mock.patch('certbot.main.account') as mocked_account:
+                    with mock.patch('certbot.main.client') as mocked_client:
+                        mocked_storage = mock.MagicMock()
+                        mocked_account.AccountFileStorage.return_value = mocked_storage
+                        mocked_storage.find_all.return_value = ["an account"]
+                        mocked_det.return_value = (mock.MagicMock(), "foo")
+                        cb_client = mock.MagicMock()
+                        mocked_client.Client.return_value = cb_client
+                        x = self._call_no_clientmock(
+                            ["update_account", "--remove-email"])
+                        # When registration change succeeds, the return value
+                        # of register() is None
+                        self.assertTrue(x[0] is None)
+                        # and we got supposedly did update the registration from
+                        # the server
+                        self.assertTrue(
+                            cb_client.acme.update_registration.called)
+                        # and we saved the updated registration on disk
+                        self.assertTrue(mocked_storage.save_regr.called)
+                        self.assertTrue(mock_handle.called)
 
     @mock.patch('certbot.main.display_ops.get_email')
     @test_util.patch_get_utility()

@@ -372,6 +372,15 @@ register:
                         to the Subscriber Agreement will still affect you, and
                         will be effective 14 days after posting an update to
                         the web site. (default: False)
+  --update-registration
+                        With the register verb, indicates that details
+                        associated with an existing registration, such as the
+                        e-mail address, should be updated, rather than
+                        registering a new account. (default: False)
+  --remove-email
+                        With the register verb, indicates that the email
+                        associated with an existing registration should
+                        be removed. (default: False)
   -m EMAIL, --email EMAIL
                         Email used for registration and recovery contact. Use
                         comma to register multiple emails, ex:
