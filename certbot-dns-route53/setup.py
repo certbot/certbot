@@ -1,5 +1,5 @@
 """Setup script for certbot-dns-route53"""
-from distutils.core import setup
+from setuptools import setup
 from setuptools import find_packages
 
 version = '0.24.0.dev0'
