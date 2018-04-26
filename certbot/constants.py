@@ -159,7 +159,7 @@ ACCOUNTS_DIR = "accounts"
 LE_REUSE_SERVERS = {
     'acme-v02.api.letsencrypt.org/directory': 'acme-v01.api.letsencrypt.org/directory',
     'acme-staging-v02.api.letsencrypt.org/directory':
-        'acme-staging-v01.api.letsencrypt.org/directory'
+        'acme-staging.api.letsencrypt.org/directory'
 }
 """Servers that can reuse accounts from other servers."""
 

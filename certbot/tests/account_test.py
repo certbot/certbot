@@ -206,11 +206,11 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
         self._set_server('https://acme-staging-v02.api.letsencrypt.org/directory')
         self.assertEqual([], self.storage.find_all())
         self.storage.save(self.acc, self.mock_client)
-        self._set_server('https://acme-staging-v01.api.letsencrypt.org/directory')
+        self._set_server('https://acme-staging.api.letsencrypt.org/directory')
         self.assertEqual([self.acc], self.storage.find_all())
 
     def test_upgrade_version(self):
-        self._set_server('https://acme-staging-v01.api.letsencrypt.org/directory')
+        self._set_server('https://acme-staging.api.letsencrypt.org/directory')
         self.storage.save(self.acc, self.mock_client)
         self._set_server('https://acme-staging-v02.api.letsencrypt.org/directory')
         self.assertEqual([self.acc], self.storage.find_all())
