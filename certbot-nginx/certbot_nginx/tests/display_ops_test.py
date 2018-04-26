@@ -5,7 +5,7 @@ from certbot.display import util as display_util
 
 from certbot.tests import util as certbot_util
 
-from certbot_nginx import parser
+from certbot_nginx import better_parser as parser
 
 from certbot_nginx.display_ops import select_vhost_multiple
 from certbot_nginx.tests import util

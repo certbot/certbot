@@ -405,10 +405,10 @@ class Bloc(WithLists):
     def duplicate(self, only_directives=None, remove_singleton_listen_params=False):
         """ Duplicates iteslf into another sibling server block. """
         # pylint: disable=protected-access
-        dup_bloc = copy.deepcopy(self)
+        dup_bloc = ServerBloc(self.context)
+        dup_bloc.parse(copy.deepcopy(self.get_data(include_spaces=True)))
         if only_directives is not None:
             dup_bloc.contents.remove_statements(lambda x: x[0] not in only_directives)
-            # dup_bloc._data[1]._data = list(dup_contents)
         if remove_singleton_listen_params:
             for directive in dup_bloc.contents.get_directives('listen'):
                 for word in ['default_server', 'default', 'ipv6only=on']:

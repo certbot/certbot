@@ -16,7 +16,6 @@ from certbot import errors
 from certbot.tests import util as certbot_test_util
 
 from certbot_nginx import constants
-from certbot_nginx import parser
 from certbot_nginx import parser_obj
 from certbot_nginx.configurator import _redirect_block_for_domain
 from certbot_nginx.tests import util
@@ -105,6 +104,7 @@ class NginxConfiguratorTest(util.NginxTest):
                          self.config.get_chall_pref('myhost'))
 
     def test_save(self):
+        from certbot_nginx.better_parser import COMMENT
         filep = self.config.parser.abs_path('sites-enabled/example.com')
         mock_vhost = [x for x in self.config.parser.get_vhosts() if 'example.com' in x.filep][0]
         self.config.parser.add_server_directives(
@@ -121,7 +121,7 @@ class NginxConfiguratorTest(util.NginxTest):
                             ['server_name', '.example.com'],
                             ['server_name', 'example.*'],
                             ['listen', '5001', 'ssl'],
-                            ['#', parser.COMMENT]]]],
+                            ['#', COMMENT]]]],
                          parsed.get_data())
 
     def test_choose_vhosts(self):
