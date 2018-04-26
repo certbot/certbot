@@ -738,13 +738,6 @@ class NginxConfiguratorTest(util.NginxTest):
             "example/chain.pem",
             "example/fullchain.pem")
 
-        self.config.deploy_cert(
-            "nomatch.com",
-            "example/cert.pem",
-            "example/key.pem",
-            "example/chain.pem",
-            "example/fullchain.pem")
-
         parsed_default_conf = util.filter_comments(self.config.parser.parsed[default_conf]
                                                        .get_data())
 
@@ -758,7 +751,7 @@ class NginxConfiguratorTest(util.NginxTest):
                           [['server'],
                            [['listen', 'myhost'],
                             ['listen', 'otherhost'],
-                            ['server_name', 'www.nomatch.com', 'nomatch.com'],
+                            ['server_name', 'www.nomatch.com'],
                             [['location', '/'],
                              [['root', 'html'],
                               ['index', 'index.html', 'index.htm']]],

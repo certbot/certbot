@@ -185,11 +185,11 @@ class Statements(WithLists):
         if found < 0:
             # TODO (sydli): this level of abstraction shouldn't know about certbot_comments.
             if insert_at_top:
-                self.add_statement(self._create_contextual_sentence(statement), insert_at_top)
                 self.add_statement(certbot_comment(self.context), insert_at_top)
+                self.add_statement(self._create_contextual_sentence(statement), insert_at_top)
             else:
-                self.add_statement(certbot_comment(self.context), insert_at_top)
                 self.add_statement(self._create_contextual_sentence(statement), insert_at_top)
+                self.add_statement(certbot_comment(self.context), insert_at_top)
             return
         self._data[found] = self._create_contextual_sentence(statement)
 
@@ -316,7 +316,7 @@ class Include(Sentence):
 
 def _space_list(list_):
     spaced_statement = []
-    for i in reversed(xrange(len(list_))):
+    for i in reversed(six.moves.xrange(len(list_))):
         spaced_statement.insert(0, list_[i])
         if i > 0 and not list_[i].isspace() and not list_[i-1].isspace():
             spaced_statement.insert(0, ' ')
