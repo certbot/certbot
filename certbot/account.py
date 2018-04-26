@@ -16,6 +16,7 @@ import zope.component
 from acme import fields as acme_fields
 from acme import messages
 
+from certbot import constants
 from certbot import errors
 from certbot import interfaces
 from certbot import util
@@ -168,7 +169,17 @@ class AccountFileStorage(interfaces.AccountStorage):
                 accounts.append(self.load(account_id))
             except errors.AccountStorageError:
                 logger.debug("Account loading problem", exc_info=True)
-        return accounts
+
+        if not accounts and self.config.server_path in constants.LE_REUSE_SERVERS:
+            # make symlink to next one down
+            os.rmdir(self.config.accounts_dir)
+            prev_server_path = constants.LE_REUSE_SERVERS[self.config.server_path]
+            prev_account_dir = self.config.accounts_dir_for_server_path(prev_server_path)
+            os.symlink(prev_account_dir, self.config.accounts_dir)
+            # try again
+            return self.find_all()
+        else:
+            return accounts
 
     def load(self, account_id):
         account_dir_path = self._account_dir_path(account_id)
