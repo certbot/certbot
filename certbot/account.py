@@ -157,7 +157,7 @@ class AccountFileStorage(interfaces.AccountStorage):
     def _metadata_path(cls, account_dir_path):
         return os.path.join(account_dir_path, "meta.json")
 
-    def find_all(self):
+    def find_all(self, first_pass=True):
         try:
             candidates = os.listdir(self.config.accounts_dir)
         except OSError:
@@ -170,14 +170,19 @@ class AccountFileStorage(interfaces.AccountStorage):
             except errors.AccountStorageError:
                 logger.debug("Account loading problem", exc_info=True)
 
-        if not accounts and self.config.server_path in constants.LE_REUSE_SERVERS:
+        if not accounts and self.config.server_path in constants.LE_REUSE_SERVERS and first_pass:
             # make symlink to next one down
-            os.rmdir(self.config.accounts_dir)
+            if os.path.islink(self.config.accounts_dir):
+                os.unlink(self.config.accounts_dir)
+            else:
+                os.rmdir(self.config.accounts_dir)
             prev_server_path = constants.LE_REUSE_SERVERS[self.config.server_path]
             prev_account_dir = self.config.accounts_dir_for_server_path(prev_server_path)
+            util.make_or_verify_dir(prev_account_dir, 0o700, os.geteuid(),
+                                   self.config.strict_permissions)
             os.symlink(prev_account_dir, self.config.accounts_dir)
             # try again
-            return self.find_all()
+            return self.find_all(first_pass=False)
         else:
             return accounts
 

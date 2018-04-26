@@ -156,8 +156,10 @@ CONFIG_DIRS_MODE = 0o755
 ACCOUNTS_DIR = "accounts"
 """Directory where all accounts are saved."""
 
-LE_REUSE_SERVERS = {'acme-v02.api.letsencrypt.org': 'acme-v01.api.letsencrypt.org',
-                    'acme-staging-v02.api.letsencrypt.org': 'acme-staging-v01.api.letsencrypt.org'
+LE_REUSE_SERVERS = {
+    'acme-v02.api.letsencrypt.org/directory': 'acme-v01.api.letsencrypt.org/directory',
+    'acme-staging-v02.api.letsencrypt.org/directory':
+        'acme-staging-v01.api.letsencrypt.org/directory'
 }
 """Servers that can reuse accounts from other servers."""
 
