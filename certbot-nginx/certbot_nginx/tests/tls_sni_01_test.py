@@ -14,6 +14,7 @@ from certbot.plugins import common_test
 from certbot.tests import acme_util
 
 from certbot_nginx import obj
+from certbot_nginx import parser_obj
 from certbot_nginx.tests import util
 
 
@@ -89,7 +90,7 @@ class TlsSniPerformTest(util.NginxTest):
 
         # Make sure challenge config is included in main config
         http = self.sni.configurator.parser.parsed[
-            self.sni.configurator.parser.config_root][-1]
+            self.sni.configurator.parser.config_root].get_data()[-1]
         self.assertTrue(
             util.contains_at_depth(http, ['include', self.sni.challenge_conf], 1))
 
@@ -112,7 +113,7 @@ class TlsSniPerformTest(util.NginxTest):
                 mock_setup_cert.call_args_list[index], mock.call(achall))
 
         http = self.sni.configurator.parser.parsed[
-            self.sni.configurator.parser.config_root][-1]
+            self.sni.configurator.parser.config_root].get_data()[-1]
         self.assertTrue(['include', self.sni.challenge_conf] in http[1])
         self.assertFalse(
             util.contains_at_depth(http, ['server_name', 'another.alias'], 3))
@@ -137,7 +138,7 @@ class TlsSniPerformTest(util.NginxTest):
         self.sni.configurator.parser.load()
 
         http = self.sni.configurator.parser.parsed[
-            self.sni.configurator.parser.config_root][-1]
+            self.sni.configurator.parser.config_root].get_data()[-1]
         self.assertTrue(['include', self.sni.challenge_conf] in http[1])
 
         vhosts = self.sni.configurator.parser.get_vhosts()
@@ -155,7 +156,11 @@ class TlsSniPerformTest(util.NginxTest):
 
     def test_mod_config_fail(self):
         root = self.sni.configurator.parser.config_root
-        self.sni.configurator.parser.parsed[root] = [['include', 'foo.conf']]
+        context = self.sni.configurator.parser.parsed_root.context
+        mock_root = parser_obj.Statements(context)
+        mock_root.parse([['include', 'foo.conf']])
+        self.sni.configurator.parser.parsed[root] = mock_root
+
         # pylint: disable=protected-access
         self.assertRaises(
             errors.MisconfigurationError, self.sni._mod_config, [])

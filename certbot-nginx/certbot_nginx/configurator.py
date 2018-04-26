@@ -760,7 +760,6 @@ class NginxConfigurator(common.Installer):
         :param `~obj.Vhost` vhost: vhost to enable redirect for
         """
 
-        og_vhost = vhost
         http_vhost = None
         if vhost.ssl:
             http_vhost, _ = self._split_block(vhost, ['listen', 'server_name'])

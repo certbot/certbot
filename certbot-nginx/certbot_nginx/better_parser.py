@@ -220,7 +220,8 @@ class FancyParser(object):
         """
         # TODO: https://github.com/certbot/certbot/issues/5185
         # put it in the same file as the template, at the same level
-        dup_server_bloc = vhost_template.raw.duplicate(only_directives, remove_singleton_listen_params)
+        dup_server_bloc = vhost_template.raw.duplicate(only_directives,
+                              remove_singleton_listen_params)
         return dup_server_bloc.vhost
 
 class NginxParser(FancyParser):

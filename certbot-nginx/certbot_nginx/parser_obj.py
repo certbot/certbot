@@ -6,6 +6,7 @@ import glob
 import logging
 import os
 import pyparsing
+import six
 
 from certbot import errors
 
@@ -74,6 +75,7 @@ class Statements(WithLists):
         super(Statements, self).__init__(context)
         self._trailing_whitespace = None
 
+    # TODO; introduce parsing hooks here
     def _choose_parser(self, list_):
         if not isinstance(list_, list):
             raise errors.MisconfigurationError("`parse` expects a list!")
@@ -81,7 +83,7 @@ class Statements(WithLists):
             if 'server' in list_[0]:
                 return ServerBloc(self.child_context())
             return Bloc(self.child_context())
-        if all([isinstance(elem, str) for elem in list_]):
+        if all([isinstance(elem, six.string_types) for elem in list_]):
             if 'include' in list_:
                 return Include(self.child_context())
             return Sentence(self.child_context())
@@ -96,7 +98,9 @@ class Statements(WithLists):
         """ Assumes parse_this is a list of parseable lists. """
         if not isinstance(parse_this, list):
             raise errors.MisconfigurationError("Statements parsing expects a list!")
-        if len(parse_this) > 0 and isinstance(parse_this[-1], str) and parse_this[-1].isspace():
+        # If there's a trailing whitespace in the list of statements, keep track of it.
+        if len(parse_this) > 0 and isinstance(parse_this[-1], six.string_types) \
+                               and parse_this[-1].isspace():
             self._trailing_whitespace = parse_this[-1]
             parse_this = parse_this[:-1]
         self._data = [self._parse_elem(elem) for elem in parse_this]
@@ -130,6 +134,8 @@ class Statements(WithLists):
                 yield elem
 
     def get_thing_shallow(self, match_func):
+        """ Retrieves any Statement that returns true for match_func--
+        Not recursive (so does not recurse on nested Blocs). """
         for elem in self._data:
             if match_func(elem):
                 yield elem
@@ -177,8 +183,13 @@ class Statements(WithLists):
         add it to this object. """
         found = self._get_statement_index(match_func)
         if found < 0:
-            self.add_statement(self._create_contextual_sentence(statement))
-            self.add_statement(certbot_comment(self.context))
+            # TODO (sydli): this level of abstraction shouldn't know about certbot_comments.
+            if insert_at_top:
+                self.add_statement(self._create_contextual_sentence(statement), insert_at_top)
+                self.add_statement(certbot_comment(self.context), insert_at_top)
+            else:
+                self.add_statement(certbot_comment(self.context), insert_at_top)
+                self.add_statement(self._create_contextual_sentence(statement), insert_at_top)
             return
         self._data[found] = self._create_contextual_sentence(statement)
 
@@ -347,12 +358,15 @@ class Bloc(WithLists):
     def get_tabs(self):
         return self.names.get_tabs()
 
+    # TODO (sydli): contextual sentences/blocks should be parsed automatically
+    # (get rid of `is_block`)
     def _add_directive(self, statement, insert_at_top=False, is_block=False):
+        # pylint: disable=protected-access
         if self.contents.contains_exact_directive(statement):
             return
         if not is_block and statement[0] not in REPEATABLE_DIRECTIVES and len(
             list(self.contents.get_directives(statement[0]))) > 0:
-            raise errors.MisconfigurationError("Existing %s directive conflicts with %s", 
+            raise errors.MisconfigurationError("Existing %s directive conflicts with %s",
                                                statement[0], statement)
         if not is_block:
             statement = self.contents._create_contextual_sentence(statement)
@@ -375,8 +389,11 @@ class Bloc(WithLists):
                 self._add_directive(statement, insert_at_top, is_block)
 
     def replace_directives(self, statements, insert_at_top=False):
-        for statement in statements:
-            self.contents.replace_statement(statement, lambda x: x[0] == statement[0], insert_at_top)
+        """ Adds statements to this object. For each of the statements,
+        if one of this statement type already exists, replaces existing statement.
+        """
+        for s in statements:
+            self.contents.replace_statement(s, lambda x, s=s: x[0] == s[0], insert_at_top)
 
     def remove_directives(self, directive, match_func=None):
         """ Removes statements from this object."""
@@ -404,12 +421,6 @@ class Bloc(WithLists):
 
 class ServerBloc(Bloc):
     """ This bloc should parallel a vhost! """
-
-    # HOOKS = {
-    #     'listen': _update_addrs,
-    #     'server_name': self._update_names,
-    #     'ssl': self._update_ssl,
-    # }
 
     def __init__(self, context=None):
         super(ServerBloc, self).__init__(context)
