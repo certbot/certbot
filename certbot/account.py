@@ -157,7 +157,7 @@ class AccountFileStorage(interfaces.AccountStorage):
     def _metadata_path(cls, account_dir_path):
         return os.path.join(account_dir_path, "meta.json")
 
-    def find_all(self, first_pass=True):
+    def _find_all_inner(self, first_pass):
         try:
             candidates = os.listdir(self.config.accounts_dir)
         except OSError:
@@ -182,9 +182,12 @@ class AccountFileStorage(interfaces.AccountStorage):
                                    self.config.strict_permissions)
             os.symlink(prev_account_dir, self.config.accounts_dir)
             # try again
-            return self.find_all(first_pass=False)
+            return self._find_all_inner(False)
         else:
             return accounts
+
+    def find_all(self):
+        return self._find_all_inner(True)
 
     def load(self, account_id):
         account_dir_path = self._account_dir_path(account_id)
