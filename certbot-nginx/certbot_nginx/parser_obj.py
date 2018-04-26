@@ -205,8 +205,9 @@ class Statements(WithLists):
         found = self._get_statement_index(match_func)
         while found >= 0:
             del self._data[found]
-            if found < len(self._data) and '#' in self._data[found] and \
-                    ' managed by Certbot' in self._data[found]:
+            if found < len(self._data) and isinstance(self._data[found], Sentence) and \
+                    '#' in self._data[found].words and \
+                    ' managed by Certbot' in self._data[found].words:
                 del self._data[found]
             found = self._get_statement_index(match_func)
 

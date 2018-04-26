@@ -159,9 +159,9 @@ class NginxHttp01(common.ChallengePerformer):
         validation = achall.validation(achall.account_key)
         validation_path = self._get_validation_path(achall)
 
-        location_directive = [['location', '=', validation_path],
-                              [['default_type', 'text/plain'],
-                               ['return', '200', validation]]]
+        location_directive = [['location', ' ', '=', ' ', validation_path],
+                              [['default_type', ' ', 'text/plain'],
+                               ['return', ' ', '200', ' ', validation]]]
         return location_directive
 
 
