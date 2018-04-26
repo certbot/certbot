@@ -667,13 +667,12 @@ def os_path_exists(path):
     :param path: A path of a possible directory
     :return: True if the path exists
     :rtype: bool
-    
+
     """
     try:
         if os.path.exists(path):
             return True
         else:
             return False
-    except OSError as e:
-        raise
+    except OSError:
         return False
