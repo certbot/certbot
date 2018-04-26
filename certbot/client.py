@@ -266,7 +266,7 @@ class Client(object):
         cert, chain = crypto_util.cert_and_chain_from_fullchain(orderr.fullchain_pem)
         return cert.encode(), chain.encode()
 
-    def obtain_certificate(self, domains):
+    def obtain_certificate(self, domains, oldkeypath=None):
         """Obtains a certificate from the ACME server.
 
         `.register` must be called before `.obtain_certificate`
@@ -279,16 +279,34 @@ class Client(object):
         :rtype: tuple
 
         """
+
+        # We need to determine the key path, key PEM data, CSR path,
+        # and CSR PEM data.  For a dry run, the paths are None because
+        # they aren't permanently saved to disk.  For a lineage with
+        # --reuse-key, the key path and PEM data are derived from an
+        # existing file.
+
+        if oldkeypath is not None:
+            # We've been asked to reuse a specific existing private key.
+            # Therefore, we'll read it now and not generate a new one in
+            # either case below.
+            with open(oldkeypath, "r") as f:
+                keypath = oldkeypath
+                keypem = f.read()
+            key = util.Key(file=keypath, pem=keypem)
+
         # Create CSR from names
         if self.config.dry_run:
-            key = util.Key(file=None,
-                           pem=crypto_util.make_key(self.config.rsa_key_size))
+            if oldkeypath is None:
+                key = util.Key(file=None,
+                               pem=crypto_util.make_key(self.config.rsa_key_size))
             csr = util.CSR(file=None, form="pem",
                            data=acme_crypto_util.make_csr(
                                key.pem, domains, self.config.must_staple))
         else:
-            key = crypto_util.init_save_key(
-                self.config.rsa_key_size, self.config.key_dir)
+            if oldkeypath is None:
+                key = crypto_util.init_save_key(
+                    self.config.rsa_key_size, self.config.key_dir)
             csr = crypto_util.init_save_csr(key, domains, self.config.csr_dir)
 
         orderr = self._get_order_and_authorizations(csr.data, self.config.allow_subset_of_names)
