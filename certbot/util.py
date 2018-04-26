@@ -659,3 +659,21 @@ def atexit_register(func, *args, **kwargs):
 def _atexit_call(func, *args, **kwargs):
     if _INITIAL_PID == os.getpid():
         func(*args, **kwargs)
+
+
+def os_path_exists(path):
+    """Returns whether a specified path exists
+
+    :param path: A path of a possible directory
+    :return: True if the path exists
+    :rtype: bool
+    
+    """
+    try:
+        if os.path.exists(path):
+            return True
+        else:
+            return False
+    except OSError as e:
+        raise
+        return False
