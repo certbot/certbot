@@ -8,7 +8,7 @@ from certbot.plugins import selection as plug_sel
 
 logger = logging.getLogger(__name__)
 
-def run_renewal_updaters(config, plugins, lineage):
+def run_generic_updaters(config, plugins, lineage):
     """Run updaters that the plugin supports
 
     :param config: Configuration object
