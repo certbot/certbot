@@ -29,14 +29,6 @@ class PostfixUtilBase(object):
         self._set_base_command(config_dir)
         self.config_dir = None
 
-    def update_dir(self, config_dir):
-        """Updates the directory of the configuration files for Postfix.
-
-        :param str config_dir: The path containing the Postfix configuration files.
-        """
-        self.config_dir = config_dir
-        self._set_base_command(config_dir)
-
     def _set_base_command(self, config_dir):
         self._base_command = [self.executable]
         if config_dir is not None:

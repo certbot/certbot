@@ -11,7 +11,6 @@ from certbot import errors
 from certbot.tests import util as certbot_test_util
 
 class InstallerTest(certbot_test_util.ConfigTestCase):
-    # pylint: disable=too-many-public-methods
 
     def setUp(self):
         super(InstallerTest, self).setUp()

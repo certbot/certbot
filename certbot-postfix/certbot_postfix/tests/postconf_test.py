@@ -8,6 +8,9 @@ import string
 import tempfile
 import unittest
 
+# TODO (sydneyli): Mock out calls to postconf
+# TODO (sydneyli): inherit certbot.tests.util.TempDirTestCase
+
 def _rand_str(n):
     """Returns a random string with length n, for use as a temporary directory."""
     return ''.join([random.choice(string.lowercase) for _ in xrange(n)])

@@ -42,6 +42,7 @@ class Installer(plugins_common.Installer):
     def add_parser_arguments(cls, add):
         add("ctl", default=constants.CLI_DEFAULTS["ctl"],
             help="Path to the 'postfix' control program.")
+        # This directory points to Postfix's configuration directory.
         add("config-dir", default=constants.CLI_DEFAULTS["config_dir"],
             help="Path to the directory containing the "
             "Postfix main.cf file to modify instead of using the "
@@ -52,6 +53,7 @@ class Installer(plugins_common.Installer):
             help="Name of the policy file that we should write to in config-dir.")
 
     def _verify_setup(self):
+        # TODO (sydneyli): do this
         pass
 
     def __init__(self, *args, **kwargs):
@@ -71,8 +73,12 @@ class Installer(plugins_common.Installer):
         self.postfix = None
         self.policy_file = None
         self._enhance_func = {"starttls-policy": self._enable_policy_list}
+        # Since we only need to enable policy once for all domains,
+        # keep track of whether this enhancement was already called.
+        self._starttls_policy_enabled = False
 
     def _ensure_ca_certificates_exist(self):
+        # TODO (sydneyli): This might block starttls-everywhere
         # TODO (sydneyli): Ensure `ca-certificates` is installed correctly, or that
         # /etc/ssl/certs/ even has certificates in it, probably via a sanity check using
         # `openssl` command?
@@ -124,7 +130,8 @@ class Installer(plugins_common.Installer):
 
         """
         if self._get_version() < constants.MINIMUM_VERSION:
-            raise errors.NotSupportedError('Postfix version is too old')
+            version_string = '.'.join([str(n) for n in constants.MINIMUM_VERSION])
+            raise errors.NotSupportedError('Postfix version must be at least %s', version_string)
 
     def _lock_config_dir(self):
         """Stop two Postfix plugins from modifying the config at once.
@@ -216,11 +223,14 @@ class Installer(plugins_common.Installer):
                           check_override=util.report_master_overrides)
 
     def _enable_policy_list(self, domain, options):
+        if self._starttls_policy_enabled:
+            return
+        self._starttls_policy_enabled = True
         # pylint: disable=unused-argument
         try:
             from starttls_policy import policy
         except ImportError:
-            raise ImportError('STARTTLS Everywhere policy Python module not installed!')
+            raise errors.PluginError('STARTTLS Everywhere policy Python module not installed!')
         if options is None:
             policy = policy.Config()
         else:
@@ -232,10 +242,6 @@ class Installer(plugins_common.Installer):
 
     def enhance(self, domain, enhancement, options=None):
         """Raises an exception for request for unsupported enhancement.
-
-        :raises .PluginError: this is always raised as no enhancements
-            are currently supported
-
         """
         try:
             func = self._enhance_func[enhancement]
@@ -254,7 +260,7 @@ class Installer(plugins_common.Installer):
         :rtype: list
 
         """
-        return ['starttls-policy'] # TODO(sydneyli): Call this starttls-policy?
+        return ['starttls-policy']
 
     def save(self, title=None, temporary=False):
         """Creates backups and writes changes to configuration files.

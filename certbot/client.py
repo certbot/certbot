@@ -481,7 +481,7 @@ class Client(object):
             if enhancement_name in supported:
                 if config_name == "redirect" and config_value is None:
                     config_value = enhancements.ask(enhancement_name)
-                if config_name == "starttls_policy" and len(config_value) > 0:
+                if config_name == "starttls_policy" and config_value is not None:
                     option = config_value
                 if config_value:
                     self.apply_enhancement(domains, enhancement_name, option)

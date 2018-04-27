@@ -5,6 +5,8 @@ from certbot import errors
 from certbot_postfix import util
 
 
+# TODO (sydneyli): tox-ify and make sure this runs in Python 3.
+
 class ConfigMain(util.PostfixUtilBase):
     """A parser for Postfix's main.cf file."""
 
@@ -36,28 +38,28 @@ class ConfigMain(util.PostfixUtilBase):
             self._master_db[param_name].append((service, value))
 
     def get_default(self, name):
-        """Retrieves default value of parameter |name| from postfix parameters.
+        """Retrieves default value of parameter `name` from postfix parameters.
             :param str name: The name of the parameter to fetch.
-            :rtype str: The default value of parameter |name|.
+            :rtype str: The default value of parameter `name`.
         """
         out = self._get_output(['-d', name])
         _, value = next(_parse_main_output(out), (None, None))
         return value
 
     def get(self, name):
-        """Retrieves working value of parameter |name| from postfix parameters.
+        """Retrieves working value of parameter `name` from postfix parameters.
             :param str name: The name of the parameter to fetch.
-            :rtype str: The value of parameter |name|.
+            :rtype str: The value of parameter `name`.
         """
         if name in self._updated:
             return self._updated[name]
         return self._db[name]
 
     def get_master_overrides(self, name):
-        """Retrieves list of overrides for parameter |name| in postfix's Master config
+        """Retrieves list of overrides for parameter `name` in postfix's Master config
         file.
-            :returns: List of tuples (service, value), meaning that parameter |name|
-                      is overridden as |value| for |service|.
+            :returns: List of tuples (service, value), meaning that parameter `name`
+                      is overridden as `value` for `service`.
             :rtype `list` of `tuple` of `str:
         """
         if name in self._master_db:
@@ -65,33 +67,26 @@ class ConfigMain(util.PostfixUtilBase):
         return None
 
     def set(self, name, value, check_override=None):
-        """Sets parameter |name| to |value|.
-        If |name| is overridden by a particular service in `master.cf`, calls
-        `check_override` on |name|, and the set of overrides.
+        """Sets parameter `name` to `value`.
+        If `name` is overridden by a particular service in `master.cf`, calls
+        `check_override` on `name`, and the set of overrides.
 
         Note that this function does not flush these parameter values to main.cf;
-        To do that, use |flush|.
+        To do that, use `flush`.
             :param str name: The name of the parameter to set.
             :param str value: The value of the parameter.
         """
         if name not in self._db:
-            return # TODO: error here
+            return
         # Check to see if this parameter is overridden by master.
+        # TODO: comment the below
         overrides = self.get_master_overrides(name)
         if check_override is not None and overrides is not None:
             check_override(name, overrides)
-        # We've updated this name before.
-        if name in self._updated:
-            if value == self._updated[name]:
-                return
-            if value == self._db[name]:
-                del self._updated[name]
-                return
-        # We haven't updated this name before.
-        else:
-            # If we're just setting the default value, ignore.
-            if value != self._db[name]:
-                self._updated[name] = value
+        if value != self._db[name]:
+            self._updated[name] = value
+        elif name in self._updated:
+            del self._updated[name]
 
     def flush(self):
         """Flushes all parameter changes made using "self.set" to "main.cf".
