@@ -1,5 +1,6 @@
 """Tests for certbot_postfix.postconf."""
 
+import mock
 import os
 import pkg_resources
 import shutil
@@ -7,43 +8,68 @@ import unittest
 
 from certbot.tests import util as test_util
 
-# TODO (sydneyli): Mock out calls to postconf
-
-class PostConfTest(test_util.TempDirTestCase):
-    """Tests for certbot_postfix.util.PostfixUtilBase."""
+class PostConfTest(unittest.TestCase):
+    """Tests for certbot_postfix.util.PostConf."""
     def setUp(self):
         from certbot_postfix.postconf import ConfigMain
         super(PostConfTest, self).setUp()
-        _config_file = pkg_resources.resource_filename("certbot_postfix.tests",
-                           os.path.join("testdata", "small.cf"))
-        self.config_path = os.path.join(self.tempdir, 'main.cf')
-        shutil.copyfile(_config_file, self.config_path)
-        self.config = ConfigMain('postconf', self.tempdir)
+        with mock.patch('certbot_postfix.util.PostfixUtilBase._get_output') as mock_call:
+            with mock.patch('certbot_postfix.postconf.ConfigMain._get_output_master') as mock_master_call:
+                with mock.patch('certbot_postfix.postconf.util.verify_exe_exists') as verify_exe:
+                    verify_exe.return_value = True
+                    mock_call.return_value = ('default_parameter = value\n'
+                                             'extra_param =\n'
+                                             'overridden_by_master = default\n')
+                    mock_master_call.return_value = (
+                        'service/type/overridden_by_master = master_value\n'
+                        'service2/type/overridden_by_master = master_value2'
+                    )
+                    self.config = ConfigMain('postconf', '')
 
-    def test_read_defalut(self):
-        self.assertEqual(self.config.get_default('smtpd_sasl_auth_enable'), 'no')
+    @mock.patch('certbot_postfix.util.PostfixUtilBase._get_output')
+    def test_read_defalut(self, mock_get_output):
+        mock_get_output.return_value = 'param = default_value'
+        self.assertEqual(self.config.get_default('param'), 'default_value')
 
-    def test_read_write(self):
-        self.config.set('inet_interfaces', '127.0.0.1')
+    @mock.patch('certbot_postfix.util.PostfixUtilBase._call')
+    def test_set(self, mock_call):
+        self.config.set('extra_param', 'other_value')
         self.config.flush()
-        with open(self.config_path) as f:
-            self.assertTrue('inet_interfaces = 127.0.0.1\n' in f.readlines())
+        mock_call.assert_called_with(['-e', 'extra_param=other_value'])
 
-    def test_write_revert(self):
-        self.config.set('postscreen_forbidden_commands', 'dummy_value')
+    def test_set_bad_param_name(self):
+        self.assertRaises(KeyError, self.config.set, 'nonexistent_param', 'some_value')
+
+    @mock.patch('certbot_postfix.util.PostfixUtilBase._call')
+    def test_write_revert(self, mock_call):
+        self.config.set('default_parameter', 'fake_news')
         # revert config set
-        self.config.set('postscreen_forbidden_commands', '$smtpd_forbidden_commands')
+        self.config.set('default_parameter', 'value')
         self.config.flush()
-        with open(self.config_path) as f:
-            self.assertTrue(not any('postscreen_forbidden_commands' in line \
-                                for line in f.readlines()))
+        mock_call.assert_not_called()
 
-    def test_write_default(self):
-        self.config.set('postscreen_forbidden_commands', '$smtpd_forbidden_commands')
+    @mock.patch('certbot_postfix.util.PostfixUtilBase._call')
+    def test_write_default(self, mock_call):
+        self.config.set('default_parameter', 'value')
         self.config.flush()
-        with open(self.config_path) as f:
-            self.assertTrue(not any('postscreen_forbidden_commands' in line \
-                                for line in f.readlines()))
+        mock_call.assert_not_called()
+
+    def test_master_overrides(self):
+        self.assertEqual(self.config.get_master_overrides('overridden_by_master'),
+                         [('service/type', 'master_value'),
+                          ('service2/type', 'master_value2')])
+
+    def test_set_check_override(self):
+        expected_overrides = [
+            ('service/type', 'master_value'),
+            ('service2/type', 'master_value2')]
+        def _check_overrides(name, overrides):
+            self.assertEqual('overridden_by_master', name)
+            self.assertEqual(expected_overrides, overrides)
+        self.config.set('overridden_by_master', 'new_value', check_override=_check_overrides)
+        self.assertEqual(self.config.get_master_overrides('overridden_by_master'),
+                         [('service/type', 'master_value'),
+                          ('service2/type', 'master_value2')])
 
 if __name__ == '__main__':  # pragma: no cover
     unittest.main()

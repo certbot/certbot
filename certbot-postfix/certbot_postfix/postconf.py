@@ -5,8 +5,6 @@ from certbot import errors
 from certbot_postfix import util
 
 
-# TODO (sydneyli): tox-ify and make sure this runs in Python 3.
-
 class ConfigMain(util.PostfixUtilBase):
     """A parser for Postfix's main.cf file."""
 
@@ -18,11 +16,9 @@ class ConfigMain(util.PostfixUtilBase):
         # of parameter name => list of tuples (service name, paramter value)
         # Note: We should never modify master without explicit permission.
         self._master_db = {}
-        self._read_from_conf()
         self._updated = {}
-        """An iterable containing additional CLI flags for postconf."""
+        self._read_from_conf()
         # TODO (sydneyli): Document the above fields in future documentation commit.
-        # TODO (sydneyli): Test master.cf functionality in future test commit.
 
     def _read_from_conf(self):
         """Reads initial parameter state from main.cf
@@ -30,12 +26,15 @@ class ConfigMain(util.PostfixUtilBase):
         out = self._get_output()
         for name, value in _parse_main_output(out):
             self._db[name] = value
-        out = self._get_output('-P') # get master parameters
+        out = self._get_output_master()
         for name, value in _parse_main_output(out):
             service, param_name = name.rsplit("/", 1)
             if param_name not in self._master_db:
                 self._master_db[param_name] = []
             self._master_db[param_name].append((service, value))
+
+    def _get_output_master(self):
+        return self._get_output('-P')
 
     def get_default(self, name):
         """Retrieves default value of parameter `name` from postfix parameters.
@@ -77,15 +76,18 @@ class ConfigMain(util.PostfixUtilBase):
             :param str value: The value of the parameter.
         """
         if name not in self._db:
-            return
+            raise KeyError("Parameter name %s is not a valid Postfix parameter name.", name)
         # Check to see if this parameter is overridden by master.
-        # TODO: comment the below
         overrides = self.get_master_overrides(name)
         if check_override is not None and overrides is not None:
             check_override(name, overrides)
         if value != self._db[name]:
+        # _db contains the "original" state of parameters. We only care about
+        # writes if they cause a delta from the original state.
             self._updated[name] = value
         elif name in self._updated:
+        # If this write reverts a previously updated parameter back to the
+        # original DB's state, we don't have to keep track of it in _updated.
             del self._updated[name]
 
     def flush(self):
