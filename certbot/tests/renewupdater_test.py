@@ -59,7 +59,7 @@ class RenewUpdaterTest(unittest.TestCase):
 
         mock_generic_updater.restart.reset_mock()
         mock_generic_updater.callcounter.reset_mock()
-        updater.run_renewal_updaters(config, None, lineage)
+        updater.run_generic_updaters(config, None, lineage)
         self.assertEqual(mock_generic_updater.callcounter.call_count, 2)
         self.assertFalse(mock_generic_updater.restart.called)
 
