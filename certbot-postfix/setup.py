@@ -7,6 +7,7 @@ version = '0.24.0.dev0'
 install_requires = [
     'certbot>0.23.0',
     'setuptools',
+    'six',
     'zope.interface',
 ]
 

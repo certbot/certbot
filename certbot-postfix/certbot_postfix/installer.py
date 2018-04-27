@@ -54,7 +54,6 @@ class Installer(plugins_common.Installer):
     def _verify_setup(self):
         pass
 
-    # TODO (sydli): fix version fetching code
     def __init__(self, *args, **kwargs):
         super(Installer, self).__init__(*args, **kwargs)
         # Verify that all directories and files exist with proper permissions

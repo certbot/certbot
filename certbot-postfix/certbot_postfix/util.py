@@ -78,7 +78,7 @@ class PostfixUtil(PostfixUtilBase):
     """
 
     def __init__(self, config_dir=None):
-        PostfixUtilBase.__init__(self, COMMAND, config_dir)
+        super(PostfixUtil, self).__init__(COMMAND, config_dir)
 
     def test(self):
         """Make sure the configuration is valid.
@@ -88,7 +88,8 @@ class PostfixUtil(PostfixUtilBase):
         try:
             self._call(["check"])
         except subprocess.CalledProcessError as e:
-            print e
+            logger.debug("Could not check postfix configuration:\n%s",
+                         e)
             raise errors.MisconfigurationError(
                 "Postfix failed internal configuration check.")
 
@@ -248,8 +249,10 @@ def _get_formatted_policy_for_domain(address_domain, tls_policy):
     return entry
 
 def write_domainwise_tls_policies(policy, policy_file):
-    """Writes domainwise tls policies to self.policy_file in a format that Postfix
+    """Writes domainwise tls policies to policy_file in a format that Postfix
     can parse.
+    :param policy: A TLSPolicy object that wraps the STARTTLS Policy List.
+    :param str policy_file: The filepath to the Postfix tls_policy file that should be written.
     """
     policy_lines = []
     for address_domain, tls_policy in policy.policies_iter():

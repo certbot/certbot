@@ -4,7 +4,7 @@ POLICY_FILENAME = "starttls_everywhere_policy"
 
 CA_CERTS_PATH = "/etc/ssl/certs/"
 
-MINIMUM_VERSION = (2, 6,)
+MINIMUM_VERSION = (2, 11,)
 
 # If the value of a default VAR is a tuple, then the values which
 # come LATER in the tuple are more strict/more secure.

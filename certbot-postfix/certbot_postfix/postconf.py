@@ -1,5 +1,6 @@
 """Classes that wrap the postconf command line utility.
 """
+import six
 from certbot import errors
 from certbot_postfix import util
 
@@ -7,33 +8,29 @@ from certbot_postfix import util
 class ConfigMain(util.PostfixUtilBase):
     """A parser for Postfix's main.cf file."""
 
-    _modifiers = None
-    _db = None
-    _updated = {}
-    """An iterable containing additional CLI flags for postconf."""
 
     def __init__(self, executable, config_dir=None):
-        util.PostfixUtilBase.__init__(self, executable, config_dir)
+        super(ConfigMain, self).__init__(executable, config_dir)
         self._db = {}
         # List of current master.cf overrides from Postfix config. Dictionary
         # of parameter name => list of tuples (service name, paramter value)
         # Note: We should never modify master without explicit permission.
         self._master_db = {}
         self._read_from_conf()
+        self._updated = {}
+        """An iterable containing additional CLI flags for postconf."""
+        # TODO (sydneyli): Document the above fields in future documentation commit.
+        # TODO (sydneyli): Test master.cf functionality in future test commit.
 
     def _read_from_conf(self):
         """Reads initial parameter state from main.cf
         """
         out = self._get_output()
         for name, value in _parse_main_output(out):
-            if not value:
-                value = ""
             self._db[name] = value
         out = self._get_output('-P') # get master parameters
         for name, value in _parse_main_output(out):
-            service, param_name = name.rsplit("/")
-            if not value:
-                value = ""
+            service, param_name = name.rsplit("/", 1)
             if param_name not in self._master_db:
                 self._master_db[param_name] = []
             self._master_db[param_name].append((service, value))
@@ -103,9 +100,8 @@ class ConfigMain(util.PostfixUtilBase):
         if len(self._updated) == 0:
             return
         args = ['-e']
-        for name, value in self._updated.iteritems():
+        for name, value in six.iteritems(self._updated):
             args.append('{0}={1}'.format(name, value))
-        #TODO (sydli) bugfix: Reset _updated after flushing :)
         try:
             self._get_output(args)
         except:
@@ -113,27 +109,6 @@ class ConfigMain(util.PostfixUtilBase):
         for name, value in self._updated.iteritems():
             self._db[name] = value
         self._updated = {}
-
-    def _call(self, extra_args=None):
-        """Runs Postconf and returns the result.
-
-        If self._modifiers is set, it is provided on the command line to
-        postconf before any values in extra_args.
-
-        :param list extra_args: additional arguments for the command
-
-        :returns: data written to stdout and stderr
-        :rtype: `tuple` of `str`
-
-        :raises subprocess.CalledProcessError: if the command fails
-
-        """
-        all_extra_args = []
-        for args_list in (self._modifiers, extra_args,):
-            if args_list is not None:
-                all_extra_args.extend(args_list)
-
-        return super(ConfigMain, self)._call(all_extra_args)
 
 def _parse_main_output(output):
     """Parses the raw output from Postconf about main.cf.
