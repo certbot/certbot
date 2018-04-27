@@ -101,7 +101,7 @@ class ConfigMain(util.PostfixUtilBase):
             self._get_output(args)
         except:
             raise errors.PluginError("Unable to save to Postfix config!")
-        for name, value in self._updated.iteritems():
+        for name, value in six.iteritems(self._updated):
             self._db[name] = value
         self._updated = {}
 

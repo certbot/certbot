@@ -5,6 +5,7 @@ import os
 from functools import partial
 
 import zope.interface
+import six
 
 from certbot import errors
 from certbot import interfaces
@@ -188,7 +189,7 @@ class Installer(plugins_common.Installer):
     def _set_vars(self, var_dict):
         """Sets all parameters in var_dict to config file.
         """
-        for param, acceptable in var_dict.iteritems():
+        for param, acceptable in six.iteritems(var_dict):
             if isinstance(acceptable, tuple):
                 if self.postconf.get(param) not in acceptable:
                     self.postconf.set(param, acceptable[0],
@@ -223,10 +224,10 @@ class Installer(plugins_common.Installer):
                           check_override=util.report_master_overrides)
 
     def _enable_policy_list(self, domain, options):
+        # pylint: disable=unused-argument
         if self._starttls_policy_enabled:
             return
         self._starttls_policy_enabled = True
-        # pylint: disable=unused-argument
         try:
             from starttls_policy import policy
         except ImportError:
