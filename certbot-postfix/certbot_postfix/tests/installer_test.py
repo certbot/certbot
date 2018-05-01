@@ -20,12 +20,17 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
         self.config.postfix_config_dir = self.tempdir
         self.config.postfix_config_utility = "postconf"
         self.config.postfix_policy_file = os.path.join(self.tempdir, "config.json")
+        self.config.config_dir = self.tempdir
         shutil.copyfile(_config_file, self.config.postfix_policy_file)
         self.mock_postfix = MockPostfix()
         self.mock_postconf = MockPostconf(self.tempdir, {"mail_version": "3.1.4"})
 
+    def test_confirm_changes(self):
+        pass
+
     def test_add_parser_arguments(self):
-        options = set(('ctl', 'config-dir', 'config-utility', 'policy-file',))
+        options = set(('ctl', 'config-dir', 'config-utility', 'policy-file',
+                       'tls-only', 'server-only', 'ignore-master-overrides'))
         mock_add = mock.MagicMock()
 
         from certbot_postfix import installer
@@ -92,6 +97,8 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
             :param str domain: domain to deploy cert for
 
             """
+            # pylint: disable=protected-access
+            installer._confirm_changes = lambda: "noop"
             installer.deploy_cert(domain, "foo", "bar", "baz", "qux")
 
         self._mock_postfix_and_call(deploy_cert, "example.org")

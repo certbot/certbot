@@ -8,6 +8,7 @@ install_requires = [
     'certbot>0.23.0',
     'setuptools',
     'six',
+    'zope.component',
     'zope.interface',
 ]
 

@@ -1,12 +1,7 @@
 """Tests for certbot_postfix.postconf."""
 
 import mock
-import os
-import pkg_resources
-import shutil
 import unittest
-
-from certbot.tests import util as test_util
 
 class PostConfTest(unittest.TestCase):
     """Tests for certbot_postfix.util.PostConf."""
@@ -14,7 +9,8 @@ class PostConfTest(unittest.TestCase):
         from certbot_postfix.postconf import ConfigMain
         super(PostConfTest, self).setUp()
         with mock.patch('certbot_postfix.util.PostfixUtilBase._get_output') as mock_call:
-            with mock.patch('certbot_postfix.postconf.ConfigMain._get_output_master') as mock_master_call:
+            with mock.patch('certbot_postfix.postconf.ConfigMain._get_output_master') as \
+                    mock_master_call:
                 with mock.patch('certbot_postfix.postconf.util.verify_exe_exists') as verify_exe:
                     verify_exe.return_value = True
                     mock_call.return_value = ('default_parameter = value\n'
@@ -22,9 +18,9 @@ class PostConfTest(unittest.TestCase):
                                              'overridden_by_master = default\n')
                     mock_master_call.return_value = (
                         'service/type/overridden_by_master = master_value\n'
-                        'service2/type/overridden_by_master = master_value2'
+                        'service2/type/overridden_by_master = master_value2\n'
                     )
-                    self.config = ConfigMain('postconf', '')
+                    self.config = ConfigMain('postconf', lambda x, y, z: None)
 
     @mock.patch('certbot_postfix.util.PostfixUtilBase._get_output')
     def test_read_defalut(self, mock_get_output):
@@ -63,13 +59,13 @@ class PostConfTest(unittest.TestCase):
         expected_overrides = [
             ('service/type', 'master_value'),
             ('service2/type', 'master_value2')]
-        def _check_overrides(name, overrides):
+        def _check_overrides(name, overrides, acceptable_overrides):
+            # pylint: disable=unused-argument
             self.assertEqual('overridden_by_master', name)
             self.assertEqual(expected_overrides, overrides)
-        self.config.set('overridden_by_master', 'new_value', check_override=_check_overrides)
-        self.assertEqual(self.config.get_master_overrides('overridden_by_master'),
-                         [('service/type', 'master_value'),
-                          ('service2/type', 'master_value2')])
+        # pylint: disable=protected-access
+        self.config._handle_overrides = _check_overrides
+        self.config.set('overridden_by_master', 'new_value')
 
 if __name__ == '__main__':  # pragma: no cover
     unittest.main()

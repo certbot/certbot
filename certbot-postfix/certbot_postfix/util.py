@@ -263,8 +263,37 @@ def report_master_overrides(name, overrides, acceptable_overrides=None):
         another service is overriding our parameter with a more secure option, we don't have
         to warn. If this is set to None, warnings are reported for *all* overrides!
     """
+    error_string = ""
     for override in overrides:
-        if acceptable_overrides is None or override not in acceptable_overrides:
-            logger.warning("Parameter {0} is overridden as {1} for service {2} in " +
-                           "master configuration file!", name, override[1], override[0])
+        service, value = override
+        # If this override is acceptable:
+        if acceptable_overrides is not None and \
+            _is_acceptable_value(name, value, acceptable_overrides):
+            continue
+        error_string += "  {1}: {2}\n".format(service, value)
+    if len(error_string) > 0:
+        raise errors.PluginError("{0} is overridden with less secure options by the "
+             "following services in master.cf:\n" + error_string)
+
+def is_acceptable_value(parameter, value, acceptable):
+    # If it's a tuple, there's multiple acceptable options.
+    # Only set a param if it's not acceptable.
+    if isinstance(acceptable, tuple):
+        if value not in acceptable:
+            return False
+    # Check if param value is a comma-separated list of protocols.
+    elif 'protocols' in parameter:
+        return _has_acceptable_tls_versions(value)
+    # Otherwise, just check whether the value is equal to acceptable.
+    return value == acceptable
+
+def _has_acceptable_tls_versions(parameter_string):
+    """
+    Checks to see if the comma-separated list of TLS protocols to exclude is acceptable.
+    Sample string: "!SSLv2, !SSLv3"
+    """
+    for bad_version in ("SSLv2", "SSLv3"): # TODO: subtract acceptable from tls-verions constant
+        if "!" + bad_version not in parameter_string:
+            return False
+    return True
 

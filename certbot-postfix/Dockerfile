@@ -20,7 +20,6 @@ COPY docker-files/rsyslog.conf /etc/rsyslog.conf
 COPY certbot_postfix/ certbot_postfix/
 COPY setup.py setup.py
 COPY requirements.txt requirements.txt
-RUN pip install --no-cache-dir -e /opt/certbot/src/acme -e /opt/certbot/src -e .
 RUN pip install --no-cache-dir --editable .
 RUN pip install -r requirements.txt
 

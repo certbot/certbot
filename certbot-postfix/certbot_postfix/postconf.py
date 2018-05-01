@@ -9,8 +9,9 @@ class ConfigMain(util.PostfixUtilBase):
     """A parser for Postfix's main.cf file."""
 
 
-    def __init__(self, executable, config_dir=None):
+    def __init__(self, executable, handle_overrides, config_dir=None):
         super(ConfigMain, self).__init__(executable, config_dir)
+        self._handle_overrides = handle_overrides
         self._db = {}
         # List of current master.cf overrides from Postfix config. Dictionary
         # of parameter name => list of tuples (service name, paramter value)
@@ -65,22 +66,25 @@ class ConfigMain(util.PostfixUtilBase):
             return self._master_db[name]
         return None
 
-    def set(self, name, value, check_override=None):
+    def set(self, name, value, acceptable_overrides=None):
         """Sets parameter `name` to `value`.
         If `name` is overridden by a particular service in `master.cf`, calls
-        `check_override` on `name`, and the set of overrides.
+        `self.handle_overrides` on `name`, and the set of overrides.
 
         Note that this function does not flush these parameter values to main.cf;
         To do that, use `flush`.
             :param str name: The name of the parameter to set.
             :param str value: The value of the parameter.
+            :param list acceptable_overrides:
+                If the master configuration file overrides `value` with a value in
+                acceptable_overrides, no need to call `_handle_overrides`.
         """
         if name not in self._db:
             raise KeyError("Parameter name %s is not a valid Postfix parameter name.", name)
         # Check to see if this parameter is overridden by master.
         overrides = self.get_master_overrides(name)
-        if check_override is not None and overrides is not None:
-            check_override(name, overrides)
+        if overrides is not None:
+            self._handle_overrides(name, overrides, acceptable_overrides)
         if value != self._db[name]:
         # _db contains the "original" state of parameters. We only care about
         # writes if they cause a delta from the original state.
@@ -106,6 +110,11 @@ class ConfigMain(util.PostfixUtilBase):
         for name, value in six.iteritems(self._updated):
             self._db[name] = value
         self._updated = {}
+
+    def get_changes(self):
+        """ Return queued changes to main.cf.
+        """
+        return self._updated
 
 def _parse_main_output(output):
     """Parses the raw output from Postconf about main.cf.

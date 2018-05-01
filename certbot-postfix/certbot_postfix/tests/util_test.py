@@ -96,5 +96,11 @@ class VerifyExeExistsTest(unittest.TestCase):
         mock_path_surgery.return_value = True
         self._call('foo')
 
+class WriteDomainwiseTlsPoliciesTest(unittest.TestCase):
+    pass
+
+class ReportMasterOverridesTest(unittest.TestCase):
+    pass
+
 if __name__ == '__main__':  # pragma: no cover
     unittest.main()

@@ -28,7 +28,7 @@ install_certs() {
     # Install certs via certbot!
     cert_name=$1
     shift
-    certbot install --installer certbot-postfix:postfix \
+    certbot install --installer postfix \
         --cert-path /etc/certificates/$cert_name.crt --key-path /etc/certificates/$cert_name.key \
         -d recipient.com ${@}
 }

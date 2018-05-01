@@ -1,10 +1,9 @@
-"""Certbot installer plugin for Postfix."""
+"""certbot installer plugin for postfix."""
 import logging
 import os
 
-from functools import partial
-
 import zope.interface
+import zope.component
 import six
 
 from certbot import errors
@@ -52,6 +51,12 @@ class Installer(plugins_common.Installer):
             help="Path to the 'postconf' executable.")
         add("policy-file", default=constants.CLI_DEFAULTS["policy_file"],
             help="Name of the policy file that we should write to in config-dir.")
+        add("tls-only", default=constants.CLI_DEFAULTS["tls_only"],
+            help="Only set params to enable opportunistic TLS and install certificates.")
+        add("server-only", default=constants.CLI_DEFAULTS["server_only"],
+            help="Only set server params (prefixed with smtpd*)")
+        add("ignore-master-overrides", default=constants.CLI_DEFAULTS["ignore_master_overrides"],
+            help="Ignore errors reporting overridden TLS parameters in master.cf.")
 
     def _verify_setup(self):
         # TODO (sydneyli): do this
@@ -74,9 +79,10 @@ class Installer(plugins_common.Installer):
         self.postfix = None
         self.policy_file = None
         self._enhance_func = {"starttls-policy": self._enable_policy_list}
-        # Since we only need to enable policy once for all domains,
+        # Since we only need to enable TLS or the STARTTLS policy once for all domains,
         # keep track of whether this enhancement was already called.
         self._starttls_policy_enabled = False
+        self._tls_enabled = False
 
     def _ensure_ca_certificates_exist(self):
         # TODO (sydneyli): This might block starttls-everywhere
@@ -109,7 +115,11 @@ class Installer(plugins_common.Installer):
 
         # Set up CLI tools
         self.postfix = util.PostfixUtil(self.conf('config-dir'))
-        self.postconf = postconf.ConfigMain(self.conf('config-utility'))
+        report_master_overrides = util.report_master_overrides
+        if self.conf('ignore-master-overrides'):
+            report_master_overrides = None
+        self.postconf = postconf.ConfigMain(self.conf('config-utility'),
+                                            report_master_overrides)
 
         # Ensure current configuration is valid.
         self.config_test()
@@ -118,6 +128,7 @@ class Installer(plugins_common.Installer):
         self._check_version()
         self._lock_config_dir()
         self.policy_file = os.path.join(self.conf('config-dir'), self.conf('policy-file'))
+        self.install_ssl_dhparams()
 
     def config_test(self):
         """Test to see that the current Postfix configuration is valid.
@@ -186,17 +197,32 @@ class Installer(plugins_common.Installer):
         return certbot_util.get_filtered_names(self.postconf.get(var)
                    for var in ('mydomain', 'myhostname', 'myorigin',))
 
+
     def _set_vars(self, var_dict):
         """Sets all parameters in var_dict to config file.
         """
         for param, acceptable in six.iteritems(var_dict):
-            if isinstance(acceptable, tuple):
-                if self.postconf.get(param) not in acceptable:
-                    self.postconf.set(param, acceptable[0],
-                        partial(util.report_master_overrides, acceptable_overrides=acceptable))
-            else:
-                self.postconf.set(param, acceptable,
-                    partial(util.report_master_overrides, acceptable_overrides=acceptable))
+            if util.is_acceptable_value(param, self.postconf.get(param), acceptable):
+                if isinstance(acceptable, tuple):
+                    self.postconf.set(param, acceptable[0], acceptable)
+                else:
+                    self.postconf.set(param, acceptable, acceptable)
+
+    def _confirm_changes(self):
+        """Confirming outstanding updates for configuration parameters.
+
+        :raises errors.PluginError: when user rejects the configuration changes.
+        """
+        updates = self.postconf.get_changes()
+        output_string = "Postfix TLS configuration parameters to update in main.cf:\n"
+        for name, value in six.iteritems(updates):
+            output_string += "{0} = {1}\n".format(name, value)
+        output_string += "Is this okay?\n"
+        if not zope.component.getUtility(interfaces.IDisplay).yesno(output_string):
+            raise errors.PluginError(
+                "Manually rejected configuration changes.\n"
+                "Try using --tls-only or --server-only to change a particular"
+                "subset of configuration parameters.")
 
     def deploy_cert(self, domain, cert_path,
                     key_path, chain_path, fullchain_path):
@@ -213,15 +239,22 @@ class Installer(plugins_common.Installer):
 
         """
         # pylint: disable=unused-argument
+        if self._tls_enabled:
+            return
+        self._tls_enabled = True
         self.save_notes.append("Configuring TLS for {0}".format(domain))
-        self.postconf.set("smtpd_tls_cert_file", cert_path,
-                          check_override=util.report_master_overrides)
-        self.postconf.set("smtpd_tls_key_file", key_path,
-                          check_override=util.report_master_overrides)
-        self._set_vars(constants.DEFAULT_SERVER_VARS)
-        self._set_vars(constants.DEFAULT_CLIENT_VARS)
-        self.postconf.set("smtp_tls_CApath", constants.CA_CERTS_PATH,
-                          check_override=util.report_master_overrides)
+        self.postconf.set("smtpd_tls_cert_file", cert_path)
+        self.postconf.set("smtpd_tls_key_file", key_path)
+        # self.postconf.set("smtpd_tls_security_level", ACCEPTABLE_SECURITY_LEVELS)
+        self._set_vars(constants.TLS_SERVER_VARS)
+        if not self.conf('tls_only'):
+            self._set_vars(constants.DEFAULT_SERVER_VARS)
+            # Despite the name, this option also supports 2048-bit DH params.
+            # http://www.postfix.org/FORWARD_SECRECY_README.html#server_fs
+            self.postconf.set("smtpd_tls_dh1024_param_file", self.ssl_dhparams)
+        if not self.conf('server_only'):
+            self._set_vars(constants.DEFAULT_CLIENT_VARS)
+        self._confirm_changes()
 
     def _enable_policy_list(self, domain, options):
         # pylint: disable=unused-argument
@@ -240,6 +273,7 @@ class Installer(plugins_common.Installer):
         util.write_domainwise_tls_policies(policy, self.policy_file)
         policy_cf_entry = "texthash:" + self.policy_file
         self.postconf.set("smtp_tls_policy_maps", policy_cf_entry)
+        self.postconf.set("smtp_tls_CApath", constants.CA_CERTS_PATH)
 
     def enhance(self, domain, enhancement, options=None):
         """Raises an exception for request for unsupported enhancement.
