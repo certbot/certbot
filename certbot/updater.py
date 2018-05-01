@@ -27,8 +27,8 @@ def run_generic_updaters(config, plugins, lineage):
         # installers are used in auth mode to determine domain names
         installer, _ = plug_sel.choose_configurator_plugins(config, plugins, "certonly")
     except errors.PluginSelectionError as e:
-        logger.info("Could not choose appropriate plugin: %s", e)
-        raise
+        logger.warning("Could not choose appropriate plugin for updaters: %s", e)
+        return
     _run_updaters(lineage, installer, config)
 
 def run_renewal_deployer(lineage, installer, config):
