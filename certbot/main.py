@@ -29,6 +29,7 @@ from certbot import log
 from certbot import renewal
 from certbot import reporter
 from certbot import storage
+from certbot import updater
 from certbot import util
 
 from certbot.display import util as display_util, ops as display_ops
@@ -1145,10 +1146,9 @@ def renew_cert(config, plugins, lineage):
     except errors.PluginSelectionError as e:
         logger.info("Could not choose appropriate plugin: %s", e)
         raise
-
     le_client = _init_le_client(config, auth, installer)
 
-    _get_and_save_cert(le_client, config, lineage=lineage)
+    renewed_lineage = _get_and_save_cert(le_client, config, lineage=lineage)
 
     notify = zope.component.getUtility(interfaces.IDisplay).notification
     if installer is None:
@@ -1158,9 +1158,11 @@ def renew_cert(config, plugins, lineage):
         # In case of a renewal, reload server to pick up new certificate.
         # In principle we could have a configuration option to inhibit this
         # from happening.
+        updater.run_renewal_deployer(renewed_lineage, installer, config)
         installer.restart()
         notify("new certificate deployed with reload of {0} server; fullchain is {1}".format(
                config.installer, lineage.fullchain), pause=False)
+        # Run deployer
 
 def certonly(config, plugins):
     """Authenticate & obtain cert, but do not install it.

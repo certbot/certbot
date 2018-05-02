@@ -9,6 +9,7 @@ obtain, install, and renew certificates:
     (default) run   Obtain & install a certificate in your current webserver
     certonly        Obtain or renew a certificate, but do not install it
     renew           Renew all previously obtained certificates that are near expiry
+    enhance         Add security enhancements to your existing configuration
    -d DOMAINS       Comma-separated list of domains to obtain a certificate for
 
   --apache          Use the Apache plugin for authentication & installation
@@ -107,7 +108,7 @@ optional arguments:
                         case, and to know when to deprecate support for past
                         Python versions and flags. If you wish to hide this
                         information from the Let's Encrypt server, set this to
-                        "". (default: CertbotACMEClient/0.23.0 (certbot;
+                        "". (default: CertbotACMEClient/0.24.0 (certbot;
                         darwin 10.13.4) Authenticator/XXX Installer/YYY
                         (SUBCOMMAND; flags: FLAGS) Py/2.7.14). The flags
                         encoded in the user agent are: --duplicate, --force-
@@ -396,6 +397,10 @@ plugins:
 update_symlinks:
   Recreates certificate and key symlinks in /etc/letsencrypt/live, if you
   changed them by hand or edited a renewal configuration file
+
+enhance:
+  Helps to harden the TLS configration by adding security enhancements to
+  already existing configuration.
 
 plugins:
   Plugin Selection: Certbot client supports an extensible plugins
