@@ -21,13 +21,13 @@ install_requires = [
     'requests[security]>=2.4.1',  # security extras added in 2.4.1
     'setuptools',
     'six>=1.9.0',  # needed for python_2_unicode_compatible
-    'typing',
 ]
 
 dev_extras = [
     'pytest',
     'pytest-xdist',
     'tox',
+    'typing',
 ]
 
 docs_extras = [
