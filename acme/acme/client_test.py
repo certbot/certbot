@@ -17,7 +17,7 @@ from acme import jws as acme_jws
 from acme import messages
 from acme import messages_test
 from acme import test_util
-from acme.magic_typing import Dict # pylint: disable=unused-import
+from acme.magic_typing import Dict # pylint: disable=unused-import, no-name-in-module
 
 
 CERT_DER = test_util.load_vector('cert.der')

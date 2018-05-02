@@ -11,7 +11,8 @@ from OpenSSL import SSL # type: ignore # https://github.com/python/typeshed/issu
 import josepy as jose
 
 from acme import errors
-from acme.magic_typing import Callable, Text, Union # pylint: disable=unused-import
+# pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Callable, Text, Union
 
 
 logger = logging.getLogger(__name__)

@@ -13,7 +13,7 @@ import OpenSSL
 
 from acme import errors
 from acme import test_util
-from acme.magic_typing import List # pylint: disable=unused-import
+from acme.magic_typing import List # pylint: disable=unused-import, no-name-in-module
 
 
 class SSLSocketAndProbeSNITest(unittest.TestCase):
