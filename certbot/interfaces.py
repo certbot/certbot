@@ -1,5 +1,6 @@
 """Certbot client interfaces."""
 import abc
+import six
 import zope.interface
 
 # pylint: disable=no-self-argument,no-method-argument,no-init,inherit-non-class
@@ -607,6 +608,7 @@ class IReporter(zope.interface.Interface):
 # installer wants to perform an update during the run or install subcommand, it
 # should do so when :func:`IInstaller.deploy_cert` is called.
 
+@six.add_metaclass(abc.ABCMeta)
 class GenericUpdater(object):
     """Interface for update types not currently specified by Certbot.
 
@@ -618,8 +620,6 @@ class GenericUpdater(object):
     be called from the installer code.
 
     """
-
-    __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
     def generic_updates(self, domain, *args, **kwargs):
@@ -637,6 +637,7 @@ class GenericUpdater(object):
         """
 
 
+@six.add_metaclass(abc.ABCMeta)
 class RenewDeployer(object):
     """Interface for update types run when a lineage is renewed
 
@@ -647,8 +648,6 @@ class RenewDeployer(object):
     methods, and interfaces.RenewDeployer.register(InstallerClass) should
     be called from the installer code.
     """
-
-    __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
     def renew_deploy(self, lineage, *args, **kwargs):
