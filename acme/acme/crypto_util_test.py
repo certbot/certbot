@@ -7,7 +7,7 @@ import unittest
 
 import six
 from six.moves import socketserver  #type: ignore  # pylint: disable=import-error
-from typing import List # pylint: disable=unused-import
+from magic_typing import List # pylint: disable=unused-import
 
 import josepy as jose
 import OpenSSL

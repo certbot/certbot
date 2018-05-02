@@ -23,7 +23,7 @@ force_text and force_bytes.
 It is recommended to use the utility functions for other string conversions.
 """
 import six
-from typing import Union, Text # pylint: disable=unused-import
+from magic_typing import Union, Text # pylint: disable=unused-import
 
 
 def force_text(s, encoding='utf-8'):

@@ -5,7 +5,7 @@ import json
 import unittest
 
 from six.moves import http_client  # pylint: disable=import-error
-from typing import Dict # pylint: disable=unused-import
+from magic_typing import Dict # pylint: disable=unused-import
 
 import josepy as jose
 import mock

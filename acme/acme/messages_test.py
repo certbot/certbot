@@ -3,7 +3,7 @@ import unittest
 
 import josepy as jose
 import mock
-from typing import Dict # pylint: disable=unused-import
+from magic_typing import Dict # pylint: disable=unused-import
 
 from acme import challenges
 from acme import test_util

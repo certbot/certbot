@@ -9,7 +9,7 @@ import unittest
 
 from six.moves import http_client  # pylint: disable=import-error
 from six.moves import socketserver  # type: ignore  # pylint: disable=import-error
-from typing import Set # pylint: disable=unused-import
+from magic_typing import Set # pylint: disable=unused-import
 
 import josepy as jose
 import mock

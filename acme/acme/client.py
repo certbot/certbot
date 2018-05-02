@@ -9,7 +9,7 @@ import time
 
 import six
 from six.moves import http_client  # pylint: disable=import-error
-from typing import Dict, List, Set, Text # pylint: disable=unused-import
+from magic_typing import Dict, List, Set, Text # pylint: disable=unused-import
 
 import josepy as jose
 import OpenSSL
