@@ -9,7 +9,6 @@ import time
 
 import six
 from six.moves import http_client  # pylint: disable=import-error
-from magic_typing import Dict, List, Set, Text # pylint: disable=unused-import
 
 import josepy as jose
 import OpenSSL
@@ -21,6 +20,7 @@ from acme import crypto_util
 from acme import errors
 from acme import jws
 from acme import messages
+from acme.magic_typing import Dict, List, Set, Text # pylint: disable=unused-import
 
 
 logger = logging.getLogger(__name__)

@@ -9,7 +9,6 @@ import unittest
 
 from six.moves import http_client  # pylint: disable=import-error
 from six.moves import socketserver  # type: ignore  # pylint: disable=import-error
-from magic_typing import Set # pylint: disable=unused-import
 
 import josepy as jose
 import mock
@@ -19,6 +18,7 @@ from acme import challenges
 from acme import crypto_util
 from acme import errors
 from acme import test_util
+from acme.magic_typing import Set # pylint: disable=unused-import
 
 
 class TLSServerTest(unittest.TestCase):

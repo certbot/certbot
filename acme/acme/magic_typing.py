@@ -5,6 +5,7 @@ class TypingClass(object):
         return None
 
 try:
+    from typing import *
     import typing
     sys.modules[__name__] = typing
 except ImportError:

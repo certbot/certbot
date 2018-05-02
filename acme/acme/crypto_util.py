@@ -8,11 +8,10 @@ import socket
 
 from OpenSSL import SSL, crypto # type: ignore # https://github.com/python/typeshed/issues/2052
 import josepy as jose
-from magic_typing import Callable, Text, Union # pylint: disable=unused-import
-
 
 from acme import errors
 from acme import str_utils
+from acme.magic_typing import Callable, Text, Union # pylint: disable=unused-import
 
 
 logger = logging.getLogger(__name__)

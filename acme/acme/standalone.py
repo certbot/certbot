@@ -11,12 +11,12 @@ import threading
 from six.moves import BaseHTTPServer  # type: ignore  # pylint: disable=import-error
 from six.moves import http_client  # pylint: disable=import-error
 from six.moves import socketserver  # type: ignore  # pylint: disable=import-error
-from magic_typing import List # pylint: disable=unused-import
 
 import OpenSSL
 
 from acme import challenges
 from acme import crypto_util
+from acme.magic_typing import List # pylint: disable=unused-import
 
 
 logger = logging.getLogger(__name__)

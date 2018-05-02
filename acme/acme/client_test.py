@@ -5,7 +5,6 @@ import json
 import unittest
 
 from six.moves import http_client  # pylint: disable=import-error
-from magic_typing import Dict # pylint: disable=unused-import
 
 import josepy as jose
 import mock
@@ -18,6 +17,7 @@ from acme import jws as acme_jws
 from acme import messages
 from acme import messages_test
 from acme import test_util
+from acme.magic_typing import Dict # pylint: disable=unused-import
 
 
 CERT_DER = test_util.load_vector('cert.der')
