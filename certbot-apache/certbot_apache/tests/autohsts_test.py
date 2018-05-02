@@ -119,6 +119,19 @@ class AutoHSTSTest(util.ApacheTest):
         self.assertEquals(self.get_autohsts_value(self.vh_truth[7].path),
                           max_val)
 
+    def test_autohsts_update_noop(self):
+        with mock.patch("time.time") as mock_time:
+            # Time mock is used to make sure that the execution does not
+            # continue when no autohsts entries exist in pluginstorage
+            self.config._autohsts_update()
+            self.assertFalse(mock_time.called)
+
+    def test_autohsts_make_permanent_noop(self):
+        self.config.storage.put = mock.MagicMock()
+        self.config._autohsts_make_permanent(mock.MagicMock())
+        # Make sure that the execution does not continue when no entries in store
+        self.assertFalse(self.config.storage.put.called)
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

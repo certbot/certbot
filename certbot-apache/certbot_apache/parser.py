@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 class ApacheParser(object):
+    # pylint: disable=too-many-public-methods
     """Class handles the fine details of parsing the Apache Configuration.
 
     .. todo:: Make parsing general... remove sites-available etc...

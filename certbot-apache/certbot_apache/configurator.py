@@ -1671,7 +1671,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         Increase the AutoHSTS values of VirtualHosts
         """
-        managed = self.storage.fetch("autohsts")
+        try:
+            managed = self.storage.fetch("autohsts")
+        except KeyError:
+            # AutoHSTS not enabled
+            return
         curtime = time.time()
         for id_str in managed:
             if managed[id_str]["timestamp"] + constants.AUTOHSTS_FREQ > curtime:
@@ -1686,8 +1690,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         Save the current state of AutoHSTS steps with a timestamp
         """
-        managed = self.storage.fetch("autohsts")
-        if not managed:
+        try:
+            managed = self.storage.fetch("autohsts")
+        except KeyError:
             managed = dict()
         managed[id_str] = {"laststep": laststep, "timestamp": time.time()}
         self.storage.put("autohsts", managed)
@@ -1698,7 +1703,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         Checks if autohsts vhost has reached maximum auto-increased value
         and changes the HSTS max-age to a high value.
         """
-        managed = self.storage.fetch("autohsts")
+        try:
+            managed = self.storage.fetch("autohsts")
+        except KeyError:
+            # No active AutoHSTS entries
+            return
         vhosts = []
         # Copy, as we are removing from the dict inside the loop
         for id_str in managed.keys()[:]:
