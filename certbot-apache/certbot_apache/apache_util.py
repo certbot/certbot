@@ -103,4 +103,4 @@ def parse_define_file(filepath, varname):
 
 def unique_id():
     """ Returns an unique id to be used as a VirtualHost identifier"""
-    return binascii.hexlify(os.urandom(16))
+    return binascii.hexlify(os.urandom(16)).decode("utf-8")

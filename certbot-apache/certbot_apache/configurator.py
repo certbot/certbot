@@ -1710,7 +1710,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             return
         vhosts = []
         # Copy, as we are removing from the dict inside the loop
-        for id_str in managed.keys()[:]:
+        for id_str in list(managed.keys()):
             if managed[id_str]["laststep"]+1 >= len(constants.AUTOHSTS_STEPS):
                 # max value reached, try to make permanent
                 vhost = self.find_vhost_by_id(id_str)
