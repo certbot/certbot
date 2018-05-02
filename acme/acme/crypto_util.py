@@ -10,7 +10,6 @@ from OpenSSL import SSL, crypto # type: ignore # https://github.com/python/types
 import josepy as jose
 
 from acme import errors
-from acme import str_utils
 from acme.magic_typing import Callable, Text, Union # pylint: disable=unused-import
 
 
@@ -227,7 +226,7 @@ def _pyopenssl_cert_or_req_san(cert_or_req):
         func = crypto.dump_certificate # type: Union[Callable[[int, crypto.X509Req], bytes], Callable[[int, crypto.X509], bytes]]
     else:
         func = crypto.dump_certificate_request
-    text = str_utils.force_text(func(crypto.FILETYPE_TEXT, cert_or_req))
+    text = func(crypto.FILETYPE_TEXT, cert_or_req).decode("utf-8")
     # WARNING: this function does not support multiple SANs extensions.
     # Multiple X509v3 extensions of the same type is disallowed by RFC 5280.
     match = re.search(r"X509v3 Subject Alternative Name:(?: critical)?\s*(.*)", text)
