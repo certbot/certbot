@@ -8,7 +8,7 @@ class TypingClass(object):
 
 try:
     # mypy doesn't respect modifying sys.modules
-    from typing import *
+    from typing import * # pylint: disable=wildcard-import
     # cache into sys.modules for when we're actually running
     import typing
     sys.modules[__name__] = typing
