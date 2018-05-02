@@ -1,7 +1,5 @@
 """Postfix plugin constants."""
 
-POLICY_FILENAME = "starttls_everywhere_policy"
-
 CA_CERTS_PATH = "/etc/ssl/certs/"
 
 MINIMUM_VERSION = (2, 11,)
@@ -55,6 +53,5 @@ CLI_DEFAULTS = dict(
     tls_only=False,
     ignore_master_overrides=False,
     server_only=False,
-    policy_file=POLICY_FILENAME,
 )
 """CLI defaults."""

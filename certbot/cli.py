@@ -1111,9 +1111,6 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         "security", "--no-uir", action="store_false", dest="uir", default=flag_default("uir"),
         help=argparse.SUPPRESS)
     helpful.add(
-        "security", "--starttls-policy", dest="starttls_policy",
-        default=flag_default("starttls_policy"), help=argparse.SUPPRESS)
-    helpful.add(
         "security", "--staple-ocsp", action="store_true", dest="staple",
         default=flag_default("staple"),
         help="Enables OCSP Stapling. A valid OCSP response is stapled to"

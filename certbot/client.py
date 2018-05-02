@@ -472,8 +472,7 @@ class Client(object):
             ("hsts", "ensure-http-header", "Strict-Transport-Security"),
             ("redirect", "redirect", None),
             ("staple", "staple-ocsp", chain_path),
-            ("uir", "ensure-http-header", "Upgrade-Insecure-Requests"),
-            ("starttls_policy", "starttls-policy", None),)
+            ("uir", "ensure-http-header", "Upgrade-Insecure-Requests"),)
         supported = self.installer.supported_enhancements()
 
         for config_name, enhancement_name, option in enhancement_info:
@@ -481,8 +480,6 @@ class Client(object):
             if enhancement_name in supported:
                 if config_name == "redirect" and config_value is None:
                     config_value = enhancements.ask(enhancement_name)
-                if config_name == "starttls_policy" and config_value is not None:
-                    option = config_value
                 if config_value:
                     self.apply_enhancement(domains, enhancement_name, option)
                     enhanced = True

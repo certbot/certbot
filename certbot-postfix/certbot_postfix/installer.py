@@ -29,11 +29,6 @@ class Installer(plugins_common.Installer):
 
     :ivar postconf: Wrapper for Postfix configuration command-line tool.
     :type postconf: :class: `certbot_postfix.postconf.ConfigMain`
-
-    :ivar policy: A STARTTLS Policy object to query per-domain TLS policies.
-    :type policy: :class: `policylist.policy.Config`
-
-    :ivar str policy_file: Path to TLS policy file in a format that Postfix expects.
     """
 
     description = "Configure TLS with the Postfix MTA"
@@ -49,8 +44,6 @@ class Installer(plugins_common.Installer):
             "default configuration paths.")
         add("config-utility", default=constants.CLI_DEFAULTS["config_utility"],
             help="Path to the 'postconf' executable.")
-        add("policy-file", default=constants.CLI_DEFAULTS["policy_file"],
-            help="Name of the policy file that we should write to in config-dir.")
         add("tls-only", default=constants.CLI_DEFAULTS["tls_only"],
             help="Only set params to enable opportunistic TLS and install certificates.")
         add("server-only", default=constants.CLI_DEFAULTS["server_only"],
@@ -74,14 +67,9 @@ class Installer(plugins_common.Installer):
         # Files to save
         self.save_notes = []
 
-        # Variables for starttls-policy enhancement
-        self.policy = None
-        self.postfix = None
-        self.policy_file = None
-        self._enhance_func = {"starttls-policy": self._enable_policy_list}
-        # Since we only need to enable TLS or the STARTTLS policy once for all domains,
+        self._enhance_func = {}
+        # Since we only need to enable TLS once for all domains,
         # keep track of whether this enhancement was already called.
-        self._starttls_policy_enabled = False
         self._tls_enabled = False
 
     def _ensure_ca_certificates_exist(self):
@@ -127,7 +115,6 @@ class Installer(plugins_common.Installer):
         # Check Postfix version
         self._check_version()
         self._lock_config_dir()
-        self.policy_file = os.path.join(self.conf('config-dir'), self.conf('policy-file'))
         self.install_ssl_dhparams()
 
     def config_test(self):
@@ -256,25 +243,6 @@ class Installer(plugins_common.Installer):
             self._set_vars(constants.DEFAULT_CLIENT_VARS)
         self._confirm_changes()
 
-    def _enable_policy_list(self, domain, options):
-        # pylint: disable=unused-argument
-        if self._starttls_policy_enabled:
-            return
-        self._starttls_policy_enabled = True
-        try:
-            from starttls_policy import policy
-        except ImportError:
-            raise errors.PluginError('STARTTLS Everywhere policy Python module not installed!')
-        if options is None:
-            policy = policy.Config()
-        else:
-            policy = policy.Config(options)
-        policy.load()
-        util.write_domainwise_tls_policies(policy, self.policy_file)
-        policy_cf_entry = "texthash:" + self.policy_file
-        self.postconf.set("smtp_tls_policy_maps", policy_cf_entry)
-        self.postconf.set("smtp_tls_CApath", constants.CA_CERTS_PATH)
-
     def enhance(self, domain, enhancement, options=None):
         """Raises an exception for request for unsupported enhancement.
         """
@@ -295,7 +263,7 @@ class Installer(plugins_common.Installer):
         :rtype: list
 
         """
-        return ['starttls-policy']
+        return []
 
     def save(self, title=None, temporary=False):
         """Creates backups and writes changes to configuration files.

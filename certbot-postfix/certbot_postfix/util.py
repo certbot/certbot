@@ -6,8 +6,6 @@ from certbot import errors
 from certbot import util as certbot_util
 from certbot.plugins import util as plugins_util
 
-from certbot_postfix import constants
-
 logger = logging.getLogger(__name__)
 
 COMMAND = "postfix"
@@ -203,55 +201,6 @@ def verify_exe_exists(exe, message=None):
     if not (certbot_util.exe_exists(exe) or plugins_util.path_surgery(exe)):
         raise errors.NoInstallationError(message)
 
-def _get_formatted_protocols(min_tls_version, delimiter=":"):
-    """Enforces the minimum TLS version in a way that Postfix can understand. For instance,
-    if the min_tls_version is TLS1.1, then Postfix expects: "!SSLv2:!SSLv3:!TLSv1"
-
-    :param str min_tls_version: SSL/TLS version that we expect to be in ACCEPTABLE_TLS_VERSIONS.
-    :param str delimiter: delimiter for the SSL/TLS declarations.
-    :rtype str: Protocol declaration, formatted correctly in a Postfix-y way. For instance:
-        TLSv1.1 => !SSLv2:!SSLv3:!TLSv1
-        TLSv1   => !SSLv2:!SSLv3
-    """
-    if min_tls_version not in constants.ACCEPTABLE_TLS_VERSIONS:
-        return None
-    return delimiter.join(["!" + version
-        for version in constants.TLS_VERSIONS[0:constants.TLS_VERSIONS.index(min_tls_version)]])
-
-def _get_formatted_policy_for_domain(address_domain, tls_policy):
-    """Parses TLS policy specification into a format that Postfix expects. In particular:
-        <domain> <tls_security_level> protocols=<protocols>
-    For instance, let's say we have an entry for mail.example.com with a minimum TLS version of 1.1:
-        mail.example.com encrypt protocols=!SSLv2:!SSLv3:!TLSv1
-    :param address_domain str: The domain we're configuring this policy for.
-    :param tls_policy dict: TLS policy information.
-    :rtype str: Properly formatted Postfix TLS policy specification for this domain.
-    """
-    mx_list = tls_policy.mxs
-    if len(mx_list) == 0:
-        matches = ""
-    else:
-        matches = 'match=' + ':'.join(mx_list)
-    entry = address_domain + " secure " + matches
-    protocols_value = _get_formatted_protocols(tls_policy.min_tls_version)
-    if protocols_value is not None:
-        entry += " protocols=" + protocols_value
-    else:
-        logger.warn('Unknown minimum TLS version: %s', tls_policy.min_tls_version)
-    return entry
-
-def write_domainwise_tls_policies(policy, policy_file):
-    """Writes domainwise tls policies to policy_file in a format that Postfix
-    can parse.
-    :param policy: A TLSPolicy object that wraps the STARTTLS Policy List.
-    :param str policy_file: The filepath to the Postfix tls_policy file that should be written.
-    """
-    policy_lines = []
-    for address_domain, tls_policy in policy.policies_iter():
-        policy_lines.append(_get_formatted_policy_for_domain(address_domain, tls_policy))
-    with open(policy_file, "w") as f:
-        f.write("\n".join(policy_lines) + "\n")
-
 def report_master_overrides(name, overrides, acceptable_overrides=None):
     """If the value for a parameter |name| is overridden by other services,
     report a warning to notify the user.
@@ -268,7 +217,7 @@ def report_master_overrides(name, overrides, acceptable_overrides=None):
         service, value = override
         # If this override is acceptable:
         if acceptable_overrides is not None and \
-            _is_acceptable_value(name, value, acceptable_overrides):
+            is_acceptable_value(name, value, acceptable_overrides):
             continue
         error_string += "  {1}: {2}\n".format(service, value)
     if len(error_string) > 0:
@@ -276,6 +225,9 @@ def report_master_overrides(name, overrides, acceptable_overrides=None):
              "following services in master.cf:\n" + error_string)
 
 def is_acceptable_value(parameter, value, acceptable):
+    """ Returns whether the `value` for this `parameter` is acceptable,
+    given a string or tuple `acceptable`
+    """
     # If it's a tuple, there's multiple acceptable options.
     # Only set a param if it's not acceptable.
     if isinstance(acceptable, tuple):

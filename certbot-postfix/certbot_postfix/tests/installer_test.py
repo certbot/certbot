@@ -2,7 +2,6 @@
 import functools
 import os
 import pkg_resources
-import shutil
 import unittest
 
 import mock
@@ -19,9 +18,7 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
         self.config.postfix_ctl = "postfix"
         self.config.postfix_config_dir = self.tempdir
         self.config.postfix_config_utility = "postconf"
-        self.config.postfix_policy_file = os.path.join(self.tempdir, "config.json")
         self.config.config_dir = self.tempdir
-        shutil.copyfile(_config_file, self.config.postfix_policy_file)
         self.mock_postfix = MockPostfix()
         self.mock_postconf = MockPostconf(self.tempdir, {"mail_version": "3.1.4"})
 
@@ -29,7 +26,7 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
         pass
 
     def test_add_parser_arguments(self):
-        options = set(('ctl', 'config-dir', 'config-utility', 'policy-file',
+        options = set(('ctl', 'config-dir', 'config-utility',
                        'tls-only', 'server-only', 'ignore-master-overrides'))
         mock_add = mock.MagicMock()
 
@@ -113,17 +110,7 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
     def test_supported_enhancements(self):
         self.assertEqual(
             self._create_prepared_installer().supported_enhancements(),
-            ['starttls-policy'])
-
-    def test_enhance_starttls(self):
-        installer = self._create_prepared_installer()
-        mock_open = mock.mock_open()
-        with mock.patch('certbot_postfix.installer.util.open', mock_open):
-            installer.enhance("example.org", "starttls-policy", self.config.postfix_policy_file)
-        mock_open().write.assert_called_once_with(
-            'example-recipient.com secure '
-            'match=.example-recipient.com:example-recipient.com:mail.example.com '
-            'protocols=!SSLv2:!SSLv3:!TLSv1:!TLSv1.1\n')
+            [])
 
     def _create_prepared_installer(self):
         """Creates and returns a new prepared Postfix Installer.
