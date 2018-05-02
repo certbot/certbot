@@ -27,7 +27,6 @@ dev_extras = [
     'pytest',
     'pytest-xdist',
     'tox',
-    'typing',
 ]
 
 docs_extras = [
