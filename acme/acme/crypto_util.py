@@ -6,7 +6,8 @@ import os
 import re
 import socket
 
-from OpenSSL import SSL, crypto # type: ignore # https://github.com/python/typeshed/issues/2052
+from OpenSSL import crypto
+from OpenSSL import SSL # type: ignore # https://github.com/python/typeshed/issues/2052
 import josepy as jose
 
 from acme import errors
