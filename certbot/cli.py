@@ -1106,6 +1106,12 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              "authenticated vhost. (default: Ask)")
     helpful.add(
         ["security", "enhance"],
+        "--auto-hsts", action="store_true", dest="auto_hsts",
+        default=flag_default("auto_hsts"),
+        help="Automatically increase Strict-Transport-Security header maxAge "
+             "value over time. Implies --hsts.")
+    helpful.add(
+        ["security", "enhance"],
         "--hsts", action="store_true", dest="hsts", default=flag_default("hsts"),
         help="Add the Strict-Transport-Security header to every HTTP response."
              " Forcing browser to always use SSL for the domain."

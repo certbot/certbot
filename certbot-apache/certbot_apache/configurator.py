@@ -165,6 +165,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.vhosts = None
         self.vhostroot = None
         self._enhance_func = {"redirect": self._enable_redirect,
+                              "auto_hsts": self._autohsts_deploy,
                               "ensure-http-header": self._set_http_header,
                               "staple-ocsp": self._enable_ocsp_stapling}
 
@@ -1470,6 +1471,63 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if need_to_save:
             self.save()
 
+    def find_vhost_by_id(self, id_str):
+        """
+        Searches through VirtualHosts and tries to match the id in a comment
+
+        :param str id_str: Id string for matching
+
+        :returns: The matched VirtualHost or None
+        :rtype: :class:`~certbot_apache.obj.VirtualHost` or None
+        """
+
+        for vh in self.vhosts:
+            if self._find_vhost_id(vh) == id_str:
+                return vh
+        return None
+
+    def _find_vhost_id(self, vhost):
+        """Tries to find the unique ID from the VirtualHost comments. This is
+        used for keeping track of VirtualHost directive over time.
+
+        :param vhost: Virtual host to add the id
+        :type vhost: :class:`~certbot_apache.obj.VirtualHost`
+
+        :returns: The unique ID or None
+        :rtype: str or None
+        """
+
+        # Strip the {} off from the format string
+        search_comment = constants.MANAGED_COMMENT_ID.format("")
+
+        id_comment = self.parser.find_comments(search_comment, vhost.path)
+        if id_comment:
+            # Use the first value, multiple ones shouldn't exist
+            comment = self.parser.get_arg(id_comment[0])
+            return comment.split(" ")[-1]
+        return None
+
+    def add_vhost_id(self, vhost):
+        """Adds an unique ID to the VirtualHost as a comment for mapping back
+        to it on later invocations, as the config file order might have changed.
+        If ID already exists, returns that instead.
+
+        :param vhost: Virtual host to add or find the id
+        :type vhost: :class:`~certbot_apache.obj.VirtualHost`
+
+        :returns: The unique ID for vhost
+        :rtype: str or None
+        """
+
+        vh_id = self._find_vhost_id(vhost)
+        if vh_id:
+            return vh_id
+
+        id_string = apache_util.unique_id()
+        comment = constants.MANAGED_COMMENT_ID.format(id_string)
+        self.parser.add_comment(vhost.path, comment)
+        return id_string
+
     def _escape(self, fp):
         fp = fp.replace(",", "\\,")
         fp = fp.replace("[", "\\[")
@@ -1486,7 +1544,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     ######################################################################
     def supported_enhancements(self):  # pylint: disable=no-self-use
         """Returns currently supported enhancements."""
-        return ["redirect", "ensure-http-header", "staple-ocsp"]
+        return ["auto_hsts", "redirect", "ensure-http-header", "staple-ocsp"]
 
     def enhance(self, domain, enhancement, options=None):
         """Enhance configuration.
@@ -1528,6 +1586,143 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         except errors.PluginError:
             logger.warning("Failed %s for %s", enhancement, domain)
             raise
+
+    def _autohsts_deploy(self, ssl_vhost, _options):
+        """Do the initial AutoHSTS deployment to a vhost
+
+        :param ssl_vhost: The VirtualHost object to deploy the AutoHSTS
+        :type ssl_vhost: :class:`~certbot_apache.obj.VirtualHost` or None
+
+        """
+        try:
+            self._verify_no_matching_http_header(ssl_vhost,
+                                                 "Strict-Transport-Security")
+        except errors.PluginEnhancementAlreadyPresent:
+            logger.warning("The Strict-Transport-Security header is already "
+                           "present in the VirtualHost")
+            return
+
+        if "headers_module" not in self.parser.modules:
+            self.enable_mod("headers")
+        # Prepare the HSTS header value
+        hsts_header = constants.HEADER_ARGS["Strict-Transport-Security"][:-1]
+        initial_maxage = constants.AUTOHSTS_STEPS[0]
+        hsts_header.append("\"max-age={0}\"".format(initial_maxage))
+
+        # Add ID to the VirtualHost for mapping back to it later
+        uniq_id = self.add_vhost_id(ssl_vhost)
+        self.save_notes += "Adding unique ID {0} to VirtualHost in {1}\n".format(
+            uniq_id, ssl_vhost.filep)
+        # Add the actual HSTS header
+        self.parser.add_dir(ssl_vhost.path, "Header", hsts_header)
+        note_msg = ("Adding gradually increasing HSTS header with initial value "
+                    "of {0} to VirtualHost in {1}\n".format(
+                        initial_maxage, ssl_vhost.filep))
+        self.save_notes += note_msg
+        self.save(note_msg)
+        logger.info(note_msg)
+
+        # Save the current state to pluginstorage
+        self._autohsts_save_state(uniq_id, laststep=0)
+
+    def _autohsts_increase(self, id_str, nextstep):
+        """Increase the AutoHSTS max-age value
+
+        :param str id_str: The unique ID string of VirtualHost
+
+        """
+        vhost = self.find_vhost_by_id(id_str)
+        nextstep_value = constants.AUTOHSTS_STEPS[nextstep]
+        self._autohsts_write(vhost, nextstep_value)
+        self._autohsts_save_state(id_str, nextstep)
+
+    def _autohsts_write(self, vhost, nextstep_value):
+        """
+        Write the new HSTS max-age value to the VirtualHost file
+        """
+
+        hsts_dirpath = None
+        header_path = self.parser.find_dir("Header", None, vhost.path)
+        if header_path:
+            pat = '(?:[ "]|^)(strict-transport-security)(?:[ "]|$)'
+            for match in header_path:
+                if re.search(pat, self.aug.get(match).lower()):
+                    hsts_dirpath = match
+        if not hsts_dirpath:
+            err_msg = ("Certbot was unable to find the existing HSTS header "
+                       "from the VirtualHost at path {0}.").format(vhost.filep)
+            raise errors.PluginError(err_msg)
+
+        # Prepare the HSTS header value
+        hsts_maxage = "\"max-age={0}\"".format(nextstep_value)
+
+        # Update the header
+        # Our match statement was for string strict-transport-security, but
+        # we need to update the value instead. The next index is for the value
+        hsts_dirpath = hsts_dirpath.replace("arg[3]", "arg[4]")
+        self.aug.set(hsts_dirpath, hsts_maxage)
+        note_msg = ("Increasing HSTS max-age value to {0} for VirtualHost "
+                    "in {1}\n".format(nextstep_value, vhost.filep))
+        logger.debug(note_msg)
+        self.save_notes += note_msg
+        self.save(note_msg)
+
+    def _autohsts_update(self):
+        """
+        Increase the AutoHSTS values of VirtualHosts
+        """
+        managed = self.storage.fetch("autohsts")
+        curtime = time.time()
+        for id_str in managed:
+            if managed[id_str]["timestamp"] + constants.AUTOHSTS_FREQ > curtime:
+                # Skip if last increase was < AUTOHSTS_FREQ ago
+                continue
+            nextstep = managed[id_str]["laststep"] + 1
+            if nextstep < len(constants.AUTOHSTS_STEPS):
+                # Have not reached the max value yet
+                self._autohsts_increase(id_str, nextstep)
+
+    def _autohsts_save_state(self, id_str, laststep=0):
+        """
+        Save the current state of AutoHSTS steps with a timestamp
+        """
+        managed = self.storage.fetch("autohsts")
+        if not managed:
+            managed = dict()
+        managed[id_str] = {"laststep": laststep, "timestamp": time.time()}
+        self.storage.put("autohsts", managed)
+        self.storage.save()
+
+    def _autohsts_make_permanent(self, lineage):
+        """
+        Checks if autohsts vhost has reached maximum auto-increased value
+        and changes the HSTS max-age to a high value.
+        """
+        managed = self.storage.fetch("autohsts")
+        vhosts = []
+        # Copy, as we are removing from the dict inside the loop
+        for id_str in managed.keys()[:]:
+            if managed[id_str]["laststep"]+1 >= len(constants.AUTOHSTS_STEPS):
+                # max value reached, try to make permanent
+                vhost = self.find_vhost_by_id(id_str)
+                if self._autohsts_vhost_in_lineage(vhost, lineage):
+                    vhosts.append(vhost)
+                    managed.pop(id_str)
+        for vhost in vhosts:
+            self._autohsts_write(vhost, constants.AUTOHSTS_PERMANENT)
+        # Update AutoHSTS storage (We potentially removed vhosts from managed)
+        self.storage.put("autohsts", managed)
+        self.storage.save()
+
+    def _autohsts_vhost_in_lineage(self, vhost, lineage):
+        """
+        Searches AutoHSTS managed VirtualHosts that belong to the lineage.
+        Matches the private key path.
+        """
+
+        return any(
+            self.parser.find_dir("SSLCertificateKeyFile",
+                                 lineage.key_path, vhost.path))
 
     def _enable_ocsp_stapling(self, ssl_vhost, unused_options):
         """Enables OCSP Stapling
@@ -2156,3 +2351,21 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # to be modified.
         return common.install_version_controlled_file(options_ssl, options_ssl_digest,
             self.constant("MOD_SSL_CONF_SRC"), constants.ALL_SSL_OPTIONS_HASHES)
+
+    def generic_updates(self, _domain):
+        """
+        Interface method from interfaces.GenericUpdater to perform actions
+        when running certbot with "renew" verb, regardless of the lineage
+        being renewed.
+        """
+        self._autohsts_update()
+
+    def renew_deploy(self, lineage):
+        """
+        Interface method from interfaces.RenewDeployer to perform actions
+        when a lineage has been renewed during a run with "renew" verb.
+        """
+        self._autohsts_make_permanent(lineage)
+
+interfaces.RenewDeployer.register(ApacheConfigurator)
+interfaces.GenericUpdater.register(ApacheConfigurator)

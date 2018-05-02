@@ -57,6 +57,7 @@ CLI_DEFAULTS = dict(
     rsa_key_size=2048,
     must_staple=False,
     redirect=None,
+    auto_hsts=False,
     hsts=None,
     uir=None,
     staple=None,

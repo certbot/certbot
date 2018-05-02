@@ -1490,6 +1490,19 @@ class MultipleVhostsTest(util.ApacheTest):
                             "Upgrade-Insecure-Requests")
         self.assertTrue(mock_choose.called)
 
+    def test_add_vhost_id(self):
+        for vh in [self.vh_truth[0], self.vh_truth[1], self.vh_truth[2]]:
+            vh_id = self.config.add_vhost_id(vh)
+            self.assertEqual(vh, self.config.find_vhost_by_id(vh_id))
+
+    def test_find_vhost_by_id_404(self):
+        self.assertEqual(None, self.config.find_vhost_by_id("nonexistent"))
+
+    def test_add_vhost_id_already_exists(self):
+        first_id = self.config.add_vhost_id(self.vh_truth[0])
+        second_id = self.config.add_vhost_id(self.vh_truth[0])
+        self.assertEqual(first_id, second_id)
+
 
 class AugeasVhostsTest(util.ApacheTest):
     """Test vhosts with illegal names dependent on augeas version."""
