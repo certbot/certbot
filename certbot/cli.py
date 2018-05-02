@@ -1193,6 +1193,14 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         help="Disable running executables found in Certbot's hook directories"
         " during renewal. (default: False)")
     helpful.add(
+        "renew", "--disable-renew-updates", action="store_true",
+        default=flag_default("disable_renew_updates"), dest="disable_renew_updates",
+        help="Disable automatic updates to your server configuration that"
+        " would otherwise be done by the selected installer plugin, and triggered"
+        " when the user executes \"certbot renew\", regardless of if the certificate"
+        " is renewed. This setting does not apply to important TLS configuration"
+        " updates.")
+    helpful.add(
         "renew", "--autorenew", action="store_true",
         dest="autorenew", help="Enable auto renewal of certificates."
         )

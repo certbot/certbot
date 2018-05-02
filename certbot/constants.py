@@ -65,6 +65,7 @@ CLI_DEFAULTS = dict(
     pref_challs=[],
     validate_hooks=True,
     directory_hooks=True,
+    disable_renew_updates=False,
 
     # Subparsers
     num=None,
