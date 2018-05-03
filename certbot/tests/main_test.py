@@ -1023,7 +1023,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
 
     def _test_renewal_common(self, due_for_renewal, extra_args, log_out=None,
                              args=None, should_renew=True, error_expected=False,
-                                 quiet_mode=False, expiry_date=datetime.datetime.now()):
+                                 quiet_mode=False, expiry_date=datetime.datetime.now(), reuse_key=False):
         # pylint: disable=too-many-locals,too-many-arguments
         cert_path = test_util.vector_path('cert_512.pem')
         chain_path = '/etc/letsencrypt/live/foo.bar/fullchain.pem'
@@ -1075,7 +1075,12 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
                                             traceback.format_exc())
 
             if should_renew:
-                mock_client.obtain_certificate.assert_called_once_with(['isnot.org'])
+                if reuse_key:
+                    # The location of the previous live privkey.pem is passed
+                    # to obtain_certificate
+                    mock_client.obtain_certificate.assert_called_once_with(['isnot.org'], os.path.join(self.config.config_dir, "live/sample-renewal/privkey.pem"))
+                else:
+                    mock_client.obtain_certificate.assert_called_once_with(['isnot.org'])
             else:
                 self.assertEqual(mock_client.obtain_certificate.call_count, 0)
         except:
@@ -1124,6 +1129,11 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
         args = ["renew", "--dry-run", "-tvv"]
         self._test_renewal_common(True, [], args=args, should_renew=True)
+
+    def test_reuse_key(self):
+        test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
+        args = ["renew", "--dry-run", "--reuse-key"]
+        self._test_renewal_common(True, [], args=args, should_renew=True, reuse_key=True)
 
     @mock.patch('certbot.renewal.should_renew')
     def test_renew_skips_recent_certs(self, should_renew):
