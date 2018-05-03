@@ -10,7 +10,7 @@ class MagicTypingTest(unittest.TestCase):
         try:
             import typing as temp_typing
         except ImportError: # pragma: no cover
-            pass # pragma: no cover
+            temp_typing = None # pragma: no cover
         typing_class_mock = mock.MagicMock()
         sys.modules['typing'] = typing_class_mock
         if 'acme.magic_typing' in sys.modules:
@@ -24,7 +24,7 @@ class MagicTypingTest(unittest.TestCase):
         try:
             import typing as temp_typing
         except ImportError: # pragma: no cover
-            pass # pragma: no cover
+            temp_typing = None # pragma: no cover
         sys.modules['typing'] = None
         if 'acme.magic_typing' in sys.modules:
             del sys.modules['acme.magic_typing'] # pragma: no cover
