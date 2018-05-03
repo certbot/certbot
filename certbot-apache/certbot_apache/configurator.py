@@ -2376,5 +2376,5 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         self._autohsts_make_permanent(lineage)
 
-interfaces.RenewDeployer.register(ApacheConfigurator)
-interfaces.GenericUpdater.register(ApacheConfigurator)
+interfaces.RenewDeployer.register(ApacheConfigurator)  # pylint: disable=no-member
+interfaces.GenericUpdater.register(ApacheConfigurator)  # pylint: disable=no-member
