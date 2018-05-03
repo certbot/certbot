@@ -67,6 +67,7 @@ dev_extras = [
 
 dev3_extras = [
     'mypy',
+    'typing', # for python3.4
 ]
 
 docs_extras = [
