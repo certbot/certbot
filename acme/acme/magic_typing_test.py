@@ -1,3 +1,4 @@
+"""Tests for acme.magic_typing."""
 import mock
 import sys
 import unittest
@@ -5,21 +6,32 @@ import unittest
 
 class MagicTypingTest(unittest.TestCase):
     """Tests for acme.magic_typing."""
-    def setUp(self):
-        super(MagicTypingTest, self).setUp()
-        if 'acme.magic_typing' in sys.modules:
-            del sys.modules['acme.magic_typing']
-
     def test_import_success(self):
+        try:
+            import typing as temp_typing
+        except ImportError: # pragma: no cover
+            pass # pragma: no cover
         typing_class_mock = mock.MagicMock()
         sys.modules['typing'] = typing_class_mock
-        from acme.magic_typing import Text
+        if 'acme.magic_typing' in sys.modules:
+            del sys.modules['acme.magic_typing'] # pragma: no cover
+        from acme.magic_typing import Text # pylint: disable=no-name-in-module, unused-variable
         self.assertEqual(sys.modules['acme.magic_typing'], typing_class_mock)
+        del sys.modules['acme.magic_typing']
+        sys.modules['typing'] = temp_typing
 
     def test_import_failure(self):
+        try:
+            import typing as temp_typing
+        except ImportError: # pragma: no cover
+            pass # pragma: no cover
         sys.modules['typing'] = None
-        from acme.magic_typing import Text
+        if 'acme.magic_typing' in sys.modules:
+            del sys.modules['acme.magic_typing'] # pragma: no cover
+        from acme.magic_typing import Text # pylint: disable=no-name-in-module
         self.assertTrue(Text is None)
+        del sys.modules['acme.magic_typing']
+        sys.modules['typing'] = temp_typing
 
 
 if __name__ == '__main__':
