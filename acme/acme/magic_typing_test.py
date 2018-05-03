@@ -12,11 +12,13 @@ class MagicTypingTest(unittest.TestCase):
         except ImportError: # pragma: no cover
             temp_typing = None # pragma: no cover
         typing_class_mock = mock.MagicMock()
+        text_mock = mock.MagicMock()
+        typing_class_mock.Text = text_mock
         sys.modules['typing'] = typing_class_mock
         if 'acme.magic_typing' in sys.modules:
             del sys.modules['acme.magic_typing'] # pragma: no cover
-        from acme.magic_typing import Text # pylint: disable=no-name-in-module, unused-variable
-        self.assertEqual(sys.modules['acme.magic_typing'], typing_class_mock)
+        from acme.magic_typing import Text # pylint: disable=no-name-in-module
+        self.assertEqual(Text, text_mock)
         del sys.modules['acme.magic_typing']
         sys.modules['typing'] = temp_typing
 
