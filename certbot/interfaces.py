@@ -7,10 +7,9 @@ import zope.interface
 # pylint: disable=too-few-public-methods
 
 
+@six.add_metaclass(abc.ABCMeta)
 class AccountStorage(object):
     """Accounts storage interface."""
-
-    __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
     def find_all(self):  # pragma: no cover
