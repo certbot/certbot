@@ -155,23 +155,27 @@ def probe_sni(name, host, port=443, timeout=300,
             raise errors.Error(error)
     return client_ssl.get_peer_certificate()
 
-def make_csr(private_key_pem, domains, must_staple=False):
-    """Generate a CSR containing a list of domains as subjectAltNames.
+def make_csr(private_key_pem, subject_alt_names, must_staple=False, common_name=None):
+    """Generate a CSR containing a list of subject_alt_names as subjectAltNames
+    and common_name string as Common Name subject. If common_name is not passed,
+    first domain from the subject_alt_names will be a Common Name subject by default.
 
     :param buffer private_key_pem: Private key, in PEM PKCS#8 format.
-    :param list domains: List of DNS names to include in subjectAltNames of CSR.
+    :param list subject_alt_names: List of DNS names to include in subjectAltNames of CSR.
     :param bool must_staple: Whether to include the TLS Feature extension (aka
         OCSP Must Staple: https://tools.ietf.org/html/rfc7633).
+    :param unicode common_name: Common name subject string of CSR.
     :returns: buffer PEM-encoded Certificate Signing Request.
     """
     private_key = OpenSSL.crypto.load_privatekey(
         OpenSSL.crypto.FILETYPE_PEM, private_key_pem)
     csr = OpenSSL.crypto.X509Req()
+    csr.get_subject().CN = common_name or subject_alt_names[0]
     extensions = [
         OpenSSL.crypto.X509Extension(
             b'subjectAltName',
             critical=False,
-            value=', '.join('DNS:' + d for d in domains).encode('ascii')
+            value=', '.join('DNS:' + d for d in subject_alt_names).encode('ascii')
         ),
     ]
     if must_staple:
@@ -303,3 +307,4 @@ def dump_pyopenssl_chain(chain, filetype=OpenSSL.crypto.FILETYPE_PEM):
     # assumes that OpenSSL.crypto.dump_certificate includes ending
     # newline character
     return b"".join(_dump_cert(cert) for cert in chain)
+
