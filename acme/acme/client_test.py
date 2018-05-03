@@ -17,6 +17,7 @@ from acme import jws as acme_jws
 from acme import messages
 from acme import messages_test
 from acme import test_util
+from acme.magic_typing import Dict # pylint: disable=unused-import, no-name-in-module
 
 
 CERT_DER = test_util.load_vector('cert.der')
@@ -61,7 +62,8 @@ class ClientTestBase(unittest.TestCase):
         self.contact = ('mailto:cert-admin@example.com', 'tel:+12025551212')
         reg = messages.Registration(
             contact=self.contact, key=KEY.public_key())
-        self.new_reg = messages.NewRegistration(**dict(reg))
+        the_arg = dict(reg) # type: Dict
+        self.new_reg = messages.NewRegistration(**the_arg) # pylint: disable=star-args
         self.regr = messages.RegistrationResource(
             body=reg, uri='https://www.letsencrypt-demo.org/acme/reg/1')
 
