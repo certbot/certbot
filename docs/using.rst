@@ -198,6 +198,7 @@ plugins on your system.
 
 Once installed, you can find documentation on how to use each plugin at:
 
+* `certbot-dns-alwaysdata <https://certbot-dns-alwaysdata.readthedocs.io>`_
 * `certbot-dns-cloudflare <https://certbot-dns-cloudflare.readthedocs.io>`_
 * `certbot-dns-cloudxns <https://certbot-dns-cloudxns.readthedocs.io>`_
 * `certbot-dns-digitalocean <https://certbot-dns-digitalocean.readthedocs.io>`_
