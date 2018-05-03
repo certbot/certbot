@@ -1,7 +1,8 @@
 """Tests for acme.magic_typing."""
-import mock
 import sys
 import unittest
+
+import mock
 
 
 class MagicTypingTest(unittest.TestCase):
