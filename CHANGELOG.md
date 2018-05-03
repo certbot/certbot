@@ -2,6 +2,49 @@
 
 Certbot adheres to [Semantic Versioning](http://semver.org/).
 
+## 0.24.0 - 2018-05-02
+
+### Added
+
+* certbot now has an enhance subcommand which allows you to configure security
+  enhancements like HTTP to HTTPS redirects, OCSP stapling, and HSTS without
+  reinstalling a certificate.
+* certbot-dns-rfc2136 now allows the user to specify the port to use to reach
+  the DNS server in its credentials file.
+* acme now parses the wildcard field included in authorizations so it can be
+  used by users of the library.
+
+### Changed
+
+* certbot-dns-route53 used to wait for each DNS update to propagate before
+  sending the next one, but now it sends all updates before waiting which
+  speeds up issuance for multiple domains dramatically.
+* Certbot's official Docker images are now based on Alpine Linux 3.7 rather
+  than 3.4 because 3.4 has reached its end-of-life.
+* We've doubled the time Certbot will spend polling authorizations before
+  timing out.
+* The level of the message logged when Certbot is being used with
+  non-standard paths warning that crontabs for renewal included in Certbot
+  packages from OS package managers may not work has been reduced. This stops
+  the message from being written to stderr every time `certbot renew` runs.
+
+### Fixed
+
+* certbot-auto now works with Python 3.6.
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+packages with changes other than their version number were:
+
+* acme
+* certbot
+* certbot-apache
+* certbot-dns-digitalocean (only style improvements to tests)
+* certbot-dns-rfc2136
+
+More details about these changes can be found on our GitHub repo:
+https://github.com/certbot/certbot/milestone/52?closed=1
+
 ## 0.23.0 - 2018-04-04
 
 ### Added
