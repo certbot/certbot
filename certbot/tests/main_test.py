@@ -1023,8 +1023,9 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
 
     def _test_renewal_common(self, due_for_renewal, extra_args, log_out=None,
                              args=None, should_renew=True, error_expected=False,
-                                 quiet_mode=False, expiry_date=datetime.datetime.now(), reuse_key=False):
-        # pylint: disable=too-many-locals,too-many-arguments
+                             quiet_mode=False, expiry_date=datetime.datetime.now(),
+                             reuse_key=False):
+        # pylint: disable=too-many-locals,too-many-arguments,too-many-branches
         cert_path = test_util.vector_path('cert_512.pem')
         chain_path = '/etc/letsencrypt/live/foo.bar/fullchain.pem'
         mock_lineage = mock.MagicMock(cert=cert_path, fullchain=chain_path,
@@ -1078,7 +1079,8 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
                 if reuse_key:
                     # The location of the previous live privkey.pem is passed
                     # to obtain_certificate
-                    mock_client.obtain_certificate.assert_called_once_with(['isnot.org'], os.path.join(self.config.config_dir, "live/sample-renewal/privkey.pem"))
+                    mock_client.obtain_certificate.assert_called_once_with(['isnot.org'],
+                        os.path.join(self.config.config_dir, "live/sample-renewal/privkey.pem"))
                 else:
                     mock_client.obtain_certificate.assert_called_once_with(['isnot.org'])
             else:
