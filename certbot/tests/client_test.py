@@ -433,6 +433,22 @@ class EnhanceConfigTest(ClientTestCommon):
         self.client.installer.enhance.assert_not_called()
         mock_enhancements.ask.assert_not_called()
 
+    @mock.patch("certbot.client.logger")
+    def test_already_exists_header(self, mock_log):
+        self.config.hsts = True
+        self._test_with_already_existing()
+        self.assertTrue(mock_log.warning.called)
+        self.assertEquals(mock_log.warning.call_args[0][1],
+                          'Strict-Transport-Security')
+
+    @mock.patch("certbot.client.logger")
+    def test_already_exists_redirect(self, mock_log):
+        self.config.redirect = True
+        self._test_with_already_existing()
+        self.assertTrue(mock_log.warning.called)
+        self.assertEquals(mock_log.warning.call_args[0][1],
+                          'redirect')
+
     def test_no_ask_hsts(self):
         self.config.hsts = True
         self._test_with_all_supported()
@@ -507,6 +523,13 @@ class EnhanceConfigTest(ClientTestCommon):
         self.client.enhance_config([self.domain], None)
         self.assertEqual(self.client.installer.save.call_count, 1)
         self.assertEqual(self.client.installer.restart.call_count, 1)
+
+    def _test_with_already_existing(self):
+        self.client.installer = mock.MagicMock()
+        self.client.installer.supported_enhancements.return_value = [
+            "ensure-http-header", "redirect", "staple-ocsp"]
+        self.client.installer.enhance.side_effect = errors.PluginEnhancementAlreadyPresent()
+        self.client.enhance_config([self.domain], None)
 
 
 class RollbackTest(unittest.TestCase):
