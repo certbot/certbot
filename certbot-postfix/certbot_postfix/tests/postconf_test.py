@@ -3,6 +3,8 @@
 import mock
 import unittest
 
+from certbot import errors
+
 class PostConfTest(unittest.TestCase):
     """Tests for certbot_postfix.util.PostConf."""
     def setUp(self):
@@ -30,6 +32,7 @@ class PostConfTest(unittest.TestCase):
     @mock.patch('certbot_postfix.util.PostfixUtilBase._call')
     def test_set(self, mock_call):
         self.config.set('extra_param', 'other_value')
+        self.assertEqual(self.config.get('extra_param'), 'other_value')
         self.config.flush()
         mock_call.assert_called_with(['-e', 'extra_param=other_value'])
 
@@ -66,6 +69,28 @@ class PostConfTest(unittest.TestCase):
         # pylint: disable=protected-access
         self.config._handle_overrides = _check_overrides
         self.config.set('overridden_by_master', 'new_value')
+
+    @mock.patch('certbot_postfix.util.PostfixUtilBase._get_output')
+    def test_flush(self, mock_out):
+        self.config.set('default_parameter', 'new_value')
+        self.config.set('extra_param', 'another_value')
+        self.config.flush()
+        mock_out.assert_called_with(
+            ['-e', 'default_parameter=new_value', 'extra_param=another_value'])
+
+    @mock.patch('certbot_postfix.util.PostfixUtilBase._get_output')
+    def test_flush_updates_object(self, mock_out):
+        self.config.set('default_parameter', 'new_value')
+        self.config.flush()
+        mock_out.reset_mock()
+        self.config.set('default_parameter', 'new_value')
+        mock_out.assert_not_called()
+
+    @mock.patch('certbot_postfix.util.PostfixUtilBase._get_output')
+    def test_flush_throws_error_on_fail(self, mock_out):
+        mock_out.side_effect = [IOError("oh no!")]
+        self.config.set('default_parameter', 'new_value')
+        self.assertRaises(errors.PluginError, self.config.flush)
 
 if __name__ == '__main__':  # pragma: no cover
     unittest.main()

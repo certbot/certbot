@@ -219,10 +219,10 @@ def report_master_overrides(name, overrides, acceptable_overrides=None):
         if acceptable_overrides is not None and \
             is_acceptable_value(name, value, acceptable_overrides):
             continue
-        error_string += "  {1}: {2}\n".format(service, value)
+        error_string += "  {0}: {1}\n".format(service, value)
     if len(error_string) > 0:
         raise errors.PluginError("{0} is overridden with less secure options by the "
-             "following services in master.cf:\n" + error_string)
+             "following services in master.cf:\n".format(name) + error_string)
 
 def is_acceptable_value(parameter, value, acceptable):
     """ Returns whether the `value` for this `parameter` is acceptable,
@@ -231,8 +231,7 @@ def is_acceptable_value(parameter, value, acceptable):
     # If it's a tuple, there's multiple acceptable options.
     # Only set a param if it's not acceptable.
     if isinstance(acceptable, tuple):
-        if value not in acceptable:
-            return False
+        return value in acceptable
     # Check if param value is a comma-separated list of protocols.
     elif 'protocols' in parameter:
         return _has_acceptable_tls_versions(value)

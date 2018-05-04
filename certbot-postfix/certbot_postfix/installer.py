@@ -189,7 +189,7 @@ class Installer(plugins_common.Installer):
         """Sets all parameters in var_dict to config file.
         """
         for param, acceptable in six.iteritems(var_dict):
-            if util.is_acceptable_value(param, self.postconf.get(param), acceptable):
+            if not util.is_acceptable_value(param, self.postconf.get(param), acceptable):
                 if isinstance(acceptable, tuple):
                     self.postconf.set(param, acceptable[0], acceptable)
                 else:
@@ -205,7 +205,7 @@ class Installer(plugins_common.Installer):
         for name, value in six.iteritems(updates):
             output_string += "{0} = {1}\n".format(name, value)
         output_string += "Is this okay?\n"
-        if not zope.component.getUtility(interfaces.IDisplay).yesno(output_string):
+        if not zope.component.getUtility(interfaces.IDisplay).yesno(output_string, default=False):
             raise errors.PluginError(
                 "Manually rejected configuration changes.\n"
                 "Try using --tls-only or --server-only to change a particular"
@@ -244,18 +244,11 @@ class Installer(plugins_common.Installer):
         self._confirm_changes()
 
     def enhance(self, domain, enhancement, options=None):
-        """Raises an exception for request for unsupported enhancement.
+        """Raises an exception since this installer doesn't support any enhancements.
         """
-        try:
-            func = self._enhance_func[enhancement]
-        except (KeyError, ValueError):
-            raise errors.PluginError(
-                "Unsupported enhancement: {0}".format(enhancement))
-        try:
-            func(domain, options)
-        except errors.PluginError:
-            logger.warning("Failed %s for %s", enhancement, domain)
-            raise
+        # pylint: disable=unused-argument
+        raise errors.PluginError(
+            "Unsupported enhancement: {0}".format(enhancement))
 
     def supported_enhancements(self):
         """Returns a list of supported enhancements.

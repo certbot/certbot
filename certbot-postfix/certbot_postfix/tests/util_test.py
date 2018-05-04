@@ -26,6 +26,54 @@ class PostfixUtilBaseTest(unittest.TestCase):
         with mock.patch('certbot_postfix.util.verify_exe_exists'):
             self._create_object('existent')
 
+    @mock.patch('certbot_postfix.util.check_all_output')
+    def test_call_extends_args(self, mock_output):
+        # pylint: disable=protected-access
+        with mock.patch('certbot_postfix.util.verify_exe_exists'):
+            mock_output.return_value = 'expected'
+            postfix = self._create_object('executable')
+            postfix._call(['many', 'extra', 'args'])
+            mock_output.assert_called_with(['executable', 'many', 'extra', 'args'])
+            postfix._call()
+            mock_output.assert_called_with(['executable'])
+
+class PostfixUtilTest(unittest.TestCase):
+    def setUp(self):
+        # pylint: disable=protected-access
+        from certbot_postfix.util import PostfixUtil
+        self.postfix = PostfixUtil()
+        self.postfix._call = mock.Mock()
+        self.mock_call = self.postfix._call
+
+    def test_test(self):
+        self.postfix.test()
+        self.mock_call.assert_called_with(['check'])
+
+    def test_test_raises_error_when_check_fails(self):
+        self.mock_call.side_effect = [subprocess.CalledProcessError(None, None, None)]
+        self.assertRaises(errors.MisconfigurationError, self.postfix.test)
+        self.mock_call.assert_called_with(['check'])
+
+    def test_restart_while_running(self):
+        self.mock_call.side_effect = [subprocess.CalledProcessError(None, None, None), None]
+        self.postfix.restart()
+        self.mock_call.assert_called_with(['start'])
+
+    def test_restart_while_not_running(self):
+        self.postfix.restart()
+        self.mock_call.assert_called_with(['reload'])
+
+    def test_restart_raises_error_when_reload_fails(self):
+        self.mock_call.side_effect = [None, subprocess.CalledProcessError(None, None, None)]
+        self.assertRaises(errors.PluginError, self.postfix.restart)
+        self.mock_call.assert_called_with(['reload'])
+
+    def test_restart_raises_error_when_start_fails(self):
+        self.mock_call.side_effect = [
+             subprocess.CalledProcessError(None, None, None),
+             subprocess.CalledProcessError(None, None, None)]
+        self.assertRaises(errors.PluginError, self.postfix.restart)
+        self.mock_call.assert_called_with(['start'])
 
 class CheckAllOutputTest(unittest.TestCase):
     """Tests for certbot_postfix.util.check_all_output."""
@@ -96,11 +144,39 @@ class VerifyExeExistsTest(unittest.TestCase):
         mock_path_surgery.return_value = True
         self._call('foo')
 
-class WriteDomainwiseTlsPoliciesTest(unittest.TestCase):
-    pass
+class TestUtils(unittest.TestCase):
+    """ Testing random utility functions in util.py
+    """
+    def test_report_master_overrides(self):
+        from certbot_postfix.util import report_master_overrides
+        self.assertRaises(errors.PluginError, report_master_overrides, 'name',
+                          [('service/type', 'value')])
+        # Shouldn't raise error
+        report_master_overrides('name', [('service/type', 'value')],
+                                acceptable_overrides='value')
+        report_master_overrides('name', [('service/type', 'value')],
+                                acceptable_overrides=('value', 'value1'))
 
-class ReportMasterOverridesTest(unittest.TestCase):
-    pass
+    def test_is_acceptable_value(self):
+        from certbot_postfix.util import is_acceptable_value
+        self.assertTrue(is_acceptable_value('name', 'value', 'value'))
+        self.assertFalse(is_acceptable_value('name', 'bad', 'value'))
 
-if __name__ == '__main__':  # pragma: no cover
+    def test_is_acceptable_tuples(self):
+        from certbot_postfix.util import is_acceptable_value
+        self.assertTrue(is_acceptable_value('name', 'value', ('value', 'value1')))
+        self.assertFalse(is_acceptable_value('name', 'bad', ('value', 'value1')))
+
+    def test_is_acceptable_protocols(self):
+        from certbot_postfix.util import is_acceptable_value
+        self.assertFalse(is_acceptable_value('something_protocols_lol',
+            'SSLv2, SSLv3', ''))
+        self.assertFalse(is_acceptable_value('something_protocols_lol',
+            '!SSLv2, !TLSv1', ''))
+        self.assertTrue(is_acceptable_value('something_protocols_lol',
+            '!SSLv2, !SSLv3', ''))
+        self.assertTrue(is_acceptable_value('something_protocols_lol',
+            '!SSLv3, !TLSv1, !SSLv2', ''))
+
+if __name__ == '__main__': # pragma: no cover
     unittest.main()

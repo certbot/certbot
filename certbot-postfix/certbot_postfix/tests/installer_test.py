@@ -1,7 +1,10 @@
 """Tests for certbot_postfix.installer."""
+from contextlib import contextmanager
+import copy
 import functools
 import os
 import pkg_resources
+import six
 import unittest
 
 import mock
@@ -9,7 +12,35 @@ import mock
 from certbot import errors
 from certbot.tests import util as certbot_test_util
 
+DEFAULT_MAIN_CF = {
+    "smtpd_tls_cert_file": "",
+    "smtpd_tls_key_file": "",
+    "smtpd_tls_dh1024_param_file": "",
+    "smtpd_tls_security_level": "none",
+    "smtpd_tls_auth_only": "",
+    "smtpd_tls_mandatory_protocols": "",
+    "smtpd_tls_protocols": "",
+    "smtpd_tls_ciphers": "",
+    "smtpd_exclude_ciphers": "",
+    "smtpd_tls_mandatory_ciphers": "",
+    "smtpd_tls_eecdh_grade": "medium",
+    "smtp_tls_security_level": "",
+    "smtp_tls_ciphers": "",
+    "smtp_exclude_ciphers": "",
+    "smtp_tls_mandatory_ciphers": "",
+    "mail_version": "3.2.3"
+}
+
+DEFAULT_MASTER_CF = {
+}
+
+def _main_cf_with(obj):
+    main_cf = copy.copy(DEFAULT_MAIN_CF)
+    main_cf.update(obj)
+    return main_cf
+
 class InstallerTest(certbot_test_util.ConfigTestCase):
+    # pylint: disable=too-many-public-methods
 
     def setUp(self):
         super(InstallerTest, self).setUp()
@@ -18,12 +49,84 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
         self.config.postfix_ctl = "postfix"
         self.config.postfix_config_dir = self.tempdir
         self.config.postfix_config_utility = "postconf"
+        self.config.postfix_tls_only = False
+        self.config.postfix_server_only = False
         self.config.config_dir = self.tempdir
-        self.mock_postfix = MockPostfix()
-        self.mock_postconf = MockPostconf(self.tempdir, {"mail_version": "3.1.4"})
 
-    def test_confirm_changes(self):
-        pass
+    @mock.patch('certbot_postfix.installer.util.is_acceptable_value')
+    def test_set_vars(self, mock_is_acceptable_value):
+        mock_is_acceptable_value.return_value = True
+        with create_installer(self.config) as installer:
+            installer.prepare()
+            mock_is_acceptable_value.return_value = False
+
+    @mock.patch('certbot_postfix.installer.util.is_acceptable_value')
+    def test_acceptable_value(self, mock_is_acceptable_value):
+        mock_is_acceptable_value.return_value = True
+        with create_installer(self.config) as installer:
+            installer.prepare()
+            mock_is_acceptable_value.return_value = False
+
+    @certbot_test_util.patch_get_utility()
+    def test_confirm_changes_no_raises_error(self, mock_util):
+        mock_util().yesno.return_value = False
+        with create_installer(self.config) as installer:
+            installer.prepare()
+            self.assertRaises(errors.PluginError, installer.deploy_cert,
+                              'example.com', 'cert_path', 'key_path',
+                              'chain_path', 'fullchain_path')
+
+    @certbot_test_util.patch_get_utility()
+    def test_save(self, mock_util):
+        mock_util().yesno.return_value = True
+        with create_installer(self.config) as installer:
+            installer.prepare()
+            installer.postconf.flush = mock.Mock()
+            installer.reverter = mock.Mock()
+            installer.deploy_cert('example.com', "cert_path", "key_path",
+                                  "chain_path", "fullchain_path")
+            installer.save()
+            self.assertEqual(installer.save_notes, [])
+            self.assertEqual(installer.postconf.flush.call_count, 1)
+            self.assertEqual(installer.reverter.add_to_checkpoint.call_count, 1)
+
+    @certbot_test_util.patch_get_utility()
+    def test_save_with_title(self, mock_util):
+        mock_util().yesno.return_value = True
+        with create_installer(self.config) as installer:
+            installer.prepare()
+            installer.postconf.flush = mock.Mock()
+            installer.reverter = mock.Mock()
+            installer.deploy_cert('example.com', "cert_path", "key_path",
+                                  "chain_path", "fullchain_path")
+            installer.save(title='new_file!')
+            self.assertEqual(installer.reverter.finalize_checkpoint.call_count, 1)
+
+    @certbot_test_util.patch_get_utility()
+    def test_rollback_checkpoints_resets_postconf(self, mock_util):
+        mock_util().yesno.return_value = True
+        with create_installer(self.config) as installer:
+            installer.prepare()
+            installer.deploy_cert('example.com', "cert_path", "key_path",
+                                  "chain_path", "fullchain_path")
+            installer.rollback_checkpoints()
+            self.assertEqual(installer.postconf.get_changes(), {})
+
+    @certbot_test_util.patch_get_utility()
+    def test_recovery_routine_resets_postconf(self, mock_util):
+        mock_util().yesno.return_value = True
+        with create_installer(self.config) as installer:
+            installer.prepare()
+            installer.deploy_cert('example.com', "cert_path", "key_path",
+                                  "chain_path", "fullchain_path")
+            installer.recovery_routine()
+            self.assertEqual(installer.postconf.get_changes(), {})
+
+    def test_restart(self):
+        with create_installer(self.config) as installer:
+            installer.prepare()
+            installer.restart()
+            self.assertEqual(installer.postfix.restart.call_count, 1)
 
     def test_add_parser_arguments(self):
         options = set(('ctl', 'config-dir', 'config-utility',
@@ -37,173 +140,171 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
             self.assertTrue(call[0][0] in options)
 
     def test_no_postconf_prepare(self):
-        installer = self._create_installer()
+        with create_installer(self.config) as installer:
+            installer_path = "certbot_postfix.installer"
+            exe_exists_path = installer_path + ".certbot_util.exe_exists"
+            path_surgery_path = "certbot_postfix.util.plugins_util.path_surgery"
+            with mock.patch(path_surgery_path, return_value=False):
+                with mock.patch(exe_exists_path, return_value=False):
+                    self.assertRaises(errors.NoInstallationError,
+                                      installer.prepare)
 
-        installer_path = "certbot_postfix.installer"
-        exe_exists_path = installer_path + ".certbot_util.exe_exists"
-        path_surgery_path = "certbot_postfix.util.plugins_util.path_surgery"
-
-        with mock.patch(path_surgery_path, return_value=False):
-            with mock.patch(exe_exists_path, return_value=False):
-                self.assertRaises(errors.NoInstallationError,
-                                  installer.prepare)
-
-    @mock.patch("certbot_postfix.installer.certbot_util.exe_exists")
-    def test_old_version(self, mock_exe_exists):
-        installer = self._create_installer()
-        mock_exe_exists.return_value = True
-        self.mock_postconf.set("mail_version", "0.0.1")
-        self._mock_postfix_and_call(
-            self.assertRaises, errors.NotSupportedError, installer.prepare)
+    def test_old_version(self):
+        with create_installer(self.config, main_cf=_main_cf_with({'mail_version': '0.0.1'}))\
+                as installer:
+            self.assertRaises(errors.NotSupportedError, installer.prepare)
 
     def test_lock_error(self):
-        assert_raises = functools.partial(self.assertRaises,
-                                          errors.PluginError,
-                                          self._create_prepared_installer)
-        certbot_test_util.lock_and_call(assert_raises, self.tempdir)
+        with create_installer(self.config) as installer:
+            assert_raises = functools.partial(self.assertRaises,
+                                              errors.PluginError,
+                                              installer.prepare)
+            certbot_test_util.lock_and_call(assert_raises, self.tempdir)
 
     def test_more_info(self):
-        installer = self._create_prepared_installer()
-        version = "3.1.2"
-        # self.mock_postfix.set_value("mail_version", version)
-        self.mock_postconf.set("mail_version", version)
-
-        output = self._mock_postfix_and_call(installer.more_info)
-        self.assertTrue("Postfix" in output)
-        self.assertTrue(self.tempdir in output)
-        self.assertTrue(version in output)
+        with create_installer(self.config) as installer:
+            installer.prepare()
+            output = installer.more_info()
+            self.assertTrue("Postfix" in output)
+            self.assertTrue(self.tempdir in output)
+            self.assertTrue(DEFAULT_MAIN_CF["mail_version"] in output)
 
     def test_get_all_names(self):
         config = {"mydomain": "example.org",
                   "myhostname": "mail.example.org",
                   "myorigin": "example.org"}
-        for name, value in config.items():
-            # self.mock_postfix.set_value(name, value)
-            self.mock_postconf.set(name, value)
+        with create_installer(self.config, main_cf=_main_cf_with(config)) as installer:
+            installer.prepare()
+            result = installer.get_all_names()
+            self.assertEqual(result, set(config.values()))
 
-        installer = self._create_prepared_installer()
-        result = self._mock_postfix_and_call(installer.get_all_names)
-        self.assertEqual(result, set(config.values()))
+    @certbot_test_util.patch_get_utility()
+    def test_deploy(self, mock_util):
+        mock_util().yesno.return_value = True
+        from certbot_postfix import constants
+        with create_installer(self.config) as installer:
+            installer.prepare()
 
-    def test_deploy(self):
-        installer = self._create_prepared_installer()
-
-        def deploy_cert(domain):
-            """Calls deploy_cert for the given domain.
-
-            :param str domain: domain to deploy cert for
-
-            """
             # pylint: disable=protected-access
-            installer._confirm_changes = lambda: "noop"
-            installer.deploy_cert(domain, "foo", "bar", "baz", "qux")
+            installer.deploy_cert('example.com', "cert_path", "key_path",
+                                  "chain_path", "fullchain_path")
+            changes = installer.postconf.get_changes()
+            expected = {}
+            expected.update(constants.TLS_SERVER_VARS)
+            expected.update(constants.DEFAULT_SERVER_VARS)
+            expected.update(constants.DEFAULT_CLIENT_VARS)
+            self.assertEqual(changes['smtpd_tls_key_file'], 'key_path')
+            self.assertEqual(changes['smtpd_tls_cert_file'], 'cert_path')
+            for name, value in six.iteritems(expected):
+                if isinstance(value, tuple):
+                    self.assertEqual(changes[name], value[0])
+                else:
+                    self.assertEqual(changes[name], value)
 
-        self._mock_postfix_and_call(deploy_cert, "example.org")
-        # No calls to postconf are expected so mock isn't needed
-        deploy_cert("mail.example.org")
+    @certbot_test_util.patch_get_utility()
+    def test_tls_only(self, mock_util):
+        mock_util().yesno.return_value = True
+        with create_installer(self.config) as installer:
+            installer.prepare()
+            installer.conf = lambda x: x == 'tls_only'
+            installer.postconf.set = mock.Mock()
+            installer.deploy_cert('example.com', "cert_path", "key_path",
+                                  "chain_path", "fullchain_path")
+            self.assertEqual(installer.postconf.set.call_count, 8)
+
+    @certbot_test_util.patch_get_utility()
+    def test_server_only(self, mock_util):
+        mock_util().yesno.return_value = True
+        with create_installer(self.config) as installer:
+            installer.prepare()
+            installer.conf = lambda x: x == 'server_only'
+            installer.postconf.set = mock.Mock()
+            installer.deploy_cert('example.com', "cert_path", "key_path",
+                                  "chain_path", "fullchain_path")
+            self.assertEqual(installer.postconf.set.call_count, 11)
+
+    @certbot_test_util.patch_get_utility()
+    def test_tls_and_server_only(self, mock_util):
+        mock_util().yesno.return_value = True
+        with create_installer(self.config) as installer:
+            installer.prepare()
+            installer.conf = lambda x: True
+            installer.postconf.set = mock.Mock()
+            installer.deploy_cert('example.com', "cert_path", "key_path",
+                                  "chain_path", "fullchain_path")
+            self.assertEqual(installer.postconf.set.call_count, 4)
+
+    @certbot_test_util.patch_get_utility()
+    def test_deploy_twice(self, mock_util):
+        # Deploying twice on the same installer shouldn't do anything!
+        mock_util().yesno.return_value = True
+        with create_installer(self.config) as installer:
+            installer.prepare()
+            from certbot_postfix.postconf import ConfigMain
+            with mock.patch.object(ConfigMain, 'set', wraps=installer.postconf.set) as fake_set:
+                installer.deploy_cert('example.com', "cert_path", "key_path",
+                                      "chain_path", "fullchain_path")
+                self.assertEqual(fake_set.call_count, 15)
+                fake_set.reset_mock()
+                installer.deploy_cert('example.com', "cert_path", "key_path",
+                                      "chain_path", "fullchain_path")
+                fake_set.assert_not_called()
+
+    @certbot_test_util.patch_get_utility()
+    def test_deploy_already_secure(self, mock_util):
+        # Should not overwrite "more-secure" parameters
+        mock_util().yesno.return_value = True
+        more_secure = {
+            'smtpd_tls_security_level': 'encrypt',
+            'smtpd_tls_protocols': '!SSLv3, !SSLv2, !TLSv1',
+            'smtpd_tls_eecdh_grade': 'strong'
+        }
+        with create_installer(self.config,\
+            main_cf=_main_cf_with(more_secure)) as installer:
+            installer.prepare()
+            installer.deploy_cert('example.com', "cert_path", "key_path",
+                                  "chain_path", "fullchain_path")
+            for param in more_secure.keys():
+                self.assertFalse(param in installer.postconf.get_changes())
 
     def test_enhance(self):
-        self.assertRaises(errors.PluginError,
-                          self._create_prepared_installer().enhance,
-                          "example.org", "redirect")
+        with create_installer(self.config) as installer:
+            installer.prepare()
+            self.assertRaises(errors.PluginError,
+                              installer.enhance,
+                              "example.org", "redirect")
 
     def test_supported_enhancements(self):
-        self.assertEqual(
-            self._create_prepared_installer().supported_enhancements(),
-            [])
+        with create_installer(self.config) as installer:
+            installer.prepare()
+            self.assertEqual(installer.supported_enhancements(), [])
 
-    def _create_prepared_installer(self):
-        """Creates and returns a new prepared Postfix Installer.
+@contextmanager
+def create_installer(config, main_cf=DEFAULT_MAIN_CF, master_cf=DEFAULT_MASTER_CF):
+# pylint: disable=dangerous-default-value
+    """Creates a Postfix installer with calls to `postconf` and `postfix` mocked out.
 
-        Calls in prepare() are mocked out so the Postfix version check
-        is successful.
-
-        :returns: a prepared Postfix installer
-        :rtype: certbot_postfix.installer.Installer
-
-        """
-        installer = self._create_installer()
-
+    In particular, creates a ConfigMain object that does regular things, but seeds it
+    with values from `main_cf` and `master_cf` dicts.
+    """
+    from certbot_postfix.postconf import ConfigMain
+    from certbot_postfix import installer
+    def _mock_init_postconf(postconf, executable, handle_overrides, config_dir=None):
+        # pylint: disable=protected-access
+        super(ConfigMain, postconf).__init__(executable, config_dir)
+        postconf._handle_overrides = handle_overrides
+        postconf._db = main_cf
+        postconf._master_db = master_cf
+        postconf._updated = {}
+        # override get_default to get from main
+        postconf.get_default = lambda name: main_cf[name]
+    with mock.patch.object(ConfigMain, "__init__", _mock_init_postconf):
         exe_exists_path = "certbot_postfix.installer.certbot_util.exe_exists"
         with mock.patch(exe_exists_path, return_value=True):
-            self._mock_postfix_and_call(installer.prepare)
-
-        return installer
-
-    def _create_installer(self):
-        """Creates and returns a new Postfix Installer.
-
-        :returns: a new Postfix installer
-        :rtype: certbot_postfix.installer.Installer
-
-        """
-        name = "postfix"
-
-        from certbot_postfix import installer
-        return installer.Installer(self.config, name)
-
-    def _mock_postfix_and_call(self, func, *args, **kwargs):
-        """Calls func with mocked responses from Postfix utilities.
-
-        :param callable func: function to call with mocked args
-        :param tuple args: positional arguments to func
-        :param dict kwargs: keyword arguments to func
-
-        :returns: the return value of func
-
-        """
-
-        with mock.patch("certbot_postfix.installer.postconf.ConfigMain",
-                         return_value=self.mock_postconf):
             with mock.patch("certbot_postfix.installer.util.PostfixUtil",
-                             return_value=self.mock_postfix):
-                return func(*args, **kwargs)
-
-class MockPostfix(object):
-    """Mock utility for Postfix command-line wrapper.
-    """
-    def __init__(self):
-        pass
-
-    def test(self):
-        """Mocks Postfix's 'test' call."""
-        pass
-
-    def restart(self):
-        """Mocks Postfix's 'reload' call."""
-        pass
-
-class MockPostconf(object):
-    """Mock utility for Postconf command-line wrapper.
-    """
-    def __init__(self, tempdir, init_keys=None):
-        self._db = init_keys
-        if self._db is None:
-            self._db = {}
-        self._db['config_directory'] = tempdir
-
-    def get(self, name):
-        """Mocks Postconf object's 'get' call."""
-        if name not in self._db:
-            return None
-        return self._db[name]
-
-    def get_default(self, name):
-        """Mocks Postconf object's 'get_default' call."""
-        if name in self._db:
-            return self._db[name]
-        if name == "mail_version":
-            return "3.2.3"
-        return None
-
-    def set(self, name, value, check_override=None):
-        """Mocks Postconf object's 'set' call."""
-        # pylint: disable=unused-argument
-        self._db[name] = value
-
-    def flush(self):
-        """Mocks Postconf object's 'flush' call."""
-        pass
+                             return_value=mock.Mock()):
+                yield installer.Installer(config, "postfix")
 
 if __name__ == '__main__':
     unittest.main()  # pragma: no cover
+

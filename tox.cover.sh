@@ -44,7 +44,7 @@ cover () {
   elif [ "$1" = "certbot_nginx" ]; then
     min=97
   elif [ "$1" = "certbot_postfix" ]; then
-    min=100
+    min=99
   elif [ "$1" = "letshelp_certbot" ]; then
     min=100
   else
