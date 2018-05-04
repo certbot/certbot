@@ -323,7 +323,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             # Returned objects are guaranteed to be ssl vhosts
             return self._choose_vhosts_wildcard(domain, create_if_no_ssl)
         else:
-            return [self.choose_vhost(domain)]
+            return [self.choose_vhost(domain, create_if_no_ssl)]
 
     def _vhosts_for_wildcard(self, domain):
         """
@@ -475,20 +475,21 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if chain_path is not None:
             self.save_notes += "\tSSLCertificateChainFile %s\n" % chain_path
 
-    def choose_vhost(self, target_name, temp=False):
+    def choose_vhost(self, target_name, create_if_no_ssl=True):
         """Chooses a virtual host based on the given domain name.
 
         If there is no clear virtual host to be selected, the user is prompted
         with all available choices.
 
-        The returned vhost is guaranteed to have TLS enabled unless temp is
-        True. If temp is True, there is no such guarantee and the result is
-        not cached.
+        The returned vhost is guaranteed to have TLS enabled unless
+        create_if_no_ssl is set to False, in which case there is no such guarantee
+        and the result is not cached.
 
         :param str target_name: domain name
-        :param bool temp: whether the vhost is only used temporarily
+        :param bool create_if_no_ssl: If found VirtualHost doesn't have a HTTPS
+            counterpart, should one get created
 
-        :returns: ssl vhost associated with name
+        :returns: vhost associated with name
         :rtype: :class:`~certbot_apache.obj.VirtualHost`
 
         :raises .errors.PluginError: If no vhost is available or chosen
@@ -501,7 +502,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Try to find a reasonable vhost
         vhost = self._find_best_vhost(target_name)
         if vhost is not None:
-            if temp:
+            if not create_if_no_ssl:
                 return vhost
             if not vhost.ssl:
                 vhost = self.make_vhost_ssl(vhost)
@@ -510,7 +511,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             self.assoc[target_name] = vhost
             return vhost
 
-        return self._choose_vhost_from_list(target_name, temp)
+        # Negate create_if_no_ssl value to indicate if we want a SSL vhost
+        # to get created if a non-ssl vhost is selected.
+        return self._choose_vhost_from_list(target_name, temp=not create_if_no_ssl)
 
     def _choose_vhost_from_list(self, target_name, temp=False):
         # Select a vhost from a list
@@ -1505,7 +1508,20 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             raise errors.PluginError(
                 "Unsupported enhancement: {0}".format(enhancement))
 
-        vhosts = self.choose_vhosts(domain, create_if_no_ssl=False)
+        matched_vhosts = self.choose_vhosts(domain, create_if_no_ssl=False)
+        # We should be handling only SSL vhosts for enhancements
+        vhosts = [vhost for vhost in matched_vhosts if vhost.ssl]
+
+        if not vhosts:
+            msg_tmpl = ("Certbot was not able to find SSL VirtualHost for a "
+                        "domain {0} for enabling enhancement \"{1}\". The requested "
+                        "enhancement was not configured.")
+            msg_enhancement = enhancement
+            if options:
+                msg_enhancement += ": " + options
+            msg = msg_tmpl.format(domain, msg_enhancement)
+            logger.warning(msg)
+            raise errors.PluginError(msg)
         try:
             for vhost in vhosts:
                 func(vhost, options)

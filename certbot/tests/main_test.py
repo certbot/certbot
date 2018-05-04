@@ -23,6 +23,7 @@ from certbot import configuration
 from certbot import crypto_util
 from certbot import errors
 from certbot import main
+from certbot import updater
 from certbot import util
 
 from certbot.plugins import disco
@@ -1232,7 +1233,9 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         self._test_renew_common(renewalparams=renewalparams, error_expected=True,
                                 names=names, assert_oc_called=False)
 
-    def test_renew_with_configurator(self):
+    @mock.patch('certbot.plugins.selection.choose_configurator_plugins')
+    def test_renew_with_configurator(self, mock_sel):
+        mock_sel.return_value = (mock.MagicMock(), mock.MagicMock())
         renewalparams = {'authenticator': 'webroot'}
         self._test_renew_common(
             renewalparams=renewalparams, assert_oc_called=True,
@@ -1448,6 +1451,18 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
                             email in mock_utility().add_message.call_args[0][0])
                         self.assertTrue(mock_handle.called)
 
+    @mock.patch('certbot.plugins.selection.choose_configurator_plugins')
+    def test_plugin_selection_error(self, mock_choose):
+        mock_choose.side_effect = errors.PluginSelectionError
+        self.assertRaises(errors.PluginSelectionError, main.renew_cert,
+                          None, None, None)
+
+        with mock.patch('certbot.updater.logger.warning') as mock_log:
+            updater.run_generic_updaters(None, None, None)
+            self.assertTrue(mock_log.called)
+            self.assertTrue("Could not choose appropriate plugin for updaters"
+                            in mock_log.call_args[0][0])
+
 
 class UnregisterTest(unittest.TestCase):
     def setUp(self):
@@ -1532,6 +1547,115 @@ class MakeOrVerifyNeededDirs(test_util.ConfigTestCase):
                 hook_dir, uid=os.geteuid(),
                 strict=self.config.strict_permissions)
 
+
+class EnhanceTest(unittest.TestCase):
+    """Tests for certbot.main.enhance."""
+
+    def setUp(self):
+        self.get_utility_patch = test_util.patch_get_utility()
+        self.mock_get_utility = self.get_utility_patch.start()
+
+    def tearDown(self):
+        self.get_utility_patch.stop()
+
+    def _call(self, args):
+        plugins = disco.PluginsRegistry.find_all()
+        config = configuration.NamespaceConfig(
+            cli.prepare_and_parse_args(plugins, args))
+
+        with mock.patch('certbot.cert_manager.get_certnames') as mock_certs:
+            mock_certs.return_value = ['example.com']
+            with mock.patch('certbot.cert_manager.domains_for_certname') as mock_dom:
+                mock_dom.return_value = ['example.com']
+                with mock.patch('certbot.main._init_le_client') as mock_init:
+                    mock_client = mock.MagicMock()
+                    mock_client.config = config
+                    mock_init.return_value = mock_client
+                    main.enhance(config, plugins)
+                    return mock_client # returns the client
+
+    @mock.patch('certbot.main.plug_sel.record_chosen_plugins')
+    @mock.patch('certbot.cert_manager.lineage_for_certname')
+    @mock.patch('certbot.main.display_ops.choose_values')
+    @mock.patch('certbot.main._find_domains_or_certname')
+    def test_selection_question(self, mock_find, mock_choose, mock_lineage, _rec):
+        mock_lineage.return_value = mock.MagicMock(chain_path="/tmp/nonexistent")
+        mock_choose.return_value = ['example.com']
+        mock_find.return_value = (None, None)
+        with mock.patch('certbot.main.plug_sel.pick_installer') as mock_pick:
+            self._call(['enhance', '--redirect'])
+            self.assertTrue(mock_pick.called)
+            # Check that the message includes "enhancements"
+            self.assertTrue("enhancements" in mock_pick.call_args[0][3])
+
+    @mock.patch('certbot.main.plug_sel.record_chosen_plugins')
+    @mock.patch('certbot.cert_manager.lineage_for_certname')
+    @mock.patch('certbot.main.display_ops.choose_values')
+    @mock.patch('certbot.main._find_domains_or_certname')
+    def test_selection_auth_warning(self, mock_find, mock_choose, mock_lineage, _rec):
+        mock_lineage.return_value = mock.MagicMock(chain_path="/tmp/nonexistent")
+        mock_choose.return_value = ["example.com"]
+        mock_find.return_value = (None, None)
+        with mock.patch('certbot.main.plug_sel.pick_installer'):
+            with mock.patch('certbot.main.plug_sel.logger.warning') as mock_log:
+                mock_client = self._call(['enhance', '-a', 'webroot', '--redirect'])
+                self.assertTrue(mock_log.called)
+                self.assertTrue("make sense" in mock_log.call_args[0][0])
+                self.assertTrue(mock_client.enhance_config.called)
+
+    @mock.patch('certbot.cert_manager.lineage_for_certname')
+    @mock.patch('certbot.main.display_ops.choose_values')
+    @mock.patch('certbot.main.plug_sel.record_chosen_plugins')
+    def test_enhance_config_call(self, _rec, mock_choose, mock_lineage):
+        mock_lineage.return_value = mock.MagicMock(chain_path="/tmp/nonexistent")
+        mock_choose.return_value = ["example.com"]
+        with mock.patch('certbot.main.plug_sel.pick_installer'):
+            mock_client = self._call(['enhance', '--redirect', '--hsts'])
+            req_enh = ["redirect", "hsts"]
+            not_req_enh = ["uir"]
+            self.assertTrue(mock_client.enhance_config.called)
+            self.assertTrue(
+                all([getattr(mock_client.config, e) for e in req_enh]))
+            self.assertFalse(
+                any([getattr(mock_client.config, e) for e in not_req_enh]))
+            self.assertTrue(
+                "example.com" in mock_client.enhance_config.call_args[0][0])
+
+    @mock.patch('certbot.cert_manager.lineage_for_certname')
+    @mock.patch('certbot.main.display_ops.choose_values')
+    @mock.patch('certbot.main.plug_sel.record_chosen_plugins')
+    def test_enhance_noninteractive(self, _rec, mock_choose, mock_lineage):
+        mock_lineage.return_value = mock.MagicMock(
+            chain_path="/tmp/nonexistent")
+        mock_choose.return_value = ["example.com"]
+        with mock.patch('certbot.main.plug_sel.pick_installer'):
+            mock_client = self._call(['enhance', '--redirect',
+                                      '--hsts', '--non-interactive'])
+            self.assertTrue(mock_client.enhance_config.called)
+            self.assertFalse(mock_choose.called)
+
+    @mock.patch('certbot.main.display_ops.choose_values')
+    @mock.patch('certbot.main.plug_sel.record_chosen_plugins')
+    def test_user_abort_domains(self, _rec, mock_choose):
+        mock_choose.return_value = []
+        with mock.patch('certbot.main.plug_sel.pick_installer'):
+            self.assertRaises(errors.Error,
+                              self._call,
+                              ['enhance', '--redirect', '--hsts'])
+
+    def test_no_enhancements_defined(self):
+        self.assertRaises(errors.MisconfigurationError,
+                          self._call, ['enhance'])
+
+    @mock.patch('certbot.main.plug_sel.choose_configurator_plugins')
+    @mock.patch('certbot.main.display_ops.choose_values')
+    @mock.patch('certbot.main.plug_sel.record_chosen_plugins')
+    def test_plugin_selection_error(self, _rec, mock_choose, mock_pick):
+        mock_choose.return_value = ["example.com"]
+        mock_pick.return_value = (None, None)
+        mock_pick.side_effect = errors.PluginSelectionError()
+        mock_client = self._call(['enhance', '--hsts'])
+        self.assertFalse(mock_client.enhance_config.called)
 
 if __name__ == '__main__':
     unittest.main()  # pragma: no cover

@@ -161,6 +161,8 @@ class MultipleVhostsTestDebian(util.ApacheTest):
         self.config.parser.modules.add("mod_ssl.c")
         self.config.get_version = mock.Mock(return_value=(2, 4, 7))
         mock_exe.return_value = True
+        # This will create an ssl vhost for certbot.demo
+        self.config.choose_vhost("certbot.demo")
         self.config.enhance("certbot.demo", "staple-ocsp")
         self.assertTrue("socache_shmcb_module" in self.config.parser.modules)
 
@@ -172,6 +174,7 @@ class MultipleVhostsTestDebian(util.ApacheTest):
         mock_exe.return_value = True
 
         # This will create an ssl vhost for certbot.demo
+        self.config.choose_vhost("certbot.demo")
         self.config.enhance("certbot.demo", "ensure-http-header",
                             "Strict-Transport-Security")
         self.assertTrue("headers_module" in self.config.parser.modules)
@@ -183,6 +186,7 @@ class MultipleVhostsTestDebian(util.ApacheTest):
         mock_exe.return_value = True
         self.config.get_version = mock.Mock(return_value=(2, 2))
         # This will create an ssl vhost for certbot.demo
+        self.config.choose_vhost("certbot.demo")
         self.config.enhance("certbot.demo", "redirect")
         self.assertTrue("rewrite_module" in self.config.parser.modules)
 

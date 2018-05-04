@@ -338,9 +338,10 @@ class Client(object):
         authenticator and installer, and then create a new renewable lineage
         containing it.
 
-        :param list domains: Domains to request.
-        :param plugins: A PluginsFactory object.
-        :param str certname: Name of new cert
+        :param domains: domains to request a certificate for
+        :type domains: `list` of `str`
+        :param certname: requested name of lineage
+        :type certname: `str` or `None`
 
         :returns: A new :class:`certbot.storage.RenewableCert` instance
             referred to the enrolled cert lineage, False if the cert could not
@@ -351,17 +352,11 @@ class Client(object):
 
         if (self.config.config_dir != constants.CLI_DEFAULTS["config_dir"] or
                 self.config.work_dir != constants.CLI_DEFAULTS["work_dir"]):
-            logger.warning(
+            logger.info(
                 "Non-standard path(s), might not work with crontab installed "
                 "by your operating system package manager")
 
-        if certname:
-            new_name = certname
-        elif util.is_wildcard_domain(domains[0]):
-            # Don't make files and directories starting with *.
-            new_name = domains[0][2:]
-        else:
-            new_name = domains[0]
+        new_name = self._choose_lineagename(domains, certname)
 
         if self.config.dry_run:
             logger.debug("Dry run: Skipping creating new lineage for %s",
@@ -372,6 +367,26 @@ class Client(object):
                 new_name, cert,
                 key.pem, chain,
                 self.config)
+
+    def _choose_lineagename(self, domains, certname):
+        """Chooses a name for the new lineage.
+
+        :param domains: domains in certificate request
+        :type domains: `list` of `str`
+        :param certname: requested name of lineage
+        :type certname: `str` or `None`
+
+        :returns: lineage name that should be used
+        :rtype: str
+
+        """
+        if certname:
+            return certname
+        elif util.is_wildcard_domain(domains[0]):
+            # Don't make files and directories starting with *.
+            return domains[0][2:]
+        else:
+            return domains[0]
 
     def save_certificate(self, cert_pem, chain_pem,
                          cert_path, chain_path, fullchain_path):
@@ -451,7 +466,7 @@ class Client(object):
             # sites may have been enabled / final cleanup
             self.installer.restart()
 
-    def enhance_config(self, domains, chain_path):
+    def enhance_config(self, domains, chain_path, ask_redirect=True):
         """Enhance the configuration.
 
         :param list domains: list of domains to configure
@@ -478,8 +493,9 @@ class Client(object):
         for config_name, enhancement_name, option in enhancement_info:
             config_value = getattr(self.config, config_name)
             if enhancement_name in supported:
-                if config_name == "redirect" and config_value is None:
-                    config_value = enhancements.ask(enhancement_name)
+                if ask_redirect:
+                    if config_name == "redirect" and config_value is None:
+                        config_value = enhancements.ask(enhancement_name)
                 if config_value:
                     self.apply_enhancement(domains, enhancement_name, option)
                     enhanced = True
@@ -515,8 +531,12 @@ class Client(object):
                 try:
                     self.installer.enhance(dom, enhancement, options)
                 except errors.PluginEnhancementAlreadyPresent:
-                    logger.warning("Enhancement %s was already set.",
-                            enhancement)
+                    if enhancement == "ensure-http-header":
+                        logger.warning("Enhancement %s was already set.",
+                                options)
+                    else:
+                        logger.warning("Enhancement %s was already set.",
+                                enhancement)
                 except errors.PluginError:
                     logger.warning("Unable to set enhancement %s for %s",
                             enhancement, dom)
