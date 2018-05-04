@@ -1,7 +1,5 @@
 """Postfix plugin constants."""
 
-CA_CERTS_PATH = "/etc/ssl/certs/"
-
 MINIMUM_VERSION = (2, 11,)
 
 # If the value of a default VAR is a tuple, then the values which
