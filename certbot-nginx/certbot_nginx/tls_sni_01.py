@@ -117,8 +117,9 @@ class NginxTlsSni01(common.TLSSNI01):
             raise errors.MisconfigurationError(
                 'Certbot could not find a block to include '
                 'challenges in %s.' % root)
-        http_block.replace_directives([bucket_directive], True)
-        http_block.add_directives([include_directive], True)
+        http_block.contents.replace_statement(bucket_directive,
+            lambda statement: statement[0] == bucket_directive[0], True)
+        http_block.contents.add_statement(include_directive, True)
 
         config = [self._make_server_block(pair[0], pair[1])
                   for pair in six.moves.zip(self.achalls, ll_addrs)]

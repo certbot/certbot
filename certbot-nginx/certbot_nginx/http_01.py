@@ -84,8 +84,9 @@ class NginxHttp01(common.ChallengePerformer):
             raise errors.MisconfigurationError(
                 'Certbot could not find a block to include '
                 'challenges in %s.' % root)
-        http_block.replace_directives([bucket_directive], True)
-        http_block.add_directives([include_directive], True)
+        http_block.contents.replace_statement(bucket_directive,
+            lambda statement: statement[0] == bucket_directive[0], True)
+        http_block.contents.add_statement(include_directive, True)
 
         config = [self._make_or_mod_server_block(achall) for achall in self.achalls]
         config = [x for x in config if x is not None]

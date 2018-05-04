@@ -18,6 +18,9 @@ logger = logging.getLogger(__name__)
 # TODO (sydli) : Flesh out docstrings
 REPEATABLE_DIRECTIVES = set(['server_name', 'listen', 'include', 'rewrite'])
 
+def is_certbot_comment(parsed_obj):
+    return isinstance(parsed_obj, Sentence) and '#' in parsed_obj.words and ' managed by Certbot' in parsed_obj.words
+
 class ParseContext(object):
     """ Context information held by parsed objects. """
     def __init__(self, cwd, filename, parent=None, parsed_files=None):
@@ -42,7 +45,7 @@ class WithLists(object):
         self.context = context
 
     @abc.abstractmethod
-    def parse(self, raw_list):
+    def parse(self, raw_list, add_spaces=False):
         """ Loads information into this object from underlying raw_list structure.
         Each Parsable object might make different assumptions about the structure of
         raw_list. """
@@ -63,10 +66,10 @@ class WithLists(object):
             self._tabs = self.get_tabs()
         return self._tabs
 
-    def get_data(self, include_spaces=False):
+    def dump(self, include_spaces=False):
         """ Retrieves readable underlying representaiton. setting include_spaces
         to False is equivalent to the old UnspacedList object. """
-        return [elem.get_data(include_spaces) for elem in self._data]
+        return [elem.dump(include_spaces) for elem in self._data]
 
 class Statements(WithLists):
     """ A group or list of "Statements". A Statement is either a Block or a Directive.
@@ -89,12 +92,17 @@ class Statements(WithLists):
             return Sentence(self.child_context())
         return Statements(self.child_context())
 
-    def _parse_elem(self, list_):
+    def _parse_elem(self, list_, add_spaces=False):
         parser = self._choose_parser(list_)
-        parser.parse(list_)
+        parser.parse(list_, add_spaces)
         return parser
 
-    def parse(self, parse_this):
+    def set_tabs(self, tabs='    '):
+        for statement in self._data:
+            statement.set_tabs(tabs)
+        self._trailing_whitespace = '\n' + self.context.parent.get_tabs()
+
+    def parse(self, parse_this, add_spaces=False):
         """ Assumes parse_this is a list of parseable lists. """
         if not isinstance(parse_this, list):
             raise errors.MisconfigurationError("Statements parsing expects a list!")
@@ -103,7 +111,7 @@ class Statements(WithLists):
                                and parse_this[-1].isspace():
             self._trailing_whitespace = parse_this[-1]
             parse_this = parse_this[:-1]
-        self._data = [self._parse_elem(elem) for elem in parse_this]
+        self._data = [self._parse_elem(elem, add_spaces) for elem in parse_this]
 
     def get_tabs(self):
         """ Takes a guess at the tabbing of all contained Statements-- by retrieving the
@@ -112,9 +120,9 @@ class Statements(WithLists):
             return self._data[0].get_tabs()
         return ''
 
-    def get_data(self, include_spaces=False):
+    def dump(self, include_spaces=False):
         """ TODO """
-        data = super(Statements, self).get_data(include_spaces)
+        data = super(Statements, self).dump(include_spaces)
         if include_spaces and self._trailing_whitespace is not None:
             return data + [self._trailing_whitespace]
         return data
@@ -171,12 +179,6 @@ class Statements(WithLists):
                 return True
         return False
 
-    def _create_contextual_sentence(self, statement):
-        return Sentence.create_from_context(statement, self.child_context(), self.get_tabs())
-
-    def _create_contextual_bloc(self, statement):
-        return Bloc.create_from_context(statement, self.child_context(), self.get_tabs())
-
     def replace_statement(self, statement, match_func, insert_at_top=False):
         """ For each statement, checks to see if an exisitng directive of that name
         exists. If so, replace the first occurrence with the statement. Otherwise, just
@@ -184,30 +186,35 @@ class Statements(WithLists):
         found = self._get_statement_index(match_func)
         if found < 0:
             # TODO (sydli): this level of abstraction shouldn't know about certbot_comments.
-            if insert_at_top:
-                self.add_statement(certbot_comment(self.context), insert_at_top)
-                self.add_statement(self._create_contextual_sentence(statement), insert_at_top)
-            else:
-                self.add_statement(self._create_contextual_sentence(statement), insert_at_top)
-                self.add_statement(certbot_comment(self.context), insert_at_top)
+            self.add_statement(statement, insert_at_top)
             return
-        self._data[found] = self._create_contextual_sentence(statement)
+        statement = self._parse_elem(statement, add_spaces=True)
+        statement.set_tabs(self.get_tabs())
+        self._data[found] = statement
+        if found + 1 >= len(self._data) or not is_certbot_comment(self._data[found+1]):
+            self._data.insert(found+1, certbot_comment(self.context))
+        # TODO (sydli): if there's no comment here already, add a comment
 
     def add_statement(self, statement, insert_at_top=False):
         """ Adds a Statement to the end of this block of statements. """
+        statement = self._parse_elem(statement, add_spaces=True)
+        statement.set_tabs(self.get_tabs())
+        index = 0
         if insert_at_top:
             self._data.insert(0, statement)
         else:
+            index = len(self._data)
             self._data.append(statement)
+        if not isinstance(statement, Sentence) or not statement.is_comment():
+            self._data.insert(index+1, certbot_comment(self.context))
+        return statement
 
     def remove_statements(self, match_func):
         """ Removes statements from this object."""
         found = self._get_statement_index(match_func)
         while found >= 0:
             del self._data[found]
-            if found < len(self._data) and isinstance(self._data[found], Sentence) and \
-                    '#' in self._data[found].words and \
-                    ' managed by Certbot' in self._data[found].words:
+            if found < len(self._data) and is_certbot_comment(self._data[found]):
                 del self._data[found]
             found = self._get_statement_index(match_func)
 
@@ -242,22 +249,16 @@ def spaces_after_newline(word):
 class Sentence(WithLists):
     """ A list of words. Non-whitespace words are  typically separated with some
     amount of whitespace. """
-    def parse(self, parse_this):
+    def parse(self, parse_this, add_spaces=False):
         """ Expects a list of strings.  """
+        if add_spaces:
+            parse_this = _space_list(parse_this)
         if not isinstance(parse_this, list):
             raise errors.MisconfigurationError("Sentence parsing expects a list!")
         self._data = parse_this
 
-    @staticmethod
-    def create_from_context(statement, context, tabs):
-        """ Constructs an appropriately spaced statement from an unspaced one.
-        no spaces in statement """
-        result = Sentence(context)
-        spaced_statement = _space_list(statement)
-        spaced_statement.insert(0, "\n" + tabs)
-        # if statement[0] != '#':
-        result.parse(spaced_statement)
-        return result
+    def set_tabs(self, tabs='    '):
+        self._data.insert(0, '\n' + tabs)
 
     def is_comment(self):
         """ Is this sentence a comment? """
@@ -282,7 +283,7 @@ class Sentence(WithLists):
     def __getitem__(self, index):
         return self.words[index]
 
-    def get_data(self, include_spaces=False):
+    def dump(self, include_spaces=False):
         """ TODO """
         if not include_spaces:
             return self.words
@@ -298,10 +299,10 @@ class Include(Sentence):
         super(Include, self).__init__(context)
         self.parsed = None
 
-    def parse(self, parse_this):
+    def parse(self, parse_this, add_spaces=False):
         """ Parsing an include touches disk-- this will fetch the associated
         files and actually parse them all! """
-        super(Include, self).parse(parse_this)
+        super(Include, self).parse(parse_this, add_spaces)
         files = glob.glob(os.path.join(self.context.cwd, self.filename))
         self.parsed = {}
         for f in files:
@@ -330,95 +331,26 @@ class Bloc(WithLists):
         self.names = None
         self.contents = None
 
-    @staticmethod
-    def create_from_context(raw, context, tabs):
-        """ Constructs an appropriately spaced statement from an unspaced one.
-        no spaces in statement """
-        result = Bloc(context)
-        spaced_name = _space_list(raw[0])
-        spaced_name.insert(0, "\n" + tabs)
-        contents = []
-        for statement in raw[1]:
-            spaced_statement = _space_list(statement)
-            spaced_statement.insert(0, "\n" + tabs + '    ')
-            contents.append(spaced_statement)
-        contents.append('\n' + tabs)
-        result.parse([spaced_name, contents])
-        return result
+    def set_tabs(self, tabs='    '):
+        self.names.set_tabs(tabs)
+        self.contents.set_tabs(tabs + '    ')
 
-    def parse(self, parse_this):
+    def parse(self, parse_this, add_spaces=False):
         """ Expects a list of two! """
         if not isinstance(parse_this, list) or len(parse_this) != 2:
             raise errors.MisconfigurationError("Bloc parsing expects a list of length 2!")
+         #if add_spaces:
+         #    parse_this = _space_list(parse_this, self.parent.get_tabs())
         self.names = Sentence(self.child_context())
-        self.names.parse(parse_this[0])
+        if add_spaces:
+            parse_this[0].append(' ')
+        self.names.parse(parse_this[0], add_spaces)
         self.contents = Statements(self.child_context())
-        self.contents.parse(parse_this[1])
+        self.contents.parse(parse_this[1], add_spaces)
         self._data = [self.names, self.contents]
 
     def get_tabs(self):
         return self.names.get_tabs()
-
-    # TODO (sydli): contextual sentences/blocks should be parsed automatically
-    # (get rid of `is_block`)
-    def _add_directive(self, statement, insert_at_top=False, is_block=False):
-        # pylint: disable=protected-access
-        if self.contents.contains_exact_directive(statement):
-            return
-        if not is_block and statement[0] not in REPEATABLE_DIRECTIVES and len(
-            list(self.contents.get_directives(statement[0]))) > 0:
-            raise errors.MisconfigurationError("Existing %s directive conflicts with %s",
-                                               statement[0], statement)
-        if not is_block:
-            statement = self.contents._create_contextual_sentence(statement)
-            self.contents.add_statement(statement, insert_at_top)
-            if statement[0] != '#':
-                self.contents.add_statement(certbot_comment(self.child_context()))
-            return
-        statement = self.contents._create_contextual_bloc(statement)
-        self.contents.add_statement(statement, insert_at_top)
-
-    def add_directives(self, statements, insert_at_top=False, is_block=False):
-        """ Add statements to this object. If the exact statement already exists,
-        don't add it.
-
-        doesn't expect spaces between elements in statements """
-        if is_block:
-            self._add_directive(statements, insert_at_top, is_block)
-        else:
-            for statement in statements:
-                self._add_directive(statement, insert_at_top, is_block)
-
-    def replace_directives(self, statements, insert_at_top=False):
-        """ Adds statements to this object. For each of the statements,
-        if one of this statement type already exists, replaces existing statement.
-        """
-        for s in statements:
-            self.contents.replace_statement(s, lambda x, s=s: x[0] == s[0], insert_at_top)
-
-    def remove_directives(self, directive, match_func=None):
-        """ Removes statements from this object."""
-        self.contents.remove_statements(lambda x: x[0] == directive and \
-            (match_func is None or match_func(x)))
-
-
-    def duplicate(self, only_directives=None, remove_singleton_listen_params=False):
-        """ Duplicates iteslf into another sibling server block. """
-        # pylint: disable=protected-access
-        dup_bloc = ServerBloc(self.context)
-        dup_bloc.parse(copy.deepcopy(self.get_data(include_spaces=True)))
-        if only_directives is not None:
-            dup_bloc.contents.remove_statements(lambda x: x[0] not in only_directives)
-        if remove_singleton_listen_params:
-            for directive in dup_bloc.contents.get_directives('listen'):
-                for word in ['default_server', 'default', 'ipv6only=on']:
-                    if word in directive.words:
-                        directive._data.remove(word)
-        self.context.parent.add_statement(dup_bloc)
-        dup_bloc.context.parent = self.context.parent
-        dup_bloc._update_vhost()
-        return dup_bloc
-
 
 class ServerBloc(Bloc):
     """ This bloc should parallel a vhost! """
@@ -450,19 +382,68 @@ class ServerBloc(Bloc):
         self.vhost.names = self.server_names
         self.vhost.ssl = self.ssl
         self.vhost.raw = self
+
+    # TODO (sydli): contextual sentences/blocks should be parsed automatically
+    # (get rid of `is_block`)
+    def _add_directive(self, statement, insert_at_top=False, is_block=False):
+        # pylint: disable=protected-access
+        # ensure no duplicates
+        if self.contents.contains_exact_directive(statement):
+            return
+        # ensure, if it's not repeatable, that it's not repeated
+        if not is_block and statement[0] not in REPEATABLE_DIRECTIVES and len(
+            list(self.contents.get_directives(statement[0]))) > 0:
+            raise errors.MisconfigurationError("Existing %s directive conflicts with %s",
+                                               statement[0], statement)
+        # self.contents.add_statement(_space_list(statement, self.contents.get_tabs()), insert_at_top)
+        self.contents.add_statement(statement, insert_at_top)
+
     def add_directives(self, statements, insert_at_top=False, is_block=False):
-        super(ServerBloc, self).add_directives(statements, insert_at_top, is_block)
-        self._update_vhost()
-    def replace_directives(self, statements, insert_at_top=False):
-        super(ServerBloc, self).replace_directives(statements, insert_at_top)
-        self._update_vhost()
-    def remove_directives(self, directive, match_func=None):
-        super(ServerBloc, self).remove_directives(directive, match_func)
+        """ Add statements to this object. If the exact statement already exists,
+        don't add it.
+
+        doesn't expect spaces between elements in statements """
+        if is_block:
+            self._add_directive(statements, insert_at_top, is_block)
+        else:
+            for statement in statements:
+                self._add_directive(statement, insert_at_top, is_block)
         self._update_vhost()
 
-    def parse(self, parse_this):
-        super(ServerBloc, self).parse(parse_this)
+    def replace_directives(self, statements, insert_at_top=False):
+        """ Adds statements to this object. For each of the statements,
+        if one of this statement type already exists, replaces existing statement.
+        """
+        for s in statements:
+            # self.contents.replace_statement(_space_list(s, self.contents.get_tabs()), lambda x, s=s: x[0] == s[0], insert_at_top)
+            self.contents.replace_statement(s, lambda x, s=s: x[0] == s[0], insert_at_top)
+        self._update_vhost()
+
+    def remove_directives(self, directive, match_func=None):
+        """ Removes statements from this object."""
+        self.contents.remove_statements(lambda x: x[0] == directive and \
+            (match_func is None or match_func(x)))
+        self._update_vhost()
+
+    def parse(self, parse_this, add_spaces=False):
+        super(ServerBloc, self).parse(parse_this, add_spaces)
         self.vhost = obj.VirtualHost(self.context.filename if self.context is not None else "",
             self.addrs, self.ssl, True, self.server_names, self, None)
         self._update_vhost()
+
+
+    def duplicate(self, only_directives=None, remove_singleton_listen_params=False):
+        """ Duplicates iteslf into another sibling server block. """
+        # pylint: disable=protected-access
+        dup_bloc = self.context.parent.add_statement(copy.deepcopy(self.dump()))
+        if only_directives is not None:
+            dup_bloc.contents.remove_statements(lambda x: x[0] not in only_directives)
+        if remove_singleton_listen_params:
+            for directive in dup_bloc.contents.get_directives('listen'):
+                for word in ['default_server', 'default', 'ipv6only=on']:
+                    if word in directive.words:
+                        directive._data.remove(word)
+        dup_bloc.context.parent = self.context.parent
+        dup_bloc._update_vhost()
+        return dup_bloc
 

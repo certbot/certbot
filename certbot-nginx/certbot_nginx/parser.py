@@ -19,7 +19,7 @@ REPEATABLE_DIRECTIVES = set(['server_name', 'listen', INCLUDE, 'rewrite'])
 COMMENT = ' managed by Certbot'
 COMMENT_BLOCK = ['#', COMMENT]
 
-class FancyParser(object):
+class Parser(object):
     """ Fancy nginx parser that tries to transform it into an AST of sorts.
     """
     def __init__(self, root_dir, config_root):
@@ -90,7 +90,7 @@ class FancyParser(object):
             try:
                 # if lazy and not tree.is_dirty():
                 #     continue
-                out = nginxparser.dumps_raw(tree.get_data(include_spaces=True))
+                out = nginxparser.dumps_raw(tree.dump(include_spaces=True))
                 logger.debug('Writing nginx conf tree to %s:\n%s', filename, out)
                 with open(filename, 'w') as _file:
                     _file.write(out)
@@ -224,7 +224,7 @@ class FancyParser(object):
                               remove_singleton_listen_params)
         return dup_server_bloc.vhost
 
-class NginxParser(FancyParser):
+class NginxParser(Parser):
     """Class handles the fine details of parsing the Nginx Configuration.
 
     :ivar str root: Normalized absolute path to the server root

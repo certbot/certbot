@@ -25,7 +25,7 @@ from certbot.plugins import common
 from certbot_nginx import constants
 from certbot_nginx import display_ops
 from certbot_nginx import nginxparser
-from certbot_nginx import better_parser as parser
+from certbot_nginx import parser
 from certbot_nginx import tls_sni_01
 from certbot_nginx import http_01
 
@@ -645,7 +645,7 @@ class NginxConfigurator(common.Installer):
 
     def _has_certbot_redirect(self, vhost, domain):
         test_redirect_block = _test_block_from_block(_redirect_block_for_domain(domain))
-        return test_redirect_block in vhost.raw.contents.get_data()
+        return test_redirect_block in vhost.raw.contents.dump()
 
     def _set_http_header(self, domain, header_substring):
         """Enables header identified by header_substring on domain.
