@@ -51,15 +51,8 @@ class Installer(plugins_common.Installer):
         add("ignore-master-overrides", default=constants.CLI_DEFAULTS["ignore_master_overrides"],
             help="Ignore errors reporting overridden TLS parameters in master.cf.")
 
-    def _verify_setup(self):
-        # TODO (sydneyli): do this
-        pass
-
     def __init__(self, *args, **kwargs):
         super(Installer, self).__init__(*args, **kwargs)
-        # Verify that all directories and files exist with proper permissions
-        self._verify_setup()
-
         # Wrapper around postconf commands
         self.postfix = None
         self.postconf = None
@@ -71,13 +64,6 @@ class Installer(plugins_common.Installer):
         # Since we only need to enable TLS once for all domains,
         # keep track of whether this enhancement was already called.
         self._tls_enabled = False
-
-    def _ensure_ca_certificates_exist(self):
-        # TODO (sydneyli): This might block starttls-everywhere
-        # TODO (sydneyli): Ensure `ca-certificates` is installed correctly, or that
-        # /etc/ssl/certs/ even has certificates in it, probably via a sanity check using
-        # `openssl` command?
-        pass
 
     def prepare(self):
         """Prepare the installer.
@@ -97,9 +83,6 @@ class Installer(plugins_common.Installer):
                     "path to this command with --{1}".format(
                         self.conf(param),
                         self.option_name(param)))
-
-        # Ensure our CA roots exist.
-        self._ensure_ca_certificates_exist()
 
         # Set up CLI tools
         self.postfix = util.PostfixUtil(self.conf('config-dir'))

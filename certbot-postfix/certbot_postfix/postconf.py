@@ -8,21 +8,22 @@ from certbot_postfix import util
 class ConfigMain(util.PostfixUtilBase):
     """A parser for Postfix's main.cf file."""
 
-
     def __init__(self, executable, handle_overrides, config_dir=None):
         super(ConfigMain, self).__init__(executable, config_dir)
         self._handle_overrides = handle_overrides
+        # List of all current Postfix parameters, from `postconf` command.
         self._db = {}
         # List of current master.cf overrides from Postfix config. Dictionary
         # of parameter name => list of tuples (service name, paramter value)
         # Note: We should never modify master without explicit permission.
         self._master_db = {}
+        # List of all changes requested to the Postfix parameters as they are now
+        # in _db. These changes are flushed to `postconf` on `flush`.
         self._updated = {}
         self._read_from_conf()
-        # TODO (sydneyli): Document the above fields in future documentation commit.
 
     def _read_from_conf(self):
-        """Reads initial parameter state from main.cf
+        """Reads initial parameter state from main.cf into `self._db` and `self._master_db`
         """
         out = self._get_output()
         for name, value in _parse_main_output(out):

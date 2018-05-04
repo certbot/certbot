@@ -41,9 +41,10 @@ class PostfixUtilTest(unittest.TestCase):
     def setUp(self):
         # pylint: disable=protected-access
         from certbot_postfix.util import PostfixUtil
-        self.postfix = PostfixUtil()
-        self.postfix._call = mock.Mock()
-        self.mock_call = self.postfix._call
+        with mock.patch('certbot_postfix.util.verify_exe_exists'):
+            self.postfix = PostfixUtil()
+            self.postfix._call = mock.Mock()
+            self.mock_call = self.postfix._call
 
     def test_test(self):
         self.postfix.test()

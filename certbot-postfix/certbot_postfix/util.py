@@ -5,6 +5,7 @@ import subprocess
 from certbot import errors
 from certbot import util as certbot_util
 from certbot.plugins import util as plugins_util
+from certbot_postfix import constants
 
 logger = logging.getLogger(__name__)
 
@@ -243,7 +244,11 @@ def _has_acceptable_tls_versions(parameter_string):
     Checks to see if the comma-separated list of TLS protocols to exclude is acceptable.
     Sample string: "!SSLv2, !SSLv3"
     """
-    for bad_version in ("SSLv2", "SSLv3"): # TODO: subtract acceptable from tls-verions constant
+    print constants.TLS_VERSIONS
+    bad_versions = list(constants.TLS_VERSIONS)
+    for version in constants.ACCEPTABLE_TLS_VERSIONS:
+        del bad_versions[bad_versions.index(version)]
+    for bad_version in bad_versions:
         if "!" + bad_version not in parameter_string:
             return False
     return True
