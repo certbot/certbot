@@ -15,9 +15,6 @@ logger = logging.getLogger(__name__)
 # TODO (sydli): Shouldn't be throwing Misconfiguration errors everywhere. Is there a parsing error?
 
 INCLUDE = 'include'
-REPEATABLE_DIRECTIVES = set(['server_name', 'listen', INCLUDE, 'rewrite'])
-COMMENT = ' managed by Certbot'
-COMMENT_BLOCK = ['#', COMMENT]
 
 class Parser(object):
     """ Fancy nginx parser that tries to transform it into an AST of sorts.
@@ -49,7 +46,7 @@ class Parser(object):
         """Loads Nginx files into a parsed tree.
         """
         self.parsed_root = parser_obj.Statements.load_from(
-                               parser_obj.ParseContext(self.root, self.config_root))
+                               parser_obj.NginxParseContext(self.root, self.config_root))
         self.parsed = {self.config_root: self.parsed_root}
         includes = self.parsed_root.get_thing_recursive(
                 lambda sentence: isinstance(sentence, parser_obj.Sentence) and \

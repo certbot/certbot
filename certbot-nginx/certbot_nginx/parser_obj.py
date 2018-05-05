@@ -17,21 +17,18 @@ logger = logging.getLogger(__name__)
 
 # TODO (sydli) : Flesh out docstrings
 REPEATABLE_DIRECTIVES = set(['server_name', 'listen', 'include', 'rewrite'])
+COMMENT = ' managed by Certbot'
+COMMENT_BLOCK = ['#', COMMENT]
 
 def is_certbot_comment(parsed_obj):
-    return isinstance(parsed_obj, Sentence) and '#' in parsed_obj.words and ' managed by Certbot' in parsed_obj.words
-
-class ParseContext(object):
-    """ Context information held by parsed objects. """
-    def __init__(self, cwd, filename, parent=None, parsed_files=None):
-        self.cwd = cwd
-        self.filename = filename
-        self.parent = parent
-        # We still need a global parsed files map so only one reference exists
-        # to each individual file's parsed tree, even when expanding includes.
-        if parsed_files is None:
-            parsed_files = {}
-        self.parsed_files = parsed_files
+    """ Checks whether parsed_obj is a certbot comment.
+    """
+    if not isinstance(parsed_obj, Sentence):
+        return False
+    for item in COMMENT_BLOCK:
+        if item not in parsed_obj.words:
+            return False
+    return True
 
 class WithLists(object):
     """ Abstract base class for "Parsable" objects whose underlying representation
@@ -58,18 +55,49 @@ class WithLists(object):
             return None
         if filename is None:
             filename = self.context.filename
-        return ParseContext(self.context.cwd, filename, self, self.context.parsed_files)
+        return ParseContext(self.context.cwd, filename, self, self.context.parsed_files,
+                            self.context.parsing_hooks)
 
+    @abc.abstractmethod
     def get_tabs(self):
         """ Guess at the number of preceding whitespaces """
-        if self._tabs is None:
-            self._tabs = self.get_tabs()
-        return self._tabs
+        raise NotImplementedError()
 
     def dump(self, include_spaces=False):
         """ Retrieves readable underlying representaiton. setting include_spaces
         to False is equivalent to the old UnspacedList object. """
         return [elem.dump(include_spaces) for elem in self._data]
+
+# parsing hook things
+
+def _is_bloc(list_):
+    return isinstance(list_, list) and len(list_) == 2 and isinstance(list_[1], list)
+
+def _is_sentence(list_):
+    return isinstance(list_, list) and all([isinstance(elem, six.string_types) for elem in list_])
+
+def _choose_parser(child_context, list_):
+    for hook, type_ in child_context.parsing_hooks:
+        if hook(list_):
+            return type_(child_context)
+    raise errors.MisconfigurationError(
+        "None of the parsing hooks succeeded, so we don't know how to parse this set of lists.")
+
+# important functions
+
+def parse_raw(lists_, context, add_spaces=False):
+    """ TODO
+    """
+    parser = _choose_parser(context, lists_)
+    parser.parse(lists_, add_spaces)
+    return parser
+
+def parse_raw_nginx(lists_, context=None):
+    """ TODO
+    """
+    if context is None:
+        return parse_raw(lists_, NginxParseContext())
+    return parse_raw(lists_, context)
 
 class Statements(WithLists):
     """ A group or list of "Statements". A Statement is either a Block or a Directive.
@@ -78,26 +106,9 @@ class Statements(WithLists):
         super(Statements, self).__init__(context)
         self._trailing_whitespace = None
 
-    # TODO; introduce parsing hooks here
-    def _choose_parser(self, list_):
-        if not isinstance(list_, list):
-            raise errors.MisconfigurationError("`parse` expects a list!")
-        if len(list_) == 2 and isinstance(list_[1], list): # Bloc
-            if 'server' in list_[0]:
-                return ServerBloc(self.child_context())
-            return Bloc(self.child_context())
-        if all([isinstance(elem, six.string_types) for elem in list_]):
-            if 'include' in list_:
-                return Include(self.child_context())
-            return Sentence(self.child_context())
-        return Statements(self.child_context())
-
-    def _parse_elem(self, list_, add_spaces=False):
-        parser = self._choose_parser(list_)
-        parser.parse(list_, add_spaces)
-        return parser
-
     def set_tabs(self, tabs='    '):
+        """ TODO
+        """
         for statement in self._data:
             statement.set_tabs(tabs)
         self._trailing_whitespace = '\n' + self.context.parent.get_tabs()
@@ -111,7 +122,7 @@ class Statements(WithLists):
                                and parse_this[-1].isspace():
             self._trailing_whitespace = parse_this[-1]
             parse_this = parse_this[:-1]
-        self._data = [self._parse_elem(elem, add_spaces) for elem in parse_this]
+        self._data = [parse_raw(elem, self.child_context(), add_spaces) for elem in parse_this]
 
     def get_tabs(self):
         """ Takes a guess at the tabbing of all contained Statements-- by retrieving the
@@ -188,7 +199,7 @@ class Statements(WithLists):
             # TODO (sydli): this level of abstraction shouldn't know about certbot_comments.
             self.add_statement(statement, insert_at_top)
             return
-        statement = self._parse_elem(statement, add_spaces=True)
+        statement = parse_raw(statement, self.child_context(), add_spaces=True)
         statement.set_tabs(self.get_tabs())
         self._data[found] = statement
         if found + 1 >= len(self._data) or not is_certbot_comment(self._data[found+1]):
@@ -197,7 +208,7 @@ class Statements(WithLists):
 
     def add_statement(self, statement, insert_at_top=False):
         """ Adds a Statement to the end of this block of statements. """
-        statement = self._parse_elem(statement, add_spaces=True)
+        statement = parse_raw(statement, self.child_context(), add_spaces=True)
         statement.set_tabs(self.get_tabs())
         index = 0
         if insert_at_top:
@@ -236,7 +247,7 @@ class Statements(WithLists):
 def certbot_comment(context, preceding_spaces=4):
     """ A "Managed by Certbot" comment :) """
     result = Sentence(context)
-    result.parse([' ' * preceding_spaces, '#', ' managed by Certbot'])
+    result.parse([' ' * preceding_spaces] + COMMENT_BLOCK)
     return result
 
 def spaces_after_newline(word):
@@ -258,6 +269,7 @@ class Sentence(WithLists):
         self._data = parse_this
 
     def set_tabs(self, tabs='    '):
+        """ TODO """
         self._data.insert(0, '\n' + tabs)
 
     def is_comment(self):
@@ -332,6 +344,8 @@ class Bloc(WithLists):
         self.contents = None
 
     def set_tabs(self, tabs='    '):
+        """ TODO
+        """
         self.names.set_tabs(tabs)
         self.contents.set_tabs(tabs + '    ')
 
@@ -393,9 +407,8 @@ class ServerBloc(Bloc):
         # ensure, if it's not repeatable, that it's not repeated
         if not is_block and statement[0] not in REPEATABLE_DIRECTIVES and len(
             list(self.contents.get_directives(statement[0]))) > 0:
-            raise errors.MisconfigurationError("Existing %s directive conflicts with %s",
-                                               statement[0], statement)
-        # self.contents.add_statement(_space_list(statement, self.contents.get_tabs()), insert_at_top)
+            raise errors.MisconfigurationError(
+                "Existing %s directive conflicts with %s", statement[0], statement)
         self.contents.add_statement(statement, insert_at_top)
 
     def add_directives(self, statements, insert_at_top=False, is_block=False):
@@ -415,7 +428,6 @@ class ServerBloc(Bloc):
         if one of this statement type already exists, replaces existing statement.
         """
         for s in statements:
-            # self.contents.replace_statement(_space_list(s, self.contents.get_tabs()), lambda x, s=s: x[0] == s[0], insert_at_top)
             self.contents.replace_statement(s, lambda x, s=s: x[0] == s[0], insert_at_top)
         self._update_vhost()
 
@@ -447,3 +459,36 @@ class ServerBloc(Bloc):
         dup_bloc._update_vhost()
         return dup_bloc
 
+DEFAULT_PARSING_HOOKS = (
+    (_is_bloc, Bloc),
+    (_is_sentence, Sentence),
+    (lambda list_: isinstance(list_, list), Statements)
+)
+
+class ParseContext(object):
+    """ Context information held by parsed objects. """
+    def __init__(self, cwd, filename, parent=None, parsed_files=None,
+                 parsing_hooks=DEFAULT_PARSING_HOOKS):
+        self.parsing_hooks = parsing_hooks
+        self.cwd = cwd
+        self.filename = filename
+        self.parent = parent
+        # We still need a global parsed files map so only one reference exists
+        # to each individual file's parsed tree, even when expanding includes.
+        if parsed_files is None:
+            parsed_files = {}
+        self.parsed_files = parsed_files
+
+
+NGINX_PARSING_HOOKS = (
+    (lambda list_: _is_bloc(list_) and 'server' in list_[0], ServerBloc),
+    (lambda list_: _is_sentence(list_) and 'include' in list_, Include),
+) + DEFAULT_PARSING_HOOKS
+
+class NginxParseContext(ParseContext):
+    """ TODO
+    """
+    def __init__(self, cwd="", filename="", parent=None, parsed_files=None,
+                 parsing_hooks=NGINX_PARSING_HOOKS):
+        super(NginxParseContext, self).__init__(cwd, filename, parent, parsed_files,
+            parsing_hooks)

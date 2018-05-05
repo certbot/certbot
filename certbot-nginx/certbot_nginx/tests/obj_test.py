@@ -112,8 +112,7 @@ class VirtualHostTest(unittest.TestCase):
         from certbot_nginx.obj import VirtualHost
         from certbot_nginx.obj import Addr
         from certbot_nginx import parser_obj
-        raw1 = parser_obj.ServerBloc(None)
-        raw1.parse([['server'], [
+        raw1 = parser_obj.parse_raw_nginx([['server'], [
             ['listen', '69.50.225.155:9000'],
             [['if', '($scheme', '!=', '"https") '],
                 [['return', '301', 'https://$host$request_uri']]
@@ -150,8 +149,7 @@ class VirtualHostTest(unittest.TestCase):
             "filp",
             set([Addr.fromstring("localhost")]), False, False,
             set(['localhost']), raw4, [])
-        raw_has_hsts = parser_obj.ServerBloc(None)
-        raw_has_hsts.parse([['server'], [
+        raw_has_hsts = parser_obj.parse_raw_nginx([['server'], [
             ['listen', '69.50.225.155:9000'],
             ['server_name', 'return.com'],
             ['add_header', 'always', 'set', 'Strict-Transport-Security', '\"max-age=31536000\"'],

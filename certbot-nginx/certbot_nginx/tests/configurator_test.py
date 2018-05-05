@@ -104,7 +104,7 @@ class NginxConfiguratorTest(util.NginxTest):
                          self.config.get_chall_pref('myhost'))
 
     def test_save(self):
-        from certbot_nginx.parser import COMMENT
+        from certbot_nginx.parser_obj import COMMENT
         filep = self.config.parser.abs_path('sites-enabled/example.com')
         mock_vhost = [x for x in self.config.parser.get_vhosts() if 'example.com' in x.filep][0]
         self.config.parser.add_server_directives(
@@ -114,7 +114,7 @@ class NginxConfiguratorTest(util.NginxTest):
 
         # pylint: disable=protected-access
         parsed = parser_obj.Statements.load_from(
-            parser_obj.ParseContext(self.config.parser.root, filep))
+            parser_obj.NginxParseContext(self.config.parser.root, filep))
         self.assertEqual([[['server'],
                            [['listen', '69.50.225.155:9000'],
                             ['listen', '127.0.0.1'],
@@ -487,7 +487,6 @@ class NginxConfiguratorTest(util.NginxTest):
             "example/fullchain.pem")
         self.config.enhance("www.example.com", "redirect")
         generated_conf = self.config.parser.parsed[example_conf]
-        from certbot_nginx import nginxparser
         self.assertEqual(
             [[['server'], [
                ['server_name', '.example.com'],
