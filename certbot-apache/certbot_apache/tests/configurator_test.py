@@ -1496,7 +1496,9 @@ class MultipleVhostsTest(util.ApacheTest):
             self.assertEqual(vh, self.config.find_vhost_by_id(vh_id))
 
     def test_find_vhost_by_id_404(self):
-        self.assertEqual(None, self.config.find_vhost_by_id("nonexistent"))
+        self.assertRaises(errors.PluginError,
+                          self.config.find_vhost_by_id,
+                          "nonexistent")
 
     def test_add_vhost_id_already_exists(self):
         first_id = self.config.add_vhost_id(self.vh_truth[0])

@@ -50,7 +50,7 @@ HEADER_ARGS = {"Strict-Transport-Security": HSTS_ARGS,
                "Upgrade-Insecure-Requests": UIR_ARGS}
 
 AUTOHSTS_STEPS = [60, 300, 900, 3600, 21600, 43200, 86400]
-"""AutoHSTS increase steps: 5min, 15min, 1h, 6h, 12h, 24h"""
+"""AutoHSTS increase steps: 1min, 5min, 15min, 1h, 6h, 12h, 24h"""
 
 AUTOHSTS_PERMANENT = 31536000
 """Value for the last max-age of HSTS"""

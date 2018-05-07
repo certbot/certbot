@@ -48,12 +48,11 @@ class AutoHSTSTest(util.ApacheTest):
     def test_autohsts_deploy(self):
         self.config.enhance("ocspvhost.com", "auto_hsts", None)
 
-    @mock.patch("certbot_apache.configurator.logger.warning")
-    def test_autohsts_deploy_already_exists(self, mock_log):
+    def test_autohsts_deploy_already_exists(self):
         self.config.enhance("ocspvhost.com", "auto_hsts", None)
-        self.config.enhance("ocspvhost.com", "auto_hsts", None)
-        self.assertTrue(mock_log.called)
-        self.assertTrue("header is already present" in mock_log.call_args[0][0])
+        self.assertRaises(errors.PluginEnhancementAlreadyPresent,
+                          self.config.enhance,
+                          "ocspvhost.com", "auto_hsts", None)
 
     @mock.patch("certbot_apache.constants.AUTOHSTS_FREQ", 0)
     def test_autohsts_increase(self):

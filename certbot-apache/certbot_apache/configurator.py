@@ -1479,12 +1479,16 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         :returns: The matched VirtualHost or None
         :rtype: :class:`~certbot_apache.obj.VirtualHost` or None
+
+        :raises .errors.PluginError: If no VirtualHost is found
         """
 
         for vh in self.vhosts:
             if self._find_vhost_id(vh) == id_str:
                 return vh
-        return None
+        msg = "No VirtualHost with ID {} was found.".format(id_str)
+        logger.warning(msg)
+        raise errors.PluginError(msg)
 
     def _find_vhost_id(self, vhost):
         """Tries to find the unique ID from the VirtualHost comments. This is
@@ -1594,13 +1598,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :type ssl_vhost: :class:`~certbot_apache.obj.VirtualHost` or None
 
         """
-        try:
-            self._verify_no_matching_http_header(ssl_vhost,
-                                                 "Strict-Transport-Security")
-        except errors.PluginEnhancementAlreadyPresent:
-            logger.warning("The Strict-Transport-Security header is already "
-                           "present in the VirtualHost")
-            return
+        self._verify_no_matching_http_header(ssl_vhost,
+                                             "Strict-Transport-Security")
 
         if "headers_module" not in self.parser.modules:
             self.enable_mod("headers")
@@ -1631,7 +1630,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :param str id_str: The unique ID string of VirtualHost
 
         """
-        vhost = self.find_vhost_by_id(id_str)
+        try:
+            vhost = self.find_vhost_by_id(id_str)
+        except errors.PluginError:
+            return
         nextstep_value = constants.AUTOHSTS_STEPS[nextstep]
         self._autohsts_write(vhost, nextstep_value)
         self._autohsts_save_state(id_str, nextstep)
@@ -1677,11 +1679,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             # AutoHSTS not enabled
             return
         curtime = time.time()
-        for id_str in managed:
-            if managed[id_str]["timestamp"] + constants.AUTOHSTS_FREQ > curtime:
+        for id_str, config in managed.items():
+            if config["timestamp"] + constants.AUTOHSTS_FREQ > curtime:
                 # Skip if last increase was < AUTOHSTS_FREQ ago
                 continue
-            nextstep = managed[id_str]["laststep"] + 1
+            nextstep = config["laststep"] + 1
             if nextstep < len(constants.AUTOHSTS_STEPS):
                 # Have not reached the max value yet
                 self._autohsts_increase(id_str, nextstep)
@@ -1710,10 +1712,14 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             return
         vhosts = []
         # Copy, as we are removing from the dict inside the loop
-        for id_str in list(managed.keys()):
-            if managed[id_str]["laststep"]+1 >= len(constants.AUTOHSTS_STEPS):
+        for id_str, config in list(managed.items()):
+            if config["laststep"]+1 >= len(constants.AUTOHSTS_STEPS):
                 # max value reached, try to make permanent
-                vhost = self.find_vhost_by_id(id_str)
+                try:
+                    vhost = self.find_vhost_by_id(id_str)
+                except errors.PluginError:
+                    logger.warning("Cannot make HSTS max-age permanent")
+                    return
                 if self._autohsts_vhost_in_lineage(vhost, lineage):
                     vhosts.append(vhost)
                     managed.pop(id_str)
@@ -1729,7 +1735,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         Matches the private key path.
         """
 
-        return any(
+        return bool(
             self.parser.find_dir("SSLCertificateKeyFile",
                                  lineage.key_path, vhost.path))
 
