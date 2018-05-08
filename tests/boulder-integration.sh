@@ -340,6 +340,15 @@ if common certificates | grep "fail\.dns1\.le\.wtf"; then
     exit 1
 fi
 
+# reuse-key
+common --domains reusekey.le.wtf --reuse-key
+common --domains reusekey.le.wtf --force-renewal
+CheckCertCount reusekey.le.wtf
+ls -l "${root}/conf/archive/reusekey.le.wtf/privkey"*
+# The final awk command here exits successfully if its input consists of
+# exactly two lines with identical first fields, and unsuccessfully otherwise.
+sha256sum "${root}/conf/archive/reusekey.le.wtf/privkey"* | awk '{a[$1] = 1}; END {exit(NR !=2 || length(a)!=1)}'
+
 # ECDSA
 openssl ecparam -genkey -name secp384r1 -out "${root}/privkey-p384.pem"
 SAN="DNS:ecdsa.le.wtf" openssl req -new -sha256 \
