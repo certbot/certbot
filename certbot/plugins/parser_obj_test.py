@@ -137,8 +137,6 @@ class SentenceTest(unittest.TestCase):
         self.sentence.set_tabs()
         self.assertEquals(self.sentence.dump(True)[0], '\n    ')
         self.sentence.parse(['tabs', 'pls'], add_spaces=True)
-        self.sentence.set_tabs('  \t', newline='\r\n')
-        self.assertEquals(self.sentence.dump(True)[0], '\r\n  \t')
 
     def test_get_tabs(self):
         self.sentence.parse(['no', 'tabs'])
@@ -176,7 +174,7 @@ class BlocTest(unittest.TestCase):
         # can match on self
         self.assertEquals(self.bloc, next(self.bloc.iterate(
             expanded=True,
-            match=lambda x: isinstance(x, Bloc) and 'server' in x._data[0])))
+            match=lambda x: isinstance(x, Bloc) and 'server' in x.names)))
 
     def test_parse_with_added_spaces(self):
         import copy
