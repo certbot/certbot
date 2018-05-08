@@ -16,7 +16,7 @@ certbot_test () {
         "$@"
 }
 
-export BOULDER_IP=${BOULDER_IP:10.77.77.77}
+export BOULDER_IP=10.77.77.77
 export SERVER=${SERVER:-http://$BOULDER_IP:4000/directory}
 # Use local ACMEv2 endpoint if requested and SERVER isn't already set.
 if [ "${BOULDER_INTEGRATION:-v1}" = "v2" -a -z "${SERVER:+x}" ]; then
