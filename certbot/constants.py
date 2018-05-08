@@ -96,6 +96,7 @@ CLI_DEFAULTS = dict(
     standalone=False,
     manual=False,
     webroot=False,
+    dns_azure=False,
     dns_cloudflare=False,
     dns_cloudxns=False,
     dns_digitalocean=False,
