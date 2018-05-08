@@ -783,6 +783,7 @@ class NginxConfiguratorTest(util.NginxTest):
         self.config.revert_challenge_config()
         self.config.rollback_checkpoints()
         self.assertTrue(mock_parser_load.call_count == 3)
+
     def test_choose_vhosts_wildcard(self):
         # pylint: disable=protected-access
         mock_path = "certbot_nginx.display_ops.select_vhost_multiple"

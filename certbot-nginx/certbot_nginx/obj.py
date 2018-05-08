@@ -152,7 +152,7 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
     :ivar set addrs: Virtual Host addresses (:class:`set` of :class:`Addr`)
     :ivar set names: Server names/aliases of vhost
         (:class:`list` of :class:`str`)
-    :ivar :class:`~certbot_nginx.parser_obj.Parsable` raw: The raw form of the parsed server block
+    :ivar :class:`.parser_obj.WithLists` raw: The raw form of the parsed server block
 
     :ivar bool ssl: SSLEngine on in vhost
     :ivar bool enabled: Virtual host is enabled

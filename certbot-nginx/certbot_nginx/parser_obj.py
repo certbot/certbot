@@ -85,15 +85,13 @@ class ServerBloc(obj.Bloc):
         self.vhost.ssl = self.ssl
         self.vhost.raw = self
 
-    # TODO (sydli): contextual sentences/blocks should be parsed automatically
-    # (get rid of `is_block`)
-    def _add_directive(self, statement, insert_at_top=False, is_block=False):
+    def _add_directive(self, statement, insert_at_top=False):
         # pylint: disable=protected-access
         # ensure no duplicates
         if self._has_same_directive(statement):
             return
         # ensure, if it's not repeatable, that it's not repeated
-        if not is_block and statement[0] not in REPEATABLE_DIRECTIVES and len(
+        if obj.is_sentence(statement) and statement[0] not in REPEATABLE_DIRECTIVES and len(
             list(self.get_directives(statement[0]))) > 0:
             raise errors.MisconfigurationError(
                 "Existing %s directive conflicts with %s", statement[0], statement)
@@ -104,16 +102,13 @@ class ServerBloc(obj.Bloc):
             lambda directive: directive.words == statement))
         return len(matches) > 0
 
-    def add_directives(self, statements, insert_at_top=False, is_block=False):
+    def add_directives(self, statements, insert_at_top=False):
         """ Add statements to this object. If the exact statement already exists,
         don't add it.
 
         doesn't expect spaces between elements in statements """
-        if is_block:
-            self._add_directive(statements, insert_at_top, is_block)
-        else:
-            for statement in statements:
-                self._add_directive(statement, insert_at_top, is_block)
+        for statement in statements:
+            self._add_directive(statement, insert_at_top)
         self._update_vhost()
 
     def replace_directives(self, statements, insert_at_top=False):

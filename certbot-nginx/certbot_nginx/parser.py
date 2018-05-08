@@ -141,7 +141,7 @@ class Parser(object):
                 return True
         return False
 
-    def add_server_directives(self, vhost, directives, insert_at_top=False, is_block=False):
+    def add_server_directives(self, vhost, directives, insert_at_top=False):
         """Add directives to the server block identified by vhost.
 
         This method modifies vhost to be fully consistent with the new directives.
@@ -159,7 +159,7 @@ class Parser(object):
             of the server block instead of the bottom
 
         """
-        vhost.raw.add_directives(directives, insert_at_top, is_block)
+        vhost.raw.add_directives(directives, insert_at_top)
 
     def update_or_add_server_directives(self, vhost, directives, insert_at_top=False):
         """Add or replace directives in the server block identified by vhost.

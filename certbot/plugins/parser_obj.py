@@ -293,7 +293,7 @@ class Sentence(WithLists):
         if self._data[0].isspace():
             raise errors.MisconfigurationError(
                 "This sentence is already tabbed; not sure how to set the tabbing further.")
-        self._data.insert(0, tabs)
+        self._data.insert(0, '\n' + tabs)
 
     def dump(self, include_spaces=False):
         """ Dumps this sentence. If include_spaces is set, includes whitespace tokens."""

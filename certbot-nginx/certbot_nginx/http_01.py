@@ -190,7 +190,7 @@ class NginxHttp01(common.ChallengePerformer):
         location_directive = self._location_directive_for_achall(achall)
 
         self.configurator.parser.add_server_directives(vhost,
-            location_directive, is_block=True)
+            [location_directive])
 
         rewrite_directive = [['rewrite', '^(/.well-known/acme-challenge/.*)',
                                 '$1', 'break']]

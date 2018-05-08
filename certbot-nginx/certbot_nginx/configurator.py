@@ -686,7 +686,7 @@ class NginxConfigurator(common.Installer):
         redirect_block = _redirect_block_for_domain(domain)
 
         self.parser.add_server_directives(
-            vhost, redirect_block, insert_at_top=True, is_block=True)
+            vhost, [redirect_block], insert_at_top=True)
 
     def _split_block(self, vhost, only_directives=None):
         """Splits this "virtual host" (i.e. this nginx server block) into
@@ -1051,6 +1051,7 @@ class NginxConfigurator(common.Installer):
 
 def _test_block_from_block(block):
     test_block = nginxparser.UnspacedList(block)
+    # TODO: implement
     # parser.comment_directive(test_block, 0)
     return test_block[:-1]
 
