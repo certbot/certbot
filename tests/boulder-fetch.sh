@@ -26,7 +26,7 @@ fi
 docker-compose up -d
 
 set +x  # reduce verbosity while waiting for boulder
-until curl http://localhost:4000/directory 2>/dev/null; do
+until curl http://10.77.77.77:4000/directory 2>/dev/null; do
   echo waiting for boulder
   sleep 1
 done

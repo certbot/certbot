@@ -24,7 +24,7 @@ from acme import client as acme_client
 from acme import errors as acme_errors
 from acme import messages
 
-DIRECTORY = os.getenv('DIRECTORY', 'http://localhost:4000/directory')
+DIRECTORY = os.getenv('DIRECTORY', 'http://10.77.77.77:4000/directory')
 
 if len(sys.argv) != 2:
     print("Usage: python deactivate.py private_key.pem")
