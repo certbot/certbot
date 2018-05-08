@@ -3,12 +3,10 @@ import logging
 import os
 import re
 
-import six
-
 from certbot import errors
 
 from certbot_nginx import nginxparser
-from certbot_nginx import parser_obj
+from certbot_nginx import parser_obj as nginx_obj
 
 logger = logging.getLogger(__name__)
 
@@ -45,15 +43,9 @@ class Parser(object):
     def load(self):
         """Loads Nginx files into a parsed tree.
         """
-        self.parsed_root = parser_obj.Statements.load_from(
-                               parser_obj.NginxParseContext(self.root, self.config_root))
-        self.parsed = {self.config_root: self.parsed_root}
-        includes = self.parsed_root.get_thing_recursive(
-                lambda sentence: isinstance(sentence, parser_obj.Sentence) and \
-                                 sentence[0] == 'include')
-        for include in includes:
-            for filename, parsed in six.iteritems(include.parsed):
-                self.parsed[os.path.join(self.root, filename)] = parsed
+        self.parsed_root = nginx_obj.parse_from_file_nginx(
+                               nginx_obj.NginxParseContext(self.root, self.config_root))
+        self.parsed = self.parsed_root.context.parsed_files
 
     def abs_path(self, path):
         """Converts a relative path to an absolute path relative to the root.
@@ -106,7 +98,7 @@ class Parser(object):
 
         """
         vhosts = []
-        blocs = self.parsed_root.get_thing_recursive(lambda x: isinstance(x, parser_obj.ServerBloc))
+        blocs = self.parsed_root.get_type(nginx_obj.ServerBloc)
         for server_bloc in blocs:
             vhosts.append(server_bloc.vhost)
         self._update_vhosts_addrs_global_ssl(vhosts)
@@ -116,7 +108,7 @@ class Parser(object):
         """Builds a map from address to whether it listens on ssl in any server block
         """
         addr_to_ssl = {}
-        blocs = self.parsed_root.get_thing_recursive(lambda x: isinstance(x, parser_obj.ServerBloc))
+        blocs = self.parsed_root.get_type(nginx_obj.ServerBloc)
         for server_bloc in blocs:
             for addr in server_bloc.addrs:
                 addr_tuple = addr.normalized_tuple()

@@ -7,9 +7,9 @@ import six
 
 from certbot import errors
 from certbot.plugins import common
+from certbot.plugins import parser_obj
 
 from certbot_nginx import obj
-from certbot_nginx import parser_obj
 from certbot_nginx import nginxparser
 
 

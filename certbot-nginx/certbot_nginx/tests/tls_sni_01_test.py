@@ -156,9 +156,7 @@ class TlsSniPerformTest(util.NginxTest):
 
     def test_mod_config_fail(self):
         root = self.sni.configurator.parser.config_root
-        context = self.sni.configurator.parser.parsed_root.context
-        mock_root = parser_obj.Statements(context)
-        mock_root.parse([['include', 'foo.conf']])
+        mock_root = parser_obj.parse_raw_nginx([['include', 'foo.conf']])
         self.sni.configurator.parser.parsed[root] = mock_root
 
         # pylint: disable=protected-access

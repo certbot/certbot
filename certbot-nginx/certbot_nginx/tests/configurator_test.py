@@ -14,9 +14,10 @@ from certbot import achallenges
 from certbot import crypto_util
 from certbot import errors
 from certbot.tests import util as certbot_test_util
+from certbot.plugins import parser_obj
 
 from certbot_nginx import constants
-from certbot_nginx import parser_obj
+from certbot_nginx import parser_obj as nginx_obj
 from certbot_nginx.configurator import _redirect_block_for_domain
 from certbot_nginx.tests import util
 
@@ -104,7 +105,7 @@ class NginxConfiguratorTest(util.NginxTest):
                          self.config.get_chall_pref('myhost'))
 
     def test_save(self):
-        from certbot_nginx.parser_obj import COMMENT
+        from certbot.plugins.parser_obj import COMMENT
         filep = self.config.parser.abs_path('sites-enabled/example.com')
         mock_vhost = [x for x in self.config.parser.get_vhosts() if 'example.com' in x.filep][0]
         self.config.parser.add_server_directives(
@@ -113,8 +114,8 @@ class NginxConfiguratorTest(util.NginxTest):
         self.config.save()
 
         # pylint: disable=protected-access
-        parsed = parser_obj.Statements.load_from(
-            parser_obj.NginxParseContext(self.config.parser.root, filep))
+        parsed = nginx_obj.parse_from_file_nginx(
+            nginx_obj.NginxParseContext(self.config.parser.root, filep))
         self.assertEqual([[['server'],
                            [['listen', '69.50.225.155:9000'],
                             ['listen', '127.0.0.1'],
@@ -465,7 +466,7 @@ class NginxConfiguratorTest(util.NginxTest):
         self.config.enhance("www.example.com", "redirect")
 
         generated_conf = self.config.parser.parsed[example_conf]
-        self.assertTrue(expected in next(generated_conf.iterate_expanded()).contents.dump())
+        self.assertTrue(expected in next(generated_conf.iterate()).contents.dump())
 
         # Test that we successfully add a redirect when there is
         # no listen directive
@@ -475,7 +476,7 @@ class NginxConfiguratorTest(util.NginxTest):
         expected = _redirect_block_for_domain("migration.com")
 
         generated_conf = self.config.parser.parsed[migration_conf]
-        self.assertTrue(expected in next(generated_conf.iterate_expanded()).contents.dump())
+        self.assertTrue(expected in next(generated_conf.iterate()).contents.dump())
 
     def test_split_for_redirect(self):
         example_conf = self.config.parser.abs_path('sites-enabled/example.com')
@@ -545,7 +546,7 @@ class NginxConfiguratorTest(util.NginxTest):
                             "Strict-Transport-Security")
         expected = ['add_header', 'Strict-Transport-Security', 'max-age=31536000', 'always']
         generated_conf = self.config.parser.parsed[example_conf]
-        block = next(generated_conf.iterate_expanded())
+        block = next(generated_conf.iterate())
         self.assertEqual(next(block.contents.get_directives('add_header')).words, expected)
 
     def test_http_header_hsts_twice(self):
@@ -585,8 +586,8 @@ class NginxConfiguratorTest(util.NginxTest):
         expected2 = _redirect_block_for_domain("example.org")
 
         generated_conf = self.config.parser.parsed[example_conf]
-        self.assertTrue(expected1 in next(generated_conf.iterate_expanded()).contents.dump())
-        self.assertTrue(expected2 in next(generated_conf.iterate_expanded()).contents.dump())
+        self.assertTrue(expected1 in next(generated_conf.iterate()).contents.dump())
+        self.assertTrue(expected2 in next(generated_conf.iterate()).contents.dump())
 
     def test_staple_ocsp_bad_version(self):
         self.config.version = (1, 3, 1)
@@ -609,7 +610,7 @@ class NginxConfiguratorTest(util.NginxTest):
 
         example_conf = self.config.parser.abs_path('sites-enabled/example.com')
         generated_conf = self.config.parser.parsed[example_conf]
-        bloc = next(generated_conf.iterate_expanded()).contents
+        bloc = next(generated_conf.iterate()).contents
         self.assertEqual(next(bloc.get_directives('ssl_trusted_certificate')).words,
             ['ssl_trusted_certificate', 'example/chain.pem'])
         self.assertEqual(next(bloc.get_directives('ssl_stapling')).words,
@@ -705,8 +706,8 @@ class NginxConfiguratorTest(util.NginxTest):
                          parsed_foo_conf[1][1][1])
 
     def _remove_default_server(self, parsed_tree):
-        for default_server_listen in parsed_tree.get_thing_recursive(
-            lambda x: isinstance(x, parser_obj.Sentence) and 'default_server' in x.words):
+        for default_server_listen in parsed_tree.get_type(
+            parser_obj.Sentence, match_func=lambda x: 'default_server' in x.words):
             # pylint: disable=protected-access
             default_server_listen._data.remove('default_server')
             default_server_listen.context.parent.context.parent._update_vhost()

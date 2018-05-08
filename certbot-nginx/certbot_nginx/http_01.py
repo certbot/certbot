@@ -7,9 +7,9 @@ from acme import challenges
 
 from certbot import errors
 from certbot.plugins import common
+from certbot.plugins import parser_obj
 
 from certbot_nginx import obj
-from certbot_nginx import parser_obj
 from certbot_nginx import nginxparser
 
 
@@ -78,7 +78,7 @@ class NginxHttp01(common.ChallengePerformer):
 
         main = self.configurator.parser.parsed[root]
         try:
-            http_block = next(main.get_thing_shallow(
+            http_block = next(main.iterate(match=
                 lambda x: isinstance(x, parser_obj.Bloc) and 'http' in x.names.words))
         except StopIteration:
             raise errors.MisconfigurationError(
