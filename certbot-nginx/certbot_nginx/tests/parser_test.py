@@ -195,7 +195,6 @@ class NginxParserTest(util.NginxTest): #pylint: disable=too-many-public-methods
                                                         '/etc/ssl/cert2.pem']])
         nparser.remove_server_directives(example_vhost, 'foo')
         nparser.remove_server_directives(example_vhost, 'ssl_certificate')
-        print nparser.parsed[example_com].dump()
         self.assertEqual(nparser.parsed[example_com].dump(),
             [[['server'], [['listen', '69.50.225.155:9000'],
                            ['listen', '127.0.0.1'],
