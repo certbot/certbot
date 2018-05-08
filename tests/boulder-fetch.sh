@@ -24,9 +24,10 @@ if [ "$BOULDER_INTEGRATION" = "v2" ]; then
 fi
 
 docker-compose up -d
+echo 10.77.77.77 boulder | sudo tee -a /etc/hosts
 
 set +x  # reduce verbosity while waiting for boulder
-until curl http://10.77.77.77:4000/directory 2>/dev/null; do
+until curl http://boulder:4000/directory 2>/dev/null; do
   echo waiting for boulder
   sleep 1
 done
