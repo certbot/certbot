@@ -766,7 +766,7 @@ class NginxConfigurator(common.Installer):
 
             # Add this at the bottom to get the right order of directives
             return_404_directive = [['return', '404']]
-            self.parser.add_server_directives(http_vhost, return_404_directive)
+            self.parser.update_or_add_server_directives(http_vhost, return_404_directive)
 
             vhost = http_vhost
 
@@ -1051,7 +1051,7 @@ class NginxConfigurator(common.Installer):
 
 def _test_block_from_block(block):
     test_block = nginxparser.UnspacedList(block)
-    # TODO: implement
+    # TODO (sydli): implement
     # parser.comment_directive(test_block, 0)
     return test_block[:-1]
 

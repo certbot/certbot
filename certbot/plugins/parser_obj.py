@@ -291,8 +291,7 @@ class Sentence(WithLists):
         """ Sets the tabbing on this sentence. Inserts a newline and `tabs` at the
         beginning of `self._data`. """
         if self._data[0].isspace():
-            raise errors.MisconfigurationError(
-                "This sentence is already tabbed; not sure how to set the tabbing further.")
+            return
         self._data.insert(0, '\n' + tabs)
 
     def dump(self, include_spaces=False):
@@ -435,7 +434,8 @@ def is_sentence(list_):
 
     :returns: whether this list_ is parseable by `Sentence`.
     """
-    return isinstance(list_, list) and all([isinstance(elem, six.string_types) for elem in list_])
+    return isinstance(list_, list) and len(list_) > 0 and \
+        all([isinstance(elem, six.string_types) for elem in list_])
 
 def _choose_parser(child_context, list_):
     """ Choose a parser from child_context, based on whichever hook returns True first. """
@@ -448,10 +448,13 @@ def _choose_parser(child_context, list_):
 def parse_raw(lists_, context=None, add_spaces=False):
     """ Primary parsing factory function. Based on `context.parsing_hooks`, chooses
     WithLists objects with which it recursively parses `lists_`.
+
     :param list lists_: raw lists from pyparsing to parse.
     :param .ParseContext context: Context containing parsing hooks. If not set,
         uses default parsing hooks.
     :param bool add_spaces: Whether to pass add_spaces to the parser.
+
+    :returns .WithLists: The parsed object.
 
     :raises errors.MisconfigurationError: If no parsing hook passes, and we can't
         determine which type to parse the raw lists into.

@@ -10,14 +10,16 @@ from certbot_nginx import parser_obj as nginx_obj
 
 logger = logging.getLogger(__name__)
 
-# TODO (sydli): Shouldn't be throwing Misconfiguration errors everywhere. Is there a parsing error?
-
 INCLUDE = 'include'
 
-class Parser(object):
-    """ Fancy nginx parser that tries to transform it into an AST of sorts.
+class NginxParser(object):
+    """Class handles the fine details of parsing the Nginx Configuration.
+
+    :ivar str root: Normalized absolute path to the server root
+        directory. Without trailing slash.
+    :ivar dict parsed: Mapping of file paths to parsed trees
     """
-    def __init__(self, root_dir, config_root):
+    def __init__(self, root_dir, config_root='nginx.conf'):
         self.parsed = {}
         self.parsed_root = None
         self.files = {}
@@ -212,17 +214,6 @@ class Parser(object):
         dup_server_bloc = vhost_template.raw.duplicate(only_directives,
                               remove_singleton_listen_params)
         return dup_server_bloc.vhost
-
-class NginxParser(Parser):
-    """Class handles the fine details of parsing the Nginx Configuration.
-
-    :ivar str root: Normalized absolute path to the server root
-        directory. Without trailing slash.
-    :ivar dict parsed: Mapping of file paths to parsed trees
-
-    """
-    def __init__(self, root_dir, root_file="nginx.conf"):
-        super(NginxParser, self).__init__(root_dir, root_file)
 
 def get_best_match(target_name, names):
     """Finds the best match for target_name out of names using the Nginx

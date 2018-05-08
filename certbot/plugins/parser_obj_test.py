@@ -36,7 +36,7 @@ class CommentHelpersTest(unittest.TestCase):
 class ParsingHooksTest(unittest.TestCase):
     def test_is_sentence(self):
         from certbot.plugins.parser_obj import is_sentence
-        self.assertTrue(is_sentence([]))
+        self.assertFalse(is_sentence([]))
         self.assertTrue(is_sentence(['']))
         self.assertTrue(is_sentence(['word']))
         self.assertTrue(is_sentence(['two', 'words']))
@@ -52,7 +52,7 @@ class ParsingHooksTest(unittest.TestCase):
         self.assertFalse(is_bloc([['block_name'], ['hi', []], []]))
         self.assertFalse(is_bloc([['block_name'], 'lol']))
         self.assertTrue(is_bloc([['block_name'], ['hi', []]]))
-        self.assertTrue(is_bloc([[], []]))
+        self.assertTrue(is_bloc([['hello'], []]))
         self.assertTrue(is_bloc([['block_name'], [['many'], ['statements'], 'here']]))
 
     def test_parse_raw(self):
