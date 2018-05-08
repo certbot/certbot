@@ -16,9 +16,11 @@ certbot_test () {
         "$@"
 }
 
+export BOULDER_IP=${BOULDER_IP:10.77.77.77}
+export SERVER=${SERVER:-http://$BOULDER_IP:4000/directory}
 # Use local ACMEv2 endpoint if requested and SERVER isn't already set.
 if [ "${BOULDER_INTEGRATION:-v1}" = "v2" -a -z "${SERVER:+x}" ]; then
-    SERVER="http://10.77.77.77:4001/directory"
+    SERVER="http://$BOULDER_IP:4001/directory"
 fi
 
 certbot_test_no_force_renew () {
@@ -30,7 +32,7 @@ certbot_test_no_force_renew () {
         --source $sources \
         --omit $omit_patterns \
         $(command -v certbot) \
-            --server "${SERVER:-http://10.77.77.77:4000/directory}" \
+            --server "${SERVER}" \
             --no-verify-ssl \
             --tls-sni-01-port $tls_sni_01_port \
             --http-01-port $http_01_port \
