@@ -127,7 +127,6 @@ Boulder:
 
 .. code-block:: shell
 
-   export SERVER=http://localhost:4000/directory
    source tests/integration/_common.sh
 
 Run the integration tests using:
