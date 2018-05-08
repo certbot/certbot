@@ -207,7 +207,7 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
             'Strict-Transport-Security'
         """
         return any([header_name in directive for directive in \
-                    self.raw.contents.get_directives(ADD_HEADER_DIRECTIVE)])
+                    self.raw.get_directives(ADD_HEADER_DIRECTIVE)])
 
     def contains_list(self, test):
         """Determine if raw server block contains test list at top level

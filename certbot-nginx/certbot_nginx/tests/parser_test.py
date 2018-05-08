@@ -304,6 +304,8 @@ class NginxParserTest(util.NginxTest): #pylint: disable=too-many-public-methods
 
 
     def test_parse_server_raw_ssl(self):
+        # pylint: disable=no-member
+        # pylint is pretty bad at guessing these types, so shh
         server = nginx_obj.parse_raw_nginx([['server'], [['listen', '443']]])
         self.assertFalse(server.ssl)
 
@@ -317,6 +319,7 @@ class NginxParserTest(util.NginxTest): #pylint: disable=too-many-public-methods
         self.assertTrue(server.ssl)
 
     def test_parse_server_raw_unix(self):
+        # pylint: disable=no-member
         server = nginx_obj.parse_raw_nginx(
             [['server'], [['listen', 'unix:/var/run/nginx.sock']]])
         self.assertEqual(len(server.addrs), 0)

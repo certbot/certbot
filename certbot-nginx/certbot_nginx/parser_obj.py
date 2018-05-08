@@ -68,15 +68,15 @@ class ServerBloc(obj.Bloc):
         self.addrs = set()
         self.ssl = False
         self.server_names = set()
-        for listen in self.contents.get_directives('listen'):
+        for listen in self.get_directives('listen'):
             addr = nginx_obj.Addr.fromstring(" ".join(listen[1:]))
             if addr:
                 self.addrs.add(addr)
                 if addr.ssl:
                     self.ssl = True
-        for name in self.contents.get_directives('server_name'):
+        for name in self.get_directives('server_name'):
             self.server_names.update(name[1:])
-        for ssl in self.contents.get_directives('ssl'):
+        for ssl in self.get_directives('ssl'):
             if ssl.words[1] == 'on':
                 self.ssl = True
 
@@ -90,14 +90,19 @@ class ServerBloc(obj.Bloc):
     def _add_directive(self, statement, insert_at_top=False, is_block=False):
         # pylint: disable=protected-access
         # ensure no duplicates
-        if self.contents.contains_exact_directive(statement):
+        if self._has_same_directive(statement):
             return
         # ensure, if it's not repeatable, that it's not repeated
         if not is_block and statement[0] not in REPEATABLE_DIRECTIVES and len(
-            list(self.contents.get_directives(statement[0]))) > 0:
+            list(self.get_directives(statement[0]))) > 0:
             raise errors.MisconfigurationError(
                 "Existing %s directive conflicts with %s", statement[0], statement)
         self.contents.add_statement(statement, insert_at_top)
+
+    def _has_same_directive(self, statement):
+        matches = list(self.get_directives(statement[0],
+            lambda directive: directive.words == statement))
+        return len(matches) > 0
 
     def add_directives(self, statements, insert_at_top=False, is_block=False):
         """ Add statements to this object. If the exact statement already exists,
@@ -140,13 +145,18 @@ class ServerBloc(obj.Bloc):
         if only_directives is not None:
             dup_bloc.contents.remove_statements(lambda x: x[0] not in only_directives)
         if remove_singleton_listen_params:
-            for directive in dup_bloc.contents.get_directives('listen'):
+            for directive in dup_bloc.get_directives('listen'):
                 for word in ['default_server', 'default', 'ipv6only=on']:
                     if word in directive.words:
                         directive._data.remove(word)
         dup_bloc.context.parent = self.context.parent
         dup_bloc._update_vhost()
         return dup_bloc
+
+    def get_directives(self, name, match=None):
+        """ Retrieves any directive starting with |name|. Expands includes."""
+        return self.contents.get_type(obj.Sentence,
+            lambda sentence: sentence[0] == name and (match is None or match(sentence)))
 
 NGINX_PARSING_HOOKS = (
     (lambda list_: obj.is_bloc(list_) and 'server' in list_[0], ServerBloc),

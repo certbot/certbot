@@ -111,7 +111,7 @@ class NginxTlsSni01(common.TLSSNI01):
 
         main = self.configurator.parser.parsed[root]
         try:
-            http_block = next(main.get_thing_shallow(
+            http_block = next(main.iterate(match=\
                 lambda x: isinstance(x, parser_obj.Bloc) and 'http' in x.names.words))
         except StopIteration:
             raise errors.MisconfigurationError(

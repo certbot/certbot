@@ -136,7 +136,7 @@ class Parser(object):
         :rtype: bool
 
         """
-        for ssl in vhost.raw.contents.get_directives("ssl"):
+        for ssl in vhost.raw.get_directives("ssl"):
             if ssl[1] == "on":
                 return True
         return False

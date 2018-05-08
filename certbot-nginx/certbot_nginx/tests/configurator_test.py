@@ -547,7 +547,7 @@ class NginxConfiguratorTest(util.NginxTest):
         expected = ['add_header', 'Strict-Transport-Security', 'max-age=31536000', 'always']
         generated_conf = self.config.parser.parsed[example_conf]
         block = next(generated_conf.iterate())
-        self.assertEqual(next(block.contents.get_directives('add_header')).words, expected)
+        self.assertEqual(next(block.get_directives('add_header')).words, expected)
 
     def test_http_header_hsts_twice(self):
         self.config.enhance("www.example.com", "ensure-http-header",
@@ -610,7 +610,7 @@ class NginxConfiguratorTest(util.NginxTest):
 
         example_conf = self.config.parser.abs_path('sites-enabled/example.com')
         generated_conf = self.config.parser.parsed[example_conf]
-        bloc = next(generated_conf.iterate()).contents
+        bloc = next(generated_conf.iterate())
         self.assertEqual(next(bloc.get_directives('ssl_trusted_certificate')).words,
             ['ssl_trusted_certificate', 'example/chain.pem'])
         self.assertEqual(next(bloc.get_directives('ssl_stapling')).words,

@@ -9,16 +9,6 @@ logger = logging.getLogger(__name__)
 COMMENT = ' managed by Certbot'
 COMMENT_BLOCK = ['#', COMMENT]
 
-def is_certbot_comment(parsed_obj):
-    """ Checks whether parsed_obj is a certbot comment.
-    """
-    if not isinstance(parsed_obj, Sentence):
-        return False
-    for item in COMMENT_BLOCK:
-        if item not in parsed_obj.words:
-            return False
-    return True
-
 class WithLists(object):
     """ Abstract base class for "Parsable" objects whose underlying representation
     is a tree of lists. """
@@ -41,7 +31,7 @@ class WithLists(object):
         """ Spans a child context (with this object as the parent)
         """
         if self.context is None:
-            return None
+            return ParseContext(None, None, self, None, None)
         if filename is None:
             filename = self.context.filename
         return ParseContext(self.context.cwd, filename, self, self.context.parsed_files,
@@ -63,31 +53,6 @@ class WithLists(object):
         to False is equivalent to the old UnspacedList object. """
         return [elem.dump(include_spaces) for elem in self._data]
 
-def is_bloc(list_):
-    """ TODO """
-    return isinstance(list_, list) and len(list_) == 2 and \
-        is_sentence(list_[0]) and isinstance(list_[1], list)
-
-def is_sentence(list_):
-    """ TODO """
-    return isinstance(list_, list) and all([isinstance(elem, six.string_types) for elem in list_])
-
-def _choose_parser(child_context, list_):
-    for hook, type_ in child_context.parsing_hooks:
-        if hook(list_):
-            return type_(child_context)
-    raise errors.MisconfigurationError(
-        "None of the parsing hooks succeeded, so we don't know how to parse this set of lists.")
-
-# important functions
-
-def parse_raw(lists_, context, add_spaces=False):
-    """ TODO
-    """
-    parser = _choose_parser(context, lists_)
-    parser.parse(lists_, add_spaces)
-    return parser
-
 class Statements(WithLists):
     """ A group or list of "Statements". A Statement is either a Block or a Directive.
     """
@@ -96,11 +61,12 @@ class Statements(WithLists):
         self._trailing_whitespace = None
 
     def set_tabs(self, tabs='    '):
-        """ TODO
+        """ Sets the tabbing for this set of statements.
         """
         for statement in self._data:
             statement.set_tabs(tabs)
-        self._trailing_whitespace = '\n' + self.context.parent.get_tabs()
+        if self.context is not None and self.context.parent is not None:
+            self._trailing_whitespace = '\n' + self.context.parent.get_tabs()
 
     def parse(self, parse_this, add_spaces=False):
         """ Assumes parse_this is a list of parseable lists. """
@@ -133,22 +99,11 @@ class Statements(WithLists):
             for sub_elem in elem.iterate(expanded, match):
                 yield sub_elem
 
-    def get_thing_shallow(self, match_func):
-        """ Retrieves any Statement that returns true for match_func--
-        Not recursive (so does not recurse on nested Blocs). """
-        for elem in self._data:
-            if match_func(elem):
-                yield elem
-
     def get_type(self, match_type, match_func=None):
         """ Retrieve objects of a particluar type """
         return self.iterate(expanded=True, match=
-            lambda elem: isinstance(elem, match_type) and  \
+            lambda elem: isinstance(elem, match_type) and \
                 (match_func is None or match_func(elem)))
-
-    def get_directives(self, name):
-        """ Retrieves any directive starting with |name|. Expands includes."""
-        return self.get_type(Sentence, lambda sentence: sentence[0] == name)
 
     def _get_statement_index(self, match_func):
         """ Retrieves index of first occurrence of |directive| """
@@ -157,20 +112,12 @@ class Statements(WithLists):
                 return i
         return -1
 
-    def contains_exact_directive(self, statement):
-        """ Returns true if |statement| is in this list of statements (+ expands includes)"""
-        for elem in self.get_type(Sentence):
-            if elem.matches_list(statement):
-                return True
-        return False
-
     def replace_statement(self, statement, match_func, insert_at_top=False):
         """ For each statement, checks to see if an exisitng directive of that name
         exists. If so, replace the first occurrence with the statement. Otherwise, just
         add it to this object. """
         found = self._get_statement_index(match_func)
         if found < 0:
-            # TODO (sydli): this level of abstraction shouldn't know about certbot_comments.
             self.add_statement(statement, insert_at_top)
             return
         statement = parse_raw(statement, self.child_context(), add_spaces=True)
@@ -178,7 +125,6 @@ class Statements(WithLists):
         self._data[found] = statement
         if found + 1 >= len(self._data) or not is_certbot_comment(self._data[found+1]):
             self._data.insert(found+1, certbot_comment(self.context))
-        # TODO (sydli): if there's no comment here already, add a comment
 
     def add_statement(self, statement, insert_at_top=False):
         """ Adds a Statement to the end of this block of statements. """
@@ -190,7 +136,7 @@ class Statements(WithLists):
         else:
             index = len(self._data)
             self._data.append(statement)
-        if not isinstance(statement, Sentence) or not statement.is_comment():
+        if not is_comment(statement):
             self._data.insert(index+1, certbot_comment(self.context))
         return statement
 
@@ -203,17 +149,11 @@ class Statements(WithLists):
                 del self._data[found]
             found = self._get_statement_index(match_func)
 
-def certbot_comment(context, preceding_spaces=4):
-    """ A "Managed by Certbot" comment :) """
-    result = Sentence(context)
-    result.parse([' ' * preceding_spaces] + COMMENT_BLOCK)
-    return result
-
-def spaces_after_newline(word):
+def _spaces_after_newline(word, newline='\n'):
     """ Retrieves number of spaces after final newline in word."""
     if not word.isspace():
         return ''
-    rindex = word.rfind('\n') # TODO: check \r
+    rindex = word.rfind(newline)
     return word[rindex+1:]
 
 class Sentence(WithLists):
@@ -223,37 +163,28 @@ class Sentence(WithLists):
         """ Expects a list of strings.  """
         if add_spaces:
             parse_this = _space_list(parse_this)
-        if not isinstance(parse_this, list):
-            raise errors.MisconfigurationError("Sentence parsing expects a list!")
+        if not isinstance(parse_this, list) or \
+                any([not isinstance(elem, six.string_types) for elem in parse_this]):
+            raise errors.MisconfigurationError("Sentence parsing expects a list of string types.")
         self._data = parse_this
 
     def iterate(self, expanded=False, match=None):
         if match is None or match(self):
             yield self
 
-    def set_tabs(self, tabs='    '):
-        """ TODO """
-        self._data.insert(0, '\n' + tabs)
+    def set_tabs(self, tabs='    ', newline='\n'):
+        """ Sets the tabbing on this sentence. Inserts a newline and `tabs` at the
+        beginning of `self._data`. """
+        if self._data[0].isspace():
+            raise errors.MisconfigurationError(
+                "This sentence is already tabbed; not sure how to set the tabbing further.")
+        self._data.insert(0, newline + tabs)
 
-    def is_comment(self):
-        """ Is this sentence a comment? """
-        if len(self.words) == 0:
-            return False
-        return self.words[0] == '#'
-
+    # TODO: remove words usage, just use __getitem__
     @property
     def words(self):
         """ Iterates over words, but without spaces. Like Unspaced List. """
         return [word.strip('"\'') for word in self._data if not word.isspace()]
-
-    def matches_list(self, list_):
-        """ Checks to see whether this object matches an unspaced list. """
-        for i, word in enumerate(self.words):
-            if word == '#' and i == len(list_):
-                return True
-            if word != list_[i]:
-                return False
-        return True
 
     def __getitem__(self, index):
         return self.words[index]
@@ -266,7 +197,7 @@ class Sentence(WithLists):
 
     def get_tabs(self):
         """ TODO """
-        return spaces_after_newline(self._data[0])
+        return _spaces_after_newline(self._data[0])
 
 def _space_list(list_):
     spaced_statement = []
@@ -298,10 +229,10 @@ class Bloc(WithLists):
 
     def parse(self, parse_this, add_spaces=False):
         """ Expects a list of two! """
-        if not isinstance(parse_this, list) or len(parse_this) != 2:
-            raise errors.MisconfigurationError("Bloc parsing expects a list of length 2!")
-         #if add_spaces:
-         #    parse_this = _space_list(parse_this, self.parent.get_tabs())
+        if not is_bloc(parse_this):
+            raise errors.MisconfigurationError("Bloc parsing expects a list of length 2. "
+                "First element should be a list of string types (the bloc names), "
+                "and second should be another list of statements (the bloc content).")
         self.names = Sentence(self.child_context())
         if add_spaces:
             parse_this[0].append(' ')
@@ -312,6 +243,60 @@ class Bloc(WithLists):
 
     def get_tabs(self):
         return self.names.get_tabs()
+
+def is_comment(parsed_obj):
+    """ Checks whether parsed_obj is a comment.
+    """
+    if not isinstance(parsed_obj, Sentence):
+        return False
+    return parsed_obj.words[0] == '#'
+
+def is_certbot_comment(parsed_obj):
+    """ Checks whether parsed_obj is a certbot comment.
+    """
+    if not is_comment(parsed_obj):
+        return False
+    if len(parsed_obj.words) != len(COMMENT_BLOCK):
+        return False
+    for i, word in enumerate(parsed_obj.words):
+        if word != COMMENT_BLOCK[i]:
+            return False
+    return True
+
+def certbot_comment(context, preceding_spaces=4):
+    """ A "Managed by Certbot" comment :) """
+    result = Sentence(context)
+    result.parse([' ' * preceding_spaces] + COMMENT_BLOCK)
+    return result
+
+def is_bloc(list_):
+    """ TODO """
+    return isinstance(list_, list) and len(list_) == 2 and \
+        is_sentence(list_[0]) and isinstance(list_[1], list)
+
+def is_sentence(list_):
+    """ TODO """
+    return isinstance(list_, list) and all([isinstance(elem, six.string_types) for elem in list_])
+
+def _choose_parser(child_context, list_):
+    for hook, type_ in child_context.parsing_hooks:
+        if hook(list_):
+            return type_(child_context)
+    raise errors.MisconfigurationError(
+        "None of the parsing hooks succeeded, so we don't know how to parse this set of lists.")
+
+# important functions
+
+def parse_raw(lists_, context=None, add_spaces=False):
+    """ TODO
+    """
+    if context is None:
+        context = ParseContext("", "")
+    if context.parsing_hooks is None:
+        context.parsing_hooks = DEFAULT_PARSING_HOOKS
+    parser = _choose_parser(context, lists_)
+    parser.parse(lists_, add_spaces)
+    return parser
 
 DEFAULT_PARSING_HOOKS = (
     (is_bloc, Bloc),
