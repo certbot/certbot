@@ -145,6 +145,7 @@ STATUS_PROCESSING = Status('processing')
 STATUS_VALID = Status('valid')
 STATUS_INVALID = Status('invalid')
 STATUS_REVOKED = Status('revoked')
+STATUS_READY = Status('ready')
 
 
 class IdentifierType(_Constant):
