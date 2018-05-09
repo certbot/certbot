@@ -356,6 +356,9 @@ ls -l "${root}/conf/archive/reusekey.le.wtf/privkey"*
 # Exactly three lines, of which exactly two identical first fields.
 sha256sum "${root}/conf/archive/reusekey.le.wtf/privkey"* | awk '{a[$1] = 1}; END {exit(NR !=3 || length(a)!=2)}'
 
+# Nonetheless, all three certificates are different even though two of them
+# share the same subject key.
+sha256sum "${root}/conf/archive/reusekey.le.wtf/cert"* | awk '{a[$1] = 1}; END {exit(NR !=3 || length(a)!=3)}'
 
 # ECDSA
 openssl ecparam -genkey -name secp384r1 -out "${root}/privkey-p384.pem"
