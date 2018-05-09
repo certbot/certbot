@@ -1,4 +1,4 @@
-FROM python:3.4-alpine
+FROM python:2-alpine
 
 ENTRYPOINT [ "certbot" ]
 EXPOSE 80 443
