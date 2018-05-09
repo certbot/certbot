@@ -18,8 +18,9 @@ certbot_test () {
 
 # Use local ACMEv2 endpoint if requested and SERVER isn't already set.
 if [ "${BOULDER_INTEGRATION:-v1}" = "v2" -a -z "${SERVER:+x}" ]; then
-    SERVER="http://localhost:4001/directory"
+    SERVER="http://boulder:4001/directory"
 fi
+export SERVER=${SERVER:-http://boulder:4000/directory}
 
 certbot_test_no_force_renew () {
     omit_patterns="*/*.egg-info/*,*/dns_common*,*/setup.py,*/test_*,*/tests/*"
@@ -30,7 +31,7 @@ certbot_test_no_force_renew () {
         --source $sources \
         --omit $omit_patterns \
         $(command -v certbot) \
-            --server "${SERVER:-http://localhost:4000/directory}" \
+            --server "${SERVER}" \
             --no-verify-ssl \
             --tls-sni-01-port $tls_sni_01_port \
             --http-01-port $http_01_port \
