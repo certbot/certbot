@@ -34,4 +34,8 @@ for n in `seq 1 300` ; do
     echo waiting for boulder
     sleep 1
   fi
+  if [[ $n == 300 ]]; then
+    echo timed out waiting for boulder
+    exit 1
+  fi
 done
