@@ -244,7 +244,6 @@ def _has_acceptable_tls_versions(parameter_string):
     Checks to see if the comma-separated list of TLS protocols to exclude is acceptable.
     Sample string: "!SSLv2, !SSLv3"
     """
-    print constants.TLS_VERSIONS
     bad_versions = list(constants.TLS_VERSIONS)
     for version in constants.ACCEPTABLE_TLS_VERSIONS:
         del bad_versions[bad_versions.index(version)]
