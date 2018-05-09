@@ -294,6 +294,8 @@ class Client(object):
                 keypath = oldkeypath
                 keypem = f.read()
             key = util.Key(file=keypath, pem=keypem)
+            logger.info("New key obtained by reusing existing private key "
+                        "from %s.", oldkeypath)
 
         # Create CSR from names
         if self.config.dry_run:
