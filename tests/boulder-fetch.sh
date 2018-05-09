@@ -27,7 +27,11 @@ docker-compose up -d
 echo 10.77.77.77 boulder | sudo tee -a /etc/hosts
 
 set +x  # reduce verbosity while waiting for boulder
-until curl http://boulder:4000/directory ; do
-  echo waiting for boulder
-  sleep 1
+for n in `seq 1 60` ; do
+  if curl -v http://boulder:4000/directory ; then
+    break
+  else
+    echo waiting for boulder
+    sleep 1
+  fi
 done
