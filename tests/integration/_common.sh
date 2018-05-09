@@ -16,11 +16,11 @@ certbot_test () {
         "$@"
 }
 
-export SERVER=${SERVER:-http://boulder:4000/directory}
 # Use local ACMEv2 endpoint if requested and SERVER isn't already set.
 if [ "${BOULDER_INTEGRATION:-v1}" = "v2" -a -z "${SERVER:+x}" ]; then
     SERVER="http://boulder:4001/directory"
 fi
+export SERVER=${SERVER:-http://boulder:4000/directory}
 
 certbot_test_no_force_renew () {
     omit_patterns="*/*.egg-info/*,*/dns_common*,*/setup.py,*/test_*,*/tests/*"
