@@ -24,8 +24,7 @@ if [ "$BOULDER_INTEGRATION" = "v2" ]; then
 fi
 
 docker-compose up -d
-echo 10.77.77.77 boulder | sudo tee -a /etc/hosts
-cat /etc/hosts
+printf "\n10.77.77.77 boulder" | sudo tee -a /etc/hosts
 
 set +x  # reduce verbosity while waiting for boulder
 for n in `seq 1 60` ; do
@@ -34,8 +33,5 @@ for n in `seq 1 60` ; do
   else
     echo waiting for boulder
     sleep 1
-  fi
-  if [[ $n = 60 ]]; then
-    docker-compose logs boulder
   fi
 done
