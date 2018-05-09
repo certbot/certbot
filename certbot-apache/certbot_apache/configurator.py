@@ -20,6 +20,7 @@ from certbot import util
 
 from certbot.plugins import common
 from certbot.plugins.util import path_surgery
+from certbot.plugins.enhancements import AutoHSTSEnhancement
 
 from certbot_apache import apache_util
 from certbot_apache import augeas_configurator
@@ -2156,3 +2157,24 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # to be modified.
         return common.install_version_controlled_file(options_ssl, options_ssl_digest,
             self.constant("MOD_SSL_CONF_SRC"), constants.ALL_SSL_OPTIONS_HASHES)
+
+    def update_autohsts(self, domain):
+        """
+        The actual enhancement update method in installer plugin.
+        """
+        logger.warning("NOOP from update")
+
+    def deploy_autohsts(self, lineage):
+        """
+        The actual enhancement deploy method in installer plugin.
+        """
+        logger.warning("NOOP from deploy")
+
+    def enable_autohsts(self, lineage):
+        """
+        The actual enhancement enabling method in installer plugin.
+        """
+        logger.warning("NOOP from enable")
+
+
+AutoHSTSEnhancement.register(ApacheConfigurator)

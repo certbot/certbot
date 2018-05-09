@@ -28,6 +28,7 @@ from certbot import util
 
 from certbot.display import util as display_util
 from certbot.plugins import disco as plugins_disco
+import certbot.plugins.enhancements as enhancements
 import certbot.plugins.selection as plugin_selection
 
 logger = logging.getLogger(__name__)
@@ -1200,6 +1201,12 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         " when the user executes \"certbot renew\", regardless of if the certificate"
         " is renewed. This setting does not apply to important TLS configuration"
         " updates.")
+
+    # Add the new style enhancements
+    for enh in enhancements.INDEX:
+        helpful.add(enh["cli_groups"], enh["cli_flag"], action=enh["cli_action"],
+                    dest=enh["cli_dest"], default=enh["cli_flag_default"],
+                    help=enh["cli_help"])
 
     helpful.add_deprecated_argument("--agree-dev-preview", 0)
     helpful.add_deprecated_argument("--dialog", 0)
