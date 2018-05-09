@@ -31,9 +31,6 @@ DEFAULT_MAIN_CF = {
     "mail_version": "3.2.3"
 }
 
-DEFAULT_MASTER_CF = {
-}
-
 def _main_cf_with(obj):
     main_cf = copy.copy(DEFAULT_MAIN_CF)
     main_cf.update(obj)
@@ -280,7 +277,7 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
             self.assertEqual(installer.supported_enhancements(), [])
 
 @contextmanager
-def create_installer(config, main_cf=DEFAULT_MAIN_CF, master_cf=DEFAULT_MASTER_CF):
+def create_installer(config, main_cf=DEFAULT_MAIN_CF):
 # pylint: disable=dangerous-default-value
     """Creates a Postfix installer with calls to `postconf` and `postfix` mocked out.
 
@@ -294,7 +291,7 @@ def create_installer(config, main_cf=DEFAULT_MAIN_CF, master_cf=DEFAULT_MASTER_C
         super(ConfigMain, postconf).__init__(executable, config_dir)
         postconf._handle_overrides = handle_overrides
         postconf._db = main_cf
-        postconf._master_db = master_cf
+        postconf._master_db = {}
         postconf._updated = {}
         # override get_default to get from main
         postconf.get_default = lambda name: main_cf[name]
