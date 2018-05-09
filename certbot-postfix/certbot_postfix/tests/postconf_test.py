@@ -75,8 +75,10 @@ class PostConfTest(unittest.TestCase):
         self.config.set('default_parameter', 'new_value')
         self.config.set('extra_param', 'another_value')
         self.config.flush()
-        mock_out.assert_called_with(
-            ['-e', 'default_parameter=new_value', 'extra_param=another_value'])
+        arguments = mock_out.call_args_list[-1][0][0]
+        self.assertEquals('-e', arguments[0])
+        self.assertTrue('default_parameter=new_value' in arguments)
+        self.assertTrue('extra_param=another_value' in arguments)
 
     @mock.patch('certbot_postfix.util.PostfixUtilBase._get_output')
     def test_flush_updates_object(self, mock_out):
