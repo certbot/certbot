@@ -34,4 +34,7 @@ for n in `seq 1 60` ; do
     echo waiting for boulder
     sleep 1
   fi
+  if [[ $n = 60 ]]; then
+    docker-compose logs boulder
+  fi
 done
