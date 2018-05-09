@@ -25,6 +25,7 @@ fi
 
 docker-compose up -d
 echo 10.77.77.77 boulder | sudo tee -a /etc/hosts
+cat /etc/hosts
 
 set +x  # reduce verbosity while waiting for boulder
 for n in `seq 1 60` ; do
