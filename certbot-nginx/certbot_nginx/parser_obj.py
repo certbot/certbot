@@ -204,7 +204,7 @@ class NginxParseContext(obj.ParseContext):
     """ A parsing context which includes a set of parsing hooks specific to Nginx
     configuration files. """
     def __init__(self, cwd="", filename="", parent=None, parsed_files=None,
-                 parsing_hooks=obj.DEFAULT_PARSING_HOOKS + NGINX_PARSING_HOOKS):
+                 parsing_hooks=NGINX_PARSING_HOOKS + obj.DEFAULT_PARSING_HOOKS)
         super(NginxParseContext, self).__init__(cwd, filename, parent, parsed_files,
             parsing_hooks)
 
