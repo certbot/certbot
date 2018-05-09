@@ -28,7 +28,7 @@ printf "\n10.77.77.77 boulder" | sudo tee -a /etc/hosts
 
 set +x  # reduce verbosity while waiting for boulder
 for n in `seq 1 300` ; do
-  if curl -v http://boulder:4000/directory ; then
+  if curl http://boulder:4000/directory 2>/dev/null ; then
     break
   else
     echo waiting for boulder
