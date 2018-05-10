@@ -286,7 +286,8 @@ class NginxConfigurator(common.Installer):
         if not vhosts:
             if create_if_no_match:
                 # result will not be [None] because it errors on failure
-                vhosts = [self._vhost_from_duplicated_default(target_name)]
+                vhosts = [self._vhost_from_duplicated_default(target_name,
+                    preferred_port=self.config.tls_sni_01_port)]
             else:
                 # No matches. Raise a misconfiguration error.
                 raise errors.MisconfigurationError(
@@ -329,9 +330,9 @@ class NginxConfigurator(common.Installer):
                     ipv6only_present = True
         return (ipv6_active, ipv6only_present)
 
-    def _vhost_from_duplicated_default(self, domain, port=None):
+    def _vhost_from_duplicated_default(self, domain, port=None, preferred_port=None):
         if self.new_vhost is None:
-            default_vhost = self._get_default_vhost(port)
+            default_vhost = self._get_default_vhost(port, preferred_port)
             self.new_vhost = self.parser.duplicate_vhost(default_vhost,
                 remove_singleton_listen_params=True)
             self.new_vhost.names = set()
@@ -347,7 +348,7 @@ class NginxConfigurator(common.Installer):
             name_block[0].append(name)
         self.parser.update_or_add_server_directives(vhost, name_block)
 
-    def _get_default_vhost(self, port):
+    def _get_default_vhost(self, port, preferred_port):
         vhost_list = self.parser.get_vhosts()
         # if one has default_server set, return that one
         default_vhosts = []
@@ -360,6 +361,11 @@ class NginxConfigurator(common.Installer):
 
         if len(default_vhosts) == 1:
             return default_vhosts[0]
+        elif len(default_vhosts) > 1 and preferred_port is not None:
+            for vhost in default_vhosts:
+                for addr in vhost.addrs:
+                    if addr.default and self._port_matches(preferred_port, addr.get_port()):
+                        return vhost
 
         # TODO: present a list of vhosts for user to choose from
 
