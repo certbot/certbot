@@ -28,18 +28,15 @@ running:
 
    git clone https://github.com/certbot/certbot
 
-If you're on macOS, we recommend you skip the rest of this section and instead
-run Certbot in Docker. You can find instructions for how to do this :ref:`here
-<docker-dev>`. If you're running on Linux, you can run the following commands to
-install dependencies and set up a virtual environment where you can run
-Certbot. You will need to repeat this when Certbot's dependencies change or when
-a new plugin is introduced.
+You can run the following commands to install dependencies and set up a virtual
+environment where you can run Certbot. You may need to repeat this when
+Certbot's dependencies change or when a new plugin is introduced.
 
 .. code-block:: shell
 
    cd certbot
-   sudo ./certbot-auto --os-packages-only
-   ./tools/venv.sh
+   sudo ./certbot-auto --debug --os-packages-only
+   tools/venv.sh
 
 You can now run the copy of Certbot from git either by executing
 ``venv/bin/certbot``, or by activating the virtual environment. If you're
