@@ -419,37 +419,22 @@ OS-level dependencies can be installed like so:
 
 .. code-block:: shell
 
-    letsencrypt-auto-source/letsencrypt-auto --os-packages-only
+   sudo ./certbot-auto --debug --os-packages-only
 
 In general...
 
 * ``sudo`` is required as a suggested way of running privileged process
-* `Python`_ 2.7 is required
+* `Python`_ 2.7 or 3.4+ is required
 * `Augeas`_ is required for the Python bindings
-* ``virtualenv`` and ``pip`` are used for managing other python library
-  dependencies
+* ``virtualenv`` is used for managing other Python library dependencies
 
 .. _Python: https://wiki.python.org/moin/BeginnersGuide/Download
 .. _Augeas: http://augeas.net/
 .. _Virtualenv: https://virtualenv.pypa.io
 
 
-Debian
-------
-
-For squeeze you will need to:
-
-- Use ``virtualenv --no-site-packages -p python`` instead of ``-p python2``.
-
-
 FreeBSD
 -------
-
-Packages can be installed on FreeBSD using ``pkg``,
-or any other port-management tool (``portupgrade``, ``portmanager``, etc.)
-from the pre-built package or can be built and installed from ports.
-Either way will ensure proper installation of all the dependencies required
-for the package.
 
 FreeBSD by default uses ``tcsh``. In order to activate virtualenv (see
 above), you will need a compatible shell, e.g. ``pkg install bash &&
