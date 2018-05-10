@@ -319,6 +319,7 @@ Steps:
 
 Updating certbot-auto and letsencrypt-auto
 ==========================================
+
 Updating the scripts
 --------------------
 Developers should *not* modify the ``certbot-auto`` and ``letsencrypt-auto`` files
