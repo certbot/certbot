@@ -287,7 +287,7 @@ class NginxConfigurator(common.Installer):
             if create_if_no_match:
                 # result will not be [None] because it errors on failure
                 vhosts = [self._vhost_from_duplicated_default(target_name,
-                    preferred_port=self.config.tls_sni_01_port)]
+                    preferred_port=str(self.config.tls_sni_01_port))]
             else:
                 # No matches. Raise a misconfiguration error.
                 raise errors.MisconfigurationError(
