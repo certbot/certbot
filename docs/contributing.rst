@@ -43,26 +43,18 @@ Certbot in Docker <docker-dev>`.
   Certbot's dependencies change or when a new plugin is introduced.
 
 You can now run the copy of Certbot from git either by executing
-``venv/bin/certbot``, or by activating the virtual environment. If you're
-actively modifying and testing the code, you may want to run commands like this in
-each shell where you're working:
+``venv/bin/certbot``, or by activating the virtual environment. You can do the
+latter by running:
 
 .. code-block:: shell
 
-   source ./venv/bin/activate
-   export SERVER=https://acme-staging-v02.api.letsencrypt.org/directory
-   source tests/integration/_common.sh
+   source venv/bin/activate
 
-After that, your shell will be using the virtual environment, your copy of
-Certbot will default to requesting test (staging) certificates, and you run the
-client by typing `certbot` or `certbot_test`. The latter is an alias that
-includes several flags useful for testing. For instance, it sets various output
-directories to point to /tmp/, and uses non-privileged ports for challenges, so
-root privileges are not required.
-
-Activating a shell with `venv/bin/activate` sets environment variables so that
-Python pulls in the correct versions of various packages needed by Certbot.
-More information can be found in the `virtualenv docs`_.
+After running this command, ``certbot`` and development tools like ``ipython``
+and ``tox`` are available in the shell where you ran the command. This works by
+setting environment variables so the right executables are found and Python can
+pull in the versions of various packages needed by Certbot.  More information
+can be found in the `virtualenv docs`_.
 
 .. _`virtualenv docs`: https://virtualenv.pypa.io
 
