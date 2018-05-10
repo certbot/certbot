@@ -293,7 +293,7 @@ class NginxConfigurator(common.Installer):
                             ("Cannot find a VirtualHost matching domain %s. "
                              "In order for Certbot to correctly perform the challenge "
                              "please add a corresponding server_name directive to your "
-                             "nginx configuration: "
+                             "nginx configuration for every domain on your certificate: "
                              "https://nginx.org/en/docs/http/server_names.html") % (target_name))
         # Note: if we are enhancing with ocsp, vhost should already be ssl.
         for vhost in vhosts:
