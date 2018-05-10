@@ -94,17 +94,17 @@ Once all the unittests pass, check for sufficient test coverage using
 ``tox -e cover``, and then check for code style with ``tox -e lint`` (all files)
 or ``pylint --rcfile=.pylintrc path/to/file.py`` (single file at a time).
 
-Once all of the above is successful, you may run the full test suite,
-including integration tests, using ``tox``. We recommend running the
-commands above first, because running all tests with ``tox`` is very
-slow, and the large amount of ``tox`` output can make it hard to find
-specific failures when they happen. Also note that the full test suite
-will attempt to modify your system's Apache config if your user has sudo
-permissions, so it should not be run on a production Apache server.
+Once all of the above is successful, you may run the full test suite using
+``tox --skip-missing-interpreters``. We recommend running the commands above
+first, because running all tests like this is very slow, and the large amount
+of output can make it hard to find specific failures when they happen. Also
+note that the full test suite will attempt to modify your system's Apache
+config if your user has sudo permissions, so it should not be run on a
+production Apache server.
 
-If you have trouble getting the full ``tox`` suite to run locally, it is
-generally sufficient to open a pull request and let Github and Travis run
-integration tests for you.
+If you have trouble getting the full ``tox --skip-missing-interpreters`` suite
+to run locally, it is generally sufficient to open a pull request and let
+Github and Travis run integration tests for you.
 
 .. _integration:
 
