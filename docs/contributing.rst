@@ -11,6 +11,12 @@ Developer Guide
 Getting Started
 ===============
 
+Certbot has the same :ref:`system requirements <system_requirements>` when set
+up for development.  While the section below will help you install Certbot and
+its dependencies, Certbot needs to be run on a UNIX-like OS so if you're using
+Windows, you'll need to set up a (virtual) machine running something like Linux
+before continuing with these instructions.
+
 Running a local copy of the client
 ----------------------------------
 
