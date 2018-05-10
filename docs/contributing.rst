@@ -313,10 +313,8 @@ Steps:
 4. Run ``tox --skip-missing-interpreters`` to run the entire test suite
    including coverage. The ``--skip-missing-interpreters`` argument ignores
    missing versions of Python needed for running the tests. Fix any errors.
-5. If your code touches communication with an ACME server/Boulder, you
-   should run the integration tests, see `integration`_.
-6. Submit the PR.
-7. Did your tests pass on Travis? If they didn't, fix any errors.
+5. Submit the PR.
+6. Did your tests pass on Travis? If they didn't, fix any errors.
 
 
 Updating certbot-auto and letsencrypt-auto
