@@ -28,15 +28,19 @@ running:
 
    git clone https://github.com/certbot/certbot
 
-You can run the following commands to install dependencies and set up a virtual
-environment where you can run Certbot. You may need to repeat this when
-Certbot's dependencies change or when a new plugin is introduced.
+Next you need to install dependencies and set up a virtual environment where
+you can run Certbot. We recommend you do this using the commands below,
+however, you can alternatively skip the rest of this section and :ref:`run
+Certbot in Docker <docker-dev>`.
 
 .. code-block:: shell
 
    cd certbot
    sudo ./certbot-auto --debug --os-packages-only
    tools/venv.sh
+
+.. note:: You may need to repeat this when
+  Certbot's dependencies change or when a new plugin is introduced.
 
 You can now run the copy of Certbot from git either by executing
 ``venv/bin/certbot``, or by activating the virtual environment. If you're
@@ -389,8 +393,8 @@ Running the client with Docker
 ==============================
 
 You can use Docker Compose to quickly set up an environment for running and
-testing Certbot. This is especially useful for macOS users. To install Docker
-Compose, follow the instructions at https://docs.docker.com/compose/install/.
+testing Certbot. To install Docker Compose, follow the instructions at
+https://docs.docker.com/compose/install/.
 
 .. note:: Linux users can simply run ``pip install docker-compose`` to get
   Docker Compose after installing Docker Engine and activating your shell as
