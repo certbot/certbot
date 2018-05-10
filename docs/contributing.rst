@@ -102,17 +102,15 @@ note that the full test suite will attempt to modify your system's Apache
 config if your user has sudo permissions, so it should not be run on a
 production Apache server.
 
-If you have trouble getting the full ``tox --skip-missing-interpreters`` suite
-to run locally, it is generally sufficient to open a pull request and let
-Github and Travis run integration tests for you.
-
 .. _integration:
 
 Integration testing with the Boulder CA
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To run integration tests locally, you need Docker and docker-compose installed
-and working. Fetch and start Boulder using:
+Generally it is sufficient to open a pull request and let Github and Travis run
+integration tests for you, however, if you want to run them locally you need
+Docker and docker-compose installed and working. Fetch and start Boulder, Let's
+Encrypt's ACME CA, by using:
 
 .. code-block:: shell
 
