@@ -36,7 +36,7 @@ Certbot in Docker <docker-dev>`.
 .. code-block:: shell
 
    cd certbot
-   sudo ./certbot-auto --debug --os-packages-only
+   ./certbot-auto --debug --os-packages-only
    tools/venv.sh
 
 .. note:: You may need to repeat this when
@@ -419,7 +419,7 @@ OS-level dependencies can be installed like so:
 
 .. code-block:: shell
 
-   sudo ./certbot-auto --debug --os-packages-only
+   ./certbot-auto --debug --os-packages-only
 
 In general...
 
