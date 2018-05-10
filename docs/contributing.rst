@@ -110,7 +110,7 @@ Integration testing with the Boulder CA
 Generally it is sufficient to open a pull request and let Github and Travis run
 integration tests for you, however, if you want to run them locally you need
 Docker and docker-compose installed and working. Fetch and start Boulder, Let's
-Encrypt's ACME CA, by using:
+Encrypt's ACME CA software, by using:
 
 .. code-block:: shell
 
