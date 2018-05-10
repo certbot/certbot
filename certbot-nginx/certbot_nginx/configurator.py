@@ -331,6 +331,9 @@ class NginxConfigurator(common.Installer):
         return (ipv6_active, ipv6only_present)
 
     def _vhost_from_duplicated_default(self, domain, port=None, preferred_port=None):
+        """port must match if given.
+           preferred_port is used to choose if we find multiple matches.
+        """
         if self.new_vhost is None:
             default_vhost = self._get_default_vhost(port, preferred_port)
             self.new_vhost = self.parser.duplicate_vhost(default_vhost,
