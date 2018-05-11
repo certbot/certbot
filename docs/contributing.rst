@@ -63,8 +63,8 @@ found in the `virtualenv docs`_.
 Find issues to work on
 ----------------------
 
-.. note:: If you're sprinting on Certbot at PyCon, you can find good issues to
-  work on during the event `here
+.. note:: If you're sprinting on Certbot at PyCon, you can find especially good
+  issues to work on during the event `here
   <https://github.com/certbot/certbot/issues?q=is%3Aopen+is%3Aissue+project%3Acertbot%2Fcertbot%2F3>`_.
 
 You can find the open issues in the `github issue tracker`_.  Comparatively
