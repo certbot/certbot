@@ -14,8 +14,8 @@ Getting Started
 Certbot has the same :ref:`system requirements <system_requirements>` when set
 up for development.  While the section below will help you install Certbot and
 its dependencies, Certbot needs to be run on a UNIX-like OS so if you're using
-Windows, you'll need to set up a (virtual) machine running something like Linux
-before continuing with these instructions.
+Windows, you'll need to set up a (virtual) machine running an OS such as Linux
+and continue with these instructions on that UNIX-like OS.
 
 Running a local copy of the client
 ----------------------------------
@@ -50,11 +50,13 @@ latter by running:
 
    source venv/bin/activate
 
-After running this command, ``certbot`` and development tools like ``ipython``
-and ``tox`` are available in the shell where you ran the command. This works by
-setting environment variables so the right executables are found and Python can
-pull in the versions of various packages needed by Certbot.  More information
-can be found in the `virtualenv docs`_.
+After running this command, ``certbot`` and development tools like ``ipdb``,
+``ipython``, ``pytest``, and ``tox`` are available in the shell where you ran
+the command. These tools are installed in the virtual environment and are kept
+separate from your global Python installation. This works by setting
+environment variables so the right executables are found and Python can pull in
+the versions of various packages needed by Certbot.  More information can be
+found in the `virtualenv docs`_.
 
 .. _`virtualenv docs`: https://virtualenv.pypa.io
 
@@ -97,10 +99,11 @@ or ``pylint --rcfile=.pylintrc path/to/file.py`` (single file at a time).
 Once all of the above is successful, you may run the full test suite using
 ``tox --skip-missing-interpreters``. We recommend running the commands above
 first, because running all tests like this is very slow, and the large amount
-of output can make it hard to find specific failures when they happen. Also
-note that the full test suite will attempt to modify your system's Apache
-config if your user has sudo permissions, so it should not be run on a
-production Apache server.
+of output can make it hard to find specific failures when they happen.
+
+.. warning:: The full test suite may attempt to modify your system's Apache
+  config if your user has sudo permissions, so it should not be run on a
+  production Apache server.
 
 .. _integration:
 
