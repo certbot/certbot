@@ -319,6 +319,13 @@ Steps:
 5. Submit the PR.
 6. Did your tests pass on Travis? If they didn't, fix any errors.
 
+Asking for help
+===============
+
+If you have any questions while working on a Certbot issue, don't hesitate to
+ask for help! You can do this in the #letsencrypt-dev IRC channel on Freenode.
+If you don't already have an IRC client set up, we recommend you join using
+`Riot <https://riot.im/app/#/room/#freenode_#letsencrypt-dev:matrix.org>`_.
 
 Updating certbot-auto and letsencrypt-auto
 ==========================================
