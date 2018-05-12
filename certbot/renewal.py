@@ -295,13 +295,10 @@ def renew_cert(config, domains, le_client, lineage):
     _avoid_invalidating_lineage(config, lineage, original_server)
     if not domains:
         domains = lineage.names()
-    if config.reuse_key:
-        # Reuse the old key for the renewal
-        new_cert, new_chain, new_key, _ = le_client.obtain_certificate(domains, lineage.privkey)
-    else:
-        # Don't specify a private key, which will result in the creation of
-        # a new key
-        new_cert, new_chain, new_key, _ = le_client.obtain_certificate(domains)
+    # The private key is the existing lineage private key if reuse_key is set.
+    # Otherwise, generate a fresh private key by passing None.
+    new_key = lineage.privkey if config.reuse_key else None
+    new_cert, new_chain, new_key, _ = le_client.obtain_certificate(domains, new_key)
     if config.dry_run:
         logger.debug("Dry run: skipping updating lineage at %s",
                     os.path.dirname(lineage.cert))
