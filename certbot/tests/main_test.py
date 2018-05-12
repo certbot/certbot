@@ -1082,7 +1082,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
                     mock_client.obtain_certificate.assert_called_once_with(['isnot.org'],
                         os.path.join(self.config.config_dir, "live/sample-renewal/privkey.pem"))
                 else:
-                    mock_client.obtain_certificate.assert_called_once_with(['isnot.org'])
+                    mock_client.obtain_certificate.assert_called_once_with(['isnot.org'], None)
             else:
                 self.assertEqual(mock_client.obtain_certificate.call_count, 0)
         except:
