@@ -266,7 +266,7 @@ class Client(object):
         cert, chain = crypto_util.cert_and_chain_from_fullchain(orderr.fullchain_pem)
         return cert.encode(), chain.encode()
 
-    def obtain_certificate(self, domains, oldkeypath=None):
+    def obtain_certificate(self, domains, old_keypath=None):
         """Obtains a certificate from the ACME server.
 
         `.register` must be called before `.obtain_certificate`
@@ -286,27 +286,27 @@ class Client(object):
         # --reuse-key, the key path and PEM data are derived from an
         # existing file.
 
-        if oldkeypath is not None:
+        if old_keypath is not None:
             # We've been asked to reuse a specific existing private key.
             # Therefore, we'll read it now and not generate a new one in
             # either case below.
-            with open(oldkeypath, "r") as f:
-                keypath = oldkeypath
+            with open(old_keypath, "r") as f:
+                keypath = old_keypath
                 keypem = f.read()
             key = util.Key(file=keypath, pem=keypem)
             logger.info("New key obtained by reusing existing private key "
-                        "from %s.", oldkeypath)
+                        "from %s.", old_keypath)
 
         # Create CSR from names
         if self.config.dry_run:
-            if oldkeypath is None:
+            if old_keypath is None:
                 key = util.Key(file=None,
                                pem=crypto_util.make_key(self.config.rsa_key_size))
             csr = util.CSR(file=None, form="pem",
                            data=acme_crypto_util.make_csr(
                                key.pem, domains, self.config.must_staple))
         else:
-            if oldkeypath is None:
+            if old_keypath is None:
                 key = crypto_util.init_save_key(
                     self.config.rsa_key_size, self.config.key_dir)
             csr = crypto_util.init_save_csr(key, domains, self.config.csr_dir)
