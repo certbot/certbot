@@ -294,21 +294,21 @@ class Client(object):
                 keypath = old_keypath
                 keypem = f.read()
             key = util.Key(file=keypath, pem=keypem)
-            logger.info("New key obtained by reusing existing private key "
-                        "from %s.", old_keypath)
+            logger.info("Reusing existing private key from %s.", old_keypath)
+        else:
+            # The key is set to None here but will be created below.
+            key = None
 
         # Create CSR from names
         if self.config.dry_run:
-            if old_keypath is None:
-                key = util.Key(file=None,
-                               pem=crypto_util.make_key(self.config.rsa_key_size))
+            key = key or util.Key(file=None,
+                                  pem=crypto_util.make_key(self.config.rsa_key_size))
             csr = util.CSR(file=None, form="pem",
                            data=acme_crypto_util.make_csr(
                                key.pem, domains, self.config.must_staple))
         else:
-            if old_keypath is None:
-                key = crypto_util.init_save_key(
-                    self.config.rsa_key_size, self.config.key_dir)
+            key = key or crypto_util.init_save_key(self.config.rsa_key_size,
+                                                   self.config.key_dir)
             csr = crypto_util.init_save_csr(key, domains, self.config.csr_dir)
 
         orderr = self._get_order_and_authorizations(csr.data, self.config.allow_subset_of_names)
