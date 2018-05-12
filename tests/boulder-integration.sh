@@ -166,6 +166,14 @@ CheckRenewHook() {
     CheckSavedRenewHook $1
 }
 
+# Return success only if input contains exactly $1 lines of text, of
+# which $2 different values occur in the first field.
+TotalAndDistinctLines() {
+    total=$1
+    distinct=$2
+    awk '{a[$1] = 1}; END {exit(NR !='$total' || length(a) !='$distinct')}'
+}
+
 # Cleanup coverage data
 coverage erase
 
@@ -347,18 +355,18 @@ CheckCertCount "reusekey.le.wtf" 2
 ls -l "${root}/conf/archive/reusekey.le.wtf/privkey"*
 # The final awk command here exits successfully if its input consists of
 # exactly two lines with identical first fields, and unsuccessfully otherwise.
-sha256sum "${root}/conf/archive/reusekey.le.wtf/privkey"* | awk '{a[$1] = 1}; END {exit(NR !=2 || length(a)!=1)}'
+sha256sum "${root}/conf/archive/reusekey.le.wtf/privkey"* | TotalAndDistinctLines 2 1
 
 # no-reuse-key
 common renew --cert-name reusekey.le.wtf --no-reuse-key
 CheckCertCount "reusekey.le.wtf" 3
 ls -l "${root}/conf/archive/reusekey.le.wtf/privkey"*
 # Exactly three lines, of which exactly two identical first fields.
-sha256sum "${root}/conf/archive/reusekey.le.wtf/privkey"* | awk '{a[$1] = 1}; END {exit(NR !=3 || length(a)!=2)}'
+sha256sum "${root}/conf/archive/reusekey.le.wtf/privkey"* | TotalAndDistinctLines 3 2
 
 # Nonetheless, all three certificates are different even though two of them
 # share the same subject key.
-sha256sum "${root}/conf/archive/reusekey.le.wtf/cert"* | awk '{a[$1] = 1}; END {exit(NR !=3 || length(a)!=3)}'
+sha256sum "${root}/conf/archive/reusekey.le.wtf/cert"* | TotalAndDistinctLines 3 3
 
 # ECDSA
 openssl ecparam -genkey -name secp384r1 -out "${root}/privkey-p384.pem"
