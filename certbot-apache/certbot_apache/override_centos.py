@@ -50,7 +50,7 @@ class CentOSParser(parser.ApacheParser):
     def update_runtime_variables(self, *args, **kwargs):
         """ Override for update_runtime_variables for custom parsing """
         # Opportunistic, works if SELinux not enforced
-        super(CentOSParser, self).update_runtime_variables(*args, **kwargs)
+        super(CentOSParser, self).update_runtime_variables()
         self.parse_sysconfig_var()
 
     def parse_sysconfig_var(self):
