@@ -1030,7 +1030,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         if response.headers.get("Content-Type") == DER_CONTENT_TYPE:
             debug_content = base64.b64encode(response.content)
         else:
-            debug_content = response.content
+            debug_content = response.content.decode("utf-8")
         logger.debug('Received response:\nHTTP %d\n%s\n\n%s',
                      response.status_code,
                      "\n".join(["{0}: {1}".format(k, v)
