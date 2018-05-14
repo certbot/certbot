@@ -74,20 +74,20 @@ download and run it as follows::
 
 
 	    
-	  user@server:~$ wget -N https://dl.eff.org/certbot-auto.asc
-	  user@server:~$ gpg2 --keyserver pool.sks-keyservers.net --recv-key A2CFB51FA275A7286234E7B24D17C995CD9775F2
-	  user@server:~$ gpg2 --recv-key A2CFB51FA275A7286234E7B24D17C995CD9775F2
-	  user@server:~$ gpg2 --trusted-key 4D17C995CD9775F2 --verify certbot-auto.asc certbot-auto
+	    user@server:~$ wget -N https://dl.eff.org/certbot-auto.asc
+	    user@server:~$ gpg2 --keyserver pool.sks-keyservers.net --recv-key A2CFB51FA275A7286234E7B24D17C995CD9775F2
+	    user@server:~$ gpg2 --recv-key A2CFB51FA275A7286234E7B24D17C995CD9775F2
+	    user@server:~$ gpg2 --trusted-key 4D17C995CD9775F2 --verify certbot-auto.asc certbot-auto
 
-	  gpg: Signature made Wed 02 May 2018 05:29:12 AM IST
-	  gpg:                using RSA key A2CFB51FA275A7286234E7B24D17C995CD9775F2
-	  gpg: key 4D17C995CD9775F2 marked as ultimately trusted
-	  gpg: checking the trustdb
-	  gpg: marginals needed: 3  completes needed: 1  trust model: pgp
-	  gpg: depth: 0  valid:   2  signed:   2  trust: 0-, 0q, 0n, 0m, 0f, 2u
-	  gpg: depth: 1  valid:   2  signed:   0  trust: 2-, 0q, 0n, 0m, 0f, 0u
-	  gpg: next trustdb check due at 2027-11-22
-	  gpg: Good signature from "Let's Encrypt Client Team <letsencrypt-client@eff.org>" [ultimate]
+	    gpg: Signature made Wed 02 May 2018 05:29:12 AM IST
+	    gpg:                using RSA key A2CFB51FA275A7286234E7B24D17C995CD9775F2
+	    gpg: key 4D17C995CD9775F2 marked as ultimately trusted
+	    gpg: checking the trustdb
+	    gpg: marginals needed: 3  completes needed: 1  trust model: pgp
+	    gpg: depth: 0  valid:   2  signed:   2  trust: 0-, 0q, 0n, 0m, 0f, 2u
+	    gpg: depth: 1  valid:   2  signed:   0  trust: 2-, 0q, 0n, 0m, 0f, 0u
+	    gpg: next trustdb check due at 2027-11-22
+	    gpg: Good signature from "Let's Encrypt Client Team <letsencrypt-client@eff.org>" [ultimate]
 
 
 	    
