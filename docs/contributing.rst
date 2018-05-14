@@ -28,10 +28,11 @@ running:
 
    git clone https://github.com/certbot/certbot
 
-Next you need to install dependencies and set up a virtual environment where
-you can run Certbot. We recommend you do this using the commands below,
-however, you can alternatively skip the rest of this section and :ref:`run
-Certbot in Docker <docker-dev>`.
+If you're on macOS, we recommend you skip the rest of this section and instead
+run Certbot in Docker. You can find instructions for how to do this :ref:`here
+<docker-dev>`. If you're running on Linux, you can run the following commands to
+install dependencies and set up a virtual environment where you can run
+Certbot.
 
 .. code-block:: shell
 
