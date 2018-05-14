@@ -72,11 +72,14 @@ download and run it as follows::
 .. hint:: The certbot-auto download is protected by HTTPS, which is pretty good, but if you'd like to
           double check the integrity of the ``certbot-auto`` script, you can use these steps for verification before running it using gpg2::
 
-   
+
+	    
             user@server:~$ wget -N https://dl.eff.org/certbot-auto.asc
 	    user@server:~$ gpg2 --keyserver pool.sks-keyservers.net --recv-key A2CFB51FA275A7286234E7B24D17C995CD9775F2
             user@server:~$ gpg2 --recv-key A2CFB51FA275A7286234E7B24D17C995CD9775F2
             user@server:~$ gpg2 --trusted-key 4D17C995CD9775F2 --verify certbot-auto.asc certbot-auto
+
+	    
 	    gpg: Signature made Wed 02 May 2018 05:29:12 AM IST
 	    gpg:                using RSA key A2CFB51FA275A7286234E7B24D17C995CD9775F2
 	    gpg: key 4D17C995CD9775F2 marked as ultimately trusted
@@ -88,6 +91,7 @@ download and run it as follows::
 	    gpg: Good signature from "Let's Encrypt Client Team <letsencrypt-client@eff.org>" [ultimate]
 
 
+	    
 The ``certbot-auto`` command updates to the latest client release automatically.
 Since ``certbot-auto`` is a wrapper to ``certbot``, it accepts exactly
 the same command line flags and arguments. For more information, see
