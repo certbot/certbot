@@ -159,7 +159,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # used by deploy_cert() and enhance()
         self._wildcard_vhosts = dict()  # type: Dict[str, List[obj.VirtualHost]]
         # Maps enhancements to vhosts we've enabled the enhancement for
-        self._enhanced_vhosts = defaultdict(set)  # type: DefaultDict[str , Set[obj.VirtualHost]]
+        self._enhanced_vhosts = defaultdict(set)  # type: DefaultDict[str, Set[obj.VirtualHost]]
 
         # These will be set in the prepare function
         self.parser = None
