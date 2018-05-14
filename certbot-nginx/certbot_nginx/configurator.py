@@ -13,6 +13,7 @@ import zope.interface
 
 from acme import challenges
 from acme import crypto_util as acme_crypto_util
+from acme.magic_typing import List, Dict, Set # pylint: disable=unused-import, no-name-in-module
 
 from certbot import constants as core_constants
 from certbot import crypto_util
@@ -29,7 +30,6 @@ from certbot_nginx import parser
 from certbot_nginx import tls_sni_01
 from certbot_nginx import http_01
 from certbot_nginx import obj # pylint: disable=unused-import
-from acme.magic_typing import List, Dict, Set # pylint: disable=unused-import, no-name-in-module
 
 
 
@@ -157,7 +157,7 @@ class NginxConfigurator(common.Installer):
         except (OSError, errors.LockError):
             logger.debug('Encountered error:', exc_info=True)
             raise errors.PluginError(
-                'Unable to lock %s', self.conf('server-root'))
+                'Unable to lock {0}'.format(self.conf('server-root')))
 
 
     # Entry point in main.py for installing cert
@@ -398,9 +398,8 @@ class NginxConfigurator(common.Installer):
             rank = matches[0]['rank']
             wildcards = [x for x in matches if x['rank'] == rank]
             return max(wildcards, key=lambda x: len(x['name']))['vhost']
-        else:
-            # Exact or regex match
-            return matches[0]['vhost']
+        # Exact or regex match
+        return matches[0]['vhost']
 
 
     def _rank_matches_by_name_and_ssl(self, vhost_list, target_name):
@@ -479,25 +478,23 @@ class NginxConfigurator(common.Installer):
         if matching_port == "" or matching_port is None:
             # if no port is specified, Nginx defaults to listening on port 80.
             return test_port == self.DEFAULT_LISTEN_PORT
-        else:
-            return test_port == matching_port
+        return test_port == matching_port
 
     def _vhost_listening_on_port_no_ssl(self, vhost, port):
         found_matching_port = False
-        if len(vhost.addrs) == 0:
+        if not vhost.addrs:
             # if there are no listen directives at all, Nginx defaults to
             # listening on port 80.
             found_matching_port = (port == self.DEFAULT_LISTEN_PORT)
         else:
             for addr in vhost.addrs:
-                if self._port_matches(port, addr.get_port()) and addr.ssl == False:
+                if self._port_matches(port, addr.get_port()) and not addr.ssl:
                     found_matching_port = True
 
         if found_matching_port:
             # make sure we don't have an 'ssl on' directive
             return not self.parser.has_ssl_on_directive(vhost)
-        else:
-            return False
+        return False
 
     def _get_redirect_ranked_matches(self, target_name, port):
         """Gets a ranked list of plaintextish port-listening vhosts matching target_name
@@ -586,7 +583,7 @@ class NginxConfigurator(common.Installer):
 
         # If the vhost was implicitly listening on the default Nginx port,
         # have it continue to do so.
-        if len(vhost.addrs) == 0:
+        if not vhost.addrs:
             listen_block = [['\n    ', 'listen', ' ', self.DEFAULT_LISTEN_PORT]]
             self.parser.add_server_directives(vhost, listen_block)
 

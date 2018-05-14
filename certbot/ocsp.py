@@ -89,9 +89,8 @@ class RevocationChecker(object):
         host = url.partition("://")[2].rstrip("/")
         if host:
             return url, host
-        else:
-            logger.info("Cannot process OCSP host from URL (%s) in cert at %s", url, cert_path)
-            return None, None
+        logger.info("Cannot process OCSP host from URL (%s) in cert at %s", url, cert_path)
+        return None, None
 
 def _translate_ocsp_query(cert_path, ocsp_output, ocsp_errors):
     """Parse openssl's weird output to work out what it means."""
@@ -117,4 +116,3 @@ def _translate_ocsp_query(cert_path, ocsp_output, ocsp_errors):
         logger.warn("Unable to properly parse OCSP output: %s\nstderr:%s",
                     ocsp_output, ocsp_errors)
         return False
-

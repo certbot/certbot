@@ -17,7 +17,7 @@ def get_prefixes(path):
     """
     prefix = path
     prefixes = []
-    while len(prefix) > 0:
+    while prefix:
         prefixes.append(prefix)
         prefix, _ = os.path.split(prefix)
         # break once we hit '/'
@@ -49,8 +49,7 @@ def path_surgery(cmd):
 
     if util.exe_exists(cmd):
         return True
-    else:
-        expanded = " expanded" if any(added) else ""
-        logger.warning("Failed to find executable %s in%s PATH: %s", cmd,
-                       expanded, path)
-        return False
+    expanded = " expanded" if any(added) else ""
+    logger.warning("Failed to find executable %s in%s PATH: %s", cmd,
+                   expanded, path)
+    return False

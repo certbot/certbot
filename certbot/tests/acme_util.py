@@ -42,7 +42,7 @@ def chall_to_challb(chall, status):  # pylint: disable=redefined-outer-name
     if status == messages.STATUS_VALID:
         kwargs.update({"validated": datetime.datetime.now()})
 
-    return messages.ChallengeBody(**kwargs)  # pylint: disable=star-args
+    return messages.ChallengeBody(**kwargs)
 
 
 # Pending ChallengeBody objects
@@ -93,7 +93,6 @@ def gen_authzr(authz_status, domain, challs, statuses, combos=True):
             "status": authz_status,
         })
 
-    # pylint: disable=star-args
     return messages.AuthorizationResource(
         uri="https://trusted.ca/new-authz-resource",
         body=messages.Authorization(**authz_kwargs)

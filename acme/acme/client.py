@@ -6,16 +6,16 @@ from email.utils import parsedate_tz
 import heapq
 import logging
 import time
+import re
+import sys
 
 import six
 from six.moves import http_client  # pylint: disable=import-error
 import josepy as jose
 import OpenSSL
-import re
-from requests_toolbelt.adapters.source import SourceAddressAdapter
 import requests
 from requests.adapters import HTTPAdapter
-import sys
+from requests_toolbelt.adapters.source import SourceAddressAdapter
 
 from acme import crypto_util
 from acme import errors
@@ -134,7 +134,7 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
         authzr = messages.AuthorizationResource(
             body=messages.Authorization.from_json(response.json()),
             uri=response.headers.get('Location', uri))
-        if identifier is not None and authzr.body.identifier != identifier:
+        if identifier is not None and authzr.body.identifier != identifier:  # pylint: disable=no-member
             raise errors.UnexpectedUpdate(authzr)
         return authzr
 
@@ -608,7 +608,7 @@ class ClientV2(ClientBase):
         response = self._post(self.directory['newOrder'], order)
         body = messages.Order.from_json(response.json())
         authorizations = []
-        for url in body.authorizations:
+        for url in body.authorizations:  # pylint: disable=not-an-iterable
             authorizations.append(self._authzr_from_response(self.net.get(url), uri=url))
         return messages.OrderResource(
             body=body,
@@ -640,7 +640,7 @@ class ClientV2(ClientBase):
         for url in orderr.body.authorizations:
             while datetime.datetime.now() < deadline:
                 authzr = self._authzr_from_response(self.net.get(url), uri=url)
-                if authzr.body.status != messages.STATUS_PENDING:
+                if authzr.body.status != messages.STATUS_PENDING:  # pylint: disable=no-member
                     responses.append(authzr)
                     break
                 time.sleep(1)
@@ -654,7 +654,7 @@ class ClientV2(ClientBase):
                 for chall in authzr.body.challenges:
                     if chall.error != None:
                         failed.append(authzr)
-        if len(failed) > 0:
+        if failed:
             raise errors.ValidationError(failed)
         return orderr.update(authorizations=responses)
 
@@ -778,8 +778,7 @@ class BackwardsCompatibleClientV2(object):
             for domain in dnsNames:
                 authorizations.append(self.client.request_domain_challenges(domain))
             return messages.OrderResource(authorizations=authorizations, csr_pem=csr_pem)
-        else:
-            return self.client.new_order(csr_pem)
+        return self.client.new_order(csr_pem)
 
     def finalize_order(self, orderr, deadline):
         """Finalize an order and obtain a certificate.
@@ -812,12 +811,11 @@ class BackwardsCompatibleClientV2(object):
                     'certificate, please rerun the command for a new one.')
 
             cert = OpenSSL.crypto.dump_certificate(
-                    OpenSSL.crypto.FILETYPE_PEM, certr.body.wrapped).decode()
+                    OpenSSL.crypto.FILETYPE_PEM, certr.body.wrapped).decode()  # pylint: disable=no-member
             chain = crypto_util.dump_pyopenssl_chain(chain).decode()
 
             return orderr.update(fullchain_pem=(cert + chain))
-        else:
-            return self.client.finalize_order(orderr, deadline)
+        return self.client.finalize_order(orderr, deadline)
 
     def revoke(self, cert, rsn):
         """Revoke certificate.
@@ -835,8 +833,7 @@ class BackwardsCompatibleClientV2(object):
     def _acme_version_from_directory(self, directory):
         if hasattr(directory, 'newNonce'):
             return 2
-        else:
-            return 1
+        return 1
 
 
 class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
@@ -913,7 +910,6 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
             if self.account is not None:
                 kwargs["kid"] = self.account["uri"]
         kwargs["key"] = self.key
-        # pylint: disable=star-args
         return jws.JWS.sign(jobj, **kwargs).json_dumps(indent=2)
 
     @classmethod
@@ -1057,7 +1053,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         if self.REPLAY_NONCE_HEADER in response.headers:
             nonce = response.headers[self.REPLAY_NONCE_HEADER]
             try:
-                decoded_nonce = jws.Header._fields['nonce'].decode(nonce)
+                decoded_nonce = jws.Header._fields['nonce'].decode(nonce)  # pylint: disable=no-member
             except jose.DeserializationError as error:
                 raise errors.BadNonce(nonce, error)
             logger.debug('Storing nonce: %s', nonce)

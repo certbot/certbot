@@ -1,9 +1,9 @@
 """Common utilities for certbot_nginx."""
 import copy
 import os
-import pkg_resources
 import tempfile
 import unittest
+import pkg_resources
 
 import josepy as jose
 import mock
@@ -113,8 +113,7 @@ def contains_at_depth(haystack, needle, n):
         return False
     if n == 0:
         return needle in haystack
-    else:
-        for item in haystack:
-            if contains_at_depth(item, needle, n - 1):
-                return True
-        return False
+    for item in haystack:
+        if contains_at_depth(item, needle, n - 1):
+            return True
+    return False

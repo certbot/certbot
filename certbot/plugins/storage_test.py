@@ -1,8 +1,8 @@
 """Tests for certbot.plugins.storage.PluginStorage"""
 import json
-import mock
 import os
 import unittest
+import mock
 
 from certbot import errors
 

@@ -82,7 +82,7 @@ class ApacheParser(object):
         :param str inc_path: path of file to include
 
         """
-        if len(self.find_dir(case_i("Include"), inc_path)) == 0:
+        if not self.find_dir(case_i("Include"), inc_path):
             logger.debug("Adding Include %s to %s",
                          inc_path, get_aug_path(main_config))
             self.add_dir(
@@ -138,7 +138,7 @@ class ApacheParser(object):
                     mods.add(os.path.basename(mod_filename)[:-2] + "c")
                 else:
                     logger.debug("Could not read LoadModule directive from " +
-                                 "Augeas path: {0}".format(match_name[6:]))
+                                 "Augeas path: %s", match_name[6:])
         self.modules.update(mods)
 
     def update_runtime_variables(self):
@@ -228,8 +228,8 @@ class ApacheParser(object):
                 "Error running command %s for runtime parameters!%s",
                 command, os.linesep)
             raise errors.MisconfigurationError(
-                "Error accessing loaded Apache parameters: %s",
-                command)
+                "Error accessing loaded Apache parameters: {0}".format(
+                command))
         # Small errors that do not impede
         if proc.returncode != 0:
             logger.warning("Error in checking parameter list: %s", stderr)
@@ -255,12 +255,12 @@ class ApacheParser(object):
         """
         filtered = []
         if args == 1:
-            for i in range(len(matches)):
-                if matches[i].endswith("/arg"):
+            for i, match in enumerate(matches):
+                if match.endswith("/arg"):
                     filtered.append(matches[i][:-4])
         else:
-            for i in range(len(matches)):
-                if matches[i].endswith("/arg[%d]" % args):
+            for i, match in enumerate(matches):
+                if match.endswith("/arg[%d]" % args):
                     # Make sure we don't cause an IndexError (end of list)
                     # Check to make sure arg + 1 doesn't exist
                     if (i == (len(matches) - 1) or
@@ -305,7 +305,7 @@ class ApacheParser(object):
         """
         if_mods = self.aug.match(("%s/IfModule/*[self::arg='%s']" %
                                   (aug_conf_path, mod)))
-        if len(if_mods) == 0:
+        if not if_mods:
             self.aug.set("%s/IfModule[last() + 1]" % aug_conf_path, "")
             self.aug.set("%s/IfModule[last()]/arg" % aug_conf_path, mod)
             if_mods = self.aug.match(("%s/IfModule/*[self::arg='%s']" %
@@ -569,9 +569,8 @@ class ApacheParser(object):
         if sys.version_info < (3, 6):
             # This strips off final /Z(?ms)
             return fnmatch.translate(clean_fn_match)[:-7]
-        else:  # pragma: no cover
-            # Since Python 3.6, it returns a different pattern like (?s:.*\.load)\Z
-            return fnmatch.translate(clean_fn_match)[4:-3]
+        # Since Python 3.6, it returns a different pattern like (?s:.*\.load)\Z
+        return fnmatch.translate(clean_fn_match)[4:-3]  # pragma: no cover
 
     def parse_file(self, filepath):
         """Parse file with Augeas
@@ -653,10 +652,7 @@ class ApacheParser(object):
                 use_new = False
             else:
                 use_new = True
-            if new_file_match == "*":
-                remove_old = True
-            else:
-                remove_old = False
+            remove_old = new_file_match == "*"
         except KeyError:
             use_new = True
             remove_old = False

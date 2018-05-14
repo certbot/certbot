@@ -95,6 +95,7 @@ class _TokenChallenge(Challenge):
         """
         # TODO: check that path combined with uri does not go above
         # URI_ROOT_PATH!
+        # pylint: disable=unsupported-membership-test
         return b'..' not in self.token and b'/' not in self.token
 
 
@@ -142,7 +143,7 @@ class KeyAuthorizationChallengeResponse(ChallengeResponse):
 
 @six.add_metaclass(abc.ABCMeta)
 class KeyAuthorizationChallenge(_TokenChallenge):
-    # pylint: disable=abstract-class-little-used,too-many-ancestors
+    # pylint: disable=too-many-ancestors
     """Challenge based on Key Authorization.
 
     :param response_cls: Subclass of `KeyAuthorizationChallengeResponse`
@@ -174,7 +175,7 @@ class KeyAuthorizationChallenge(_TokenChallenge):
         :rtype: KeyAuthorizationChallengeResponse
 
         """
-        return self.response_cls(
+        return self.response_cls(  # pylint: disable=not-callable
             key_authorization=self.key_authorization(account_key))
 
     @abc.abstractmethod

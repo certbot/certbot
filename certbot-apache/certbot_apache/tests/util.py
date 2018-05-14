@@ -115,8 +115,7 @@ def get_apache_configurator(  # pylint: disable=too-many-arguments, too-many-loc
         """Mock default vhost path"""
         if key == "vhost_root":
             return vhost_path
-        else:
-            return orig_os_constant(key)
+        return orig_os_constant(key)
 
     with mock.patch("certbot_apache.configurator.ApacheConfigurator.constant") as mock_cons:
         mock_cons.side_effect = mock_os_constant

@@ -2,11 +2,11 @@
 import argparse
 import functools
 import os
-import pkg_resources
 import subprocess
 import tarfile
 import tempfile
 import unittest
+import pkg_resources
 
 import mock
 # six is used in mock.patch()

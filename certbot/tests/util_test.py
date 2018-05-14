@@ -551,7 +551,7 @@ class OsInfoTest(unittest.TestCase):
                 comm_mock = mock.Mock()
                 comm_attrs = {'communicate.return_value':
                               ('42.42.42', 'error')}
-                comm_mock.configure_mock(**comm_attrs)  # pylint: disable=star-args
+                comm_mock.configure_mock(**comm_attrs)
                 popen_mock.return_value = comm_mock
                 self.assertEqual(get_os_info()[0], 'darwin')
                 self.assertEqual(get_os_info()[1], '42.42.42')
@@ -607,7 +607,7 @@ class AtexitRegisterTest(unittest.TestCase):
             self.assertTrue(mock_atexit.register.called)
             args, kwargs = mock_atexit.register.call_args
             atexit_func = args[0]
-            atexit_func(*args[1:], **kwargs)  # pylint: disable=star-args
+            atexit_func(*args[1:], **kwargs)
 
 
 if __name__ == "__main__":

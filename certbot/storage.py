@@ -5,11 +5,11 @@ import logging
 import os
 import re
 import stat
+import shutil
 
 import configobj
 import parsedatetime
 import pytz
-import shutil
 import six
 
 import certbot
@@ -272,8 +272,7 @@ def full_archive_path(config_obj, cli_config, lineagename):
     """
     if config_obj and "archive_dir" in config_obj:
         return config_obj["archive_dir"]
-    else:
-        return os.path.join(cli_config.default_archive_dir, lineagename)
+    return os.path.join(cli_config.default_archive_dir, lineagename)
 
 def _full_live_path(cli_config, lineagename):
     """Returns the full default live path for a lineagename"""
@@ -481,8 +480,7 @@ class RenewableCert(object):
         server = self.configuration["renewalparams"].get("server", None)
         if server:
             return util.is_staging(server)
-        else:
-            return False
+        return False
 
     def _check_symlinks(self):
         """Raises an exception if a symlink doesn't exist"""
@@ -671,9 +669,8 @@ class RenewableCert(object):
         matches = pattern.match(os.path.basename(target))
         if matches:
             return int(matches.groups()[0])
-        else:
-            logger.debug("No matches for target %s.", kind)
-            return None
+        logger.debug("No matches for target %s.", kind)
+        return None
 
     def version(self, kind, version):
         """The filename that corresponds to the specified version and kind.

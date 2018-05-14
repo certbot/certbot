@@ -1,7 +1,7 @@
 """Tests for certbot.reporter."""
-import mock
 import sys
 import unittest
+import mock
 
 import six
 

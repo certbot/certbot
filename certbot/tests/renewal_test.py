@@ -1,6 +1,6 @@
 """Tests for certbot.renewal"""
-import mock
 import unittest
+import mock
 
 from acme import challenges
 
@@ -12,9 +12,6 @@ import certbot.tests.util as test_util
 
 
 class RenewalTest(test_util.ConfigTestCase):
-    def setUp(self):
-        super(RenewalTest, self).setUp()
-
     @mock.patch('certbot.cli.set_by_cli')
     def test_ancient_webroot_renewal_conf(self, mock_set_by_cli):
         mock_set_by_cli.return_value = False
@@ -34,9 +31,6 @@ class RenewalTest(test_util.ConfigTestCase):
 
 class RestoreRequiredConfigElementsTest(test_util.ConfigTestCase):
     """Tests for certbot.renewal.restore_required_config_elements."""
-    def setUp(self):
-        super(RestoreRequiredConfigElementsTest, self).setUp()
-
     @classmethod
     def _call(cls, *args, **kwargs):
         from certbot.renewal import restore_required_config_elements

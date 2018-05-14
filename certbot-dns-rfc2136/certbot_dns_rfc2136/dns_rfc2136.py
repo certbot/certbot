@@ -220,4 +220,3 @@ class _RFC2136Client(object):
         except Exception as e:
             raise errors.PluginError('Encountered error when making query: {0}'
                                      .format(e))
-

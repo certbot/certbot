@@ -84,7 +84,7 @@ class Addr(common.Addr):
                 port = tup[2]
 
         # The rest of the parts are options; we only care about ssl and default
-        while len(parts) > 0:
+        while parts:
             nextpart = parts.pop()
             if nextpart == 'ssl':
                 ssl = True
@@ -120,7 +120,7 @@ class Addr(common.Addr):
     def __repr__(self):
         return "Addr(" + self.__str__() + ")"
 
-    def __hash__(self):
+    def __hash__(self):  # pylint: disable=useless-super-delegation
         # Python 3 requires explicit overridden for __hash__
         # See certbot-apache/certbot_apache/obj.py for more information
         return super(Addr, self).__hash__()
@@ -224,15 +224,17 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
         for a in self.addrs:
             if a.ipv6:
                 return True
+        return False
 
     def ipv4_enabled(self):
         """Return true if one or more of the listen directives in vhost are IPv4
         only"""
-        if self.addrs is None or len(self.addrs) == 0:
+        if not self.addrs:
             return True
         for a in self.addrs:
             if not a.ipv6:
                 return True
+        return False
 
     def display_repr(self):
         """Return a representation of VHost to be used in dialog"""
@@ -250,7 +252,7 @@ def _find_directive(directives, directive_name, match_content=None):
     """Find a directive of type directive_name in directives. If match_content is given,
        Searches for `match_content` in the directive arguments.
     """
-    if not directives or isinstance(directives, six.string_types) or len(directives) == 0:
+    if not directives or isinstance(directives, six.string_types):
         return None
 
     # If match_content is None, just match on directive type. Otherwise, match on

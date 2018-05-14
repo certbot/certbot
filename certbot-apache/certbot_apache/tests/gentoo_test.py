@@ -113,6 +113,7 @@ class MultipleVhostsTestGentoo(util.ApacheTest):
             """Mock httpd process stdout"""
             if command == ['apache2ctl', 'modules']:
                 return mod_val
+            return None  # pragma: no cover
         mock_get.side_effect = mock_get_cfg
         self.config.parser.modules = set()
 

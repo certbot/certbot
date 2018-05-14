@@ -1,8 +1,8 @@
 """Tests for certbot.eff."""
-import requests
 import unittest
 
 import mock
+import requests
 
 from certbot import constants
 import certbot.tests.util as test_util

@@ -2,6 +2,7 @@
 import argparse
 import atexit
 import collections
+from collections import OrderedDict
 # distutils.version under virtualenv confuses pylint
 # For more info, see: https://github.com/PyCQA/pylint/issues/73
 import distutils.version  # pylint: disable=import-error,no-name-in-module
@@ -10,14 +11,12 @@ import logging
 import os
 import platform
 import re
-import six
 import socket
 import stat
 import subprocess
 import sys
 
-from collections import OrderedDict
-
+import six
 import configargparse
 
 from certbot import constants
@@ -217,7 +216,6 @@ def safe_open(path, mode="w", chmod=None, buffering=None):
         defaults if ``None``.
 
     """
-    # pylint: disable=star-args
     open_args = () if chmod is None else (chmod,)
     fdopen_args = () if buffering is None else (buffering,)
     return os.fdopen(
@@ -465,9 +463,8 @@ def safe_email(email):
     """Scrub email address before using it."""
     if EMAIL_REGEX.match(email) is not None:
         return not email.startswith(".") and ".." not in email
-    else:
-        logger.warning("Invalid email address: %s.", email)
-        return False
+    logger.warning("Invalid email address: %s.", email)
+    return False
 
 
 class _ShowWarning(argparse.Action):

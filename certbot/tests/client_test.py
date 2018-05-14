@@ -110,7 +110,6 @@ class ClientTestCommon(test_util.ConfigTestCase):
         self.config.no_verify_ssl = False
         self.config.allow_subset_of_names = False
 
-        # pylint: disable=star-args
         self.account = mock.MagicMock(**{"key.pem": KEY})
 
         from certbot.client import Client

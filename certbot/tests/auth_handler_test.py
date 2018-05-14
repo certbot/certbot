@@ -518,21 +518,18 @@ class ReportFailedChallsTest(unittest.TestCase):
         self.assertTrue(kwargs["error"].description is not None)
 
         self.http01 = achallenges.KeyAuthorizationAnnotatedChallenge(
-            # pylint: disable=star-args
             challb=messages.ChallengeBody(**kwargs),
             domain="example.com",
             account_key="key")
 
         kwargs["chall"] = acme_util.TLSSNI01
         self.tls_sni_same = achallenges.KeyAuthorizationAnnotatedChallenge(
-            # pylint: disable=star-args
             challb=messages.ChallengeBody(**kwargs),
             domain="example.com",
             account_key="key")
 
         kwargs["error"] = messages.Error(typ="dnssec", detail="detail")
         self.tls_sni_diff = achallenges.KeyAuthorizationAnnotatedChallenge(
-            # pylint: disable=star-args
             challb=messages.ChallengeBody(**kwargs),
             domain="foo.bar",
             account_key="key")

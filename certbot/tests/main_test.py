@@ -4,12 +4,12 @@
 from __future__ import print_function
 
 import itertools
-import mock
 import os
 import shutil
 import traceback
 import unittest
 import datetime
+import mock
 import pytz
 
 import josepy as jose
@@ -606,8 +606,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
                     fn.endswith("chain") or
                     fn.endswith("privkey")):
                     return True
-                else:
-                    return orig_open(fn, *args, **kwargs)
+                return orig_open(fn, *args, **kwargs)
 
             with mock.patch("os.path.isfile") as mock_if:
                 mock_if.side_effect = mock_isfile

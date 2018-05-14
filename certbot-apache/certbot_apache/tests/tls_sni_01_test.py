@@ -4,13 +4,13 @@ import unittest
 
 import mock
 
+from six.moves import xrange  # pylint: disable=redefined-builtin, import-error
+
 from certbot import errors
 from certbot.plugins import common_test
 
 from certbot_apache import obj
 from certbot_apache.tests import util
-
-from six.moves import xrange  # pylint: disable=redefined-builtin, import-error
 
 
 class TlsSniPerformTest(util.ApacheTest):

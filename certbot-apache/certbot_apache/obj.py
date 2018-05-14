@@ -26,7 +26,7 @@ class Addr(common.Addr):
     def __repr__(self):
         return "certbot_apache.obj.Addr(" + repr(self.tup) + ")"
 
-    def __hash__(self):
+    def __hash__(self):  # pylint: disable=useless-super-delegation
         # Python 3 requires explicit overridden for __hash__ if __eq__ or
         # __cmp__ is overridden. See https://bugs.python.org/issue2235
         return super(Addr, self).__hash__()
@@ -47,8 +47,7 @@ class Addr(common.Addr):
             return 0
         elif self.get_addr() == "*":
             return 1
-        else:
-            return 2
+        return 2
 
     def conflicts(self, addr):
         r"""Returns if address could conflict with correct function of self.

@@ -73,7 +73,7 @@ def _check_response(response):
     logger.debug('Received response:\n%s', response.content)
     try:
         response.raise_for_status()
-        if response.json()['status'] == False:
+        if not response.json()['status']:
             _report_failure('your e-mail address appears to be invalid')
     except requests.exceptions.HTTPError:
         _report_failure()

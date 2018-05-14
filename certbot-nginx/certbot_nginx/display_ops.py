@@ -22,7 +22,7 @@ def select_vhost_multiple(vhosts):
         return list()
     tags_list = [vhost.display_repr()+"\n" for vhost in vhosts]
     # Remove the extra newline from the last entry
-    if len(tags_list):
+    if tags_list:
         tags_list[-1] = tags_list[-1][:-1]
     code, names = zope.component.getUtility(interfaces.IDisplay).checklist(
         "Which server blocks would you like to modify?",

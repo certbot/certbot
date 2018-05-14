@@ -183,8 +183,7 @@ class FileDisplay(object):
 
         if ans == "c" or ans == "C":
             return CANCEL, "-1"
-        else:
-            return OK, ans
+        return OK, ans
 
     def yesno(self, message, yes_label="Yes", no_label="No", default=None,
               cli_flag=None, force_interactive=False, **unused_kwargs):
@@ -260,7 +259,7 @@ class FileDisplay(object):
                                    force_interactive=True)
 
             if code == OK:
-                if len(ans.strip()) == 0:
+                if not ans.strip():
                     ans = " ".join(str(x) for x in range(1, len(tags)+1))
                 indices = separate_list_input(ans)
                 selected_tags = self._scrub_checklist_input(indices, tags)
@@ -528,8 +527,7 @@ class NoninteractiveDisplay(object):
         """
         if default is None:
             self._interaction_fail(message, cli_flag)
-        else:
-            return OK, default
+        return OK, default
 
     def yesno(self, message, yes_label=None, no_label=None,
               default=None, cli_flag=None, **unused_kwargs):
@@ -546,8 +544,7 @@ class NoninteractiveDisplay(object):
         """
         if default is None:
             self._interaction_fail(message, cli_flag)
-        else:
-            return default
+        return default
 
     def checklist(self, message, tags, default=None,
                   cli_flag=None, **unused_kwargs):
@@ -565,8 +562,7 @@ class NoninteractiveDisplay(object):
         """
         if default is None:
             self._interaction_fail(message, cli_flag, "? ".join(tags))
-        else:
-            return OK, default
+        return OK, default
 
     def directory_select(self, message, default=None,
                          cli_flag=None, **unused_kwargs):

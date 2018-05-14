@@ -135,7 +135,7 @@ class ApacheTlsSni01(common.TLSSNI01):
             return addrs
 
         for addr in vhost.addrs:
-            if "_default_" == addr.get_addr():
+            if addr.get_addr() == "_default_":
                 addrs.add(default_addr)
             else:
                 addrs.add(

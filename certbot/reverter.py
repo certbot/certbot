@@ -146,7 +146,7 @@ class Reverter(object):
         if not backups:
             logger.info("Certbot has not saved backups of your configuration")
 
-            return
+            return None
         # Make sure there isn't anything unexpected in the backup folder
         # There should only be timestamped (float) directories
         try:
@@ -182,6 +182,7 @@ class Reverter(object):
             return os.linesep.join(output)
         zope.component.getUtility(interfaces.IDisplay).notification(
             os.linesep.join(output), force_interactive=True, pause=False)
+        return None
 
     def add_to_temp_checkpoint(self, save_files, save_notes):
         """Add files to temporary checkpoint.

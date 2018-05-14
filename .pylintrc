@@ -189,6 +189,9 @@ init-import=no
 # not used).
 dummy-variables-rgx=(unused)?_.*|dummy
 
+# A regular expression matching ignored argument variable names
+ignored-argument-names=(unused)?_.*|dummy
+
 # List of additional names supposed to be defined in builtins. Remember that
 # you should avoid to define new builtins when possible.
 additional-builtins=

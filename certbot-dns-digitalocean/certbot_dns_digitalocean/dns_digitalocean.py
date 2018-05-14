@@ -154,7 +154,7 @@ class _DigitalOceanClient(object):
         for guess in domain_name_guesses:
             matches = [domain for domain in domains if domain.name == guess]
 
-            if len(matches) > 0:
+            if matches:
                 domain = matches[0]
                 logger.debug('Found base domain for %s using name %s', domain_name, guess)
                 return domain

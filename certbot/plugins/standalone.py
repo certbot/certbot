@@ -225,7 +225,8 @@ class Authenticator(common.Plugin):
             try:
                 return self._perform_single(achall)
             except errors.StandaloneBindError as error:
-                _handle_perform_error(error)
+                if not _handle_perform_error(error):
+                    raise
 
     def _perform_single(self, achall):
         if isinstance(achall.chall, challenges.HTTP01):
@@ -282,5 +283,5 @@ def _handle_perform_error(error):
                                      "Cancel", default=False)
         if not should_retry:
             raise errors.PluginError(msg)
-    else:
-        raise
+        return True
+    return False
