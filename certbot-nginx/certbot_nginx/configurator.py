@@ -28,6 +28,7 @@ from certbot_nginx import nginxparser
 from certbot_nginx import parser
 from certbot_nginx import tls_sni_01
 from certbot_nginx import http_01
+from acme.magic_typing import List, Dict, Set
 
 
 logger = logging.getLogger(__name__)
@@ -98,8 +99,8 @@ class NginxConfigurator(common.Installer):
 
         # List of vhosts configured per wildcard domain on this run.
         # used by deploy_cert() and enhance()
-        self._wildcard_vhosts = {}
-        self._wildcard_redirect_vhosts = {}
+        self._wildcard_vhosts = {} # type: Dict[str, str]
+        self._wildcard_redirect_vhosts = {} # type: Dict[str, str]
 
         # Add number of outstanding challenges
         self._chall_out = 0
@@ -528,7 +529,7 @@ class NginxConfigurator(common.Installer):
         :rtype: set
 
         """
-        all_names = set()
+        all_names = set() # type: Set[str]
 
         for vhost in self.parser.get_vhosts():
             all_names.update(vhost.names)
@@ -824,7 +825,7 @@ class NginxConfigurator(common.Installer):
             self.parser.add_server_directives(vhost,
                                               stapling_directives)
         except errors.MisconfigurationError as error:
-            logger.debug(error)
+            logger.debug(str(error))
             raise errors.PluginError("An error occurred while enabling OCSP "
                                      "stapling for {0}.".format(vhost.names))
 
@@ -892,7 +893,7 @@ class NginxConfigurator(common.Installer):
                 universal_newlines=True)
             text = proc.communicate()[1]  # nginx prints output to stderr
         except (OSError, ValueError) as error:
-            logger.debug(error, exc_info=True)
+            logger.debug(str(error), exc_info=True)
             raise errors.PluginError(
                 "Unable to run %s -V" % self.conf('ctl'))
 

@@ -13,7 +13,8 @@ from certbot import errors
 
 from certbot_nginx import obj
 from certbot_nginx import nginxparser
-
+from acme.magic_typing import Dict, Set, Any
+# pylint: disable=unused-import, no-name-in-module
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +29,7 @@ class NginxParser(object):
     """
 
     def __init__(self, root):
-        self.parsed = {}
+        self.parsed = {} # type: Dict
         self.root = os.path.abspath(root)
         self.config_root = self._find_config_root()
 
@@ -90,7 +91,7 @@ class NginxParser(object):
         """
         servers = self._get_raw_servers()
 
-        addr_to_ssl = {}
+        addr_to_ssl = {} # type: Dict
         for filename in servers:
             for server, _ in servers[filename]:
                 # Parse the server block to save addr info
@@ -104,9 +105,10 @@ class NginxParser(object):
 
     def _get_raw_servers(self):
         # pylint: disable=cell-var-from-loop
+        # type: () -> Dict
         """Get a map of unparsed all server blocks
         """
-        servers = {}
+        servers = {} # type: Dict
         for filename in self.parsed:
             tree = self.parsed[filename]
             servers[filename] = []
@@ -729,7 +731,7 @@ def _parse_server_raw(server):
     """
     parsed_server = {'addrs': set(),
                      'ssl': False,
-                     'names': set()}
+                     'names': set()} # type: Dict[str, Any]
 
     apply_ssl_to_all_addrs = False
 
