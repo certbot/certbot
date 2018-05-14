@@ -726,13 +726,15 @@ def register(config, unused_plugins):
             return ("--register-unsafely-without-email provided, however, a "
                     "new e-mail address must\ncurrently be provided when "
                     "updating a registration.")
-        config.email = display_ops.get_email(optional=False)
+        config.email = display_ops.get_email(optional=False)  # TODO: check return type
 
     acc, acme = _determine_account(config)
     cb_client = client.Client(config, acc, None, None, acme=acme)
     # We rely on an exception to interrupt this process if it didn't work.
+    acc_contacts = ['mailto:' + email for email in config.email.split(',')]
+    # TODO see if the below code can be simplified
     acc.regr = cb_client.acme.update_registration(acc.regr.update(
-        body=acc.regr.body.update(contact=('mailto:' + config.email,))))
+        body=acc.regr.body.update(contact=acc_contacts)))
     account_storage.save_regr(acc, cb_client.acme)
     eff.handle_subscription(config)
     add_msg("Your e-mail address was updated to {0}.".format(config.email))
