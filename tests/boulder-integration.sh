@@ -191,6 +191,11 @@ for dir in $renewal_hooks_dirs; do
         exit 1
     fi
 done
+
+common register --email ex1@domain.org,ex2@domain.org
+
+common register --update-registration --email ex1@domain.org
+
 common register --update-registration --email ex1@domain.org,ex2@domain.org
 
 common plugins --init --prepare | grep webroot
