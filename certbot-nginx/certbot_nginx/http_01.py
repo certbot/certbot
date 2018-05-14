@@ -7,6 +7,7 @@ from acme import challenges
 
 from certbot import errors
 from certbot.plugins import common
+from certbot.plugins import parser_obj
 
 from certbot_nginx import obj
 from certbot_nginx import nginxparser
@@ -70,34 +71,23 @@ class NginxHttp01(common.ChallengePerformer):
             Unable to find a suitable HTTP block in which to include
             authenticator hosts.
         """
-        included = False
-        include_directive = ['\n', 'include', ' ', self.challenge_conf]
+        include_directive = ['include', self.challenge_conf]
         root = self.configurator.parser.config_root
 
-        bucket_directive = ['\n', 'server_names_hash_bucket_size', ' ', '128']
+        bucket_directive = ['server_names_hash_bucket_size', '128']
 
         main = self.configurator.parser.parsed[root]
-        for line in main:
-            if line[0] == ['http']:
-                body = line[1]
-                found_bucket = False
-                posn = 0
-                for inner_line in body:
-                    if inner_line[0] == bucket_directive[1]:
-                        if int(inner_line[1]) < int(bucket_directive[3]):
-                            body[posn] = bucket_directive
-                        found_bucket = True
-                    posn += 1
-                if not found_bucket:
-                    body.insert(0, bucket_directive)
-                if include_directive not in body:
-                    body.insert(0, include_directive)
-                included = True
-                break
-        if not included:
+        try:
+            http_block = next(main.iterate(match=
+                lambda x: isinstance(x, parser_obj.Bloc) and 'http' in x.names.words))
+        except StopIteration:
             raise errors.MisconfigurationError(
                 'Certbot could not find a block to include '
                 'challenges in %s.' % root)
+        http_block.contents.replace_statement(bucket_directive,
+            lambda statement: statement[0] == bucket_directive[0], True)
+        http_block.contents.add_statement(include_directive, True)
+
         config = [self._make_or_mod_server_block(achall) for achall in self.achalls]
         config = [x for x in config if x is not None]
         config = nginxparser.UnspacedList(config)
@@ -197,12 +187,12 @@ class NginxHttp01(common.ChallengePerformer):
         vhost = vhosts[0]
 
         # Modify existing server block
-        location_directive = [self._location_directive_for_achall(achall)]
+        location_directive = self._location_directive_for_achall(achall)
 
         self.configurator.parser.add_server_directives(vhost,
-            location_directive)
+            [location_directive])
 
-        rewrite_directive = [['rewrite', ' ', '^(/.well-known/acme-challenge/.*)',
-                                ' ', '$1', ' ', 'break']]
+        rewrite_directive = [['rewrite', '^(/.well-known/acme-challenge/.*)',
+                                '$1', 'break']]
         self.configurator.parser.add_server_directives(vhost,
             rewrite_directive, insert_at_top=True)
