@@ -11,7 +11,6 @@ import mock
 import six  # pylint: disable=unused-import
 
 from acme import challenges
-from acme.magic_typing import List, Union  # pylint: disable=unused-import, no-name-in-module
 
 from certbot import achallenges
 from certbot import crypto_util
@@ -354,13 +353,11 @@ class MultipleVhostsTest(util.ApacheTest):
 
         self.config.parser.find_dir = mock_find_dir
         mock_add.reset_mock()
-
         self.config._add_dummy_ssl_directives(self.vh_truth[0])  # pylint: disable=protected-access
         for a in mock_add.call_args_list:
             if a[0][1] == "Include" and a[0][2] == self.config.mod_ssl_conf:
-                tried_to_add = True
-        # Include shouldn't be added, as patched find_dir "finds" existing one
-        self.assertFalse(tried_to_add)
+                self.fail("Include shouldn't be added, as patched find_dir 'finds' existing one") \
+                    # pragma: no cover
 
     def test_deploy_cert(self):
         self.config.parser.modules.add("ssl_module")

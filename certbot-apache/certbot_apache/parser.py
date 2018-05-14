@@ -9,7 +9,7 @@ import sys
 
 import six
 
-from acme.magic_typing import Dict, List, Set # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Dict, List, Set  # pylint: disable=unused-import, no-name-in-module
 from certbot import errors
 
 logger = logging.getLogger(__name__)

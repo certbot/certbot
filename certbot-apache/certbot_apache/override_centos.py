@@ -47,7 +47,7 @@ class CentOSParser(parser.ApacheParser):
         self.sysconfig_filep = "/etc/sysconfig/httpd"
         super(CentOSParser, self).__init__(*args, **kwargs)
 
-    def update_runtime_variables(self, *args, **kwargs):
+    def update_runtime_variables(self):
         """ Override for update_runtime_variables for custom parsing """
         # Opportunistic, works if SELinux not enforced
         super(CentOSParser, self).update_runtime_variables()

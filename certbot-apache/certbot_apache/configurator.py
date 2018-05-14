@@ -19,7 +19,7 @@ from certbot import errors
 from certbot import interfaces
 from certbot import util
 
-from certbot.achallenges import KeyAuthorizationAnnotatedChallenge
+from certbot.achallenges import KeyAuthorizationAnnotatedChallenge  # pylint: disable=unused-import
 from certbot.plugins import common
 from certbot.plugins.util import path_surgery
 
@@ -154,7 +154,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Add name_server association dict
         self.assoc = dict()  # type: Dict[str, obj.VirtualHost]
         # Outstanding challenges
-        self._chall_out = set()  # type: Set[Union[List[KeyAuthorizationAnnotatedChallenge], Tuple[KeyAuthorizationAnnotatedChallenge, ...]]]
+        self._chall_out = set()  # type: Set[Tuple[KeyAuthorizationAnnotatedChallenge, ...]]
         # List of vhosts configured per wildcard domain on this run.
         # used by deploy_cert() and enhance()
         self._wildcard_vhosts = dict()  # type: Dict[str, List[obj.VirtualHost]]

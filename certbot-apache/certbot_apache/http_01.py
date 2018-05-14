@@ -2,10 +2,10 @@
 import logging
 import os
 
-from acme.magic_typing import Set # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Set  # pylint: disable=unused-import, no-name-in-module
 from certbot import errors
 from certbot.plugins import common
-from obj import VirtualHost
+from certbot_apache.obj import VirtualHost  # pylint: disable=unused-import
 
 logger = logging.getLogger(__name__)
 
