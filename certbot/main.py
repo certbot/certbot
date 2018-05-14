@@ -324,7 +324,7 @@ def _find_lineage_for_domains_and_certname(config, domains, certname):
                 return "newcert", None
             else:
                 raise errors.ConfigurationError("No certificate with name {0} found. "
-                    "Use -d to specify domains, or run certbot --certificates to see "
+                    "Use -d to specify domains, or run certbot certificates to see "
                     "possible certificate names.".format(certname))
 
 def _get_added_removed(after, before):
