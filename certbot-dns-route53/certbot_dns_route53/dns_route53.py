@@ -11,6 +11,8 @@ from certbot import errors
 from certbot import interfaces
 from certbot.plugins import dns_common
 
+from acme.magic_typing import DefaultDict, List, Dict # pylint: disable=unused-import, no-name-in-module
+
 logger = logging.getLogger(__name__)
 
 INSTRUCTIONS = (
@@ -34,7 +36,7 @@ class Authenticator(dns_common.DNSAuthenticator):
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
         self.r53 = boto3.client("route53")
-        self._resource_records = collections.defaultdict(list)
+        self._resource_records = collections.defaultdict(list) # type: DefaultDict[str, List[Dict[str, str]]]
 
     def more_info(self):  # pylint: disable=missing-docstring,no-self-use
         return "Solve a DNS01 challenge using AWS Route53"
