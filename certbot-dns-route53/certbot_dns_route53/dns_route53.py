@@ -11,7 +11,7 @@ from certbot import errors
 from certbot import interfaces
 from certbot.plugins import dns_common
 
-from acme.magic_typing import DefaultDict, List, Dict # pylint: disable=import-error, no-name-in-module
+from acme.magic_typing import DefaultDict, List, Dict # pylint: disable=unused-import, no-name-in-module
 
 logger = logging.getLogger(__name__)
 
