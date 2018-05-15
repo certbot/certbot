@@ -340,7 +340,10 @@ def _get_added_removed(after, before):
 def _format_list(character, strings):
     """Format list with given character
     """
-    formatted = "{br}{ch} " + "{br}{ch} ".join(strings)
+    if len(strings) == 0:
+        formatted = "{br}(None)"
+    else:
+        formatted = "{br}{ch} " + "{br}{ch} ".join(strings)
     return formatted.format(
         ch=character,
         br=os.linesep
