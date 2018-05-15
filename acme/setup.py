@@ -19,6 +19,7 @@ install_requires = [
     'pyrfc3339',
     'pytz',
     'requests[security]>=2.4.1',  # security extras added in 2.4.1
+    'requests-toolbelt>=0.3.0',
     'setuptools',
     'six>=1.9.0',  # needed for python_2_unicode_compatible
 ]
