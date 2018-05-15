@@ -12,7 +12,9 @@ import OpenSSL
 import pyrfc3339
 import six
 import zope.component
+from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15
 from cryptography import x509 # type: ignore
 
 from acme import crypto_util as acme_crypto_util
@@ -225,12 +227,14 @@ def verify_renewable_cert_sig(renewable_cert):
     """
     try:
         with open(renewable_cert.chain, 'rb') as chain:
-            chain, _ = pyopenssl_load_certificate(chain.read())
+            chain = x509.load_pem_x509_certificate(chain.read(), default_backend())
         with open(renewable_cert.cert, 'rb') as cert:
             cert = x509.load_pem_x509_certificate(cert.read(), default_backend())
-        hash_name = cert.signature_hash_algorithm.name
-        OpenSSL.crypto.verify(chain, cert.signature, cert.tbs_certificate_bytes, hash_name)
-    except (IOError, ValueError, OpenSSL.crypto.Error) as e:
+        chain.public_key().verify(
+            cert.signature, cert.tbs_certificate_bytes,
+            PKCS1v15(), cert.signature_hash_algorithm
+        )
+    except (IOError, ValueError, InvalidSignature) as e:
         error_str = "verifying the signature of the cert located at {0} has failed. \
                 Details: {1}".format(renewable_cert.cert, e)
         logger.exception(error_str)
