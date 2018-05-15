@@ -689,7 +689,47 @@ def unregister(config, unused_plugins):
 
 
 def register(config, unused_plugins):
-    """Create or modify accounts on the server.
+    """Create accounts on the server.
+
+    :param config: Configuration object
+    :type config: interfaces.IConfig
+
+    :param unused_plugins: List of plugins (deprecated)
+    :type unused_plugins: `list` of `str`
+
+    :returns: `None` or a string indicating and error
+    :rtype: None or str
+
+    """
+    # TODO: When `certbot register --update-registration` is fully deprecated,
+    # delete the true case of if block
+    if config.update_registration:
+        if config.register_unsafely_without_email:
+            return ("--register-unsafely-without-email provided, however, a "
+                    "new e-mail address must\ncurrently be provided when "
+                    "updating a registration.")
+        return update_registration(config, unused_plugins)
+
+    # Portion of _determine_account logic to see whether accounts already
+    # exist or not.
+    account_storage = account.AccountFileStorage(config)
+    accounts = account_storage.find_all()
+    reporter_util = zope.component.getUtility(interfaces.IReporter)
+
+    if len(accounts) > 0:
+        # TODO: add a flag to register a duplicate account (this will
+        #       also require extending _determine_account's behavior
+        #       or else extracting the registration code from there)
+        return ("There is an existing account; registration of a "
+                "duplicate account with this command is currently "
+                "unsupported.")
+    # _determine_account will register an account
+    _determine_account(config)
+    return
+
+
+def update_registration(config, unused_plugins):
+    """Modify accounts on the server.
 
     :param config: Configuration object
     :type config: interfaces.IConfig
@@ -708,27 +748,9 @@ def register(config, unused_plugins):
     reporter_util = zope.component.getUtility(interfaces.IReporter)
     add_msg = lambda m: reporter_util.add_message(m, reporter_util.MEDIUM_PRIORITY)
 
-    # registering a new account
-    if not config.update_registration:
-        if len(accounts) > 0:
-            # TODO: add a flag to register a duplicate account (this will
-            #       also require extending _determine_account's behavior
-            #       or else extracting the registration code from there)
-            return ("There is an existing account; registration of a "
-                    "duplicate account with this command is currently "
-                    "unsupported.")
-        # _determine_account will register an account
-        _determine_account(config)
-        return
-
-    # --update-registration
     if len(accounts) == 0:
         return "Could not find an existing account to update."
     if config.email is None:
-        if config.register_unsafely_without_email:
-            return ("--register-unsafely-without-email provided, however, a "
-                    "new e-mail address must\ncurrently be provided when "
-                    "updating a registration.")
         config.email = display_ops.get_email(optional=False)
 
     acc, acme = _determine_account(config)
@@ -739,6 +761,7 @@ def register(config, unused_plugins):
     account_storage.save_regr(acc, cb_client.acme)
     eff.handle_subscription(config)
     add_msg("Your e-mail address was updated to {0}.".format(config.email))
+
 
 def _install_cert(config, le_client, domains, lineage=None):
     """Install a cert
