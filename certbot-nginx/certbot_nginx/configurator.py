@@ -28,6 +28,7 @@ from certbot_nginx import nginxparser
 from certbot_nginx import parser
 from certbot_nginx import tls_sni_01
 from certbot_nginx import http_01
+from certbot_nginx import obj # pylint: disable=unused-import, no-name-in-module
 from acme.magic_typing import List, Dict, Set # pylint: disable=unused-import, no-name-in-module
 
 
@@ -100,8 +101,8 @@ class NginxConfigurator(common.Installer):
 
         # List of vhosts configured per wildcard domain on this run.
         # used by deploy_cert() and enhance()
-        self._wildcard_vhosts = {} # type: Dict[str, str]
-        self._wildcard_redirect_vhosts = {} # type: Dict[str, str]
+        self._wildcard_vhosts = {} # type: Dict[str, List[obj.VirtualHost]]
+        self._wildcard_redirect_vhosts = {} # type: Dict[str, List[obj.VirtualHost]]
 
         # Add number of outstanding challenges
         self._chall_out = 0

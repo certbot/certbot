@@ -114,7 +114,7 @@ class NginxHttp01(common.ChallengePerformer):
         :returns: list of :class:`certbot_nginx.obj.Addr` to apply
         :rtype: list
         """
-        addresses = [] # type: List
+        addresses = [] # type: List[obj.Addr]
         default_addr = "%s" % self.configurator.config.http01_port
         ipv6_addr = "[::]:{0}".format(
             self.configurator.config.http01_port)
