@@ -181,7 +181,7 @@ class Reverter(object):
         if for_logging:
             return os.linesep.join(output)
         zope.component.getUtility(interfaces.IDisplay).notification(
-            os.linesep.join(output), force_interactive=True)
+            os.linesep.join(output), force_interactive=True, pause=False)
 
     def add_to_temp_checkpoint(self, save_files, save_notes):
         """Add files to temporary checkpoint.
