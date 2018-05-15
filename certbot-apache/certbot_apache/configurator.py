@@ -13,7 +13,7 @@ import zope.component
 import zope.interface
 
 from acme import challenges
-from acme.magic_typing import DefaultDict, Dict, List, Set, Tuple, Union  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import DefaultDict, Dict, List, Set  # pylint: disable=unused-import, no-name-in-module
 
 from certbot import errors
 from certbot import interfaces
@@ -154,7 +154,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Add name_server association dict
         self.assoc = dict()  # type: Dict[str, obj.VirtualHost]
         # Outstanding challenges
-        self._chall_out = set()  # type: Set[Tuple[KeyAuthorizationAnnotatedChallenge, ...]]
+        self._chall_out = set()  # type: Set[KeyAuthorizationAnnotatedChallenge]
         # List of vhosts configured per wildcard domain on this run.
         # used by deploy_cert() and enhance()
         self._wildcard_vhosts = dict()  # type: Dict[str, List[obj.VirtualHost]]

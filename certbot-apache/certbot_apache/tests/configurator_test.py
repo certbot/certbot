@@ -348,7 +348,7 @@ class MultipleVhostsTest(util.ApacheTest):
         for a in mock_add.call_args_list:
             if a[0][1] == "Include" and a[0][2] == self.config.mod_ssl_conf:
                 tried_to_add = True
-        # Include should be added, find_dir is not patched, and returns false
+        # Include should be added, find_dir is not patched, and returns falsy
         self.assertTrue(tried_to_add)
 
         self.config.parser.find_dir = mock_find_dir
