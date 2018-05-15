@@ -11,7 +11,7 @@ from certbot_nginx import nginxparser
 from certbot_nginx import obj
 from certbot_nginx import parser
 from certbot_nginx.tests import util
-from acme.magic_typing import List
+from acme.magic_typing import List # pylint: disable=unused-import, no-name-in-module
 
 
 class NginxParserTest(util.NginxTest): #pylint: disable=too-many-public-methods

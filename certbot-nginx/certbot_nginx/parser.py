@@ -13,8 +13,7 @@ from certbot import errors
 
 from certbot_nginx import obj
 from certbot_nginx import nginxparser
-from acme.magic_typing import Dict, Set, Any
-# pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Dict, Set, Any # pylint: disable=unused-import, no-name-in-module
 
 logger = logging.getLogger(__name__)
 

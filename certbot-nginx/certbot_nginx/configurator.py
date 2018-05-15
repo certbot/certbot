@@ -28,7 +28,8 @@ from certbot_nginx import nginxparser
 from certbot_nginx import parser
 from certbot_nginx import tls_sni_01
 from certbot_nginx import http_01
-from acme.magic_typing import List, Dict, Set
+from acme.magic_typing import List, Dict, Set # pylint: disable=unused-import, no-name-in-module
+
 
 
 logger = logging.getLogger(__name__)

@@ -10,7 +10,7 @@ from certbot.plugins import common
 
 from certbot_nginx import obj
 from certbot_nginx import nginxparser
-from acme.magic_typing import List
+from acme.magic_typing import List # pylint: disable=unused-import, no-name-in-module
 
 
 logger = logging.getLogger(__name__)
