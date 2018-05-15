@@ -14,7 +14,8 @@ import six
 import zope.component
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives.asymmetric.ec import ECDSA
+from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey
 from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 from cryptography import x509 # type: ignore
@@ -239,14 +240,13 @@ def verify_renewable_cert_sig(renewable_cert):
             )
             verifier.update(cert.tbs_certificate_bytes)
             verifier.verify()
-        elif isinstance(pk, ec.EllipticCurvePublicKey):
+        elif isinstance(pk, EllipticCurvePublicKey):
             verifier = pk.verifier(
-                cert.signature, ec.ECDSA(cert.signature_hash_algorithm)
+                cert.signature, ECDSA(cert.signature_hash_algorithm)
             )
             verifier.update(cert.tbs_certificate_bytes)
             verifier.verify()
         else:
-            import pdb;pdb.set_trace()
             raise errors.Error("Unsupported public key type")
     except (IOError, ValueError, InvalidSignature) as e:
         error_str = "verifying the signature of the cert located at {0} has failed. \
