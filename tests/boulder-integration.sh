@@ -192,6 +192,8 @@ for dir in $renewal_hooks_dirs; do
     fi
 done
 
+common unregister
+
 common register --email ex1@domain.org,ex2@domain.org
 
 common register --update-registration --email ex1@domain.org
