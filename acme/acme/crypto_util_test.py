@@ -13,6 +13,7 @@ import OpenSSL
 
 from acme import errors
 from acme import test_util
+from acme.magic_typing import List # pylint: disable=unused-import, no-name-in-module
 
 
 class SSLSocketAndProbeSNITest(unittest.TestCase):
@@ -165,7 +166,7 @@ class RandomSnTest(unittest.TestCase):
 
     def setUp(self):
         self.cert_count = 5
-        self.serial_num = []
+        self.serial_num = [] # type: List[int]
         self.key = OpenSSL.crypto.PKey()
         self.key.generate_key(OpenSSL.crypto.TYPE_RSA, 2048)
 

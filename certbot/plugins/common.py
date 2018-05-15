@@ -18,6 +18,8 @@ from certbot import interfaces
 from certbot import reverter
 from certbot import util
 
+from certbot.plugins.storage import PluginStorage
+
 logger = logging.getLogger(__name__)
 
 
@@ -99,7 +101,6 @@ class Plugin(object):
     def conf(self, var):
         """Find a configuration value for variable ``var``."""
         return getattr(self.config, self.dest(var))
-# other
 
 
 class Installer(Plugin):
@@ -110,6 +111,7 @@ class Installer(Plugin):
     """
     def __init__(self, *args, **kwargs):
         super(Installer, self).__init__(*args, **kwargs)
+        self.storage = PluginStorage(self.config, self.name)
         self.reverter = reverter.Reverter(self.config)
 
     def add_to_checkpoint(self, save_files, save_notes, temporary=False):

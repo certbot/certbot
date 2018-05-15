@@ -45,7 +45,7 @@ a combination_ of distinct authenticator and installer plugins.
 Plugin      Auth Inst Notes                                                           Challenge types (and port)
 =========== ==== ==== =============================================================== =============================
 apache_     Y    Y    | Automates obtaining and installing a certificate with Apache  tls-sni-01_ (443)
-                      | 2.4 on Debian-based distributions with ``libaugeas0`` 1.0+.
+                      | 2.4 on OSes with ``libaugeas0`` 1.0+.
 webroot_    Y    N    | Obtains a certificate by writing to the webroot directory of  http-01_ (80)
                       | an already running webserver.
 nginx_      Y    Y    | Automates obtaining and installing a certificate with Nginx.  tls-sni-01_ (443)
@@ -87,7 +87,7 @@ Apache
 
 The Apache plugin currently requires an OS with augeas version 1.0; currently `it
 supports
-<https://github.com/certbot/certbot/blob/master/certbot-apache/certbot_apache/constants.py>`_
+<https://github.com/certbot/certbot/blob/master/certbot-apache/certbot_apache/entrypoint.py>`_
 modern OSes based on Debian, Fedora, SUSE, Gentoo and Darwin.
 This automates both obtaining *and* installing certificates on an Apache
 webserver. To specify this plugin on the command line, simply include
@@ -170,6 +170,14 @@ one of the options shown below on the command line.
 It must still be possible for your machine to accept inbound connections from
 the Internet on the specified port using each requested domain name.
 
+By default, Certbot first attempts to bind to the port for all interfaces using
+IPv6 and then bind to that port using IPv4; Certbot continues so long as at
+least one bind succeeds. On most Linux systems, IPv4 traffic will be routed to
+the bound IPv6 port and the failure during the second bind is expected.
+
+Use ``--<challenge-type>-address`` to explicitly tell Certbot which interface
+(and protocol) to bind.
+
 .. note:: The ``--standalone-supported-challenges`` option has been
    deprecated since ``certbot`` version 0.9.0.
 
@@ -185,7 +193,7 @@ Certbot's DNS plugins.
 These plugins are still in the process of being packaged
 by many distributions and cannot currently be installed with ``certbot-auto``.
 If, however, you are comfortable installing the certificates yourself,
-you can run these plugins with :ref:`Docker <docker>`.
+you can run these plugins with :ref:`Docker <docker-user>`.
 
 Once installed, you can find documentation on how to use each plugin at:
 
@@ -552,6 +560,12 @@ can run on a regular basis, like every week or every day). In that case,
 you are likely to want to use the ``-q`` or ``--quiet`` quiet flag to
 silence all output except errors.
 
+.. seealso:: Many of the certbot clients obtained through a
+   distribution come with automatic renewal out of the box,
+   such as Debian and Ubuntu versions installed through `apt`,
+   CentOS/RHEL 7 through EPEL, etc.  See `Automated Renewals`_
+   for more details.
+
 If you are manually renewing all of your certificates, the
 ``--force-renewal`` flag may be helpful; it causes the expiration time of
 the certificate(s) to be ignored when considering renewal, and attempts to
@@ -595,7 +609,7 @@ commands into your individual environment.
 .. note:: ``certbot renew`` exit status will only be 1 if a renewal attempt failed.
   This means ``certbot renew`` exit status will be 0 if no certificate needs to be updated.
   If you write a custom script and expect to run a command only after a certificate was actually renewed
-  you will need to use the ``--post-hook`` since the exit status will be 0 both on successful renewal
+  you will need to use the ``--deploy-hook`` since the exit status will be 0 both on successful renewal
   and when renewal is not necessary.
 
 .. _renewal-config-file:
@@ -647,6 +661,31 @@ The following commands could be used to specify where these files are located::
   sed -i 's,/etc/letsencrypt/live/example.com,/home/user/me/certbot,g' /etc/letsencrypt/renewal/example.com.conf
   certbot update_symlinks
 
+Automated Renewals
+------------------
+
+Many Linux distributions provide automated renewal when you use the
+packages installed through their system package manager.  The
+following table is an *incomplete* list of distributions which do so,
+as well as their methods for doing so.
+
+If you are not sure whether or not your system has this already
+automated, refer to your distribution's documentation, or check your
+system's crontab (typically in `/etc/crontab/` and `/etc/cron.*/*` and
+systemd timers (`systemctl list-timers`).
+
+.. csv-table:: Distributions with Automated Renewal
+   :header: "Distribution Name", "Distribution Version", "Automation Method"
+
+   "CentOS", "EPEL 7", "systemd"
+   "Debian", "jessie", "cron, systemd"
+   "Debian", "stretch", "cron, systemd"
+   "Debian", "testing/sid", "cron, systemd"
+   "Fedora", "26", "systemd"
+   "Fedora", "27", "systemd"
+   "RHEL", "EPEL 7", "systemd"
+   "Ubuntu", "17.10", "cron, systemd"
+   "Ubuntu", "certbot PPA", "cron, systemd"
 
 .. _where-certs:
 
@@ -888,7 +927,7 @@ Certbot accepts a global configuration file that applies its options to all invo
 of Certbot. Certificate specific configuration choices should be set in the ``.conf``
 files that can be found in ``/etc/letsencrypt/renewal``.
 
-By default no cli.ini file is created, after creating one 
+By default no cli.ini file is created, after creating one
 it is possible to specify the location of this configuration file with
 ``certbot-auto --config cli.ini`` (or shorter ``-c cli.ini``). An
 example configuration file is shown below:
@@ -923,6 +962,12 @@ Meaning that once 1000 files are in ``/var/log/letsencrypt`` Certbot will delete
 the oldest one to make room for new logs. The number of subsequent logs can be
 changed by passing the desired number to the command line flag
 ``--max-log-backups``.
+
+.. note:: Some distributions, including Debian and Ubuntu, disable
+   certbot's internal log rotation in favor of a more traditional
+   logrotate script.  If you are using a distribution's packages and
+   want to alter the log rotation, check `/etc/logrotate.d/` for a
+   certbot rotation script.
 
 .. _command-line:
 

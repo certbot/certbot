@@ -69,14 +69,15 @@ class AuthHandler(object):
 
         # While there are still challenges remaining...
         while self._has_challenges(aauthzrs):
-            resp = self._solve_challenges(aauthzrs)
-            logger.info("Waiting for verification...")
-            if config.debug_challenges:
-                notify('Challenges loaded. Press continue to submit to CA. '
-                       'Pass "-v" for more info about challenges.', pause=True)
+            with error_handler.ExitHandler(self._cleanup_challenges, aauthzrs):
+                resp = self._solve_challenges(aauthzrs)
+                logger.info("Waiting for verification...")
+                if config.debug_challenges:
+                    notify('Challenges loaded. Press continue to submit to CA. '
+                           'Pass "-v" for more info about challenges.', pause=True)
 
-            # Send all Responses - this modifies achalls
-            self._respond(aauthzrs, resp, best_effort)
+                # Send all Responses - this modifies achalls
+                self._respond(aauthzrs, resp, best_effort)
 
         # Just make sure all decisions are complete.
         self.verify_authzr_complete(aauthzrs)
@@ -118,14 +119,13 @@ class AuthHandler(object):
         """Get Responses for challenges from authenticators."""
         resp = []
         all_achalls = self._get_all_achalls(aauthzrs)
-        with error_handler.ErrorHandler(self._cleanup_challenges, all_achalls):
-            try:
-                if all_achalls:
-                    resp = self.auth.perform(all_achalls)
-            except errors.AuthorizationError:
-                logger.critical("Failure in setting up challenges.")
-                logger.info("Attempting to clean up outstanding challenges...")
-                raise
+        try:
+            if all_achalls:
+                resp = self.auth.perform(all_achalls)
+        except errors.AuthorizationError:
+            logger.critical("Failure in setting up challenges.")
+            logger.info("Attempting to clean up outstanding challenges...")
+            raise
 
         assert len(resp) == len(all_achalls)
 
@@ -147,13 +147,10 @@ class AuthHandler(object):
         """
         # TODO: chall_update is a dirty hack to get around acme-spec #105
         chall_update = dict()
-        active_achalls = self._send_responses(aauthzrs, resp, chall_update)
+        self._send_responses(aauthzrs, resp, chall_update)
 
         # Check for updated status...
-        try:
-            self._poll_challenges(aauthzrs, chall_update, best_effort)
-        finally:
-            self._cleanup_challenges(aauthzrs, active_achalls)
+        self._poll_challenges(aauthzrs, chall_update, best_effort)
 
     def _send_responses(self, aauthzrs, resps, chall_update):
         """Send responses and make sure errors are handled.
@@ -192,7 +189,7 @@ class AuthHandler(object):
         return active_achalls
 
     def _poll_challenges(self, aauthzrs, chall_update,
-                         best_effort, min_sleep=3, max_rounds=15):
+                         best_effort, min_sleep=3, max_rounds=30):
         """Wait for all challenge results to be determined."""
         indices_to_check = set(chall_update.keys())
         comp_indices = set()
@@ -294,19 +291,19 @@ class AuthHandler(object):
         chall_prefs.extend(plugin_pref)
         return chall_prefs
 
-    def _cleanup_challenges(self, aauthzrs, achall_list=None):
+    def _cleanup_challenges(self, aauthzrs, achalls=None):
         """Cleanup challenges.
 
-        If achall_list is not provided, cleanup all achallenges.
+        :param aauthzrs: authorizations and their selected annotated
+            challenges
+        :type aauthzrs: `list` of `AnnotatedAuthzr`
+        :param achalls: annotated challenges to cleanup
+        :type achalls: `list` of :class:`certbot.achallenges.AnnotatedChallenge`
 
         """
         logger.info("Cleaning up challenges")
-
-        if achall_list is None:
+        if achalls is None:
             achalls = self._get_all_achalls(aauthzrs)
-        else:
-            achalls = achall_list
-
         if achalls:
             self.auth.cleanup(achalls)
             for achall in achalls:
