@@ -622,7 +622,7 @@ class HelpfulArgumentParser(object):
 
         if self.verb == "register" and parsed_args.update_registration:
             sys.stderr.write("Usage 'certbot register --update_registration' is deprecated.\n"
-                           "Use 'cerbot update_registration [options]' instead\n.")
+                           "Use 'cerbot update_registration [options]' instead.\n")
 
         possible_deprecation_warning(parsed_args)
 
