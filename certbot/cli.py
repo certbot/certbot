@@ -381,7 +381,7 @@ VERB_HELP = [
     ("register", {
         "short": "Register for account with Let's Encrypt / other ACME server",
         "opts": ("Options for account registration & modification"
-                 ". To register multi email, separate by comma,"
+                 ". To register multi emails, separate by comma,"
                  " ex: u1@example.com,u2@example.com"),
         "usage": "\n\n  certbot register --email user@example.com [options]\n\n"
     }),
