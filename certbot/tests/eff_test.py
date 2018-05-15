@@ -1,4 +1,5 @@
 """Tests for certbot.eff."""
+import requests
 import unittest
 
 import mock
@@ -117,7 +118,6 @@ class SubscribeTest(unittest.TestCase):
 
     @test_util.patch_get_utility()
     def test_not_ok(self, mock_get_utility):
-        from certbot.eff import requests
         self.response.ok = False
         self.response.raise_for_status.side_effect = requests.exceptions.HTTPError
         self._call()  # pylint: disable=no-value-for-parameter
@@ -135,11 +135,10 @@ class SubscribeTest(unittest.TestCase):
 
     @test_util.patch_get_utility()
     def test_response_json_missing_status_element(self, mock_get_utility):
-        self.json = {}
-        self.response.json.return_value = self.json
+        self.json.clear()
         self._call()  # pylint: disable=no-value-for-parameter
         actual = self._get_reported_message(mock_get_utility)
-        expected_part = 'missing'
+        expected_part = 'problem'
         self.assertTrue(expected_part in actual)
 
     def _get_reported_message(self, mock_get_utility):
