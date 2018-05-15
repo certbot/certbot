@@ -714,7 +714,6 @@ def register(config, unused_plugins):
     # exist or not.
     account_storage = account.AccountFileStorage(config)
     accounts = account_storage.find_all()
-    
     if len(accounts) > 0:
         # TODO: add a flag to register a duplicate account (this will
         #       also require extending _determine_account's behavior
