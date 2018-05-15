@@ -179,8 +179,9 @@ def perform_registration(acme, config, tos_cb):
     Actually register new account, trying repeatedly if there are email
     problems
 
-    :param .IConfig config: Client configuration.
     :param acme.client.Client client: ACME client object.
+    :param .IConfig config: Client configuration.
+    :param Callable tos_cb: a callback to handle Term of Service agreement.
 
     :returns: Registration Resource.
     :rtype: `acme.messages.RegistrationResource`
