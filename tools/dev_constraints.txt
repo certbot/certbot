@@ -30,7 +30,7 @@ josepy==1.0.1
 logger==1.4
 logilab-common==1.4.1
 MarkupSafe==1.0
-mypy==0.580
+mypy==0.600
 ndg-httpsclient==0.3.2
 oauth2client==2.0.0
 pathlib2==2.3.0
