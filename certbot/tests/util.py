@@ -336,6 +336,7 @@ class ConfigTestCase(TempDirTestCase):
         self.config.fullchain_path = constants.CLI_DEFAULTS['auth_chain_path']
         self.config.chain_path = constants.CLI_DEFAULTS['auth_chain_path']
         self.config.server = "https://example.com"
+        self.config.source_address = None
 
 def lock_and_call(func, lock_path):
     """Grab a lock for lock_path and call func.

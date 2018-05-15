@@ -1134,13 +1134,15 @@ class ClientNetworkSourceAddressBindingTest(unittest.TestCase):
     used the provided source address."""
 
     def setUp(self):
-        self.source_address = "8.8.8.8"
+        self.source_addresses = ["8.8.8.8", "2001:db8:8:4::2",
+                "2001:0000:4136:e378:8000:63bf:3fff:fdd2"]
 
     def test_source_address_set(self):
         from acme.client import ClientNetwork
-        net = ClientNetwork(key=None, alg=None, source_address=self.source_address)
-        for adapter in net.session.adapters.values():
-            self.assertTrue(self.source_address in adapter.source_address)
+        for source_address in self.source_addresses:
+            net = ClientNetwork(key=None, alg=None, source_address=source_address)
+            for adapter in net.session.adapters.values():
+                self.assertTrue(source_address in adapter.source_address)
 
     def test_behavior_assumption(self):
         """This is a test that guardrails the HTTPAdapter behavior so that if the default for

@@ -1237,6 +1237,9 @@ def _create_subparsers(helpful):
         help="Add a comment to the default user agent string. May be used when repackaging Certbot "
              "or calling it from another tool to allow additional statistical data to be collected."
              " Ignored if --user-agent is set. (Example: Foo-Wrapper/1.0)")
+    helpful.add(
+        None, "--source-address", default=None, type=str,
+        help="Specify a source IP address for the client.")
     helpful.add("certonly",
                 "--csr", default=flag_default("csr"), type=read_file,
                 help="Path to a Certificate Signing Request (CSR) in DER or PEM format."

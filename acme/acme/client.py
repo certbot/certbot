@@ -878,6 +878,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
 
         if source_address is not None:
             adapter = SourceAddressAdapter(source_address)
+            logger.debug("Set source address for client to %s", source_address)
 
         self.session.mount("http://", adapter)
         self.session.mount("https://", adapter)

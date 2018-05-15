@@ -42,7 +42,8 @@ def acme_from_config_key(config, key, regr=None):
     "Wrangle ACME client construction"
     # TODO: Allow for other alg types besides RS256
     net = acme_client.ClientNetwork(key, account=regr, verify_ssl=(not config.no_verify_ssl),
-                                    user_agent=determine_user_agent(config))
+                                    user_agent=determine_user_agent(config),
+                                    source_address=config.source_address)
     return acme_client.BackwardsCompatibleClientV2(net, key, config.server)
 
 

@@ -231,6 +231,8 @@ class IConfig(zope.interface.Interface):
         "A conforming ACME server will still attempt to connect on port 443.")
     tls_sni_01_address = zope.interface.Attribute(
         "The address the server listens to during tls-sni-01 challenge.")
+    source_address = zope.interface.Attribute(
+        "The address the client binds to when connecting to the ACME server.")
 
     http01_port = zope.interface.Attribute(
         "Port used in the http-01 challenge. "

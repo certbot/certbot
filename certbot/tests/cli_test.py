@@ -430,6 +430,20 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertRaises(errors.Error, self.parse,
                           "--allow-subset-of-names -d *.example.org".split())
 
+    def test_source_address_flag_v4(self):
+        namespace = self.parse(["--source-address=8.8.8.8"])
+        self.assertEqual(namespace.source_address, "8.8.8.8")
+
+    def test_source_address_flag_v6(self):
+        ipv6_addrs = ["2001:db8:8:4::2", "2001:0000:4136:e378:8000:63bf:3fff:fdd2"]
+        for addr in ipv6_addrs:
+            namespace = self.parse(["--source-address={}".format(addr)])
+            self.assertEqual(namespace.source_address, addr)
+
+    def test_source_address_flag_not_set(self):
+        namespace = self.parse([])
+        self.assertIsNone(namespace.source_address)
+
 
 class DefaultTest(unittest.TestCase):
     """Tests for certbot.cli._Default."""
