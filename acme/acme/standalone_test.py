@@ -119,6 +119,58 @@ class HTTP01ServerTest(unittest.TestCase):
         self.assertFalse(self._test_http01(add=False))
 
 
+class TLSALPN01ServerTest(unittest.TestCase):
+    """Test for acme.standalone.TLSALPN01Server."""
+
+    def setUp(self):
+        self.certs = {b'localhost': (
+            test_util.load_pyopenssl_private_key('rsa2048_key.pem'),
+            test_util.load_cert('rsa2048_cert.pem'),
+        )}
+        # Use different certificate for challenge.
+        self.challenge_certs = {b'localhost': (
+            test_util.load_pyopenssl_private_key('rsa1024_key.pem'),
+            test_util.load_cert('rsa1024_cert.pem'),
+        )}
+        from acme.standalone import TLSALPN01Server
+        self.server = TLSALPN01Server(("", 0), certs=self.certs,
+                challenge_certs=self.challenge_certs)
+        # pylint: disable=no-member
+        self.thread = threading.Thread(target=self.server.serve_forever)
+        self.thread.start()
+
+    def tearDown(self):
+        self.server.shutdown()  # pylint: disable=no-member
+        self.thread.join()
+
+    #TODO: This is not implemented yet, see comments in standalone.py
+    #def test_certs(self):
+    #    host, port = self.server.socket.getsockname()[:2]
+    #    cert = crypto_util.probe_sni(
+    #        b'localhost', host=host, port=port, timeout=1)
+    #    # Expect normal cert when connecting without ALPN.
+    #    self.assertEqual(jose.ComparableX509(cert),
+    #                     jose.ComparableX509(self.certs[b'localhost'][1]))
+
+    def test_challenge_certs(self):
+        host, port = self.server.socket.getsockname()[:2]
+        cert = crypto_util.probe_sni(
+            b'localhost', host=host, port=port, timeout=1,
+            alpn_protocols=[b"acme-tls/1"])
+        #  Expect challenge cert when connecting with ALPN.
+        self.assertEqual(
+                jose.ComparableX509(cert),
+                jose.ComparableX509(self.challenge_certs[b'localhost'][1])
+        )
+
+    def test_bad_alpn(self):
+        host, port = self.server.socket.getsockname()[:2]
+        with self.assertRaises(errors.Error):
+            crypto_util.probe_sni(
+                b'localhost', host=host, port=port, timeout=1,
+                alpn_protocols=[b"bad-alpn"])
+
+
 class BaseDualNetworkedServersTest(unittest.TestCase):
     """Test for acme.standalone.BaseDualNetworkedServers."""
 
