@@ -2,6 +2,7 @@
 import argparse
 import socket
 import unittest
+# https://github.com/python/typeshed/blob/master/stdlib/2and3/socket.pyi
 from socket import errno as socket_errors  # type: ignore
 
 import josepy as jose
@@ -11,6 +12,7 @@ import six
 import OpenSSL.crypto  # pylint: disable=unused-import
 
 from acme import challenges
+from acme import standalone as acme_standalone  # pylint: disable=unused-import
 from acme.magic_typing import Dict, Tuple, Set  # pylint: disable=unused-import, no-name-in-module
 
 from certbot import achallenges
@@ -25,8 +27,9 @@ class ServerManagerTest(unittest.TestCase):
 
     def setUp(self):
         from certbot.plugins.standalone import ServerManager
-        self.certs = {}  # type: Dict[bytes, Tuple[OpenSSL.crypto.PKey, OpenSSL.crypto.PKey]]
-        self.http_01_resources = {}  # type: Set[challenges.HTTP01Response]
+        self.certs = {}  # type: Dict[bytes, Tuple[OpenSSL.crypto.PKey, OpenSSL.crypto.X509]]
+        self.http_01_resources = {} \
+        # type: Set[acme_standalone.HTTP01RequestHandler.HTTP01Resource]
         self.mgr = ServerManager(self.certs, self.http_01_resources)
 
     def test_init(self):

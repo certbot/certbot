@@ -8,7 +8,8 @@ import zope.component
 
 from acme import challenges
 from acme import messages
-from acme.magic_typing import DefaultDict, Dict, List, Set  # pylint: disable=unused-import, no-name-in-module
+# pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import DefaultDict, Dict, List, Set, Collection
 from certbot import achallenges
 from certbot import errors
 from certbot import error_handler
@@ -117,7 +118,7 @@ class AuthHandler(object):
 
     def _solve_challenges(self, aauthzrs):
         """Get Responses for challenges from authenticators."""
-        resp = []  # type: List[str]
+        resp = []  # type: Collection[acme.challenges.ChallengeResponse]
         all_achalls = self._get_all_achalls(aauthzrs)
         try:
             if all_achalls:
@@ -133,7 +134,7 @@ class AuthHandler(object):
 
     def _get_all_achalls(self, aauthzrs):
         """Return all active challenges."""
-        all_achalls = []  # type: List[achallenges.KeyAuthorizationAnnotatedChallenge]
+        all_achalls = []  # type: Collection[challenges.ChallengeResponse]
         for aauthzr in aauthzrs:
             all_achalls.extend(aauthzr.achalls)
         return all_achalls

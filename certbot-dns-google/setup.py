@@ -9,7 +9,7 @@ version = '0.25.0.dev0'
 # Remember to update local-oldest-requirements.txt when changing the minimum
 # acme/certbot version.
 install_requires = [
-    'acme>0.24.0',
+    'acme>=0.21.1',
     'certbot>=0.21.1',
     # 1.5 is the first version that supports oauth2client>=2.0
     'google-api-python-client>=1.5',

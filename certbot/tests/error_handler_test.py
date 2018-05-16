@@ -8,6 +8,7 @@ import unittest
 import mock
 # pylint: disable=unused-import, no-name-in-module
 from acme.magic_typing import Callable, Dict, Union
+# pylint: enable=unused-import, no-name-in-module
 
 
 def get_signals(signums):
@@ -25,8 +26,7 @@ def set_signals(sig_handler_dict):
 def signal_receiver(signums):
     """Context manager to catch signals"""
     signals = []
-    prev_handlers = {}  # type: Dict[int, Union[int, None, Callable[[], None]]]
-    prev_handlers = get_signals(signums)
+    prev_handlers = get_signals(signums)  # type: Dict[int, Union[int, None, Callable]]
     set_signals(dict((s, lambda s, _: signals.append(s)) for s in signums))
     yield signals
     set_signals(prev_handlers)

@@ -9,7 +9,7 @@ version = '0.25.0.dev0'
 # Remember to update local-oldest-requirements.txt when changing the minimum
 # acme/certbot version.
 install_requires = [
-    'acme>0.24.0',
+    'acme>=0.21.1',
     'certbot>=0.21.1',
     'dns-lexicon>=2.2.1', # Support for >1 TXT record per name
     'mock',

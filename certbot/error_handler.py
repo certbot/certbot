@@ -7,6 +7,7 @@ import traceback
 
 # pylint: disable=unused-import, no-name-in-module
 from acme.magic_typing import Any, Callable, Dict, List, Union
+# pylint: enable=unused-import, no-name-in-module
 
 from certbot import errors
 
@@ -59,8 +60,8 @@ class ErrorHandler(object):
     def __init__(self, func=None, *args, **kwargs):
         self.call_on_regular_exit = False
         self.body_executed = False
-        self.funcs = []  # type: List[Callable[[], None]]
-        self.prev_handlers = {}  # type: Dict[int, Union[int, None, Callable[[], None]]]
+        self.funcs = []  # type: List[Callable[[], Any]]
+        self.prev_handlers = {}  # type: Dict[int, Union[int, None, Callable]]
         self.received_signals = []  # type: List[int]
         if func is not None:
             self.register(func, *args, **kwargs)

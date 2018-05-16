@@ -10,11 +10,12 @@ import six
 import zope.component
 import zope.interface
 
-from acme import challenges  # pylint: disable=unused-import,
+from acme import challenges  # pylint: disable=unused-import
 # pylint: disable=unused-import, no-name-in-module
 from acme.magic_typing import Dict, Set, DefaultDict, List
+# pylint: enable=unused-import, no-name-in-module
 
-from certbot import achallenges
+from certbot import achallenges  # pylint: disable=unused-import
 from certbot import cli
 from certbot import errors
 from certbot import interfaces

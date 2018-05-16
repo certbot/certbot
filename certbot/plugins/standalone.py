@@ -3,6 +3,7 @@ import argparse
 import collections
 import logging
 import socket
+# https://github.com/python/typeshed/blob/master/stdlib/2and3/socket.pyi
 from socket import errno as socket_errors  # type: ignore
 
 import OpenSSL
@@ -196,8 +197,9 @@ class Authenticator(common.Plugin):
         # values, main thread writes). Due to the nature of CPython's
         # GIL, the operations are safe, c.f.
         # https://docs.python.org/2/faq/library.html#what-kinds-of-global-value-mutation-are-thread-safe
-        self.certs = {}  # type: Dict[bytes, Tuple[OpenSSL.crypto.PKey, OpenSSL.crypto.PKey]]
-        self.http_01_resources = set()  # type: Set[challenges.HTTP01Response]
+        self.certs = {}  # type: Dict[bytes, Tuple[OpenSSL.crypto.PKey, OpenSSL.crypto.X509]]
+        self.http_01_resources = set() \
+        # type: Set[acme_standalone.HTTP01RequestHandler.HTTP01Resource]
 
         self.servers = ServerManager(self.certs, self.http_01_resources)
 
