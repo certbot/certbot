@@ -73,32 +73,32 @@ certificate. """.format(cli_command)
 COMMAND_OVERVIEW = """The most common SUBCOMMANDS and flags are:
 
 obtain, install, and renew certificates:
-    (default) run         Obtain & install a certificate in your current webserver
-    certonly              Obtain or renew a certificate, but do not install it
-    renew                 Renew all previously obtained certificates that are near expiry
-    enhance               Add security enhancements to your existing configuration
-   -d DOMAINS             Comma-separated list of domains to obtain a certificate for
+    (default) run    Obtain & install a certificate in your current webserver
+    certonly         Obtain or renew a certificate, but do not install it
+    renew            Renew all previously obtained certificates that are near expiry
+    enhance          Add security enhancements to your existing configuration
+   -d DOMAINS        Comma-separated list of domains to obtain a certificate for
 
   %s
-  --standalone            Run a standalone webserver for authentication
+  --standalone       Run a standalone webserver for authentication
   %s
-  --webroot               Place files in a server's webroot folder for authentication
-  --manual                Obtain certificates interactively, or using shell script hooks
+  --webroot          Place files in a server's webroot folder for authentication
+  --manual           Obtain certificates interactively, or using shell script hooks
 
-   -n                     Run non-interactively
-  --test-cert             Obtain a test certificate from a staging server
-  --dry-run               Test "renew" or "certonly" without saving any certificates to disk
+   -n                Run non-interactively
+  --test-cert        Obtain a test certificate from a staging server
+  --dry-run          Test "renew" or "certonly" without saving any certificates to disk
 
 manage certificates:
-    certificates          Display information about certificates you have from Certbot
-    revoke                Revoke a certificate (supply --cert-path)
-    delete                Delete a certificate
+    certificates     Display information about certificates you have from Certbot
+    revoke           Revoke a certificate (supply --cert-path)
+    delete           Delete a certificate
 
 manage your account with Let's Encrypt:
-    register              Create a Let's Encrypt ACME account
-    update_registration   Update a Let's Encrypt ACME account
-  --agree-tos             Agree to the ACME server's Subscriber Agreement
-   -m EMAIL               Email address for important account notifications
+    register         Create a Let's Encrypt ACME account
+    update_account   Update a Let's Encrypt ACME account
+  --agree-tos        Agree to the ACME server's Subscriber Agreement
+   -m EMAIL          Email address for important account notifications
 """
 
 # This is the short help for certbot --help, where we disable argparse
@@ -384,10 +384,10 @@ VERB_HELP = [
         "opts": "Options for account registration",
         "usage": "\n\n  certbot register --email user@example.com [options]\n\n"
     }),
-    ("update_registration", {
+    ("update_account", {
         "short": "Update existing account with Let's Encrypt / other ACME server",
         "opts": "Options for account modification",
-        "usage": "\n\n  certbot update_registration --email updated_email@example.com [options]\n\n"
+        "usage": "\n\n  certbot update_account --email updated_email@example.com [options]\n\n"
     }),
     ("unregister", {
         "short": "Irrevocably deactivate your account",
@@ -454,7 +454,7 @@ class HelpfulArgumentParser(object):
             "install": main.install,
             "plugins": main.plugins_cmd,
             "register": main.register,
-            "update_registration": main.update_registration,
+            "update_account": main.update_account,
             "unregister": main.unregister,
             "renew": main.renew,
             "revoke": main.revoke,
@@ -620,9 +620,9 @@ class HelpfulArgumentParser(object):
                                    " wildcard domain is not supported.")
 
 
-        if self.verb == "register" and parsed_args.update_registration:
-            sys.stderr.write("Usage 'certbot register --update_registration' is deprecated.\n"
-                           "Use 'cerbot update_registration [options]' instead.\n")
+        if self.verb == "register" and parsed_args.update_account:
+            sys.stderr.write("Usage 'certbot register --update-registration' is deprecated.\n"
+                           "Use 'cerbot update_account [options]' instead.\n")
 
         possible_deprecation_warning(parsed_args)
 
@@ -969,18 +969,18 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              "affect you, and will be effective 14 days after posting an "
              "update to the web site.")
     helpful.add(
-        ["register"], "--update-registration", action="store_true",
-        default=flag_default("update_registration"),
+        ["register", "automation", "update_account"], "--update-registration", action="store_true",
+        default=flag_default("update_account"), dest="update_account",
         help=argparse.SUPPRESS)
     helpful.add(
-        ["register", "unregister", "automation", "update_registration"], "-m", "--email",
+        ["register", "unregister", "automation", "update_account"], "-m", "--email",
         default=flag_default("email"),
         help=config_help("email"))
-    helpful.add(["register", "automation", "update_registration"], "--eff-email",
+    helpful.add(["register", "automation", "update_account"], "--eff-email",
                 action="store_true",
                 default=flag_default("eff_email"), dest="eff_email",
                 help="Share your e-mail address with EFF")
-    helpful.add(["register", "automation", "update_registration"], "--no-eff-email",
+    helpful.add(["register", "automation", "update_account"], "--no-eff-email",
                 action="store_false",
                 default=flag_default("eff_email"), dest="eff_email",
                 help="Don't share your e-mail address with EFF")

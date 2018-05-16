@@ -703,17 +703,14 @@ def register(config, unused_plugins):
     """
     # TODO: When `certbot register --update-registration` is fully deprecated,
     # delete the true case of if block
-    if config.update_registration:
-        if config.register_unsafely_without_email:
-            return ("--register-unsafely-without-email provided, however, a "
-                    "new e-mail address must\ncurrently be provided when "
-                    "updating a registration.")
-        return update_registration(config, unused_plugins)
+    if config.update_account:
+        return update_account(config, unused_plugins)
 
     # Portion of _determine_account logic to see whether accounts already
     # exist or not.
     account_storage = account.AccountFileStorage(config)
     accounts = account_storage.find_all()
+
     if len(accounts) > 0:
         # TODO: add a flag to register a duplicate account (this will
         #       also require extending _determine_account's behavior
@@ -726,7 +723,7 @@ def register(config, unused_plugins):
     return
 
 
-def update_registration(config, unused_plugins):
+def update_account(config, unused_plugins):
     """Modify accounts on the server.
 
     :param config: Configuration object
@@ -749,6 +746,10 @@ def update_registration(config, unused_plugins):
     if len(accounts) == 0:
         return "Could not find an existing account to update."
     if config.email is None:
+        if config.register_unsafely_without_email:
+            return ("--register-unsafely-without-email provided, however, a "
+                    "new e-mail address must\ncurrently be provided when "
+                    "updating a registration.")
         config.email = display_ops.get_email(optional=False)
 
     acc, acme = _determine_account(config)

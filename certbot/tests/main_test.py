@@ -1398,19 +1398,19 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
                 x = self._call_no_clientmock(["register", "--email", "user@example.org"])
                 self.assertTrue("There is an existing account" in x[0])
 
-    def test_update_registration_no_existing_accounts(self):
+    def test_update_account_no_existing_accounts(self):
         # with mock.patch('certbot.main.client') as mocked_client:
         with mock.patch('certbot.main.account') as mocked_account:
             mocked_storage = mock.MagicMock()
             mocked_account.AccountFileStorage.return_value = mocked_storage
             mocked_storage.find_all.return_value = []
             x = self._call_no_clientmock(
-                ["update_registration", "--email",
+                ["update_account", "--email",
                  "user@example.org"])
             self.assertTrue("Could not find an existing account" in x[0])
 
     # TODO: delete the following test when `register --update-registration` is fully deprecated
-    def test_update_registration_no_existing_accounts_deprecated(self):
+    def test_update_account_no_existing_accounts_deprecated(self):
         # with mock.patch('certbot.main.client') as mocked_client:
         with mock.patch('certbot.main.account') as mocked_account:
             mocked_storage = mock.MagicMock()
@@ -1422,7 +1422,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
             self.assertTrue("Could not find an existing account" in x[0])
 
     # TODO: delete the following test when `register --update-registration` is fully deprecated
-    def test_update_registration_unsafely_deprecated(self):
+    def test_update_account_unsafely_deprecated(self):
         # This test will become obsolete when register --update-registration
         # supports removing an e-mail address from the account
         with mock.patch('certbot.main.account') as mocked_account:
@@ -1436,7 +1436,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
 
     @mock.patch('certbot.main.display_ops.get_email')
     @test_util.patch_get_utility()
-    def test_update_registration_with_email(self, mock_utility, mock_email):
+    def test_update_account_with_email(self, mock_utility, mock_email):
         email = "user@example.com"
         mock_email.return_value = email
         with mock.patch('certbot.eff.handle_subscription') as mock_handle:
@@ -1450,7 +1450,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
                         cb_client = mock.MagicMock()
                         mocked_client.Client.return_value = cb_client
                         x = self._call_no_clientmock(
-                            ["update_registration"])
+                            ["update_account"])
                         # When registration change succeeds, the return value
                         # of register() is None
                         self.assertTrue(x[0] is None)
@@ -1464,10 +1464,10 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
                             email in mock_utility().add_message.call_args[0][0])
                         self.assertTrue(mock_handle.called)
 
-
+    # TODO: delete the following test when `register --update-registration` is fully deprecated
     @mock.patch('certbot.main.display_ops.get_email')
     @test_util.patch_get_utility()
-    def test_update_registration_with_email_deprecated(self, mock_utility, mock_email):
+    def test_update_account_with_email_deprecated(self, mock_utility, mock_email):
         email = "user@example.com"
         mock_email.return_value = email
         with mock.patch('certbot.eff.handle_subscription') as mock_handle:
