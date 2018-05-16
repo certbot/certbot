@@ -12,7 +12,7 @@ import josepy as jose
 
 from acme import errors
 # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Callable, Union, Tuple
+from acme.magic_typing import Callable, Union, Tuple, Optional
 
 
 logger = logging.getLogger(__name__)
@@ -138,8 +138,8 @@ def probe_sni(name, host, port=443, timeout=300,
     host_protocol_agnostic = host
     if host == '::' or host == '0':
         # https://github.com/python/typeshed/pull/2136
-        # while PR is not merged, it can't be None
-        host_protocol_agnostic = ''
+        # while PR is not merged, we need to ignore
+        host_protocol_agnostic = None
 
     try:
         # pylint: disable=star-args
@@ -150,8 +150,8 @@ def probe_sni(name, host, port=443, timeout=300,
                 source_address[1]
             ) if socket_kwargs else ""
         )
-        socket_tuple = (host_protocol_agnostic, port)  # type: Tuple[str, int]
-        sock = socket.create_connection(socket_tuple, **socket_kwargs)
+        socket_tuple = (host_protocol_agnostic, port)  # type: Tuple[Optional[str], int]
+        sock = socket.create_connection(socket_tuple, **socket_kwargs)  # type: ignore
     except socket.error as error:
         raise errors.Error(error)
 
