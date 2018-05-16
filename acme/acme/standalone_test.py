@@ -10,7 +10,7 @@ import unittest
 from six.moves import http_client  # pylint: disable=import-error
 from six.moves import socketserver  # type: ignore  # pylint: disable=import-error
 
-from OpenSSL import SSL
+from OpenSSL import SSL # type: ignore # https://github.com/python/typeshed/issues/2052
 import josepy as jose
 import mock
 import requests
