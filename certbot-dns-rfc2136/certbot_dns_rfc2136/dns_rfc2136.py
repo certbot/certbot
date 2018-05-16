@@ -59,14 +59,16 @@ class Authenticator(dns_common.DNSAuthenticator):
         if algorithm:
             if not self.ALGORITHMS.get(algorithm):
                 raise errors.PluginError("Unknown algorithm: {0}.".format(algorithm))
+            credentials.require({
+                'name': 'TSIG key name',
+                'secret': 'TSIG key secret',
+            })
 
     def _setup_credentials(self):
         self.credentials = self._configure_credentials(
             'credentials',
             'RFC 2136 credentials INI file',
             {
-                'name': 'TSIG key name',
-                'secret': 'TSIG key secret',
                 'server': 'The target DNS server'
             },
             self._validate_algorithm
@@ -94,10 +96,14 @@ class _RFC2136Client(object):
     def __init__(self, server, port, key_name, key_secret, key_algorithm):
         self.server = server
         self.port = port
-        self.keyring = dns.tsigkeyring.from_text({
-            key_name: key_secret
-        })
-        self.algorithm = key_algorithm
+        if key_name:
+            self.keyring = dns.tsigkeyring.from_text({
+                key_name: key_secret
+            })
+            self.algorithm = key_algorithm
+        else:
+            self.keyring = None
+            self.algorithm = None
 
     def add_txt_record(self, record_name, record_content, record_ttl):
         """

@@ -69,6 +69,13 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
 
         self.auth.perform([self.achall])
 
+    def test_no_key_passes(self):
+        config = VALID_CONFIG.copy()
+        del config["rfc2136_name"]
+        del config["rfc2136_secret"]
+        dns_test_common.write(config, self.config.rfc2136_credentials)
+
+        self.auth.perform([self.achall])
 
 class RFC2136ClientTest(unittest.TestCase):
 
