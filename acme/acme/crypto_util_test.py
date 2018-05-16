@@ -33,8 +33,13 @@ class SSLSocketAndProbeSNITest(unittest.TestCase):
             # pylint: disable=too-few-public-methods
             # six.moves.* | pylint: disable=attribute-defined-outside-init,no-init
 
+            def cert_selection(self, conn):
+                """Select cert for connection."""
+                return certs.get(conn.get_servername(), None)
+
             def server_bind(self):  # pylint: disable=missing-docstring
-                self.socket = SSLSocket(socket.socket(), certs=certs)
+                self.socket = SSLSocket(socket.socket(),
+                        cert_selection=self.cert_selection)
                 socketserver.TCPServer.server_bind(self)
 
         self.server = _TestServer(('', 0), socketserver.BaseRequestHandler)
