@@ -10,6 +10,7 @@ import unittest
 from six.moves import http_client  # pylint: disable=import-error
 from six.moves import socketserver  # type: ignore  # pylint: disable=import-error
 
+from OpenSSL import SSL
 import josepy as jose
 import mock
 import requests
@@ -119,6 +120,10 @@ class HTTP01ServerTest(unittest.TestCase):
         self.assertFalse(self._test_http01(add=False))
 
 
+@unittest.skipUnless(
+        hasattr(SSL.Connection, "set_alpn_protos") and
+        hasattr(SSL.Context, "set_alpn_select_callback"),
+        "pyOpenSSL too old")
 class TLSALPN01ServerTest(unittest.TestCase):
     """Test for acme.standalone.TLSALPN01Server."""
 
