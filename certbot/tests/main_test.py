@@ -626,7 +626,8 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         toy_stdout = stdout if stdout else six.StringIO()
         with mock.patch('certbot.main.sys.stdout', new=toy_stdout):
             with mock.patch('certbot.main.sys.stderr') as stderr:
-                ret = main.main(args[:])  # NOTE: parser can alter its args!
+                with mock.patch("certbot.util.atexit"):
+                    ret = main.main(args[:])  # NOTE: parser can alter its args!
         return ret, toy_stdout, stderr
 
     def test_no_flags(self):
