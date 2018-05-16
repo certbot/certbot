@@ -10,6 +10,7 @@ from acme import challenges
 from acme import messages
 # pylint: disable=unused-import, no-name-in-module
 from acme.magic_typing import DefaultDict, Dict, List, Set, Collection
+# pylint: enable=unused-import, no-name-in-module
 from certbot import achallenges
 from certbot import errors
 from certbot import error_handler
