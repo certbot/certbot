@@ -15,6 +15,7 @@ import zope.component
 from OpenSSL import crypto
 from OpenSSL import SSL  # type: ignore
 from cryptography.hazmat.backends import default_backend
+# https://github.com/python/typeshed/tree/master/third_party/2/cryptography
 from cryptography import x509  # type: ignore
 
 from acme import crypto_util as acme_crypto_util

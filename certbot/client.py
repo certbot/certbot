@@ -5,6 +5,8 @@ import os
 import platform
 
 from cryptography.hazmat.backends import default_backend
+# https://github.com/python/typeshed/blob/master/third_party/
+# 2/cryptography/hazmat/primitives/asymmetric/rsa.pyi
 from cryptography.hazmat.primitives.asymmetric.rsa import generate_private_key  # type: ignore
 import josepy as jose
 import OpenSSL
@@ -605,7 +607,7 @@ def validate_key_csr(privkey, csr=None):
         if csr.form == "der":
             csr_obj = OpenSSL.crypto.load_certificate_request(
                 OpenSSL.crypto.FILETYPE_ASN1, csr.data)
-            cert_buffer = OpenSSL.crypto.dump_certificate(  # type: ignore
+            cert_buffer = OpenSSL.crypto.dump_certificate_request(
                 OpenSSL.crypto.FILETYPE_PEM, csr_obj
             )
             csr = util.CSR(csr.file, cert_buffer, "pem")

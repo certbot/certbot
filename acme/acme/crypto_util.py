@@ -13,6 +13,7 @@ import josepy as jose
 from acme import errors
 # pylint: disable=unused-import, no-name-in-module
 from acme.magic_typing import Callable, Union, Tuple, Optional
+# pylint: enable=unused-import, no-name-in-module
 
 
 logger = logging.getLogger(__name__)
