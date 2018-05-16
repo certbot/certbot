@@ -28,6 +28,7 @@ from certbot import util
 
 from certbot.plugins import disco
 from certbot.plugins import manual
+from certbot.plugins import selection
 
 import certbot.tests.util as test_util
 
@@ -76,14 +77,15 @@ class RunTest(unittest.TestCase):
         for patch in self.patches:
             patch.stop()
 
-    def _call(self):
-        args = '-a webroot -i null -d {0}'.format(self.domain).split()
+    def _call(self, extra_args=""):
+        args = '-a webroot -i null -d {0} ' + extra_args
+        args = args.format(self.domain).split()
         plugins = disco.PluginsRegistry.find_all()
         config = configuration.NamespaceConfig(
             cli.prepare_and_parse_args(plugins, args))
 
         from certbot.main import run
-        run(config, plugins)
+        return run(config, plugins)
 
     def test_newcert_success(self):
         self.mock_auth.return_value = mock.Mock()
@@ -102,7 +104,21 @@ class RunTest(unittest.TestCase):
         self.mock_find_cert.return_value = True, mock.Mock()
         self._call()
         self.mock_success_renewal.assert_called_once_with([self.domain])
+    
+    def test_must_staple_with_stapling(self):
+        self.mock_auth.return_value = mock.Mock()
+        self.mock_find_cert.return_value = True, None 
+        mock_installer = mock.Mock()
+        mock_authenticator = mock.Mock()
+        with mock.patch('certbot.main.plug_sel.choose_configurator_plugins') as choose_plugin:
+            choose_plugin.return_value = mock_installer, mock_authenticator
+            mock_installer.supported_enhancements.return_value = ["ocsp-stapling"]
+            return_value = self._call('--must-staple')
+        self.assertTrue(return_value is None)
 
+    def test_must_staple_with_no_stapling(self):
+        return_value = self._call('--must-staple')
+        self.assertTrue(return_value is not None)
 
 class CertonlyTest(unittest.TestCase):
     """Tests for certbot.main.certonly."""
