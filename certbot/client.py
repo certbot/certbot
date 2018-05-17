@@ -155,6 +155,10 @@ def register(config, account_storage, tos_cb=None):
         if not config.dry_run:
             logger.info("Registering without email!")
 
+    # If --dry-run is used, and there is no staging account, create one with no email.
+    if config.dry_run:
+        config.email = None
+
     # Each new registration shall use a fresh new key
     key = jose.JWKRSA(key=jose.ComparableRSAKey(
         rsa.generate_private_key(
