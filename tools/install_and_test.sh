@@ -25,5 +25,5 @@ for requirement in "$@" ; do
   fi
   cd "$temp_cwd"
   pytest --numprocesses auto --quiet --pyargs $pkg
-  cd ~-
+  cd -
 done
