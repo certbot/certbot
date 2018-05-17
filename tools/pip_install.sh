@@ -1,4 +1,4 @@
-#!/bin/sh -e
+#!/bin/sh -ex
 # pip installs packages using pinned package versions. If CERTBOT_OLDEST is set
 # to 1, a combination of tools/oldest_constraints.txt,
 # tools/dev_constraints.txt, and local-oldest-requirements.txt contained in the
@@ -39,6 +39,6 @@ set -x
 
 # install the requested packages using the pinned requirements as constraints
 if [ -n "$requirements" ]; then
-    pip install -q --constraint "$all_constraints" --requirement "$requirements"
+    pip install --constraint "$all_constraints" --requirement "$requirements"
 fi
-pip install -q --constraint "$all_constraints" "$@"
+pip install --constraint "$all_constraints" "$@"

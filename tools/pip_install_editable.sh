@@ -1,4 +1,4 @@
-#!/bin/sh -e
+#!/bin/sh -ex
 # pip installs packages in editable mode using certbot-auto's requirements file
 # as constraints
 
