@@ -16,7 +16,7 @@ import textwrap
 
 import six
 
-from letshelp_certbot.magic_typing import List
+from letshelp_certbot.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
 
 _DESCRIPTION = """
 Let's Help is a simple script you can run to help out the Certbot
