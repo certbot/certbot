@@ -2,11 +2,11 @@
 import pkg_resources
 import platform
 
-if(platform.system() == ('FreeBSD' or 'Darwin')):
+if platform.system() in ('FreeBSD', 'Darwin'):
     server_root_tmp = "/usr/local/etc/nginx"
 else:
     server_root_tmp = "/etc/nginx"
-    
+
 CLI_DEFAULTS = dict(
     server_root=server_root_tmp,
     ctl="nginx",
