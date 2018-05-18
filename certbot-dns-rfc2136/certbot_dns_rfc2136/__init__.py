@@ -21,9 +21,10 @@ Credentials
 -----------
 
 Use of this plugin requires a configuration file containing the target DNS
-server and optional port that supports RFC 2136 Dynamic Updates, the name
-of the TSIG key, the TSIG key secret itself and the algorithm used if it's
-different to HMAC-MD5.
+server and optional port that supports RFC 2136 Dynamic Updates. If the
+target DNS server requires authentication using a TSIG key, then the name
+of the TSIG key, the TSIG key secret itself and the algorithm used, if it's
+different from HMAC-MD5, are also required.
 
 .. code-block:: ini
    :name: credentials.ini
