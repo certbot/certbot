@@ -2,9 +2,10 @@
 import logging
 import os
 
+from acme.magic_typing import Set  # pylint: disable=unused-import, no-name-in-module
 from certbot import errors
-
 from certbot.plugins import common
+from certbot_apache.obj import VirtualHost  # pylint: disable=unused-import
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +52,7 @@ class ApacheHttp01(common.TLSSNI01):
         self.challenge_dir = os.path.join(
             self.configurator.config.work_dir,
             "http_challenges")
-        self.moded_vhosts = set()
+        self.moded_vhosts = set()  # type: Set[VirtualHost]
 
     def perform(self):
         """Perform all HTTP-01 challenges."""

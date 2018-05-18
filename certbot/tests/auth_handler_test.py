@@ -10,6 +10,7 @@ import zope.component
 from acme import challenges
 from acme import client as acme_client
 from acme import messages
+from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
 
 from certbot import achallenges
 from certbot import errors
@@ -354,11 +355,12 @@ class PollChallengesTest(unittest.TestCase):
                 acme_util.CHALLENGES, [messages.STATUS_PENDING] * 3, False), [])
         ]
 
-        self.chall_update = {}
+        self.chall_update = {}  # type: Dict[int, achallenges.KeyAuthorizationAnnotatedChallenge]
         for i, aauthzr in enumerate(self.aauthzrs):
             self.chall_update[i] = [
                 challb_to_achall(challb, mock.Mock(key="dummy_key"), self.doms[i])
                 for challb in aauthzr.authzr.body.challenges]
+
 
     @mock.patch("certbot.auth_handler.time")
     def test_poll_challenges(self, unused_mock_time):

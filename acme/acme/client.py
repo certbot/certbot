@@ -12,7 +12,9 @@ from six.moves import http_client  # pylint: disable=import-error
 import josepy as jose
 import OpenSSL
 import re
+from requests_toolbelt.adapters.source import SourceAddressAdapter
 import requests
+from requests.adapters import HTTPAdapter
 import sys
 
 from acme import crypto_util
@@ -857,9 +859,12 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
     :param bool verify_ssl: Whether to verify certificates on SSL connections.
     :param str user_agent: String to send as User-Agent header.
     :param float timeout: Timeout for requests.
+    :param source_address: Optional source address to bind to when making requests.
+    :type source_address: str or tuple(str, int)
     """
     def __init__(self, key, account=None, alg=jose.RS256, verify_ssl=True,
-                 user_agent='acme-python', timeout=DEFAULT_NETWORK_TIMEOUT):
+                 user_agent='acme-python', timeout=DEFAULT_NETWORK_TIMEOUT,
+                 source_address=None):
         # pylint: disable=too-many-arguments
         self.key = key
         self.account = account
@@ -869,6 +874,13 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         self.user_agent = user_agent
         self.session = requests.Session()
         self._default_timeout = timeout
+        adapter = HTTPAdapter()
+
+        if source_address is not None:
+            adapter = SourceAddressAdapter(source_address)
+
+        self.session.mount("http://", adapter)
+        self.session.mount("https://", adapter)
 
     def __del__(self):
         # Try to close the session, but don't show exceptions to the
@@ -1018,7 +1030,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         if response.headers.get("Content-Type") == DER_CONTENT_TYPE:
             debug_content = base64.b64encode(response.content)
         else:
-            debug_content = response.content
+            debug_content = response.content.decode("utf-8")
         logger.debug('Received response:\nHTTP %d\n%s\n\n%s',
                      response.status_code,
                      "\n".join(["{0}: {1}".format(k, v)

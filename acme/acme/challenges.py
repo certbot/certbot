@@ -147,9 +147,9 @@ class KeyAuthorizationChallenge(_TokenChallenge):
 
     :param response_cls: Subclass of `KeyAuthorizationChallengeResponse`
         that will be used to generate `response`.
-
+    :param str typ: type of the challenge
     """
-
+    typ = NotImplemented
     response_cls = NotImplemented
     thumbprint_hash_function = (
         KeyAuthorizationChallengeResponse.thumbprint_hash_function)

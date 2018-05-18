@@ -609,7 +609,7 @@ commands into your individual environment.
 .. note:: ``certbot renew`` exit status will only be 1 if a renewal attempt failed.
   This means ``certbot renew`` exit status will be 0 if no certificate needs to be updated.
   If you write a custom script and expect to run a command only after a certificate was actually renewed
-  you will need to use the ``--post-hook`` since the exit status will be 0 both on successful renewal
+  you will need to use the ``--deploy-hook`` since the exit status will be 0 both on successful renewal
   and when renewal is not necessary.
 
 .. _renewal-config-file:

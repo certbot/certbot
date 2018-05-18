@@ -87,7 +87,6 @@ class ParserTest(ApacheTest):
 def get_apache_configurator(  # pylint: disable=too-many-arguments, too-many-locals
         config_path, vhost_path,
         config_dir, work_dir, version=(2, 4, 7),
-        conf=None,
         os_info="generic",
         conf_vhost_path=None):
     """Create an Apache Configurator with the specified options.
@@ -133,10 +132,6 @@ def get_apache_configurator(  # pylint: disable=too-many-arguments, too-many-loc
                         config_class = configurator.ApacheConfigurator
                     config = config_class(config=mock_le_config, name="apache",
                         version=version)
-                    # This allows testing scripts to set it a bit more
-                    # quickly
-                    if conf is not None:
-                        config.conf = conf  # pragma: no cover
 
                     config.prepare()
     return config

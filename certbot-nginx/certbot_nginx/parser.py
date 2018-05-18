@@ -13,7 +13,7 @@ from certbot import errors
 
 from certbot_nginx import obj
 from certbot_nginx import nginxparser
-
+from acme.magic_typing import Union, Dict, Set, Any, List, Tuple # pylint: disable=unused-import, no-name-in-module
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +28,7 @@ class NginxParser(object):
     """
 
     def __init__(self, root):
-        self.parsed = {}
+        self.parsed = {} # type: Dict[str, Union[List, nginxparser.UnspacedList]]
         self.root = os.path.abspath(root)
         self.config_root = self._find_config_root()
 
@@ -90,7 +90,7 @@ class NginxParser(object):
         """
         servers = self._get_raw_servers()
 
-        addr_to_ssl = {}
+        addr_to_ssl = {} # type: Dict[Tuple[str, str], bool]
         for filename in servers:
             for server, _ in servers[filename]:
                 # Parse the server block to save addr info
@@ -104,9 +104,10 @@ class NginxParser(object):
 
     def _get_raw_servers(self):
         # pylint: disable=cell-var-from-loop
+        # type: () -> Dict
         """Get a map of unparsed all server blocks
         """
-        servers = {}
+        servers = {} # type: Dict[str, Union[List, nginxparser.UnspacedList]]
         for filename in self.parsed:
             tree = self.parsed[filename]
             servers[filename] = []
@@ -727,9 +728,9 @@ def _parse_server_raw(server):
     :rtype: dict
 
     """
-    parsed_server = {'addrs': set(),
-                     'ssl': False,
-                     'names': set()}
+    addrs = set() # type: Set[obj.Addr]
+    ssl = False # type: bool
+    names = set() # type: Set[str]
 
     apply_ssl_to_all_addrs = False
 
@@ -739,17 +740,21 @@ def _parse_server_raw(server):
         if directive[0] == 'listen':
             addr = obj.Addr.fromstring(" ".join(directive[1:]))
             if addr:
-                parsed_server['addrs'].add(addr)
+                addrs.add(addr)
                 if addr.ssl:
-                    parsed_server['ssl'] = True
+                    ssl = True
         elif directive[0] == 'server_name':
-            parsed_server['names'].update(x.strip('"\'') for x in directive[1:])
+            names.update(x.strip('"\'') for x in directive[1:])
         elif _is_ssl_on_directive(directive):
-            parsed_server['ssl'] = True
+            ssl = True
             apply_ssl_to_all_addrs = True
 
     if apply_ssl_to_all_addrs:
-        for addr in parsed_server['addrs']:
+        for addr in addrs:
             addr.ssl = True
 
-    return parsed_server
+    return {
+        'addrs': addrs,
+        'ssl': ssl,
+        'names': names
+    }

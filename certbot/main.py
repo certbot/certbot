@@ -11,6 +11,7 @@ import josepy as jose
 import zope.component
 
 from acme import errors as acme_errors
+from acme.magic_typing import Union  # pylint: disable=unused-import, no-name-in-module
 
 import certbot
 
@@ -324,7 +325,7 @@ def _find_lineage_for_domains_and_certname(config, domains, certname):
                 return "newcert", None
             else:
                 raise errors.ConfigurationError("No certificate with name {0} found. "
-                    "Use -d to specify domains, or run certbot --certificates to see "
+                    "Use -d to specify domains, or run certbot certificates to see "
                     "possible certificate names.".format(certname))
 
 def _get_added_removed(after, before):
@@ -340,7 +341,10 @@ def _get_added_removed(after, before):
 def _format_list(character, strings):
     """Format list with given character
     """
-    formatted = "{br}{ch} " + "{br}{ch} ".join(strings)
+    if len(strings) == 0:
+        formatted = "{br}(None)"
+    else:
+        formatted = "{br}{ch} " + "{br}{ch} ".join(strings)
     return formatted.format(
         ch=character,
         br=os.linesep
@@ -517,8 +521,8 @@ def _determine_account(config):
                     config, account_storage, tos_cb=_tos_cb)
             except errors.MissingCommandlineFlag:
                 raise
-            except errors.Error as error:
-                logger.debug(error, exc_info=True)
+            except errors.Error:
+                logger.debug("", exc_info=True)
                 raise errors.Error(
                     "Unable to register an account with ACME server")
 
@@ -1268,7 +1272,8 @@ def set_displayer(config):
     """
     if config.quiet:
         config.noninteractive_mode = True
-        displayer = display_util.NoninteractiveDisplay(open(os.devnull, "w"))
+        displayer = display_util.NoninteractiveDisplay(open(os.devnull, "w")) \
+        # type: Union[None, display_util.NoninteractiveDisplay, display_util.FileDisplay]
     elif config.noninteractive_mode:
         displayer = display_util.NoninteractiveDisplay(sys.stdout)
     else:

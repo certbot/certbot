@@ -40,6 +40,12 @@ Certbot.
    ./certbot-auto --debug --os-packages-only
    tools/venv.sh
 
+If you have Python3 available and want to use it, run the ``venv3.sh`` script.
+
+.. code-block:: shell
+
+   tools/venv3.sh
+
 .. note:: You may need to repeat this when
   Certbot's dependencies change or when a new plugin is introduced.
 
@@ -50,6 +56,8 @@ latter by running:
 .. code-block:: shell
 
    source venv/bin/activate
+   # or
+   source venv3/bin/activate
 
 After running this command, ``certbot`` and development tools like ``ipdb``,
 ``ipython``, ``pytest``, and ``tox`` are available in the shell where you ran
