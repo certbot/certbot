@@ -12,7 +12,8 @@ import josepy as jose
 
 from acme import errors
 # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Callable, Text, Union
+from acme.magic_typing import Callable, Union, Tuple, Optional
+# pylint: enable=unused-import, no-name-in-module
 
 
 logger = logging.getLogger(__name__)
@@ -135,14 +136,23 @@ def probe_sni(name, host, port=443, timeout=300,
 
     socket_kwargs = {'source_address': source_address}
 
-    host_protocol_agnostic = None if host == '::' or host == '0' else host
+    host_protocol_agnostic = host
+    if host == '::' or host == '0':
+        # https://github.com/python/typeshed/pull/2136
+        # while PR is not merged, we need to ignore
+        host_protocol_agnostic = None
 
     try:
         # pylint: disable=star-args
-        logger.debug("Attempting to connect to %s:%d%s.", host_protocol_agnostic, port,
-            " from {0}:{1}".format(source_address[0], source_address[1]) if \
-            socket_kwargs else "")
-        sock = socket.create_connection((host_protocol_agnostic, port), **socket_kwargs)
+        logger.debug(
+            "Attempting to connect to %s:%d%s.", host_protocol_agnostic, port,
+            " from {0}:{1}".format(
+                source_address[0],
+                source_address[1]
+            ) if socket_kwargs else ""
+        )
+        socket_tuple = (host_protocol_agnostic, port)  # type: Tuple[Optional[str], int]
+        sock = socket.create_connection(socket_tuple, **socket_kwargs)  # type: ignore
     except socket.error as error:
         raise errors.Error(error)
 

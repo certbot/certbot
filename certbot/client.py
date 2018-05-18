@@ -5,7 +5,9 @@ import os
 import platform
 
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.asymmetric import rsa
+# https://github.com/python/typeshed/blob/master/third_party/
+# 2/cryptography/hazmat/primitives/asymmetric/rsa.pyi
+from cryptography.hazmat.primitives.asymmetric.rsa import generate_private_key  # type: ignore
 import josepy as jose
 import OpenSSL
 import zope.component
@@ -160,11 +162,11 @@ def register(config, account_storage, tos_cb=None):
         config.email = None
 
     # Each new registration shall use a fresh new key
-    key = jose.JWKRSA(key=jose.ComparableRSAKey(
-        rsa.generate_private_key(
+    rsa_key = generate_private_key(
             public_exponent=65537,
             key_size=config.rsa_key_size,
-            backend=default_backend())))
+            backend=default_backend())
+    key = jose.JWKRSA(key=jose.ComparableRSAKey(rsa_key))
     acme = acme_from_config_key(config, key)
     # TODO: add phone?
     regr = perform_registration(acme, config, tos_cb)
@@ -609,8 +611,10 @@ def validate_key_csr(privkey, csr=None):
         if csr.form == "der":
             csr_obj = OpenSSL.crypto.load_certificate_request(
                 OpenSSL.crypto.FILETYPE_ASN1, csr.data)
-            csr = util.CSR(csr.file, OpenSSL.crypto.dump_certificate(
-                OpenSSL.crypto.FILETYPE_PEM, csr_obj), "pem")
+            cert_buffer = OpenSSL.crypto.dump_certificate_request(
+                OpenSSL.crypto.FILETYPE_PEM, csr_obj
+            )
+            csr = util.CSR(csr.file, cert_buffer, "pem")
 
         # If CSR is provided, it must be readable and valid.
         if csr.data and not crypto_util.valid_csr(csr.data):

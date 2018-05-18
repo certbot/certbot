@@ -8,15 +8,18 @@ import hashlib
 import logging
 import os
 
-import OpenSSL
+
 import pyrfc3339
 import six
 import zope.component
+from OpenSSL import crypto
+from OpenSSL import SSL  # type: ignore
 from cryptography.hazmat.backends import default_backend
-from cryptography import x509 # type: ignore
+# https://github.com/python/typeshed/tree/master/third_party/2/cryptography
+from cryptography import x509  # type: ignore
 
 from acme import crypto_util as acme_crypto_util
-
+from acme.magic_typing import IO  # pylint: disable=unused-import, no-name-in-module
 from certbot import errors
 from certbot import interfaces
 from certbot import util
@@ -47,7 +50,7 @@ def init_save_key(key_size, key_dir, keyname="key-certbot.pem"):
     try:
         key_pem = make_key(key_size)
     except ValueError as err:
-        logger.exception(err)
+        logger.error("", exc_info=True)
         raise err
 
     config = zope.component.getUtility(interfaces.IConfig)
@@ -111,11 +114,11 @@ def valid_csr(csr):
 
     """
     try:
-        req = OpenSSL.crypto.load_certificate_request(
-            OpenSSL.crypto.FILETYPE_PEM, csr)
+        req = crypto.load_certificate_request(
+            crypto.FILETYPE_PEM, csr)
         return req.verify(req.get_pubkey())
-    except OpenSSL.crypto.Error as error:
-        logger.debug(error, exc_info=True)
+    except crypto.Error:
+        logger.debug("", exc_info=True)
         return False
 
 
@@ -129,13 +132,13 @@ def csr_matches_pubkey(csr, privkey):
     :rtype: bool
 
     """
-    req = OpenSSL.crypto.load_certificate_request(
-        OpenSSL.crypto.FILETYPE_PEM, csr)
-    pkey = OpenSSL.crypto.load_privatekey(OpenSSL.crypto.FILETYPE_PEM, privkey)
+    req = crypto.load_certificate_request(
+        crypto.FILETYPE_PEM, csr)
+    pkey = crypto.load_privatekey(crypto.FILETYPE_PEM, privkey)
     try:
         return req.verify(pkey)
-    except OpenSSL.crypto.Error as error:
-        logger.debug(error, exc_info=True)
+    except crypto.Error:
+        logger.debug("", exc_info=True)
         return False
 
 
@@ -145,26 +148,26 @@ def import_csr_file(csrfile, data):
     :param str csrfile: CSR filename
     :param str data: contents of the CSR file
 
-    :returns: (`OpenSSL.crypto.FILETYPE_PEM`,
+    :returns: (`crypto.FILETYPE_PEM`,
                util.CSR object representing the CSR,
                list of domains requested in the CSR)
     :rtype: tuple
 
     """
-    PEM = OpenSSL.crypto.FILETYPE_PEM
-    load = OpenSSL.crypto.load_certificate_request
+    PEM = crypto.FILETYPE_PEM
+    load = crypto.load_certificate_request
     try:
         # Try to parse as DER first, then fall back to PEM.
-        csr = load(OpenSSL.crypto.FILETYPE_ASN1, data)
-    except OpenSSL.crypto.Error:
+        csr = load(crypto.FILETYPE_ASN1, data)
+    except crypto.Error:
         try:
             csr = load(PEM, data)
-        except OpenSSL.crypto.Error:
+        except crypto.Error:
             raise errors.Error("Failed to parse CSR file: {0}".format(csrfile))
 
     domains = _get_names_from_loaded_cert_or_req(csr)
     # Internally we always use PEM, so re-encode as PEM before returning.
-    data_pem = OpenSSL.crypto.dump_certificate_request(PEM, csr)
+    data_pem = crypto.dump_certificate_request(PEM, csr)
     return PEM, util.CSR(file=csrfile, data=data_pem, form="pem"), domains
 
 
@@ -178,9 +181,9 @@ def make_key(bits):
 
     """
     assert bits >= 1024  # XXX
-    key = OpenSSL.crypto.PKey()
-    key.generate_key(OpenSSL.crypto.TYPE_RSA, bits)
-    return OpenSSL.crypto.dump_privatekey(OpenSSL.crypto.FILETYPE_PEM, key)
+    key = crypto.PKey()
+    key.generate_key(crypto.TYPE_RSA, bits)
+    return crypto.dump_privatekey(crypto.FILETYPE_PEM, key)
 
 
 def valid_privkey(privkey):
@@ -193,9 +196,9 @@ def valid_privkey(privkey):
 
     """
     try:
-        return OpenSSL.crypto.load_privatekey(
-            OpenSSL.crypto.FILETYPE_PEM, privkey).check()
-    except (TypeError, OpenSSL.crypto.Error):
+        return crypto.load_privatekey(
+            crypto.FILETYPE_PEM, privkey).check()
+    except (TypeError, crypto.Error):
         return False
 
 
@@ -224,13 +227,14 @@ def verify_renewable_cert_sig(renewable_cert):
     :raises errors.Error: If signature verification fails.
     """
     try:
-        with open(renewable_cert.chain, 'rb') as chain:
-            chain, _ = pyopenssl_load_certificate(chain.read())
-        with open(renewable_cert.cert, 'rb') as cert:
-            cert = x509.load_pem_x509_certificate(cert.read(), default_backend())
+        with open(renewable_cert.chain, 'rb') as chain_file:  # type: IO[bytes]
+            chain, _ = pyopenssl_load_certificate(chain_file.read())
+        with open(renewable_cert.cert, 'rb') as cert_file:  # type: IO[bytes]
+            cert = x509.load_pem_x509_certificate(
+                cert_file.read(), default_backend())
         hash_name = cert.signature_hash_algorithm.name
-        OpenSSL.crypto.verify(chain, cert.signature, cert.tbs_certificate_bytes, hash_name)
-    except (IOError, ValueError, OpenSSL.crypto.Error) as e:
+        crypto.verify(chain, cert.signature, cert.tbs_certificate_bytes, hash_name)
+    except (IOError, ValueError, crypto.Error) as e:
         error_str = "verifying the signature of the cert located at {0} has failed. \
                 Details: {1}".format(renewable_cert.cert, e)
         logger.exception(error_str)
@@ -246,11 +250,11 @@ def verify_cert_matches_priv_key(cert_path, key_path):
     :raises errors.Error: If they don't match.
     """
     try:
-        context = OpenSSL.SSL.Context(OpenSSL.SSL.SSLv23_METHOD)
+        context = SSL.Context(SSL.SSLv23_METHOD)
         context.use_certificate_file(cert_path)
         context.use_privatekey_file(key_path)
         context.check_privatekey()
-    except (IOError, OpenSSL.SSL.Error) as e:
+    except (IOError, SSL.Error) as e:
         error_str = "verifying the cert located at {0} matches the \
                 private key located at {1} has failed. \
                 Details: {2}".format(cert_path,
@@ -267,12 +271,12 @@ def verify_fullchain(renewable_cert):
     :raises errors.Error: If cert and chain do not combine to fullchain.
     """
     try:
-        with open(renewable_cert.chain) as chain:
-            chain = chain.read()
-        with open(renewable_cert.cert) as cert:
-            cert = cert.read()
-        with open(renewable_cert.fullchain) as fullchain:
-            fullchain = fullchain.read()
+        with open(renewable_cert.chain) as chain_file:  # type: IO[str]
+            chain = chain_file.read()
+        with open(renewable_cert.cert) as cert_file:  # type: IO[str]
+            cert = cert_file.read()
+        with open(renewable_cert.fullchain) as fullchain_file:  # type: IO[str]
+            fullchain = fullchain_file.read()
         if (cert + chain) != fullchain:
             error_str = "fullchain does not match cert + chain for {0}!"
             error_str = error_str.format(renewable_cert.lineagename)
@@ -294,43 +298,43 @@ def pyopenssl_load_certificate(data):
 
     openssl_errors = []
 
-    for file_type in (OpenSSL.crypto.FILETYPE_PEM, OpenSSL.crypto.FILETYPE_ASN1):
+    for file_type in (crypto.FILETYPE_PEM, crypto.FILETYPE_ASN1):
         try:
-            return OpenSSL.crypto.load_certificate(file_type, data), file_type
-        except OpenSSL.crypto.Error as error:  # TODO: other errors?
+            return crypto.load_certificate(file_type, data), file_type
+        except crypto.Error as error:  # TODO: other errors?
             openssl_errors.append(error)
     raise errors.Error("Unable to load: {0}".format(",".join(
         str(error) for error in openssl_errors)))
 
 
 def _load_cert_or_req(cert_or_req_str, load_func,
-                      typ=OpenSSL.crypto.FILETYPE_PEM):
+                      typ=crypto.FILETYPE_PEM):
     try:
         return load_func(typ, cert_or_req_str)
-    except OpenSSL.crypto.Error as error:
-        logger.exception(error)
+    except crypto.Error:
+        logger.error("", exc_info=True)
         raise
 
 
 def _get_sans_from_cert_or_req(cert_or_req_str, load_func,
-                               typ=OpenSSL.crypto.FILETYPE_PEM):
+                               typ=crypto.FILETYPE_PEM):
     # pylint: disable=protected-access
     return acme_crypto_util._pyopenssl_cert_or_req_san(_load_cert_or_req(
         cert_or_req_str, load_func, typ))
 
 
-def get_sans_from_cert(cert, typ=OpenSSL.crypto.FILETYPE_PEM):
+def get_sans_from_cert(cert, typ=crypto.FILETYPE_PEM):
     """Get a list of Subject Alternative Names from a certificate.
 
     :param str cert: Certificate (encoded).
-    :param typ: `OpenSSL.crypto.FILETYPE_PEM` or `OpenSSL.crypto.FILETYPE_ASN1`
+    :param typ: `crypto.FILETYPE_PEM` or `crypto.FILETYPE_ASN1`
 
     :returns: A list of Subject Alternative Names.
     :rtype: list
 
     """
     return _get_sans_from_cert_or_req(
-        cert, OpenSSL.crypto.load_certificate, typ)
+        cert, crypto.load_certificate, typ)
 
 
 def _get_names_from_cert_or_req(cert_or_req, load_func, typ):
@@ -343,24 +347,24 @@ def _get_names_from_loaded_cert_or_req(loaded_cert_or_req):
     return acme_crypto_util._pyopenssl_cert_or_req_all_names(loaded_cert_or_req)
 
 
-def get_names_from_cert(csr, typ=OpenSSL.crypto.FILETYPE_PEM):
+def get_names_from_cert(csr, typ=crypto.FILETYPE_PEM):
     """Get a list of domains from a cert, including the CN if it is set.
 
     :param str cert: Certificate (encoded).
-    :param typ: `OpenSSL.crypto.FILETYPE_PEM` or `OpenSSL.crypto.FILETYPE_ASN1`
+    :param typ: `crypto.FILETYPE_PEM` or `crypto.FILETYPE_ASN1`
 
     :returns: A list of domain names.
     :rtype: list
 
     """
     return _get_names_from_cert_or_req(
-        csr, OpenSSL.crypto.load_certificate, typ)
+        csr, crypto.load_certificate, typ)
 
 
-def dump_pyopenssl_chain(chain, filetype=OpenSSL.crypto.FILETYPE_PEM):
+def dump_pyopenssl_chain(chain, filetype=crypto.FILETYPE_PEM):
     """Dump certificate chain into a bundle.
 
-    :param list chain: List of `OpenSSL.crypto.X509` (or wrapped in
+    :param list chain: List of `crypto.X509` (or wrapped in
         :class:`josepy.util.ComparableX509`).
 
     """
@@ -378,7 +382,7 @@ def notBefore(cert_path):
     :rtype: :class:`datetime.datetime`
 
     """
-    return _notAfterBefore(cert_path, OpenSSL.crypto.X509.get_notBefore)
+    return _notAfterBefore(cert_path, crypto.X509.get_notBefore)
 
 
 def notAfter(cert_path):
@@ -390,15 +394,15 @@ def notAfter(cert_path):
     :rtype: :class:`datetime.datetime`
 
     """
-    return _notAfterBefore(cert_path, OpenSSL.crypto.X509.get_notAfter)
+    return _notAfterBefore(cert_path, crypto.X509.get_notAfter)
 
 
 def _notAfterBefore(cert_path, method):
     """Internal helper function for finding notbefore/notafter.
 
     :param str cert_path: path to a cert in PEM format
-    :param function method: one of ``OpenSSL.crypto.X509.get_notBefore``
-        or ``OpenSSL.crypto.X509.get_notAfter``
+    :param function method: one of ``crypto.X509.get_notBefore``
+        or ``crypto.X509.get_notAfter``
 
     :returns: the notBefore or notAfter value from the cert at cert_path
     :rtype: :class:`datetime.datetime`
@@ -406,7 +410,7 @@ def _notAfterBefore(cert_path, method):
     """
     # pylint: disable=redefined-outer-name
     with open(cert_path) as f:
-        x509 = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM,
+        x509 = crypto.load_certificate(crypto.FILETYPE_PEM,
                                                f.read())
     # pyopenssl always returns bytes
     timestamp = method(x509)
@@ -443,7 +447,7 @@ def cert_and_chain_from_fullchain(fullchain_pem):
     :rtype: tuple
 
     """
-    cert = OpenSSL.crypto.dump_certificate(OpenSSL.crypto.FILETYPE_PEM,
-        OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM, fullchain_pem)).decode()
+    cert = crypto.dump_certificate(crypto.FILETYPE_PEM,
+        crypto.load_certificate(crypto.FILETYPE_PEM, fullchain_pem)).decode()
     chain = fullchain_pem[len(cert):].lstrip()
     return (cert, chain)

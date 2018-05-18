@@ -8,6 +8,9 @@ class TypingClass(object):
 
 try:
     # mypy doesn't respect modifying sys.modules
-    from typing import * # pylint: disable=wildcard-import, unused-wildcard-import
+    from typing import *  # pylint: disable=wildcard-import, unused-wildcard-import
+    # pylint: disable=unused-import
+    from typing import Collection, IO  # type: ignore
+    # pylint: enable=unused-import
 except ImportError:
     sys.modules[__name__] = TypingClass()

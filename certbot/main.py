@@ -11,6 +11,7 @@ import josepy as jose
 import zope.component
 
 from acme import errors as acme_errors
+from acme.magic_typing import Union  # pylint: disable=unused-import, no-name-in-module
 
 import certbot
 
@@ -520,8 +521,8 @@ def _determine_account(config):
                     config, account_storage, tos_cb=_tos_cb)
             except errors.MissingCommandlineFlag:
                 raise
-            except errors.Error as error:
-                logger.debug(error, exc_info=True)
+            except errors.Error:
+                logger.debug("", exc_info=True)
                 raise errors.Error(
                     "Unable to register an account with ACME server")
 
@@ -1271,7 +1272,8 @@ def set_displayer(config):
     """
     if config.quiet:
         config.noninteractive_mode = True
-        displayer = display_util.NoninteractiveDisplay(open(os.devnull, "w"))
+        displayer = display_util.NoninteractiveDisplay(open(os.devnull, "w")) \
+        # type: Union[None, display_util.NoninteractiveDisplay, display_util.FileDisplay]
     elif config.noninteractive_mode:
         displayer = display_util.NoninteractiveDisplay(sys.stdout)
     else:
