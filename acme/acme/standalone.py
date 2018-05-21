@@ -88,10 +88,9 @@ class BaseDualNetworkedServers(object):
             except socket.error:
                 if self.servers:
                     # Already bound using IPv6.
-                    logger.debug("""Certbot wasn't able to bind to %s:%s using
-                    %s, this is often expected due to the dual stack nature of
-                    IPv6 socket implementations.""", new_address[0],
-                    new_address[1], "IPv6" if ip_version else "IPv4")
+                    logger.debug("Certbot wasn't able to bind to %s:%s using %s, this is often " +
+                    "expected due to the dual stack nature of IPv6 socket implementations.",
+                    new_address[0], new_address[1], "IPv6" if ip_version else "IPv4")
                 else:
                     logger.debug("Failed to bind to %s:%s using %s", new_address[0],
                         new_address[1], "IPv6" if ip_version else "IPv4")
