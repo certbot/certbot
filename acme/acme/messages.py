@@ -1,6 +1,7 @@
 """ACME protocol messages."""
 import collections
 import six
+import json
 
 import josepy as jose
 
@@ -274,6 +275,7 @@ class Registration(ResourceBody):
     agreement = jose.Field('agreement', omitempty=True)
     status = jose.Field('status', omitempty=True)
     terms_of_service_agreed = jose.Field('termsOfServiceAgreed', omitempty=True)
+    external_account_binding = jose.Field('externalAccountBinding', omitempty=True)
 
     phone_prefix = 'tel:'
     email_prefix = 'mailto:'
@@ -287,6 +289,34 @@ class Registration(ResourceBody):
         if email is not None:
             details.append(cls.email_prefix + email)
         kwargs['contact'] = tuple(details)
+        return cls(**kwargs)
+
+    @classmethod
+    def from_eab_data(cls, key=None, kid=None, hmac=None, phone=None, email=None, **kwargs):
+        """Create registration resource from contact details for EAB use."""
+        details = list(kwargs.pop('contact', ()))
+        if phone is not None:
+            details.append(cls.phone_prefix + phone)
+        if email is not None:
+            details.append(cls.email_prefix + email)
+        kwargs['contact'] = tuple(details)
+
+        # jwk_key = jose.jwk.JWKRSA(key=key)
+        key_json = json.dumps(key.public_key().to_partial_json())
+        # b64_key_json = jose.b64.b64encode(key_json)
+        hmac_key = jose.b64.b64decode(hmac)
+        jws = jose.JWS.sign(
+            payload=key_json,
+            key=jose.jwk.JWKOct(key=hmac_key),
+            alg=jose.jwa.HS256,
+            kid=kid,
+            include_jwk=False,
+            protect=frozenset(['alg', 'kid'])
+        )
+        # eab_content = json.dumps(jws.to_partial_json())
+        eab_content = jws.to_partial_json()
+
+        kwargs['external_account_binding'] = eab_content
         return cls(**kwargs)
 
     def _filter_contact(self, prefix):

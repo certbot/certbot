@@ -192,7 +192,10 @@ def perform_registration(acme, config, tos_cb):
     :rtype: `acme.messages.RegistrationResource`
     """
     try:
-        return acme.new_account_and_tos(messages.NewRegistration.from_data(email=config.email),
+        return acme.new_account_and_tos(messages.NewRegistration.from_eab_data(key=acme.client.net.key,
+                                                                               kid=config.kid,
+                                                                               hmac=config.hmac,
+                                                                               email=config.email),
             tos_cb)
     except messages.Error as e:
         if e.code == "invalidEmail" or e.code == "invalidContact":
