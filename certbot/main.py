@@ -487,6 +487,21 @@ def _determine_account(config):
     :raises errors.Error: If unable to register an account with ACME server
 
     """
+    def _tos_cb(terms_of_service):
+        if config.tos:
+            return True
+        msg = ("Please read the Terms of Service at {0}. You "
+               "must agree in order to register with the ACME "
+               "server at {1}".format(
+                   terms_of_service, config.server))
+        obj = zope.component.getUtility(interfaces.IDisplay)
+        result = obj.yesno(msg, "Agree", "Cancel",
+                         cli_flag="--agree-tos", force_interactive=True)
+        if not result:
+            raise errors.Error(
+                "Registration cannot proceed without accepting "
+                "Terms of Service.")
+
     account_storage = account.AccountFileStorage(config)
     acme = None
 
@@ -501,21 +516,6 @@ def _determine_account(config):
         else:  # no account registered yet
             if config.email is None and not config.register_unsafely_without_email:
                 config.email = display_ops.get_email()
-
-            def _tos_cb(terms_of_service):
-                if config.tos:
-                    return True
-                msg = ("Please read the Terms of Service at {0}. You "
-                       "must agree in order to register with the ACME "
-                       "server at {1}".format(
-                           terms_of_service, config.server))
-                obj = zope.component.getUtility(interfaces.IDisplay)
-                result = obj.yesno(msg, "Agree", "Cancel",
-                                 cli_flag="--agree-tos", force_interactive=True)
-                if not result:
-                    raise errors.Error(
-                        "Registration cannot proceed without accepting "
-                        "Terms of Service.")
             try:
                 acc, acme = client.register(
                     config, account_storage, tos_cb=_tos_cb)
@@ -735,8 +735,9 @@ def register(config, unused_plugins):
     acc, acme = _determine_account(config)
     cb_client = client.Client(config, acc, None, None, acme=acme)
     # We rely on an exception to interrupt this process if it didn't work.
+    acc_contacts = ['mailto:' + email for email in config.email.split(',')]
     acc.regr = cb_client.acme.update_registration(acc.regr.update(
-        body=acc.regr.body.update(contact=('mailto:' + config.email,))))
+        body=acc.regr.body.update(contact=acc_contacts)))
     account_storage.save_regr(acc, cb_client.acme)
     eff.handle_subscription(config)
     add_msg("Your e-mail address was updated to {0}.".format(config.email))

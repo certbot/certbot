@@ -430,7 +430,7 @@ VERB_HELP = [
     }),
     ("enhance", {
         "short": "Add security enhancements to your existing configuration",
-        "opts": ("Helps to harden the TLS configration by adding security enhancements "
+        "opts": ("Helps to harden the TLS configuration by adding security enhancements "
                  "to already existing configuration."),
         "usage": "\n\n  certbot enhance [options]\n\n"
     }),

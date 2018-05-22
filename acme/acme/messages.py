@@ -285,7 +285,7 @@ class Registration(ResourceBody):
         if phone is not None:
             details.append(cls.phone_prefix + phone)
         if email is not None:
-            details.append(cls.email_prefix + email)
+            details.extend([cls.email_prefix + mail for mail in email.split(',')])
         kwargs['contact'] = tuple(details)
         return cls(**kwargs)
 
