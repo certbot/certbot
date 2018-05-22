@@ -18,9 +18,18 @@ FAKE_DNS=$(ifconfig docker0 | grep "inet addr:" | cut -d: -f2 | awk '{ print $1}
 sed -i "s/FAKE_DNS: .*/FAKE_DNS: ${FAKE_DNS}/" docker-compose.yml
 
 docker-compose up -d
+printf "\n10.77.77.77 boulder" | sudo tee -a /etc/hosts
 
 set +x  # reduce verbosity while waiting for boulder
-until curl http://localhost:4000/directory 2>/dev/null; do
-  echo waiting for boulder
-  sleep 1
+for n in `seq 1 300` ; do
+  if curl http://boulder:4000/directory 2>/dev/null ; then
+    break
+  else
+    echo waiting for boulder
+    sleep 1
+  fi
+  if [[ $n == 300 ]]; then
+    echo timed out waiting for boulder
+    exit 1
+  fi
 done
