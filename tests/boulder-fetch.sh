@@ -17,7 +17,7 @@ FAKE_DNS=$(ifconfig docker0 | grep "inet addr:" | cut -d: -f2 | awk '{ print $1}
 [ -z "$FAKE_DNS" ] && echo Unable to find the IP for docker0 && exit 1
 sed -i "s/FAKE_DNS: .*/FAKE_DNS: ${FAKE_DNS}/" docker-compose.yml
 
-docker-compose up -d
+docker-compose up -d boulder
 
 set +x  # reduce verbosity while waiting for boulder
 until curl http://localhost:4000/directory 2>/dev/null; do
