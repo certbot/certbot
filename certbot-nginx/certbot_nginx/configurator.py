@@ -334,7 +334,7 @@ class NginxConfigurator(common.Installer):
 
     def _vhost_from_duplicated_default(self, domain, port=None):
         if self.new_vhost is None:
-            default_vhost = self._get_default_vhost(port)
+            default_vhost = self._get_default_vhost(port, domain)
             self.new_vhost = self.parser.duplicate_vhost(default_vhost,
                 remove_singleton_listen_params=True)
             self.new_vhost.names = set()
@@ -350,7 +350,7 @@ class NginxConfigurator(common.Installer):
             name_block[0].append(name)
         self.parser.update_or_add_server_directives(vhost, name_block)
 
-    def _get_default_vhost(self, port):
+    def _get_default_vhost(self, port, domain):
         vhost_list = self.parser.get_vhosts()
         # if one has default_server set, return that one
         default_vhosts = []
@@ -367,7 +367,7 @@ class NginxConfigurator(common.Installer):
         # TODO: present a list of vhosts for user to choose from
 
         raise errors.MisconfigurationError("Could not automatically find a matching server"
-            " block. Set the `server_name` directive to use the Nginx installer.")
+            " block for %s. Set the `server_name` directive to use the Nginx installer." % domain)
 
     def _get_ranked_matches(self, target_name):
         """Returns a ranked list of vhosts that match target_name.
