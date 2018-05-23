@@ -9,6 +9,7 @@ import sys
 
 import six
 
+from acme.magic_typing import Dict, List, Set  # pylint: disable=unused-import, no-name-in-module
 from certbot import errors
 
 logger = logging.getLogger(__name__)
@@ -38,9 +39,9 @@ class ApacheParser(object):
         # issues with aug.load() after adding new files / defines to parse tree
         self.configurator = configurator
 
-        self.modules = set()
-        self.parser_paths = {}
-        self.variables = {}
+        self.modules = set()  # type: Set[str]
+        self.parser_paths = {}  # type: Dict[str, List[str]]
+        self.variables = {}  # type: Dict[str, str]
 
         self.aug = aug
         # Find configuration root and make sure augeas can parse it.
@@ -119,7 +120,7 @@ class ApacheParser(object):
             the iteration issue.  Else... parse and enable mods at same time.
 
         """
-        mods = set()
+        mods = set()  # type: Set[str]
         matches = self.find_dir("LoadModule")
         iterator = iter(matches)
         # Make sure prev_size != cur_size for do: while: iteration
@@ -408,7 +409,7 @@ class ApacheParser(object):
         else:
             arg_suffix = "/*[self::arg=~regexp('%s')]" % case_i(arg)
 
-        ordered_matches = []
+        ordered_matches = []  # type: List[str]
 
         # TODO: Wildcards should be included in alphabetical order
         # https://httpd.apache.org/docs/2.4/mod/core.html#include
