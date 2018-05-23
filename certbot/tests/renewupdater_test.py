@@ -19,7 +19,7 @@ class RenewUpdaterTest(unittest.TestCase):
                 # pylint: disable=unused-argument
                 self.restart = mock.MagicMock()
                 self.callcounter = mock.MagicMock()
-            def generic_updates(self, domain, *args, **kwargs):
+            def generic_updates(self, lineage, *args, **kwargs):
                 self.callcounter(*args, **kwargs)
 
         class MockInstallerRenewDeployer(interfaces.RenewDeployer):
@@ -46,9 +46,7 @@ class RenewUpdaterTest(unittest.TestCase):
     def test_server_updates(self, _, mock_select, mock_getsave):
         config = self.get_config({"disable_renew_updates": False})
 
-        lineage = mock.MagicMock()
-        lineage.names.return_value = ['firstdomain', 'seconddomain']
-        mock_getsave.return_value = lineage
+        mock_getsave.return_value = mock.MagicMock()
         mock_generic_updater = self.generic_updater
 
         # Generic Updater
@@ -59,14 +57,13 @@ class RenewUpdaterTest(unittest.TestCase):
 
         mock_generic_updater.restart.reset_mock()
         mock_generic_updater.callcounter.reset_mock()
-        updater.run_generic_updaters(config, None, lineage)
-        self.assertEqual(mock_generic_updater.callcounter.call_count, 2)
+        updater.run_generic_updaters(config, None, mock.MagicMock())
+        self.assertEqual(mock_generic_updater.callcounter.call_count, 1)
         self.assertFalse(mock_generic_updater.restart.called)
 
     def test_renew_deployer(self):
         config = self.get_config({"disable_renew_updates": False})
         lineage = mock.MagicMock()
-        lineage.names.return_value = ['firstdomain', 'seconddomain']
         mock_deployer = self.renew_deployer
         updater.run_renewal_deployer(lineage, mock_deployer, config)
         self.assertTrue(mock_deployer.callcounter.called_with(lineage))
