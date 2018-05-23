@@ -83,9 +83,22 @@ class BaseDualNetworkedServers(object):
                 new_address = (server_address[0],) + (port,) + server_address[2:]
                 new_args = (new_address,) + remaining_args
                 server = ServerClass(*new_args, **kwargs) # pylint: disable=star-args
-            except socket.error:
-                logger.debug("Failed to bind to %s:%s using %s", new_address[0],
+                logger.debug(
+                    "Successfully bound to %s:%s using %s", new_address[0],
                     new_address[1], "IPv6" if ip_version else "IPv4")
+            except socket.error:
+                if self.servers:
+                    # Already bound using IPv6.
+                    logger.debug(
+                        "Certbot wasn't able to bind to %s:%s using %s, this " +
+                        "is often expected due to the dual stack nature of " +
+                        "IPv6 socket implementations.",
+                        new_address[0], new_address[1],
+                        "IPv6" if ip_version else "IPv4")
+                else:
+                    logger.debug(
+                        "Failed to bind to %s:%s using %s", new_address[0],
+                        new_address[1], "IPv6" if ip_version else "IPv4")
             else:
                 self.servers.append(server)
                 # If two servers are set up and port 0 was passed in, ensure we always
