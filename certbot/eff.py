@@ -41,8 +41,8 @@ def _want_subscription():
         'Would you be willing to share your email address with the '
         "Electronic Frontier Foundation, a founding partner of the Let's "
         'Encrypt project and the non-profit organization that develops '
-        "Certbot? We'd like to send you email about EFF and our work to "
-        'encrypt the web, protect its users and defend digital rights.')
+        "Certbot? We'd like to send you email about our work encrypting "
+        "the web, EFF news, campaigns, and ways to support digital freedom. ")
     display = zope.component.getUtility(interfaces.IDisplay)
     return display.yesno(prompt, default=False)
 
