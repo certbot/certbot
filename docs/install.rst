@@ -41,8 +41,9 @@ supports
 modern OSes based on Debian, Fedora, SUSE, Gentoo and Darwin.
 
 
-To double check the integrity of the ``certbot-auto`` script before running it requires gpg2 installed and
-setting an appropriate key server 
+To double check the integrity of the ``certbot-auto`` script before running it using gpg2
+install the package gnupg
+
 
 Installing with ``certbot-auto`` requires 512MB of RAM in order to build some
 of the dependencies. Installing from pre-built OS packages avoids this
@@ -74,10 +75,9 @@ download and run it as follows::
 
 
 	    
-	    user@server:~$ wget -N https://dl.eff.org/certbot-auto.asc
-	    user@server:~$ gpg2 --keyserver pool.sks-keyservers.net --recv-key A2CFB51FA275A7286234E7B24D17C995CD9775F2
-	    user@server:~$ gpg2 --recv-key A2CFB51FA275A7286234E7B24D17C995CD9775F2
-	    user@server:~$ gpg2 --trusted-key 4D17C995CD9775F2 --verify certbot-auto.asc certbot-auto
+	    user@webserver:~$ wget -N https://dl.eff.org/certbot-auto.asc
+	    user@webserver:~$ gpg2 --keyserver pool.sks-keyservers.net --recv-key A2CFB51FA275A7286234E7B24D17C995CD9775F2
+	    user@webserver:~$ gpg2 --trusted-key 4D17C995CD9775F2 --verify certbot-auto.asc certbot-auto
 
 	    gpg: Signature made Wed 02 May 2018 05:29:12 AM IST
 	    gpg:                using RSA key A2CFB51FA275A7286234E7B24D17C995CD9775F2
