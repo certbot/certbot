@@ -41,7 +41,7 @@ supports
 modern OSes based on Debian, Fedora, SUSE, Gentoo and Darwin.
 
 
-To double check the integrity of the ``certbot-auto`` script before running it by gpg2
+To double check the integrity of the ``certbot-auto`` script before running it using gpg2
 requires the package gnupg installed
 
 
