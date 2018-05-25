@@ -41,8 +41,8 @@ supports
 modern OSes based on Debian, Fedora, SUSE, Gentoo and Darwin.
 
 
-To double check the integrity of the ``certbot-auto`` script before running it using gpg2
-install the package gnupg
+To double check the integrity of the ``certbot-auto`` script before running it by gpg2
+requires the package gnupg installed
 
 
 Installing with ``certbot-auto`` requires 512MB of RAM in order to build some
