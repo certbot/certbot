@@ -44,7 +44,8 @@ class RenewUpdaterTest(unittest.TestCase):
     @mock.patch('certbot.plugins.selection.choose_configurator_plugins')
     @test_util.patch_get_utility()
     def test_server_updates(self, _, mock_select, mock_getsave):
-        config = self.get_config({"disable_renew_updates": False})
+        config = self.get_config({"disable_renew_updates": False,
+                                  "dry_run": False})
 
         lineage = mock.MagicMock()
         lineage.names.return_value = ['firstdomain', 'seconddomain']
@@ -59,17 +60,36 @@ class RenewUpdaterTest(unittest.TestCase):
 
         mock_generic_updater.restart.reset_mock()
         mock_generic_updater.callcounter.reset_mock()
-        updater.run_generic_updaters(config, None, lineage)
+        updater.run_generic_updaters(config, lineage, None)
         self.assertEqual(mock_generic_updater.callcounter.call_count, 2)
         self.assertFalse(mock_generic_updater.restart.called)
 
     def test_renew_deployer(self):
-        config = self.get_config({"disable_renew_updates": False})
+        config = self.get_config({"disable_renew_updates": False,
+                                  "dry_run": False})
         lineage = mock.MagicMock()
         lineage.names.return_value = ['firstdomain', 'seconddomain']
         mock_deployer = self.renew_deployer
-        updater.run_renewal_deployer(lineage, mock_deployer, config)
+        updater.run_renewal_deployer(config, lineage, mock_deployer)
         self.assertTrue(mock_deployer.callcounter.called_with(lineage))
+
+    @mock.patch("certbot.updater.logger.debug")
+    def test_updater_skip_dry_run(self, mock_log):
+        config = self.get_config({"disable_renew_updates": False,
+                                  "dry_run": True})
+        updater.run_generic_updaters(config, None, None)
+        self.assertTrue(mock_log.called)
+        self.assertEquals(mock_log.call_args[0][0],
+                          "Skipping updaters in dry-run mode.")
+
+    @mock.patch("certbot.updater.logger.debug")
+    def test_deployer_skip_dry_run(self, mock_log):
+        config = self.get_config({"disable_renew_updates": False,
+                                  "dry_run": True})
+        updater.run_renewal_deployer(config, None, None)
+        self.assertTrue(mock_log.called)
+        self.assertEquals(mock_log.call_args[0][0],
+                          "Skipping renewal deployer in dry-run mode.")
 
 
 if __name__ == '__main__':
