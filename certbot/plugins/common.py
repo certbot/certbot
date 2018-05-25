@@ -11,6 +11,8 @@ import zope.interface
 
 from josepy import util as jose_util
 
+from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
+from certbot import achallenges  # pylint: disable=unused-import
 from certbot import constants
 from certbot import crypto_util
 from certbot import errors
@@ -331,8 +333,8 @@ class ChallengePerformer(object):
 
     def __init__(self, configurator):
         self.configurator = configurator
-        self.achalls = []
-        self.indices = []
+        self.achalls = []  # type: List[achallenges.KeyAuthorizationAnnotatedChallenge]
+        self.indices = []  # type: List[int]
 
     def add_chall(self, achall, idx=None):
         """Store challenge to be performed when perform() is called.

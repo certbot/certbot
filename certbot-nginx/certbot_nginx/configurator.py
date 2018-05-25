@@ -28,6 +28,9 @@ from certbot_nginx import nginxparser
 from certbot_nginx import parser
 from certbot_nginx import tls_sni_01
 from certbot_nginx import http_01
+from certbot_nginx import obj # pylint: disable=unused-import
+from acme.magic_typing import List, Dict, Set # pylint: disable=unused-import, no-name-in-module
+
 
 
 logger = logging.getLogger(__name__)
@@ -98,8 +101,8 @@ class NginxConfigurator(common.Installer):
 
         # List of vhosts configured per wildcard domain on this run.
         # used by deploy_cert() and enhance()
-        self._wildcard_vhosts = {}
-        self._wildcard_redirect_vhosts = {}
+        self._wildcard_vhosts = {} # type: Dict[str, List[obj.VirtualHost]]
+        self._wildcard_redirect_vhosts = {} # type: Dict[str, List[obj.VirtualHost]]
 
         # Add number of outstanding challenges
         self._chall_out = 0
@@ -293,7 +296,7 @@ class NginxConfigurator(common.Installer):
                             ("Cannot find a VirtualHost matching domain %s. "
                              "In order for Certbot to correctly perform the challenge "
                              "please add a corresponding server_name directive to your "
-                             "nginx configuration: "
+                             "nginx configuration for every domain on your certificate: "
                              "https://nginx.org/en/docs/http/server_names.html") % (target_name))
         # Note: if we are enhancing with ocsp, vhost should already be ssl.
         for vhost in vhosts:
@@ -331,7 +334,7 @@ class NginxConfigurator(common.Installer):
 
     def _vhost_from_duplicated_default(self, domain, port=None):
         if self.new_vhost is None:
-            default_vhost = self._get_default_vhost(port)
+            default_vhost = self._get_default_vhost(port, domain)
             self.new_vhost = self.parser.duplicate_vhost(default_vhost,
                 remove_singleton_listen_params=True)
             self.new_vhost.names = set()
@@ -347,7 +350,7 @@ class NginxConfigurator(common.Installer):
             name_block[0].append(name)
         self.parser.update_or_add_server_directives(vhost, name_block)
 
-    def _get_default_vhost(self, port):
+    def _get_default_vhost(self, port, domain):
         vhost_list = self.parser.get_vhosts()
         # if one has default_server set, return that one
         default_vhosts = []
@@ -364,7 +367,7 @@ class NginxConfigurator(common.Installer):
         # TODO: present a list of vhosts for user to choose from
 
         raise errors.MisconfigurationError("Could not automatically find a matching server"
-            " block. Set the `server_name` directive to use the Nginx installer.")
+            " block for %s. Set the `server_name` directive to use the Nginx installer." % domain)
 
     def _get_ranked_matches(self, target_name):
         """Returns a ranked list of vhosts that match target_name.
@@ -528,7 +531,7 @@ class NginxConfigurator(common.Installer):
         :rtype: set
 
         """
-        all_names = set()
+        all_names = set() # type: Set[str]
 
         for vhost in self.parser.get_vhosts():
             all_names.update(vhost.names)
@@ -824,7 +827,7 @@ class NginxConfigurator(common.Installer):
             self.parser.add_server_directives(vhost,
                                               stapling_directives)
         except errors.MisconfigurationError as error:
-            logger.debug(error)
+            logger.debug(str(error))
             raise errors.PluginError("An error occurred while enabling OCSP "
                                      "stapling for {0}.".format(vhost.names))
 
@@ -892,7 +895,7 @@ class NginxConfigurator(common.Installer):
                 universal_newlines=True)
             text = proc.communicate()[1]  # nginx prints output to stderr
         except (OSError, ValueError) as error:
-            logger.debug(error, exc_info=True)
+            logger.debug(str(error), exc_info=True)
             raise errors.PluginError(
                 "Unable to run %s -V" % self.conf('ctl'))
 
