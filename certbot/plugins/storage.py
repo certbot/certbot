@@ -3,6 +3,7 @@ import json
 import logging
 import os
 
+from acme.magic_typing import Any, Dict  # pylint: disable=unused-import, no-name-in-module
 from certbot import errors
 
 logger = logging.getLogger(__name__)
@@ -38,7 +39,7 @@ class PluginStorage(object):
 
         :raises .errors.PluginStorageError: when unable to open or read the file
         """
-        data = dict()
+        data = dict()  # type: Dict[str, Any]
         filedata = ""
         try:
             with open(self._storagepath, 'r') as fh:

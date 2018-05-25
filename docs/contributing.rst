@@ -28,16 +28,23 @@ running:
 
    git clone https://github.com/certbot/certbot
 
-Next you need to install dependencies and set up a virtual environment where
-you can run Certbot. We recommend you do this using the commands below,
-however, you can alternatively skip the rest of this section and :ref:`run
-Certbot in Docker <docker-dev>`.
+If you're on macOS, we recommend you skip the rest of this section and instead
+run Certbot in Docker. You can find instructions for how to do this :ref:`here
+<docker-dev>`. If you're running on Linux, you can run the following commands to
+install dependencies and set up a virtual environment where you can run
+Certbot.
 
 .. code-block:: shell
 
    cd certbot
    ./certbot-auto --debug --os-packages-only
    tools/venv.sh
+
+If you have Python3 available and want to use it, run the ``venv3.sh`` script.
+
+.. code-block:: shell
+
+   tools/venv3.sh
 
 .. note:: You may need to repeat this when
   Certbot's dependencies change or when a new plugin is introduced.
@@ -49,6 +56,8 @@ latter by running:
 .. code-block:: shell
 
    source venv/bin/activate
+   # or
+   source venv3/bin/activate
 
 After running this command, ``certbot`` and development tools like ``ipdb``,
 ``ipython``, ``pytest``, and ``tox`` are available in the shell where you ran

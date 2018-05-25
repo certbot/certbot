@@ -61,7 +61,6 @@ def _run_updaters(lineage, installer, config):
     :returns: `None`
     :rtype: None
     """
-    for domain in lineage.names():
-        if not config.disable_renew_updates:
-            if isinstance(installer, interfaces.GenericUpdater):
-                installer.generic_updates(domain)
+    if not config.disable_renew_updates:
+        if isinstance(installer, interfaces.GenericUpdater):
+            installer.generic_updates(lineage)

@@ -8,7 +8,9 @@ import zope.component
 
 from acme import challenges
 from acme import messages
-
+# pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import DefaultDict, Dict, List, Set, Collection
+# pylint: enable=unused-import, no-name-in-module
 from certbot import achallenges
 from certbot import errors
 from certbot import error_handler
@@ -117,7 +119,7 @@ class AuthHandler(object):
 
     def _solve_challenges(self, aauthzrs):
         """Get Responses for challenges from authenticators."""
-        resp = []
+        resp = []  # type: Collection[acme.challenges.ChallengeResponse]
         all_achalls = self._get_all_achalls(aauthzrs)
         try:
             if all_achalls:
@@ -133,10 +135,9 @@ class AuthHandler(object):
 
     def _get_all_achalls(self, aauthzrs):
         """Return all active challenges."""
-        all_achalls = []
+        all_achalls = []  # type: Collection[challenges.ChallengeResponse]
         for aauthzr in aauthzrs:
             all_achalls.extend(aauthzr.achalls)
-
         return all_achalls
 
     def _respond(self, aauthzrs, resp, best_effort):
@@ -146,7 +147,8 @@ class AuthHandler(object):
 
         """
         # TODO: chall_update is a dirty hack to get around acme-spec #105
-        chall_update = dict()
+        chall_update = dict() \
+        # type: Dict[int, List[achallenges.KeyAuthorizationAnnotatedChallenge]]
         self._send_responses(aauthzrs, resp, chall_update)
 
         # Check for updated status...
@@ -198,7 +200,7 @@ class AuthHandler(object):
         while indices_to_check and rounds < max_rounds:
             # TODO: Use retry-after...
             time.sleep(min_sleep)
-            all_failed_achalls = set()
+            all_failed_achalls = set()  # type: Set[achallenges.KeyAuthorizationAnnotatedChallenge]
             for index in indices_to_check:
                 comp_achalls, failed_achalls = self._handle_check(
                     aauthzrs, index, chall_update[index])
@@ -424,7 +426,7 @@ def _find_smart_path(challbs, preferences, combinations):
 
     # max_cost is now equal to sum(indices) + 1
 
-    best_combo = []
+    best_combo = None
     # Set above completing all of the available challenges
     best_combo_cost = max_cost
 
@@ -479,7 +481,7 @@ def _report_no_chall_path(challbs):
         msg += (
             " You may need to use an authenticator "
             "plugin that can do challenges over DNS.")
-    logger.fatal(msg)
+    logger.critical(msg)
     raise errors.AuthorizationError(msg)
 
 
@@ -522,11 +524,11 @@ def _report_failed_challs(failed_achalls):
         :class:`certbot.achallenges.AnnotatedChallenge`.
 
     """
-    problems = dict()
+    problems = collections.defaultdict(list)\
+    # type: DefaultDict[str, List[achallenges.KeyAuthorizationAnnotatedChallenge]]
     for achall in failed_achalls:
         if achall.error:
-            problems.setdefault(achall.error.typ, []).append(achall)
-
+            problems[achall.error.typ].append(achall)
     reporter = zope.component.getUtility(interfaces.IReporter)
     for achalls in six.itervalues(problems):
         reporter.add_message(

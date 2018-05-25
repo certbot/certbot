@@ -191,9 +191,8 @@ class MemoryHandler(logging.handlers.MemoryHandler):
     only happens when flush(force=True) is called.
 
     """
-    def __init__(self, target=None):
+    def __init__(self, target=None, capacity=10000):
         # capacity doesn't matter because should_flush() is overridden
-        capacity = float('inf')
         super(MemoryHandler, self).__init__(capacity, target=target)
 
     def close(self):
