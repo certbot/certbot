@@ -633,8 +633,7 @@ class GenericUpdater(object):
 
         This method is called once for each lineage.
 
-        :param lineage: Certificate lineage object that is set if certificate
-            was renewed on this run.
+        :param lineage: Certificate lineage object
         :type lineage: storage.RenewableCert
 
         """
@@ -663,8 +662,7 @@ class RenewDeployer(object):
 
         This method is called once for each lineage renewed
 
-        :param lineage: Certificate lineage object that is set if certificate
-            was renewed on this run.
+        :param lineage: Certificate lineage object
         :type lineage: storage.RenewableCert
 
         """
