@@ -70,9 +70,10 @@ download and run it as follows::
   user@webserver:~$ chmod a+x ./certbot-auto
   user@webserver:~$ ./certbot-auto --help
 
-.. hint:: To check the integrity of the ``certbot-auto`` script, you can use these steps::
+To check the integrity of the ``certbot-auto`` script,  
+you can use these steps::
 
-	    
+	  
 	    user@webserver:~$ wget -N https://dl.eff.org/certbot-auto.asc
 	    user@webserver:~$ gpg2 --keyserver pool.sks-keyservers.net --recv-key A2CFB51FA275A7286234E7B24D17C995CD9775F2
 	    user@webserver:~$ gpg2 --trusted-key 4D17C995CD9775F2 --verify certbot-auto.asc certbot-auto
