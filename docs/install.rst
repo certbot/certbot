@@ -41,8 +41,8 @@ supports
 modern OSes based on Debian, Fedora, SUSE, Gentoo and Darwin.
 
 
-To double check the integrity of the ``certbot-auto`` script before running it using gpg2
-requires the package gnupg or gnupg2 installed
+Additional integrity verification of certbot-auto script can be done by verifying its digital signature.
+This requires a local installation of gpg2, which comes packaged in many Linux distributions under name gnupg or gnupg2.
 
 
 Installing with ``certbot-auto`` requires 512MB of RAM in order to build some
@@ -70,9 +70,7 @@ download and run it as follows::
   user@webserver:~$ chmod a+x ./certbot-auto
   user@webserver:~$ ./certbot-auto --help
 
-.. hint:: The certbot-auto download is protected by HTTPS, which is pretty good, but if you'd like to
-          double check the integrity of the ``certbot-auto`` script, you can use these steps for verification before running it using gpg2::
-
+.. hint:: To check the integrity of the ``certbot-auto`` script, you can use these steps::
 
 	    
 	    user@webserver:~$ wget -N https://dl.eff.org/certbot-auto.asc
