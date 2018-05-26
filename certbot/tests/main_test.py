@@ -1464,7 +1464,8 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
                           None, None, None)
 
         with mock.patch('certbot.updater.logger.warning') as mock_log:
-            updater.run_generic_updaters(None, None, None)
+            self.config.dry_run = False
+            updater.run_generic_updaters(self.config, None, None)
             self.assertTrue(mock_log.called)
             self.assertTrue("Could not choose appropriate plugin for updaters"
                             in mock_log.call_args[0][0])
