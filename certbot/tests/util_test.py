@@ -610,5 +610,12 @@ class AtexitRegisterTest(unittest.TestCase):
             atexit_func(*args[1:], **kwargs)  # pylint: disable=star-args
 
 
+class OsPathExistsTest(unittest.TestCase):
+    """Test whether a path exists or not"""
+    def test_os_path_exists(self):
+        from certbot.util import os_path_exists
+        self.assertTrue(os_path_exists(".")) #Testing current directory
+        self.assertFalse(os_path_exists("R4nd0M")) # Testing a random directory
+
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

@@ -44,7 +44,7 @@ def renewal_conf_files(config):
 def renewal_file_for_certname(config, certname):
     """Return /path/to/certname.conf in the renewal conf directory"""
     path = os.path.join(config.renewal_configs_dir, "{0}.conf".format(certname))
-    if not os.path.exists(path):
+    if not util.os_path_exists(path):
         raise errors.CertStorageError("No certificate found with name {0} (expected "
             "{1}).".format(certname, path))
     return path
@@ -138,7 +138,7 @@ def write_renewal_config(o_filename, n_filename, archive_dir, target, relevant_d
     open(n_filename, 'a').close()
 
     # Copy permissions from the old version of the file, if it exists.
-    if os.path.exists(o_filename):
+    if util.os_path_exists(o_filename):
         current_permissions = stat.S_IMODE(os.lstat(o_filename).st_mode)
         os.chmod(n_filename, current_permissions)
 
@@ -155,7 +155,7 @@ def rename_renewal_config(prev_name, new_name, cli_config):
     """
     prev_filename = renewal_filename_for_lineagename(cli_config, prev_name)
     new_filename = renewal_filename_for_lineagename(cli_config, new_name)
-    if os.path.exists(new_filename):
+    if util.os_path_exists(new_filename):
         raise errors.ConfigurationError("The new certificate name "
             "is already in use.")
     try:
@@ -182,7 +182,7 @@ def update_configuration(lineagename, archive_dir, target, cli_config):
     temp_filename = config_filename + ".new"
 
     # If an existing tempfile exists, delete it
-    if os.path.exists(temp_filename):
+    if util.os_path_exists(temp_filename):
         os.unlink(temp_filename)
 
     # Save only the config items that are relevant to renewal
@@ -492,7 +492,7 @@ class RenewableCert(object):
                 raise errors.CertStorageError(
                     "expected {0} to be a symlink".format(link))
             target = get_link_target(link)
-            if not os.path.exists(target):
+            if not util.os_path_exists(target):
                 raise errors.CertStorageError("target {0} of symlink {1} does "
                                               "not exist".format(target, link))
 
@@ -547,7 +547,7 @@ class RenewableCert(object):
                 return False
 
             # The link must point to a file that exists
-            if not os.path.exists(target):
+            if not util.os_path_exists(target):
                 logger.debug("Link %s points to file %s that does not exist.",
                              link, target)
                 return False
@@ -616,7 +616,7 @@ class RenewableCert(object):
 
         """
         previous_symlinks = self._previous_symlinks()
-        if all(os.path.exists(link[1]) for link in previous_symlinks):
+        if all(util.os_path_exists(link[1]) for link in previous_symlinks):
             for kind, previous_link in previous_symlinks:
                 current_link = getattr(self, kind)
                 if os.path.lexists(current_link):
@@ -624,7 +624,7 @@ class RenewableCert(object):
                 os.symlink(os.readlink(previous_link), current_link)
 
         for _, link in previous_symlinks:
-            if os.path.exists(link):
+            if util.os_path_exists(link):
                 os.unlink(link)
 
     def current_target(self, kind):
@@ -641,7 +641,7 @@ class RenewableCert(object):
         if kind not in ALL_FOUR:
             raise errors.CertStorageError("unknown kind of item")
         link = getattr(self, kind)
-        if not os.path.exists(link):
+        if not util.os_path_exists(link):
             logger.debug("Expected symlink %s for %s does not exist.",
                          link, kind)
             return None
@@ -664,7 +664,7 @@ class RenewableCert(object):
             raise errors.CertStorageError("unknown kind of item")
         pattern = re.compile(r"^{0}([0-9]+)\.pem$".format(kind))
         target = self.current_target(kind)
-        if target is None or not os.path.exists(target):
+        if target is None or not util.os_path_exists(target):
             logger.debug("Current-version target for %s "
                          "does not exist at %s.", kind, target)
             target = ""
@@ -997,7 +997,7 @@ class RenewableCert(object):
         # Examine the configuration and find the new lineage's name
         for i in (cli_config.renewal_configs_dir, cli_config.default_archive_dir,
                   cli_config.live_dir):
-            if not os.path.exists(i):
+            if not util.os_path_exists(i):
                 os.makedirs(i, 0o700)
                 logger.debug("Creating directory %s.", i)
         config_file, config_filename = util.unique_lineage_name(
@@ -1009,10 +1009,10 @@ class RenewableCert(object):
         lineagename = lineagename_for_filename(config_filename)
         archive = full_archive_path(None, cli_config, lineagename)
         live_dir = _full_live_path(cli_config, lineagename)
-        if os.path.exists(archive):
+        if util.os_path_exists(archive):
             raise errors.CertStorageError(
                 "archive directory exists for " + lineagename)
-        if os.path.exists(live_dir):
+        if util.os_path_exists(live_dir):
             raise errors.CertStorageError(
                 "live directory exists for " + lineagename)
         os.mkdir(archive)
