@@ -923,7 +923,7 @@ class RenewableCert(object):
         return ("autorenew" not in self.configuration or
                 self.configuration.as_bool("autorenew"))
 
-    def should_autorenew(self, interactive=False):
+    def should_autorenew(self):
         """Should we now try to autorenew the most recent cert version?
 
         This is a policy question and does not only depend on whether
@@ -934,16 +934,12 @@ class RenewableCert(object):
         Note that this examines the numerically most recent cert version,
         not the currently deployed version.
 
-        :param bool interactive: set to True to examine the question
-            regardless of whether the renewal configuration allows
-            automated renewal (for interactive use). Default False.
-
         :returns: whether an attempt should now be made to autorenew the
             most current cert version in this lineage
         :rtype: bool
 
         """
-        if interactive or self.autorenewal_is_enabled():
+        if self.autorenewal_is_enabled():
             # Consider whether to attempt to autorenew this cert now
 
             # Renewals on the basis of revocation
