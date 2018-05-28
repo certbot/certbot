@@ -4,7 +4,6 @@ import copy
 import itertools
 import logging
 import os
-import sys
 import traceback
 
 import six
@@ -364,7 +363,7 @@ def _renew_describe_results(config, renew_successes, renew_failures,
     disp.notification("\n".join(out), wrap=False)
 
 
-def handle_renewal_request(config): # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+def handle_renewal_request(config):
     """Examine each lineage; renew if due and report results"""
 
     # This is trivially False if config.domains is empty
@@ -409,16 +408,6 @@ def handle_renewal_request(config): # pylint: disable=too-many-locals,too-many-b
         try:
             if renewal_candidate is None:
                 parse_failures.append(renewal_file)
-            elif lineage_config.certname  and cli.set_by_cli('autorenew'):
-                # Update renewal config file and exit.
-                symlinks = dict((kind, renewal_candidate.configuration[kind])
-                                for kind in storage.ALL_FOUR)
-                storage.update_configuration(lineagename,
-                        renewal_candidate.archive_dir, symlinks, lineage_config)
-                disp.notification("{} auto renewal for {}".format(
-                    "Enabled" if config.autorenew else "Disabled",
-                    lineagename))
-                sys.exit(0)
             else:
                 # XXX: ensure that each call here replaces the previous one
                 zope.component.provideUtility(lineage_config)

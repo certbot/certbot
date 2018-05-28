@@ -11,6 +11,7 @@ import parsedatetime
 import pytz
 import shutil
 import six
+import zope.component
 
 import certbot
 from certbot import cli
@@ -18,6 +19,7 @@ from certbot import constants
 from certbot import crypto_util
 from certbot import errors
 from certbot import error_handler
+from certbot import interfaces
 from certbot import util
 
 from certbot.plugins import common as plugins_common
@@ -920,8 +922,8 @@ class RenewableCert(object):
         :rtype: bool
 
         """
-        return ("autorenew" not in self.configuration or
-                self.configuration.as_bool("autorenew"))
+        return ("autorenew" not in self.configuration["renewalparams"] or
+                self.configuration["renewalparams"].as_bool("autorenew"))
 
     def should_autorenew(self):
         """Should we now try to autorenew the most recent cert version?
@@ -939,6 +941,19 @@ class RenewableCert(object):
         :rtype: bool
 
         """
+        if cli.set_by_cli('autorenew'):
+            # Set auterenew option in renewal conf.
+            disp = zope.component.getUtility(interfaces.IDisplay)
+            symlinks = dict((kind, self.configuration[kind])
+                            for kind in ALL_FOUR)
+            self.configfile = update_configuration(self.lineagename,
+                                    self.archive_dir, symlinks,
+                                    self.cli_config)
+            self.configuration = config_with_defaults(self.configfile)
+            disp.notification("{} auto renewal for {}".format(
+                "Enabled" if self.cli_config.autorenew else "Disabled",
+                self.lineagename))
+
         if self.autorenewal_is_enabled():
             # Consider whether to attempt to autorenew this cert now
 
