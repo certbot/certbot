@@ -1202,12 +1202,12 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         " updates.")
     helpful.add(
         "renew", "--autorenew", action="store_true",
-        dest="autorenew", help="Enable auto renewal of certificates."
-        )
+        default=flag_default('autorenew'), dest="autorenew",
+        help="Enable auto renewal of certificates.")
     helpful.add(
         "renew", "--no-autorenew", action="store_false",
-        dest="autorenew", help="Disable auto renewal of certificates."
-        )
+        default=flag_default("autorenew"), dest="autorenew",
+        help="Disable auto renewal of certificates.")
 
     helpful.add_deprecated_argument("--agree-dev-preview", 0)
     helpful.add_deprecated_argument("--dialog", 0)
