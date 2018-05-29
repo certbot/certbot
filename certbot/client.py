@@ -300,7 +300,7 @@ class Client(object):
             with open(old_keypath, "r") as f:
                 keypath = old_keypath
                 keypem = f.read()
-            key = util.Key(file=keypath, pem=keypem)
+            key = util.Key(file=keypath, pem=keypem) # type: Optional[util.Key]
             logger.info("Reusing existing private key from %s.", old_keypath)
         else:
             # The key is set to None here but will be created below.
