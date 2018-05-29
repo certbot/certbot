@@ -434,8 +434,8 @@ def handle_renewal_request(config):
                     renew_skipped.append("%s expires on %s" % (renewal_candidate.fullchain,
                                          expiry.strftime("%Y-%m-%d")))
                 # Run updater interface methods
-                updater.run_generic_updaters(lineage_config, plugins,
-                                             renewal_candidate)
+                updater.run_generic_updaters(lineage_config, renewal_candidate,
+                                             plugins)
 
         except Exception as e:  # pylint: disable=broad-except
             # obtain_cert (presumably) encountered an unanticipated problem.
