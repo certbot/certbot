@@ -82,8 +82,10 @@ class Reverter(object):
                 self._recover_checkpoint(self.config.temp_checkpoint_dir)
             except errors.ReverterError:
                 # We have a partial or incomplete recovery
-                logger.fatal("Incomplete or failed recovery for %s",
-                             self.config.temp_checkpoint_dir)
+                logger.critical(
+                    "Incomplete or failed recovery for %s",
+                    self.config.temp_checkpoint_dir,
+                )
                 raise errors.ReverterError("Unable to revert temporary config")
 
     def rollback_checkpoints(self, rollback=1):
@@ -123,7 +125,7 @@ class Reverter(object):
             try:
                 self._recover_checkpoint(cp_dir)
             except errors.ReverterError:
-                logger.fatal("Failed to load checkpoint during rollback")
+                logger.critical("Failed to load checkpoint during rollback")
                 raise errors.ReverterError(
                     "Unable to load checkpoint during rollback")
             rollback -= 1
@@ -181,7 +183,7 @@ class Reverter(object):
         if for_logging:
             return os.linesep.join(output)
         zope.component.getUtility(interfaces.IDisplay).notification(
-            os.linesep.join(output), force_interactive=True)
+            os.linesep.join(output), force_interactive=True, pause=False)
 
     def add_to_temp_checkpoint(self, save_files, save_notes):
         """Add files to temporary checkpoint.
@@ -457,7 +459,7 @@ class Reverter(object):
                 self._recover_checkpoint(self.config.in_progress_dir)
             except errors.ReverterError:
                 # We have a partial or incomplete recovery
-                logger.fatal("Incomplete or failed recovery for IN_PROGRESS "
+                logger.critical("Incomplete or failed recovery for IN_PROGRESS "
                              "checkpoint - %s",
                              self.config.in_progress_dir)
                 raise errors.ReverterError(
@@ -494,7 +496,7 @@ class Reverter(object):
                             "Certbot probably shut down unexpectedly",
                             os.linesep, path)
         except (IOError, OSError):
-            logger.fatal(
+            logger.critical(
                 "Unable to remove filepaths contained within %s", file_list)
             raise errors.ReverterError(
                 "Unable to remove filepaths contained within "

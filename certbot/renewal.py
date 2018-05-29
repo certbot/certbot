@@ -11,6 +11,8 @@ import zope.component
 
 import OpenSSL
 
+from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
+
 from certbot import cli
 from certbot import crypto_util
 from certbot import errors
@@ -59,8 +61,8 @@ def _reconstitute(config, full_path):
     """
     try:
         renewal_candidate = storage.RenewableCert(full_path, config)
-    except (errors.CertStorageError, IOError) as exc:
-        logger.warning(exc)
+    except (errors.CertStorageError, IOError):
+        logger.warning("", exc_info=True)
         logger.warning("Renewal configuration file %s is broken. Skipping.", full_path)
         logger.debug("Traceback was:\n%s", traceback.format_exc())
         return None
@@ -133,14 +135,15 @@ def _restore_plugin_configs(config, renewalparams):
     #      longer defined, stored copies of that parameter will be
     #      deserialized as strings by this logic even if they were
     #      originally meant to be some other type.
+    plugin_prefixes = []  # type: List[str]
     if renewalparams["authenticator"] == "webroot":
         _restore_webroot_config(config, renewalparams)
-        plugin_prefixes = []
     else:
-        plugin_prefixes = [renewalparams["authenticator"]]
+        plugin_prefixes.append(renewalparams["authenticator"])
 
-    if renewalparams.get("installer", None) is not None:
+    if renewalparams.get("installer") is not None:
         plugin_prefixes.append(renewalparams["installer"])
+
     for plugin_prefix in set(plugin_prefixes):
         plugin_prefix = plugin_prefix.replace('-', '_')
         for config_item, config_value in six.iteritems(renewalparams):
@@ -316,13 +319,13 @@ def report(msgs, category):
 def _renew_describe_results(config, renew_successes, renew_failures,
                             renew_skipped, parse_failures):
 
-    out = []
+    out = []  # type: List[str]
     notify = out.append
     disp = zope.component.getUtility(interfaces.IDisplay)
 
     def notify_error(err):
         """Notify and log errors."""
-        notify(err)
+        notify(str(err))
         logger.error(err)
 
     if config.dry_run:

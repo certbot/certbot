@@ -5,6 +5,10 @@ import os
 import signal
 import traceback
 
+# pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Any, Callable, Dict, List, Union
+# pylint: enable=unused-import, no-name-in-module
+
 from certbot import errors
 
 logger = logging.getLogger(__name__)
@@ -56,9 +60,9 @@ class ErrorHandler(object):
     def __init__(self, func=None, *args, **kwargs):
         self.call_on_regular_exit = False
         self.body_executed = False
-        self.funcs = []
-        self.prev_handlers = {}
-        self.received_signals = []
+        self.funcs = []  # type: List[Callable[[], Any]]
+        self.prev_handlers = {}  # type: Dict[int, Union[int, None, Callable]]
+        self.received_signals = []  # type: List[int]
         if func is not None:
             self.register(func, *args, **kwargs)
 
@@ -88,6 +92,7 @@ class ErrorHandler(object):
         return retval
 
     def register(self, func, *args, **kwargs):
+        # type: (Callable, *Any, **Any) -> None
         """Sets func to be run with the given arguments during cleanup.
 
         :param function func: function to be called in case of an error
@@ -101,9 +106,8 @@ class ErrorHandler(object):
         while self.funcs:
             try:
                 self.funcs[-1]()
-            except Exception as error:  # pylint: disable=broad-except
-                logger.error("Encountered exception during recovery")
-                logger.exception(error)
+            except Exception:  # pylint: disable=broad-except
+                logger.error("Encountered exception during recovery: ", exc_info=True)
             self.funcs.pop()
 
     def _set_signal_handlers(self):
