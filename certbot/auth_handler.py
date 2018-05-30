@@ -488,7 +488,9 @@ def _report_no_chall_path(challbs):
 _ERROR_HELP_COMMON = (
     "To fix these errors, please make sure that your domain name was entered "
     "correctly and the DNS A/AAAA record(s) for that domain contain(s) the "
-    "right IP address.")
+    "right IP address.\n"
+    "\n"
+    "To debug, re-run this command with --debug-challenges.")
 
 
 _ERROR_HELP = {
