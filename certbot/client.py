@@ -17,7 +17,7 @@ from acme import client as acme_client
 from acme import crypto_util as acme_crypto_util
 from acme import errors as acme_errors
 from acme import messages
-from acme.magic_typing import Optional
+from acme.magic_typing import Optional  # pylint: disable=import-error,no-name-in-module
 
 import certbot
 
