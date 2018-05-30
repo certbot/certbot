@@ -1022,10 +1022,6 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         action="store_true", default=flag_default("reuse_key"),
         help="When renewing, use the same private key as the existing "
              "certificate.")
-    helpful.add(
-        "automation", "--no-reuse-key", dest="reuse_key",
-        action="store_false", default=flag_default("reuse_key"),
-        help="When renewing, generate a new private key each time.")
 
     helpful.add(
         ["automation", "renew", "certonly"],

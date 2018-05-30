@@ -364,8 +364,8 @@ ls -l "${root}/conf/archive/reusekey.le.wtf/privkey"*
 # exactly two lines with identical first fields, and unsuccessfully otherwise.
 sha256sum "${root}/conf/archive/reusekey.le.wtf/privkey"* | TotalAndDistinctLines 2 1
 
-# no-reuse-key
-common renew --cert-name reusekey.le.wtf --no-reuse-key
+# don't reuse key (just by forcing reissuance without --reuse-key)
+common --cert-name reusekey.le.wtf --domains reusekey.le.wtf --force-renewal
 CheckCertCount "reusekey.le.wtf" 3
 ls -l "${root}/conf/archive/reusekey.le.wtf/privkey"*
 # Exactly three lines, of which exactly two identical first fields.
