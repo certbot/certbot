@@ -43,7 +43,7 @@ class TLSServer(socketserver.TCPServer):
 
     def _wrap_sock(self):
         self.socket = crypto_util.SSLSocket(
-            self.socket, cert_selection=self.cert_selection,
+            self.socket, {}, cert_selection=self.cert_selection,
             alpn_selection=getattr(self, 'alpn_selection', None),
             method=self.method)
 
@@ -162,7 +162,7 @@ class BadALPNProtos(Exception):
 class TLSALPN01Server(TLSServer, ACMEServerMixin):
     """TLSALPN01 Server."""
 
-    ACMETLS1Protocol = b"acme-tls/1"
+    ACME_TLS_1_PROTOCOL = b"acme-tls/1"
 
     def __init__(self, server_address, certs, challenge_certs, ipv6=False):
         TLSServer.__init__(
@@ -184,9 +184,9 @@ class TLSALPN01Server(TLSServer, ACMEServerMixin):
 
     def alpn_selection(self, _connection, alpn_protos):
         """Callback to select alpn protocol."""
-        if len(alpn_protos) == 1 and alpn_protos[0] == self.ACMETLS1Protocol:
-            logger.debug("Agreed on %s ALPN", self.ACMETLS1Protocol)
-            return self.ACMETLS1Protocol
+        if len(alpn_protos) == 1 and alpn_protos[0] == self.ACME_TLS_1_PROTOCOL:
+            logger.debug("Agreed on %s ALPN", self.ACME_TLS_1_PROTOCOL)
+            return self.ACME_TLS_1_PROTOCOL
         # Raising an exception causes openssl to terminate handshake and
         # send fatal tls alert.
         logger.debug("Cannot agree on ALPN proto. Got: %s", str(alpn_protos))

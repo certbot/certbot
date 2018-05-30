@@ -31,6 +31,15 @@ logger = logging.getLogger(__name__)
 _DEFAULT_TLSSNI01_SSL_METHOD = SSL.SSLv23_METHOD  # type: ignore
 
 
+class _DefaultCertSelection(object):
+    def __init__(self, certs):
+        self.certs = certs
+
+    def __call__(self, connection):
+        server_name = connection.get_servername()
+        return self.certs.get(server_name, None)
+
+
 class SSLSocket(object):  # pylint: disable=too-few-public-methods
     """SSL wrapper for sockets.
 
@@ -38,14 +47,23 @@ class SSLSocket(object):  # pylint: disable=too-few-public-methods
     :ivar dict certs: Mapping from domain names (`bytes`) to
         `OpenSSL.crypto.X509`.
     :ivar method: See `OpenSSL.SSL.Context` for allowed values.
+    :ivar alpn_selection: Hook to select negotiated ALPN protocol for
+        connection.
+    :ivar cert_selection: Hook to select certificate for connection. If given,
+        `certs` parameter would be ignored, and therefore must be empty.
 
     """
-    def __init__(self, sock, cert_selection, alpn_selection=None,
-            method=_DEFAULT_TLSSNI01_SSL_METHOD):
+    def __init__(self, sock, certs,
+            method=_DEFAULT_TLSSNI01_SSL_METHOD, alpn_selection=None,
+            cert_selection=None):
         self.sock = sock
-        self.cert_selection = cert_selection
         self.alpn_selection = alpn_selection
         self.method = method
+        if cert_selection and certs:
+            raise ValueError("Both cert_selection and certs specified.")
+        if cert_selection is None:
+            cert_selection = _DefaultCertSelection(certs)
+        self.cert_selection = cert_selection
 
     def __getattr__(self, name):
         return getattr(self.sock, name)
@@ -130,7 +148,8 @@ def probe_sni(name, host, port=443, timeout=300, # pylint: disable=too-many-argu
     :param tuple source_address: Enables multi-path probing (selection
         of source interface). See `socket.creation_connection` for more
         info. Available only in Python 2.7+.
-    :param list bytes alpn_protocols: Protocols to request using ALPN.
+    :param alpn_protocols: Protocols to request using ALPN.
+    :type alpn_protocols: `list` of `bytes`
 
     :raises acme.errors.Error: In case of any problems.
 
@@ -266,7 +285,8 @@ def gen_ss_cert(key, domains, not_before=None,
     :type domains: `list` of `unicode`
     :param OpenSSL.crypto.PKey key:
     :param bool force_san:
-    :param extensions `list` of `OpenSSL.crypto.X509Extension`:
+    :param extensions: List of additional extensions to include in the cert.
+    :type extensions: `list` of `OpenSSL.crypto.X509Extension`
 
     If more than one domain is provided, all of the domains are put into
     ``subjectAltName`` X.509 extension and first domain is set as the

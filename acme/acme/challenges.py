@@ -521,8 +521,8 @@ class TLSALPN01Response(KeyAuthorizationChallengeResponse):
 
     """
 
-    IdPeAcmeIdentifierV1 = b"1.3.6.1.5.5.7.1.30.1"
-    ACMETLS1Protocol = "acme-tls/1"
+    ID_PE_ACME_IDENTIFIER_V1 = b"1.3.6.1.5.5.7.1.30.1"
+    ACME_TLS_1_PROTOCOL = "acme-tls/1"
 
     @property
     def h(self):
@@ -547,27 +547,26 @@ class TLSALPN01Response(KeyAuthorizationChallengeResponse):
 
 
         der_value = b"DER:" + codecs.encode(self.h, 'hex')
-        acme_extension = crypto.X509Extension(self.IdPeAcmeIdentifierV1,
+        acme_extension = crypto.X509Extension(self.ID_PE_ACME_IDENTIFIER_V1,
                 critical=True, value=der_value)
 
         return crypto_util.gen_ss_cert(key, [domain], force_san=True,
                 extensions=[acme_extension]), key
 
-    def probe_cert(self, domain, **kwargs):
+    def probe_cert(self, domain, host=None, port=None):
         """Probe tls-alpn-01 challenge certificate.
 
-        :param unicode domain:
+        :param unicode domain: domain being validated, required.
 
         """
-        if "host" not in kwargs:
+        if host is None:
             host = socket.gethostbyname(domain)
             logger.debug('%s resolved to %s', domain, host)
-            kwargs["host"] = host
+        if port is None:
+            port = self.PORT
 
-        kwargs.setdefault("port", self.PORT)
-        kwargs["name"] = domain
-        kwargs["alpn_protocols"] = [self.ACMETLS1Protocol]
-        return crypto_util.probe_sni(**kwargs)
+        return crypto_util.probe_sni(host=host, port=port, name=domain,
+                alpn_protocols=[self.ACME_TLS_1_PROTOCOL])
 
     def verify_cert(self, domain, cert):
         """Verify tls-alpn-01 challenge certificate.
@@ -581,7 +580,7 @@ class TLSALPN01Response(KeyAuthorizationChallengeResponse):
         # pylint: disable=protected-access
         names = crypto_util._pyopenssl_cert_or_req_all_names(cert)
         logger.debug('Certificate %s. SANs: %s', cert.digest('sha256'), names)
-        if domain not in names:
+        if len(names) != 1 or names[0].lower() != domain.lower():
             return False
 
         for i in range(cert.get_extension_count()):
@@ -594,8 +593,9 @@ class TLSALPN01Response(KeyAuthorizationChallengeResponse):
 
         return False
 
+    # pylint: disable=too-many-arguments
     def simple_verify(self, chall, domain, account_public_key,
-                      cert=None, **kwargs):
+                      cert=None, host=None, port=None):
         """Simple verify.
 
         Verify ``validation`` using ``account_public_key``, optionally
@@ -607,6 +607,7 @@ class TLSALPN01Response(KeyAuthorizationChallengeResponse):
         :param OpenSSL.crypto.X509 cert: Optional certificate. If not
             provided (``None``) certificate will be retrieved using
             `probe_cert`.
+        :param string host: IP address used to probe the certificate.
         :param int port: Port used to probe the certificate.
 
 
@@ -621,7 +622,7 @@ class TLSALPN01Response(KeyAuthorizationChallengeResponse):
 
         if cert is None:
             try:
-                cert = self.probe_cert(domain=domain, **kwargs)
+                cert = self.probe_cert(domain=domain, host=host, port=port)
             except errors.Error as error:
                 logger.debug(str(error), exc_info=True)
                 return False
