@@ -170,6 +170,14 @@ one of the options shown below on the command line.
 It must still be possible for your machine to accept inbound connections from
 the Internet on the specified port using each requested domain name.
 
+By default, Certbot first attempts to bind to the port for all interfaces using
+IPv6 and then bind to that port using IPv4; Certbot continues so long as at
+least one bind succeeds. On most Linux systems, IPv4 traffic will be routed to
+the bound IPv6 port and the failure during the second bind is expected.
+
+Use ``--<challenge-type>-address`` to explicitly tell Certbot which interface
+(and protocol) to bind.
+
 .. note:: The ``--standalone-supported-challenges`` option has been
    deprecated since ``certbot`` version 0.9.0.
 
@@ -601,7 +609,7 @@ commands into your individual environment.
 .. note:: ``certbot renew`` exit status will only be 1 if a renewal attempt failed.
   This means ``certbot renew`` exit status will be 0 if no certificate needs to be updated.
   If you write a custom script and expect to run a command only after a certificate was actually renewed
-  you will need to use the ``--post-hook`` since the exit status will be 0 both on successful renewal
+  you will need to use the ``--deploy-hook`` since the exit status will be 0 both on successful renewal
   and when renewal is not necessary.
 
 .. _renewal-config-file:

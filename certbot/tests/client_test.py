@@ -12,7 +12,6 @@ from certbot import util
 
 import certbot.tests.util as test_util
 
-
 KEY = test_util.load_vector("rsa512_key.pem")
 CSR_SAN = test_util.load_vector("csr-san_512.pem")
 
@@ -92,6 +91,20 @@ class RegisterTest(test_util.ConfigTestCase):
                     mock_logger.info.assert_called_once_with(mock.ANY)
                     self.assertTrue(mock_handle.called)
 
+    @mock.patch("certbot.account.report_new_account")
+    @mock.patch("certbot.client.display_ops.get_email")
+    def test_dry_run_no_staging_account(self, _rep, mock_get_email):
+        """Tests dry-run for no staging account, expect account created with no email"""
+        with mock.patch("certbot.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
+            with mock.patch("certbot.eff.handle_subscription"):
+                with mock.patch("certbot.account.report_new_account"):
+                    self.config.dry_run = True
+                    self._call()
+                    # check Certbot did not ask the user to provide an email
+                    self.assertFalse(mock_get_email.called)
+                    # check Certbot created an account with no email. Contact should return empty
+                    self.assertFalse(mock_client().new_account_and_tos.call_args[0][0].contact)
+
     def test_unsupported_error(self):
         from acme import messages
         msg = "Test"
@@ -105,6 +118,7 @@ class RegisterTest(test_util.ConfigTestCase):
 
 class ClientTestCommon(test_util.ConfigTestCase):
     """Common base class for certbot.client.Client tests."""
+
     def setUp(self):
         super(ClientTestCommon, self).setUp()
         self.config.no_verify_ssl = False
@@ -124,6 +138,7 @@ class ClientTestCommon(test_util.ConfigTestCase):
 
 class ClientTest(ClientTestCommon):
     """Tests for certbot.client.Client."""
+
     def setUp(self):
         super(ClientTest, self).setUp()
 
@@ -286,10 +301,10 @@ class ClientTest(ClientTestCommon):
     @mock.patch('certbot.client.Client.obtain_certificate')
     @mock.patch('certbot.storage.RenewableCert.new_lineage')
     def test_obtain_and_enroll_certificate(self,
-        mock_storage, mock_obtain_certificate):
+                                           mock_storage, mock_obtain_certificate):
         domains = ["*.example.com", "example.com"]
         mock_obtain_certificate.return_value = (mock.MagicMock(),
-            mock.MagicMock(), mock.MagicMock(), None)
+                                                mock.MagicMock(), mock.MagicMock(), None)
 
         self.client.config.dry_run = False
         self.assertTrue(self.client.obtain_and_enroll_certificate(domains, "example_cert"))
@@ -318,8 +333,8 @@ class ClientTest(ClientTestCommon):
         candidate_fullchain_path = os.path.join(tmp_path, "chains", "fullchain.pem")
         mock_parser.verb = "certonly"
         mock_parser.args = ["--cert-path", candidate_cert_path,
-                "--chain-path", candidate_chain_path,
-                "--fullchain-path", candidate_fullchain_path]
+                            "--chain-path", candidate_chain_path,
+                            "--fullchain-path", candidate_fullchain_path]
 
         cert_path, chain_path, fullchain_path = self.client.save_certificate(
             cert_pem, chain_pem, candidate_cert_path, candidate_chain_path,
@@ -407,6 +422,7 @@ class ClientTest(ClientTestCommon):
 
 class EnhanceConfigTest(ClientTestCommon):
     """Tests for certbot.client.Client.enhance_config."""
+
     def setUp(self):
         super(EnhanceConfigTest, self).setUp()
 
