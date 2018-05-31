@@ -315,8 +315,8 @@ Please:
 Mypy type annotations
 =====================
 
-Certbot uses the ``mypy`` static type checker. Python 3 natively supports official type annotations,
-which can then be tested for consistency using ``mypy``. Python 3 doesn’t, but type annotations can
+Certbot uses the `mypy`_ static type checker. Python 3 natively supports official type annotations,
+which can then be tested for consistency using ``mypy``. Python 2 doesn’t, but type annotations can
 be `added in comments`_. ``mypy`` does some type checks even without type annotations; we can find
 bugs in Certbot even without a fully annotated codebase.
 
@@ -342,8 +342,9 @@ Those imports should look like this:
   from OpenSSL import crypto
   from OpenSSL import SSL # type: ignore # https://github.com/python/typeshed/issues/2052
 
-.. _added in comments: http://mypy.readthedocs.io/en/latest/cheat_sheet.html
-.. _great guide: http://blog.zulip.org/2016/10/13/static-types-in-python-oh-mypy/
+.. _mypy: https://mypy.readthedocs.io
+.. _added in comments: https://mypy.readthedocs.io/en/latest/cheat_sheet.html
+.. _great guide: https://blog.zulip.org/2016/10/13/static-types-in-python-oh-mypy/
 
 Submitting a pull request
 =========================
