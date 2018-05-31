@@ -286,8 +286,8 @@ class NginxConfigurator(common.Installer):
         if not vhosts:
             if create_if_no_match:
                 # result will not be [None] because it errors on failure
-                vhosts = [self._vhost_from_duplicated_default(target_name,
-                    preferred_port=str(self.config.tls_sni_01_port))]
+                vhosts = [self._vhost_from_duplicated_default(target_name, allow_port_mismatch=True,
+                    port=str(self.config.tls_sni_01_port))]
             else:
                 # No matches. Raise a misconfiguration error.
                 raise errors.MisconfigurationError(
@@ -330,9 +330,9 @@ class NginxConfigurator(common.Installer):
                     ipv6only_present = True
         return (ipv6_active, ipv6only_present)
 
-    def _vhost_from_duplicated_default(self, domain, port=None, preferred_port=None):
-        """port must match if given.
-           preferred_port is used to choose if we find multiple matches.
+    def _vhost_from_duplicated_default(self, domain, allow_port_mismatch, port=None):
+        """if allow_port_mismatch is False, only server blocks with matching ports will be
+           used as a default server block template.
         """
         if self.new_vhost is None:
             default_vhost = self._get_default_vhost(port, preferred_port)
@@ -351,24 +351,24 @@ class NginxConfigurator(common.Installer):
             name_block[0].append(name)
         self.parser.update_or_add_server_directives(vhost, name_block)
 
-    def _get_default_vhost(self, port, preferred_port):
+    def _get_default_vhost(self, port, allow_port_mismatch):
+        """Helper method for _vhost_from_duplicated_default; see argument documentation there"""
         vhost_list = self.parser.get_vhosts()
         # if one has default_server set, return that one
-        default_vhosts = []
+        all_default_vhosts = []
+        port_matching_vhosts = []
         for vhost in vhost_list:
             for addr in vhost.addrs:
                 if addr.default:
-                    if port is None or self._port_matches(port, addr.get_port()):
-                        default_vhosts.append(vhost)
-                        break
+                    all_default_vhosts.append(vhost)
+                    if port is not None and self._port_matches(port, addr.get_port()):
+                        port_matching_vhosts.append(vhost)
+                    break
 
-        if len(default_vhosts) == 1:
+        if len(port_matching_vhosts) == 1:
+            return port_matching_vhosts[0]
+        elif len(default_vhosts) == 1 and allow_port_mismatch:
             return default_vhosts[0]
-        elif len(default_vhosts) > 1 and preferred_port is not None:
-            for vhost in default_vhosts:
-                for addr in vhost.addrs:
-                    if addr.default and self._port_matches(preferred_port, addr.get_port()):
-                        return vhost
 
         # TODO: present a list of vhosts for user to choose from
 
@@ -477,7 +477,8 @@ class NginxConfigurator(common.Installer):
             matches = self._get_redirect_ranked_matches(target_name, port)
             vhosts = [x for x in [self._select_best_name_match(matches)]if x is not None]
         if not vhosts and create_if_no_match:
-            vhosts = [self._vhost_from_duplicated_default(target_name, port=port)]
+            vhosts = [self._vhost_from_duplicated_default(target_name, allow_port_mismatch=False,
+                port=port)]
         return vhosts
 
     def _port_matches(self, test_port, matching_port):
