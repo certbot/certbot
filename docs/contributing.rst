@@ -316,8 +316,8 @@ Mypy type annotations
 =====================
 
 Certbot uses the `mypy`_ static type checker. Python 3 natively supports official type annotations,
-which can then be tested for consistency using ``mypy``. Python 2 doesn’t, but type annotations can
-be `added in comments`_. ``mypy`` does some type checks even without type annotations; we can find
+which can then be tested for consistency using mypy. Python 2 doesn’t, but type annotations can
+be `added in comments`_. Mypy does some type checks even without type annotations; we can find
 bugs in Certbot even without a fully annotated codebase.
 
 Certbot supports both Python 2 and 3, so we’re using Python 2-style annotations.
@@ -325,7 +325,7 @@ Certbot supports both Python 2 and 3, so we’re using Python 2-style annotation
 Zulip wrote a `great guide`_ to using mypy. It’s useful, but you don’t have to read the whole thing
 to start contributing to Certbot.
 
-To run ``mypy`` on Certbot, use ``tox -e mypy`` on a machine that has Python 3 installed.
+To run mypy on Certbot, use ``tox -e mypy`` on a machine that has Python 3 installed.
 
 Note that instead of just importing ``typing``, due to packaging issues, in Certbot we import from
 ``acme.magic_typing`` and have to add some comments for pylint like this:
