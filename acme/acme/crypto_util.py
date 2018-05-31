@@ -53,12 +53,14 @@ class SSLSocket(object):  # pylint: disable=too-few-public-methods
         `certs` parameter would be ignored, and therefore must be empty.
 
     """
-    def __init__(self, sock, certs,
+    def __init__(self, sock, certs=None,
             method=_DEFAULT_TLSSNI01_SSL_METHOD, alpn_selection=None,
             cert_selection=None):
         self.sock = sock
         self.alpn_selection = alpn_selection
         self.method = method
+        if not cert_selection and not certs:
+            raise ValueError("Neither cert_selection or certs specified.")
         if cert_selection and certs:
             raise ValueError("Both cert_selection and certs specified.")
         if cert_selection is None:

@@ -74,6 +74,8 @@ class SSLSocketTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             _ = SSLSocket(None, {'sni': ('key', 'cert')},
                     cert_selection=lambda _: None)
+        with self.assertRaises(ValueError):
+            _ = SSLSocket(None)
 
 
 class PyOpenSSLCertOrReqAllNamesTest(unittest.TestCase):

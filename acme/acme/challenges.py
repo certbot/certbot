@@ -557,6 +557,8 @@ class TLSALPN01Response(KeyAuthorizationChallengeResponse):
         """Probe tls-alpn-01 challenge certificate.
 
         :param unicode domain: domain being validated, required.
+        :param string host: IP address used to probe the certificate.
+        :param int port: Port used to probe the certificate.
 
         """
         if host is None:
@@ -571,6 +573,7 @@ class TLSALPN01Response(KeyAuthorizationChallengeResponse):
     def verify_cert(self, domain, cert):
         """Verify tls-alpn-01 challenge certificate.
 
+        :param unicode domain: Domain name being validated.
         :param OpensSSL.crypto.X509 cert: Challenge certificate.
 
         :returns: Whether the certificate was successfully verified.

@@ -43,7 +43,7 @@ class TLSServer(socketserver.TCPServer):
 
     def _wrap_sock(self):
         self.socket = crypto_util.SSLSocket(
-            self.socket, {}, cert_selection=self.cert_selection,
+            self.socket, cert_selection=self.cert_selection,
             alpn_selection=getattr(self, 'alpn_selection', None),
             method=self.method)
 
