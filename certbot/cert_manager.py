@@ -104,7 +104,7 @@ def lineage_for_certname(cli_config, certname):
     """Find a lineage object with name certname."""
     configs_dir = cli_config.renewal_configs_dir
     # Verify the directory is there
-    util.make_or_verify_dir(configs_dir, mode=0o755, uid=os.geteuid())
+    util.make_or_verify_dir(configs_dir, mode=0o755)
     try:
         renewal_file = storage.renewal_file_for_certname(cli_config, certname)
     except errors.CertStorageError:
@@ -374,7 +374,7 @@ def _search_lineages(cli_config, func, initial_rv, *args):
     """
     configs_dir = cli_config.renewal_configs_dir
     # Verify the directory is there
-    util.make_or_verify_dir(configs_dir, mode=0o755, uid=os.geteuid())
+    util.make_or_verify_dir(configs_dir, mode=0o755)
 
     rv = initial_rv
     for renewal_file in storage.renewal_conf_files(cli_config):

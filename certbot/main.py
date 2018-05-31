@@ -1248,9 +1248,9 @@ def make_or_verify_needed_dirs(config):
 
     """
     util.set_up_core_dir(config.config_dir, constants.CONFIG_DIRS_MODE,
-                         os.geteuid(), config.strict_permissions)
+                         config.strict_permissions)
     util.set_up_core_dir(config.work_dir, constants.CONFIG_DIRS_MODE,
-                         os.geteuid(), config.strict_permissions)
+                         config.strict_permissions)
 
     hook_dirs = (config.renewal_pre_hooks_dir,
                  config.renewal_deploy_hooks_dir,

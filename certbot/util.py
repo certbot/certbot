@@ -57,6 +57,11 @@ _INITIAL_PID = os.getpid()
 # released, but the file isn't deleted.
 _LOCKS = OrderedDict() # type: OrderedDict[str, lock.LockFile]
 
+#Global UID Parameter rather than requiring every single class (Accounts, Storage etc) to use os.geteUID()
+if os.name == 'posix':
+    UID=os.geteuid()
+if os.name == 'nt':
+    UID=0
 
 def run_script(params, log=logger.error):
     """Run the script with the given params.
@@ -144,32 +149,29 @@ def _release_locks():
             logger.debug(msg, exc_info=True)
 
 
-def set_up_core_dir(directory, mode, uid, strict):
+def set_up_core_dir(directory, mode, strict):
     """Ensure directory exists with proper permissions and is locked.
 
     :param str directory: Path to a directory.
     :param int mode: Directory mode.
-    :param int uid: Directory owner.
     :param bool strict: require directory to be owned by current user
-
     :raises .errors.LockError: if the directory cannot be locked
     :raises .errors.Error: if the directory cannot be made or verified
 
     """
     try:
-        make_or_verify_dir(directory, mode, uid, strict)
+        make_or_verify_dir(directory, mode, strict)
         lock_dir_until_exit(directory)
     except OSError as error:
         logger.debug("Exception was:", exc_info=True)
         raise errors.Error(PERM_ERR_FMT.format(error))
 
 
-def make_or_verify_dir(directory, mode=0o755, uid=0, strict=False):
+def make_or_verify_dir(directory, mode=0o755, strict=False):
     """Make sure directory exists with proper permissions.
 
     :param str directory: Path to a directory.
     :param int mode: Directory mode.
-    :param int uid: Directory owner.
     :param bool strict: require directory to be owned by current user
 
     :raises .errors.Error: if a directory already exists,
@@ -184,27 +186,25 @@ def make_or_verify_dir(directory, mode=0o755, uid=0, strict=False):
         os.makedirs(directory, mode)
     except OSError as exception:
         if exception.errno == errno.EEXIST:
-            if strict and not check_permissions(directory, mode, uid):
+            if strict and not check_permissions(directory, mode):
                 raise errors.Error(
                     "%s exists, but it should be owned by user %d with"
-                    "permissions %s" % (directory, uid, oct(mode)))
+                    "permissions %s" % (directory, UID, oct(mode)))
         else:
             raise
 
 
-def check_permissions(filepath, mode, uid=0):
+def check_permissions(filepath, mode):
     """Check file or directory permissions.
 
     :param str filepath: Path to the tested file (or directory).
     :param int mode: Expected file mode.
-    :param int uid: Expected file owner.
-
     :returns: True if `mode` and `uid` match, False otherwise.
     :rtype: bool
 
     """
     file_stat = os.stat(filepath)
-    return stat.S_IMODE(file_stat.st_mode) == mode and file_stat.st_uid == uid
+    return stat.S_IMODE(file_stat.st_mode) == mode and file_stat.st_uid == UID
 
 
 def safe_open(path, mode="w", chmod=None, buffering=None):
