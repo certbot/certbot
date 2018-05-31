@@ -124,8 +124,11 @@ class ApacheTlsSni01(common.TLSSNI01):
             self.configurator.config.tls_sni_01_port)))
 
         try:
-            vhost = self.configurator.choose_vhost(achall.domain,
-                                                   create_if_no_ssl=False)
+            try:
+                vhosts = self.configurator.vhosts
+            except AttributeError:
+                vhost = self.configurator.choose_vhost(achall.domain,
+                                                       create_if_no_ssl=False)
         except (PluginError, MissingCommandlineFlag):
             # We couldn't find the virtualhost for this domain, possibly
             # because it's a new vhost that's not configured yet
@@ -134,13 +137,14 @@ class ApacheTlsSni01(common.TLSSNI01):
             addrs.add(default_addr)
             return addrs
 
-        for addr in vhost.addrs:
-            if "_default_" == addr.get_addr():
-                addrs.add(default_addr)
-            else:
-                addrs.add(
-                    addr.get_sni_addr(
-                        self.configurator.config.tls_sni_01_port))
+        for vhost in vhosts:
+            for addr in vhost.addrs:
+                if "_default_" == addr.get_addr():
+                    addrs.add(default_addr)
+                else:
+                    addrs.add(
+                        addr.get_sni_addr(
+                            self.configurator.config.tls_sni_01_port))
 
         return addrs
 
