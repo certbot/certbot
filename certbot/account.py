@@ -157,9 +157,9 @@ class AccountFileStorage(interfaces.AccountStorage):
     def _metadata_path(cls, account_dir_path):
         return os.path.join(account_dir_path, "meta.json")
 
-    def _find_all_inner(self, first_pass):
+    def _find_all_for_accounts_dir(self, accounts_dir):
         try:
-            candidates = os.listdir(self.config.accounts_dir)
+            candidates = os.listdir(accounts_dir)
         except OSError:
             return []
 
@@ -170,24 +170,23 @@ class AccountFileStorage(interfaces.AccountStorage):
             except errors.AccountStorageError:
                 logger.debug("Account loading problem", exc_info=True)
 
-        if not accounts and self.config.server_path in constants.LE_REUSE_SERVERS and first_pass:
-            # make symlink to next one down
-            if os.path.islink(self.config.accounts_dir):
-                os.unlink(self.config.accounts_dir)
-            else:
-                os.rmdir(self.config.accounts_dir)
+        if not accounts and self.config.server_path in constants.LE_REUSE_SERVERS:
+            # find all for the next link down
             prev_server_path = constants.LE_REUSE_SERVERS[self.config.server_path]
             prev_account_dir = self.config.accounts_dir_for_server_path(prev_server_path)
-            util.make_or_verify_dir(prev_account_dir, 0o700, os.geteuid(),
-                                   self.config.strict_permissions)
-            os.symlink(prev_account_dir, self.config.accounts_dir)
-            # try again
-            return self._find_all_inner(False)
-        else:
-            return accounts
+            prev_accounts = _find_all_for_accounts_dir(prev_account_dir)
+            # if we found something, link to that
+            if prev_accounts:
+                if os.path.islink(accounts_dir):
+                    os.unlink(accounts_dir)
+                else:
+                    os.rmdir(accounts_dir)
+                os.symlink(prev_account_dir, accounts_dir)
+            accounts = prev_accounts
+        return accounts
 
     def find_all(self):
-        return self._find_all_inner(True)
+        return self._find_all_for_accounts_dir(self.config.accounts_dir)
 
     def load(self, account_id):
         account_dir_path = self._account_dir_path(account_id)
