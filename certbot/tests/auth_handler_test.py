@@ -10,6 +10,7 @@ import zope.component
 from acme import challenges
 from acme import client as acme_client
 from acme import messages
+from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
 
 from certbot import achallenges
 from certbot import errors
@@ -289,6 +290,32 @@ class HandleAuthorizationsTest(unittest.TestCase):
         self.assertEqual(
             self.mock_auth.cleanup.call_args[0][0][0].typ, "tls-sni-01")
 
+    @mock.patch("certbot.auth_handler.AuthHandler._respond")
+    def test_respond_error(self, mock_respond):
+        authzrs = [gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES)]
+        mock_order = mock.MagicMock(authorizations=authzrs)
+        mock_respond.side_effect = errors.AuthorizationError
+
+        self.assertRaises(
+            errors.AuthorizationError, self.handler.handle_authorizations, mock_order)
+        self.assertEqual(self.mock_auth.cleanup.call_count, 1)
+        self.assertEqual(
+            self.mock_auth.cleanup.call_args[0][0][0].typ, "tls-sni-01")
+
+    @mock.patch("certbot.auth_handler.AuthHandler._poll_challenges")
+    @mock.patch("certbot.auth_handler.AuthHandler.verify_authzr_complete")
+    def test_incomplete_authzr_error(self, mock_verify, mock_poll):
+        authzrs = [gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES)]
+        mock_order = mock.MagicMock(authorizations=authzrs)
+        mock_verify.side_effect = errors.AuthorizationError
+        mock_poll.side_effect = self._validate_all
+
+        self.assertRaises(
+            errors.AuthorizationError, self.handler.handle_authorizations, mock_order)
+        self.assertEqual(self.mock_auth.cleanup.call_count, 1)
+        self.assertEqual(
+            self.mock_auth.cleanup.call_args[0][0][0].typ, "tls-sni-01")
+
     def _validate_all(self, aauthzrs, unused_1, unused_2):
         for i, aauthzr in enumerate(aauthzrs):
             azr = aauthzr.authzr
@@ -328,11 +355,12 @@ class PollChallengesTest(unittest.TestCase):
                 acme_util.CHALLENGES, [messages.STATUS_PENDING] * 3, False), [])
         ]
 
-        self.chall_update = {}
+        self.chall_update = {}  # type: Dict[int, achallenges.KeyAuthorizationAnnotatedChallenge]
         for i, aauthzr in enumerate(self.aauthzrs):
             self.chall_update[i] = [
                 challb_to_achall(challb, mock.Mock(key="dummy_key"), self.doms[i])
                 for challb in aauthzr.authzr.body.challenges]
+
 
     @mock.patch("certbot.auth_handler.time")
     def test_poll_challenges(self, unused_mock_time):

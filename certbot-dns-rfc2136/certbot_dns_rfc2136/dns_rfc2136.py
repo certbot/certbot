@@ -38,6 +38,8 @@ class Authenticator(dns_common.DNSAuthenticator):
       'HMAC-SHA512': dns.tsig.HMAC_SHA512
     }
 
+    PORT = 53
+
     description = 'Obtain certificates using a DNS TXT record (if you are using BIND for DNS).'
     ttl = 120
 
@@ -80,6 +82,7 @@ class Authenticator(dns_common.DNSAuthenticator):
 
     def _get_rfc2136_client(self):
         return _RFC2136Client(self.credentials.conf('server'),
+                              int(self.credentials.conf('port') or self.PORT),
                               self.credentials.conf('name'),
                               self.credentials.conf('secret'),
                               self.ALGORITHMS.get(self.credentials.conf('algorithm'),
@@ -90,9 +93,10 @@ class _RFC2136Client(object):
     """
     Encapsulates all communication with the target DNS server.
     """
-    def __init__(self, server, key_name, key_secret, key_algorithm):
+    def __init__(self, server, port, key_name, key_secret, key_algorithm):
         try:
             self.server = self._get_ip_for_hostname(server)
+            self.port = port
         except Exception as e:
             raise errors.PluginError("Failed to resolve {0}: {1}".format(server, e))
 
@@ -124,7 +128,7 @@ class _RFC2136Client(object):
         update.add(rel, record_ttl, dns.rdatatype.TXT, record_content)
 
         try:
-            response = dns.query.tcp(update, self.server)
+            response = dns.query.tcp(update, self.server, port=self.port)
         except Exception as e:
             raise errors.PluginError('Encountered error adding TXT record: {0}'
                                      .format(e))
@@ -159,7 +163,7 @@ class _RFC2136Client(object):
         update.delete(rel, dns.rdatatype.TXT, record_content)
 
         try:
-            response = dns.query.tcp(update, self.server)
+            response = dns.query.tcp(update, self.server, port=self.port)
         except Exception as e:
             raise errors.PluginError('Encountered error deleting TXT record: {0}'
                                      .format(e))
@@ -232,7 +236,7 @@ class _RFC2136Client(object):
         request.flags ^= dns.flags.RD
 
         try:
-            response = dns.query.udp(request, self.server)
+            response = dns.query.udp(request, self.server, port=self.port)
             rcode = response.rcode()
 
             # Authoritative Answer bit should be set

@@ -5,6 +5,10 @@ import os
 import signal
 import traceback
 
+# pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Any, Callable, Dict, List, Union
+# pylint: enable=unused-import, no-name-in-module
+
 from certbot import errors
 
 logger = logging.getLogger(__name__)
@@ -23,7 +27,6 @@ if os.name != "nt":
         # This is platform-dependent, so we check it dynamically.
         if signal.getsignal(signal_code) != signal.SIG_IGN:
             _SIGNALS.append(signal_code)
-
 
 class ErrorHandler(object):
     """Context manager for running code that must be cleaned up on failure.
@@ -55,10 +58,11 @@ class ErrorHandler(object):
 
     """
     def __init__(self, func=None, *args, **kwargs):
+        self.call_on_regular_exit = False
         self.body_executed = False
-        self.funcs = []
-        self.prev_handlers = {}
-        self.received_signals = []
+        self.funcs = []  # type: List[Callable[[], Any]]
+        self.prev_handlers = {}  # type: Dict[int, Union[int, None, Callable]]
+        self.received_signals = []  # type: List[int]
         if func is not None:
             self.register(func, *args, **kwargs)
 
@@ -70,8 +74,11 @@ class ErrorHandler(object):
         self.body_executed = True
         retval = False
         # SystemExit is ignored to properly handle forks that don't exec
-        if exec_type in (None, SystemExit):
+        if exec_type is SystemExit:
             return retval
+        elif exec_type is None:
+            if not self.call_on_regular_exit:
+                return retval
         elif exec_type is errors.SignalExit:
             logger.debug("Encountered signals: %s", self.received_signals)
             retval = True
@@ -85,6 +92,7 @@ class ErrorHandler(object):
         return retval
 
     def register(self, func, *args, **kwargs):
+        # type: (Callable, *Any, **Any) -> None
         """Sets func to be run with the given arguments during cleanup.
 
         :param function func: function to be called in case of an error
@@ -98,9 +106,8 @@ class ErrorHandler(object):
         while self.funcs:
             try:
                 self.funcs[-1]()
-            except Exception as error:  # pylint: disable=broad-except
-                logger.error("Encountered exception during recovery")
-                logger.exception(error)
+            except Exception:  # pylint: disable=broad-except
+                logger.error("Encountered exception during recovery: ", exc_info=True)
             self.funcs.pop()
 
     def _set_signal_handlers(self):
@@ -136,3 +143,15 @@ class ErrorHandler(object):
         for signum in self.received_signals:
             logger.debug("Calling signal %s", signum)
             os.kill(os.getpid(), signum)
+
+class ExitHandler(ErrorHandler):
+    """Context manager for running code that must be cleaned up.
+
+    Subclass of ErrorHandler, with the same usage and parameters.
+    In addition to cleaning up on all signals, also cleans up on
+    regular exit.
+    """
+    def __init__(self, func=None, *args, **kwargs):
+        ErrorHandler.__init__(self, func, *args, **kwargs)
+        self.call_on_regular_exit = True
+

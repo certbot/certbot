@@ -28,6 +28,9 @@ from certbot_nginx import nginxparser
 from certbot_nginx import parser
 from certbot_nginx import tls_sni_01
 from certbot_nginx import http_01
+from certbot_nginx import obj # pylint: disable=unused-import
+from acme.magic_typing import List, Dict, Set # pylint: disable=unused-import, no-name-in-module
+
 
 
 logger = logging.getLogger(__name__)
@@ -98,8 +101,8 @@ class NginxConfigurator(common.Installer):
 
         # List of vhosts configured per wildcard domain on this run.
         # used by deploy_cert() and enhance()
-        self._wildcard_vhosts = {}
-        self._wildcard_redirect_vhosts = {}
+        self._wildcard_vhosts = {} # type: Dict[str, List[obj.VirtualHost]]
+        self._wildcard_redirect_vhosts = {} # type: Dict[str, List[obj.VirtualHost]]
 
         # Add number of outstanding challenges
         self._chall_out = 0
@@ -192,8 +195,8 @@ class NginxConfigurator(common.Installer):
         cert_directives = [['\n    ', 'ssl_certificate', ' ', fullchain_path],
                            ['\n    ', 'ssl_certificate_key', ' ', key_path]]
 
-        self.parser.add_server_directives(vhost,
-                                          cert_directives, replace=True)
+        self.parser.update_or_add_server_directives(vhost,
+                                          cert_directives)
         logger.info("Deploying Certificate to VirtualHost %s", vhost.filep)
 
         self.save_notes += ("Changed vhost at %s with addresses of %s\n" %
@@ -293,7 +296,7 @@ class NginxConfigurator(common.Installer):
                             ("Cannot find a VirtualHost matching domain %s. "
                              "In order for Certbot to correctly perform the challenge "
                              "please add a corresponding server_name directive to your "
-                             "nginx configuration: "
+                             "nginx configuration for every domain on your certificate: "
                              "https://nginx.org/en/docs/http/server_names.html") % (target_name))
         # Note: if we are enhancing with ocsp, vhost should already be ssl.
         for vhost in vhosts:
@@ -331,8 +334,9 @@ class NginxConfigurator(common.Installer):
 
     def _vhost_from_duplicated_default(self, domain, port=None):
         if self.new_vhost is None:
-            default_vhost = self._get_default_vhost(port)
-            self.new_vhost = self.parser.duplicate_vhost(default_vhost, delete_default=True)
+            default_vhost = self._get_default_vhost(port, domain)
+            self.new_vhost = self.parser.duplicate_vhost(default_vhost,
+                remove_singleton_listen_params=True)
             self.new_vhost.names = set()
 
         self._add_server_name_to_vhost(self.new_vhost, domain)
@@ -344,9 +348,9 @@ class NginxConfigurator(common.Installer):
         for name in vhost.names:
             name_block[0].append(' ')
             name_block[0].append(name)
-        self.parser.add_server_directives(vhost, name_block, replace=True)
+        self.parser.update_or_add_server_directives(vhost, name_block)
 
-    def _get_default_vhost(self, port):
+    def _get_default_vhost(self, port, domain):
         vhost_list = self.parser.get_vhosts()
         # if one has default_server set, return that one
         default_vhosts = []
@@ -363,7 +367,7 @@ class NginxConfigurator(common.Installer):
         # TODO: present a list of vhosts for user to choose from
 
         raise errors.MisconfigurationError("Could not automatically find a matching server"
-            " block. Set the `server_name` directive to use the Nginx installer.")
+            " block for %s. Set the `server_name` directive to use the Nginx installer." % domain)
 
     def _get_ranked_matches(self, target_name):
         """Returns a ranked list of vhosts that match target_name.
@@ -527,7 +531,7 @@ class NginxConfigurator(common.Installer):
         :rtype: set
 
         """
-        all_names = set()
+        all_names = set() # type: Set[str]
 
         for vhost in self.parser.get_vhosts():
             all_names.update(vhost.names)
@@ -584,7 +588,7 @@ class NginxConfigurator(common.Installer):
         # have it continue to do so.
         if len(vhost.addrs) == 0:
             listen_block = [['\n    ', 'listen', ' ', self.DEFAULT_LISTEN_PORT]]
-            self.parser.add_server_directives(vhost, listen_block, replace=False)
+            self.parser.add_server_directives(vhost, listen_block)
 
         if vhost.ipv6_enabled():
             ipv6_block = ['\n    ',
@@ -618,7 +622,7 @@ class NginxConfigurator(common.Installer):
         ])
 
         self.parser.add_server_directives(
-            vhost, ssl_block, replace=False)
+            vhost, ssl_block)
 
     ##################################
     # enhancement methods (IInstaller)
@@ -683,7 +687,7 @@ class NginxConfigurator(common.Installer):
                 ['\n    ', 'add_header', ' ', header_substring, ' '] +
                     constants.HEADER_ARGS[header_substring],
                 ['\n']]
-            self.parser.add_server_directives(vhost, header_directives, replace=False)
+            self.parser.add_server_directives(vhost, header_directives)
 
     def _add_redirect_block(self, vhost, domain):
         """Add redirect directive to vhost
@@ -691,7 +695,7 @@ class NginxConfigurator(common.Installer):
         redirect_block = _redirect_block_for_domain(domain)
 
         self.parser.add_server_directives(
-            vhost, redirect_block, replace=False, insert_at_top=True)
+            vhost, redirect_block, insert_at_top=True)
 
     def _split_block(self, vhost, only_directives=None):
         """Splits this "virtual host" (i.e. this nginx server block) into
@@ -771,7 +775,7 @@ class NginxConfigurator(common.Installer):
 
             # Add this at the bottom to get the right order of directives
             return_404_directive = [['\n    ', 'return', ' ', '404']]
-            self.parser.add_server_directives(http_vhost, return_404_directive, replace=False)
+            self.parser.add_server_directives(http_vhost, return_404_directive)
 
             vhost = http_vhost
 
@@ -821,9 +825,9 @@ class NginxConfigurator(common.Installer):
 
         try:
             self.parser.add_server_directives(vhost,
-                                              stapling_directives, replace=False)
+                                              stapling_directives)
         except errors.MisconfigurationError as error:
-            logger.debug(error)
+            logger.debug(str(error))
             raise errors.PluginError("An error occurred while enabling OCSP "
                                      "stapling for {0}.".format(vhost.names))
 
@@ -891,11 +895,11 @@ class NginxConfigurator(common.Installer):
                 universal_newlines=True)
             text = proc.communicate()[1]  # nginx prints output to stderr
         except (OSError, ValueError) as error:
-            logger.debug(error, exc_info=True)
+            logger.debug(str(error), exc_info=True)
             raise errors.PluginError(
                 "Unable to run %s -V" % self.conf('ctl'))
 
-        version_regex = re.compile(r"nginx/([0-9\.]*)", re.IGNORECASE)
+        version_regex = re.compile(r"nginx version: ([^/]+)/([0-9\.]*)", re.IGNORECASE)
         version_matches = version_regex.findall(text)
 
         sni_regex = re.compile(r"TLS SNI support enabled", re.IGNORECASE)
@@ -912,7 +916,12 @@ class NginxConfigurator(common.Installer):
         if not sni_matches:
             raise errors.PluginError("Nginx build doesn't support SNI")
 
-        nginx_version = tuple([int(i) for i in version_matches[0].split(".")])
+        product_name, product_version = version_matches[0]
+        if product_name != 'nginx':
+            logger.warning("NGINX derivative %s is not officially supported by"
+                           " certbot", product_name)
+
+        nginx_version = tuple([int(i) for i in product_version.split(".")])
 
         # nginx < 0.8.48 uses machine hostname as default server_name instead of
         # the empty string

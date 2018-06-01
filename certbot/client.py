@@ -5,7 +5,9 @@ import os
 import platform
 
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.asymmetric import rsa
+# https://github.com/python/typeshed/blob/master/third_party/
+# 2/cryptography/hazmat/primitives/asymmetric/rsa.pyi
+from cryptography.hazmat.primitives.asymmetric.rsa import generate_private_key  # type: ignore
 import josepy as jose
 import OpenSSL
 import zope.component
@@ -155,12 +157,16 @@ def register(config, account_storage, tos_cb=None):
         if not config.dry_run:
             logger.info("Registering without email!")
 
+    # If --dry-run is used, and there is no staging account, create one with no email.
+    if config.dry_run:
+        config.email = None
+
     # Each new registration shall use a fresh new key
-    key = jose.JWKRSA(key=jose.ComparableRSAKey(
-        rsa.generate_private_key(
+    rsa_key = generate_private_key(
             public_exponent=65537,
             key_size=config.rsa_key_size,
-            backend=default_backend())))
+            backend=default_backend())
+    key = jose.JWKRSA(key=jose.ComparableRSAKey(rsa_key))
     acme = acme_from_config_key(config, key)
     # TODO: add phone?
     regr = perform_registration(acme, config, tos_cb)
@@ -179,8 +185,9 @@ def perform_registration(acme, config, tos_cb):
     Actually register new account, trying repeatedly if there are email
     problems
 
-    :param .IConfig config: Client configuration.
     :param acme.client.Client client: ACME client object.
+    :param .IConfig config: Client configuration.
+    :param Callable tos_cb: a callback to handle Term of Service agreement.
 
     :returns: Registration Resource.
     :rtype: `acme.messages.RegistrationResource`
@@ -338,9 +345,10 @@ class Client(object):
         authenticator and installer, and then create a new renewable lineage
         containing it.
 
-        :param list domains: Domains to request.
-        :param plugins: A PluginsFactory object.
-        :param str certname: Name of new cert
+        :param domains: domains to request a certificate for
+        :type domains: `list` of `str`
+        :param certname: requested name of lineage
+        :type certname: `str` or `None`
 
         :returns: A new :class:`certbot.storage.RenewableCert` instance
             referred to the enrolled cert lineage, False if the cert could not
@@ -351,17 +359,11 @@ class Client(object):
 
         if (self.config.config_dir != constants.CLI_DEFAULTS["config_dir"] or
                 self.config.work_dir != constants.CLI_DEFAULTS["work_dir"]):
-            logger.warning(
+            logger.info(
                 "Non-standard path(s), might not work with crontab installed "
                 "by your operating system package manager")
 
-        if certname:
-            new_name = certname
-        elif util.is_wildcard_domain(domains[0]):
-            # Don't make files and directories starting with *.
-            new_name = domains[0][2:]
-        else:
-            new_name = domains[0]
+        new_name = self._choose_lineagename(domains, certname)
 
         if self.config.dry_run:
             logger.debug("Dry run: Skipping creating new lineage for %s",
@@ -372,6 +374,26 @@ class Client(object):
                 new_name, cert,
                 key.pem, chain,
                 self.config)
+
+    def _choose_lineagename(self, domains, certname):
+        """Chooses a name for the new lineage.
+
+        :param domains: domains in certificate request
+        :type domains: `list` of `str`
+        :param certname: requested name of lineage
+        :type certname: `str` or `None`
+
+        :returns: lineage name that should be used
+        :rtype: str
+
+        """
+        if certname:
+            return certname
+        elif util.is_wildcard_domain(domains[0]):
+            # Don't make files and directories starting with *.
+            return domains[0][2:]
+        else:
+            return domains[0]
 
     def save_certificate(self, cert_pem, chain_pem,
                          cert_path, chain_path, fullchain_path):
@@ -451,7 +473,7 @@ class Client(object):
             # sites may have been enabled / final cleanup
             self.installer.restart()
 
-    def enhance_config(self, domains, chain_path):
+    def enhance_config(self, domains, chain_path, ask_redirect=True):
         """Enhance the configuration.
 
         :param list domains: list of domains to configure
@@ -478,8 +500,9 @@ class Client(object):
         for config_name, enhancement_name, option in enhancement_info:
             config_value = getattr(self.config, config_name)
             if enhancement_name in supported:
-                if config_name == "redirect" and config_value is None:
-                    config_value = enhancements.ask(enhancement_name)
+                if ask_redirect:
+                    if config_name == "redirect" and config_value is None:
+                        config_value = enhancements.ask(enhancement_name)
                 if config_value:
                     self.apply_enhancement(domains, enhancement_name, option)
                     enhanced = True
@@ -515,8 +538,12 @@ class Client(object):
                 try:
                     self.installer.enhance(dom, enhancement, options)
                 except errors.PluginEnhancementAlreadyPresent:
-                    logger.warning("Enhancement %s was already set.",
-                            enhancement)
+                    if enhancement == "ensure-http-header":
+                        logger.warning("Enhancement %s was already set.",
+                                options)
+                    else:
+                        logger.warning("Enhancement %s was already set.",
+                                enhancement)
                 except errors.PluginError:
                     logger.warning("Unable to set enhancement %s for %s",
                             enhancement, dom)
@@ -585,8 +612,10 @@ def validate_key_csr(privkey, csr=None):
         if csr.form == "der":
             csr_obj = OpenSSL.crypto.load_certificate_request(
                 OpenSSL.crypto.FILETYPE_ASN1, csr.data)
-            csr = util.CSR(csr.file, OpenSSL.crypto.dump_certificate(
-                OpenSSL.crypto.FILETYPE_PEM, csr_obj), "pem")
+            cert_buffer = OpenSSL.crypto.dump_certificate_request(
+                OpenSSL.crypto.FILETYPE_PEM, csr_obj
+            )
+            csr = util.CSR(csr.file, cert_buffer, "pem")
 
         # If CSR is provided, it must be readable and valid.
         if csr.data and not crypto_util.valid_csr(csr.data):

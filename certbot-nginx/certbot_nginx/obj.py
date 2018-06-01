@@ -29,6 +29,8 @@ class Addr(common.Addr):
     :param str port: port number or "\*" or ""
     :param bool ssl: Whether the directive includes 'ssl'
     :param bool default: Whether the directive includes 'default_server'
+    :param bool default: Whether this is an IPv6 address
+    :param bool ipv6only: Whether the directive includes 'ipv6only=on'
 
     """
     UNSPECIFIED_IPV4_ADDRESSES = ('', '*', '0.0.0.0')
@@ -87,6 +89,8 @@ class Addr(common.Addr):
             if nextpart == 'ssl':
                 ssl = True
             elif nextpart == 'default_server':
+                default = True
+            elif nextpart == 'default':
                 default = True
             elif nextpart == "ipv6only=on":
                 ipv6only = True

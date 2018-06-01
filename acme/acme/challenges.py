@@ -9,6 +9,7 @@ from cryptography.hazmat.primitives import hashes  # type: ignore
 import josepy as jose
 import OpenSSL
 import requests
+import six
 
 from acme import errors
 from acme import crypto_util
@@ -139,16 +140,16 @@ class KeyAuthorizationChallengeResponse(ChallengeResponse):
         return True
 
 
+@six.add_metaclass(abc.ABCMeta)
 class KeyAuthorizationChallenge(_TokenChallenge):
     # pylint: disable=abstract-class-little-used,too-many-ancestors
     """Challenge based on Key Authorization.
 
     :param response_cls: Subclass of `KeyAuthorizationChallengeResponse`
         that will be used to generate `response`.
-
+    :param str typ: type of the challenge
     """
-    __metaclass__ = abc.ABCMeta
-
+    typ = NotImplemented
     response_cls = NotImplemented
     thumbprint_hash_function = (
         KeyAuthorizationChallengeResponse.thumbprint_hash_function)
@@ -477,7 +478,7 @@ class TLSSNI01Response(KeyAuthorizationChallengeResponse):
             try:
                 cert = self.probe_cert(domain=domain, **kwargs)
             except errors.Error as error:
-                logger.debug(error, exc_info=True)
+                logger.debug(str(error), exc_info=True)
                 return False
 
         return self.verify_cert(cert)

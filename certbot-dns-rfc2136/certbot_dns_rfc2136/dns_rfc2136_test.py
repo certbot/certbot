@@ -14,6 +14,7 @@ from certbot.plugins.dns_test_common import DOMAIN
 from certbot.tests import util as test_util
 
 SERVER = '192.0.2.1'
+PORT = 53
 NAME = 'a-tsig-key.'
 SECRET = 'SSB3b25kZXIgd2hvIHdpbGwgYm90aGVyIHRvIGRlY29kZSB0aGlzIHRleHQK'
 VALID_CONFIG = {"rfc2136_server": SERVER, "rfc2136_name": NAME, "rfc2136_secret": SECRET}
@@ -102,7 +103,7 @@ class RFC2136ClientTest(unittest.TestCase):
     def setUp(self):
         from certbot_dns_rfc2136.dns_rfc2136 import _RFC2136Client
 
-        self.rfc2136_client = _RFC2136Client(SERVER, NAME, SECRET, dns.tsig.HMAC_MD5)
+        self.rfc2136_client = _RFC2136Client(SERVER, PORT, NAME, SECRET, dns.tsig.HMAC_MD5)
 
     @mock.patch("dns.query.tcp")
     def test_add_txt_record(self, query_mock):
@@ -112,7 +113,7 @@ class RFC2136ClientTest(unittest.TestCase):
 
         self.rfc2136_client.add_txt_record("bar", "baz", 42)
 
-        query_mock.assert_called_with(mock.ANY, SERVER)
+        query_mock.assert_called_with(mock.ANY, SERVER, port=PORT)
         self.assertTrue("bar. 42 IN TXT \"baz\"" in str(query_mock.call_args[0][0]))
 
     @mock.patch("dns.query.tcp")
@@ -145,7 +146,7 @@ class RFC2136ClientTest(unittest.TestCase):
 
         self.rfc2136_client.del_txt_record("bar", "baz")
 
-        query_mock.assert_called_with(mock.ANY, SERVER)
+        query_mock.assert_called_with(mock.ANY, SERVER, port=PORT)
         self.assertTrue("bar. 0 NONE TXT \"baz\"" in str(query_mock.call_args[0][0]))
 
     @mock.patch("dns.query.tcp")
@@ -197,7 +198,7 @@ class RFC2136ClientTest(unittest.TestCase):
         # _query_soa | pylint: disable=protected-access
         result = self.rfc2136_client._query_soa(DOMAIN)
 
-        query_mock.assert_called_with(mock.ANY, SERVER)
+        query_mock.assert_called_with(mock.ANY, SERVER, port=PORT)
         self.assertTrue(result == True)
 
     @mock.patch("dns.query.udp")
@@ -207,7 +208,7 @@ class RFC2136ClientTest(unittest.TestCase):
         # _query_soa | pylint: disable=protected-access
         result = self.rfc2136_client._query_soa(DOMAIN)
 
-        query_mock.assert_called_with(mock.ANY, SERVER)
+        query_mock.assert_called_with(mock.ANY, SERVER, port=PORT)
         self.assertTrue(result == False)
 
     @mock.patch("dns.query.udp")

@@ -8,7 +8,9 @@ import zope.component
 
 from acme import challenges
 from acme import messages
-
+# pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import DefaultDict, Dict, List, Set, Collection
+# pylint: enable=unused-import, no-name-in-module
 from certbot import achallenges
 from certbot import errors
 from certbot import error_handler
@@ -69,14 +71,15 @@ class AuthHandler(object):
 
         # While there are still challenges remaining...
         while self._has_challenges(aauthzrs):
-            resp = self._solve_challenges(aauthzrs)
-            logger.info("Waiting for verification...")
-            if config.debug_challenges:
-                notify('Challenges loaded. Press continue to submit to CA. '
-                       'Pass "-v" for more info about challenges.', pause=True)
+            with error_handler.ExitHandler(self._cleanup_challenges, aauthzrs):
+                resp = self._solve_challenges(aauthzrs)
+                logger.info("Waiting for verification...")
+                if config.debug_challenges:
+                    notify('Challenges loaded. Press continue to submit to CA. '
+                           'Pass "-v" for more info about challenges.', pause=True)
 
-            # Send all Responses - this modifies achalls
-            self._respond(aauthzrs, resp, best_effort)
+                # Send all Responses - this modifies achalls
+                self._respond(aauthzrs, resp, best_effort)
 
         # Just make sure all decisions are complete.
         self.verify_authzr_complete(aauthzrs)
@@ -116,16 +119,15 @@ class AuthHandler(object):
 
     def _solve_challenges(self, aauthzrs):
         """Get Responses for challenges from authenticators."""
-        resp = []
+        resp = []  # type: Collection[acme.challenges.ChallengeResponse]
         all_achalls = self._get_all_achalls(aauthzrs)
-        with error_handler.ErrorHandler(self._cleanup_challenges, aauthzrs, all_achalls):
-            try:
-                if all_achalls:
-                    resp = self.auth.perform(all_achalls)
-            except errors.AuthorizationError:
-                logger.critical("Failure in setting up challenges.")
-                logger.info("Attempting to clean up outstanding challenges...")
-                raise
+        try:
+            if all_achalls:
+                resp = self.auth.perform(all_achalls)
+        except errors.AuthorizationError:
+            logger.critical("Failure in setting up challenges.")
+            logger.info("Attempting to clean up outstanding challenges...")
+            raise
 
         assert len(resp) == len(all_achalls)
 
@@ -133,10 +135,9 @@ class AuthHandler(object):
 
     def _get_all_achalls(self, aauthzrs):
         """Return all active challenges."""
-        all_achalls = []
+        all_achalls = []  # type: Collection[challenges.ChallengeResponse]
         for aauthzr in aauthzrs:
             all_achalls.extend(aauthzr.achalls)
-
         return all_achalls
 
     def _respond(self, aauthzrs, resp, best_effort):
@@ -146,14 +147,12 @@ class AuthHandler(object):
 
         """
         # TODO: chall_update is a dirty hack to get around acme-spec #105
-        chall_update = dict()
-        active_achalls = self._send_responses(aauthzrs, resp, chall_update)
+        chall_update = dict() \
+        # type: Dict[int, List[achallenges.KeyAuthorizationAnnotatedChallenge]]
+        self._send_responses(aauthzrs, resp, chall_update)
 
         # Check for updated status...
-        try:
-            self._poll_challenges(aauthzrs, chall_update, best_effort)
-        finally:
-            self._cleanup_challenges(aauthzrs, active_achalls)
+        self._poll_challenges(aauthzrs, chall_update, best_effort)
 
     def _send_responses(self, aauthzrs, resps, chall_update):
         """Send responses and make sure errors are handled.
@@ -192,7 +191,7 @@ class AuthHandler(object):
         return active_achalls
 
     def _poll_challenges(self, aauthzrs, chall_update,
-                         best_effort, min_sleep=3, max_rounds=15):
+                         best_effort, min_sleep=3, max_rounds=30):
         """Wait for all challenge results to be determined."""
         indices_to_check = set(chall_update.keys())
         comp_indices = set()
@@ -201,7 +200,7 @@ class AuthHandler(object):
         while indices_to_check and rounds < max_rounds:
             # TODO: Use retry-after...
             time.sleep(min_sleep)
-            all_failed_achalls = set()
+            all_failed_achalls = set()  # type: Set[achallenges.KeyAuthorizationAnnotatedChallenge]
             for index in indices_to_check:
                 comp_achalls, failed_achalls = self._handle_check(
                     aauthzrs, index, chall_update[index])
@@ -294,7 +293,7 @@ class AuthHandler(object):
         chall_prefs.extend(plugin_pref)
         return chall_prefs
 
-    def _cleanup_challenges(self, aauthzrs, achalls):
+    def _cleanup_challenges(self, aauthzrs, achalls=None):
         """Cleanup challenges.
 
         :param aauthzrs: authorizations and their selected annotated
@@ -305,7 +304,8 @@ class AuthHandler(object):
 
         """
         logger.info("Cleaning up challenges")
-
+        if achalls is None:
+            achalls = self._get_all_achalls(aauthzrs)
         if achalls:
             self.auth.cleanup(achalls)
             for achall in achalls:
@@ -426,7 +426,7 @@ def _find_smart_path(challbs, preferences, combinations):
 
     # max_cost is now equal to sum(indices) + 1
 
-    best_combo = []
+    best_combo = None
     # Set above completing all of the available challenges
     best_combo_cost = max_cost
 
@@ -481,7 +481,7 @@ def _report_no_chall_path(challbs):
         msg += (
             " You may need to use an authenticator "
             "plugin that can do challenges over DNS.")
-    logger.fatal(msg)
+    logger.critical(msg)
     raise errors.AuthorizationError(msg)
 
 
@@ -524,11 +524,11 @@ def _report_failed_challs(failed_achalls):
         :class:`certbot.achallenges.AnnotatedChallenge`.
 
     """
-    problems = dict()
+    problems = collections.defaultdict(list)\
+    # type: DefaultDict[str, List[achallenges.KeyAuthorizationAnnotatedChallenge]]
     for achall in failed_achalls:
         if achall.error:
-            problems.setdefault(achall.error.typ, []).append(achall)
-
+            problems[achall.error.typ].append(achall)
     reporter = zope.component.getUtility(interfaces.IReporter)
     for achalls in six.itervalues(problems):
         reporter.add_message(

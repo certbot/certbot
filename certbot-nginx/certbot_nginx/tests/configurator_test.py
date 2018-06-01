@@ -113,8 +113,7 @@ class NginxConfiguratorTest(util.NginxTest):
                                      None, [0])
         self.config.parser.add_server_directives(
             mock_vhost,
-            [['listen', ' ', '5001', ' ', 'ssl']],
-            replace=False)
+            [['listen', ' ', '5001', ' ', 'ssl']])
         self.config.save()
 
         # pylint: disable=protected-access
@@ -206,9 +205,9 @@ class NginxConfiguratorTest(util.NginxTest):
             "example/chain.pem",
             None)
 
-    @mock.patch('certbot_nginx.parser.NginxParser.add_server_directives')
-    def test_deploy_cert_raise_on_add_error(self, mock_add_server_directives):
-        mock_add_server_directives.side_effect = errors.MisconfigurationError()
+    @mock.patch('certbot_nginx.parser.NginxParser.update_or_add_server_directives')
+    def test_deploy_cert_raise_on_add_error(self, mock_update_or_add_server_directives):
+        mock_update_or_add_server_directives.side_effect = errors.MisconfigurationError()
         self.assertRaises(
             errors.PluginError,
             self.config.deploy_cert,
@@ -640,7 +639,7 @@ class NginxConfiguratorTest(util.NginxTest):
         self.assertEqual([[['server'],
                            [['listen', 'myhost', 'default_server'],
                             ['listen', 'otherhost', 'default_server'],
-                            ['server_name', 'www.example.org'],
+                            ['server_name', '"www.example.org"'],
                             [['location', '/'],
                              [['root', 'html'],
                               ['index', 'index.html', 'index.htm']]]]],
