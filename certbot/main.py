@@ -35,7 +35,7 @@ from certbot import util
 from certbot.display import util as display_util, ops as display_ops
 from certbot.plugins import disco as plugins_disco
 from certbot.plugins import selection as plug_sel
-
+from certbot.plugins import enhancements
 
 USER_CANCELLED = ("User chose to cancel the operation and may "
                   "reinvoke the client.")
@@ -875,9 +875,10 @@ def enhance(config, plugins):
     :rtype: None
 
     """
-    supported_enhancements = ["auto_hsts", "hsts", "redirect", "uir", "staple"]
+    supported_enhancements = ["hsts", "redirect", "uir", "staple"]
     # Check that at least one enhancement was requested on command line
-    if not any([getattr(config, enh) for enh in supported_enhancements]):
+    oldstyle_enh = any([getattr(config, enh) for enh in supported_enhancements])
+    if not enhancements.is_supported(config) and not oldstyle_enh:
         msg = ("Please specify one or more enhancement types to configure. To list "
                "the available enhancement types, run:\n\n%s --help enhance\n")
         logger.warning(msg, sys.argv[0])
@@ -906,8 +907,11 @@ def enhance(config, plugins):
     if not config.chain_path:
         lineage = cert_manager.lineage_for_certname(config, config.certname)
         config.chain_path = lineage.chain_path
-    le_client = _init_le_client(config, authenticator=None, installer=installer)
-    le_client.enhance_config(domains, config.chain_path, ask_redirect=False)
+    if oldstyle_enh:
+        le_client = _init_le_client(config, authenticator=None, installer=installer)
+        le_client.enhance_config(domains, config.chain_path, ask_redirect=False)
+    if enhancements.is_supported(config):
+        enhancements.enable(lineage, domains, installer, config)
 
 
 def rollback(config, plugins):

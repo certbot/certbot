@@ -28,6 +28,7 @@ from certbot import util
 
 from certbot.display import util as display_util
 from certbot.plugins import disco as plugins_disco
+import certbot.plugins.enhancements as enhancements
 import certbot.plugins.selection as plugin_selection
 
 logger = logging.getLogger(__name__)
@@ -1104,6 +1105,10 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         default=flag_default("redirect"),
         help="Do not automatically redirect all HTTP traffic to HTTPS for the newly "
              "authenticated vhost. (default: Ask)")
+    for enh in enhancements._INDEX:
+        helpful.add(enh["cli_groups"], enh["cli_flag"], action=enh["cli_action"],
+                    dest=enh["cli_dest"], default=enh["cli_flag_default"],
+                    help=enh["cli_help"])
     helpful.add(
         ["security", "enhance"],
         "--auto-hsts", action="store_true", dest="auto_hsts",
