@@ -259,6 +259,27 @@ class ResourceBody(jose.JSONObjectWithFields):
     """ACME Resource Body."""
 
 
+class ExternalAccountBinding:
+    """ACME External Account Binding"""
+
+    @classmethod
+    def from_data(cls, key=None, kid=None, hmac=None):
+        """Create External Account Binding Resource from contact details, kid and hmac."""
+
+        key_json = json.dumps(key.to_partial_json())
+        decoded_hmac = jose.b64.b64decode(hmac)
+        jws = jose.JWS.sign(
+            payload=key_json,
+            key=jose.jwk.JWKOct(key=decoded_hmac),
+            alg=jose.jwa.HS256,
+            kid=kid,
+            include_jwk=False,
+            protect=frozenset(['alg', 'kid'])
+        )
+
+        return jws.to_partial_json()
+
+
 class Registration(ResourceBody):
     """Registration Resource Body.
 
@@ -281,7 +302,7 @@ class Registration(ResourceBody):
     email_prefix = 'mailto:'
 
     @classmethod
-    def from_data(cls, phone=None, email=None, **kwargs):
+    def from_data(cls, key=None, kid=None, hmac=None, phone=None, email=None, **kwargs):
         """Create registration resource from contact details."""
         details = list(kwargs.pop('contact', ()))
         if phone is not None:
@@ -289,34 +310,10 @@ class Registration(ResourceBody):
         if email is not None:
             details.append(cls.email_prefix + email)
         kwargs['contact'] = tuple(details)
-        return cls(**kwargs)
 
-    @classmethod
-    def from_eab_data(cls, key=None, kid=None, hmac=None, phone=None, email=None, **kwargs):
-        """Create registration resource from contact details for EAB use."""
-        details = list(kwargs.pop('contact', ()))
-        if phone is not None:
-            details.append(cls.phone_prefix + phone)
-        if email is not None:
-            details.append(cls.email_prefix + email)
-        kwargs['contact'] = tuple(details)
+        if kid is not None and hmac is not None:
+            kwargs['external_account_binding'] = ExternalAccountBinding.from_data(key, kid, hmac)
 
-        # jwk_key = jose.jwk.JWKRSA(key=key)
-        key_json = json.dumps(key.public_key().to_partial_json())
-        # b64_key_json = jose.b64.b64encode(key_json)
-        hmac_key = jose.b64.b64decode(hmac)
-        jws = jose.JWS.sign(
-            payload=key_json,
-            key=jose.jwk.JWKOct(key=hmac_key),
-            alg=jose.jwa.HS256,
-            kid=kid,
-            include_jwk=False,
-            protect=frozenset(['alg', 'kid'])
-        )
-        # eab_content = json.dumps(jws.to_partial_json())
-        eab_content = jws.to_partial_json()
-
-        kwargs['external_account_binding'] = eab_content
         return cls(**kwargs)
 
     def _filter_contact(self, prefix):
