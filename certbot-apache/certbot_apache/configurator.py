@@ -132,10 +132,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             default=cls.OS_DEFAULTS["challenge_location"],
             help="Directory path for challenge configuration.")
         add("handle-modules", default=cls.OS_DEFAULTS["handle_mods"],
-            help="Let installer handle enabling required modules for you." +
+            help="Let installer handle enabling required modules for you. " +
                  "(Only Ubuntu/Debian currently)")
         add("handle-sites", default=cls.OS_DEFAULTS["handle_sites"],
-            help="Let installer handle enabling sites for you." +
+            help="Let installer handle enabling sites for you. " +
                  "(Only Ubuntu/Debian currently)")
         util.add_deprecated_argument(add, argument_name="ctl", nargs=1)
         util.add_deprecated_argument(
