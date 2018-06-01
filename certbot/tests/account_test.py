@@ -159,7 +159,7 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
         self.assertEqual([], self.storage.find_all())
 
     def test_find_all_load_skips(self):
-        self.storage.load = mock.MagicMock(
+        self.storage._load_for_server_path = mock.MagicMock(
             side_effect=["x", errors.AccountStorageError, "z"])
         with mock.patch("certbot.account.os.listdir") as mock_listdir:
             mock_listdir.return_value = ["x", "y", "z"]
@@ -184,30 +184,37 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
         self._set_server('https://acme-staging-v02.api.letsencrypt.org/directory')
         self.assertEqual([], self.storage.find_all())
         self.assertEqual([], self.storage.find_all())
-        self.assertTrue(os.path.islink(self.config.accounts_dir))
+        self.assertFalse(os.path.islink(self.config.accounts_dir))
 
-    def test_find_all_symlink_exists(self):
+    def test_find_all_find_before_save(self):
         self._set_server('https://acme-staging-v02.api.letsencrypt.org/directory')
         self.assertEqual([], self.storage.find_all())
         self.storage.save(self.acc, self.mock_client)
         self.assertEqual([self.acc], self.storage.find_all())
         self.assertEqual([self.acc], self.storage.find_all())
-        self.assertTrue(os.path.islink(self.config.accounts_dir))
+        self.assertFalse(os.path.islink(self.config.accounts_dir))
+        # we shouldn't have created a v1 account
+        prev_server_path = 'https://acme-staging.api.letsencrypt.org/directory'
+        self.assertFalse(os.path.isdir(self.config.accounts_dir_for_server_path(prev_server_path)))
 
-    def test_find_all_regular_files_exist(self):
+    def test_find_all_save_before_find(self):
         self._set_server('https://acme-staging-v02.api.letsencrypt.org/directory')
         self.storage.save(self.acc, self.mock_client)
         self.assertEqual([self.acc], self.storage.find_all())
         self.assertEqual([self.acc], self.storage.find_all())
         self.assertFalse(os.path.islink(self.config.accounts_dir))
         self.assertTrue(os.path.isdir(self.config.accounts_dir))
+        prev_server_path = 'https://acme-staging.api.letsencrypt.org/directory'
+        self.assertFalse(os.path.isdir(self.config.accounts_dir_for_server_path(prev_server_path)))
 
     def test_find_all_server_downgrade(self):
+        # don't use v2 accounts with a v1 url
         self._set_server('https://acme-staging-v02.api.letsencrypt.org/directory')
         self.assertEqual([], self.storage.find_all())
         self.storage.save(self.acc, self.mock_client)
-        self._set_server('https://acme-staging.api.letsencrypt.org/directory')
         self.assertEqual([self.acc], self.storage.find_all())
+        self._set_server('https://acme-staging.api.letsencrypt.org/directory')
+        self.assertEqual([], self.storage.find_all())
 
     def test_upgrade_version(self):
         self._set_server('https://acme-staging.api.letsencrypt.org/directory')
