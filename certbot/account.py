@@ -157,7 +157,8 @@ class AccountFileStorage(interfaces.AccountStorage):
     def _metadata_path(cls, account_dir_path):
         return os.path.join(account_dir_path, "meta.json")
 
-    def _find_all_for_accounts_dir(self, accounts_dir):
+    def _find_all_for_server_path(self, server_path):
+        accounts_dir = self.config.accounts_dir_for_server_path(server_path)
         try:
             candidates = os.listdir(accounts_dir)
         except OSError:
@@ -170,11 +171,12 @@ class AccountFileStorage(interfaces.AccountStorage):
             except errors.AccountStorageError:
                 logger.debug("Account loading problem", exc_info=True)
 
-        if not accounts and self.config.server_path in constants.LE_REUSE_SERVERS:
+
+        if not accounts and server_path in constants.LE_REUSE_SERVERS:
             # find all for the next link down
-            prev_server_path = constants.LE_REUSE_SERVERS[self.config.server_path]
+            prev_server_path = constants.LE_REUSE_SERVERS[server_path]
             prev_account_dir = self.config.accounts_dir_for_server_path(prev_server_path)
-            prev_accounts = _find_all_for_accounts_dir(prev_account_dir)
+            prev_accounts = self._find_all_for_server_path(prev_account_dir)
             # if we found something, link to that
             if prev_accounts:
                 if os.path.islink(accounts_dir):
@@ -186,7 +188,7 @@ class AccountFileStorage(interfaces.AccountStorage):
         return accounts
 
     def find_all(self):
-        return self._find_all_for_accounts_dir(self.config.accounts_dir)
+        return self._find_all_for_server_path(self.config.server_path)
 
     def load(self, account_id):
         account_dir_path = self._account_dir_path(account_id)
