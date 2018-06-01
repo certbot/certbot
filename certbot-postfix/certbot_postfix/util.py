@@ -1,5 +1,6 @@
 """Utility functions for use in the Postfix installer."""
 import logging
+import re
 import subprocess
 
 from certbot import errors
@@ -221,7 +222,7 @@ def report_master_overrides(name, overrides, acceptable_overrides=None):
             is_acceptable_value(name, value, acceptable_overrides):
             continue
         error_string += "  {0}: {1}\n".format(service, value)
-    if len(error_string) > 0:
+    if error_string:
         raise errors.PluginError("{0} is overridden with less secure options by the "
              "following services in master.cf:\n".format(name) + error_string)
 
@@ -234,21 +235,50 @@ def is_acceptable_value(parameter, value, acceptable):
     if isinstance(acceptable, tuple):
         return value in acceptable
     # Check if param value is a comma-separated list of protocols.
-    elif 'protocols' in parameter:
+    elif 'tls_protocols' in parameter:
         return _has_acceptable_tls_versions(value)
     # Otherwise, just check whether the value is equal to acceptable.
     return value == acceptable
 
 def _has_acceptable_tls_versions(parameter_string):
     """
-    Checks to see if the comma-separated list of TLS protocols to exclude is acceptable.
-    Sample string: "!SSLv2, !SSLv3"
+    Checks to see if the list of TLS protocols is acceptable.
+    This means TLSv1.2 is supported, and neither SSLv2 nor SSLv3 are supported.
+
+    Should be a string of protocol names delimited by commas, spaces, or colons.
+
+    Postfix's documents suggest listing protocols to exclude, like "!SSLv2, !SSLv3".
+    Listing the protocols to include, like "TLSv1, TLSv1.1, TLSv1.2" is okay as well,
+    though not recommended
+
+    When these two modes are interspersed, the presence of a single non-negated protocol name
+    (i.e. "TLSv1" rather than "!TLSv1") automatically excludes all other unnamed protocols.
+
+    In addition, the presence of a protocol name overrides any exclusion, so "SSLv3, !SSLv3"
+    supports SSLv3. This behavior isn't explicitly documented, so this method should return False
+    if it encounters contradicting statements about TLSv1.2, SSLv2, or SSLv3.
     """
+    if not parameter_string:
+        return False
     bad_versions = list(constants.TLS_VERSIONS)
     for version in constants.ACCEPTABLE_TLS_VERSIONS:
         del bad_versions[bad_versions.index(version)]
-    for bad_version in bad_versions:
-        if "!" + bad_version not in parameter_string:
+    supported_version_list = re.split("[, :]+", parameter_string)
+    # The presence of any non-"!" protocol listing excludes the others by default.
+    inclusion_list = False
+    for version in supported_version_list:
+        if not version:
+            continue
+        if version in bad_versions: # short-circuit if we recognize any bad version
             return False
+        if version[0] != "!":
+            inclusion_list = True
+    if inclusion_list: # For any inclusion list, we still require TLS 1.2.
+        if "TLSv1.2" not in supported_version_list or "!TLSv1.2" in supported_version_list:
+            return False
+    else: 
+        for bad_version in bad_versions:
+            if "!" + bad_version not in supported_version_list:
+               return False
     return True
 

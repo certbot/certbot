@@ -44,11 +44,11 @@ class Installer(plugins_common.Installer):
             "default configuration paths.")
         add("config-utility", default=constants.CLI_DEFAULTS["config_utility"],
             help="Path to the 'postconf' executable.")
-        add("tls-only", default=constants.CLI_DEFAULTS["tls_only"],
+        add("tls-only", action="store_true", default=constants.CLI_DEFAULTS["tls_only"],
             help="Only set params to enable opportunistic TLS and install certificates.")
-        add("server-only", default=constants.CLI_DEFAULTS["server_only"],
+        add("server-only", action="store_true", default=constants.CLI_DEFAULTS["server_only"],
             help="Only set server params (prefixed with smtpd*)")
-        add("ignore-master-overrides", default=constants.CLI_DEFAULTS["ignore_master_overrides"],
+        add("ignore-master-overrides", action="store_true", default=constants.CLI_DEFAULTS["ignore_master_overrides"],
             help="Ignore errors reporting overridden TLS parameters in master.cf.")
 
     def __init__(self, *args, **kwargs):
@@ -86,11 +86,9 @@ class Installer(plugins_common.Installer):
 
         # Set up CLI tools
         self.postfix = util.PostfixUtil(self.conf('config-dir'))
-        report_master_overrides = util.report_master_overrides
-        if self.conf('ignore-master-overrides'):
-            report_master_overrides = None
         self.postconf = postconf.ConfigMain(self.conf('config-utility'),
-                                            report_master_overrides)
+                                            self.conf('ignore-master-overrides'),
+                                            self.conf('config-dir'))
 
         # Ensure current configuration is valid.
         self.config_test()
@@ -113,7 +111,7 @@ class Installer(plugins_common.Installer):
         """
         if self._get_version() < constants.MINIMUM_VERSION:
             version_string = '.'.join([str(n) for n in constants.MINIMUM_VERSION])
-            raise errors.NotSupportedError('Postfix version must be at least %s', version_string)
+            raise errors.NotSupportedError('Postfix version must be at least %s' % version_string)
 
     def _lock_config_dir(self):
         """Stop two Postfix plugins from modifying the config at once.
@@ -126,7 +124,7 @@ class Installer(plugins_common.Installer):
         except (OSError, errors.LockError):
             logger.debug("Encountered error:", exc_info=True)
             raise errors.PluginError(
-                "Unable to lock %s", self.conf('config-dir'))
+                "Unable to lock %s" % self.conf('config-dir'))
 
     def more_info(self):
         """Human-readable string to help the user.
@@ -188,7 +186,8 @@ class Installer(plugins_common.Installer):
         for name, value in six.iteritems(updates):
             output_string += "{0} = {1}\n".format(name, value)
         output_string += "Is this okay?\n"
-        if not zope.component.getUtility(interfaces.IDisplay).yesno(output_string, default=False):
+        if not zope.component.getUtility(interfaces.IDisplay).yesno(output_string,
+            force_interactive=True, default=True):
             raise errors.PluginError(
                 "Manually rejected configuration changes.\n"
                 "Try using --tls-only or --server-only to change a particular"
@@ -215,7 +214,6 @@ class Installer(plugins_common.Installer):
         self.save_notes.append("Configuring TLS for {0}".format(domain))
         self.postconf.set("smtpd_tls_cert_file", cert_path)
         self.postconf.set("smtpd_tls_key_file", key_path)
-        # self.postconf.set("smtpd_tls_security_level", ACCEPTABLE_SECURITY_LEVELS)
         self._set_vars(constants.TLS_SERVER_VARS)
         if not self.conf('tls_only'):
             self._set_vars(constants.DEFAULT_SERVER_VARS)
@@ -266,7 +264,9 @@ class Installer(plugins_common.Installer):
 
     def recovery_routine(self):
         super(Installer, self).recovery_routine()
-        self.postconf = postconf.ConfigMain(self.conf('config-utility'), self.conf('config-dir'))
+        self.postconf = postconf.ConfigMain(self.conf('config-utility'),
+                                            self.conf('ignore-master-overrides'),
+                                            self.conf('config-dir'))
 
     def rollback_checkpoints(self, rollback=1):
         """Rollback saved checkpoints.
@@ -278,7 +278,9 @@ class Installer(plugins_common.Installer):
 
         """
         super(Installer, self).rollback_checkpoints(rollback)
-        self.postconf = postconf.ConfigMain(self.conf('config-utility'), self.conf('config-dir'))
+        self.postconf = postconf.ConfigMain(self.conf('config-utility'),
+                                            self.conf('ignore-master-overrides'),
+                                            self.conf('config-dir'))
 
     def restart(self):
         """Restart or refresh the server content.

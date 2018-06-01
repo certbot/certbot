@@ -12,6 +12,11 @@ install_requires = [
     'zope.interface',
 ]
 
+docs_extras = [
+    'Sphinx>=1.0',  # autodoc_member_order = 'bysource', autodoc_default_flags
+    'sphinx_rtd_theme',
+]
+
 setup(
     name='certbot-postfix',
     version=version,
@@ -45,6 +50,9 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     install_requires=install_requires,
+    extras_require={
+        'docs': docs_extras,
+    },
     entry_points={
         'certbot.plugins': [
             'postfix = certbot_postfix:Installer',

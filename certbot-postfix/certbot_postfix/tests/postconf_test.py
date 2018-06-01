@@ -25,7 +25,7 @@ class PostConfTest(unittest.TestCase):
                     self.config = ConfigMain('postconf', lambda x, y, z: None)
 
     @mock.patch('certbot_postfix.util.PostfixUtilBase._get_output')
-    def test_read_defalut(self, mock_get_output):
+    def test_read_default(self, mock_get_output):
         mock_get_output.return_value = 'param = default_value'
         self.assertEqual(self.config.get_default('param'), 'default_value')
 

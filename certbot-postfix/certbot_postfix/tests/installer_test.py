@@ -21,12 +21,12 @@ DEFAULT_MAIN_CF = {
     "smtpd_tls_mandatory_protocols": "",
     "smtpd_tls_protocols": "",
     "smtpd_tls_ciphers": "",
-    "smtpd_exclude_ciphers": "",
+    "smtpd_tls_exclude_ciphers": "",
     "smtpd_tls_mandatory_ciphers": "",
     "smtpd_tls_eecdh_grade": "medium",
     "smtp_tls_security_level": "",
     "smtp_tls_ciphers": "",
-    "smtp_exclude_ciphers": "",
+    "smtp_tls_exclude_ciphers": "",
     "smtp_tls_mandatory_ciphers": "",
     "mail_version": "3.2.3"
 }
@@ -50,14 +50,14 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
         self.config.postfix_server_only = False
         self.config.config_dir = self.tempdir
 
-    @mock.patch('certbot_postfix.installer.util.is_acceptable_value')
+    @mock.patch("certbot_postfix.installer.util.is_acceptable_value")
     def test_set_vars(self, mock_is_acceptable_value):
         mock_is_acceptable_value.return_value = True
         with create_installer(self.config) as installer:
             installer.prepare()
             mock_is_acceptable_value.return_value = False
 
-    @mock.patch('certbot_postfix.installer.util.is_acceptable_value')
+    @mock.patch("certbot_postfix.installer.util.is_acceptable_value")
     def test_acceptable_value(self, mock_is_acceptable_value):
         mock_is_acceptable_value.return_value = True
         with create_installer(self.config) as installer:
@@ -70,8 +70,8 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
         with create_installer(self.config) as installer:
             installer.prepare()
             self.assertRaises(errors.PluginError, installer.deploy_cert,
-                              'example.com', 'cert_path', 'key_path',
-                              'chain_path', 'fullchain_path')
+                              "example.com", "cert_path", "key_path",
+                              "chain_path", "fullchain_path")
 
     @certbot_test_util.patch_get_utility()
     def test_save(self, mock_util):
@@ -80,7 +80,7 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
             installer.prepare()
             installer.postconf.flush = mock.Mock()
             installer.reverter = mock.Mock()
-            installer.deploy_cert('example.com', "cert_path", "key_path",
+            installer.deploy_cert("example.com", "cert_path", "key_path",
                                   "chain_path", "fullchain_path")
             installer.save()
             self.assertEqual(installer.save_notes, [])
@@ -94,9 +94,9 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
             installer.prepare()
             installer.postconf.flush = mock.Mock()
             installer.reverter = mock.Mock()
-            installer.deploy_cert('example.com', "cert_path", "key_path",
+            installer.deploy_cert("example.com", "cert_path", "key_path",
                                   "chain_path", "fullchain_path")
-            installer.save(title='new_file!')
+            installer.save(title="new_file!")
             self.assertEqual(installer.reverter.finalize_checkpoint.call_count, 1)
 
     @certbot_test_util.patch_get_utility()
@@ -104,7 +104,7 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
         mock_util().yesno.return_value = True
         with create_installer(self.config) as installer:
             installer.prepare()
-            installer.deploy_cert('example.com', "cert_path", "key_path",
+            installer.deploy_cert("example.com", "cert_path", "key_path",
                                   "chain_path", "fullchain_path")
             installer.rollback_checkpoints()
             self.assertEqual(installer.postconf.get_changes(), {})
@@ -114,7 +114,7 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
         mock_util().yesno.return_value = True
         with create_installer(self.config) as installer:
             installer.prepare()
-            installer.deploy_cert('example.com', "cert_path", "key_path",
+            installer.deploy_cert("example.com", "cert_path", "key_path",
                                   "chain_path", "fullchain_path")
             installer.recovery_routine()
             self.assertEqual(installer.postconf.get_changes(), {})
@@ -126,8 +126,8 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
             self.assertEqual(installer.postfix.restart.call_count, 1)
 
     def test_add_parser_arguments(self):
-        options = set(('ctl', 'config-dir', 'config-utility',
-                       'tls-only', 'server-only', 'ignore-master-overrides'))
+        options = set(("ctl", "config-dir", "config-utility",
+                       "tls-only", "server-only", "ignore-master-overrides"))
         mock_add = mock.MagicMock()
 
         from certbot_postfix import installer
@@ -147,7 +147,7 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
                                       installer.prepare)
 
     def test_old_version(self):
-        with create_installer(self.config, main_cf=_main_cf_with({'mail_version': '0.0.1'}))\
+        with create_installer(self.config, main_cf=_main_cf_with({"mail_version": "0.0.1"}))\
                 as installer:
             self.assertRaises(errors.NotSupportedError, installer.prepare)
 
@@ -183,15 +183,15 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
             installer.prepare()
 
             # pylint: disable=protected-access
-            installer.deploy_cert('example.com', "cert_path", "key_path",
+            installer.deploy_cert("example.com", "cert_path", "key_path",
                                   "chain_path", "fullchain_path")
             changes = installer.postconf.get_changes()
             expected = {}
             expected.update(constants.TLS_SERVER_VARS)
             expected.update(constants.DEFAULT_SERVER_VARS)
             expected.update(constants.DEFAULT_CLIENT_VARS)
-            self.assertEqual(changes['smtpd_tls_key_file'], 'key_path')
-            self.assertEqual(changes['smtpd_tls_cert_file'], 'cert_path')
+            self.assertEqual(changes["smtpd_tls_key_file"], "key_path")
+            self.assertEqual(changes["smtpd_tls_cert_file"], "cert_path")
             for name, value in six.iteritems(expected):
                 if isinstance(value, tuple):
                     self.assertEqual(changes[name], value[0])
@@ -203,20 +203,20 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
         mock_util().yesno.return_value = True
         with create_installer(self.config) as installer:
             installer.prepare()
-            installer.conf = lambda x: x == 'tls_only'
+            installer.conf = lambda x: x == "tls_only"
             installer.postconf.set = mock.Mock()
-            installer.deploy_cert('example.com', "cert_path", "key_path",
+            installer.deploy_cert("example.com", "cert_path", "key_path",
                                   "chain_path", "fullchain_path")
-            self.assertEqual(installer.postconf.set.call_count, 8)
+            self.assertEqual(installer.postconf.set.call_count, 7)
 
     @certbot_test_util.patch_get_utility()
     def test_server_only(self, mock_util):
         mock_util().yesno.return_value = True
         with create_installer(self.config) as installer:
             installer.prepare()
-            installer.conf = lambda x: x == 'server_only'
+            installer.conf = lambda x: x == "server_only"
             installer.postconf.set = mock.Mock()
-            installer.deploy_cert('example.com', "cert_path", "key_path",
+            installer.deploy_cert("example.com", "cert_path", "key_path",
                                   "chain_path", "fullchain_path")
             self.assertEqual(installer.postconf.set.call_count, 11)
 
@@ -227,9 +227,9 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
             installer.prepare()
             installer.conf = lambda x: True
             installer.postconf.set = mock.Mock()
-            installer.deploy_cert('example.com', "cert_path", "key_path",
+            installer.deploy_cert("example.com", "cert_path", "key_path",
                                   "chain_path", "fullchain_path")
-            self.assertEqual(installer.postconf.set.call_count, 4)
+            self.assertEqual(installer.postconf.set.call_count, 3)
 
     @certbot_test_util.patch_get_utility()
     def test_deploy_twice(self, mock_util):
@@ -238,12 +238,12 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
         with create_installer(self.config) as installer:
             installer.prepare()
             from certbot_postfix.postconf import ConfigMain
-            with mock.patch.object(ConfigMain, 'set', wraps=installer.postconf.set) as fake_set:
-                installer.deploy_cert('example.com', "cert_path", "key_path",
+            with mock.patch.object(ConfigMain, "set", wraps=installer.postconf.set) as fake_set:
+                installer.deploy_cert("example.com", "cert_path", "key_path",
                                       "chain_path", "fullchain_path")
                 self.assertEqual(fake_set.call_count, 15)
                 fake_set.reset_mock()
-                installer.deploy_cert('example.com', "cert_path", "key_path",
+                installer.deploy_cert("example.com", "cert_path", "key_path",
                                       "chain_path", "fullchain_path")
                 fake_set.assert_not_called()
 
@@ -252,14 +252,14 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
         # Should not overwrite "more-secure" parameters
         mock_util().yesno.return_value = True
         more_secure = {
-            'smtpd_tls_security_level': 'encrypt',
-            'smtpd_tls_protocols': '!SSLv3, !SSLv2, !TLSv1',
-            'smtpd_tls_eecdh_grade': 'strong'
+            "smtpd_tls_security_level": "encrypt",
+            "smtpd_tls_protocols": "!SSLv3, !SSLv2, !TLSv1",
+            "smtpd_tls_eecdh_grade": "strong"
         }
         with create_installer(self.config,\
             main_cf=_main_cf_with(more_secure)) as installer:
             installer.prepare()
-            installer.deploy_cert('example.com', "cert_path", "key_path",
+            installer.deploy_cert("example.com", "cert_path", "key_path",
                                   "chain_path", "fullchain_path")
             for param in more_secure.keys():
                 self.assertFalse(param in installer.postconf.get_changes())
@@ -286,10 +286,10 @@ def create_installer(config, main_cf=DEFAULT_MAIN_CF):
     """
     from certbot_postfix.postconf import ConfigMain
     from certbot_postfix import installer
-    def _mock_init_postconf(postconf, executable, handle_overrides, config_dir=None):
+    def _mock_init_postconf(postconf, executable, ignore_master_overrides=False, config_dir=None):
         # pylint: disable=protected-access
         super(ConfigMain, postconf).__init__(executable, config_dir)
-        postconf._handle_overrides = handle_overrides
+        postconf._ignore_master_overrides = ignore_master_overrides
         postconf._db = main_cf
         postconf._master_db = {}
         postconf._updated = {}
@@ -302,6 +302,6 @@ def create_installer(config, main_cf=DEFAULT_MAIN_CF):
                              return_value=mock.Mock()):
                 yield installer.Installer(config, "postfix")
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()  # pragma: no cover
 

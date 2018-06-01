@@ -170,14 +170,26 @@ class TestUtils(unittest.TestCase):
 
     def test_is_acceptable_protocols(self):
         from certbot_postfix.util import is_acceptable_value
-        self.assertFalse(is_acceptable_value('something_protocols_lol',
+        # SSLv2 and SSLv3 are both not supported, unambiguously
+        self.assertFalse(is_acceptable_value('tls_protocols_lol',
             'SSLv2, SSLv3', ''))
-        self.assertFalse(is_acceptable_value('something_protocols_lol',
+        self.assertFalse(is_acceptable_value('tls_protocols_lol',
             '!SSLv2, !TLSv1', ''))
-        self.assertTrue(is_acceptable_value('something_protocols_lol',
+        self.assertFalse(is_acceptable_value('tls_protocols_lol',
+            '!SSLv2, SSLv3, !SSLv3, ', ''))
+        self.assertTrue(is_acceptable_value('tls_protocols_lol',
             '!SSLv2, !SSLv3', ''))
-        self.assertTrue(is_acceptable_value('something_protocols_lol',
+        self.assertTrue(is_acceptable_value('tls_protocols_lol',
             '!SSLv3, !TLSv1, !SSLv2', ''))
+        # TLSv1.2 is supported unambiguously
+        self.assertFalse(is_acceptable_value('tls_protocols_lol',
+            'TLSv1, TLSv1.1,', ''))
+        self.assertFalse(is_acceptable_value('tls_protocols_lol',
+            'TLSv1.2, !TLSv1.2,', ''))
+        self.assertTrue(is_acceptable_value('tls_protocols_lol',
+            'TLSv1.2, ', ''))
+        self.assertTrue(is_acceptable_value('tls_protocols_lol',
+            'TLSv1, TLSv1.1, TLSv1.2', ''))
 
 if __name__ == '__main__': # pragma: no cover
     unittest.main()
