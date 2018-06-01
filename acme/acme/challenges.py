@@ -147,9 +147,9 @@ class KeyAuthorizationChallenge(_TokenChallenge):
 
     :param response_cls: Subclass of `KeyAuthorizationChallengeResponse`
         that will be used to generate `response`.
-
+    :param str typ: type of the challenge
     """
-
+    typ = NotImplemented
     response_cls = NotImplemented
     thumbprint_hash_function = (
         KeyAuthorizationChallengeResponse.thumbprint_hash_function)
@@ -478,7 +478,7 @@ class TLSSNI01Response(KeyAuthorizationChallengeResponse):
             try:
                 cert = self.probe_cert(domain=domain, **kwargs)
             except errors.Error as error:
-                logger.debug(error, exc_info=True)
+                logger.debug(str(error), exc_info=True)
                 return False
 
         return self.verify_cert(cert)

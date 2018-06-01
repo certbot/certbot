@@ -353,14 +353,11 @@ class MultipleVhostsTest(util.ApacheTest):
 
         self.config.parser.find_dir = mock_find_dir
         mock_add.reset_mock()
-
         self.config._add_dummy_ssl_directives(self.vh_truth[0])  # pylint: disable=protected-access
-        tried_to_add = []
         for a in mock_add.call_args_list:
-            tried_to_add.append(a[0][1] == "Include" and
-                                a[0][2] == self.config.mod_ssl_conf)
-        # Include shouldn't be added, as patched find_dir "finds" existing one
-        self.assertFalse(any(tried_to_add))
+            if a[0][1] == "Include" and a[0][2] == self.config.mod_ssl_conf:
+                self.fail("Include shouldn't be added, as patched find_dir 'finds' existing one") \
+                    # pragma: no cover
 
     def test_deploy_cert(self):
         self.config.parser.modules.add("ssl_module")

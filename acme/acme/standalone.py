@@ -16,6 +16,7 @@ import OpenSSL
 
 from acme import challenges
 from acme import crypto_util
+from acme.magic_typing import List # pylint: disable=unused-import, no-name-in-module
 
 
 logger = logging.getLogger(__name__)
@@ -66,8 +67,8 @@ class BaseDualNetworkedServers(object):
 
     def __init__(self, ServerClass, server_address, *remaining_args, **kwargs):
         port = server_address[1]
-        self.threads = []
-        self.servers = []
+        self.threads = [] # type: List[threading.Thread]
+        self.servers = [] # type: List[ACMEServerMixin]
 
         # Must try True first.
         # Ubuntu, for example, will fail to bind to IPv4 if we've already bound
@@ -82,9 +83,22 @@ class BaseDualNetworkedServers(object):
                 new_address = (server_address[0],) + (port,) + server_address[2:]
                 new_args = (new_address,) + remaining_args
                 server = ServerClass(*new_args, **kwargs) # pylint: disable=star-args
-            except socket.error:
-                logger.debug("Failed to bind to %s:%s using %s", new_address[0],
+                logger.debug(
+                    "Successfully bound to %s:%s using %s", new_address[0],
                     new_address[1], "IPv6" if ip_version else "IPv4")
+            except socket.error:
+                if self.servers:
+                    # Already bound using IPv6.
+                    logger.debug(
+                        "Certbot wasn't able to bind to %s:%s using %s, this " +
+                        "is often expected due to the dual stack nature of " +
+                        "IPv6 socket implementations.",
+                        new_address[0], new_address[1],
+                        "IPv6" if ip_version else "IPv4")
+                else:
+                    logger.debug(
+                        "Failed to bind to %s:%s using %s", new_address[0],
+                        new_address[1], "IPv6" if ip_version else "IPv4")
             else:
                 self.servers.append(server)
                 # If two servers are set up and port 0 was passed in, ensure we always
@@ -189,7 +203,7 @@ class HTTP01RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
     def __init__(self, *args, **kwargs):
         self.simple_http_resources = kwargs.pop("simple_http_resources", set())
-        socketserver.BaseRequestHandler.__init__(self, *args, **kwargs)
+        BaseHTTPServer.BaseHTTPRequestHandler.__init__(self, *args, **kwargs)
 
     def log_message(self, format, *args):  # pylint: disable=redefined-builtin
         """Log arbitrary message."""
@@ -262,7 +276,7 @@ def simple_tls_sni_01_server(cli_args, forever=True):
 
     certs = {}
 
-    _, hosts, _ = next(os.walk('.'))
+    _, hosts, _ = next(os.walk('.')) # type: ignore # https://github.com/python/mypy/issues/465
     for host in hosts:
         with open(os.path.join(host, "cert.pem")) as cert_file:
             cert_contents = cert_file.read()
