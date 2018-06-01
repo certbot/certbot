@@ -159,6 +159,7 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
         self.assertEqual([], self.storage.find_all())
 
     def test_find_all_load_skips(self):
+        # pylint: disable=protected-access
         self.storage._load_for_server_path = mock.MagicMock(
             side_effect=["x", errors.AccountStorageError, "z"])
         with mock.patch("certbot.account.os.listdir") as mock_listdir:
