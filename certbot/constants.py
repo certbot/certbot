@@ -48,6 +48,7 @@ CLI_DEFAULTS = dict(
     staging=False,
     debug=False,
     debug_challenges=False,
+    debug_standalone_server=False,
     no_verify_ssl=False,
     tls_sni_01_port=challenges.TLSSNI01Response.PORT,
     tls_sni_01_address="",

@@ -1082,6 +1082,11 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         help="After setting up challenges, wait for user input before "
              "submitting to CA")
     helpful.add(
+        [None, "certonly", "renew", "run"], "--debug-standalone-server", action="store_true",
+        default=flag_default("debug_standalone_server"),
+        help="Keep internal webserver running, by delaying automatic cleanup, "
+             "until user input is performed.")
+    helpful.add(
         "testing", "--no-verify-ssl", action="store_true",
         help=config_help("no_verify_ssl"),
         default=flag_default("no_verify_ssl"))

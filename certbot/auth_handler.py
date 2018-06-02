@@ -303,6 +303,17 @@ class AuthHandler(object):
         :type achalls: `list` of :class:`certbot.achallenges.AnnotatedChallenge`
 
         """
+        if config.debug_standalone_server:
+            ready_for_cleanup = False
+            while not ready_for_cleanup:
+                prompt = (
+                    'Webserver is up and running, delaying cleanup '
+                    'because `--debug_standalone_server` was '
+                    'specified. Type `Y` when you' "'" 're ready.'
+                )
+                display = zope.component.getUtility(interfaces.IDisplay)
+                ready_for_cleanup = display.yesno(prompt, default=False)
+
         logger.info("Cleaning up challenges")
         if achalls is None:
             achalls = self._get_all_achalls(aauthzrs)
