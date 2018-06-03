@@ -303,6 +303,7 @@ class AuthHandler(object):
         :type achalls: `list` of :class:`certbot.achallenges.AnnotatedChallenge`
 
         """
+        config = zope.component.getUtility(interfaces.IConfig)
         if config.debug_standalone_server:
             ready_for_cleanup = False
             while not ready_for_cleanup:
