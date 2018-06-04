@@ -312,6 +312,40 @@ Please:
 .. _PEP 8 - Style Guide for Python Code:
   https://www.python.org/dev/peps/pep-0008
 
+Mypy type annotations
+=====================
+
+Certbot uses the `mypy`_ static type checker. Python 3 natively supports official type annotations,
+which can then be tested for consistency using mypy. Python 2 doesn’t, but type annotations can
+be `added in comments`_. Mypy does some type checks even without type annotations; we can find
+bugs in Certbot even without a fully annotated codebase.
+
+Certbot supports both Python 2 and 3, so we’re using Python 2-style annotations.
+
+Zulip wrote a `great guide`_ to using mypy. It’s useful, but you don’t have to read the whole thing
+to start contributing to Certbot.
+
+To run mypy on Certbot, use ``tox -e mypy`` on a machine that has Python 3 installed.
+
+Note that instead of just importing ``typing``, due to packaging issues, in Certbot we import from
+``acme.magic_typing`` and have to add some comments for pylint like this:
+
+.. code-block:: python
+
+  from acme.magic_typing import Dict # pylint: disable=unused-import, no-name-in-module
+
+Also note that OpenSSL, which we rely on, has type definitions for crypto but not SSL. We use both.
+Those imports should look like this:
+
+.. code-block:: python
+
+  from OpenSSL import crypto
+  from OpenSSL import SSL # type: ignore # https://github.com/python/typeshed/issues/2052
+
+.. _mypy: https://mypy.readthedocs.io
+.. _added in comments: https://mypy.readthedocs.io/en/latest/cheat_sheet.html
+.. _great guide: https://blog.zulip.org/2016/10/13/static-types-in-python-oh-mypy/
+
 Submitting a pull request
 =========================
 
