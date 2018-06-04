@@ -157,7 +157,6 @@ ACCOUNTS_DIR = "accounts"
 """Directory where all accounts are saved."""
 
 LE_REUSE_SERVERS = {
-    'acme-v02.api.letsencrypt.org/directory': 'acme-v01.api.letsencrypt.org/directory',
     'acme-staging-v02.api.letsencrypt.org/directory':
         'acme-staging.api.letsencrypt.org/directory'
 }
