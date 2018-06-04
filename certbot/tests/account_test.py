@@ -95,6 +95,7 @@ class AccountMemoryStorageTest(unittest.TestCase):
 
 class AccountFileStorageTest(test_util.ConfigTestCase):
     """Tests for certbot.account.AccountFileStorage."""
+    #pylint: disable=too-many-public-methods
 
     def setUp(self):
         super(AccountFileStorageTest, self).setUp()
@@ -225,6 +226,7 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
 
     @mock.patch('os.rmdir')
     def test_corrupted_account(self, mock_rmdir):
+        # pylint: disable=protected-access
         self._set_server('https://acme-staging.api.letsencrypt.org/directory')
         self.storage.save(self.acc, self.mock_client)
         mock_rmdir.side_effect = OSError
