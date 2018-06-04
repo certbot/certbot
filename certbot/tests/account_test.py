@@ -223,6 +223,16 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
         self._set_server('https://acme-staging-v02.api.letsencrypt.org/directory')
         self.assertEqual([self.acc], self.storage.find_all())
 
+    @mock.patch('os.rmdir')
+    def test_corrupted_account(self, mock_rmdir):
+        self._set_server('https://acme-staging.api.letsencrypt.org/directory')
+        self.storage.save(self.acc, self.mock_client)
+        mock_rmdir.side_effect = OSError
+        self.storage._load_for_server_path = mock.MagicMock(
+            side_effect=errors.AccountStorageError)
+        self._set_server('https://acme-staging-v02.api.letsencrypt.org/directory')
+        self.assertEqual([], self.storage.find_all())
+
     def test_load_ioerror(self):
         self.storage.save(self.acc, self.mock_client)
         mock_open = mock.mock_open()

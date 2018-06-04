@@ -185,7 +185,10 @@ class AccountFileStorage(interfaces.AccountStorage):
                 if os.path.islink(accounts_dir):
                     os.unlink(accounts_dir)
                 else:
-                    os.rmdir(accounts_dir)
+                    try:
+                        os.rmdir(accounts_dir)
+                    except OSError:
+                        return []
                 prev_account_dir = self.config.accounts_dir_for_server_path(prev_server_path)
                 os.symlink(prev_account_dir, accounts_dir)
             accounts = prev_accounts
