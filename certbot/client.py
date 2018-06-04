@@ -299,7 +299,10 @@ class Client(object):
             # We've been asked to reuse a specific existing private key.
             # Therefore, we'll read it now and not generate a new one in
             # either case below.
-            with open(old_keypath, "r") as f:
+            #
+            # We read in bytes here because the type of `key.pem`
+            # created below is also bytes.
+            with open(old_keypath, "rb") as f:
                 keypath = old_keypath
                 keypem = f.read()
             key = util.Key(file=keypath, pem=keypem) # type: Optional[util.Key]
