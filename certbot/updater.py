@@ -95,13 +95,9 @@ def _run_enhancement_updaters(lineage, installer, config):
 
     if config.disable_renew_updates:
         return
-    for enh in enhancements.INDEX:
+    for enh in enhancements._INDEX:  # pylint: disable=protected-access
         if isinstance(installer, enh["class"]) and enh["updater_function"]:
-            upd_func = getattr(installer, enh["updater_function"])
-            for domain in lineage.names():
-                upd_func(domain)
-        else:
-            continue
+            getattr(installer, enh["updater_function"])(lineage)
 
 
 def _run_enhancement_deployers(lineage, installer, config):
@@ -121,6 +117,6 @@ def _run_enhancement_deployers(lineage, installer, config):
 
     if config.disable_renew_updates:
         return
-    for enh in enhancements.INDEX:
+    for enh in enhancements._INDEX:  # pylint: disable=protected-access
         if isinstance(installer, enh["class"]) and enh["deployer_function"]:
             getattr(installer, enh["deployer_function"])(lineage)

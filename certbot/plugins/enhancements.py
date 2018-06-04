@@ -1,3 +1,4 @@
+"""New interface style Certbot enhancements"""
 import abc
 import six
 
@@ -6,11 +7,12 @@ from certbot import errors
 def is_supported(config):
     """Checks if one or more of the requested enhancements are supported by
     the enhancement interfaces."""
-    supported = []
     for enh in _INDEX:
-        if hasattr(config, enh["cli_dest"]):
-            supported.append(getattr(config, enh["cli_dest"]))
-    return bool(supported)
+        enh_requested = hasattr(config, enh["cli_dest"])
+        enh_enabled = bool(getattr(config, enh["cli_dest"]))
+        if enh_requested and enh_enabled:
+            return True
+    return False
 
 def enable(lineage, domains, installer, config):
     """
@@ -43,7 +45,7 @@ class AutoHSTSEnhancement(object):
     """Example enhancement interface class for AutoHSTS"""
 
     @abc.abstractmethod
-    def update_autohsts(self, domain, *args, **kwargs):
+    def update_autohsts(self, lineage, *args, **kwargs):
         """As updater method, takes the same parameters as
         interfaces.GenericUpdater.generic_updates
         """

@@ -42,17 +42,14 @@ class AutoHSTSTest(util.ApacheTest):
     def test_autohsts_enable_headers_mod(self, mock_enable):
         self.config.parser.modules.discard("headers_module")
         self.config.parser.modules.discard("mod_header.c")
-        self.config.enhance("ocspvhost.com", "auto_hsts", None)
+        self.config.enable_autohsts(mock.MagicMock(), ["ocspvhost.com"])
         self.assertTrue(mock_enable.called)
 
-    def test_autohsts_deploy(self):
-        self.config.enhance("ocspvhost.com", "auto_hsts", None)
-
     def test_autohsts_deploy_already_exists(self):
-        self.config.enhance("ocspvhost.com", "auto_hsts", None)
+        self.config.enable_autohsts(mock.MagicMock(), ["ocspvhost.com"])
         self.assertRaises(errors.PluginEnhancementAlreadyPresent,
-                          self.config.enhance,
-                          "ocspvhost.com", "auto_hsts", None)
+                          self.config.enable_autohsts,
+                          mock.MagicMock(), ["ocspvhost.com"])
 
     @mock.patch("certbot_apache.constants.AUTOHSTS_FREQ", 0)
     def test_autohsts_increase(self):
@@ -60,12 +57,12 @@ class AutoHSTSTest(util.ApacheTest):
         initial_val = maxage.format(constants.AUTOHSTS_STEPS[0])
         inc_val = maxage.format(constants.AUTOHSTS_STEPS[1])
 
-        self.config.enhance("ocspvhost.com", "auto_hsts", None)
+        self.config.enable_autohsts(mock.MagicMock(), ["ocspvhost.com"])
         # Verify initial value
         self.assertEquals(self.get_autohsts_value(self.vh_truth[7].path),
                           initial_val)
         # Increase
-        self.config.generic_updates("ocspvhost.com")
+        self.config.update_autohsts(mock.MagicMock())
         # Verify increased value
         self.assertEquals(self.get_autohsts_value(self.vh_truth[7].path),
                           inc_val)
@@ -74,27 +71,27 @@ class AutoHSTSTest(util.ApacheTest):
     def test_autohsts_increase_noop(self, mock_increase):
         maxage = "\"max-age={0}\""
         initial_val = maxage.format(constants.AUTOHSTS_STEPS[0])
-        self.config.enhance("ocspvhost.com", "auto_hsts", None)
+        self.config.enable_autohsts(mock.MagicMock(), ["ocspvhost.com"])
         # Verify initial value
         self.assertEquals(self.get_autohsts_value(self.vh_truth[7].path),
                           initial_val)
 
-        self.config.generic_updates("ocspvhost.com")
+        self.config.update_autohsts(mock.MagicMock())
         # Freq not patched, so value shouldn't increase
         self.assertFalse(mock_increase.called)
 
 
     @mock.patch("certbot_apache.constants.AUTOHSTS_FREQ", 0)
     def test_autohsts_increase_no_header(self):
-        self.config.enhance("ocspvhost.com", "auto_hsts", None)
+        self.config.enable_autohsts(mock.MagicMock(), ["ocspvhost.com"])
         # Remove the header
         dir_locs = self.config.parser.find_dir("Header", None,
                                               self.vh_truth[7].path)
         dir_loc = "/".join(dir_locs[0].split("/")[:-1])
         self.config.parser.aug.remove(dir_loc)
         self.assertRaises(errors.PluginError,
-                          self.config.generic_updates,
-                          "ocspvhost.com")
+                          self.config.update_autohsts,
+                          mock.MagicMock())
 
     @mock.patch("certbot_apache.constants.AUTOHSTS_FREQ", 0)
     def test_autohsts_increase_and_make_permanent(self):
@@ -102,19 +99,19 @@ class AutoHSTSTest(util.ApacheTest):
         max_val = maxage.format(constants.AUTOHSTS_PERMANENT)
         mock_lineage = mock.MagicMock()
         mock_lineage.key_path = "/etc/apache2/ssl/key-certbot_15.pem"
-        self.config.enhance("ocspvhost.com", "auto_hsts", None)
+        self.config.enable_autohsts(mock.MagicMock(), ["ocspvhost.com"])
         for i in range(len(constants.AUTOHSTS_STEPS)-1):
             # Ensure that value is not made permanent prematurely
-            self.config.renew_deploy(mock_lineage)
+            self.config.deploy_autohsts(mock_lineage)
             self.assertNotEquals(self.get_autohsts_value(self.vh_truth[7].path),
                                  max_val)
-            self.config.generic_updates("ocspvhost.com")
+            self.config.update_autohsts(mock.MagicMock())
             # Value should match pre-permanent increment step
             cur_val = maxage.format(constants.AUTOHSTS_STEPS[i+1])
             self.assertEquals(self.get_autohsts_value(self.vh_truth[7].path),
                               cur_val)
         # Make permanent
-        self.config.renew_deploy(mock_lineage)
+        self.config.deploy_autohsts(mock_lineage)
         self.assertEquals(self.get_autohsts_value(self.vh_truth[7].path),
                           max_val)
 
@@ -122,14 +119,57 @@ class AutoHSTSTest(util.ApacheTest):
         with mock.patch("time.time") as mock_time:
             # Time mock is used to make sure that the execution does not
             # continue when no autohsts entries exist in pluginstorage
-            self.config._autohsts_update()
+            self.config.update_autohsts(mock.MagicMock())
             self.assertFalse(mock_time.called)
 
     def test_autohsts_make_permanent_noop(self):
         self.config.storage.put = mock.MagicMock()
-        self.config._autohsts_make_permanent(mock.MagicMock())
+        self.config.deploy_autohsts(mock.MagicMock())
         # Make sure that the execution does not continue when no entries in store
         self.assertFalse(self.config.storage.put.called)
+
+    @mock.patch("certbot_apache.display_ops.select_vhost")
+    def test_autohsts_no_ssl_vhost(self, mock_select):
+        mock_select.return_value = self.vh_truth[0]
+        with mock.patch("certbot_apache.configurator.logger.warning") as mock_log:
+            self.assertRaises(errors.PluginError,
+                              self.config.enable_autohsts,
+                              mock.MagicMock(), "invalid.example.com")
+            self.assertTrue(
+                "Certbot was not able to find SSL" in mock_log.call_args[0][0])
+
+    @mock.patch("certbot_apache.configurator.ApacheConfigurator.add_vhost_id")
+    def test_autohsts_dont_enhance_twice(self, mock_id):
+        mock_id.return_value = "1234567"
+        self.config.enable_autohsts(mock.MagicMock(),
+                                    ["ocspvhost.com", "ocspvhost.com"])
+        self.assertEquals(mock_id.call_count, 1)
+
+    def test_autohsts_remove_orphaned(self):
+        # pylint: disable=protected-access
+        self.config._autohsts_fetch_state()
+        self.config._autohsts["orphan_id"] = {"laststep": 0, "timestamp": 0}
+
+        self.config._autohsts_save_state()
+        self.config.update_autohsts(mock.MagicMock())
+        self.assertFalse("orphan_id" in self.config._autohsts)
+        # Make sure it's removed from the pluginstorage file as well
+        self.config._autohsts = None
+        self.config._autohsts_fetch_state()
+        self.assertFalse("orphan_id" in self.config._autohsts)
+
+    def test_autohsts_make_permanent_vhost_not_found(self):
+        # pylint: disable=protected-access
+        self.config._autohsts_fetch_state()
+        self.config._autohsts["orphan_id"] = {"laststep": 999, "timestamp": 0}
+        self.config._autohsts_save_state()
+        with mock.patch("certbot_apache.configurator.logger.warning") as mock_log:
+            self.config.deploy_autohsts(mock.MagicMock())
+            self.assertTrue(mock_log.called)
+            self.assertTrue(
+                "VirtualHost with id orphan_id was not" in mock_log.call_args[0][0])
+
+
 
 
 if __name__ == "__main__":

@@ -161,6 +161,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self._wildcard_vhosts = dict()  # type: Dict[str, List[obj.VirtualHost]]
         # Maps enhancements to vhosts we've enabled the enhancement for
         self._enhanced_vhosts = defaultdict(set)  # type: DefaultDict[str, Set[obj.VirtualHost]]
+        # Temporary state for AutoHSTS enhancement
+        self._autohsts = {}
 
         # These will be set in the prepare function
         self.parser = None
@@ -1606,8 +1608,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         nextstep_value = constants.AUTOHSTS_STEPS[nextstep]
         self._autohsts_write(vhost, nextstep_value)
-        self.autohsts[id_str] = {"laststep": nextstep, "timestamp": time.time()}
-        self._autohsts_save_state()
+        self._autohsts[id_str] = {"laststep": nextstep, "timestamp": time.time()}
 
     def _autohsts_write(self, vhost, nextstep_value):
         """
@@ -1645,15 +1646,15 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         Populates the AutoHSTS state from the pluginstorage
         """
         try:
-            self.autohsts = self.storage.fetch("autohsts")
+            self._autohsts = self.storage.fetch("autohsts")
         except KeyError:
-            self.autohsts = dict()
+            self._autohsts = dict()
 
     def _autohsts_save_state(self):
         """
         Saves the state of AutoHSTS object to pluginstorage
         """
-        self.storage.put("autohsts", self.autohsts)
+        self.storage.put("autohsts", self._autohsts)
         self.storage.save()
 
     def _autohsts_vhost_in_lineage(self, vhost, lineage):
@@ -2294,12 +2295,12 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         return common.install_version_controlled_file(options_ssl, options_ssl_digest,
             self.constant("MOD_SSL_CONF_SRC"), constants.ALL_SSL_OPTIONS_HASHES)
 
-    def enable_autohsts(self, lineage, domains):
+    def enable_autohsts(self, _unused_lineage, domains):
         """
         Enable the AutoHSTS enhancement for defined domains
 
-        :param lineage: Certificate lineage object
-        :type lineage: certbot.storage.RenewableCert
+        :param _unused_lineage: Certificate lineage object, unused
+        :type _unused_lineage: certbot.storage.RenewableCert
 
         :param domains: List of domains in certificate to enhance
         :type domains: str
@@ -2315,7 +2316,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             if not vhosts:
                 msg_tmpl = ("Certbot was not able to find SSL VirtualHost for a "
                             "domain {0} for enabling AutoHSTS enhancement.")
-                msg = msg_tmpl.format(domain)
+                msg = msg_tmpl.format(d)
                 logger.warning(msg)
                 raise errors.PluginError(msg)
             for vh in vhosts:
@@ -2336,7 +2337,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :param ssl_vhost: The VirtualHost object to deploy the AutoHSTS
         :type ssl_vhost: :class:`~certbot_apache.obj.VirtualHost` or None
 
+        :raises errors.PluginEnhancementAlreadyPresent: When already enhanced
+
         """
+        # This raises the exception
         self._verify_no_matching_http_header(ssl_vhost,
                                              "Strict-Transport-Security")
 
@@ -2361,7 +2365,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         logger.info(note_msg)
 
         # Save the current state to pluginstorage
-        self.autohsts[uniq_id] = {"laststep": 0, "timestamp": time.time()}
+        self._autohsts[uniq_id] = {"laststep": 0, "timestamp": time.time()}
         self._autohsts_save_state()
 
     def update_autohsts(self, _unused_domain):
@@ -2374,11 +2378,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         self._autohsts_fetch_state()
-        if not self.autohsts:
+        if not self._autohsts:
             # No AutoHSTS enabled for any domain
             return
         curtime = time.time()
-        for id_str, config in list(self.autohsts.items()):
+        for id_str, config in list(self._autohsts.items()):
             if config["timestamp"] + constants.AUTOHSTS_FREQ > curtime:
                 # Skip if last increase was < AUTOHSTS_FREQ ago
                 continue
@@ -2389,7 +2393,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                     vhost = self.find_vhost_by_id(id_str)
                 except errors.PluginError:
                     # Remove the orphaned AutoHSTS entry from pluginstorage
-                    self.autohsts.pop(id_str)
+                    self._autohsts.pop(id_str)
                     continue
                 self._autohsts_increase(vhost, id_str, nextstep)
         self._autohsts_save_state()
@@ -2403,23 +2407,26 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :type lineage: certbot.storage.RenewableCert
         """
         self._autohsts_fetch_state()
-        if not self.autohsts:
+        if not self._autohsts:
             # No autohsts enabled for any vhost
             return
 
         vhosts = []
         # Copy, as we are removing from the dict inside the loop
-        for id_str, config in list(self.autohsts.items()):
+        for id_str, config in list(self._autohsts.items()):
             if config["laststep"]+1 >= len(constants.AUTOHSTS_STEPS):
                 # max value reached, try to make permanent
                 try:
                     vhost = self.find_vhost_by_id(id_str)
                 except errors.PluginError:
-                    logger.warning("Cannot make HSTS max-age permanent")
-                    return
+                    msg = ("VirtualHost with id {} was not found, unable to "
+                           "make HSTS max-age permanent.").format(id_str)
+                    logger.warning(msg)
+                    self._autohsts.pop(id_str)
+                    continue
                 if self._autohsts_vhost_in_lineage(vhost, lineage):
                     vhosts.append(vhost)
-                    self.autohsts.pop(id_str)
+                    self._autohsts.pop(id_str)
         for vhost in vhosts:
             self._autohsts_write(vhost, constants.AUTOHSTS_PERMANENT)
         # Update AutoHSTS storage (We potentially removed vhosts from managed)

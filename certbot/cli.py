@@ -1119,7 +1119,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         default=flag_default("redirect"),
         help="Do not automatically redirect all HTTP traffic to HTTPS for the newly "
              "authenticated vhost. (default: Ask)")
-    for enh in enhancements._INDEX:
+    for enh in enhancements._INDEX:  # pylint: disable=protected-access
         helpful.add(enh["cli_groups"], enh["cli_flag"], action=enh["cli_action"],
                     dest=enh["cli_dest"], default=enh["cli_flag_default"],
                     help=enh["cli_help"])

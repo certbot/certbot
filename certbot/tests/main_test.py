@@ -1652,7 +1652,7 @@ class EnhanceTest(unittest.TestCase):
 
     def test_no_enhancements_defined(self):
         self.assertRaises(errors.MisconfigurationError,
-                          self._call, ['enhance'])
+                          self._call, ['enhance', '-a', 'null'])
 
     @mock.patch('certbot.main.plug_sel.choose_configurator_plugins')
     @mock.patch('certbot.main.display_ops.choose_values')
