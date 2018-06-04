@@ -43,11 +43,11 @@ class TLSServer(socketserver.TCPServer):
 
     def _wrap_sock(self):
         self.socket = crypto_util.SSLSocket(
-            self.socket, cert_selection=self.cert_selection,
-            alpn_selection=getattr(self, 'alpn_selection', None),
+            self.socket, cert_selection=self._cert_selection,
+            alpn_selection=getattr(self, '_alpn_selection', None),
             method=self.method)
 
-    def cert_selection(self, connection):
+    def _cert_selection(self, connection):
         """Callback selecting certificate for connection."""
         server_name = connection.get_servername()
         return self.certs.get(server_name, None)
@@ -170,7 +170,7 @@ class TLSALPN01Server(TLSServer, ACMEServerMixin):
             ipv6=ipv6)
         self.challenge_certs = challenge_certs
 
-    def cert_selection(self, connection):
+    def _cert_selection(self, connection):
         # TODO: We would like to serve challenge cert only if asked for it via
         # ALPN. To do this, we need to retrieve the list of protos from client
         # hello, but this is currently impossible with openssl [0], and ALPN
@@ -182,7 +182,7 @@ class TLSALPN01Server(TLSServer, ACMEServerMixin):
         logger.debug("Serving challenge cert for server name %s", server_name)
         return self.challenge_certs.get(server_name, None)
 
-    def alpn_selection(self, _connection, alpn_protos):
+    def _alpn_selection(self, _connection, alpn_protos):
         """Callback to select alpn protocol."""
         if len(alpn_protos) == 1 and alpn_protos[0] == self.ACME_TLS_1_PROTOCOL:
             logger.debug("Agreed on %s ALPN", self.ACME_TLS_1_PROTOCOL)
