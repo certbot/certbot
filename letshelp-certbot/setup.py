@@ -1,4 +1,3 @@
-"""Setup script for letshelp-certbot"""
 from setuptools import setup
 from setuptools import find_packages
 
