@@ -628,6 +628,10 @@ class HelpfulArgumentParser(object):
                 raise errors.Error("Using --allow-subset-of-names with a"
                                    " wildcard domain is not supported.")
 
+        if parsed_args.hsts and parsed_args.auto_hsts:
+            raise errors.Error(
+                "Parameters --hsts and --auto-hsts cannot be used simultaneously.")
+
         possible_deprecation_warning(parsed_args)
 
         return parsed_args
