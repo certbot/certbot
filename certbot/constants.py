@@ -64,6 +64,8 @@ CLI_DEFAULTS = dict(
     pref_challs=[],
     validate_hooks=True,
     directory_hooks=True,
+    reuse_key=False,
+    disable_renew_updates=False,
 
     # Subparsers
     num=None,
@@ -155,6 +157,12 @@ CONFIG_DIRS_MODE = 0o755
 
 ACCOUNTS_DIR = "accounts"
 """Directory where all accounts are saved."""
+
+LE_REUSE_SERVERS = {
+    'acme-staging-v02.api.letsencrypt.org/directory':
+        'acme-staging.api.letsencrypt.org/directory'
+}
+"""Servers that can reuse accounts from other servers."""
 
 BACKUP_DIR = "backups"
 """Directory (relative to `IConfig.work_dir`) where backups are kept."""

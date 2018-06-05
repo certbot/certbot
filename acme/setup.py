@@ -1,10 +1,8 @@
-import sys
-
 from setuptools import setup
 from setuptools import find_packages
 
 
-version = '0.23.0.dev0'
+version = '0.25.0.dev0'
 
 # Please update tox.ini when modifying dependency version requirements
 install_requires = [
@@ -19,6 +17,7 @@ install_requires = [
     'pyrfc3339',
     'pytz',
     'requests[security]>=2.4.1',  # security extras added in 2.4.1
+    'requests-toolbelt>=0.3.0',
     'setuptools',
     'six>=1.9.0',  # needed for python_2_unicode_compatible
 ]

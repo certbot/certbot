@@ -31,7 +31,7 @@ if [ -z "$VENV_PATH" ]; then
 fi
 VENV_BIN="$VENV_PATH/bin"
 BOOTSTRAP_VERSION_PATH="$VENV_PATH/certbot-auto-bootstrap-version.txt"
-LE_AUTO_VERSION="0.22.2"
+LE_AUTO_VERSION="0.24.0"
 BASENAME=$(basename $0)
 USAGE="Usage: $BASENAME [OPTIONS]
 A self-updating wrapper script for the Certbot ACME client. When run, updates
@@ -1089,7 +1089,7 @@ cryptography==2.0.2 \
     --hash=sha256:01e6e60654df64cca53733cda39446d67100c819c181d403afb120e0d2a71e1b \
     --hash=sha256:d46f4e5d455cb5563685c52ef212696f0a6cc1ea627603218eabbd8a095291d8 \
     --hash=sha256:3780b2663ee7ebb37cb83263326e3cd7f8b2ea439c448539d4b87de12c8d06ab
-enum34==1.1.2 \
+enum34==1.1.2 ; python_version < '3.4' \
     --hash=sha256:2475d7fcddf5951e92ff546972758802de5260bf409319a9f1934e6bbc8b1dc7 \
     --hash=sha256:35907defb0f992b75ab7788f65fedc1cf20ffa22688e0e6f6f12afc06b3ea501
 funcsigs==1.0.2 \
@@ -1199,18 +1199,18 @@ letsencrypt==0.7.0 \
     --hash=sha256:105a5fb107e45bcd0722eb89696986dcf5f08a86a321d6aef25a0c7c63375ade \
     --hash=sha256:c36e532c486a7e92155ee09da54b436a3c420813ec1c590b98f635d924720de9
 
-certbot==0.22.2 \
-    --hash=sha256:c8c63bdf0fed6258bdbc892454314ec37bcd1c35a7f62524a083d93ccdfc420d \
-    --hash=sha256:e6e3639293e78397f31f7d99e3c63aff82d91e2b0d50d146ee3c77f830464bef
-acme==0.22.2 \
-    --hash=sha256:59a55244612ee305d2caa6bb4cddd400fb60ec841bf011ed29a2899832a682c2 \
-    --hash=sha256:0ecd0ea369f53d5bc744d6e72717f9af2e1ceb558d109dbd433148851027adb4
-certbot-apache==0.22.2 \
-    --hash=sha256:b5340d4b9190358fde8eb6a5be0def37e32014b5142ee79ef5d2319ccbbde754 \
-    --hash=sha256:3cd26912bb5732d917ddf7aad2fe870090d4ece9a408b2c2de8e9723ec99c759
-certbot-nginx==0.22.2 \
-    --hash=sha256:91feef0d879496835d355e82841f92e5ecb5abbf6f23ea0ee5bbb8f5a92b278a \
-    --hash=sha256:b10bf04c1a20cf878d5e0d1877deb0e0780bc31b0ffda08ce7199bbc39d0753b
+certbot==0.24.0 \
+    --hash=sha256:a3fc41fde4f0dbb35f7ebec2f9e00339580b3f4298850411eac0719223073b27 \
+    --hash=sha256:a072d4528bb3ac4184f5c961a96931795ddfe4b7cb0f3a98954bdd4cce5f6d70
+acme==0.24.0 \
+    --hash=sha256:b92b16102051f447abb52917638fbfb34b646ac07267fee85961b360a0149e32 \
+    --hash=sha256:d655e0627c0830114ab3f6732d8bf2f4a2c36f602e0cde10988684e229b501cb
+certbot-apache==0.24.0 \
+    --hash=sha256:fe54db3e7e09ffe1139041c23ff5123e80aa1526d6fcd40b2a593d005cfcf152 \
+    --hash=sha256:686c6c0af5ae8d06e37cc762de7ffa0dc5c3b1ba06ff7653ef61713fa016f891
+certbot-nginx==0.24.0 \
+    --hash=sha256:d44c419f72c2cc30de3b138a2cf92e0531696dcb048f287036e229dce2131c00 \
+    --hash=sha256:3283d1db057261f05537fa408baee20e0ab9e81c3d55cfba70afe3805cd6f941
 
 UNLIKELY_EOF
     # -------------------------------------------------------------------------

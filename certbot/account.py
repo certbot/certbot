@@ -16,6 +16,7 @@ import zope.component
 from acme import fields as acme_fields
 from acme import messages
 
+from certbot import constants
 from certbot import errors
 from certbot import interfaces
 from certbot import util
@@ -142,7 +143,11 @@ class AccountFileStorage(interfaces.AccountStorage):
                                    self.config.strict_permissions)
 
     def _account_dir_path(self, account_id):
-        return os.path.join(self.config.accounts_dir, account_id)
+        return self._account_dir_path_for_server_path(account_id, self.config.server_path)
+
+    def _account_dir_path_for_server_path(self, account_id, server_path):
+        accounts_dir = self.config.accounts_dir_for_server_path(server_path)
+        return os.path.join(accounts_dir, account_id)
 
     @classmethod
     def _regr_path(cls, account_dir_path):
@@ -156,22 +161,44 @@ class AccountFileStorage(interfaces.AccountStorage):
     def _metadata_path(cls, account_dir_path):
         return os.path.join(account_dir_path, "meta.json")
 
-    def find_all(self):
+    def _find_all_for_server_path(self, server_path):
+        accounts_dir = self.config.accounts_dir_for_server_path(server_path)
         try:
-            candidates = os.listdir(self.config.accounts_dir)
+            candidates = os.listdir(accounts_dir)
         except OSError:
             return []
 
         accounts = []
         for account_id in candidates:
             try:
-                accounts.append(self.load(account_id))
+                accounts.append(self._load_for_server_path(account_id, server_path))
             except errors.AccountStorageError:
                 logger.debug("Account loading problem", exc_info=True)
+
+
+        if not accounts and server_path in constants.LE_REUSE_SERVERS:
+            # find all for the next link down
+            prev_server_path = constants.LE_REUSE_SERVERS[server_path]
+            prev_accounts = self._find_all_for_server_path(prev_server_path)
+            # if we found something, link to that
+            if prev_accounts:
+                if os.path.islink(accounts_dir):
+                    os.unlink(accounts_dir)
+                else:
+                    try:
+                        os.rmdir(accounts_dir)
+                    except OSError:
+                        return []
+                prev_account_dir = self.config.accounts_dir_for_server_path(prev_server_path)
+                os.symlink(prev_account_dir, accounts_dir)
+            accounts = prev_accounts
         return accounts
 
-    def load(self, account_id):
-        account_dir_path = self._account_dir_path(account_id)
+    def find_all(self):
+        return self._find_all_for_server_path(self.config.server_path)
+
+    def _load_for_server_path(self, account_id, server_path):
+        account_dir_path = self._account_dir_path_for_server_path(account_id, server_path)
         if not os.path.isdir(account_dir_path):
             raise errors.AccountNotFound(
                 "Account at %s does not exist" % account_dir_path)
@@ -192,6 +219,9 @@ class AccountFileStorage(interfaces.AccountStorage):
                 "Account ids mismatch (expected: {0}, found: {1}".format(
                     account_id, acc.id))
         return acc
+
+    def load(self, account_id):
+        return self._load_for_server_path(account_id, self.config.server_path)
 
     def save(self, account, acme):
         self._save(account, acme, regr_only=False)

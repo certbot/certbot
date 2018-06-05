@@ -13,11 +13,13 @@ import zope.component
 import zope.interface
 
 from acme import challenges
+from acme.magic_typing import DefaultDict, Dict, List, Set  # pylint: disable=unused-import, no-name-in-module
 
 from certbot import errors
 from certbot import interfaces
 from certbot import util
 
+from certbot.achallenges import KeyAuthorizationAnnotatedChallenge  # pylint: disable=unused-import
 from certbot.plugins import common
 from certbot.plugins.util import path_surgery
 
@@ -130,10 +132,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             default=cls.OS_DEFAULTS["challenge_location"],
             help="Directory path for challenge configuration.")
         add("handle-modules", default=cls.OS_DEFAULTS["handle_mods"],
-            help="Let installer handle enabling required modules for you." +
+            help="Let installer handle enabling required modules for you. " +
                  "(Only Ubuntu/Debian currently)")
         add("handle-sites", default=cls.OS_DEFAULTS["handle_sites"],
-            help="Let installer handle enabling sites for you." +
+            help="Let installer handle enabling sites for you. " +
                  "(Only Ubuntu/Debian currently)")
         util.add_deprecated_argument(add, argument_name="ctl", nargs=1)
         util.add_deprecated_argument(
@@ -150,14 +152,14 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         super(ApacheConfigurator, self).__init__(*args, **kwargs)
 
         # Add name_server association dict
-        self.assoc = dict()
+        self.assoc = dict()  # type: Dict[str, obj.VirtualHost]
         # Outstanding challenges
-        self._chall_out = set()
+        self._chall_out = set()  # type: Set[KeyAuthorizationAnnotatedChallenge]
         # List of vhosts configured per wildcard domain on this run.
         # used by deploy_cert() and enhance()
-        self._wildcard_vhosts = dict()
+        self._wildcard_vhosts = dict()  # type: Dict[str, List[obj.VirtualHost]]
         # Maps enhancements to vhosts we've enabled the enhancement for
-        self._enhanced_vhosts = defaultdict(set)
+        self._enhanced_vhosts = defaultdict(set)  # type: DefaultDict[str, Set[obj.VirtualHost]]
 
         # These will be set in the prepare function
         self.parser = None
@@ -323,7 +325,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             # Returned objects are guaranteed to be ssl vhosts
             return self._choose_vhosts_wildcard(domain, create_if_no_ssl)
         else:
-            return [self.choose_vhost(domain)]
+            return [self.choose_vhost(domain, create_if_no_ssl)]
 
     def _vhosts_for_wildcard(self, domain):
         """
@@ -475,20 +477,21 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if chain_path is not None:
             self.save_notes += "\tSSLCertificateChainFile %s\n" % chain_path
 
-    def choose_vhost(self, target_name, temp=False):
+    def choose_vhost(self, target_name, create_if_no_ssl=True):
         """Chooses a virtual host based on the given domain name.
 
         If there is no clear virtual host to be selected, the user is prompted
         with all available choices.
 
-        The returned vhost is guaranteed to have TLS enabled unless temp is
-        True. If temp is True, there is no such guarantee and the result is
-        not cached.
+        The returned vhost is guaranteed to have TLS enabled unless
+        create_if_no_ssl is set to False, in which case there is no such guarantee
+        and the result is not cached.
 
         :param str target_name: domain name
-        :param bool temp: whether the vhost is only used temporarily
+        :param bool create_if_no_ssl: If found VirtualHost doesn't have a HTTPS
+            counterpart, should one get created
 
-        :returns: ssl vhost associated with name
+        :returns: vhost associated with name
         :rtype: :class:`~certbot_apache.obj.VirtualHost`
 
         :raises .errors.PluginError: If no vhost is available or chosen
@@ -501,7 +504,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Try to find a reasonable vhost
         vhost = self._find_best_vhost(target_name)
         if vhost is not None:
-            if temp:
+            if not create_if_no_ssl:
                 return vhost
             if not vhost.ssl:
                 vhost = self.make_vhost_ssl(vhost)
@@ -510,7 +513,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             self.assoc[target_name] = vhost
             return vhost
 
-        return self._choose_vhost_from_list(target_name, temp)
+        # Negate create_if_no_ssl value to indicate if we want a SSL vhost
+        # to get created if a non-ssl vhost is selected.
+        return self._choose_vhost_from_list(target_name, temp=not create_if_no_ssl)
 
     def _choose_vhost_from_list(self, target_name, temp=False):
         # Select a vhost from a list
@@ -656,7 +661,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :rtype: set
 
         """
-        all_names = set()
+        all_names = set()  # type: Set[str]
 
         vhost_macro = []
 
@@ -797,8 +802,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         # Search base config, and all included paths for VirtualHosts
-        file_paths = {}
-        internal_paths = defaultdict(set)
+        file_paths = {}  # type: Dict[str, str]
+        internal_paths = defaultdict(set)  # type: DefaultDict[str, Set[str]]
         vhs = []
         # Make a list of parser paths because the parser_paths
         # dictionary may be modified during the loop.
@@ -1236,7 +1241,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             if not self.parser.parsed_in_current(ssl_fp):
                 self.parser.parse_file(ssl_fp)
         except IOError:
-            logger.fatal("Error writing/reading to file in make_vhost_ssl")
+            logger.critical("Error writing/reading to file in make_vhost_ssl", exc_info=True)
             raise errors.PluginError("Unable to write/read in make_vhost_ssl")
 
         if sift:
@@ -1324,7 +1329,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         try:
             span_val = self.aug.span(vhost.path)
         except ValueError:
-            logger.fatal("Error while reading the VirtualHost %s from "
+            logger.critical("Error while reading the VirtualHost %s from "
                          "file %s", vhost.name, vhost.filep, exc_info=True)
             raise errors.PluginError("Unable to read VirtualHost from file")
         span_filep = span_val[0]
@@ -1505,7 +1510,20 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             raise errors.PluginError(
                 "Unsupported enhancement: {0}".format(enhancement))
 
-        vhosts = self.choose_vhosts(domain, create_if_no_ssl=False)
+        matched_vhosts = self.choose_vhosts(domain, create_if_no_ssl=False)
+        # We should be handling only SSL vhosts for enhancements
+        vhosts = [vhost for vhost in matched_vhosts if vhost.ssl]
+
+        if not vhosts:
+            msg_tmpl = ("Certbot was not able to find SSL VirtualHost for a "
+                        "domain {0} for enabling enhancement \"{1}\". The requested "
+                        "enhancement was not configured.")
+            msg_enhancement = enhancement
+            if options:
+                msg_enhancement += ": " + options
+            msg = msg_tmpl.format(domain, msg_enhancement)
+            logger.warning(msg)
+            raise errors.PluginError(msg)
         try:
             for vhost in vhosts:
                 func(vhost, options)
@@ -1754,7 +1772,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # There can be other RewriteRule directive lines in vhost config.
         # rewrite_args_dict keys are directive ids and the corresponding value
         # for each is a list of arguments to that directive.
-        rewrite_args_dict = defaultdict(list)
+        rewrite_args_dict = defaultdict(list)  # type: DefaultDict[str, List[str]]
         pat = r'(.*directive\[\d+\]).*'
         for match in rewrite_path:
             m = re.match(pat, match)
@@ -1848,7 +1866,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if ssl_vhost.aliases:
             serveralias = "ServerAlias " + " ".join(ssl_vhost.aliases)
 
-        rewrite_rule_args = []
+        rewrite_rule_args = []  # type: List[str]
         if self.get_version() >= (2, 3, 9):
             rewrite_rule_args = constants.REWRITE_HTTPS_ARGS_WITH_END
         else:
@@ -2000,10 +2018,27 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :raises .errors.MisconfigurationError: If reload fails
 
         """
+        error = ""
         try:
             util.run_script(self.constant("restart_cmd"))
         except errors.SubprocessError as err:
-            raise errors.MisconfigurationError(str(err))
+            logger.info("Unable to restart apache using %s",
+                        self.constant("restart_cmd"))
+            alt_restart = self.constant("restart_cmd_alt")
+            if alt_restart:
+                logger.debug("Trying alternative restart command: %s",
+                             alt_restart)
+                # There is an alternative restart command available
+                # This usually is "restart" verb while original is "graceful"
+                try:
+                    util.run_script(self.constant(
+                        "restart_cmd_alt"))
+                    return
+                except errors.SubprocessError as secerr:
+                    error = str(secerr)
+            else:
+                error = str(err)
+            raise errors.MisconfigurationError(error)
 
     def config_test(self):  # pylint: disable=no-self-use
         """Check the configuration of Apache for errors.
