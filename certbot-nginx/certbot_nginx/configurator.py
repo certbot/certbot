@@ -289,8 +289,8 @@ class NginxConfigurator(common.Installer):
         if not vhosts:
             if create_if_no_match:
                 # result will not be [None] because it errors on failure
-                vhosts = [self._vhost_from_duplicated_default(target_name, allow_port_mismatch=True,
-                    port=str(self.config.tls_sni_01_port))]
+                vhosts = [self._vhost_from_duplicated_default(target_name, True,
+                    str(self.config.tls_sni_01_port))]
             else:
                 # No matches. Raise a misconfiguration error.
                 raise errors.MisconfigurationError(
@@ -333,7 +333,7 @@ class NginxConfigurator(common.Installer):
                     ipv6only_present = True
         return (ipv6_active, ipv6only_present)
 
-    def _vhost_from_duplicated_default(self, domain, allow_port_mismatch, port=None):
+    def _vhost_from_duplicated_default(self, domain, allow_port_mismatch, port):
         """if allow_port_mismatch is False, only server blocks with matching ports will be
            used as a default server block template.
         """
@@ -480,8 +480,7 @@ class NginxConfigurator(common.Installer):
             matches = self._get_redirect_ranked_matches(target_name, port)
             vhosts = [x for x in [self._select_best_name_match(matches)]if x is not None]
         if not vhosts and create_if_no_match:
-            vhosts = [self._vhost_from_duplicated_default(target_name, allow_port_mismatch=False,
-                port=port)]
+            vhosts = [self._vhost_from_duplicated_default(target_name, False, port)]
         return vhosts
 
     def _port_matches(self, test_port, matching_port):
