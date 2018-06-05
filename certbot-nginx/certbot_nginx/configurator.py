@@ -364,7 +364,7 @@ class NginxConfigurator(common.Installer):
             for addr in vhost.addrs:
                 if addr.default:
                     all_default_vhosts.append(vhost)
-                    if port is not None and self._port_matches(port, addr.get_port()):
+                    if self._port_matches(port, addr.get_port()):
                         port_matching_vhosts.append(vhost)
                     break
 
