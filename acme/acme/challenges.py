@@ -1,5 +1,6 @@
 """ACME Identifier Validation Challenges."""
 import abc
+import codecs
 import functools
 import hashlib
 import logging
@@ -7,7 +8,7 @@ import socket
 
 from cryptography.hazmat.primitives import hashes  # type: ignore
 import josepy as jose
-import OpenSSL
+from OpenSSL import crypto
 import requests
 import six
 
@@ -411,8 +412,8 @@ class TLSSNI01Response(KeyAuthorizationChallengeResponse):
 
         """
         if key is None:
-            key = OpenSSL.crypto.PKey()
-            key.generate_key(OpenSSL.crypto.TYPE_RSA, bits)
+            key = crypto.PKey()
+            key.generate_key(crypto.TYPE_RSA, bits)
         return crypto_util.gen_ss_cert(key, [
             # z_domain is too big to fit into CN, hence first dummy domain
             'dummy', self.z_domain.decode()], force_san=True), key
@@ -492,6 +493,151 @@ class TLSSNI01(KeyAuthorizationChallenge):
 
     # boulder#962, ietf-wg-acme#22
     #n = jose.Field("n", encoder=int, decoder=int)
+
+    def validation(self, account_key, **kwargs):
+        """Generate validation.
+
+        :param JWK account_key:
+        :param OpenSSL.crypto.PKey cert_key: Optional private key used
+            in certificate generation. If not provided (``None``), then
+            fresh key will be generated.
+
+        :rtype: `tuple` of `OpenSSL.crypto.X509` and `OpenSSL.crypto.PKey`
+
+        """
+        return self.response(account_key).gen_cert(key=kwargs.get('cert_key'))
+
+
+@ChallengeResponse.register
+class TLSALPN01Response(KeyAuthorizationChallengeResponse):
+    """ACME tls-alpn-01 challenge response."""
+    typ = "tls-alpn-01"
+
+    PORT = 443
+    """Verification port as defined by the protocol.
+
+    You can override it (e.g. for testing) by passing ``port`` to
+    `simple_verify`.
+
+    """
+
+    ID_PE_ACME_IDENTIFIER_V1 = b"1.3.6.1.5.5.7.1.30.1"
+    ACME_TLS_1_PROTOCOL = "acme-tls/1"
+
+    @property
+    def h(self):
+        """Hash value stored in challenge certificate"""
+        return hashlib.sha256(self.key_authorization.encode('utf-8')).digest()
+
+    def gen_cert(self, domain, key=None, bits=2048):
+        """Generate tls-alpn-01 certificate.
+
+        :param unicode domain: Domain verified by the challenge.
+        :param OpenSSL.crypto.PKey key: Optional private key used in
+            certificate generation. If not provided (``None``), then
+            fresh key will be generated.
+        :param int bits: Number of bits for newly generated key.
+
+        :rtype: `tuple` of `OpenSSL.crypto.X509` and `OpenSSL.crypto.PKey`
+
+        """
+        if key is None:
+            key = crypto.PKey()
+            key.generate_key(crypto.TYPE_RSA, bits)
+
+
+        der_value = b"DER:" + codecs.encode(self.h, 'hex')
+        acme_extension = crypto.X509Extension(self.ID_PE_ACME_IDENTIFIER_V1,
+                critical=True, value=der_value)
+
+        return crypto_util.gen_ss_cert(key, [domain], force_san=True,
+                extensions=[acme_extension]), key
+
+    def probe_cert(self, domain, host=None, port=None):
+        """Probe tls-alpn-01 challenge certificate.
+
+        :param unicode domain: domain being validated, required.
+        :param string host: IP address used to probe the certificate.
+        :param int port: Port used to probe the certificate.
+
+        """
+        if host is None:
+            host = socket.gethostbyname(domain)
+            logger.debug('%s resolved to %s', domain, host)
+        if port is None:
+            port = self.PORT
+
+        return crypto_util.probe_sni(host=host, port=port, name=domain,
+                alpn_protocols=[self.ACME_TLS_1_PROTOCOL])
+
+    def verify_cert(self, domain, cert):
+        """Verify tls-alpn-01 challenge certificate.
+
+        :param unicode domain: Domain name being validated.
+        :param OpensSSL.crypto.X509 cert: Challenge certificate.
+
+        :returns: Whether the certificate was successfully verified.
+        :rtype: bool
+
+        """
+        # pylint: disable=protected-access
+        names = crypto_util._pyopenssl_cert_or_req_all_names(cert)
+        logger.debug('Certificate %s. SANs: %s', cert.digest('sha256'), names)
+        if len(names) != 1 or names[0].lower() != domain.lower():
+            return False
+
+        for i in range(cert.get_extension_count()):
+            ext = cert.get_extension(i)
+            # FIXME: assume this is the ACME extension. Currently there is no
+            # way to get full OID of an unknown extension from pyopenssl.
+            if ext.get_short_name() == b'UNDEF':
+                data = ext.get_data()
+                return data == self.h
+
+        return False
+
+    # pylint: disable=too-many-arguments
+    def simple_verify(self, chall, domain, account_public_key,
+                      cert=None, host=None, port=None):
+        """Simple verify.
+
+        Verify ``validation`` using ``account_public_key``, optionally
+        probe tls-alpn-01 certificate and check using `verify_cert`.
+
+        :param .challenges.TLSALPN01 chall: Corresponding challenge.
+        :param str domain: Domain name being validated.
+        :param JWK account_public_key:
+        :param OpenSSL.crypto.X509 cert: Optional certificate. If not
+            provided (``None``) certificate will be retrieved using
+            `probe_cert`.
+        :param string host: IP address used to probe the certificate.
+        :param int port: Port used to probe the certificate.
+
+
+        :returns: ``True`` iff client's control of the domain has been
+            verified.
+        :rtype: bool
+
+        """
+        if not self.verify(chall, account_public_key):
+            logger.debug("Verification of key authorization in response failed")
+            return False
+
+        if cert is None:
+            try:
+                cert = self.probe_cert(domain=domain, host=host, port=port)
+            except errors.Error as error:
+                logger.debug(str(error), exc_info=True)
+                return False
+
+        return self.verify_cert(cert, domain)
+
+
+@Challenge.register  # pylint: disable=too-many-ancestors
+class TLSALPN01(KeyAuthorizationChallenge):
+    """ACME tls-alpn-01 challenge."""
+    response_cls = TLSALPN01Response
+    typ = response_cls.typ
 
     def validation(self, account_key, **kwargs):
         """Generate validation.
