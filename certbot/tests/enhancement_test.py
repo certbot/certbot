@@ -20,7 +20,7 @@ class EnhancementTest(test_util.ConfigTestCase):
 
     def setUp(self):
         super(EnhancementTest, self).setUp()
-        class MockInstallerAutoHSTS(null.Installer):
+        class MockInstallerAutoHSTS(enhancements.AutoHSTSEnhancement):
             """Mock class that implements AutoHSTSEnhancement"""
             def __init__(self, *args, **kwargs):
                 super(MockInstallerAutoHSTS, self).__init__(*args, **kwargs)
@@ -42,7 +42,6 @@ class EnhancementTest(test_util.ConfigTestCase):
                 """Mock enable method."""
                 self.enable_counter(lineage, domains, *args, **kwargs)
 
-        enhancements.AutoHSTSEnhancement.register(MockInstallerAutoHSTS)  # pylint: disable=no-member
         self.mockinstaller = MockInstallerAutoHSTS()
 
     def _call(self, args):

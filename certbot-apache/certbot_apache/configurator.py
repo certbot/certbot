@@ -162,7 +162,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Maps enhancements to vhosts we've enabled the enhancement for
         self._enhanced_vhosts = defaultdict(set)  # type: DefaultDict[str, Set[obj.VirtualHost]]
         # Temporary state for AutoHSTS enhancement
-        self._autohsts = {}
+        self._autohsts = {}  # type: Dict[str, Dict[str, object]]
 
         # These will be set in the prepare function
         self.parser = None
