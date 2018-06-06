@@ -4,6 +4,9 @@ import six
 
 from certbot import errors
 
+from acme.magic_typing import Dict, List, Any  # pylint: disable=unused-import, no-name-in-module
+
+
 def is_supported(config):
     """Checks if one or more of the requested enhancements are supported by
     the enhancement interfaces."""
@@ -31,7 +34,9 @@ def enable(lineage, domains, installer, config):
     :type config: :class:`certbot.interfaces.IConfig`
     """
     for enh in _INDEX:
-        if hasattr(config, enh["cli_dest"]) and getattr(config, enh["cli_dest"]):
+        enh_requested = hasattr(config, enh["cli_dest"])
+        enh_enabled = bool(getattr(config, enh["cli_dest"]))
+        if enh_requested and enh_enabled:
             if not isinstance(installer, enh["class"]):
                 msg = ("Requested enhancement {} not supported by selected "
                        "installer").format(enh["name"])
@@ -85,4 +90,4 @@ _INDEX = [
         "deployer_function": "deploy_autohsts",
         "enable_function": "enable_autohsts"
     }
-]
+]  # type: List[Dict[str, Any]]

@@ -13,7 +13,7 @@ import zope.component
 import zope.interface
 
 from acme import challenges
-from acme.magic_typing import DefaultDict, Dict, List, Set  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Any, DefaultDict, Dict, List, Set  # pylint: disable=unused-import, no-name-in-module
 
 from certbot import errors
 from certbot import interfaces
@@ -162,7 +162,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Maps enhancements to vhosts we've enabled the enhancement for
         self._enhanced_vhosts = defaultdict(set)  # type: DefaultDict[str, Set[obj.VirtualHost]]
         # Temporary state for AutoHSTS enhancement
-        self._autohsts = {}  # type: Dict[str, Dict[str, object]]
+        self._autohsts = {}  # type: Dict[str, Dict[str, Any]]
 
         # These will be set in the prepare function
         self.parser = None

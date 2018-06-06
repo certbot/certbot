@@ -22,8 +22,8 @@ class EnhancementTest(test_util.ConfigTestCase):
         super(EnhancementTest, self).setUp()
         class MockInstallerAutoHSTS(enhancements.AutoHSTSEnhancement):
             """Mock class that implements AutoHSTSEnhancement"""
-            def __init__(self, *args, **kwargs):
-                super(MockInstallerAutoHSTS, self).__init__(*args, **kwargs)
+            def __init__(self):
+                super(MockInstallerAutoHSTS, self).__init__()
                 # pylint: disable=unused-argument
                 self.enable_counter = mock.MagicMock()
                 self.update_counter = mock.MagicMock()
@@ -149,6 +149,10 @@ class EnhancementTest(test_util.ConfigTestCase):
             errors.NotSupportedError,
             self._call, ['enhance', '--auto-hsts'])
 
+    def test_enhancement_enable_conflict(self):
+        self.assertRaises(
+            errors.Error,
+            self._call, ['enhance', '--auto-hsts', '--hsts'])
 
 
 if __name__ == '__main__':
