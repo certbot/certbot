@@ -7,7 +7,7 @@
 import hashlib
 import logging
 import os
-
+import warnings
 
 import pyrfc3339
 import six
@@ -237,21 +237,23 @@ def verify_renewable_cert_sig(renewable_cert):
         with open(renewable_cert.cert, 'rb') as cert_file:  # type: IO[bytes]
             cert = x509.load_pem_x509_certificate(cert_file.read(), default_backend())
         pk = chain.public_key()
-        if isinstance(pk, RSAPublicKey):
-            # https://github.com/python/typeshed/blob/master/third_party/2/cryptography/hazmat/primitives/asymmetric/rsa.pyi
-            verifier = pk.verifier(  # type: ignore
-                cert.signature, PKCS1v15(), cert.signature_hash_algorithm
-            )
-            verifier.update(cert.tbs_certificate_bytes)
-            verifier.verify()
-        elif isinstance(pk, EllipticCurvePublicKey):
-            verifier = pk.verifier(
-                cert.signature, ECDSA(cert.signature_hash_algorithm)
-            )
-            verifier.update(cert.tbs_certificate_bytes)
-            verifier.verify()
-        else:
-            raise errors.Error("Unsupported public key type")
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            if isinstance(pk, RSAPublicKey):
+                # https://github.com/python/typeshed/blob/master/third_party/2/cryptography/hazmat/primitives/asymmetric/rsa.pyi
+                verifier = pk.verifier(  # type: ignore
+                    cert.signature, PKCS1v15(), cert.signature_hash_algorithm
+                )
+                verifier.update(cert.tbs_certificate_bytes)
+                verifier.verify()
+            elif isinstance(pk, EllipticCurvePublicKey):
+                verifier = pk.verifier(
+                    cert.signature, ECDSA(cert.signature_hash_algorithm)
+                )
+                verifier.update(cert.tbs_certificate_bytes)
+                verifier.verify()
+            else:
+                raise errors.Error("Unsupported public key type")
     except (IOError, ValueError, InvalidSignature) as e:
         error_str = "verifying the signature of the cert located at {0} has failed. \
                 Details: {1}".format(renewable_cert.cert, e)
