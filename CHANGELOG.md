@@ -13,7 +13,8 @@ Certbot adheres to [Semantic Versioning](http://semver.org/).
   https://community.letsencrypt.org/t/acmev2-order-ready-status/62866 for more
   information.
 * Certbot now accepts the flag --reuse-key which will cause the same key to be
-  used when the lineage is renewed rather than generating a new key.
+  used in the certificate when the lineage is renewed rather than generating a
+  new key.
 * You can now add multiple email addresses to your ACME account with Certbot by
   providing a comma separated list of emails to the --email flag.
 * Support for Let's Encrypt's upcoming TLS-ALPN-01 challenge was added to acme.
