@@ -22,24 +22,6 @@ targets:
     #   #cloud-init
     #   runcmd:
     #     - [ apt-get, install, -y, curl ]
-  - ami: ami-e0efab88
-    name: debian7.8.aws.1
-    type: ubuntu
-    virt: hvm
-    user: admin
-    # userdata: |
-    #   #cloud-init
-    #   runcmd:
-    #     - [ apt-get, install, -y, curl ]
-  - ami: ami-e6eeaa8e
-    name: debian7.8.aws.1_32bit
-    type: ubuntu
-    virt: pv
-    user: admin
-    # userdata: |
-    #   #cloud-init
-    #   runcmd:
-    #     - [ apt-get, install, -y, curl ]
   #-----------------------------------------------------------------------------
   # Other Redhat Distros
   - ami: ami-60b6c60a
