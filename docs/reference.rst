@@ -6,7 +6,7 @@ Reference
 
 
 Certbot Logs
-==========
+============
 
 
 .. _log-rotation:

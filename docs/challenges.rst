@@ -40,7 +40,7 @@ General tips:
 .. _http_01_challenge:
 
 HTTP-01 Challenge
-~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^
 
 * Make sure the domain name exists and is already pointed to the public IP address of the server where 
   you’re requesting the certificate.
@@ -61,10 +61,10 @@ HTTP-01 Challenge
 * When using the Webroot plugin, make sure there is a web server listening on port 80.
 
 
-.. _tls_sni_01_challege:
+.. _tls_sni_01_challenge:
 
 TLS-SNI-01 Challenge
-~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^
 
 * The TLS-SNI-01 challenge doesn’t work with content delivery networks (CDNs) 
   like CloudFlare and Akamai because the domain name is pointed at the CDN, not directly at your server.
@@ -81,7 +81,7 @@ TLS-SNI-01 Challenge
 .. _dns_01_challenge:
 
 DNS-01 Challenge
-~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^
 
 * When using the manual plugin, make sure your DNS records are correctly updated; 
   you must be able to make appropriate changes to your DNS zone in order to pass the challenge.

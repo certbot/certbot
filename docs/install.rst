@@ -9,6 +9,7 @@ Manual Installation
 where you can find the correct installation instructions for many web server 
 and OS combinations.
 
+
 .. _certbot.eff.org: https://certbot.eff.org/
 
 
@@ -301,7 +302,7 @@ server using SNI.
 Additionally you can specify scripts to prepare for validation and
 perform the authentication procedure and/or clean up after it by using
 the ``--manual-auth-hook`` and ``--manual-cleanup-hook`` flags. This is
-described in more depth in the hooks_ section.
+described in more depth in the hooks section.
 
 * Manual plugin: (DNS-01 or HTTP-01) Either tells you what changes to make to your configuration or updates 
   your DNS records using an external script (for DNS-01) or your webroot (for HTTP-01). Use the Manual 
@@ -413,7 +414,7 @@ installer plugins. To do so, specify the authenticator plugin with
 For instance, you may want to create a certificate using the webroot_ plugin
 for authentication and the apache_ plugin for installation, perhaps because you
 use a proxy or CDN for SSL and only want to secure the connection between them
-and your origin server, which cannot use the tls-sni-01_ challenge due to the
+and your origin server, which cannot use the tls_sni_01_challege_ due to the
 intermediate proxy.
 
 ::

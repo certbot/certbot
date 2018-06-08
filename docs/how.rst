@@ -42,19 +42,19 @@ a combination_ of distinct authenticator and installer plugins.
 =========== ==== ==== =============================================================== =============================
 Plugin      Auth Inst Notes                                                           Challenge types (and port)
 =========== ==== ==== =============================================================== =============================
-apache_     Y    Y    | Automates obtaining and installing a certificate with Apache  :ref:`TLS-SNI-01 <tls_sni_01_challege>` (443)
+apache     Y    Y    | Automates obtaining and installing a certificate with Apache  :ref:`TLS-SNI-01 <tls_sni_01_challenge>` (443)
                       | 2.4 on Debian-based distributions with ``libaugeas0`` 1.0+.
-webroot_    Y    N    | Obtains a certificate by writing to the webroot directory of  :ref:`HTTP-01 <http_01_challenge>` (80)
+webroot    Y    N    | Obtains a certificate by writing to the webroot directory of  :ref:`HTTP-01 <http_01_challenge>` (80)
                       | an already running webserver.
-nginx_      Y    Y    | Automates obtaining and installing a certificate with Nginx.  :ref:`TLS-SNI-01 <tls_sni_01_challege>` (443)
+nginx      Y    Y    | Automates obtaining and installing a certificate with Nginx.  :ref:`TLS-SNI-01 <tls_sni_01_challenge>` (443)
                       | Shipped with Certbot 0.9.0.
-standalone_ Y    N    | Uses a "standalone" webserver to obtain a certificate.        :ref:`HTTP-01 <http_01_challenge>` (80) or
-                      | Requires port 80 or 443 to be available. This is useful on    :ref:`TLS-SNI-01 <tls_sni_01_challege>` (443)
+standalone Y    N    | Uses a "standalone" webserver to obtain a certificate.        :ref:`HTTP-01 <http_01_challenge>` (80) or
+                      | Requires port 80 or 443 to be available. This is useful on    :ref:`TLS-SNI-01 <tls_sni_01_challenge>` (443)
                       | systems with no webserver, or when direct integration with
                       | the local webserver is not supported or not desired.
-manual_     Y    N    | Helps you obtain a certificate by giving you instructions to  :ref:`HTTP-01 <http_01_challenge>` (80),
+manual     Y    N    | Helps you obtain a certificate by giving you instructions to  :ref:`HTTP-01 <http_01_challenge>` (80),
                       | perform domain validation yourself. Additionally allows you   :ref:`DNS-01 <dns_01_challenge>` (53) or
-                      | to specify scripts to automate the validation task in a       :ref:`TLS-SNI-01 <tls_sni_01_challege>` (443)
+                      | to specify scripts to automate the validation task in a       :ref:`TLS-SNI-01 <tls_sni_01_challenge>` (443)
                       | customized way.
 =========== ==== ==== =============================================================== =============================
 
