@@ -229,6 +229,10 @@ def report_master_overrides(name, overrides, acceptable_overrides=None):
 def is_acceptable_value(parameter, value, acceptable):
     """ Returns whether the `value` for this `parameter` is acceptable,
     given a string or tuple `acceptable`
+
+    :param str parameter:       The name of the parameter being set.
+    :param str value:           Proposed new value for parameter.
+    :param tuple acceptable:    List of acceptable values for parameter.
     """
     # If it's a tuple, there's multiple acceptable options.
     # Only set a param if it's not acceptable.
@@ -276,9 +280,9 @@ def _has_acceptable_tls_versions(parameter_string):
     if inclusion_list: # For any inclusion list, we still require TLS 1.2.
         if "TLSv1.2" not in supported_version_list or "!TLSv1.2" in supported_version_list:
             return False
-    else: 
+    else:
         for bad_version in bad_versions:
             if "!" + bad_version not in supported_version_list:
-               return False
+                return False
     return True
 

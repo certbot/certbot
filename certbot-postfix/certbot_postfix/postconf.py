@@ -12,7 +12,6 @@ class ConfigMain(util.PostfixUtilBase):
         super(ConfigMain, self).__init__(executable, config_dir)
         # Whether to ignore overrides from master.
         self._ignore_master_overrides = ignore_master_overrides
-        print(self._ignore_master_overrides)
         # List of all current Postfix parameters, from `postconf` command.
         self._db = {}
         # List of current master.cf overrides from Postfix config. Dictionary

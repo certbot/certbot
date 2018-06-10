@@ -48,7 +48,8 @@ class Installer(plugins_common.Installer):
             help="Only set params to enable opportunistic TLS and install certificates.")
         add("server-only", action="store_true", default=constants.CLI_DEFAULTS["server_only"],
             help="Only set server params (prefixed with smtpd*)")
-        add("ignore-master-overrides", action="store_true", default=constants.CLI_DEFAULTS["ignore_master_overrides"],
+        add("ignore-master-overrides", action="store_true",
+            default=constants.CLI_DEFAULTS["ignore_master_overrides"],
             help="Ignore errors reporting overridden TLS parameters in master.cf.")
 
     def __init__(self, *args, **kwargs):

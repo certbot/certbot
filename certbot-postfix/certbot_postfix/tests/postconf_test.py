@@ -22,7 +22,15 @@ class PostConfTest(unittest.TestCase):
                         'service/type/overridden_by_master = master_value\n'
                         'service2/type/overridden_by_master = master_value2\n'
                     )
-                    self.config = ConfigMain('postconf', lambda x, y, z: None)
+                    self.config = ConfigMain('postconf', False)
+
+    @mock.patch('certbot_postfix.util.PostfixUtilBase._get_output')
+    @mock.patch('certbot_postfix.postconf.util.verify_exe_exists')
+    def test_get_output_master(self, mock_verify_exe, mock_get_output):
+        from certbot_postfix.postconf import ConfigMain
+        mock_verify_exe.return_value = True
+        ConfigMain('postconf', lambda x, y, z: None)
+        mock_get_output.assert_called_with('-P')
 
     @mock.patch('certbot_postfix.util.PostfixUtilBase._get_output')
     def test_read_default(self, mock_get_output):
@@ -59,16 +67,17 @@ class PostConfTest(unittest.TestCase):
                           ('service2/type', 'master_value2')])
 
     def test_set_check_override(self):
-        expected_overrides = [
-            ('service/type', 'master_value'),
-            ('service2/type', 'master_value2')]
-        def _check_overrides(name, overrides, acceptable_overrides):
-            # pylint: disable=unused-argument
-            self.assertEqual('overridden_by_master', name)
-            self.assertEqual(expected_overrides, overrides)
+        self.assertRaises(errors.PluginError, self.config.set,
+            'overridden_by_master', 'new_value')
+
+    def test_ignore_check_override(self):
         # pylint: disable=protected-access
-        self.config._handle_overrides = _check_overrides
+        self.config._ignore_master_overrides = True
         self.config.set('overridden_by_master', 'new_value')
+
+    def test_check_acceptable_overrides(self):
+        self.config.set('overridden_by_master', 'new_value',
+                        ('master_value', 'master_value2'))
 
     @mock.patch('certbot_postfix.util.PostfixUtilBase._get_output')
     def test_flush(self, mock_out):
