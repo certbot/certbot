@@ -14,7 +14,7 @@ Named Arguments
                                             DNS to propagate before asking the
                                             ACME server to verify the DNS
                                             record.
-                                            (Default: 930)
+                                            (Default: 960)
 ==========================================  ===================================
 
 
