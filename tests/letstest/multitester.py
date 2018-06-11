@@ -33,6 +33,8 @@ from __future__ import print_function
 from __future__ import with_statement
 
 import sys, os, time, argparse, socket
+import random
+import string
 import multiprocessing as mp
 from multiprocessing import Manager
 import urllib2
@@ -103,6 +105,8 @@ LOGDIR = "" #points to logging / working directory
 # boto3/AWS api globals
 AWS_SESSION = None
 EC2 = None
+TAG_KEY = 'MultitesterRunID'
+TAG_VALUE = None
 
 # Boto3/AWS automation functions
 #-------------------------------------------------------------------------------
@@ -126,30 +130,24 @@ def make_instance(instance_name,
                   machine_type='t2.micro',
                   security_groups=['letsencrypt_test'],
                   userdata=""): #userdata contains bash or cloud-init script
+    assert TAG_VALUE, 'TAG_VALUE must be set to use this function!'
+    tag_specs = []
+    for rtype in ('instance', 'volume',):
+        tag_specs.append({'ResourceType': rtype,
+                          'Tags': [{'Key': TAG_KEY, 'Value': TAG_VALUE}]})
+    for tag_spec in tag_specs:
+        if tag_spec['ResourceType'] == 'instance':
+            tag_spec['Tags'].append({'Key': 'Name', 'Value': instance_name})
 
-    new_instance = EC2.create_instances(
+    return EC2.create_instances(
         ImageId=ami_id,
         SecurityGroups=security_groups,
         KeyName=keyname,
         MinCount=1,
         MaxCount=1,
         UserData=userdata,
-        InstanceType=machine_type)[0]
-
-    # brief pause to prevent rare error on EC2 delay, should block until ready instead
-    time.sleep(1.0)
-
-    # give instance a name
-    try:
-        new_instance.create_tags(Tags=[{'Key': 'Name', 'Value': instance_name}])
-    except ClientError as e:
-        if "InvalidInstanceID.NotFound" in str(e):
-            # This seems to be ephemeral... retry
-            time.sleep(1)
-            new_instance.create_tags(Tags=[{'Key': 'Name', 'Value': instance_name}])
-        else:
-            raise
-    return new_instance
+        InstanceType=machine_type,
+        TagSpecifications=tag_specs)[0]
 
 def terminate_and_clean(instances):
     """
@@ -235,6 +233,25 @@ def block_until_instance_ready(booting_instance, wait_time=5, extra_wait_time=20
     time.sleep(extra_wait_time)
     return _instance
 
+def get_run_id_filter(id_):
+    """Returns the filter to use to find resources with id_."""
+    return {'Name': 'tag:' + TAG_KEY, 'Values': [id_]}
+
+def is_unique_run_id(id_):
+    """Checks if ID is a unique run ID."""
+    filters = [get_run_id_filter(id_)]
+    for resource in (EC2.instances, EC2.volumes):
+        for _ in resource.filter(Filters=filters):
+            return False
+    return True
+
+def create_unique_run_id():
+    """Creates a unique ID for the current run."""
+    chars = string.ascii_letters + string.digits
+    while True:
+        id_ = ''.join(random.choice(chars) for _ in range(16))
+        if is_unique_run_id(id_):
+            return id_
 
 # Fabric Routines
 #-------------------------------------------------------------------------------
@@ -366,7 +383,6 @@ def test_client_process(inqueue, outqueue):
             print("log fail\n")
             pass
 
-
 def cleanup(cl_args, instances, targetlist):
     print('Logs in ', LOGDIR)
     if not cl_args.saveinstances:
@@ -442,6 +458,8 @@ for sg in EC2.security_groups.all():
 if not sg_exists:
     make_security_group()
     time.sleep(30)
+
+TAG_VALUE = create_unique_run_id()
 
 boulder_preexists = False
 boulder_servers = EC2.instances.filter(Filters=[
