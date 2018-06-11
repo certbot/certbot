@@ -546,7 +546,9 @@ class TLSALPN01Response(KeyAuthorizationChallengeResponse):
             key.generate_key(crypto.TYPE_RSA, bits)
 
 
-        der_value = b"DER:" + codecs.encode(self.h, 'hex')
+        # Instead of using a ASN.1 encoding library just append the OCTET STRING tag (0x04)
+        # and the length of the SHA256 hash (0x20) since both of these should never change
+        der_value = b"DER:0420" + codecs.encode(self.h, 'hex')
         acme_extension = crypto.X509Extension(self.ID_PE_ACME_IDENTIFIER_V1,
                 critical=True, value=der_value)
 
