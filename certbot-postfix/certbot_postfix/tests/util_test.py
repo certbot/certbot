@@ -51,12 +51,12 @@ class PostfixUtilTest(unittest.TestCase):
         self.mock_call.assert_called_with(['check'])
 
     def test_test_raises_error_when_check_fails(self):
-        self.mock_call.side_effect = [subprocess.CalledProcessError(None, None, None)]
+        self.mock_call.side_effect = [subprocess.CalledProcessError(1, "")]
         self.assertRaises(errors.MisconfigurationError, self.postfix.test)
         self.mock_call.assert_called_with(['check'])
 
     def test_restart_while_running(self):
-        self.mock_call.side_effect = [subprocess.CalledProcessError(None, None, None), None]
+        self.mock_call.side_effect = [subprocess.CalledProcessError(1, ""), None]
         self.postfix.restart()
         self.mock_call.assert_called_with(['start'])
 
@@ -65,14 +65,14 @@ class PostfixUtilTest(unittest.TestCase):
         self.mock_call.assert_called_with(['reload'])
 
     def test_restart_raises_error_when_reload_fails(self):
-        self.mock_call.side_effect = [None, subprocess.CalledProcessError(None, None, None)]
+        self.mock_call.side_effect = [None, subprocess.CalledProcessError(1, "")]
         self.assertRaises(errors.PluginError, self.postfix.restart)
         self.mock_call.assert_called_with(['reload'])
 
     def test_restart_raises_error_when_start_fails(self):
         self.mock_call.side_effect = [
-             subprocess.CalledProcessError(None, None, None),
-             subprocess.CalledProcessError(None, None, None)]
+             subprocess.CalledProcessError(1, ""),
+             subprocess.CalledProcessError(1, "")]
         self.assertRaises(errors.PluginError, self.postfix.restart)
         self.mock_call.assert_called_with(['start'])
 

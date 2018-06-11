@@ -13,14 +13,14 @@ class ConfigMain(util.PostfixUtilBase):
         # Whether to ignore overrides from master.
         self._ignore_master_overrides = ignore_master_overrides
         # List of all current Postfix parameters, from `postconf` command.
-        self._db = {}
+        self._db = {} # type: Dict[str, str]
         # List of current master.cf overrides from Postfix config. Dictionary
         # of parameter name => list of tuples (service name, paramter value)
         # Note: We should never modify master without explicit permission.
-        self._master_db = {}
+        self._master_db = {} # Dict[str, List[Tuple[str, str]]]
         # List of all changes requested to the Postfix parameters as they are now
         # in _db. These changes are flushed to `postconf` on `flush`.
-        self._updated = {}
+        self._updated = {} # type: Dict[str, str]
         self._read_from_conf()
 
     def _read_from_conf(self):

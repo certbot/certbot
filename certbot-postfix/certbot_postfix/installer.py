@@ -59,9 +59,9 @@ class Installer(plugins_common.Installer):
         self.postconf = None
 
         # Files to save
-        self.save_notes = []
+        self.save_notes = [] # type: List[str]
 
-        self._enhance_func = {}
+        self._enhance_func = {} # type: Dict[str, Callable[[str, str]]]
         # Since we only need to enable TLS once for all domains,
         # keep track of whether this enhancement was already called.
         self._tls_enabled = False

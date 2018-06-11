@@ -158,6 +158,14 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
                                               installer.prepare)
             certbot_test_util.lock_and_call(assert_raises, self.tempdir)
 
+
+    @mock.patch('certbot.util.lock_dir_until_exit')
+    def test_dir_locked(self, lock_dir):
+        with create_installer(self.config) as installer:
+            lock_dir.side_effect = errors.LockError
+            self.assertRaises(errors.PluginError, installer.prepare)
+        
+
     def test_more_info(self):
         with create_installer(self.config) as installer:
             installer.prepare()
@@ -288,7 +296,6 @@ def create_installer(config, main_cf=DEFAULT_MAIN_CF):
     from certbot_postfix import installer
     def _mock_init_postconf(postconf, executable, ignore_master_overrides=False, config_dir=None):
         # pylint: disable=protected-access
-        super(ConfigMain, postconf).__init__(executable, config_dir)
         postconf._ignore_master_overrides = ignore_master_overrides
         postconf._db = main_cf
         postconf._master_db = {}
