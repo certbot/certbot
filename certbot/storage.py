@@ -1053,6 +1053,9 @@ class RenewableCert(object):
                     "`cert.pem`     : will break many server configurations, and "
                                         "should not be used\n"
                     "                 without reading further documentation (see link below).\n\n"
+                    "WARNING: DO NOT MOVE THESE FILES!\n"
+                    "         Certbot expects these files to remain in this location in order\n"
+                    "         to function properly!\n\n"
                     "We recommend not moving these files. For more information, see the Certbot\n"
                     "User Guide at https://certbot.eff.org/docs/using.html#where-are-my-"
                                         "certificates.\n")

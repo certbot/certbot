@@ -6,6 +6,7 @@ import unittest
 import mock
 import zope.component
 
+from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
 from certbot.display import util as display_util
 from certbot.tests import util as test_util
 from certbot import interfaces
@@ -47,7 +48,7 @@ class PickPluginTest(unittest.TestCase):
         self.default = None
         self.reg = mock.MagicMock()
         self.question = "Question?"
-        self.ifaces = []
+        self.ifaces = []  # type: List[interfaces.IPlugin]
 
     def _call(self):
         from certbot.plugins.selection import pick_plugin

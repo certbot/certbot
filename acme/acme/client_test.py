@@ -17,6 +17,7 @@ from acme import jws as acme_jws
 from acme import messages
 from acme import messages_test
 from acme import test_util
+from acme.magic_typing import Dict # pylint: disable=unused-import, no-name-in-module
 
 
 CERT_DER = test_util.load_vector('cert.der')
@@ -61,7 +62,8 @@ class ClientTestBase(unittest.TestCase):
         self.contact = ('mailto:cert-admin@example.com', 'tel:+12025551212')
         reg = messages.Registration(
             contact=self.contact, key=KEY.public_key())
-        self.new_reg = messages.NewRegistration(**dict(reg))
+        the_arg = dict(reg) # type: Dict
+        self.new_reg = messages.NewRegistration(**the_arg) # pylint: disable=star-args
         self.regr = messages.RegistrationResource(
             body=reg, uri='https://www.letsencrypt-demo.org/acme/reg/1')
 
@@ -1127,6 +1129,31 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
         self.assertRaises(requests.exceptions.RequestException,
                           self.net.post, 'uri', obj=self.obj)
 
+class ClientNetworkSourceAddressBindingTest(unittest.TestCase):
+    """Tests that if ClientNetwork has a source IP set manually, the underlying library has
+    used the provided source address."""
+
+    def setUp(self):
+        self.source_address = "8.8.8.8"
+
+    def test_source_address_set(self):
+        from acme.client import ClientNetwork
+        net = ClientNetwork(key=None, alg=None, source_address=self.source_address)
+        for adapter in net.session.adapters.values():
+            self.assertTrue(self.source_address in adapter.source_address)
+
+    def test_behavior_assumption(self):
+        """This is a test that guardrails the HTTPAdapter behavior so that if the default for
+        a Session() changes, the assumptions here aren't violated silently."""
+        from acme.client import ClientNetwork
+        # Source address not specified, so the default adapter type should be bound -- this
+        # test should fail if the default adapter type is changed by requests
+        net = ClientNetwork(key=None, alg=None)
+        session = requests.Session()
+        for scheme in session.adapters.keys():
+            client_network_adapter = net.session.adapters.get(scheme)
+            default_adapter = session.adapters.get(scheme)
+            self.assertEqual(client_network_adapter.__class__, default_adapter.__class__)
 
 if __name__ == '__main__':
     unittest.main()  # pragma: no cover

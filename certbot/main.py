@@ -11,6 +11,7 @@ import josepy as jose
 import zope.component
 
 from acme import errors as acme_errors
+from acme.magic_typing import Union  # pylint: disable=unused-import, no-name-in-module
 
 import certbot
 
@@ -29,6 +30,7 @@ from certbot import log
 from certbot import renewal
 from certbot import reporter
 from certbot import storage
+from certbot import updater
 from certbot import util
 
 from certbot.display import util as display_util, ops as display_ops
@@ -323,7 +325,7 @@ def _find_lineage_for_domains_and_certname(config, domains, certname):
                 return "newcert", None
             else:
                 raise errors.ConfigurationError("No certificate with name {0} found. "
-                    "Use -d to specify domains, or run certbot --certificates to see "
+                    "Use -d to specify domains, or run certbot certificates to see "
                     "possible certificate names.".format(certname))
 
 def _get_added_removed(after, before):
@@ -339,7 +341,10 @@ def _get_added_removed(after, before):
 def _format_list(character, strings):
     """Format list with given character
     """
-    formatted = "{br}{ch} " + "{br}{ch} ".join(strings)
+    if len(strings) == 0:
+        formatted = "{br}(None)"
+    else:
+        formatted = "{br}{ch} " + "{br}{ch} ".join(strings)
     return formatted.format(
         ch=character,
         br=os.linesep
@@ -382,7 +387,7 @@ def _ask_user_to_confirm_new_names(config, new_domains, certname, old_domains):
     if not obj.yesno(msg, "Update cert", "Cancel", default=True):
         raise errors.ConfigurationError("Specified mismatched cert name and domains.")
 
-def _find_domains_or_certname(config, installer):
+def _find_domains_or_certname(config, installer, question=None):
     """Retrieve domains and certname from config or user input.
 
     :param config: Configuration object
@@ -391,6 +396,8 @@ def _find_domains_or_certname(config, installer):
     :param installer: Installer object
     :type installer: interfaces.IInstaller
 
+    :param `str` question: Overriding dialog question to ask the user if asked
+        to choose from domain names.
 
     :returns: Two-part tuple of domains and certname
     :rtype: `tuple` of list of `str` and `str`
@@ -411,7 +418,7 @@ def _find_domains_or_certname(config, installer):
     # that certname might not have existed, or there was a problem.
     # try to get domains from the user.
     if not domains:
-        domains = display_ops.choose_names(installer)
+        domains = display_ops.choose_names(installer, question)
 
     if not domains and not certname:
         raise errors.Error("Please specify --domains, or --installer that "
@@ -480,6 +487,21 @@ def _determine_account(config):
     :raises errors.Error: If unable to register an account with ACME server
 
     """
+    def _tos_cb(terms_of_service):
+        if config.tos:
+            return True
+        msg = ("Please read the Terms of Service at {0}. You "
+               "must agree in order to register with the ACME "
+               "server at {1}".format(
+                   terms_of_service, config.server))
+        obj = zope.component.getUtility(interfaces.IDisplay)
+        result = obj.yesno(msg, "Agree", "Cancel",
+                         cli_flag="--agree-tos", force_interactive=True)
+        if not result:
+            raise errors.Error(
+                "Registration cannot proceed without accepting "
+                "Terms of Service.")
+
     account_storage = account.AccountFileStorage(config)
     acme = None
 
@@ -494,28 +516,13 @@ def _determine_account(config):
         else:  # no account registered yet
             if config.email is None and not config.register_unsafely_without_email:
                 config.email = display_ops.get_email()
-
-            def _tos_cb(terms_of_service):
-                if config.tos:
-                    return True
-                msg = ("Please read the Terms of Service at {0}. You "
-                       "must agree in order to register with the ACME "
-                       "server at {1}".format(
-                           terms_of_service, config.server))
-                obj = zope.component.getUtility(interfaces.IDisplay)
-                result = obj.yesno(msg, "Agree", "Cancel",
-                                 cli_flag="--agree-tos", force_interactive=True)
-                if not result:
-                    raise errors.Error(
-                        "Registration cannot proceed without accepting "
-                        "Terms of Service.")
             try:
                 acc, acme = client.register(
                     config, account_storage, tos_cb=_tos_cb)
             except errors.MissingCommandlineFlag:
                 raise
-            except errors.Error as error:
-                logger.debug(error, exc_info=True)
+            except errors.Error:
+                logger.debug("", exc_info=True)
                 raise errors.Error(
                     "Unable to register an account with ACME server")
 
@@ -728,8 +735,9 @@ def register(config, unused_plugins):
     acc, acme = _determine_account(config)
     cb_client = client.Client(config, acc, None, None, acme=acme)
     # We rely on an exception to interrupt this process if it didn't work.
+    acc_contacts = ['mailto:' + email for email in config.email.split(',')]
     acc.regr = cb_client.acme.update_registration(acc.regr.update(
-        body=acc.regr.body.update(contact=('mailto:' + config.email,))))
+        body=acc.regr.body.update(contact=acc_contacts)))
     account_storage.save_regr(acc, cb_client.acme)
     eff.handle_subscription(config)
     add_msg("Your e-mail address was updated to {0}.".format(config.email))
@@ -858,6 +866,53 @@ def plugins_cmd(config, plugins):
     available = verified.available()
     logger.debug("Prepared plugins: %s", available)
     notify(str(available))
+
+def enhance(config, plugins):
+    """Add security enhancements to existing configuration
+
+    :param config: Configuration object
+    :type config: interfaces.IConfig
+
+    :param plugins: List of plugins
+    :type plugins: `list` of `str`
+
+    :returns: `None`
+    :rtype: None
+
+    """
+    supported_enhancements = ["hsts", "redirect", "uir", "staple"]
+    # Check that at least one enhancement was requested on command line
+    if not any([getattr(config, enh) for enh in supported_enhancements]):
+        msg = ("Please specify one or more enhancement types to configure. To list "
+               "the available enhancement types, run:\n\n%s --help enhance\n")
+        logger.warning(msg, sys.argv[0])
+        raise errors.MisconfigurationError("No enhancements requested, exiting.")
+
+    try:
+        installer, _ = plug_sel.choose_configurator_plugins(config, plugins, "enhance")
+    except errors.PluginSelectionError as e:
+        return str(e)
+
+    certname_question = ("Which certificate would you like to use to enhance "
+                         "your configuration?")
+    config.certname = cert_manager.get_certnames(
+        config, "enhance", allow_multiple=False,
+        custom_prompt=certname_question)[0]
+    cert_domains = cert_manager.domains_for_certname(config, config.certname)
+    if config.noninteractive_mode:
+        domains = cert_domains
+    else:
+        domain_question = ("Which domain names would you like to enable the "
+                           "selected enhancements for?")
+        domains = display_ops.choose_values(cert_domains, domain_question)
+        if not domains:
+            raise errors.Error("User cancelled the domain selection. No domains "
+                               "defined, exiting.")
+    if not config.chain_path:
+        lineage = cert_manager.lineage_for_certname(config, config.certname)
+        config.chain_path = lineage.chain_path
+    le_client = _init_le_client(config, authenticator=None, installer=installer)
+    le_client.enhance_config(domains, config.chain_path, ask_redirect=False)
 
 
 def rollback(config, plugins):
@@ -1096,10 +1151,9 @@ def renew_cert(config, plugins, lineage):
     except errors.PluginSelectionError as e:
         logger.info("Could not choose appropriate plugin: %s", e)
         raise
-
     le_client = _init_le_client(config, auth, installer)
 
-    _get_and_save_cert(le_client, config, lineage=lineage)
+    renewed_lineage = _get_and_save_cert(le_client, config, lineage=lineage)
 
     notify = zope.component.getUtility(interfaces.IDisplay).notification
     if installer is None:
@@ -1109,9 +1163,11 @@ def renew_cert(config, plugins, lineage):
         # In case of a renewal, reload server to pick up new certificate.
         # In principle we could have a configuration option to inhibit this
         # from happening.
+        updater.run_renewal_deployer(config, renewed_lineage, installer)
         installer.restart()
         notify("new certificate deployed with reload of {0} server; fullchain is {1}".format(
                config.installer, lineage.fullchain), pause=False)
+        # Run deployer
 
 def certonly(config, plugins):
     """Authenticate & obtain cert, but do not install it.
@@ -1217,7 +1273,8 @@ def set_displayer(config):
     """
     if config.quiet:
         config.noninteractive_mode = True
-        displayer = display_util.NoninteractiveDisplay(open(os.devnull, "w"))
+        displayer = display_util.NoninteractiveDisplay(open(os.devnull, "w")) \
+        # type: Union[None, display_util.NoninteractiveDisplay, display_util.FileDisplay]
     elif config.noninteractive_mode:
         displayer = display_util.NoninteractiveDisplay(sys.stdout)
     else:

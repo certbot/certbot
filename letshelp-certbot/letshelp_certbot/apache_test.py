@@ -203,13 +203,19 @@ class LetsHelpApacheTest(unittest.TestCase):
                         tempdir_path, "config.tar.gz"))
 
                     tempdir = tar.next()
-                    self.assertTrue(tempdir.isdir())
-                    self.assertEqual(tempdir.name, ".")
+                    if tempdir is None:
+                        self.fail("Invalid tarball!")  # pragma: no cover
+                    else:
+                        self.assertTrue(tempdir.isdir())
+                        self.assertEqual(tempdir.name, ".")
 
                     testdir = tar.next()
-                    self.assertTrue(testdir.isdir())
-                    self.assertEqual(os.path.basename(testdir.name),
-                                     testdir_basename)
+                    if testdir is None:
+                        self.fail("Invalid tarball!")  # pragma: no cover
+                    else:
+                        self.assertTrue(testdir.isdir())
+                        self.assertEqual(os.path.basename(testdir.name),
+                                         testdir_basename)
 
                     self.assertEqual(tar.next(), None)
 

@@ -10,7 +10,7 @@ import unittest
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 import josepy as jose
-import OpenSSL
+from OpenSSL import crypto
 
 
 def vector_path(*names):
@@ -39,8 +39,8 @@ def _guess_loader(filename, loader_pem, loader_der):
 def load_cert(*names):
     """Load certificate."""
     loader = _guess_loader(
-        names[-1], OpenSSL.crypto.FILETYPE_PEM, OpenSSL.crypto.FILETYPE_ASN1)
-    return OpenSSL.crypto.load_certificate(loader, load_vector(*names))
+        names[-1], crypto.FILETYPE_PEM, crypto.FILETYPE_ASN1)
+    return crypto.load_certificate(loader, load_vector(*names))
 
 
 def load_comparable_cert(*names):
@@ -51,8 +51,8 @@ def load_comparable_cert(*names):
 def load_csr(*names):
     """Load certificate request."""
     loader = _guess_loader(
-        names[-1], OpenSSL.crypto.FILETYPE_PEM, OpenSSL.crypto.FILETYPE_ASN1)
-    return OpenSSL.crypto.load_certificate_request(loader, load_vector(*names))
+        names[-1], crypto.FILETYPE_PEM, crypto.FILETYPE_ASN1)
+    return crypto.load_certificate_request(loader, load_vector(*names))
 
 
 def load_comparable_csr(*names):
@@ -71,8 +71,8 @@ def load_rsa_private_key(*names):
 def load_pyopenssl_private_key(*names):
     """Load pyOpenSSL private key."""
     loader = _guess_loader(
-        names[-1], OpenSSL.crypto.FILETYPE_PEM, OpenSSL.crypto.FILETYPE_ASN1)
-    return OpenSSL.crypto.load_privatekey(loader, load_vector(*names))
+        names[-1], crypto.FILETYPE_PEM, crypto.FILETYPE_ASN1)
+    return crypto.load_privatekey(loader, load_vector(*names))
 
 
 def skip_unless(condition, reason):  # pragma: no cover

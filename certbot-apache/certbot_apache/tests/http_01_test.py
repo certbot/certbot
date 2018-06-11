@@ -4,47 +4,26 @@ import os
 import unittest
 
 from acme import challenges
+from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
 
 from certbot import achallenges
 from certbot import errors
 
 from certbot.tests import acme_util
-
 from certbot_apache.tests import util
 
 
 NUM_ACHALLS = 3
 
 
-class ApacheHttp01TestMeta(type):
-    """Generates parmeterized tests for testing perform."""
-    def __new__(mcs, name, bases, class_dict):
-
-        def _gen_test(num_achalls, minor_version):
-            def _test(self):
-                achalls = self.achalls[:num_achalls]
-                vhosts = self.vhosts[:num_achalls]
-                self.config.version = (2, minor_version)
-                self.common_perform_test(achalls, vhosts)
-            return _test
-
-        for i in range(1, NUM_ACHALLS + 1):
-            for j in (2, 4):
-                test_name = "test_perform_{0}_{1}".format(i, j)
-                class_dict[test_name] = _gen_test(i, j)
-        return type.__new__(mcs, name, bases, class_dict)
-
-
 class ApacheHttp01Test(util.ApacheTest):
     """Test for certbot_apache.http_01.ApacheHttp01."""
-
-    __metaclass__ = ApacheHttp01TestMeta
 
     def setUp(self, *args, **kwargs):
         super(ApacheHttp01Test, self).setUp(*args, **kwargs)
 
         self.account_key = self.rsa512jwk
-        self.achalls = []
+        self.achalls = []  # type: List[achallenges.KeyAuthorizationAnnotatedChallenge]
         vh_truth = util.get_vh_truth(
             self.temp_dir, "debian_apache_2_4/multiple_vhosts")
         # Takes the vhosts for encryption-example.demo, certbot.demo, and
@@ -71,7 +50,7 @@ class ApacheHttp01Test(util.ApacheTest):
         self.assertFalse(self.http.perform())
 
     @mock.patch("certbot_apache.configurator.ApacheConfigurator.enable_mod")
-    def test_enable_modules_22(self, mock_enmod):
+    def test_enable_modules_apache_2_2(self, mock_enmod):
         self.config.version = (2, 2)
         self.config.parser.modules.remove("authz_host_module")
         self.config.parser.modules.remove("mod_authz_host.c")
@@ -80,7 +59,7 @@ class ApacheHttp01Test(util.ApacheTest):
         self.assertEqual(enmod_calls[0][0][0], "authz_host")
 
     @mock.patch("certbot_apache.configurator.ApacheConfigurator.enable_mod")
-    def test_enable_modules_24(self, mock_enmod):
+    def test_enable_modules_apache_2_4(self, mock_enmod):
         self.config.parser.modules.remove("authz_core_module")
         self.config.parser.modules.remove("mod_authz_core.c")
 
@@ -136,6 +115,31 @@ class ApacheHttp01Test(util.ApacheTest):
             self.http.add_chall(achall)
         self.config.config.http01_port = 12345
         self.assertRaises(errors.PluginError, self.http.perform)
+
+    def test_perform_1_achall_apache_2_2(self):
+        self.combinations_perform_test(num_achalls=1, minor_version=2)
+
+    def test_perform_1_achall_apache_2_4(self):
+        self.combinations_perform_test(num_achalls=1, minor_version=4)
+
+    def test_perform_2_achall_apache_2_2(self):
+        self.combinations_perform_test(num_achalls=2, minor_version=2)
+
+    def test_perform_2_achall_apache_2_4(self):
+        self.combinations_perform_test(num_achalls=2, minor_version=4)
+
+    def test_perform_3_achall_apache_2_2(self):
+        self.combinations_perform_test(num_achalls=3, minor_version=2)
+
+    def test_perform_3_achall_apache_2_4(self):
+        self.combinations_perform_test(num_achalls=3, minor_version=4)
+
+    def combinations_perform_test(self, num_achalls, minor_version):
+        """Test perform with the given achall count and Apache version."""
+        achalls = self.achalls[:num_achalls]
+        vhosts = self.vhosts[:num_achalls]
+        self.config.version = (2, minor_version)
+        self.common_perform_test(achalls, vhosts)
 
     def common_perform_test(self, achalls, vhosts):
         """Tests perform with the given achalls."""

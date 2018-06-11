@@ -11,14 +11,17 @@ import zope.component
 
 import OpenSSL
 
-from certbot import cli
+from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
 
+from certbot import cli
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
 from certbot import util
 from certbot import hooks
 from certbot import storage
+from certbot import updater
+
 from certbot.plugins import disco as plugins_disco
 
 logger = logging.getLogger(__name__)
@@ -33,7 +36,7 @@ STR_CONFIG_ITEMS = ["config_dir", "logs_dir", "work_dir", "user_agent",
                     "pre_hook", "post_hook", "tls_sni_01_address",
                     "http01_address"]
 INT_CONFIG_ITEMS = ["rsa_key_size", "tls_sni_01_port", "http01_port"]
-BOOL_CONFIG_ITEMS = ["must_staple", "allow_subset_of_names"]
+BOOL_CONFIG_ITEMS = ["must_staple", "allow_subset_of_names", "reuse_key"]
 
 CONFIG_ITEMS = set(itertools.chain(
     BOOL_CONFIG_ITEMS, INT_CONFIG_ITEMS, STR_CONFIG_ITEMS, ('pref_challs',)))
@@ -58,8 +61,8 @@ def _reconstitute(config, full_path):
     """
     try:
         renewal_candidate = storage.RenewableCert(full_path, config)
-    except (errors.CertStorageError, IOError) as exc:
-        logger.warning(exc)
+    except (errors.CertStorageError, IOError):
+        logger.warning("", exc_info=True)
         logger.warning("Renewal configuration file %s is broken. Skipping.", full_path)
         logger.debug("Traceback was:\n%s", traceback.format_exc())
         return None
@@ -132,14 +135,15 @@ def _restore_plugin_configs(config, renewalparams):
     #      longer defined, stored copies of that parameter will be
     #      deserialized as strings by this logic even if they were
     #      originally meant to be some other type.
+    plugin_prefixes = []  # type: List[str]
     if renewalparams["authenticator"] == "webroot":
         _restore_webroot_config(config, renewalparams)
-        plugin_prefixes = []
     else:
-        plugin_prefixes = [renewalparams["authenticator"]]
+        plugin_prefixes.append(renewalparams["authenticator"])
 
-    if renewalparams.get("installer", None) is not None:
+    if renewalparams.get("installer") is not None:
         plugin_prefixes.append(renewalparams["installer"])
+
     for plugin_prefix in set(plugin_prefixes):
         plugin_prefix = plugin_prefix.replace('-', '_')
         for config_item, config_value in six.iteritems(renewalparams):
@@ -294,7 +298,10 @@ def renew_cert(config, domains, le_client, lineage):
     _avoid_invalidating_lineage(config, lineage, original_server)
     if not domains:
         domains = lineage.names()
-    new_cert, new_chain, new_key, _ = le_client.obtain_certificate(domains)
+    # The private key is the existing lineage private key if reuse_key is set.
+    # Otherwise, generate a fresh private key by passing None.
+    new_key = lineage.privkey if config.reuse_key else None
+    new_cert, new_chain, new_key, _ = le_client.obtain_certificate(domains, new_key)
     if config.dry_run:
         logger.debug("Dry run: skipping updating lineage at %s",
                     os.path.dirname(lineage.cert))
@@ -315,13 +322,13 @@ def report(msgs, category):
 def _renew_describe_results(config, renew_successes, renew_failures,
                             renew_skipped, parse_failures):
 
-    out = []
+    out = []  # type: List[str]
     notify = out.append
     disp = zope.component.getUtility(interfaces.IDisplay)
 
     def notify_error(err):
         """Notify and log errors."""
-        notify(err)
+        notify(str(err))
         logger.error(err)
 
     if config.dry_run:
@@ -411,9 +418,9 @@ def handle_renewal_request(config):
                 # XXX: ensure that each call here replaces the previous one
                 zope.component.provideUtility(lineage_config)
                 renewal_candidate.ensure_deployed()
+                from certbot import main
+                plugins = plugins_disco.PluginsRegistry.find_all()
                 if should_renew(lineage_config, renewal_candidate):
-                    plugins = plugins_disco.PluginsRegistry.find_all()
-                    from certbot import main
                     # domains have been restored into lineage_config by reconstitute
                     # but they're unnecessary anyway because renew_cert here
                     # will just grab them from the certificate
@@ -426,6 +433,10 @@ def handle_renewal_request(config):
                         "cert", renewal_candidate.latest_common_version()))
                     renew_skipped.append("%s expires on %s" % (renewal_candidate.fullchain,
                                          expiry.strftime("%Y-%m-%d")))
+                # Run updater interface methods
+                updater.run_generic_updaters(lineage_config, renewal_candidate,
+                                             plugins)
+
         except Exception as e:  # pylint: disable=broad-except
             # obtain_cert (presumably) encountered an unanticipated problem.
             logger.warning("Attempting to renew cert (%s) from %s produced an "
