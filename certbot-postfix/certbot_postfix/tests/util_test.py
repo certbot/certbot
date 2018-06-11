@@ -37,6 +37,12 @@ class PostfixUtilBaseTest(unittest.TestCase):
             postfix._call()
             mock_output.assert_called_with(['executable'])
 
+    @mock.patch('certbot_postfix.util.verify_exe_exists')
+    def test_create_with_config(self, mock_verify):
+        # pylint: disable=protected-access
+        postfix = self._create_object('exec', 'config_dir')
+        self.assertEquals(postfix._base_command, ['exec', '-c', 'config_dir'])
+
 class PostfixUtilTest(unittest.TestCase):
     def setUp(self):
         # pylint: disable=protected-access

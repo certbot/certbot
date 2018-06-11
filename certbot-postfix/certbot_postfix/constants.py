@@ -27,6 +27,9 @@ ACCEPTABLE_TLS_VERSIONS = ("TLSv1", "TLSv1.1", "TLSv1.2")
 TLS_SERVER_VARS = {
     "smtpd_tls_security_level": ACCEPTABLE_SERVER_SECURITY_LEVELS,
 }
+TLS_CLIENT_VARS = {
+    "smtp_tls_security_level": ACCEPTABLE_CLIENT_SECURITY_LEVELS,
+}
 # Default variables for a secure MTA server [receiver].
 DEFAULT_SERVER_VARS = {
     "smtpd_tls_auth_only": "yes",
@@ -40,7 +43,6 @@ DEFAULT_SERVER_VARS = {
 
 # Default variables for a secure MTA client [sender].
 DEFAULT_CLIENT_VARS = {
-    "smtp_tls_security_level": ACCEPTABLE_CLIENT_SECURITY_LEVELS,
     "smtp_tls_ciphers": ACCEPTABLE_CIPHER_LEVELS,
     "smtp_tls_exclude_ciphers": EXCLUDE_CIPHERS,
     "smtp_tls_mandatory_ciphers": ACCEPTABLE_CIPHER_LEVELS,

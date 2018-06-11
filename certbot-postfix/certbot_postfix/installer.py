@@ -63,7 +63,7 @@ class Installer(plugins_common.Installer):
         # Files to save
         self.save_notes = [] # type: List[str]
 
-        self._enhance_func = {} # type: Dict[str, Callable[[str, str]]]
+        self._enhance_func = {} # type: Dict[str, Callable[[str, str], None]]
         # Since we only need to enable TLS once for all domains,
         # keep track of whether this enhancement was already called.
         self._tls_enabled = False
@@ -218,13 +218,15 @@ class Installer(plugins_common.Installer):
         self.postconf.set("smtpd_tls_cert_file", cert_path)
         self.postconf.set("smtpd_tls_key_file", key_path)
         self._set_vars(constants.TLS_SERVER_VARS)
+        if not self.conf('server_only'):
+            self._set_vars(constants.TLS_CLIENT_VARS)
         if not self.conf('tls_only'):
             self._set_vars(constants.DEFAULT_SERVER_VARS)
+            if not self.conf('server_only'):
+                self._set_vars(constants.DEFAULT_CLIENT_VARS)
             # Despite the name, this option also supports 2048-bit DH params.
             # http://www.postfix.org/FORWARD_SECRECY_README.html#server_fs
             self.postconf.set("smtpd_tls_dh1024_param_file", self.ssl_dhparams)
-        if not self.conf('server_only'):
-            self._set_vars(constants.DEFAULT_CLIENT_VARS)
         self._confirm_changes()
 
     def enhance(self, domain, enhancement, options=None):
