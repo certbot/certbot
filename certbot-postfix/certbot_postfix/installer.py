@@ -15,6 +15,8 @@ from certbot_postfix import constants
 from certbot_postfix import postconf
 from certbot_postfix import util
 
+# pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Callable, Dict, List
 
 logger = logging.getLogger(__name__)
 

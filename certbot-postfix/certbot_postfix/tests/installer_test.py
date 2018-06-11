@@ -12,6 +12,9 @@ import mock
 from certbot import errors
 from certbot.tests import util as certbot_test_util
 
+# pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Dict, Tuple
+
 DEFAULT_MAIN_CF = {
     "smtpd_tls_cert_file": "",
     "smtpd_tls_key_file": "",
@@ -164,7 +167,6 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
         with create_installer(self.config) as installer:
             lock_dir.side_effect = errors.LockError
             self.assertRaises(errors.PluginError, installer.prepare)
-        
 
     def test_more_info(self):
         with create_installer(self.config) as installer:
@@ -194,7 +196,7 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
             installer.deploy_cert("example.com", "cert_path", "key_path",
                                   "chain_path", "fullchain_path")
             changes = installer.postconf.get_changes()
-            expected = {}
+            expected = {} # type: Dict[str, Tuple[str, str]]
             expected.update(constants.TLS_SERVER_VARS)
             expected.update(constants.DEFAULT_SERVER_VARS)
             expected.update(constants.DEFAULT_CLIENT_VARS)
@@ -295,7 +297,7 @@ def create_installer(config, main_cf=DEFAULT_MAIN_CF):
     from certbot_postfix.postconf import ConfigMain
     from certbot_postfix import installer
     def _mock_init_postconf(postconf, executable, ignore_master_overrides=False, config_dir=None):
-        # pylint: disable=protected-access
+        # pylint: disable=protected-access,unused-argument
         postconf._ignore_master_overrides = ignore_master_overrides
         postconf._db = main_cf
         postconf._master_db = {}

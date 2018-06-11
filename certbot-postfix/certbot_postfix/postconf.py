@@ -4,6 +4,8 @@ import six
 from certbot import errors
 from certbot_postfix import util
 
+# pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Dict, List, Tuple
 
 class ConfigMain(util.PostfixUtilBase):
     """A parser for Postfix's main.cf file."""
@@ -17,7 +19,7 @@ class ConfigMain(util.PostfixUtilBase):
         # List of current master.cf overrides from Postfix config. Dictionary
         # of parameter name => list of tuples (service name, paramter value)
         # Note: We should never modify master without explicit permission.
-        self._master_db = {} # Dict[str, List[Tuple[str, str]]]
+        self._master_db = {} # type: Dict[str, List[Tuple[str, str]]]
         # List of all changes requested to the Postfix parameters as they are now
         # in _db. These changes are flushed to `postconf` on `flush`.
         self._updated = {} # type: Dict[str, str]
