@@ -26,7 +26,7 @@ class ConfigMain(util.PostfixUtilBase):
         self._read_from_conf()
 
     def _read_from_conf(self):
-        """Reads initial parameter state from main.cf into `self._db` and `self._master_db`
+        """Reads initial parameter state from `main.cf` into this object.
         """
         out = self._get_output()
         for name, value in _parse_main_output(out):
@@ -39,10 +39,12 @@ class ConfigMain(util.PostfixUtilBase):
             self._master_db[param_name].append((service, value))
 
     def _get_output_master(self):
+        """Retrieves output for `master.cf` parameters."""
         return self._get_output('-P')
 
     def get_default(self, name):
         """Retrieves default value of parameter `name` from postfix parameters.
+
         :param str name: The name of the parameter to fetch.
         :returns: The default value of parameter `name`.
         :rtype: str
@@ -53,9 +55,10 @@ class ConfigMain(util.PostfixUtilBase):
 
     def get(self, name):
         """Retrieves working value of parameter `name` from postfix parameters.
-            :param str name: The name of the parameter to fetch.
-            :returns: The value of parameter `name`.
-            :rtype: str
+
+        :param str name: The name of the parameter to fetch.
+        :returns: The value of parameter `name`.
+        :rtype: str
         """
         if name in self._updated:
             return self._updated[name]
@@ -64,8 +67,9 @@ class ConfigMain(util.PostfixUtilBase):
     def get_master_overrides(self, name):
         """Retrieves list of overrides for parameter `name` in postfix's Master config
         file.
+
         :returns: List of tuples (service, value), meaning that parameter `name`
-                  is overridden as `value` for `service`.
+            is overridden as `value` for `service`.
         :rtype: `list` of `tuple` of `str`
         """
         if name in self._master_db:
@@ -73,16 +77,16 @@ class ConfigMain(util.PostfixUtilBase):
         return None
 
     def set(self, name, value, acceptable_overrides=None):
-        """Sets parameter `name` to `value`.
-        If `name` is overridden by a particular service in `master.cf`, reports any
-        these parameter conflicts as long as `self._ignore_master_overrides` is not set.
+        """Sets parameter `name` to `value`. If `name` is overridden by a particular service in
+        `master.cf`, reports any of these parameter conflicts as long as
+        `ignore_master_overrides` was not set.
 
-        Note that this function does not flush these parameter values to main.cf;
-        To do that, use `flush`.
+        .. note:: that this function does not flush these parameter values to main.cf;
+            To do that, use `flush`.
+
         :param str name: The name of the parameter to set.
         :param str value: The value of the parameter.
-        :param list acceptable_overrides:
-            If the master configuration file overrides `value` with a value in
+        :param tuple acceptable_overrides: If the master configuration file overrides `value` with a value in
             acceptable_overrides, no need to call `_handle_overrides`.
         """
         if name not in self._db:
@@ -101,8 +105,9 @@ class ConfigMain(util.PostfixUtilBase):
             del self._updated[name]
 
     def flush(self):
-        """Flushes all parameter changes made using "self.set" to "main.cf".
-        :raises error.PluginError: When we can't flush to main.cf.
+        """Flushes all parameter changes made using `self.set`, to `main.cf`
+
+        :raises error.PluginError: When flush to main.cf fails for some reason.
         """
         if len(self._updated) == 0:
             return
@@ -119,15 +124,20 @@ class ConfigMain(util.PostfixUtilBase):
 
     def get_changes(self):
         """ Return queued changes to main.cf.
+
+        :rtype: dict[str, str]
         """
         return self._updated
 
 def _parse_main_output(output):
     """Parses the raw output from Postconf about main.cf.
-    Expects the output to look like:
 
-    name1 = value1
-    name2 = value2
+    Expects the output to look like: 
+
+    .. code-block:: none
+
+       name1 = value1
+       name2 = value2
 
     :param str output: data postconf wrote to stdout about main.cf
 

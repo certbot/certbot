@@ -31,6 +31,8 @@ class Installer(plugins_common.Installer):
 
     :ivar postconf: Wrapper for Postfix configuration command-line tool.
     :type postconf: :class: `certbot_postfix.postconf.ConfigMain`
+    :ivar postfix: Wrapper for Postfix command-line tool.
+    :type postfix: :class: `certbot_postfix.util.PostfixUtil`
     """
 
     description = "Configure TLS with the Postfix MTA"
@@ -71,13 +73,10 @@ class Installer(plugins_common.Installer):
     def prepare(self):
         """Prepare the installer.
 
-        Finish up any additional initialization.
-
         :raises errors.PluginError: when an unexpected error occurs
         :raises errors.MisconfigurationError: when the config is invalid
         :raises errors.NoInstallationError: when can't find installation
         :raises errors.NotSupportedError: when version is not supported
-
         """
         # Verify postfix and postconf are installed
         for param in ("ctl", "config_utility",):
@@ -103,6 +102,8 @@ class Installer(plugins_common.Installer):
 
     def config_test(self):
         """Test to see that the current Postfix configuration is valid.
+
+        :raises errors.MisconfigurationError: If the configuration is invalid.
         """
         self.postfix.test()
 
@@ -110,7 +111,6 @@ class Installer(plugins_common.Installer):
         """Verifies that the installed Postfix version is supported.
 
         :raises errors.NotSupportedError: if the version is unsupported
-
         """
         if self._get_version() < constants.MINIMUM_VERSION:
             version_string = '.'.join([str(n) for n in constants.MINIMUM_VERSION])
@@ -120,7 +120,6 @@ class Installer(plugins_common.Installer):
         """Stop two Postfix plugins from modifying the config at once.
 
         :raises .PluginError: if unable to acquire the lock
-
         """
         try:
             certbot_util.lock_dir_until_exit(self.conf('config-dir'))
@@ -130,10 +129,10 @@ class Installer(plugins_common.Installer):
                 "Unable to lock %s" % self.conf('config-dir'))
 
     def more_info(self):
-        """Human-readable string to help the user.
-        Should describe the steps taken and any relevant info to help the user
-        decide which plugin to use.
-        :rtype str:
+        """Human-readable string to help the user. Describes steps taken and any relevant
+        info to help the user decide which plugin to use.
+
+        :rtype: str
         """
         return (
             "Configures Postfix to try to authenticate mail servers, use "
@@ -146,15 +145,12 @@ class Installer(plugins_common.Installer):
         )
 
     def _get_version(self):
-        """Return the mail version of Postfix.
-
-        Version is returned as a tuple. (e.g. '2.11.3' is (2, 11, 3))
+        """Return the version of Postfix, as a tuple. (e.g. '2.11.3' is (2, 11, 3))
 
         :returns: version
         :rtype: tuple
 
-        :raises .PluginError: Unable to find Postfix version.
-
+        :raises errors.PluginError: Unable to find Postfix version.
         """
         mail_version = self.postconf.get_default("mail_version")
         return tuple(int(i) for i in mail_version.split('.'))
@@ -177,7 +173,7 @@ class Installer(plugins_common.Installer):
                 if isinstance(acceptable, tuple):
                     self.postconf.set(param, acceptable[0], acceptable)
                 else:
-                    self.postconf.set(param, acceptable, acceptable)
+                    self.postconf.set(param, acceptable, (acceptable,))
 
     def _confirm_changes(self):
         """Confirming outstanding updates for configuration parameters.
@@ -255,7 +251,6 @@ class Installer(plugins_common.Installer):
             be quickly reversed in the future (challenges)
 
         :raises errors.PluginError: when save is unsuccessful
-
         """
         save_files = set((os.path.join(self.conf('config-dir'), "main.cf"),))
         self.add_to_checkpoint(save_files,
@@ -280,7 +275,6 @@ class Installer(plugins_common.Installer):
 
         :raises .errors.PluginError: If there is a problem with the input or
             the function is unable to correctly revert the configuration
-
         """
         super(Installer, self).rollback_checkpoints(rollback)
         self.postconf = postconf.ConfigMain(self.conf('config-utility'),

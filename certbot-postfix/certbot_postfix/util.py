@@ -80,8 +80,7 @@ class PostfixUtil(PostfixUtilBase):
         try:
             self._call(["check"])
         except subprocess.CalledProcessError as e:
-            logger.debug("Could not check postfix configuration:\n%s",
-                         e)
+            logger.debug("Could not check postfix configuration:\n%s", e)
             raise errors.MisconfigurationError(
                 "Postfix failed internal configuration check.")
 
@@ -210,9 +209,9 @@ def report_master_overrides(name, overrides, acceptable_overrides=None):
     :param str name: The name of the parameter that is being overridden.
     :param list overrides: The values that other services are setting for |name|.
         Each override is a tuple: (service name, value)
-    :param list acceptable_overrides: Override values that are acceptable. For instance, if
+    :param tuple acceptable_overrides: Override values that are acceptable. For instance, if
         another service is overriding our parameter with a more secure option, we don't have
-        to warn. If this is set to None, warnings are reported for *all* overrides!
+        to warn. If this is set to None, errors are raised for *any* overrides of `name`!
     """
     error_string = ""
     for override in overrides:
@@ -234,15 +233,13 @@ def is_acceptable_value(parameter, value, acceptable):
     :param str value:           Proposed new value for parameter.
     :param tuple acceptable:    List of acceptable values for parameter.
     """
-    # If it's a tuple, there's multiple acceptable options.
-    # Only set a param if it's not acceptable.
-    if isinstance(acceptable, tuple):
-        return value in acceptable
     # Check if param value is a comma-separated list of protocols.
-    elif 'tls_protocols' in parameter:
+    # Otherwise, just check whether the value is in the acceptable list.
+    if 'tls_protocols' in parameter:
         return _has_acceptable_tls_versions(value)
-    # Otherwise, just check whether the value is equal to acceptable.
-    return value == acceptable
+    if acceptable is not None:
+        return value in acceptable
+    return False
 
 def _has_acceptable_tls_versions(parameter_string):
     """

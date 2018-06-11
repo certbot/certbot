@@ -41,7 +41,7 @@ class PostfixUtilBaseTest(unittest.TestCase):
     def test_create_with_config(self, mock_verify):
         # pylint: disable=protected-access
         postfix = self._create_object('exec', 'config_dir')
-        self.assertEquals(postfix._base_command, ['exec', '-c', 'config_dir'])
+        self.assertEqual(postfix._base_command, ['exec', '-c', 'config_dir'])
 
 class PostfixUtilTest(unittest.TestCase):
     def setUp(self):
@@ -160,14 +160,12 @@ class TestUtils(unittest.TestCase):
                           [('service/type', 'value')])
         # Shouldn't raise error
         report_master_overrides('name', [('service/type', 'value')],
-                                acceptable_overrides='value')
-        report_master_overrides('name', [('service/type', 'value')],
-                                acceptable_overrides=('value', 'value1'))
+                                acceptable_overrides=('value',))
 
     def test_is_acceptable_value(self):
         from certbot_postfix.util import is_acceptable_value
-        self.assertTrue(is_acceptable_value('name', 'value', 'value'))
-        self.assertFalse(is_acceptable_value('name', 'bad', 'value'))
+        self.assertTrue(is_acceptable_value('name', 'value', ('value',)))
+        self.assertFalse(is_acceptable_value('name', 'bad', ('value',)))
 
     def test_is_acceptable_tuples(self):
         from certbot_postfix.util import is_acceptable_value
@@ -178,24 +176,24 @@ class TestUtils(unittest.TestCase):
         from certbot_postfix.util import is_acceptable_value
         # SSLv2 and SSLv3 are both not supported, unambiguously
         self.assertFalse(is_acceptable_value('tls_protocols_lol',
-            'SSLv2, SSLv3', ''))
+            'SSLv2, SSLv3', None))
         self.assertFalse(is_acceptable_value('tls_protocols_lol',
-            '!SSLv2, !TLSv1', ''))
+            '!SSLv2, !TLSv1', None))
         self.assertFalse(is_acceptable_value('tls_protocols_lol',
-            '!SSLv2, SSLv3, !SSLv3, ', ''))
+            '!SSLv2, SSLv3, !SSLv3, ', None))
         self.assertTrue(is_acceptable_value('tls_protocols_lol',
-            '!SSLv2, !SSLv3', ''))
+            '!SSLv2, !SSLv3', None))
         self.assertTrue(is_acceptable_value('tls_protocols_lol',
-            '!SSLv3, !TLSv1, !SSLv2', ''))
+            '!SSLv3, !TLSv1, !SSLv2', None))
         # TLSv1.2 is supported unambiguously
         self.assertFalse(is_acceptable_value('tls_protocols_lol',
-            'TLSv1, TLSv1.1,', ''))
+            'TLSv1, TLSv1.1,', None))
         self.assertFalse(is_acceptable_value('tls_protocols_lol',
-            'TLSv1.2, !TLSv1.2,', ''))
+            'TLSv1.2, !TLSv1.2,', None))
         self.assertTrue(is_acceptable_value('tls_protocols_lol',
-            'TLSv1.2, ', ''))
+            'TLSv1.2, ', None))
         self.assertTrue(is_acceptable_value('tls_protocols_lol',
-            'TLSv1, TLSv1.1, TLSv1.2', ''))
+            'TLSv1, TLSv1.1, TLSv1.2', None))
 
 if __name__ == '__main__': # pragma: no cover
     unittest.main()
