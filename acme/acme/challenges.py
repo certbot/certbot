@@ -594,7 +594,8 @@ class TLSALPN01Response(KeyAuthorizationChallengeResponse):
             # way to get full OID of an unknown extension from pyopenssl.
             if ext.get_short_name() == b'UNDEF':
                 data = ext.get_data()
-                return data == self.h
+                # Add the ASN.1 tag/length prefix to the hash before comparison
+                return data == b'\x04\x20' + self.h
 
         return False
 
