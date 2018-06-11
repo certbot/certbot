@@ -86,8 +86,8 @@ class ConfigMain(util.PostfixUtilBase):
 
         :param str name: The name of the parameter to set.
         :param str value: The value of the parameter.
-        :param tuple acceptable_overrides: If the master configuration file overrides `value` with a value in
-            acceptable_overrides, no need to call `_handle_overrides`.
+        :param tuple acceptable_overrides: If the master configuration file overrides `value`
+            with a value in acceptable_overrides.
         """
         if name not in self._db:
             raise KeyError("Parameter name %s is not a valid Postfix parameter name.", name)
