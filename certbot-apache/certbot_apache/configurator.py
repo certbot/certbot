@@ -13,7 +13,7 @@ import zope.component
 import zope.interface
 
 from acme import challenges
-from acme.magic_typing import Any, DefaultDict, Dict, List, Set  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Any, DefaultDict, Dict, List, Set, Union  # pylint: disable=unused-import, no-name-in-module
 
 from certbot import errors
 from certbot import interfaces
@@ -162,7 +162,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Maps enhancements to vhosts we've enabled the enhancement for
         self._enhanced_vhosts = defaultdict(set)  # type: DefaultDict[str, Set[obj.VirtualHost]]
         # Temporary state for AutoHSTS enhancement
-        self._autohsts = {}  # type: Dict[str, Dict[str, Any]]
+        self._autohsts = {}  # type: Dict[str, Dict[str, Union[int, float]]]
 
         # These will be set in the prepare function
         self.parser = None
@@ -2382,6 +2382,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             # No AutoHSTS enabled for any domain
             return
         curtime = time.time()
+        save_and_restart = False
         for id_str, config in list(self._autohsts.items()):
             if config["timestamp"] + constants.AUTOHSTS_FREQ > curtime:
                 # Skip if last increase was < AUTOHSTS_FREQ ago
@@ -2392,10 +2393,22 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 try:
                     vhost = self.find_vhost_by_id(id_str)
                 except errors.PluginError:
+                    msg = ("Could not find VirtualHost with ID {0}, disabling "
+                           "AutoHSTS for this VirtualHost").format(id_str)
+                    logger.warning(msg)
                     # Remove the orphaned AutoHSTS entry from pluginstorage
                     self._autohsts.pop(id_str)
                     continue
                 self._autohsts_increase(vhost, id_str, nextstep)
+                msg = ("Increasing HSTS max-age value for VirtualHost with id "
+                       "{0}").format(id_str)
+                self.save_notes += msg
+                save_and_restart = True
+
+        if save_and_restart:
+            self.save("Increased HSTS max-age values")
+            self.restart()
+
         self._autohsts_save_state()
 
     def deploy_autohsts(self, lineage):
@@ -2412,6 +2425,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             return
 
         vhosts = []
+        affected_ids = []
         # Copy, as we are removing from the dict inside the loop
         for id_str, config in list(self._autohsts.items()):
             if config["laststep"]+1 >= len(constants.AUTOHSTS_STEPS):
@@ -2426,9 +2440,25 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                     continue
                 if self._autohsts_vhost_in_lineage(vhost, lineage):
                     vhosts.append(vhost)
-                    self._autohsts.pop(id_str)
+                    affected_ids.append(id_str)
+
+        save_and_restart = False
         for vhost in vhosts:
             self._autohsts_write(vhost, constants.AUTOHSTS_PERMANENT)
+            msg = ("Strict-Transport-Security max-age value for "
+                   "VirtualHost in {0} was made permanent.").format(vhost.filep)
+            logger.debug(msg)
+            self.save_notes += msg+"\n"
+            save_and_restart = True
+
+        if save_and_restart:
+            self.save("Made HSTS max-age permanent")
+            self.restart()
+
+        for id_str in affected_ids:
+            self._autohsts.pop(id_str)
+
+
         # Update AutoHSTS storage (We potentially removed vhosts from managed)
         self._autohsts_save_state()
 

@@ -55,8 +55,8 @@ AUTOHSTS_STEPS = [60, 300, 900, 3600, 21600, 43200, 86400]
 AUTOHSTS_PERMANENT = 31536000
 """Value for the last max-age of HSTS"""
 
-AUTOHSTS_FREQ = 36000
-"""Minimum time since last increase to perform a new one"""
+AUTOHSTS_FREQ = 172800
+"""Minimum time since last increase to perform a new one: 48h"""
 
 MANAGED_COMMENT = "DO NOT REMOVE - Managed by Certbot"
 MANAGED_COMMENT_ID = MANAGED_COMMENT+", VirtualHost id: {0}"

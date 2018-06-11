@@ -52,7 +52,8 @@ class AutoHSTSTest(util.ApacheTest):
                           mock.MagicMock(), ["ocspvhost.com"])
 
     @mock.patch("certbot_apache.constants.AUTOHSTS_FREQ", 0)
-    def test_autohsts_increase(self):
+    @mock.patch("certbot_apache.configurator.ApacheConfigurator.restart")
+    def test_autohsts_increase(self, _mock_restart):
         maxage = "\"max-age={0}\""
         initial_val = maxage.format(constants.AUTOHSTS_STEPS[0])
         inc_val = maxage.format(constants.AUTOHSTS_STEPS[1])
@@ -94,7 +95,8 @@ class AutoHSTSTest(util.ApacheTest):
                           mock.MagicMock())
 
     @mock.patch("certbot_apache.constants.AUTOHSTS_FREQ", 0)
-    def test_autohsts_increase_and_make_permanent(self):
+    @mock.patch("certbot_apache.configurator.ApacheConfigurator.restart")
+    def test_autohsts_increase_and_make_permanent(self, _mock_restart):
         maxage = "\"max-age={0}\""
         max_val = maxage.format(constants.AUTOHSTS_PERMANENT)
         mock_lineage = mock.MagicMock()
@@ -168,8 +170,6 @@ class AutoHSTSTest(util.ApacheTest):
             self.assertTrue(mock_log.called)
             self.assertTrue(
                 "VirtualHost with id orphan_id was not" in mock_log.call_args[0][0])
-
-
 
 
 if __name__ == "__main__":

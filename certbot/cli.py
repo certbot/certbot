@@ -1129,16 +1129,6 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         default=flag_default("redirect"),
         help="Do not automatically redirect all HTTP traffic to HTTPS for the newly "
              "authenticated vhost. (default: Ask)")
-    for enh in enhancements._INDEX:  # pylint: disable=protected-access
-        helpful.add(enh["cli_groups"], enh["cli_flag"], action=enh["cli_action"],
-                    dest=enh["cli_dest"], default=enh["cli_flag_default"],
-                    help=enh["cli_help"])
-    helpful.add(
-        ["security", "enhance"],
-        "--auto-hsts", action="store_true", dest="auto_hsts",
-        default=flag_default("auto_hsts"),
-        help="Automatically increase Strict-Transport-Security header maxAge "
-             "value over time. Implies --hsts.")
     helpful.add(
         ["security", "enhance"],
         "--hsts", action="store_true", dest="hsts", default=flag_default("hsts"),
@@ -1238,6 +1228,9 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
 
     helpful.add_deprecated_argument("--agree-dev-preview", 0)
     helpful.add_deprecated_argument("--dialog", 0)
+
+    # Populate the command line parameters for new style enhancements
+    enhancements.populate_cli(helpful.add)
 
     _create_subparsers(helpful)
     _paths_parser(helpful)

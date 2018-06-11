@@ -516,7 +516,6 @@ class Client(object):
 
         enhanced = False
         enhancement_info = (
-            ("auto_hsts", "auto_hsts", None),
             ("hsts", "ensure-http-header", "Strict-Transport-Security"),
             ("redirect", "redirect", None),
             ("staple", "staple-ocsp", chain_path),

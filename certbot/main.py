@@ -883,7 +883,7 @@ def enhance(config, plugins):
     supported_enhancements = ["hsts", "redirect", "uir", "staple"]
     # Check that at least one enhancement was requested on command line
     oldstyle_enh = any([getattr(config, enh) for enh in supported_enhancements])
-    if not enhancements.is_supported(config) and not oldstyle_enh:
+    if not enhancements.are_requested(config) and not oldstyle_enh:
         msg = ("Please specify one or more enhancement types to configure. To list "
                "the available enhancement types, run:\n\n%s --help enhance\n")
         logger.warning(msg, sys.argv[0])
@@ -909,13 +909,14 @@ def enhance(config, plugins):
         if not domains:
             raise errors.Error("User cancelled the domain selection. No domains "
                                "defined, exiting.")
+
+    lineage = cert_manager.lineage_for_certname(config, config.certname)
     if not config.chain_path:
-        lineage = cert_manager.lineage_for_certname(config, config.certname)
         config.chain_path = lineage.chain_path
     if oldstyle_enh:
         le_client = _init_le_client(config, authenticator=None, installer=installer)
         le_client.enhance_config(domains, config.chain_path, ask_redirect=False)
-    if enhancements.is_supported(config):
+    if enhancements.are_requested(config):
         enhancements.enable(lineage, domains, installer, config)
 
 

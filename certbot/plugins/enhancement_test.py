@@ -122,6 +122,26 @@ class EnhancementTest(test_util.ConfigTestCase):
                                          self.mockinstaller)
         self.assertFalse(self.mockinstaller.deploy_counter.called)
 
+    @test_util.patch_get_utility()
+    def test_enhancement_enabled_enhancements(self, _):
+        FAKEINDEX = [
+            {
+                "name": "autohsts",
+                "cli_dest": "auto_hsts",
+            },
+            {
+                "name": "somethingelse",
+                "cli_dest": "something",
+            }
+        ]
+        with mock.patch("certbot.plugins.enhancements._INDEX", FAKEINDEX):
+            self.config.auto_hsts = True
+            self.config.something = True
+            enabled = list(enhancements.enabled_enhancements(self.config))
+        self.assertEqual(len(enabled), 2)
+        self.assertTrue([i for i in enabled if i["name"] == "autohsts"])
+        self.assertTrue([i for i in enabled if i["name"] == "somethingelse"])
+
     @mock.patch('certbot.cert_manager.lineage_for_certname')
     @mock.patch('certbot.main.display_ops.choose_values')
     @mock.patch('certbot.main.plug_sel.pick_installer')
