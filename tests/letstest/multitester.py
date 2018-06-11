@@ -383,6 +383,24 @@ def test_client_process(inqueue, outqueue):
             print("log fail\n")
             pass
 
+def print_manual_cleanup_instructions():
+    """Print the magic awscli invocations to cleanup these tests."""
+    print('To cleanup AWS resources used by this test, run:')
+    instances_cmd = 'aws ec2 terminate-instances --profile ' + PROFILE
+    instances_cmd += ' --instance-ids $(aws ec2 describe-instances --filters'
+    instances_cmd += ' "Name=tag:' + TAG_KEY + ',Values=' + TAG_VALUE
+    instances_cmd += '" --output text --profile ' + PROFILE
+    instances_cmd += ' | grep INSTANCES | cut -f8)'
+    print(instances_cmd)
+    print("After waiting for those instances to shut down, "
+          "you can delete any abandoned volumes by running:")
+    volumes_cmd = 'aws ec2 describe-volumes --filters "Name=tag:' + TAG_KEY
+    volumes_cmd += ',Values=' + TAG_VALUE + '" --output text'
+    volumes_cmd += ' --profile '+ PROFILE + ' | grep VOLUMES | cut -f8 | '
+    volumes_cmd += 'xargs -n1 aws ec2 delete-volume --profile ' + PROFILE
+    volumes_cmd += ' --volume-id'
+    print(volumes_cmd)
+
 def cleanup(cl_args, instances, targetlist):
     print('Logs in ', LOGDIR)
     if not cl_args.saveinstances:
