@@ -790,6 +790,13 @@ def install(config, plugins):
     except errors.PluginSelectionError as e:
         return str(e)
 
+    custom_cert = (config.key_path and config.cert_path)
+    if not config.certname and not custom_cert:
+        certname_question = "Which certificate would you like to install?"
+        config.certname = cert_manager.get_certnames(
+            config, "install", allow_multiple=False,
+            custom_prompt=certname_question)[0]
+
     # If cert-path is defined, populate missing (ie. not overridden) values.
     # Unfortunately this can't be done in argument parser, as certificate
     # manager needs the access to renewal directory paths
