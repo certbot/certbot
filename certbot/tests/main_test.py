@@ -1026,8 +1026,9 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
 
     def _test_renewal_common(self, due_for_renewal, extra_args, log_out=None,
                              args=None, should_renew=True, error_expected=False,
-                                 quiet_mode=False, expiry_date=datetime.datetime.now()):
-        # pylint: disable=too-many-locals,too-many-arguments
+                             quiet_mode=False, expiry_date=datetime.datetime.now(),
+                             reuse_key=False):
+        # pylint: disable=too-many-locals,too-many-arguments,too-many-branches
         cert_path = test_util.vector_path('cert_512.pem')
         chain_path = '/etc/letsencrypt/live/foo.bar/fullchain.pem'
         mock_lineage = mock.MagicMock(cert=cert_path, fullchain=chain_path,
@@ -1077,7 +1078,13 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
                                             traceback.format_exc())
 
             if should_renew:
-                mock_client.obtain_certificate.assert_called_once_with(['isnot.org'])
+                if reuse_key:
+                    # The location of the previous live privkey.pem is passed
+                    # to obtain_certificate
+                    mock_client.obtain_certificate.assert_called_once_with(['isnot.org'],
+                        os.path.join(self.config.config_dir, "live/sample-renewal/privkey.pem"))
+                else:
+                    mock_client.obtain_certificate.assert_called_once_with(['isnot.org'], None)
             else:
                 self.assertEqual(mock_client.obtain_certificate.call_count, 0)
         except:
@@ -1126,6 +1133,17 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
         args = ["renew", "--dry-run", "-tvv"]
         self._test_renewal_common(True, [], args=args, should_renew=True)
+
+    def test_reuse_key(self):
+        test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
+        args = ["renew", "--dry-run", "--reuse-key"]
+        self._test_renewal_common(True, [], args=args, should_renew=True, reuse_key=True)
+
+    @mock.patch('certbot.storage.RenewableCert.save_successor')
+    def test_reuse_key_no_dry_run(self, unused_save_successor):
+        test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
+        args = ["renew", "--reuse-key"]
+        self._test_renewal_common(True, [], args=args, should_renew=True, reuse_key=True)
 
     @mock.patch('certbot.renewal.should_renew')
     def test_renew_skips_recent_certs(self, should_renew):
@@ -1464,7 +1482,8 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
                           None, None, None)
 
         with mock.patch('certbot.updater.logger.warning') as mock_log:
-            updater.run_generic_updaters(None, None, None)
+            self.config.dry_run = False
+            updater.run_generic_updaters(self.config, None, None)
             self.assertTrue(mock_log.called)
             self.assertTrue("Could not choose appropriate plugin for updaters"
                             in mock_log.call_args[0][0])
