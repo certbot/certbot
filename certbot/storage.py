@@ -11,7 +11,6 @@ import parsedatetime
 import pytz
 import shutil
 import six
-import zope.component
 
 import certbot
 from certbot import cli
@@ -19,7 +18,6 @@ from certbot import constants
 from certbot import crypto_util
 from certbot import errors
 from certbot import error_handler
-from certbot import interfaces
 from certbot import util
 
 from certbot.plugins import common as plugins_common
