@@ -941,19 +941,6 @@ class RenewableCert(object):
         :rtype: bool
 
         """
-        if cli.set_by_cli('autorenew'):
-            # Set auterenew option in renewal conf.
-            disp = zope.component.getUtility(interfaces.IDisplay)
-            symlinks = dict((kind, self.configuration[kind])
-                            for kind in ALL_FOUR)
-            self.configfile = update_configuration(self.lineagename,
-                                    self.archive_dir, symlinks,
-                                    self.cli_config)
-            self.configuration = config_with_defaults(self.configfile)
-            disp.notification("{} auto renewal for {}".format(
-                "Enabled" if self.cli_config.autorenew else "Disabled",
-                self.lineagename))
-
         if self.autorenewal_is_enabled():
             # Consider whether to attempt to autorenew this cert now
 
