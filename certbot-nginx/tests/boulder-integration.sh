@@ -62,3 +62,5 @@ test_deployment_and_rollback nginx6.wtf
 # note: not reached if anything above fails, hence "killall" at the
 # top
 nginx -c $nginx_root/nginx.conf -s stop
+
+coverage report --include 'certbot-nginx/*' --show-missing
