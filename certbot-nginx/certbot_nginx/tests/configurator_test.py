@@ -47,7 +47,7 @@ class NginxConfiguratorTest(util.NginxTest):
 
     def test_prepare(self):
         self.assertEqual((1, 6, 2), self.config.version)
-        self.assertEqual(10, len(self.config.parser.parsed))
+        self.assertEqual(11, len(self.config.parser.parsed))
 
     @mock.patch("certbot_nginx.configurator.util.exe_exists")
     @mock.patch("certbot_nginx.configurator.subprocess.Popen")
@@ -91,7 +91,8 @@ class NginxConfiguratorTest(util.NginxTest):
         self.assertEqual(names, set(
             ["155.225.50.69.nephoscale.net", "www.example.org", "another.alias",
              "migration.com", "summer.com", "geese.com", "sslon.com",
-             "globalssl.com", "globalsslsetssl.com", "ipv6.com", "ipv6ssl.com"]))
+             "globalssl.com", "globalsslsetssl.com", "ipv6.com", "ipv6ssl.com",
+             "headers.com"]))
 
     def test_supported_enhancements(self):
         self.assertEqual(['redirect', 'ensure-http-header', 'staple-ocsp'],
@@ -548,6 +549,14 @@ class NginxConfiguratorTest(util.NginxTest):
         generated_conf = self.config.parser.parsed[example_conf]
         self.assertTrue(util.contains_at_depth(generated_conf, expected, 2))
 
+    def test_multiple_headers_hsts(self):
+        headers_conf = self.config.parser.abs_path('sites-enabled/headers.com')
+        self.config.enhance("headers.com", "ensure-http-header",
+                            "Strict-Transport-Security")
+        expected = ['add_header', 'Strict-Transport-Security', '"max-age=31536000"', 'always']
+        generated_conf = self.config.parser.parsed[headers_conf]
+        self.assertTrue(util.contains_at_depth(generated_conf, expected, 2))
+
     def test_http_header_hsts_twice(self):
         self.config.enhance("www.example.com", "ensure-http-header",
                             "Strict-Transport-Security")
@@ -722,6 +731,13 @@ class NginxConfiguratorTest(util.NginxTest):
             "www.nomatch.com", "example/cert.pem", "example/key.pem",
             "example/chain.pem", "example/fullchain.pem")
 
+    def test_deploy_no_match_multiple_defaults_ok(self):
+        foo_conf = self.config.parser.abs_path('foo.conf')
+        self.config.parser.parsed[foo_conf][2][1][0][1][0][1] = '*:5001'
+        self.config.version = (1, 3, 1)
+        self.config.deploy_cert("www.nomatch.com", "example/cert.pem", "example/key.pem",
+            "example/chain.pem", "example/fullchain.pem")
+
     def test_deploy_no_match_add_redirect(self):
         default_conf = self.config.parser.abs_path('sites-enabled/default')
         foo_conf = self.config.parser.abs_path('foo.conf')
@@ -852,7 +868,7 @@ class NginxConfiguratorTest(util.NginxTest):
                                                 prefer_ssl=False,
                                                 no_ssl_filter_port='80')
             # Check that the dialog was called with only port 80 vhosts
-            self.assertEqual(len(mock_select_vhs.call_args[0][0]), 4)
+            self.assertEqual(len(mock_select_vhs.call_args[0][0]), 5)
 
 
 class InstallSslOptionsConfTest(util.NginxTest):

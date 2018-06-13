@@ -16,12 +16,14 @@ import josepy as jose
 import six
 from six.moves import reload_module  # pylint: disable=import-error
 
+from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
 from certbot import account
 from certbot import cli
 from certbot import constants
 from certbot import configuration
 from certbot import crypto_util
 from certbot import errors
+from certbot import interfaces  # pylint: disable=unused-import
 from certbot import main
 from certbot import updater
 from certbot import util
@@ -600,14 +602,14 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
 
         if mockisfile:
             orig_open = os.path.isfile
-            def mock_isfile(fn, *args, **kwargs):
+            def mock_isfile(fn, *args, **kwargs):  # pylint: disable=unused-argument
                 """Mock os.path.isfile()"""
                 if (fn.endswith("cert") or
                     fn.endswith("chain") or
                     fn.endswith("privkey")):
                     return True
                 else:
-                    return orig_open(fn, *args, **kwargs)
+                    return orig_open(fn)
 
             with mock.patch("os.path.isfile") as mock_if:
                 mock_if.side_effect = mock_isfile
@@ -626,7 +628,8 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         toy_stdout = stdout if stdout else six.StringIO()
         with mock.patch('certbot.main.sys.stdout', new=toy_stdout):
             with mock.patch('certbot.main.sys.stderr') as stderr:
-                ret = main.main(args[:])  # NOTE: parser can alter its args!
+                with mock.patch("certbot.util.atexit"):
+                    ret = main.main(args[:])  # NOTE: parser can alter its args!
         return ret, toy_stdout, stderr
 
     def test_no_flags(self):
@@ -835,7 +838,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
     @mock.patch('certbot.main.plugins_disco')
     @mock.patch('certbot.main.cli.HelpfulArgumentParser.determine_help_topics')
     def test_plugins_no_args(self, _det, mock_disco):
-        ifaces = []
+        ifaces = []  # type: List[interfaces.IPlugin]
         plugins = mock_disco.PluginsRegistry.find_all()
 
         stdout = six.StringIO()
@@ -850,7 +853,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
     @mock.patch('certbot.main.plugins_disco')
     @mock.patch('certbot.main.cli.HelpfulArgumentParser.determine_help_topics')
     def test_plugins_no_args_unprivileged(self, _det, mock_disco):
-        ifaces = []
+        ifaces = []  # type: List[interfaces.IPlugin]
         plugins = mock_disco.PluginsRegistry.find_all()
 
         def throw_error(directory, mode, uid, strict):
@@ -872,7 +875,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
     @mock.patch('certbot.main.plugins_disco')
     @mock.patch('certbot.main.cli.HelpfulArgumentParser.determine_help_topics')
     def test_plugins_init(self, _det, mock_disco):
-        ifaces = []
+        ifaces = []  # type: List[interfaces.IPlugin]
         plugins = mock_disco.PluginsRegistry.find_all()
 
         stdout = six.StringIO()
@@ -890,7 +893,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
     @mock.patch('certbot.main.plugins_disco')
     @mock.patch('certbot.main.cli.HelpfulArgumentParser.determine_help_topics')
     def test_plugins_prepare(self, _det, mock_disco):
-        ifaces = []
+        ifaces = []  # type: List[interfaces.IPlugin]
         plugins = mock_disco.PluginsRegistry.find_all()
 
         stdout = six.StringIO()
@@ -1023,8 +1026,9 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
 
     def _test_renewal_common(self, due_for_renewal, extra_args, log_out=None,
                              args=None, should_renew=True, error_expected=False,
-                                 quiet_mode=False, expiry_date=datetime.datetime.now()):
-        # pylint: disable=too-many-locals,too-many-arguments
+                             quiet_mode=False, expiry_date=datetime.datetime.now(),
+                             reuse_key=False):
+        # pylint: disable=too-many-locals,too-many-arguments,too-many-branches
         cert_path = test_util.vector_path('cert_512.pem')
         chain_path = '/etc/letsencrypt/live/foo.bar/fullchain.pem'
         mock_lineage = mock.MagicMock(cert=cert_path, fullchain=chain_path,
@@ -1039,9 +1043,8 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         mock_client.obtain_certificate.return_value = (mock_certr, 'chain',
                                                        mock_key, 'csr')
 
-        def write_msg(message, *args, **kwargs):
+        def write_msg(message, *args, **kwargs):  # pylint: disable=unused-argument
             """Write message to stdout."""
-            _, _ = args, kwargs
             stdout.write(message)
 
         try:
@@ -1075,7 +1078,13 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
                                             traceback.format_exc())
 
             if should_renew:
-                mock_client.obtain_certificate.assert_called_once_with(['isnot.org'])
+                if reuse_key:
+                    # The location of the previous live privkey.pem is passed
+                    # to obtain_certificate
+                    mock_client.obtain_certificate.assert_called_once_with(['isnot.org'],
+                        os.path.join(self.config.config_dir, "live/sample-renewal/privkey.pem"))
+                else:
+                    mock_client.obtain_certificate.assert_called_once_with(['isnot.org'], None)
             else:
                 self.assertEqual(mock_client.obtain_certificate.call_count, 0)
         except:
@@ -1124,6 +1133,17 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
         args = ["renew", "--dry-run", "-tvv"]
         self._test_renewal_common(True, [], args=args, should_renew=True)
+
+    def test_reuse_key(self):
+        test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
+        args = ["renew", "--dry-run", "--reuse-key"]
+        self._test_renewal_common(True, [], args=args, should_renew=True, reuse_key=True)
+
+    @mock.patch('certbot.storage.RenewableCert.save_successor')
+    def test_reuse_key_no_dry_run(self, unused_save_successor):
+        test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
+        args = ["renew", "--reuse-key"]
+        self._test_renewal_common(True, [], args=args, should_renew=True, reuse_key=True)
 
     @mock.patch('certbot.renewal.should_renew')
     def test_renew_skips_recent_certs(self, should_renew):
@@ -1433,7 +1453,9 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
                         mocked_storage = mock.MagicMock()
                         mocked_account.AccountFileStorage.return_value = mocked_storage
                         mocked_storage.find_all.return_value = ["an account"]
-                        mocked_det.return_value = (mock.MagicMock(), "foo")
+                        mock_acc = mock.MagicMock()
+                        mock_regr = mock_acc.regr
+                        mocked_det.return_value = (mock_acc, "foo")
                         cb_client = mock.MagicMock()
                         mocked_client.Client.return_value = cb_client
                         x = self._call_no_clientmock(
@@ -1443,8 +1465,10 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
                         self.assertTrue(x[0] is None)
                         # and we got supposedly did update the registration from
                         # the server
-                        self.assertTrue(
-                            cb_client.acme.update_registration.called)
+                        reg_arg = cb_client.acme.update_registration.call_args[0][0]
+                        # Test the return value of .update() was used because
+                        # the regr is immutable.
+                        self.assertEqual(reg_arg, mock_regr.update())
                         # and we saved the updated registration on disk
                         self.assertTrue(mocked_storage.save_regr.called)
                         self.assertTrue(
@@ -1458,7 +1482,8 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
                           None, None, None)
 
         with mock.patch('certbot.updater.logger.warning') as mock_log:
-            updater.run_generic_updaters(None, None, None)
+            self.config.dry_run = False
+            updater.run_generic_updaters(self.config, None, None)
             self.assertTrue(mock_log.called)
             self.assertTrue("Could not choose appropriate plugin for updaters"
                             in mock_log.call_args[0][0])

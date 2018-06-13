@@ -30,13 +30,13 @@ josepy==1.0.1
 logger==1.4
 logilab-common==1.4.1
 MarkupSafe==1.0
-mypy==0.580
+mypy==0.600
 ndg-httpsclient==0.3.2
 oauth2client==2.0.0
 pathlib2==2.3.0
 pexpect==4.2.1
 pickleshare==0.7.4
-pkginfo==1.4.1
+pkginfo==1.4.2
 pluggy==0.5.2
 prompt-toolkit==1.0.15
 ptyprocess==0.5.2
@@ -66,7 +66,7 @@ tldextract==2.2.0
 tox==2.9.1
 tqdm==4.19.4
 traitlets==4.3.2
-twine==1.9.1
+twine==1.11.0
 typed-ast==1.1.0
 typing==3.6.4
 uritemplate==0.6

@@ -166,6 +166,14 @@ CheckRenewHook() {
     CheckSavedRenewHook $1
 }
 
+# Return success only if input contains exactly $1 lines of text, of
+# which $2 different values occur in the first field.
+TotalAndDistinctLines() {
+    total=$1
+    distinct=$2
+    awk '{a[$1] = 1}; END {exit(NR !='$total' || length(a) !='$distinct')}'
+}
+
 # Cleanup coverage data
 coverage erase
 
@@ -191,7 +199,14 @@ for dir in $renewal_hooks_dirs; do
         exit 1
     fi
 done
-common register --update-registration --email example@example.org
+
+common unregister
+
+common register --email ex1@domain.org,ex2@domain.org
+
+common register --update-registration --email ex1@domain.org
+
+common register --update-registration --email ex1@domain.org,ex2@domain.org
 
 common plugins --init --prepare | grep webroot
 
@@ -339,6 +354,26 @@ if common certificates | grep "fail\.dns1\.le\.wtf"; then
     echo "certificate should not have been issued for domain!" >&2
     exit 1
 fi
+
+# reuse-key
+common --domains reusekey.le.wtf --reuse-key
+common renew --cert-name reusekey.le.wtf
+CheckCertCount "reusekey.le.wtf" 2
+ls -l "${root}/conf/archive/reusekey.le.wtf/privkey"*
+# The final awk command here exits successfully if its input consists of
+# exactly two lines with identical first fields, and unsuccessfully otherwise.
+sha256sum "${root}/conf/archive/reusekey.le.wtf/privkey"* | TotalAndDistinctLines 2 1
+
+# don't reuse key (just by forcing reissuance without --reuse-key)
+common --cert-name reusekey.le.wtf --domains reusekey.le.wtf --force-renewal
+CheckCertCount "reusekey.le.wtf" 3
+ls -l "${root}/conf/archive/reusekey.le.wtf/privkey"*
+# Exactly three lines, of which exactly two identical first fields.
+sha256sum "${root}/conf/archive/reusekey.le.wtf/privkey"* | TotalAndDistinctLines 3 2
+
+# Nonetheless, all three certificates are different even though two of them
+# share the same subject key.
+sha256sum "${root}/conf/archive/reusekey.le.wtf/cert"* | TotalAndDistinctLines 3 3
 
 # ECDSA
 openssl ecparam -genkey -name secp384r1 -out "${root}/privkey-p384.pem"

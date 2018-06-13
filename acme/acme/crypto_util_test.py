@@ -13,11 +13,11 @@ import OpenSSL
 
 from acme import errors
 from acme import test_util
+from acme.magic_typing import List # pylint: disable=unused-import, no-name-in-module
 
 
 class SSLSocketAndProbeSNITest(unittest.TestCase):
     """Tests for acme.crypto_util.SSLSocket/probe_sni."""
-
 
     def setUp(self):
         self.cert = test_util.load_comparable_cert('rsa2048_cert.pem')
@@ -33,7 +33,8 @@ class SSLSocketAndProbeSNITest(unittest.TestCase):
             # six.moves.* | pylint: disable=attribute-defined-outside-init,no-init
 
             def server_bind(self):  # pylint: disable=missing-docstring
-                self.socket = SSLSocket(socket.socket(), certs=certs)
+                self.socket = SSLSocket(socket.socket(),
+                        certs)
                 socketserver.TCPServer.server_bind(self)
 
         self.server = _TestServer(('', 0), socketserver.BaseRequestHandler)
@@ -63,6 +64,18 @@ class SSLSocketAndProbeSNITest(unittest.TestCase):
     #    self._probe(b'foo')
     #    #time.sleep(1)  # TODO: avoid race conditions in other way
     #    self.assertRaises(errors.Error, self._probe, b'bar')
+
+
+class SSLSocketTest(unittest.TestCase):
+    """Tests for acme.crypto_util.SSLSocket."""
+
+    def test_ssl_socket_invalid_arguments(self):
+        from acme.crypto_util import SSLSocket
+        with self.assertRaises(ValueError):
+            _ = SSLSocket(None, {'sni': ('key', 'cert')},
+                    cert_selection=lambda _: None)
+        with self.assertRaises(ValueError):
+            _ = SSLSocket(None)
 
 
 class PyOpenSSLCertOrReqAllNamesTest(unittest.TestCase):
@@ -165,7 +178,7 @@ class RandomSnTest(unittest.TestCase):
 
     def setUp(self):
         self.cert_count = 5
-        self.serial_num = []
+        self.serial_num = [] # type: List[int]
         self.key = OpenSSL.crypto.PKey()
         self.key.generate_key(OpenSSL.crypto.TYPE_RSA, 2048)
 

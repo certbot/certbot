@@ -1,15 +1,15 @@
 """Certbot client interfaces."""
 import abc
+import six
 import zope.interface
 
 # pylint: disable=no-self-argument,no-method-argument,no-init,inherit-non-class
 # pylint: disable=too-few-public-methods
 
 
+@six.add_metaclass(abc.ABCMeta)
 class AccountStorage(object):
     """Accounts storage interface."""
-
-    __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
     def find_all(self):  # pragma: no cover
@@ -201,7 +201,9 @@ class IConfig(zope.interface.Interface):
     """
     server = zope.interface.Attribute("ACME Directory Resource URI.")
     email = zope.interface.Attribute(
-        "Email used for registration and recovery contact. (default: Ask)")
+        "Email used for registration and recovery contact. Use comma to "
+        "register multiple emails, ex: u1@example.com,u2@example.com. "
+        "(default: Ask).")
     rsa_key_size = zope.interface.Attribute("Size of the RSA key.")
     must_staple = zope.interface.Attribute(
         "Adds the OCSP Must Staple extension to the certificate. "
@@ -602,11 +604,12 @@ class IReporter(zope.interface.Interface):
 # When "certbot renew" is run, Certbot will iterate over each lineage and check
 # if the selected installer for that lineage is a subclass of each updater
 # class. If it is and the update of that type is configured to be run for that
-# lineage, the relevant update function will be called for each domain in the
-# lineage. These functions are never called for other subcommands, so if an
-# installer wants to perform an update during the run or install subcommand, it
-# should do so when :func:`IInstaller.deploy_cert` is called.
+# lineage, the relevant update function will be called for it. These functions
+# are never called for other subcommands, so if an installer wants to perform
+# an update during the run or install subcommand, it should do so when
+# :func:`IInstaller.deploy_cert` is called.
 
+@six.add_metaclass(abc.ABCMeta)
 class GenericUpdater(object):
     """Interface for update types not currently specified by Certbot.
 
@@ -619,10 +622,8 @@ class GenericUpdater(object):
 
     """
 
-    __metaclass__ = abc.ABCMeta
-
     @abc.abstractmethod
-    def generic_updates(self, domain, *args, **kwargs):
+    def generic_updates(self, lineage, *args, **kwargs):
         """Perform any update types defined by the installer.
 
         If an installer is a subclass of the class containing this method, this
@@ -630,13 +631,15 @@ class GenericUpdater(object):
         update defined by the installer should be run conditionally, the
         installer needs to handle checking the conditions itself.
 
-        This method is called once for each domain.
+        This method is called once for each lineage.
 
-        :param str domain: domain to handle the updates for
+        :param lineage: Certificate lineage object
+        :type lineage: storage.RenewableCert
 
         """
 
 
+@six.add_metaclass(abc.ABCMeta)
 class RenewDeployer(object):
     """Interface for update types run when a lineage is renewed
 
@@ -647,8 +650,6 @@ class RenewDeployer(object):
     methods, and interfaces.RenewDeployer.register(InstallerClass) should
     be called from the installer code.
     """
-
-    __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
     def renew_deploy(self, lineage, *args, **kwargs):
@@ -661,8 +662,7 @@ class RenewDeployer(object):
 
         This method is called once for each lineage renewed
 
-        :param lineage: Certificate lineage object that is set if certificate
-            was renewed on this run.
+        :param lineage: Certificate lineage object
         :type lineage: storage.RenewableCert
 
         """

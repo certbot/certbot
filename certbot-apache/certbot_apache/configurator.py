@@ -13,11 +13,13 @@ import zope.component
 import zope.interface
 
 from acme import challenges
+from acme.magic_typing import DefaultDict, Dict, List, Set  # pylint: disable=unused-import, no-name-in-module
 
 from certbot import errors
 from certbot import interfaces
 from certbot import util
 
+from certbot.achallenges import KeyAuthorizationAnnotatedChallenge  # pylint: disable=unused-import
 from certbot.plugins import common
 from certbot.plugins.util import path_surgery
 
@@ -130,10 +132,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             default=cls.OS_DEFAULTS["challenge_location"],
             help="Directory path for challenge configuration.")
         add("handle-modules", default=cls.OS_DEFAULTS["handle_mods"],
-            help="Let installer handle enabling required modules for you." +
+            help="Let installer handle enabling required modules for you. " +
                  "(Only Ubuntu/Debian currently)")
         add("handle-sites", default=cls.OS_DEFAULTS["handle_sites"],
-            help="Let installer handle enabling sites for you." +
+            help="Let installer handle enabling sites for you. " +
                  "(Only Ubuntu/Debian currently)")
         util.add_deprecated_argument(add, argument_name="ctl", nargs=1)
         util.add_deprecated_argument(
@@ -150,14 +152,14 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         super(ApacheConfigurator, self).__init__(*args, **kwargs)
 
         # Add name_server association dict
-        self.assoc = dict()
+        self.assoc = dict()  # type: Dict[str, obj.VirtualHost]
         # Outstanding challenges
-        self._chall_out = set()
+        self._chall_out = set()  # type: Set[KeyAuthorizationAnnotatedChallenge]
         # List of vhosts configured per wildcard domain on this run.
         # used by deploy_cert() and enhance()
-        self._wildcard_vhosts = dict()
+        self._wildcard_vhosts = dict()  # type: Dict[str, List[obj.VirtualHost]]
         # Maps enhancements to vhosts we've enabled the enhancement for
-        self._enhanced_vhosts = defaultdict(set)
+        self._enhanced_vhosts = defaultdict(set)  # type: DefaultDict[str, Set[obj.VirtualHost]]
 
         # These will be set in the prepare function
         self.parser = None
@@ -659,7 +661,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :rtype: set
 
         """
-        all_names = set()
+        all_names = set()  # type: Set[str]
 
         vhost_macro = []
 
@@ -800,8 +802,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         # Search base config, and all included paths for VirtualHosts
-        file_paths = {}
-        internal_paths = defaultdict(set)
+        file_paths = {}  # type: Dict[str, str]
+        internal_paths = defaultdict(set)  # type: DefaultDict[str, Set[str]]
         vhs = []
         # Make a list of parser paths because the parser_paths
         # dictionary may be modified during the loop.
@@ -1239,7 +1241,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             if not self.parser.parsed_in_current(ssl_fp):
                 self.parser.parse_file(ssl_fp)
         except IOError:
-            logger.fatal("Error writing/reading to file in make_vhost_ssl")
+            logger.critical("Error writing/reading to file in make_vhost_ssl", exc_info=True)
             raise errors.PluginError("Unable to write/read in make_vhost_ssl")
 
         if sift:
@@ -1327,7 +1329,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         try:
             span_val = self.aug.span(vhost.path)
         except ValueError:
-            logger.fatal("Error while reading the VirtualHost %s from "
+            logger.critical("Error while reading the VirtualHost %s from "
                          "file %s", vhost.name, vhost.filep, exc_info=True)
             raise errors.PluginError("Unable to read VirtualHost from file")
         span_filep = span_val[0]
@@ -1770,7 +1772,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # There can be other RewriteRule directive lines in vhost config.
         # rewrite_args_dict keys are directive ids and the corresponding value
         # for each is a list of arguments to that directive.
-        rewrite_args_dict = defaultdict(list)
+        rewrite_args_dict = defaultdict(list)  # type: DefaultDict[str, List[str]]
         pat = r'(.*directive\[\d+\]).*'
         for match in rewrite_path:
             m = re.match(pat, match)
@@ -1864,7 +1866,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if ssl_vhost.aliases:
             serveralias = "ServerAlias " + " ".join(ssl_vhost.aliases)
 
-        rewrite_rule_args = []
+        rewrite_rule_args = []  # type: List[str]
         if self.get_version() >= (2, 3, 9):
             rewrite_rule_args = constants.REWRITE_HTTPS_ARGS_WITH_END
         else:
