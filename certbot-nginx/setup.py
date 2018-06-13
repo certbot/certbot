@@ -7,10 +7,7 @@ version = '0.25.0'
 # Remember to update local-oldest-requirements.txt when changing the minimum
 # acme/certbot version.
 install_requires = [
-    # This plugin works with an older version of acme, but Certbot does not.
-    # 0.22.0 is specified here to work around
-    # https://github.com/pypa/pip/issues/988.
-    'acme>0.21.1',
+    'acme>=0.25.0',
     'certbot>0.21.1',
     'mock',
     'PyOpenSSL',
