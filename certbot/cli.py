@@ -1221,10 +1221,6 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         " is renewed. This setting does not apply to important TLS configuration"
         " updates.")
     helpful.add(
-        "renew", "--autorenew", action="store_true",
-        default=flag_default('autorenew'), dest="autorenew",
-        help="Enable auto renewal of certificates.")
-    helpful.add(
         "renew", "--no-autorenew", action="store_false",
         default=flag_default("autorenew"), dest="autorenew",
         help="Disable auto renewal of certificates.")
