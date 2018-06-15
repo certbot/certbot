@@ -203,11 +203,14 @@ def verify_exe_exists(exe, message=None):
         raise errors.NoInstallationError(message)
 
 def report_master_overrides(name, overrides, acceptable_overrides=None):
-    """If the value for a parameter |name| is overridden by other services,
-    report a warning to notify the user.
+    """If the value for a parameter `name` is overridden by other services,
+    report a warning to notify the user. If `parameter` is a TLS version parameter
+    (i.e., `parameter` contains 'tls_protocols' or 'tls_mandatory_protocols'), then
+    `acceptable_overrides` isn't used each value in overrides is inspected for secure TLS
+    versions.
 
     :param str name: The name of the parameter that is being overridden.
-    :param list overrides: The values that other services are setting for |name|.
+    :param list overrides: The values that other services are setting for `name`.
         Each override is a tuple: (service name, value)
     :param tuple acceptable_overrides: Override values that are acceptable. For instance, if
         another service is overriding our parameter with a more secure option, we don't have
@@ -225,9 +228,12 @@ def report_master_overrides(name, overrides, acceptable_overrides=None):
         raise errors.PluginError("{0} is overridden with less secure options by the "
              "following services in master.cf:\n".format(name) + error_string)
 
-def is_acceptable_value(parameter, value, acceptable):
+
+def is_acceptable_value(parameter, value, acceptable=None):
     """ Returns whether the `value` for this `parameter` is acceptable,
-    given a string or tuple `acceptable`
+    given a tuple of `acceptable` values. If `parameter` is a TLS version parameter
+    (i.e., `parameter` contains 'tls_protocols' or 'tls_mandatory_protocols'), then
+    `acceptable` isn't used and `value` is inspected for secure TLS versions.
 
     :param str parameter:       The name of the parameter being set.
     :param str value:           Proposed new value for parameter.
@@ -235,16 +241,17 @@ def is_acceptable_value(parameter, value, acceptable):
     """
     # Check if param value is a comma-separated list of protocols.
     # Otherwise, just check whether the value is in the acceptable list.
-    if 'tls_protocols' in parameter:
+    if 'tls_protocols' in parameter or 'tls_mandatory_protocols' in parameter:
         return _has_acceptable_tls_versions(value)
     if acceptable is not None:
         return value in acceptable
     return False
 
+
 def _has_acceptable_tls_versions(parameter_string):
     """
     Checks to see if the list of TLS protocols is acceptable.
-    This means TLSv1.2 is supported, and neither SSLv2 nor SSLv3 are supported.
+    This requires that TLSv1.2 is supported, and neither SSLv2 nor SSLv3 are supported.
 
     Should be a string of protocol names delimited by commas, spaces, or colons.
 
@@ -255,9 +262,9 @@ def _has_acceptable_tls_versions(parameter_string):
     When these two modes are interspersed, the presence of a single non-negated protocol name
     (i.e. "TLSv1" rather than "!TLSv1") automatically excludes all other unnamed protocols.
 
-    In addition, the presence of a protocol name overrides any exclusion, so "SSLv3, !SSLv3"
-    supports SSLv3. This behavior isn't explicitly documented, so this method should return False
-    if it encounters contradicting statements about TLSv1.2, SSLv2, or SSLv3.
+    In addition, the presence of both a protocol name inclusion and exclusion isn't explicitly
+    documented, so this method should return False if it encounters contradicting statements
+    about TLSv1.2, SSLv2, or SSLv3. (for instance, "SSLv3, !SSLv3").
     """
     if not parameter_string:
         return False

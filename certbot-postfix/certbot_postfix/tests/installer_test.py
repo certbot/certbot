@@ -14,6 +14,7 @@ from certbot.tests import util as certbot_test_util
 
 # pylint: disable=unused-import, no-name-in-module
 from acme.magic_typing import Dict, Tuple, Union
+# pylint: enable=unused-import, no-name-in-module
 
 DEFAULT_MAIN_CF = {
     "smtpd_tls_cert_file": "",
@@ -196,17 +197,14 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
             installer.deploy_cert("example.com", "cert_path", "key_path",
                                   "chain_path", "fullchain_path")
             changes = installer.postconf.get_changes()
-            expected = {} # type: Dict[str, Union[Tuple[str, str], str]]
+            expected = {} # type: Dict[str, Tuple[str, ...]]
             expected.update(constants.TLS_SERVER_VARS)
             expected.update(constants.DEFAULT_SERVER_VARS)
             expected.update(constants.DEFAULT_CLIENT_VARS)
             self.assertEqual(changes["smtpd_tls_key_file"], "key_path")
             self.assertEqual(changes["smtpd_tls_cert_file"], "cert_path")
             for name, value in six.iteritems(expected):
-                if isinstance(value, tuple):
-                    self.assertEqual(changes[name], value[0])
-                else:
-                    self.assertEqual(changes[name], value)
+                self.assertEqual(changes[name], value[0])
 
     @certbot_test_util.patch_get_utility()
     def test_tls_only(self, mock_util):

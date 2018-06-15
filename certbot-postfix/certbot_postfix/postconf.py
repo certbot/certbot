@@ -6,6 +6,7 @@ from certbot_postfix import util
 
 # pylint: disable=unused-import, no-name-in-module
 from acme.magic_typing import Dict, List, Tuple
+# pylint: enable=unused-import, no-name-in-module
 
 class ConfigMain(util.PostfixUtilBase):
     """A parser for Postfix's main.cf file."""
@@ -132,7 +133,7 @@ class ConfigMain(util.PostfixUtilBase):
 def _parse_main_output(output):
     """Parses the raw output from Postconf about main.cf.
 
-    Expects the output to look like: 
+    Expects the output to look like:
 
     .. code-block:: none
 

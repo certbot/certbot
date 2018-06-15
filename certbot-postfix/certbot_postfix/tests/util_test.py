@@ -37,11 +37,11 @@ class PostfixUtilBaseTest(unittest.TestCase):
             postfix._call()
             mock_output.assert_called_with(['executable'])
 
-    @mock.patch('certbot_postfix.util.verify_exe_exists')
-    def test_create_with_config(self, mock_verify):
+    def test_create_with_config(self):
         # pylint: disable=protected-access
-        postfix = self._create_object('exec', 'config_dir')
-        self.assertEqual(postfix._base_command, ['exec', '-c', 'config_dir'])
+        with mock.patch('certbot_postfix.util.verify_exe_exists'):
+            postfix = self._create_object('exec', 'config_dir')
+            self.assertEqual(postfix._base_command, ['exec', '-c', 'config_dir'])
 
 class PostfixUtilTest(unittest.TestCase):
     def setUp(self):
@@ -162,6 +162,10 @@ class TestUtils(unittest.TestCase):
         report_master_overrides('name', [('service/type', 'value')],
                                 acceptable_overrides=('value',))
 
+    def test_no_acceptable_value(self):
+        from certbot_postfix.util import is_acceptable_value
+        self.assertFalse(is_acceptable_value('name', 'value', None))
+
     def test_is_acceptable_value(self):
         from certbot_postfix.util import is_acceptable_value
         self.assertTrue(is_acceptable_value('name', 'value', ('value',)))
@@ -175,6 +179,8 @@ class TestUtils(unittest.TestCase):
     def test_is_acceptable_protocols(self):
         from certbot_postfix.util import is_acceptable_value
         # SSLv2 and SSLv3 are both not supported, unambiguously
+        self.assertFalse(is_acceptable_value('tls_mandatory_protocols_lol',
+            'SSLv2, SSLv3', None))
         self.assertFalse(is_acceptable_value('tls_protocols_lol',
             'SSLv2, SSLv3', None))
         self.assertFalse(is_acceptable_value('tls_protocols_lol',

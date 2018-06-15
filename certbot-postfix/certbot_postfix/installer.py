@@ -17,6 +17,7 @@ from certbot_postfix import util
 
 # pylint: disable=unused-import, no-name-in-module
 from acme.magic_typing import Callable, Dict, List
+# pylint: enable=unused-import, no-name-in-module
 
 logger = logging.getLogger(__name__)
 
@@ -164,16 +165,13 @@ class Installer(plugins_common.Installer):
         return certbot_util.get_filtered_names(self.postconf.get(var)
                    for var in ('mydomain', 'myhostname', 'myorigin',))
 
-
     def _set_vars(self, var_dict):
-        """Sets all parameters in var_dict to config file.
+        """Sets all parameters in var_dict to config file. If current value is already set
+        as more secure (acceptable), then don't set/overwrite it.
         """
         for param, acceptable in six.iteritems(var_dict):
             if not util.is_acceptable_value(param, self.postconf.get(param), acceptable):
-                if isinstance(acceptable, tuple):
-                    self.postconf.set(param, acceptable[0], acceptable)
-                else:
-                    self.postconf.set(param, acceptable, (acceptable,))
+                self.postconf.set(param, acceptable[0], acceptable)
 
     def _confirm_changes(self):
         """Confirming outstanding updates for configuration parameters.

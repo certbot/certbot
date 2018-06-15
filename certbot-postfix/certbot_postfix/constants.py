@@ -1,5 +1,9 @@
 """Postfix plugin constants."""
 
+# pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Dict, Tuple, Union
+# pylint: enable=unused-import, no-name-in-module
+
 MINIMUM_VERSION = (2, 11,)
 
 # If the value of a default VAR is a tuple, then the values which
@@ -26,10 +30,10 @@ ACCEPTABLE_TLS_VERSIONS = ("TLSv1", "TLSv1.1", "TLSv1.2")
 # Variables associated with enabling opportunistic TLS.
 TLS_SERVER_VARS = {
     "smtpd_tls_security_level": ACCEPTABLE_SERVER_SECURITY_LEVELS,
-}
+} # type:Dict[str, Tuple[str, ...]]
 TLS_CLIENT_VARS = {
     "smtp_tls_security_level": ACCEPTABLE_CLIENT_SECURITY_LEVELS,
-}
+} # type:Dict[str, Tuple[str, ...]]
 # Default variables for a secure MTA server [receiver].
 DEFAULT_SERVER_VARS = {
     "smtpd_tls_auth_only": ("yes",),
@@ -39,14 +43,14 @@ DEFAULT_SERVER_VARS = {
     "smtpd_tls_mandatory_ciphers": ACCEPTABLE_CIPHER_LEVELS,
     "smtpd_tls_exclude_ciphers": EXCLUDE_CIPHERS,
     "smtpd_tls_eecdh_grade": ("strong",),
-}
+} # type:Dict[str, Tuple[str, ...]]
 
 # Default variables for a secure MTA client [sender].
 DEFAULT_CLIENT_VARS = {
     "smtp_tls_ciphers": ACCEPTABLE_CIPHER_LEVELS,
     "smtp_tls_exclude_ciphers": EXCLUDE_CIPHERS,
     "smtp_tls_mandatory_ciphers": ACCEPTABLE_CIPHER_LEVELS,
-}
+} # type:Dict[str, Tuple[str, ...]]
 
 CLI_DEFAULTS = dict(
     config_dir="/etc/postfix",
