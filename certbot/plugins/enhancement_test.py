@@ -4,13 +4,11 @@ import mock
 
 from certbot import cli
 from certbot import configuration
-from certbot import errors
 from certbot import main
 from certbot import updater
 
 from certbot.plugins import disco
 from certbot.plugins import enhancements
-from certbot.plugins import null
 
 import certbot.tests.util as test_util
 
@@ -20,29 +18,7 @@ class EnhancementTest(test_util.ConfigTestCase):
 
     def setUp(self):
         super(EnhancementTest, self).setUp()
-        class MockInstallerAutoHSTS(enhancements.AutoHSTSEnhancement):
-            """Mock class that implements AutoHSTSEnhancement"""
-            def __init__(self):
-                super(MockInstallerAutoHSTS, self).__init__()
-                # pylint: disable=unused-argument
-                self.enable_counter = mock.MagicMock()
-                self.update_counter = mock.MagicMock()
-                self.deploy_counter = mock.MagicMock()
-                self.restart = mock.MagicMock()
-
-            def update_autohsts(self, lineage, *args, **kwargs):
-                """Mock updater method."""
-                self.update_counter(lineage, *args, **kwargs)
-
-            def deploy_autohsts(self, lineage, *args, **kwargs):
-                """Mock deployer method."""
-                self.deploy_counter(lineage, *args, **kwargs)
-
-            def enable_autohsts(self, lineage, domains, *args, **kwargs):
-                """Mock enable method."""
-                self.enable_counter(lineage, domains, *args, **kwargs)
-
-        self.mockinstaller = MockInstallerAutoHSTS()
+        self.mockinstaller = test_util.MockInstallerAutoHSTS()
 
     def _call(self, args):
         plugins = disco.PluginsRegistry.find_all()
@@ -141,38 +117,6 @@ class EnhancementTest(test_util.ConfigTestCase):
         self.assertEqual(len(enabled), 2)
         self.assertTrue([i for i in enabled if i["name"] == "autohsts"])
         self.assertTrue([i for i in enabled if i["name"] == "somethingelse"])
-
-    @mock.patch('certbot.cert_manager.lineage_for_certname')
-    @mock.patch('certbot.main.display_ops.choose_values')
-    @mock.patch('certbot.main.plug_sel.pick_installer')
-    @mock.patch('certbot.main.plug_sel.record_chosen_plugins')
-    @test_util.patch_get_utility()
-    def test_enhancement_enable(self, _, _rec, mock_inst, mock_choose, mock_lineage):
-        mock_inst.return_value = self.mockinstaller
-        mock_choose.return_value = ["example.com", "another.tld"]
-        mock_lineage.return_value = mock.MagicMock(chain_path="/tmp/nonexistent")
-        self._call(['enhance', '--auto-hsts'])
-        self.assertTrue(self.mockinstaller.enable_counter.called)
-        self.assertEquals(self.mockinstaller.enable_counter.call_args[0][1],
-                          ["example.com", "another.tld"])
-
-    @mock.patch('certbot.cert_manager.lineage_for_certname')
-    @mock.patch('certbot.main.display_ops.choose_values')
-    @mock.patch('certbot.main.plug_sel.pick_installer')
-    @mock.patch('certbot.main.plug_sel.record_chosen_plugins')
-    @test_util.patch_get_utility()
-    def test_enhancement_enable_not_supported(self, _, _rec, mock_inst, mock_choose, mock_lineage):
-        mock_inst.return_value = null.Installer(self.config, "null")
-        mock_choose.return_value = ["example.com", "another.tld"]
-        mock_lineage.return_value = mock.MagicMock(chain_path="/tmp/nonexistent")
-        self.assertRaises(
-            errors.NotSupportedError,
-            self._call, ['enhance', '--auto-hsts'])
-
-    def test_enhancement_enable_conflict(self):
-        self.assertRaises(
-            errors.Error,
-            self._call, ['enhance', '--auto-hsts', '--hsts'])
 
 
 if __name__ == '__main__':

@@ -25,6 +25,7 @@ from certbot import util
 from certbot import configuration
 
 from certbot.display import util as display_util
+from certbot.plugins import enhancements
 
 
 def vector_path(*names):
@@ -379,3 +380,26 @@ def hold_lock(cv, lock_path):  # pragma: no cover
     cv.notify()
     cv.wait()
     my_lock.release()
+
+
+class MockInstallerAutoHSTS(enhancements.AutoHSTSEnhancement):
+    """Mock class that implements AutoHSTSEnhancement"""
+    def __init__(self):
+        super(MockInstallerAutoHSTS, self).__init__()
+        # pylint: disable=unused-argument
+        self.enable_counter = mock.MagicMock()
+        self.update_counter = mock.MagicMock()
+        self.deploy_counter = mock.MagicMock()
+        self.restart = mock.MagicMock()
+
+    def update_autohsts(self, lineage, *args, **kwargs):
+        """Mock updater method."""
+        self.update_counter(lineage, *args, **kwargs)
+
+    def deploy_autohsts(self, lineage, *args, **kwargs):
+        """Mock deployer method."""
+        self.deploy_counter(lineage, *args, **kwargs)
+
+    def enable_autohsts(self, lineage, domains, *args, **kwargs):
+        """Mock enable method."""
+        self.enable_counter(lineage, domains, *args, **kwargs)
