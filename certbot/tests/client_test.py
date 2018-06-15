@@ -1,5 +1,6 @@
 """Tests for certbot.client."""
 import os
+import platform
 import shutil
 import tempfile
 import unittest
@@ -14,6 +15,38 @@ import certbot.tests.util as test_util
 
 KEY = test_util.load_vector("rsa512_key.pem")
 CSR_SAN = test_util.load_vector("csr-san_512.pem")
+
+
+class DetermineUserAgentTest(test_util.ConfigTestCase):
+    """Tests for certbot.client.determine_user_agent."""
+
+    def _call(self):
+        from certbot.client import determine_user_agent
+        return determine_user_agent(self.config)
+
+    @mock.patch.dict(os.environ, {"CERTBOT_DOCS": "1"})
+    def test_docs_value(self):
+        self._test(expect_doc_values=True)
+
+    @mock.patch.dict(os.environ, {})
+    def test_real_values(self):
+        self._test(expect_doc_values=False)
+
+    def _test(self, expect_doc_values):
+        ua = self._call()
+
+        if expect_doc_values:
+            doc_value_check = self.assertIn
+            real_value_check = self.assertNotIn
+        else:
+            doc_value_check = self.assertNotIn
+            real_value_check = self.assertIn
+
+        doc_value_check("certbot(-auto)", ua)
+        doc_value_check("OS_NAME OS_VERSION", ua)
+        doc_value_check("major.minor.patchlevel", ua)
+        real_value_check(util.get_os_info_ua(), ua)
+        real_value_check(platform.python_version(), ua)
 
 
 class RegisterTest(test_util.ConfigTestCase):
