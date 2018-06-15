@@ -2,12 +2,8 @@
 import unittest
 import mock
 
-from certbot import cli
-from certbot import configuration
-from certbot import main
 from certbot import updater
 
-from certbot.plugins import disco
 from certbot.plugins import enhancements
 
 import certbot.tests.util as test_util
@@ -19,22 +15,6 @@ class EnhancementTest(test_util.ConfigTestCase):
     def setUp(self):
         super(EnhancementTest, self).setUp()
         self.mockinstaller = test_util.MockInstallerAutoHSTS()
-
-    def _call(self, args):
-        plugins = disco.PluginsRegistry.find_all()
-        config = configuration.NamespaceConfig(
-            cli.prepare_and_parse_args(plugins, args))
-
-        with mock.patch('certbot.cert_manager.get_certnames') as mock_certs:
-            mock_certs.return_value = ['example.com']
-            with mock.patch('certbot.cert_manager.domains_for_certname') as mock_dom:
-                mock_dom.return_value = ['example.com']
-                with mock.patch('certbot.main._init_le_client') as mock_init:
-                    mock_client = mock.MagicMock()
-                    mock_client.config = config
-                    mock_init.return_value = mock_client
-                    main.enhance(config, plugins)
-                    return mock_client # returns the client
 
     @mock.patch('certbot.plugins.selection.choose_configurator_plugins')
     @test_util.patch_get_utility()

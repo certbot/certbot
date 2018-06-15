@@ -3,7 +3,6 @@ import abc
 import six
 
 from certbot import constants
-from certbot import errors
 
 from acme.magic_typing import Dict, List, Any  # pylint: disable=unused-import, no-name-in-module
 
@@ -19,9 +18,33 @@ def enabled_enhancements(config):
             yield enh
 
 def are_requested(config):
-    """Checks if one or more of the requested enhancements are those of the new
-    enhancement interfaces."""
+    """
+    Checks if one or more of the requested enhancements are those of the new
+    enhancement interfaces.
+
+    :param config: Configuration.
+    :type config: :class:`certbot.interfaces.IConfig`
+    """
     return any(enabled_enhancements(config))
+
+def are_supported(config, installer):
+    """
+    Checks that all of the requested enhancements are supported by the
+    installer.
+
+    :param config: Configuration.
+    :type config: :class:`certbot.interfaces.IConfig`
+
+    :param installer: Installer object
+    :type installer: interfaces.IInstaller
+
+    :returns: If all the requested enhancements are supported by the installer
+    :rtype: bool
+    """
+    for enh in enabled_enhancements(config):
+        if not isinstance(installer, enh["class"]):
+            return False
+    return True
 
 def enable(lineage, domains, installer, config):
     """
@@ -40,11 +63,6 @@ def enable(lineage, domains, installer, config):
     :type config: :class:`certbot.interfaces.IConfig`
     """
     for enh in enabled_enhancements(config):
-        if not isinstance(installer, enh["class"]):
-            msg = ("Requested enhancement {} not supported by selected "
-                "installer").format(enh["name"])
-            raise errors.NotSupportedError(msg)
-        # Run the enable method
         getattr(installer, enh["enable_function"])(lineage, domains)
 
 def populate_cli(add):

@@ -2330,6 +2330,13 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                            "String-Transport-Security header present, exiting.")
                     raise errors.PluginEnhancementAlreadyPresent(
                         msg.format(d, vh.filep))
+        if _enhanced_vhosts:
+            note_msg = "Enabling AutoHSTS"
+            self.save(note_msg)
+            logger.info(note_msg)
+
+        # Save the current state to pluginstorage
+        self._autohsts_save_state()
 
     def _enable_autohsts_domain(self, ssl_vhost):
         """Do the initial AutoHSTS deployment to a vhost
@@ -2361,12 +2368,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                     "of {0} to VirtualHost in {1}\n".format(
                         initial_maxage, ssl_vhost.filep))
         self.save_notes += note_msg
-        self.save(note_msg)
-        logger.info(note_msg)
 
         # Save the current state to pluginstorage
         self._autohsts[uniq_id] = {"laststep": 0, "timestamp": time.time()}
-        self._autohsts_save_state()
 
     def update_autohsts(self, _unused_domain):
         """

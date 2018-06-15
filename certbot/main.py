@@ -750,8 +750,8 @@ def _install_cert(config, le_client, domains, lineage=None):
     :param le_client: Client object
     :type le_client: client.Client
 
-    :param plugins: List of domains
-    :type plugins: `list` of `str`
+    :param domains: List of domains
+    :type domains: `list` of `str`
 
     :param lineage: Certificate lineage object. Defaults to `None`
     :type lineage: storage.RenewableCert
@@ -789,11 +789,19 @@ def install(config, plugins):
     except errors.PluginSelectionError as e:
         return str(e)
 
+    if not enhancements.are_supported(config, installer):
+        raise errors.NotSupportedError("One ore more of the requested enhancements "
+                                       "are not supported by the selected installer")
     # If cert-path is defined, populate missing (ie. not overridden) values.
     # Unfortunately this can't be done in argument parser, as certificate
     # manager needs the access to renewal directory paths
     if config.certname:
         config = _populate_from_certname(config)
+    elif enhancements.are_requested(config):
+        # Preflight config check
+        raise errors.ConfigurationError("One or more of the requested enhancements "
+                                        "require --cert-name to be provided")
+
     if config.key_path and config.cert_path:
         _check_certificate_and_key(config)
         domains, _ = _find_domains_or_certname(config, installer)
@@ -803,6 +811,11 @@ def install(config, plugins):
         raise errors.ConfigurationError("Path to certificate or key was not defined. "
             "If your certificate is managed by Certbot, please use --cert-name "
             "to define which certificate you would like to install.")
+
+    if enhancements.are_requested(config):
+        # In the case where we don't have certname, we have errored out already
+        lineage = cert_manager.lineage_for_certname(config, config.certname)
+        enhancements.enable(lineage, domains, installer, config)
 
 def _populate_from_certname(config):
     """Helper function for install to populate missing config values from lineage
@@ -892,6 +905,10 @@ def enhance(config, plugins):
         installer, _ = plug_sel.choose_configurator_plugins(config, plugins, "enhance")
     except errors.PluginSelectionError as e:
         return str(e)
+
+    if not enhancements.are_supported(config, installer):
+        raise errors.NotSupportedError("One ore more of the requested enhancements "
+                                       "are not supported by the selected installer")
 
     certname_question = ("Which certificate would you like to use to enhance "
                          "your configuration?")
@@ -1078,6 +1095,11 @@ def run(config, plugins):  # pylint: disable=too-many-branches,too-many-locals
     except errors.PluginSelectionError as e:
         return str(e)
 
+    # Preflight check for enhancement support by the selected installer
+    if not enhancements.are_supported(config, installer):
+        raise errors.NotSupportedError("One ore more of the requested enhancements "
+                                       "are not supported by the selected installer")
+
     # TODO: Handle errors from _init_le_client?
     le_client = _init_le_client(config, authenticator, installer)
 
@@ -1095,6 +1117,9 @@ def run(config, plugins):  # pylint: disable=too-many-branches,too-many-locals
     _report_new_cert(config, cert_path, fullchain_path, key_path)
 
     _install_cert(config, le_client, domains, new_lineage)
+
+    if enhancements.are_requested(config) and new_lineage:
+        enhancements.enable(new_lineage, domains, installer, config)
 
     if lineage is None or not should_get_cert:
         display_ops.success_installation(domains)
