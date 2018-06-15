@@ -473,8 +473,7 @@ def _report_new_cert(config, cert_path, fullchain_path, key_path=None):
 def _determine_account(config):
     """Determine which account to use.
 
-    In order to make the renewer (configuration de/serialization) happy,
-    if ``config.account`` is ``None``, it will be updated based on the
+    If ``config.account`` is ``None``, it will be updated based on the
     user input. Same for ``config.email``.
 
     :param config: Configuration object

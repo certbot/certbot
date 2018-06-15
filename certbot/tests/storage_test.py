@@ -383,8 +383,9 @@ class RenewableCertTests(BaseRenewableCertTest):
         os.unlink(self.test_rc.cert)
         self.assertRaises(errors.CertStorageError, self.test_rc.names)
 
+    @mock.patch("certbot.storage.cli")
     @mock.patch("certbot.storage.datetime")
-    def test_time_interval_judgments(self, mock_datetime):
+    def test_time_interval_judgments(self, mock_datetime, mock_cli):
         """Test should_autodeploy() and should_autorenew() on the basis
         of expiry time windows."""
         test_cert = test_util.load_vector("cert_512.pem")
@@ -399,6 +400,8 @@ class RenewableCertTests(BaseRenewableCertTest):
             f.write(test_cert)
 
         mock_datetime.timedelta = datetime.timedelta
+        mock_cli.set_by_cli.return_value = False
+        self.test_rc.configuration["renewalparams"] = {}
 
         for (current_time, interval, result) in [
                 # 2014-12-13 12:00:00+00:00 (about 5 days prior to expiry)
@@ -451,22 +454,25 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertFalse(self.test_rc.should_autodeploy())
 
     def test_autorenewal_is_enabled(self):
+        self.test_rc.configuration["renewalparams"] = {}
         self.assertTrue(self.test_rc.autorenewal_is_enabled())
-        self.test_rc.configuration["autorenew"] = "1"
+        self.test_rc.configuration["renewalparams"]["autorenew"] = "True"
         self.assertTrue(self.test_rc.autorenewal_is_enabled())
 
-        self.test_rc.configuration["autorenew"] = "0"
+        self.test_rc.configuration["renewalparams"]["autorenew"] = "False"
         self.assertFalse(self.test_rc.autorenewal_is_enabled())
 
+    @mock.patch("certbot.storage.cli")
     @mock.patch("certbot.storage.RenewableCert.ocsp_revoked")
-    def test_should_autorenew(self, mock_ocsp):
+    def test_should_autorenew(self, mock_ocsp, mock_cli):
         """Test should_autorenew on the basis of reasons other than
         expiry time window."""
         # pylint: disable=too-many-statements
+        mock_cli.set_by_cli.return_value = False
         # Autorenewal turned off
-        self.test_rc.configuration["autorenew"] = "0"
+        self.test_rc.configuration["renewalparams"] = {"autorenew": "False"}
         self.assertFalse(self.test_rc.should_autorenew())
-        self.test_rc.configuration["autorenew"] = "1"
+        self.test_rc.configuration["renewalparams"]["autorenew"] = "True"
         for kind in ALL_FOUR:
             self._write_out_kind(kind, 12)
         # Mandatory renewal on the basis of OCSP revocation

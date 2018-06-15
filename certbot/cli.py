@@ -1225,6 +1225,10 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         " when the user executes \"certbot renew\", regardless of if the certificate"
         " is renewed. This setting does not apply to important TLS configuration"
         " updates.")
+    helpful.add(
+        "renew", "--no-autorenew", action="store_false",
+        default=flag_default("autorenew"), dest="autorenew",
+        help="Disable auto renewal of certificates.")
 
     helpful.add_deprecated_argument("--agree-dev-preview", 0)
     helpful.add_deprecated_argument("--dialog", 0)
