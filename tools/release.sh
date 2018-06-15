@@ -153,7 +153,8 @@ kill $!
 cd ~-
 
 # get a snapshot of the CLI help for the docs
-certbot --help all > docs/cli-help.txt
+# We set CERTBOT_DOCS to use dummy values in example user-agent string.
+CERTBOT_DOCS=1 certbot --help all > docs/cli-help.txt
 jws --help > acme/docs/jws-help.txt
 
 cd ..
