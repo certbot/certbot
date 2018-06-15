@@ -29,8 +29,10 @@ HELP = "help"
 ESC = "esc"
 """Display exit code when the user hits Escape (UNUSED)"""
 
+# Display constants
 SIDE_FRAME = ("- " * 39) + "-"
-
+"""Display boundary (alternates spaces, so when copy-pasted, markdown doesn't interpret
+it as a heading)"""
 
 def _wrap_lines(msg):
     """Format lines nicely to 80 chars.
