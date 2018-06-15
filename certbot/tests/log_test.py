@@ -10,6 +10,7 @@ import mock
 import six
 
 from acme import messages
+from acme.magic_typing import Optional  # pylint: disable=unused-import, no-name-in-module
 
 from certbot import constants
 from certbot import errors
@@ -21,9 +22,9 @@ class PreArgParseSetupTest(unittest.TestCase):
     """Tests for certbot.log.pre_arg_parse_setup."""
 
     @classmethod
-    def _call(cls, *args, **kwargs):
+    def _call(cls, *args, **kwargs):  # pylint: disable=unused-argument
         from certbot.log import pre_arg_parse_setup
-        return pre_arg_parse_setup(*args, **kwargs)
+        return pre_arg_parse_setup()
 
     @mock.patch('certbot.log.sys')
     @mock.patch('certbot.log.pre_arg_parse_except_hook')
@@ -38,16 +39,16 @@ class PreArgParseSetupTest(unittest.TestCase):
         mock_root_logger.setLevel.assert_called_once_with(logging.DEBUG)
         self.assertEqual(mock_root_logger.addHandler.call_count, 2)
 
-        MemoryHandler = logging.handlers.MemoryHandler
-        memory_handler = None
+        memory_handler = None  # type: Optional[logging.handlers.MemoryHandler]
         for call in mock_root_logger.addHandler.call_args_list:
             handler = call[0][0]
-            if memory_handler is None and isinstance(handler, MemoryHandler):
+            if memory_handler is None and isinstance(handler, logging.handlers.MemoryHandler):
                 memory_handler = handler
+                target = memory_handler.target  # type: ignore
             else:
                 self.assertTrue(isinstance(handler, logging.StreamHandler))
         self.assertTrue(
-            isinstance(memory_handler.target, logging.StreamHandler))
+            isinstance(target, logging.StreamHandler))
 
         mock_register.assert_called_once_with(logging.shutdown)
         mock_sys.excepthook(1, 2, 3)
@@ -156,7 +157,7 @@ class SetupLogFileHandlerTest(test_util.ConfigTestCase):
         handler.close()
 
         self.assertEqual(handler.level, logging.DEBUG)
-        self.assertEqual(handler.formatter.converter, time.gmtime)
+        self.assertEqual(handler.formatter.converter, time.localtime)
 
         expected_path = os.path.join(self.config.logs_dir, log_file)
         self.assertEqual(log_path, expected_path)
@@ -343,11 +344,17 @@ class PostArgParseExceptHookTest(unittest.TestCase):
     def _test_common(self, error_type, debug):
         """Returns the mocked logger and stderr output."""
         mock_err = six.StringIO()
+
+        def write_err(*args, **unused_kwargs):
+            """Write error to mock_err."""
+            mock_err.write(args[0])
+
         try:
             raise error_type(self.error_msg)
         except BaseException:
             exc_info = sys.exc_info()
             with mock.patch('certbot.log.logger') as mock_logger:
+                mock_logger.error.side_effect = write_err
                 with mock.patch('certbot.log.sys.stderr', mock_err):
                     try:
                         # pylint: disable=star-args

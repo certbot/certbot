@@ -1,4 +1,5 @@
 """Certbot Route53 authenticator plugin."""
+import collections
 import logging
 import time
 
@@ -9,6 +10,8 @@ from botocore.exceptions import NoCredentialsError, ClientError
 from certbot import errors
 from certbot import interfaces
 from certbot.plugins import dns_common
+
+from acme.magic_typing import DefaultDict, List, Dict # pylint: disable=unused-import, no-name-in-module
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +36,7 @@ class Authenticator(dns_common.DNSAuthenticator):
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
         self.r53 = boto3.client("route53")
+        self._resource_records = collections.defaultdict(list) # type: DefaultDict[str, List[Dict[str, str]]]
 
     def more_info(self):  # pylint: disable=missing-docstring,no-self-use
         return "Solve a DNS01 challenge using AWS Route53"
@@ -40,14 +44,26 @@ class Authenticator(dns_common.DNSAuthenticator):
     def _setup_credentials(self):
         pass
 
-    def _perform(self, domain, validation_domain_name, validation):
-        try:
-            change_id = self._change_txt_record("UPSERT", validation_domain_name, validation)
+    def _perform(self, domain, validation_domain_name, validation): # pylint: disable=missing-docstring
+        pass
 
-            self._wait_for_change(change_id)
+    def perform(self, achalls):
+        self._attempt_cleanup = True
+
+        try:
+            change_ids = [
+                self._change_txt_record("UPSERT",
+                  achall.validation_domain_name(achall.domain),
+                  achall.validation(achall.account_key))
+                for achall in achalls
+            ]
+
+            for change_id in change_ids:
+                self._wait_for_change(change_id)
         except (NoCredentialsError, ClientError) as e:
             logger.debug('Encountered error during perform: %s', e, exc_info=True)
             raise errors.PluginError("\n".join([str(e), INSTRUCTIONS]))
+        return [achall.response(achall.account_key) for achall in achalls]
 
     def _cleanup(self, domain, validation_domain_name, validation):
         try:
@@ -88,6 +104,20 @@ class Authenticator(dns_common.DNSAuthenticator):
     def _change_txt_record(self, action, validation_domain_name, validation):
         zone_id = self._find_zone_id_for_domain(validation_domain_name)
 
+        rrecords = self._resource_records[validation_domain_name]
+        challenge = {"Value": '"{0}"'.format(validation)}
+        if action == "DELETE":
+            # Remove the record being deleted from the list of tracked records
+            rrecords.remove(challenge)
+            if rrecords:
+                # Need to update instead, as we're not deleting the rrset
+                action = "UPSERT"
+            else:
+                # Create a new list containing the record to use with DELETE
+                rrecords = [challenge]
+        else:
+            rrecords.append(challenge)
+
         response = self.r53.change_resource_record_sets(
             HostedZoneId=zone_id,
             ChangeBatch={
@@ -99,11 +129,7 @@ class Authenticator(dns_common.DNSAuthenticator):
                             "Name": validation_domain_name,
                             "Type": "TXT",
                             "TTL": self.ttl,
-                            "ResourceRecords": [
-                                # For some reason TXT records need to be
-                                # manually quoted.
-                                {"Value": '"{0}"'.format(validation)}
-                            ],
+                            "ResourceRecords": rrecords,
                         }
                     }
                 ]

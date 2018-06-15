@@ -5,7 +5,6 @@ import unittest
 
 import digitalocean
 import mock
-import six
 
 from certbot import errors
 from certbot.plugins import dns_test_common
@@ -51,7 +50,8 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
 
 
 class DigitalOceanClientTest(unittest.TestCase):
-    id = 1
+
+    id_num = 1
     record_prefix = "_acme-challenge"
     record_name = record_prefix + "." + DOMAIN
     record_content = "bar"
@@ -71,7 +71,7 @@ class DigitalOceanClientTest(unittest.TestCase):
 
         domain_mock = mock.MagicMock()
         domain_mock.name = DOMAIN
-        domain_mock.create_new_domain_record.return_value = {'domain_record': {'id': self.id}}
+        domain_mock.create_new_domain_record.return_value = {'domain_record': {'id': self.id_num}}
 
         self.manager.get_all_domains.return_value = [wrong_domain_mock, domain_mock]
 
@@ -132,10 +132,10 @@ class DigitalOceanClientTest(unittest.TestCase):
 
         self.digitalocean_client.del_txt_record(DOMAIN, self.record_name, self.record_content)
 
-        correct_record_mock.destroy.assert_called()
+        self.assertTrue(correct_record_mock.destroy.called)
 
-        six.assertCountEqual(self, first_record_mock.destroy.call_args_list, [])
-        six.assertCountEqual(self, last_record_mock.destroy.call_args_list, [])
+        self.assertFalse(first_record_mock.destroy.call_args_list)
+        self.assertFalse(last_record_mock.destroy.call_args_list)
 
     def test_del_txt_record_error_finding_domain(self):
         self.manager.get_all_domains.side_effect = API_ERROR

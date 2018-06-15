@@ -16,17 +16,14 @@ import stat
 import subprocess
 import sys
 
+from collections import OrderedDict
+
 import configargparse
 
+from acme.magic_typing import Tuple, Union  # pylint: disable=unused-import, no-name-in-module
 from certbot import constants
 from certbot import errors
 from certbot import lock
-
-try:
-    from collections import OrderedDict
-except ImportError:  # pragma: no cover
-    # OrderedDict was added in Python 2.7
-    from ordereddict import OrderedDict  # pylint: disable=import-error
 
 
 logger = logging.getLogger(__name__)
@@ -58,7 +55,7 @@ _INITIAL_PID = os.getpid()
 # the dict are attempted to be cleaned up at program exit. If the
 # program exits before the lock is cleaned up, it is automatically
 # released, but the file isn't deleted.
-_LOCKS = OrderedDict()
+_LOCKS = OrderedDict() # type: OrderedDict[str, lock.LockFile]
 
 
 def run_script(params, log=logger.error):
@@ -91,6 +88,18 @@ def run_script(params, log=logger.error):
     return stdout, stderr
 
 
+def is_exe(path):
+    """Is path an executable file?
+
+    :param str path: path to test
+
+    :returns: True iff path is an executable file
+    :rtype: bool
+
+    """
+    return os.path.isfile(path) and os.access(path, os.X_OK)
+
+
 def exe_exists(exe):
     """Determine whether path/name refers to an executable.
 
@@ -100,10 +109,6 @@ def exe_exists(exe):
     :rtype: bool
 
     """
-    def is_exe(path):
-        """Determine if path is an exe."""
-        return os.path.isfile(path) and os.access(path, os.X_OK)
-
     path, _ = os.path.split(exe)
     if path:
         return is_exe(exe)
@@ -214,8 +219,12 @@ def safe_open(path, mode="w", chmod=None, buffering=None):
 
     """
     # pylint: disable=star-args
-    open_args = () if chmod is None else (chmod,)
-    fdopen_args = () if buffering is None else (buffering,)
+    open_args = ()  # type: Union[Tuple[()], Tuple[int]]
+    if chmod is not None:
+        open_args = (chmod,)
+    fdopen_args = ()  # type: Union[Tuple[()], Tuple[int]]
+    if buffering is not None:
+        fdopen_args = (buffering,)
     return os.fdopen(
         os.open(path, os.O_CREAT | os.O_EXCL | os.O_RDWR, *open_args),
         mode, *fdopen_args)
@@ -299,9 +308,8 @@ def get_filtered_names(all_names):
     for name in all_names:
         try:
             filtered_names.add(enforce_le_validity(name))
-        except errors.ConfigurationError as error:
-            logger.debug('Not suggesting name "%s"', name)
-            logger.debug(error)
+        except errors.ConfigurationError:
+            logger.debug('Not suggesting name "%s"', name, exc_info=True)
     return filtered_names
 
 
@@ -334,9 +342,9 @@ def get_os_info_ua(filepath="/etc/os-release"):
     """
 
     if os.path.isfile(filepath):
-        os_ua = _get_systemd_os_release_var("PRETTY_NAME", filepath=filepath)
+        os_ua = get_var_from_file("PRETTY_NAME", filepath=filepath)
         if not os_ua:
-            os_ua = _get_systemd_os_release_var("NAME", filepath=filepath)
+            os_ua = get_var_from_file("NAME", filepath=filepath)
         if os_ua:
             return os_ua
 
@@ -353,8 +361,8 @@ def get_systemd_os_info(filepath="/etc/os-release"):
     :rtype: `tuple` of `str`
     """
 
-    os_name = _get_systemd_os_release_var("ID", filepath=filepath)
-    os_version = _get_systemd_os_release_var("VERSION_ID", filepath=filepath)
+    os_name = get_var_from_file("ID", filepath=filepath)
+    os_version = get_var_from_file("VERSION_ID", filepath=filepath)
 
     return (os_name, os_version)
 
@@ -369,10 +377,10 @@ def get_systemd_os_like(filepath="/etc/os-release"):
     :rtype: `list` of `str`
     """
 
-    return _get_systemd_os_release_var("ID_LIKE", filepath).split(" ")
+    return get_var_from_file("ID_LIKE", filepath).split(" ")
 
 
-def _get_systemd_os_release_var(varname, filepath="/etc/os-release"):
+def get_var_from_file(varname, filepath="/etc/os-release"):
     """
     Get single value from systemd /etc/os-release
 
@@ -397,7 +405,7 @@ def _get_systemd_os_release_var(varname, filepath="/etc/os-release"):
 
 def _normalize_string(orig):
     """
-    Helper function for _get_systemd_os_release_var() to remove quotes
+    Helper function for get_var_from_file() to remove quotes
     and whitespaces
     """
     return orig.replace('"', '').replace("'", "").strip()
@@ -544,16 +552,6 @@ def enforce_domain_sanity(domain):
     :returns: The domain cast to `str`, with ASCII-only contents
     :rtype: str
     """
-    if isinstance(domain, six.text_type):
-        wildcard_marker = u"*."
-    else:
-        wildcard_marker = b"*."
-
-    # Check if there's a wildcard domain
-    if domain.startswith(wildcard_marker):
-        raise errors.ConfigurationError(
-            "Wildcard domains are not supported: {0}".format(domain))
-
     # Unicode
     try:
         if isinstance(domain, six.binary_type):
@@ -605,6 +603,24 @@ def enforce_domain_sanity(domain):
             raise errors.ConfigurationError("{0} label {1} is too long.".format(msg, l))
 
     return domain
+
+
+def is_wildcard_domain(domain):
+    """"Is domain a wildcard domain?
+
+    :param domain: domain to check
+    :type domain: `bytes` or `str` or `unicode`
+
+    :returns: True if domain is a wildcard, otherwise, False
+    :rtype: bool
+
+    """
+    if isinstance(domain, six.text_type):
+        wildcard_marker = u"*."
+    else:
+        wildcard_marker = b"*."
+
+    return domain.startswith(wildcard_marker)
 
 
 def get_strict_version(normalized):

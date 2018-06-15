@@ -258,7 +258,7 @@ class UniqueLineageNameTest(test_util.TempDirTestCase):
         for _ in six.moves.range(10):
             f, name = self._call("wow")
         self.assertTrue(isinstance(f, file_type))
-        self.assertTrue(isinstance(name, str))
+        self.assertTrue(isinstance(name, six.string_types))
         self.assertTrue("wow-0009.conf" in name)
 
     @mock.patch("certbot.util.os.fdopen")
@@ -485,6 +485,26 @@ class EnforceDomainSanityTest(unittest.TestCase):
         # Punycode is now legal, so no longer an error; instead check
         # that it's _not_ an error (at the initial sanity check stage)
         self._call('this.is.xn--ls8h.tld')
+
+
+class IsWildcardDomainTest(unittest.TestCase):
+    """Tests for is_wildcard_domain."""
+
+    def setUp(self):
+        self.wildcard = u"*.example.org"
+        self.no_wildcard = u"example.org"
+
+    def _call(self, domain):
+        from certbot.util import is_wildcard_domain
+        return is_wildcard_domain(domain)
+
+    def test_no_wildcard(self):
+        self.assertFalse(self._call(self.no_wildcard))
+        self.assertFalse(self._call(self.no_wildcard.encode()))
+
+    def test_wildcard(self):
+        self.assertTrue(self._call(self.wildcard))
+        self.assertTrue(self._call(self.wildcard.encode()))
 
 
 class OsInfoTest(unittest.TestCase):

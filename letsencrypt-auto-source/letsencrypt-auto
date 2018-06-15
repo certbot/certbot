@@ -31,7 +31,7 @@ if [ -z "$VENV_PATH" ]; then
 fi
 VENV_BIN="$VENV_PATH/bin"
 BOOTSTRAP_VERSION_PATH="$VENV_PATH/certbot-auto-bootstrap-version.txt"
-LE_AUTO_VERSION="0.18.0.dev0"
+LE_AUTO_VERSION="0.26.0.dev0"
 BASENAME=$(basename $0)
 USAGE="Usage: $BASENAME [OPTIONS]
 A self-updating wrapper script for the Certbot ACME client. When run, updates
@@ -47,6 +47,7 @@ Help for certbot itself cannot be provided until it is installed.
   --no-bootstrap                            do not install OS dependencies
   --no-self-upgrade                         do not download updates
   --os-packages-only                        install OS dependencies and exit
+  --install-only                            install certbot, upgrade if needed, and exit
   -v, --verbose                             provide more output
   -q, --quiet                               provide only update/error output;
                                             implies --non-interactive
@@ -60,6 +61,8 @@ for arg in "$@" ; do
       DEBUG=1;;
     --os-packages-only)
       OS_PACKAGES_ONLY=1;;
+    --install-only)
+      INSTALL_ONLY=1;;
     --no-self-upgrade)
       # Do not upgrade this script (also prevents client upgrades, because each
       # copy of the script pins a hash of the python client)
@@ -68,10 +71,12 @@ for arg in "$@" ; do
       NO_BOOTSTRAP=1;;
     --help)
       HELP=1;;
-    --noninteractive|--non-interactive|renew)
-      ASSUME_YES=1;;
+    --noninteractive|--non-interactive)
+      NONINTERACTIVE=1;;
     --quiet)
       QUIET=1;;
+    renew)
+      ASSUME_YES=1;;
     --verbose)
       VERBOSE=1;;
     -[!-]*)
@@ -93,7 +98,7 @@ done
 
 if [ $BASENAME = "letsencrypt-auto" ]; then
   # letsencrypt-auto does not respect --help or --yes for backwards compatibility
-  ASSUME_YES=1
+  NONINTERACTIVE=1
   HELP=0
 fi
 
@@ -187,8 +192,7 @@ SetRootAuthMechanism() {
 
 if [ "$1" = "--cb-auto-has-root" ]; then
   shift 1
-elif [ "$1" != "--le-auto-phase2" ]; then
-  # if $1 is --le-auto-phase2, we've executed this branch before
+else
   SetRootAuthMechanism
   if [ -n "$SUDO" ]; then
     echo "Requesting to rerun $0 with root privileges..."
@@ -196,6 +200,14 @@ elif [ "$1" != "--le-auto-phase2" ]; then
     exit 0
   fi
 fi
+
+# Runs this script again with the given arguments. --cb-auto-has-root is added
+# to the command line arguments to ensure we don't try to acquire root a
+# second time. After the script is rerun, we exit the current script.
+RerunWithArgs() {
+    "$0" --cb-auto-has-root "$@"
+    exit 0
+}
 
 BootstrapMessage() {
   # Arguments: Platform name
@@ -237,23 +249,42 @@ DeprecationBootstrap() {
   fi
 }
 
-
+MIN_PYTHON_VERSION="2.7"
+MIN_PYVER=$(echo "$MIN_PYTHON_VERSION" | sed 's/\.//')
+# Sets LE_PYTHON to Python version string and PYVER to the first two
+# digits of the python version
 DeterminePythonVersion() {
-  for LE_PYTHON in "$LE_PYTHON" python2.7 python27 python2 python; do
-    # Break (while keeping the LE_PYTHON value) if found.
-    $EXISTS "$LE_PYTHON" > /dev/null && break
-  done
-  if [ "$?" != "0" ]; then
-    error "Cannot find any Pythons; please install one!"
-    exit 1
+  # Arguments: "NOCRASH" if we shouldn't crash if we don't find a good python
+  #
+  # If no Python is found, PYVER is set to 0.
+  if [ "$USE_PYTHON_3" = 1 ]; then
+    for LE_PYTHON in "$LE_PYTHON" python3; do
+      # Break (while keeping the LE_PYTHON value) if found.
+      $EXISTS "$LE_PYTHON" > /dev/null && break
+    done
+  else
+    for LE_PYTHON in "$LE_PYTHON" python2.7 python27 python2 python; do
+      # Break (while keeping the LE_PYTHON value) if found.
+      $EXISTS "$LE_PYTHON" > /dev/null && break
+    done
   fi
-  export LE_PYTHON
+  if [ "$?" != "0" ]; then
+    if [ "$1" != "NOCRASH" ]; then
+      error "Cannot find any Pythons; please install one!"
+      exit 1
+    else
+      PYVER=0
+      return 0
+    fi
+  fi
 
   PYVER=`"$LE_PYTHON" -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//'`
-  if [ "$PYVER" -lt 26 ]; then
-    error "You have an ancient version of Python entombed in your operating system..."
-    error "This isn't going to work; you'll need at least version 2.6."
-    exit 1
+  if [ "$PYVER" -lt "$MIN_PYVER" ]; then
+    if [ "$1" != "NOCRASH" ]; then
+      error "You have an ancient version of Python entombed in your operating system..."
+      error "This isn't going to work; you'll need at least version $MIN_PYTHON_VERSION."
+      exit 1
+    fi
   fi
 }
 
@@ -377,23 +408,19 @@ BootstrapDebCommon() {
   fi
 }
 
-# If new packages are installed by BootstrapRpmCommon below, this version
-# number must be increased.
-BOOTSTRAP_RPM_COMMON_VERSION=1
+# If new packages are installed by BootstrapRpmCommonBase below, version
+# numbers in rpm_common.sh and rpm_python3.sh must be increased.
 
-BootstrapRpmCommon() {
-  # Tested with:
-  #   - Fedora 20, 21, 22, 23 (x64)
-  #   - Centos 7 (x64: on DigitalOcean droplet)
-  #   - CentOS 7 Minimal install in a Hyper-V VM
-  #   - CentOS 6 (EPEL must be installed manually)
-
+# Sets TOOL to the name of the package manager
+# Sets appropriate values for YES_FLAG and QUIET_FLAG based on $ASSUME_YES and $QUIET_FLAG.
+# Enables EPEL if applicable and possible.
+InitializeRPMCommonBase() {
   if type dnf 2>/dev/null
   then
-    tool=dnf
+    TOOL=dnf
   elif type yum 2>/dev/null
   then
-    tool=yum
+    TOOL=yum
 
   else
     error "Neither yum nor dnf found. Aborting bootstrap!"
@@ -401,15 +428,15 @@ BootstrapRpmCommon() {
   fi
 
   if [ "$ASSUME_YES" = 1 ]; then
-    yes_flag="-y"
+    YES_FLAG="-y"
   fi
   if [ "$QUIET" = 1 ]; then
     QUIET_FLAG='--quiet'
   fi
 
-  if ! $tool list *virtualenv >/dev/null 2>&1; then
+  if ! $TOOL list *virtualenv >/dev/null 2>&1; then
     echo "To use Certbot, packages from the EPEL repository need to be installed."
-    if ! $tool list epel-release >/dev/null 2>&1; then
+    if ! $TOOL list epel-release >/dev/null 2>&1; then
       error "Enable the EPEL repository and try running Certbot again."
       exit 1
     fi
@@ -418,14 +445,20 @@ BootstrapRpmCommon() {
       sleep 1s
       /bin/echo -ne "\e[0K\rEnabling the EPEL repository in 2 seconds..."
       sleep 1s
-      /bin/echo -e "\e[0K\rEnabling the EPEL repository in 1 seconds..."
+      /bin/echo -e "\e[0K\rEnabling the EPEL repository in 1 second..."
       sleep 1s
     fi
-    if ! $tool install $yes_flag $QUIET_FLAG epel-release; then
+    if ! $TOOL install $YES_FLAG $QUIET_FLAG epel-release; then
       error "Could not enable EPEL. Aborting bootstrap!"
       exit 1
     fi
   fi
+}
+
+BootstrapRpmCommonBase() {
+  # Arguments: whitespace-delimited python packages to install
+
+  InitializeRPMCommonBase # This call is superfluous in practice
 
   pkgs="
     gcc
@@ -437,10 +470,39 @@ BootstrapRpmCommon() {
     ca-certificates
   "
 
-  # Most RPM distros use the "python" or "python-" naming convention.  Let's try that first.
-  if $tool list python >/dev/null 2>&1; then
+  # Add the python packages
+  pkgs="$pkgs
+    $1
+  "
+
+  if $TOOL list installed "httpd" >/dev/null 2>&1; then
     pkgs="$pkgs
-      python
+      mod_ssl
+    "
+  fi
+
+  if ! $TOOL install $YES_FLAG $QUIET_FLAG $pkgs; then
+    error "Could not install OS dependencies. Aborting bootstrap!"
+    exit 1
+  fi
+}
+
+# If new packages are installed by BootstrapRpmCommon below, this version
+# number must be increased.
+BOOTSTRAP_RPM_COMMON_VERSION=1
+
+BootstrapRpmCommon() {
+  # Tested with:
+  #   - Fedora 20, 21, 22, 23 (x64)
+  #   - Centos 7 (x64: on DigitalOcean droplet)
+  #   - CentOS 7 Minimal install in a Hyper-V VM
+  #   - CentOS 6
+
+  InitializeRPMCommonBase
+
+  # Most RPM distros use the "python" or "python-" naming convention.  Let's try that first.
+  if $TOOL list python >/dev/null 2>&1; then
+    python_pkgs="$python
       python-devel
       python-virtualenv
       python-tools
@@ -448,9 +510,8 @@ BootstrapRpmCommon() {
     "
   # Fedora 26 starts to use the prefix python2 for python2 based packages.
   # this elseif is theoretically for any Fedora over version 26:
-  elif $tool list python2 >/dev/null 2>&1; then
-    pkgs="$pkgs
-      python2
+  elif $TOOL list python2 >/dev/null 2>&1; then
+    python_pkgs="$python2
       python2-libs
       python2-setuptools
       python2-devel
@@ -461,8 +522,7 @@ BootstrapRpmCommon() {
   # Some distros and older versions of current distros use a "python27"
   # instead of the "python" or "python-" naming convention.
   else
-    pkgs="$pkgs
-      python27
+    python_pkgs="$python27
       python27-devel
       python27-virtualenv
       python27-tools
@@ -470,16 +530,31 @@ BootstrapRpmCommon() {
     "
   fi
 
-  if $tool list installed "httpd" >/dev/null 2>&1; then
-    pkgs="$pkgs
-      mod_ssl
-    "
-  fi
+  BootstrapRpmCommonBase "$python_pkgs"
+}
 
-  if ! $tool install $yes_flag $QUIET_FLAG $pkgs; then
-    error "Could not install OS dependencies. Aborting bootstrap!"
+# If new packages are installed by BootstrapRpmPython3 below, this version
+# number must be increased.
+BOOTSTRAP_RPM_PYTHON3_VERSION=1
+
+BootstrapRpmPython3() {
+  # Tested with:
+  #   - CentOS 6
+
+  InitializeRPMCommonBase
+
+  # EPEL uses python34
+  if $TOOL list python34 >/dev/null 2>&1; then
+    python_pkgs="python34
+      python34-devel
+      python34-tools
+    "
+  else
+    error "No supported Python package available to install. Aborting bootstrap!"
     exit 1
   fi
+
+  BootstrapRpmCommonBase "$python_pkgs"
 }
 
 # If new packages are installed by BootstrapSuseCommon below, this version
@@ -689,13 +764,8 @@ BootstrapMageiaCommon() {
 # Set Bootstrap to the function that installs OS dependencies on this system
 # and BOOTSTRAP_VERSION to the unique identifier for the current version of
 # that function. If Bootstrap is set to a function that doesn't install any
-# packages (either because --no-bootstrap was included on the command line or
-# we don't know how to bootstrap on this system), BOOTSTRAP_VERSION is not set.
-if [ "$NO_BOOTSTRAP" = 1 ]; then
-  Bootstrap() {
-    :
-  }
-elif [ -f /etc/debian_version ]; then
+# packages BOOTSTRAP_VERSION is not set.
+if [ -f /etc/debian_version ]; then
   Bootstrap() {
     BootstrapMessage "Debian-based OSes"
     BootstrapDebCommon
@@ -708,11 +778,27 @@ elif [ -f /etc/mageia-release ]; then
   }
   BOOTSTRAP_VERSION="BootstrapMageiaCommon $BOOTSTRAP_MAGEIA_COMMON_VERSION"
 elif [ -f /etc/redhat-release ]; then
-  Bootstrap() {
-    BootstrapMessage "RedHat-based OSes"
-    BootstrapRpmCommon
-  }
-  BOOTSTRAP_VERSION="BootstrapRpmCommon $BOOTSTRAP_RPM_COMMON_VERSION"
+  # Run DeterminePythonVersion to decide on the basis of available Python versions
+  # whether to use 2.x or 3.x on RedHat-like systems.
+  # Then, revert LE_PYTHON to its previous state.
+  prev_le_python="$LE_PYTHON"
+  unset LE_PYTHON
+  DeterminePythonVersion "NOCRASH"
+  if [ "$PYVER" -eq 26 ]; then
+    Bootstrap() {
+      BootstrapMessage "RedHat-based OSes that will use Python3"
+      BootstrapRpmPython3
+    }
+    USE_PYTHON_3=1
+    BOOTSTRAP_VERSION="BootstrapRpmPython3 $BOOTSTRAP_RPM_PYTHON3_VERSION"
+  else
+    Bootstrap() {
+      BootstrapMessage "RedHat-based OSes"
+      BootstrapRpmCommon
+    }
+    BOOTSTRAP_VERSION="BootstrapRpmCommon $BOOTSTRAP_RPM_COMMON_VERSION"
+  fi
+  LE_PYTHON="$prev_le_python"
 elif [ -f /etc/os-release ] && `grep -q openSUSE /etc/os-release` ; then
   Bootstrap() {
     BootstrapMessage "openSUSE-based OSes"
@@ -775,6 +861,17 @@ else
   }
 fi
 
+# We handle this case after determining the normal bootstrap version to allow
+# variables like USE_PYTHON_3 to be properly set. As described above, if the
+# Bootstrap function doesn't install any packages, BOOTSTRAP_VERSION should not
+# be set so we unset it here.
+if [ "$NO_BOOTSTRAP" = 1 ]; then
+  Bootstrap() {
+    :
+  }
+  unset BOOTSTRAP_VERSION
+fi
+
 # Sets PREV_BOOTSTRAP_VERSION to the identifier for the bootstrap script used
 # to install OS dependencies on this system. PREV_BOOTSTRAP_VERSION isn't set
 # if it is unknown how OS dependencies were installed on this system.
@@ -809,7 +906,11 @@ TempDir() {
   mktemp -d 2>/dev/null || mktemp -d -t 'le'  # Linux || macOS
 }
 
-
+# Returns 0 if a letsencrypt installation exists at $OLD_VENV_PATH, otherwise,
+# returns a non-zero number.
+OldVenvExists() {
+    [ -n "$OLD_VENV_PATH" -a -f "$OLD_VENV_PATH/bin/letsencrypt" ]
+}
 
 if [ "$1" = "--le-auto-phase2" ]; then
   # Phase 2: Create venv, install LE, and run.
@@ -817,16 +918,27 @@ if [ "$1" = "--le-auto-phase2" ]; then
   shift 1  # the --le-auto-phase2 arg
   SetPrevBootstrapVersion
 
+  if [ -z "$PHASE_1_VERSION" -a "$USE_PYTHON_3" = 1 ]; then
+    unset LE_PYTHON
+  fi
+
   INSTALLED_VERSION="none"
-  if [ -d "$VENV_PATH" ]; then
+  if [ -d "$VENV_PATH" ] || OldVenvExists; then
     # If the selected Bootstrap function isn't a noop and it differs from the
     # previously used version
     if [ -n "$BOOTSTRAP_VERSION" -a "$BOOTSTRAP_VERSION" != "$PREV_BOOTSTRAP_VERSION" ]; then
       # if non-interactive mode or stdin and stdout are connected to a terminal
       if [ \( "$NONINTERACTIVE" = 1 \) -o \( \( -t 0 \) -a \( -t 1 \) \) ]; then
-        rm -rf "$VENV_PATH"
-        "$0" "$@"
-        exit 0
+        if [ -d "$VENV_PATH" ]; then
+          rm -rf "$VENV_PATH"
+        fi
+        # In the case the old venv was just a symlink to the new one,
+        # OldVenvExists is now false because we deleted the venv at VENV_PATH.
+        if OldVenvExists; then
+          rm -rf "$OLD_VENV_PATH"
+          ln -s "$VENV_PATH" "$OLD_VENV_PATH"
+        fi
+        RerunWithArgs "$@"
       else
         error "Skipping upgrade because new OS dependencies may need to be installed."
         error
@@ -835,6 +947,10 @@ if [ "$1" = "--le-auto-phase2" ]; then
         error "install any required packages."
         # Set INSTALLED_VERSION to be the same so we don't update the venv
         INSTALLED_VERSION="$LE_AUTO_VERSION"
+        # Continue to use OLD_VENV_PATH if the new venv doesn't exist
+        if [ ! -d "$VENV_PATH" ]; then
+          VENV_BIN="$OLD_VENV_PATH/bin"
+        fi
       fi
     elif [ -f "$VENV_BIN/letsencrypt" ]; then
       # --version output ran through grep due to python-cryptography DeprecationWarnings
@@ -852,10 +968,18 @@ if [ "$1" = "--le-auto-phase2" ]; then
     say "Creating virtual environment..."
     DeterminePythonVersion
     rm -rf "$VENV_PATH"
-    if [ "$VERBOSE" = 1 ]; then
-      virtualenv --no-site-packages --python "$LE_PYTHON" "$VENV_PATH"
+    if [ "$PYVER" -le 27 ]; then
+      if [ "$VERBOSE" = 1 ]; then
+        virtualenv --no-site-packages --python "$LE_PYTHON" "$VENV_PATH"
+      else
+        virtualenv --no-site-packages --python "$LE_PYTHON" "$VENV_PATH" > /dev/null
+      fi
     else
-      virtualenv --no-site-packages --python "$LE_PYTHON" "$VENV_PATH" > /dev/null
+      if [ "$VERBOSE" = 1 ]; then
+        "$LE_PYTHON" -m venv "$VENV_PATH"
+      else
+        "$LE_PYTHON" -m venv "$VENV_PATH" > /dev/null
+      fi
     fi
 
     if [ -n "$BOOTSTRAP_VERSION" ]; then
@@ -931,9 +1055,11 @@ cffi==1.10.0 \
     --hash=sha256:5576644b859197da7bbd8f8c7c2fb5dcc6cd505cadb42992d5f104c013f8a214 \
     --hash=sha256:b3b02911eb1f6ada203b0763ba924234629b51586f72a21faacc638269f4ced5
 ConfigArgParse==0.12.0 \
-    --hash=sha256:28cd7d67669651f2a4518367838c49539457504584a139709b2b8f6c208ef339
+    --hash=sha256:28cd7d67669651f2a4518367838c49539457504584a139709b2b8f6c208ef339 \
+    --no-binary ConfigArgParse
 configobj==5.0.6 \
-    --hash=sha256:a2f5650770e1c87fb335af19a9b7eb73fc05ccf22144eb68db7d00cd2bcb0902
+    --hash=sha256:a2f5650770e1c87fb335af19a9b7eb73fc05ccf22144eb68db7d00cd2bcb0902 \
+    --no-binary configobj
 cryptography==2.0.2 \
     --hash=sha256:187ae17358436d2c760f28c2aeb02fefa3f37647a9c5b6f7f7c3e83cd1c5a972 \
     --hash=sha256:19e43a13bbf52028dd1e810c803f2ad8880d0692d772f98d42e1eaf34bdee3d6 \
@@ -965,7 +1091,7 @@ cryptography==2.0.2 \
     --hash=sha256:01e6e60654df64cca53733cda39446d67100c819c181d403afb120e0d2a71e1b \
     --hash=sha256:d46f4e5d455cb5563685c52ef212696f0a6cc1ea627603218eabbd8a095291d8 \
     --hash=sha256:3780b2663ee7ebb37cb83263326e3cd7f8b2ea439c448539d4b87de12c8d06ab
-enum34==1.1.2 \
+enum34==1.1.2 ; python_version < '3.4' \
     --hash=sha256:2475d7fcddf5951e92ff546972758802de5260bf409319a9f1934e6bbc8b1dc7 \
     --hash=sha256:35907defb0f992b75ab7788f65fedc1cf20ffa22688e0e6f6f12afc06b3ea501
 funcsigs==1.0.2 \
@@ -977,11 +1103,19 @@ idna==2.5 \
 ipaddress==1.0.16 \
     --hash=sha256:935712800ce4760701d89ad677666cd52691fd2f6f0b340c8b4239a3c17988a5 \
     --hash=sha256:5a3182b322a706525c46282ca6f064d27a02cffbd449f9f47416f1dc96aa71b0
+josepy==1.0.1 \
+    --hash=sha256:354a3513038a38bbcd27c97b7c68a8f3dfaff0a135b20a92c6db4cc4ea72915e \
+    --hash=sha256:9f48b88ca37f0244238b1cc77723989f7c54f7b90b2eee6294390bacfe870acc
 linecache2==1.0.0 \
     --hash=sha256:e78be9c0a0dfcbac712fe04fbf92b96cddae80b1b842f24248214c8496f006ef \
     --hash=sha256:4b26ff4e7110db76eeb6f5a7b64a82623839d595c2038eeda662f2a2db78e97c
+# Using an older version of mock here prevents regressions of #5276.
+mock==1.3.0 \
+    --hash=sha256:3f573a18be94de886d1191f27c168427ef693e8dcfcecf95b170577b2eb69cbb \
+    --hash=sha256:1e247dbecc6ce057299eb7ee019ad68314bb93152e81d9a6110d35f4d5eca0f6
 ordereddict==1.1 \
-    --hash=sha256:1c35b4ac206cef2d24816c89f89cf289dd3d38cf7c449bb3fab7bf6d43f01b1f
+    --hash=sha256:1c35b4ac206cef2d24816c89f89cf289dd3d38cf7c449bb3fab7bf6d43f01b1f \
+    --no-binary ordereddict
 packaging==16.8 \
     --hash=sha256:99276dc6e3a7851f32027a68f1095cd3f77c148091b092ea867a351811cfe388 \
     --hash=sha256:5d50835fdf0a7edf0b55e311b7c887786504efea1177abd7e69329a8e5ea619e
@@ -1007,7 +1141,8 @@ pyRFC3339==1.0 \
     --hash=sha256:eea31835c56e2096af4363a5745a784878a61d043e247d3a6d6a0a32a9741f56 \
     --hash=sha256:8dfbc6c458b8daba1c0f3620a8c78008b323a268b27b7359e92a4ae41325f535
 python-augeas==0.5.0 \
-    --hash=sha256:67d59d66cdba8d624e0389b87b2a83a176f21f16a87553b50f5703b23f29bac2
+    --hash=sha256:67d59d66cdba8d624e0389b87b2a83a176f21f16a87553b50f5703b23f29bac2 \
+    --no-binary python-augeas
 pytz==2015.7 \
     --hash=sha256:3abe6a6d3fc2fbbe4c60144211f45da2edbe3182a6f6511af6bbba0598b1f992 \
     --hash=sha256:939ef9c1e1224d980405689a97ffcf7828c56d1517b31d73464356c1f2b7769e \
@@ -1035,9 +1170,11 @@ unittest2==1.1.0 \
     --hash=sha256:13f77d0875db6d9b435e1d4f41e74ad4cc2eb6e1d5c824996092b3430f088bb8 \
     --hash=sha256:22882a0e418c284e1f718a822b3b022944d53d2d908e1690b319a9d3eb2c0579
 zope.component==4.2.2 \
-    --hash=sha256:282c112b55dd8e3c869a3571f86767c150ab1284a9ace2bdec226c592acaf81a
+    --hash=sha256:282c112b55dd8e3c869a3571f86767c150ab1284a9ace2bdec226c592acaf81a \
+    --no-binary zope.component
 zope.event==4.1.0 \
-    --hash=sha256:dc7a59a2fd91730d3793131a5d261b29e93ec4e2a97f1bc487ce8defee2fe786
+    --hash=sha256:dc7a59a2fd91730d3793131a5d261b29e93ec4e2a97f1bc487ce8defee2fe786 \
+    --no-binary zope.event
 zope.interface==4.1.3 \
     --hash=sha256:f07b631f7a601cd8cbd3332d54f43142c7088a83299f859356f08d1d4d4259b3 \
     --hash=sha256:de5cca083b9439d8002fb76bbe6b4998c5a5a721fab25b84298967f002df4c94 \
@@ -1056,9 +1193,9 @@ zope.interface==4.1.3 \
     --hash=sha256:928138365245a0e8869a5999fbcc2a45475a0a6ed52a494d60dbdc540335fedd \
     --hash=sha256:0d841ba1bb840eea0e6489dc5ecafa6125554971f53b5acb87764441e61bceba \
     --hash=sha256:b09c8c1d47b3531c400e0195697f1414a63221de6ef478598a4f1460f7d9a392
-mock==2.0.0 \
-    --hash=sha256:5ce3c71c5545b472da17b72268978914d0252980348636840bd34a00b5cc96c1 \
-    --hash=sha256:b158b6df76edd239b8208d481dc46b6afd45a846b7812ff0ce58971cf5bc8bba
+requests-toolbelt==0.8.0 \
+    --hash=sha256:42c9c170abc2cacb78b8ab23ac957945c7716249206f90874651971a4acff237 \
+    --hash=sha256:f6a531936c6fa4c6cfce1b9c10d5c4f498d16528d2a54a22ca00011205a187b5
 
 # Contains the requirements for the letsencrypt package.
 #
@@ -1071,24 +1208,24 @@ letsencrypt==0.7.0 \
     --hash=sha256:105a5fb107e45bcd0722eb89696986dcf5f08a86a321d6aef25a0c7c63375ade \
     --hash=sha256:c36e532c486a7e92155ee09da54b436a3c420813ec1c590b98f635d924720de9
 
-certbot==0.17.0 \
-    --hash=sha256:64c25c7123357feffded6408660bc6f5c7d493dd635ae172081d21473075a86a \
-    --hash=sha256:43f5b26c3f314d14babf79a3bdf3522e4fc9eef867a0681c426f113c650a669c
-acme==0.17.0 \
-    --hash=sha256:501710171633af13fc52aa61d0277a6fe335f7477db5810e72239aaf4f3a09e7 \
-    --hash=sha256:3ccbe4aaeb98c77b98ee4093b4e4adb76a1a24cbdfec0130c489c206f1d9b66e
-certbot-apache==0.17.0 \
-    --hash=sha256:17a7e8d7526d838610e68b96cf052af17c4055655b76b06d1cbc74857d90a216 \
-    --hash=sha256:29b9e7bc5eaaff6dc4bce8398e35eeacdf346126aad68cac3d41bb87df20a6b9
-certbot-nginx==0.17.0 \
-    --hash=sha256:980c9a33a79ab839a089a0085ff0c5414f01f47b6db26ed342df25916658cec9 \
-    --hash=sha256:e573f8b4283172755c07b9cca8a8da7ef2d31b4df763881394b5339b2d42994a
+certbot==0.25.1 \
+    --hash=sha256:01689015364685fef3f1e1fb7832ba84eb3b0aa85bc5a71c96661f6d4c59981f \
+    --hash=sha256:5c23e5186133bb1afd805be5e0cd2fb7b95862a8b0459c9ecad4ae60f933e54e
+acme==0.25.1 \
+    --hash=sha256:26e641a01536705fe5f12d856703b8ef06e5a07981a7b6379d2771dcdb69a742 \
+    --hash=sha256:47b5f3f73d69b7b1d13f918aa2cd75a8093069a68becf4af38e428e4613b2734
+certbot-apache==0.25.1 \
+    --hash=sha256:a28b7c152cc11474bef5b5e7967aaea42b2c0aaf86fd82ee4082713d33cee5a9 \
+    --hash=sha256:ed012465617073a0f1057fe854dc8d1eb6d2dd7ede1fb2eee765129fed2a095a
+certbot-nginx==0.25.1 \
+    --hash=sha256:83f82c3ba08c0b1d4bf449ac24018e8e7dd34a6248d35466f2de7da1cd312e15 \
+    --hash=sha256:68f98b41c54e0bf4218ef293079597176617bee3837ae3aa6528ce2ff0bf4f9c
 
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
     cat << "UNLIKELY_EOF" > "$TEMP_DIR/pipstrap.py"
 #!/usr/bin/env python
-"""A small script that can act as a trust root for installing pip 8
+"""A small script that can act as a trust root for installing pip >=8
 
 Embed this in your project, and your VCS checkout is all you have to trust. In
 a post-peep era, this lets you claw your way to a hash-checking version of pip,
@@ -1112,6 +1249,7 @@ anything goes wrong, it will exit with a non-zero status code.
 from __future__ import print_function
 from distutils.version import StrictVersion
 from hashlib import sha256
+from os import environ
 from os.path import join
 from pipes import quote
 from shutil import rmtree
@@ -1145,14 +1283,14 @@ except ImportError:
     from urllib.parse import urlparse  # 3.4
 
 
-__version__ = 1, 3, 0
+__version__ = 1, 5, 1
 PIP_VERSION = '9.0.1'
+DEFAULT_INDEX_BASE = 'https://pypi.python.org'
 
 
 # wheel has a conditional dependency on argparse:
 maybe_argparse = (
-    [('https://pypi.python.org/packages/18/dd/'
-      'e617cfc3f6210ae183374cd9f6a26b20514bbb5a792af97949c5aacddf0f/'
+    [('18/dd/e617cfc3f6210ae183374cd9f6a26b20514bbb5a792af97949c5aacddf0f/'
       'argparse-1.4.0.tar.gz',
       '62b089a55be1d8949cd2bc7e0df0bddb9e028faefc8c32038cc84862aefdd6e4')]
     if version_info < (2, 7, 0) else [])
@@ -1160,18 +1298,14 @@ maybe_argparse = (
 
 PACKAGES = maybe_argparse + [
     # Pip has no dependencies, as it vendors everything:
-    ('https://pypi.python.org/packages/11/b6/'
-     'abcb525026a4be042b486df43905d6893fb04f05aac21c32c638e939e447/'
-     'pip-{0}.tar.gz'
-     .format(PIP_VERSION),
+    ('11/b6/abcb525026a4be042b486df43905d6893fb04f05aac21c32c638e939e447/'
+     'pip-{0}.tar.gz'.format(PIP_VERSION),
      '09f243e1a7b461f654c26a725fa373211bb7ff17a9300058b205c61658ca940d'),
     # This version of setuptools has only optional dependencies:
-    ('https://pypi.python.org/packages/69/65/'
-     '4c544cde88d4d876cdf5cbc5f3f15d02646477756d89547e9a7ecd6afa76/'
-     'setuptools-20.2.2.tar.gz',
-     '24fcfc15364a9fe09a220f37d2dcedc849795e3de3e4b393ee988e66a9cbd85a'),
-    ('https://pypi.python.org/packages/c9/1d/'
-     'bd19e691fd4cfe908c76c429fe6e4436c9e83583c4414b54f6c85471954a/'
+    ('59/88/2f3990916931a5de6fa9706d6d75eb32ee8b78627bb2abaab7ed9e6d0622/'
+     'setuptools-29.0.1.tar.gz',
+     'b539118819a4857378398891fa5366e090690e46b3e41421a1e07d6e9fd8feb0'),
+    ('c9/1d/bd19e691fd4cfe908c76c429fe6e4436c9e83583c4414b54f6c85471954a/'
      'wheel-0.29.0.tar.gz',
      '1ebb8ad7e26b448e9caa4773d2357849bf80ff9e313964bcaf79cbf0201a1648')
 ]
@@ -1192,12 +1326,13 @@ def hashed_download(url, temp, digest):
     # >=2.7.9 verifies HTTPS certs itself, and, in any case, the cert
     # authenticity has only privacy (not arbitrary code execution)
     # implications, since we're checking hashes.
-    def opener():
+    def opener(using_https=True):
         opener = build_opener(HTTPSHandler())
-        # Strip out HTTPHandler to prevent MITM spoof:
-        for handler in opener.handlers:
-            if isinstance(handler, HTTPHandler):
-                opener.handlers.remove(handler)
+        if using_https:
+            # Strip out HTTPHandler to prevent MITM spoof:
+            for handler in opener.handlers:
+                if isinstance(handler, HTTPHandler):
+                    opener.handlers.remove(handler)
         return opener
 
     def read_chunks(response, chunk_size):
@@ -1207,8 +1342,9 @@ def hashed_download(url, temp, digest):
                 break
             yield chunk
 
-    response = opener().open(url)
-    path = join(temp, urlparse(url).path.split('/')[-1])
+    parsed_url = urlparse(url)
+    response = opener(using_https=parsed_url.scheme == 'https').open(url)
+    path = join(temp, parsed_url.path.split('/')[-1])
     actual_hash = sha256()
     with open(path, 'wb') as file:
         for chunk in read_chunks(response, 4096):
@@ -1221,6 +1357,24 @@ def hashed_download(url, temp, digest):
     return path
 
 
+def get_index_base():
+    """Return the URL to the dir containing the "packages" folder.
+
+    Try to wring something out of PIP_INDEX_URL, if set. Hack "/simple" off the
+    end if it's there; that is likely to give us the right dir.
+
+    """
+    env_var = environ.get('PIP_INDEX_URL', '').rstrip('/')
+    if env_var:
+        SIMPLE = '/simple'
+        if env_var.endswith(SIMPLE):
+            return env_var[:-len(SIMPLE)]
+        else:
+            return env_var
+    else:
+        return DEFAULT_INDEX_BASE
+
+
 def main():
     pip_version = StrictVersion(check_output(['pip', '--version'])
                                 .decode('utf-8').split()[1])
@@ -1228,11 +1382,13 @@ def main():
     if pip_version >= min_pip_version:
         return 0
     has_pip_cache = pip_version >= StrictVersion('6.0')
-
+    index_base = get_index_base()
     temp = mkdtemp(prefix='pipstrap-')
     try:
-        downloads = [hashed_download(url, temp, digest)
-                     for url, digest in PACKAGES]
+        downloads = [hashed_download(index_base + '/packages/' + path,
+                                     temp,
+                                     digest)
+                     for path, digest in PACKAGES]
         check_output('pip install --no-index --no-deps -U ' +
                      # Disable cache since we're not using it and it otherwise
                      # sometimes throws permission warnings:
@@ -1303,6 +1459,12 @@ UNLIKELY_EOF
 
     say "Installation succeeded."
   fi
+
+  if [ "$INSTALL_ONLY" = 1 ]; then
+    say "Certbot is installed."
+    exit 0
+  fi
+
   "$VENV_BIN/letsencrypt" "$@"
 
 else
@@ -1312,9 +1474,10 @@ else
   # upgrading. Phase 1 checks the version of the latest release of
   # certbot-auto (which is always the same as that of the certbot
   # package). Phase 2 checks the version of the locally installed certbot.
+  export PHASE_1_VERSION="$LE_AUTO_VERSION"
 
   if [ ! -f "$VENV_BIN/letsencrypt" ]; then
-    if [ -z "$OLD_VENV_PATH" -o ! -f "$OLD_VENV_PATH/bin/letsencrypt" ]; then
+    if ! OldVenvExists; then
       if [ "$HELP" = 1 ]; then
         echo "$USAGE"
         exit 0
@@ -1346,16 +1509,22 @@ On failure, return non-zero.
 
 """
 
-from __future__ import print_function
+from __future__ import print_function, unicode_literals
 
 from distutils.version import LooseVersion
 from json import loads
 from os import devnull, environ
 from os.path import dirname, join
 import re
+import ssl
 from subprocess import check_call, CalledProcessError
 from sys import argv, exit
-from urllib2 import build_opener, HTTPHandler, HTTPSHandler, HTTPError
+try:
+    from urllib2 import build_opener, HTTPHandler, HTTPSHandler
+    from urllib2 import HTTPError, URLError
+except ImportError:
+    from urllib.request import build_opener, HTTPHandler, HTTPSHandler
+    from urllib.error import HTTPError, URLError
 
 PUBLIC_KEY = environ.get('LE_AUTO_PUBLIC_KEY', """-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA6MR8W/galdxnpGqBsYbq
@@ -1377,8 +1546,11 @@ class HttpsGetter(object):
     def __init__(self):
         """Build an HTTPS opener."""
         # Based on pip 1.4.1's URLOpener
-        # This verifies certs on only Python >=2.7.9.
-        self._opener = build_opener(HTTPSHandler())
+        # This verifies certs on only Python >=2.7.9, and when NO_CERT_VERIFY isn't set.
+        if environ.get('NO_CERT_VERIFY') == '1' and hasattr(ssl, 'SSLContext'):
+            self._opener = build_opener(HTTPSHandler(context=cert_none_context()))
+        else:
+            self._opener = build_opener(HTTPSHandler())
         # Strip out HTTPHandler to prevent MITM spoof:
         for handler in self._opener.handlers:
             if isinstance(handler, HTTPHandler):
@@ -1391,14 +1563,16 @@ class HttpsGetter(object):
 
         """
         try:
-            return self._opener.open(url).read()
+            # socket module docs say default timeout is None: that is, no
+            # timeout
+            return self._opener.open(url, timeout=30).read()
         except (HTTPError, IOError) as exc:
             raise ExpectedError("Couldn't download %s." % url, exc)
 
 
 def write(contents, dir, filename):
     """Write something to a file in a certain directory."""
-    with open(join(dir, filename), 'w') as file:
+    with open(join(dir, filename), 'wb') as file:
         file.write(contents)
 
 
@@ -1406,13 +1580,13 @@ def latest_stable_version(get):
     """Return the latest stable release of letsencrypt."""
     metadata = loads(get(
         environ.get('LE_AUTO_JSON_URL',
-                    'https://pypi.python.org/pypi/certbot/json')))
+                    'https://pypi.python.org/pypi/certbot/json')).decode('UTF-8'))
     # metadata['info']['version'] actually returns the latest of any kind of
     # release release, contrary to https://wiki.python.org/moin/PyPIJSON.
     # The regex is a sufficient regex for picking out prereleases for most
     # packages, LE included.
     return str(max(LooseVersion(r) for r
-                   in metadata['releases'].iterkeys()
+                   in metadata['releases'].keys()
                    if re.match('^[0-9.]+$', r)))
 
 
@@ -1429,7 +1603,7 @@ def verified_new_le_auto(get, tag, temp_dir):
         'letsencrypt-auto-source/') % tag
     write(get(le_auto_dir + 'letsencrypt-auto'), temp_dir, 'letsencrypt-auto')
     write(get(le_auto_dir + 'letsencrypt-auto.sig'), temp_dir, 'letsencrypt-auto.sig')
-    write(PUBLIC_KEY, temp_dir, 'public_key.pem')
+    write(PUBLIC_KEY.encode('UTF-8'), temp_dir, 'public_key.pem')
     try:
         with open(devnull, 'w') as dev_null:
             check_call(['openssl', 'dgst', '-sha256', '-verify',
@@ -1442,6 +1616,14 @@ def verified_new_le_auto(get, tag, temp_dir):
     except CalledProcessError as exc:
         raise ExpectedError("Couldn't verify signature of downloaded "
                             "certbot-auto.", exc)
+
+
+def cert_none_context():
+    """Create a SSLContext object to not check hostname."""
+    # PROTOCOL_TLS isn't available before 2.7.13 but this code is for 2.7.9+, so use this.
+    context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+    context.verify_mode = ssl.CERT_NONE
+    return context
 
 
 def main():
@@ -1465,8 +1647,10 @@ if __name__ == '__main__':
 
 UNLIKELY_EOF
     # ---------------------------------------------------------------------------
-    DeterminePythonVersion
-    if ! REMOTE_VERSION=`"$LE_PYTHON" "$TEMP_DIR/fetch.py" --latest-version` ; then
+    DeterminePythonVersion "NOCRASH"
+    if [ "$PYVER" -lt "$MIN_PYVER" ]; then
+      error "WARNING: couldn't find Python $MIN_PYTHON_VERSION+ to check for updates."
+    elif ! REMOTE_VERSION=`"$LE_PYTHON" "$TEMP_DIR/fetch.py" --latest-version` ; then
       error "WARNING: unable to check for updates."
     elif [ "$LE_AUTO_VERSION" != "$REMOTE_VERSION" ]; then
       say "Upgrading certbot-auto $LE_AUTO_VERSION to $REMOTE_VERSION..."
@@ -1491,5 +1675,5 @@ UNLIKELY_EOF
     fi  # A newer version is available.
   fi  # Self-upgrading is allowed.
 
-  "$0" --le-auto-phase2 "$@"
+  RerunWithArgs --le-auto-phase2 "$@"
 fi

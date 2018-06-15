@@ -49,6 +49,21 @@ def renewal_file_for_certname(config, certname):
             "{1}).".format(certname, path))
     return path
 
+
+def cert_path_for_cert_name(config, cert_name):
+    """ If `--cert-name` was specified, but you need a value for `--cert-path`.
+
+    :param `configuration.NamespaceConfig` config: parsed command line arguments
+    :param str cert_name: cert name.
+
+    """
+    cert_name_implied_conf = renewal_file_for_certname(config, cert_name)
+    fullchain_path = configobj.ConfigObj(cert_name_implied_conf)["fullchain"]
+    with open(fullchain_path) as f:
+        cert_path = (fullchain_path, f.read())
+    return cert_path
+
+
 def config_with_defaults(config=None):
     """Merge supplied config, if provided, on top of builtin defaults."""
     defaults_copy = configobj.ConfigObj(constants.RENEWER_DEFAULTS)
@@ -246,7 +261,7 @@ def _relpath_from_file(archive_dir, from_file):
     """Path to a directory from a file"""
     return os.path.relpath(archive_dir, os.path.dirname(from_file))
 
-def _full_archive_path(config_obj, cli_config, lineagename):
+def full_archive_path(config_obj, cli_config, lineagename):
     """Returns the full archive path for a lineagename
 
     Uses cli_config to determine archive path if not available from config_obj.
@@ -271,7 +286,7 @@ def delete_files(config, certname):
     """
     renewal_filename = renewal_file_for_certname(config, certname)
     # file exists
-    full_default_archive_dir = _full_archive_path(None, config, certname)
+    full_default_archive_dir = full_archive_path(None, config, certname)
     full_default_live_dir = _full_live_path(config, certname)
     try:
         renewal_config = configobj.ConfigObj(renewal_filename)
@@ -323,7 +338,7 @@ def delete_files(config, certname):
 
     # archive directory
     try:
-        archive_path = _full_archive_path(renewal_config, config, certname)
+        archive_path = full_archive_path(renewal_config, config, certname)
         shutil.rmtree(archive_path)
         logger.debug("Removed %s", archive_path)
     except OSError:
@@ -402,7 +417,7 @@ class RenewableCert(object):
         conf_version = self.configuration.get("version")
         if (conf_version is not None and
                 util.get_strict_version(conf_version) > CURRENT_VERSION):
-            logger.warning(
+            logger.info(
                 "Attempting to parse the version %s renewal configuration "
                 "file found at %s with version %s of Certbot. This might not "
                 "work.", conf_version, config_filename, certbot.__version__)
@@ -450,7 +465,7 @@ class RenewableCert(object):
     @property
     def archive_dir(self):
         """Returns the default or specified archive directory"""
-        return _full_archive_path(self.configuration,
+        return full_archive_path(self.configuration,
             self.cli_config, self.lineagename)
 
     def relative_archive_dir(self, from_file):
@@ -905,10 +920,10 @@ class RenewableCert(object):
         :rtype: bool
 
         """
-        return ("autorenew" not in self.configuration or
-                self.configuration.as_bool("autorenew"))
+        return ("autorenew" not in self.configuration["renewalparams"] or
+                self.configuration["renewalparams"].as_bool("autorenew"))
 
-    def should_autorenew(self, interactive=False):
+    def should_autorenew(self):
         """Should we now try to autorenew the most recent cert version?
 
         This is a policy question and does not only depend on whether
@@ -919,16 +934,12 @@ class RenewableCert(object):
         Note that this examines the numerically most recent cert version,
         not the currently deployed version.
 
-        :param bool interactive: set to True to examine the question
-            regardless of whether the renewal configuration allows
-            automated renewal (for interactive use). Default False.
-
         :returns: whether an attempt should now be made to autorenew the
             most current cert version in this lineage
         :rtype: bool
 
         """
-        if interactive or self.autorenewal_is_enabled():
+        if self.autorenewal_is_enabled():
             # Consider whether to attempt to autorenew this cert now
 
             # Renewals on the basis of revocation
@@ -992,7 +1003,7 @@ class RenewableCert(object):
         # lineagename will now potentially be modified based on which
         # renewal configuration file could actually be created
         lineagename = lineagename_for_filename(config_filename)
-        archive = _full_archive_path(None, cli_config, lineagename)
+        archive = full_archive_path(None, cli_config, lineagename)
         live_dir = _full_live_path(cli_config, lineagename)
         if os.path.exists(archive):
             raise errors.CertStorageError(
@@ -1038,6 +1049,9 @@ class RenewableCert(object):
                     "`cert.pem`     : will break many server configurations, and "
                                         "should not be used\n"
                     "                 without reading further documentation (see link below).\n\n"
+                    "WARNING: DO NOT MOVE THESE FILES!\n"
+                    "         Certbot expects these files to remain in this location in order\n"
+                    "         to function properly!\n\n"
                     "We recommend not moving these files. For more information, see the Certbot\n"
                     "User Guide at https://certbot.eff.org/docs/using.html#where-are-my-"
                                         "certificates.\n")

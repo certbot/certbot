@@ -7,12 +7,11 @@ PLUGINS="certbot-apache certbot-nginx"
 PYTHON=$(command -v python2.7 || command -v python27 || command -v python2 || command -v python)
 TEMP_DIR=$(mktemp -d)
 VERSION=$(letsencrypt-auto-source/version.py)
+export VENV_ARGS="-p $PYTHON"
 
 # setup venv
-virtualenv --no-site-packages -p $PYTHON --setuptools venv
+tools/_venv_common.sh --requirement letsencrypt-auto-source/pieces/dependency-requirements.txt
 . ./venv/bin/activate
-pip install -U pip
-pip install -U setuptools
 
 # build sdists
 for pkg_dir in acme . $PLUGINS; do

@@ -10,20 +10,21 @@ import unittest
 from six.moves import http_client  # pylint: disable=import-error
 from six.moves import socketserver  # type: ignore  # pylint: disable=import-error
 
+from OpenSSL import SSL # type: ignore # https://github.com/python/typeshed/issues/2052
+import josepy as jose
 import mock
 import requests
 
 from acme import challenges
 from acme import crypto_util
 from acme import errors
-from acme import jose
 from acme import test_util
+from acme.magic_typing import Set # pylint: disable=unused-import, no-name-in-module
 
 
 class TLSServerTest(unittest.TestCase):
     """Tests for acme.standalone.TLSServer."""
 
-    _multiprocess_can_split_ = True
 
     def test_bind(self):  # pylint: disable=no-self-use
         from acme.standalone import TLSServer
@@ -42,7 +43,6 @@ class TLSServerTest(unittest.TestCase):
 class TLSSNI01ServerTest(unittest.TestCase):
     """Test for acme.standalone.TLSSNI01Server."""
 
-    _multiprocess_can_split_ = True
 
     def setUp(self):
         self.certs = {b'localhost': (
@@ -70,12 +70,11 @@ class TLSSNI01ServerTest(unittest.TestCase):
 class HTTP01ServerTest(unittest.TestCase):
     """Tests for acme.standalone.HTTP01Server."""
 
-    _multiprocess_can_split_ = True
 
     def setUp(self):
         self.account_key = jose.JWK.load(
             test_util.load_vector('rsa1024_key.pem'))
-        self.resources = set()
+        self.resources = set() # type: Set
 
         from acme.standalone import HTTP01Server
         self.server = HTTP01Server(('', 0), resources=self.resources)
@@ -121,10 +120,65 @@ class HTTP01ServerTest(unittest.TestCase):
         self.assertFalse(self._test_http01(add=False))
 
 
+@unittest.skipUnless(
+        hasattr(SSL.Connection, "set_alpn_protos") and
+        hasattr(SSL.Context, "set_alpn_select_callback"),
+        "pyOpenSSL too old")
+class TLSALPN01ServerTest(unittest.TestCase):
+    """Test for acme.standalone.TLSALPN01Server."""
+
+    def setUp(self):
+        self.certs = {b'localhost': (
+            test_util.load_pyopenssl_private_key('rsa2048_key.pem'),
+            test_util.load_cert('rsa2048_cert.pem'),
+        )}
+        # Use different certificate for challenge.
+        self.challenge_certs = {b'localhost': (
+            test_util.load_pyopenssl_private_key('rsa1024_key.pem'),
+            test_util.load_cert('rsa1024_cert.pem'),
+        )}
+        from acme.standalone import TLSALPN01Server
+        self.server = TLSALPN01Server(("", 0), certs=self.certs,
+                challenge_certs=self.challenge_certs)
+        # pylint: disable=no-member
+        self.thread = threading.Thread(target=self.server.serve_forever)
+        self.thread.start()
+
+    def tearDown(self):
+        self.server.shutdown()  # pylint: disable=no-member
+        self.thread.join()
+
+    #TODO: This is not implemented yet, see comments in standalone.py
+    #def test_certs(self):
+    #    host, port = self.server.socket.getsockname()[:2]
+    #    cert = crypto_util.probe_sni(
+    #        b'localhost', host=host, port=port, timeout=1)
+    #    # Expect normal cert when connecting without ALPN.
+    #    self.assertEqual(jose.ComparableX509(cert),
+    #                     jose.ComparableX509(self.certs[b'localhost'][1]))
+
+    def test_challenge_certs(self):
+        host, port = self.server.socket.getsockname()[:2]
+        cert = crypto_util.probe_sni(
+            b'localhost', host=host, port=port, timeout=1,
+            alpn_protocols=[b"acme-tls/1"])
+        #  Expect challenge cert when connecting with ALPN.
+        self.assertEqual(
+                jose.ComparableX509(cert),
+                jose.ComparableX509(self.challenge_certs[b'localhost'][1])
+        )
+
+    def test_bad_alpn(self):
+        host, port = self.server.socket.getsockname()[:2]
+        with self.assertRaises(errors.Error):
+            crypto_util.probe_sni(
+                b'localhost', host=host, port=port, timeout=1,
+                alpn_protocols=[b"bad-alpn"])
+
+
 class BaseDualNetworkedServersTest(unittest.TestCase):
     """Test for acme.standalone.BaseDualNetworkedServers."""
 
-    _multiprocess_can_split_ = True
 
     class SingleProtocolServer(socketserver.TCPServer):
         """Server that only serves on a single protocol. FreeBSD has this behavior for AF_INET6."""
@@ -174,7 +228,6 @@ class BaseDualNetworkedServersTest(unittest.TestCase):
 class TLSSNI01DualNetworkedServersTest(unittest.TestCase):
     """Test for acme.standalone.TLSSNI01DualNetworkedServers."""
 
-    _multiprocess_can_split_ = True
 
     def setUp(self):
         self.certs = {b'localhost': (
@@ -202,12 +255,11 @@ class TLSSNI01DualNetworkedServersTest(unittest.TestCase):
 class HTTP01DualNetworkedServersTest(unittest.TestCase):
     """Tests for acme.standalone.HTTP01DualNetworkedServers."""
 
-    _multiprocess_can_split_ = True
 
     def setUp(self):
         self.account_key = jose.JWK.load(
             test_util.load_vector('rsa1024_key.pem'))
-        self.resources = set()
+        self.resources = set() # type: Set
 
         from acme.standalone import HTTP01DualNetworkedServers
         self.servers = HTTP01DualNetworkedServers(('', 0), resources=self.resources)
@@ -254,7 +306,6 @@ class HTTP01DualNetworkedServersTest(unittest.TestCase):
 class TestSimpleTLSSNI01Server(unittest.TestCase):
     """Tests for acme.standalone.simple_tls_sni_01_server."""
 
-    _multiprocess_can_split_ = True
 
     def setUp(self):
         # mirror ../examples/standalone

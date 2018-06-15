@@ -31,7 +31,7 @@ class AuthenticatorTest(unittest.TestCase, dns_test_common.BaseAuthenticatorTest
         self.auth._change_txt_record.assert_called_once_with("UPSERT",
                                                              '_acme-challenge.' + DOMAIN,
                                                              mock.ANY)
-        self.auth._wait_for_change.assert_called_once()
+        self.assertEqual(self.auth._wait_for_change.call_count, 1)
 
     def test_perform_no_credentials_error(self):
         self.auth._change_txt_record = mock.MagicMock(side_effect=NoCredentialsError)
@@ -183,7 +183,50 @@ class ClientTest(unittest.TestCase):
 
         self.client._change_txt_record("FOO", DOMAIN, "foo")
 
-        self.client.r53.change_resource_record_sets.assert_called_once()
+        call_count = self.client.r53.change_resource_record_sets.call_count
+        self.assertEqual(call_count, 1)
+
+    def test_change_txt_record_delete(self):
+        self.client._find_zone_id_for_domain = mock.MagicMock()
+        self.client.r53.change_resource_record_sets = mock.MagicMock(
+            return_value={"ChangeInfo": {"Id": 1}})
+
+        validation = "some-value"
+        validation_record = {"Value": '"{0}"'.format(validation)}
+        self.client._resource_records[DOMAIN] = [validation_record]
+
+        self.client._change_txt_record("DELETE", DOMAIN, validation)
+
+        call_count = self.client.r53.change_resource_record_sets.call_count
+        self.assertEqual(call_count, 1)
+        call_args = self.client.r53.change_resource_record_sets.call_args_list[0][1]
+        call_args_batch = call_args["ChangeBatch"]["Changes"][0]
+        self.assertEqual(call_args_batch["Action"], "DELETE")
+        self.assertEqual(
+            call_args_batch["ResourceRecordSet"]["ResourceRecords"],
+            [validation_record])
+
+    def test_change_txt_record_multirecord(self):
+        self.client._find_zone_id_for_domain = mock.MagicMock()
+        self.client._get_validation_rrset = mock.MagicMock()
+        self.client._resource_records[DOMAIN] = [
+            {"Value": "\"pre-existing-value\""},
+            {"Value": "\"pre-existing-value-two\""},
+        ]
+        self.client.r53.change_resource_record_sets = mock.MagicMock(
+            return_value={"ChangeInfo": {"Id": 1}})
+
+        self.client._change_txt_record("DELETE", DOMAIN, "pre-existing-value")
+
+        call_count = self.client.r53.change_resource_record_sets.call_count
+        call_args = self.client.r53.change_resource_record_sets.call_args_list[0][1]
+        call_args_batch = call_args["ChangeBatch"]["Changes"][0]
+        self.assertEqual(call_args_batch["Action"], "UPSERT")
+        self.assertEqual(
+            call_args_batch["ResourceRecordSet"]["ResourceRecords"],
+            [{"Value": "\"pre-existing-value-two\""}])
+
+        self.assertEqual(call_count, 1)
 
     def test_wait_for_change(self):
         self.client.r53.get_change = mock.MagicMock(
@@ -192,7 +235,7 @@ class ClientTest(unittest.TestCase):
 
         self.client._wait_for_change(1)
 
-        self.client.r53.get_change.assert_called()
+        self.assertTrue(self.client.r53.get_change.called)
 
 
 if __name__ == "__main__":

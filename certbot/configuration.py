@@ -65,8 +65,12 @@ class NamespaceConfig(object):
 
     @property
     def accounts_dir(self):  # pylint: disable=missing-docstring
+        return self.accounts_dir_for_server_path(self.server_path)
+
+    def accounts_dir_for_server_path(self, server_path):
+        """Path to accounts directory based on server_path"""
         return os.path.join(
-            self.namespace.config_dir, constants.ACCOUNTS_DIR, self.server_path)
+            self.namespace.config_dir, constants.ACCOUNTS_DIR, server_path)
 
     @property
     def backup_dir(self):  # pylint: disable=missing-docstring
@@ -107,6 +111,30 @@ class NamespaceConfig(object):
     def renewal_configs_dir(self):  # pylint: disable=missing-docstring
         return os.path.join(
             self.namespace.config_dir, constants.RENEWAL_CONFIGS_DIR)
+
+    @property
+    def renewal_hooks_dir(self):
+        """Path to directory with hooks to run with the renew subcommand."""
+        return os.path.join(self.namespace.config_dir,
+                            constants.RENEWAL_HOOKS_DIR)
+
+    @property
+    def renewal_pre_hooks_dir(self):
+        """Path to the pre-hook directory for the renew subcommand."""
+        return os.path.join(self.renewal_hooks_dir,
+                            constants.RENEWAL_PRE_HOOKS_DIR)
+
+    @property
+    def renewal_deploy_hooks_dir(self):
+        """Path to the deploy-hook directory for the renew subcommand."""
+        return os.path.join(self.renewal_hooks_dir,
+                            constants.RENEWAL_DEPLOY_HOOKS_DIR)
+
+    @property
+    def renewal_post_hooks_dir(self):
+        """Path to the post-hook directory for the renew subcommand."""
+        return os.path.join(self.renewal_hooks_dir,
+                            constants.RENEWAL_POST_HOOKS_DIR)
 
 
 def check_config_sanity(config):

@@ -1,3 +1,4 @@
+
 """Tests for certbot.cert_manager."""
 # pylint: disable=protected-access
 import os
@@ -107,16 +108,45 @@ class UpdateLiveSymlinksTest(BaseCertManagerTest):
 class DeleteTest(storage_test.BaseRenewableCertTest):
     """Tests for certbot.cert_manager.delete
     """
+
+    def _call(self):
+        from certbot import cert_manager
+        cert_manager.delete(self.config)
+
     @test_util.patch_get_utility()
     @mock.patch('certbot.cert_manager.lineage_for_certname')
     @mock.patch('certbot.storage.delete_files')
-    def test_delete(self, mock_delete_files, mock_lineage_for_certname, unused_get_utility):
+    def test_delete_from_config(self, mock_delete_files, mock_lineage_for_certname,
+        unused_get_utility):
         """Test delete"""
         mock_lineage_for_certname.return_value = self.test_rc
         self.config.certname = "example.org"
-        from certbot import cert_manager
-        cert_manager.delete(self.config)
-        self.assertTrue(mock_delete_files.called)
+        self._call()
+        mock_delete_files.assert_called_once_with(self.config, "example.org")
+
+    @test_util.patch_get_utility()
+    @mock.patch('certbot.cert_manager.lineage_for_certname')
+    @mock.patch('certbot.storage.delete_files')
+    def test_delete_interactive_single(self, mock_delete_files, mock_lineage_for_certname,
+        mock_util):
+        """Test delete"""
+        mock_lineage_for_certname.return_value = self.test_rc
+        mock_util().checklist.return_value = (display_util.OK, ["example.org"])
+        self._call()
+        mock_delete_files.assert_called_once_with(self.config, "example.org")
+
+    @test_util.patch_get_utility()
+    @mock.patch('certbot.cert_manager.lineage_for_certname')
+    @mock.patch('certbot.storage.delete_files')
+    def test_delete_interactive_multiple(self, mock_delete_files, mock_lineage_for_certname,
+        mock_util):
+        """Test delete"""
+        mock_lineage_for_certname.return_value = self.test_rc
+        mock_util().checklist.return_value = (display_util.OK, ["example.org", "other.org"])
+        self._call()
+        mock_delete_files.assert_any_call(self.config, "example.org")
+        mock_delete_files.assert_any_call(self.config, "other.org")
+        self.assertEqual(mock_delete_files.call_count, 2)
 
 
 class CertificatesTest(BaseCertManagerTest):
@@ -186,11 +216,12 @@ class CertificatesTest(BaseCertManagerTest):
         cert.is_test_cert = False
         parsed_certs = [cert]
 
+        mock_config = mock.MagicMock(certname=None, lineagename=None)
+        # pylint: disable=protected-access
+
         # pylint: disable=protected-access
         get_report = lambda: cert_manager._report_human_readable(mock_config, parsed_certs)
 
-        mock_config = mock.MagicMock(certname=None, lineagename=None)
-        # pylint: disable=protected-access
         out = get_report()
         self.assertTrue("INVALID: EXPIRED" in out)
 
@@ -346,9 +377,8 @@ class RenameLineageTest(BaseCertManagerTest):
         self.assertRaises(errors.Error, self._call, self.config)
 
         mock_renewal_conf_files.return_value = ["one.conf"]
-        util_mock = mock.Mock()
+        util_mock = mock_get_utility()
         util_mock.menu.return_value = (display_util.CANCEL, 0)
-        mock_get_utility.return_value = util_mock
         self.assertRaises(errors.Error, self._call, self.config)
 
         util_mock.menu.return_value = (display_util.OK, -1)
@@ -359,14 +389,11 @@ class RenameLineageTest(BaseCertManagerTest):
         self.config.certname = "one"
         self.config.new_certname = None
 
-        util_mock = mock.Mock()
+        util_mock = mock_get_utility()
         util_mock.input.return_value = (display_util.CANCEL, "name")
-        mock_get_utility.return_value = util_mock
         self.assertRaises(errors.Error, self._call, self.config)
 
-        util_mock = mock.Mock()
         util_mock.input.return_value = (display_util.OK, None)
-        mock_get_utility.return_value = util_mock
         self.assertRaises(errors.Error, self._call, self.config)
 
     @test_util.patch_get_utility()
@@ -393,9 +420,8 @@ class RenameLineageTest(BaseCertManagerTest):
     def test_rename_cert_interactive_certname(self, mock_check, mock_get_utility):
         mock_check.return_value = True
         self.config.certname = None
-        util_mock = mock.Mock()
+        util_mock = mock_get_utility()
         util_mock.menu.return_value = (display_util.OK, 0)
-        mock_get_utility.return_value = util_mock
         self._call(self.config)
         from certbot import cert_manager
         updated_lineage = cert_manager.lineage_for_certname(self.config, self.config.new_certname)
@@ -451,6 +477,194 @@ class DuplicativeCertsTest(storage_test.BaseRenewableCertTest):
         result = find_duplicative_certs(
             self.config, ['example.com', 'something.new'])
         self.assertEqual(result, (None, None))
+
+
+class CertPathToLineageTest(storage_test.BaseRenewableCertTest):
+    """Tests for certbot.cert_manager.cert_path_to_lineage"""
+
+    def setUp(self):
+        super(CertPathToLineageTest, self).setUp()
+        self.config_file.write()
+        self._write_out_ex_kinds()
+        self.fullchain = os.path.join(self.config.config_dir, 'live', 'example.org',
+                'fullchain.pem')
+        self.config.cert_path = (self.fullchain, '')
+
+    def _call(self, cli_config):
+        from certbot.cert_manager import cert_path_to_lineage
+        return cert_path_to_lineage(cli_config)
+
+    def _archive_files(self, cli_config, filetype):
+        from certbot.cert_manager import _archive_files
+        return _archive_files(cli_config, filetype)
+
+    def test_basic_match(self):
+        self.assertEqual('example.org', self._call(self.config))
+
+    def test_no_match_exists(self):
+        bad_test_config = self.config
+        bad_test_config.cert_path = os.path.join(self.config.config_dir, 'live',
+                'SailorMoon', 'fullchain.pem')
+        self.assertRaises(errors.Error, self._call, bad_test_config)
+
+    @mock.patch('certbot.cert_manager._acceptable_matches')
+    def test_options_fullchain(self, mock_acceptable_matches):
+        mock_acceptable_matches.return_value = [lambda x: x.fullchain_path]
+        self.config.fullchain_path = self.fullchain
+        self.assertEqual('example.org', self._call(self.config))
+
+    @mock.patch('certbot.cert_manager._acceptable_matches')
+    def test_options_cert_path(self, mock_acceptable_matches):
+        mock_acceptable_matches.return_value = [lambda x: x.cert_path]
+        test_cert_path = os.path.join(self.config.config_dir, 'live', 'example.org',
+                'cert.pem')
+        self.config.cert_path = (test_cert_path, '')
+        self.assertEqual('example.org', self._call(self.config))
+
+    @mock.patch('certbot.cert_manager._acceptable_matches')
+    def test_options_archive_cert(self, mock_acceptable_matches):
+        # Also this and the next test check that the regex of _archive_files is working.
+        self.config.cert_path = (os.path.join(self.config.config_dir, 'archive', 'example.org',
+            'cert11.pem'), '')
+        mock_acceptable_matches.return_value = [lambda x: self._archive_files(x, 'cert')]
+        self.assertEqual('example.org', self._call(self.config))
+
+    @mock.patch('certbot.cert_manager._acceptable_matches')
+    def test_options_archive_fullchain(self, mock_acceptable_matches):
+        self.config.cert_path = (os.path.join(self.config.config_dir, 'archive',
+            'example.org', 'fullchain11.pem'), '')
+        mock_acceptable_matches.return_value = [lambda x:
+                self._archive_files(x, 'fullchain')]
+        self.assertEqual('example.org', self._call(self.config))
+
+
+class MatchAndCheckOverlaps(storage_test.BaseRenewableCertTest):
+    """Tests for certbot.cert_manager.match_and_check_overlaps w/o overlapping archive dirs."""
+    # A test with real overlapping archive dirs can be found in tests/boulder_integration.sh
+    def setUp(self):
+        super(MatchAndCheckOverlaps, self).setUp()
+        self.config_file.write()
+        self._write_out_ex_kinds()
+        self.fullchain = os.path.join(self.config.config_dir, 'live', 'example.org',
+                'fullchain.pem')
+        self.config.cert_path = (self.fullchain, '')
+
+    def _call(self, cli_config, acceptable_matches, match_func, rv_func):
+        from certbot.cert_manager import match_and_check_overlaps
+        return match_and_check_overlaps(cli_config, acceptable_matches, match_func, rv_func)
+
+    def test_basic_match(self):
+        from certbot.cert_manager import _acceptable_matches
+        self.assertEqual(['example.org'], self._call(self.config, _acceptable_matches(),
+            lambda x: self.config.cert_path[0], lambda x: x.lineagename))
+
+    @mock.patch('certbot.cert_manager._search_lineages')
+    def test_no_matches(self, mock_search_lineages):
+        mock_search_lineages.return_value = []
+        self.assertRaises(errors.Error, self._call, self.config, None, None, None)
+
+    @mock.patch('certbot.cert_manager._search_lineages')
+    def test_too_many_matches(self, mock_search_lineages):
+        mock_search_lineages.return_value = ['spider', 'dance']
+        self.assertRaises(errors.OverlappingMatchFound, self._call, self.config, None, None, None)
+
+
+class GetCertnameTest(unittest.TestCase):
+    """Tests for certbot.cert_manager."""
+
+    def setUp(self):
+        self.get_utility_patch = test_util.patch_get_utility()
+        self.mock_get_utility = self.get_utility_patch.start()
+        self.config = mock.MagicMock()
+        self.config.certname = None
+
+    def tearDown(self):
+        self.get_utility_patch.stop()
+
+    @mock.patch('certbot.storage.renewal_conf_files')
+    @mock.patch('certbot.storage.lineagename_for_filename')
+    def test_get_certnames(self, mock_name, mock_files):
+        mock_files.return_value = ['example.com.conf']
+        mock_name.return_value = 'example.com'
+        from certbot import cert_manager
+        prompt = "Which certificate would you"
+        self.mock_get_utility().menu.return_value = (display_util.OK, 0)
+        self.assertEquals(
+            cert_manager.get_certnames(
+                self.config, "verb", allow_multiple=False), ['example.com'])
+        self.assertTrue(
+            prompt in self.mock_get_utility().menu.call_args[0][0])
+
+    @mock.patch('certbot.storage.renewal_conf_files')
+    @mock.patch('certbot.storage.lineagename_for_filename')
+    def test_get_certnames_custom_prompt(self, mock_name, mock_files):
+        mock_files.return_value = ['example.com.conf']
+        mock_name.return_value = 'example.com'
+        from certbot import cert_manager
+        prompt = "custom prompt"
+        self.mock_get_utility().menu.return_value = (display_util.OK, 0)
+        self.assertEquals(
+            cert_manager.get_certnames(
+                self.config, "verb", allow_multiple=False, custom_prompt=prompt),
+            ['example.com'])
+        self.assertEquals(self.mock_get_utility().menu.call_args[0][0],
+                          prompt)
+
+    @mock.patch('certbot.storage.renewal_conf_files')
+    @mock.patch('certbot.storage.lineagename_for_filename')
+    def test_get_certnames_user_abort(self, mock_name, mock_files):
+        mock_files.return_value = ['example.com.conf']
+        mock_name.return_value = 'example.com'
+        from certbot import cert_manager
+        self.mock_get_utility().menu.return_value = (display_util.CANCEL, 0)
+        self.assertRaises(
+            errors.Error,
+            cert_manager.get_certnames,
+            self.config, "erroring_anyway", allow_multiple=False)
+
+    @mock.patch('certbot.storage.renewal_conf_files')
+    @mock.patch('certbot.storage.lineagename_for_filename')
+    def test_get_certnames_allow_multiple(self, mock_name, mock_files):
+        mock_files.return_value = ['example.com.conf']
+        mock_name.return_value = 'example.com'
+        from certbot import cert_manager
+        prompt = "Which certificate(s) would you"
+        self.mock_get_utility().checklist.return_value = (display_util.OK,
+                                                          ['example.com'])
+        self.assertEquals(
+            cert_manager.get_certnames(
+                self.config, "verb", allow_multiple=True), ['example.com'])
+        self.assertTrue(
+            prompt in self.mock_get_utility().checklist.call_args[0][0])
+
+    @mock.patch('certbot.storage.renewal_conf_files')
+    @mock.patch('certbot.storage.lineagename_for_filename')
+    def test_get_certnames_allow_multiple_custom_prompt(self, mock_name, mock_files):
+        mock_files.return_value = ['example.com.conf']
+        mock_name.return_value = 'example.com'
+        from certbot import cert_manager
+        prompt = "custom prompt"
+        self.mock_get_utility().checklist.return_value = (display_util.OK,
+                                                          ['example.com'])
+        self.assertEquals(
+            cert_manager.get_certnames(
+                self.config, "verb", allow_multiple=True, custom_prompt=prompt),
+            ['example.com'])
+        self.assertEquals(
+            self.mock_get_utility().checklist.call_args[0][0],
+            prompt)
+
+    @mock.patch('certbot.storage.renewal_conf_files')
+    @mock.patch('certbot.storage.lineagename_for_filename')
+    def test_get_certnames_allow_multiple_user_abort(self, mock_name, mock_files):
+        mock_files.return_value = ['example.com.conf']
+        mock_name.return_value = 'example.com'
+        from certbot import cert_manager
+        self.mock_get_utility().checklist.return_value = (display_util.CANCEL, [])
+        self.assertRaises(
+            errors.Error,
+            cert_manager.get_certnames,
+            self.config, "erroring_anyway", allow_multiple=True)
 
 
 if __name__ == "__main__":

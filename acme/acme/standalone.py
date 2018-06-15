@@ -16,6 +16,7 @@ import OpenSSL
 
 from acme import challenges
 from acme import crypto_util
+from acme.magic_typing import List # pylint: disable=unused-import, no-name-in-module
 
 
 logger = logging.getLogger(__name__)
@@ -42,7 +43,14 @@ class TLSServer(socketserver.TCPServer):
 
     def _wrap_sock(self):
         self.socket = crypto_util.SSLSocket(
-            self.socket, certs=self.certs, method=self.method)
+            self.socket, cert_selection=self._cert_selection,
+            alpn_selection=getattr(self, '_alpn_selection', None),
+            method=self.method)
+
+    def _cert_selection(self, connection):
+        """Callback selecting certificate for connection."""
+        server_name = connection.get_servername()
+        return self.certs.get(server_name, None)
 
     def server_bind(self):  # pylint: disable=missing-docstring
         self._wrap_sock()
@@ -66,8 +74,8 @@ class BaseDualNetworkedServers(object):
 
     def __init__(self, ServerClass, server_address, *remaining_args, **kwargs):
         port = server_address[1]
-        self.threads = []
-        self.servers = []
+        self.threads = [] # type: List[threading.Thread]
+        self.servers = [] # type: List[ACMEServerMixin]
 
         # Must try True first.
         # Ubuntu, for example, will fail to bind to IPv4 if we've already bound
@@ -82,9 +90,22 @@ class BaseDualNetworkedServers(object):
                 new_address = (server_address[0],) + (port,) + server_address[2:]
                 new_args = (new_address,) + remaining_args
                 server = ServerClass(*new_args, **kwargs) # pylint: disable=star-args
-            except socket.error:
-                logger.debug("Failed to bind to %s:%s using %s", new_address[0],
+                logger.debug(
+                    "Successfully bound to %s:%s using %s", new_address[0],
                     new_address[1], "IPv6" if ip_version else "IPv4")
+            except socket.error:
+                if self.servers:
+                    # Already bound using IPv6.
+                    logger.debug(
+                        "Certbot wasn't able to bind to %s:%s using %s, this " +
+                        "is often expected due to the dual stack nature of " +
+                        "IPv6 socket implementations.",
+                        new_address[0], new_address[1],
+                        "IPv6" if ip_version else "IPv4")
+                else:
+                    logger.debug(
+                        "Failed to bind to %s:%s using %s", new_address[0],
+                        new_address[1], "IPv6" if ip_version else "IPv4")
             else:
                 self.servers.append(server)
                 # If two servers are set up and port 0 was passed in, ensure we always
@@ -131,6 +152,45 @@ class TLSSNI01DualNetworkedServers(BaseDualNetworkedServers):
 
     def __init__(self, *args, **kwargs):
         BaseDualNetworkedServers.__init__(self, TLSSNI01Server, *args, **kwargs)
+
+
+class BadALPNProtos(Exception):
+    """Error raised when cannot negotiate ALPN protocol."""
+    pass
+
+
+class TLSALPN01Server(TLSServer, ACMEServerMixin):
+    """TLSALPN01 Server."""
+
+    ACME_TLS_1_PROTOCOL = b"acme-tls/1"
+
+    def __init__(self, server_address, certs, challenge_certs, ipv6=False):
+        TLSServer.__init__(
+            self, server_address, BaseRequestHandlerWithLogging, certs=certs,
+            ipv6=ipv6)
+        self.challenge_certs = challenge_certs
+
+    def _cert_selection(self, connection):
+        # TODO: We would like to serve challenge cert only if asked for it via
+        # ALPN. To do this, we need to retrieve the list of protos from client
+        # hello, but this is currently impossible with openssl [0], and ALPN
+        # negotiation is done after cert selection.
+        # Therefore, currently we always return challenge cert, and terminate
+        # handshake in alpn_selection() if ALPN protos are not what we expect.
+        # [0] https://github.com/openssl/openssl/issues/4952
+        server_name = connection.get_servername()
+        logger.debug("Serving challenge cert for server name %s", server_name)
+        return self.challenge_certs.get(server_name, None)
+
+    def _alpn_selection(self, _connection, alpn_protos):
+        """Callback to select alpn protocol."""
+        if len(alpn_protos) == 1 and alpn_protos[0] == self.ACME_TLS_1_PROTOCOL:
+            logger.debug("Agreed on %s ALPN", self.ACME_TLS_1_PROTOCOL)
+            return self.ACME_TLS_1_PROTOCOL
+        # Raising an exception causes openssl to terminate handshake and
+        # send fatal tls alert.
+        logger.debug("Cannot agree on ALPN proto. Got: %s", str(alpn_protos))
+        raise BadALPNProtos("Got: %s" % str(alpn_protos))
 
 
 class BaseRequestHandlerWithLogging(socketserver.BaseRequestHandler):
@@ -189,7 +249,7 @@ class HTTP01RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
     def __init__(self, *args, **kwargs):
         self.simple_http_resources = kwargs.pop("simple_http_resources", set())
-        socketserver.BaseRequestHandler.__init__(self, *args, **kwargs)
+        BaseHTTPServer.BaseHTTPRequestHandler.__init__(self, *args, **kwargs)
 
     def log_message(self, format, *args):  # pylint: disable=redefined-builtin
         """Log arbitrary message."""
@@ -262,7 +322,7 @@ def simple_tls_sni_01_server(cli_args, forever=True):
 
     certs = {}
 
-    _, hosts, _ = next(os.walk('.'))
+    _, hosts, _ = next(os.walk('.')) # type: ignore # https://github.com/python/mypy/issues/465
     for host in hosts:
         with open(os.path.join(host, "cert.pem")) as cert_file:
             cert_contents = cert_file.read()

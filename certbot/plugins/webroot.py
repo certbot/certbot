@@ -10,14 +10,19 @@ import six
 import zope.component
 import zope.interface
 
-from acme import challenges
+from acme import challenges  # pylint: disable=unused-import
+# pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Dict, Set, DefaultDict, List
+# pylint: enable=unused-import, no-name-in-module
 
+from certbot import achallenges  # pylint: disable=unused-import
 from certbot import cli
 from certbot import errors
 from certbot import interfaces
 from certbot.display import util as display_util
 from certbot.display import ops
 from certbot.plugins import common
+from certbot.plugins import util
 
 
 logger = logging.getLogger(__name__)
@@ -63,8 +68,11 @@ to serve all files under specified web root ({0})."""
 
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
-        self.full_roots = {}
-        self.performed = collections.defaultdict(set)
+        self.full_roots = {}  # type: Dict[str, str]
+        self.performed = collections.defaultdict(set) \
+        # type: DefaultDict[str, Set[achallenges.KeyAuthorizationAnnotatedChallenge]]
+        # stack of dirs successfully created by this authenticator
+        self._created_dirs = []  # type: List[str]
 
     def prepare(self):  # pylint: disable=missing-docstring
         pass
@@ -102,10 +110,14 @@ to serve all files under specified web root ({0})."""
         webroot = None
 
         while webroot is None:
-            webroot = self._prompt_with_webroot_list(domain, known_webroots)
-
-            if webroot is None:
-                webroot = self._prompt_for_new_webroot(domain)
+            if known_webroots:
+                # Only show the menu if we have options for it
+                webroot = self._prompt_with_webroot_list(domain, known_webroots)
+                if webroot is None:
+                    webroot = self._prompt_for_new_webroot(domain)
+            else:
+                # Allow prompt to raise PluginError instead of looping forever
+                webroot = self._prompt_for_new_webroot(domain, True)
 
         return webroot
 
@@ -125,13 +137,18 @@ to serve all files under specified web root ({0})."""
             else:  # code == display_util.OK
                 return None if index == 0 else known_webroots[index - 1]
 
-    def _prompt_for_new_webroot(self, domain):
+    def _prompt_for_new_webroot(self, domain, allowraise=False):
         code, webroot = ops.validated_directory(
             _validate_webroot,
             "Input the webroot for {0}:".format(domain),
             force_interactive=True)
         if code == display_util.CANCEL:
-            return None
+            if not allowraise:
+                return None
+            else:
+                raise errors.PluginError(
+                    "Every requested domain must have a "
+                    "webroot when using the webroot plugin.")
         else:  # code == display_util.OK
             return _validate_webroot(webroot)
 
@@ -144,7 +161,6 @@ to serve all files under specified web root ({0})."""
                 " --help webroot for examples.")
         for name, path in path_map.items():
             self.full_roots[name] = os.path.join(path, challenges.HTTP01.URI_ROOT_PATH)
-
             logger.debug("Creating root challenges validation dir at %s",
                          self.full_roots[name])
 
@@ -152,27 +168,26 @@ to serve all files under specified web root ({0})."""
             # Umask is used instead of chmod to ensure the client can also
             # run as non-root (GH #1795)
             old_umask = os.umask(0o022)
-
             try:
-                # This is coupled with the "umask" call above because
-                # os.makedirs's "mode" parameter may not always work:
-                # https://stackoverflow.com/questions/5231901/permission-problems-when-creating-a-dir-with-os-makedirs-python
-                os.makedirs(self.full_roots[name], 0o0755)
-
-                # Set owner as parent directory if possible
-                try:
-                    stat_path = os.stat(path)
-                    os.chown(self.full_roots[name], stat_path.st_uid,
-                             stat_path.st_gid)
-                except OSError as exception:
-                    logger.info("Unable to change owner and uid of webroot directory")
-                    logger.debug("Error was: %s", exception)
-
-            except OSError as exception:
-                if exception.errno != errno.EEXIST:
-                    raise errors.PluginError(
-                        "Couldn't create root for {0} http-01 "
-                        "challenge responses: {1}", name, exception)
+                stat_path = os.stat(path)
+                for prefix in sorted(util.get_prefixes(self.full_roots[name]), key=len):
+                    try:
+                        # This is coupled with the "umask" call above because
+                        # os.mkdir's "mode" parameter may not always work:
+                        # https://docs.python.org/3/library/os.html#os.mkdir
+                        os.mkdir(prefix, 0o0755)
+                        self._created_dirs.append(prefix)
+                        # Set owner as parent directory if possible
+                        try:
+                            os.chown(prefix, stat_path.st_uid, stat_path.st_gid)
+                        except OSError as exception:
+                            logger.info("Unable to change owner and uid of webroot directory")
+                            logger.debug("Error was: %s", exception)
+                    except OSError as exception:
+                        if exception.errno not in (errno.EEXIST, errno.EISDIR):
+                            raise errors.PluginError(
+                                "Couldn't create root for {0} http-01 "
+                                "challenge responses: {1}".format(name, exception))
             finally:
                 os.umask(old_umask)
 
@@ -196,7 +211,6 @@ to serve all files under specified web root ({0})."""
             os.umask(old_umask)
 
         self.performed[root_path].add(achall)
-
         return response
 
     def cleanup(self, achalls):  # pylint: disable=missing-docstring
@@ -208,16 +222,17 @@ to serve all files under specified web root ({0})."""
                 os.remove(validation_path)
                 self.performed[root_path].remove(achall)
 
-        for root_path, achalls in six.iteritems(self.performed):
-            if not achalls:
-                try:
-                    os.rmdir(root_path)
-                    logger.debug("All challenges cleaned up, removing %s",
-                                 root_path)
-                except OSError as exc:
-                    logger.info(
-                        "Unable to clean up challenge directory %s", root_path)
-                    logger.debug("Error was: %s", exc)
+        not_removed = []  # type: List[str]
+        while len(self._created_dirs) > 0:
+            path = self._created_dirs.pop()
+            try:
+                os.rmdir(path)
+            except OSError as exc:
+                not_removed.insert(0, path)
+                logger.info("Challenge directory %s was not empty, didn't remove", path)
+                logger.debug("Error was: %s", exc)
+        self._created_dirs = not_removed
+        logger.debug("All challenges cleaned up")
 
 
 class _WebrootMapAction(argparse.Action):

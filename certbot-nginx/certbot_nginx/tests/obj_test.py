@@ -14,6 +14,7 @@ class AddrTest(unittest.TestCase):
         self.addr5 = Addr.fromstring("myhost")
         self.addr6 = Addr.fromstring("80 default_server spdy")
         self.addr7 = Addr.fromstring("unix:/var/run/nginx.sock")
+        self.addr8 = Addr.fromstring("*:80 default ssl")
 
     def test_fromstring(self):
         self.assertEqual(self.addr1.get_addr(), "192.168.1.1")
@@ -46,6 +47,8 @@ class AddrTest(unittest.TestCase):
         self.assertFalse(self.addr6.ssl)
         self.assertTrue(self.addr6.default)
 
+        self.assertTrue(self.addr8.default)
+
         self.assertEqual(None, self.addr7)
 
     def test_str(self):
@@ -55,6 +58,7 @@ class AddrTest(unittest.TestCase):
         self.assertEqual(str(self.addr4), "*:80 default_server ssl")
         self.assertEqual(str(self.addr5), "myhost")
         self.assertEqual(str(self.addr6), "80 default_server")
+        self.assertEqual(str(self.addr8), "*:80 default_server ssl")
 
     def test_to_string(self):
         self.assertEqual(self.addr1.to_string(), "192.168.1.1")
@@ -77,7 +81,8 @@ class AddrTest(unittest.TestCase):
         from certbot_nginx.obj import Addr
         any_addresses = ("0.0.0.0:80 default_server ssl",
                          "80 default_server ssl",
-                         "*:80 default_server ssl")
+                         "*:80 default_server ssl",
+                         "80 default ssl")
         for first, second in itertools.combinations(any_addresses, 2):
             self.assertEqual(Addr.fromstring(first), Addr.fromstring(second))
 
@@ -143,6 +148,15 @@ class VirtualHostTest(unittest.TestCase):
             "filp",
             set([Addr.fromstring("localhost")]), False, False,
             set(['localhost']), raw4, [])
+        raw_has_hsts = [
+            ['listen', '69.50.225.155:9000'],
+            ['server_name', 'return.com'],
+            ['add_header', 'always', 'set', 'Strict-Transport-Security', '\"max-age=31536000\"'],
+        ]
+        self.vhost_has_hsts = VirtualHost(
+            "filep",
+            set([Addr.fromstring("localhost")]), False, False,
+            set(['localhost']), raw_has_hsts, [])
 
     def test_eq(self):
         from certbot_nginx.obj import Addr
@@ -162,17 +176,21 @@ class VirtualHostTest(unittest.TestCase):
                                  'enabled: False'])
         self.assertEqual(stringified, str(self.vhost1))
 
-    def test_has_redirect(self):
-        self.assertTrue(self.vhost1.has_redirect())
-        self.assertTrue(self.vhost2.has_redirect())
-        self.assertTrue(self.vhost3.has_redirect())
-        self.assertFalse(self.vhost4.has_redirect())
+    def test_has_header(self):
+        self.assertTrue(self.vhost_has_hsts.has_header('Strict-Transport-Security'))
+        self.assertFalse(self.vhost_has_hsts.has_header('Bogus-Header'))
+        self.assertFalse(self.vhost1.has_header('Strict-Transport-Security'))
+        self.assertFalse(self.vhost1.has_header('Bogus-Header'))
 
     def test_contains_list(self):
         from certbot_nginx.obj import VirtualHost
         from certbot_nginx.obj import Addr
-        from certbot_nginx.configurator import TEST_REDIRECT_BLOCK
-        test_needle = TEST_REDIRECT_BLOCK
+        from certbot_nginx.configurator import _test_block_from_block
+        test_block = [
+            ['\n    ', 'return', ' ', '301', ' ', 'https://$host$request_uri'],
+            ['\n']
+        ]
+        test_needle = _test_block_from_block(test_block)
         test_haystack = [['listen', '80'], ['root', '/var/www/html'],
             ['index', 'index.html index.htm index.nginx-debian.html'],
             ['server_name', 'two.functorkitten.xyz'], ['listen', '443 ssl'],
@@ -181,9 +199,7 @@ class VirtualHostTest(unittest.TestCase):
             ['#', ' managed by Certbot'],
             ['ssl_certificate_key', '/etc/letsencrypt/live/two.functorkitten.xyz/privkey.pem'],
             ['#', ' managed by Certbot'],
-            [['if', '($scheme', '!=', '"https")'],
-             [['return', '301', 'https://$host$request_uri']]
-            ],
+            ['return', '301', 'https://$host$request_uri'],
             ['#', ' managed by Certbot'], []]
         vhost_haystack = VirtualHost(
             "filp",

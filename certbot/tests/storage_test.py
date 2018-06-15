@@ -43,7 +43,6 @@ class BaseRenewableCertTest(test_util.ConfigTestCase):
     your test.  Check :class:`.cli_test.DuplicateCertTest` for an example.
 
     """
-    _multiprocess_can_split_ = True
 
     def setUp(self):
         from certbot import storage
@@ -159,8 +158,8 @@ class RenewableCertTests(BaseRenewableCertTest):
 
         with mock.patch("certbot.storage.logger") as mock_logger:
             storage.RenewableCert(self.config_file.filename, self.config)
-        self.assertTrue(mock_logger.warning.called)
-        self.assertTrue("version" in mock_logger.warning.call_args[0][0])
+        self.assertTrue(mock_logger.info.called)
+        self.assertTrue("version" in mock_logger.info.call_args[0][0])
 
     def test_consistent(self):
         # pylint: disable=too-many-statements,protected-access
@@ -384,8 +383,9 @@ class RenewableCertTests(BaseRenewableCertTest):
         os.unlink(self.test_rc.cert)
         self.assertRaises(errors.CertStorageError, self.test_rc.names)
 
+    @mock.patch("certbot.storage.cli")
     @mock.patch("certbot.storage.datetime")
-    def test_time_interval_judgments(self, mock_datetime):
+    def test_time_interval_judgments(self, mock_datetime, mock_cli):
         """Test should_autodeploy() and should_autorenew() on the basis
         of expiry time windows."""
         test_cert = test_util.load_vector("cert_512.pem")
@@ -400,6 +400,8 @@ class RenewableCertTests(BaseRenewableCertTest):
             f.write(test_cert)
 
         mock_datetime.timedelta = datetime.timedelta
+        mock_cli.set_by_cli.return_value = False
+        self.test_rc.configuration["renewalparams"] = {}
 
         for (current_time, interval, result) in [
                 # 2014-12-13 12:00:00+00:00 (about 5 days prior to expiry)
@@ -452,22 +454,25 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertFalse(self.test_rc.should_autodeploy())
 
     def test_autorenewal_is_enabled(self):
+        self.test_rc.configuration["renewalparams"] = {}
         self.assertTrue(self.test_rc.autorenewal_is_enabled())
-        self.test_rc.configuration["autorenew"] = "1"
+        self.test_rc.configuration["renewalparams"]["autorenew"] = "True"
         self.assertTrue(self.test_rc.autorenewal_is_enabled())
 
-        self.test_rc.configuration["autorenew"] = "0"
+        self.test_rc.configuration["renewalparams"]["autorenew"] = "False"
         self.assertFalse(self.test_rc.autorenewal_is_enabled())
 
+    @mock.patch("certbot.storage.cli")
     @mock.patch("certbot.storage.RenewableCert.ocsp_revoked")
-    def test_should_autorenew(self, mock_ocsp):
+    def test_should_autorenew(self, mock_ocsp, mock_cli):
         """Test should_autorenew on the basis of reasons other than
         expiry time window."""
         # pylint: disable=too-many-statements
+        mock_cli.set_by_cli.return_value = False
         # Autorenewal turned off
-        self.test_rc.configuration["autorenew"] = "0"
+        self.test_rc.configuration["renewalparams"] = {"autorenew": "False"}
         self.assertFalse(self.test_rc.should_autorenew())
-        self.test_rc.configuration["autorenew"] = "1"
+        self.test_rc.configuration["renewalparams"]["autorenew"] = "True"
         for kind in ALL_FOUR:
             self._write_out_kind(kind, 12)
         # Mandatory renewal on the basis of OCSP revocation
@@ -727,7 +732,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.test_rc.configuration["renewalparams"] = {}
         rp = self.test_rc.configuration["renewalparams"]
         self.assertEqual(self.test_rc.is_test_cert, False)
-        rp["server"] = "https://acme-staging.api.letsencrypt.org/directory"
+        rp["server"] = "https://acme-staging-v02.api.letsencrypt.org/directory"
         self.assertEqual(self.test_rc.is_test_cert, True)
         rp["server"] = "https://staging.someotherca.com/directory"
         self.assertEqual(self.test_rc.is_test_cert, True)
@@ -884,6 +889,25 @@ class DeleteFilesTest(BaseRenewableCertTest):
             self.config.live_dir, "example.org")))
         self.assertFalse(os.path.exists(archive_dir))
 
+class CertPathForCertNameTest(BaseRenewableCertTest):
+    """Test for certbot.storage.cert_path_for_cert_name"""
+    def setUp(self):
+        super(CertPathForCertNameTest, self).setUp()
+        self.config_file.write()
+        self._write_out_ex_kinds()
+        self.fullchain = os.path.join(self.config.config_dir, 'live', 'example.org',
+                'fullchain.pem')
+        self.config.cert_path = (self.fullchain, '')
+
+    def _call(self, cli_config, certname):
+        from certbot.storage import cert_path_for_cert_name
+        return cert_path_for_cert_name(cli_config, certname)
+
+    def test_simple_cert_name(self):
+        self.assertEqual(self._call(self.config, 'example.org'), (self.fullchain, 'fullchain'))
+
+    def test_no_such_cert_name(self):
+        self.assertRaises(errors.CertStorageError, self._call, self.config, 'fake-example.org')
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

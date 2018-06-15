@@ -1,4 +1,5 @@
 """ApacheParser is a member object of the ApacheConfigurator class."""
+import copy
 import fnmatch
 import logging
 import os
@@ -8,9 +9,8 @@ import sys
 
 import six
 
+from acme.magic_typing import Dict, List, Set  # pylint: disable=unused-import, no-name-in-module
 from certbot import errors
-
-from certbot_apache import constants
 
 logger = logging.getLogger(__name__)
 
@@ -30,86 +30,130 @@ class ApacheParser(object):
     arg_var_interpreter = re.compile(r"\$\{[^ \}]*}")
     fnmatch_chars = set(["*", "?", "\\", "[", "]"])
 
-    def __init__(self, aug, root, vhostroot, version=(2, 4)):
+    def __init__(self, aug, root, vhostroot=None, version=(2, 4),
+                 configurator=None):
         # Note: Order is important here.
 
-        # This uses the binary, so it can be done first.
-        # https://httpd.apache.org/docs/2.4/mod/core.html#define
-        # https://httpd.apache.org/docs/2.4/mod/core.html#ifdefine
-        # This only handles invocation parameters and Define directives!
-        self.parser_paths = {}
-        self.variables = {}
-        if version >= (2, 4):
-            self.update_runtime_variables()
+        # Needed for calling save() with reverter functionality that resides in
+        # AugeasConfigurator superclass of ApacheConfigurator. This resolves
+        # issues with aug.load() after adding new files / defines to parse tree
+        self.configurator = configurator
+
+        self.modules = set()  # type: Set[str]
+        self.parser_paths = {}  # type: Dict[str, List[str]]
+        self.variables = {}  # type: Dict[str, str]
 
         self.aug = aug
         # Find configuration root and make sure augeas can parse it.
         self.root = os.path.abspath(root)
         self.loc = {"root": self._find_config_root()}
-        self._parse_file(self.loc["root"])
+        self.parse_file(self.loc["root"])
 
-        self.vhostroot = os.path.abspath(vhostroot)
+        if version >= (2, 4):
+            # Look up variables from httpd and add to DOM if not already parsed
+            self.update_runtime_variables()
 
         # This problem has been fixed in Augeas 1.0
         self.standardize_excl()
 
-        # Temporarily set modules to be empty, so that find_dirs can work
-        # https://httpd.apache.org/docs/2.4/mod/core.html#ifmodule
-        # This needs to come before locations are set.
-        self.modules = set()
-        self.init_modules()
+        # Parse LoadModule directives from configuration files
+        self.parse_modules()
 
         # Set up rest of locations
         self.loc.update(self._set_locations())
 
-        # Must also attempt to parse virtual host root
-        self._parse_file(self.vhostroot + "/" +
-                         constants.os_constant("vhost_files"))
+        # list of the active include paths, before modifications
+        self.existing_paths = copy.deepcopy(self.parser_paths)
+
+        # Must also attempt to parse additional virtual host root
+        if vhostroot:
+            self.parse_file(os.path.abspath(vhostroot) + "/" +
+                            self.configurator.constant("vhost_files"))
 
         # check to see if there were unparsed define statements
         if version < (2, 4):
             if self.find_dir("Define", exclude=False):
                 raise errors.PluginError("Error parsing runtime variables")
 
-    def init_modules(self):
+    def add_include(self, main_config, inc_path):
+        """Add Include for a new configuration file if one does not exist
+
+        :param str main_config: file path to main Apache config file
+        :param str inc_path: path of file to include
+
+        """
+        if len(self.find_dir(case_i("Include"), inc_path)) == 0:
+            logger.debug("Adding Include %s to %s",
+                         inc_path, get_aug_path(main_config))
+            self.add_dir(
+                get_aug_path(main_config),
+                "Include", inc_path)
+
+            # Add new path to parser paths
+            new_dir = os.path.dirname(inc_path)
+            new_file = os.path.basename(inc_path)
+            if new_dir in self.existing_paths.keys():
+                # Add to existing path
+                self.existing_paths[new_dir].append(new_file)
+            else:
+                # Create a new path
+                self.existing_paths[new_dir] = [new_file]
+
+    def add_mod(self, mod_name):
+        """Shortcut for updating parser modules."""
+        if mod_name + "_module" not in self.modules:
+            self.modules.add(mod_name + "_module")
+        if "mod_" + mod_name + ".c" not in self.modules:
+            self.modules.add("mod_" + mod_name + ".c")
+
+    def reset_modules(self):
+        """Reset the loaded modules list. This is called from cleanup to clear
+        temporarily loaded modules."""
+        self.modules = set()
+        self.update_modules()
+        self.parse_modules()
+
+    def parse_modules(self):
         """Iterates on the configuration until no new modules are loaded.
 
         ..todo:: This should be attempted to be done with a binary to avoid
             the iteration issue.  Else... parse and enable mods at same time.
 
         """
-        # Since modules are being initiated... clear existing set.
-        self.modules = set()
+        mods = set()  # type: Set[str]
         matches = self.find_dir("LoadModule")
-
         iterator = iter(matches)
         # Make sure prev_size != cur_size for do: while: iteration
         prev_size = -1
 
-        while len(self.modules) != prev_size:
-            prev_size = len(self.modules)
+        while len(mods) != prev_size:
+            prev_size = len(mods)
 
             for match_name, match_filename in six.moves.zip(
                     iterator, iterator):
-                self.modules.add(self.get_arg(match_name))
-                self.modules.add(
-                    os.path.basename(self.get_arg(match_filename))[:-2] + "c")
+                mod_name = self.get_arg(match_name)
+                mod_filename = self.get_arg(match_filename)
+                if mod_name and mod_filename:
+                    mods.add(mod_name)
+                    mods.add(os.path.basename(mod_filename)[:-2] + "c")
+                else:
+                    logger.debug("Could not read LoadModule directive from " +
+                                 "Augeas path: {0}".format(match_name[6:]))
+        self.modules.update(mods)
 
     def update_runtime_variables(self):
-        """"
+        """Update Includes, Defines and Includes from httpd config dump data"""
+        self.update_defines()
+        self.update_includes()
+        self.update_modules()
 
-        .. note:: Compile time variables (apache2ctl -V) are not used within
-            the dynamic configuration files.  These should not be parsed or
-            interpreted.
-
-        .. todo:: Create separate compile time variables...
-            simply for arg_get()
-
-        """
-        stdout = self._get_runtime_cfg()
+    def update_defines(self):
+        """Get Defines from httpd process"""
 
         variables = dict()
-        matches = re.compile(r"Define: ([^ \n]*)").findall(stdout)
+        define_cmd = [self.configurator.constant("apache_cmd"), "-t", "-D",
+                      "DUMP_RUN_CFG"]
+        matches = self.parse_from_subprocess(define_cmd, r"Define: ([^ \n]*)")
         try:
             matches.remove("DUMP_RUN_CFG")
         except ValueError:
@@ -126,15 +170,54 @@ class ApacheParser(object):
 
         self.variables = variables
 
-    def _get_runtime_cfg(self):  # pylint: disable=no-self-use
-        """Get runtime configuration info.
+    def update_includes(self):
+        """Get includes from httpd process, and add them to DOM if needed"""
 
-        :returns: stdout from DUMP_RUN_CFG
+        # Find_dir iterates over configuration for Include and IncludeOptional
+        # directives to make sure we see the full include tree present in the
+        # configuration files
+        _ = self.find_dir("Include")
+
+        inc_cmd = [self.configurator.constant("apache_cmd"), "-t", "-D",
+                   "DUMP_INCLUDES"]
+        matches = self.parse_from_subprocess(inc_cmd, r"\(.*\) (.*)")
+        if matches:
+            for i in matches:
+                if not self.parsed_in_current(i):
+                    self.parse_file(i)
+
+    def update_modules(self):
+        """Get loaded modules from httpd process, and add them to DOM"""
+
+        mod_cmd = [self.configurator.constant("apache_cmd"), "-t", "-D",
+                       "DUMP_MODULES"]
+        matches = self.parse_from_subprocess(mod_cmd, r"(.*)_module")
+        for mod in matches:
+            self.add_mod(mod.strip())
+
+    def parse_from_subprocess(self, command, regexp):
+        """Get values from stdout of subprocess command
+
+        :param list command: Command to run
+        :param str regexp: Regexp for parsing
+
+        :returns: list parsed from command output
+        :rtype: list
+
+        """
+        stdout = self._get_runtime_cfg(command)
+        return re.compile(regexp).findall(stdout)
+
+    def _get_runtime_cfg(self, command):  # pylint: disable=no-self-use
+        """Get runtime configuration info.
+        :param command: Command to run
+
+        :returns: stdout from command
 
         """
         try:
             proc = subprocess.Popen(
-                constants.os_constant("define_cmd"),
+                command,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 universal_newlines=True)
@@ -143,10 +226,10 @@ class ApacheParser(object):
         except (OSError, ValueError):
             logger.error(
                 "Error running command %s for runtime parameters!%s",
-                constants.os_constant("define_cmd"), os.linesep)
+                command, os.linesep)
             raise errors.MisconfigurationError(
                 "Error accessing loaded Apache parameters: %s",
-                constants.os_constant("define_cmd"))
+                command)
         # Small errors that do not impede
         if proc.returncode != 0:
             logger.warning("Error in checking parameter list: %s", stderr)
@@ -250,6 +333,23 @@ class ApacheParser(object):
         else:
             self.aug.set(aug_conf_path + "/directive[last()]/arg", args)
 
+    def add_dir_beginning(self, aug_conf_path, dirname, args):
+        """Adds the directive to the beginning of defined aug_conf_path.
+
+        :param str aug_conf_path: Augeas configuration path to add directive
+        :param str dirname: Directive to add
+        :param args: Value of the directive. ie. Listen 443, 443 is arg
+        :type args: list or str
+        """
+        first_dir = aug_conf_path + "/directive[1]"
+        self.aug.insert(first_dir, "directive", True)
+        self.aug.set(first_dir, dirname)
+        if isinstance(args, list):
+            for i, value in enumerate(args, 1):
+                self.aug.set(first_dir + "/arg[%d]" % (i), value)
+        else:
+            self.aug.set(first_dir + "/arg", args)
+
     def find_dir(self, directive, arg=None, start=None, exclude=True):
         """Finds directive in the configuration.
 
@@ -309,7 +409,7 @@ class ApacheParser(object):
         else:
             arg_suffix = "/*[self::arg=~regexp('%s')]" % case_i(arg)
 
-        ordered_matches = []
+        ordered_matches = []  # type: List[str]
 
         # TODO: Wildcards should be included in alphabetical order
         # https://httpd.apache.org/docs/2.4/mod/core.html#include
@@ -339,7 +439,10 @@ class ApacheParser(object):
 
         # Note: normal argument may be a quoted variable
         # e.g. strip now, not later
-        value = value.strip("'\"")
+        if not value:
+            return None
+        else:
+            value = value.strip("'\"")
 
         variables = ApacheParser.arg_var_interpreter.findall(value)
 
@@ -428,9 +531,9 @@ class ApacheParser(object):
 
         # Attempts to add a transform to the file if one does not already exist
         if os.path.isdir(arg):
-            self._parse_file(os.path.join(arg, "*"))
+            self.parse_file(os.path.join(arg, "*"))
         else:
-            self._parse_file(arg)
+            self.parse_file(arg)
 
         # Argument represents an fnmatch regular expression, convert it
         # Split up the path and convert each into an Augeas accepted regex
@@ -470,7 +573,7 @@ class ApacheParser(object):
             # Since Python 3.6, it returns a different pattern like (?s:.*\.load)\Z
             return fnmatch.translate(clean_fn_match)[4:-3]
 
-    def _parse_file(self, filepath):
+    def parse_file(self, filepath):
         """Parse file with Augeas
 
         Checks to see if file_path is parsed by Augeas
@@ -480,6 +583,10 @@ class ApacheParser(object):
 
         """
         use_new, remove_old = self._check_path_actions(filepath)
+        # Ensure that we have the latest Augeas DOM state on disk before
+        # calling aug.load() which reloads the state from disk
+        if self.configurator:
+            self.configurator.ensure_augeas_state()
         # Test if augeas included file for Httpd.lens
         # Note: This works for augeas globs, ie. *.conf
         if use_new:
@@ -493,6 +600,39 @@ class ApacheParser(object):
                     self._remove_httpd_transform(filepath)
                 self._add_httpd_transform(filepath)
                 self.aug.load()
+
+    def parsed_in_current(self, filep):
+        """Checks if the file path is parsed by current Augeas parser config
+        ie. returns True if the file is found on a path that's found in live
+        Augeas configuration.
+
+        :param str filep: Path to match
+
+        :returns: True if file is parsed in existing configuration tree
+        :rtype: bool
+        """
+        return self._parsed_by_parser_paths(filep, self.parser_paths)
+
+    def parsed_in_original(self, filep):
+        """Checks if the file path is parsed by existing Apache config.
+        ie. returns True if the file is found on a path that matches Include or
+        IncludeOptional statement in the Apache configuration.
+
+        :param str filep: Path to match
+
+        :returns: True if file is parsed in existing configuration tree
+        :rtype: bool
+        """
+        return self._parsed_by_parser_paths(filep, self.existing_paths)
+
+    def _parsed_by_parser_paths(self, filep, paths):
+        """Helper function that searches through provided paths and returns
+        True if file path is found in the set"""
+        for directory in paths.keys():
+            for filename in paths[directory]:
+                if fnmatch.fnmatch(filep, os.path.join(directory, filename)):
+                    return True
+        return False
 
     def _check_path_actions(self, filepath):
         """Determine actions to take with a new augeas path
@@ -622,7 +762,6 @@ class ApacheParser(object):
         for name in location:
             if os.path.isfile(os.path.join(self.root, name)):
                 return os.path.join(self.root, name)
-
         raise errors.NoInstallationError("Could not find configuration root")
 
 

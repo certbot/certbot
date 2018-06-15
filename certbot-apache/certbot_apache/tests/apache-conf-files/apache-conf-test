@@ -26,6 +26,7 @@ function Setup() {
     ErrorLog /tmp/error.log
     CustomLog /tmp/requests.log combined
 </VirtualHost>" | sudo tee $EA/sites-available/throwaway-example.conf >/dev/null
+        sudo ln -sf $EA/sites-available/throwaway-example.conf $EA/sites-enabled/throwaway-example.conf
     else
         TMP="/tmp/`basename \"$APPEND_APACHECONF\"`.$$"
         sudo cp -a "$APPEND_APACHECONF" "$TMP"
@@ -37,6 +38,7 @@ function Cleanup() {
     if [ "$APPEND_APACHECONF" = "" ] ; then
         sudo rm /etc/apache2/sites-{enabled,available}/"$f"
         sudo rm $EA/sites-available/throwaway-example.conf
+        sudo rm $EA/sites-enabled/throwaway-example.conf
     else
         sudo mv "$TMP" "$APPEND_APACHECONF"
     fi

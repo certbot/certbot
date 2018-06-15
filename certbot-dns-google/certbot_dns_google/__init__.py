@@ -10,7 +10,7 @@ Named Arguments
 ========================================  =====================================
 ``--dns-google-credentials``              Google Cloud Platform credentials_
                                           JSON file.
-                                          (Required)
+                                          (Required - Optional on Google Compute Engine)
 ``--dns-google-propagation-seconds``      The number of seconds to wait for DNS
                                           to propagate before asking the ACME
                                           server to verify the DNS record.
@@ -21,19 +21,26 @@ Named Arguments
 Credentials
 -----------
 
-Use of this plugin requires a configuration file containing Google Cloud
-Platform API credentials for an account with the following permissions:
+Use of this plugin requires Google Cloud Platform API credentials
+for an account with the following permissions:
 
 * ``dns.changes.create``
 * ``dns.changes.get``
 * ``dns.managedZones.list``
 * ``dns.resourceRecordSets.create``
 * ``dns.resourceRecordSets.delete``
+* ``dns.resourceRecordSets.list``
+* ``dns.resourceRecordSets.update``
 
 Google provides instructions for `creating a service account <https://developers
 .google.com/identity/protocols/OAuth2ServiceAccount#creatinganaccount>`_ and
 `information about the required permissions <https://cloud.google.com/dns/access
--control#permissions_and_roles>`_.
+-control#permissions_and_roles>`_. If you're running on Google Compute Engine,
+you can `assign the service account to the instance <https://cloud.google.com/
+compute/docs/access/create-enable-service-accounts-for-instances>`_ which
+is running certbot. A credentials file is not required in this case, as they
+are automatically obtained by certbot through the `metadata service
+<https://cloud.google.com/compute/docs/storing-retrieving-metadata>`_ .
 
 .. code-block:: json
    :name: credentials.json

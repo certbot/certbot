@@ -1,6 +1,7 @@
 """Module contains classes used by the Apache Configurator."""
 import re
 
+from acme.magic_typing import Set # pylint: disable=unused-import, no-name-in-module
 from certbot.plugins import common
 
 
@@ -140,7 +141,7 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
 
     def get_names(self):
         """Return a set of all names."""
-        all_names = set()
+        all_names = set()  # type: Set[str]
         all_names.update(self.aliases)
         # Strip out any scheme:// and <port> field from servername
         if self.name is not None:
@@ -166,6 +167,19 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
                 tls="Yes" if self.ssl else "No",
                 active="Yes" if self.enabled else "No",
                 modmacro="Yes" if self.modmacro else "No"))
+
+    def display_repr(self):
+        """Return a representation of VHost to be used in dialog"""
+        return (
+            "File: {filename}\n"
+            "Addresses: {addrs}\n"
+            "Names: {names}\n"
+            "HTTPS: {https}\n".format(
+                filename=self.filep,
+                addrs=", ".join(str(addr) for addr in self.addrs),
+                names=", ".join(self.get_names()),
+                https="Yes" if self.ssl else "No"))
+
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
@@ -238,7 +252,7 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
 
         # already_found acts to keep everything very conservative.
         # Don't allow multiple ip:ports in same set.
-        already_found = set()
+        already_found = set()  # type: Set[str]
 
         for addr in vhost.addrs:
             for local_addr in self.addrs:

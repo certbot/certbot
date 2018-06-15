@@ -1,11 +1,12 @@
 """Tests for acme.messages."""
 import unittest
 
+import josepy as jose
 import mock
 
 from acme import challenges
-from acme import jose
 from acme import test_util
+from acme.magic_typing import Dict # pylint: disable=unused-import, no-name-in-module
 
 
 CERT = test_util.load_comparable_cert('cert.der')
@@ -71,6 +72,12 @@ class ErrorTest(unittest.TestCase):
         self.assertTrue(is_acme_error(Error.with_code('badCSR')))
         self.assertRaises(ValueError, Error.with_code, 'not an ACME error code')
 
+    def test_str(self):
+        self.assertEqual(
+            str(self.error),
+            u"{0.typ} :: {0.description} :: {0.detail} :: {0.title}"
+            .format(self.error))
+
 
 class ConstantTest(unittest.TestCase):
     """Tests for acme.messages._Constant."""
@@ -79,7 +86,7 @@ class ConstantTest(unittest.TestCase):
         from acme.messages import _Constant
 
         class MockConstant(_Constant):  # pylint: disable=missing-docstring
-            POSSIBLE_NAMES = {}
+            POSSIBLE_NAMES = {} # type: Dict
 
         self.MockConstant = MockConstant  # pylint: disable=invalid-name
         self.const_a = MockConstant('a')
@@ -151,13 +158,20 @@ class DirectoryTest(unittest.TestCase):
             'meta': {
                 'terms-of-service': 'https://example.com/acme/terms',
                 'website': 'https://www.example.com/',
-                'caa-identities': ['example.com'],
+                'caaIdentities': ['example.com'],
             },
         })
 
     def test_from_json_deserialization_unknown_key_success(self):  # pylint: disable=no-self-use
         from acme.messages import Directory
         Directory.from_json({'foo': 'bar'})
+
+    def test_iter_meta(self):
+        result = False
+        for k in self.dir.meta:
+            if k == 'terms_of_service':
+                result = self.dir.meta[k] == 'https://example.com/acme/terms'
+        self.assertTrue(result)
 
 
 class RegistrationTest(unittest.TestCase):
@@ -277,6 +291,9 @@ class ChallengeBodyTest(unittest.TestCase):
             'detail': 'Unable to communicate with DNS server',
         }
 
+    def test_encode(self):
+        self.assertEqual(self.challb.encode('uri'), self.challb.uri)
+
     def test_to_partial_json(self):
         self.assertEqual(self.jobj_to, self.challb.to_partial_json())
 
@@ -390,6 +407,22 @@ class RevocationTest(unittest.TestCase):
     def test_from_json_hashable(self):
         from acme.messages import Revocation
         hash(Revocation.from_json(self.rev.to_json()))
+
+
+class OrderResourceTest(unittest.TestCase):
+    """Tests for acme.messages.OrderResource."""
+
+    def setUp(self):
+        from acme.messages import OrderResource
+        self.regr = OrderResource(
+            body=mock.sentinel.body, uri=mock.sentinel.uri)
+
+    def test_to_partial_json(self):
+        self.assertEqual(self.regr.to_json(), {
+            'body': mock.sentinel.body,
+            'uri': mock.sentinel.uri,
+            'authorizations': None,
+        })
 
 
 if __name__ == '__main__':

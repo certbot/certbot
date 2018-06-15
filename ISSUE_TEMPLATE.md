@@ -1,3 +1,9 @@
+If you're having trouble using Certbot and aren't sure you've found a bug or
+request for a new feature, please first try asking for help at
+https://community.letsencrypt.org/. There is a much larger community there of
+people familiar with the project who will be able to more quickly answer your
+questions.
+
 ## My operating system is (include version):
 
 

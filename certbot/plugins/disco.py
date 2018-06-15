@@ -5,18 +5,15 @@ import logging
 import pkg_resources
 import six
 
+from collections import OrderedDict
+
 import zope.interface
 import zope.interface.verify
 
+from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
 from certbot import constants
 from certbot import errors
 from certbot import interfaces
-
-try:
-    from collections import OrderedDict
-except ImportError:  # pragma: no cover
-    # OrderedDict was added in Python 2.7
-    from ordereddict import OrderedDict  # pylint: disable=import-error
 
 
 logger = logging.getLogger(__name__)
@@ -194,7 +191,8 @@ class PluginsRegistry(collections.Mapping):
     @classmethod
     def find_all(cls):
         """Find plugins using setuptools entry points."""
-        plugins = {}
+        plugins = {}  # type: Dict[str, PluginEntryPoint]
+        # pylint: disable=not-callable
         entry_points = itertools.chain(
             pkg_resources.iter_entry_points(
                 constants.SETUPTOOLS_PLUGINS_ENTRY_POINT),

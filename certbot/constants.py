@@ -1,6 +1,7 @@
 """Certbot constants."""
-import os
 import logging
+import os
+import pkg_resources
 
 from acme import challenges
 
@@ -18,25 +19,98 @@ CLI_DEFAULTS = dict(
         os.path.join(os.environ.get("XDG_CONFIG_HOME", "~/.config"),
                      "letsencrypt", "cli.ini"),
     ],
+
+    # Main parser
     verbose_count=-int(logging.INFO / 10),
-    server="https://acme-v01.api.letsencrypt.org/directory",
+    text_mode=False,
+    max_log_backups=1000,
+    noninteractive_mode=False,
+    force_interactive=False,
+    domains=[],
+    certname=None,
+    dry_run=False,
+    register_unsafely_without_email=False,
+    update_registration=False,
+    email=None,
+    eff_email=None,
+    reinstall=False,
+    expand=False,
+    renew_by_default=False,
+    renew_with_new_domains=False,
+    autorenew=True,
+    allow_subset_of_names=False,
+    tos=False,
+    account=None,
+    duplicate=False,
+    os_packages_only=False,
+    no_self_upgrade=False,
+    no_bootstrap=False,
+    quiet=False,
+    staging=False,
+    debug=False,
+    debug_challenges=False,
+    no_verify_ssl=False,
+    tls_sni_01_port=challenges.TLSSNI01Response.PORT,
+    tls_sni_01_address="",
+    http01_port=challenges.HTTP01Response.PORT,
+    http01_address="",
+    break_my_certs=False,
     rsa_key_size=2048,
+    must_staple=False,
+    redirect=None,
+    hsts=None,
+    uir=None,
+    staple=None,
+    strict_permissions=False,
+    pref_challs=[],
+    validate_hooks=True,
+    directory_hooks=True,
+    reuse_key=False,
+    disable_renew_updates=False,
+
+    # Subparsers
+    num=None,
+    user_agent=None,
+    user_agent_comment=None,
+    csr=None,
+    reason=0,
+    delete_after_revoke=None,
     rollback_checkpoints=1,
+    init=False,
+    prepare=False,
+    ifaces=None,
+
+    # Path parsers
+    auth_cert_path="./cert.pem",
+    auth_chain_path="./chain.pem",
+    key_path=None,
     config_dir="/etc/letsencrypt",
     work_dir="/var/lib/letsencrypt",
     logs_dir="/var/log/letsencrypt",
-    no_verify_ssl=False,
-    http01_port=challenges.HTTP01Response.PORT,
-    http01_address="",
-    tls_sni_01_port=challenges.TLSSNI01Response.PORT,
-    tls_sni_01_address="",
+    server="https://acme-v01.api.letsencrypt.org/directory",
 
-    auth_cert_path="./cert.pem",
-    auth_chain_path="./chain.pem",
-    strict_permissions=False,
-    debug_challenges=False,
+    # Plugins parsers
+    configurator=None,
+    authenticator=None,
+    installer=None,
+    apache=False,
+    nginx=False,
+    standalone=False,
+    manual=False,
+    webroot=False,
+    dns_cloudflare=False,
+    dns_cloudxns=False,
+    dns_digitalocean=False,
+    dns_dnsimple=False,
+    dns_dnsmadeeasy=False,
+    dns_google=False,
+    dns_luadns=False,
+    dns_nsone=False,
+    dns_rfc2136=False,
+    dns_route53=False
+
 )
-STAGING_URI = "https://acme-staging.api.letsencrypt.org/directory"
+STAGING_URI = "https://acme-staging-v02.api.letsencrypt.org/directory"
 
 # The set of reasons for revoking a certificate is defined in RFC 5280 in
 # section 5.3.1. The reasons that users are allowed to submit are restricted to
@@ -64,13 +138,13 @@ RENEWER_DEFAULTS = dict(
 """Defaults for renewer script."""
 
 
-ENHANCEMENTS = ["redirect", "ensure-http-header", "ocsp-stapling", "spdy", "starttls-policy"]
+ENHANCEMENTS = ["redirect", "ensure-http-header", "ocsp-stapling", "spdy"]
 """List of possible :class:`certbot.interfaces.IInstaller`
 enhancements.
 
 List of expected options parameters:
 - redirect: None
-- http-header: TODO
+- ensure-http-header: name of header (i.e. Strict-Transport-Security)
 - ocsp-stapling: certificate chain file path
 - spdy: TODO
 
@@ -84,6 +158,12 @@ CONFIG_DIRS_MODE = 0o755
 
 ACCOUNTS_DIR = "accounts"
 """Directory where all accounts are saved."""
+
+LE_REUSE_SERVERS = {
+    'acme-staging-v02.api.letsencrypt.org/directory':
+        'acme-staging.api.letsencrypt.org/directory'
+}
+"""Servers that can reuse accounts from other servers."""
 
 BACKUP_DIR = "backups"
 """Directory (relative to `IConfig.work_dir`) where backups are kept."""
@@ -107,8 +187,35 @@ TEMP_CHECKPOINT_DIR = "temp_checkpoint"
 RENEWAL_CONFIGS_DIR = "renewal"
 """Renewal configs directory, relative to `IConfig.config_dir`."""
 
+RENEWAL_HOOKS_DIR = "renewal-hooks"
+"""Basename of directory containing hooks to run with the renew command."""
+
+RENEWAL_PRE_HOOKS_DIR = "pre"
+"""Basename of directory containing pre-hooks to run with the renew command."""
+
+RENEWAL_DEPLOY_HOOKS_DIR = "deploy"
+"""Basename of directory containing deploy-hooks to run with the renew command."""
+
+RENEWAL_POST_HOOKS_DIR = "post"
+"""Basename of directory containing post-hooks to run with the renew command."""
+
 FORCE_INTERACTIVE_FLAG = "--force-interactive"
 """Flag to disable TTY checking in IDisplay."""
 
 EFF_SUBSCRIBE_URI = "https://supporters.eff.org/subscribe/certbot"
 """EFF URI used to submit the e-mail address of users who opt-in."""
+
+SSL_DHPARAMS_DEST = "ssl-dhparams.pem"
+"""Name of the ssl_dhparams file as saved in `IConfig.config_dir`."""
+
+SSL_DHPARAMS_SRC = pkg_resources.resource_filename(
+    "certbot", "ssl-dhparams.pem")
+"""Path to the nginx ssl_dhparams file found in the Certbot distribution."""
+
+UPDATED_SSL_DHPARAMS_DIGEST = ".updated-ssl-dhparams-pem-digest.txt"
+"""Name of the hash of the updated or informed ssl_dhparams as saved in `IConfig.config_dir`."""
+
+ALL_SSL_DHPARAMS_HASHES = [
+    '9ba6429597aeed2d8617a7705b56e96d044f64b07971659382e426675105654b',
+]
+"""SHA256 hashes of the contents of all versions of SSL_DHPARAMS_SRC"""
