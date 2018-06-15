@@ -87,6 +87,14 @@ if [ "$RELEASE_BRANCH" != "candidate-$version" ] ; then
 fi
 git checkout "$RELEASE_BRANCH"
 
+for pkg_dir in $SUBPKGS_NO_CERTBOT certbot-compatibility-test .
+do
+  sed -i 's/\.dev0//' "$pkg_dir/setup.py"
+done
+# We only add Certbot's setup.py here because the other files are added in the
+# call to SetVersion below.
+git add -p setup.py
+
 SetVersion() {
     ver="$1"
     # bumping Certbot's version number is done differently
