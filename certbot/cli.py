@@ -1426,6 +1426,10 @@ def _plugins_parsing(helpful, plugins):
                 default=flag_default("dns_route53"),
                 help=("Obtain certificates using a DNS TXT record (if you are using Route53 for "
                       "DNS)."))
+    helpful.add(["plugins", "certonly"], "--dns-yandex", action="store_true",
+                default=flag_default("dns_yandex"),
+                help=("Obtain certificates using a DNS TXT record (if you are "
+                      "using Yandex for DNS)."))
 
     # things should not be reorder past/pre this comment:
     # plugins_group should be displayed in --help before plugin
