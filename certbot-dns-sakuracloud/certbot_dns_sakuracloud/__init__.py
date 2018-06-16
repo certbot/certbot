@@ -7,14 +7,14 @@ removing, TXT records using the Sakura Cloud DNS API.
 Named Arguments
 ---------------
 
-========================================  =====================================
-``--dns-sakuracloud-credentials``         Sakura Cloud credentials_ INI file.
-                                          (Required)
-``--dns-sakuracloud-propagation-seconds`` The number of seconds to wait for DNS
-                                          to propagate before asking the ACME
-                                          server to verify the DNS record.
-                                          (Default: 90)
-========================================  =====================================
+==========================================  ======================================
+``--dns-sakuracloud-credentials``           Sakura Cloud credentials_ INI file.
+                                            (Required)
+``--dns-sakuracloud-propagation-seconds``   The number of seconds to wait for DNS
+                                            to propagate before asking the ACME
+                                            server to verify the DNS record.
+                                            (Default: 90)
+==========================================  ======================================
 
 
 Credentials
