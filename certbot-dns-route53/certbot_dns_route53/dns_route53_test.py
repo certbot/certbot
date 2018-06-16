@@ -19,6 +19,8 @@ class AuthenticatorTest(unittest.TestCase, dns_test_common.BaseAuthenticatorTest
         super(AuthenticatorTest, self).setUp()
 
         self.config = mock.MagicMock()
+        self.config.route53_boto3_max_attempts = 20
+        self.config.route53_profile_name = None
 
         self.auth = Authenticator(self.config, "route53")
 
@@ -116,6 +118,8 @@ class ClientTest(unittest.TestCase):
         super(ClientTest, self).setUp()
 
         self.config = mock.MagicMock()
+        self.config.route53_boto3_max_attempts = 20
+        self.config.route53_profile_name = None
 
         self.client = Authenticator(self.config, "route53")
 
