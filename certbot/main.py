@@ -1073,6 +1073,12 @@ def run(config, plugins):  # pylint: disable=too-many-branches,too-many-locals
     except errors.PluginSelectionError as e:
         return str(e)
 
+    if config.must_staple:
+        supported_enhancements = installer.supported_enhancements()
+        if "ocsp-stapling" not in supported_enhancements:
+            return "Command included --must-staple but the selected installer "
+            "does not support OCSP stapling."
+        
     # TODO: Handle errors from _init_le_client?
     le_client = _init_le_client(config, authenticator, installer)
 
