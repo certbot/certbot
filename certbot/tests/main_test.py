@@ -1717,6 +1717,36 @@ class EnhanceTest(test_util.ConfigTestCase):
             errors.Error,
             self._call, ['enhance', '--auto-hsts', '--hsts'])
 
+    @mock.patch('certbot.main.plug_sel.record_chosen_plugins')
+    @mock.patch('certbot.main.plug_sel.pick_installer')
+    def test_install_enhancement_not_supported(self, mock_inst, _rec):
+        mock_inst.return_value = null.Installer(self.config, "null")
+        plugins = disco.PluginsRegistry.find_all()
+        self.config.auto_hsts = True
+        self.assertRaises(errors.NotSupportedError,
+                          main.install,
+                          self.config, plugins)
+
+    @mock.patch('certbot.main.plug_sel.choose_configurator_plugins')
+    def test_run_enhancement_not_supported(self, mock_choose):
+        mock_choose.return_value = (null.Installer(self.config, "null"), None)
+        plugins = disco.PluginsRegistry.find_all()
+        self.config.auto_hsts = True
+        self.assertRaises(errors.NotSupportedError,
+                          main.run,
+                          self.config, plugins)
+
+    @mock.patch('certbot.main.plug_sel.record_chosen_plugins')
+    @mock.patch('certbot.main.plug_sel.pick_installer')
+    def test_install_enhancement_no_certname(self, mock_inst, _rec):
+        mock_inst.return_value = test_util.MockInstallerAutoHSTS()
+        plugins = disco.PluginsRegistry.find_all()
+        self.config.auto_hsts = True
+        self.config.certname = None
+        self.assertRaises(errors.ConfigurationError,
+                          main.install,
+                          self.config, plugins)
+
 
 if __name__ == '__main__':
     unittest.main()  # pragma: no cover

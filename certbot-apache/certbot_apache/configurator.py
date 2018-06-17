@@ -2334,6 +2334,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             note_msg = "Enabling AutoHSTS"
             self.save(note_msg)
             logger.info(note_msg)
+            self.restart()
 
         # Save the current state to pluginstorage
         self._autohsts_save_state()
@@ -2461,7 +2462,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         for id_str in affected_ids:
             self._autohsts.pop(id_str)
-
 
         # Update AutoHSTS storage (We potentially removed vhosts from managed)
         self._autohsts_save_state()

@@ -403,3 +403,22 @@ class MockInstallerAutoHSTS(enhancements.AutoHSTSEnhancement):
     def enable_autohsts(self, lineage, domains, *args, **kwargs):
         """Mock enable method."""
         self.enable_counter(lineage, domains, *args, **kwargs)
+
+
+class MockInstallerGenericUpdater(interfaces.GenericUpdater):
+    """Mock class that implements GenericUpdater"""
+    def __init__(self, *args, **kwargs):
+        # pylint: disable=unused-argument
+        self.restart = mock.MagicMock()
+        self.callcounter = mock.MagicMock()
+    def generic_updates(self, lineage, *args, **kwargs):
+        self.callcounter(*args, **kwargs)
+
+
+class MockInstallerRenewDeployer(interfaces.RenewDeployer):
+    """Mock class that implements RenewDeployer"""
+    def __init__(self, *args, **kwargs):
+        # pylint: disable=unused-argument
+        self.callcounter = mock.MagicMock()
+    def renew_deploy(self, lineage, *args, **kwargs):
+        self.callcounter(*args, **kwargs)
