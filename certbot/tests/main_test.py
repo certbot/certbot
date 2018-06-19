@@ -29,6 +29,7 @@ from certbot import updater
 from certbot import util
 
 from certbot.plugins import disco
+from certbot.plugins import enhancements
 from certbot.plugins import manual
 from certbot.plugins import null
 
@@ -1581,7 +1582,7 @@ class EnhanceTest(test_util.ConfigTestCase):
         super(EnhanceTest, self).setUp()
         self.get_utility_patch = test_util.patch_get_utility()
         self.mock_get_utility = self.get_utility_patch.start()
-        self.mockinstaller = test_util.MockInstallerAutoHSTS()
+        self.mockinstaller = mock.MagicMock(spec=enhancements.AutoHSTSEnhancement)
 
     def tearDown(self):
         self.get_utility_patch.stop()
@@ -1695,8 +1696,8 @@ class EnhanceTest(test_util.ConfigTestCase):
         mock_choose.return_value = ["example.com", "another.tld"]
         mock_lineage.return_value = mock.MagicMock(chain_path="/tmp/nonexistent")
         self._call(['enhance', '--auto-hsts'])
-        self.assertTrue(self.mockinstaller.enable_counter.called)
-        self.assertEquals(self.mockinstaller.enable_counter.call_args[0][1],
+        self.assertTrue(self.mockinstaller.enable_autohsts.called)
+        self.assertEquals(self.mockinstaller.enable_autohsts.call_args[0][1],
                           ["example.com", "another.tld"])
 
     @mock.patch('certbot.cert_manager.lineage_for_certname')
@@ -1739,7 +1740,7 @@ class EnhanceTest(test_util.ConfigTestCase):
     @mock.patch('certbot.main.plug_sel.record_chosen_plugins')
     @mock.patch('certbot.main.plug_sel.pick_installer')
     def test_install_enhancement_no_certname(self, mock_inst, _rec):
-        mock_inst.return_value = test_util.MockInstallerAutoHSTS()
+        mock_inst.return_value = self.mockinstaller
         plugins = disco.PluginsRegistry.find_all()
         self.config.auto_hsts = True
         self.config.certname = None

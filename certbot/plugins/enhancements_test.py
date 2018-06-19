@@ -13,7 +13,7 @@ class EnhancementTest(test_util.ConfigTestCase):
 
     def setUp(self):
         super(EnhancementTest, self).setUp()
-        self.mockinstaller = test_util.MockInstallerAutoHSTS()
+        self.mockinstaller = mock.MagicMock(spec=enhancements.AutoHSTSEnhancement)
 
 
     @test_util.patch_get_utility()
@@ -56,8 +56,8 @@ class EnhancementTest(test_util.ConfigTestCase):
         domains = ["example.com", "www.example.com"]
         lineage = "lineage"
         enhancements.enable(lineage, domains, self.mockinstaller, self.config)
-        self.assertTrue(self.mockinstaller.enable_counter.called)
-        self.assertEquals(self.mockinstaller.enable_counter.call_args[0],
+        self.assertTrue(self.mockinstaller.enable_autohsts.called)
+        self.assertEquals(self.mockinstaller.enable_autohsts.call_args[0],
                           (lineage, domains))
 
 

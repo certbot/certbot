@@ -25,7 +25,6 @@ from certbot import util
 from certbot import configuration
 
 from certbot.display import util as display_util
-from certbot.plugins import enhancements
 
 
 def vector_path(*names):
@@ -380,45 +379,3 @@ def hold_lock(cv, lock_path):  # pragma: no cover
     cv.notify()
     cv.wait()
     my_lock.release()
-
-
-class MockInstallerAutoHSTS(enhancements.AutoHSTSEnhancement):
-    """Mock class that implements AutoHSTSEnhancement"""
-    def __init__(self):
-        super(MockInstallerAutoHSTS, self).__init__()
-        # pylint: disable=unused-argument
-        self.enable_counter = mock.MagicMock()
-        self.update_counter = mock.MagicMock()
-        self.deploy_counter = mock.MagicMock()
-        self.restart = mock.MagicMock()
-
-    def update_autohsts(self, lineage, *args, **kwargs):
-        """Mock updater method."""
-        self.update_counter(lineage, *args, **kwargs)
-
-    def deploy_autohsts(self, lineage, *args, **kwargs):
-        """Mock deployer method."""
-        self.deploy_counter(lineage, *args, **kwargs)
-
-    def enable_autohsts(self, lineage, domains, *args, **kwargs):
-        """Mock enable method."""
-        self.enable_counter(lineage, domains, *args, **kwargs)
-
-
-class MockInstallerGenericUpdater(interfaces.GenericUpdater):
-    """Mock class that implements GenericUpdater"""
-    def __init__(self, *args, **kwargs):
-        # pylint: disable=unused-argument
-        self.restart = mock.MagicMock()
-        self.callcounter = mock.MagicMock()
-    def generic_updates(self, lineage, *args, **kwargs):
-        self.callcounter(*args, **kwargs)
-
-
-class MockInstallerRenewDeployer(interfaces.RenewDeployer):
-    """Mock class that implements RenewDeployer"""
-    def __init__(self, *args, **kwargs):
-        # pylint: disable=unused-argument
-        self.callcounter = mock.MagicMock()
-    def renew_deploy(self, lineage, *args, **kwargs):
-        self.callcounter(*args, **kwargs)
