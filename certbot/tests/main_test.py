@@ -1718,6 +1718,23 @@ class EnhanceTest(test_util.ConfigTestCase):
             errors.Error,
             self._call, ['enhance', '--auto-hsts', '--hsts'])
 
+    @mock.patch('certbot.main.plug_sel.choose_configurator_plugins')
+    def test_run_enhancement_not_supported(self, mock_choose):
+        mock_choose.return_value = (null.Installer(self.config, "null"), None)
+        plugins = disco.PluginsRegistry.find_all()
+        self.config.auto_hsts = True
+        self.assertRaises(errors.NotSupportedError,
+                          main.run,
+                          self.config, plugins)
+
+
+class InstallTest(test_util.ConfigTestCase):
+    """Tests for certbot.main.install."""
+
+    def setUp(self):
+        super(InstallTest, self).setUp()
+        self.mockinstaller = mock.MagicMock(spec=enhancements.AutoHSTSEnhancement)
+
     @mock.patch('certbot.main.plug_sel.record_chosen_plugins')
     @mock.patch('certbot.main.plug_sel.pick_installer')
     def test_install_enhancement_not_supported(self, mock_inst, _rec):
@@ -1726,15 +1743,6 @@ class EnhanceTest(test_util.ConfigTestCase):
         self.config.auto_hsts = True
         self.assertRaises(errors.NotSupportedError,
                           main.install,
-                          self.config, plugins)
-
-    @mock.patch('certbot.main.plug_sel.choose_configurator_plugins')
-    def test_run_enhancement_not_supported(self, mock_choose):
-        mock_choose.return_value = (null.Installer(self.config, "null"), None)
-        plugins = disco.PluginsRegistry.find_all()
-        self.config.auto_hsts = True
-        self.assertRaises(errors.NotSupportedError,
-                          main.run,
                           self.config, plugins)
 
     @mock.patch('certbot.main.plug_sel.record_chosen_plugins')

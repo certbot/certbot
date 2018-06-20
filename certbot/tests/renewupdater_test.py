@@ -63,37 +63,32 @@ class RenewUpdaterTest(test_util.ConfigTestCase):
                           "Skipping renewal deployer in dry-run mode.")
 
     @mock.patch('certbot.plugins.selection.choose_configurator_plugins')
-    @test_util.patch_get_utility()
-    def test_enhancement_updates(self, _, mock_select):
+    def test_enhancement_updates(self, mock_select):
         mock_select.return_value = (self.mockinstaller, None)
         updater.run_generic_updaters(self.config, mock.MagicMock(), None)
         self.assertTrue(self.mockinstaller.update_autohsts.called)
         self.assertEqual(self.mockinstaller.update_autohsts.call_count, 1)
 
-    @test_util.patch_get_utility()
-    def test_enhancement_deployer(self, _):
+    def test_enhancement_deployer(self):
         updater.run_renewal_deployer(self.config, mock.MagicMock(),
                                      self.mockinstaller)
         self.assertTrue(self.mockinstaller.deploy_autohsts.called)
 
     @mock.patch('certbot.plugins.selection.choose_configurator_plugins')
-    @test_util.patch_get_utility()
-    def test_enhancement_updates_not_called(self, _, mock_select):
+    def test_enhancement_updates_not_called(self, mock_select):
         self.config.disable_renew_updates = True
         mock_select.return_value = (self.mockinstaller, None)
         updater.run_generic_updaters(self.config, mock.MagicMock(), None)
         self.assertFalse(self.mockinstaller.update_autohsts.called)
 
-    @test_util.patch_get_utility()
-    def test_enhancement_deployer_not_called(self, _):
+    def test_enhancement_deployer_not_called(self):
         self.config.disable_renew_updates = True
         updater.run_renewal_deployer(self.config, mock.MagicMock(),
                                      self.mockinstaller)
         self.assertFalse(self.mockinstaller.deploy_autohsts.called)
 
     @mock.patch('certbot.plugins.selection.choose_configurator_plugins')
-    @test_util.patch_get_utility()
-    def test_enhancement_no_updater(self, _, mock_select):
+    def test_enhancement_no_updater(self, mock_select):
         FAKEINDEX = [
             {
                 "name": "Test",
@@ -108,8 +103,7 @@ class RenewUpdaterTest(test_util.ConfigTestCase):
             updater.run_generic_updaters(self.config, mock.MagicMock(), None)
         self.assertFalse(self.mockinstaller.update_autohsts.called)
 
-    @test_util.patch_get_utility()
-    def test_enhancement_no_deployer(self, _):
+    def test_enhancement_no_deployer(self):
         FAKEINDEX = [
             {
                 "name": "Test",
