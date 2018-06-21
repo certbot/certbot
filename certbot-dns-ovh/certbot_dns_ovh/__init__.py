@@ -30,8 +30,8 @@ credentials for an account with the following access rules:
 
 These credentials can be obtained there:
 
-* `OVH Europe <https://eu.api.ovh.com/createToken/>` (endpoint: ``ovh-eu``)
-* `OVH North America <https://ca.api.ovh.com/createToken/>` (endpoint:
+* `OVH Europe <https://eu.api.ovh.com/createToken/>`_ (endpoint: ``ovh-eu``)
+* `OVH North America <https://ca.api.ovh.com/createToken/>`_ (endpoint:
   ``ovh-ca``)
 
 .. code-block:: ini
