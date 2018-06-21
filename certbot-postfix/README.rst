@@ -11,17 +11,13 @@ To install this plugin, in the root of this repo, run::
     source venv/bin/activate
 
 You can use this installer with any `authenticator plugin
-<https://certbot.eff.org/docs/using.html#getting-certificates-and-choosing-plugins>_`.
+<https://certbot.eff.org/docs/using.html#getting-certificates-and-choosing-plugins>`_.
 For instance, with the `standalone authenticator
-<https://certbot.eff.org/docs/using.html#standalone>_`, which requires no extra server
+<https://certbot.eff.org/docs/using.html#standalone>`_, which requires no extra server
 software, you might run::
 
-    certbot run --standalone -i postfix -d <domain name>
+    sudo ./venv/bin/certbot run --standalone -i postfix -d <domain name>
 
 To just install existing certs with this plugin, run::
 
-    certbot install -i postfix --cert-path <path to cert> --key-path <path to key> -d <domain name>
-
-If you need elevated permissions to run ``certbot``, you can run
-``sudo ./venv/bin/certbot`` with the above arguments.
-
+    sudo ./venv/bin/certbot install -i postfix --cert-path <path to cert> --key-path <path to key> -d <domain name>
