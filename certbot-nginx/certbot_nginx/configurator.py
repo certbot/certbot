@@ -69,7 +69,11 @@ class NginxConfigurator(common.Installer):
 
     @classmethod
     def add_parser_arguments(cls, add):
-        add("server-root", default=constants.CLI_DEFAULTS["server_root"],
+        if os.environ.get("CERTBOT_DOCS") == "1":
+            default_server_root = "%s or %s" % (LINUX_SERVER_ROOT, FREEBSD_DARWIN_SERVER_ROOT)
+        else:
+            default_server_root = constants.CLI_DEFAULTS["server_root"]
+        add("server-root", default=default_server_root,
             help="Nginx server root directory.")
         add("ctl", default=constants.CLI_DEFAULTS["ctl"], help="Path to the "
             "'nginx' binary, used for 'configtest' and retrieving nginx "
