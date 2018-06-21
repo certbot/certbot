@@ -54,10 +54,11 @@ class TestHandleIdenticalCerts(unittest.TestCase):
         self.assertEqual(ret, ("reinstall", mock_lineage))
 
 
-class RunTest(unittest.TestCase):
+class RunTest(test_util.ConfigTestCase):
     """Tests for certbot.main.run."""
 
     def setUp(self):
+        super(RunTest, self).setUp()
         self.domain = 'example.org'
         self.patches = [
             mock.patch('certbot.main._get_and_save_cert'),
@@ -106,6 +107,15 @@ class RunTest(unittest.TestCase):
         self.mock_find_cert.return_value = True, mock.Mock()
         self._call()
         self.mock_success_renewal.assert_called_once_with([self.domain])
+
+    @mock.patch('certbot.main.plug_sel.choose_configurator_plugins')
+    def test_run_enhancement_not_supported(self, mock_choose):
+        mock_choose.return_value = (null.Installer(self.config, "null"), None)
+        plugins = disco.PluginsRegistry.find_all()
+        self.config.auto_hsts = True
+        self.assertRaises(errors.NotSupportedError,
+                          main.run,
+                          self.config, plugins)
 
 
 class CertonlyTest(unittest.TestCase):
@@ -1717,15 +1727,6 @@ class EnhanceTest(test_util.ConfigTestCase):
         self.assertRaises(
             errors.Error,
             self._call, ['enhance', '--auto-hsts', '--hsts'])
-
-    @mock.patch('certbot.main.plug_sel.choose_configurator_plugins')
-    def test_run_enhancement_not_supported(self, mock_choose):
-        mock_choose.return_value = (null.Installer(self.config, "null"), None)
-        plugins = disco.PluginsRegistry.find_all()
-        self.config.auto_hsts = True
-        self.assertRaises(errors.NotSupportedError,
-                          main.run,
-                          self.config, plugins)
 
 
 class InstallTest(test_util.ConfigTestCase):
