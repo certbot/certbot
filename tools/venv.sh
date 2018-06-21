@@ -26,5 +26,6 @@ fi
   -e certbot-dns-rfc2136 \
   -e certbot-dns-route53 \
   -e certbot-nginx \
+  -e certbot-postfix \
   -e letshelp-certbot \
   -e certbot-compatibility-test

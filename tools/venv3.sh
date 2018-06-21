@@ -24,5 +24,6 @@ fi
   -e certbot-dns-ovh \
   -e certbot-dns-route53 \
   -e certbot-nginx \
+  -e certbot-postfix \
   -e letshelp-certbot \
   -e certbot-compatibility-test

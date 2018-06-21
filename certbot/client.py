@@ -4,8 +4,11 @@ import logging
 import os
 import platform
 
+
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.asymmetric import rsa
+# https://github.com/python/typeshed/blob/master/third_party/
+# 2/cryptography/hazmat/primitives/asymmetric/rsa.pyi
+from cryptography.hazmat.primitives.asymmetric.rsa import generate_private_key  # type: ignore
 import josepy as jose
 import OpenSSL
 import zope.component
@@ -14,6 +17,7 @@ from acme import client as acme_client
 from acme import crypto_util as acme_crypto_util
 from acme import errors as acme_errors
 from acme import messages
+from acme.magic_typing import Optional  # pylint: disable=unused-import,no-name-in-module
 
 import certbot
 
@@ -155,12 +159,16 @@ def register(config, account_storage, tos_cb=None):
         if not config.dry_run:
             logger.info("Registering without email!")
 
+    # If --dry-run is used, and there is no staging account, create one with no email.
+    if config.dry_run:
+        config.email = None
+
     # Each new registration shall use a fresh new key
-    key = jose.JWKRSA(key=jose.ComparableRSAKey(
-        rsa.generate_private_key(
+    rsa_key = generate_private_key(
             public_exponent=65537,
             key_size=config.rsa_key_size,
-            backend=default_backend())))
+            backend=default_backend())
+    key = jose.JWKRSA(key=jose.ComparableRSAKey(rsa_key))
     acme = acme_from_config_key(config, key)
     # TODO: add phone?
     regr = perform_registration(acme, config, tos_cb)
@@ -179,8 +187,9 @@ def perform_registration(acme, config, tos_cb):
     Actually register new account, trying repeatedly if there are email
     problems
 
-    :param .IConfig config: Client configuration.
     :param acme.client.Client client: ACME client object.
+    :param .IConfig config: Client configuration.
+    :param Callable tos_cb: a callback to handle Term of Service agreement.
 
     :returns: Registration Resource.
     :rtype: `acme.messages.RegistrationResource`
@@ -266,7 +275,7 @@ class Client(object):
         cert, chain = crypto_util.cert_and_chain_from_fullchain(orderr.fullchain_pem)
         return cert.encode(), chain.encode()
 
-    def obtain_certificate(self, domains):
+    def obtain_certificate(self, domains, old_keypath=None):
         """Obtains a certificate from the ACME server.
 
         `.register` must be called before `.obtain_certificate`
@@ -279,16 +288,39 @@ class Client(object):
         :rtype: tuple
 
         """
+
+        # We need to determine the key path, key PEM data, CSR path,
+        # and CSR PEM data.  For a dry run, the paths are None because
+        # they aren't permanently saved to disk.  For a lineage with
+        # --reuse-key, the key path and PEM data are derived from an
+        # existing file.
+
+        if old_keypath is not None:
+            # We've been asked to reuse a specific existing private key.
+            # Therefore, we'll read it now and not generate a new one in
+            # either case below.
+            #
+            # We read in bytes here because the type of `key.pem`
+            # created below is also bytes.
+            with open(old_keypath, "rb") as f:
+                keypath = old_keypath
+                keypem = f.read()
+            key = util.Key(file=keypath, pem=keypem) # type: Optional[util.Key]
+            logger.info("Reusing existing private key from %s.", old_keypath)
+        else:
+            # The key is set to None here but will be created below.
+            key = None
+
         # Create CSR from names
         if self.config.dry_run:
-            key = util.Key(file=None,
-                           pem=crypto_util.make_key(self.config.rsa_key_size))
+            key = key or util.Key(file=None,
+                                  pem=crypto_util.make_key(self.config.rsa_key_size))
             csr = util.CSR(file=None, form="pem",
                            data=acme_crypto_util.make_csr(
                                key.pem, domains, self.config.must_staple))
         else:
-            key = crypto_util.init_save_key(
-                self.config.rsa_key_size, self.config.key_dir)
+            key = key or crypto_util.init_save_key(self.config.rsa_key_size,
+                                                   self.config.key_dir)
             csr = crypto_util.init_save_csr(key, domains, self.config.csr_dir)
 
         orderr = self._get_order_and_authorizations(csr.data, self.config.allow_subset_of_names)
@@ -605,8 +637,10 @@ def validate_key_csr(privkey, csr=None):
         if csr.form == "der":
             csr_obj = OpenSSL.crypto.load_certificate_request(
                 OpenSSL.crypto.FILETYPE_ASN1, csr.data)
-            csr = util.CSR(csr.file, OpenSSL.crypto.dump_certificate(
-                OpenSSL.crypto.FILETYPE_PEM, csr_obj), "pem")
+            cert_buffer = OpenSSL.crypto.dump_certificate_request(
+                OpenSSL.crypto.FILETYPE_PEM, csr_obj
+            )
+            csr = util.CSR(csr.file, cert_buffer, "pem")
 
         # If CSR is provided, it must be readable and valid.
         if csr.data and not crypto_util.valid_csr(csr.data):

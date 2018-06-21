@@ -29,6 +29,8 @@ matrix:
       addons:
     - python: "2.7"
       env: TOXENV=lint
+    - python: "3.4"
+      env: TOXENV=mypy
     - python: "3.5"
       env: TOXENV=mypy
     - python: "2.7"
@@ -105,6 +107,7 @@ notifications:
   irc:
     channels:
       - secure: "SGWZl3ownKx9xKVV2VnGt7DqkTmutJ89oJV9tjKhSs84kLijU6EYdPnllqISpfHMTxXflNZuxtGo0wTDYHXBuZL47w1O32W6nzuXdra5zC+i4sYQwYULUsyfOv9gJX8zWAULiK0Z3r0oho45U+FR5ZN6TPCidi8/eGU+EEPwaAw="
+    on_cancel: never
     on_success: never
     on_failure: always
     use_notice: true
