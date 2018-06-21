@@ -218,10 +218,16 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
         self._set_server('https://acme-staging.api.letsencrypt.org/directory')
         self.assertEqual([], self.storage.find_all())
 
-    def test_upgrade_version(self):
+    def test_upgrade_version_staging(self):
         self._set_server('https://acme-staging.api.letsencrypt.org/directory')
         self.storage.save(self.acc, self.mock_client)
         self._set_server('https://acme-staging-v02.api.letsencrypt.org/directory')
+        self.assertEqual([self.acc], self.storage.find_all())
+
+    def test_upgrade_version_production(self):
+        self._set_server('https://acme-v01.api.letsencrypt.org/directory')
+        self.storage.save(self.acc, self.mock_client)
+        self._set_server('https://acme-v02.api.letsencrypt.org/directory')
         self.assertEqual([self.acc], self.storage.find_all())
 
     @mock.patch('os.rmdir')
