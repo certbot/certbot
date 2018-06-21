@@ -70,8 +70,8 @@ class NginxConfigurator(common.Installer):
     @classmethod
     def add_parser_arguments(cls, add):
         default_server_root = _determine_default_server_root()
-        add("server-root", default=default_server_root,
-            help="Nginx server root directory.")
+        add("server-root", default=constants.CLI_DEFAULTS["server_root"],
+            help="Nginx server root directory. (default: %s)" % default_server_root)
         add("ctl", default=constants.CLI_DEFAULTS["ctl"], help="Path to the "
             "'nginx' binary, used for 'configtest' and retrieving nginx "
             "version number.")
