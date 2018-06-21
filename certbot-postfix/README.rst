@@ -2,9 +2,26 @@
 Postfix plugin for Certbot
 ==========================
 
-To install your certs with this plugin, run:
+Note: this MTA installer is in **developer beta**-- we appreciate any testing, feedback, or
+feature requests for this plugin.
 
-``certbot install --installer postfix --cert-path <path to cert> --key-path <path to key> -d <MX hostname>``
+To install this plugin, in the root of this repo, run::
 
-And there you go! If you'd like to obtain these certificates via certbot, there's more documentation on how to do this `here <https://certbot.eff.org/docs/using.html#getting-certificates-and-choosing-plugins>`_.
+    ./tools/venv.sh
+    source venv/bin/activate
+
+You can use this installer with any `authenticator plugin
+<https://certbot.eff.org/docs/using.html#getting-certificates-and-choosing-plugins>_`.
+For instance, with the `standalone authenticator
+<https://certbot.eff.org/docs/using.html#standalone>_`, which requires no extra server
+software, you might run::
+
+    certbot run --standalone -i postfix -d <domain name>
+
+To just install existing certs with this plugin, run::
+
+    certbot install -i postfix --cert-path <path to cert> --key-path <path to key> -d <domain name>
+
+If you need elevated permissions to run ``certbot``, you can run
+``sudo ./venv/bin/certbot`` with the above arguments.
 
