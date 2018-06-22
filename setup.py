@@ -2,8 +2,7 @@ import codecs
 import os
 import re
 
-from setuptools import setup
-from setuptools import find_packages
+from setuptools import find_packages, setup
 
 # Workaround for http://bugs.python.org/issue8876, see
 # http://bugs.python.org/issue8876#msg208792
