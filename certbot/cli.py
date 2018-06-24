@@ -1082,7 +1082,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         help="Show tracebacks in case of errors, and allow certbot-auto "
              "execution on experimental platforms")
     helpful.add(
-        [None, "certonly", "renew", "run"], "--debug-challenges", action="store_true",
+        [None, "certonly", "run"], "--debug-challenges", action="store_true",
         default=flag_default("debug_challenges"),
         help="After setting up challenges, wait for user input before "
              "submitting to CA")
