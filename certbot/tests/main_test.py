@@ -1747,6 +1747,7 @@ class InstallTest(test_util.ConfigTestCase):
         mock_inst.return_value = null.Installer(self.config, "null")
         plugins = disco.PluginsRegistry.find_all()
         self.config.auto_hsts = True
+        self.config.certname = "nonexistent"
         self.assertRaises(errors.NotSupportedError,
                           main.install,
                           self.config, plugins)
@@ -1758,6 +1759,8 @@ class InstallTest(test_util.ConfigTestCase):
         plugins = disco.PluginsRegistry.find_all()
         self.config.auto_hsts = True
         self.config.certname = None
+        self.config.key_path = "/tmp/nonexistent"
+        self.config.cert_path = "/tmp/nonexistent"
         self.assertRaises(errors.ConfigurationError,
                           main.install,
                           self.config, plugins)
