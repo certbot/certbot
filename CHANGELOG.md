@@ -2,6 +2,28 @@
 
 Certbot adheres to [Semantic Versioning](http://semver.org/).
 
+## 0.25.1 - 2018-06-13
+
+### Fixed
+
+* TLS-ALPN-01 support has been removed from our acme library. Using our current
+  dependencies, we are unable to provide a correct implementation of this
+  challenge so we decided to remove it from the library until we can provide
+  proper support.
+* Issues causing test failures when running the tests in the acme package with
+  pytest<3.0 has been resolved.
+* certbot-nginx now correctly depends on acme>=0.25.0.
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+packages with changes other than their version number were:
+
+* acme
+* certbot-nginx
+
+More details about these changes can be found on our GitHub repo:
+https://github.com/certbot/certbot/milestone/56?closed=1
+
 ## 0.25.0 - 2018-06-06
 
 ### Added

@@ -32,6 +32,7 @@ from certbot import util
 
 from certbot.display import util as display_util
 from certbot.plugins import disco as plugins_disco
+import certbot.plugins.enhancements as enhancements
 import certbot.plugins.selection as plugin_selection
 
 logger = logging.getLogger(__name__)
@@ -627,6 +628,10 @@ class HelpfulArgumentParser(object):
                 raise errors.Error("Using --allow-subset-of-names with a"
                                    " wildcard domain is not supported.")
 
+        if parsed_args.hsts and parsed_args.auto_hsts:
+            raise errors.Error(
+                "Parameters --hsts and --auto-hsts cannot be used simultaneously.")
+
         possible_deprecation_warning(parsed_args)
 
         return parsed_args
@@ -1220,9 +1225,16 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         " when the user executes \"certbot renew\", regardless of if the certificate"
         " is renewed. This setting does not apply to important TLS configuration"
         " updates.")
+    helpful.add(
+        "renew", "--no-autorenew", action="store_false",
+        default=flag_default("autorenew"), dest="autorenew",
+        help="Disable auto renewal of certificates.")
 
     helpful.add_deprecated_argument("--agree-dev-preview", 0)
     helpful.add_deprecated_argument("--dialog", 0)
+
+    # Populate the command line parameters for new style enhancements
+    enhancements.populate_cli(helpful.add)
 
     _create_subparsers(helpful)
     _paths_parser(helpful)

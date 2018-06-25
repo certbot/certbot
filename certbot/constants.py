@@ -37,6 +37,7 @@ CLI_DEFAULTS = dict(
     expand=False,
     renew_by_default=False,
     renew_with_new_domains=False,
+    autorenew=True,
     allow_subset_of_names=False,
     tos=False,
     account=None,
@@ -57,6 +58,7 @@ CLI_DEFAULTS = dict(
     rsa_key_size=2048,
     must_staple=False,
     redirect=None,
+    auto_hsts=False,
     hsts=None,
     uir=None,
     staple=None,
@@ -159,6 +161,7 @@ ACCOUNTS_DIR = "accounts"
 """Directory where all accounts are saved."""
 
 LE_REUSE_SERVERS = {
+    'acme-v02.api.letsencrypt.org/directory': 'acme-v01.api.letsencrypt.org/directory',
     'acme-staging-v02.api.letsencrypt.org/directory':
         'acme-staging.api.letsencrypt.org/directory'
 }

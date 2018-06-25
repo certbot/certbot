@@ -299,6 +299,13 @@ class BasicParserTest(util.ParserTest):
             errors.MisconfigurationError,
             self.parser.update_runtime_variables)
 
+    def test_add_comment(self):
+        from certbot_apache.parser import get_aug_path
+        self.parser.add_comment(get_aug_path(self.parser.loc["name"]), "123456")
+        comm = self.parser.find_comments("123456")
+        self.assertEquals(len(comm), 1)
+        self.assertTrue(self.parser.loc["name"] in comm[0])
+
 
 class ParserInitTest(util.ApacheTest):
     def setUp(self):  # pylint: disable=arguments-differ

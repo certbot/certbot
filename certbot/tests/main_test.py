@@ -29,7 +29,9 @@ from certbot import updater
 from certbot import util
 
 from certbot.plugins import disco
+from certbot.plugins import enhancements
 from certbot.plugins import manual
+from certbot.plugins import null
 
 import certbot.tests.util as test_util
 
@@ -52,10 +54,11 @@ class TestHandleIdenticalCerts(unittest.TestCase):
         self.assertEqual(ret, ("reinstall", mock_lineage))
 
 
-class RunTest(unittest.TestCase):
+class RunTest(test_util.ConfigTestCase):
     """Tests for certbot.main.run."""
 
     def setUp(self):
+        super(RunTest, self).setUp()
         self.domain = 'example.org'
         self.patches = [
             mock.patch('certbot.main._get_and_save_cert'),
@@ -104,6 +107,15 @@ class RunTest(unittest.TestCase):
         self.mock_find_cert.return_value = True, mock.Mock()
         self._call()
         self.mock_success_renewal.assert_called_once_with([self.domain])
+
+    @mock.patch('certbot.main.plug_sel.choose_configurator_plugins')
+    def test_run_enhancement_not_supported(self, mock_choose):
+        mock_choose.return_value = (null.Installer(self.config, "null"), None)
+        plugins = disco.PluginsRegistry.find_all()
+        self.config.auto_hsts = True
+        self.assertRaises(errors.NotSupportedError,
+                          main.run,
+                          self.config, plugins)
 
 
 class CertonlyTest(unittest.TestCase):
@@ -1578,12 +1590,14 @@ class MakeOrVerifyNeededDirs(test_util.ConfigTestCase):
                 strict=self.config.strict_permissions)
 
 
-class EnhanceTest(unittest.TestCase):
+class EnhanceTest(test_util.ConfigTestCase):
     """Tests for certbot.main.enhance."""
 
     def setUp(self):
+        super(EnhanceTest, self).setUp()
         self.get_utility_patch = test_util.patch_get_utility()
         self.mock_get_utility = self.get_utility_patch.start()
+        self.mockinstaller = mock.MagicMock(spec=enhancements.AutoHSTSEnhancement)
 
     def tearDown(self):
         self.get_utility_patch.stop()
@@ -1675,7 +1689,7 @@ class EnhanceTest(unittest.TestCase):
 
     def test_no_enhancements_defined(self):
         self.assertRaises(errors.MisconfigurationError,
-                          self._call, ['enhance'])
+                          self._call, ['enhance', '-a', 'null'])
 
     @mock.patch('certbot.main.plug_sel.choose_configurator_plugins')
     @mock.patch('certbot.main.display_ops.choose_values')
@@ -1686,6 +1700,68 @@ class EnhanceTest(unittest.TestCase):
         mock_pick.side_effect = errors.PluginSelectionError()
         mock_client = self._call(['enhance', '--hsts'])
         self.assertFalse(mock_client.enhance_config.called)
+
+    @mock.patch('certbot.cert_manager.lineage_for_certname')
+    @mock.patch('certbot.main.display_ops.choose_values')
+    @mock.patch('certbot.main.plug_sel.pick_installer')
+    @mock.patch('certbot.main.plug_sel.record_chosen_plugins')
+    @test_util.patch_get_utility()
+    def test_enhancement_enable(self, _, _rec, mock_inst, mock_choose, mock_lineage):
+        mock_inst.return_value = self.mockinstaller
+        mock_choose.return_value = ["example.com", "another.tld"]
+        mock_lineage.return_value = mock.MagicMock(chain_path="/tmp/nonexistent")
+        self._call(['enhance', '--auto-hsts'])
+        self.assertTrue(self.mockinstaller.enable_autohsts.called)
+        self.assertEquals(self.mockinstaller.enable_autohsts.call_args[0][1],
+                          ["example.com", "another.tld"])
+
+    @mock.patch('certbot.cert_manager.lineage_for_certname')
+    @mock.patch('certbot.main.display_ops.choose_values')
+    @mock.patch('certbot.main.plug_sel.pick_installer')
+    @mock.patch('certbot.main.plug_sel.record_chosen_plugins')
+    @test_util.patch_get_utility()
+    def test_enhancement_enable_not_supported(self, _, _rec, mock_inst, mock_choose, mock_lineage):
+        mock_inst.return_value = null.Installer(self.config, "null")
+        mock_choose.return_value = ["example.com", "another.tld"]
+        mock_lineage.return_value = mock.MagicMock(chain_path="/tmp/nonexistent")
+        self.assertRaises(
+            errors.NotSupportedError,
+            self._call, ['enhance', '--auto-hsts'])
+
+    def test_enhancement_enable_conflict(self):
+        self.assertRaises(
+            errors.Error,
+            self._call, ['enhance', '--auto-hsts', '--hsts'])
+
+
+class InstallTest(test_util.ConfigTestCase):
+    """Tests for certbot.main.install."""
+
+    def setUp(self):
+        super(InstallTest, self).setUp()
+        self.mockinstaller = mock.MagicMock(spec=enhancements.AutoHSTSEnhancement)
+
+    @mock.patch('certbot.main.plug_sel.record_chosen_plugins')
+    @mock.patch('certbot.main.plug_sel.pick_installer')
+    def test_install_enhancement_not_supported(self, mock_inst, _rec):
+        mock_inst.return_value = null.Installer(self.config, "null")
+        plugins = disco.PluginsRegistry.find_all()
+        self.config.auto_hsts = True
+        self.assertRaises(errors.NotSupportedError,
+                          main.install,
+                          self.config, plugins)
+
+    @mock.patch('certbot.main.plug_sel.record_chosen_plugins')
+    @mock.patch('certbot.main.plug_sel.pick_installer')
+    def test_install_enhancement_no_certname(self, mock_inst, _rec):
+        mock_inst.return_value = self.mockinstaller
+        plugins = disco.PluginsRegistry.find_all()
+        self.config.auto_hsts = True
+        self.config.certname = None
+        self.assertRaises(errors.ConfigurationError,
+                          main.install,
+                          self.config, plugins)
+
 
 if __name__ == '__main__':
     unittest.main()  # pragma: no cover
