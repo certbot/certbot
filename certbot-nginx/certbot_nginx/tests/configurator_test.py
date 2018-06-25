@@ -972,6 +972,7 @@ class DetermineDefaultServerRootTest(certbot_test_util.ConfigTestCase):
             self.assertIn("/etc/nginx", server_root)
         else:
             self.assertTrue("/etc/nginx" in server_root or "/usr/local/etc/nginx" in server_root)
+            self.assertFalse("/etc/nginx" in server_root and "/usr/local/etc/nginx" in server_root)
 
 
 if __name__ == "__main__":
