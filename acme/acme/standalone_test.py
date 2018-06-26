@@ -347,6 +347,7 @@ class TestSimpleTLSSNI01Server(unittest.TestCase):
                 return
             else:  # pragma: no cover
                 time.sleep(1)  # wait until thread starts
+        self.fail('Server never started!')  # pragma: no cover
 
 
 if __name__ == "__main__":
