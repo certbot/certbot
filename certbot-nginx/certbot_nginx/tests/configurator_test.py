@@ -949,5 +949,31 @@ class InstallSslOptionsConfTest(util.NginxTest):
             " with the sha256 hash of self.config.mod_ssl_conf when it is updated.")
 
 
+class DetermineDefaultServerRootTest(certbot_test_util.ConfigTestCase):
+    """Tests for certbot_nginx.configurator._determine_default_server_root."""
+
+    def _call(self):
+        from certbot_nginx.configurator import _determine_default_server_root
+        return _determine_default_server_root()
+
+    @mock.patch.dict(os.environ, {"CERTBOT_DOCS": "1"})
+    def test_docs_value(self):
+        self._test(expect_both_values=True)
+
+    @mock.patch.dict(os.environ, {})
+    def test_real_values(self):
+        self._test(expect_both_values=False)
+
+    def _test(self, expect_both_values):
+        server_root = self._call()
+
+        if expect_both_values:
+            self.assertIn("/usr/local/etc/nginx", server_root)
+            self.assertIn("/etc/nginx", server_root)
+        else:
+            self.assertTrue("/etc/nginx" in server_root or "/usr/local/etc/nginx" in server_root)
+            self.assertFalse("/etc/nginx" in server_root and "/usr/local/etc/nginx" in server_root)
+
+
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
