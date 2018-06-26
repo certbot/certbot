@@ -336,7 +336,7 @@ class TestSimpleTLSSNI01Server(unittest.TestCase):
     def test_it(self, mock_logger):
         max_attempts = 5
         self.thread.start()
-        for attempt in range(max_attempts):
+        for _ in range(max_attempts):
             if mock_logger.info.called:
                 # Get the port selection which was logged
                 port = mock_logger.info.call_args[0][-1]
