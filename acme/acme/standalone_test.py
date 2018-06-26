@@ -318,10 +318,9 @@ class TestSimpleTLSSNI01Server(unittest.TestCase):
                     os.path.join(localhost_dir, 'key.pem'))
 
         from acme.standalone import simple_tls_sni_01_server
-        self.port = 1234
         self.thread = threading.Thread(
             target=simple_tls_sni_01_server, kwargs={
-                'cli_args': ('xxx', '--port', str(self.port)),
+                'cli_args': ('filename',),
                 'forever': False,
             },
         )
@@ -333,25 +332,21 @@ class TestSimpleTLSSNI01Server(unittest.TestCase):
         self.thread.join()
         shutil.rmtree(self.test_cwd)
 
-    def test_it(self):
+    @mock.patch('acme.standalone.logger')
+    def test_it(self, mock_logger):
         max_attempts = 5
+        self.thread.start()
         for attempt in range(max_attempts):
-            try:
-                cert = crypto_util.probe_sni(
-                    b'localhost', b'0.0.0.0', self.port)
-            except errors.Error:
-                self.assertTrue(attempt + 1 < max_attempts, "Timeout!")
-                time.sleep(1)  # wait until thread starts
-            else:
+            if mock_logger.info.called:
+                # Get the port selection which was logged
+                port = mock_logger.info.call_args[0][-1]
+                cert = crypto_util.probe_sni(b'localhost', b'0.0.0.0', port)
                 self.assertEqual(jose.ComparableX509(cert),
                                  test_util.load_comparable_cert(
                                      'rsa2048_cert.pem'))
-                break
-
-            if attempt == 0:
-                # the first attempt is always meant to fail, so we can test
-                # the socket failure code-path for probe_sni, as well
-                self.thread.start()
+                return
+            else:  # pragma: no cover
+                time.sleep(1)  # wait until thread starts
 
 
 if __name__ == "__main__":
