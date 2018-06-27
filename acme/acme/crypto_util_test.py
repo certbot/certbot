@@ -45,7 +45,8 @@ class SSLSocketAndProbeSNITest(unittest.TestCase):
 
     def tearDown(self):
         if self.server_thread.is_alive():
-            self.server_thread.join()
+            # The thread may have already terminated.
+            self.server_thread.join()  # pragma: no cover
 
     def _probe(self, name):
         from acme.crypto_util import probe_sni
