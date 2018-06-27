@@ -1,0 +1,67 @@
+name: certbot
+version: script
+version-script: cd parts/certbot/src && git describe|sed s/^v//
+summary: Automatically configure HTTPS using Let's Encrypt
+description: |
+ The objective of Certbot, Let's Encrypt, and the ACME (Automated
+ Certificate Management Environment) protocol is to make it possible
+ to set up an HTTPS server and have it automatically obtain a
+ browser-trusted certificate, without any human intervention. This is
+ accomplished by running a certificate management agent on the web
+ server.
+ 
+ This agent is used to:
+   - Automatically prove to the Let's Encrypt CA that you control the website
+   - Obtain a browser-trusted certificate and set it up on your web server
+   - Keep track of when your certificate is going to expire, and renew it
+   - Help you revoke the certificate if that ever becomes necessary.
+confinement: classic
+grade: devel
+
+apps:
+  certbot:
+    command: certbot
+    environment:
+      PATH: "$SNAP/bin:$SNAP/usr/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games"
+      AUGEAS_LENS_LIB: $SNAP/usr/share/augeas/lenses/dist
+  renew:
+    command: certbot -q renew
+    daemon: oneshot
+    environment:
+      PATH: "$SNAP/bin:$SNAP/usr/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games"
+      AUGEAS_LENS_LIB: $SNAP/usr/share/augeas/lenses/dist
+    passthrough:
+        # Run approximately twice a day with randomization
+        timer: 00:00~24:00/2
+
+parts:
+  python-augeas:
+    plugin: python
+    source: git://github.com/basak/python-augeas
+    source-branch: snap
+    python-version: python2
+    build-packages: [libaugeas0]
+  certbot:
+    plugin: python
+    source: git://github.com/certbot/certbot
+    source-branch: master
+    python-version: python2
+    after: [python-augeas]
+  certbot-nginx:
+    plugin: python
+    source: git://github.com/certbot/certbot
+    source-branch: master
+    source-subdir: certbot-nginx
+    build-packages: [libaugeas-dev]
+    stage-packages: [libaugeas0]
+    after: [certbot]
+    python-version: python2
+  certbot-apache:
+    plugin: python
+    source: git://github.com/certbot/certbot
+    source-branch: master
+    source-subdir: certbot-apache
+    build-packages: [libaugeas-dev]
+    stage-packages: [libaugeas0]
+    after: [certbot]
+    python-version: python2
