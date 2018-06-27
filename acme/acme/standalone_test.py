@@ -16,7 +16,6 @@ import requests
 
 from acme import challenges
 from acme import crypto_util
-from acme import errors
 from acme import test_util
 from acme.magic_typing import Set # pylint: disable=unused-import, no-name-in-module
 
