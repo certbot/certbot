@@ -65,7 +65,8 @@ class SSLSocketAndProbeSNITest(unittest.TestCase):
         self.assertRaises(errors.Error, self._probe, b'bar')
 
     def test_probe_connection_error(self):
-        self.server.server_close()
+        # pylint has a hard time with six
+        self.server.server_close()  # pylint: disable=no-member
         original_timeout = socket.getdefaulttimeout()
         try:
             socket.setdefaulttimeout(1)
