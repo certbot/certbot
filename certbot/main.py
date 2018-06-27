@@ -789,6 +789,13 @@ def install(config, plugins):
     except errors.PluginSelectionError as e:
         return str(e)
 
+    custom_cert = (config.key_path and config.cert_path)
+    if not config.certname and not custom_cert:
+        certname_question = "Which certificate would you like to install?"
+        config.certname = cert_manager.get_certnames(
+            config, "install", allow_multiple=False,
+            custom_prompt=certname_question)[0]
+
     if not enhancements.are_supported(config, installer):
         raise errors.NotSupportedError("One ore more of the requested enhancements "
                                        "are not supported by the selected installer")

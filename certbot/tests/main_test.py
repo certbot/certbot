@@ -763,17 +763,22 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
     def test_installer_param_error(self, _inst, _rec):
         self.assertRaises(errors.ConfigurationError,
                           self._call,
-                          ['install', '--key-path', '/tmp/key_path'])
-        self.assertRaises(errors.ConfigurationError,
-                          self._call,
-                          ['install', '--cert-path', '/tmp/key_path'])
-        self.assertRaises(errors.ConfigurationError,
-                          self._call,
-                          ['install'])
-        self.assertRaises(errors.ConfigurationError,
-                          self._call,
                           ['install', '--cert-name', 'notfound',
                            '--key-path', 'invalid'])
+
+    @mock.patch('certbot.main.plug_sel.record_chosen_plugins')
+    @mock.patch('certbot.main.plug_sel.pick_installer')
+    @mock.patch('certbot.cert_manager.get_certnames')
+    @mock.patch('certbot.main._install_cert')
+    def test_installer_select_cert(self, mock_inst, mock_getcert, _inst, _rec):
+        mock_lineage = mock.MagicMock(cert_path="/tmp/cert", chain_path="/tmp/chain",
+                                      fullchain_path="/tmp/chain",
+                                      key_path="/tmp/privkey")
+        with mock.patch("certbot.cert_manager.lineage_for_certname") as mock_getlin:
+            mock_getlin.return_value = mock_lineage
+            self._call(['install'], mockisfile=True)
+        self.assertTrue(mock_getcert.called)
+        self.assertTrue(mock_inst.called)
 
     @mock.patch('certbot.main._report_new_cert')
     @mock.patch('certbot.util.exe_exists')
@@ -1742,6 +1747,7 @@ class InstallTest(test_util.ConfigTestCase):
         mock_inst.return_value = null.Installer(self.config, "null")
         plugins = disco.PluginsRegistry.find_all()
         self.config.auto_hsts = True
+        self.config.certname = "nonexistent"
         self.assertRaises(errors.NotSupportedError,
                           main.install,
                           self.config, plugins)
@@ -1753,6 +1759,8 @@ class InstallTest(test_util.ConfigTestCase):
         plugins = disco.PluginsRegistry.find_all()
         self.config.auto_hsts = True
         self.config.certname = None
+        self.config.key_path = "/tmp/nonexistent"
+        self.config.cert_path = "/tmp/nonexistent"
         self.assertRaises(errors.ConfigurationError,
                           main.install,
                           self.config, plugins)
