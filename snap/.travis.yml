@@ -1,0 +1,11 @@
+language: bash
+script: docker run -v $(pwd):$(pwd) -t snapcore/snapcraft sh -c "apt-get update -qq && cd $(pwd) && snapcraft" && sudo apt-get -y install snapd && sudo snap install --dangerous --classic *.snap && sudo bash test.bash
+sudo: required
+services:
+- docker
+deploy:
+  'on':
+    branch: master
+  provider: script
+  script: openssl aes-256-cbc -K $encrypted_edc9d3b1405a_key -iv $encrypted_edc9d3b1405a_iv -in .snapcraft/travis_snapcraft.cfg -out .snapcraft/snapcraft.cfg -d && docker run -v $(pwd):$(pwd) -t snapcore/snapcraft sh -c "cd $(pwd) && snapcraft push *.snap --release edge"
+  skip_cleanup: true
