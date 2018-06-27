@@ -139,7 +139,16 @@ def make_instance(instance_name,
         if tag_spec['ResourceType'] == 'instance':
             tag_spec['Tags'].append({'Key': 'Name', 'Value': instance_name})
 
+    block_device_mappings = []
+    image = EC2.Image(ami_id)
+    for mapping in image.block_device_mappings:
+        if 'Ebs' in mapping and not mapping['Ebs'].get('DeleteOnTermination', False):
+            block_device_mappings.append(
+                {'DeviceName': mapping['DeviceName'],
+                 'Ebs': {'DeleteOnTermination': True}})
+
     return EC2.create_instances(
+        BlockDeviceMappings=block_device_mappings,
         ImageId=ami_id,
         SecurityGroups=security_groups,
         KeyName=keyname,
@@ -149,38 +158,10 @@ def make_instance(instance_name,
         InstanceType=machine_type,
         TagSpecifications=tag_specs)[0]
 
-def terminate_and_clean(instances):
-    """
-    Some AMIs specify EBS stores that won't delete on instance termination.
-    These must be manually deleted after shutdown.
-    """
-    volumes_to_delete = []
-    for instance in instances:
-        for bdmap in instance.block_device_mappings:
-            if 'Ebs' in bdmap.keys():
-                if not bdmap['Ebs']['DeleteOnTermination']:
-                    volumes_to_delete.append(bdmap['Ebs']['VolumeId'])
-
+def terminate_instances(instances):
+    """Terminate all instances in the given list."""
     for instance in instances:
         instance.terminate()
-
-    # can't delete volumes until all attaching instances are terminated
-    _ids = [instance.id for instance in instances]
-    all_terminated = False
-    while not all_terminated:
-        all_terminated = True
-        for _id in _ids:
-            # necessary to reinit object for boto3 to get true state
-            inst = EC2.Instance(id=_id)
-            if inst.state['Name'] != 'terminated':
-                all_terminated = False
-        time.sleep(5)
-
-    for vol_id in volumes_to_delete:
-        volume = EC2.Volume(id=vol_id)
-        volume.delete()
-
-    return volumes_to_delete
 
 
 # Helper Routines
@@ -404,10 +385,10 @@ def print_manual_cleanup_instructions():
 def cleanup(cl_args, instances, targetlist):
     print('Logs in ', LOGDIR)
     if not cl_args.saveinstances:
-        print('Terminating EC2 Instances and Cleaning Dangling EBS Volumes')
+        print('Terminating EC2 Instances')
         if cl_args.killboulder:
             boulder_server.terminate()
-        terminate_and_clean(instances)
+        terminate_instances(instances)
     else:
         # print login information for the boxes for debugging
         for ii, target in enumerate(targetlist):
