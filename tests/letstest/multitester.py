@@ -168,14 +168,6 @@ def _get_block_device_mappings(ami_id):
             for mapping in EC2.Image(ami_id).block_device_mappings
             if not mapping.get('Ebs', {}).get('DeleteOnTermination', True)]
 
-def terminate_and_clean(instances):
-    """
-    Some AMIs specify EBS stores that won't delete on instance termination.
-    These must be manually deleted after shutdown.
-    """
-    for instance in instances:
-        instance.terminate()
-
 
 # Helper Routines
 #-------------------------------------------------------------------------------
@@ -362,10 +354,11 @@ def test_client_process(inqueue, outqueue):
 def cleanup(cl_args, instances, targetlist):
     print('Logs in ', LOGDIR)
     if not cl_args.saveinstances:
-        print('Terminating EC2 Instances and Cleaning Dangling EBS Volumes')
+        print('Terminating EC2 Instances')
         if cl_args.killboulder:
             boulder_server.terminate()
-        terminate_and_clean(instances)
+        for instance in instances:
+            instance.terminate()
     else:
         # print login information for the boxes for debugging
         for ii, target in enumerate(targetlist):
