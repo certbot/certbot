@@ -128,6 +128,7 @@ def make_instance(instance_name,
                   userdata=""): #userdata contains bash or cloud-init script
 
     new_instance = EC2.create_instances(
+        BlockDeviceMappings=_get_block_device_mappings(ami_id),
         ImageId=ami_id,
         SecurityGroups=security_groups,
         KeyName=keyname,
@@ -150,6 +151,22 @@ def make_instance(instance_name,
         else:
             raise
     return new_instance
+
+def _get_block_device_mappings(ami_id):
+    """Returns the list of block device mappings to ensure cleanup.
+
+    This list sets connected EBS volumes to be deleted when the EC2
+    instance is terminated.
+
+    """
+    # Not all devices use EBS, but the default value for DeleteOnTermination
+    # when the device does use EBS is true. See:
+    # * https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ec2-blockdev-mapping.html
+    # * https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ec2-blockdev-template.html
+    return [{'DeviceName': mapping['DeviceName'],
+             'Ebs': {'DeleteOnTermination': True}}
+            for mapping in EC2.Image(ami_id).block_device_mappings
+            if not mapping.get('Ebs', {}).get('DeleteOnTermination', True)]
 
 def terminate_and_clean(instances):
     """
