@@ -12,6 +12,13 @@ Named Arguments
                                           to propagate before asking the ACME
                                           server to verify the DNS record.
                                           (Default: 10)
+``--dns-route53-profile-name``            The name of the AWS credentials
+                                          profile to use when contacting AWS.
+                                          (Default: ``None``)
+``--dns-route53-boto3-max-attempts``      The number of times to Boto3 will
+                                          attempt to retry AWS API when rate
+                                          limit is reached.
+                                          (Default: 20)
 ========================================  =====================================
 
 
@@ -70,7 +77,8 @@ credentials <https://boto3.readthedocs.io/en/latest/guide/configuration.html
 * Using the ``AWS_ACCESS_KEY_ID`` and ``AWS_SECRET_ACCESS_KEY`` environment
   variables.
 * Using a credentials configuration file at the default location,
-  ``~/.aws/config``.
+  ``~/.aws/config``. If multiple profiles are used the required one may be
+  selected via ``--dns-route53-profile-name``.
 * Using a credentials configuration file at a path supplied using the
   ``AWS_CONFIG_FILE`` environment variable.
 

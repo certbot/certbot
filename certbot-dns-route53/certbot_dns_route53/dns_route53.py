@@ -5,13 +5,13 @@ import time
 
 import boto3
 import zope.interface
+from acme.magic_typing import DefaultDict, List, Dict  # pylint: disable=unused-import, no-name-in-module
+from botocore.config import Config
 from botocore.exceptions import NoCredentialsError, ClientError
 
 from certbot import errors
 from certbot import interfaces
 from certbot.plugins import dns_common
-
-from acme.magic_typing import DefaultDict, List, Dict # pylint: disable=unused-import, no-name-in-module
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +19,7 @@ INSTRUCTIONS = (
     "To use certbot-dns-route53, configure credentials as described at "
     "https://boto3.readthedocs.io/en/latest/guide/configuration.html#best-practices-for-configuring-credentials "  # pylint: disable=line-too-long
     "and add the necessary permissions for Route53 access.")
+
 
 @zope.interface.implementer(interfaces.IAuthenticator)
 @zope.interface.provider(interfaces.IPluginFactory)
@@ -35,8 +36,26 @@ class Authenticator(dns_common.DNSAuthenticator):
 
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
-        self.r53 = boto3.client("route53")
-        self._resource_records = collections.defaultdict(list) # type: DefaultDict[str, List[Dict[str, str]]]
+
+        boto3_config = Config(retries={'max_attempts': self.conf('boto3-max-attempts')})
+        session = boto3.Session(profile_name=self.conf('profile-name'))
+        self.r53 = session.client('route53', config=boto3_config)
+        self._resource_records = collections.defaultdict(list)  # type: DefaultDict[str, List[Dict[str, str]]]
+
+    @classmethod
+    def add_parser_arguments(cls, add,  # pylint: disable=arguments-differ
+                             default_propagation_seconds=10,
+                             profile_name=None,
+                             max_attempts=20):
+        super(Authenticator, cls).add_parser_arguments(add, default_propagation_seconds)
+        add('profile-name',
+            default=profile_name,
+            type=str,
+            help='The name of the AWS credentials profile to use.')
+        add('boto3-max-attempts',
+            default=max_attempts,
+            type=int,
+            help='The number times to Boto3 will attempt to retry AWS API when rate limit is reached.')
 
     def more_info(self):  # pylint: disable=missing-docstring,no-self-use
         return "Solve a DNS01 challenge using AWS Route53"
@@ -44,7 +63,7 @@ class Authenticator(dns_common.DNSAuthenticator):
     def _setup_credentials(self):
         pass
 
-    def _perform(self, domain, validation_domain_name, validation): # pylint: disable=missing-docstring
+    def _perform(self, domain, validation_domain_name, validation):  # pylint: disable=missing-docstring
         pass
 
     def perform(self, achalls):
@@ -53,8 +72,8 @@ class Authenticator(dns_common.DNSAuthenticator):
         try:
             change_ids = [
                 self._change_txt_record("UPSERT",
-                  achall.validation_domain_name(achall.domain),
-                  achall.validation(achall.account_key))
+                                        achall.validation_domain_name(achall.domain),
+                                        achall.validation(achall.account_key))
                 for achall in achalls
             ]
 
