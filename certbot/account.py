@@ -192,7 +192,6 @@ class AccountFileStorage(interfaces.AccountStorage):
         return self._find_all_for_server_path(self.config.server_path)
 
     def _symlink_to_accounts_dir(self, prev_server_path, server_path):
-        server_path = self.config.server_path
         accounts_dir = self.config.accounts_dir_for_server_path(server_path)
         if os.path.islink(accounts_dir):
             os.unlink(accounts_dir)
