@@ -4,10 +4,10 @@ import shutil
 import socket
 import threading
 import tempfile
-import time
 import unittest
 
 from six.moves import http_client  # pylint: disable=import-error
+from six.moves import queue  # pylint: disable=import-error
 from six.moves import socketserver  # type: ignore  # pylint: disable=import-error
 
 import josepy as jose
@@ -276,20 +276,18 @@ class TestSimpleTLSSNI01Server(unittest.TestCase):
 
     @mock.patch('acme.standalone.logger')
     def test_it(self, mock_logger):
-        max_attempts = 5
+        # Use a Queue because mock objects aren't thread safe.
+        q = queue.Queue()  # type: queue.Queue[int]
+        # Add port number to the queue.
+        mock_logger.info.side_effect = lambda *args: q.put(args[-1])
         self.thread.start()
-        for _ in range(max_attempts):
-            if mock_logger.info.called:
-                # Get the port selection which was logged
-                port = mock_logger.info.call_args[0][-1]
-                cert = crypto_util.probe_sni(b'localhost', b'0.0.0.0', port)
-                self.assertEqual(jose.ComparableX509(cert),
-                                 test_util.load_comparable_cert(
-                                     'rsa2048_cert.pem'))
-                return
-            else:  # pragma: no cover
-                time.sleep(1)  # wait until thread starts
-        self.fail('Server never started!')  # pragma: no cover
+
+        # After the timeout, an exception is raised if the queue is empty.
+        port = q.get(timeout=5)
+        cert = crypto_util.probe_sni(b'localhost', b'0.0.0.0', port)
+        self.assertEqual(jose.ComparableX509(cert),
+                         test_util.load_comparable_cert(
+                             'rsa2048_cert.pem'))
 
 
 if __name__ == "__main__":
