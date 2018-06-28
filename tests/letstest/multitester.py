@@ -173,33 +173,8 @@ def terminate_and_clean(instances):
     Some AMIs specify EBS stores that won't delete on instance termination.
     These must be manually deleted after shutdown.
     """
-    volumes_to_delete = []
-    for instance in instances:
-        for bdmap in instance.block_device_mappings:
-            if 'Ebs' in bdmap.keys():
-                if not bdmap['Ebs']['DeleteOnTermination']:
-                    volumes_to_delete.append(bdmap['Ebs']['VolumeId'])
-
     for instance in instances:
         instance.terminate()
-
-    # can't delete volumes until all attaching instances are terminated
-    _ids = [instance.id for instance in instances]
-    all_terminated = False
-    while not all_terminated:
-        all_terminated = True
-        for _id in _ids:
-            # necessary to reinit object for boto3 to get true state
-            inst = EC2.Instance(id=_id)
-            if inst.state['Name'] != 'terminated':
-                all_terminated = False
-        time.sleep(5)
-
-    for vol_id in volumes_to_delete:
-        volume = EC2.Volume(id=vol_id)
-        volume.delete()
-
-    return volumes_to_delete
 
 
 # Helper Routines
