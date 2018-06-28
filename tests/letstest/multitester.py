@@ -32,6 +32,7 @@ see:
 from __future__ import print_function
 from __future__ import with_statement
 
+import atexit
 import sys, os, time, argparse, socket
 import random
 import string
@@ -234,6 +235,13 @@ def create_unique_run_id():
         if is_unique_run_id(id_):
             return id_
 
+def get_client_instances():
+    """Returns all client instances created by the current run."""
+    filters = [get_run_id_filter(TAG_VALUE)]
+    boulder_tag = {'Key': 'Name', 'Value': 'le-boulderserver'}
+    return [instance for instance in EC2.instances.filter(Filters=filters)
+            if boulder_tag not in instance.tags]
+
 # Fabric Routines
 #-------------------------------------------------------------------------------
 def local_git_clone(repo_url):
@@ -373,8 +381,8 @@ def print_manual_cleanup_instructions():
     instances_cmd += '" --output text --profile ' + PROFILE
     instances_cmd += ' | grep INSTANCES | cut -f8)'
     print(instances_cmd)
-    print("After waiting for those instances to shut down, "
-          "you can delete any abandoned volumes by running:")
+    print('After waiting for those instances to shut down, '
+          'you can delete any abandoned volumes by running:')
     volumes_cmd = 'aws ec2 describe-volumes --filters "Name=tag:' + TAG_KEY
     volumes_cmd += ',Values=' + TAG_VALUE + '" --output text'
     volumes_cmd += ' --profile '+ PROFILE + ' | grep VOLUMES | cut -f8 | '
@@ -382,19 +390,27 @@ def print_manual_cleanup_instructions():
     volumes_cmd += ' --volume-id'
     print(volumes_cmd)
 
-def cleanup(cl_args, instances, targetlist):
-    print('Logs in ', LOGDIR)
-    if not cl_args.saveinstances:
-        print('Terminating EC2 Instances')
-        if cl_args.killboulder:
-            boulder_server.terminate()
-        terminate_instances(instances)
-    else:
-        # print login information for the boxes for debugging
-        for ii, target in enumerate(targetlist):
-            print(target['name'],
-                  target['ami'],
-                  "%s@%s"%(target['user'], instances[ii].public_ip_address))
+def cleanup(cl_args, targetlist):
+    try:
+        print('Logs in ', LOGDIR)
+        instances = get_client_instances()
+        if cl_args.saveinstances:
+            for instance in instances:
+                target = next(t for t in targetlist
+                              if t['ami'] == instance.image_id)
+                print(target['name'],
+                      target['ami'],
+                      "%s@%s"%(target['user'], instance.public_ip_address))
+            print_manual_cleanup_instructions()
+        else:
+            print('Terminating EC2 Instances')
+            if cl_args.killboulder:
+                boulder_server.terminate()
+            terminate_instances(instances)
+    except:
+        print('An error occurred during cleanup!')
+        print_manual_cleanup_instructions()
+        raise
 
 
 
@@ -467,6 +483,7 @@ boulder_servers = EC2.instances.filter(Filters=[
 
 boulder_server = next(iter(boulder_servers), None)
 
+atexit.register(cleanup, cl_args, targetlist)
 print("Requesting Instances...")
 if boulder_server:
     print("Found existing boulder server:", boulder_server)
@@ -558,7 +575,5 @@ try:
     results_file.close()
 
 finally:
-    cleanup(cl_args, instances, targetlist)
-
     # kill any connections
     fabric.network.disconnect_all()
