@@ -1863,7 +1863,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
             names = ssl_vhost.get_names()
             for idx, name in enumerate(names):
-                args = ["%{SERVER_NAME}", "={0}".format(name), "[OR]"]
+                args = ["%{SERVER_NAME}", " ^({0})$".format(name), "[OR]"]
                 if idx == len(names) - 1:
                     args.pop()
                 self.parser.add_dir(general_vh.path, "RewriteCond", args)
