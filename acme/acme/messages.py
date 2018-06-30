@@ -274,6 +274,7 @@ class Registration(ResourceBody):
     agreement = jose.Field('agreement', omitempty=True)
     status = jose.Field('status', omitempty=True)
     terms_of_service_agreed = jose.Field('termsOfServiceAgreed', omitempty=True)
+    only_return_existing = jose.Field('onlyReturnExisting', omitempty=True)
 
     phone_prefix = 'tel:'
     email_prefix = 'mailto:'

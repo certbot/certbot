@@ -109,18 +109,6 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
         self.net.account = updated_regr
         return updated_regr
 
-    def deactivate_registration(self, regr):
-        """Deactivate registration.
-
-        :param messages.RegistrationResource regr: The Registration Resource
-            to be deactivated.
-
-        :returns: The Registration resource that was deactivated.
-        :rtype: `.RegistrationResource`
-
-        """
-        return self.update_registration(regr, update={'status': 'deactivated'})
-
     def query_registration(self, regr):
         """Query server about registration.
 
@@ -288,6 +276,19 @@ class Client(ClientBase):
         # "Instance of 'Field' has no key/contact member" bug:
         # pylint: disable=no-member
         return self._regr_from_response(response)
+
+    def deactivate_registration(self, regr):
+        """Deactivate registration.
+
+        :param messages.RegistrationResource regr: The Registration Resource
+            to be deactivated.
+
+        :returns: The Registration resource that was deactivated.
+        :rtype: `.RegistrationResource`
+
+        """
+
+        return self.update_registration(regr, update={'status': 'deactivated'})
 
     def agree_to_tos(self, regr):
         """Agree to the terms-of-service.
@@ -588,6 +589,27 @@ class ClientV2(ClientBase):
         self.net.account = regr
         return regr
 
+    def deactivate_registration(self, regr):
+        """Deactivate registration.
+
+        :param messages.RegistrationResource regr: The Registration Resource
+            to be deactivated.
+
+        :returns: The Registration resource that was deactivated.
+        :rtype: `.RegistrationResource`
+
+        """
+        # https://github.com/certbot/certbot/issues/6155
+        correct_url_regr = self._get_account(regr)
+        return self.update_registration(regr, update={'status': 'deactivated'})
+
+    def _get_account(self, regr):
+        only_existing_reg = regr.body.update(only_return_existing=True)
+        response = self._post(self.directory['newAccount'], only_existing_reg)
+        regr = self._regr_from_response(response)
+        self.net.account = regr
+        return regr
+
     def new_order(self, csr_pem):
         """Request a new Order object from the server.
 
@@ -754,6 +776,18 @@ class BackwardsCompatibleClientV2(object):
                 _assess_tos(self.client.directory.meta.terms_of_service)
                 regr = regr.update(terms_of_service_agreed=True)
             return self.client.new_account(regr)
+
+    def deactivate_registration(self, regr):
+        """Deactivate registration.
+
+        :param messages.RegistrationResource regr: The Registration Resource
+            to be deactivated.
+
+        :returns: The Registration resource that was deactivated.
+        :rtype: `.RegistrationResource`
+
+        """
+        return self.client.deactivate_registration(regr)
 
     def new_order(self, csr_pem):
         """Request a new Order object from the server.
