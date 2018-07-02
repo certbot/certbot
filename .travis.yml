@@ -19,14 +19,6 @@ before_script:
 
 matrix:
   include:
-    - python: "3.7"
-      env: TOXENV=py36 BOULDER_INTEGRATION=v1
-      sudo: required
-      services: docker
-    - python: "3.7"
-      env: TOXENV=py36 BOULDER_INTEGRATION=v2
-      sudo: required
-      services: docker
     - language: generic
       env: TOXENV=py37
       os: osx
