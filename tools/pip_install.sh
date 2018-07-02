@@ -39,6 +39,6 @@ set -x
 
 # install the requested packages using the pinned requirements as constraints
 if [ -n "$requirements" ]; then
-    pip install -q --constraint "$all_constraints" --requirement "$requirements"
+    pip install --constraint "$all_constraints" --requirement "$requirements"
 fi
-pip install -q --constraint "$all_constraints" "$@"
+pip install --constraint "$all_constraints" "$@"
