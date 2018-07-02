@@ -59,7 +59,7 @@ def get_installer(config, plugins):
             "You can do this by running Certbot with '--installer PLUGIN_NAME ")
     _installers = plugins.filter(lambda p_ep: p_ep.name == req_inst)
     if _installers:
-        inst = _installers.values()[0]
+        inst = list(_installers.values())[0]
         logger.debug("Selecting plugin: %s", inst)
         if inst.misconfigured:
             raise errors.PluginSelectionError(
