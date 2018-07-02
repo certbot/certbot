@@ -1199,11 +1199,11 @@ def renew_cert(config, plugins, lineage):
         # In case of a renewal, reload server to pick up new certificate.
         # In principle we could have a configuration option to inhibit this
         # from happening.
+        # Run deployer
         updater.run_renewal_deployer(config, renewed_lineage, installer)
         installer.restart()
         notify("new certificate deployed with reload of {0} server; fullchain is {1}".format(
                config.installer, lineage.fullchain), pause=False)
-        # Run deployer
 
 def certonly(config, plugins):
     """Authenticate & obtain cert, but do not install it.

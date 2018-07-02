@@ -87,8 +87,8 @@ class AutoHSTSEnhancement(object):
     increase over time.
 
     The plugins implementing new style enhancements are responsible of handling
-    the saving of configuration checkpoints as well as calling possible restarts
-    of managed software themselves.
+    the saving of configuration checkpoints as well as the other calls to
+    interface methods of `interfaces.IInstaller` such as prepare() and restart()
 
     Methods:
         enable_autohsts is called when the header is initially installed using a

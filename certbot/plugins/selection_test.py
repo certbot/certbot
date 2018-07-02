@@ -6,10 +6,13 @@ import unittest
 import mock
 import zope.component
 
+from certbot import errors
+from certbot import interfaces
+
 from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
 from certbot.display import util as display_util
+from certbot.plugins.disco import PluginsRegistry
 from certbot.tests import util as test_util
-from certbot import interfaces
 
 
 class ConveniencePickPluginTest(unittest.TestCase):
@@ -169,6 +172,53 @@ class ChoosePluginTest(unittest.TestCase):
                 del os.environ["CERTBOT_AUTO"]
 
         self.assertTrue("default" in mock_util().menu.call_args[1])
+
+class GetInstallerTest(test_util.ConfigTestCase):
+    """Tests for certbot.plugins.selection.get_installer."""
+
+    def setUp(self):
+        super(GetInstallerTest, self).setUp()
+        self.mock_apache_fail_ep = mock.Mock(
+            description_with_name="afail", misconfigured=True)
+        self.mock_apache_fail_ep.name = "afail"
+        self.mock_apache_ep = mock.Mock(
+            description_with_name="apache", misconfigured=False)
+        self.mock_apache_ep.name = "apache"
+        self.mock_apache_plugin = mock.MagicMock()
+        self.mock_apache_ep.init.return_value = self.mock_apache_plugin
+        self.plugins = PluginsRegistry({
+            "afail": self.mock_apache_fail_ep,
+            "apache": self.mock_apache_ep,
+        })
+
+
+    def _call(self):
+        from certbot.plugins.selection import get_installer
+        return get_installer(self.config, self.plugins)
+
+    def test_no_installer_defined(self):
+        self.config.configurator = None
+        self.assertRaises(errors.MissingCommandlineFlag,
+                          self._call)
+
+    def test_misconfigured_installer(self):
+        self.config.configurator = "afail"
+        self.assertRaises(errors.PluginSelectionError,
+                          self._call)
+
+    def test_no_available_installers(self):
+        self.config.configurator = "apache"
+        self.plugins = PluginsRegistry({})
+        self.assertRaises(errors.MisconfigurationError,
+                          self._call)
+
+    def test_get_plugin(self):
+        self.config.configurator = "apache"
+        installer = self._call()
+        self.assertTrue(installer is self.mock_apache_plugin)
+
+
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

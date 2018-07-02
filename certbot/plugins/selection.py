@@ -39,6 +39,35 @@ def pick_authenticator(
     return pick_plugin(
         config, default, plugins, question, (interfaces.IAuthenticator,))
 
+def get_installer(config, plugins):
+    """
+    Get an unprepared interfaces.IInstaller object.
+
+    :param certbot.interfaces.IConfig config: Configuration
+    :param certbot.plugins.disco.PluginsRegistry plugins:
+        All plugins registered as entry points.
+
+    :returns: Unprepared installer plugin.
+    :rtype: IPlugin
+    """
+
+    _, req_inst = cli_plugin_requests(config)
+    if not req_inst:
+        raise errors.MissingCommandlineFlag(
+            "Missing command line flags. For non-interactive execution, "
+            "you will need to specify an installer plugin on the command line. "
+            "You can do this by running Certbot with '--installer PLUGIN_NAME ")
+    _installers = plugins.filter(lambda p_ep: p_ep.name == req_inst)
+    if _installers:
+        inst = _installers.values()[0]
+        logger.debug("Selecting plugin: %s", inst)
+        if inst.misconfigured:
+            raise errors.PluginSelectionError(
+                "Configuration error in plugin %s", req_inst)
+        return inst.init(config)
+    else:
+        raise errors.MisconfigurationError("Could not select or initialize the "
+                                           "requested installer %s.")
 
 def pick_plugin(config, default, plugins, question, ifaces):
     """Pick plugin.
