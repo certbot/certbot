@@ -1,4 +1,5 @@
 language: python
+dist: xenial
 
 cache:
     directories:
@@ -27,7 +28,7 @@ branches:
     - /^test-.*$/
 
 # container-based infrastructure
-sudo: false
+sudo: true
 
 addons:
   apt:
