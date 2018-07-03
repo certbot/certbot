@@ -174,7 +174,7 @@ class ChoosePluginTest(unittest.TestCase):
         self.assertTrue("default" in mock_util().menu.call_args[1])
 
 class GetInstallerTest(test_util.ConfigTestCase):
-    """Tests for certbot.plugins.selection.get_installer."""
+    """Tests for certbot.plugins.selection.get_unprepared_installer."""
 
     def setUp(self):
         super(GetInstallerTest, self).setUp()
@@ -193,8 +193,8 @@ class GetInstallerTest(test_util.ConfigTestCase):
 
 
     def _call(self):
-        from certbot.plugins.selection import get_installer
-        return get_installer(self.config, self.plugins)
+        from certbot.plugins.selection import get_unprepared_installer
+        return get_unprepared_installer(self.config, self.plugins)
 
     def test_no_installer_defined(self):
         self.config.configurator = None

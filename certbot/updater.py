@@ -29,10 +29,8 @@ def run_generic_updaters(config, lineage, plugins):
         return
     try:
         # installers are used in auth mode to determine domain names
-        installer = plug_sel.get_installer(config, plugins)
-    except (errors.MissingCommandlineFlag,
-            errors.MisconfigurationError,
-            errors.PluginSelectionError) as e:
+        installer = plug_sel.get_unprepared_installer(config, plugins)
+    except errors.Error as e:
         logger.warning("Could not choose appropriate plugin for updaters: %s", e)
         return
     _run_updaters(lineage, installer, config)

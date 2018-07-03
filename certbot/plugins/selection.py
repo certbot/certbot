@@ -39,7 +39,7 @@ def pick_authenticator(
     return pick_plugin(
         config, default, plugins, question, (interfaces.IAuthenticator,))
 
-def get_installer(config, plugins):
+def get_unprepared_installer(config, plugins):
     """
     Get an unprepared interfaces.IInstaller object.
 

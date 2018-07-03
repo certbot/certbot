@@ -87,8 +87,9 @@ class AutoHSTSEnhancement(object):
     increase over time.
 
     The plugins implementing new style enhancements are responsible of handling
-    the saving of configuration checkpoints as well as the other calls to
-    interface methods of `interfaces.IInstaller` such as prepare() and restart()
+    the saving of configuration checkpoints as well as calling possible restarts
+    of managed software themselves. For update_autohsts method, the installer may
+    have to call prepare() to finalize the plugin initialization.
 
     Methods:
         enable_autohsts is called when the header is initially installed using a
@@ -112,6 +113,10 @@ class AutoHSTSEnhancement(object):
 
         :param lineage: Certificate lineage object
         :type lineage: certbot.storage.RenewableCert
+
+        .. note:: prepare() method inherited from `interfaces.IPlugin` might need
+            to be called manually within implementation if this interface method
+            to finalize the plugin initialization.
         """
 
     @abc.abstractmethod
