@@ -273,7 +273,7 @@ class AccountFileStorage(interfaces.AccountStorage):
             next_server_path = reused_servers[server_path]
             next_accounts_dir_path = self.config.accounts_dir_for_server_path(next_server_path)
             if os.path.islink(next_accounts_dir_path) \
-                and os.readlink(next_accounts_dir) == accounts_dir_path:
+                and os.readlink(next_accounts_dir_path) == accounts_dir_path:
                 self._delete_accounts_dir_for_server_path(next_server_path)
 
         # now there is nothing linking to this, so delete
