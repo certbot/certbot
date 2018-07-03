@@ -258,7 +258,7 @@ class AccountFileStorage(interfaces.AccountStorage):
         shutil.rmtree(account_dir_path)
 
         # Step 2: remove the directory if it's empty, and linked directories
-        if not os.listdir(self.accounts_dir):
+        if not os.listdir(self.config.accounts_dir):
             self._delete_accounts_dir_for_server_path(self.config.server_path)
 
     def _delete_accounts_dir_for_server_path(self, server_path):
@@ -266,14 +266,14 @@ class AccountFileStorage(interfaces.AccountStorage):
 
         # does an appropriate directory link to me? if so, make sure that's gone
         reused_servers = {}
-        for k in LE_REUSE_SERVERS:
-            reused_servers[LE_REUSE_SERVERS[k]] = k
+        for k in constants.LE_REUSE_SERVERS:
+            reused_servers[constants.LE_REUSE_SERVERS[k]] = k
 
         if server_path in reused_servers:
             next_server_path = reused_servers[server_path]
             next_accounts_dir_path = self.config.accounts_dir_for_server_path(next_server_path)
-            if os.path.islink(next_accounts_dir_path) and
-                os.readlink(next_accounts_dir) == accounts_dir_path:
+            if os.path.islink(next_accounts_dir_path) \
+                and os.readlink(next_accounts_dir) == accounts_dir_path:
                 self._delete_accounts_dir_for_server_path(next_server_path)
 
         # now there is nothing linking to this, so delete
