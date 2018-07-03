@@ -600,20 +600,19 @@ class ClientV2(ClientBase):
 
         """
         # https://github.com/certbot/certbot/issues/6155
-        correct_url_regr = self._get_account(regr)
-        self.net.account = None
-        updated_regr = self.update_registration(regr, update={'status': 'deactivated'})
-        self.net.account = updated_regr
-        return updated_regr
+        v2_uri_for_account = self._get_v2_account_uri(regr)
+        self.net.account = regr.update(uri=v2_uri_for_account)
+        deactivated_regr = self.update_registration(self.net.account,
+            update={'status': 'deactivated'})
+        return deactivated_regr
 
-    def _get_account(self, regr):
+    def _get_v2_account_uri(self, regr):
         self.net.account = None
         only_existing_reg = regr.body.update(only_return_existing=True)
         response = self._post(self.directory['newAccount'], only_existing_reg)
         updated_uri = response.headers['Location']
-        updated_regr = regr.update(new_authzr_uri=updated_uri)
-        self.net.account = updated_regr
-        return updated_regr
+        self.net.account = regr
+        return updated_uri
 
     def new_order(self, csr_pem):
         """Request a new Order object from the server.
