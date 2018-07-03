@@ -92,15 +92,6 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
         kwargs.setdefault('acme_version', self.acme_version)
         return self.net.post(*args, **kwargs)
 
-    def query_registration(self, regr):
-        """Query server about registration.
-
-        :param messages.RegistrationResource: Existing Registration
-            Resource.
-
-        """
-        return self._send_recv_regr(regr, messages.UpdateRegistration())
-
     def deactivate_registration(self, regr):
         """Deactivate registration.
 
@@ -113,6 +104,15 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
         """
 
         return self.update_registration(regr, update={'status': 'deactivated'})
+
+    def query_registration(self, regr):
+        """Query server about registration.
+
+        :param messages.RegistrationResource: Existing Registration
+            Resource.
+
+        """
+        return self._send_recv_regr(regr, messages.UpdateRegistration())
 
     def _authzr_from_response(self, response, identifier=None, uri=None):
         authzr = messages.AuthorizationResource(
