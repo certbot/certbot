@@ -92,6 +92,23 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
         kwargs.setdefault('acme_version', self.acme_version)
         return self.net.post(*args, **kwargs)
 
+    def _update_registration(self, regr, update):
+        """Update registration.
+
+        :param messages.RegistrationResource regr: Registration Resource.
+        :param messages.Registration update: Updated body of the
+            resource. If not provided, body will be taken from `regr`.
+
+        :returns: Updated Registration Resource.
+        :rtype: `.RegistrationResource`
+
+        """
+        update = regr.body if update is None else update
+        body = messages.UpdateRegistration(**dict(update))
+        updated_regr = self._send_recv_regr(regr, body=body)
+        self.net.account = updated_regr
+        return updated_regr
+
     def deactivate_registration(self, regr):
         """Deactivate registration.
 
@@ -283,11 +300,7 @@ class Client(ClientBase):
         :rtype: `.RegistrationResource`
 
         """
-        update = regr.body if update is None else update
-        body = messages.UpdateRegistration(**dict(update))
-        updated_regr = self._send_recv_regr(regr, body=body)
-        self.net.account = updated_regr
-        return updated_regr
+        return self._update_registration(regr, update)
 
     def agree_to_tos(self, regr):
         """Agree to the terms-of-service.
@@ -602,11 +615,7 @@ class ClientV2(ClientBase):
         # https://github.com/certbot/certbot/issues/6155
         new_regr = self._get_v2_account(regr)
 
-        update = new_regr.body if update is None else update
-        body = messages.UpdateRegistration(**dict(update))
-        updated_regr = self._send_recv_regr(new_regr, body=body)
-        self.net.account = updated_regr
-        return updated_regr
+        return self._update_registration(new_regr, update)
 
     def _get_v2_account(self, regr):
         self.net.account = None
