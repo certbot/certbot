@@ -601,14 +601,19 @@ class ClientV2(ClientBase):
         """
         # https://github.com/certbot/certbot/issues/6155
         correct_url_regr = self._get_account(regr)
-        return self.update_registration(regr, update={'status': 'deactivated'})
+        self.net.account = None
+        updated_regr = self.update_registration(regr, update={'status': 'deactivated'})
+        self.net.account = updated_regr
+        return updated_regr
 
     def _get_account(self, regr):
+        self.net.account = None
         only_existing_reg = regr.body.update(only_return_existing=True)
         response = self._post(self.directory['newAccount'], only_existing_reg)
-        regr = self._regr_from_response(response)
-        self.net.account = regr
-        return regr
+        updated_uri = response.headers['Location']
+        updated_regr = regr.update(new_authzr_uri=updated_uri)
+        self.net.account = updated_regr
+        return updated_regr
 
     def new_order(self, csr_pem):
         """Request a new Order object from the server.
@@ -944,6 +949,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         if acme_version == 2:
             kwargs["url"] = url
             # newAccount and revokeCert work without the kid
+            # newAccount must not have kid
             if self.account is not None:
                 kwargs["kid"] = self.account["uri"]
         kwargs["key"] = self.key
