@@ -102,7 +102,6 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
         :rtype: `.RegistrationResource`
 
         """
-
         return self.update_registration(regr, update={'status': 'deactivated'})
 
     def query_registration(self, regr):
