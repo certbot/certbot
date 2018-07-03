@@ -1,4 +1,5 @@
 """ACME client API."""
+from abc import ABCMeta, abstractmethod
 import base64
 import collections
 import datetime
@@ -50,6 +51,7 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
     :ivar .ClientNetwork net: Client network.
     :ivar int acme_version: ACME protocol version. 1 or 2.
     """
+    __metaclass__ = ABCMeta
 
     def __init__(self, directory, net, acme_version):
         """Initialize.
@@ -92,7 +94,8 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
         kwargs.setdefault('acme_version', self.acme_version)
         return self.net.post(*args, **kwargs)
 
-    def _update_registration(self, regr, update):
+    @abstractmethod
+    def update_registration(self, regr, update=None):
         """Update registration.
 
         :param messages.RegistrationResource regr: Registration Resource.
@@ -103,6 +106,9 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
         :rtype: `.RegistrationResource`
 
         """
+        pass
+
+    def _update_registration(self, regr, update):
         update = regr.body if update is None else update
         body = messages.UpdateRegistration(**dict(update))
         updated_regr = self._send_recv_regr(regr, body=body)
