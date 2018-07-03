@@ -106,6 +106,7 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
         :rtype: `.RegistrationResource`
 
         """
+        # pragma: no cover
         pass
 
     def _update_registration(self, regr, update):

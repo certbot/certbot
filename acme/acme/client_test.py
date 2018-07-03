@@ -270,6 +270,13 @@ class BackwardsCompatibleClientV2Test(ClientTestBase):
             client.revoke(messages_test.CERT, self.rsn)
         mock_client().revoke.assert_called_once_with(messages_test.CERT, self.rsn)
 
+    def test_update_registration(self):
+        self.response.json.return_value = DIRECTORY_V1.to_json()
+        with mock.patch('acme.client.Client') as mock_client:
+            client = self._init()
+            client.update_registration(mock.sentinel.regr, None)
+        mock_client().update_registration.assert_called_once_with(mock.sentinel.regr, None)
+
 
 class ClientTest(ClientTestBase):
     """Tests for acme.client.Client."""
@@ -788,6 +795,18 @@ class ClientV2Test(ClientTestBase):
         self.client.revoke(messages_test.CERT, self.rsn)
         self.net.post.assert_called_once_with(
             self.directory["revokeCert"], mock.ANY, acme_version=2)
+
+    def test_update_registration(self):
+        # "Instance of 'Field' has no to_json/update member" bug:
+        # pylint: disable=no-member
+        self.response.headers['Location'] = self.regr.uri
+        self.response.json.return_value = self.regr.body.to_json()
+        self.assertEqual(self.regr, self.client.update_registration(self.regr))
+        # TODO: test POST call arguments
+
+        # TODO: split here and separate test
+        self.response.json.return_value = self.regr.body.update(
+            contact=()).to_json()
 
 
 class MockJSONDeSerializable(jose.JSONDeSerializable):
