@@ -139,7 +139,7 @@ class BackwardsCompatibleClientV2Test(ClientTestBase):
         client = self._init()
         self.assertEqual(client.directory, client.client.directory)
         self.assertEqual(client.key, KEY)
-        self.assertEqual(client.update_registration, client.client.update_registration)
+        self.assertEqual(client.deactivate_registration, client.client.deactivate_registration)
         self.assertRaises(AttributeError, client.__getattr__, 'nonexistent')
         self.assertRaises(AttributeError, client.__getattr__, 'new_account_and_tos')
         self.assertRaises(AttributeError, client.__getattr__, 'new_account')
