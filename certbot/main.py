@@ -735,8 +735,10 @@ def register(config, unused_plugins):
     cb_client = client.Client(config, acc, None, None, acme=acme)
     # We rely on an exception to interrupt this process if it didn't work.
     acc_contacts = ['mailto:' + email for email in config.email.split(',')]
+    prev_regr_uri = acc.regr.uri
     acc.regr = cb_client.acme.update_registration(acc.regr.update(
         body=acc.regr.body.update(contact=acc_contacts)))
+    acc.regr = acc.regr.update(uri=prev_regr_uri)
     account_storage.save_regr(acc, cb_client.acme)
     eff.handle_subscription(config)
     add_msg("Your e-mail address was updated to {0}.".format(config.email))
