@@ -20,7 +20,7 @@ matrix:
       dist: xenial
       env: TOXENV=py37
       sudo: required
-      services: docker
+      services: nginx
 
 
 # Only build pushes to the master branch, PRs, and branches beginning with
@@ -46,12 +46,7 @@ addons:
     - libssl-dev
     - libffi-dev
     - ca-certificates
-    # For certbot-nginx integration testing
-    - nginx-light
     - openssl
-    # for apacheconftest
-    - apache2
-    - libapache2-mod-wsgi
 
 install: "travis_retry $(command -v pip || command -v pip3) install tox coveralls"
 script:
