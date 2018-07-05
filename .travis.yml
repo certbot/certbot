@@ -10,11 +10,15 @@ before_install:
 before_script:
   - 'if [ $TRAVIS_OS_NAME = osx ] ; then ulimit -n 1024 ; fi'
 
+env:
+  global:
+    - RUNLEVEL=1
+
 matrix:
   include:
     - python: "3.7"
       dist: xenial
-      env: RUNLEVEL=1 TOXENV=py37
+      env: TOXENV=py37
       sudo: required
       services: docker
 
