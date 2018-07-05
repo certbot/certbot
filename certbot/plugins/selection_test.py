@@ -173,16 +173,16 @@ class ChoosePluginTest(unittest.TestCase):
 
         self.assertTrue("default" in mock_util().menu.call_args[1])
 
-class GetInstallerTest(test_util.ConfigTestCase):
+class GetUnpreparedInstallerTest(test_util.ConfigTestCase):
     """Tests for certbot.plugins.selection.get_unprepared_installer."""
 
     def setUp(self):
-        super(GetInstallerTest, self).setUp()
+        super(GetUnpreparedInstallerTest, self).setUp()
         self.mock_apache_fail_ep = mock.Mock(
-            description_with_name="afail", misconfigured=True)
+            description_with_name="afail")
         self.mock_apache_fail_ep.name = "afail"
         self.mock_apache_ep = mock.Mock(
-            description_with_name="apache", misconfigured=False)
+            description_with_name="apache")
         self.mock_apache_ep.name = "apache"
         self.mock_apache_plugin = mock.MagicMock()
         self.mock_apache_ep.init.return_value = self.mock_apache_plugin
@@ -191,33 +191,29 @@ class GetInstallerTest(test_util.ConfigTestCase):
             "apache": self.mock_apache_ep,
         })
 
-
     def _call(self):
         from certbot.plugins.selection import get_unprepared_installer
         return get_unprepared_installer(self.config, self.plugins)
 
     def test_no_installer_defined(self):
         self.config.configurator = None
-        self.assertRaises(errors.MissingCommandlineFlag,
-                          self._call)
-
-    def test_misconfigured_installer(self):
-        self.config.configurator = "afail"
-        self.assertRaises(errors.PluginSelectionError,
-                          self._call)
+        self.assertEquals(self._call(), None)
 
     def test_no_available_installers(self):
         self.config.configurator = "apache"
         self.plugins = PluginsRegistry({})
-        self.assertRaises(errors.MisconfigurationError,
-                          self._call)
+        self.assertRaises(errors.PluginSelectionError, self._call)
 
     def test_get_plugin(self):
         self.config.configurator = "apache"
         installer = self._call()
         self.assertTrue(installer is self.mock_apache_plugin)
 
-
+    def test_multiple_installers_returned(self):
+        self.config.configurator = "apache"
+        # Two plugins with the same name
+        self.mock_apache_fail_ep.name = "apache"
+        self.assertRaises(errors.PluginSelectionError, self._call)
 
 
 if __name__ == "__main__":

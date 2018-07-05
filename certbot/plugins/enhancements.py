@@ -115,7 +115,7 @@ class AutoHSTSEnhancement(object):
         :type lineage: certbot.storage.RenewableCert
 
         .. note:: prepare() method inherited from `interfaces.IPlugin` might need
-            to be called manually within implementation if this interface method
+            to be called manually within implementation of this interface method
             to finalize the plugin initialization.
         """
 

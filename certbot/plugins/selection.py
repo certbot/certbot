@@ -47,27 +47,25 @@ def get_unprepared_installer(config, plugins):
     :param certbot.plugins.disco.PluginsRegistry plugins:
         All plugins registered as entry points.
 
-    :returns: Unprepared installer plugin.
-    :rtype: IPlugin
+    :returns: Unprepared installer plugin or None
+    :rtype: IPlugin or None
     """
 
     _, req_inst = cli_plugin_requests(config)
     if not req_inst:
-        raise errors.MissingCommandlineFlag(
-            "Missing command line flags. For non-interactive execution, "
-            "you will need to specify an installer plugin on the command line. "
-            "You can do this by running Certbot with '--installer PLUGIN_NAME ")
-    _installers = plugins.filter(lambda p_ep: p_ep.name == req_inst)
-    if _installers:
-        inst = list(_installers.values())[0]
+        return None
+    installers = plugins.filter(lambda p_ep: p_ep.name == req_inst)
+    if len(installers) > 1:
+        raise errors.PluginSelectionError(
+            "Found multiple installers with the name %s, Certbot is unable to "
+            "determine which one to use. Skipping." % req_inst)
+    if installers:
+        inst = list(installers.values())[0]
         logger.debug("Selecting plugin: %s", inst)
-        if inst.misconfigured:
-            raise errors.PluginSelectionError(
-                "Configuration error in plugin %s", req_inst)
         return inst.init(config)
     else:
-        raise errors.MisconfigurationError("Could not select or initialize the "
-                                           "requested installer %s.")
+        raise errors.PluginSelectionError(
+            "Could not select or initialize the requested installer %s." % req_inst)
 
 def pick_plugin(config, default, plugins, question, ifaces):
     """Pick plugin.
