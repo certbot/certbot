@@ -14,7 +14,7 @@ matrix:
   include:
     - python: "3.7"
       dist: xenial
-      env: TOXENV=py37
+      env: RUNLEVEL=1 TOXENV=py37
       sudo: required
       services: docker
 
@@ -45,6 +45,10 @@ addons:
     # For certbot-nginx integration testing
     - nginx-light
     - openssl
+    # for apacheconftest
+    - apache2
+    - libapache2-mod-wsgi
+    - libapache2-mod-macro
 
 install: "travis_retry $(command -v pip || command -v pip3) install tox coveralls"
 script:
