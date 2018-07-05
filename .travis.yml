@@ -17,6 +17,9 @@ matrix:
       env: TOXENV=py37
       sudo: required
       services: docker
+      addons:
+        apt:
+          sources:
 
 
 # Only build pushes to the master branch, PRs, and branches beginning with
