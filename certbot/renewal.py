@@ -36,7 +36,8 @@ STR_CONFIG_ITEMS = ["config_dir", "logs_dir", "work_dir", "user_agent",
                     "pre_hook", "post_hook", "tls_sni_01_address",
                     "http01_address"]
 INT_CONFIG_ITEMS = ["rsa_key_size", "tls_sni_01_port", "http01_port"]
-BOOL_CONFIG_ITEMS = ["must_staple", "allow_subset_of_names"]
+BOOL_CONFIG_ITEMS = ["must_staple", "allow_subset_of_names", "reuse_key",
+                     "autorenew"]
 
 CONFIG_ITEMS = set(itertools.chain(
     BOOL_CONFIG_ITEMS, INT_CONFIG_ITEMS, STR_CONFIG_ITEMS, ('pref_challs',)))
@@ -261,7 +262,7 @@ def should_renew(config, lineage):
     if config.renew_by_default:
         logger.debug("Auto-renewal forced with --force-renewal...")
         return True
-    if lineage.should_autorenew(interactive=True):
+    if lineage.should_autorenew():
         logger.info("Cert is due for renewal, auto-renewing...")
         return True
     if config.dry_run:
@@ -298,7 +299,10 @@ def renew_cert(config, domains, le_client, lineage):
     _avoid_invalidating_lineage(config, lineage, original_server)
     if not domains:
         domains = lineage.names()
-    new_cert, new_chain, new_key, _ = le_client.obtain_certificate(domains)
+    # The private key is the existing lineage private key if reuse_key is set.
+    # Otherwise, generate a fresh private key by passing None.
+    new_key = lineage.privkey if config.reuse_key else None
+    new_cert, new_chain, new_key, _ = le_client.obtain_certificate(domains, new_key)
     if config.dry_run:
         logger.debug("Dry run: skipping updating lineage at %s",
                     os.path.dirname(lineage.cert))
@@ -431,8 +435,8 @@ def handle_renewal_request(config):
                     renew_skipped.append("%s expires on %s" % (renewal_candidate.fullchain,
                                          expiry.strftime("%Y-%m-%d")))
                 # Run updater interface methods
-                updater.run_generic_updaters(lineage_config, plugins,
-                                             renewal_candidate)
+                updater.run_generic_updaters(lineage_config, renewal_candidate,
+                                             plugins)
 
         except Exception as e:  # pylint: disable=broad-except
             # obtain_cert (presumably) encountered an unanticipated problem.

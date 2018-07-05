@@ -48,3 +48,16 @@ UIR_ARGS = ["always", "set", "Content-Security-Policy",
 
 HEADER_ARGS = {"Strict-Transport-Security": HSTS_ARGS,
                "Upgrade-Insecure-Requests": UIR_ARGS}
+
+AUTOHSTS_STEPS = [60, 300, 900, 3600, 21600, 43200, 86400]
+"""AutoHSTS increase steps: 1min, 5min, 15min, 1h, 6h, 12h, 24h"""
+
+AUTOHSTS_PERMANENT = 31536000
+"""Value for the last max-age of HSTS"""
+
+AUTOHSTS_FREQ = 172800
+"""Minimum time since last increase to perform a new one: 48h"""
+
+MANAGED_COMMENT = "DO NOT REMOVE - Managed by Certbot"
+MANAGED_COMMENT_ID = MANAGED_COMMENT+", VirtualHost id: {0}"
+"""Managed by Certbot comments and the VirtualHost identification template"""
