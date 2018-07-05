@@ -17,9 +17,6 @@ matrix:
       env: TOXENV=py37
       sudo: required
       services: docker
-      addons:
-        apt:
-          sources:
 
 
 # Only build pushes to the master branch, PRs, and branches beginning with
@@ -37,8 +34,6 @@ sudo: false
 
 addons:
   apt:
-    sources:
-    - augeas
     packages:  # Keep in sync with letsencrypt-auto-source/pieces/bootstrappers/deb_common.sh and Boulder.
     - python-dev
     - python-virtualenv
