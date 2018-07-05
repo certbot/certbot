@@ -48,7 +48,6 @@ addons:
     # for apacheconftest
     - apache2
     - libapache2-mod-wsgi
-    - libapache2-mod-macro
 
 install: "travis_retry $(command -v pip || command -v pip3) install tox coveralls"
 script:
