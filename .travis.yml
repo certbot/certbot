@@ -77,8 +77,6 @@ sudo: false
 
 addons:
   apt:
-    sources:
-    - augeas
     packages:  # Keep in sync with letsencrypt-auto-source/pieces/bootstrappers/deb_common.sh and Boulder.
     - python-dev
     - python-virtualenv
