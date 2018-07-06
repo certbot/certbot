@@ -6,8 +6,6 @@ cache:
 
 before_install:
   - '([ $TRAVIS_OS_NAME == linux ] && dpkg -s libaugeas0) || (brew update && brew install augeas python3 && brew upgrade python && brew link python)'
-  - 'if [ -n "$INSTALL_APACHE" ] ; then sudo apt-get install apache2 libapache2-mod-wsgi -y && sudo service apache2 stop ; fi'
-  - 'if [ -n "$INSTALL_NGINX" -o -n "$BOULDER_INTEGRATION" ] ; then sudo apt-get install nginx-light -y && sudo service nginx stop ; fi'
 
 before_script:
   - 'if [ $TRAVIS_OS_NAME = osx ] ; then ulimit -n 1024 ; fi'
@@ -48,7 +46,7 @@ matrix:
       sudo: required
       services: docker
     - sudo: required
-      env: INSTALL_APACHE=1 TOXENV=apache_compat
+      env: TOXENV=apache_compat
       services: docker
       before_install:
       addons:
@@ -89,6 +87,8 @@ addons:
     - libssl-dev
     - libffi-dev
     - ca-certificates
+    # For certbot-nginx integration testing
+    - nginx-light
     - openssl
 
 install: "travis_retry $(command -v pip || command -v pip3) install tox coveralls"
