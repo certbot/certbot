@@ -12,6 +12,8 @@ from certbot import interfaces
 
 from certbot.display import util as display_util
 
+from zope.interface.exceptions import DoesNotImplement
+
 logger = logging.getLogger(__name__)
 z_util = zope.component.getUtility
 
@@ -55,6 +57,11 @@ def get_unprepared_installer(config, plugins):
     if not req_inst:
         return None
     installers = plugins.filter(lambda p_ep: p_ep.name == req_inst)
+    installers.init(config)
+    try:
+        installers = installers.verify((interfaces.IInstaller,))
+    except DoesNotImplement:
+        return None
     if len(installers) > 1:
         raise errors.PluginSelectionError(
             "Found multiple installers with the name %s, Certbot is unable to "

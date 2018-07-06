@@ -215,6 +215,13 @@ class GetUnpreparedInstallerTest(test_util.ConfigTestCase):
         self.mock_apache_fail_ep.name = "apache"
         self.assertRaises(errors.PluginSelectionError, self._call)
 
+    def test_does_not_implement(self):
+        from zope.interface.exceptions import DoesNotImplement
+        self.config.configurator = "apache"
+        with mock.patch("certbot.plugins.disco.PluginsRegistry.verify") as mock_v:
+            mock_v.side_effect = DoesNotImplement("no")
+            self.assertEqual(self._call(), None)
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
