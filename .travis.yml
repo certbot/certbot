@@ -6,8 +6,8 @@ cache:
 
 before_install:
   - '([ $TRAVIS_OS_NAME == linux ] && dpkg -s libaugeas0) || (brew update && brew install augeas python3 && brew upgrade python && brew link python)'
-  - 'if [ -n "$INSTALL_APACHE" ] ; then apt-get install apache2 libapache2-mod-wsgi -y && service apache2 stop ; fi'
-  - 'if [ -n "$INSTALL_NGINX" -o -n "$BOULDER_INTEGRATION" ] ; then apt-get install nginx-light -y && service nginx stop ; fi'
+  - 'if [ -n "$INSTALL_APACHE" ] ; then sudo apt-get install apache2 libapache2-mod-wsgi -y && sudo service apache2 stop ; fi'
+  - 'if [ -n "$INSTALL_NGINX" -o -n "$BOULDER_INTEGRATION" ] ; then sudo apt-get install nginx-light -y && sudo service nginx stop ; fi'
 
 before_script:
   - 'if [ $TRAVIS_OS_NAME = osx ] ; then ulimit -n 1024 ; fi'
