@@ -99,7 +99,12 @@ matrix:
       services: docker
     - python: "3.7"
       dist: xenial
-      env: TOXENV=py37
+      env: TOXENV=py37 BOULDER_INTEGRATION=v1
+      sudo: required
+      services: docker
+    - python: "3.7"
+      dist: xenial
+      env: TOXENV=py37 BOULDER_INTEGRATION=v2
       sudo: required
       services: docker
     - python: "2.7"
