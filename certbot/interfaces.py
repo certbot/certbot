@@ -604,10 +604,10 @@ class IReporter(zope.interface.Interface):
 # When "certbot renew" is run, Certbot will iterate over each lineage and check
 # if the selected installer for that lineage is a subclass of each updater
 # class. If it is and the update of that type is configured to be run for that
-# lineage, the relevant update function will be called for each domain in the
-# lineage. These functions are never called for other subcommands, so if an
-# installer wants to perform an update during the run or install subcommand, it
-# should do so when :func:`IInstaller.deploy_cert` is called.
+# lineage, the relevant update function will be called for it. These functions
+# are never called for other subcommands, so if an installer wants to perform
+# an update during the run or install subcommand, it should do so when
+# :func:`IInstaller.deploy_cert` is called.
 
 @six.add_metaclass(abc.ABCMeta)
 class GenericUpdater(object):
@@ -623,7 +623,7 @@ class GenericUpdater(object):
     """
 
     @abc.abstractmethod
-    def generic_updates(self, domain, *args, **kwargs):
+    def generic_updates(self, lineage, *args, **kwargs):
         """Perform any update types defined by the installer.
 
         If an installer is a subclass of the class containing this method, this
@@ -631,9 +631,10 @@ class GenericUpdater(object):
         update defined by the installer should be run conditionally, the
         installer needs to handle checking the conditions itself.
 
-        This method is called once for each domain.
+        This method is called once for each lineage.
 
-        :param str domain: domain to handle the updates for
+        :param lineage: Certificate lineage object
+        :type lineage: storage.RenewableCert
 
         """
 
@@ -661,8 +662,7 @@ class RenewDeployer(object):
 
         This method is called once for each lineage renewed
 
-        :param lineage: Certificate lineage object that is set if certificate
-            was renewed on this run.
+        :param lineage: Certificate lineage object
         :type lineage: storage.RenewableCert
 
         """

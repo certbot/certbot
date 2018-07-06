@@ -87,6 +87,14 @@ if [ "$RELEASE_BRANCH" != "candidate-$version" ] ; then
 fi
 git checkout "$RELEASE_BRANCH"
 
+for pkg_dir in $SUBPKGS_NO_CERTBOT certbot-compatibility-test .
+do
+  sed -i 's/\.dev0//' "$pkg_dir/setup.py"
+done
+# We only add Certbot's setup.py here because the other files are added in the
+# call to SetVersion below.
+git add -p setup.py
+
 SetVersion() {
     ver="$1"
     # bumping Certbot's version number is done differently
@@ -153,7 +161,8 @@ kill $!
 cd ~-
 
 # get a snapshot of the CLI help for the docs
-certbot --help all > docs/cli-help.txt
+# We set CERTBOT_DOCS to use dummy values in example user-agent string.
+CERTBOT_DOCS=1 certbot --help all > docs/cli-help.txt
 jws --help > acme/docs/jws-help.txt
 
 cd ..

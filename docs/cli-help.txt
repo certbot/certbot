@@ -108,12 +108,12 @@ optional arguments:
                         case, and to know when to deprecate support for past
                         Python versions and flags. If you wish to hide this
                         information from the Let's Encrypt server, set this to
-                        "". (default: CertbotACMEClient/0.24.0 (certbot;
-                        darwin 10.13.4) Authenticator/XXX Installer/YYY
-                        (SUBCOMMAND; flags: FLAGS) Py/2.7.14). The flags
-                        encoded in the user agent are: --duplicate, --force-
-                        renew, --allow-subset-of-names, -n, and whether any
-                        hooks are set.
+                        "". (default: CertbotACMEClient/0.25.1
+                        (certbot(-auto); OS_NAME OS_VERSION) Authenticator/XXX
+                        Installer/YYY (SUBCOMMAND; flags: FLAGS)
+                        Py/major.minor.patchlevel). The flags encoded in the
+                        user agent are: --duplicate, --force-renew, --allow-
+                        subset-of-names, -n, and whether any hooks are set.
   --user-agent-comment USER_AGENT_COMMENT
                         Add a comment to the default user agent string. May be
                         used when repackaging Certbot or calling it from
@@ -143,6 +143,8 @@ automation:
                         certificate name but does not match the requested
                         domains, renew it now, regardless of whether it is
                         near expiry. (default: False)
+  --reuse-key           When renewing, use the same private key as the
+                        existing certificate. (default: False)
   --allow-subset-of-names
                         When performing domain validation, do not consider it
                         a failure if authorizations can not be obtained for a
@@ -319,6 +321,13 @@ renew:
                         disable it. (default: False)
   --no-directory-hooks  Disable running executables found in Certbot's hook
                         directories during renewal. (default: False)
+  --disable-renew-updates
+                        Disable automatic updates to your server configuration
+                        that would otherwise be done by the selected installer
+                        plugin, and triggered when the user executes "certbot
+                        renew", regardless of if the certificate is renewed.
+                        This setting does not apply to important TLS
+                        configuration updates. (default: False)
 
 certificates:
   List certificates managed by Certbot
@@ -360,8 +369,9 @@ register:
                         e-mail address, should be updated, rather than
                         registering a new account. (default: False)
   -m EMAIL, --email EMAIL
-                        Email used for registration and recovery contact.
-                        (default: Ask)
+                        Email used for registration and recovery contact. Use
+                        comma to register multiple emails, ex:
+                        u1@example.com,u2@example.com. (default: Ask).
   --eff-email           Share your e-mail address with EFF (default: None)
   --no-eff-email        Don't share your e-mail address with EFF (default:
                         None)
@@ -399,7 +409,7 @@ update_symlinks:
   changed them by hand or edited a renewal configuration file
 
 enhance:
-  Helps to harden the TLS configration by adding security enhancements to
+  Helps to harden the TLS configuration by adding security enhancements to
   already existing configuration.
 
 plugins:
@@ -472,9 +482,9 @@ apache:
                         /etc/apache2/other)
   --apache-handle-modules APACHE_HANDLE_MODULES
                         Let installer handle enabling required modules for
-                        you.(Only Ubuntu/Debian currently) (default: False)
+                        you. (Only Ubuntu/Debian currently) (default: False)
   --apache-handle-sites APACHE_HANDLE_SITES
-                        Let installer handle enabling sites for you.(Only
+                        Let installer handle enabling sites for you. (Only
                         Ubuntu/Debian currently) (default: False)
 
 certbot-route53:auth:
@@ -628,7 +638,8 @@ nginx:
   Nginx Web Server plugin - Alpha
 
   --nginx-server-root NGINX_SERVER_ROOT
-                        Nginx server root directory. (default: /etc/nginx)
+                        Nginx server root directory. (default: /etc/nginx or
+                        /usr/local/etc/nginx)
   --nginx-ctl NGINX_CTL
                         Path to the 'nginx' binary, used for 'configtest' and
                         retrieving nginx version number. (default: nginx)

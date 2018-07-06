@@ -37,6 +37,7 @@ CLI_DEFAULTS = dict(
     expand=False,
     renew_by_default=False,
     renew_with_new_domains=False,
+    autorenew=True,
     allow_subset_of_names=False,
     tos=False,
     account=None,
@@ -57,6 +58,7 @@ CLI_DEFAULTS = dict(
     rsa_key_size=2048,
     must_staple=False,
     redirect=None,
+    auto_hsts=False,
     hsts=None,
     uir=None,
     staple=None,
@@ -64,6 +66,7 @@ CLI_DEFAULTS = dict(
     pref_challs=[],
     validate_hooks=True,
     directory_hooks=True,
+    reuse_key=False,
     disable_renew_updates=False,
 
     # Subparsers
@@ -156,6 +159,13 @@ CONFIG_DIRS_MODE = 0o755
 
 ACCOUNTS_DIR = "accounts"
 """Directory where all accounts are saved."""
+
+LE_REUSE_SERVERS = {
+    'acme-v02.api.letsencrypt.org/directory': 'acme-v01.api.letsencrypt.org/directory',
+    'acme-staging-v02.api.letsencrypt.org/directory':
+        'acme-staging.api.letsencrypt.org/directory'
+}
+"""Servers that can reuse accounts from other servers."""
 
 BACKUP_DIR = "backups"
 """Directory (relative to `IConfig.work_dir`) where backups are kept."""

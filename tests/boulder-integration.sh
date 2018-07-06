@@ -166,6 +166,14 @@ CheckRenewHook() {
     CheckSavedRenewHook $1
 }
 
+# Return success only if input contains exactly $1 lines of text, of
+# which $2 different values occur in the first field.
+TotalAndDistinctLines() {
+    total=$1
+    distinct=$2
+    awk '{a[$1] = 1}; END {exit(NR !='$total' || length(a) !='$distinct')}'
+}
+
 # Cleanup coverage data
 coverage erase
 
@@ -347,6 +355,26 @@ if common certificates | grep "fail\.dns1\.le\.wtf"; then
     exit 1
 fi
 
+# reuse-key
+common --domains reusekey.le.wtf --reuse-key
+common renew --cert-name reusekey.le.wtf
+CheckCertCount "reusekey.le.wtf" 2
+ls -l "${root}/conf/archive/reusekey.le.wtf/privkey"*
+# The final awk command here exits successfully if its input consists of
+# exactly two lines with identical first fields, and unsuccessfully otherwise.
+sha256sum "${root}/conf/archive/reusekey.le.wtf/privkey"* | TotalAndDistinctLines 2 1
+
+# don't reuse key (just by forcing reissuance without --reuse-key)
+common --cert-name reusekey.le.wtf --domains reusekey.le.wtf --force-renewal
+CheckCertCount "reusekey.le.wtf" 3
+ls -l "${root}/conf/archive/reusekey.le.wtf/privkey"*
+# Exactly three lines, of which exactly two identical first fields.
+sha256sum "${root}/conf/archive/reusekey.le.wtf/privkey"* | TotalAndDistinctLines 3 2
+
+# Nonetheless, all three certificates are different even though two of them
+# share the same subject key.
+sha256sum "${root}/conf/archive/reusekey.le.wtf/cert"* | TotalAndDistinctLines 3 3
+
 # ECDSA
 openssl ecparam -genkey -name secp384r1 -out "${root}/privkey-p384.pem"
 SAN="DNS:ecdsa.le.wtf" openssl req -new -sha256 \
@@ -458,11 +486,11 @@ if [ "${BOULDER_INTEGRATION:-v1}" = "v2" ]; then
         --manual-cleanup-hook ./tests/manual-dns-cleanup.sh
 fi
 
+coverage report --fail-under 65 --include 'certbot/*' --show-missing
+
 # Most CI systems set this variable to true.
 # If the tests are running as part of CI, Nginx should be available.
 if ${CI:-false} || type nginx;
 then
     . ./certbot-nginx/tests/boulder-integration.sh
 fi
-
-coverage report --fail-under 67 -m
