@@ -41,8 +41,9 @@ matrix:
       env: TOXENV=py34
       sudo: required
       services: docker
-    - python: "3.6"
-      env: TOXENV=py36
+    - python: "3.7"
+      dist: xenial
+      env: TOXENV=py37
       sudo: required
       services: docker
     - sudo: required
