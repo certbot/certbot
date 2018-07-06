@@ -26,7 +26,7 @@ ipython==5.5.0
 ipython-genutils==0.2.0
 Jinja2==2.9.6
 jmespath==0.9.3
-josepy==1.0.1
+josepy==1.1.0
 logger==1.4
 logilab-common==1.4.1
 MarkupSafe==1.0
