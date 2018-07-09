@@ -3,6 +3,7 @@
 from __future__ import print_function
 import argparse
 import copy
+import functools
 import glob
 import logging
 import logging.handlers
@@ -263,13 +264,22 @@ def option_was_set(option, value):
     return set_by_cli(option) or not has_default_value(option, value)
 
 
+def argparse_list(cast, values):
+    if cast is None:
+        cast = str
+    return [cast(value) for value in values]
+
+
 def argparse_type(variable):
     """Return our argparse type function for a config variable (default: str)"""
     # pylint: disable=protected-access
     if helpful_parser is not None:
         for action in helpful_parser.parser._actions:
-            if action.type is not None and action.dest == variable:
-                return action.type
+            if action.dest == variable:
+                if action.nargs in ['N', '*', '+', argparse.REMAINDER]:
+                    return functools.partial(argparse_list, action.type)
+                if action.type is not None:
+                    return action.type
     return str
 
 def read_file(filename, mode="rb"):
