@@ -120,7 +120,7 @@ More detailed help:
 
 
 # These argparse parameters should be removed when detecting defaults.
-ARGPARSE_PARAMS_TO_REMOVE = ("const", "nargs", "type",)
+ARGPARSE_PARAMS_TO_REMOVE = ("const", "type",)
 
 
 # These sets are used when to help detect options set by the user.
