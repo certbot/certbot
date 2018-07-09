@@ -14,6 +14,7 @@ fi
   -e acme[dev] \
   -e .[dev,docs] \
   -e certbot-apache \
+  -e certbot-dns-azure \
   -e certbot-dns-cloudflare \
   -e certbot-dns-cloudxns \
   -e certbot-dns-digitalocean \
