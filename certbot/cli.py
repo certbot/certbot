@@ -265,6 +265,7 @@ def option_was_set(option, value):
 
 
 def argparse_list(cast, values):
+    """Wrap an argparse type function in a list (default: str)"""
     if cast is None:
         cast = str
     return [cast(value) for value in values]
