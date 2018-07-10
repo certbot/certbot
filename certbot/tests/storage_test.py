@@ -544,9 +544,11 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertFalse(os.path.exists(temp_config_file))
 
     def _test_relevant_values_common(self, values):
-        option = "rsa_key_size"
-        mock_parser = mock.Mock(args=["--standalone"], verb="certonly",
-                                defaults={option: cli.flag_default(option)})
+        defaults = dict((option, cli.flag_default(option))
+                        for option in ("authenticator", "installer",
+                                       "rsa_key_size", "server",))
+        mock_parser = mock.Mock(args=[], verb="plugins",
+                                defaults=defaults)
 
         from certbot.storage import relevant_values
         with mock.patch("certbot.cli.helpful_parser", mock_parser):
@@ -579,6 +581,11 @@ class RenewableCertTests(BaseRenewableCertTest):
         values = {"authenticator": "apache"}
         self.assertEqual(
             self._test_relevant_values_common(values), values)
+
+    def test_relevant_values_plugins_none(self):
+        self.assertEqual(
+            self._test_relevant_values_common(
+                {"authenticator": None, "installer": None}), {})
 
     @mock.patch("certbot.cli.set_by_cli")
     @mock.patch("certbot.plugins.disco.PluginsRegistry.find_all")
