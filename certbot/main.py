@@ -1064,7 +1064,7 @@ def revoke(config, unused_plugins):  # TODO: coop with renewal config
 
     """
     # For user-agent construction
-    config.installer = config.authenticator = "None"
+    config.installer = config.authenticator = None
     if config.key_path is not None:  # revocation by cert key
         logger.debug("Revoking %s using cert key %s",
                      config.cert_path[0], config.key_path[0])
