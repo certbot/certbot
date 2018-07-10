@@ -263,6 +263,10 @@ def cli_plugin_requests(config):  # pylint: disable=too-many-branches
     :rtype: tuple
     """
     req_inst = req_auth = config.configurator
+    if config.installer == 'None':
+        config.installer = None
+    if config.authenticator == 'None':
+        config.authenticator = None
     req_inst = set_configurator(req_inst, config.installer)
     req_auth = set_configurator(req_auth, config.authenticator)
 

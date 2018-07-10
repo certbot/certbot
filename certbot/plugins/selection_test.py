@@ -215,6 +215,14 @@ class GetUnpreparedInstallerTest(test_util.ConfigTestCase):
         self.mock_apache_fail_ep.name = "apache"
         self.assertRaises(errors.PluginSelectionError, self._call)
 
+    def test_return_early_if_none(self):
+        self.config.installer = 'None'
+        # Make sure that the function returns early. PluginsRegistry.filter is
+        # called right after we should return.
+        with mock.patch('certbot.plugins.disco.PluginsRegistry.filter') as mock_f:
+            self._call()
+            self.assertFalse(mock_f.called)
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
