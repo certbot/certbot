@@ -804,6 +804,7 @@ class ClientV2Test(ClientTestBase):
         self.assertEqual(self.regr, self.client.update_registration(self.regr))
         self.assertNotEqual(self.client.net.account, None)
         self.assertEqual(self.client.net.post.call_count, 2)
+        self.assertTrue(DIRECTORY_V2.newAccount in self.net.post.call_args_list[0][0])
 
         self.response.json.return_value = self.regr.body.update(
             contact=()).to_json()
