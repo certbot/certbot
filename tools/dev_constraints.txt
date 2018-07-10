@@ -12,7 +12,7 @@ botocore==1.7.41
 cloudflare==1.5.1
 coverage==4.4.2
 decorator==4.1.2
-dns-lexicon==2.2.1
+dns-lexicon==2.4.5
 dnspython==1.15.0
 docutils==0.14
 execnet==1.5.0
