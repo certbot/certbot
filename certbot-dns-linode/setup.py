@@ -1,17 +1,16 @@
+import sys
+
 from setuptools import setup
 from setuptools import find_packages
 
-
 version = '0.26.0.dev0'
 
-# Remember to update local-oldest-requirements.txt when changing the minimum
-# acme/certbot version.
+# Please update tox.ini when modifying dependency version requirements
 install_requires = [
-    'acme>=0.25.0',
-    'certbot>=0.22.0',
+    'acme>=0.21.1',
+    'certbot>=0.21.1',
+    'dns-lexicon>=2.2.1',
     'mock',
-    'PyOpenSSL',
-    'pyparsing>=1.5.5',  # Python3 support; perhaps unnecessary?
     'setuptools',
     'zope.interface',
 ]
@@ -22,16 +21,16 @@ docs_extras = [
 ]
 
 setup(
-    name='certbot-nginx',
+    name='certbot-dns-linode',
     version=version,
-    description="Nginx plugin for Certbot",
-    url='https://github.com/letsencrypt/letsencrypt',
+    description="Linode DNS Authenticator plugin for Certbot",
+    url='https://github.com/certbot/certbot',
     author="Certbot Project",
     author_email='client-dev@letsencrypt.org',
     license='Apache License 2.0',
     python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*',
     classifiers=[
-        'Development Status :: 5 - Production/Stable',
+        'Development Status :: 3 - Alpha',
         'Environment :: Plugins',
         'Intended Audience :: System Administrators',
         'License :: OSI Approved :: Apache Software License',
@@ -60,8 +59,8 @@ setup(
     },
     entry_points={
         'certbot.plugins': [
-            'nginx = certbot_nginx.configurator:NginxConfigurator',
+            'dns-linode = certbot_dns_linode.dns_linode:Authenticator',
         ],
     },
-    test_suite='certbot_nginx',
+    test_suite='certbot_dns_linode',
 )

@@ -635,7 +635,7 @@ manual:
                         Automatically allows public IP logging (default: Ask)
 
 nginx:
-  Nginx Web Server plugin - Alpha
+  Nginx Web Server plugin
 
   --nginx-server-root NGINX_SERVER_ROOT
                         Nginx server root directory. (default: /etc/nginx or

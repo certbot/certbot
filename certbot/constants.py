@@ -105,10 +105,12 @@ CLI_DEFAULTS = dict(
     dns_dnsimple=False,
     dns_dnsmadeeasy=False,
     dns_google=False,
+    dns_linode=False,
     dns_luadns=False,
     dns_nsone=False,
     dns_rfc2136=False,
-    dns_route53=False
+    dns_route53=False,
+    dns_sakuracloud=False
 
 )
 STAGING_URI = "https://acme-staging-v02.api.letsencrypt.org/directory"
