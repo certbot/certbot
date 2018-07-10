@@ -19,6 +19,7 @@ fi
   -e certbot-dns-dnsimple \
   -e certbot-dns-dnsmadeeasy \
   -e certbot-dns-google \
+  -e certbot-dns-linode \
   -e certbot-dns-luadns \
   -e certbot-dns-nsone \
   -e certbot-dns-route53 \
