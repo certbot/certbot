@@ -269,15 +269,17 @@ class AccountFileStorage(interfaces.AccountStorage):
         for k in constants.LE_REUSE_SERVERS:
             reused_servers[constants.LE_REUSE_SERVERS[k]] = k
 
+        # is there a next one up? call that and be done
         if server_path in reused_servers:
             next_server_path = reused_servers[server_path]
             next_accounts_dir_path = self.config.accounts_dir_for_server_path(next_server_path)
             if os.path.islink(next_accounts_dir_path) \
                 and os.readlink(next_accounts_dir_path) == accounts_dir_path:
                 self._delete_accounts_dir_for_server_path(next_server_path)
+                return
 
-        # now there is nothing linking to this, so delete
-
+        # if there's not a next one up to delete, then delete me
+        # and whatever I link to if applicable
         if os.path.islink(accounts_dir_path):
             # save my info then delete me
             target = os.readlink(accounts_dir_path)
