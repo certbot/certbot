@@ -1493,17 +1493,17 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
                         self.assertTrue(mock_handle.called)
 
     @mock.patch('certbot.plugins.selection.choose_configurator_plugins')
-    def test_plugin_selection_error(self, mock_choose):
+    @mock.patch('certbot.updater._run_updaters')
+    def test_plugin_selection_error(self, mock_run, mock_choose):
         mock_choose.side_effect = errors.PluginSelectionError
         self.assertRaises(errors.PluginSelectionError, main.renew_cert,
                           None, None, None)
 
-        with mock.patch('certbot.updater.logger.warning') as mock_log:
-            self.config.dry_run = False
-            updater.run_generic_updaters(self.config, None, None)
-            self.assertTrue(mock_log.called)
-            self.assertTrue("Could not choose appropriate plugin for updaters"
-                            in mock_log.call_args[0][0])
+        self.config.dry_run = False
+        updater.run_generic_updaters(self.config, None, None)
+        # Make sure we're returning None, and hence not trying to run the
+        # without installer
+        self.assertFalse(mock_run.called)
 
 
 class UnregisterTest(unittest.TestCase):

@@ -165,6 +165,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self._autohsts = {}  # type: Dict[str, Dict[str, Union[int, float]]]
 
         # These will be set in the prepare function
+        self._prepared = False
         self.parser = None
         self.version = version
         self.vhosts = None
@@ -249,6 +250,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             logger.debug("Encountered error:", exc_info=True)
             raise errors.PluginError(
                 "Unable to lock %s", self.conf("server-root"))
+        self._prepared = True
 
     def _check_aug_version(self):
         """ Checks that we have recent enough version of libaugeas.
@@ -2394,6 +2396,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 continue
             nextstep = config["laststep"] + 1
             if nextstep < len(constants.AUTOHSTS_STEPS):
+                # If installer hasn't been prepared yet, do it now
+                if not self._prepared:
+                    self.prepare()
                 # Have not reached the max value yet
                 try:
                     vhost = self.find_vhost_by_id(id_str)

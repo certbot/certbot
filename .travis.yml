@@ -41,8 +41,9 @@ matrix:
       env: TOXENV=py34
       sudo: required
       services: docker
-    - python: "3.6"
-      env: TOXENV=py36
+    - python: "3.7"
+      dist: xenial
+      env: TOXENV=py37
       sudo: required
       services: docker
     - sudo: required
@@ -77,8 +78,6 @@ sudo: false
 
 addons:
   apt:
-    sources:
-    - augeas
     packages:  # Keep in sync with letsencrypt-auto-source/pieces/bootstrappers/deb_common.sh and Boulder.
     - python-dev
     - python-virtualenv
@@ -90,10 +89,6 @@ addons:
     # For certbot-nginx integration testing
     - nginx-light
     - openssl
-    # for apacheconftest
-    - apache2
-    - libapache2-mod-wsgi
-    - libapache2-mod-macro
 
 install: "travis_retry $(command -v pip || command -v pip3) install tox coveralls"
 script:

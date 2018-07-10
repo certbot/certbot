@@ -39,6 +39,35 @@ def pick_authenticator(
     return pick_plugin(
         config, default, plugins, question, (interfaces.IAuthenticator,))
 
+def get_unprepared_installer(config, plugins):
+    """
+    Get an unprepared interfaces.IInstaller object.
+
+    :param certbot.interfaces.IConfig config: Configuration
+    :param certbot.plugins.disco.PluginsRegistry plugins:
+        All plugins registered as entry points.
+
+    :returns: Unprepared installer plugin or None
+    :rtype: IPlugin or None
+    """
+
+    _, req_inst = cli_plugin_requests(config)
+    if not req_inst:
+        return None
+    installers = plugins.filter(lambda p_ep: p_ep.name == req_inst)
+    installers.init(config)
+    installers = installers.verify((interfaces.IInstaller,))
+    if len(installers) > 1:
+        raise errors.PluginSelectionError(
+            "Found multiple installers with the name %s, Certbot is unable to "
+            "determine which one to use. Skipping." % req_inst)
+    if installers:
+        inst = list(installers.values())[0]
+        logger.debug("Selecting plugin: %s", inst)
+        return inst.init(config)
+    else:
+        raise errors.PluginSelectionError(
+            "Could not select or initialize the requested installer %s." % req_inst)
 
 def pick_plugin(config, default, plugins, question, ifaces):
     """Pick plugin.

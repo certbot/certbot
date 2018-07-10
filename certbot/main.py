@@ -735,8 +735,13 @@ def register(config, unused_plugins):
     cb_client = client.Client(config, acc, None, None, acme=acme)
     # We rely on an exception to interrupt this process if it didn't work.
     acc_contacts = ['mailto:' + email for email in config.email.split(',')]
+    prev_regr_uri = acc.regr.uri
     acc.regr = cb_client.acme.update_registration(acc.regr.update(
         body=acc.regr.body.update(contact=acc_contacts)))
+    # A v1 account being used as a v2 account will result in changing the uri to
+    # the v2 uri. Since it's the same object on disk, put it back to the v1 uri
+    # so that we can also continue to use the account object with acmev1.
+    acc.regr = acc.regr.update(uri=prev_regr_uri)
     account_storage.save_regr(acc, cb_client.acme)
     eff.handle_subscription(config)
     add_msg("Your e-mail address was updated to {0}.".format(config.email))
@@ -1199,11 +1204,11 @@ def renew_cert(config, plugins, lineage):
         # In case of a renewal, reload server to pick up new certificate.
         # In principle we could have a configuration option to inhibit this
         # from happening.
+        # Run deployer
         updater.run_renewal_deployer(config, renewed_lineage, installer)
         installer.restart()
         notify("new certificate deployed with reload of {0} server; fullchain is {1}".format(
                config.installer, lineage.fullchain), pause=False)
-        # Run deployer
 
 def certonly(config, plugins):
     """Authenticate & obtain cert, but do not install it.
