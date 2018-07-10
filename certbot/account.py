@@ -175,33 +175,43 @@ class AccountFileStorage(interfaces.AccountStorage):
             except errors.AccountStorageError:
                 logger.debug("Account loading problem", exc_info=True)
 
-
         if not accounts and server_path in constants.LE_REUSE_SERVERS:
             # find all for the next link down
             prev_server_path = constants.LE_REUSE_SERVERS[server_path]
             prev_accounts = self._find_all_for_server_path(prev_server_path)
             # if we found something, link to that
             if prev_accounts:
-                if os.path.islink(accounts_dir):
-                    os.unlink(accounts_dir)
-                else:
-                    try:
-                        os.rmdir(accounts_dir)
-                    except OSError:
-                        return []
-                prev_account_dir = self.config.accounts_dir_for_server_path(prev_server_path)
-                os.symlink(prev_account_dir, accounts_dir)
+                try:
+                    self._symlink_to_accounts_dir(prev_server_path, server_path)
+                except OSError:
+                    return []
             accounts = prev_accounts
         return accounts
 
     def find_all(self):
         return self._find_all_for_server_path(self.config.server_path)
 
+    def _symlink_to_accounts_dir(self, prev_server_path, server_path):
+        accounts_dir = self.config.accounts_dir_for_server_path(server_path)
+        if os.path.islink(accounts_dir):
+            os.unlink(accounts_dir)
+        else:
+            os.rmdir(accounts_dir)
+        prev_account_dir = self.config.accounts_dir_for_server_path(prev_server_path)
+        os.symlink(prev_account_dir, accounts_dir)
+
     def _load_for_server_path(self, account_id, server_path):
         account_dir_path = self._account_dir_path_for_server_path(account_id, server_path)
-        if not os.path.isdir(account_dir_path):
-            raise errors.AccountNotFound(
-                "Account at %s does not exist" % account_dir_path)
+        if not os.path.isdir(account_dir_path): # isdir is also true for symlinks
+            if server_path in constants.LE_REUSE_SERVERS:
+                prev_server_path = constants.LE_REUSE_SERVERS[server_path]
+                prev_loaded_account = self._load_for_server_path(account_id, prev_server_path)
+                # we didn't error so we found something, so create a symlink to that
+                self._symlink_to_accounts_dir(prev_server_path, server_path)
+                return prev_loaded_account
+            else:
+                raise errors.AccountNotFound(
+                    "Account at %s does not exist" % account_dir_path)
 
         try:
             with open(self._regr_path(account_dir_path)) as regr_file:
@@ -260,9 +270,12 @@ class AccountFileStorage(interfaces.AccountStorage):
                 if hasattr(acme.directory, "new-authz"):
                     regr = RegistrationResourceWithNewAuthzrURI(
                         new_authzr_uri=acme.directory.new_authz,
-                        body=regr.body,
-                        uri=regr.uri,
-                        terms_of_service=regr.terms_of_service)
+                        body={},
+                        uri=regr.uri)
+                else:
+                    regr = messages.RegistrationResource(
+                        body={},
+                        uri=regr.uri)
                 regr_file.write(regr.json_dumps())
             if not regr_only:
                 with util.safe_open(self._key_path(account_dir_path),

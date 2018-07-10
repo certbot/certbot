@@ -58,6 +58,7 @@ CLI_DEFAULTS = dict(
     rsa_key_size=2048,
     must_staple=False,
     redirect=None,
+    auto_hsts=False,
     hsts=None,
     uir=None,
     staple=None,
@@ -105,10 +106,12 @@ CLI_DEFAULTS = dict(
     dns_dnsmadeeasy=False,
     dns_gehirn=False,
     dns_google=False,
+    dns_linode=False,
     dns_luadns=False,
     dns_nsone=False,
     dns_rfc2136=False,
-    dns_route53=False
+    dns_route53=False,
+    dns_sakuracloud=False
 
 )
 STAGING_URI = "https://acme-staging-v02.api.letsencrypt.org/directory"
@@ -161,6 +164,7 @@ ACCOUNTS_DIR = "accounts"
 """Directory where all accounts are saved."""
 
 LE_REUSE_SERVERS = {
+    'acme-v02.api.letsencrypt.org/directory': 'acme-v01.api.letsencrypt.org/directory',
     'acme-staging-v02.api.letsencrypt.org/directory':
         'acme-staging.api.letsencrypt.org/directory'
 }
