@@ -203,6 +203,7 @@ Once installed, you can find documentation on how to use each plugin at:
 * `certbot-dns-dnsimple <https://certbot-dns-dnsimple.readthedocs.io>`_
 * `certbot-dns-dnsmadeeasy <https://certbot-dns-dnsmadeeasy.readthedocs.io>`_
 * `certbot-dns-google <https://certbot-dns-google.readthedocs.io>`_
+* `certbot-dns-linode <https://certbot-dns-linode.readthedocs.io>`_
 * `certbot-dns-luadns <https://certbot-dns-luadns.readthedocs.io>`_
 * `certbot-dns-nsone <https://certbot-dns-nsone.readthedocs.io>`_
 * `certbot-dns-rfc2136 <https://certbot-dns-rfc2136.readthedocs.io>`_
@@ -454,6 +455,12 @@ Renewing certificates
    days). Make sure you renew the certificates at least once in 3
    months.
 
+.. seealso:: Many of the certbot clients obtained through a
+   distribution come with automatic renewal out of the box,
+   such as Debian and Ubuntu versions installed through `apt`,
+   CentOS/RHEL 7 through EPEL, etc.  See `Automated Renewals`_
+   for more details.
+
 As of version 0.10.0, Certbot supports a ``renew`` action to check
 all installed certificates for impending expiry and attempt to renew
 them. The simplest form is simply
@@ -559,12 +566,6 @@ are only renewed when they're determined to be near expiry, the command
 can run on a regular basis, like every week or every day). In that case,
 you are likely to want to use the ``-q`` or ``--quiet`` quiet flag to
 silence all output except errors.
-
-.. seealso:: Many of the certbot clients obtained through a
-   distribution come with automatic renewal out of the box,
-   such as Debian and Ubuntu versions installed through `apt`,
-   CentOS/RHEL 7 through EPEL, etc.  See `Automated Renewals`_
-   for more details.
 
 If you are manually renewing all of your certificates, the
 ``--force-renewal`` flag may be helpful; it causes the expiration time of

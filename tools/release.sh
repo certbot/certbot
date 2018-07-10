@@ -46,7 +46,7 @@ PORT=${PORT:-1234}
 
 # subpackages to be released (the way developers think about them)
 SUBPKGS_IN_AUTO_NO_CERTBOT="acme certbot-apache certbot-nginx"
-SUBPKGS_NOT_IN_AUTO="certbot-dns-cloudflare certbot-dns-cloudxns certbot-dns-digitalocean certbot-dns-dnsimple certbot-dns-dnsmadeeasy certbot-dns-google certbot-dns-luadns certbot-dns-nsone certbot-dns-rfc2136 certbot-dns-route53 certbot-dns-sakuracloud"
+SUBPKGS_NOT_IN_AUTO="certbot-dns-cloudflare certbot-dns-cloudxns certbot-dns-digitalocean certbot-dns-dnsimple certbot-dns-dnsmadeeasy certbot-dns-google certbot-dns-linode certbot-dns-luadns certbot-dns-nsone certbot-dns-rfc2136 certbot-dns-route53 certbot-dns-sakuracloud"
 
 # subpackages to be released (the way the script thinks about them)
 SUBPKGS_IN_AUTO="certbot $SUBPKGS_IN_AUTO_NO_CERTBOT"
@@ -86,6 +86,14 @@ if [ "$RELEASE_BRANCH" != "candidate-$version" ] ; then
     git branch -f "$RELEASE_BRANCH"
 fi
 git checkout "$RELEASE_BRANCH"
+
+for pkg_dir in $SUBPKGS_NO_CERTBOT certbot-compatibility-test .
+do
+  sed -i 's/\.dev0//' "$pkg_dir/setup.py"
+done
+# We only add Certbot's setup.py here because the other files are added in the
+# call to SetVersion below.
+git add -p setup.py
 
 SetVersion() {
     ver="$1"
@@ -153,7 +161,8 @@ kill $!
 cd ~-
 
 # get a snapshot of the CLI help for the docs
-certbot --help all > docs/cli-help.txt
+# We set CERTBOT_DOCS to use dummy values in example user-agent string.
+CERTBOT_DOCS=1 certbot --help all > docs/cli-help.txt
 jws --help > acme/docs/jws-help.txt
 
 cd ..

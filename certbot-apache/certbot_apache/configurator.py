@@ -13,7 +13,7 @@ import zope.component
 import zope.interface
 
 from acme import challenges
-from acme.magic_typing import DefaultDict, Dict, List, Set  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Any, DefaultDict, Dict, List, Set, Union  # pylint: disable=unused-import, no-name-in-module
 
 from certbot import errors
 from certbot import interfaces
@@ -22,6 +22,7 @@ from certbot import util
 from certbot.achallenges import KeyAuthorizationAnnotatedChallenge  # pylint: disable=unused-import
 from certbot.plugins import common
 from certbot.plugins.util import path_surgery
+from certbot.plugins.enhancements import AutoHSTSEnhancement
 
 from certbot_apache import apache_util
 from certbot_apache import augeas_configurator
@@ -160,8 +161,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self._wildcard_vhosts = dict()  # type: Dict[str, List[obj.VirtualHost]]
         # Maps enhancements to vhosts we've enabled the enhancement for
         self._enhanced_vhosts = defaultdict(set)  # type: DefaultDict[str, Set[obj.VirtualHost]]
+        # Temporary state for AutoHSTS enhancement
+        self._autohsts = {}  # type: Dict[str, Dict[str, Union[int, float]]]
 
         # These will be set in the prepare function
+        self._prepared = False
         self.parser = None
         self.version = version
         self.vhosts = None
@@ -246,6 +250,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             logger.debug("Encountered error:", exc_info=True)
             raise errors.PluginError(
                 "Unable to lock %s", self.conf("server-root"))
+        self._prepared = True
 
     def _check_aug_version(self):
         """ Checks that we have recent enough version of libaugeas.
@@ -1472,6 +1477,67 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if need_to_save:
             self.save()
 
+    def find_vhost_by_id(self, id_str):
+        """
+        Searches through VirtualHosts and tries to match the id in a comment
+
+        :param str id_str: Id string for matching
+
+        :returns: The matched VirtualHost or None
+        :rtype: :class:`~certbot_apache.obj.VirtualHost` or None
+
+        :raises .errors.PluginError: If no VirtualHost is found
+        """
+
+        for vh in self.vhosts:
+            if self._find_vhost_id(vh) == id_str:
+                return vh
+        msg = "No VirtualHost with ID {} was found.".format(id_str)
+        logger.warning(msg)
+        raise errors.PluginError(msg)
+
+    def _find_vhost_id(self, vhost):
+        """Tries to find the unique ID from the VirtualHost comments. This is
+        used for keeping track of VirtualHost directive over time.
+
+        :param vhost: Virtual host to add the id
+        :type vhost: :class:`~certbot_apache.obj.VirtualHost`
+
+        :returns: The unique ID or None
+        :rtype: str or None
+        """
+
+        # Strip the {} off from the format string
+        search_comment = constants.MANAGED_COMMENT_ID.format("")
+
+        id_comment = self.parser.find_comments(search_comment, vhost.path)
+        if id_comment:
+            # Use the first value, multiple ones shouldn't exist
+            comment = self.parser.get_arg(id_comment[0])
+            return comment.split(" ")[-1]
+        return None
+
+    def add_vhost_id(self, vhost):
+        """Adds an unique ID to the VirtualHost as a comment for mapping back
+        to it on later invocations, as the config file order might have changed.
+        If ID already exists, returns that instead.
+
+        :param vhost: Virtual host to add or find the id
+        :type vhost: :class:`~certbot_apache.obj.VirtualHost`
+
+        :returns: The unique ID for vhost
+        :rtype: str or None
+        """
+
+        vh_id = self._find_vhost_id(vhost)
+        if vh_id:
+            return vh_id
+
+        id_string = apache_util.unique_id()
+        comment = constants.MANAGED_COMMENT_ID.format(id_string)
+        self.parser.add_comment(vhost.path, comment)
+        return id_string
+
     def _escape(self, fp):
         fp = fp.replace(",", "\\,")
         fp = fp.replace("[", "\\[")
@@ -1530,6 +1596,78 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         except errors.PluginError:
             logger.warning("Failed %s for %s", enhancement, domain)
             raise
+
+    def _autohsts_increase(self, vhost, id_str, nextstep):
+        """Increase the AutoHSTS max-age value
+
+        :param vhost: Virtual host object to modify
+        :type vhost: :class:`~certbot_apache.obj.VirtualHost`
+
+        :param str id_str: The unique ID string of VirtualHost
+
+        :param int nextstep: Next AutoHSTS max-age value index
+
+        """
+        nextstep_value = constants.AUTOHSTS_STEPS[nextstep]
+        self._autohsts_write(vhost, nextstep_value)
+        self._autohsts[id_str] = {"laststep": nextstep, "timestamp": time.time()}
+
+    def _autohsts_write(self, vhost, nextstep_value):
+        """
+        Write the new HSTS max-age value to the VirtualHost file
+        """
+
+        hsts_dirpath = None
+        header_path = self.parser.find_dir("Header", None, vhost.path)
+        if header_path:
+            pat = '(?:[ "]|^)(strict-transport-security)(?:[ "]|$)'
+            for match in header_path:
+                if re.search(pat, self.aug.get(match).lower()):
+                    hsts_dirpath = match
+        if not hsts_dirpath:
+            err_msg = ("Certbot was unable to find the existing HSTS header "
+                       "from the VirtualHost at path {0}.").format(vhost.filep)
+            raise errors.PluginError(err_msg)
+
+        # Prepare the HSTS header value
+        hsts_maxage = "\"max-age={0}\"".format(nextstep_value)
+
+        # Update the header
+        # Our match statement was for string strict-transport-security, but
+        # we need to update the value instead. The next index is for the value
+        hsts_dirpath = hsts_dirpath.replace("arg[3]", "arg[4]")
+        self.aug.set(hsts_dirpath, hsts_maxage)
+        note_msg = ("Increasing HSTS max-age value to {0} for VirtualHost "
+                    "in {1}\n".format(nextstep_value, vhost.filep))
+        logger.debug(note_msg)
+        self.save_notes += note_msg
+        self.save(note_msg)
+
+    def _autohsts_fetch_state(self):
+        """
+        Populates the AutoHSTS state from the pluginstorage
+        """
+        try:
+            self._autohsts = self.storage.fetch("autohsts")
+        except KeyError:
+            self._autohsts = dict()
+
+    def _autohsts_save_state(self):
+        """
+        Saves the state of AutoHSTS object to pluginstorage
+        """
+        self.storage.put("autohsts", self._autohsts)
+        self.storage.save()
+
+    def _autohsts_vhost_in_lineage(self, vhost, lineage):
+        """
+        Searches AutoHSTS managed VirtualHosts that belong to the lineage.
+        Matches the private key path.
+        """
+
+        return bool(
+            self.parser.find_dir("SSLCertificateKeyFile",
+                                 lineage.key_path, vhost.path))
 
     def _enable_ocsp_stapling(self, ssl_vhost, unused_options):
         """Enables OCSP Stapling
@@ -2158,3 +2296,180 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # to be modified.
         return common.install_version_controlled_file(options_ssl, options_ssl_digest,
             self.constant("MOD_SSL_CONF_SRC"), constants.ALL_SSL_OPTIONS_HASHES)
+
+    def enable_autohsts(self, _unused_lineage, domains):
+        """
+        Enable the AutoHSTS enhancement for defined domains
+
+        :param _unused_lineage: Certificate lineage object, unused
+        :type _unused_lineage: certbot.storage.RenewableCert
+
+        :param domains: List of domains in certificate to enhance
+        :type domains: str
+        """
+
+        self._autohsts_fetch_state()
+        _enhanced_vhosts = []
+        for d in domains:
+            matched_vhosts = self.choose_vhosts(d, create_if_no_ssl=False)
+            # We should be handling only SSL vhosts for AutoHSTS
+            vhosts = [vhost for vhost in matched_vhosts if vhost.ssl]
+
+            if not vhosts:
+                msg_tmpl = ("Certbot was not able to find SSL VirtualHost for a "
+                            "domain {0} for enabling AutoHSTS enhancement.")
+                msg = msg_tmpl.format(d)
+                logger.warning(msg)
+                raise errors.PluginError(msg)
+            for vh in vhosts:
+                try:
+                    self._enable_autohsts_domain(vh)
+                    _enhanced_vhosts.append(vh)
+                except errors.PluginEnhancementAlreadyPresent:
+                    if vh in _enhanced_vhosts:
+                        continue
+                    msg = ("VirtualHost for domain {0} in file {1} has a " +
+                           "String-Transport-Security header present, exiting.")
+                    raise errors.PluginEnhancementAlreadyPresent(
+                        msg.format(d, vh.filep))
+        if _enhanced_vhosts:
+            note_msg = "Enabling AutoHSTS"
+            self.save(note_msg)
+            logger.info(note_msg)
+            self.restart()
+
+        # Save the current state to pluginstorage
+        self._autohsts_save_state()
+
+    def _enable_autohsts_domain(self, ssl_vhost):
+        """Do the initial AutoHSTS deployment to a vhost
+
+        :param ssl_vhost: The VirtualHost object to deploy the AutoHSTS
+        :type ssl_vhost: :class:`~certbot_apache.obj.VirtualHost` or None
+
+        :raises errors.PluginEnhancementAlreadyPresent: When already enhanced
+
+        """
+        # This raises the exception
+        self._verify_no_matching_http_header(ssl_vhost,
+                                             "Strict-Transport-Security")
+
+        if "headers_module" not in self.parser.modules:
+            self.enable_mod("headers")
+        # Prepare the HSTS header value
+        hsts_header = constants.HEADER_ARGS["Strict-Transport-Security"][:-1]
+        initial_maxage = constants.AUTOHSTS_STEPS[0]
+        hsts_header.append("\"max-age={0}\"".format(initial_maxage))
+
+        # Add ID to the VirtualHost for mapping back to it later
+        uniq_id = self.add_vhost_id(ssl_vhost)
+        self.save_notes += "Adding unique ID {0} to VirtualHost in {1}\n".format(
+            uniq_id, ssl_vhost.filep)
+        # Add the actual HSTS header
+        self.parser.add_dir(ssl_vhost.path, "Header", hsts_header)
+        note_msg = ("Adding gradually increasing HSTS header with initial value "
+                    "of {0} to VirtualHost in {1}\n".format(
+                        initial_maxage, ssl_vhost.filep))
+        self.save_notes += note_msg
+
+        # Save the current state to pluginstorage
+        self._autohsts[uniq_id] = {"laststep": 0, "timestamp": time.time()}
+
+    def update_autohsts(self, _unused_domain):
+        """
+        Increase the AutoHSTS values of VirtualHosts that the user has enabled
+        this enhancement for.
+
+        :param _unused_domain: Not currently used
+        :type _unused_domain: Not Available
+
+        """
+        self._autohsts_fetch_state()
+        if not self._autohsts:
+            # No AutoHSTS enabled for any domain
+            return
+        curtime = time.time()
+        save_and_restart = False
+        for id_str, config in list(self._autohsts.items()):
+            if config["timestamp"] + constants.AUTOHSTS_FREQ > curtime:
+                # Skip if last increase was < AUTOHSTS_FREQ ago
+                continue
+            nextstep = config["laststep"] + 1
+            if nextstep < len(constants.AUTOHSTS_STEPS):
+                # If installer hasn't been prepared yet, do it now
+                if not self._prepared:
+                    self.prepare()
+                # Have not reached the max value yet
+                try:
+                    vhost = self.find_vhost_by_id(id_str)
+                except errors.PluginError:
+                    msg = ("Could not find VirtualHost with ID {0}, disabling "
+                           "AutoHSTS for this VirtualHost").format(id_str)
+                    logger.warning(msg)
+                    # Remove the orphaned AutoHSTS entry from pluginstorage
+                    self._autohsts.pop(id_str)
+                    continue
+                self._autohsts_increase(vhost, id_str, nextstep)
+                msg = ("Increasing HSTS max-age value for VirtualHost with id "
+                       "{0}").format(id_str)
+                self.save_notes += msg
+                save_and_restart = True
+
+        if save_and_restart:
+            self.save("Increased HSTS max-age values")
+            self.restart()
+
+        self._autohsts_save_state()
+
+    def deploy_autohsts(self, lineage):
+        """
+        Checks if autohsts vhost has reached maximum auto-increased value
+        and changes the HSTS max-age to a high value.
+
+        :param lineage: Certificate lineage object
+        :type lineage: certbot.storage.RenewableCert
+        """
+        self._autohsts_fetch_state()
+        if not self._autohsts:
+            # No autohsts enabled for any vhost
+            return
+
+        vhosts = []
+        affected_ids = []
+        # Copy, as we are removing from the dict inside the loop
+        for id_str, config in list(self._autohsts.items()):
+            if config["laststep"]+1 >= len(constants.AUTOHSTS_STEPS):
+                # max value reached, try to make permanent
+                try:
+                    vhost = self.find_vhost_by_id(id_str)
+                except errors.PluginError:
+                    msg = ("VirtualHost with id {} was not found, unable to "
+                           "make HSTS max-age permanent.").format(id_str)
+                    logger.warning(msg)
+                    self._autohsts.pop(id_str)
+                    continue
+                if self._autohsts_vhost_in_lineage(vhost, lineage):
+                    vhosts.append(vhost)
+                    affected_ids.append(id_str)
+
+        save_and_restart = False
+        for vhost in vhosts:
+            self._autohsts_write(vhost, constants.AUTOHSTS_PERMANENT)
+            msg = ("Strict-Transport-Security max-age value for "
+                   "VirtualHost in {0} was made permanent.").format(vhost.filep)
+            logger.debug(msg)
+            self.save_notes += msg+"\n"
+            save_and_restart = True
+
+        if save_and_restart:
+            self.save("Made HSTS max-age permanent")
+            self.restart()
+
+        for id_str in affected_ids:
+            self._autohsts.pop(id_str)
+
+        # Update AutoHSTS storage (We potentially removed vhosts from managed)
+        self._autohsts_save_state()
+
+
+AutoHSTSEnhancement.register(ApacheConfigurator)  # pylint: disable=no-member

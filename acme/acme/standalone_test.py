@@ -4,20 +4,18 @@ import shutil
 import socket
 import threading
 import tempfile
-import time
 import unittest
 
 from six.moves import http_client  # pylint: disable=import-error
+from six.moves import queue  # pylint: disable=import-error
 from six.moves import socketserver  # type: ignore  # pylint: disable=import-error
 
-from OpenSSL import SSL # type: ignore # https://github.com/python/typeshed/issues/2052
 import josepy as jose
 import mock
 import requests
 
 from acme import challenges
 from acme import crypto_util
-from acme import errors
 from acme import test_util
 from acme.magic_typing import Set # pylint: disable=unused-import, no-name-in-module
 
@@ -118,62 +116,6 @@ class HTTP01ServerTest(unittest.TestCase):
 
     def test_http01_not_found(self):
         self.assertFalse(self._test_http01(add=False))
-
-
-@unittest.skipUnless(
-        hasattr(SSL.Connection, "set_alpn_protos") and
-        hasattr(SSL.Context, "set_alpn_select_callback"),
-        "pyOpenSSL too old")
-class TLSALPN01ServerTest(unittest.TestCase):
-    """Test for acme.standalone.TLSALPN01Server."""
-
-    def setUp(self):
-        self.certs = {b'localhost': (
-            test_util.load_pyopenssl_private_key('rsa2048_key.pem'),
-            test_util.load_cert('rsa2048_cert.pem'),
-        )}
-        # Use different certificate for challenge.
-        self.challenge_certs = {b'localhost': (
-            test_util.load_pyopenssl_private_key('rsa1024_key.pem'),
-            test_util.load_cert('rsa1024_cert.pem'),
-        )}
-        from acme.standalone import TLSALPN01Server
-        self.server = TLSALPN01Server(("", 0), certs=self.certs,
-                challenge_certs=self.challenge_certs)
-        # pylint: disable=no-member
-        self.thread = threading.Thread(target=self.server.serve_forever)
-        self.thread.start()
-
-    def tearDown(self):
-        self.server.shutdown()  # pylint: disable=no-member
-        self.thread.join()
-
-    #TODO: This is not implemented yet, see comments in standalone.py
-    #def test_certs(self):
-    #    host, port = self.server.socket.getsockname()[:2]
-    #    cert = crypto_util.probe_sni(
-    #        b'localhost', host=host, port=port, timeout=1)
-    #    # Expect normal cert when connecting without ALPN.
-    #    self.assertEqual(jose.ComparableX509(cert),
-    #                     jose.ComparableX509(self.certs[b'localhost'][1]))
-
-    def test_challenge_certs(self):
-        host, port = self.server.socket.getsockname()[:2]
-        cert = crypto_util.probe_sni(
-            b'localhost', host=host, port=port, timeout=1,
-            alpn_protocols=[b"acme-tls/1"])
-        #  Expect challenge cert when connecting with ALPN.
-        self.assertEqual(
-                jose.ComparableX509(cert),
-                jose.ComparableX509(self.challenge_certs[b'localhost'][1])
-        )
-
-    def test_bad_alpn(self):
-        host, port = self.server.socket.getsockname()[:2]
-        with self.assertRaises(errors.Error):
-            crypto_util.probe_sni(
-                b'localhost', host=host, port=port, timeout=1,
-                alpn_protocols=[b"bad-alpn"])
 
 
 class BaseDualNetworkedServersTest(unittest.TestCase):
@@ -318,10 +260,9 @@ class TestSimpleTLSSNI01Server(unittest.TestCase):
                     os.path.join(localhost_dir, 'key.pem'))
 
         from acme.standalone import simple_tls_sni_01_server
-        self.port = 1234
         self.thread = threading.Thread(
             target=simple_tls_sni_01_server, kwargs={
-                'cli_args': ('xxx', '--port', str(self.port)),
+                'cli_args': ('filename',),
                 'forever': False,
             },
         )
@@ -333,25 +274,20 @@ class TestSimpleTLSSNI01Server(unittest.TestCase):
         self.thread.join()
         shutil.rmtree(self.test_cwd)
 
-    def test_it(self):
-        max_attempts = 5
-        for attempt in range(max_attempts):
-            try:
-                cert = crypto_util.probe_sni(
-                    b'localhost', b'0.0.0.0', self.port)
-            except errors.Error:
-                self.assertTrue(attempt + 1 < max_attempts, "Timeout!")
-                time.sleep(1)  # wait until thread starts
-            else:
-                self.assertEqual(jose.ComparableX509(cert),
-                                 test_util.load_comparable_cert(
-                                     'rsa2048_cert.pem'))
-                break
+    @mock.patch('acme.standalone.logger')
+    def test_it(self, mock_logger):
+        # Use a Queue because mock objects aren't thread safe.
+        q = queue.Queue()  # type: queue.Queue[int]
+        # Add port number to the queue.
+        mock_logger.info.side_effect = lambda *args: q.put(args[-1])
+        self.thread.start()
 
-            if attempt == 0:
-                # the first attempt is always meant to fail, so we can test
-                # the socket failure code-path for probe_sni, as well
-                self.thread.start()
+        # After the timeout, an exception is raised if the queue is empty.
+        port = q.get(timeout=5)
+        cert = crypto_util.probe_sni(b'localhost', b'0.0.0.0', port)
+        self.assertEqual(jose.ComparableX509(cert),
+                         test_util.load_comparable_cert(
+                             'rsa2048_cert.pem'))
 
 
 if __name__ == "__main__":

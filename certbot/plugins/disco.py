@@ -31,6 +31,7 @@ class PluginEntryPoint(object):
         "certbot-dns-dnsimple",
         "certbot-dns-dnsmadeeasy",
         "certbot-dns-google",
+        "certbot-dns-linode",
         "certbot-dns-luadns",
         "certbot-dns-nsone",
         "certbot-dns-rfc2136",

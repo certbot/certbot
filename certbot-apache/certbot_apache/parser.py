@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 class ApacheParser(object):
+    # pylint: disable=too-many-public-methods
     """Class handles the fine details of parsing the Apache Configuration.
 
     .. todo:: Make parsing general... remove sites-available etc...
@@ -349,6 +350,37 @@ class ApacheParser(object):
                 self.aug.set(first_dir + "/arg[%d]" % (i), value)
         else:
             self.aug.set(first_dir + "/arg", args)
+
+    def add_comment(self, aug_conf_path, comment):
+        """Adds the comment to the augeas path
+
+        :param str aug_conf_path: Augeas configuration path to add directive
+        :param str comment: Comment content
+
+        """
+        self.aug.set(aug_conf_path + "/#comment[last() + 1]", comment)
+
+    def find_comments(self, arg, start=None):
+        """Finds a comment with specified content from the provided DOM path
+
+        :param str arg: Comment content to search
+        :param str start: Beginning Augeas path to begin looking
+
+        :returns: List of augeas paths containing the comment content
+        :rtype: list
+
+        """
+        if not start:
+            start = get_aug_path(self.root)
+
+        comments = self.aug.match("%s//*[label() = '#comment']" % start)
+
+        results = []
+        for comment in comments:
+            c_content = self.aug.get(comment)
+            if c_content and arg in c_content:
+                results.append(comment)
+        return results
 
     def find_dir(self, directive, arg=None, start=None, exclude=True):
         """Finds directive in the configuration.

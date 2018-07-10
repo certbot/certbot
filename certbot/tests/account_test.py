@@ -218,10 +218,16 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
         self._set_server('https://acme-staging.api.letsencrypt.org/directory')
         self.assertEqual([], self.storage.find_all())
 
-    def test_upgrade_version(self):
+    def test_upgrade_version_staging(self):
         self._set_server('https://acme-staging.api.letsencrypt.org/directory')
         self.storage.save(self.acc, self.mock_client)
         self._set_server('https://acme-staging-v02.api.letsencrypt.org/directory')
+        self.assertEqual([self.acc], self.storage.find_all())
+
+    def test_upgrade_version_production(self):
+        self._set_server('https://acme-v01.api.letsencrypt.org/directory')
+        self.storage.save(self.acc, self.mock_client)
+        self._set_server('https://acme-v02.api.letsencrypt.org/directory')
         self.assertEqual([self.acc], self.storage.find_all())
 
     @mock.patch('os.rmdir')
@@ -234,6 +240,14 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
             side_effect=errors.AccountStorageError)
         self._set_server('https://acme-staging-v02.api.letsencrypt.org/directory')
         self.assertEqual([], self.storage.find_all())
+
+    def test_upgrade_load(self):
+        self._set_server('https://acme-staging.api.letsencrypt.org/directory')
+        self.storage.save(self.acc, self.mock_client)
+        prev_account = self.storage.load(self.acc.id)
+        self._set_server('https://acme-staging-v02.api.letsencrypt.org/directory')
+        account = self.storage.load(self.acc.id)
+        self.assertEqual(prev_account, account)
 
     def test_load_ioerror(self):
         self.storage.save(self.acc, self.mock_client)
