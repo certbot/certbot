@@ -802,9 +802,9 @@ class ClientV2Test(ClientTestBase):
         self.response.headers['Location'] = self.regr.uri
         self.response.json.return_value = self.regr.body.to_json()
         self.assertEqual(self.regr, self.client.update_registration(self.regr))
-        # TODO: test POST call arguments
+        self.assertNotEqual(self.client.net.account, None)
+        self.assertEqual(self.client.net.post.call_count, 2)
 
-        # TODO: split here and separate test
         self.response.json.return_value = self.regr.body.update(
             contact=()).to_json()
 
