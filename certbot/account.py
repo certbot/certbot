@@ -270,11 +270,11 @@ class AccountFileStorage(interfaces.AccountStorage):
                 if hasattr(acme.directory, "new-authz"):
                     regr = RegistrationResourceWithNewAuthzrURI(
                         new_authzr_uri=acme.directory.new_authz,
-                        body="",
+                        body={},
                         uri=regr.uri)
                 else:
                     regr = messages.RegistrationResource(
-                        body="",
+                        body={},
                         uri=regr.uri)
                 regr_file.write(regr.json_dumps())
             if not regr_only:
