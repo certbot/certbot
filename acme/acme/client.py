@@ -1,5 +1,4 @@
 """ACME client API."""
-from abc import ABCMeta, abstractmethod
 import base64
 import collections
 import datetime
@@ -51,8 +50,6 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
     :ivar .ClientNetwork net: Client network.
     :ivar int acme_version: ACME protocol version. 1 or 2.
     """
-    __metaclass__ = ABCMeta
-
     def __init__(self, directory, net, acme_version):
         """Initialize.
 
@@ -94,7 +91,6 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
         kwargs.setdefault('acme_version', self.acme_version)
         return self.net.post(*args, **kwargs)
 
-    @abstractmethod
     def update_registration(self, regr, update=None):
         """Update registration.
 
@@ -106,9 +102,6 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
         :rtype: `.RegistrationResource`
 
         """
-        pass # pragma: no cover
-
-    def _update_registration(self, regr, update):
         update = regr.body if update is None else update
         body = messages.UpdateRegistration(**dict(update))
         updated_regr = self._send_recv_regr(regr, body=body)
@@ -294,19 +287,6 @@ class Client(ClientBase):
         # "Instance of 'Field' has no key/contact member" bug:
         # pylint: disable=no-member
         return self._regr_from_response(response)
-
-    def update_registration(self, regr, update=None):
-        """Update registration.
-
-        :param messages.RegistrationResource regr: Registration Resource.
-        :param messages.Registration update: Updated body of the
-            resource. If not provided, body will be taken from `regr`.
-
-        :returns: Updated Registration Resource.
-        :rtype: `.RegistrationResource`
-
-        """
-        return self._update_registration(regr, update)
 
     def agree_to_tos(self, regr):
         """Agree to the terms-of-service.
@@ -620,8 +600,7 @@ class ClientV2(ClientBase):
         """
         # https://github.com/certbot/certbot/issues/6155
         new_regr = self._get_v2_account(regr)
-
-        return self._update_registration(new_regr, update)
+        return super(ClientV2, self).update_registration(new_regr, update)
 
     def _get_v2_account(self, regr):
         self.net.account = None
@@ -798,19 +777,6 @@ class BackwardsCompatibleClientV2(object):
                 _assess_tos(self.client.directory.meta.terms_of_service)
                 regr = regr.update(terms_of_service_agreed=True)
             return self.client.new_account(regr)
-
-    def update_registration(self, regr, update=None):
-        """Update registration.
-
-        :param messages.RegistrationResource regr: Registration Resource.
-        :param messages.Registration update: Updated body of the
-            resource. If not provided, body will be taken from `regr`.
-
-        :returns: Updated Registration Resource.
-        :rtype: `.RegistrationResource`
-
-        """
-        return self.client.update_registration(regr, update)
 
     def new_order(self, csr_pem):
         """Request a new Order object from the server.
