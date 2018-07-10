@@ -97,6 +97,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         vhost_root="/etc/apache2/sites-available",
         vhost_files="*",
         logs_root="/var/log/apache2",
+        ctlpath="apache2ctl",
+        binpath="apache2",
         version_cmd=['apache2ctl', '-v'],
         apache_cmd="apache2ctl",
         restart_cmd=['apache2ctl', 'graceful'],
@@ -114,6 +116,16 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     def constant(self, key):
         """Get constant for OS_DEFAULTS"""
         return self.OS_DEFAULTS.get(key)
+
+    def _prepare_constants(self):
+        """
+        Set the values possibly changed by command line parameters to
+        OS_DEFAULTS constant dictionary
+        """
+        self.OS_DEFAULTS["version_cmd"][0] = self.conf("binpath")
+        self.OS_DEFAULTS["apache_cmd"] = self.conf("ctlpath")
+        self.OS_DEFAULTS["restart_cmd"][0] = self.conf("ctlpath")
+        self.OS_DEFAULTS["conftest_cmd"][0] = self.conf("ctlpath")
 
     @classmethod
     def add_parser_arguments(cls, add):
@@ -138,6 +150,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         add("handle-sites", default=cls.OS_DEFAULTS["handle_sites"],
             help="Let installer handle enabling sites for you. " +
                  "(Only Ubuntu/Debian currently)")
+        add("ctlpath", default=cls.OS_DEFAULTS["ctlpath"],
+            help="Path to Apache control script")
+        add("binpath", default=cls.OS_DEFAULTS["binpath"],
+            help="Path to Apache binary.")
         util.add_deprecated_argument(add, argument_name="ctl", nargs=1)
         util.add_deprecated_argument(
             add, argument_name="init-script", nargs=1)
@@ -200,6 +216,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             self.init_augeas()
         except ImportError:
             raise errors.NoInstallationError("Problem in Augeas installation")
+
+        self._prepare_constants()
 
         # Verify Apache is installed
         restart_cmd = self.constant("restart_cmd")[0]

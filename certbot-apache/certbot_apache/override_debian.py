@@ -23,6 +23,8 @@ class DebianConfigurator(configurator.ApacheConfigurator):
         vhost_root="/etc/apache2/sites-available",
         vhost_files="*",
         logs_root="/var/log/apache2",
+        ctlpath="apache2ctl",
+        binpath="apache2",
         version_cmd=['apache2ctl', '-v'],
         apache_cmd="apache2ctl",
         restart_cmd=['apache2ctl', 'graceful'],
