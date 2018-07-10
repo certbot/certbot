@@ -270,9 +270,12 @@ class AccountFileStorage(interfaces.AccountStorage):
                 if hasattr(acme.directory, "new-authz"):
                     regr = RegistrationResourceWithNewAuthzrURI(
                         new_authzr_uri=acme.directory.new_authz,
-                        body=regr.body,
-                        uri=regr.uri,
-                        terms_of_service=regr.terms_of_service)
+                        body={},
+                        uri=regr.uri)
+                else:
+                    regr = messages.RegistrationResource(
+                        body={},
+                        uri=regr.uri)
                 regr_file.write(regr.json_dumps())
             if not regr_only:
                 with util.safe_open(self._key_path(account_dir_path),

@@ -139,7 +139,7 @@ class BackwardsCompatibleClientV2Test(ClientTestBase):
         client = self._init()
         self.assertEqual(client.directory, client.client.directory)
         self.assertEqual(client.key, KEY)
-        self.assertEqual(client.update_registration, client.client.update_registration)
+        self.assertEqual(client.deactivate_registration, client.client.deactivate_registration)
         self.assertRaises(AttributeError, client.__getattr__, 'nonexistent')
         self.assertRaises(AttributeError, client.__getattr__, 'new_account_and_tos')
         self.assertRaises(AttributeError, client.__getattr__, 'new_account')
@@ -269,6 +269,13 @@ class BackwardsCompatibleClientV2Test(ClientTestBase):
             client = self._init()
             client.revoke(messages_test.CERT, self.rsn)
         mock_client().revoke.assert_called_once_with(messages_test.CERT, self.rsn)
+
+    def test_update_registration(self):
+        self.response.json.return_value = DIRECTORY_V1.to_json()
+        with mock.patch('acme.client.Client') as mock_client:
+            client = self._init()
+            client.update_registration(mock.sentinel.regr, None)
+        mock_client().update_registration.assert_called_once_with(mock.sentinel.regr, None)
 
 
 class ClientTest(ClientTestBase):
@@ -788,6 +795,19 @@ class ClientV2Test(ClientTestBase):
         self.client.revoke(messages_test.CERT, self.rsn)
         self.net.post.assert_called_once_with(
             self.directory["revokeCert"], mock.ANY, acme_version=2)
+
+    def test_update_registration(self):
+        # "Instance of 'Field' has no to_json/update member" bug:
+        # pylint: disable=no-member
+        self.response.headers['Location'] = self.regr.uri
+        self.response.json.return_value = self.regr.body.to_json()
+        self.assertEqual(self.regr, self.client.update_registration(self.regr))
+        self.assertNotEqual(self.client.net.account, None)
+        self.assertEqual(self.client.net.post.call_count, 2)
+        self.assertTrue(DIRECTORY_V2.newAccount in self.net.post.call_args_list[0][0])
+
+        self.response.json.return_value = self.regr.body.update(
+            contact=()).to_json()
 
 
 class MockJSONDeSerializable(jose.JSONDeSerializable):
