@@ -738,6 +738,9 @@ def register(config, unused_plugins):
     prev_regr_uri = acc.regr.uri
     acc.regr = cb_client.acme.update_registration(acc.regr.update(
         body=acc.regr.body.update(contact=acc_contacts)))
+    # A v1 account being used as a v2 account will result in changing the uri to
+    # the v2 uri. Since it's the same object on disk, put it back to the v1 uri
+    # so that we can also continue to use the account object with acmev1.
     acc.regr = acc.regr.update(uri=prev_regr_uri)
     account_storage.save_regr(acc, cb_client.acme)
     eff.handle_subscription(config)
