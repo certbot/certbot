@@ -545,8 +545,9 @@ class RenewableCertTests(BaseRenewableCertTest):
 
     def _test_relevant_values_common(self, values):
         defaults = dict((option, cli.flag_default(option))
-                        for option in ("rsa_key_size", "server",))
-        mock_parser = mock.Mock(args=["--standalone"], verb="certonly",
+                        for option in ("authenticator", "installer",
+                                       "rsa_key_size", "server",))
+        mock_parser = mock.Mock(args=[], verb="plugins",
                                 defaults=defaults)
 
         # make a copy to ensure values isn't modified
@@ -587,6 +588,11 @@ class RenewableCertTests(BaseRenewableCertTest):
         values = {"authenticator": "apache"}
         self.assertEqual(
             self._test_relevant_values_common(values), values)
+
+    def test_relevant_values_plugins_none(self):
+        self.assertEqual(
+            self._test_relevant_values_common(
+                {"authenticator": None, "installer": None}), {})
 
     @mock.patch("certbot.cli.set_by_cli")
     @mock.patch("certbot.plugins.disco.PluginsRegistry.find_all")
