@@ -5,7 +5,7 @@ cache:
         - $HOME/.cache/pip
 
 before_install:
-  - '([ $TRAVIS_OS_NAME == linux ] && dpkg -s libaugeas0) || (brew update && brew install augeas python3 && brew upgrade python && brew link python)'
+  - '([ $TRAVIS_OS_NAME == linux ] && dpkg -s libaugeas0) || (brew update && brew install augeas && brew upgrade python python3 && brew link python)'
 
 before_script:
   - 'if [ $TRAVIS_OS_NAME = osx ] ; then ulimit -n 1024 ; fi'
@@ -13,55 +13,21 @@ before_script:
 matrix:
   include:
     - python: "2.7"
-      env: TOXENV=py27_install BOULDER_INTEGRATION=v1
+      env: TOXENV=py27-certbot-oldest BOULDER_INTEGRATION=v1
       sudo: required
       services: docker
     - python: "2.7"
-      env: TOXENV=py27_install BOULDER_INTEGRATION=v2
+      env: TOXENV=py27-certbot-oldest BOULDER_INTEGRATION=v2
       sudo: required
       services: docker
     - python: "2.7"
-      env: TOXENV=cover FYI="this also tests py27"
-    - sudo: required
-      env: TOXENV=nginx_compat
-      services: docker
-      before_install:
-      addons:
-    - python: "2.7"
-      env: TOXENV=lint
-    - python: "3.4"
-      env: TOXENV=mypy
-    - python: "3.5"
-      env: TOXENV=mypy
-    - python: "2.7"
-      env: TOXENV='py27-{acme,apache,certbot,dns,nginx}-oldest'
+      env: TOXENV=py27-nginx-oldest BOULDER_INTEGRATION=v1
       sudo: required
       services: docker
-    - python: "3.4"
-      env: TOXENV=py34
-      sudo: required
-      services: docker
-    - python: "3.7"
-      dist: xenial
-      env: TOXENV=py37
-      sudo: required
-      services: docker
-    - sudo: required
-      env: TOXENV=apache_compat
-      services: docker
-      before_install:
-      addons:
-    - sudo: required
-      env: TOXENV=le_auto_trusty
-      services: docker
-      before_install:
-      addons:
     - python: "2.7"
-      env: TOXENV=apacheconftest
+      env: TOXENV=py27-nginx-oldest BOULDER_INTEGRATION=v2
       sudo: required
-    - python: "2.7"
-      env: TOXENV=nginxroundtrip
-
+      services: docker
 
 # Only build pushes to the master branch, PRs, and branches beginning with
 # `test-` or of the form `digit(s).digit(s).x`. This reduces the number of
