@@ -553,17 +553,6 @@ dns-dnsmadeeasy:
   --dns-dnsmadeeasy-credentials DNS_DNSMADEEASY_CREDENTIALS
                         DNS Made Easy credentials INI file. (default: None)
 
-dns-exoscale:
-  Obtain certificates using a DNS TXT record (if you are using Exoscale for
-  DNS).
-
-  --dns-exoscale-propagation-seconds DNS_EXOSCALE_PROPAGATION_SECONDS
-                        The number of seconds to wait for DNS to propagate
-                        before asking the ACME server to verify the DNS
-                        record. (default: 30)
-  --dns-exoscale-credentials DNS_EXOSCALE_CREDENTIALS
-                        Exoscale credentials INI file. (default: None)
-
 dns-google:
   Obtain certificates using a DNS TXT record (if you are using Google Cloud
   DNS for DNS).

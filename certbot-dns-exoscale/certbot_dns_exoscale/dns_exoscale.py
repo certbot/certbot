@@ -4,7 +4,6 @@ import logging
 import zope.interface
 from lexicon.providers import exoscale
 
-from certbot import errors
 from certbot import interfaces
 from certbot.plugins import dns_common
 from certbot.plugins import dns_common_lexicon
@@ -78,24 +77,11 @@ class Authenticator(dns_common.DNSAuthenticator):
 
 
 class _ExoscaleLexiconClient(dns_common_lexicon.LexiconClient):
-    """
-    Encapsulates all communication with the Exoscale via Lexicon.
-    """
+    """Encapsulate all communication with the Exoscale via Lexicon"""
 
     def __init__(self, key, secret, ttl):
         super(_ExoscaleLexiconClient, self).__init__()
 
         self.provider = exoscale.Provider(
             {"auth_key": key, "auth_secret": secret, "ttl": ttl}
-        )
-
-    def _handle_http_error(self, e, domain_name):
-        hint = None
-        if str(e).startswith("401 Client Error: Unauthorized for url:"):
-            hint = "Is your API token value correct?"
-
-        return errors.PluginError(
-            "Error determining zone identifier for {0}: {1}.{2}".format(
-                domain_name, e, " ({0})".format(hint) if hint else ""
-            )
         )
