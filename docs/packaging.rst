@@ -86,6 +86,19 @@ In Fedora 23+.
 
 - https://apps.fedoraproject.org/packages/python-acme
 - https://apps.fedoraproject.org/packages/certbot
+- https://apps.fedoraproject.org/packages/python-certbot-apache
+- https://apps.fedoraproject.org/packages/python-certbot-dns-cloudflare
+- https://apps.fedoraproject.org/packages/python-certbot-dns-cloudxns
+- https://apps.fedoraproject.org/packages/python-certbot-dns-digitalocean
+- https://apps.fedoraproject.org/packages/python-certbot-dns-dnsimple
+- https://apps.fedoraproject.org/packages/python-certbot-dns-dnsmadeeasy
+- https://apps.fedoraproject.org/packages/python-certbot-dns-google
+- https://apps.fedoraproject.org/packages/python-certbot-dns-linode
+- https://apps.fedoraproject.org/packages/python-certbot-dns-luadns
+- https://apps.fedoraproject.org/packages/python-certbot-dns-nsone
+- https://apps.fedoraproject.org/packages/python-certbot-dns-rfc2136
+- https://apps.fedoraproject.org/packages/python-certbot-dns-route53
+- https://apps.fedoraproject.org/packages/python-certbot-nginx
 
 FreeBSD
 -------
