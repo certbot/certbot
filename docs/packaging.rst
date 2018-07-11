@@ -84,8 +84,8 @@ Fedora
 
 In Fedora 23+.
 
-- https://admin.fedoraproject.org/pkgdb/package/certbot/
-- https://admin.fedoraproject.org/pkgdb/package/python-acme/
+- https://apps.fedoraproject.org/packages/python-acme
+- https://apps.fedoraproject.org/packages/certbot
 
 FreeBSD
 -------
