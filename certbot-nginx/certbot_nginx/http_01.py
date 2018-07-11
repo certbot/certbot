@@ -10,6 +10,7 @@ from certbot.plugins import common
 
 from certbot_nginx import obj
 from certbot_nginx import nginxparser
+from acme.magic_typing import List # pylint: disable=unused-import, no-name-in-module
 
 
 logger = logging.getLogger(__name__)
@@ -113,7 +114,7 @@ class NginxHttp01(common.ChallengePerformer):
         :returns: list of :class:`certbot_nginx.obj.Addr` to apply
         :rtype: list
         """
-        addresses = []
+        addresses = [] # type: List[obj.Addr]
         default_addr = "%s" % self.configurator.config.http01_port
         ipv6_addr = "[::]:{0}".format(
             self.configurator.config.http01_port)

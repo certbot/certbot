@@ -16,6 +16,7 @@ import zope.component
 from acme import fields as acme_fields
 from acme import messages
 
+from certbot import constants
 from certbot import errors
 from certbot import interfaces
 from certbot import util
@@ -142,7 +143,11 @@ class AccountFileStorage(interfaces.AccountStorage):
                                    self.config.strict_permissions)
 
     def _account_dir_path(self, account_id):
-        return os.path.join(self.config.accounts_dir, account_id)
+        return self._account_dir_path_for_server_path(account_id, self.config.server_path)
+
+    def _account_dir_path_for_server_path(self, account_id, server_path):
+        accounts_dir = self.config.accounts_dir_for_server_path(server_path)
+        return os.path.join(accounts_dir, account_id)
 
     @classmethod
     def _regr_path(cls, account_dir_path):
@@ -156,25 +161,57 @@ class AccountFileStorage(interfaces.AccountStorage):
     def _metadata_path(cls, account_dir_path):
         return os.path.join(account_dir_path, "meta.json")
 
-    def find_all(self):
+    def _find_all_for_server_path(self, server_path):
+        accounts_dir = self.config.accounts_dir_for_server_path(server_path)
         try:
-            candidates = os.listdir(self.config.accounts_dir)
+            candidates = os.listdir(accounts_dir)
         except OSError:
             return []
 
         accounts = []
         for account_id in candidates:
             try:
-                accounts.append(self.load(account_id))
+                accounts.append(self._load_for_server_path(account_id, server_path))
             except errors.AccountStorageError:
                 logger.debug("Account loading problem", exc_info=True)
+
+        if not accounts and server_path in constants.LE_REUSE_SERVERS:
+            # find all for the next link down
+            prev_server_path = constants.LE_REUSE_SERVERS[server_path]
+            prev_accounts = self._find_all_for_server_path(prev_server_path)
+            # if we found something, link to that
+            if prev_accounts:
+                try:
+                    self._symlink_to_accounts_dir(prev_server_path, server_path)
+                except OSError:
+                    return []
+            accounts = prev_accounts
         return accounts
 
-    def load(self, account_id):
-        account_dir_path = self._account_dir_path(account_id)
-        if not os.path.isdir(account_dir_path):
-            raise errors.AccountNotFound(
-                "Account at %s does not exist" % account_dir_path)
+    def find_all(self):
+        return self._find_all_for_server_path(self.config.server_path)
+
+    def _symlink_to_accounts_dir(self, prev_server_path, server_path):
+        accounts_dir = self.config.accounts_dir_for_server_path(server_path)
+        if os.path.islink(accounts_dir):
+            os.unlink(accounts_dir)
+        else:
+            os.rmdir(accounts_dir)
+        prev_account_dir = self.config.accounts_dir_for_server_path(prev_server_path)
+        os.symlink(prev_account_dir, accounts_dir)
+
+    def _load_for_server_path(self, account_id, server_path):
+        account_dir_path = self._account_dir_path_for_server_path(account_id, server_path)
+        if not os.path.isdir(account_dir_path): # isdir is also true for symlinks
+            if server_path in constants.LE_REUSE_SERVERS:
+                prev_server_path = constants.LE_REUSE_SERVERS[server_path]
+                prev_loaded_account = self._load_for_server_path(account_id, prev_server_path)
+                # we didn't error so we found something, so create a symlink to that
+                self._symlink_to_accounts_dir(prev_server_path, server_path)
+                return prev_loaded_account
+            else:
+                raise errors.AccountNotFound(
+                    "Account at %s does not exist" % account_dir_path)
 
         try:
             with open(self._regr_path(account_dir_path)) as regr_file:
@@ -193,6 +230,9 @@ class AccountFileStorage(interfaces.AccountStorage):
                     account_id, acc.id))
         return acc
 
+    def load(self, account_id):
+        return self._load_for_server_path(account_id, self.config.server_path)
+
     def save(self, account, acme):
         self._save(account, acme, regr_only=False)
 
@@ -210,11 +250,49 @@ class AccountFileStorage(interfaces.AccountStorage):
         :param account_id: id of account which should be deleted
 
         """
+        # Step 1: remove the account itself
         account_dir_path = self._account_dir_path(account_id)
         if not os.path.isdir(account_dir_path):
             raise errors.AccountNotFound(
                 "Account at %s does not exist" % account_dir_path)
         shutil.rmtree(account_dir_path)
+
+        # Step 2: remove the directory if it's empty, and linked directories
+        if not os.listdir(self.config.accounts_dir):
+            self._delete_accounts_dir_for_server_path(self.config.server_path)
+
+    def _delete_accounts_dir_for_server_path(self, server_path):
+        accounts_dir_path = self.config.accounts_dir_for_server_path(server_path)
+
+        # does an appropriate directory link to me? if so, make sure that's gone
+        reused_servers = {}
+        for k in constants.LE_REUSE_SERVERS:
+            reused_servers[constants.LE_REUSE_SERVERS[k]] = k
+
+        # is there a next one up? call that and be done
+        if server_path in reused_servers:
+            next_server_path = reused_servers[server_path]
+            next_accounts_dir_path = self.config.accounts_dir_for_server_path(next_server_path)
+            if os.path.islink(next_accounts_dir_path) \
+                and os.readlink(next_accounts_dir_path) == accounts_dir_path:
+                self._delete_accounts_dir_for_server_path(next_server_path)
+                return
+
+        # if there's not a next one up to delete, then delete me
+        # and whatever I link to if applicable
+        if os.path.islink(accounts_dir_path):
+            # save my info then delete me
+            target = os.readlink(accounts_dir_path)
+            os.unlink(accounts_dir_path)
+            # then delete whatever I linked to, if appropriate
+            if server_path in constants.LE_REUSE_SERVERS:
+                prev_server_path = constants.LE_REUSE_SERVERS[server_path]
+                prev_accounts_dir_path = self.config.accounts_dir_for_server_path(prev_server_path)
+                if target == prev_accounts_dir_path:
+                    self._delete_accounts_dir_for_server_path(prev_server_path)
+        else:
+            # just delete me
+            os.rmdir(accounts_dir_path)
 
     def _save(self, account, acme, regr_only):
         account_dir_path = self._account_dir_path(account.id)
@@ -230,9 +308,12 @@ class AccountFileStorage(interfaces.AccountStorage):
                 if hasattr(acme.directory, "new-authz"):
                     regr = RegistrationResourceWithNewAuthzrURI(
                         new_authzr_uri=acme.directory.new_authz,
-                        body=regr.body,
-                        uri=regr.uri,
-                        terms_of_service=regr.terms_of_service)
+                        body={},
+                        uri=regr.uri)
+                else:
+                    regr = messages.RegistrationResource(
+                        body={},
+                        uri=regr.uri)
                 regr_file.write(regr.json_dumps())
             if not regr_only:
                 with util.safe_open(self._key_path(account_dir_path),

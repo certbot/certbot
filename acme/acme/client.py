@@ -9,17 +9,20 @@ import time
 
 import six
 from six.moves import http_client  # pylint: disable=import-error
-
 import josepy as jose
 import OpenSSL
 import re
+from requests_toolbelt.adapters.source import SourceAddressAdapter
 import requests
+from requests.adapters import HTTPAdapter
 import sys
 
 from acme import crypto_util
 from acme import errors
 from acme import jws
 from acme import messages
+# pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Dict, List, Set, Text
 
 
 logger = logging.getLogger(__name__)
@@ -47,7 +50,6 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
     :ivar .ClientNetwork net: Client network.
     :ivar int acme_version: ACME protocol version. 1 or 2.
     """
-
     def __init__(self, directory, net, acme_version):
         """Initialize.
 
@@ -415,7 +417,7 @@ class Client(ClientBase):
         """
         # pylint: disable=too-many-locals
         assert max_attempts > 0
-        attempts = collections.defaultdict(int)
+        attempts = collections.defaultdict(int) # type: Dict[messages.AuthorizationResource, int]
         exhausted = set()
 
         # priority queue with datetime.datetime (based on Retry-After) as key,
@@ -529,7 +531,7 @@ class Client(ClientBase):
         :rtype: `list` of `OpenSSL.crypto.X509` wrapped in `.ComparableX509`
 
         """
-        chain = []
+        chain = [] # type: List[jose.ComparableX509]
         uri = certr.cert_chain_uri
         while uri is not None and len(chain) < max_length:
             response, cert = self._get_cert(uri)
@@ -584,6 +586,30 @@ class ClientV2(ClientBase):
         regr = self._regr_from_response(response)
         self.net.account = regr
         return regr
+
+    def update_registration(self, regr, update=None):
+        """Update registration.
+
+        :param messages.RegistrationResource regr: Registration Resource.
+        :param messages.Registration update: Updated body of the
+            resource. If not provided, body will be taken from `regr`.
+
+        :returns: Updated Registration Resource.
+        :rtype: `.RegistrationResource`
+
+        """
+        # https://github.com/certbot/certbot/issues/6155
+        new_regr = self._get_v2_account(regr)
+        return super(ClientV2, self).update_registration(new_regr, update)
+
+    def _get_v2_account(self, regr):
+        self.net.account = None
+        only_existing_reg = regr.body.update(only_return_existing=True)
+        response = self._post(self.directory['newAccount'], only_existing_reg)
+        updated_uri = response.headers['Location']
+        new_regr = regr.update(uri=updated_uri)
+        self.net.account = new_regr
+        return new_regr
 
     def new_order(self, csr_pem):
         """Request a new Order object from the server.
@@ -856,18 +882,28 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
     :param bool verify_ssl: Whether to verify certificates on SSL connections.
     :param str user_agent: String to send as User-Agent header.
     :param float timeout: Timeout for requests.
+    :param source_address: Optional source address to bind to when making requests.
+    :type source_address: str or tuple(str, int)
     """
     def __init__(self, key, account=None, alg=jose.RS256, verify_ssl=True,
-                 user_agent='acme-python', timeout=DEFAULT_NETWORK_TIMEOUT):
+                 user_agent='acme-python', timeout=DEFAULT_NETWORK_TIMEOUT,
+                 source_address=None):
         # pylint: disable=too-many-arguments
         self.key = key
         self.account = account
         self.alg = alg
         self.verify_ssl = verify_ssl
-        self._nonces = set()
+        self._nonces = set() # type: Set[Text]
         self.user_agent = user_agent
         self.session = requests.Session()
         self._default_timeout = timeout
+        adapter = HTTPAdapter()
+
+        if source_address is not None:
+            adapter = SourceAddressAdapter(source_address)
+
+        self.session.mount("http://", adapter)
+        self.session.mount("https://", adapter)
 
     def __del__(self):
         # Try to close the session, but don't show exceptions to the
@@ -897,6 +933,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         if acme_version == 2:
             kwargs["url"] = url
             # newAccount and revokeCert work without the kid
+            # newAccount must not have kid
             if self.account is not None:
                 kwargs["kid"] = self.account["uri"]
         kwargs["key"] = self.key
@@ -1017,7 +1054,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         if response.headers.get("Content-Type") == DER_CONTENT_TYPE:
             debug_content = base64.b64encode(response.content)
         else:
-            debug_content = response.content
+            debug_content = response.content.decode("utf-8")
         logger.debug('Received response:\nHTTP %d\n%s\n\n%s',
                      response.status_code,
                      "\n".join(["{0}: {1}".format(k, v)

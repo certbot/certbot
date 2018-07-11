@@ -145,6 +145,7 @@ STATUS_PROCESSING = Status('processing')
 STATUS_VALID = Status('valid')
 STATUS_INVALID = Status('invalid')
 STATUS_REVOKED = Status('revoked')
+STATUS_READY = Status('ready')
 
 
 class IdentifierType(_Constant):
@@ -273,6 +274,7 @@ class Registration(ResourceBody):
     agreement = jose.Field('agreement', omitempty=True)
     status = jose.Field('status', omitempty=True)
     terms_of_service_agreed = jose.Field('termsOfServiceAgreed', omitempty=True)
+    only_return_existing = jose.Field('onlyReturnExisting', omitempty=True)
 
     phone_prefix = 'tel:'
     email_prefix = 'mailto:'
@@ -284,7 +286,7 @@ class Registration(ResourceBody):
         if phone is not None:
             details.append(cls.phone_prefix + phone)
         if email is not None:
-            details.append(cls.email_prefix + email)
+            details.extend([cls.email_prefix + mail for mail in email.split(',')])
         kwargs['contact'] = tuple(details)
         return cls(**kwargs)
 
@@ -435,6 +437,7 @@ class Authorization(ResourceBody):
     # be absent'... then acme-spec gives example with 'expires'
     # present... That's confusing!
     expires = fields.RFC3339Field('expires', omitempty=True)
+    wildcard = jose.Field('wildcard', omitempty=True)
 
     @challenges.decoder
     def challenges(value):  # pylint: disable=missing-docstring,no-self-argument

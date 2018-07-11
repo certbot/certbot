@@ -2,6 +2,178 @@
 
 Certbot adheres to [Semantic Versioning](http://semver.org/).
 
+## 0.25.1 - 2018-06-13
+
+### Fixed
+
+* TLS-ALPN-01 support has been removed from our acme library. Using our current
+  dependencies, we are unable to provide a correct implementation of this
+  challenge so we decided to remove it from the library until we can provide
+  proper support.
+* Issues causing test failures when running the tests in the acme package with
+  pytest<3.0 has been resolved.
+* certbot-nginx now correctly depends on acme>=0.25.0.
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+packages with changes other than their version number were:
+
+* acme
+* certbot-nginx
+
+More details about these changes can be found on our GitHub repo:
+https://github.com/certbot/certbot/milestone/56?closed=1
+
+## 0.25.0 - 2018-06-06
+
+### Added
+
+* Support for the ready status type was added to acme. Without this change,
+  Certbot and acme users will begin encountering errors when using Let's
+  Encrypt's ACMEv2 API starting on June 19th for the staging environment and
+  July 5th for production. See
+  https://community.letsencrypt.org/t/acmev2-order-ready-status/62866 for more
+  information.
+* Certbot now accepts the flag --reuse-key which will cause the same key to be
+  used in the certificate when the lineage is renewed rather than generating a
+  new key.
+* You can now add multiple email addresses to your ACME account with Certbot by
+  providing a comma separated list of emails to the --email flag.
+* Support for Let's Encrypt's upcoming TLS-ALPN-01 challenge was added to acme.
+  For more information, see
+  https://community.letsencrypt.org/t/tls-alpn-validation-method/63814/1.
+* acme now supports specifying the source address to bind to when sending
+  outgoing connections. You still cannot specify this address using Certbot.
+* If you run Certbot against Let's Encrypt's ACMEv2 staging server but don't
+  already have an account registered at that server URL, Certbot will
+  automatically reuse your staging account from Let's Encrypt's ACMEv1 endpoint
+  if it exists.
+* Interfaces were added to Certbot allowing plugins to be called at additional
+  points. The `GenericUpdater` interface allows plugins to perform actions
+  every time `certbot renew` is run, regardless of whether any certificates are
+  due for renewal, and the `RenewDeployer` interface allows plugins to perform
+  actions when a certificate is renewed. See `certbot.interfaces` for more
+  information.
+
+### Changed
+
+* When running Certbot with --dry-run and you don't already have a staging
+  account, the created account does not contain an email address even if one
+  was provided to avoid expiration emails from Let's Encrypt's staging server.
+* certbot-nginx does a better job of automatically detecting the location of
+  Nginx's configuration files when run on BSD based systems.
+* acme now requires and uses pytest when running tests with setuptools with
+  `python setup.py test`.
+* `certbot config_changes` no longer waits for user input before exiting.
+
+### Fixed
+
+* Misleading log output that caused users to think that Certbot's standalone
+  plugin failed to bind to a port when performing a challenge has been
+  corrected.
+* An issue where certbot-nginx would fail to enable HSTS if the server block
+  already had an `add_header` directive has been resolved.
+* certbot-nginx now does a better job detecting the server block to base the
+  configuration for TLS-SNI challenges on.
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+packages with functional changes were:
+
+* acme
+* certbot
+* certbot-apache
+* certbot-nginx
+
+More details about these changes can be found on our GitHub repo:
+https://github.com/certbot/certbot/milestone/54?closed=1
+
+## 0.24.0 - 2018-05-02
+
+### Added
+
+* certbot now has an enhance subcommand which allows you to configure security
+  enhancements like HTTP to HTTPS redirects, OCSP stapling, and HSTS without
+  reinstalling a certificate.
+* certbot-dns-rfc2136 now allows the user to specify the port to use to reach
+  the DNS server in its credentials file.
+* acme now parses the wildcard field included in authorizations so it can be
+  used by users of the library.
+
+### Changed
+
+* certbot-dns-route53 used to wait for each DNS update to propagate before
+  sending the next one, but now it sends all updates before waiting which
+  speeds up issuance for multiple domains dramatically.
+* Certbot's official Docker images are now based on Alpine Linux 3.7 rather
+  than 3.4 because 3.4 has reached its end-of-life.
+* We've doubled the time Certbot will spend polling authorizations before
+  timing out.
+* The level of the message logged when Certbot is being used with
+  non-standard paths warning that crontabs for renewal included in Certbot
+  packages from OS package managers may not work has been reduced. This stops
+  the message from being written to stderr every time `certbot renew` runs.
+
+### Fixed
+
+* certbot-auto now works with Python 3.6.
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+packages with changes other than their version number were:
+
+* acme
+* certbot
+* certbot-apache
+* certbot-dns-digitalocean (only style improvements to tests)
+* certbot-dns-rfc2136
+
+More details about these changes can be found on our GitHub repo:
+https://github.com/certbot/certbot/milestone/52?closed=1
+
+## 0.23.0 - 2018-04-04
+
+### Added
+
+* Support for OpenResty was added to the Nginx plugin.
+
+### Changed
+
+* The timestamps in Certbot's logfiles now use the system's local time zone
+  rather than UTC.
+* Certbot's DNS plugins that use Lexicon now rely on Lexicon>=2.2.1 to be able
+  to create and delete multiple TXT records on a single domain.
+* certbot-dns-google's test suite now works without an internet connection.
+
+### Fixed
+
+* Removed a small window that if during which an error occurred, Certbot
+  wouldn't clean up performed challenges.
+* The parameters `default` and `ipv6only` are now removed from `listen`
+  directives when creating a new server block in the Nginx plugin.
+* `server_name` directives enclosed in quotation marks in Nginx are now properly
+  supported.
+* Resolved an issue preventing the Apache plugin from starting Apache when it's
+  not currently running on RHEL and Gentoo based systems.
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+packages with changes other than their version number were:
+
+* certbot
+* certbot-apache
+* certbot-dns-cloudxns
+* certbot-dns-dnsimple
+* certbot-dns-dnsmadeeasy
+* certbot-dns-google
+* certbot-dns-luadns
+* certbot-dns-nsone
+* certbot-dns-rfc2136
+* certbot-nginx
+
+More details about these changes can be found on our GitHub repo:
+https://github.com/certbot/certbot/milestone/50?closed=1
+
 ## 0.22.2 - 2018-03-19
 
 ### Fixed
