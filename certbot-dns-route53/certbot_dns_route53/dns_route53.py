@@ -11,6 +11,8 @@ from certbot import errors
 from certbot import interfaces
 from certbot.plugins import dns_common
 
+from acme.magic_typing import DefaultDict, List, Dict # pylint: disable=unused-import, no-name-in-module
+
 logger = logging.getLogger(__name__)
 
 INSTRUCTIONS = (
@@ -34,7 +36,7 @@ class Authenticator(dns_common.DNSAuthenticator):
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
         self.r53 = boto3.client("route53")
-        self._resource_records = collections.defaultdict(list)
+        self._resource_records = collections.defaultdict(list) # type: DefaultDict[str, List[Dict[str, str]]]
 
     def more_info(self):  # pylint: disable=missing-docstring,no-self-use
         return "Solve a DNS01 challenge using AWS Route53"
@@ -42,14 +44,26 @@ class Authenticator(dns_common.DNSAuthenticator):
     def _setup_credentials(self):
         pass
 
-    def _perform(self, domain, validation_domain_name, validation):
-        try:
-            change_id = self._change_txt_record("UPSERT", validation_domain_name, validation)
+    def _perform(self, domain, validation_domain_name, validation): # pylint: disable=missing-docstring
+        pass
 
-            self._wait_for_change(change_id)
+    def perform(self, achalls):
+        self._attempt_cleanup = True
+
+        try:
+            change_ids = [
+                self._change_txt_record("UPSERT",
+                  achall.validation_domain_name(achall.domain),
+                  achall.validation(achall.account_key))
+                for achall in achalls
+            ]
+
+            for change_id in change_ids:
+                self._wait_for_change(change_id)
         except (NoCredentialsError, ClientError) as e:
             logger.debug('Encountered error during perform: %s', e, exc_info=True)
             raise errors.PluginError("\n".join([str(e), INSTRUCTIONS]))
+        return [achall.response(achall.account_key) for achall in achalls]
 
     def _cleanup(self, domain, validation_domain_name, validation):
         try:
