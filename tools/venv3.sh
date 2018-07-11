@@ -23,6 +23,7 @@ fi
   -e certbot-dns-linode \
   -e certbot-dns-luadns \
   -e certbot-dns-nsone \
+  -e certbot-dns-ovh \
   -e certbot-dns-route53 \
   -e certbot-dns-sakuracloud \
   -e certbot-nginx \
