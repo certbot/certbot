@@ -16,6 +16,8 @@ class DarwinConfigurator(configurator.ApacheConfigurator):
         vhost_root="/etc/apache2/other",
         vhost_files="*.conf",
         logs_root="/var/log/apache2",
+        ctlpath="apachectl",
+        binpath="/usr/sbin/httpd",
         version_cmd=['/usr/sbin/httpd', '-v'],
         apache_cmd="/usr/sbin/httpd",
         restart_cmd=['apachectl', 'graceful'],

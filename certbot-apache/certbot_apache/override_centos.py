@@ -18,6 +18,8 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
         vhost_root="/etc/httpd/conf.d",
         vhost_files="*.conf",
         logs_root="/var/log/httpd",
+        ctlpath="apachectl",
+        binpath="apachectl",
         version_cmd=['apachectl', '-v'],
         apache_cmd="apachectl",
         restart_cmd=['apachectl', 'graceful'],
@@ -36,7 +38,7 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
     def get_parser(self):
         """Initializes the ApacheParser"""
         return CentOSParser(
-            self.aug, self.conf("server-root"), self.conf("vhost-root"),
+            self.aug, self.option("server-root"), self.option("vhost-root"),
             self.version, configurator=self)
 
 

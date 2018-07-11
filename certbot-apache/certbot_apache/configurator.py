@@ -117,7 +117,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """Get a value from options"""
         return self.options.get(key)
 
-    def _prepare_constants(self):
+    def _prepare_options(self):
         """
         Set the values possibly changed by command line parameters to
         OS_DEFAULTS constant dictionary
@@ -166,7 +166,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         add("ctlpath", default=cls.OS_DEFAULTS["ctlpath"],
             help="Path to Apache control script")
         add("binpath", default=cls.OS_DEFAULTS["binpath"],
-            help="Path to Apache binary.")
+            help="Path to Apache binary or a script passing arguments to it.")
         util.add_deprecated_argument(add, argument_name="ctl", nargs=1)
         util.add_deprecated_argument(
             add, argument_name="init-script", nargs=1)
@@ -230,7 +230,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         except ImportError:
             raise errors.NoInstallationError("Problem in Augeas installation")
 
-        self._prepare_constants()
+        self._prepare_options()
 
         # Verify Apache is installed
         restart_cmd = self.option("restart_cmd")[0]

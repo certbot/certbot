@@ -16,6 +16,8 @@ class ArchConfigurator(configurator.ApacheConfigurator):
         vhost_root="/etc/httpd/conf",
         vhost_files="*.conf",
         logs_root="/var/log/httpd",
+        ctlpath="apachectl",
+        binpath="apachectl",
         version_cmd=['apachectl', '-v'],
         apache_cmd="apachectl",
         restart_cmd=['apachectl', 'graceful'],
