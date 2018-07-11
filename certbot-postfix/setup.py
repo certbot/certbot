@@ -6,7 +6,7 @@ version = '0.26.0.dev0'
 
 install_requires = [
     'acme>=0.25.0',
-    'certbot>0.23.0',
+    'certbot>=0.23.0',
     'setuptools',
     'six',
     'zope.component',
@@ -40,6 +40,7 @@ setup(
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
         'Topic :: Communications :: Email :: Mail Transport Agents',
         'Topic :: Security',
         'Topic :: System :: Installation/Setup',

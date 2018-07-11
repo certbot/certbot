@@ -60,7 +60,7 @@ class NginxConfigurator(common.Installer):
 
     """
 
-    description = "Nginx Web Server plugin - Alpha"
+    description = "Nginx Web Server plugin"
 
     DEFAULT_LISTEN_PORT = '80'
 
@@ -69,8 +69,9 @@ class NginxConfigurator(common.Installer):
 
     @classmethod
     def add_parser_arguments(cls, add):
+        default_server_root = _determine_default_server_root()
         add("server-root", default=constants.CLI_DEFAULTS["server_root"],
-            help="Nginx server root directory.")
+            help="Nginx server root directory. (default: %s)" % default_server_root)
         add("ctl", default=constants.CLI_DEFAULTS["ctl"], help="Path to the "
             "'nginx' binary, used for 'configtest' and retrieving nginx "
             "version number.")
@@ -1129,3 +1130,11 @@ def install_ssl_options_conf(options_ssl, options_ssl_digest):
     """Copy Certbot's SSL options file into the system's config dir if required."""
     return common.install_version_controlled_file(options_ssl, options_ssl_digest,
         constants.MOD_SSL_CONF_SRC, constants.ALL_SSL_OPTIONS_HASHES)
+
+def _determine_default_server_root():
+    if os.environ.get("CERTBOT_DOCS") == "1":
+        default_server_root = "%s or %s" % (constants.LINUX_SERVER_ROOT,
+            constants.FREEBSD_DARWIN_SERVER_ROOT)
+    else:
+        default_server_root = constants.CLI_DEFAULTS["server_root"]
+    return default_server_root
