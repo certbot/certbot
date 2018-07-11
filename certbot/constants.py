@@ -109,6 +109,7 @@ CLI_DEFAULTS = dict(
     dns_linode=False,
     dns_luadns=False,
     dns_nsone=False,
+    dns_ovh=False,
     dns_rfc2136=False,
     dns_route53=False,
     dns_sakuracloud=False

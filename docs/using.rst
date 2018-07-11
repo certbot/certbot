@@ -206,6 +206,7 @@ Once installed, you can find documentation on how to use each plugin at:
 * `certbot-dns-linode <https://certbot-dns-linode.readthedocs.io>`_
 * `certbot-dns-luadns <https://certbot-dns-luadns.readthedocs.io>`_
 * `certbot-dns-nsone <https://certbot-dns-nsone.readthedocs.io>`_
+* `certbot-dns-ovh <https://certbot-dns-ovh.readthedocs.io>`_
 * `certbot-dns-rfc2136 <https://certbot-dns-rfc2136.readthedocs.io>`_
 * `certbot-dns-route53 <https://certbot-dns-route53.readthedocs.io>`_
 
