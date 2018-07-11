@@ -164,13 +164,14 @@ def choose_plugin(prepared, question):
             return None
 
 noninstaller_plugins = ["webroot", "manual", "standalone", "dns-cloudflare", "dns-cloudxns",
-                        "dns-digitalocean", "dns-dnsimple", "dns-dnsmadeeasy", "dns-google",
-                        "dns-luadns", "dns-nsone", "dns-rfc2136", "dns-route53"]
+                        "dns-digitalocean", "dns-dnsimple", "dns-dnsmadeeasy", "dns-gehirn",
+                        "dns-google", "dns-linode", "dns-luadns", "dns-nsone", "dns-ovh",
+                        "dns-rfc2136", "dns-route53", "dns-sakuracloud"]
 
 def record_chosen_plugins(config, plugins, auth, inst):
     "Update the config entries to reflect the plugins we actually selected."
-    config.authenticator = plugins.find_init(auth).name if auth else "None"
-    config.installer = plugins.find_init(inst).name if inst else "None"
+    config.authenticator = plugins.find_init(auth).name if auth else None
+    config.installer = plugins.find_init(inst).name if inst else None
     logger.info("Plugins selected: Authenticator %s, Installer %s",
          config.authenticator, config.installer)
 
@@ -288,16 +289,24 @@ def cli_plugin_requests(config):  # pylint: disable=too-many-branches
         req_auth = set_configurator(req_auth, "dns-dnsimple")
     if config.dns_dnsmadeeasy:
         req_auth = set_configurator(req_auth, "dns-dnsmadeeasy")
+    if config.dns_gehirn:
+        req_auth = set_configurator(req_auth, "dns-gehirn")
     if config.dns_google:
         req_auth = set_configurator(req_auth, "dns-google")
+    if config.dns_linode:
+        req_auth = set_configurator(req_auth, "dns-linode")
     if config.dns_luadns:
         req_auth = set_configurator(req_auth, "dns-luadns")
     if config.dns_nsone:
         req_auth = set_configurator(req_auth, "dns-nsone")
+    if config.dns_ovh:
+        req_auth = set_configurator(req_auth, "dns-ovh")
     if config.dns_rfc2136:
         req_auth = set_configurator(req_auth, "dns-rfc2136")
     if config.dns_route53:
         req_auth = set_configurator(req_auth, "dns-route53")
+    if config.dns_sakuracloud:
+        req_auth = set_configurator(req_auth, "dns-sakuracloud")
     logger.debug("Requested authenticator %s and installer %s", req_auth, req_inst)
     return req_auth, req_inst
 

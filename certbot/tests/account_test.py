@@ -273,6 +273,40 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
     def test_delete_no_account(self):
         self.assertRaises(errors.AccountNotFound, self.storage.delete, self.acc.id)
 
+    def _assert_symlinked_account_removed(self):
+        # create v1 account
+        self._set_server('https://acme-staging.api.letsencrypt.org/directory')
+        self.storage.save(self.acc, self.mock_client)
+        # ensure v2 isn't already linked to it
+        with mock.patch('certbot.constants.LE_REUSE_SERVERS', {}):
+            self._set_server('https://acme-staging-v02.api.letsencrypt.org/directory')
+            self.assertRaises(errors.AccountNotFound, self.storage.load, self.acc.id)
+
+    def _test_delete_folders(self, server_url):
+        # create symlinked servers
+        self._set_server('https://acme-staging.api.letsencrypt.org/directory')
+        self.storage.save(self.acc, self.mock_client)
+        self._set_server('https://acme-staging-v02.api.letsencrypt.org/directory')
+        self.storage.find_all()
+
+        # delete starting at given server_url
+        self._set_server(server_url)
+        self.storage.delete(self.acc.id)
+
+        # make sure we're gone from both urls
+        self._set_server('https://acme-staging.api.letsencrypt.org/directory')
+        self.assertRaises(errors.AccountNotFound, self.storage.load, self.acc.id)
+        self._set_server('https://acme-staging-v02.api.letsencrypt.org/directory')
+        self.assertRaises(errors.AccountNotFound, self.storage.load, self.acc.id)
+
+    def test_delete_folders_up(self):
+        self._test_delete_folders('https://acme-staging.api.letsencrypt.org/directory')
+        self._assert_symlinked_account_removed()
+
+    def test_delete_folders_down(self):
+        self._test_delete_folders('https://acme-staging-v02.api.letsencrypt.org/directory')
+        self._assert_symlinked_account_removed()
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

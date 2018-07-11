@@ -544,14 +544,23 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertFalse(os.path.exists(temp_config_file))
 
     def _test_relevant_values_common(self, values):
-        option = "rsa_key_size"
-        mock_parser = mock.Mock(args=["--standalone"], verb="certonly",
-                                defaults={option: cli.flag_default(option)})
+        defaults = dict((option, cli.flag_default(option))
+                        for option in ("authenticator", "installer",
+                                       "rsa_key_size", "server",))
+        mock_parser = mock.Mock(args=[], verb="plugins",
+                                defaults=defaults)
+
+        # make a copy to ensure values isn't modified
+        values = values.copy()
+        values.setdefault("server", defaults["server"])
+        expected_server = values["server"]
 
         from certbot.storage import relevant_values
         with mock.patch("certbot.cli.helpful_parser", mock_parser):
-            # make a copy to ensure values isn't modified
-            return relevant_values(values.copy())
+            rv = relevant_values(values)
+        self.assertIn("server", rv)
+        self.assertEqual(rv.pop("server"), expected_server)
+        return rv
 
     def test_relevant_values(self):
         """Test that relevant_values() can reject an irrelevant value."""
@@ -580,6 +589,11 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertEqual(
             self._test_relevant_values_common(values), values)
 
+    def test_relevant_values_plugins_none(self):
+        self.assertEqual(
+            self._test_relevant_values_common(
+                {"authenticator": None, "installer": None}), {})
+
     @mock.patch("certbot.cli.set_by_cli")
     @mock.patch("certbot.plugins.disco.PluginsRegistry.find_all")
     def test_relevant_values_namespace(self, mock_find_all, mock_set_by_cli):
@@ -588,6 +602,12 @@ class RenewableCertTests(BaseRenewableCertTest):
         values = {"certbot_foo:bar_baz": 42}
         self.assertEqual(
             self._test_relevant_values_common(values), values)
+
+    def test_relevant_values_server(self):
+        self.assertEqual(
+            # _test_relevant_values_common handles testing the server
+            # value and removes it
+            self._test_relevant_values_common({"server": "example.org"}), {})
 
     @mock.patch("certbot.storage.relevant_values")
     def test_new_lineage(self, mock_rv):

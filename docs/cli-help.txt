@@ -454,6 +454,8 @@ plugins:
                         using LuaDNS for DNS). (default: False)
   --dns-nsone           Obtain certificates using a DNS TXT record (if you are
                         using NS1 for DNS). (default: False)
+  --dns-ovh             Obtain certificates using a DNS TXT record (if you are
+                        using OVH for DNS). (default: False)
   --dns-rfc2136         Obtain certificates using a DNS TXT record (if you are
                         using BIND for DNS). (default: False)
   --dns-route53         Obtain certificates using a DNS TXT record (if you are
@@ -589,6 +591,16 @@ dns-nsone:
   --dns-nsone-credentials DNS_NSONE_CREDENTIALS
                         NS1 credentials file. (default: None)
 
+dns-ovh:
+  Obtain certificates using a DNS TXT record (if you are using OVH for DNS).
+
+  --dns-ovh-propagation-seconds DNS_OVH_PROPAGATION_SECONDS
+                        The number of seconds to wait for DNS to propagate
+                        before asking the ACME server to verify the DNS
+                        record. (default: 30)
+  --dns-ovh-credentials DNS_OVH_CREDENTIALS
+                        OVH credentials file. (default: None)
+
 dns-rfc2136:
   Obtain certificates using a DNS TXT record (if you are using BIND for
   DNS).
@@ -635,7 +647,7 @@ manual:
                         Automatically allows public IP logging (default: Ask)
 
 nginx:
-  Nginx Web Server plugin - Alpha
+  Nginx Web Server plugin
 
   --nginx-server-root NGINX_SERVER_ROOT
                         Nginx server root directory. (default: /etc/nginx or

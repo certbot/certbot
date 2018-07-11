@@ -250,11 +250,49 @@ class AccountFileStorage(interfaces.AccountStorage):
         :param account_id: id of account which should be deleted
 
         """
+        # Step 1: remove the account itself
         account_dir_path = self._account_dir_path(account_id)
         if not os.path.isdir(account_dir_path):
             raise errors.AccountNotFound(
                 "Account at %s does not exist" % account_dir_path)
         shutil.rmtree(account_dir_path)
+
+        # Step 2: remove the directory if it's empty, and linked directories
+        if not os.listdir(self.config.accounts_dir):
+            self._delete_accounts_dir_for_server_path(self.config.server_path)
+
+    def _delete_accounts_dir_for_server_path(self, server_path):
+        accounts_dir_path = self.config.accounts_dir_for_server_path(server_path)
+
+        # does an appropriate directory link to me? if so, make sure that's gone
+        reused_servers = {}
+        for k in constants.LE_REUSE_SERVERS:
+            reused_servers[constants.LE_REUSE_SERVERS[k]] = k
+
+        # is there a next one up? call that and be done
+        if server_path in reused_servers:
+            next_server_path = reused_servers[server_path]
+            next_accounts_dir_path = self.config.accounts_dir_for_server_path(next_server_path)
+            if os.path.islink(next_accounts_dir_path) \
+                and os.readlink(next_accounts_dir_path) == accounts_dir_path:
+                self._delete_accounts_dir_for_server_path(next_server_path)
+                return
+
+        # if there's not a next one up to delete, then delete me
+        # and whatever I link to if applicable
+        if os.path.islink(accounts_dir_path):
+            # save my info then delete me
+            target = os.readlink(accounts_dir_path)
+            os.unlink(accounts_dir_path)
+            # then delete whatever I linked to, if appropriate
+            if server_path in constants.LE_REUSE_SERVERS:
+                prev_server_path = constants.LE_REUSE_SERVERS[server_path]
+                prev_accounts_dir_path = self.config.accounts_dir_for_server_path(prev_server_path)
+                if target == prev_accounts_dir_path:
+                    self._delete_accounts_dir_for_server_path(prev_server_path)
+        else:
+            # just delete me
+            os.rmdir(accounts_dir_path)
 
     def _save(self, account, acme, regr_only):
         account_dir_path = self._account_dir_path(account.id)
@@ -270,9 +308,12 @@ class AccountFileStorage(interfaces.AccountStorage):
                 if hasattr(acme.directory, "new-authz"):
                     regr = RegistrationResourceWithNewAuthzrURI(
                         new_authzr_uri=acme.directory.new_authz,
-                        body=regr.body,
-                        uri=regr.uri,
-                        terms_of_service=regr.terms_of_service)
+                        body={},
+                        uri=regr.uri)
+                else:
+                    regr = messages.RegistrationResource(
+                        body={},
+                        uri=regr.uri)
                 regr_file.write(regr.json_dumps())
             if not regr_only:
                 with util.safe_open(self._key_path(account_dir_path),
