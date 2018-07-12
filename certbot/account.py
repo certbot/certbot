@@ -191,6 +191,11 @@ class AccountFileStorage(interfaces.AccountStorage):
     def find_all(self):
         return self._find_all_for_server_path(self.config.server_path)
 
+    def _symlink_to_account_dir(self, prev_server_path, server_path, account_id):
+        prev_account_dir = self._account_dir_path_for_server_path(account_id, prev_server_path)
+        new_account_dir = self._account_dir_path_for_server_path(account_id, server_path)
+        os.symlink(prev_account_dir, new_account_dir)
+
     def _symlink_to_accounts_dir(self, prev_server_path, server_path):
         accounts_dir = self.config.accounts_dir_for_server_path(server_path)
         if os.path.islink(accounts_dir):
@@ -207,7 +212,12 @@ class AccountFileStorage(interfaces.AccountStorage):
                 prev_server_path = constants.LE_REUSE_SERVERS[server_path]
                 prev_loaded_account = self._load_for_server_path(account_id, prev_server_path)
                 # we didn't error so we found something, so create a symlink to that
-                self._symlink_to_accounts_dir(prev_server_path, server_path)
+                accounts_dir = self.config.accounts_dir_for_server_path(server_path)
+                # If accounts_dir isn't empty, make an account specific symlink
+                if os.listdir(accounts_dir):
+                    self._symlink_to_account_dir(prev_server_path, server_path, account_id)
+                else:
+                    self._symlink_to_accounts_dir(prev_server_path, server_path)
                 return prev_loaded_account
             else:
                 raise errors.AccountNotFound(
