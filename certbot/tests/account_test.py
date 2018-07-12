@@ -320,11 +320,11 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
         with open(os.path.join(self.config.accounts_dir, 'foo'), 'w') as f:
             f.write('bar')
 
-    def test_delete_shared_acocunt_up(self):
+    def test_delete_shared_account_up(self):
         self._set_server_and_stop_symlink('https://acme-staging-v02.api.letsencrypt.org/directory')
         self._test_delete_folders('https://acme-staging.api.letsencrypt.org/directory')
 
-    def test_delete_shared_acocunt_down(self):
+    def test_delete_shared_account_down(self):
         self._set_server_and_stop_symlink('https://acme-staging-v02.api.letsencrypt.org/directory')
         self._test_delete_folders('https://acme-staging.api.letsencrypt.org/directory')
 
