@@ -1,5 +1,6 @@
 """Creates ACME accounts for server."""
 import datetime
+import functools
 import hashlib
 import logging
 import os
@@ -260,16 +261,22 @@ class AccountFileStorage(interfaces.AccountStorage):
         :param account_id: id of account which should be deleted
 
         """
-        # Step 1: remove the account itself
         account_dir_path = self._account_dir_path(account_id)
         if not os.path.isdir(account_dir_path):
             raise errors.AccountNotFound(
                 "Account at %s does not exist" % account_dir_path)
-        shutil.rmtree(account_dir_path)
+        # Step 1: Delete account specific link and directories
+        self._delete_account_dir_for_server_path(account_id, self.config.server_path)
 
-        # Step 2: remove the directory if it's empty, and linked directories
+        # Step 2: Remove any accounts links and directories that are now empty
         if not os.listdir(self.config.accounts_dir):
             self._delete_accounts_dir_for_server_path(self.config.server_path)
+
+    def _delete_account_dir_for_server_path(self, account_id, server_path):
+        link_func = functools.partial(self._account_dir_path_for_server_path, account_id)
+        nonsymlinked_dir = self._delete_links_and_find_target_dir(server_path, link_func)
+        if nonsymlinked_dir:
+            shutil.rmtree(nonsymlinked_dir)
 
     def _delete_accounts_dir_for_server_path(self, server_path):
         link_func = self.config.accounts_dir_for_server_path
