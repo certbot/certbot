@@ -502,9 +502,9 @@ class ChooseValuesTest(unittest.TestCase):
         items = ["first", "second", "third"]
         mock_util().checklist.return_value = (display_util.OK, [items[2]])
         result = self._call(items, None)
-        self.assertEquals(result, [items[2]])
+        self.assertEqual(result, [items[2]])
         self.assertTrue(mock_util().checklist.called)
-        self.assertEquals(mock_util().checklist.call_args[0][0], None)
+        self.assertEqual(mock_util().checklist.call_args[0][0], None)
 
     @test_util.patch_get_utility("certbot.display.ops.z_util")
     def test_choose_names_success_question(self, mock_util):
@@ -512,9 +512,9 @@ class ChooseValuesTest(unittest.TestCase):
         question = "Which one?"
         mock_util().checklist.return_value = (display_util.OK, [items[1]])
         result = self._call(items, question)
-        self.assertEquals(result, [items[1]])
+        self.assertEqual(result, [items[1]])
         self.assertTrue(mock_util().checklist.called)
-        self.assertEquals(mock_util().checklist.call_args[0][0], question)
+        self.assertEqual(mock_util().checklist.call_args[0][0], question)
 
     @test_util.patch_get_utility("certbot.display.ops.z_util")
     def test_choose_names_user_cancel(self, mock_util):
@@ -522,9 +522,9 @@ class ChooseValuesTest(unittest.TestCase):
         question = "Want to cancel?"
         mock_util().checklist.return_value = (display_util.CANCEL, [])
         result = self._call(items, question)
-        self.assertEquals(result, [])
+        self.assertEqual(result, [])
         self.assertTrue(mock_util().checklist.called)
-        self.assertEquals(mock_util().checklist.call_args[0][0], question)
+        self.assertEqual(mock_util().checklist.call_args[0][0], question)
 
 
 if __name__ == "__main__":

@@ -85,7 +85,7 @@ class PostConfTest(unittest.TestCase):
         self.config.set('extra_param', 'another_value')
         self.config.flush()
         arguments = mock_out.call_args_list[-1][0][0]
-        self.assertEquals('-e', arguments[0])
+        self.assertEqual('-e', arguments[0])
         self.assertTrue('default_parameter=new_value' in arguments)
         self.assertTrue('extra_param=another_value' in arguments)
 

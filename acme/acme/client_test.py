@@ -659,7 +659,7 @@ class ClientTest(ClientTestBase):
     def test_revocation_payload(self):
         obj = messages.Revocation(certificate=self.certr.body, reason=self.rsn)
         self.assertTrue('reason' in obj.to_partial_json().keys())
-        self.assertEquals(self.rsn, obj.to_partial_json()['reason'])
+        self.assertEqual(self.rsn, obj.to_partial_json()['reason'])
 
     def test_revoke_bad_status_raises_error(self):
         self.response.status_code = http_client.METHOD_NOT_ALLOWED

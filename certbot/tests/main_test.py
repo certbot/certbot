@@ -1712,7 +1712,7 @@ class EnhanceTest(test_util.ConfigTestCase):
         mock_lineage.return_value = mock.MagicMock(chain_path="/tmp/nonexistent")
         self._call(['enhance', '--auto-hsts'])
         self.assertTrue(self.mockinstaller.enable_autohsts.called)
-        self.assertEquals(self.mockinstaller.enable_autohsts.call_args[0][1],
+        self.assertEqual(self.mockinstaller.enable_autohsts.call_args[0][1],
                           ["example.com", "another.tld"])
 
     @mock.patch('certbot.cert_manager.lineage_for_certname')

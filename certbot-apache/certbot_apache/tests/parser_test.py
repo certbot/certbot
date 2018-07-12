@@ -84,7 +84,7 @@ class BasicParserTest(util.ParserTest):
             self.assertEqual(self.parser.aug.get(match), str(i + 1))
 
     def test_empty_arg(self):
-        self.assertEquals(None,
+        self.assertEqual(None,
                           self.parser.get_arg("/files/whatever/nonexistent"))
 
     def test_add_dir_to_ifmodssl(self):
@@ -303,7 +303,7 @@ class BasicParserTest(util.ParserTest):
         from certbot_apache.parser import get_aug_path
         self.parser.add_comment(get_aug_path(self.parser.loc["name"]), "123456")
         comm = self.parser.find_comments("123456")
-        self.assertEquals(len(comm), 1)
+        self.assertEqual(len(comm), 1)
         self.assertTrue(self.parser.loc["name"] in comm[0])
 
 

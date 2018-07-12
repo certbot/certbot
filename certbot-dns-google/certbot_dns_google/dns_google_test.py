@@ -276,9 +276,9 @@ class GoogleClientTest(unittest.TestCase):
             [{'managedZones': [{'id': self.zone}]}])
         # Record name mocked in setUp
         found = client.get_existing_txt_rrset(self.zone, "_acme-challenge.example.org")
-        self.assertEquals(found, ["\"example-txt-contents\""])
+        self.assertEqual(found, ["\"example-txt-contents\""])
         not_found = client.get_existing_txt_rrset(self.zone, "nonexistent.tld")
-        self.assertEquals(not_found, None)
+        self.assertEqual(not_found, None)
 
     @mock.patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_name')
     @mock.patch('certbot_dns_google.dns_google.open',

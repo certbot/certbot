@@ -177,9 +177,9 @@ class NginxConfiguratorTest(util.NginxTest):
 
     def test_ipv6only(self):
         # ipv6_info: (ipv6_active, ipv6only_present)
-        self.assertEquals((True, False), self.config.ipv6_info("80"))
+        self.assertEqual((True, False), self.config.ipv6_info("80"))
         # Port 443 has ipv6only=on because of ipv6ssl.com vhost
-        self.assertEquals((True, True), self.config.ipv6_info("443"))
+        self.assertEqual((True, True), self.config.ipv6_info("443"))
 
     def test_ipv6only_detection(self):
         self.config.version = (1, 3, 1)
@@ -790,7 +790,7 @@ class NginxConfiguratorTest(util.NginxTest):
             self.assertTrue(vhost in mock_select_vhs.call_args[0][0])
 
             # And the actual returned values
-            self.assertEquals(len(vhs), 1)
+            self.assertEqual(len(vhs), 1)
             self.assertEqual(vhs[0], vhost)
 
     def test_choose_vhosts_wildcard_redirect(self):
@@ -806,7 +806,7 @@ class NginxConfiguratorTest(util.NginxTest):
             self.assertTrue(vhost in mock_select_vhs.call_args[0][0])
 
             # And the actual returned values
-            self.assertEquals(len(vhs), 1)
+            self.assertEqual(len(vhs), 1)
             self.assertEqual(vhs[0], vhost)
 
     def test_deploy_cert_wildcard(self):
@@ -821,7 +821,7 @@ class NginxConfiguratorTest(util.NginxTest):
             self.config.deploy_cert("*.com", "/tmp/path",
                                     "/tmp/path", "/tmp/path", "/tmp/path")
             self.assertTrue(mock_dep.called)
-            self.assertEquals(len(mock_dep.call_args_list), 1)
+            self.assertEqual(len(mock_dep.call_args_list), 1)
             self.assertEqual(vhost, mock_dep.call_args_list[0][0][0])
 
     @mock.patch("certbot_nginx.display_ops.select_vhost_multiple")
