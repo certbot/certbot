@@ -265,7 +265,7 @@ class AccountFileStorage(interfaces.AccountStorage):
         if not os.path.isdir(account_dir_path):
             raise errors.AccountNotFound(
                 "Account at %s does not exist" % account_dir_path)
-        # Step 1: Delete account specific link and directories
+        # Step 1: Delete account specific links and the directory
         self._delete_account_dir_for_server_path(account_id, self.config.server_path)
 
         # Step 2: Remove any accounts links and directories that are now empty
@@ -275,14 +275,12 @@ class AccountFileStorage(interfaces.AccountStorage):
     def _delete_account_dir_for_server_path(self, account_id, server_path):
         link_func = functools.partial(self._account_dir_path_for_server_path, account_id)
         nonsymlinked_dir = self._delete_links_and_find_target_dir(server_path, link_func)
-        if nonsymlinked_dir:
-            shutil.rmtree(nonsymlinked_dir)
+        shutil.rmtree(nonsymlinked_dir)
 
     def _delete_accounts_dir_for_server_path(self, server_path):
         link_func = self.config.accounts_dir_for_server_path
         nonsymlinked_dir = self._delete_links_and_find_target_dir(server_path, link_func)
-        if nonsymlinked_dir:
-            os.rmdir(nonsymlinked_dir)
+        os.rmdir(nonsymlinked_dir)
 
     def _delete_links_and_find_target_dir(self, server_path, link_func):
         """Delete symlinks and return the nonsymlinked directory path.
@@ -291,8 +289,8 @@ class AccountFileStorage(interfaces.AccountStorage):
         :param callable link_func: callable that returns possible links
             given a server_path
 
-        :returns: the final, non-symlinked target if it exists
-        :rtype: `str` or `None`
+        :returns: the final, non-symlinked target
+        :rtype: str
 
         """
         dir_path = link_func(server_path)
@@ -302,8 +300,8 @@ class AccountFileStorage(interfaces.AccountStorage):
         for k in constants.LE_REUSE_SERVERS:
             reused_servers[constants.LE_REUSE_SERVERS[k]] = k
 
-        possible_next_link = True
         # is there a next one up?
+        possible_next_link = True
         while possible_next_link:
             possible_next_link = False
             if server_path in reused_servers:
@@ -315,19 +313,11 @@ class AccountFileStorage(interfaces.AccountStorage):
                     dir_path = next_dir_path
 
         # if there's not a next one up to delete, then delete me
-        # and whatever I link to if applicable
+        # and whatever I link to
         while os.path.islink(dir_path):
-            # save my info then delete me
             target = os.readlink(dir_path)
             os.unlink(dir_path)
-            # then delete whatever I linked to, if appropriate
-            if server_path in constants.LE_REUSE_SERVERS:
-                prev_server_path = constants.LE_REUSE_SERVERS[server_path]
-                prev_dir_path = link_func(prev_server_path)
-                if target == prev_dir_path:
-                    dir_path = prev_dir_path
-                else:
-                    return None
+            dir_path = target
 
         return dir_path
 
