@@ -16,6 +16,7 @@ We release packages and upload them to PyPI (wheels and source tarballs).
 - https://pypi.python.org/pypi/certbot-dns-digitalocean
 - https://pypi.python.org/pypi/certbot-dns-dnsimple
 - https://pypi.python.org/pypi/certbot-dns-dnsmadeeasy
+- https://pypi.python.org/pypi/certbot-dns-dyn
 - https://pypi.python.org/pypi/certbot-dns-google
 - https://pypi.python.org/pypi/certbot-dns-linode
 - https://pypi.python.org/pypi/certbot-dns-luadns

@@ -1413,6 +1413,10 @@ def _plugins_parsing(helpful, plugins):
                 default=flag_default("dns_dnsmadeeasy"),
                 help=("Obtain certificates using a DNS TXT record (if you are "
                       "using DNS Made Easy for DNS)."))
+    helpful.add(["plugins", "certonly"], "--dns-dyn", action="store_true",
+                default=flag_default("dns_dyn"),
+                help=("Obtain certificates using a DNS TXT record (if you are "
+                      "using DYN for DNS)."))
     helpful.add(["plugins", "certonly"], "--dns-gehirn", action="store_true",
                 default=flag_default("dns_gehirn"),
                 help=("Obtain certificates using a DNS TXT record "
