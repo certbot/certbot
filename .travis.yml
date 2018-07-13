@@ -90,12 +90,12 @@ addons:
     - nginx-light
     - openssl
 
-install: "travis_retry $(command -v pip || command -v pip3) install tox coveralls"
+install: "travis_retry $(command -v pip || command -v pip3) install codecov tox"
 script:
     - travis_retry tox
     - '[ -z "${BOULDER_INTEGRATION+x}" ] || (travis_retry tests/boulder-fetch.sh && tests/tox-boulder-integration.sh)'
 
-after_success: '[ "$TOXENV" == "cover" ] && coveralls'
+after_success: '[ "$TOXENV" == "cover" ] && codecov'
 
 notifications:
   email: false
