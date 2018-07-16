@@ -117,7 +117,7 @@ class MultipleVhostsTestGentoo(util.ApacheTest):
         self.config.parser.modules = set()
 
         with mock.patch("certbot.util.get_os_info") as mock_osi:
-            # Make sure we have the have the CentOS httpd constants
+            # Make sure we have the have the Gentoo httpd constants
             mock_osi.return_value = ("gentoo", "123")
             self.config.parser.update_runtime_variables()
 

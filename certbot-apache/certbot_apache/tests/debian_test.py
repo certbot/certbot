@@ -20,7 +20,7 @@ class MultipleVhostsTestDebian(util.ApacheTest):
     def setUp(self):  # pylint: disable=arguments-differ
         super(MultipleVhostsTestDebian, self).setUp()
         self.config = util.get_apache_configurator(
-            self.config_path, None, self.config_dir, self.work_dir,
+            self.config_path, self.vhost_path, self.config_dir, self.work_dir,
             os_info="debian")
         self.config = self.mock_deploy_cert(self.config)
         self.vh_truth = util.get_vh_truth(self.temp_dir,

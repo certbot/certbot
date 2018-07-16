@@ -122,18 +122,17 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         Set the values possibly changed by command line parameters to
         OS_DEFAULTS constant dictionary
         """
-        self.options = self.OS_DEFAULTS
-        self.options["enmod"] = self.conf("enmod")
-        self.options["dismod"] = self.conf("dismod")
+        self.options["enmod"] = self.conf("enmod")
+        self.options["dismod"] = self.conf("dismod")
         self.options["le_vhost_ext"] = self.conf("le-vhost-ext")
         self.options["server_root"] = self.conf("server-root")
         self.options["vhost_root"] = self.conf("vhost-root")
-        self.options["logs_root"] = self.conf("logs-root")
+        self.options["logs_root"] = self.conf("logs-root")
         self.options["challenge_location"] = self.conf("challenge-location")
-        self.options["handle_mods"] = self.conf("handle-modules")
-        self.options["handle_sites"] = self.conf("handle-sites")
+        self.options["handle_mods"] = self.conf("handle-modules")
+        self.options["handle_sites"] = self.conf("handle-sites")
         self.options["ctlpath"] = self.conf("ctlpath")
-        self.options["binpath"] = self.conf("binpath")
+        self.options["binpath"] = self.conf("binpath")
         self.options["version_cmd"][0] = self.conf("binpath")
         self.options["apache_cmd"] = self.conf("ctlpath")
         self.options["restart_cmd"][0] = self.conf("ctlpath")
@@ -199,6 +198,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.version = version
         self.vhosts = None
         self.vhostroot = None
+        self.options = self.OS_DEFAULTS
         self._enhance_func = {"redirect": self._enable_redirect,
                               "ensure-http-header": self._set_http_header,
                               "staple-ocsp": self._enable_ocsp_stapling}
