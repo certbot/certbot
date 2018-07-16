@@ -295,7 +295,7 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
         self._set_server('https://acme-staging.api.letsencrypt.org/directory')
         self.storage.save(self.acc, self.mock_client)
         self._set_server('https://acme-staging-v02.api.letsencrypt.org/directory')
-        self.storage.find_all()
+        self.storage.load(self.acc.id)
 
         # delete starting at given server_url
         self._set_server(server_url)
@@ -326,7 +326,7 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
 
     def test_delete_shared_account_down(self):
         self._set_server_and_stop_symlink('https://acme-staging-v02.api.letsencrypt.org/directory')
-        self._test_delete_folders('https://acme-staging.api.letsencrypt.org/directory')
+        self._test_delete_folders('https://acme-staging-v02.api.letsencrypt.org/directory')
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
