@@ -249,6 +249,14 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
         account = self.storage.load(self.acc.id)
         self.assertEqual(prev_account, account)
 
+    def test_upgrade_load_single_account(self):
+        self._set_server('https://acme-staging.api.letsencrypt.org/directory')
+        self.storage.save(self.acc, self.mock_client)
+        prev_account = self.storage.load(self.acc.id)
+        self._set_server_and_stop_symlink('https://acme-staging-v02.api.letsencrypt.org/directory')
+        account = self.storage.load(self.acc.id)
+        self.assertEqual(prev_account, account)
+
     def test_load_ioerror(self):
         self.storage.save(self.acc, self.mock_client)
         mock_open = mock.mock_open()
@@ -307,6 +315,18 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
         self._test_delete_folders('https://acme-staging-v02.api.letsencrypt.org/directory')
         self._assert_symlinked_account_removed()
 
+    def _set_server_and_stop_symlink(self, server_path):
+        self._set_server(server_path)
+        with open(os.path.join(self.config.accounts_dir, 'foo'), 'w') as f:
+            f.write('bar')
+
+    def test_delete_shared_account_up(self):
+        self._set_server_and_stop_symlink('https://acme-staging-v02.api.letsencrypt.org/directory')
+        self._test_delete_folders('https://acme-staging.api.letsencrypt.org/directory')
+
+    def test_delete_shared_account_down(self):
+        self._set_server_and_stop_symlink('https://acme-staging-v02.api.letsencrypt.org/directory')
+        self._test_delete_folders('https://acme-staging.api.letsencrypt.org/directory')
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
