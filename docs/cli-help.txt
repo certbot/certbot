@@ -108,7 +108,7 @@ optional arguments:
                         case, and to know when to deprecate support for past
                         Python versions and flags. If you wish to hide this
                         information from the Let's Encrypt server, set this to
-                        "". (default: CertbotACMEClient/0.25.1
+                        "". (default: CertbotACMEClient/0.26.0
                         (certbot(-auto); OS_NAME OS_VERSION) Authenticator/XXX
                         Installer/YYY (SUBCOMMAND; flags: FLAGS)
                         Py/major.minor.patchlevel). The flags encoded in the
@@ -196,6 +196,8 @@ security:
   --strict-permissions  Require that all configuration files are owned by the
                         current user; only needed if your config is somewhere
                         unsafe like /tmp/ (default: False)
+  --auto-hsts           Gradually increasing max-age value for HTTP Strict
+                        Transport Security security header (default: False)
 
 testing:
   The following flags are meant for testing and integration purposes only.
@@ -249,7 +251,7 @@ paths:
   --work-dir WORK_DIR   Working directory. (default: /var/lib/letsencrypt)
   --logs-dir LOGS_DIR   Logs directory. (default: /var/log/letsencrypt)
   --server SERVER       ACME Directory Resource URI. (default:
-                        https://acme-v01.api.letsencrypt.org/directory)
+                        https://acme-v02.api.letsencrypt.org/directory)
 
 manage:
   Various subcommands and flags are available for managing your
@@ -328,6 +330,7 @@ renew:
                         renew", regardless of if the certificate is renewed.
                         This setting does not apply to important TLS
                         configuration updates. (default: False)
+  --no-autorenew        Disable auto renewal of certificates. (default: True)
 
 certificates:
   List certificates managed by Certbot
@@ -448,8 +451,13 @@ plugins:
                         using DNSimple for DNS). (default: False)
   --dns-dnsmadeeasy     Obtain certificates using a DNS TXT record (if you
                         areusing DNS Made Easy for DNS). (default: False)
+  --dns-gehirn          Obtain certificates using a DNS TXT record (if you are
+                        using Gehirn Infrastracture Service for DNS).
+                        (default: False)
   --dns-google          Obtain certificates using a DNS TXT record (if you are
                         using Google Cloud DNS). (default: False)
+  --dns-linode          Obtain certificates using a DNS TXT record (if you are
+                        using Linode for DNS). (default: False)
   --dns-luadns          Obtain certificates using a DNS TXT record (if you are
                         using LuaDNS for DNS). (default: False)
   --dns-nsone           Obtain certificates using a DNS TXT record (if you are
@@ -460,6 +468,8 @@ plugins:
                         using BIND for DNS). (default: False)
   --dns-route53         Obtain certificates using a DNS TXT record (if you are
                         using Route53 for DNS). (default: False)
+  --dns-sakuracloud     Obtain certificates using a DNS TXT record (if you are
+                        using Sakura Cloud for DNS). (default: False)
 
 apache:
   Apache Web Server plugin - Beta
@@ -553,6 +563,18 @@ dns-dnsmadeeasy:
   --dns-dnsmadeeasy-credentials DNS_DNSMADEEASY_CREDENTIALS
                         DNS Made Easy credentials INI file. (default: None)
 
+dns-gehirn:
+  Obtain certificates using a DNS TXT record (if you are using Gehirn
+  Infrastracture Service for DNS).
+
+  --dns-gehirn-propagation-seconds DNS_GEHIRN_PROPAGATION_SECONDS
+                        The number of seconds to wait for DNS to propagate
+                        before asking the ACME server to verify the DNS
+                        record. (default: 30)
+  --dns-gehirn-credentials DNS_GEHIRN_CREDENTIALS
+                        Gehirn Infrastracture Service credentials file.
+                        (default: None)
+
 dns-google:
   Obtain certificates using a DNS TXT record (if you are using Google Cloud
   DNS for DNS).
@@ -569,6 +591,16 @@ dns-google:
                         https://cloud.google.com/dns/access-
                         control#permissions_and_roles for information about
                         therequired permissions.) (default: None)
+
+dns-linode:
+  Obtain certs using a DNS TXT record (if you are using Linode for DNS).
+
+  --dns-linode-propagation-seconds DNS_LINODE_PROPAGATION_SECONDS
+                        The number of seconds to wait for DNS to propagate
+                        before asking the ACME server to verify the DNS
+                        record. (default: 960)
+  --dns-linode-credentials DNS_LINODE_CREDENTIALS
+                        Linode credentials INI file. (default: None)
 
 dns-luadns:
   Obtain certificates using a DNS TXT record (if you are using LuaDNS for
@@ -599,7 +631,7 @@ dns-ovh:
                         before asking the ACME server to verify the DNS
                         record. (default: 30)
   --dns-ovh-credentials DNS_OVH_CREDENTIALS
-                        OVH credentials file. (default: None)
+                        OVH credentials INI file. (default: None)
 
 dns-rfc2136:
   Obtain certificates using a DNS TXT record (if you are using BIND for
@@ -620,6 +652,17 @@ dns-route53:
                         The number of seconds to wait for DNS to propagate
                         before asking the ACME server to verify the DNS
                         record. (default: 10)
+
+dns-sakuracloud:
+  Obtain certificates using a DNS TXT record (if you are using Sakura Cloud
+  for DNS).
+
+  --dns-sakuracloud-propagation-seconds DNS_SAKURACLOUD_PROPAGATION_SECONDS
+                        The number of seconds to wait for DNS to propagate
+                        before asking the ACME server to verify the DNS
+                        record. (default: 90)
+  --dns-sakuracloud-credentials DNS_SAKURACLOUD_CREDENTIALS
+                        Sakura Cloud credentials file. (default: None)
 
 manual:
   Authenticate through manual configuration or custom shell scripts. When
