@@ -401,7 +401,8 @@ class NginxParser(object):
                     exclude = set(('default_server', 'default', 'setfib', 'fastopen', 'backlog',
                                    'rcvbuf', 'sndbuf', 'accept_filter', 'deferred', 'bind',
                                    'ipv6only', 'reuseport', 'so_keepalive'))
-                    block[i] = [x for x in directive if x.split('=')[0] not in exclude]
+                    block[i] = nginxparser.UnspacedList(
+                        x for x in directive.spaced if x.split('=')[0] not in exclude)
         return new_vhost
 
 
