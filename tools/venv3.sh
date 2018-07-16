@@ -24,6 +24,7 @@ fi
   -e certbot-dns-luadns \
   -e certbot-dns-nsone \
   -e certbot-dns-ovh \
+  -e certbot-dns-rfc2136 \
   -e certbot-dns-route53 \
   -e certbot-dns-sakuracloud \
   -e certbot-nginx \
