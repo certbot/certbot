@@ -13,9 +13,7 @@ install_requires = [
     'certbot>=0.21.1',
     'dns-lexicon>=2.2.1', # Support for >1 TXT record per name
     'mock',
-    # For pkg_resources. >=1.0 so pip resolves it to a version cryptography
-    # will tolerate; see #2599:
-    'setuptools>=1.0',
+    'setuptools',
     'zope.interface',
 ]
 
