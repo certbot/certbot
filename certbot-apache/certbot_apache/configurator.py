@@ -1,5 +1,6 @@
 """Apache Configuration based off of Augeas Configurator."""
 # pylint: disable=too-many-lines
+import copy
 import fnmatch
 import logging
 import os
@@ -197,8 +198,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.parser = None
         self.version = version
         self.vhosts = None
-        self.vhostroot = None
-        self.options = self.OS_DEFAULTS
+        self.options = copy.deepcopy(self.OS_DEFAULTS)
         self._enhance_func = {"redirect": self._enable_redirect,
                               "ensure-http-header": self._set_http_header,
                               "staple-ocsp": self._enable_ocsp_stapling}
@@ -256,8 +256,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 "Apache plugin support requires libaugeas0 and augeas-lenses "
                 "version 1.2.0 or higher, please make sure you have you have "
                 "those installed.")
-
-        self.vhostroot = os.path.abspath(self.option("vhost_root"))
 
         self.parser = self.get_parser()
 
@@ -1191,10 +1189,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :rtype: str
         """
 
-        if self.option("vhost_root") and os.path.exists(self.option("vhost_root")):
+        if (self.option("vhost_root") != self.OS_DEFAULTS["vhost_root"] and
+            os.path.exists(self.option("vhost_root"))):
             # Defined by user on CLI
 
-            fp = os.path.join(os.path.realpath(self.vhostroot),
+            fp = os.path.join(os.path.realpath(self.option("vhost_root")),
                               os.path.basename(non_ssl_vh_fp))
         else:
             # Use non-ssl filepath
@@ -2064,7 +2063,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             if len(ssl_vhost.name) < (255 - (len(redirect_filename) + 1)):
                 redirect_filename = "le-redirect-%s.conf" % ssl_vhost.name
 
-        redirect_filepath = os.path.join(self.vhostroot,
+        redirect_filepath = os.path.join(self.option("vhost_root"),
                                          redirect_filename)
 
         # Register the new file that will be created
