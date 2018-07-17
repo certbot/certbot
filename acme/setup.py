@@ -3,7 +3,7 @@ from setuptools import find_packages
 from setuptools.command.test import test as TestCommand
 import sys
 
-version = '0.26.0.dev0'
+version = '0.27.0.dev0'
 
 # Please update tox.ini when modifying dependency version requirements
 install_requires = [
@@ -58,7 +58,7 @@ setup(
     license='Apache License 2.0',
     python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*',
     classifiers=[
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: Apache Software License',
         'Programming Language :: Python',
@@ -68,6 +68,7 @@ setup(
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Security',
     ],

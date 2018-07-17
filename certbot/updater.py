@@ -28,13 +28,13 @@ def run_generic_updaters(config, lineage, plugins):
         logger.debug("Skipping updaters in dry-run mode.")
         return
     try:
-        # installers are used in auth mode to determine domain names
-        installer, _ = plug_sel.choose_configurator_plugins(config, plugins, "certonly")
-    except errors.PluginSelectionError as e:
+        installer = plug_sel.get_unprepared_installer(config, plugins)
+    except errors.Error as e:
         logger.warning("Could not choose appropriate plugin for updaters: %s", e)
         return
-    _run_updaters(lineage, installer, config)
-    _run_enhancement_updaters(lineage, installer, config)
+    if installer:
+        _run_updaters(lineage, installer, config)
+        _run_enhancement_updaters(lineage, installer, config)
 
 def run_renewal_deployer(config, lineage, installer):
     """Helper function to run deployer interface method if supported by the used

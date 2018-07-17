@@ -55,7 +55,9 @@ class AutoHSTSTest(util.ApacheTest):
 
     @mock.patch("certbot_apache.constants.AUTOHSTS_FREQ", 0)
     @mock.patch("certbot_apache.configurator.ApacheConfigurator.restart")
-    def test_autohsts_increase(self, _mock_restart):
+    @mock.patch("certbot_apache.configurator.ApacheConfigurator.prepare")
+    def test_autohsts_increase(self, mock_prepare, _mock_restart):
+        self.config._prepared = False
         maxage = "\"max-age={0}\""
         initial_val = maxage.format(constants.AUTOHSTS_STEPS[0])
         inc_val = maxage.format(constants.AUTOHSTS_STEPS[1])
@@ -69,6 +71,7 @@ class AutoHSTSTest(util.ApacheTest):
         # Verify increased value
         self.assertEquals(self.get_autohsts_value(self.vh_truth[7].path),
                           inc_val)
+        self.assertTrue(mock_prepare.called)
 
     @mock.patch("certbot_apache.configurator.ApacheConfigurator.restart")
     @mock.patch("certbot_apache.configurator.ApacheConfigurator._autohsts_increase")
