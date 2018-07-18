@@ -249,33 +249,13 @@ def match_and_check_overlaps(cli_config, acceptable_matches, match_func, rv_func
 def human_readable_cert_info(config, cert, skip_filter_checks=False):
     """ Returns a human readable description of info about a RenewableCert object"""
     certinfo = []
-    checker = ocsp.RevocationChecker()
 
     if config.certname and cert.lineagename != config.certname and not skip_filter_checks:
         return ""
     if config.domains and not set(config.domains).issubset(cert.names()):
         return ""
-    now = pytz.UTC.fromutc(datetime.datetime.utcnow())
 
-    reasons = []
-    if cert.is_test_cert:
-        reasons.append('TEST_CERT')
-    if cert.target_expiry <= now:
-        reasons.append('EXPIRED')
-    if checker.ocsp_revoked(cert.cert, cert.chain):
-        reasons.append('REVOKED')
-
-    if reasons:
-        status = "INVALID: " + ", ".join(reasons)
-    else:
-        diff = cert.target_expiry - now
-        if diff.days == 1:
-            status = "VALID: 1 day"
-        elif diff.days < 1:
-            status = "VALID: {0} hour(s)".format(diff.seconds // 3600)
-        else:
-            status = "VALID: {0} days".format(diff.days)
-
+    status = cert.validity_string()
     valid_string = "{0} ({1})".format(cert.target_expiry, status)
     certinfo.append("  Certificate Name: {0}\n"
                     "    Domains: {1}\n"
