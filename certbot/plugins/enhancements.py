@@ -143,6 +143,19 @@ class AutoHSTSEnhancement(object):
         :type domains: str
         """
 
+    @abc.abstractmethod
+    def handle_autohsts_error(self, lineage, details, *args, **kwargs):
+        """
+        Handle an error that potentially has implications for AutoHSTS safety.
+        For now, this is just details == "renewal failure".
+
+        :param lineage: Certificate lineage object
+        :type lineage: certbot.storage.RenewableCert
+
+        :param details: Helpful string characterizing error
+        :type details: str
+        """
+
 # This is used to configure internal new style enhancements in Certbot. These
 # enhancement interfaces need to be defined in this file. Please do not modify
 # this list from plugin code.
@@ -159,6 +172,7 @@ _INDEX = [
         "class": AutoHSTSEnhancement,
         "updater_function": "update_autohsts",
         "deployer_function": "deploy_autohsts",
-        "enable_function": "enable_autohsts"
+        "enable_function": "enable_autohsts",
+        "error_handler_function", "handle_autohsts_error"
     }
 ]  # type: List[Dict[str, Any]]

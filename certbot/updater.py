@@ -120,3 +120,31 @@ def _run_enhancement_deployers(lineage, installer, config):
     for enh in enhancements._INDEX:  # pylint: disable=protected-access
         if isinstance(installer, enh["class"]) and enh["deployer_function"]:
             getattr(installer, enh["deployer_function"])(lineage)
+
+def _run_enhancement_error_handlers(lineage, installer, config, details):
+    """Iterates through known enhancement interfaces. If the installer implements
+    an enhancement interface and the enhance interface has an updater method, its
+    error_handler method gets run.
+
+    :param lineage: Certificate lineage object
+    :type lineage: storage.RenewableCert
+
+    :param installer: Installer object
+    :type installer: interfaces.IInstaller
+
+    :param config: Configuration object
+    :type config: interfaces.IConfig
+
+    :param code: Helpful and possibly standardized error code! Can be any of:
+                 ["renewal failure"]
+    :type code: str
+    """
+
+    if config.disable_renew_updates:
+        return
+    for enh in enhancements._INDEX:  # pylint: disable=protected-access
+        if isinstance(installer, enh["class"]) and enh["error_handler_function"]:
+            getattr(installer, enh["error_handler_function"])(lineage, details)
+
+
+

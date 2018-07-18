@@ -2471,5 +2471,25 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Update AutoHSTS storage (We potentially removed vhosts from managed)
         self._autohsts_save_state()
 
+    def handle_autohsts_error(self, lineage, details):
+        self._autohsts_fetch_state()
+        if not self._autohsts:
+            # No autohsts enabled for any vhost
+            return
+        if details != "renewal failure":
+            logger.info("Ignoring unknown error in auto-hsts code: {0}".format(details))
+            return
+
+        # Renewal failure experienced; figure out which vhosts it affects
+        for id_str, config in list(self._autohsts.items()):
+            vhost = self.find_vhost_by_id(id_str)
+            if self._autohsts_vhost_in_lineage(vhost, lineage):
+            config["laststep"]
+
+
+
+
+
+
 
 AutoHSTSEnhancement.register(ApacheConfigurator)  # pylint: disable=no-member
