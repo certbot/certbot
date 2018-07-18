@@ -253,7 +253,7 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
                 fake_set.reset_mock()
                 installer.deploy_cert("example.com", "cert_path", "key_path",
                                       "chain_path", "fullchain_path")
-                fake_set.assert_not_called()
+                self.assertFalse(fake_set.called)
 
     @certbot_test_util.patch_get_utility()
     def test_deploy_already_secure(self, mock_util):

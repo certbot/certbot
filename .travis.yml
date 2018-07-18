@@ -34,7 +34,7 @@ matrix:
     - python: "3.5"
       env: TOXENV=mypy
     - python: "2.7"
-      env: TOXENV='py27-{acme,apache,certbot,dns,nginx}-oldest'
+      env: TOXENV='py27-{acme,apache,certbot,dns,nginx,postfix}-oldest'
       sudo: required
       services: docker
     - python: "3.4"
