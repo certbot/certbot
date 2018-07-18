@@ -2,6 +2,19 @@
 
 Certbot adheres to [Semantic Versioning](http://semver.org/).
 
+## 0.26.1 - 2018-07-17
+
+### Fixed
+
+* Fix a bug that was triggered when users who had previously manually set `--server` to get ACMEv2 certs tried to renew ACMEv1 certs.
+
+Despite us having broken lockstep, we are continuing to release new versions of all Certbot components during releases for the time being, however, the only package with changes other than its version number was:
+
+* certbot
+
+More details about these changes can be found on our GitHub repo:
+https://github.com/certbot/certbot/milestone/58?closed=1
+
 ## 0.26.0 - 2018-07-11
 
 ### Added
@@ -783,7 +796,7 @@ https://github.com/certbot/certbot/pulls?q=is%3Apr%20milestone%3A0.11.1%20is%3Ac
 
 ### Added
 
-* When using the standalone plugin while running Certbot interactively 
+* When using the standalone plugin while running Certbot interactively
 and a required port is bound by another process, Certbot will give you
 the option to retry to grab the port rather than immediately exiting.
 * You are now able to deactivate your account with the Let's Encrypt
