@@ -2,6 +2,54 @@
 
 Certbot adheres to [Semantic Versioning](http://semver.org/).
 
+## 0.26.0 - 2018-07-11
+
+### Added
+
+* A new security enhancement which we're calling AutoHSTS has been added to
+  Certbot's Apache plugin. This enhancement configures your webserver to send a
+  HTTP Strict Transport Security header with a low max-age value that is slowly
+  increased over time. The max-age value is not increased to a large value
+  until you've successfully managed to renew your certificate. This enhancement
+  can be requested with the --auto-hsts flag.
+* New official DNS plugins have been created for Gehirn Infrastracture Service,
+  Linode, OVH, and Sakura Cloud. These plugins can be found on our Docker Hub
+  page at https://hub.docker.com/u/certbot and on PyPI.
+* The ability to reuse ACME accounts from Let's Encrypt's ACMEv1 endpoint on
+  Let's Encrypt's ACMEv2 endpoint has been added.
+* Certbot and its components now support Python 3.7.
+* Certbot's install subcommand now allows you to interactively choose which
+  certificate to install from the list of certificates managed by Certbot.
+* Certbot now accepts the flag `--no-autorenew` which causes any obtained
+  certificates to not be automatically renewed when it approaches expiration.
+* Support for parsing the TLS-ALPN-01 challenge has been added back to the acme
+  library.
+
+### Changed
+
+* Certbot's default ACME server has been changed to Let's Encrypt's ACMEv2
+  endpoint. By default, this server will now be used for both new certificate
+  lineages and renewals.
+* The Nginx plugin is no longer marked labeled as an "Alpha" version.
+* The `prepare` method of Certbot's plugins is no longer called before running
+  "Updater" enhancements that are run on every invocation of `certbot renew`.
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+packages with functional changes were:
+
+* acme
+* certbot
+* certbot-apache
+* certbot-dns-gehirn
+* certbot-dns-linode
+* certbot-dns-ovh
+* certbot-dns-sakuracloud
+* certbot-nginx
+
+More details about these changes can be found on our GitHub repo:
+https://github.com/certbot/certbot/milestone/55?closed=1
+
 ## 0.25.1 - 2018-06-13
 
 ### Fixed

@@ -50,7 +50,6 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
     :ivar .ClientNetwork net: Client network.
     :ivar int acme_version: ACME protocol version. 1 or 2.
     """
-
     def __init__(self, directory, net, acme_version):
         """Initialize.
 
@@ -588,6 +587,30 @@ class ClientV2(ClientBase):
         self.net.account = regr
         return regr
 
+    def update_registration(self, regr, update=None):
+        """Update registration.
+
+        :param messages.RegistrationResource regr: Registration Resource.
+        :param messages.Registration update: Updated body of the
+            resource. If not provided, body will be taken from `regr`.
+
+        :returns: Updated Registration Resource.
+        :rtype: `.RegistrationResource`
+
+        """
+        # https://github.com/certbot/certbot/issues/6155
+        new_regr = self._get_v2_account(regr)
+        return super(ClientV2, self).update_registration(new_regr, update)
+
+    def _get_v2_account(self, regr):
+        self.net.account = None
+        only_existing_reg = regr.body.update(only_return_existing=True)
+        response = self._post(self.directory['newAccount'], only_existing_reg)
+        updated_uri = response.headers['Location']
+        new_regr = regr.update(uri=updated_uri)
+        self.net.account = new_regr
+        return new_regr
+
     def new_order(self, csr_pem):
         """Request a new Order object from the server.
 
@@ -910,6 +933,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         if acme_version == 2:
             kwargs["url"] = url
             # newAccount and revokeCert work without the kid
+            # newAccount must not have kid
             if self.account is not None:
                 kwargs["kid"] = self.account["uri"]
         kwargs["key"] = self.key
