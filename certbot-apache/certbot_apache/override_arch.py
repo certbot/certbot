@@ -25,7 +25,7 @@ class ArchConfigurator(configurator.ApacheConfigurator):
         enmod=None,
         dismod=None,
         le_vhost_ext="-le-ssl.conf",
-        handle_mods=False,
+        handle_modules=False,
         handle_sites=False,
         challenge_location="/etc/httpd/conf",
         MOD_SSL_CONF_SRC=pkg_resources.resource_filename(

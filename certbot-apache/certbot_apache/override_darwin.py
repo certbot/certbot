@@ -25,9 +25,16 @@ class DarwinConfigurator(configurator.ApacheConfigurator):
         enmod=None,
         dismod=None,
         le_vhost_ext="-le-ssl.conf",
-        handle_mods=False,
+        handle_modules=False,
         handle_sites=False,
         challenge_location="/etc/apache2/other",
         MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
             "certbot_apache", "options-ssl-apache.conf")
     )
+
+    def _prepare_options(self):
+        """
+        Override the options dictionary initialization.
+        """
+        super(DarwinConfigurator, self)._prepare_options()
+        self.options["apache_cmd"] = self.conf("binpath")

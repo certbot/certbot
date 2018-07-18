@@ -152,7 +152,6 @@ class ApacheParser(object):
         """Get Defines from httpd process"""
 
         variables = dict()
-        ## FIXME!
         define_cmd = [self.configurator.option("apache_cmd"), "-t", "-D",
                       "DUMP_RUN_CFG"]
         matches = self.parse_from_subprocess(define_cmd, r"Define: ([^ \n]*)")

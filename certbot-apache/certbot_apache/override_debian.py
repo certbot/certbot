@@ -20,7 +20,7 @@ class DebianConfigurator(configurator.ApacheConfigurator):
 
     OS_DEFAULTS = dict(
         server_root="/etc/apache2",
-        vhost_root="/etc/apache2/sites-available",
+        vhost_root="/etc/apache2/sites-enabled",
         vhost_files="*",
         logs_root="/var/log/apache2",
         ctlpath="apache2ctl",
@@ -32,7 +32,7 @@ class DebianConfigurator(configurator.ApacheConfigurator):
         enmod="a2enmod",
         dismod="a2dismod",
         le_vhost_ext="-le-ssl.conf",
-        handle_mods=True,
+        handle_modules=True,
         handle_sites=True,
         challenge_location="/etc/apache2",
         MOD_SSL_CONF_SRC=pkg_resources.resource_filename(

@@ -652,18 +652,17 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertEqual(ssl_vhost_slink.name, "nonsym.link")
 
     def test_make_vhost_ssl_nonexistent_vhost_path(self):
-        def conf_side_effect(arg):
-            """ Mock function for ApacheConfigurator.conf """
-            confvars = {
-                "vhost-root": "/tmp/nonexistent",
-                "le_vhost_ext": "-le-ssl.conf",
-                "handle-sites": True}
-            return confvars[arg]
+        orig_opt = self.config.option
+        def opt_side_effect(arg):
+            """ Mock function for ApacheConfigurator.option """
+            if arg == "vhost_root":
+                return "/tmp/nonexsistent"
+            return orig_opt(arg)
 
         with mock.patch(
-                "certbot_apache.configurator.ApacheConfigurator.conf"
-        ) as mock_conf:
-            mock_conf.side_effect = conf_side_effect
+                "certbot_apache.configurator.ApacheConfigurator.option"
+        ) as mock_opt:
+            mock_opt.side_effect = opt_side_effect
             ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[1])
             self.assertEqual(os.path.dirname(ssl_vhost.filep),
                              os.path.dirname(os.path.realpath(
@@ -1584,7 +1583,7 @@ class AugeasVhostsTest(util.ApacheTest):
                           broken_vhost)
 
 class MultiVhostsTest(util.ApacheTest):
-    """Test vhosts with illegal names dependent on augeas version."""
+    """Test configuration with multiple virtualhosts in a single file."""
     # pylint: disable=protected-access
 
     def setUp(self):  # pylint: disable=arguments-differ
@@ -1596,7 +1595,8 @@ class MultiVhostsTest(util.ApacheTest):
                                             vhost_root=vr)
 
         self.config = util.get_apache_configurator(
-            self.config_path, self.vhost_path, self.config_dir, self.work_dir)
+            self.config_path, self.vhost_path,
+            self.config_dir, self.work_dir, conf_vhost_path=self.vhost_path)
         self.vh_truth = util.get_vh_truth(
             self.temp_dir, "debian_apache_2_4/multi_vhosts")
 

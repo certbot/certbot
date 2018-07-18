@@ -95,7 +95,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
     OS_DEFAULTS = dict(
         server_root="/etc/apache2",
-        vhost_root="/etc/apache2/sites-available",
+        vhost_root="/etc/apache2/sites-enabled",
         vhost_files="*",
         logs_root="/var/log/apache2",
         ctlpath="apache2ctl",
@@ -107,7 +107,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         enmod=None,
         dismod=None,
         le_vhost_ext="-le-ssl.conf",
-        handle_mods=False,
+        handle_modules=False,
         handle_sites=False,
         challenge_location="/etc/apache2",
         MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
@@ -123,22 +123,21 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         Set the values possibly changed by command line parameters to
         OS_DEFAULTS constant dictionary
         """
-        self.options["enmod"] = self.conf("enmod")
-        self.options["dismod"] = self.conf("dismod")
-        self.options["le_vhost_ext"] = self.conf("le-vhost-ext")
-        self.options["server_root"] = self.conf("server-root")
-        self.options["vhost_root"] = self.conf("vhost-root")
-        self.options["logs_root"] = self.conf("logs-root")
-        self.options["challenge_location"] = self.conf("challenge-location")
-        self.options["handle_mods"] = self.conf("handle-modules")
-        self.options["handle_sites"] = self.conf("handle-sites")
-        self.options["ctlpath"] = self.conf("ctlpath")
-        self.options["binpath"] = self.conf("binpath")
-        self.options["version_cmd"][0] = self.conf("binpath")
-        self.options["apache_cmd"] = self.conf("ctlpath")
-        self.options["restart_cmd"][0] = self.conf("ctlpath")
-        self.options["conftest_cmd"][0] = self.conf("ctlpath")
+        opts = ["enmod", "dismod", "le_vhost_ext", "server_root", "vhost_root",
+                "logs_root", "challenge_location", "handle_modules", "handle_sites",
+                "ctlpath", "binpath"]
+        for o in opts:
+            # Config options use dashes instead of underscores
+            if self.conf(o.replace("_", "-")):
+                self.options[o] = self.conf(o.replace("_", "-"))
+            else:
+                self.options[o] = self.OS_DEFAULTS[o]
 
+        # Special cases
+        self.options["apache_cmd"] = self.option("ctlpath")
+        self.options["version_cmd"][0] = self.option("binpath")
+        self.options["restart_cmd"][0] = self.option("ctlpath")
+        self.options["conftest_cmd"][0] = self.option("ctlpath")
 
     @classmethod
     def add_parser_arguments(cls, add):
@@ -157,7 +156,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         add("challenge-location",
             default=cls.OS_DEFAULTS["challenge_location"],
             help="Directory path for challenge configuration.")
-        add("handle-modules", default=cls.OS_DEFAULTS["handle_mods"],
+        add("handle-modules", default=cls.OS_DEFAULTS["handle_modules"],
             help="Let installer handle enabling required modules for you. " +
                  "(Only Ubuntu/Debian currently)")
         add("handle-sites", default=cls.OS_DEFAULTS["handle_sites"],
@@ -294,8 +293,13 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
     def get_parser(self):
         """Initializes the ApacheParser"""
+        # If user provided vhost_root value in command line, use it
+        if self.option("vhost_root") != self.OS_DEFAULTS["vhost_root"]:
+            vhostroot = self.option("vhost_root")
+        else:
+            vhostroot = None
         return parser.ApacheParser(
-            self.aug, self.option("server_root"), self.option("vhost_root"),
+            self.aug, self.option("server_root"), vhostroot,
             self.version, configurator=self)
 
     def _wildcard_domain(self, domain):
@@ -1189,10 +1193,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :rtype: str
         """
 
-        if (self.option("vhost_root") != self.OS_DEFAULTS["vhost_root"] and
-            os.path.exists(self.option("vhost_root"))):
-            # Defined by user on CLI
-
+        custom_path = self.option("vhost_root") != self.OS_DEFAULTS["vhost_root"]
+        if custom_path and os.path.exists(self.option("vhost_root")):
             fp = os.path.join(os.path.realpath(self.option("vhost_root")),
                               os.path.basename(non_ssl_vh_fp))
         else:

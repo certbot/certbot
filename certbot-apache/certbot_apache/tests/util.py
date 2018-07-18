@@ -85,8 +85,10 @@ class ParserTest(ApacheTest):
 
 
 def get_apache_configurator(  # pylint: disable=too-many-arguments, too-many-locals
-        config_path, vhost_path, config_dir, work_dir,
-        version=(2, 4, 7), os_info="generic"):
+        config_path, vhost_path,
+        config_dir, work_dir, version=(2, 4, 7),
+        os_info="generic",
+        conf_vhost_path=None):
     """Create an Apache Configurator with the specified options.
 
     :param conf: Function that returns binary paths. self.conf in Configurator
@@ -98,6 +100,7 @@ def get_apache_configurator(  # pylint: disable=too-many-arguments, too-many-loc
         apache_vhost_root=vhost_path,
         apache_le_vhost_ext="-le-ssl.conf",
         apache_challenge_location=config_path,
+        apache_enmod=False,
         backup_dir=backups,
         config_dir=config_dir,
         http01_port=80,
@@ -115,10 +118,15 @@ def get_apache_configurator(  # pylint: disable=too-many-arguments, too-many-loc
                     config_class = entrypoint.OVERRIDE_CLASSES[os_info]
                 except KeyError:
                     config_class = configurator.ApacheConfigurator
-                mock_le_config.apache_binpath = config_class.OS_DEFAULTS["binpath"]
-                mock_le_config.apache_ctlpath = config_class.OS_DEFAULTS["ctlpath"]
                 config = config_class(config=mock_le_config, name="apache",
                     version=version)
+                if not conf_vhost_path:
+                    config_class.OS_DEFAULTS["vhost_root"] = vhost_path
+                else:
+                    # Custom virtualhost path was requested
+                    config.config.apache_vhost_root = conf_vhost_path
+                config.config.apache_ctlpath = config_class.OS_DEFAULTS["ctlpath"]
+                config.config.apache_binpath = config_class.OS_DEFAULTS["binpath"]
                 config.prepare()
     return config
 

@@ -1,7 +1,6 @@
 # pylint: disable=too-many-public-methods,too-many-lines
 """Test for certbot_apache.configurator AutoHSTS functionality"""
 import re
-import time
 import unittest
 import mock
 # six is used in mock.patch()
@@ -16,8 +15,6 @@ class AutoHSTSTest(util.ApacheTest):
     """Tests for AutoHSTS feature"""
     # pylint: disable=protected-access
 
-    _multiprocess_can_split_ = True
-
     def setUp(self):  # pylint: disable=arguments-differ
         super(AutoHSTSTest, self).setUp()
 
@@ -31,16 +28,8 @@ class AutoHSTSTest(util.ApacheTest):
         self.vh_truth = util.get_vh_truth(
             self.temp_dir, "debian_apache_2_4/multiple_vhosts")
 
-    def _ensure_update_timestamp(self):
-        """
-        Decrease the timestamp value by one, to ensure that time.time() < timestamp
-        """
-        for id_str, config in list(self.config._autohsts.items()):
-            self.config._autohsts[id_str]["timestamp"] -= 1
-
     def get_autohsts_value(self, vh_path):
         """ Get value from Strict-Transport-Security header """
-        import time;time.sleep(0.2)
         header_path = self.config.parser.find_dir("Header", None, vh_path)
         if header_path:
             pat = '(?:[ "]|^)(strict-transport-security)(?:[ "]|$)'
@@ -78,7 +67,6 @@ class AutoHSTSTest(util.ApacheTest):
         self.assertEquals(self.get_autohsts_value(self.vh_truth[7].path),
                           initial_val)
         # Increase
-        self._ensure_update_timestamp()
         self.config.update_autohsts(mock.MagicMock())
         # Verify increased value
         self.assertEquals(self.get_autohsts_value(self.vh_truth[7].path),
@@ -128,9 +116,9 @@ class AutoHSTSTest(util.ApacheTest):
                                  max_val)
             self.config.update_autohsts(mock.MagicMock())
             # Value should match pre-permanent increment step
-            # cur_val = maxage.format(constants.AUTOHSTS_STEPS[i+1])
-            # self.assertEquals(self.get_autohsts_value(self.vh_truth[7].path),
-            #                  cur_val)
+            cur_val = maxage.format(constants.AUTOHSTS_STEPS[i+1])
+            self.assertEquals(self.get_autohsts_value(self.vh_truth[7].path),
+                              cur_val)
         # Ensure that the value is raised to max
         self.assertEquals(self.get_autohsts_value(self.vh_truth[7].path),
                           maxage.format(constants.AUTOHSTS_STEPS[-1]))
