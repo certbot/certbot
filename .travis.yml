@@ -40,7 +40,7 @@ matrix:
       sudo: required
       services: docker
     - python: "2.7"
-      env: TOXENV='py27-{acme,apache,certbot,dns,nginx,postfix}-oldest'
+      env: TOXENV='py27-{acme,apache,certbot,dns,postfix}-oldest'
     - sudo: required
       env: TOXENV=apache_compat
       services: docker
