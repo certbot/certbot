@@ -354,7 +354,7 @@ def _describe_certs(config, parsed_certs, parse_failures):
             notify(_report_human_readable(config, parsed_certs))
         if parse_failures:
             notify("\nThe following renewal configuration files "
-               "were invalid:")
+                   "were invalid:")
             notify(_report_lines(parse_failures))
 
     disp = zope.component.getUtility(interfaces.IDisplay)

@@ -18,6 +18,7 @@ from certbot import constants
 from certbot import crypto_util
 from certbot import errors
 from certbot import error_handler
+from certbot import ocsp
 from certbot import util
 
 from certbot.plugins import common as plugins_common
@@ -964,6 +965,37 @@ class RenewableCert(object):
                              expiry.strftime("%Y-%m-%d %H:%M:%S %Z"))
                 return True
         return False
+
+    def validity_string(self):
+        """
+        Return a string describing whther the cert is valid or not.
+
+        :rtype: str
+        :returns: eg "VALID: 1 day" | "EXPIRED" | "REVOKED" | "TEST_CERT"
+                   | "VALID: 13 hours" | "VALID: 72 days" | "EXPIRED, REVOKED"
+        """
+
+        checker = ocsp.RevocationChecker()
+        now = pytz.UTC.fromutc(datetime.datetime.utcnow())
+        reasons = []
+        if cert.is_test_cert:
+            reasons.append('TEST_CERT')
+        if cert.target_expiry <= now:
+            reasons.append('EXPIRED')
+        if checker.ocsp_revoked(cert.cert, cert.chain):
+            reasons.append('REVOKED')
+
+        if reasons:
+            status = "INVALID: " + ", ".join(reasons)
+        else:
+            diff = cert.target_expiry - now
+            if diff.days == 1:
+                status = "VALID: 1 day"
+            elif diff.days < 1:
+                status = "VALID: {0} hour(s)".format(diff.seconds // 3600)
+            else:
+                status = "VALID: {0} days".format(diff.days)
+        return status
 
     @classmethod
     def new_lineage(cls, lineagename, cert, privkey, chain, cli_config):
