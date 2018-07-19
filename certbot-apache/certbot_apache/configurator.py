@@ -141,6 +141,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
     @classmethod
     def add_parser_arguments(cls, add):
+        # When adding, modifying or deleting command line arguments, be sure to
+        # include the changes in the list used in method _prepare_options() to
+        # ensure consistent behavior.
         add("enmod", default=cls.OS_DEFAULTS["enmod"],
             help="Path to the Apache 'a2enmod' binary.")
         add("dismod", default=cls.OS_DEFAULTS["dismod"],
