@@ -145,30 +145,30 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # include the changes in the list used in method _prepare_options() to
         # ensure consistent behavior.
         add("enmod", default=cls.OS_DEFAULTS["enmod"],
-            help="Path to the Apache 'a2enmod' binary.")
+            help="Path to the Apache 'a2enmod' binary")
         add("dismod", default=cls.OS_DEFAULTS["dismod"],
-            help="Path to the Apache 'a2dismod' binary.")
+            help="Path to the Apache 'a2dismod' binary")
         add("le-vhost-ext", default=cls.OS_DEFAULTS["le_vhost_ext"],
-            help="SSL vhost configuration extension.")
+            help="SSL vhost configuration extension")
         add("server-root", default=cls.OS_DEFAULTS["server_root"],
-            help="Apache server root directory.")
+            help="Apache server root directory")
         add("vhost-root", default=None,
             help="Apache server VirtualHost configuration root")
         add("logs-root", default=cls.OS_DEFAULTS["logs_root"],
             help="Apache server logs directory")
         add("challenge-location",
             default=cls.OS_DEFAULTS["challenge_location"],
-            help="Directory path for challenge configuration.")
+            help="Directory path for challenge configuration")
         add("handle-modules", default=cls.OS_DEFAULTS["handle_modules"],
-            help="Let installer handle enabling required modules for you. " +
+            help="Let installer handle enabling required modules for you " +
                  "(Only Ubuntu/Debian currently)")
         add("handle-sites", default=cls.OS_DEFAULTS["handle_sites"],
-            help="Let installer handle enabling sites for you. " +
+            help="Let installer handle enabling sites for you " +
                  "(Only Ubuntu/Debian currently)")
         add("ctlpath", default=cls.OS_DEFAULTS["ctlpath"],
             help="Path to Apache control script")
         add("binpath", default=cls.OS_DEFAULTS["binpath"],
-            help="Path to Apache binary or a script passing arguments to it.")
+            help="Path to Apache binary or a script passing arguments to it")
         util.add_deprecated_argument(add, argument_name="ctl", nargs=1)
         util.add_deprecated_argument(
             add, argument_name="init-script", nargs=1)
