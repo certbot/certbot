@@ -234,11 +234,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self._prepare_options()
 
         # Verify Apache is installed
-        restart_cmd = self.option("restart_cmd")[0]
-        if not util.exe_exists(restart_cmd):
-            if not path_surgery(restart_cmd):
-                raise errors.NoInstallationError(
-                    'Cannot find Apache control command {0}'.format(restart_cmd))
+        self._verify_exe_availability(self.option("bin"))
+        self._verify_exe_availability(self.option("ctl"))
 
         # Make sure configuration is valid
         self.config_test()
@@ -277,6 +274,13 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             raise errors.PluginError(
                 "Unable to lock %s", self.option("server_root"))
         self._prepared = True
+
+    def _verify_exe_availability(self, exe):
+        """Checks availability of Apache executable"""
+        if not util.exe_exists(exe):
+            if not path_surgery(exe):
+                raise errors.NoInstallationError(
+                    'Cannot find Apache executable {0}'.format(exe))
 
     def _check_aug_version(self):
         """ Checks that we have recent enough version of libaugeas.
