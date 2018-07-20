@@ -95,7 +95,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
     OS_DEFAULTS = dict(
         server_root="/etc/apache2",
-        vhost_root="/etc/apache2/sites-enabled",
+        vhost_root="/etc/apache2/sites-available",
         vhost_files="*",
         logs_root="/var/log/apache2",
         ctlpath="apache2ctl",
