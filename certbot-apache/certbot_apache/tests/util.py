@@ -125,8 +125,8 @@ def get_apache_configurator(  # pylint: disable=too-many-arguments, too-many-loc
                 else:
                     # Custom virtualhost path was requested
                     config.config.apache_vhost_root = conf_vhost_path
-                config.config.apache_ctlpath = config_class.OS_DEFAULTS["ctlpath"]
-                config.config.apache_binpath = config_class.OS_DEFAULTS["binpath"]
+                config.config.apache_ctl = config_class.OS_DEFAULTS["ctl"]
+                config.config.apache_bin = config_class.OS_DEFAULTS["bin"]
                 config.prepare()
     return config
 

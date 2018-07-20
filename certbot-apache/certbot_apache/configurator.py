@@ -98,8 +98,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         vhost_root="/etc/apache2/sites-available",
         vhost_files="*",
         logs_root="/var/log/apache2",
-        ctlpath="apache2ctl",
-        binpath="apache2",
+        ctl="apache2ctl",
+        bin="apache2",
         version_cmd=['apache2ctl', '-v'],
         apache_cmd="apache2ctl",
         restart_cmd=['apache2ctl', 'graceful'],
@@ -125,7 +125,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         opts = ["enmod", "dismod", "le_vhost_ext", "server_root", "vhost_root",
                 "logs_root", "challenge_location", "handle_modules", "handle_sites",
-                "ctlpath", "binpath"]
+                "ctl", "bin"]
         for o in opts:
             # Config options use dashes instead of underscores
             if self.conf(o.replace("_", "-")) != None:
@@ -134,10 +134,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 self.options[o] = self.OS_DEFAULTS[o]
 
         # Special cases
-        self.options["apache_cmd"] = self.option("ctlpath")
-        self.options["version_cmd"][0] = self.option("binpath")
-        self.options["restart_cmd"][0] = self.option("ctlpath")
-        self.options["conftest_cmd"][0] = self.option("ctlpath")
+        self.options["apache_cmd"] = self.option("ctl")
+        self.options["version_cmd"][0] = self.option("bin")
+        self.options["restart_cmd"][0] = self.option("ctl")
+        self.options["conftest_cmd"][0] = self.option("ctl")
 
     @classmethod
     def add_parser_arguments(cls, add):
@@ -165,11 +165,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         add("handle-sites", default=cls.OS_DEFAULTS["handle_sites"],
             help="Let installer handle enabling sites for you " +
                  "(Only Ubuntu/Debian currently)")
-        add("ctlpath", default=cls.OS_DEFAULTS["ctlpath"],
-            help="Path to Apache control script")
-        add("binpath", default=cls.OS_DEFAULTS["binpath"],
-            help="Path to Apache binary or a script passing arguments to it")
-        util.add_deprecated_argument(add, argument_name="ctl", nargs=1)
+        add("ctl", default=cls.OS_DEFAULTS["ctl"],
+            help="Full path to Apache control script")
+        add("bin", default=cls.OS_DEFAULTS["bin"],
+            help="Full path to Apache binary or a script passing arguments to it")
         util.add_deprecated_argument(
             add, argument_name="init-script", nargs=1)
 

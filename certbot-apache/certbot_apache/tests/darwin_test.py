@@ -15,7 +15,7 @@ class DarwinTest(util.ApacheTest):
 
     def test_prepare_options(self):
         self.assertEqual(self.config.option("apache_cmd"),
-                         self.config.option("binpath"))
+                         self.config.option("bin"))
 
 
 if __name__ == "__main__":

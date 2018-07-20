@@ -16,8 +16,8 @@ class DarwinConfigurator(configurator.ApacheConfigurator):
         vhost_root="/etc/apache2/other",
         vhost_files="*.conf",
         logs_root="/var/log/apache2",
-        ctlpath="apachectl",
-        binpath="/usr/sbin/httpd",
+        ctl="apachectl",
+        bin="/usr/sbin/httpd",
         version_cmd=['/usr/sbin/httpd', '-v'],
         apache_cmd="/usr/sbin/httpd",
         restart_cmd=['apachectl', 'graceful'],
@@ -37,4 +37,4 @@ class DarwinConfigurator(configurator.ApacheConfigurator):
         Override the options dictionary initialization.
         """
         super(DarwinConfigurator, self)._prepare_options()
-        self.options["apache_cmd"] = self.conf("binpath")
+        self.options["apache_cmd"] = self.conf("bin")

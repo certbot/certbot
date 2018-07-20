@@ -18,8 +18,8 @@ class GentooConfigurator(configurator.ApacheConfigurator):
         vhost_root="/etc/apache2/vhosts.d",
         vhost_files="*.conf",
         logs_root="/var/log/apache2",
-        ctlpath="apache2ctl",
-        binpath="/usr/sbin/apache2",
+        ctl="apache2ctl",
+        bin="/usr/sbin/apache2",
         version_cmd=['/usr/sbin/apache2', '-v'],
         apache_cmd="apache2ctl",
         restart_cmd=['apache2ctl', 'graceful'],
@@ -41,7 +41,7 @@ class GentooConfigurator(configurator.ApacheConfigurator):
         alternative restart cmd used in Gentoo.
         """
         super(GentooConfigurator, self)._prepare_options()
-        self.options["restart_cmd_alt"][0] = self.conf("ctlpath")
+        self.options["restart_cmd_alt"][0] = self.conf("ctl")
 
     def get_parser(self):
         """Initializes the ApacheParser"""
@@ -71,7 +71,7 @@ class GentooParser(parser.ApacheParser):
 
     def update_modules(self):
         """Get loaded modules from httpd process, and add them to DOM"""
-        mod_cmd = [self.configurator.option("ctlpath"), "modules"]
+        mod_cmd = [self.configurator.option("ctl"), "modules"]
         matches = self.parse_from_subprocess(mod_cmd, r"(.*)_module")
         for mod in matches:
             self.add_mod(mod.strip())
