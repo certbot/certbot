@@ -16,6 +16,7 @@ We release packages and upload them to PyPI (wheels and source tarballs).
 - https://pypi.python.org/pypi/certbot-dns-digitalocean
 - https://pypi.python.org/pypi/certbot-dns-dnsimple
 - https://pypi.python.org/pypi/certbot-dns-dnsmadeeasy
+- https://pypi.python.org/pypi/certbot-dns-exoscale
 - https://pypi.python.org/pypi/certbot-dns-google
 - https://pypi.python.org/pypi/certbot-dns-linode
 - https://pypi.python.org/pypi/certbot-dns-luadns
@@ -64,6 +65,7 @@ From our official releases:
 - https://www.archlinux.org/packages/community/any/certbot-dns-digitalocean
 - https://www.archlinux.org/packages/community/any/certbot-dns-dnsimple
 - https://www.archlinux.org/packages/community/any/certbot-dns-dnsmadeeasy
+- https://www.archlinux.org/packages/community/any/certbot-dns-exoscale
 - https://www.archlinux.org/packages/community/any/certbot-dns-google
 - https://www.archlinux.org/packages/community/any/certbot-dns-luadns
 - https://www.archlinux.org/packages/community/any/certbot-dns-nsone
@@ -92,6 +94,7 @@ In Fedora 23+.
 - https://apps.fedoraproject.org/packages/python-certbot-dns-digitalocean
 - https://apps.fedoraproject.org/packages/python-certbot-dns-dnsimple
 - https://apps.fedoraproject.org/packages/python-certbot-dns-dnsmadeeasy
+- https://apps.fedoraproject.org/packages/python-certbot-dns-exoscale
 - https://apps.fedoraproject.org/packages/python-certbot-dns-google
 - https://apps.fedoraproject.org/packages/python-certbot-dns-luadns
 - https://apps.fedoraproject.org/packages/python-certbot-dns-nsone
