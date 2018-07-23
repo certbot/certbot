@@ -1,2 +1,4 @@
-acme[dev]==0.25.0
+# Pinning acme==0.26.0 here rather than acme==0.25.0 is needed until
+# https://github.com/certbot/certbot/issues/5810 is resolved.
+acme[dev]==0.26.0
 -e .[dev]
