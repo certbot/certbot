@@ -299,6 +299,29 @@ class BasicParserTest(util.ParserTest):
             errors.MisconfigurationError,
             self.parser.update_runtime_variables)
 
+    def test_fix_path_indices_match(self):
+        old_path = new_path = "/augeas/dom/path[1]/match"
+        self.assertEquals(self.parser.fix_path_indices(old_path, new_path),
+                          old_path)
+
+    def test_fix_path_indices_needs_index(self):
+        old_path = "/path/index/needed"
+        new_path = "/path/index[2]/needed"
+        fixed_path = self.parser.fix_path_indices(old_path, new_path)
+        self.assertEquals(fixed_path, "/path/index[1]/needed")
+
+    def test_fix_path_indices_shorter_new(self):
+        old_path = "/path/index/needed"
+        new_path = "/path/index[2]"
+        fixed_path = self.parser.fix_path_indices(old_path, new_path)
+        self.assertEquals(fixed_path, "/path/index[1]/needed")
+
+    def test_fix_path_indices_needs_index_divergence(self):
+        old_path = "/path/index/needed/unique/path"
+        new_path = "/path/index[2]/needed/another/path"
+        fixed_path = self.parser.fix_path_indices(old_path, new_path)
+        self.assertEquals(fixed_path, "/path/index[1]/needed/unique/path")
+
     def test_add_comment(self):
         from certbot_apache.parser import get_aug_path
         self.parser.add_comment(get_aug_path(self.parser.loc["name"]), "123456")
