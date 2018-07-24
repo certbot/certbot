@@ -12,6 +12,7 @@ from certbot_apache.tests import util
 
 
 class BasicParserTest(util.ParserTest):
+    # pylint: disable=too-many-public-methods
     """Apache Parser Test."""
 
     def setUp(self):  # pylint: disable=arguments-differ

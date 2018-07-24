@@ -729,7 +729,7 @@ class ApacheParser(object):
 
     def _fix_path(self, old, new):
         """Helper function to add index to Augeas path if required"""
-        index_re = "\[\d*\]"
+        index_re = r"\[\d*\]"
         if old == new:
             return old
         if re.search(index_re, old):
