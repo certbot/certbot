@@ -706,6 +706,11 @@ class ClientV2Test(ClientTestBase):
 
         self.assertEqual(self.regr, self.client.new_account(self.new_reg))
 
+    def test_new_account_conflict(self):
+        self.response.status_code = http_client.OK
+        self.response.headers['Location'] = self.regr.uri
+        self.assertRaises(errors.ConflictError, self.client.new_account, self.new_reg)
+
     def test_new_order(self):
         order_response = copy.deepcopy(self.response)
         order_response.status_code = http_client.CREATED
