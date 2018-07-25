@@ -5,7 +5,9 @@ import zope.component
 import zope.interface
 
 from acme import challenges
+from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
 
+from certbot import achallenges  # pylint: disable=unused-import
 from certbot import interfaces
 from certbot import errors
 from certbot import hooks
@@ -98,7 +100,8 @@ when it receives a TLS ClientHello with the SNI extension set to
         super(Authenticator, self).__init__(*args, **kwargs)
         self.reverter = reverter.Reverter(self.config)
         self.reverter.recovery_routine()
-        self.env = dict()
+        self.env = dict() \
+        # type: Dict[achallenges.KeyAuthorizationAnnotatedChallenge, Dict[str, str]]
         self.tls_sni_01 = None
 
     @classmethod

@@ -248,7 +248,7 @@ class UnspacedList(list):
         """Recurse through the parse tree to figure out if any sublists are dirty"""
         if self.dirty:
             return True
-        return any((isinstance(x, list) and x.is_dirty() for x in self))
+        return any((isinstance(x, UnspacedList) and x.is_dirty() for x in self))
 
     def _spaced_position(self, idx):
         "Convert from indexes in the unspaced list to positions in the spaced one"

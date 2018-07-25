@@ -1,4 +1,5 @@
 """ Utility functions for certbot-apache plugin """
+import binascii
 import os
 
 from certbot import util
@@ -98,3 +99,8 @@ def parse_define_file(filepath, varname):
             var_parts = v[2:].partition("=")
             return_vars[var_parts[0]] = var_parts[2]
     return return_vars
+
+
+def unique_id():
+    """ Returns an unique id to be used as a VirtualHost identifier"""
+    return binascii.hexlify(os.urandom(16)).decode("utf-8")

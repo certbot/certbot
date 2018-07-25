@@ -11,6 +11,7 @@ from certbot_nginx import nginxparser
 from certbot_nginx import obj
 from certbot_nginx import parser
 from certbot_nginx.tests import util
+from acme.magic_typing import List # pylint: disable=unused-import, no-name-in-module
 
 
 class NginxParserTest(util.NginxTest): #pylint: disable=too-many-public-methods
@@ -48,6 +49,7 @@ class NginxParserTest(util.NginxTest): #pylint: disable=too-many-public-methods
                               ['foo.conf', 'nginx.conf', 'server.conf',
                                'sites-enabled/default',
                                'sites-enabled/example.com',
+                               'sites-enabled/headers.com',
                                'sites-enabled/migration.com',
                                'sites-enabled/sslon.com',
                                'sites-enabled/globalssl.com',
@@ -76,7 +78,7 @@ class NginxParserTest(util.NginxTest): #pylint: disable=too-many-public-methods
         parsed = nparser._parse_files(nparser.abs_path(
             'sites-enabled/example.com.test'))
         self.assertEqual(3, len(glob.glob(nparser.abs_path('*.test'))))
-        self.assertEqual(7, len(
+        self.assertEqual(8, len(
             glob.glob(nparser.abs_path('sites-enabled/*.test'))))
         self.assertEqual([[['server'], [['listen', '69.50.225.155:9000'],
                                         ['listen', '127.0.0.1'],
@@ -99,7 +101,7 @@ class NginxParserTest(util.NginxTest): #pylint: disable=too-many-public-methods
                    ([[[0], [3], [4]], [[5], [3], [0]]], [])]
 
         for mylist, result in mylists:
-            paths = []
+            paths = [] # type: List[List[int]]
             parser._do_for_subarray(mylist,
                                     lambda x: isinstance(x, list) and
                                     len(x) >= 1 and
@@ -159,7 +161,7 @@ class NginxParserTest(util.NginxTest): #pylint: disable=too-many-public-methods
                                                   '*.www.example.com']),
                                  [], [2, 1, 0])
 
-        self.assertEqual(12, len(vhosts))
+        self.assertEqual(13, len(vhosts))
         example_com = [x for x in vhosts if 'example.com' in x.filep][0]
         self.assertEqual(vhost3, example_com)
         default = [x for x in vhosts if 'default' in x.filep][0]

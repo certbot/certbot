@@ -12,10 +12,14 @@ import sys
 import configargparse
 import six
 import zope.component
+import zope.interface
 
 from zope.interface import interfaces as zope_interfaces
 
 from acme import challenges
+# pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Any, Dict, Optional
+# pylint: enable=unused-import, no-name-in-module
 
 import certbot
 
@@ -28,12 +32,13 @@ from certbot import util
 
 from certbot.display import util as display_util
 from certbot.plugins import disco as plugins_disco
+import certbot.plugins.enhancements as enhancements
 import certbot.plugins.selection as plugin_selection
 
 logger = logging.getLogger(__name__)
 
 # Global, to save us from a lot of argument passing within the scope of this module
-helpful_parser = None
+helpful_parser = None  # type: Optional[HelpfulArgumentParser]
 
 # For help strings, figure out how the user ran us.
 # When invoked from letsencrypt-auto, sys.argv[0] is something like:
@@ -196,17 +201,17 @@ def set_by_cli(var):
     (CLI or config file) including if the user explicitly set it to the
     default.  Returns False if the variable was assigned a default value.
     """
-    detector = set_by_cli.detector
-    if detector is None:
+    detector = set_by_cli.detector  # type: ignore
+    if detector is None and helpful_parser is not None:
         # Setup on first run: `detector` is a weird version of config in which
         # the default value of every attribute is wrangled to be boolean-false
         plugins = plugins_disco.PluginsRegistry.find_all()
         # reconstructed_args == sys.argv[1:], or whatever was passed to main()
         reconstructed_args = helpful_parser.args + [helpful_parser.verb]
-        detector = set_by_cli.detector = prepare_and_parse_args(
+        detector = set_by_cli.detector = prepare_and_parse_args(  # type: ignore
             plugins, reconstructed_args, detect_defaults=True)
         # propagate plugin requests: eg --standalone modifies config.authenticator
-        detector.authenticator, detector.installer = (
+        detector.authenticator, detector.installer = (  # type: ignore
             plugin_selection.cli_plugin_requests(detector))
 
     if not isinstance(getattr(detector, var), _Default):
@@ -220,7 +225,10 @@ def set_by_cli(var):
             return True
 
     return False
+
 # static housekeeping var
+# functions attributed are not supported by mypy
+# https://github.com/python/mypy/issues/2087
 set_by_cli.detector = None  # type: ignore
 
 
@@ -236,8 +244,10 @@ def has_default_value(option, value):
     :rtype: bool
 
     """
-    return (option in helpful_parser.defaults and
-            helpful_parser.defaults[option] == value)
+    if helpful_parser is not None:
+        return (option in helpful_parser.defaults and
+                helpful_parser.defaults[option] == value)
+    return False
 
 
 def option_was_set(option, value):
@@ -254,11 +264,12 @@ def option_was_set(option, value):
 
 
 def argparse_type(variable):
-    "Return our argparse type function for a config variable (default: str)"
+    """Return our argparse type function for a config variable (default: str)"""
     # pylint: disable=protected-access
-    for action in helpful_parser.parser._actions:
-        if action.type is not None and action.dest == variable:
-            return action.type
+    if helpful_parser is not None:
+        for action in helpful_parser.parser._actions:
+            if action.type is not None and action.dest == variable:
+                return action.type
     return str
 
 def read_file(filename, mode="rb"):
@@ -291,10 +302,12 @@ def flag_default(name):
 
 def config_help(name, hidden=False):
     """Extract the help message for an `.IConfig` attribute."""
+    # pylint: disable=no-member
     if hidden:
         return argparse.SUPPRESS
     else:
-        return interfaces.IConfig[name].__doc__
+        field = interfaces.IConfig.__getitem__(name) # type: zope.interface.interface.Attribute
+        return field.__doc__
 
 
 class HelpfulArgumentGroup(object):
@@ -418,7 +431,7 @@ VERB_HELP = [
     }),
     ("enhance", {
         "short": "Add security enhancements to your existing configuration",
-        "opts": ("Helps to harden the TLS configration by adding security enhancements "
+        "opts": ("Helps to harden the TLS configuration by adding security enhancements "
                  "to already existing configuration."),
         "usage": "\n\n  certbot enhance [options]\n\n"
     }),
@@ -473,7 +486,7 @@ class HelpfulArgumentParser(object):
         HELP_TOPICS += list(self.VERBS) + self.COMMANDS_TOPICS + ["manage"]
 
         plugin_names = list(plugins)
-        self.help_topics = HELP_TOPICS + plugin_names + [None]
+        self.help_topics = HELP_TOPICS + plugin_names + [None]  # type: ignore
 
         self.detect_defaults = detect_defaults
         self.args = args
@@ -492,8 +505,11 @@ class HelpfulArgumentParser(object):
         short_usage = self._usage_string(plugins, self.help_arg)
 
         self.visible_topics = self.determine_help_topics(self.help_arg)
-        self.groups = {}       # elements are added by .add_group()
-        self.defaults = {}     # elements are added by .parse_args()
+
+        # elements are added by .add_group()
+        self.groups = {}  # type: Dict[str, argparse._ArgumentGroup]
+        # elements are added by .parse_args()
+        self.defaults = {}  # type: Dict[str, Any]
 
         self.parser = configargparse.ArgParser(
             prog="certbot",
@@ -611,6 +627,10 @@ class HelpfulArgumentParser(object):
             if any(util.is_wildcard_domain(d) for d in parsed_args.domains):
                 raise errors.Error("Using --allow-subset-of-names with a"
                                    " wildcard domain is not supported.")
+
+        if parsed_args.hsts and parsed_args.auto_hsts:
+            raise errors.Error(
+                "Parameters --hsts and --auto-hsts cannot be used simultaneously.")
 
         possible_deprecation_warning(parsed_args)
 
@@ -805,7 +825,6 @@ class HelpfulArgumentParser(object):
             if self.help_arg:
                 for v in verbs:
                     self.groups[topic].add_argument(v, help=VERB_HELP_MAP[v]["short"])
-
         return HelpfulArgumentGroup(self, topic)
 
     def add_plugin_args(self, plugins):
@@ -1004,6 +1023,12 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              "but does not match the requested domains, renew it now, "
              "regardless of whether it is near expiry.")
     helpful.add(
+        "automation", "--reuse-key", dest="reuse_key",
+        action="store_true", default=flag_default("reuse_key"),
+        help="When renewing, use the same private key as the existing "
+             "certificate.")
+
+    helpful.add(
         ["automation", "renew", "certonly"],
         "--allow-subset-of-names", action="store_true",
         default=flag_default("allow_subset_of_names"),
@@ -1057,7 +1082,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         help="Show tracebacks in case of errors, and allow certbot-auto "
              "execution on experimental platforms")
     helpful.add(
-        [None, "certonly", "renew", "run"], "--debug-challenges", action="store_true",
+        [None, "certonly", "run"], "--debug-challenges", action="store_true",
         default=flag_default("debug_challenges"),
         help="After setting up challenges, wait for user input before "
              "submitting to CA")
@@ -1200,9 +1225,16 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         " when the user executes \"certbot renew\", regardless of if the certificate"
         " is renewed. This setting does not apply to important TLS configuration"
         " updates.")
+    helpful.add(
+        "renew", "--no-autorenew", action="store_false",
+        default=flag_default("autorenew"), dest="autorenew",
+        help="Disable auto renewal of certificates.")
 
     helpful.add_deprecated_argument("--agree-dev-preview", 0)
     helpful.add_deprecated_argument("--dialog", 0)
+
+    # Populate the command line parameters for new style enhancements
+    enhancements.populate_cli(helpful.add)
 
     _create_subparsers(helpful)
     _paths_parser(helpful)
@@ -1296,14 +1328,14 @@ def _paths_parser(helpful):
         verb = helpful.help_arg
 
     cph = "Path to where certificate is saved (with auth --csr), installed from, or revoked."
-    section = ["paths", "install", "revoke", "certonly", "manage"]
+    sections = ["paths", "install", "revoke", "certonly", "manage"]
     if verb == "certonly":
-        add(section, "--cert-path", type=os.path.abspath,
+        add(sections, "--cert-path", type=os.path.abspath,
             default=flag_default("auth_cert_path"), help=cph)
     elif verb == "revoke":
-        add(section, "--cert-path", type=read_file, required=True, help=cph)
+        add(sections, "--cert-path", type=read_file, required=True, help=cph)
     else:
-        add(section, "--cert-path", type=os.path.abspath, help=cph)
+        add(sections, "--cert-path", type=os.path.abspath, help=cph)
 
     section = "paths"
     if verb in ("install", "revoke"):
@@ -1387,10 +1419,18 @@ def _plugins_parsing(helpful, plugins):
                 default=flag_default("dns_dnsmadeeasy"),
                 help=("Obtain certificates using a DNS TXT record (if you are"
                       "using DNS Made Easy for DNS)."))
+    helpful.add(["plugins", "certonly"], "--dns-gehirn", action="store_true",
+                default=flag_default("dns_gehirn"),
+                help=("Obtain certificates using a DNS TXT record "
+                     "(if you are using Gehirn Infrastracture Service for DNS)."))
     helpful.add(["plugins", "certonly"], "--dns-google", action="store_true",
                 default=flag_default("dns_google"),
                 help=("Obtain certificates using a DNS TXT record (if you are "
                       "using Google Cloud DNS)."))
+    helpful.add(["plugins", "certonly"], "--dns-linode", action="store_true",
+                default=flag_default("dns_linode"),
+                help=("Obtain certificates using a DNS TXT record (if you are "
+                      "using Linode for DNS)."))
     helpful.add(["plugins", "certonly"], "--dns-luadns", action="store_true",
                 default=flag_default("dns_luadns"),
                 help=("Obtain certificates using a DNS TXT record (if you are "
@@ -1399,6 +1439,10 @@ def _plugins_parsing(helpful, plugins):
                 default=flag_default("dns_nsone"),
                 help=("Obtain certificates using a DNS TXT record (if you are "
                       "using NS1 for DNS)."))
+    helpful.add(["plugins", "certonly"], "--dns-ovh", action="store_true",
+                default=flag_default("dns_ovh"),
+                help=("Obtain certificates using a DNS TXT record (if you are "
+                      "using OVH for DNS)."))
     helpful.add(["plugins", "certonly"], "--dns-rfc2136", action="store_true",
                 default=flag_default("dns_rfc2136"),
                 help="Obtain certificates using a DNS TXT record (if you are using BIND for DNS).")
@@ -1406,6 +1450,10 @@ def _plugins_parsing(helpful, plugins):
                 default=flag_default("dns_route53"),
                 help=("Obtain certificates using a DNS TXT record (if you are using Route53 for "
                       "DNS)."))
+    helpful.add(["plugins", "certonly"], "--dns-sakuracloud", action="store_true",
+                default=flag_default("dns_sakuracloud"),
+                help=("Obtain certificates using a DNS TXT record "
+                     "(if you are using Sakura Cloud for DNS)."))
 
     # things should not be reorder past/pre this comment:
     # plugins_group should be displayed in --help before plugin

@@ -128,6 +128,7 @@ def make_instance(instance_name,
                   userdata=""): #userdata contains bash or cloud-init script
 
     new_instance = EC2.create_instances(
+        BlockDeviceMappings=_get_block_device_mappings(ami_id),
         ImageId=ami_id,
         SecurityGroups=security_groups,
         KeyName=keyname,
@@ -151,38 +152,21 @@ def make_instance(instance_name,
             raise
     return new_instance
 
-def terminate_and_clean(instances):
+def _get_block_device_mappings(ami_id):
+    """Returns the list of block device mappings to ensure cleanup.
+
+    This list sets connected EBS volumes to be deleted when the EC2
+    instance is terminated.
+
     """
-    Some AMIs specify EBS stores that won't delete on instance termination.
-    These must be manually deleted after shutdown.
-    """
-    volumes_to_delete = []
-    for instance in instances:
-        for bdmap in instance.block_device_mappings:
-            if 'Ebs' in bdmap.keys():
-                if not bdmap['Ebs']['DeleteOnTermination']:
-                    volumes_to_delete.append(bdmap['Ebs']['VolumeId'])
-
-    for instance in instances:
-        instance.terminate()
-
-    # can't delete volumes until all attaching instances are terminated
-    _ids = [instance.id for instance in instances]
-    all_terminated = False
-    while not all_terminated:
-        all_terminated = True
-        for _id in _ids:
-            # necessary to reinit object for boto3 to get true state
-            inst = EC2.Instance(id=_id)
-            if inst.state['Name'] != 'terminated':
-                all_terminated = False
-        time.sleep(5)
-
-    for vol_id in volumes_to_delete:
-        volume = EC2.Volume(id=vol_id)
-        volume.delete()
-
-    return volumes_to_delete
+    # Not all devices use EBS, but the default value for DeleteOnTermination
+    # when the device does use EBS is true. See:
+    # * https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ec2-blockdev-mapping.html
+    # * https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ec2-blockdev-template.html
+    return [{'DeviceName': mapping['DeviceName'],
+             'Ebs': {'DeleteOnTermination': True}}
+            for mapping in EC2.Image(ami_id).block_device_mappings
+            if not mapping.get('Ebs', {}).get('DeleteOnTermination', True)]
 
 
 # Helper Routines
@@ -370,10 +354,11 @@ def test_client_process(inqueue, outqueue):
 def cleanup(cl_args, instances, targetlist):
     print('Logs in ', LOGDIR)
     if not cl_args.saveinstances:
-        print('Terminating EC2 Instances and Cleaning Dangling EBS Volumes')
+        print('Terminating EC2 Instances')
         if cl_args.killboulder:
             boulder_server.terminate()
-        terminate_and_clean(instances)
+        for instance in instances:
+            instance.terminate()
     else:
         # print login information for the boxes for debugging
         for ii, target in enumerate(targetlist):

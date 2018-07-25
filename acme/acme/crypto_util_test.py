@@ -42,28 +42,38 @@ class SSLSocketAndProbeSNITest(unittest.TestCase):
         self.server_thread = threading.Thread(
             # pylint: disable=no-member
             target=self.server.handle_request)
-        self.server_thread.start()
-        time.sleep(1)  # TODO: avoid race conditions in other way
 
     def tearDown(self):
-        self.server_thread.join()
+        if self.server_thread.is_alive():
+            # The thread may have already terminated.
+            self.server_thread.join()  # pragma: no cover
 
     def _probe(self, name):
         from acme.crypto_util import probe_sni
         return jose.ComparableX509(probe_sni(
             name, host='127.0.0.1', port=self.port))
 
+    def _start_server(self):
+        self.server_thread.start()
+        time.sleep(1)  # TODO: avoid race conditions in other way
+
     def test_probe_ok(self):
+        self._start_server()
         self.assertEqual(self.cert, self._probe(b'foo'))
 
     def test_probe_not_recognized_name(self):
+        self._start_server()
         self.assertRaises(errors.Error, self._probe, b'bar')
 
-    # TODO: py33/py34 tox hangs forever on do_handshake in second probe
-    #def probe_connection_error(self):
-    #    self._probe(b'foo')
-    #    #time.sleep(1)  # TODO: avoid race conditions in other way
-    #    self.assertRaises(errors.Error, self._probe, b'bar')
+    def test_probe_connection_error(self):
+        # pylint has a hard time with six
+        self.server.server_close()  # pylint: disable=no-member
+        original_timeout = socket.getdefaulttimeout()
+        try:
+            socket.setdefaulttimeout(1)
+            self.assertRaises(errors.Error, self._probe, b'bar')
+        finally:
+            socket.setdefaulttimeout(original_timeout)
 
 
 class PyOpenSSLCertOrReqAllNamesTest(unittest.TestCase):

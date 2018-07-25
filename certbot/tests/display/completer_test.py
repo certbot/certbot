@@ -8,6 +8,7 @@ import unittest
 import mock
 from six.moves import reload_module  # pylint: disable=import-error
 
+from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
 from certbot.tests.util import TempDirTestCase
 
 class CompleterTest(TempDirTestCase):
@@ -21,7 +22,7 @@ class CompleterTest(TempDirTestCase):
         if self.tempdir[-1] != os.sep:
             self.tempdir += os.sep
 
-        self.paths = []
+        self.paths = []  # type: List[str]
         # create some files and directories in temp_dir
         for c in string.ascii_lowercase:
             path = os.path.join(self.tempdir, c)
