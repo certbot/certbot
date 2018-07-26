@@ -134,6 +134,12 @@ class BackwardsCompatibleClientV2Test(ClientTestBase):
         client = self._init()
         self.assertEqual(client.acme_version, 2)
 
+    def test_query_registration_client_v2(self):
+        self.response.json.return_value = DIRECTORY_V2.to_json()
+        client = self._init()
+        self.response.json.return_value = self.regr.body.to_json()
+        self.assertEqual(self.regr, client.query_registration(self.regr))
+
     def test_forwarding(self):
         self.response.json.return_value = DIRECTORY_V1.to_json()
         client = self._init()

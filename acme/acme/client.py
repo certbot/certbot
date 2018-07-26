@@ -127,7 +127,11 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
             Resource.
 
         """
-        return self._send_recv_regr(regr, messages.UpdateRegistration())
+        if self.acme_version == 2:
+            self.net.account = regr
+        updated_regr = self._send_recv_regr(regr, messages.UpdateRegistration())
+        self.net.account = updated_regr
+        return updated_regr
 
     def _authzr_from_response(self, response, identifier=None, uri=None):
         authzr = messages.AuthorizationResource(
