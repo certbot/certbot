@@ -99,9 +99,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         vhost_files="*",
         logs_root="/var/log/apache2",
         ctl="apache2ctl",
-        bin="apache2",
         version_cmd=['apache2ctl', '-v'],
-        apache_cmd="apache2ctl",
         restart_cmd=['apache2ctl', 'graceful'],
         conftest_cmd=['apache2ctl', 'configtest'],
         enmod=None,
@@ -125,7 +123,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         opts = ["enmod", "dismod", "le_vhost_ext", "server_root", "vhost_root",
                 "logs_root", "challenge_location", "handle_modules", "handle_sites",
-                "ctl", "bin"]
+                "ctl"]
         for o in opts:
             # Config options use dashes instead of underscores
             if self.conf(o.replace("_", "-")) != None:
@@ -134,8 +132,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 self.options[o] = self.OS_DEFAULTS[o]
 
         # Special cases
-        self.options["apache_cmd"] = self.option("ctl")
-        self.options["version_cmd"][0] = self.option("bin")
+        self.options["version_cmd"][0] = self.option("ctl")
         self.options["restart_cmd"][0] = self.option("ctl")
         self.options["conftest_cmd"][0] = self.option("ctl")
 
@@ -167,8 +164,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                  "(Only Ubuntu/Debian currently)")
         add("ctl", default=cls.OS_DEFAULTS["ctl"],
             help="Full path to Apache control script")
-        add("bin", default=cls.OS_DEFAULTS["bin"],
-            help="Full path to Apache binary or a script passing arguments to it")
         util.add_deprecated_argument(
             add, argument_name="init-script", nargs=1)
 
@@ -234,7 +229,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self._prepare_options()
 
         # Verify Apache is installed
-        self._verify_exe_availability(self.option("bin"))
         self._verify_exe_availability(self.option("ctl"))
 
         # Make sure configuration is valid

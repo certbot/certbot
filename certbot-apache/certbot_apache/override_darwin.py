@@ -17,9 +17,7 @@ class DarwinConfigurator(configurator.ApacheConfigurator):
         vhost_files="*.conf",
         logs_root="/var/log/apache2",
         ctl="apachectl",
-        bin="/usr/sbin/httpd",
         version_cmd=['/usr/sbin/httpd', '-v'],
-        apache_cmd="/usr/sbin/httpd",
         restart_cmd=['apachectl', 'graceful'],
         conftest_cmd=['apachectl', 'configtest'],
         enmod=None,
@@ -31,10 +29,3 @@ class DarwinConfigurator(configurator.ApacheConfigurator):
         MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
             "certbot_apache", "options-ssl-apache.conf")
     )
-
-    def _prepare_options(self):
-        """
-        Override the options dictionary initialization.
-        """
-        super(DarwinConfigurator, self)._prepare_options()
-        self.options["apache_cmd"] = self.conf("bin")
