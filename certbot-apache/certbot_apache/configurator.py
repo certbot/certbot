@@ -126,7 +126,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 "ctl"]
         for o in opts:
             # Config options use dashes instead of underscores
-            if self.conf(o.replace("_", "-")) != None:
+            if self.conf(o.replace("_", "-")) is not None:
                 self.options[o] = self.conf(o.replace("_", "-"))
             else:
                 self.options[o] = self.OS_DEFAULTS[o]
