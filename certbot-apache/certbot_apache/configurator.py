@@ -294,8 +294,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     def get_parser(self):
         """Initializes the ApacheParser"""
         # If user provided vhost_root value in command line, use it
-        if self.option("vhost_root") != self.OS_DEFAULTS["vhost_root"]:
-            vhostroot = self.option("vhost_root")
+        if self.conf("vhost-root"):
+            vhostroot = self.conf("vhost-root")
         else:
             vhostroot = None
         return parser.ApacheParser(
@@ -1193,8 +1193,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :rtype: str
         """
 
-        custom_path = self.option("vhost_root") != self.OS_DEFAULTS["vhost_root"]
-        if custom_path and os.path.exists(self.option("vhost_root")):
+        if self.conf("vhost-root") and os.path.exists(self.conf("vhost-root")):
             fp = os.path.join(os.path.realpath(self.option("vhost_root")),
                               os.path.basename(non_ssl_vh_fp))
         else:

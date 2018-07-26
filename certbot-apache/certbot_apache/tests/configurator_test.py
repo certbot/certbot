@@ -652,21 +652,10 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertEqual(ssl_vhost_slink.name, "nonsym.link")
 
     def test_make_vhost_ssl_nonexistent_vhost_path(self):
-        orig_opt = self.config.option
-        def opt_side_effect(arg):
-            """ Mock function for ApacheConfigurator.option """
-            if arg == "vhost_root":
-                return "/tmp/nonexsistent"
-            return orig_opt(arg)
-
-        with mock.patch(
-                "certbot_apache.configurator.ApacheConfigurator.option"
-        ) as mock_opt:
-            mock_opt.side_effect = opt_side_effect
-            ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[1])
-            self.assertEqual(os.path.dirname(ssl_vhost.filep),
-                             os.path.dirname(os.path.realpath(
-                                 self.vh_truth[1].filep)))
+        ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[1])
+        self.assertEqual(os.path.dirname(ssl_vhost.filep),
+                            os.path.dirname(os.path.realpath(
+                                self.vh_truth[1].filep)))
 
     def test_make_vhost_ssl(self):
         ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[0])
