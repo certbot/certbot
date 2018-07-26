@@ -33,6 +33,14 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
             "certbot_apache", "centos-options-ssl-apache.conf")
     )
 
+    def _prepare_options(self):
+        """
+        Override the options dictionary initialization in order to support
+        alternative restart cmd used in CentOS.
+        """
+        super(CentOSConfigurator, self)._prepare_options()
+        self.options["restart_cmd_alt"][0] = self.option("ctl")
+
     def get_parser(self):
         """Initializes the ApacheParser"""
         return CentOSParser(
