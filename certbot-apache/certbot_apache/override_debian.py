@@ -24,7 +24,7 @@ class DebianConfigurator(configurator.ApacheConfigurator):
         vhost_files="*",
         logs_root="/var/log/apache2",
         ctl="apache2ctl",
-        version_cmd=['apache2', '-v'],
+        version_cmd=['apache2ctl', '-v'],
         restart_cmd=['apache2ctl', 'graceful'],
         conftest_cmd=['apache2ctl', 'configtest'],
         enmod="a2enmod",

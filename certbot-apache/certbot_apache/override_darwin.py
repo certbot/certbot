@@ -17,7 +17,7 @@ class DarwinConfigurator(configurator.ApacheConfigurator):
         vhost_files="*.conf",
         logs_root="/var/log/apache2",
         ctl="apachectl",
-        version_cmd=['/usr/sbin/httpd', '-v'],
+        version_cmd=['apachectl', '-v'],
         restart_cmd=['apachectl', 'graceful'],
         conftest_cmd=['apachectl', 'configtest'],
         enmod=None,

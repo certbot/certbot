@@ -19,7 +19,7 @@ class GentooConfigurator(configurator.ApacheConfigurator):
         vhost_files="*.conf",
         logs_root="/var/log/apache2",
         ctl="apache2ctl",
-        version_cmd=['/usr/sbin/apache2', '-v'],
+        version_cmd=['apache2ctl', '-v'],
         restart_cmd=['apache2ctl', 'graceful'],
         restart_cmd_alt=['apache2ctl', 'restart'],
         conftest_cmd=['apache2ctl', 'configtest'],
