@@ -8,9 +8,10 @@ version = '0.27.0.dev0'
 
 # Please update tox.ini when modifying dependency version requirements
 install_requires = [
-    'acme=={0}'.format(version),
-    'certbot=={0}'.format(version),
+    'acme>=0.21.1',
+    'certbot>=0.21.1',
     'azure-mgmt-dns',
+    'requests>=2.16',
     'mock',
     # For pkg_resources. >=1.0 so pip resolves it to a version cryptography
     # will tolerate; see #2599:

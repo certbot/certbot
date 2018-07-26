@@ -42,7 +42,9 @@ specify with this option or with the AZURE_AUTH_LOCATION environment variable.
 
 Alternately, you can use an existing service principal account with the correct
 role assignment. In this case, you can create a json file in the following
-format (as per <https://docs.microsoft.com/en-au/python/azure/python-sdk-azure-authenticate?view=azure-python#mgmt-auth-file>):
+format (as per
+<https://docs.microsoft.com/python/azure/python-sdk-azure-authenticate?view=azure-python#mgmt-auth-file>
+):
 .. code-block:: json
     {
         "clientId": "ad735158-65ca-11e7-ba4d-ecb1d756380e",

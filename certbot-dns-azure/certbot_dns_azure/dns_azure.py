@@ -1,9 +1,7 @@
 """DNS Authenticator for Azure DNS."""
-import json
 import logging
 import os
 
-import httplib2
 import zope.interface
 
 from azure.mgmt.dns import DnsManagementClient
@@ -18,9 +16,13 @@ from certbot.plugins import dns_common
 
 logger = logging.getLogger(__name__)
 
-ACCT_URL = 'https://docs.microsoft.com/en-au/python/azure/python-sdk-azure-authenticate?view=azure-python#mgmt-auth-file'
-AZURE_CLI_URL = 'https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest'
-AZURE_CLI_COMMAND = 'az ad sp create-for-rbac --name Certbot --sdk-auth --role "DNS Zone Contributor" --scope /subscriptions/<YOUR SUBSCRIPTION ID>/resourceGroups/<YOUR RESOURCE GROUP ID > mycredentials.json'
+MSDOCS = 'https://docs.microsoft.com/'
+ACCT_URL = MSDOCS + 'python/azure/python-sdk-azure-authenticate?view=azure-python#mgmt-auth-file'
+AZURE_CLI_URL = MSDOCS + 'cli/azure/install-azure-cli?view=azure-cli-latest'
+AZURE_CLI_COMMAND = ("az ad sp create-for-rbac"
+                     " --name Certbot --sdk-auth --role \"DNS Zone Contributor\""
+                     " --scope /subscriptions/<SUBSCRIPTION_ID>/resourceGroups/<RESOURCE_GROUP_ID"
+                     " > mycredentials.json")
 
 
 @zope.interface.implementer(interfaces.IAuthenticator)
@@ -81,12 +83,12 @@ class Authenticator(dns_common.DNSAuthenticator):
             dns_common.validate_file_permissions(self.conf('credentials'))
 
     def _perform(self, domain, validation_name, validation):
-        self._get_azure_client().add_txt_record(domain, validation_name,
-                                                validation, self.ttl)
+        self._get_azure_client().add_txt_record(validation_name,
+                                                validation,
+                                                self.ttl)
 
     def _cleanup(self, domain, validation_name, validation):
-        self._get_azure_client().del_txt_record(domain, validation_name,
-                                                validation)
+        self._get_azure_client().del_txt_record(validation_name)
 
     def _get_azure_client(self):
         return _AzureClient(self.conf('resource-group'),
@@ -103,12 +105,11 @@ class _AzureClient(object):
         self.dns_client = get_client_from_auth_file(DnsManagementClient,
                                                     auth_path=account_json)
 
-    def add_txt_record(self, domain, record_name, record_content, record_ttl):
+    def add_txt_record(self, domain, record_content, record_ttl):
         """
         Add a TXT record using the supplied information.
 
-        :param str domain: The domain to use to look up the managed zone.
-        :param str record_name: The record name (typically beginning with '_acme-challenge.').
+        :param str domain: The fqdn (typically beginning with '_acme-challenge.').
         :param str record_content: The record content (typically the challenge validation).
         :param int record_ttl: The record TTL (number of seconds that the record may be cached).
         :raises certbot.errors.PluginError: if an error occurs communicating with the Azure API
@@ -116,9 +117,9 @@ class _AzureClient(object):
         try:
             record = RecordSet(ttl=record_ttl,
                                txt_records=[TxtRecord(value=[record_content])])
-            zone = self._find_managed_zone(record_name)
+            zone = self._find_managed_zone(domain)
             relative_record_name = ".".join(
-                record_name.split('.')[0:-len(zone.split('.'))])
+                domain.split('.')[0:-len(zone.split('.'))])
             self.dns_client.record_sets.create_or_update(self.resource_group,
                                                          zone,
                                                          relative_record_name,
@@ -128,20 +129,18 @@ class _AzureClient(object):
             logger.error('Encountered error adding TXT record: %s', e)
             raise errors.PluginError('Error communicating with the Azure DNS API: {0}'.format(e))
 
-    def del_txt_record(self, domain, record_name, record_content):
+    def del_txt_record(self, domain):
         """
         Delete a TXT record using the supplied information.
 
-        :param str domain: The domain to use to look up the managed zone.
-        :param str record_name: The record name (typically beginning with '_acme-challenge.').
-        :param str record_content: The record content (typically the challenge validation).
+        :param str domain: The fqdn (typically beginning with '_acme-challenge.').
         :raises certbot.errors.PluginError: if an error occurs communicating with the Azure API
         """
 
         try:
-            zone = self._find_managed_zone(record_name)
+            zone = self._find_managed_zone(domain)
             relative_record_name = ".".join(
-                record_name.split('.')[0:-len(zone.split('.'))])
+                domain.split('.')[0:-len(zone.split('.'))])
             self.dns_client.record_sets.delete(self.resource_group,
                                                zone,
                                                relative_record_name,
@@ -168,7 +167,7 @@ class _AzureClient(object):
         except StopIteration:
             pass
         except CloudError as e:
-            logger.error('Error finding zone: {0}'.format(e))
+            logger.error('Error finding zone: %s', e)
             raise errors.PluginError('Error finding zone form the Azure DNS API: {0}'.format(e))
         zone_dns_name_guesses = dns_common.base_domain_name_guesses(domain)
 
