@@ -86,7 +86,7 @@ class Authenticator(dns_common.DNSAuthenticator):
 
     def _cleanup(self, domain, validation_name, validation):
         self._get_azure_client().del_txt_record(domain, validation_name,
-                                                validation, self.ttl)
+                                                validation)
 
     def _get_azure_client(self):
         return _AzureClient(self.conf('resource-group'),
@@ -128,14 +128,13 @@ class _AzureClient(object):
             logger.error('Encountered error adding TXT record: %s', e)
             raise errors.PluginError('Error communicating with the Azure DNS API: {0}'.format(e))
 
-    def del_txt_record(self, domain, record_name, record_content, record_ttl):
+    def del_txt_record(self, domain, record_name, record_content):
         """
         Delete a TXT record using the supplied information.
 
         :param str domain: The domain to use to look up the managed zone.
         :param str record_name: The record name (typically beginning with '_acme-challenge.').
         :param str record_content: The record content (typically the challenge validation).
-        :param int record_ttl: The record TTL (number of seconds that the record may be cached).
         :raises certbot.errors.PluginError: if an error occurs communicating with the Azure API
         """
 
