@@ -127,11 +127,7 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
             Resource.
 
         """
-        if self.acme_version == 2:
-            self.net.account = regr
-        updated_regr = self._send_recv_regr(regr, messages.UpdateRegistration())
-        self.net.account = updated_regr
-        return updated_regr
+        return self._send_recv_regr(regr, messages.UpdateRegistration())
 
     def _authzr_from_response(self, response, identifier=None, uri=None):
         authzr = messages.AuthorizationResource(
@@ -581,13 +577,13 @@ class ClientV2(ClientBase):
 
         :param .NewRegistration new_account:
 
-        :raises .ConflictError in case the account already exist
+        :raises .ConflictError: in case the account already exists
 
         :returns: Registration Resource.
         :rtype: `.RegistrationResource`
         """
         response = self._post(self.directory['newAccount'], new_account)
-        # if account already exist
+        # if account already exists
         if response.status_code == 200 and 'Location' in response.headers:
             raise errors.ConflictError(response.headers.get('Location'))
         # "Instance of 'Field' has no key/contact member" bug:
@@ -595,6 +591,18 @@ class ClientV2(ClientBase):
         regr = self._regr_from_response(response)
         self.net.account = regr
         return regr
+
+    def query_registration(self, regr):
+        """Query server about registration.
+
+        :param messages.RegistrationResource: Existing Registration
+            Resource.
+
+        """
+        self.net.account = regr
+        updated_regr = super(ClientV2, self).query_registration(regr)
+        self.net.account = updated_regr
+        return updated_regr
 
     def update_registration(self, regr, update=None):
         """Update registration.
