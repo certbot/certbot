@@ -40,6 +40,7 @@ class Authenticator(dns_common.DNSAuthenticator):
         self.credentials = None
         self._client = None
         self._zone_cache = None
+        self._attempt_cleanup = False
 
     @classmethod
     def add_parser_arguments(cls, add):  # pylint: disable=arguments-differ
@@ -87,7 +88,6 @@ class Authenticator(dns_common.DNSAuthenticator):
     def perform(self, achalls):
         self._setup_credentials()
         self._client = self._get_dyn_client()
-        self._attempt_cleanup = True
 
         try:
             self._client.authenticate()
@@ -118,7 +118,8 @@ class Authenticator(dns_common.DNSAuthenticator):
             responses.append(achall.response(achall.account_key))
 
         for _, zone in self._zone_cache.items():
-            zone.publish('Added Certbot Validation')
+            zone.publish("Let's Encrypt validation token added by Certbot")
+            self._attempt_cleanup = True
 
         sleep(self.conf('propagation-seconds'))
         return responses
@@ -142,6 +143,6 @@ class Authenticator(dns_common.DNSAuthenticator):
                                     record_name)
                             break
 
-                    zone.publish('Removed Certbot Validation')
+                    zone.publish("Let's Encrypt validation token removed by Certbot")
             self._client.log_out()
 

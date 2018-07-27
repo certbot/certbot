@@ -53,16 +53,16 @@ class AuthenticatorTest(test_util.TempDirTestCase,
     @mock.patch('certbot_dns_dyn.dns_dyn.get_all_zones')
     def test_find_zone_missing(self, patch_get_all_zones):
         patch_get_all_zones.return_value = []
-        assert self.auth._find_zone('_acme-challenge.letsencrypt.org') == None
+        assert self.auth._find_zone('_acme-challenge.example.com') == None
         patch_get_all_zones.assert_called_once_with()
 
     @mock.patch('certbot_dns_dyn.dns_dyn.get_all_zones')
     def test_find_zone(self, patch_get_all_zones):
         mock_zone = mock.Mock()
-        mock_zone.fqdn = 'letsencrypt.org.'
+        mock_zone.fqdn = 'example.com.'
 
         patch_get_all_zones.return_value = [mock_zone]
-        assert self.auth._find_zone('_acme-challenge.letsencrypt.org') == mock_zone
+        assert self.auth._find_zone('_acme-challenge.example.com') == mock_zone
         patch_get_all_zones.assert_called_once_with()
 
     @mock.patch('certbot_dns_dyn.dns_dyn.Authenticator._get_dyn_client')
@@ -123,7 +123,7 @@ class AuthenticatorTest(test_util.TempDirTestCase,
             expected_name,
             record_type='TXT',
             txtdata=self.achall.validation(self.achall.account_key))
-        zone.publish.assert_called_once_with('Added Certbot Validation')
+        zone.publish.assert_called_once_with("Let's Encrypt validation token added by Certbot")
 
     @mock.patch('certbot_dns_dyn.dns_dyn.Authenticator._get_dyn_client')
     @mock.patch('certbot_dns_dyn.dns_dyn.Authenticator._find_zone')
@@ -179,7 +179,7 @@ class AuthenticatorTest(test_util.TempDirTestCase,
         zone.get_node.assert_called_once_with(expected_name)
         node.get_all_records_by_type.assert_called_once_with('TXT')
         record.delete.assert_called_once_with()
-        zone.publish.assert_called_once_with('Removed Certbot Validation')
+        zone.publish.assert_called_once_with("Let's Encrypt validation token removed by Certbot")
         self.auth._client.log_out.assert_called_once_with()
 
     def test_cleanup_delete_error(self):
@@ -211,7 +211,7 @@ class AuthenticatorTest(test_util.TempDirTestCase,
         zone.get_node.assert_called_once_with(expected_name)
         node.get_all_records_by_type.assert_called_once_with('TXT')
         record.delete.assert_called_once_with()
-        zone.publish.assert_called_once_with('Removed Certbot Validation')
+        zone.publish.assert_called_once_with("Let's Encrypt validation token removed by Certbot")
         self.auth._client.log_out.assert_called_once_with()
 
 if __name__ == "__main__":
