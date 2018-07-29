@@ -1123,6 +1123,12 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
         self.assertRaises(errors.BadNonce, self.net.post, 'uri',
                           self.obj, content_type=self.content_type)
 
+    def test_post_malformed_body(self):
+        self.response.status_code = 500
+        self.available_nonces = []
+        self.assertRaises(errors.MalformedBodyError, self.net.post, 'uri',
+                          self.obj, content_type=self.content_type)
+
     def test_post_failed_retry(self):
         check_response = mock.MagicMock()
         check_response.side_effect = messages.Error.with_code('badNonce')
