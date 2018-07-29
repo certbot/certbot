@@ -25,6 +25,8 @@ class UnexpectedUpdate(ClientError):
 class NonceError(ClientError):
     """Server response nonce error."""
 
+class MalformedBodyError(Error):
+    """Malformed response body."""
 
 class BadNonce(NonceError):
     """Bad nonce error."""
