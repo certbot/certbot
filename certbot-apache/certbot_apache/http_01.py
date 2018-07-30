@@ -172,4 +172,10 @@ class ApacheHttp01(common.TLSSNI01):
             self.configurator.parser.add_dir(
                 vhost.path, "Include", self.challenge_conf_post)
 
+            if not vhost.enabled:
+                from certbot_apache.parser import get_aug_path
+                self.configurator.parser.add_dir(
+                    get_aug_path(self.configurator.parser.loc["default"]),
+                    "Include", vhost.filep)
+
             self.moded_vhosts.add(vhost)
