@@ -577,15 +577,32 @@ class ClientV2(ClientBase):
 
         :param .NewRegistration new_account:
 
+        :raises .ConflictError: in case the account already exists
+
         :returns: Registration Resource.
         :rtype: `.RegistrationResource`
         """
         response = self._post(self.directory['newAccount'], new_account)
+        # if account already exists
+        if response.status_code == 200 and 'Location' in response.headers:
+            raise errors.ConflictError(response.headers.get('Location'))
         # "Instance of 'Field' has no key/contact member" bug:
         # pylint: disable=no-member
         regr = self._regr_from_response(response)
         self.net.account = regr
         return regr
+
+    def query_registration(self, regr):
+        """Query server about registration.
+
+        :param messages.RegistrationResource: Existing Registration
+            Resource.
+
+        """
+        self.net.account = regr
+        updated_regr = super(ClientV2, self).query_registration(regr)
+        self.net.account = updated_regr
+        return updated_regr
 
     def update_registration(self, regr, update=None):
         """Update registration.
