@@ -40,10 +40,16 @@ supports
 <https://github.com/certbot/certbot/blob/master/certbot-apache/certbot_apache/constants.py>`_
 modern OSes based on Debian, Fedora, SUSE, Gentoo and Darwin.
 
+
+Additional integrity verification of certbot-auto script can be done by verifying its digital signature.
+This requires a local installation of gpg2, which comes packaged in many Linux distributions under name gnupg or gnupg2.
+
+
 Installing with ``certbot-auto`` requires 512MB of RAM in order to build some
 of the dependencies. Installing from pre-built OS packages avoids this
 requirement. You can also temporarily set a swap file. See "Problems with
 Python virtual environment" below for details.
+
 
 Alternate installation methods
 ================================
@@ -64,12 +70,30 @@ download and run it as follows::
   user@webserver:~$ chmod a+x ./certbot-auto
   user@webserver:~$ ./certbot-auto --help
 
-.. hint:: The certbot-auto download is protected by HTTPS, which is pretty good, but if you'd like to
-          double check the integrity of the ``certbot-auto`` script, you can use these steps for verification before running it::
+To check the integrity of the ``certbot-auto`` script,
+you can use these steps::
 
-            user@server:~$ wget -N https://dl.eff.org/certbot-auto.asc
-            user@server:~$ gpg2 --recv-key A2CFB51FA275A7286234E7B24D17C995CD9775F2
-            user@server:~$ gpg2 --trusted-key 4D17C995CD9775F2 --verify certbot-auto.asc certbot-auto
+
+	    user@webserver:~$ wget -N https://dl.eff.org/certbot-auto.asc
+	    user@webserver:~$ gpg2 --keyserver pool.sks-keyservers.net --recv-key A2CFB51FA275A7286234E7B24D17C995CD9775F2
+	    user@webserver:~$ gpg2 --trusted-key 4D17C995CD9775F2 --verify certbot-auto.asc certbot-auto
+
+
+
+The output of the last command should look something like::
+
+
+	    gpg: Signature made Wed 02 May 2018 05:29:12 AM IST
+	    gpg:                using RSA key A2CFB51FA275A7286234E7B24D17C995CD9775F2
+	    gpg: key 4D17C995CD9775F2 marked as ultimately trusted
+	    gpg: checking the trustdb
+	    gpg: marginals needed: 3  completes needed: 1  trust model: pgp
+	    gpg: depth: 0  valid:   2  signed:   2  trust: 0-, 0q, 0n, 0m, 0f, 2u
+	    gpg: depth: 1  valid:   2  signed:   0  trust: 2-, 0q, 0n, 0m, 0f, 0u
+	    gpg: next trustdb check due at 2027-11-22
+	    gpg: Good signature from "Let's Encrypt Client Team <letsencrypt-client@eff.org>" [ultimate]
+
+
 
 The ``certbot-auto`` command updates to the latest client release automatically.
 Since ``certbot-auto`` is a wrapper to ``certbot``, it accepts exactly

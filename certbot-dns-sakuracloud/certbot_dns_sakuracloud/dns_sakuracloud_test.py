@@ -38,7 +38,8 @@ class AuthenticatorTest(test_util.TempDirTestCase,
         self.auth._get_sakuracloud_client = mock.MagicMock(return_value=self.mock_client)
 
 
-class NS1LexiconClientTest(unittest.TestCase, dns_test_common_lexicon.BaseLexiconClientTest):
+class SakuraCloudLexiconClientTest(unittest.TestCase,
+                                   dns_test_common_lexicon.BaseLexiconClientTest):
     DOMAIN_NOT_FOUND = HTTPError('404 Client Error: Not Found for url: {0}.'.format(DOMAIN))
     LOGIN_ERROR = HTTPError('401 Client Error: Unauthorized for url: {0}.'.format(DOMAIN))
 
