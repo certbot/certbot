@@ -53,33 +53,45 @@ class DnspodClient(object):
         data = self._fetch_from_response(url, data, ret)
         return data
 
-    def _fetch_from_response(self, url, request_data, r): # pragma: no cover
+    def _fetch_from_response(self, url, request_data, response): # pragma: no cover
         """
         Fetch valid data from response
+
+        :param str url: The API url.
+        :param dict request data: The request data.
+        :param requests.Response response: Response Dnspod API.
+        :returns: valid respone data
+        :rtype: dict
         """
-        respone_data = {}
-        if r is None:
-            return respone_data
-        if r.status_code != 200:
-            logger.error("http request fail, url: %s status_code: %s", url, r.status_code)
+        response_data = {}
+        if response is None:
+            return response_data
+        if response.status_code != 200:
+            logger.error("http request fail, url: %s status_code: %s", url, response.status_code)
             raise DnspodClientError("http request fail, url: %s status_code: %s" % (url,
-                r.status_code))
+                response.status_code))
         try:
-            respone_data = r.json()
+            response_data = response.json()
         except ValueError:
-            logger.error("response is not json format, url: %s, respone text %s", url, r.text)
-            raise DnspodClientError("response is not json format, url: %s, respone text %s" % (url,
-                r.text))
-        code = int(respone_data.get("status", {}).get("code", 0))
+            logger.error("response is not json format, url: %s, respone text %s", url,
+                    response.text)
+            raise DnspodClientError("response is not json format, url: %s, respone text %s" %
+                    (url, response.text))
+        code = int(response_data.get("status", {}).get("code", 0))
         if code != 1:
             raise DnspodClientError(
                     "Unexpected status code: %s, url: %s request_data: %s, message: %s" %
-                    (code, url, request_data, r.text))
-        return respone_data
+                    (code, url, request_data, response.text))
+        return response_data
 
     def get_record_list(self, domain, record_type):
         """
         Fetch all records for a given type and a given domain
+
+        :param str domain: The domain name for which to find the records.
+        :param str record_type: The record type to find.
+        :returns: All the records.
+        :rtype: list
         """
         url = "Record.List"
         data = {}
