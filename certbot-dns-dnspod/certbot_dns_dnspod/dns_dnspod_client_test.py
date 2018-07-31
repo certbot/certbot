@@ -87,5 +87,12 @@ class DnspodClientTest(unittest.TestCase):
         data = {'record_id': self.record_id, 'domain': DOMAIN}
         self.client._request.assert_called_with('Record.Remove', data)
 
+    def test_check_sub_domain(self):
+        from certbot_dns_dnspod.dns_dnspod_client import check_sub_domain
+        self.assertEqual(check_sub_domain(DOMAIN, 'www.' + DOMAIN), 'www')
+        self.assertEqual(check_sub_domain(DOMAIN, DOMAIN), '@')
+        self.assertEqual(check_sub_domain(DOMAIN, '.' + DOMAIN), '@')
+        self.assertEqual(check_sub_domain(DOMAIN, '*.' + DOMAIN), '*')
+
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

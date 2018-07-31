@@ -32,21 +32,30 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         self.mock_client = mock.MagicMock()
         # _get_dnspod_client | pylint: disable=protected-access
         self.auth._get_dnspod_client = mock.MagicMock(return_value=self.mock_client)
-        self.auth._find_domain = mock.MagicMock(return_value=DOMAIN)
 
     def test_perform(self):
+        self.mock_client.domain_list.return_value = {DOMAIN: mock.ANY}
         self.auth.perform([self.achall])
 
-        expected = [mock.call.ensure_record(DOMAIN, '_acme-challenge.'+DOMAIN, 'TXT', mock.ANY)]
+        expected = [mock.call.domain_list(), mock.call.ensure_record(DOMAIN, '_acme-challenge.'+DOMAIN, 'TXT', mock.ANY)]
         self.assertEqual(expected, self.mock_client.mock_calls)
+
+    def test_perform_fail_to_find_domain(self):
+        self.mock_client.domain_list.return_value = {}
+
+        self.assertRaises(errors.PluginError,
+                          self.auth.perform,
+                          [self.achall])
 
     def test_cleanup(self):
         # _attempt_cleanup | pylint: disable=protected-access
         self.auth._attempt_cleanup = True
+        self.auth._find_domain = mock.MagicMock(return_value=DOMAIN)
         self.auth.cleanup([self.achall])
 
         expected = [mock.call.remove_record_by_sub_domain(DOMAIN, '_acme-challenge.'+DOMAIN, 'TXT')]
         self.assertEqual(expected, self.mock_client.mock_calls)
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

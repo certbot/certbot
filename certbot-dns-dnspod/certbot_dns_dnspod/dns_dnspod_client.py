@@ -29,7 +29,7 @@ class DnspodClient(object):
         self.token = id + "," + token
         self._domain_list = None
 
-    def _request(self, url, data):
+    def _request(self, url, data): # pragma: no cover
         url = URL_PRE + url
         base_data = {}
         base_data["login_token"] = self.token
@@ -44,7 +44,7 @@ class DnspodClient(object):
         json = self._fetch_json(url, data, ret)
         return json
 
-    def _fetch_json(self, url, request_data, r):
+    def _fetch_json(self, url, request_data, r): # pragma: no cover
         respone_data = {}
         if r is None:
             return respone_data
@@ -120,7 +120,7 @@ class DnspodClient(object):
         record_list = self.get_record_list(domain, type)
         record_existent = next((item for item in record_list if item["name"] == sub_domain), None)
         if record_existent is None:
-            return
+            return # pragma: no cover
         else:
             record_id = record_existent["id"]
             self.remove_record(domain, record_id)

@@ -51,7 +51,7 @@ class Authenticator(dns_common.DNSAuthenticator):
         domain = self._find_domain(domain)
         self._get_dnspod_client().remove_record_by_sub_domain(domain, validation_name, 'TXT')
 
-    def _get_dnspod_client(self):
+    def _get_dnspod_client(self): # pragma: no cover
         return DnspodClient(self.credentials.conf('id'), self.credentials.conf('token'))
 
     def _find_domain(self, domain_name):
