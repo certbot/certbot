@@ -20,7 +20,7 @@ before_script:
 matrix:
   include:
     - python: "2.7"
-      env: TOXENV=cover NUMPROCESSES=2 FYI="this also tests py27"
+      env: TOXENV=cover FYI="this also tests py27"
     - python: "2.7"
       env: TOXENV=lint
     - python: "2.7"
