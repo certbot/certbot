@@ -63,7 +63,7 @@ class DnspodClient(object):
         :returns: valid respone data
         :rtype: dict
         """
-        response_data = {} # type: Dict
+        response_data = {} # # type: ignore
         if response is None:
             return response_data
         if response.status_code != 200:

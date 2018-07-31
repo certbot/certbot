@@ -55,7 +55,7 @@ class DnspodClientTest(unittest.TestCase):
 
     def test_ensure_record_add_record(self):
 
-        record_list = [] # type: List[Dict]
+        record_list = [] # # type: ignore
         self.client.get_record_list = mock.MagicMock(return_value=record_list)
         self.client.ensure_record(DOMAIN, self.record_name, self.record_type, self.record_content)
 
