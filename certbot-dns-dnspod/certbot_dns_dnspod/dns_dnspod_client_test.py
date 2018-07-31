@@ -54,8 +54,7 @@ class DnspodClientTest(unittest.TestCase):
         self.client.request.assert_called_with('Domain.List', data)
 
     def test_ensure_record_add_record(self):
-
-        record_list = [] # # type: ignore
+        record_list = [] # type: ignore
         self.client.get_record_list = mock.MagicMock(return_value=record_list)
         self.client.ensure_record(DOMAIN, self.record_name, self.record_type, self.record_content)
 
@@ -64,7 +63,6 @@ class DnspodClientTest(unittest.TestCase):
         self.client.request.assert_called_with('Record.Create', data)
 
     def test_ensure_record_modify_record(self):
-
         record_list = [{'name': self.record_prefix, 'id': self.record_id}]
         self.client.get_record_list = mock.MagicMock(return_value=record_list)
         self.client.ensure_record(DOMAIN, self.record_name, self.record_type, self.record_content)
@@ -74,7 +72,6 @@ class DnspodClientTest(unittest.TestCase):
         self.client.request.assert_called_with('Record.Modify', data)
 
     def test_remove_record_by_sub_domain(self):
-
         record_list = [{'name': self.record_prefix, 'id': self.record_id}]
         self.client.get_record_list = mock.MagicMock(return_value=record_list)
         self.client.remove_record_by_sub_domain(DOMAIN, self.record_name, self.record_type)
