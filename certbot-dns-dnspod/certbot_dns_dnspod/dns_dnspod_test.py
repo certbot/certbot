@@ -3,7 +3,6 @@
 import os
 import unittest
 
-import dns_dnspod
 import mock
 
 from certbot import errors
@@ -37,7 +36,8 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         self.mock_client.domain_list.return_value = {DOMAIN: mock.ANY}
         self.auth.perform([self.achall])
 
-        expected = [mock.call.domain_list(), mock.call.ensure_record(DOMAIN, '_acme-challenge.'+DOMAIN, 'TXT', mock.ANY)]
+        expected = [mock.call.domain_list(),
+                mock.call.ensure_record(DOMAIN, '_acme-challenge.'+DOMAIN, 'TXT', mock.ANY)]
         self.assertEqual(expected, self.mock_client.mock_calls)
 
     def test_perform_fail_to_find_domain(self):
