@@ -113,8 +113,7 @@ def _vhost_menu(domain, vhosts):
         code, tag = zope.component.getUtility(interfaces.IDisplay).menu(
             "We were unable to find a vhost with a ServerName "
             "or Address of {0}.{1}Which virtual host would you "
-            "like to choose?\n(note: conf files with multiple "
-            "vhosts are not yet supported)".format(domain, os.linesep),
+            "like to choose?".format(domain, os.linesep),
             choices, force_interactive=True)
     except errors.MissingCommandlineFlag:
         msg = (
