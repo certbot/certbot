@@ -21,7 +21,7 @@ matrix:
       sudo: required
       services: docker
     - python: "2.7"
-      env: TOXENV=cover NUMPROCESSES=2 FYI="this also tests py27"
+      env: TOXENV=cover FYI="this also tests py27"
     - sudo: required
       env: TOXENV=nginx_compat
       services: docker

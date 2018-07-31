@@ -8,8 +8,6 @@
 #
 # -e makes sure we fail fast and don't submit coveralls submit
 
-NUMPROCESSES=${NUMPROCESSES:=auto}
-
 if [ "xxx$1" = "xxx" ]; then
   pkgs="certbot acme certbot_apache certbot_dns_cloudflare certbot_dns_cloudxns certbot_dns_digitalocean certbot_dns_dnsimple certbot_dns_dnsmadeeasy certbot_dns_gehirn certbot_dns_google certbot_dns_linode certbot_dns_luadns certbot_dns_nsone certbot_dns_ovh certbot_dns_rfc2136 certbot_dns_route53 certbot_dns_sakuracloud certbot_nginx certbot_postfix letshelp_certbot"
 else
@@ -63,7 +61,7 @@ cover () {
   fi
 
   pkg_dir=$(echo "$1" | tr _ -)
-  pytest --cov "$pkg_dir" --cov-append --cov-report= --numprocesses "$NUMPROCESSES" --pyargs "$1"
+  pytest --cov "$pkg_dir" --cov-append --cov-report= --numprocesses "auto" --pyargs "$1"
   coverage report --fail-under="$min" --include="$pkg_dir/*" --show-missing
 }
 
