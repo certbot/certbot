@@ -402,7 +402,7 @@ class NginxParser(object):
                                    'ipv6only', 'reuseport', 'so_keepalive'))
                     i = 0
                     while i < len(directive):
-                        if directive[i].split('=')[0] not in exclude:
+                        if directive[i].split('=')[0] in exclude:
                             del directive[i]
                         else:
                             i += 1
