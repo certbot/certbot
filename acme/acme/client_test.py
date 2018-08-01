@@ -697,7 +697,6 @@ class ClientV2Test(ClientTestBase):
 
         self.order = messages.Order(
             identifiers=(self.authz.identifier, self.authz2.identifier),
-            status=messages.STATUS_PENDING,
             authorizations=(self.authzr.uri, self.authzr_uri2),
             finalize='https://www.letsencrypt-demo.org/acme/acct/1/order/1/finalize')
         self.orderr = messages.OrderResource(
