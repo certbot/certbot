@@ -509,10 +509,11 @@ class Revocation(jose.JSONObjectWithFields):
     reason = jose.Field('reason')
 
 
-class OrderBase(ResourceBody):
+class Order(ResourceBody):
     """Order Resource Body.
 
     :ivar list of .Identifier: List of identifiers for the certificate.
+    :ivar acme.messages.Status status:
     :ivar list of str authorizations: URLs of authorizations.
     :ivar str certificate: URL to download certificate as a fullchain PEM.
     :ivar str finalize: URL to POST to to request issuance once all
@@ -521,6 +522,8 @@ class OrderBase(ResourceBody):
     :ivar .Error error: Any error that occurred during finalization, if applicable.
     """
     identifiers = jose.Field('identifiers', omitempty=True)
+    status = jose.Field('status', decoder=Status.from_json,
+                        omitempty=True, default=STATUS_PENDING)
     authorizations = jose.Field('authorizations', omitempty=True)
     certificate = jose.Field('certificate', omitempty=True)
     finalize = jose.Field('finalize', omitempty=True)
@@ -530,16 +533,6 @@ class OrderBase(ResourceBody):
     @identifiers.decoder
     def identifiers(value):  # pylint: disable=missing-docstring,no-self-argument
         return tuple(Identifier.from_json(identifier) for identifier in value)
-
-
-class Order(OrderBase):
-    """Order Resource Body for ACMEv1
-
-    :ivar acme.messages.Status status:
-    """
-    status = jose.Field('status', decoder=Status.from_json,
-                        omitempty=True, default=STATUS_PENDING)
-
 
 class OrderResource(ResourceWithURI):
     """Order Resource.
@@ -556,8 +549,8 @@ class OrderResource(ResourceWithURI):
     authorizations = jose.Field('authorizations')
     fullchain_pem = jose.Field('fullchain_pem', omitempty=True)
 
-
 @Directory.register
-class NewOrder(OrderBase):
-    """New order for ACMEv2"""
-    resource_type = "new-order"
+class NewOrder(Order):
+    """New order."""
+    resource_type = 'new-order'
+    resource = fields.Resource(resource_type)

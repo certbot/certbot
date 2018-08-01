@@ -646,7 +646,7 @@ class ClientV2(ClientBase):
                 value=name))
         order = messages.NewOrder(identifiers=identifiers)
         response = self._post(self.directory['newOrder'], order)
-        body = messages.OrderBase.from_json(response.json())
+        body = messages.Order.from_json(response.json())
         authorizations = []
         for url in body.authorizations:
             authorizations.append(self._authzr_from_response(self.net.get(url), uri=url))
@@ -715,7 +715,7 @@ class ClientV2(ClientBase):
         while datetime.datetime.now() < deadline:
             time.sleep(1)
             response = self.net.get(orderr.uri)
-            body = messages.OrderBase.from_json(response.json())
+            body = messages.Order.from_json(response.json())
             if body.error is not None:
                 raise errors.IssuanceError(body.error)
             if body.certificate is not None:
