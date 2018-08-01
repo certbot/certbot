@@ -393,16 +393,19 @@ class NginxParser(object):
             for addr in new_vhost.addrs:
                 addr.default = False
                 addr.ipv6only = False
-            block = enclosing_block[new_vhost.path[-1]][1]
-            for i, directive in enumerate(block):
+            for directive in enclosing_block[new_vhost.path[-1]][1]:
                 if len(directive) > 0 and directive[0] == 'listen':
                     # Exclude one-time use parameters which will cause an error if repeated.
                     # https://nginx.org/en/docs/http/ngx_http_core_module.html#listen
                     exclude = set(('default_server', 'default', 'setfib', 'fastopen', 'backlog',
                                    'rcvbuf', 'sndbuf', 'accept_filter', 'deferred', 'bind',
                                    'ipv6only', 'reuseport', 'so_keepalive'))
-                    block[i] = nginxparser.UnspacedList(
-                        x for x in directive.spaced if x.split('=')[0] not in exclude)
+                    i = 0
+                    while i < len(directive):
+                        if directive[i].split('=')[0] not in exclude:
+                            del directive[i]
+                        else:
+                            i += 1
         return new_vhost
 
 
