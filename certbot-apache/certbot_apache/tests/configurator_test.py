@@ -30,6 +30,8 @@ from certbot_apache.tests import util
 class MultipleVhostsTest(util.ApacheTest):
     """Test two standard well-configured HTTP vhosts."""
 
+    os.access = mock.MagicMock(return_value=True)
+
 
     def setUp(self):  # pylint: disable=arguments-differ
         super(MultipleVhostsTest, self).setUp()
@@ -91,6 +93,17 @@ class MultipleVhostsTest(util.ApacheTest):
         self.config._check_aug_version = mock.Mock(return_value=False)
         self.assertRaises(
             errors.NotSupportedError, self.config.prepare)
+
+    @mock.patch("certbot_apache.parser.ApacheParser")
+    @mock.patch("certbot_apache.configurator.util.exe_exists")
+    def test_prepare_no_permissions(self, mock_exe_exists, _):
+        """Tests that a LocalPermissionsError is appropriately raised when we
+        do not have write access to `vhostroot`."""
+        mock_exe_exists.return_value = True
+        self.config.config_test = mock.Mock()
+        os.access.return_value = False
+        self.assertRaises(errors.LocalPermissionsError, self.config.prepare)
+        os.access.return_value = True
 
     def test_prepare_locked(self):
         server_root = self.config.conf("server-root")
