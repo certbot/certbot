@@ -145,6 +145,10 @@ class ApacheHttp01Test(util.ApacheTest):
                 domain="certbot.demo", account_key=self.account_key)]
         vhosts[0].enabled = False
         self.common_perform_test(achalls, vhosts)
+        matches = self.config.parser.find_dir(
+            "Include", vhosts[0].filep,
+            get_aug_path(self.config.parser.loc["default"]))
+        self.assertEqual(len(matches), 1)
 
     def combinations_perform_test(self, num_achalls, minor_version):
         """Test perform with the given achall count and Apache version."""
@@ -180,11 +184,6 @@ class ApacheHttp01Test(util.ApacheTest):
                 matches = self.config.parser.find_dir("Include",
                                                       self.http.challenge_conf_post,
                                                       vhost.path)
-                self.assertEqual(len(matches), 1)
-            if not vhost.enabled:
-                matches = self.config.parser.find_dir(
-                    "Include", vhost.filep,
-                    get_aug_path(self.config.parser.loc["default"]))
                 self.assertEqual(len(matches), 1)
 
         self.assertTrue(os.path.exists(challenge_dir))

@@ -6,6 +6,7 @@ from acme.magic_typing import Set  # pylint: disable=unused-import, no-name-in-m
 from certbot import errors
 from certbot.plugins import common
 from certbot_apache.obj import VirtualHost  # pylint: disable=unused-import
+from certbot_apache.parser import get_aug_path
 
 logger = logging.getLogger(__name__)
 
@@ -173,7 +174,6 @@ class ApacheHttp01(common.TLSSNI01):
                 vhost.path, "Include", self.challenge_conf_post)
 
             if not vhost.enabled:
-                from certbot_apache.parser import get_aug_path
                 self.configurator.parser.add_dir(
                     get_aug_path(self.configurator.parser.loc["default"]),
                     "Include", vhost.filep)
