@@ -294,12 +294,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     def get_parser(self):
         """Initializes the ApacheParser"""
         # If user provided vhost_root value in command line, use it
-        if self.conf("vhost-root"):
-            vhostroot = self.conf("vhost-root")
-        else:
-            vhostroot = None
         return parser.ApacheParser(
-            self.aug, self.option("server_root"), vhostroot,
+            self.aug, self.option("server_root"), self.conf("vhost-root"),
             self.version, configurator=self)
 
     def _wildcard_domain(self, domain):
