@@ -404,7 +404,8 @@ class NginxParser(object):
                     while i < len(directive):
                         if directive[i].split('=')[0] in exclude:
                             del directive[i]
-                            i = 0  # See: https://github.com/certbot/certbot/pull/6223#pullrequestreview-143019225
+                            # See: github.com/certbot/certbot/pull/6223#pullrequestreview-143019225
+                            i = 0
                         else:
                             i += 1
         return new_vhost
