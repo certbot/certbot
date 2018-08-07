@@ -25,7 +25,12 @@ if [ "$CERTBOT_OLDEST" = 1 ]; then
     if [ ! -f "$requirements" ]; then
         unset requirements
     fi
-    cp "$tools_dir/oldest_constraints.txt" "$test_constraints"
+    constraints="$pkg_dir/local-oldest-constraints.txt"
+    # packages like acme don't have any local oldest constraints
+    if [ ! -f "$constraints" ]; then
+        unset constraints
+    fi
+    "$tools_dir/merge_requirements.py" "$tools_dir/oldest_constraints.txt" "$constraints" > "$test_constraints"
 else
     repo_root=$(dirname "$tools_dir")
     certbot_requirements="$repo_root/letsencrypt-auto-source/pieces/dependency-requirements.txt"

@@ -53,7 +53,7 @@ def merge_requirements_files(*files):
     """
     d = {}
     for f in files:
-        d.update(read_file(f))
+        if f: d.update(read_file(f))
     print_requirements(d)
 
 

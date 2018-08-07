@@ -1,0 +1,6 @@
+acme[dev]==0.21.1
+certbot[dev]==0.21.1
+azure-mgmt-dns==2.0.0
+requests==2.16.5
+urllib3==1.21.1
+chardet==3.0.4
