@@ -147,7 +147,7 @@ class AzureClientConfigDummy(object):
         """Helper method to create dummy Azure configuration"""
 
         config_path = os.path.join(tempdir, 'azurecreds.json')
-        with open(config_path, 'w') as outfile:
+        with open(config_path, 'wb') as outfile:
             json.dump({
                 "clientId": "uuid",
                 "clientSecret": "uuid",
