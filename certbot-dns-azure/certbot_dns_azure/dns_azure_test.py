@@ -28,8 +28,8 @@ class AuthenticatorTest(test_util.TempDirTestCase,
 
         config_path = AzureClientConfigDummy.build_config(self.tempdir)
 
-        self.config = mock.MagicMock(credentials=config_path,
-                                     resource_group=RESOURCE_GROUP)  # don't wait during tests
+        self.config = mock.MagicMock(azure_credentials=config_path,
+                                     azure_resource_group=RESOURCE_GROUP)
 
         self.auth = Authenticator(self.config, "azure")
 
@@ -147,7 +147,7 @@ class AzureClientConfigDummy(object):
         """Helper method to create dummy Azure configuration"""
 
         config_path = os.path.join(tempdir, 'azurecreds.json')
-        with open(config_path, 'wb') as outfile:
+        with open(config_path, 'w') as outfile:
             json.dump({
                 "clientId": "uuid",
                 "clientSecret": "uuid",
@@ -160,6 +160,8 @@ class AzureClientConfigDummy(object):
                 "galleryEndpointUrl": "https://gallery.azure.com/",
                 "managementEndpointUrl": "https://management.core.windows.net/"
             }, outfile)
+
+        os.chmod(config_path, 0o600)
 
         return config_path
 
