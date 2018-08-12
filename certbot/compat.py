@@ -16,10 +16,10 @@ from certbot import errors
 
 try:
     # Linux specific
-    import fcntl
+    import fcntl # pylint: disable=import-error
 except ImportError:
     # Windows specific
-    import msvcrt
+    import msvcrt # pylint: disable=import-error
 
 def os_geteuid():
     """Get current user uid"""
