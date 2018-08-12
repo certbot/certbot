@@ -923,6 +923,11 @@ class ClientNetworkTest(unittest.TestCase):
         # pylint: disable=protected-access
         self.assertRaises(errors.ConflictError, self.net._check_response, self.response)
 
+    def test_check_response_malformed_body(self):
+        self.response.status_code = 503
+        # pylint: disable=protected-access
+        self.assertRaises(errors.MalformedBodyError, self.net._check_response, self.response)
+
     def test_check_response_jobj(self):
         self.response.json.return_value = {}
         for response_ct in [self.net.JSON_CONTENT_TYPE, 'foo']:
@@ -1121,12 +1126,6 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
     def test_post_wrong_post_response_nonce(self):
         self.available_nonces = [jose.b64encode(b'good'), b'f']
         self.assertRaises(errors.BadNonce, self.net.post, 'uri',
-                          self.obj, content_type=self.content_type)
-
-    def test_post_malformed_body(self):
-        self.response.status_code = 500
-        self.available_nonces = []
-        self.assertRaises(errors.MalformedBodyError, self.net.post, 'uri',
                           self.obj, content_type=self.content_type)
 
     def test_post_failed_retry(self):

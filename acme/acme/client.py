@@ -973,6 +973,8 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
 
         :raises .messages.Error: If server response body
             carries HTTP Problem (draft-ietf-appsawg-http-problem-00).
+        :raises .MalformedBodyError: If the server sends back a 503
+            indicating that the Akamai server failed to reach Let's Encrypt.
         :raises .ClientError: In case of other networking errors.
 
         """
@@ -986,6 +988,9 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
 
         if response.status_code == 409:
             raise errors.ConflictError(response.headers.get('Location'))
+
+        if response.status_code == 503:
+            raise errors.MalformedBodyError()
 
         if not response.ok:
             if jobj is not None:
@@ -1103,9 +1108,6 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
                 raise errors.BadNonce(nonce, error)
             logger.debug('Storing nonce: %s', nonce)
             self._nonces.add(decoded_nonce)
-        # Handles the case where Akamai fails to reach Let's Encrypt
-        elif response.status_code == 500:
-            raise errors.MalformedBodyError()
         else:
             raise errors.MissingNonce(response)
 
