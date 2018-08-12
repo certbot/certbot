@@ -10,6 +10,9 @@ Then logic chains are abstracted into single functions to be exposed to certbot.
 import os
 import select
 import sys
+import errno
+
+from certbot import errors
 
 try:
     # Linux specific
@@ -27,7 +30,7 @@ def os_geteuid():
         # Windows specific
         return '0'
 
-def readline_with_timeout(timeout):
+def readline_with_timeout(timeout, prompt):
     """Read user input and return the first line entered, or raise an exception after specified timeout"""
     try:
         # Linux specific
@@ -69,13 +72,16 @@ def release_locked_file(fd, path):
     # process C: open and lock a different file at the same path
     try:
         os.remove(path)
-    except PermissionError:
-        # Windows specific
-        #
-        # On Windows we cannot remove a file before closing its file descriptor.
-        # So we close first, and be exposed to the concurrency problem described in Linux section.
-        os.close(fd)
-        os.remove(path)
+    except OSError as err:
+        if err.errno in (errno.EACCES, errno.EPERM):
+            # Windows specific
+            #
+            # On Windows we cannot remove a file before closing its file descriptor.
+            # So we close first, and be exposed to the concurrency problem described in Linux section.
+            os.close(fd)
+            os.remove(path)
+        else:
+            raise
     finally:
         try:
             os.close(fd)

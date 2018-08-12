@@ -79,7 +79,7 @@ def input_with_timeout(prompt=None, timeout=36000.0):
         sys.stdout.write(prompt)
         sys.stdout.flush()
 
-    line = compat.readline_with_timeout(timeout)
+    line = compat.readline_with_timeout(timeout, prompt)
 
     if not line:
         raise EOFError
