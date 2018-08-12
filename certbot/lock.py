@@ -2,7 +2,6 @@
 import errno
 import logging
 import os
-import sys
 
 from certbot import compat
 from certbot import errors
