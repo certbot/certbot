@@ -184,7 +184,7 @@ to serve all files under specified web root ({0})."""
                             logger.info("Unable to change owner and uid of webroot directory")
                             logger.debug("Error was: %s", exception)
                     except OSError as exception:
-                        if exception.errno not in (errno.EEXIST, errno.EISDIR, errno.EACCES):
+                        if exception.errno not in (errno.EEXIST, errno.EISDIR):
                             raise errors.PluginError(
                                 "Couldn't create root for {0} http-01 "
                                 "challenge responses: {1}".format(name, exception))

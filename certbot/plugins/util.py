@@ -1,10 +1,13 @@
 """Plugin utilities."""
 import logging
 import os
+import re
 
 from certbot import util
 
 logger = logging.getLogger(__name__)
+
+windows_drive_path = re.compile(r'^[A-Z]:\\$')
 
 def get_prefixes(path):
     """Retrieves all possible path prefixes of a path, in descending order
@@ -20,8 +23,8 @@ def get_prefixes(path):
     while len(prefix) > 0:
         prefixes.append(prefix)
         prefix, _ = os.path.split(prefix)
-        # break once we hit '/'
-        if prefix == prefixes[-1]:
+        # break once we hit '/' or ~ 'C:\'
+        if prefix == prefixes[-1] or windows_drive_path.match(prefix):
             break
     return prefixes
 
