@@ -180,11 +180,11 @@ to serve all files under specified web root ({0})."""
                         # Set owner as parent directory if possible
                         try:
                             os.chown(prefix, stat_path.st_uid, stat_path.st_gid)
-                        except OSError as exception:
+                        except (OSError, AttributeError) as exception:
                             logger.info("Unable to change owner and uid of webroot directory")
                             logger.debug("Error was: %s", exception)
                     except OSError as exception:
-                        if exception.errno not in (errno.EEXIST, errno.EISDIR):
+                        if exception.errno not in (errno.EEXIST, errno.EISDIR, errno.EACCES):
                             raise errors.PluginError(
                                 "Couldn't create root for {0} http-01 "
                                 "challenge responses: {1}".format(name, exception))
