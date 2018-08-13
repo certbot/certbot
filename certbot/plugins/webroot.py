@@ -170,7 +170,9 @@ to serve all files under specified web root ({0})."""
             old_umask = os.umask(0o022)
             try:
                 stat_path = os.stat(path)
-                for prefix in sorted(util.get_prefixes(self.full_roots[name]), key=len):
+                # We ignore the last prefix in the next iteration,
+                # as it does not correspond to a folder path ('/' or 'C:')
+                for prefix in sorted(util.get_prefixes(self.full_roots[name])[:-1], key=len):
                     try:
                         # This is coupled with the "umask" call above because
                         # os.mkdir's "mode" parameter may not always work:
