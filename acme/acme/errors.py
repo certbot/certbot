@@ -26,7 +26,7 @@ class NonceError(ClientError):
     """Server response nonce error."""
 
 class MalformedBodyError(Error):
-    """Malformed response body."""
+    """Malformed response body received from Akamai."""
 
 class BadNonce(NonceError):
     """Bad nonce error."""
