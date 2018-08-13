@@ -48,22 +48,22 @@ class NamespaceConfigTest(test_util.ConfigTestCase):
         mock_constants.TEMP_CHECKPOINT_DIR = 't'
 
         self.assertEqual(
-            os.path.normpath(self.config.accounts_dir), 
+            os.path.normpath(self.config.accounts_dir),
             os.path.normpath(os.path.join(self.config.config_dir, 'acc/acme-server.org:443/new')))
         self.assertEqual(
-            os.path.normpath(self.config.backup_dir), 
+            os.path.normpath(self.config.backup_dir),
             os.path.normpath(os.path.join(self.config.work_dir, 'backups')))
         self.assertEqual(
-            os.path.normpath(self.config.csr_dir), 
+            os.path.normpath(self.config.csr_dir),
             os.path.normpath(os.path.join(self.config.config_dir, 'csr')))
         self.assertEqual(
-            os.path.normpath(self.config.in_progress_dir), 
+            os.path.normpath(self.config.in_progress_dir),
             os.path.normpath(os.path.join(self.config.work_dir, '../p')))
         self.assertEqual(
-            os.path.normpath(self.config.key_dir), 
+            os.path.normpath(self.config.key_dir),
             os.path.normpath(os.path.join(self.config.config_dir, 'keys')))
         self.assertEqual(
-            os.path.normpath(self.config.temp_checkpoint_dir), 
+            os.path.normpath(self.config.temp_checkpoint_dir),
             os.path.normpath(os.path.join(self.config.work_dir, 't')))
 
     def test_absolute_paths(self):
