@@ -3,7 +3,8 @@ Compatibility layer to run certbot both on Linux and Windows.
 
 The approach used here is similar to Modernizr for Web browsers.
 We do not check the plateform type to determine if a particular logic is supported.
-Instead, we apply a logic, and then fallback to another logic if first logic is not supported at runtime.
+Instead, we apply a logic, and then fallback to another logic if first logic 
+is not supported at runtime.
 
 Then logic chains are abstracted into single functions to be exposed to certbot.
 """
@@ -31,7 +32,7 @@ def os_geteuid():
         return '0'
 
 def readline_with_timeout(timeout, prompt):
-    """Read user input and return the first line entered, or raise an exception after specified timeout"""
+    """Read user input to return the first line entered, or raise after specified timeout"""
     try:
         # Linux specific
         #
@@ -44,7 +45,8 @@ def readline_with_timeout(timeout, prompt):
     except OSError:
         # Windows specific
         #
-        # No way with select to make a timeout to the user input on Windows, as select only support socket in this case.
+        # No way with select to make a timeout to the user input on Windows,
+        # as select only supports socket in this case.
         # So no timeout on Windows for now.
         return sys.stdin.readline()
 
@@ -77,7 +79,8 @@ def release_locked_file(fd, path):
             # Windows specific
             #
             # On Windows we cannot remove a file before closing its file descriptor.
-            # So we close first, and be exposed to the concurrency problem described in Linux section.
+            # So we close first, and be exposed to the concurrency problem 
+            # described in Linux section.
             os.close(fd)
             os.remove(path)
         else:
