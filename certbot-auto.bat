@@ -23,12 +23,12 @@ for /f "tokens=* USEBACKQ" %%x in (`python --version`) do set python_version=%%x
 if /i "%python_version:~0,9%" neq "Python 3." goto installpython3
 
 :: Install a custom venv and enable it
-set current_path=%~dp0
+set script_path=%~dp0
 python -m venv %current_path%\venv-win-certbot-auto
 call %current_path%\venv-win-certbot-auto\Scripts\activate.bat
 
 :: Update cerbot
-pip install --upgrade -e . > nul 2> nul
+pip install --upgrade -e %script_path% > nul 2> nul
 
 :: Execute certbot with given arguments
 certbot %*
