@@ -23,6 +23,7 @@ from acme.magic_typing import Any, Dict, Optional
 
 import certbot
 
+from certbot import compat
 from certbot import constants
 from certbot import crypto_util
 from certbot import errors
@@ -36,6 +37,10 @@ import certbot.plugins.enhancements as enhancements
 import certbot.plugins.selection as plugin_selection
 
 logger = logging.getLogger(__name__)
+
+# For windows, shell without administrative right cannot create symlinks, which is a problem.
+# So we check the rights before continuing.
+compat.raise_for_non_administrative_windows_user()
 
 # Global, to save us from a lot of argument passing within the scope of this module
 helpful_parser = None  # type: Optional[HelpfulArgumentParser]

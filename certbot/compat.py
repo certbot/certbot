@@ -12,6 +12,7 @@ import os
 import select
 import sys
 import errno
+import ctypes
 
 from certbot import errors
 
@@ -21,6 +22,18 @@ try:
 except ImportError:
     # Windows specific
     import msvcrt # pylint: disable=import-error
+
+def raise_for_non_administrative_windows_user():
+    on_windows = False
+    try:
+        os.geteuid()
+    except AttributeError:
+        on_windows = True
+        pass
+
+    # Windows specific
+    if on_windows and ctypes.windll.shell32.IsUserAnAdmin() == 0:
+        raise ValueError('Error, certbot must be run on a shell with administrative rights.')
 
 def os_geteuid():
     """Get current user uid"""
