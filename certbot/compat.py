@@ -25,7 +25,7 @@ except ImportError:
 
 def raise_for_non_administrative_windows_rights():
     """
-    On Windows, raise if current shell does not have the administrative rights. 
+    On Windows, raise if current shell does not have the administrative rights.
     Do nothing on Linux.
     """
     if hasattr(ctypes, 'windll'):
