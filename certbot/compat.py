@@ -24,7 +24,10 @@ except ImportError:
     import msvcrt # pylint: disable=import-error
 
 def raise_for_non_administrative_windows_rights():
-    """On Windows, raise if current shell does not have the administrative rights. Do nothing on Linux."""
+    """
+    On Windows, raise if current shell does not have the administrative rights. 
+    Do nothing on Linux.
+    """
     if hasattr(ctypes, 'windll'):
         windll = getattr(ctypes, 'windll')
         if windll.shell32.IsUserAnAdmin() == 0:
