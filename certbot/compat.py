@@ -23,15 +23,17 @@ except ImportError:
     # Windows specific
     import msvcrt # pylint: disable=import-error
 
-def raise_for_non_administrative_windows_user():
+try:
+    # Windows specific
+    from ctypes import windll
+except ImportError:
+    # Linux specific
+    pass
+
+def raise_for_non_administrative_windows_rights():
     """On Windows, raise if current shell does not have the administrative rights. Do nothing on Linux."""
-    try:
-        # Windows specific
-        if ctypes.windll.shell32.IsUserAnAdmin() == 0:
-            raise ValueError('Error, certbot must be run on a shell with administrative rights.')
-    except AttributeError:
-        # Linux specific
-        pass
+    if windll and windll.shell32.IsUserAnAdmin() == 0:
+        raise ValueError('Error, certbot must be run on a shell with administrative rights.')
 
 def os_geteuid():
     """Get current user uid"""

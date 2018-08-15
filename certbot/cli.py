@@ -40,7 +40,7 @@ logger = logging.getLogger(__name__)
 
 # For windows, shell without administrative right cannot create symlinks, which is a problem.
 # So we check the rights before continuing.
-compat.raise_for_non_administrative_windows_user()
+compat.raise_for_non_administrative_windows_rights()
 
 # Global, to save us from a lot of argument passing within the scope of this module
 helpful_parser = None  # type: Optional[HelpfulArgumentParser]
