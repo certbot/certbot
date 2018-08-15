@@ -1334,6 +1334,11 @@ def main(cli_args=sys.argv[1:]):
     :raises errors.Error: error if plugin command is not supported
 
     """
+
+    # On windows, shell without administrative right cannot create symlinks required by certbot.
+    # So we check the rights before continuing.
+    compat.raise_for_non_administrative_windows_rights()
+
     log.pre_arg_parse_setup()
 
     plugins = plugins_disco.PluginsRegistry.find_all()
