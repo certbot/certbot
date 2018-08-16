@@ -10,6 +10,9 @@
 
 set -eux
 
+# Check that python executable is available in the PATH. Fail immediatly if not.
+command -v python > /dev/null || (echo "Error, python executable is not in the PATH" && exit 1)
+
 . ./tests/integration/_common.sh
 export PATH="$PATH:/usr/sbin"  # /usr/sbin/nginx
 
