@@ -359,7 +359,7 @@ def _renew_describe_results(config, renew_successes, renew_failures,
         notify_error(report(renew_failures, "failure"))
 
     if parse_failures:
-        notify("\nAdditionally, the following renewal configuration files "
+        notify("\nAdditionally, the following renewal configurations "
                "were invalid: ")
         notify(report(parse_failures, "parsefail"))
 

@@ -116,8 +116,9 @@ class MultipleVhostsTest(util.ApacheTest):
         ApacheConfigurator.add_parser_arguments(mock.MagicMock())
 
     def test_constant(self):
-        self.assertEqual(self.config.constant("server_root"), "/etc/apache2")
-        self.assertEqual(self.config.constant("nonexistent"), None)
+        self.assertTrue("debian_apache_2_4/multiple_vhosts/apache" in
+                        self.config.option("server_root"))
+        self.assertEqual(self.config.option("nonexistent"), None)
 
     @certbot_util.patch_get_utility()
     def test_get_all_names(self, mock_getutility):
@@ -651,22 +652,10 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertEqual(ssl_vhost_slink.name, "nonsym.link")
 
     def test_make_vhost_ssl_nonexistent_vhost_path(self):
-        def conf_side_effect(arg):
-            """ Mock function for ApacheConfigurator.conf """
-            confvars = {
-                "vhost-root": "/tmp/nonexistent",
-                "le_vhost_ext": "-le-ssl.conf",
-                "handle-sites": True}
-            return confvars[arg]
-
-        with mock.patch(
-                "certbot_apache.configurator.ApacheConfigurator.conf"
-        ) as mock_conf:
-            mock_conf.side_effect = conf_side_effect
-            ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[1])
-            self.assertEqual(os.path.dirname(ssl_vhost.filep),
-                             os.path.dirname(os.path.realpath(
-                                 self.vh_truth[1].filep)))
+        ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[1])
+        self.assertEqual(os.path.dirname(ssl_vhost.filep),
+                            os.path.dirname(os.path.realpath(
+                                self.vh_truth[1].filep)))
 
     def test_make_vhost_ssl(self):
         ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[0])
@@ -1583,7 +1572,7 @@ class AugeasVhostsTest(util.ApacheTest):
                           broken_vhost)
 
 class MultiVhostsTest(util.ApacheTest):
-    """Test vhosts with illegal names dependent on augeas version."""
+    """Test configuration with multiple virtualhosts in a single file."""
     # pylint: disable=protected-access
 
     def setUp(self):  # pylint: disable=arguments-differ
@@ -1703,7 +1692,7 @@ class InstallSslOptionsConfTest(util.ApacheTest):
                                              self.config.updated_mod_ssl_conf_digest)
 
     def _current_ssl_options_hash(self):
-        return crypto_util.sha256sum(self.config.constant("MOD_SSL_CONF_SRC"))
+        return crypto_util.sha256sum(self.config.option("MOD_SSL_CONF_SRC"))
 
     def _assert_current_file(self):
         self.assertTrue(os.path.isfile(self.config.mod_ssl_conf))
@@ -1739,7 +1728,7 @@ class InstallSslOptionsConfTest(util.ApacheTest):
             self.assertFalse(mock_logger.warning.called)
         self.assertTrue(os.path.isfile(self.config.mod_ssl_conf))
         self.assertEqual(crypto_util.sha256sum(
-            self.config.constant("MOD_SSL_CONF_SRC")),
+            self.config.option("MOD_SSL_CONF_SRC")),
             self._current_ssl_options_hash())
         self.assertNotEqual(crypto_util.sha256sum(self.config.mod_ssl_conf),
             self._current_ssl_options_hash())
@@ -1755,7 +1744,7 @@ class InstallSslOptionsConfTest(util.ApacheTest):
                 "%s has been manually modified; updated file "
                 "saved to %s. We recommend updating %s for security purposes.")
         self.assertEqual(crypto_util.sha256sum(
-            self.config.constant("MOD_SSL_CONF_SRC")),
+            self.config.option("MOD_SSL_CONF_SRC")),
             self._current_ssl_options_hash())
         # only print warning once
         with mock.patch("certbot.plugins.common.logger") as mock_logger:
