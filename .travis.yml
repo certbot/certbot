@@ -17,19 +17,19 @@ before_script:
 matrix:
   include:
     - python: "2.7"
-      env: TOXENV=py27-certbot-oldest BOULDER_INTEGRATION=v1 INTEGRATION=nginx
+      env: TOXENV=py27-certbot-oldest BOULDER_INTEGRATION=v1 INTEGRATION_TEST=certbot
       sudo: required
       services: docker
     - python: "2.7"
-      env: TOXENV=py27-certbot-oldest BOULDER_INTEGRATION=v2 INTEGRATION=nginx
+      env: TOXENV=py27-certbot-oldest BOULDER_INTEGRATION=v2 INTEGRATION_TEST=certbot
       sudo: required
       services: docker
     - python: "2.7"
-      env: TOXENV=py27-nginx-oldest BOULDER_INTEGRATION=v1 INTEGRATION=nginx
+      env: TOXENV=py27-nginx-oldest BOULDER_INTEGRATION=v1 INTEGRATION_TEST=nginx
       sudo: required
       services: docker
     - python: "2.7"
-      env: TOXENV=py27-nginx-oldest BOULDER_INTEGRATION=v2 INTEGRATION=nginx
+      env: TOXENV=py27-nginx-oldest BOULDER_INTEGRATION=v2 INTEGRATION_TEST=nginx
       sudo: required
       services: docker
 
