@@ -134,6 +134,12 @@ class BackwardsCompatibleClientV2Test(ClientTestBase):
         client = self._init()
         self.assertEqual(client.acme_version, 2)
 
+    def test_query_registration_client_v2(self):
+        self.response.json.return_value = DIRECTORY_V2.to_json()
+        client = self._init()
+        self.response.json.return_value = self.regr.body.to_json()
+        self.assertEqual(self.regr, client.query_registration(self.regr))
+
     def test_forwarding(self):
         self.response.json.return_value = DIRECTORY_V1.to_json()
         client = self._init()
@@ -705,6 +711,11 @@ class ClientV2Test(ClientTestBase):
         self.response.headers['Location'] = self.regr.uri
 
         self.assertEqual(self.regr, self.client.new_account(self.new_reg))
+
+    def test_new_account_conflict(self):
+        self.response.status_code = http_client.OK
+        self.response.headers['Location'] = self.regr.uri
+        self.assertRaises(errors.ConflictError, self.client.new_account, self.new_reg)
 
     def test_new_order(self):
         order_response = copy.deepcopy(self.response)

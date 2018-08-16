@@ -65,10 +65,8 @@ From our official releases:
 - https://www.archlinux.org/packages/community/any/certbot-dns-dnsimple
 - https://www.archlinux.org/packages/community/any/certbot-dns-dnsmadeeasy
 - https://www.archlinux.org/packages/community/any/certbot-dns-google
-- https://www.archlinux.org/packages/community/any/certbot-dns-linode
 - https://www.archlinux.org/packages/community/any/certbot-dns-luadns
 - https://www.archlinux.org/packages/community/any/certbot-dns-nsone
-- https://www.archlinux.org/packages/community/any/certbot-dns-ovh
 - https://www.archlinux.org/packages/community/any/certbot-dns-rfc2136
 - https://www.archlinux.org/packages/community/any/certbot-dns-route53
 
@@ -95,7 +93,6 @@ In Fedora 23+.
 - https://apps.fedoraproject.org/packages/python-certbot-dns-dnsimple
 - https://apps.fedoraproject.org/packages/python-certbot-dns-dnsmadeeasy
 - https://apps.fedoraproject.org/packages/python-certbot-dns-google
-- https://apps.fedoraproject.org/packages/python-certbot-dns-linode
 - https://apps.fedoraproject.org/packages/python-certbot-dns-luadns
 - https://apps.fedoraproject.org/packages/python-certbot-dns-nsone
 - https://apps.fedoraproject.org/packages/python-certbot-dns-rfc2136

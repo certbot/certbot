@@ -353,7 +353,7 @@ def _describe_certs(config, parsed_certs, parse_failures):
             notify("Found the following {0}certs:".format(match))
             notify(_report_human_readable(config, parsed_certs))
         if parse_failures:
-            notify("\nThe following renewal configuration files "
+            notify("\nThe following renewal configurations "
                "were invalid:")
             notify(_report_lines(parse_failures))
 
