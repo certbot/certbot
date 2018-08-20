@@ -108,3 +108,12 @@ class ConfigurationError(Error):
 
 class MissingCommandlineFlag(Error):
     """A command line argument was missing in noninteractive usage"""
+
+# OCSP errors:
+
+class OCSPRevokedError(Error):
+    """Certificate is revoked based on the OCSP response"""
+
+
+class OCSPRequestError(Error):
+    """Error in OCSP request"""

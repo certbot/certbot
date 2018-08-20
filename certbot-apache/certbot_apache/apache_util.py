@@ -1,7 +1,10 @@
 """ Utility functions for certbot-apache plugin """
 import binascii
 import os
+import struct
+import time
 
+from certbot import crypto_util
 from certbot import util
 
 def get_mod_deps(mod_name):
@@ -104,3 +107,44 @@ def parse_define_file(filepath, varname):
 def unique_id():
     """ Returns an unique id to be used as a VirtualHost identifier"""
     return binascii.hexlify(os.urandom(16)).decode("utf-8")
+
+
+def get_apache_ocsp_struct(ttl, ocsp_response):
+    """Create Apache OCSP response structure to be used in response cache
+
+    :param int ttl: Time-To-Live in seocnds
+    :param str ocsp_response: OCSP response data
+
+    :returns: Apache OCSP structure
+    :rtype: `str`
+
+    """
+
+    ttl = time.time() + ttl
+    # As microseconds
+    ttl_struct = struct.pack('l', ttl*1000000)
+    return "\x01".join([ttl_struct, ocsp_response])
+
+
+def certid_sha1_hex(cert_path):
+    """Hex representation of certificate SHA1 fingerprint
+
+    :param str cert_path: File path to certificate
+
+    :returns: Hex representation SHA1 fingerprint of certificate
+    :rtype: `str`
+
+    """
+    return binascii.hexlify(certid_sha1(cert_path))
+
+
+def certid_sha1(cert_path):
+    """SHA1 fingerprint of certificate
+
+    :param str cert_path: File path to certificate
+
+    :returns: SHA1 fingerprint bytestring
+    :rtype: `str`
+
+    """
+    return crypto_util.cert_sha1_fingerprint(cert_path)
