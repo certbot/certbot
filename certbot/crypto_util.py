@@ -232,7 +232,7 @@ def load_cert(cert_path):
     :rtype `cryptography.x509`:
     :returns: x509 certificate object
     """
-    with open(cert_path, 'r') as fh:
+    with open(cert_path, 'rb') as fh:
         cert_pem = fh.read()
     return x509.load_pem_x509_certificate(cert_pem, default_backend())
 
