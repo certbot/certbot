@@ -39,7 +39,7 @@ class OCSPPrefetchTest(util.ApacheTest):
         with mock.patch(ver_path) as mock_ver:
             mock_ver.return_value = (2, 4, 10)
             with mock.patch(cry_path) as mock_cry:
-                mock_cry.return_value = 'j\x056\x1f\xfa\x08B\xe8D\xa1Bn\xeb*A\xebWx\xdd\xfe'
+                mock_cry.return_value = b'j\x056\x1f\xfa\x08B\xe8D\xa1Bn\xeb*A\xebWx\xdd\xfe'
                 return func(*args, **kwargs)
 
     @mock.patch("certbot_apache.configurator.ApacheConfigurator.restart")
@@ -102,15 +102,13 @@ class OCSPPrefetchTest(util.ApacheTest):
             self.assertFalse(mock_refresh.called)
 
     @mock.patch("certbot_apache.configurator.ApacheConfigurator.config_test")
-    @mock.patch("certbot_apache.configurator.ApacheConfigurator._reload")
-    def test_ocsp_prefetch_backup_db(self, mock_reload, _mock_test):
+    def test_ocsp_prefetch_backup_db(self, _mock_test):
         db_path = os.path.join(self.config_dir, "ocsp", "ocsp_cache.db")
         def ocsp_del_db():
             """Side effect of _reload() that deletes the DBM file, like Apache
             does when restarting"""
             os.remove(db_path)
             self.assertFalse(os.path.isfile(db_path))
-        mock_reload.side_effect = ocsp_del_db
 
         self.config._ensure_ocsp_dirs()
         odbm = dbm.open(db_path[:-3], 'c')
@@ -119,7 +117,9 @@ class OCSPPrefetchTest(util.ApacheTest):
 
         # Mock OCSP prefetch dict to signify that there should be a db
         self.config._ocsp_prefetch = {"mock": "value"}
-        self.config.restart()
+        rel_path = "certbot_apache.configurator.ApacheConfigurator._reload"
+        with mock.patch(rel_path, side_effect=ocsp_del_db) as mock_reload:
+            self.config.restart()
 
         odbm = dbm.open(db_path[:-3], 'c')
         self.assertEquals(odbm["mock_key"], "mock_value")
