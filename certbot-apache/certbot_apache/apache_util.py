@@ -1,6 +1,7 @@
 """ Utility functions for certbot-apache plugin """
 import binascii
 import os
+import six
 import struct
 import time
 
@@ -122,8 +123,8 @@ def get_apache_ocsp_struct(ttl, ocsp_response):
 
     ttl = time.time() + ttl
     # As microseconds
-    ttl_struct = struct.pack('l', ttl*1000000)
-    return "\x01".join([ttl_struct, ocsp_response])
+    ttl_struct = struct.pack('l', int(ttl*1000000))
+    return b'\x01'.join([ttl_struct, ocsp_response])
 
 
 def certid_sha1_hex(cert_path):
@@ -135,7 +136,10 @@ def certid_sha1_hex(cert_path):
     :rtype: `str`
 
     """
-    return binascii.hexlify(certid_sha1(cert_path))
+    sha1_hex = binascii.hexlify(certid_sha1(cert_path))
+    if isinstance(sha1_hex, six.binary_type):
+        return sha1_hex.decode('utf-8')
+    return sha1_hex
 
 
 def certid_sha1(cert_path):

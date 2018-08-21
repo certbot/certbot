@@ -75,7 +75,7 @@ class OCSPPrefetchTest(util.ApacheTest):
         odbm = dbm.open(os.path.join(self.config_dir, "ocsp", "ocsp_cache"), 'c')
         self.assertEquals(len(odbm.keys()), 1)
         # The actual response data is prepended by Apache timestamp
-        self.assertTrue(odbm[odbm.keys()[0]].endswith("MOCKRESPONSE"))
+        self.assertTrue(odbm[odbm.keys()[0]].endswith(b'MOCKRESPONSE'))
         odbm.close()
 
         with mock.patch(ocsp_path, side_effect=ocsp_req_mock) as mock_ocsp:
@@ -112,7 +112,7 @@ class OCSPPrefetchTest(util.ApacheTest):
 
         self.config._ensure_ocsp_dirs()
         odbm = dbm.open(db_path[:-3], 'c')
-        odbm["mock_key"] = "mock_value"
+        odbm["mock_key"] = b'mock_value'
         odbm.close()
 
         # Mock OCSP prefetch dict to signify that there should be a db
@@ -122,7 +122,7 @@ class OCSPPrefetchTest(util.ApacheTest):
             self.config.restart()
 
         odbm = dbm.open(db_path[:-3], 'c')
-        self.assertEquals(odbm["mock_key"], "mock_value")
+        self.assertEquals(odbm["mock_key"], b'mock_value')
         odbm.close()
 
     @mock.patch("certbot_apache.configurator.ApacheConfigurator.config_test")
