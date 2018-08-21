@@ -2562,7 +2562,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             db.close()
         else:
             logger.warning("Encountered an issue while trying to prefetch OCSP "
-                           "response for certificate: ", cert_path)
+                           "response for certificate: %s", cert_path)
 
     def _ocsp_response_dbm(self, workfile):
         """Creates a dbm entry for OCSP response data

@@ -24,21 +24,26 @@ class OCSPBase(object):
         :returns: (OCSP server URL or None, OCSP server host or None)
 
         """
-        url = None
-        cert = crypto_util.load_cert(cert_path)
-        ocsp_authinfo = cert.extensions.get_extension_for_oid(
-            ExtensionOID.AUTHORITY_INFORMATION_ACCESS)
-        for obj in ocsp_authinfo.value:
-            if obj.access_method == AuthorityInformationAccessOID.OCSP:
-                url = obj.access_location.value
-
-        url = url.strip()
+        url = self._ocsp_host_from_cert(cert_path)
+        if url:
+            url = url.strip()
         host = url.partition("://")[2].rstrip("/")
         if host:
             return url, host
         else:
             logger.info("Cannot process OCSP host from URL (%s) in cert at %s", url, cert_path)
             return None, None
+
+    def _ocsp_host_from_cert(self, cert_path):
+        """Helper method for determine_ocsp_server to read the actual OCSP
+        server information from a certificate file"""
+        cert = crypto_util.load_cert(cert_path)
+        ocsp_authinfo = cert.extensions.get_extension_for_oid(
+            ExtensionOID.AUTHORITY_INFORMATION_ACCESS)
+        for obj in ocsp_authinfo.value:
+            if obj.access_method == AuthorityInformationAccessOID.OCSP:
+                return obj.access_location.value
+        return None
 
     def _request_status(self, response):
         """Checks that the OCSP response was successful from the text output"""
