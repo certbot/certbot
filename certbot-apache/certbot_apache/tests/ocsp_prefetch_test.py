@@ -1,5 +1,4 @@
 """Test for certbot_apache.configurator OCSP Prefetching functionality"""
-import dbm
 import os
 import unittest
 import mock
@@ -7,6 +6,12 @@ import mock
 import six  # pylint: disable=unused-import
 
 from certbot_apache.tests import util
+
+try:
+    import dbm.ndbm as dbm  # pragma: no cover
+except ImportError:  # pragma: no cover
+    # dbm.ndbm only available on Python3
+    import dbm  # pragma: no cover
 
 
 class OCSPPrefetchTest(util.ApacheTest):

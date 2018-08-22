@@ -138,8 +138,8 @@ def certid_sha1_hex(cert_path):
     """
     sha1_hex = binascii.hexlify(certid_sha1(cert_path))
     if isinstance(sha1_hex, six.binary_type):
-        return sha1_hex.decode('utf-8')
-    return sha1_hex
+        return sha1_hex.decode('utf-8')  # pragma: no cover
+    return sha1_hex  # pragma: no cover
 
 
 def certid_sha1(cert_path):

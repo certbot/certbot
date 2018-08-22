@@ -39,6 +39,12 @@ from certbot_apache import tls_sni_01
 
 from collections import defaultdict
 
+try:
+    import dbm.ndbm as dbm  # pragma: no cover
+except ImportError:  # pragma: no cover
+    # dbm.ndbm only available on Python3
+    import dbm  # pragma: no cover
+
 logger = logging.getLogger(__name__)
 
 
