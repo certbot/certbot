@@ -2523,6 +2523,18 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 os.makedirs(path)
                 os.chmod(path, 0o755)
 
+    def _ocsp_db_path(self):
+        """Helper function to determine OCSP database path. This is required
+        as the underlaying DBM implementation behaves a bit differently
+        regarding the db file paths"""
+
+        cache_path = os.path.join(self.config.config_dir, "ocsp", "ocsp_cache")
+
+        if hasattr(dbm, 'library') and getattr(dbm, 'library') == "Berkeley DB":
+            return cache_path
+        return cache_path+".db"
+
+
     def _ocsp_refresh_if_needed(self, pf_obj):
         """Refreshes OCSP response for a certiifcate if it's due
 
@@ -2554,9 +2566,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             apache_util.certid_sha1_hex(cert_path))
         if handler.ocsp_request_to_file(ocsp_workfile):
             # Guaranteed good response
-            cache_path = os.path.join(self.config.config_dir, "ocsp", "ocsp_cache")
-            # dbm.open automatically adds the file extension, it will be
-            db = dbm.open(cache_path, "c")
+            db = dbm.open(self._ocsp_db_path(), "c")
             cert_sha = apache_util.certid_sha1(cert_path)
             db[cert_sha] = self._ocsp_response_dbm(ocsp_workfile)
             db.close()
