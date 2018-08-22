@@ -7,11 +7,14 @@ import six  # pylint: disable=unused-import
 
 from certbot_apache.tests import util
 
+
 try:
-    import dbm.ndbm as dbm  # pragma: no cover
-except ImportError:  # pragma: no cover
-    # dbm.ndbm only available on Python3
-    import dbm  # pragma: no cover
+    import anydbm as dbm
+    dbm._names = ['dbhash', 'dbm']
+except ImportError:
+    # Not available in Py3
+    import dbm
+    dbm._names = ['dbm.ndbm']
 
 
 class OCSPPrefetchTest(util.ApacheTest):
