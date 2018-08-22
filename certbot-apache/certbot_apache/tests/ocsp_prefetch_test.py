@@ -165,6 +165,12 @@ class OCSPPrefetchTest(util.ApacheTest):
         self.config.update_ocsp_prefetch(None)
         self.assertFalse(mock_refresh.called)
 
+    def test_dbm_format(self):
+        dbm_dir = dir(dbm)
+        dbm_dir.append(dbm.library)
+        self.assertEquals(1, dbm_dir)
+
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
