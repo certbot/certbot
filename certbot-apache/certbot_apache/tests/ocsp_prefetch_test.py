@@ -8,18 +8,22 @@ import six  # pylint: disable=unused-import
 from certbot_apache.tests import util
 
 
-try:
-    import anydbm as dbm
-    dbm._names = ['dbhash', 'dbm']
-except ImportError:
-    # Not available in Py3
-    import dbm
-    dbm._names = ['dbm.ndbm']
-
-
 class OCSPPrefetchTest(util.ApacheTest):
     """Tests for OCSP Prefetch feature"""
     # pylint: disable=protected-access
+
+    def openDBM(self, path):
+        self.config._ensure_ocsp_dirs()
+        try:
+            import dbm.ndbm as dbm  # pragma: no cover
+            d = dbm.open(path, 'c')
+        except ImportError:  # pragma: no cover
+            # dbm.ndbm only available on Python3
+            import anydbm  # pragma: no cover
+            anydbm._names = ["dbm"]
+            d = anydbm.open(path, 'c')
+        return d
+
 
     def setUp(self):  # pylint: disable=arguments-differ
         super(OCSPPrefetchTest, self).setUp()
@@ -169,8 +173,10 @@ class OCSPPrefetchTest(util.ApacheTest):
         self.assertFalse(mock_refresh.called)
 
     def test_dbm_format(self):
-        dbm_dir = dir(dbm)
-        dbm_dir.append(dbm.library)
+        db_path = os.path.join(self.config_dir, "ocsp", "ocsp_cache.db")
+        dobject = self.openDBM(db_path)
+        dbm_dir = dir(dobject)
+        dbm_dir.append(dobject.__module__)
         self.assertEquals(1, dbm_dir)
 
 
