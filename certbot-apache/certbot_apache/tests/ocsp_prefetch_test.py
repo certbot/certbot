@@ -12,19 +12,6 @@ class OCSPPrefetchTest(util.ApacheTest):
     """Tests for OCSP Prefetch feature"""
     # pylint: disable=protected-access
 
-    def openDBM(self, path):
-        self.config._ensure_ocsp_dirs()
-        try:
-            import dbm.ndbm as dbm  # pragma: no cover
-            d = dbm.open(path, 'c')
-        except ImportError:  # pragma: no cover
-            # dbm.ndbm only available on Python3
-            import anydbm  # pragma: no cover
-            anydbm._names = ["dbm"]
-            d = anydbm.open(path, 'c')
-        return d
-
-
     def setUp(self):  # pylint: disable=arguments-differ
         super(OCSPPrefetchTest, self).setUp()
 
@@ -73,6 +60,7 @@ class OCSPPrefetchTest(util.ApacheTest):
     @mock.patch("certbot_apache.constants.OCSP_INTERNAL_TTL", 0)
     @mock.patch("certbot_apache.configurator.ApacheConfigurator.restart")
     def test_ocsp_prefetch_refresh(self, _mock_restart):
+        db_path = os.path.join(self.config_dir, "ocsp", "ocsp_cache")
         def ocsp_req_mock(workfile):
             """Method to mock the OCSP request and write response to file"""
             with open(workfile, 'w') as fh:
@@ -84,11 +72,12 @@ class OCSPPrefetchTest(util.ApacheTest):
             self.call_mocked(self.config.enable_ocsp_prefetch,
                                 self.lineage,
                                 ["ocspvhost.com"])
-        odbm = dbm.open(os.path.join(self.config_dir, "ocsp", "ocsp_cache"), 'c')
+
+        odbm = self.config._ocsp_dbm_open(db_path)
         self.assertEquals(len(odbm.keys()), 1)
         # The actual response data is prepended by Apache timestamp
         self.assertTrue(odbm[odbm.keys()[0]].endswith(b'MOCKRESPONSE'))
-        odbm.close()
+        self.config._ocsp_dbm_close(odbm)
 
         with mock.patch(ocsp_path, side_effect=ocsp_req_mock) as mock_ocsp:
             self.call_mocked(self.config.update_ocsp_prefetch, None)
@@ -115,17 +104,18 @@ class OCSPPrefetchTest(util.ApacheTest):
 
     @mock.patch("certbot_apache.configurator.ApacheConfigurator.config_test")
     def test_ocsp_prefetch_backup_db(self, _mock_test):
-        db_path = os.path.join(self.config_dir, "ocsp", "ocsp_cache.db")
+        db_path = os.path.join(self.config_dir, "ocsp", "ocsp_cache")
         def ocsp_del_db():
             """Side effect of _reload() that deletes the DBM file, like Apache
             does when restarting"""
-            os.remove(db_path)
-            self.assertFalse(os.path.isfile(db_path))
+            full_db_path = db_path + ".db"
+            os.remove(full_db_path)
+            self.assertFalse(os.path.isfile(full_db_path))
 
         self.config._ensure_ocsp_dirs()
-        odbm = dbm.open(db_path[:-3], 'c')
+        odbm = self.config._ocsp_dbm_open(db_path)
         odbm["mock_key"] = b'mock_value'
-        odbm.close()
+        self.config._ocsp_dbm_close(odbm)
 
         # Mock OCSP prefetch dict to signify that there should be a db
         self.config._ocsp_prefetch = {"mock": "value"}
@@ -133,9 +123,9 @@ class OCSPPrefetchTest(util.ApacheTest):
         with mock.patch(rel_path, side_effect=ocsp_del_db) as mock_reload:
             self.config.restart()
 
-        odbm = dbm.open(db_path[:-3], 'c')
+        odbm = self.config._ocsp_dbm_open(db_path)
         self.assertEquals(odbm["mock_key"], b'mock_value')
-        odbm.close()
+        self.config._ocsp_dbm_close(odbm)
 
     @mock.patch("certbot_apache.configurator.ApacheConfigurator.config_test")
     @mock.patch("certbot_apache.configurator.ApacheConfigurator._reload")
@@ -171,14 +161,6 @@ class OCSPPrefetchTest(util.ApacheTest):
     def test_ocsp_prefetch_update_noop(self, mock_refresh):
         self.config.update_ocsp_prefetch(None)
         self.assertFalse(mock_refresh.called)
-
-    def test_dbm_format(self):
-        db_path = os.path.join(self.config_dir, "ocsp", "ocsp_cache.db")
-        dobject = self.openDBM(db_path)
-        dbm_dir = dir(dobject)
-        dbm_dir.append(dobject.__module__)
-        self.assertEquals(1, dbm_dir)
-
 
 
 if __name__ == "__main__":
