@@ -982,6 +982,10 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              "with an existing registration, such as the e-mail address, "
              "should be updated, rather than registering a new account.")
     helpful.add(
+        "register", "--show-registration", action="store_true",
+        default=False,
+        help="With the register verb, display current registration details.")
+    helpful.add(
         ["register", "unregister", "automation"], "-m", "--email",
         default=flag_default("email"),
         help=config_help("email"))

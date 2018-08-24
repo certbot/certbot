@@ -12,6 +12,7 @@ import zope.component
 
 from acme import errors as acme_errors
 from acme.magic_typing import Union  # pylint: disable=unused-import, no-name-in-module
+from acme.messages import Registration
 
 import certbot
 
@@ -710,7 +711,7 @@ def register(config, unused_plugins):
     add_msg = lambda m: reporter_util.add_message(m, reporter_util.MEDIUM_PRIORITY)
 
     # registering a new account
-    if not config.update_registration:
+    if not (config.update_registration or config.show_registration):
         if len(accounts) > 0:
             # TODO: add a flag to register a duplicate account (this will
             #       also require extending _determine_account's behavior
@@ -722,10 +723,10 @@ def register(config, unused_plugins):
         _determine_account(config)
         return
 
-    # --update-registration
+    # --{update,show}-registration
     if len(accounts) == 0:
-        return "Could not find an existing account to update."
-    if config.email is None:
+        return "Could not find an existing account to update or display."
+    if config.update_registration and config.email is None:
         if config.register_unsafely_without_email:
             return ("--register-unsafely-without-email provided, however, a "
                     "new e-mail address must\ncurrently be provided when "
@@ -734,11 +735,24 @@ def register(config, unused_plugins):
 
     acc, acme = _determine_account(config)
     cb_client = client.Client(config, acc, None, None, acme=acme)
-    # We rely on an exception to interrupt this process if it didn't work.
-    acc_contacts = ['mailto:' + email for email in config.email.split(',')]
-    prev_regr_uri = acc.regr.uri
-    acc.regr = cb_client.acme.update_registration(acc.regr.update(
-        body=acc.regr.body.update(contact=acc_contacts)))
+
+    if config.update_registration:
+        # We rely on an exception to interrupt this process if it didn't work.
+        acc_contacts = ['mailto:' + email for email in config.email.split(',')]
+        prev_regr_uri = acc.regr.uri
+        upd_body = acc.regr.body.update(contact=acc_contacts)
+    else:
+        # Show only: send empty update
+        upd_body = Registration()
+
+    acc.regr = cb_client.acme.update_registration(acc.regr.update(body=upd_body))
+
+    if config.show_registration:
+        add_msg("Current registration info: {0}." .format(acc.regr.body))
+
+    if not config.update_registration:
+        return
+
     # A v1 account being used as a v2 account will result in changing the uri to
     # the v2 uri. Since it's the same object on disk, put it back to the v1 uri
     # so that we can also continue to use the account object with acmev1.

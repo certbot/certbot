@@ -17,6 +17,7 @@ import six
 from six.moves import reload_module  # pylint: disable=import-error
 
 from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
+from acme.messages import Registration
 from certbot import account
 from certbot import cli
 from certbot import compat
@@ -1481,7 +1482,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
                         # When registration change succeeds, the return value
                         # of register() is None
                         self.assertTrue(x[0] is None)
-                        # and we got supposedly did update the registration from
+                        # and we supposedly did update the registration from
                         # the server
                         reg_arg = cb_client.acme.update_registration.call_args[0][0]
                         # Test the return value of .update() was used because
@@ -1492,6 +1493,34 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
                         self.assertTrue(
                             email in mock_utility().add_message.call_args[0][0])
                         self.assertTrue(mock_handle.called)
+
+    @test_util.patch_get_utility()
+    def test_show_registration(self, mock_utility):
+        email = "already-registered@example.com"
+        with mock.patch('certbot.main._determine_account') as mocked_det:
+            with mock.patch('certbot.main.account') as mocked_account:
+                with mock.patch('certbot.main.client') as mocked_client:
+                    mocked_storage = mock.MagicMock()
+                    mocked_account.AccountFileStorage.return_value = mocked_storage
+                    mocked_storage.find_all.return_value = ["an account"]
+                    mock_acc = mock.MagicMock()
+                    mock_regr = mock_acc.regr
+                    mock_regr.update.return_value = mock_regr
+                    mocked_det.return_value = (mock_acc, "foo")
+                    cb_client = mock.MagicMock()
+                    mocked_upd = cb_client.acme.update_registration
+                    mocked_upd.return_value.body = {"contact": (email,)}
+                    mocked_client.Client.return_value = cb_client
+                    x = self._call_no_clientmock(
+                        ["register", "--show-registration"])
+                    self.assertTrue(x[0] is None)
+                    # Test that we sent an empty update to the server
+                    reg_arg = mocked_upd.call_args[0][0]
+                    self.assertEqual(reg_arg, mock_regr)
+                    self.assertEqual(reg_arg.update.call_args[1]["body"], Registration())
+                    # Test that we displayed the current contact email
+                    self.assertTrue(
+                        email in mock_utility().add_message.call_args[0][0])
 
     @mock.patch('certbot.plugins.selection.choose_configurator_plugins')
     @mock.patch('certbot.updater._run_updaters')
