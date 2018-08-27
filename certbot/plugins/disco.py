@@ -35,6 +35,7 @@ class PluginEntryPoint(object):
         "certbot-dns-linode",
         "certbot-dns-luadns",
         "certbot-dns-nsone",
+        "certbot-dns-online",
         "certbot-dns-ovh",
         "certbot-dns-rfc2136",
         "certbot-dns-route53",

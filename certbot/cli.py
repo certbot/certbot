@@ -1443,6 +1443,10 @@ def _plugins_parsing(helpful, plugins):
                 default=flag_default("dns_ovh"),
                 help=("Obtain certificates using a DNS TXT record (if you are "
                       "using OVH for DNS)."))
+    helpful.add(["plugins", "certonly"], "--dns-online", action="store_true",
+                default=flag_default("dns_online"),
+                help=("Obtain certificates using a DNS TXT record (if you are "
+                      "using Online for DNS)."))
     helpful.add(["plugins", "certonly"], "--dns-rfc2136", action="store_true",
                 default=flag_default("dns_rfc2136"),
                 help="Obtain certificates using a DNS TXT record (if you are using BIND for DNS).")
