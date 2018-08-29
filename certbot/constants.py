@@ -60,6 +60,7 @@ CLI_DEFAULTS = dict(
     redirect=None,
     auto_hsts=False,
     hsts=None,
+    ocsp_prefetch=False,
     uir=None,
     staple=None,
     strict_permissions=False,

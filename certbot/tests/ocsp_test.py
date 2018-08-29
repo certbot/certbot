@@ -73,19 +73,15 @@ class OCSPTest(unittest.TestCase):
 
 
     @mock.patch('certbot.ocsp.logger.info')
-    @mock.patch('certbot.util.run_script')
-    def test_determine_ocsp_server(self, mock_run, mock_info):
+    @mock.patch('certbot.ocsp.RevocationChecker._ocsp_host_from_cert')
+    def test_determine_ocsp_server(self, mock_host, mock_info):
         uri = "http://ocsp.stg-int-x1.letsencrypt.org/"
         host = "ocsp.stg-int-x1.letsencrypt.org"
-        mock_run.return_value = uri, ""
+        mock_host.return_value = uri
         self.assertEqual(self.checker.determine_ocsp_server("beep"), (uri, host))
-        mock_run.return_value = "ftp:/" + host + "/", ""
+        mock_host.return_value = "ftp:/" + host + "/"
         self.assertEqual(self.checker.determine_ocsp_server("beep"), (None, None))
         self.assertEqual(mock_info.call_count, 1)
-
-        c = "confusion"
-        mock_run.side_effect = errors.SubprocessError(c)
-        self.assertEqual(self.checker.determine_ocsp_server("beep"), (None, None))
 
     @mock.patch('certbot.ocsp.logger')
     @mock.patch('certbot.util.run_script')
@@ -110,7 +106,6 @@ class OCSPTest(unittest.TestCase):
         self.assertEqual(mock_log.info.call_count, 0)
         self.assertEqual(ocsp._translate_ocsp_query(*openssl_expired_ocsp_revoked), True)
         self.assertEqual(mock_log.info.call_count, 1)
-
 
 # pylint: disable=line-too-long
 openssl_confused = ("", """
