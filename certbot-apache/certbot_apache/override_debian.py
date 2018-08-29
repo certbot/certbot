@@ -23,14 +23,14 @@ class DebianConfigurator(configurator.ApacheConfigurator):
         vhost_root="/etc/apache2/sites-available",
         vhost_files="*",
         logs_root="/var/log/apache2",
+        ctl="apache2ctl",
         version_cmd=['apache2ctl', '-v'],
-        apache_cmd="apache2ctl",
         restart_cmd=['apache2ctl', 'graceful'],
         conftest_cmd=['apache2ctl', 'configtest'],
         enmod="a2enmod",
         dismod="a2dismod",
         le_vhost_ext="-le-ssl.conf",
-        handle_mods=True,
+        handle_modules=True,
         handle_sites=True,
         challenge_location="/etc/apache2",
         MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
@@ -134,11 +134,11 @@ class DebianConfigurator(configurator.ApacheConfigurator):
         # Generate reversal command.
         # Try to be safe here... check that we can probably reverse before
         # applying enmod command
-        if not util.exe_exists(self.conf("dismod")):
+        if not util.exe_exists(self.option("dismod")):
             raise errors.MisconfigurationError(
                 "Unable to find a2dismod, please make sure a2enmod and "
                 "a2dismod are configured correctly for certbot.")
 
         self.reverter.register_undo_command(
-            temp, [self.conf("dismod"), "-f", mod_name])
-        util.run_script([self.conf("enmod"), mod_name])
+            temp, [self.option("dismod"), "-f", mod_name])
+        util.run_script([self.option("enmod"), mod_name])
