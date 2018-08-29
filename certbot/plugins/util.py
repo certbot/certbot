@@ -1,7 +1,6 @@
 """Plugin utilities."""
 import logging
 import os
-import re
 
 from certbot import util
 
