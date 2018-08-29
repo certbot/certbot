@@ -59,9 +59,6 @@ class Proxy(configurators_common.Proxy):
             setattr(self.le_config, "apache_" + k,
                     entrypoint.ENTRYPOINT.OS_DEFAULTS[k])
 
-        # An alias
-        self.le_config.apache_handle_modules = self.le_config.apache_handle_mods
-
         self._configurator = entrypoint.ENTRYPOINT(
             config=configuration.NamespaceConfig(self.le_config),
             name="apache")

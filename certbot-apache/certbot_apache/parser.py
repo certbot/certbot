@@ -69,7 +69,7 @@ class ApacheParser(object):
         # Must also attempt to parse additional virtual host root
         if vhostroot:
             self.parse_file(os.path.abspath(vhostroot) + "/" +
-                            self.configurator.constant("vhost_files"))
+                            self.configurator.option("vhost_files"))
 
         # check to see if there were unparsed define statements
         if version < (2, 4):
@@ -152,7 +152,7 @@ class ApacheParser(object):
         """Get Defines from httpd process"""
 
         variables = dict()
-        define_cmd = [self.configurator.constant("apache_cmd"), "-t", "-D",
+        define_cmd = [self.configurator.option("ctl"), "-t", "-D",
                       "DUMP_RUN_CFG"]
         matches = self.parse_from_subprocess(define_cmd, r"Define: ([^ \n]*)")
         try:
@@ -179,7 +179,7 @@ class ApacheParser(object):
         # configuration files
         _ = self.find_dir("Include")
 
-        inc_cmd = [self.configurator.constant("apache_cmd"), "-t", "-D",
+        inc_cmd = [self.configurator.option("ctl"), "-t", "-D",
                    "DUMP_INCLUDES"]
         matches = self.parse_from_subprocess(inc_cmd, r"\(.*\) (.*)")
         if matches:
@@ -190,7 +190,7 @@ class ApacheParser(object):
     def update_modules(self):
         """Get loaded modules from httpd process, and add them to DOM"""
 
-        mod_cmd = [self.configurator.constant("apache_cmd"), "-t", "-D",
+        mod_cmd = [self.configurator.option("ctl"), "-t", "-D",
                        "DUMP_MODULES"]
         matches = self.parse_from_subprocess(mod_cmd, r"(.*)_module")
         for mod in matches:

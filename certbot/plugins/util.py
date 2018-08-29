@@ -51,6 +51,6 @@ def path_surgery(cmd):
         return True
     else:
         expanded = " expanded" if any(added) else ""
-        logger.warning("Failed to find executable %s in%s PATH: %s", cmd,
-                       expanded, path)
+        logger.debug("Failed to find executable %s in%s PATH: %s", cmd,
+                     expanded, path)
         return False
