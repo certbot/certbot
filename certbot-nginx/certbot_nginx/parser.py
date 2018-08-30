@@ -81,7 +81,7 @@ class NginxParser(object):
 
         """
         if not os.path.isabs(path):
-            return os.path.join(self.root, path)
+            return os.path.join(self.root, path).strip('"')
         else:
             return path
 
