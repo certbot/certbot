@@ -73,7 +73,6 @@ class NginxParserTest(util.NginxTest): #pylint: disable=too-many-public-methods
         self.assertEqual(os.path.join(self.config_path, 'foo/bar/'),
                          nparser.abs_path('"foo/bar/"'))
 
-
     def test_filedump(self):
         nparser = parser.NginxParser(self.config_path)
         nparser.filedump('test', lazy=False)
