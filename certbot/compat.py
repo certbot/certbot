@@ -30,7 +30,7 @@ def raise_for_non_administrative_windows_rights():
     """
     # Why not simply try ctypes.windll.shell32.IsUserAnAdmin() and catch AttributeError ?
     # Because windll exists only on a Windows runtime, and static code analysis engines
-    # do not like at all non existent objects when run from Linux (even if we handle properly 
+    # do not like at all non existent objects when run from Linux (even if we handle properly
     # all the cases in the code).
     # So we access windll only by reflection to trick theses engines.
     if hasattr(ctypes, 'windll'):
