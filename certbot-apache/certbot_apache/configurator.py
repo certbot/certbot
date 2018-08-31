@@ -1,6 +1,5 @@
 """Apache Configuration based off of Augeas Configurator."""
 # pylint: disable=too-many-lines
-import dbm
 import copy
 import fnmatch
 import logging
@@ -39,11 +38,6 @@ from certbot_apache import tls_sni_01
 
 from collections import defaultdict
 
-try:
-    import dbm.ndbm as dbm  # pragma: no cover
-except ImportError:  # pragma: no cover
-    # dbm.ndbm only available on Python3
-    import dbm  # pragma: no cover
 
 logger = logging.getLogger(__name__)
 
@@ -198,6 +192,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Temporary state for AutoHSTS enhancement
         self._autohsts = {}  # type: Dict[str, Dict[str, Union[int, float]]]
         self._ocsp_prefetch = {}  # type: Dict[str, str]
+        self._ocsp_dbm_bsddb = False
 
         # These will be set in the prepare function
         self._prepared = False
@@ -2529,6 +2524,59 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 os.makedirs(path)
                 os.chmod(path, 0o755)
 
+    def _ensure_ocsp_prefetch_compatibility(self):
+        """Make sure that the operating system supports the required libraries
+        to manage Apache DBM files.
+
+        :raises: errors.NotSupportedError
+        """
+        try:
+            import bsddb
+        except ImportError:
+            import dbm
+            if not hasattr(dbm, 'ndbm') or dbm.ndbm.library != 'Berkeley DB':
+                msg = ("Unfortunately your operating system does not have a "
+                       "compatible database module available for managing "
+                       "Apache OCSP stapling cache database.")
+                raise errors.NotSupportedError(msg)
+
+    def _ocsp_dbm_open(self, filepath):
+        """Helper method to open an DBM file in a way that depends on the platform
+        that Certbot is run on. Returns an open database structure."""
+        if not os.path.isfile(filepath+".db"):
+            raise errors.PluginError(
+                "The OCSP stapling cache DBM file wasn't created by Apache.")
+        try:
+            import bsddb
+            self._ocsp_dbm_bsddb = True
+            cache_path = filepath + ".db"
+            try:
+                database = bsddb.hashopen(cache_path, 'w')
+            except bsddb.db.DBAccessError:
+                raise errors.PluginError(
+                    "Could not open DBM file.")
+            except bsddb.db.DBInvalidArgError:
+                raise errors.PluginError(
+                    "DBM file has an unknown format.")
+        except ImportError:
+            # Python3 doesn't have bsddb module, so we use dbm.ndbm instead
+            import dbm
+            try:
+                database = dbm.ndbm.open(filepath, 'w')
+            except dbm.error:
+                # This is raised if a file cannot be found
+                raise errors.PluginError("Unable to open dbm database file.")
+        return database
+
+    def _ocsp_dbm_close(self, database):
+        """Helper method to sync and close a DBM file, in a way required by the
+        used dbm implementation."""
+        if self._ocsp_dbm_bsddb:
+            database.sync()
+            database.close()
+        else:
+            database.close()
+
     def _ocsp_refresh_if_needed(self, pf_obj):
         """Refreshes OCSP response for a certiifcate if it's due
 
@@ -2562,10 +2610,12 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             # Guaranteed good response
             cache_path = os.path.join(self.config.config_dir, "ocsp", "ocsp_cache")
             # dbm.open automatically adds the file extension, it will be
-            db = dbm.open(cache_path, "c")
+            db = self._ocsp_dbm_open(cache_path)
+            #db = dbm.open(cache_path, "c")
             cert_sha = apache_util.certid_sha1(cert_path)
             db[cert_sha] = self._ocsp_response_dbm(ocsp_workfile)
-            db.close()
+            self._ocsp_dbm_close(db)
+            #db.close()
         else:
             logger.warning("Encountered an issue while trying to prefetch OCSP "
                            "response for certificate: %s", cert_path)
@@ -2645,6 +2695,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         TLS. i.e. clients would not have to query the OCSP responder.
 
         """
+
+        # Fail early if we are not able to support this
+        self._ensure_ocsp_prefetch_compatibility()
         prefetch_vhosts = set()
         for domain in domains:
             matched_vhosts = self.choose_vhosts(domain, create_if_no_ssl=False)
@@ -2656,9 +2709,18 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if prefetch_vhosts:
             for vh in prefetch_vhosts:
                 self._enable_ocsp_stapling(vh, None, prefetch=True)
-            self._ocsp_prefetch_save(lineage.cert_path, lineage.chain_path)
             self.restart()
-            self._ocsp_refresh(lineage.cert_path, lineage.chain_path)
+            try:
+                self._ocsp_refresh(lineage.cert_path, lineage.chain_path)
+                self._ocsp_prefetch_save(lineage.cert_path, lineage.chain_path)
+                self.save("Enabled OCSP prefetching")
+            except errors.PluginError as err:
+                # Revert the OCSP prefetch configuration
+                self.recovery_routine()
+                self.restart()
+                msg = ("Encountered an error while trying to enable OCSP prefetch "
+                       "enhancement: %s.\nOCSP prefetch was not enabled.")
+                raise errors.PluginError(msg % str(err))
 
     def update_ocsp_prefetch(self, _unused_lineage):
         """Checks all certificates that are managed by OCSP prefetch, and
