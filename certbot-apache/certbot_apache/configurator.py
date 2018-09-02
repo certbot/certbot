@@ -25,7 +25,7 @@ from certbot import util
 from certbot.achallenges import KeyAuthorizationAnnotatedChallenge  # pylint: disable=unused-import
 from certbot.plugins import common
 from certbot.plugins.util import path_surgery
-from certbot.plugins.enhancements import AutoHSTSEnhancement, OCSPPrefetchEnhancement
+from certbot.plugins.enhancements import AutoHSTSEnhancement
 
 from certbot_apache import apache_util
 from certbot_apache import augeas_configurator
@@ -2531,10 +2531,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :raises: errors.NotSupportedError
         """
         try:
-            import bsddb
+            import bsddb  # pylint: disable=unused-variable
         except ImportError:
             import dbm
-            if not hasattr(dbm, 'ndbm') or dbm.ndbm.library != 'Berkeley DB':
+            if not hasattr(dbm, 'ndbm') or dbm.ndbm.library != 'Berkeley DB':  # pylint: disable=no-member
                 msg = ("Unfortunately your operating system does not have a "
                        "compatible database module available for managing "
                        "Apache OCSP stapling cache database.")
@@ -2552,18 +2552,14 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             cache_path = filepath + ".db"
             try:
                 database = bsddb.hashopen(cache_path, 'w')
-            except bsddb.db.DBAccessError:
-                raise errors.PluginError(
-                    "Could not open DBM file.")
-            except bsddb.db.DBInvalidArgError:
-                raise errors.PluginError(
-                    "DBM file has an unknown format.")
+            except Exception:
+                raise errors.PluginError("Unable to open dbm database file.")
         except ImportError:
             # Python3 doesn't have bsddb module, so we use dbm.ndbm instead
             import dbm
             try:
-                database = dbm.ndbm.open(filepath, 'w')
-            except dbm.error:
+                database = dbm.ndbm.open(filepath, 'w')  # pylint: disable=no-member
+            except Exception:
                 # This is raised if a file cannot be found
                 raise errors.PluginError("Unable to open dbm database file.")
         return database
@@ -2738,4 +2734,3 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
 
 AutoHSTSEnhancement.register(ApacheConfigurator)  # pylint: disable=no-member
-OCSPPrefetchEnhancement.register(ApacheConfigurator)  # pylint: disable=no-member
