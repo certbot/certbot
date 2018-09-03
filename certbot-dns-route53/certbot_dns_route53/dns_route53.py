@@ -163,7 +163,7 @@ class Authenticator(dns_common.DNSAuthenticator):
         account_id, role = accountrole.split(":")
         sts = boto3.client("sts")
         response = sts.assume_role(
-            RoleArn="arn:aws:iam::%s:role/%s" % *(account_id, role),
+            RoleArn="arn:aws:iam::%s:role/%s" % (account_id, role),
             RoleSessionName="TODO-session-name",
             DurationSeconds=900
         )
