@@ -174,6 +174,6 @@ class Authenticator(dns_common.DNSAuthenticator):
                                     aws_secret_access_key=credentials["SecretAccessKey"],
                                     aws_session_token=credentials["SessionToken"])
             return session.client("route53")
-        except botocore.exceptions.NoCredentialsError as e:
-            logger.error('Could not find AWS credentials: %s', e)
-            raise errors.PluginError('Error obtaining AWS credentials: {0}'.format(e))
+        except (NoCredentialsError, ClientError) as e:
+            logger.debug('Encountered error during _get_session: %s', e, exc_info=True)
+            raise errors.PluginError("\n".join([str(e), INSTRUCTIONS]))
