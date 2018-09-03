@@ -5,6 +5,7 @@ import functools
 import logging.handlers
 import os
 import sys
+import re
 
 import configobj
 import josepy as jose
@@ -413,6 +414,9 @@ def _find_domains_or_certname(config, installer, question=None):
     # if we can't do that but we have a certname, get the domains
     # with that certname
     elif certname:
+        if bool(re.search('[\/]', certname)) or bool(re.search('^-', certname)):
+            raise errors.Error("A certname cannot contain slashes (/ or \) "
+                               "or start a with hyphen (-).")
         domains = cert_manager.domains_for_certname(config, certname)
 
     # that certname might not have existed, or there was a problem.
