@@ -12,6 +12,10 @@ Named Arguments
                                           to propagate before asking the ACME
                                           server to verify the DNS record.
                                           (Default: 10)
+
+``--dns-route53-assume-role``             Assume a role in a different AWS
+                                          account. Specify the account ID
+                                          and role separated with a colon.
 ========================================  =====================================
 
 
@@ -116,5 +120,14 @@ Examples
    certbot certonly \\
      --dns-route53 \\
      --dns-route53-propagation-seconds 30 \\
+     -d example.com
+
+.. code-block:: bash
+   :caption: To aquire a certificate for ``example.com``, assuming a role in
+             a different account
+
+   certbot certonly \\
+     --dns-route53 \\
+     --dns-route53-assume-role 123456:dns-role \\
      -d example.com
 """

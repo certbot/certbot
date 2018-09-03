@@ -35,8 +35,16 @@ class Authenticator(dns_common.DNSAuthenticator):
 
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
-        self.r53 = boto3.client("route53")
+        if self.conf("assume-role"):
+            self.r53 = self._get_session(self.conf("assume-role"))
+        else:
+            self.r53 = boto3.client("route53")
         self._resource_records = collections.defaultdict(list) # type: DefaultDict[str, List[Dict[str, str]]]
+
+    @classmethod
+    def add_parser_arguments(cls, add): # pylint: disable=arguments-differ
+        super(Authenticator, cls).add_parser_arguments(add)
+        add("assume-role", help="Assume a role in a different account.")
 
     def more_info(self):  # pylint: disable=missing-docstring,no-self-use
         return "Solve a DNS01 challenge using AWS Route53"
@@ -149,3 +157,18 @@ class Authenticator(dns_common.DNSAuthenticator):
         raise errors.PluginError(
             "Timed out waiting for Route53 change. Current status: %s" %
             response["ChangeInfo"]["Status"])
+
+    def _get_session(self, accountrole):
+        """Assume a role in a different account"""
+        account_id, role = accountrole.split(":")
+        sts = boto3.client("sts")
+        response = sts.assume_role(
+            RoleArn="arn:aws:iam::%s:role/%s" % *(account_id, role),
+            RoleSessionName="TODO-session-name",
+            DurationSeconds=900
+        )
+        credentials = response["Credentials"]
+        session = boto3.Session(aws_access_key_id=credentials["AccessKeyId"],
+                                aws_secret_access_key=credentials["SecretAccessKey"],
+                                aws_session_token=credentials["SessionToken"])
+        return session.client("route53")
