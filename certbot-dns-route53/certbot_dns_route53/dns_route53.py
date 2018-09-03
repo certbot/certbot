@@ -4,6 +4,7 @@ import logging
 import time
 
 import boto3
+import botocore
 import zope.interface
 from botocore.exceptions import NoCredentialsError, ClientError
 
@@ -162,13 +163,17 @@ class Authenticator(dns_common.DNSAuthenticator):
         """Assume a role in a different account"""
         account_id, role = accountrole.split(":")
         sts = boto3.client("sts")
-        response = sts.assume_role(
-            RoleArn="arn:aws:iam::%s:role/%s" % (account_id, role),
-            RoleSessionName="TODO-session-name",
-            DurationSeconds=900
-        )
-        credentials = response["Credentials"]
-        session = boto3.Session(aws_access_key_id=credentials["AccessKeyId"],
-                                aws_secret_access_key=credentials["SecretAccessKey"],
-                                aws_session_token=credentials["SessionToken"])
-        return session.client("route53")
+        try:
+            response = sts.assume_role(
+                RoleArn="arn:aws:iam::%s:role/%s" % (account_id, role),
+                RoleSessionName="TODO-session-name",
+                DurationSeconds=900
+            )
+            credentials = response["Credentials"]
+            session = boto3.Session(aws_access_key_id=credentials["AccessKeyId"],
+                                    aws_secret_access_key=credentials["SecretAccessKey"],
+                                    aws_session_token=credentials["SessionToken"])
+            return session.client("route53")
+        except botocore.exceptions.NoCredentialsError as e:
+            logger.error('Could not find AWS credentials: %s', e)
+            raise errors.PluginError('Error obtaining AWS credentials: {0}'.format(e))
