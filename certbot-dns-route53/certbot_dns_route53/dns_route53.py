@@ -4,7 +4,6 @@ import logging
 import time
 
 import boto3
-import botocore
 import zope.interface
 from botocore.exceptions import NoCredentialsError, ClientError
 
