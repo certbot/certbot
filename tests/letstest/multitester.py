@@ -103,13 +103,32 @@ LOGDIR = "" #points to logging / working directory
 # boto3/AWS api globals
 AWS_SESSION = None
 EC2 = None
+SECURITY_GROUP_NAME = 'certbot-security-group'
+SUBNET_NAME = 'certbot-subnet'
 
 # Boto3/AWS automation functions
 #-------------------------------------------------------------------------------
-def make_security_group():
+def should_use_subnet(subnet):
+    """Should we use the given subnet for these tests?
+
+    We should if it is the default subnet for the availability zone or the
+    subnet is named "certbot-subnet".
+
+    """
+    if not subnet.map_public_ip_on_launch:
+        return False
+    if subnet.default_for_az:
+        return True
+    for tag in subnet.tags:
+        if tag['Key'] == 'Name' and tag['Value'] == SUBNET_NAME:
+            return True
+    return False
+
+def make_security_group(vpc):
+    """Creates a security group in the given VPC."""
     # will fail if security group of GroupName already exists
     # cannot have duplicate SGs of the same name
-    mysg = EC2.create_security_group(GroupName="letsencrypt_test",
+    mysg = vpc.create_security_group(GroupName=SECURITY_GROUP_NAME,
                                      Description='security group for automated testing')
     mysg.authorize_ingress(IpProtocol="tcp", CidrIp="0.0.0.0/0", FromPort=22, ToPort=22)
     mysg.authorize_ingress(IpProtocol="tcp", CidrIp="0.0.0.0/0", FromPort=80, ToPort=80)
@@ -123,14 +142,16 @@ def make_security_group():
 def make_instance(instance_name,
                   ami_id,
                   keyname,
+                  security_group_id,
+                  subnet_id,
                   machine_type='t2.micro',
-                  security_groups=['letsencrypt_test'],
                   userdata=""): #userdata contains bash or cloud-init script
 
     new_instance = EC2.create_instances(
         BlockDeviceMappings=_get_block_device_mappings(ami_id),
         ImageId=ami_id,
-        SecurityGroups=security_groups,
+        SecurityGroupIds=[security_group_id],
+        SubnetId=subnet_id,
         KeyName=keyname,
         MinCount=1,
         MaxCount=1,
@@ -294,7 +315,7 @@ def grab_certbot_log():
     sudo('if [ -f ./certbot.log ]; then \
     cat ./certbot.log; else echo "[nolocallog]"; fi')
 
-def create_client_instances(targetlist):
+def create_client_instances(targetlist, security_group_id, subnet_id):
     "Create a fleet of client instances"
     instances = []
     print("Creating instances: ", end="")
@@ -314,6 +335,8 @@ def create_client_instances(targetlist):
                                        target['ami'],
                                        KEYNAME,
                                        machine_type=machine_type,
+                                       security_group_id=security_group_id,
+                                       subnet_id=subnet_id,
                                        userdata=userdata))
     print()
     return instances
@@ -418,14 +441,28 @@ print("Connecting to EC2 using\n profile %s\n keyname %s\n keyfile %s"%(PROFILE,
 AWS_SESSION = boto3.session.Session(profile_name=PROFILE)
 EC2 = AWS_SESSION.resource('ec2')
 
+print("Determining Subnet")
+for subnet in EC2.subnets.all():
+    if should_use_subnet(subnet):
+        subnet_id = subnet.id
+        vpc_id = subnet.vpc.id
+        break
+else:
+    print("No usable subnet exists!")
+    print("Please create a VPC with a subnet named {0}".format(SUBNET_NAME))
+    print("that maps public IPv4 addresses to instances launched in the subnet.")
+    sys.exit(1)
+
 print("Making Security Group")
+vpc = EC2.Vpc(vpc_id)
 sg_exists = False
-for sg in EC2.security_groups.all():
-    if sg.group_name == 'letsencrypt_test':
+for sg in vpc.security_groups.all():
+    if sg.group_name == SECURITY_GROUP_NAME:
+        security_group_id = sg.id
         sg_exists = True
-        print("  %s already exists"%'letsencrypt_test')
+        print("  %s already exists"%SECURITY_GROUP_NAME)
 if not sg_exists:
-    make_security_group()
+    security_group_id = make_security_group(vpc).id
     time.sleep(30)
 
 boulder_preexists = False
@@ -446,11 +483,12 @@ else:
                                    KEYNAME,
                                    machine_type='t2.micro',
                                    #machine_type='t2.medium',
-                                   security_groups=['letsencrypt_test'])
+                                   security_group_id=security_group_id,
+                                   subnet_id=subnet_id)
 
 try:
     if not cl_args.boulderonly:
-        instances = create_client_instances(targetlist)
+        instances = create_client_instances(targetlist, security_group_id, subnet_id)
 
     # Configure and launch boulder server
     #-------------------------------------------------------------------------------
