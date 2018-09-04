@@ -18,7 +18,7 @@ class AuthenticatorTest(unittest.TestCase, dns_test_common.BaseAuthenticatorTest
 
         super(AuthenticatorTest, self).setUp()
 
-        self.config = mock.MagicMock()
+        self.config = mock.MagicMock(route53_assume_role=None)
 
         self.auth = Authenticator(self.config, "route53")
 
@@ -115,7 +115,7 @@ class ClientTest(unittest.TestCase):
 
         super(ClientTest, self).setUp()
 
-        self.config = mock.MagicMock()
+        self.config = mock.MagicMock(route53_assume_role=None)
 
         self.client = Authenticator(self.config, "route53")
 

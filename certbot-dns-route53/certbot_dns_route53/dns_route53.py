@@ -44,7 +44,7 @@ class Authenticator(dns_common.DNSAuthenticator):
     @classmethod
     def add_parser_arguments(cls, add): # pylint: disable=arguments-differ
         super(Authenticator, cls).add_parser_arguments(add)
-        add("assume-role", help="Assume a role in a different account.")
+        add("assume-role", default=None, help="Assume a role in a different account.")
 
     def more_info(self):  # pylint: disable=missing-docstring,no-self-use
         return "Solve a DNS01 challenge using AWS Route53"
