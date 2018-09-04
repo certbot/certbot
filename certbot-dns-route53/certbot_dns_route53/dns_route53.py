@@ -161,12 +161,16 @@ class Authenticator(dns_common.DNSAuthenticator):
 
     def _get_session(self, accountrole):
         """Assume a role in a different account"""
+        if ':' not in accountrole:
+            raise errors.PluginError(
+                "The account role should be formatted as AWS account ID and role separated with a ':' "
+                "(1234567:my_role)")
         account_id, role = accountrole.split(":")
         sts = boto3.client("sts")
         try:
             response = sts.assume_role(
                 RoleArn="arn:aws:iam::%s:role/%s" % (account_id, role),
-                RoleSessionName="TODO-session-name",
+                RoleSessionName="role-session-name-%s" % int(time.time()),
                 DurationSeconds=900
             )
             credentials = response["Credentials"]
