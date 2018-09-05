@@ -69,23 +69,29 @@ git checkout "$RELEASE_BRANCH"
 for pkg_dir in $SUBPKGS_NO_CERTBOT certbot-compatibility-test .
 do
   sed -i 's/\.dev0//' "$pkg_dir/setup.py"
+  git add "$pkg_dir/setup.py"
 done
-# We only add Certbot's setup.py here because the other files are added in the
-# call to SetVersion below.
-git add -p setup.py
 
 SetVersion() {
     ver="$1"
     # bumping Certbot's version number is done differently
     for pkg_dir in $SUBPKGS_NO_CERTBOT certbot-compatibility-test
     do
+      setup_file="$pkg_dir/setup.py"
+      if [ $(grep -c '^version' "$setup_file") != 1 ]; then
+        echo "Unexpected count of version variables in $setup_file"
+        exit 1
+      fi
       sed -i "s/^version.*/version = '$ver'/" $pkg_dir/setup.py
     done
-    sed -i "s/^__version.*/__version__ = '$ver'/" certbot/__init__.py
+    init_file="certbot/__init__.py"
+    if [ $(grep -c '^__version' "$init_file") != 1 ]; then
+      echo "Unexpected count of __version variables in $init_file"
+      exit 1
+    fi
+    sed -i "s/^__version.*/__version__ = '$ver'/" "$init_file"
 
-    # interactive user input
-    git add -p $SUBPKGS certbot-compatibility-test
-
+    git add $SUBPKGS certbot-compatibility-test
 }
 
 SetVersion "$version"
