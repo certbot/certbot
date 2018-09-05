@@ -185,6 +185,13 @@ while ! openssl dgst -sha256 -verify $RELEASE_OPENSSL_PUBKEY -signature \
    read -p "Please correctly sign letsencrypt-auto with offline-signrequest.sh"
 done
 
+if [ "$RELEASE_GPG_KEY" = "" ]; then
+    while ! gpg2 --card-status >/dev/null 2>&1; do
+        echo gpg cannot find your OpenPGP card
+        read -p "Please take the card out and put it back in again."
+    done
+fi
+
 # This signature is not quite as strong, but easier for people to verify out of band
 gpg2 -u "$RELEASE_GPG_KEY" --detach-sign --armor --sign --digest-algo sha256 letsencrypt-auto-source/letsencrypt-auto
 # We can't rename the openssl letsencrypt-auto.sig for compatibility reasons,
