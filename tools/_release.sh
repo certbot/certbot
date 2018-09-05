@@ -185,7 +185,7 @@ while ! openssl dgst -sha256 -verify $RELEASE_OPENSSL_PUBKEY -signature \
    read -p "Please correctly sign letsencrypt-auto with offline-signrequest.sh"
 done
 
-if [ "$RELEASE_GPG_KEY" = "" ]; then
+if [ "$RELEASE_GPG_KEY" = "$DEFAULT_GPG_KEY" ]; then
     while ! gpg2 --card-status >/dev/null 2>&1; do
         echo gpg cannot find your OpenPGP card
         read -p "Please take the card out and put it back in again."
