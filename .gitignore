@@ -6,7 +6,8 @@ dist*/
 /venv*/
 /kgs/
 /.tox/
-/releases/
+/releases*/
+/log*
 letsencrypt.log
 certbot.log
 letsencrypt-auto-source/letsencrypt-auto.sig.lzma.base64
