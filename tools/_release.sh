@@ -185,10 +185,18 @@ fi
 letsencrypt-auto-source/build.py
 
 # and that it's signed correctly
+tools/offline-sigrequest.sh
 while ! openssl dgst -sha256 -verify $RELEASE_OPENSSL_PUBKEY -signature \
         letsencrypt-auto-source/letsencrypt-auto.sig \
         letsencrypt-auto-source/letsencrypt-auto            ; do
-   read -p "Please correctly sign letsencrypt-auto with offline-signrequest.sh"
+    echo "The signature on letsencrypt-auto is not correct."
+    read -p "Would you like this script to try and sign it again [Y/n]?" response
+    case $response in
+      [yY][eE][sS]|[yY]|"")
+        tools/offline-sigrequest.sh;;
+      *)
+        ;;
+    esac
 done
 
 if [ "$RELEASE_GPG_KEY" = "$DEFAULT_GPG_KEY" ]; then
