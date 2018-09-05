@@ -19,7 +19,7 @@ CheckVersion() {
 CheckVersion "$1"
 CheckVersion "$2"
 
-if ! gpg2 --card-status >/dev/null 2>&1; then
+if [ "$RELEASE_GPG_KEY" = "" ] && ! gpg2 --card-status >/dev/null 2>&1; then
     echo OpenPGP card not found!
     echo Please insert your PGP card and run this script again.
     exit 1
@@ -36,12 +36,9 @@ mv "$RELEASE_DIR" "$RELEASE_DIR.$(date +%s).bak" || true
 LOG_PATH="log"
 mv "$LOG_PATH" "$LOG_PATH.$(date +%s).bak" || true
 
-CMD="tools/release.sh $1 $2"
 # Work with both Linux and macOS versions of script
 if script --help | grep -q -- '--command'; then
-    script --command "$CMD" "$LOG_PATH"
+    script --command "tools/_release.sh $1 $2" "$LOG_PATH"
 else
-    script "$LOG_PATH" "$CMD"
+    script "$LOG_PATH" tools/_release.sh "$1" "$2"
 fi
-
-tools/_release.sh
