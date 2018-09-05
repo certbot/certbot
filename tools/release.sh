@@ -1,4 +1,4 @@
-#!/bin/bash -xe
+#!/bin/bash -e
 # Release packages to PyPI
 
 if [ "`dirname $0`" != "tools" ] ; then
@@ -7,7 +7,7 @@ if [ "`dirname $0`" != "tools" ] ; then
 fi
 
 CheckVersion() {
-    # Args: <description of version type> <version number>
+    # Args: <version number>
     if ! echo "$1" | grep -q -e '[0-9]\+.[0-9]\+.[0-9]\+' ; then
         echo "$1 doesn't look like 1.2.3"
         echo "Usage:"
