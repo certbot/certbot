@@ -15,7 +15,8 @@ RELEASE_BRANCH="candidate-$version"
 if [ "$RELEASE_OPENSSL_PUBKEY" = "" ] ; then
     RELEASE_OPENSSL_PUBKEY="`realpath \`dirname $0\``/eff-pubkey.pem"
 fi
-RELEASE_GPG_KEY=${RELEASE_GPG_KEY:-A2CFB51FA275A7286234E7B24D17C995CD9775F2}
+DEFAULT_GPG_KEY="A2CFB51FA275A7286234E7B24D17C995CD9775F2"
+RELEASE_GPG_KEY=${RELEASE_GPG_KEY:-"$DEFAULT_GPG_KEY"}
 # Needed to fix problems with git signatures and pinentry
 export GPG_TTY=$(tty)
 
