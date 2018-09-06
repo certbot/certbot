@@ -23,7 +23,10 @@ except ImportError:
     # Windows specific
     import msvcrt # pylint: disable=import-error
 
-def raise_for_non_administrative_windows_rights():
+UNPRIVILEGED_SUBCOMMANDS_ALLOWED = [
+    'certificates', 'enhance', 'revoke', 'delete', 
+    'register', 'unregister', 'config_changes', 'plugins']
+def raise_for_non_administrative_windows_rights(subcommand):
     """
     On Windows, raise if current shell does not have the administrative rights.
     Do nothing on Linux.
@@ -33,10 +36,12 @@ def raise_for_non_administrative_windows_rights():
     # do not like at all non existent objects when run from Linux (even if we handle properly
     # all the cases in the code).
     # So we access windll only by reflection to trick theses engines.
-    if hasattr(ctypes, 'windll'):
+    if hasattr(ctypes, 'windll') and subcommand not in UNPRIVILEGED_SUBCOMMANDS_ALLOWED:
         windll = getattr(ctypes, 'windll')
         if windll.shell32.IsUserAnAdmin() == 0:
-            raise ValueError('Error, certbot must be run on a shell with administrative rights.')
+            raise ValueError(
+                'Error, subcommand "{0}" requires to be run on a shell with administrative rights.'
+                .format(subcommand))
 
 def os_geteuid():
     """Get current user uid"""

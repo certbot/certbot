@@ -1335,10 +1335,6 @@ def main(cli_args=sys.argv[1:]):
 
     """
 
-    # On windows, shell without administrative right cannot create symlinks required by certbot.
-    # So we check the rights before continuing.
-    compat.raise_for_non_administrative_windows_rights()
-
     log.pre_arg_parse_setup()
 
     plugins = plugins_disco.PluginsRegistry.find_all()
@@ -1351,6 +1347,10 @@ def main(cli_args=sys.argv[1:]):
     args = cli.prepare_and_parse_args(plugins, cli_args)
     config = configuration.NamespaceConfig(args)
     zope.component.provideUtility(config)
+
+    # On windows, shell without administrative right cannot create symlinks required by certbot.
+    # So we check the rights before continuing.
+    compat.raise_for_non_administrative_windows_rights(config.verb)
 
     try:
         log.post_arg_parse_setup(config)
