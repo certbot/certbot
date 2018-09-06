@@ -14,7 +14,8 @@ Certbot adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
-*
+* Fixed parameter name in OpenSUSE overrides for default parameters in the
+  Apache plugin. Certbot on OpenSUSE works again.
 
 ## 0.27.0 - 2018-09-05
 
