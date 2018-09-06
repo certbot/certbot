@@ -115,6 +115,18 @@ class MultipleVhostsTest(util.ApacheTest):
         # Weak test..
         ApacheConfigurator.add_parser_arguments(mock.MagicMock())
 
+    def test_add_parser_arguments_all_configurators(self):  # pylint: disable=no-self-use
+        from certbot_apache.entrypoint import OVERRIDE_CLASSES
+        for cls in OVERRIDE_CLASSES.values():
+            cls.add_parser_arguments(mock.MagicMock())
+
+    def test_all_configurators_defaults_defined(self):
+        from certbot_apache.entrypoint import OVERRIDE_CLASSES
+        from certbot_apache.configurator import ApacheConfigurator
+        parameters = set(ApacheConfigurator.OS_DEFAULTS.keys())
+        for cls in OVERRIDE_CLASSES.values():
+            self.assertTrue(parameters.issubset(set(cls.OS_DEFAULTS.keys())))
+
     def test_constant(self):
         self.assertTrue("debian_apache_2_4/multiple_vhosts/apache" in
                         self.config.option("server_root"))
