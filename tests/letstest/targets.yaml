@@ -48,13 +48,13 @@ targets:
   # CentOS
   # These Marketplace AMIs must, irritatingly, have their terms manually
   # agreed to on the AWS marketplace site for any new AWS account using them...
-  - ami: ami-61bbf104
+  - ami: ami-9887c6e7
     name: centos7
     type: centos
     virt: hvm
     user: centos
   # centos6 requires EPEL repo added
-  - ami: ami-57cd8732
+  - ami: ami-1585c46a
     name: centos6
     type: centos
     virt: hvm
