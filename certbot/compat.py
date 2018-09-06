@@ -24,7 +24,7 @@ except ImportError:
     import msvcrt # pylint: disable=import-error
 
 UNPRIVILEGED_SUBCOMMANDS_ALLOWED = [
-    'certificates', 'enhance', 'revoke', 'delete', 
+    'certificates', 'enhance', 'revoke', 'delete',
     'register', 'unregister', 'config_changes', 'plugins']
 def raise_for_non_administrative_windows_rights(subcommand):
     """
