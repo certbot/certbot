@@ -30,6 +30,12 @@ def raise_for_non_administrative_windows_rights(subcommand):
     """
     On Windows, raise if current shell does not have the administrative rights.
     Do nothing on Linux.
+
+    :param str subcommand: The subcommand (like 'certonly') passed to the certbot client.
+
+    :raises .errors.Error: If the provided subcommand must be run on a shell with
+        administrative rights, and current shell does not have these rights.
+
     """
     # Why not simply try ctypes.windll.shell32.IsUserAnAdmin() and catch AttributeError ?
     # Because windll exists only on a Windows runtime, and static code analysis engines
@@ -39,12 +45,18 @@ def raise_for_non_administrative_windows_rights(subcommand):
     if hasattr(ctypes, 'windll') and subcommand not in UNPRIVILEGED_SUBCOMMANDS_ALLOWED:
         windll = getattr(ctypes, 'windll')
         if windll.shell32.IsUserAnAdmin() == 0:
-            raise ValueError(
-                'Error, subcommand "{0}" requires to be run on a shell with administrative rights.'
+            raise errors.Error(
+                'Error, "{0}" subcommand must be run on a shell with administrative rights.'
                 .format(subcommand))
 
 def os_geteuid():
-    """Get current user uid"""
+    """
+    Get current user uid
+
+    :returns: The current user uid.
+    :rtype: int
+
+    """
     try:
         # Linux specific
         return os.geteuid()
@@ -53,7 +65,16 @@ def os_geteuid():
         return '0'
 
 def readline_with_timeout(timeout, prompt):
-    """Read user input to return the first line entered, or raise after specified timeout"""
+    """
+    Read user input to return the first line entered, or raise after specified timeout.
+
+    :param int timeout: The timeout, specified in seconds, given to the user.
+    :param str timeout: The prompt message to display to the user.
+
+    :returns: The first line entered by the user.
+    :rtype: str
+
+    """
     try:
         # Linux specific
         #
@@ -72,7 +93,12 @@ def readline_with_timeout(timeout, prompt):
         return sys.stdin.readline()
 
 def lock_file(fd):
-    """Lock the file linked to the specified file descriptor"""
+    """
+    Lock the file linked to the specified file descriptor.
+
+    :param int fd: The file descriptor of the file to lock.
+
+    """
     if 'fcntl' in sys.modules:
         # Linux specific
         fcntl.lockf(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -81,7 +107,13 @@ def lock_file(fd):
         msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
 
 def release_locked_file(fd, path):
-    """Remove, close, and release a lock file specified by its file descriptor and its path."""
+    """
+    Remove, close, and release a lock file specified by its file descriptor and its path.
+
+    :param int fd: The file descriptor of the lock file.
+    :param str path: The path of the lock file.
+
+    """
     # Linux specific
     #
     # It is important the lock file is removed before it's released,
