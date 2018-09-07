@@ -184,7 +184,7 @@ fi
 letsencrypt-auto-source/build.py
 
 # and that it's signed correctly
-tools/offline-sigrequest.sh
+tools/offline-sigrequest.sh || true
 while ! openssl dgst -sha256 -verify $RELEASE_OPENSSL_PUBKEY -signature \
         letsencrypt-auto-source/letsencrypt-auto.sig \
         letsencrypt-auto-source/letsencrypt-auto            ; do
@@ -192,7 +192,7 @@ while ! openssl dgst -sha256 -verify $RELEASE_OPENSSL_PUBKEY -signature \
     read -p "Would you like this script to try and sign it again [Y/n]?" response
     case $response in
       [yY][eE][sS]|[yY]|"")
-        tools/offline-sigrequest.sh;;
+        tools/offline-sigrequest.sh || true;;
       *)
         ;;
     esac
