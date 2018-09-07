@@ -190,10 +190,11 @@ If you'd like to obtain a wildcard certificate from Let's Encrypt or run
 ``certbot`` on a machine other than your target webserver, you can use one of
 Certbot's DNS plugins.
 
-These plugins are still in the process of being packaged
-by many distributions and cannot currently be installed with ``certbot-auto``.
-If, however, you are comfortable installing the certificates yourself,
-you can run these plugins with :ref:`Docker <docker-user>`.
+These plugins are not included in a default Certbot installation and must be
+installed separately. While the DNS plugins cannot currently be used with
+``certbot-auto``, they are available in many OS package managers and as Docker
+images. Visit https://certbot.eff.org to learn the best way to use the DNS
+plugins on your system.
 
 Once installed, you can find documentation on how to use each plugin at:
 
