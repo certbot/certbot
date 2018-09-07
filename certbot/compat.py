@@ -128,7 +128,7 @@ def release_locked_file(fd, path):
     try:
         os.remove(path)
     except OSError as err:
-        if err.errno in (errno.EACCES, errno.EPERM):
+        if err.errno == errno.EACCES:
             # Windows specific
             # We will not be able to remove a file before closing it.
             # To avoid race conditions described for Linux, we will not delete the lockfile,
