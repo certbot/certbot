@@ -15,8 +15,7 @@ RELEASE_BRANCH="candidate-$version"
 if [ "$RELEASE_OPENSSL_PUBKEY" = "" ] ; then
     RELEASE_OPENSSL_PUBKEY="`realpath \`dirname $0\``/eff-pubkey.pem"
 fi
-DEFAULT_GPG_KEY="A2CFB51FA275A7286234E7B24D17C995CD9775F2"
-RELEASE_GPG_KEY=${RELEASE_GPG_KEY:-"$DEFAULT_GPG_KEY"}
+RELEASE_GPG_KEY=${RELEASE_GPG_KEY:-A2CFB51FA275A7286234E7B24D17C995CD9775F2}
 # Needed to fix problems with git signatures and pinentry
 export GPG_TTY=$(tty)
 
@@ -199,15 +198,13 @@ while ! openssl dgst -sha256 -verify $RELEASE_OPENSSL_PUBKEY -signature \
     esac
 done
 
-if [ "$RELEASE_GPG_KEY" = "$DEFAULT_GPG_KEY" ]; then
-    while ! gpg2 --card-status >/dev/null 2>&1; do
-        echo gpg cannot find your OpenPGP card
-        read -p "Please take the card out and put it back in again."
-    done
-fi
-
 # This signature is not quite as strong, but easier for people to verify out of band
-gpg2 -u "$RELEASE_GPG_KEY" --detach-sign --armor --sign --digest-algo sha256 letsencrypt-auto-source/letsencrypt-auto
+while ! gpg2 -u "$RELEASE_GPG_KEY" --detach-sign --armor --sign --digest-algo sha256 letsencrypt-auto-source/letsencrypt-auto; do
+    echo "Unable to sign letsencrypt-auto using $RELEASE_KEY."
+    echo "Make sure your OpenPGP card is in your computer if you are using one."
+    echo "You may need to take the card out and put it back in again."
+    read -p "Press enter to try signing again."
+done
 # We can't rename the openssl letsencrypt-auto.sig for compatibility reasons,
 # but we can use the right name for certbot-auto.asc from day one
 mv letsencrypt-auto-source/letsencrypt-auto.asc letsencrypt-auto-source/certbot-auto.asc
