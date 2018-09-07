@@ -40,6 +40,7 @@ tests/letstest/venv/
 # pytest cache
 .cache
 .mypy_cache/
+.pytest_cache/
 
 # docker files
 .docker
