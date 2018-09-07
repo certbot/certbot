@@ -215,7 +215,12 @@ cp -p letsencrypt-auto-source/letsencrypt-auto letsencrypt-auto
 
 git add certbot-auto letsencrypt-auto letsencrypt-auto-source docs/cli-help.txt
 git diff --cached
-git commit --gpg-sign="$RELEASE_GPG_KEY" -m "Release $version"
+while ! git commit --gpg-sign="$RELEASE_GPG_KEY" -m "Release $version"; do
+    echo "Unable to sign the release commit using git."
+    echo "You may have to configure git to use gpg2 by running:"
+    echo 'git config --global gpg.program $(command -v gpg2)'
+    read -p "Press enter to try signing again."
+done
 git tag --local-user "$RELEASE_GPG_KEY" --sign --message "Release $version" "$tag"
 
 cd ..
