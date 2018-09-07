@@ -23,7 +23,7 @@ class OpenSUSEConfigurator(configurator.ApacheConfigurator):
         enmod="a2enmod",
         dismod="a2dismod",
         le_vhost_ext="-le-ssl.conf",
-        handle_mods=False,
+        handle_modules=False,
         handle_sites=False,
         challenge_location="/etc/apache2/vhosts.d",
         MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
