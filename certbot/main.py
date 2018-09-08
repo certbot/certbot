@@ -19,6 +19,7 @@ from certbot import account
 from certbot import cert_manager
 from certbot import cli
 from certbot import client
+from certbot import compat
 from certbot import configuration
 from certbot import constants
 from certbot import crypto_util
@@ -1289,16 +1290,16 @@ def make_or_verify_needed_dirs(config):
 
     """
     util.set_up_core_dir(config.config_dir, constants.CONFIG_DIRS_MODE,
-                         os.geteuid(), config.strict_permissions)
+                         compat.os_geteuid(), config.strict_permissions)
     util.set_up_core_dir(config.work_dir, constants.CONFIG_DIRS_MODE,
-                         os.geteuid(), config.strict_permissions)
+                         compat.os_geteuid(), config.strict_permissions)
 
     hook_dirs = (config.renewal_pre_hooks_dir,
                  config.renewal_deploy_hooks_dir,
                  config.renewal_post_hooks_dir,)
     for hook_dir in hook_dirs:
         util.make_or_verify_dir(hook_dir,
-                                uid=os.geteuid(),
+                                uid=compat.os_geteuid(),
                                 strict=config.strict_permissions)
 
 
@@ -1333,6 +1334,7 @@ def main(cli_args=sys.argv[1:]):
     :raises errors.Error: error if plugin command is not supported
 
     """
+
     log.pre_arg_parse_setup()
 
     plugins = plugins_disco.PluginsRegistry.find_all()
@@ -1345,6 +1347,10 @@ def main(cli_args=sys.argv[1:]):
     args = cli.prepare_and_parse_args(plugins, cli_args)
     config = configuration.NamespaceConfig(args)
     zope.component.provideUtility(config)
+
+    # On windows, shell without administrative right cannot create symlinks required by certbot.
+    # So we check the rights before continuing.
+    compat.raise_for_non_administrative_windows_rights(config.verb)
 
     try:
         log.post_arg_parse_setup(config)

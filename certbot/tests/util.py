@@ -362,7 +362,6 @@ def lock_and_call(func, lock_path):
     child.join()
     assert child.exitcode == 0
 
-
 def hold_lock(cv, lock_path):  # pragma: no cover
     """Acquire a file lock at lock_path and wait to release it.
 
