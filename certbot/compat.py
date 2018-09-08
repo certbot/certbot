@@ -62,14 +62,14 @@ def os_geteuid():
         return os.geteuid()
     except AttributeError:
         # Windows specific
-        return '0'
+        return 0
 
 def readline_with_timeout(timeout, prompt):
     """
     Read user input to return the first line entered, or raise after specified timeout.
 
-    :param int timeout: The timeout, specified in seconds, given to the user.
-    :param str timeout: The prompt message to display to the user.
+    :param float timeout: The timeout in seconds given to the user.
+    :param str prompt: The prompt message to display to the user.
 
     :returns: The first line entered by the user.
     :rtype: str
