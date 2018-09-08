@@ -1,0 +1,10 @@
+branches:
+  only:
+    - master
+    - /^\d+\.\d+\.x$/ # version branches like X.X.X
+    - /^test-.*$/
+
+build: off
+
+test_script:
+  - ps: Write-Host "Hello, world!"
