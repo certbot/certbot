@@ -89,7 +89,7 @@ class LockFileTest(test_util.TempDirTestCase):
         lock_file.release()
         self.assertFalse(os.path.exists(self.lock_path))
 
-    @mock.patch('certbot.lock.fcntl.lockf')
+    @mock.patch('certbot.compat.fcntl.lockf')
     def test_unexpected_lockf_err(self, mock_lockf):
         msg = 'hi there'
         mock_lockf.side_effect = IOError(msg)

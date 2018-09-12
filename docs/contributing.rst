@@ -11,6 +11,12 @@ Developer Guide
 Getting Started
 ===============
 
+Certbot has the same :ref:`system requirements <system_requirements>` when set
+up for development.  While the section below will help you install Certbot and
+its dependencies, Certbot needs to be run on a UNIX-like OS so if you're using
+Windows, you'll need to set up a (virtual) machine running an OS such as Linux
+and continue with these instructions on that UNIX-like OS.
+
 Running a local copy of the client
 ----------------------------------
 
@@ -26,36 +32,40 @@ If you're on macOS, we recommend you skip the rest of this section and instead
 run Certbot in Docker. You can find instructions for how to do this :ref:`here
 <docker-dev>`. If you're running on Linux, you can run the following commands to
 install dependencies and set up a virtual environment where you can run
-Certbot. You will need to repeat this when Certbot's dependencies change or when
-a new plugin is introduced.
+Certbot.
 
 .. code-block:: shell
 
    cd certbot
-   sudo ./certbot-auto --os-packages-only
-   ./tools/venv.sh
+   ./certbot-auto --debug --os-packages-only
+   tools/venv.sh
 
-You can now run the copy of Certbot from git either by executing
-``venv/bin/certbot``, or by activating the virtual environment. If you're
-actively modifying and testing the code, you may want to run commands like this in
-each shell where you're working:
+If you have Python3 available and want to use it, run the ``venv3.sh`` script.
 
 .. code-block:: shell
 
-   source ./venv/bin/activate
-   export SERVER=https://acme-staging-v02.api.letsencrypt.org/directory
-   source tests/integration/_common.sh
+   tools/venv3.sh
 
-After that, your shell will be using the virtual environment, your copy of
-Certbot will default to requesting test (staging) certificates, and you run the
-client by typing `certbot` or `certbot_test`. The latter is an alias that
-includes several flags useful for testing. For instance, it sets various output
-directories to point to /tmp/, and uses non-privileged ports for challenges, so
-root privileges are not required.
+.. note:: You may need to repeat this when
+  Certbot's dependencies change or when a new plugin is introduced.
 
-Activating a shell with `venv/bin/activate` sets environment variables so that
-Python pulls in the correct versions of various packages needed by Certbot.
-More information can be found in the `virtualenv docs`_.
+You can now run the copy of Certbot from git either by executing
+``venv/bin/certbot``, or by activating the virtual environment. You can do the
+latter by running:
+
+.. code-block:: shell
+
+   source venv/bin/activate
+   # or
+   source venv3/bin/activate
+
+After running this command, ``certbot`` and development tools like ``ipdb``,
+``ipython``, ``pytest``, and ``tox`` are available in the shell where you ran
+the command. These tools are installed in the virtual environment and are kept
+separate from your global Python installation. This works by setting
+environment variables so the right executables are found and Python can pull in
+the versions of various packages needed by Certbot.  More information can be
+found in the `virtualenv docs`_.
 
 .. _`virtualenv docs`: https://virtualenv.pypa.io
 
@@ -95,25 +105,24 @@ Once all the unittests pass, check for sufficient test coverage using
 ``tox -e cover``, and then check for code style with ``tox -e lint`` (all files)
 or ``pylint --rcfile=.pylintrc path/to/file.py`` (single file at a time).
 
-Once all of the above is successful, you may run the full test suite,
-including integration tests, using ``tox``. We recommend running the
-commands above first, because running all tests with ``tox`` is very
-slow, and the large amount of ``tox`` output can make it hard to find
-specific failures when they happen. Also note that the full test suite
-will attempt to modify your system's Apache config if your user has sudo
-permissions, so it should not be run on a production Apache server.
+Once all of the above is successful, you may run the full test suite using
+``tox --skip-missing-interpreters``. We recommend running the commands above
+first, because running all tests like this is very slow, and the large amount
+of output can make it hard to find specific failures when they happen.
 
-If you have trouble getting the full ``tox`` suite to run locally, it is
-generally sufficient to open a pull request and let Github and Travis run
-integration tests for you.
+.. warning:: The full test suite may attempt to modify your system's Apache
+  config if your user has sudo permissions, so it should not be run on a
+  production Apache server.
 
 .. _integration:
 
 Integration testing with the Boulder CA
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To run integration tests locally, you need Docker and docker-compose installed
-and working. Fetch and start Boulder using:
+Generally it is sufficient to open a pull request and let Github and Travis run
+integration tests for you, however, if you want to run them locally you need
+Docker and docker-compose installed and working. Fetch and start Boulder, Let's
+Encrypt's ACME CA software, by using:
 
 .. code-block:: shell
 
@@ -303,6 +312,40 @@ Please:
 .. _PEP 8 - Style Guide for Python Code:
   https://www.python.org/dev/peps/pep-0008
 
+Mypy type annotations
+=====================
+
+Certbot uses the `mypy`_ static type checker. Python 3 natively supports official type annotations,
+which can then be tested for consistency using mypy. Python 2 doesn’t, but type annotations can
+be `added in comments`_. Mypy does some type checks even without type annotations; we can find
+bugs in Certbot even without a fully annotated codebase.
+
+Certbot supports both Python 2 and 3, so we’re using Python 2-style annotations.
+
+Zulip wrote a `great guide`_ to using mypy. It’s useful, but you don’t have to read the whole thing
+to start contributing to Certbot.
+
+To run mypy on Certbot, use ``tox -e mypy`` on a machine that has Python 3 installed.
+
+Note that instead of just importing ``typing``, due to packaging issues, in Certbot we import from
+``acme.magic_typing`` and have to add some comments for pylint like this:
+
+.. code-block:: python
+
+  from acme.magic_typing import Dict # pylint: disable=unused-import, no-name-in-module
+
+Also note that OpenSSL, which we rely on, has type definitions for crypto but not SSL. We use both.
+Those imports should look like this:
+
+.. code-block:: python
+
+  from OpenSSL import crypto
+  from OpenSSL import SSL # type: ignore # https://github.com/python/typeshed/issues/2052
+
+.. _mypy: https://mypy.readthedocs.io
+.. _added in comments: https://mypy.readthedocs.io/en/latest/cheat_sheet.html
+.. _great guide: https://blog.zulip.org/2016/10/13/static-types-in-python-oh-mypy/
+
 Submitting a pull request
 =========================
 
@@ -316,14 +359,20 @@ Steps:
 4. Run ``tox --skip-missing-interpreters`` to run the entire test suite
    including coverage. The ``--skip-missing-interpreters`` argument ignores
    missing versions of Python needed for running the tests. Fix any errors.
-5. If your code touches communication with an ACME server/Boulder, you
-   should run the integration tests, see `integration`_.
-6. Submit the PR.
-7. Did your tests pass on Travis? If they didn't, fix any errors.
+5. Submit the PR.
+6. Did your tests pass on Travis? If they didn't, fix any errors.
 
+Asking for help
+===============
+
+If you have any questions while working on a Certbot issue, don't hesitate to
+ask for help! You can do this in the #letsencrypt-dev IRC channel on Freenode.
+If you don't already have an IRC client set up, we recommend you join using
+`Riot <https://riot.im/app/#/room/#freenode_#letsencrypt-dev:matrix.org>`_.
 
 Updating certbot-auto and letsencrypt-auto
 ==========================================
+
 Updating the scripts
 --------------------
 Developers should *not* modify the ``certbot-auto`` and ``letsencrypt-auto`` files
@@ -386,8 +435,8 @@ Running the client with Docker
 ==============================
 
 You can use Docker Compose to quickly set up an environment for running and
-testing Certbot. This is especially useful for macOS users. To install Docker
-Compose, follow the instructions at https://docs.docker.com/compose/install/.
+testing Certbot. To install Docker Compose, follow the instructions at
+https://docs.docker.com/compose/install/.
 
 .. note:: Linux users can simply run ``pip install docker-compose`` to get
   Docker Compose after installing Docker Engine and activating your shell as
@@ -420,37 +469,22 @@ OS-level dependencies can be installed like so:
 
 .. code-block:: shell
 
-    letsencrypt-auto-source/letsencrypt-auto --os-packages-only
+   ./certbot-auto --debug --os-packages-only
 
 In general...
 
 * ``sudo`` is required as a suggested way of running privileged process
-* `Python`_ 2.7 is required
+* `Python`_ 2.7 or 3.4+ is required
 * `Augeas`_ is required for the Python bindings
-* ``virtualenv`` and ``pip`` are used for managing other python library
-  dependencies
+* ``virtualenv`` is used for managing other Python library dependencies
 
 .. _Python: https://wiki.python.org/moin/BeginnersGuide/Download
 .. _Augeas: http://augeas.net/
 .. _Virtualenv: https://virtualenv.pypa.io
 
 
-Debian
-------
-
-For squeeze you will need to:
-
-- Use ``virtualenv --no-site-packages -p python`` instead of ``-p python2``.
-
-
 FreeBSD
 -------
-
-Packages can be installed on FreeBSD using ``pkg``,
-or any other port-management tool (``portupgrade``, ``portmanager``, etc.)
-from the pre-built package or can be built and installed from ports.
-Either way will ensure proper installation of all the dependencies required
-for the package.
 
 FreeBSD by default uses ``tcsh``. In order to activate virtualenv (see
 above), you will need a compatible shell, e.g. ``pkg install bash &&

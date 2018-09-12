@@ -23,6 +23,7 @@ import traceback
 
 from acme import messages
 
+from certbot import compat
 from certbot import constants
 from certbot import errors
 from certbot import util
@@ -133,7 +134,7 @@ def setup_log_file_handler(config, logfile, fmt):
     # TODO: logs might contain sensitive data such as contents of the
     # private key! #525
     util.set_up_core_dir(
-        config.logs_dir, 0o700, os.geteuid(), config.strict_permissions)
+        config.logs_dir, 0o700, compat.os_geteuid(), config.strict_permissions)
     log_file_path = os.path.join(config.logs_dir, logfile)
     try:
         handler = logging.handlers.RotatingFileHandler(
@@ -191,9 +192,8 @@ class MemoryHandler(logging.handlers.MemoryHandler):
     only happens when flush(force=True) is called.
 
     """
-    def __init__(self, target=None):
+    def __init__(self, target=None, capacity=10000):
         # capacity doesn't matter because should_flush() is overridden
-        capacity = float('inf')
         super(MemoryHandler, self).__init__(capacity, target=target)
 
     def close(self):

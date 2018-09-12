@@ -147,9 +147,9 @@ class KeyAuthorizationChallenge(_TokenChallenge):
 
     :param response_cls: Subclass of `KeyAuthorizationChallengeResponse`
         that will be used to generate `response`.
-
+    :param str typ: type of the challenge
     """
-
+    typ = NotImplemented
     response_cls = NotImplemented
     thumbprint_hash_function = (
         KeyAuthorizationChallengeResponse.thumbprint_hash_function)
@@ -505,6 +505,21 @@ class TLSSNI01(KeyAuthorizationChallenge):
 
         """
         return self.response(account_key).gen_cert(key=kwargs.get('cert_key'))
+
+
+@Challenge.register  # pylint: disable=too-many-ancestors
+class TLSALPN01(KeyAuthorizationChallenge):
+    """ACME tls-alpn-01 challenge.
+
+    This class simply allows parsing the TLS-ALPN-01 challenge returned from
+    the CA. Full TLS-ALPN-01 support is not currently provided.
+
+    """
+    typ = "tls-alpn-01"
+
+    def validation(self, account_key, **kwargs):
+        """Generate validation for the challenge."""
+        raise NotImplementedError()
 
 
 @Challenge.register  # pylint: disable=too-many-ancestors

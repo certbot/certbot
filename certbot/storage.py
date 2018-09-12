@@ -239,10 +239,15 @@ def relevant_values(all_values):
     :rtype dict:
 
     """
-    return dict(
+    rv = dict(
         (option, value)
         for option, value in six.iteritems(all_values)
         if _relevant(option) and cli.option_was_set(option, value))
+    # We always save the server value to help with forward compatibility
+    # and behavioral consistency when versions of Certbot with different
+    # server defaults are used.
+    rv["server"] = all_values["server"]
+    return rv
 
 def lineagename_for_filename(config_filename):
     """Returns the lineagename for a configuration filename.
@@ -920,10 +925,10 @@ class RenewableCert(object):
         :rtype: bool
 
         """
-        return ("autorenew" not in self.configuration or
-                self.configuration.as_bool("autorenew"))
+        return ("autorenew" not in self.configuration["renewalparams"] or
+                self.configuration["renewalparams"].as_bool("autorenew"))
 
-    def should_autorenew(self, interactive=False):
+    def should_autorenew(self):
         """Should we now try to autorenew the most recent cert version?
 
         This is a policy question and does not only depend on whether
@@ -934,16 +939,12 @@ class RenewableCert(object):
         Note that this examines the numerically most recent cert version,
         not the currently deployed version.
 
-        :param bool interactive: set to True to examine the question
-            regardless of whether the renewal configuration allows
-            automated renewal (for interactive use). Default False.
-
         :returns: whether an attempt should now be made to autorenew the
             most current cert version in this lineage
         :rtype: bool
 
         """
-        if interactive or self.autorenewal_is_enabled():
+        if self.autorenewal_is_enabled():
             # Consider whether to attempt to autorenew this cert now
 
             # Renewals on the basis of revocation
