@@ -400,12 +400,12 @@ class NginxParser(object):
                     exclude = set(('default_server', 'default', 'setfib', 'fastopen', 'backlog',
                                    'rcvbuf', 'sndbuf', 'accept_filter', 'deferred', 'bind',
                                    'ipv6only', 'reuseport', 'so_keepalive'))
-                    
+
                     for param in exclude:
-                            # See: github.com/certbot/certbot/pull/6223#pullrequestreview-143019225
-                            keys = [x.split('=')[0] for x in directive]
-                            if param in keys:
-                                del directive[keys.index(param)]
+                        # See: github.com/certbot/certbot/pull/6223#pullrequestreview-143019225
+                        keys = [x.split('=')[0] for x in directive]
+                        if param in keys:
+                            del directive[keys.index(param)]
         return new_vhost
 
 
