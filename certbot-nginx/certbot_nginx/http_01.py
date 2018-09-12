@@ -185,25 +185,21 @@ class NginxHttp01(common.ChallengePerformer):
             :class:`certbot.achallenges.KeyAuthorizationAnnotatedChallenge`
 
         """
-        try:
-            vhosts = self.configurator.choose_redirect_vhosts(achall.domain,
-                '%i' % self.configurator.config.http01_port, create_if_no_match=True)
-        except errors.MisconfigurationError:
+        vhosts = self.configurator.choose_http_and_https_vhosts(achall.domain,
+            '%i' % self.configurator.config.http01_port)
+        if vhosts is (None, None):
             # Couldn't find either a matching name+port server block
             # or a port+default_server block, so create a dummy block
             return self._make_server_block(achall)
 
-        # len is max 1 because Nginx doesn't authenticate wildcards
-        # if len were or vhosts None, we would have errored
-        vhost = vhosts[0]
+        for vhost in vhosts:
+            # Modify existing server block
+            location_directive = [self._location_directive_for_achall(achall)]
 
-        # Modify existing server block
-        location_directive = [self._location_directive_for_achall(achall)]
+            self.configurator.parser.add_server_directives(vhost,
+                location_directive)
 
-        self.configurator.parser.add_server_directives(vhost,
-            location_directive)
-
-        rewrite_directive = [['rewrite', ' ', '^(/.well-known/acme-challenge/.*)',
-                                ' ', '$1', ' ', 'break']]
-        self.configurator.parser.add_server_directives(vhost,
-            rewrite_directive, insert_at_top=True)
+            rewrite_directive = [['rewrite', ' ', '^(/.well-known/acme-challenge/.*)',
+                                    ' ', '$1', ' ', 'break']]
+            self.configurator.parser.add_server_directives(vhost,
+                rewrite_directive, insert_at_top=True)

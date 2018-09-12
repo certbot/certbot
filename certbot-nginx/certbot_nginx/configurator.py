@@ -484,6 +484,36 @@ class NginxConfigurator(common.Installer):
             vhosts = [self._vhost_from_duplicated_default(target_name, False, port)]
         return vhosts
 
+    def choose_http_and_https_vhosts(self, target_name, http_port):
+        """Chooses a single http virtual host and a single https virtual host.
+
+        Chooses the vhosts most closely matching target_name that are
+        listening without using ssl on http_port and with ssl.
+
+        :param str target_name: domain name
+        :param str http_port: http port number
+
+        :returns: (http_vhost, https_vhost) associated with target_name
+        :rtype: tuple of :class:`~certbot_nginx.obj.VirtualHost`
+
+        """
+        if util.is_wildcard_domain(target_name):
+            raise errors.NotSupportedError("Wildcard issuance not supported by this method.")
+
+        try:
+            # take first item because we don't support wildcards
+            http_vhost = self.choose_redirect_vhosts(target_name, http_port,
+                create_if_no_match=True)[0]
+        except errors.MisconfigurationError:
+            http_vhost = None
+        try:
+            # take first item because we don't support wildcards
+            https_vhost = self.choose_vhosts(target_name, create_if_no_match=True)[0]
+        except errors.MisconfigurationError:
+            https_vhost = None
+
+        return (http_vhost, https_vhost)
+
     def _port_matches(self, test_port, matching_port):
         # test_port is a number, matching is a number or "" or None
         if matching_port == "" or matching_port is None:
