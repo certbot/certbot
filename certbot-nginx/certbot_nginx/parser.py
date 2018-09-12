@@ -222,7 +222,7 @@ class NginxParser(object):
                 return os.path.join(self.root, name)
 
         raise errors.NoInstallationError(
-            "Could not find configuration root")
+            "Could not find Nginx root configuration file (nginx.conf)")
 
     def filedump(self, ext='tmp', lazy=True):
         """Dumps parsed configurations into files.
