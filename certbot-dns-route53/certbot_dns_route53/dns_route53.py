@@ -38,6 +38,12 @@ class Authenticator(dns_common.DNSAuthenticator):
         self.r53 = boto3.client("route53")
         self._resource_records = collections.defaultdict(list) # type: DefaultDict[str, List[Dict[str, str]]]
 
+    @classmethod
+    def add_parser_arguments(cls, add):
+        add('change-max-poll',
+            help=('Maximum number of rounds to poll for INSYNC status against a route53 changeset'),
+            default=120)
+
     def more_info(self):  # pylint: disable=missing-docstring,no-self-use
         return "Solve a DNS01 challenge using AWS Route53"
 
@@ -141,7 +147,8 @@ class Authenticator(dns_common.DNSAuthenticator):
         """Wait for a change to be propagated to all Route53 DNS servers.
            https://docs.aws.amazon.com/Route53/latest/APIReference/API_GetChange.html
         """
-        for unused_n in range(0, 120):
+        change_max_poll = self.config('change-max-poll')
+        for unused_n in range(0, change_max_poll):
             response = self.r53.get_change(Id=change_id)
             if response["ChangeInfo"]["Status"] == "INSYNC":
                 return
