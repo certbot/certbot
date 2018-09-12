@@ -1,3 +1,4 @@
+# AppVeyor CI pipeline, executed on Windows Server 2016/2012 R2
 branches:
   only:
     - master
@@ -8,3 +9,4 @@ build: off
 
 test_script:
   - ps: Write-Host "Hello, world!"
+  
