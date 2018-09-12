@@ -25,7 +25,6 @@ init_fn = os.path.join(here, 'certbot', '__init__.py')
 meta = dict(re.findall(r"""__([a-z]+)__ = '([^']+)""", read_file(init_fn)))
 
 readme = read_file(os.path.join(here, 'README.rst'))
-changes = read_file(os.path.join(here, 'CHANGES.rst'))
 version = meta['version']
 
 # This package relies on PyOpenSSL, requests, and six, however, it isn't
@@ -79,7 +78,7 @@ setup(
     name='certbot',
     version=version,
     description="ACME client",
-    long_description=readme,  # later: + '\n\n' + changes
+    long_description=readme,
     url='https://github.com/letsencrypt/letsencrypt',
     author="Certbot Project",
     author_email='client-dev@letsencrypt.org',
