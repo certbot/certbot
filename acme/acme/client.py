@@ -36,7 +36,10 @@ if sys.version_info < (2, 7, 9):  # pragma: no cover
         requests.packages.urllib3.contrib.pyopenssl.inject_into_urllib3()  # type: ignore
     except AttributeError:
         import urllib3.contrib.pyopenssl  # pylint: disable=import-error
-        urllib3.contrib.pyopenssl.inject_into_urllib3()
+        try:
+            urllib3.contrib.pyopenssl.inject_into_urllib3()
+        except AttributeError:
+            pass
 
 DEFAULT_NETWORK_TIMEOUT = 45
 
