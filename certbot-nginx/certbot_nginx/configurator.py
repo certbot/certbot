@@ -521,8 +521,7 @@ class NginxConfigurator(common.Installer):
             # we couldn't choose a default and there was no match
             http_vhosts = []
 
-        vhosts = set(https_vhosts).union(http_vhosts)
-        return vhosts
+        return (http_vhosts, https_vhosts)
 
     def _port_matches(self, test_port, matching_port):
         # test_port is a number, matching is a number or "" or None

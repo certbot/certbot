@@ -205,12 +205,10 @@ class NginxHttp01(common.ChallengePerformer):
             :class:`certbot.achallenges.KeyAuthorizationAnnotatedChallenge`
 
         """
-        vhosts = self.configurator.choose_http_and_https_vhosts(achall.domain,
+        http_vhosts, https_vhosts = self.configurator.choose_http_and_https_vhosts(achall.domain,
             '%i' % self.configurator.config.http01_port)
-        if not vhosts:
-            # Couldn't find either a matching name+port server block
-            # or a port+default_server block, so create a dummy block
-            return self._make_server_block(achall)
+
+        vhosts = set(https_vhosts).union(http_vhosts)
 
         for vhost in vhosts:
             # Modify existing server block
@@ -223,3 +221,9 @@ class NginxHttp01(common.ChallengePerformer):
                                     ' ', '$1', ' ', 'break']]
             self.configurator.parser.add_server_directives(vhost,
                 rewrite_directive, insert_at_top=True)
+
+        # if vhosts doesn't contain at least one http and one https, make our own
+        if not http_vhosts or not https_vhosts:
+            # Couldn't find either a matching name+port server block
+            # or a port+default_server block, so create a dummy block
+            return self._make_server_block(achall)
