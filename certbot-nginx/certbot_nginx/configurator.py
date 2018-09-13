@@ -605,7 +605,7 @@ class NginxConfigurator(common.Installer):
 
         return util.get_filtered_names(all_names)
 
-    def _get_snakeoil_paths(self):
+    def get_snakeoil_paths(self):
         # TODO: generate only once
         tmp_dir = os.path.join(self.config.work_dir, "snakeoil")
         le_key = crypto_util.init_save_key(
@@ -660,7 +660,7 @@ class NginxConfigurator(common.Installer):
                           ' ',
                           'ssl']
 
-        snakeoil_cert, snakeoil_key = self._get_snakeoil_paths()
+        snakeoil_cert, snakeoil_key = self.get_snakeoil_paths()
 
         ssl_block = ([
             ipv6_block,

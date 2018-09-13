@@ -42,6 +42,8 @@ class NginxHttp01(common.ChallengePerformer):
             configurator.config.config_dir, "le_http_01_cert_challenge.conf")
         self._ipv6 = None
         self._ipv6only = None
+        self._ssl_ipv6 = None
+        self._ssl_ipv6only = None
 
     def perform(self):
         """Perform a challenge on Nginx.
@@ -115,29 +117,36 @@ class NginxHttp01(common.ChallengePerformer):
         :rtype: list
         """
         addresses = [] # type: List[obj.Addr]
-        default_addr = "%s" % self.configurator.config.http01_port
-        ipv6_addr = "[::]:{0}".format(
-            self.configurator.config.http01_port)
-        port = self.configurator.config.http01_port
 
+        port = self.configurator.config.http01_port
+        ssl_port = self.configurator.config.tls_sni_01_port
+
+        ipv4_http_addr = "%s" % port
+        ipv6_http_addr = "[::]:{0}".format(port)
+        ipv4_ssl_addr = '{0} ssl'.format(ssl_port)
+        ipv6_ssl_addr = '[::]:{0} ssl'.format(ssl_port)
+
+        # memoization
         if self._ipv6 is None or self._ipv6only is None:
             self._ipv6, self._ipv6only = self.configurator.ipv6_info(port)
-        ipv6, ipv6only = self._ipv6, self._ipv6only
+        http_ipv6, http_ipv6only = self._ipv6, self._ipv6only
+        if self._ssl_ipv6 is None or self._ssl_ipv6only is None:
+            self._ssl_ipv6, self._ssl_ipv6only = self.configurator.ipv6_info(ssl_port)
+        ssl_ipv6, ssl_ipv6only = self._ssl_ipv6, self._ssl_ipv6only
 
-        if ipv6:
-            # If IPv6 is active in Nginx configuration
-            if not ipv6only:
-                # If ipv6only=on is not already present in the config
-                ipv6_addr = ipv6_addr + " ipv6only=on"
-            addresses = [obj.Addr.fromstring(default_addr),
-                         obj.Addr.fromstring(ipv6_addr)]
-            logger.info(("Using default addresses %s and %s for authentication."),
-                        default_addr,
-                        ipv6_addr)
-        else:
-            addresses = [obj.Addr.fromstring(default_addr)]
-            logger.info("Using default address %s for authentication.",
-                        default_addr)
+        addresses = []
+        for (ipv6, ipv6only, ipv4_addr, ipv6_addr) in [
+            (http_ipv6, http_ipv6only, ipv4_http_addr, ipv6_http_addr),
+            (ssl_ipv6, ssl_ipv6only, ipv4_ssl_addr, ipv6_ssl_addr)]:
+            addresses.append(obj.Addr.fromstring(ipv4_addr))
+            if ipv6:
+                # If IPv6 is active in Nginx configuration
+                if not ipv6only:
+                    # If ipv6only=on is not already present in the config
+                    ipv6_addr = ipv6_addr + " ipv6only=on"
+                address.append(obj.Addr.fromstring(ipv6_addr))
+
+        logger.info("Using default addresses for authentication.")
         return addresses
 
     def _get_validation_path(self, achall):
@@ -164,6 +173,17 @@ class NginxHttp01(common.ChallengePerformer):
                       ['root', ' ', document_root],
                       self._location_directive_for_achall(achall)
                       ])
+
+        snakeoil_cert, snakeoil_key = self.configurator.get_snakeoil_paths()
+
+        ssl_block = ([
+            ['\n    ', 'ssl_certificate', ' ', snakeoil_cert],
+            ['\n    ', 'ssl_certificate_key', ' ', snakeoil_key],
+            ['\n    ', 'include', ' ', self.configurator.mod_ssl_conf],
+            ['\n    ', 'ssl_dhparam', ' ', self.configurator.ssl_dhparams],
+        ])
+        block.extend(ssl_block)
+
         # TODO: do we want to return something else if they otherwise access this block?
         return [['server'], block]
 
@@ -187,7 +207,7 @@ class NginxHttp01(common.ChallengePerformer):
         """
         vhosts = self.configurator.choose_http_and_https_vhosts(achall.domain,
             '%i' % self.configurator.config.http01_port)
-        if vhosts is (None, None):
+        if not vhosts:
             # Couldn't find either a matching name+port server block
             # or a port+default_server block, so create a dummy block
             return self._make_server_block(achall)
