@@ -193,6 +193,8 @@ class NginxHttp01(common.ChallengePerformer):
             return self._make_server_block(achall)
 
         for vhost in vhosts:
+            if vhost is None:
+                continue
             # Modify existing server block
             location_directive = [self._location_directive_for_achall(achall)]
 
