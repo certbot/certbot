@@ -435,19 +435,19 @@ class NginxConfigurator(common.Installer):
             if name_type == 'exact':
                 matches.append({'vhost': vhost,
                                 'name': name,
-                                'rank': 0 if vhost.ssl else 1})
+                                'rank': 0 if vhost.ssl else 4})
             elif name_type == 'wildcard_start':
                 matches.append({'vhost': vhost,
                                 'name': name,
-                                'rank': 2 if vhost.ssl else 3})
+                                'rank': 1 if vhost.ssl else 5})
             elif name_type == 'wildcard_end':
                 matches.append({'vhost': vhost,
                                 'name': name,
-                                'rank': 4 if vhost.ssl else 5})
+                                'rank': 2 if vhost.ssl else 6})
             elif name_type == 'regex':
                 matches.append({'vhost': vhost,
                                 'name': name,
-                                'rank': 6 if vhost.ssl else 7})
+                                'rank': 3 if vhost.ssl else 7})
         return sorted(matches, key=lambda x: x['rank'])
 
 
