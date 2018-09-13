@@ -507,7 +507,7 @@ class NginxConfigurator(common.Installer):
 
         # after that, just run choose_vhosts with create_if_no_match
         try:
-            https_vhosts = choose_vhosts(target_name, create_if_no_match=True)
+            https_vhosts = self.choose_vhosts(target_name, create_if_no_match=True)
         except errors.MisconfigurationError:
             # we couldn't choose a default and there was no match
             https_vhosts = []
