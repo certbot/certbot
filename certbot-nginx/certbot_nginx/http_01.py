@@ -144,7 +144,7 @@ class NginxHttp01(common.ChallengePerformer):
                 if not ipv6only:
                     # If ipv6only=on is not already present in the config
                     ipv6_addr = ipv6_addr + " ipv6only=on"
-                address.append(obj.Addr.fromstring(ipv6_addr))
+                addresses.append(obj.Addr.fromstring(ipv6_addr))
 
         logger.info("Using default addresses for authentication.")
         return addresses
