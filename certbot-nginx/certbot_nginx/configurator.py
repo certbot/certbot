@@ -519,9 +519,9 @@ class NginxConfigurator(common.Installer):
                 create_if_no_match=True)
         except errors.MisconfigurationError:
             # we couldn't choose a default and there was no match
-            https_vhosts = []
+            http_vhosts = []
 
-        vhosts = set(https_vhosts).update(http_vhosts)
+        vhosts = set(https_vhosts).union(http_vhosts)
         return vhosts
 
     def _port_matches(self, test_port, matching_port):
