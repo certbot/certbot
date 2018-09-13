@@ -10,7 +10,7 @@ from collections import OrderedDict
 import zope.interface
 import zope.interface.verify
 
-from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Dict, List  # pylint: disable=unused-import, no-name-in-module
 from certbot import constants
 from certbot import errors
 from certbot import interfaces
