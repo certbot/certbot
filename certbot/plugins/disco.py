@@ -291,7 +291,7 @@ class PluginsRegistry(collections.Mapping):
     def __str__(self):
         if not self._plugins:
             return "No plugins"
-        cleaned_list = []
+        cleaned_list = [] # type: List[PluginEntryPoint]
         for p_ep in six.itervalues(self._plugins):
             if p_ep not in cleaned_list:
                 cleaned_list.append(p_ep)
