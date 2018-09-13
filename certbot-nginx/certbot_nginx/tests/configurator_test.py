@@ -448,7 +448,7 @@ class NginxConfiguratorTest(util.NginxTest):
 
     def test_get_snakeoil_paths(self):
         # pylint: disable=protected-access
-        cert, key = self.config._get_snakeoil_paths()
+        cert, key = self.config.get_snakeoil_paths()
         self.assertTrue(os.path.exists(cert))
         self.assertTrue(os.path.exists(key))
         with open(cert) as cert_file:
