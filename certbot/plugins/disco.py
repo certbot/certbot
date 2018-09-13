@@ -15,7 +15,6 @@ from certbot import constants
 from certbot import errors
 from certbot import interfaces
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -48,7 +47,9 @@ class PluginEntryPoint(object):
     __hash__ = None  # type: ignore
 
     def __init__(self, entry_point):
-        self.name = self.entry_point_to_plugin_name(entry_point)
+        self.name = entry_point.name
+        self.dist = entry_point.dist.key
+        self.prefix_free = self.dist in self.PREFIX_FREE_DISTRIBUTIONS
         self.plugin_cls = entry_point.load()
         self.entry_point = entry_point
         self._initialized = None
@@ -173,7 +174,8 @@ class PluginEntryPoint(object):
                     self.plugin_cls))),
             "Entry point: {0}".format(self.entry_point),
         ]
-
+        if not self.prefix_free:
+            lines.insert(1, "Alternative name: {}:{}".format(self.dist, self.name))
         if self.initialized:
             lines.append("Initialized: {0}".format(self.init()))
             if self.prepared:
@@ -201,14 +203,17 @@ class PluginsRegistry(collections.Mapping):
             pkg_resources.iter_entry_points(
                 constants.SETUPTOOLS_PLUGINS_ENTRY_POINT),
             pkg_resources.iter_entry_points(
-                constants.OLD_SETUPTOOLS_PLUGINS_ENTRY_POINT),)
+                constants.OLD_SETUPTOOLS_PLUGINS_ENTRY_POINT), )
         for entry_point in entry_points:
             plugin_ep = PluginEntryPoint(entry_point)
             assert plugin_ep.name not in plugins, (
-                "PREFIX_FREE_DISTRIBUTIONS messed up")
+                "PREFIX_FREE_DISTRIBUTIONS messed up /"\
+				"plugin {} several times present".format(plugin_ep.name))
             # providedBy | pylint: disable=no-member
             if interfaces.IPluginFactory.providedBy(plugin_ep.plugin_cls):
                 plugins[plugin_ep.name] = plugin_ep
+                if not plugin_ep.prefix_free:
+                    plugins[plugin_ep.dist + ":" + plugin_ep.name] = plugin_ep
             else:  # pragma: no cover
                 logger.warning(
                     "%r does not provide IPluginFactory, skipping", plugin_ep)
@@ -286,4 +291,8 @@ class PluginsRegistry(collections.Mapping):
     def __str__(self):
         if not self._plugins:
             return "No plugins"
-        return "\n\n".join(str(p_ep) for p_ep in six.itervalues(self._plugins))
+        cleaned_list = []
+        for p_ep in six.itervalues(self._plugins):
+            if p_ep not in cleaned_list:
+                cleaned_list.append(p_ep)
+        return "\n\n".join(str(p_ep) for p_ep in cleaned_list)
