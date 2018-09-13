@@ -500,6 +500,19 @@ class NginxConfigurator(common.Installer):
         if util.is_wildcard_domain(target_name):
             raise errors.NotSupportedError("Wildcard issuance not supported by this method.")
 
+        # goal: return a set of vhosts that contains at least one http server and at least one
+        # https server
+
+        # first, fix choose_vhost to prefer all matching ssl server blocks over all matching
+        # non-ssl server blocks
+
+        # after that, just run choose_vhosts with create_if_no_match
+        # the thing it returns will be definitely https, maybe also http
+        # what if there's an ssl-only block?
+        # run choose_redirect vhosts to find a matching http block
+        # if they're the same, remove one
+        # return
+
         try:
             # take first item because we don't support wildcards
             http_vhost = self.choose_redirect_vhosts(target_name, http_port,
@@ -509,6 +522,9 @@ class NginxConfigurator(common.Installer):
         try:
             # take first item because we don't support wildcards
             https_vhosts = self._choose_vhost_single(target_name)
+            # first, try to find an already-ssl block that matches by server name
+            # if that doesn't exist, find the most-matching non-ssl block
+            # if none exist, make sure to create one
         except errors.MisconfigurationError:
             https_vhosts = None
         https_vhost = https_vhosts[0].ssl if https_vhosts and https_vhosts[0].ssl else None
