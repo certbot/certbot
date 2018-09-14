@@ -129,15 +129,13 @@ class NginxHttp01(common.ChallengePerformer):
         # memoization
         if self._ipv6 is None or self._ipv6only is None:
             self._ipv6, self._ipv6only = self.configurator.ipv6_info(port)
-        http_ipv6, http_ipv6only = self._ipv6, self._ipv6only
         if self._ssl_ipv6 is None or self._ssl_ipv6only is None:
             self._ssl_ipv6, self._ssl_ipv6only = self.configurator.ipv6_info(ssl_port)
-        ssl_ipv6, ssl_ipv6only = self._ssl_ipv6, self._ssl_ipv6only
 
         addresses = []
         for (ipv6, ipv6only, ipv4_addr, ipv6_addr) in [
-            (http_ipv6, http_ipv6only, ipv4_http_addr, ipv6_http_addr),
-            (ssl_ipv6, ssl_ipv6only, ipv4_ssl_addr, ipv6_ssl_addr)]:
+            (self._ipv6, self._ipv6only, ipv4_http_addr, ipv6_http_addr),
+            (self._ssl_ipv6, self._ssl_ipv6only, ipv4_ssl_addr, ipv6_ssl_addr)]:
             addresses.append(obj.Addr.fromstring(ipv4_addr))
             if ipv6:
                 # If IPv6 is active in Nginx configuration

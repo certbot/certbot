@@ -605,6 +605,7 @@ class NginxConfigurator(common.Installer):
         return util.get_filtered_names(all_names)
 
     def get_snakeoil_paths(self):
+        """Generate invalid certs that let us create ssl directives for Nginx"""
         # TODO: generate only once
         tmp_dir = os.path.join(self.config.work_dir, "snakeoil")
         le_key = crypto_util.init_save_key(
