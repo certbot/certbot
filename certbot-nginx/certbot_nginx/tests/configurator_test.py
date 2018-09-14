@@ -128,22 +128,39 @@ class NginxConfiguratorTest(util.NginxTest):
                             ['#', parser.COMMENT]]]],
                          parsed[0])
 
-    def test_choose_vhosts(self):
-        localhost_conf = set(['localhost', r'~^(www\.)?(example|bar)\.'])
-        server_conf = set(['somename', 'another.alias', 'alias'])
-        example_conf = set(['.example.com', 'example.*'])
-        foo_conf = set(['*.www.foo.com', '*.www.example.com'])
-        ipv6_conf = set(['ipv6.com'])
+    def test_choose_vhosts_alias(self):
+        self._test_choose_vhosts_common('alias', 'server_conf')
 
-        results = [('alias', server_conf),
-                   ('example.com', example_conf),
-                   ('localhost', localhost_conf),
-                   ('example.com.uk.test', example_conf),
-                   ('www.example.com', example_conf),
-                   ('test.www.example.com', foo_conf),
-                   ('abc.www.foo.com', foo_conf),
-                   ('www.bar.co.uk', localhost_conf),
-                   ('ipv6.com', ipv6_conf)]
+    def test_choose_vhosts_example_com(self):
+        self._test_choose_vhosts_common('example.com', 'example_conf')
+
+    def test_choose_vhosts_localhost(self):
+        self._test_choose_vhosts_common('localhost', 'localhost_conf')
+
+    def test_choose_vhosts_example_com_uk_test(self):
+        self._test_choose_vhosts_common('example.com.uk.test', 'example_conf')
+
+    def test_choose_vhosts_www_example_com(self):
+        self._test_choose_vhosts_common('www.example.com', 'example_conf')
+
+    def test_choose_vhosts_test_www_example_com(self):
+        self._test_choose_vhosts_common('test.www.example.com', 'foo_conf')
+
+    def test_choose_vhosts_abc_www_foo_com(self):
+        self._test_choose_vhosts_common('abc.www.foo.com', 'foo_conf')
+
+    def test_choose_vhosts_www_bar_co_uk(self):
+        self._test_choose_vhosts_common('www.bar.co.uk', 'localhost_conf')
+
+    def test_choose_vhosts_ipv6_com(self):
+        self._test_choose_vhosts_common('ipv6.com', 'ipv6_conf')
+
+    def _test_choose_vhosts_common(self, name, conf):
+        conf_names = {'localhost_conf': set(['localhost', r'~^(www\.)?(example|bar)\.']),
+                 'server_conf': set(['somename', 'another.alias', 'alias']),
+                 'example_conf': set(['.example.com', 'example.*']),
+                 'foo_conf': set(['*.www.foo.com', '*.www.example.com']),
+                 'ipv6_conf': set(['ipv6.com'])}
 
         conf_path = {'localhost': "etc_nginx/nginx.conf",
                    'alias': "etc_nginx/nginx.conf",
@@ -155,21 +172,21 @@ class NginxConfiguratorTest(util.NginxTest):
                    'www.bar.co.uk': "etc_nginx/nginx.conf",
                    'ipv6.com': "etc_nginx/sites-enabled/ipv6.com"}
 
+        vhost = self.config.choose_vhosts(name)[0]
+        path = os.path.relpath(vhost.filep, self.temp_dir)
+
+        self.assertEqual(conf_names[conf], vhost.names)
+        self.assertEqual(conf_path[name], path)
+        # IPv6 specific checks
+        if name == "ipv6.com":
+            self.assertTrue(vhost.ipv6_enabled())
+            # Make sure that we have SSL enabled also for IPv6 addr
+            self.assertTrue(
+                any([True for x in vhost.addrs if x.ssl and x.ipv6]))
+
+    def test_choose_vhosts_bad(self):
         bad_results = ['www.foo.com', 'example', 't.www.bar.co',
                        '69.255.225.155']
-
-        for name, conf_names in results:
-            vhost = self.config.choose_vhosts(name)[0]
-            path = os.path.relpath(vhost.filep, self.temp_dir)
-
-            self.assertEqual(conf_names, vhost.names)
-            self.assertEqual(conf_path[name], path)
-            # IPv6 specific checks
-            if name == "ipv6.com":
-                self.assertTrue(vhost.ipv6_enabled())
-                # Make sure that we have SSL enabled also for IPv6 addr
-                self.assertTrue(
-                    any([True for x in vhost.addrs if x.ssl and x.ipv6]))
 
         for name in bad_results:
             self.assertRaises(errors.MisconfigurationError,
