@@ -748,7 +748,8 @@ def register(config, unused_plugins):
     acc.regr = cb_client.acme.update_registration(acc.regr.update(body=upd_body))
 
     if config.show_registration:
-        add_msg("Current registration info: {0}." .format(acc.regr.body))
+        add_msg("Current registration info for account {0}: {1}."
+                .format(acc.regr.uri, acc.regr.body))
 
     if not config.update_registration:
         return
