@@ -135,15 +135,15 @@ class NginxConfiguratorTest(util.NginxTest):
         foo_conf = set(['*.www.foo.com', '*.www.example.com'])
         ipv6_conf = set(['ipv6.com'])
 
-        results = {'localhost': localhost_conf,
-                   'alias': server_conf,
-                   'example.com': example_conf,
-                   'example.com.uk.test': example_conf,
-                   'www.example.com': example_conf,
-                   'test.www.example.com': foo_conf,
-                   'abc.www.foo.com': foo_conf,
-                   'www.bar.co.uk': localhost_conf,
-                   'ipv6.com': ipv6_conf}
+        results = [('alias', server_conf),
+                   ('example.com', example_conf),
+                   ('localhost', localhost_conf),
+                   ('example.com.uk.test', example_conf),
+                   ('www.example.com', example_conf),
+                   ('test.www.example.com', foo_conf),
+                   ('abc.www.foo.com', foo_conf),
+                   ('www.bar.co.uk', localhost_conf),
+                   ('ipv6.com', ipv6_conf)]
 
         conf_path = {'localhost': "etc_nginx/nginx.conf",
                    'alias': "etc_nginx/nginx.conf",
@@ -158,11 +158,11 @@ class NginxConfiguratorTest(util.NginxTest):
         bad_results = ['www.foo.com', 'example', 't.www.bar.co',
                        '69.255.225.155']
 
-        for name in results:
+        for name, conf_names in results:
             vhost = self.config.choose_vhosts(name)[0]
             path = os.path.relpath(vhost.filep, self.temp_dir)
 
-            self.assertEqual(results[name], vhost.names)
+            self.assertEqual(conf_names, vhost.names)
             self.assertEqual(conf_path[name], path)
             # IPv6 specific checks
             if name == "ipv6.com":
