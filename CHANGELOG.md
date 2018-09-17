@@ -14,8 +14,8 @@ Certbot adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
-*
-  
+* Correct OVH integration tests on machines without internet access.
+
 ## 0.27.1 - 2018-09-06
 
 ### Fixed
