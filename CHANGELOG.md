@@ -14,6 +14,7 @@ Certbot adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+* Match Nginx parser update in allowing variable names to start with `${`.
 * Correct OVH integration tests on machines without internet access.
 
 ## 0.27.1 - 2018-09-06
@@ -22,7 +23,7 @@ Certbot adheres to [Semantic Versioning](http://semver.org/).
 
 * Fixed parameter name in OpenSUSE overrides for default parameters in the
   Apache plugin. Certbot on OpenSUSE works again.
-  
+
 Despite us having broken lockstep, we are continuing to release new versions of
 all Certbot components during releases for the time being, however, the only
 package with changes other than its version number was:
