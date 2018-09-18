@@ -271,6 +271,8 @@ class TestRawNginxParser(unittest.TestCase):
             location ~ ^/users/(.+\.(?:gif|jpe?g|png))$ {
               alias /data/w3/images/$1;
             }
+
+            proxy_set_header X-Origin-URI ${scheme}://${http_host}/$request_uri;
         """
         parsed = loads(test)
         self.assertEqual(parsed, [[['if', '($http_user_agent', '~', 'MSIE)'],
@@ -281,17 +283,14 @@ class TestRawNginxParser(unittest.TestCase):
             [['return', '403']]], [['if', '($args', '~', 'post=140)'],
             [['rewrite', '^', 'http://example.com/']]],
             [['location', '~', '^/users/(.+\\.(?:gif|jpe?g|png))$'],
-            [['alias', '/data/w3/images/$1']]]]
+            [['alias', '/data/w3/images/$1']]],
+            ['proxy_set_header', 'X-Origin-URI', '${scheme}://${http_host}/$request_uri']]
         )
 
     def test_edge_cases(self):
         # quotes
         parsed = loads(r'"hello\""; # blah "heh heh"')
         self.assertEqual(parsed, [['"hello\\""'], ['#', ' blah "heh heh"']])
-
-        # empty var as block
-        parsed = loads(r"${}")
-        self.assertEqual(parsed, [[['$'], []]])
 
         # if with comment
         parsed = loads("""if ($http_cookie ~* "id=([^;]+)(?:;|$)") { # blah )
@@ -342,10 +341,9 @@ class TestRawNginxParser(unittest.TestCase):
         ])
 
         # variable weirdness
-        parsed = loads("directive $var;")
-        self.assertEqual(parsed, [['directive', '$var']])
+        parsed = loads("directive $var ${var} $ ${};")
+        self.assertEqual(parsed, [['directive', '$var', '${var}', '$', '${}']])
         self.assertRaises(ParseException, loads, "server {server_name test.com};")
-        self.assertRaises(ParseException, loads, "directive ${var};")
         self.assertEqual(loads("blag${dfgdfg};"), [['blag${dfgdfg}']])
         self.assertRaises(ParseException, loads, "blag${dfgdf{g};")
 
