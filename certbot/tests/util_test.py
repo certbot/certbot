@@ -79,8 +79,9 @@ class LockDirUntilExit(test_util.TempDirTestCase):
     """Tests for certbot.util.lock_dir_until_exit."""
     @classmethod
     def _call(cls, *args, **kwargs):
-        from certbot.util import lock_dir_until_exit
-        return lock_dir_until_exit(*args, **kwargs)
+        from certbot.util import filelock
+        lock = filelock.lock_for_dir(*args, **kwargs)
+        lock.acquire()
 
     def setUp(self):
         super(LockDirUntilExit, self).setUp()
@@ -88,23 +89,23 @@ class LockDirUntilExit(test_util.TempDirTestCase):
         import certbot.util
         reload_module(certbot.util)
 
-    @test_util.broken_on_windows
-    @mock.patch('certbot.util.logger')
-    @mock.patch('certbot.util.atexit_register')
-    def test_it(self, mock_register, mock_logger):
+    @mock.patch('certbot.filelock.logger')
+    @mock.patch('certbot.filelock._LOCKS')
+    def test_it(self, mock_locks, mock_logger):
+        from certbot import filelock
+
         subdir = os.path.join(self.tempdir, 'subdir')
         os.mkdir(subdir)
-        self._call(self.tempdir)
-        self._call(subdir)
-        self._call(subdir)
 
-        self.assertEqual(mock_register.call_count, 1)
-        registered_func = mock_register.call_args[0][0]
-        shutil.rmtree(subdir)
-        registered_func()  # exception not raised
-        # logger.debug is only called once because the second call
-        # to lock subdir was ignored because it was already locked
-        self.assertEqual(mock_logger.debug.call_count, 1)
+        with filelock.lock_for_dir(self.tempdir):
+            with filelock.lock_for_dir(subdir) as sub_lock:
+                with sub_lock:
+                    self.assertEqual(len(mock_locks.mock_calls), 2) # pylint: disable=protected-access
+                    # exception not raised
+                    filelock._release_all_locks() # pylint: disable=protected-access
+                    # logger.debug is only called twice because the third call
+                    # to lock subdir was ignored as it was already unlocked
+                    self.assertEqual(mock_logger.debug.call_count, 2)
 
 
 class SetUpCoreDirTest(test_util.TempDirTestCase):
@@ -112,9 +113,10 @@ class SetUpCoreDirTest(test_util.TempDirTestCase):
 
     def _call(self, *args, **kwargs):
         from certbot.util import set_up_core_dir
-        return set_up_core_dir(*args, **kwargs)
+        with set_up_core_dir(*args, **kwargs):
+            print('Dummy implementation')
 
-    @mock.patch('certbot.util.lock_dir_until_exit')
+    @mock.patch('certbot.util.filelock.lock_for_dir')
     def test_success(self, mock_lock):
         new_dir = os.path.join(self.tempdir, 'new')
         self._call(new_dir, 0o700, compat.os_geteuid(), False)

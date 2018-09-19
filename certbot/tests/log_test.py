@@ -128,7 +128,8 @@ class SetupLogFileHandlerTest(test_util.ConfigTestCase):
     @classmethod
     def _call(cls, *args, **kwargs):
         from certbot.log import setup_log_file_handler
-        return setup_log_file_handler(*args, **kwargs)
+        with setup_log_file_handler(*args, **kwargs):
+            print('Dummy implementation')
 
     def setUp(self):
         super(SetupLogFileHandlerTest, self).setUp()
@@ -154,17 +155,18 @@ class SetupLogFileHandlerTest(test_util.ConfigTestCase):
 
     def _test_success_common(self, should_rollover):
         log_file = 'test.log'
-        handler, log_path = self._call(self.config, log_file, '%(message)s')
-        handler.close()
+        from certbot.log import setup_log_file_handler
+        with setup_log_file_handler(self.config, log_file, '%(message)s') as (handler, log_path):
+            handler.close()
 
-        self.assertEqual(handler.level, logging.DEBUG)
-        self.assertEqual(handler.formatter.converter, time.localtime)
+            self.assertEqual(handler.level, logging.DEBUG)
+            self.assertEqual(handler.formatter.converter, time.localtime)
 
-        expected_path = os.path.join(self.config.logs_dir, log_file)
-        self.assertEqual(log_path, expected_path)
+            expected_path = os.path.join(self.config.logs_dir, log_file)
+            self.assertEqual(log_path, expected_path)
 
-        backup_path = os.path.join(self.config.logs_dir, log_file + '.1')
-        self.assertEqual(os.path.exists(backup_path), should_rollover)
+            backup_path = os.path.join(self.config.logs_dir, log_file + '.1')
+            self.assertEqual(os.path.exists(backup_path), should_rollover)
 
     @mock.patch('certbot.log.logging.handlers.RotatingFileHandler')
     def test_max_log_backups_used(self, mock_handler):

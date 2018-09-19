@@ -163,10 +163,10 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
             certbot_test_util.lock_and_call(assert_raises, self.tempdir)
 
 
-    @mock.patch('certbot.util.lock_dir_until_exit')
-    def test_dir_locked(self, lock_dir):
+    @mock.patch('certbot.util.filelock.lock_for_dir')
+    def test_dir_locked(self, lock_for_dir):
         with create_installer(self.config) as installer:
-            lock_dir.side_effect = errors.LockError
+            lock_for_dir.side_effect = errors.LockError
             self.assertRaises(errors.PluginError, installer.prepare)
 
     def test_more_info(self):
