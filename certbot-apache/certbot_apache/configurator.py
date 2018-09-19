@@ -18,6 +18,7 @@ from acme.magic_typing import Any, DefaultDict, Dict, List, Set, Union  # pylint
 
 from certbot import errors
 from certbot import interfaces
+from certbot import filelock
 from certbot import util
 
 from certbot.achallenges import KeyAuthorizationAnnotatedChallenge  # pylint: disable=unused-import
@@ -262,7 +263,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         # Prevent two Apache plugins from modifying a config at once
         try:
-            util.lock_dir_until_exit(self.option("server_root"))
+            filelock.lock_for_dir(self.option("server_root")).acquire()
         except (OSError, errors.LockError):
             logger.debug("Encountered error:", exc_info=True)
             raise errors.PluginError(

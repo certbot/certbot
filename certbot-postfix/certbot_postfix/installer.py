@@ -8,6 +8,7 @@ import six
 
 from certbot import errors
 from certbot import interfaces
+from certbot import filelock
 from certbot import util as certbot_util
 from certbot.plugins import common as plugins_common
 
@@ -123,7 +124,7 @@ class Installer(plugins_common.Installer):
         :raises .PluginError: if unable to acquire the lock
         """
         try:
-            certbot_util.lock_dir_until_exit(self.conf('config-dir'))
+            filelock.lock_for_dir(self.conf('config-dir')).acquire()
         except (OSError, errors.LockError):
             logger.debug("Encountered error:", exc_info=True)
             raise errors.PluginError(

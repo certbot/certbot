@@ -17,6 +17,7 @@ from acme import crypto_util as acme_crypto_util
 from certbot import constants as core_constants
 from certbot import crypto_util
 from certbot import errors
+from certbot import filelock
 from certbot import interfaces
 from certbot import util
 
@@ -156,7 +157,7 @@ class NginxConfigurator(common.Installer):
 
         # Prevent two Nginx plugins from modifying a config at once
         try:
-            util.lock_dir_until_exit(self.conf('server-root'))
+            filelock.lock_for_dir(self.conf('server-root')).acquire()
         except (OSError, errors.LockError):
             logger.debug('Encountered error:', exc_info=True)
             raise errors.PluginError(
