@@ -389,15 +389,15 @@ def hold_lock(cv, lock_path):  # pragma: no cover
     :param str lock_path: path to the file lock
 
     """
-    from certbot import lock
+    from certbot import filelock
     if os.path.isdir(lock_path):
-        my_lock = lock.lock_dir(lock_path)
+        my_lock = filelock.lock_for_dir(lock_path)
     else:
-        my_lock = lock.LockFile(lock_path)
-    cv.acquire()
-    cv.notify()
-    cv.wait()
-    my_lock.release()
+        my_lock = filelock.lock_for_file(lock_path)
+    with my_lock:
+        cv.acquire()
+        cv.notify()
+        cv.wait()
 
 def skip_on_windows(reason):
     """Decorator to skip permanently a test on Windows. A reason is required."""
