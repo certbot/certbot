@@ -2,6 +2,7 @@
 import argparse
 import atexit
 import collections
+import contextlib
 # distutils.version under virtualenv confuses pylint
 # For more info, see: https://github.com/PyCQA/pylint/issues/73
 import distutils.version  # pylint: disable=import-error,no-name-in-module
@@ -15,16 +16,13 @@ import socket
 import subprocess
 import sys
 
-from collections import OrderedDict
-
 import configargparse
 
 from acme.magic_typing import Tuple, Union  # pylint: disable=unused-import, no-name-in-module
 from certbot import compat
 from certbot import constants
 from certbot import errors
-from certbot import lock
-
+from certbot import filelock
 
 logger = logging.getLogger(__name__)
 
@@ -48,14 +46,9 @@ PERM_ERR_FMT = os.linesep.join((
     "Either run as root, or set --config-dir, "
     "--work-dir, and --logs-dir to writeable paths."))
 
-
+    
 # Stores importing process ID to be used by atexit_register()
 _INITIAL_PID = os.getpid()
-# Maps paths to locked directories to their lock object. All locks in
-# the dict are attempted to be cleaned up at program exit. If the
-# program exits before the lock is cleaned up, it is automatically
-# released, but the file isn't deleted.
-_LOCKS = OrderedDict() # type: OrderedDict[str, lock.LockFile]
 
 
 def run_script(params, log=logger.error):
@@ -112,38 +105,14 @@ def exe_exists(exe):
     path, _ = os.path.split(exe)
     if path:
         return is_exe(exe)
-    else:
-        for path in os.environ["PATH"].split(os.pathsep):
-            if is_exe(os.path.join(path, exe)):
-                return True
+
+    for path in os.environ["PATH"].split(os.pathsep):
+        if is_exe(os.path.join(path, exe)):
+            return True
 
     return False
 
-
-def lock_dir_until_exit(dir_path):
-    """Lock the directory at dir_path until program exit.
-
-    :param str dir_path: path to directory
-
-    :raises errors.LockError: if the lock is held by another process
-
-    """
-    if not _LOCKS:  # this is the first lock to be released at exit
-        atexit_register(_release_locks)
-
-    if dir_path not in _LOCKS:
-        _LOCKS[dir_path] = lock.lock_dir(dir_path)
-
-
-def _release_locks():
-    for dir_lock in six.itervalues(_LOCKS):
-        try:
-            dir_lock.release()
-        except:  # pylint: disable=bare-except
-            msg = 'Exception occurred releasing lock: {0!r}'.format(dir_lock)
-            logger.debug(msg, exc_info=True)
-
-
+@contextlib.contextmanager
 def set_up_core_dir(directory, mode, uid, strict):
     """Ensure directory exists with proper permissions and is locked.
 
@@ -158,7 +127,9 @@ def set_up_core_dir(directory, mode, uid, strict):
     """
     try:
         make_or_verify_dir(directory, mode, uid, strict)
-        lock_dir_until_exit(directory)
+        lock = filelock.lock_for_dir(directory)
+        with lock:
+            yield lock
     except OSError as error:
         logger.debug("Exception was:", exc_info=True)
         raise errors.Error(PERM_ERR_FMT.format(error))

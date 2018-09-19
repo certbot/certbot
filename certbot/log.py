@@ -13,6 +13,7 @@ and properly flushed before program exit.
 
 """
 from __future__ import print_function
+import contextlib
 import functools
 import logging
 import logging.handlers
@@ -86,40 +87,40 @@ def post_arg_parse_setup(config):
     :param certbot.interface.IConfig config: Configuration object
 
     """
-    file_handler, file_path = setup_log_file_handler(
-        config, 'letsencrypt.log', FILE_FMT)
-    logs_dir = os.path.dirname(file_path)
+    with setup_log_file_handler(config, 'letsencrypt.log', FILE_FMT) as (file_handler, file_path):
+        logs_dir = os.path.dirname(file_path)
 
-    root_logger = logging.getLogger()
-    memory_handler = stderr_handler = None
-    for handler in root_logger.handlers:
-        if isinstance(handler, ColoredStreamHandler):
-            stderr_handler = handler
-        elif isinstance(handler, MemoryHandler):
-            memory_handler = handler
-    msg = 'Previously configured logging handlers have been removed!'
-    assert memory_handler is not None and stderr_handler is not None, msg
+        root_logger = logging.getLogger()
+        memory_handler = stderr_handler = None
+        for handler in root_logger.handlers:
+            if isinstance(handler, ColoredStreamHandler):
+                stderr_handler = handler
+            elif isinstance(handler, MemoryHandler):
+                memory_handler = handler
+        msg = 'Previously configured logging handlers have been removed!'
+        assert memory_handler is not None and stderr_handler is not None, msg
 
-    root_logger.addHandler(file_handler)
-    root_logger.removeHandler(memory_handler)
-    temp_handler = memory_handler.target
-    memory_handler.setTarget(file_handler)
-    memory_handler.flush(force=True)
-    memory_handler.close()
-    temp_handler.close()
+        root_logger.addHandler(file_handler)
+        root_logger.removeHandler(memory_handler)
+        temp_handler = memory_handler.target
+        memory_handler.setTarget(file_handler)
+        memory_handler.flush(force=True)
+        memory_handler.close()
+        temp_handler.close()
 
-    if config.quiet:
-        level = constants.QUIET_LOGGING_LEVEL
-    else:
-        level = -config.verbose_count * 10
-    stderr_handler.setLevel(level)
-    logger.debug('Root logging level set at %d', level)
-    logger.info('Saving debug log to %s', file_path)
+        if config.quiet:
+            level = constants.QUIET_LOGGING_LEVEL
+        else:
+            level = -config.verbose_count * 10
+        stderr_handler.setLevel(level)
+        logger.debug('Root logging level set at %d', level)
+        logger.info('Saving debug log to %s', file_path)
 
-    sys.excepthook = functools.partial(
-        post_arg_parse_except_hook, debug=config.debug, log_path=logs_dir)
+        sys.excepthook = functools.partial(
+            post_arg_parse_except_hook, debug=config.debug, log_path=logs_dir)
 
 
+@contextlib.contextmanager
 def setup_log_file_handler(config, logfile, fmt):
     """Setup file debug logging.
 
@@ -133,23 +134,24 @@ def setup_log_file_handler(config, logfile, fmt):
     """
     # TODO: logs might contain sensitive data such as contents of the
     # private key! #525
-    util.set_up_core_dir(
-        config.logs_dir, 0o700, compat.os_geteuid(), config.strict_permissions)
-    log_file_path = os.path.join(config.logs_dir, logfile)
-    try:
-        handler = logging.handlers.RotatingFileHandler(
-            log_file_path, maxBytes=2 ** 20,
-            backupCount=config.max_log_backups)
-    except IOError as error:
-        raise errors.Error(util.PERM_ERR_FMT.format(error))
-    # rotate on each invocation, rollover only possible when maxBytes
-    # is nonzero and backupCount is nonzero, so we set maxBytes as big
-    # as possible not to overrun in single CLI invocation (1MB).
-    handler.doRollover()  # TODO: creates empty letsencrypt.log.1 file
-    handler.setLevel(logging.DEBUG)
-    handler_formatter = logging.Formatter(fmt=fmt)
-    handler.setFormatter(handler_formatter)
-    return handler, log_file_path
+    with util.set_up_core_dir(
+            config.logs_dir, 0o700, compat.os_geteuid(), config.strict_permissions):
+        log_file_path = os.path.join(config.logs_dir, logfile)
+        try:
+            handler = logging.handlers.RotatingFileHandler(
+                log_file_path, maxBytes=2 ** 20,
+                backupCount=config.max_log_backups)
+        except IOError as error:
+            raise errors.Error(util.PERM_ERR_FMT.format(error))
+        # rotate on each invocation, rollover only possible when maxBytes
+        # is nonzero and backupCount is nonzero, so we set maxBytes as big
+        # as possible not to overrun in single CLI invocation (1MB).
+        handler.doRollover()  # TODO: creates empty letsencrypt.log.1 file
+        handler.setLevel(logging.DEBUG)
+        handler_formatter = logging.Formatter(fmt=fmt)
+        handler.setFormatter(handler_formatter)
+
+        yield (handler, log_file_path)
 
 
 class ColoredStreamHandler(logging.StreamHandler):
