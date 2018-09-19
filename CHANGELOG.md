@@ -10,7 +10,7 @@ Certbot adheres to [Semantic Versioning](http://semver.org/).
 
 ### Changed
 
-*
+* Write README to the base of (config-dir)/live directory
 
 ### Fixed
 
