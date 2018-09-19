@@ -76,6 +76,7 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
         return output.getvalue()
 
+    @test_util.broken_on_windows
     @mock.patch("certbot.cli.flag_default")
     def test_cli_ini_domains(self, mock_flag_default):
         tmp_config = tempfile.NamedTemporaryFile()

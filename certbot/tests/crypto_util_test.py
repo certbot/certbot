@@ -140,7 +140,7 @@ class ImportCSRFileTest(unittest.TestCase):
              util.CSR(file=csrfile,
                       data=data_pem,
                       form="pem"),
-             ["Example.com"],),
+             ["Example.com"]),
             self._call(csrfile, data))
 
     def test_pem_csr(self):
@@ -376,7 +376,6 @@ class NotAfterTest(unittest.TestCase):
 
 class Sha256sumTest(unittest.TestCase):
     """Tests for certbot.crypto_util.notAfter"""
-
     def test_sha256sum(self):
         from certbot.crypto_util import sha256sum
         self.assertEqual(sha256sum(CERT_PATH),
@@ -394,7 +393,7 @@ class CertAndChainFromFullchainTest(unittest.TestCase):
         from certbot.crypto_util import cert_and_chain_from_fullchain
         for fullchain in (fullchain_pem, spacey_fullchain_pem):
             cert_out, chain_out = cert_and_chain_from_fullchain(fullchain)
-            self.assertEqual(cert_out, cert_pem)
+            self.assertEqual(cert_out, cert_pem.replace('\r\n', '\n'))
             self.assertEqual(chain_out, chain_pem)
 
 

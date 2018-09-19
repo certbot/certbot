@@ -37,6 +37,7 @@ class ValidateHookTest(util.TempDirTestCase):
         from certbot.hooks import validate_hook
         return validate_hook(*args, **kwargs)
 
+    @util.broken_on_windows
     def test_not_executable(self):
         file_path = os.path.join(self.tempdir, "foo")
         # create a non-executable file
