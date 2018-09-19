@@ -4,6 +4,7 @@ import unittest
 
 import six
 import mock
+import sys
 
 from acme import challenges
 
@@ -74,12 +75,14 @@ class AuthenticatorTest(test_util.TempDirTestCase):
     def test_script_perform(self):
         self.config.manual_public_ip_logging_ok = True
         self.config.manual_auth_hook = (
-            'echo ${CERTBOT_DOMAIN}; '
-            'echo ${CERTBOT_TOKEN:-notoken}; '
-            'echo ${CERTBOT_CERT_PATH:-nocert}; '
-            'echo ${CERTBOT_KEY_PATH:-nokey}; '
-            'echo ${CERTBOT_SNI_DOMAIN:-nosnidomain}; '
-            'echo ${CERTBOT_VALIDATION:-novalidation};')
+            '{0} -c "from __future__ import print_function;'
+            'import os;  print(os.environ.get(\'CERTBOT_DOMAIN\'));'
+            'print(os.environ.get(\'CERTBOT_TOKEN\', \'notoken\'));'
+            'print(os.environ.get(\'CERTBOT_CERT_PATH\', \'nocert\'));'
+            'print(os.environ.get(\'CERTBOT_KEY_PATH\', \'nokey\'));'
+            'print(os.environ.get(\'CERTBOT_SNI_DOMAIN\', \'nosnidomain\'));'
+            'print(os.environ.get(\'CERTBOT_VALIDATION\', \'novalidation\'));"'
+            .format(sys.executable))
         dns_expected = '{0}\n{1}\n{2}\n{3}\n{4}\n{5}'.format(
             self.dns_achall.domain, 'notoken',
             'nocert', 'nokey', 'nosnidomain',
@@ -127,6 +130,7 @@ class AuthenticatorTest(test_util.TempDirTestCase):
                         achall.validation(achall.account_key) in args[0])
             self.assertFalse(kwargs['wrap'])
 
+    @test_util.broken_on_windows
     def test_cleanup(self):
         self.config.manual_public_ip_logging_ok = True
         self.config.manual_auth_hook = 'echo foo;'
