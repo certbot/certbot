@@ -10,6 +10,7 @@ from certbot import errors
 from certbot.tests import util as test_util
 
 
+@test_util.broken_on_windows
 class LockDirTest(test_util.TempDirTestCase):
     """Tests for certbot.lock.lock_dir."""
     @classmethod
@@ -24,6 +25,7 @@ class LockDirTest(test_util.TempDirTestCase):
         test_util.lock_and_call(assert_raises, lock_path)
 
 
+@test_util.broken_on_windows
 class LockFileTest(test_util.TempDirTestCase):
     """Tests for certbot.lock.LockFile."""
     @classmethod
