@@ -51,7 +51,7 @@ def _wrap_lines(msg):
             line,
             80,
             break_long_words=False,
-            break_on_hyphens=False))
+            break_on_hyphens=False).replace('\n', os.linesep))
 
     return os.linesep.join(fixed_l)
 

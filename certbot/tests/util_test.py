@@ -3,7 +3,6 @@ import argparse
 import errno
 import os
 import shutil
-import stat
 import unittest
 
 import mock
@@ -89,6 +88,7 @@ class LockDirUntilExit(test_util.TempDirTestCase):
         import certbot.util
         reload_module(certbot.util)
 
+    @test_util.broken_on_windows
     @mock.patch('certbot.util.logger')
     @mock.patch('certbot.util.atexit_register')
     def test_it(self, mock_register, mock_logger):
@@ -140,9 +140,9 @@ class MakeOrVerifyDirTest(test_util.TempDirTestCase):
         super(MakeOrVerifyDirTest, self).setUp()
 
         self.path = os.path.join(self.tempdir, "foo")
-        os.mkdir(self.path, 0o400)
+        os.mkdir(self.path, 0o600)
 
-        self.uid = os.getuid()
+        self.uid = compat.os_geteuid()
 
     def _call(self, directory, mode):
         from certbot.util import make_or_verify_dir
@@ -152,14 +152,15 @@ class MakeOrVerifyDirTest(test_util.TempDirTestCase):
         path = os.path.join(self.tempdir, "bar")
         self._call(path, 0o650)
         self.assertTrue(os.path.isdir(path))
-        self.assertEqual(stat.S_IMODE(os.stat(path).st_mode), 0o650)
+        self.assertTrue(compat.compare_file_modes(os.stat(path).st_mode, 0o650))
 
     def test_existing_correct_mode_does_not_fail(self):
-        self._call(self.path, 0o400)
-        self.assertEqual(stat.S_IMODE(os.stat(self.path).st_mode), 0o400)
+        self._call(self.path, 0o600)
+        self.assertTrue(compat.compare_file_modes(os.stat(self.path).st_mode, 0o600))
 
+    @test_util.skip_on_windows('Umask modes are mostly ignored on Windows.')
     def test_existing_wrong_mode_fails(self):
-        self.assertRaises(errors.Error, self._call, self.path, 0o600)
+        self.assertRaises(errors.Error, self._call, self.path, 0o400)
 
     def test_reraises_os_error(self):
         with mock.patch.object(os, "makedirs") as makedirs:
@@ -178,7 +179,7 @@ class CheckPermissionsTest(test_util.TempDirTestCase):
     def setUp(self):
         super(CheckPermissionsTest, self).setUp()
 
-        self.uid = os.getuid()
+        self.uid = compat.os_geteuid()
 
     def _call(self, mode):
         from certbot.util import check_permissions
@@ -212,8 +213,8 @@ class UniqueFileTest(test_util.TempDirTestCase):
         self.assertEqual(open(name).read(), "bar")
 
     def test_right_mode(self):
-        self.assertEqual(0o700, os.stat(self._call(0o700)[1]).st_mode & 0o777)
-        self.assertEqual(0o100, os.stat(self._call(0o100)[1]).st_mode & 0o777)
+        self.assertTrue(compat.compare_file_modes(0o700, os.stat(self._call(0o700)[1]).st_mode))
+        self.assertTrue(compat.compare_file_modes(0o600, os.stat(self._call(0o600)[1]).st_mode))
 
     def test_default_exists(self):
         name1 = self._call()[1]  # create 0000_foo.txt
@@ -520,12 +521,12 @@ class OsInfoTest(unittest.TestCase):
                 test_util.vector_path("os-release"))[0], 'systemdos')
             self.assertEqual(get_os_info(
                 test_util.vector_path("os-release"))[1], '42')
-            self.assertEqual(get_systemd_os_info("/dev/null"), ("", ""))
             self.assertEqual(get_os_info_ua(
-                test_util.vector_path("os-release")),
-                "SystemdOS")
+                test_util.vector_path("os-release")), "SystemdOS")
         with mock.patch('os.path.isfile', return_value=False):
             self.assertEqual(get_systemd_os_info(), ("", ""))
+
+        self.assertEqual(get_systemd_os_info("/dev/null"), ("", ""))
 
     def test_systemd_os_release_like(self):
         from certbot.util import get_systemd_os_like

@@ -1166,7 +1166,8 @@ def _csr_get_and_save_cert(config, le_client):
             "Dry run: skipping saving certificate to %s", config.cert_path)
         return None, None
     cert_path, _, fullchain_path = le_client.save_certificate(
-            cert, chain, config.cert_path, config.chain_path, config.fullchain_path)
+        cert, chain, os.path.normpath(config.cert_path),
+        os.path.normpath(config.chain_path), os.path.normpath(config.fullchain_path))
     return cert_path, fullchain_path
 
 def renew_cert(config, plugins, lineage):
