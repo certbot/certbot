@@ -389,7 +389,8 @@ VERB_HELP = [
     ("revoke", {
         "short": "Revoke a certificate specified with --cert-path or --cert-name",
         "opts": "Options for revocation of certificates",
-        "usage": "\n\n  certbot revoke --cert-path /path/to/fullchain.pem --cert-name example.com [options]\n\n"
+        "usage": "\n\n  certbot revoke [--cert-path /path/to/fullchain.pem | "
+        "--cert-name example.com] [options]\n\n"
     }),
     ("register", {
         "short": "Register for account with Let's Encrypt / other ACME server",
