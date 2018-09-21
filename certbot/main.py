@@ -532,8 +532,7 @@ def _determine_account(config):
 
 def _delete_if_appropriate(config): # pylint: disable=too-many-locals,too-many-branches
     """Does the user want to delete their now-revoked certs? If run in non-interactive mode,
-    deleting happens automatically, unless if both `--cert-name` and `--cert-path` were
-    specified with conflicting values.
+    deleting happens automatically.
 
     :param config: parsed command line arguments
     :type config: interfaces.IConfig
@@ -557,14 +556,12 @@ def _delete_if_appropriate(config): # pylint: disable=too-many-locals,too-many-b
         reporter_util.add_message("Not deleting revoked certs.", reporter_util.LOW_PRIORITY)
         return
 
-    if not (config.certname or config.cert_path):
-        raise errors.Error('At least one of --cert-path or --cert-name must be specified.')
+    # config.cert_path must have been set
+    # config.certname may have been set
+    assert config.cert_path
 
-    if config.cert_path:
+    if not config.certname:
         config.certname = cert_manager.cert_path_to_lineage(config)
-
-    else: # if only config.certname was specified
-        config.cert_path = storage.cert_path_for_cert_name(config, config.certname)
 
     # don't delete if the archive_dir is used by some other lineage
     archive_dir = storage.full_archive_path(
