@@ -271,7 +271,7 @@ class RevokeTest(test_util.TempDirTestCase):
         for patch in self.patches:
             patch.stop()
 
-    def _call(self, args=[]):
+    def _call(self, args=None):
         if not args:
             args = 'revoke --cert-path={0} '
             args = args.format(self.tmp_cert_path).split()
