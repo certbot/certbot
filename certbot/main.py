@@ -560,42 +560,7 @@ def _delete_if_appropriate(config): # pylint: disable=too-many-locals,too-many-b
     if not (config.certname or config.cert_path):
         raise errors.Error('At least one of --cert-path or --cert-name must be specified.')
 
-    if config.certname and config.cert_path:
-        # first, check if certname and cert_path imply the same certs
-        implied_cert_name = cert_manager.cert_path_to_lineage(config)
-
-        if implied_cert_name != config.certname:
-            cert_path_implied_cert_name = cert_manager.cert_path_to_lineage(config)
-            cert_path_implied_conf = storage.renewal_file_for_certname(config,
-                    cert_path_implied_cert_name)
-            cert_path_cert = storage.RenewableCert(cert_path_implied_conf, config)
-            cert_path_info = cert_manager.human_readable_cert_info(config, cert_path_cert,
-                    skip_filter_checks=True)
-
-            cert_name_implied_conf = storage.renewal_file_for_certname(config, config.certname)
-            cert_name_cert = storage.RenewableCert(cert_name_implied_conf, config)
-            cert_name_info = cert_manager.human_readable_cert_info(config, cert_name_cert)
-
-            msg = ("You specified conflicting values for --cert-path and --cert-name. "
-                    "Which did you mean to select?")
-            choices = [cert_path_info, cert_name_info]
-            try:
-                code, index = display.menu(msg,
-                        choices, ok_label="Select", force_interactive=True)
-            except errors.MissingCommandlineFlag:
-                error_msg = ('To run in non-interactive mode, you must either specify only one of '
-                '--cert-path or --cert-name, or both must point to the same certificate lineages.')
-                raise errors.Error(error_msg)
-
-            if code != display_util.OK or not index in range(0, len(choices)):
-                raise errors.Error("User ended interaction.")
-
-            if index == 0:
-                config.certname = cert_path_implied_cert_name
-            else:
-                config.cert_path = storage.cert_path_for_cert_name(config, config.certname)
-
-    elif config.cert_path:
+    if config.cert_path:
         config.certname = cert_manager.cert_path_to_lineage(config)
 
     else: # if only config.certname was specified
