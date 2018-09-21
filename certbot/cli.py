@@ -12,10 +12,14 @@ import sys
 import configargparse
 import six
 import zope.component
+import zope.interface
 
 from zope.interface import interfaces as zope_interfaces
 
 from acme import challenges
+# pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Any, Dict, Optional
+# pylint: enable=unused-import, no-name-in-module
 
 import certbot
 
@@ -28,12 +32,13 @@ from certbot import util
 
 from certbot.display import util as display_util
 from certbot.plugins import disco as plugins_disco
+import certbot.plugins.enhancements as enhancements
 import certbot.plugins.selection as plugin_selection
 
 logger = logging.getLogger(__name__)
 
 # Global, to save us from a lot of argument passing within the scope of this module
-helpful_parser = None
+helpful_parser = None  # type: Optional[HelpfulArgumentParser]
 
 # For help strings, figure out how the user ran us.
 # When invoked from letsencrypt-auto, sys.argv[0] is something like:
@@ -76,6 +81,7 @@ obtain, install, and renew certificates:
     (default) run   Obtain & install a certificate in your current webserver
     certonly        Obtain or renew a certificate, but do not install it
     renew           Renew all previously obtained certificates that are near expiry
+    enhance         Add security enhancements to your existing configuration
    -d DOMAINS       Comma-separated list of domains to obtain a certificate for
 
   %s
@@ -142,14 +148,14 @@ def report_config_interaction(modified, modifiers):
     between config options.
 
     :param modified: config options that can be modified by modifiers
-    :type modified: iterable or str
+    :type modified: iterable or str (string_types)
     :param modifiers: config options that modify modified
-    :type modifiers: iterable or str
+    :type modifiers: iterable or str (string_types)
 
     """
-    if isinstance(modified, str):
+    if isinstance(modified, six.string_types):
         modified = (modified,)
-    if isinstance(modifiers, str):
+    if isinstance(modifiers, six.string_types):
         modifiers = (modifiers,)
 
     for var in modified:
@@ -195,29 +201,34 @@ def set_by_cli(var):
     (CLI or config file) including if the user explicitly set it to the
     default.  Returns False if the variable was assigned a default value.
     """
-    detector = set_by_cli.detector
-    if detector is None:
+    detector = set_by_cli.detector  # type: ignore
+    if detector is None and helpful_parser is not None:
         # Setup on first run: `detector` is a weird version of config in which
         # the default value of every attribute is wrangled to be boolean-false
         plugins = plugins_disco.PluginsRegistry.find_all()
         # reconstructed_args == sys.argv[1:], or whatever was passed to main()
         reconstructed_args = helpful_parser.args + [helpful_parser.verb]
-        detector = set_by_cli.detector = prepare_and_parse_args(
+        detector = set_by_cli.detector = prepare_and_parse_args(  # type: ignore
             plugins, reconstructed_args, detect_defaults=True)
         # propagate plugin requests: eg --standalone modifies config.authenticator
-        detector.authenticator, detector.installer = (
+        detector.authenticator, detector.installer = (  # type: ignore
             plugin_selection.cli_plugin_requests(detector))
-        logger.debug("Default Detector is %r", detector)
 
     if not isinstance(getattr(detector, var), _Default):
+        logger.debug("Var %s=%s (set by user).", var, getattr(detector, var))
         return True
 
     for modifier in VAR_MODIFIERS.get(var, []):
         if set_by_cli(modifier):
+            logger.debug("Var %s=%s (set by user).",
+                var, VAR_MODIFIERS.get(var, []))
             return True
 
     return False
+
 # static housekeeping var
+# functions attributed are not supported by mypy
+# https://github.com/python/mypy/issues/2087
 set_by_cli.detector = None  # type: ignore
 
 
@@ -233,8 +244,10 @@ def has_default_value(option, value):
     :rtype: bool
 
     """
-    return (option in helpful_parser.defaults and
-            helpful_parser.defaults[option] == value)
+    if helpful_parser is not None:
+        return (option in helpful_parser.defaults and
+                helpful_parser.defaults[option] == value)
+    return False
 
 
 def option_was_set(option, value):
@@ -251,11 +264,12 @@ def option_was_set(option, value):
 
 
 def argparse_type(variable):
-    "Return our argparse type function for a config variable (default: str)"
+    """Return our argparse type function for a config variable (default: str)"""
     # pylint: disable=protected-access
-    for action in helpful_parser.parser._actions:
-        if action.type is not None and action.dest == variable:
-            return action.type
+    if helpful_parser is not None:
+        for action in helpful_parser.parser._actions:
+            if action.type is not None and action.dest == variable:
+                return action.type
     return str
 
 def read_file(filename, mode="rb"):
@@ -288,10 +302,12 @@ def flag_default(name):
 
 def config_help(name, hidden=False):
     """Extract the help message for an `.IConfig` attribute."""
+    # pylint: disable=no-member
     if hidden:
         return argparse.SUPPRESS
     else:
-        return interfaces.IConfig[name].__doc__
+        field = interfaces.IConfig.__getitem__(name) # type: zope.interface.interface.Attribute
+        return field.__doc__
 
 
 class HelpfulArgumentGroup(object):
@@ -413,6 +429,12 @@ VERB_HELP = [
                   os.path.join(flag_default("config_dir"), "live"))),
         "usage": "\n\n  certbot update_symlinks [options]\n\n"
     }),
+    ("enhance", {
+        "short": "Add security enhancements to your existing configuration",
+        "opts": ("Helps to harden the TLS configuration by adding security enhancements "
+                 "to already existing configuration."),
+        "usage": "\n\n  certbot enhance [options]\n\n"
+    }),
 
 ]
 # VERB_HELP is a list in order to preserve order, but a dict is sometimes useful
@@ -447,6 +469,7 @@ class HelpfulArgumentParser(object):
             "update_symlinks": main.update_symlinks,
             "certificates": main.certificates,
             "delete": main.delete,
+            "enhance": main.enhance,
         }
 
         # Get notification function for printing
@@ -463,7 +486,7 @@ class HelpfulArgumentParser(object):
         HELP_TOPICS += list(self.VERBS) + self.COMMANDS_TOPICS + ["manage"]
 
         plugin_names = list(plugins)
-        self.help_topics = HELP_TOPICS + plugin_names + [None]
+        self.help_topics = HELP_TOPICS + plugin_names + [None]  # type: ignore
 
         self.detect_defaults = detect_defaults
         self.args = args
@@ -477,13 +500,16 @@ class HelpfulArgumentParser(object):
         if isinstance(help1, bool) and isinstance(help2, bool):
             self.help_arg = help1 or help2
         else:
-            self.help_arg = help1 if isinstance(help1, str) else help2
+            self.help_arg = help1 if isinstance(help1, six.string_types) else help2
 
         short_usage = self._usage_string(plugins, self.help_arg)
 
         self.visible_topics = self.determine_help_topics(self.help_arg)
-        self.groups = {}       # elements are added by .add_group()
-        self.defaults = {}     # elements are added by .parse_args()
+
+        # elements are added by .add_group()
+        self.groups = {}  # type: Dict[str, argparse._ArgumentGroup]
+        # elements are added by .parse_args()
+        self.defaults = {}  # type: Dict[str, Any]
 
         self.parser = configargparse.ArgParser(
             prog="certbot",
@@ -596,6 +622,15 @@ class HelpfulArgumentParser(object):
 
         if parsed_args.validate_hooks:
             hooks.validate_hooks(parsed_args)
+
+        if parsed_args.allow_subset_of_names:
+            if any(util.is_wildcard_domain(d) for d in parsed_args.domains):
+                raise errors.Error("Using --allow-subset-of-names with a"
+                                   " wildcard domain is not supported.")
+
+        if parsed_args.hsts and parsed_args.auto_hsts:
+            raise errors.Error(
+                "Parameters --hsts and --auto-hsts cannot be used simultaneously.")
 
         possible_deprecation_warning(parsed_args)
 
@@ -790,7 +825,6 @@ class HelpfulArgumentParser(object):
             if self.help_arg:
                 for v in verbs:
                     self.groups[topic].add_argument(v, help=VERB_HELP_MAP[v]["short"])
-
         return HelpfulArgumentGroup(self, topic)
 
     def add_plugin_args(self, plugins):
@@ -828,11 +862,11 @@ class HelpfulArgumentParser(object):
             return dict([(t, t == chosen_topic) for t in self.help_topics])
 
 def _add_all_groups(helpful):
-    helpful.add_group("automation", description="Arguments for automating execution & other tweaks")
+    helpful.add_group("automation", description="Flags for automating execution & other tweaks")
     helpful.add_group("security", description="Security parameters & server settings")
     helpful.add_group("testing",
         description="The following flags are meant for testing and integration purposes only.")
-    helpful.add_group("paths", description="Arguments changing execution paths & servers")
+    helpful.add_group("paths", description="Flags for changing execution paths & servers")
     helpful.add_group("manage",
         description="Various subcommands and flags are available for managing your certificates:",
         verbs=["certificates", "delete", "renew", "revoke", "update_symlinks"])
@@ -876,21 +910,22 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              "flag to 0 disables log rotation entirely, causing "
              "Certbot to always append to the same log file.")
     helpful.add(
-        [None, "automation", "run", "certonly"], "-n", "--non-interactive", "--noninteractive",
+        [None, "automation", "run", "certonly", "enhance"],
+        "-n", "--non-interactive", "--noninteractive",
         dest="noninteractive_mode", action="store_true",
         default=flag_default("noninteractive_mode"),
         help="Run without ever asking for user input. This may require "
               "additional command line flags; the client will try to explain "
               "which ones are required if it finds one missing")
     helpful.add(
-        [None, "register", "run", "certonly"],
+        [None, "register", "run", "certonly", "enhance"],
         constants.FORCE_INTERACTIVE_FLAG, action="store_true",
         default=flag_default("force_interactive"),
         help="Force Certbot to be interactive even if it detects it's not "
              "being run in a terminal. This flag cannot be used with the "
              "renew subcommand.")
     helpful.add(
-        [None, "run", "certonly", "certificates"],
+        [None, "run", "certonly", "certificates", "enhance"],
         "-d", "--domains", "--domain", dest="domains",
         metavar="DOMAIN", action=_DomainsAction,
         default=flag_default("domains"),
@@ -906,8 +941,8 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              "name. In the case of a name collision it will append a number "
              "like 0001 to the file path name. (default: Ask)")
     helpful.add(
-        [None, "run", "certonly", "manage", "delete", "certificates", "renew"],
-        "--cert-name", dest="certname",
+        [None, "run", "certonly", "manage", "delete", "certificates",
+         "renew", "enhance"], "--cert-name", dest="certname",
         metavar="CERTNAME", default=flag_default("certname"),
         help="Certificate name to apply. This name is used by Certbot for housekeeping "
              "and in file paths; it doesn't affect the content of the certificate itself. "
@@ -988,6 +1023,12 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              "but does not match the requested domains, renew it now, "
              "regardless of whether it is near expiry.")
     helpful.add(
+        "automation", "--reuse-key", dest="reuse_key",
+        action="store_true", default=flag_default("reuse_key"),
+        help="When renewing, use the same private key as the existing "
+             "certificate.")
+
+    helpful.add(
         ["automation", "renew", "certonly"],
         "--allow-subset-of-names", action="store_true",
         default=flag_default("allow_subset_of_names"),
@@ -1041,7 +1082,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         help="Show tracebacks in case of errors, and allow certbot-auto "
              "execution on experimental platforms")
     helpful.add(
-        [None, "certonly", "renew", "run"], "--debug-challenges", action="store_true",
+        [None, "certonly", "run"], "--debug-challenges", action="store_true",
         default=flag_default("debug_challenges"),
         help="After setting up challenges, wait for user input before "
              "submitting to CA")
@@ -1078,7 +1119,8 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         dest="must_staple", default=flag_default("must_staple"),
         help=config_help("must_staple"))
     helpful.add(
-        "security", "--redirect", action="store_true", dest="redirect",
+        ["security", "enhance"],
+        "--redirect", action="store_true", dest="redirect",
         default=flag_default("redirect"),
         help="Automatically redirect all HTTP traffic to HTTPS for the newly "
              "authenticated vhost. (default: Ask)")
@@ -1088,7 +1130,8 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         help="Do not automatically redirect all HTTP traffic to HTTPS for the newly "
              "authenticated vhost. (default: Ask)")
     helpful.add(
-        "security", "--hsts", action="store_true", dest="hsts", default=flag_default("hsts"),
+        ["security", "enhance"],
+        "--hsts", action="store_true", dest="hsts", default=flag_default("hsts"),
         help="Add the Strict-Transport-Security header to every HTTP response."
              " Forcing browser to always use SSL for the domain."
              " Defends against SSL Stripping.")
@@ -1096,7 +1139,8 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         "security", "--no-hsts", action="store_false", dest="hsts",
         default=flag_default("hsts"), help=argparse.SUPPRESS)
     helpful.add(
-        "security", "--uir", action="store_true", dest="uir", default=flag_default("uir"),
+        ["security", "enhance"],
+        "--uir", action="store_true", dest="uir", default=flag_default("uir"),
         help='Add the "Content-Security-Policy: upgrade-insecure-requests"'
              ' header to every HTTP response. Forcing the browser to use'
              ' https:// for every http:// resource.')
@@ -1173,9 +1217,24 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         default=flag_default("directory_hooks"), dest="directory_hooks",
         help="Disable running executables found in Certbot's hook directories"
         " during renewal. (default: False)")
+    helpful.add(
+        "renew", "--disable-renew-updates", action="store_true",
+        default=flag_default("disable_renew_updates"), dest="disable_renew_updates",
+        help="Disable automatic updates to your server configuration that"
+        " would otherwise be done by the selected installer plugin, and triggered"
+        " when the user executes \"certbot renew\", regardless of if the certificate"
+        " is renewed. This setting does not apply to important TLS configuration"
+        " updates.")
+    helpful.add(
+        "renew", "--no-autorenew", action="store_false",
+        default=flag_default("autorenew"), dest="autorenew",
+        help="Disable auto renewal of certificates.")
 
     helpful.add_deprecated_argument("--agree-dev-preview", 0)
     helpful.add_deprecated_argument("--dialog", 0)
+
+    # Populate the command line parameters for new style enhancements
+    enhancements.populate_cli(helpful.add)
 
     _create_subparsers(helpful)
     _paths_parser(helpful)
@@ -1220,6 +1279,18 @@ def _create_subparsers(helpful):
                                                    key=constants.REVOCATION_REASONS.get)),
                 action=_EncodeReasonAction, default=flag_default("reason"),
                 help="Specify reason for revoking certificate. (default: unspecified)")
+    helpful.add("revoke",
+                "--delete-after-revoke", action="store_true",
+                default=flag_default("delete_after_revoke"),
+                help="Delete certificates after revoking them.")
+    helpful.add("revoke",
+                "--no-delete-after-revoke", action="store_false",
+                dest="delete_after_revoke",
+                default=flag_default("delete_after_revoke"),
+                help="Do not delete certificates after revoking them. This "
+                     "option should be used with caution because the 'renew' "
+                     "subcommand will attempt to renew undeleted revoked "
+                     "certificates.")
     helpful.add("rollback",
                 "--checkpoints", type=int, metavar="N",
                 default=flag_default("rollback_checkpoints"),
@@ -1257,21 +1328,20 @@ def _paths_parser(helpful):
         verb = helpful.help_arg
 
     cph = "Path to where certificate is saved (with auth --csr), installed from, or revoked."
-    section = ["paths", "install", "revoke", "certonly", "manage"]
+    sections = ["paths", "install", "revoke", "certonly", "manage"]
     if verb == "certonly":
-        add(section, "--cert-path", type=os.path.abspath,
+        add(sections, "--cert-path", type=os.path.abspath,
             default=flag_default("auth_cert_path"), help=cph)
     elif verb == "revoke":
-        add(section, "--cert-path", type=read_file, required=False, help=cph)
+        add(sections, "--cert-path", type=read_file, required=False, help=cph)
     else:
-        add(section, "--cert-path", type=os.path.abspath,
-            help=cph, required=(verb == "install"))
+        add(sections, "--cert-path", type=os.path.abspath, help=cph)
 
     section = "paths"
     if verb in ("install", "revoke"):
         section = verb
     # revoke --key-path reads a file, install --key-path takes a string
-    add(section, "--key-path", required=(verb == "install"),
+    add(section, "--key-path",
         type=((verb == "revoke" and read_file) or os.path.abspath),
         help="Path to private key for certificate installation "
              "or revocation (if account key is missing)")
@@ -1345,10 +1415,18 @@ def _plugins_parsing(helpful, plugins):
                 default=flag_default("dns_dnsmadeeasy"),
                 help=("Obtain certificates using a DNS TXT record (if you are"
                       "using DNS Made Easy for DNS)."))
+    helpful.add(["plugins", "certonly"], "--dns-gehirn", action="store_true",
+                default=flag_default("dns_gehirn"),
+                help=("Obtain certificates using a DNS TXT record "
+                     "(if you are using Gehirn Infrastracture Service for DNS)."))
     helpful.add(["plugins", "certonly"], "--dns-google", action="store_true",
                 default=flag_default("dns_google"),
                 help=("Obtain certificates using a DNS TXT record (if you are "
                       "using Google Cloud DNS)."))
+    helpful.add(["plugins", "certonly"], "--dns-linode", action="store_true",
+                default=flag_default("dns_linode"),
+                help=("Obtain certificates using a DNS TXT record (if you are "
+                      "using Linode for DNS)."))
     helpful.add(["plugins", "certonly"], "--dns-luadns", action="store_true",
                 default=flag_default("dns_luadns"),
                 help=("Obtain certificates using a DNS TXT record (if you are "
@@ -1357,6 +1435,10 @@ def _plugins_parsing(helpful, plugins):
                 default=flag_default("dns_nsone"),
                 help=("Obtain certificates using a DNS TXT record (if you are "
                       "using NS1 for DNS)."))
+    helpful.add(["plugins", "certonly"], "--dns-ovh", action="store_true",
+                default=flag_default("dns_ovh"),
+                help=("Obtain certificates using a DNS TXT record (if you are "
+                      "using OVH for DNS)."))
     helpful.add(["plugins", "certonly"], "--dns-rfc2136", action="store_true",
                 default=flag_default("dns_rfc2136"),
                 help="Obtain certificates using a DNS TXT record (if you are using BIND for DNS).")
@@ -1364,6 +1446,10 @@ def _plugins_parsing(helpful, plugins):
                 default=flag_default("dns_route53"),
                 help=("Obtain certificates using a DNS TXT record (if you are using Route53 for "
                       "DNS)."))
+    helpful.add(["plugins", "certonly"], "--dns-sakuracloud", action="store_true",
+                default=flag_default("dns_sakuracloud"),
+                help=("Obtain certificates using a DNS TXT record "
+                     "(if you are using Sakura Cloud for DNS)."))
 
     # things should not be reorder past/pre this comment:
     # plugins_group should be displayed in --help before plugin

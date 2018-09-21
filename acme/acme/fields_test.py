@@ -2,9 +2,8 @@
 import datetime
 import unittest
 
+import josepy as jose
 import pytz
-
-from acme import jose
 
 
 class FixedTest(unittest.TestCase):

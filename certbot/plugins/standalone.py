@@ -3,6 +3,8 @@ import argparse
 import collections
 import logging
 import socket
+# https://github.com/python/typeshed/blob/master/stdlib/2and3/socket.pyi
+from socket import errno as socket_errors  # type: ignore
 
 import OpenSSL
 import six
@@ -10,7 +12,10 @@ import zope.interface
 
 from acme import challenges
 from acme import standalone as acme_standalone
+# pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import DefaultDict, Dict, Set, Tuple, List, Type, TYPE_CHECKING
 
+from certbot import achallenges  # pylint: disable=unused-import
 from certbot import errors
 from certbot import interfaces
 
@@ -18,6 +23,11 @@ from certbot.plugins import common
 
 logger = logging.getLogger(__name__)
 
+if TYPE_CHECKING:
+    ServedType = DefaultDict[
+        acme_standalone.BaseDualNetworkedServers,
+        Set[achallenges.KeyAuthorizationAnnotatedChallenge]
+    ]
 
 class ServerManager(object):
     """Standalone servers manager.
@@ -33,7 +43,7 @@ class ServerManager(object):
 
     """
     def __init__(self, certs, http_01_resources):
-        self._instances = {}
+        self._instances = {}  # type: Dict[int, acme_standalone.BaseDualNetworkedServers]
         self.certs = certs
         self.http_01_resources = http_01_resources
 
@@ -59,7 +69,8 @@ class ServerManager(object):
         address = (listenaddr, port)
         try:
             if challenge_type is challenges.TLSSNI01:
-                servers = acme_standalone.TLSSNI01DualNetworkedServers(address, self.certs)
+                servers = acme_standalone.TLSSNI01DualNetworkedServers(
+                    address, self.certs)  # type: acme_standalone.BaseDualNetworkedServers
             else:  # challenges.HTTP01
                 servers = acme_standalone.HTTP01DualNetworkedServers(
                     address, self.http_01_resources)
@@ -103,7 +114,8 @@ class ServerManager(object):
         return self._instances.copy()
 
 
-SUPPORTED_CHALLENGES = [challenges.TLSSNI01, challenges.HTTP01]
+SUPPORTED_CHALLENGES = [challenges.TLSSNI01, challenges.HTTP01] \
+# type: List[Type[challenges.KeyAuthorizationChallenge]]
 
 
 class SupportedChallengesAction(argparse.Action):
@@ -179,14 +191,15 @@ class Authenticator(common.Plugin):
         self.key = OpenSSL.crypto.PKey()
         self.key.generate_key(OpenSSL.crypto.TYPE_RSA, 2048)
 
-        self.served = collections.defaultdict(set)
+        self.served = collections.defaultdict(set)  # type: ServedType
 
         # Stuff below is shared across threads (i.e. servers read
         # values, main thread writes). Due to the nature of CPython's
         # GIL, the operations are safe, c.f.
         # https://docs.python.org/2/faq/library.html#what-kinds-of-global-value-mutation-are-thread-safe
-        self.certs = {}
-        self.http_01_resources = set()
+        self.certs = {}  # type: Dict[bytes, Tuple[OpenSSL.crypto.PKey, OpenSSL.crypto.X509]]
+        self.http_01_resources = set() \
+        # type: Set[acme_standalone.HTTP01RequestHandler.HTTP01Resource]
 
         self.servers = ServerManager(self.certs, self.http_01_resources)
 
@@ -265,13 +278,13 @@ class Authenticator(common.Plugin):
 
 
 def _handle_perform_error(error):
-    if error.socket_error.errno == socket.errno.EACCES:
+    if error.socket_error.errno == socket_errors.EACCES:
         raise errors.PluginError(
             "Could not bind TCP port {0} because you don't have "
             "the appropriate permissions (for example, you "
             "aren't running this program as "
             "root).".format(error.port))
-    elif error.socket_error.errno == socket.errno.EADDRINUSE:
+    elif error.socket_error.errno == socket_errors.EADDRINUSE:
         display = zope.component.getUtility(interfaces.IDisplay)
         msg = (
             "Could not bind TCP port {0} because it is already in "

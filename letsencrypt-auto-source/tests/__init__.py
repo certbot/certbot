@@ -2,6 +2,6 @@
 
 Run these locally by saying... ::
 
-    ./build.py && docker build -t lea . && docker run --rm -t -i lea
+    ./build.py && docker build -t lea . -f Dockerfile.<distro> && docker run --rm -t -i lea
 
 """

@@ -10,11 +10,11 @@ import stat
 import tempfile
 import unittest
 
+import josepy as jose
 import mock
 import six
 
 from acme import challenges
-from acme import jose
 
 from certbot import achallenges
 from certbot import errors
@@ -36,6 +36,8 @@ class AuthenticatorTest(unittest.TestCase):
     def setUp(self):
         from certbot.plugins.webroot import Authenticator
         self.path = tempfile.mkdtemp()
+        self.partial_root_challenge_path = os.path.join(
+            self.path, ".well-known")
         self.root_challenge_path = os.path.join(
             self.path, ".well-known", "acme-challenge")
         self.validation_path = os.path.join(
@@ -50,7 +52,7 @@ class AuthenticatorTest(unittest.TestCase):
 
     def test_more_info(self):
         more_info = self.auth.more_info()
-        self.assertTrue(isinstance(more_info, str))
+        self.assertTrue(isinstance(more_info, six.string_types))
         self.assertTrue(self.path in more_info)
 
     def test_add_parser_arguments(self):
@@ -197,6 +199,35 @@ class AuthenticatorTest(unittest.TestCase):
                     self.achall.chall, KEY.public_key()))
 
         self.auth.cleanup([self.achall])
+        self.assertFalse(os.path.exists(self.validation_path))
+        self.assertFalse(os.path.exists(self.root_challenge_path))
+        self.assertFalse(os.path.exists(self.partial_root_challenge_path))
+
+    def test_perform_cleanup_existing_dirs(self):
+        os.mkdir(self.partial_root_challenge_path)
+        self.auth.prepare()
+        self.auth.perform([self.achall])
+        self.auth.cleanup([self.achall])
+
+        # Ensure we don't "clean up" directories that previously existed
+        self.assertFalse(os.path.exists(self.validation_path))
+        self.assertFalse(os.path.exists(self.root_challenge_path))
+
+    def test_perform_cleanup_multiple_challenges(self):
+        bingo_achall = achallenges.KeyAuthorizationAnnotatedChallenge(
+            challb=acme_util.chall_to_challb(
+                challenges.HTTP01(token=b"bingo"), "pending"),
+            domain="thing.com", account_key=KEY)
+
+        bingo_validation_path = "YmluZ28"
+        os.mkdir(self.partial_root_challenge_path)
+        self.auth.prepare()
+        self.auth.perform([bingo_achall, self.achall])
+
+        self.auth.cleanup([self.achall])
+        self.assertFalse(os.path.exists(bingo_validation_path))
+        self.assertTrue(os.path.exists(self.root_challenge_path))
+        self.auth.cleanup([bingo_achall])
         self.assertFalse(os.path.exists(self.validation_path))
         self.assertFalse(os.path.exists(self.root_challenge_path))
 

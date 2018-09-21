@@ -1,6 +1,7 @@
 """Tests for acme.challenges."""
 import unittest
 
+import josepy as jose
 import mock
 import OpenSSL
 import requests
@@ -8,7 +9,6 @@ import requests
 from six.moves.urllib import parse as urllib_parse  # pylint: disable=import-error
 
 from acme import errors
-from acme import jose
 from acme import test_util
 
 CERT = test_util.load_comparable_cert('cert.pem')
@@ -391,6 +391,38 @@ class TLSSNI01Test(unittest.TestCase):
         self.assertEqual(('cert', 'key'), self.msg.validation(
             KEY, cert_key=mock.sentinel.cert_key))
         mock_gen_cert.assert_called_once_with(key=mock.sentinel.cert_key)
+
+
+class TLSALPN01Test(unittest.TestCase):
+
+    def setUp(self):
+        from acme.challenges import TLSALPN01
+        self.msg = TLSALPN01(
+            token=jose.b64decode('a82d5ff8ef740d12881f6d3c2277ab2e'))
+        self.jmsg = {
+            'type': 'tls-alpn-01',
+            'token': 'a82d5ff8ef740d12881f6d3c2277ab2e',
+        }
+
+    def test_to_partial_json(self):
+        self.assertEqual(self.jmsg, self.msg.to_partial_json())
+
+    def test_from_json(self):
+        from acme.challenges import TLSALPN01
+        self.assertEqual(self.msg, TLSALPN01.from_json(self.jmsg))
+
+    def test_from_json_hashable(self):
+        from acme.challenges import TLSALPN01
+        hash(TLSALPN01.from_json(self.jmsg))
+
+    def test_from_json_invalid_token_length(self):
+        from acme.challenges import TLSALPN01
+        self.jmsg['token'] = jose.encode_b64jose(b'abcd')
+        self.assertRaises(
+            jose.DeserializationError, TLSALPN01.from_json, self.jmsg)
+
+    def test_validation(self):
+        self.assertRaises(NotImplementedError, self.msg.validation, KEY)
 
 
 class DNSTest(unittest.TestCase):

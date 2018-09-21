@@ -21,6 +21,9 @@ CERT_PATH = test_util.vector_path('cert_512.pem')
 CERT = test_util.load_vector('cert_512.pem')
 SS_CERT_PATH = test_util.vector_path('cert_2048.pem')
 SS_CERT = test_util.load_vector('cert_2048.pem')
+P256_KEY = test_util.load_vector('nistp256_key.pem')
+P256_CERT_PATH = test_util.vector_path('cert-nosans_nistp256.pem')
+P256_CERT = test_util.load_vector('cert-nosans_nistp256.pem')
 
 class InitSaveKeyTest(test_util.TempDirTestCase):
     """Tests for certbot.crypto_util.init_save_key."""
@@ -217,6 +220,13 @@ class VerifyRenewableCertSigTest(VerifyCertSetup):
     def test_cert_sig_match(self):
         self.assertEqual(None, self._call(self.renewable_cert))
 
+    def test_cert_sig_match_ec(self):
+        renewable_cert = mock.MagicMock()
+        renewable_cert.cert = P256_CERT_PATH
+        renewable_cert.chain = P256_CERT_PATH
+        renewable_cert.privkey = P256_KEY
+        self.assertEqual(None, self._call(renewable_cert))
+
     def test_cert_sig_mismatch(self):
         self.bad_renewable_cert.cert = test_util.vector_path('cert_512_bad.pem')
         self.assertRaises(errors.Error, self._call, self.bad_renewable_cert)
@@ -371,6 +381,21 @@ class Sha256sumTest(unittest.TestCase):
         from certbot.crypto_util import sha256sum
         self.assertEqual(sha256sum(CERT_PATH),
             '914ffed8daf9e2c99d90ac95c77d54f32cbd556672facac380f0c063498df84e')
+
+
+class CertAndChainFromFullchainTest(unittest.TestCase):
+    """Tests for certbot.crypto_util.cert_and_chain_from_fullchain"""
+
+    def test_cert_and_chain_from_fullchain(self):
+        cert_pem = CERT.decode()
+        chain_pem = cert_pem + SS_CERT.decode()
+        fullchain_pem = cert_pem + chain_pem
+        spacey_fullchain_pem = cert_pem + u'\n' + chain_pem
+        from certbot.crypto_util import cert_and_chain_from_fullchain
+        for fullchain in (fullchain_pem, spacey_fullchain_pem):
+            cert_out, chain_out = cert_and_chain_from_fullchain(fullchain)
+            self.assertEqual(cert_out, cert_pem)
+            self.assertEqual(chain_out, chain_pem)
 
 
 if __name__ == '__main__':

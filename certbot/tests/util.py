@@ -14,10 +14,9 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 import mock
 import OpenSSL
+import josepy as jose
 import six
 from six.moves import reload_module  # pylint: disable=import-error
-
-from acme import jose
 
 from certbot import constants
 from certbot import interfaces
@@ -56,11 +55,6 @@ def load_cert(*names):
     loader = _guess_loader(
         names[-1], OpenSSL.crypto.FILETYPE_PEM, OpenSSL.crypto.FILETYPE_ASN1)
     return OpenSSL.crypto.load_certificate(loader, load_vector(*names))
-
-
-def load_comparable_cert(*names):
-    """Load ComparableX509 cert."""
-    return jose.ComparableX509(load_cert(*names))
 
 
 def load_csr(*names):
@@ -341,7 +335,7 @@ class ConfigTestCase(TempDirTestCase):
         self.config.cert_path = constants.CLI_DEFAULTS['auth_cert_path']
         self.config.fullchain_path = constants.CLI_DEFAULTS['auth_chain_path']
         self.config.chain_path = constants.CLI_DEFAULTS['auth_chain_path']
-        self.config.server = "example.com"
+        self.config.server = "https://example.com"
 
 def lock_and_call(func, lock_path):
     """Grab a lock for lock_path and call func.
@@ -367,7 +361,6 @@ def lock_and_call(func, lock_path):
     cv.release()
     child.join()
     assert child.exitcode == 0
-
 
 def hold_lock(cv, lock_path):  # pragma: no cover
     """Acquire a file lock at lock_path and wait to release it.

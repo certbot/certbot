@@ -107,8 +107,8 @@ ACME working area in github: https://github.com/ietf-wg-acme/acme
    :target: https://travis-ci.org/certbot/certbot
    :alt: Travis CI status
 
-.. |coverage| image:: https://coveralls.io/repos/certbot/certbot/badge.svg?branch=master
-   :target: https://coveralls.io/r/certbot/certbot
+.. |coverage| image:: https://codecov.io/gh/certbot/certbot/branch/master/graph/badge.svg
+   :target: https://codecov.io/gh/certbot/certbot
    :alt: Coverage status
 
 .. |docs| image:: https://readthedocs.org/projects/letsencrypt/badge/

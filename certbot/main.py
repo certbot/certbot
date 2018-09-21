@@ -1,4 +1,5 @@
 """Certbot main entry point."""
+# pylint: disable=too-many-lines
 from __future__ import print_function
 import functools
 import logging.handlers
@@ -6,10 +7,11 @@ import os
 import sys
 
 import configobj
+import josepy as jose
 import zope.component
 
-from acme import jose
 from acme import errors as acme_errors
+from acme.magic_typing import Union  # pylint: disable=unused-import, no-name-in-module
 
 import certbot
 
@@ -17,6 +19,7 @@ from certbot import account
 from certbot import cert_manager
 from certbot import cli
 from certbot import client
+from certbot import compat
 from certbot import configuration
 from certbot import constants
 from certbot import crypto_util
@@ -28,12 +31,13 @@ from certbot import log
 from certbot import renewal
 from certbot import reporter
 from certbot import storage
+from certbot import updater
 from certbot import util
 
 from certbot.display import util as display_util, ops as display_ops
 from certbot.plugins import disco as plugins_disco
 from certbot.plugins import selection as plug_sel
-
+from certbot.plugins import enhancements
 
 USER_CANCELLED = ("User chose to cancel the operation and may "
                   "reinvoke the client.")
@@ -43,7 +47,15 @@ logger = logging.getLogger(__name__)
 
 
 def _suggest_donation_if_appropriate(config):
-    """Potentially suggest a donation to support Certbot."""
+    """Potentially suggest a donation to support Certbot.
+
+    :param config: Configuration object
+    :type config: interfaces.IConfig
+
+    :returns: `None`
+    :rtype: None
+
+    """
     assert config.verb != "renew"
     if config.staging:
         # --dry-run implies --staging
@@ -55,6 +67,15 @@ def _suggest_donation_if_appropriate(config):
     reporter_util.add_message(msg, reporter_util.LOW_PRIORITY)
 
 def _report_successful_dry_run(config):
+    """Reports on successful dry run
+
+    :param config: Configuration object
+    :type config: interfaces.IConfig
+
+    :returns: `None`
+    :rtype: None
+
+    """
     reporter_util = zope.component.getUtility(interfaces.IReporter)
     assert config.verb != "renew"
     reporter_util.add_message("The dry run was successful.",
@@ -68,8 +89,23 @@ def _get_and_save_cert(le_client, config, domains=None, certname=None, lineage=N
     then performs that action. Includes calls to hooks, various reports,
     checks, and requests for user input.
 
+    :param config: Configuration object
+    :type config: interfaces.IConfig
+
+    :param domains: List of domain names to get a certificate. Defaults to `None`
+    :type domains: `list` of `str`
+
+    :param certname: Name of new certificate. Defaults to `None`
+    :type certname: str
+
+    :param lineage: Certificate lineage object. Defaults to `None`
+    :type lineage: storage.RenewableCert
+
     :returns: the issued certificate or `None` if doing a dry run
-    :rtype: `storage.RenewableCert` or `None`
+    :rtype: storage.RenewableCert or None
+
+    :raises errors.Error: if certificate could not be obtained
+
     """
     hooks.pre_hook(config)
     try:
@@ -96,11 +132,18 @@ def _get_and_save_cert(le_client, config, domains=None, certname=None, lineage=N
 def _handle_subset_cert_request(config, domains, cert):
     """Figure out what to do if a previous cert had a subset of the names now requested
 
-    :param storage.RenewableCert cert:
+    :param config: Configuration object
+    :type config: interfaces.IConfig
+
+    :param domains: List of domain names
+    :type domains: `list` of `str`
+
+    :param cert: Certificate object
+    :type cert: storage.RenewableCert
 
     :returns: Tuple of (str action, cert_or_None) as per _find_lineage_for_domains_and_certname
               action can be: "newcert" | "renew" | "reinstall"
-    :rtype: tuple
+    :rtype: `tuple` of `str`
 
     """
     existing = ", ".join(cert.names())
@@ -137,11 +180,15 @@ def _handle_subset_cert_request(config, domains, cert):
 def _handle_identical_cert_request(config, lineage):
     """Figure out what to do if a lineage has the same names as a previously obtained one
 
-    :param storage.RenewableCert lineage:
+    :param config: Configuration object
+    :type config: interfaces.IConfig
+
+    :param lineage: Certificate lineage object
+    :type lineage: storage.RenewableCert
 
     :returns: Tuple of (str action, cert_or_None) as per _find_lineage_for_domains_and_certname
               action can be: "newcert" | "renew" | "reinstall"
-    :rtype: tuple
+    :rtype: `tuple` of `str`
 
     """
     if not lineage.ensure_deployed():
@@ -186,11 +233,18 @@ def _find_lineage_for_domains(config, domains):
     the client run if the user chooses to cancel the operation when
     prompted).
 
+    :param config: Configuration object
+    :type config: interfaces.IConfig
+
+    :param domains: List of domain names
+    :type domains: `list` of `str`
+
     :returns: Two-element tuple containing desired new-certificate behavior as
               a string token ("reinstall", "renew", or "newcert"), plus either
-              a RenewableCert instance or None if renewal shouldn't occur.
+              a RenewableCert instance or `None` if renewal shouldn't occur.
+    :rtype: `tuple` of `str` and :class:`storage.RenewableCert` or `None`
 
-    :raises .Error: If the user would like to rerun the client again.
+    :raises errors.Error: If the user would like to rerun the client again.
 
     """
     # Considering the possibility that the requested certificate is
@@ -214,9 +268,20 @@ def _find_lineage_for_domains(config, domains):
 def _find_cert(config, domains, certname):
     """Finds an existing certificate object given domains and/or a certificate name.
 
+    :param config: Configuration object
+    :type config: interfaces.IConfig
+
+    :param domains: List of domain names
+    :type domains: `list` of `str`
+
+    :param certname: Name of certificate
+    :type certname: str
+
     :returns: Two-element tuple of a boolean that indicates if this function should be
               followed by a call to fetch a certificate from the server, and either a
               RenewableCert instance or None.
+    :rtype: `tuple` of `bool` and :class:`storage.RenewableCert` or `None`
+
     """
     action, lineage = _find_lineage_for_domains_and_certname(config, domains, certname)
     if action == "reinstall":
@@ -226,11 +291,22 @@ def _find_cert(config, domains, certname):
 def _find_lineage_for_domains_and_certname(config, domains, certname):
     """Find appropriate lineage based on given domains and/or certname.
 
+    :param config: Configuration object
+    :type config: interfaces.IConfig
+
+    :param domains: List of domain names
+    :type domains: `list` of `str`
+
+    :param certname: Name of certificate
+    :type certname: str
+
     :returns: Two-element tuple containing desired new-certificate behavior as
               a string token ("reinstall", "renew", or "newcert"), plus either
-              a RenewableCert instance or None if renewal shouldn't occur.
+              a RenewableCert instance or None if renewal should not occur.
 
-    :raises .Error: If the user would like to rerun the client again.
+    :rtype: `tuple` of `str` and :class:`storage.RenewableCert` or `None`
+
+    :raises errors.Error: If the user would like to rerun the client again.
 
     """
     if not certname:
@@ -250,28 +326,85 @@ def _find_lineage_for_domains_and_certname(config, domains, certname):
                 return "newcert", None
             else:
                 raise errors.ConfigurationError("No certificate with name {0} found. "
-                    "Use -d to specify domains, or run certbot --certificates to see "
+                    "Use -d to specify domains, or run certbot certificates to see "
                     "possible certificate names.".format(certname))
+
+def _get_added_removed(after, before):
+    """Get lists of items removed from `before`
+    and a lists of items added to `after`
+    """
+    added = list(set(after) - set(before))
+    removed = list(set(before) - set(after))
+    added.sort()
+    removed.sort()
+    return added, removed
+
+def _format_list(character, strings):
+    """Format list with given character
+    """
+    if len(strings) == 0:
+        formatted = "{br}(None)"
+    else:
+        formatted = "{br}{ch} " + "{br}{ch} ".join(strings)
+    return formatted.format(
+        ch=character,
+        br=os.linesep
+    )
 
 def _ask_user_to_confirm_new_names(config, new_domains, certname, old_domains):
     """Ask user to confirm update cert certname to contain new_domains.
+
+    :param config: Configuration object
+    :type config: interfaces.IConfig
+
+    :param new_domains: List of new domain names
+    :type new_domains: `list` of `str`
+
+    :param certname: Name of certificate
+    :type certname: str
+
+    :param old_domains: List of old domain names
+    :type old_domains: `list` of `str`
+
+    :returns: None
+    :rtype: None
+
+    :raises errors.ConfigurationError: if cert name and domains mismatch
+
     """
     if config.renew_with_new_domains:
         return
 
-    msg = ("You are updating certificate {0} to include domains: {1}{br}{br}"
-           "It previously included domains: {2}{br}{br}"
+    added, removed = _get_added_removed(new_domains, old_domains)
+
+    msg = ("You are updating certificate {0} to include new domain(s): {1}{br}{br}"
+           "You are also removing previously included domain(s): {2}{br}{br}"
            "Did you intend to make this change?".format(
                certname,
-               ", ".join(new_domains),
-               ", ".join(old_domains),
+               _format_list("+", added),
+               _format_list("-", removed),
                br=os.linesep))
     obj = zope.component.getUtility(interfaces.IDisplay)
     if not obj.yesno(msg, "Update cert", "Cancel", default=True):
         raise errors.ConfigurationError("Specified mismatched cert name and domains.")
 
-def _find_domains_or_certname(config, installer):
+def _find_domains_or_certname(config, installer, question=None):
     """Retrieve domains and certname from config or user input.
+
+    :param config: Configuration object
+    :type config: interfaces.IConfig
+
+    :param installer: Installer object
+    :type installer: interfaces.IInstaller
+
+    :param `str` question: Overriding dialog question to ask the user if asked
+        to choose from domain names.
+
+    :returns: Two-part tuple of domains and certname
+    :rtype: `tuple` of list of `str` and `str`
+
+    :raises errors.Error: Usage message, if parameters are not used correctly
+
     """
     domains = None
     certname = config.certname
@@ -286,7 +419,7 @@ def _find_domains_or_certname(config, installer):
     # that certname might not have existed, or there was a problem.
     # try to get domains from the user.
     if not domains:
-        domains = display_ops.choose_names(installer)
+        domains = display_ops.choose_names(installer, question)
 
     if not domains and not certname:
         raise errors.Error("Please specify --domains, or --installer that "
@@ -299,9 +432,17 @@ def _find_domains_or_certname(config, installer):
 def _report_new_cert(config, cert_path, fullchain_path, key_path=None):
     """Reports the creation of a new certificate to the user.
 
-    :param str cert_path: path to cert
-    :param str fullchain_path: path to full chain
-    :param str key_path: path to private key, if available
+    :param cert_path: path to certificate
+    :type cert_path: str
+
+    :param fullchain_path: path to full chain
+    :type fullchain_path: str
+
+    :param key_path: path to private key, if available
+    :type key_path: str
+
+    :returns: `None`
+    :rtype: None
 
     """
     if config.dry_run:
@@ -333,20 +474,34 @@ def _report_new_cert(config, cert_path, fullchain_path, key_path=None):
 def _determine_account(config):
     """Determine which account to use.
 
-    In order to make the renewer (configuration de/serialization) happy,
-    if ``config.account`` is ``None``, it will be updated based on the
+    If ``config.account`` is ``None``, it will be updated based on the
     user input. Same for ``config.email``.
 
-    :param argparse.Namespace config: CLI arguments
-    :param certbot.interface.IConfig config: Configuration object
-    :param .AccountStorage account_storage: Account storage.
+    :param config: Configuration object
+    :type config: interfaces.IConfig
 
     :returns: Account and optionally ACME client API (biproduct of new
         registration).
-    :rtype: `tuple` of `certbot.account.Account` and
-        `acme.client.Client`
+    :rtype: tuple of :class:`certbot.account.Account` and :class:`acme.client.Client`
+
+    :raises errors.Error: If unable to register an account with ACME server
 
     """
+    def _tos_cb(terms_of_service):
+        if config.tos:
+            return True
+        msg = ("Please read the Terms of Service at {0}. You "
+               "must agree in order to register with the ACME "
+               "server at {1}".format(
+                   terms_of_service, config.server))
+        obj = zope.component.getUtility(interfaces.IDisplay)
+        result = obj.yesno(msg, "Agree", "Cancel",
+                         cli_flag="--agree-tos", force_interactive=True)
+        if not result:
+            raise errors.Error(
+                "Registration cannot proceed without accepting "
+                "Terms of Service.")
+
     account_storage = account.AccountFileStorage(config)
     acme = None
 
@@ -361,25 +516,13 @@ def _determine_account(config):
         else:  # no account registered yet
             if config.email is None and not config.register_unsafely_without_email:
                 config.email = display_ops.get_email()
-
-            def _tos_cb(regr):
-                if config.tos:
-                    return True
-                msg = ("Please read the Terms of Service at {0}. You "
-                       "must agree in order to register with the ACME "
-                       "server at {1}".format(
-                           regr.terms_of_service, config.server))
-                obj = zope.component.getUtility(interfaces.IDisplay)
-                return obj.yesno(msg, "Agree", "Cancel",
-                                 cli_flag="--agree-tos", force_interactive=True)
-
             try:
                 acc, acme = client.register(
                     config, account_storage, tos_cb=_tos_cb)
             except errors.MissingCommandlineFlag:
                 raise
-            except errors.Error as error:
-                logger.debug(error, exc_info=True)
+            except errors.Error:
+                logger.debug("", exc_info=True)
                 raise errors.Error(
                     "Unable to register an account with ACME server")
 
@@ -392,17 +535,23 @@ def _delete_if_appropriate(config): # pylint: disable=too-many-locals,too-many-b
     deleting happens automatically, unless if both `--cert-name` and `--cert-path` were
     specified with conflicting values.
 
-    :param `configuration.NamespaceConfig` config: parsed command line arguments
+    :param config: parsed command line arguments
+    :type config: interfaces.IConfig
 
-    :raises `error.Errors`: If anything goes wrong, including bad user input, if an overlapping
+    :returns: `None`
+    :rtype: None
+
+    :raises errors.Error: If anything goes wrong, including bad user input, if an overlapping
         archive dir is found for the specified lineage, etc ...
     """
     display = zope.component.getUtility(interfaces.IDisplay)
     reporter_util = zope.component.getUtility(interfaces.IReporter)
 
-    msg = ("Would you like to delete the cert(s) you just revoked?")
-    attempt_deletion = display.yesno(msg, yes_label="Yes (recommended)", no_label="No",
-            force_interactive=True, default=True)
+    attempt_deletion = config.delete_after_revoke
+    if attempt_deletion is None:
+        msg = ("Would you like to delete the cert(s) you just revoked?")
+        attempt_deletion = display.yesno(msg, yes_label="Yes (recommended)", no_label="No",
+                force_interactive=True, default=True)
 
     if not attempt_deletion:
         reporter_util.add_message("Not deleting revoked certs.", reporter_util.LOW_PRIORITY)
@@ -474,6 +623,20 @@ def _delete_if_appropriate(config): # pylint: disable=too-many-locals,too-many-b
 
 
 def _init_le_client(config, authenticator, installer):
+    """Initialize Let's Encrypt Client
+
+    :param config: Configuration object
+    :type config: interfaces.IConfig
+
+    :param authenticator: Acme authentication handler
+    :type authenticator: interfaces.IAuthenticator
+    :param installer: Installer object
+    :type installer: interfaces.IInstaller
+
+    :returns: client: Client object
+    :rtype: client.Client
+
+    """
     if authenticator is not None:
         # if authenticator was given, then we will need account...
         acc, acme = _determine_account(config)
@@ -487,7 +650,18 @@ def _init_le_client(config, authenticator, installer):
 
 
 def unregister(config, unused_plugins):
-    """Deactivate account on server"""
+    """Deactivate account on server
+
+    :param config: Configuration object
+    :type config: interfaces.IConfig
+
+    :param unused_plugins: List of plugins (deprecated)
+    :type unused_plugins: `list` of `str`
+
+    :returns: `None`
+    :rtype: None
+
+    """
     account_storage = account.AccountFileStorage(config)
     accounts = account_storage.find_all()
     reporter_util = zope.component.getUtility(interfaces.IReporter)
@@ -516,8 +690,18 @@ def unregister(config, unused_plugins):
 
 
 def register(config, unused_plugins):
-    """Create or modify accounts on the server."""
+    """Create or modify accounts on the server.
 
+    :param config: Configuration object
+    :type config: interfaces.IConfig
+
+    :param unused_plugins: List of plugins (deprecated)
+    :type unused_plugins: `list` of `str`
+
+    :returns: `None` or a string indicating and error
+    :rtype: None or str
+
+    """
     # Portion of _determine_account logic to see whether accounts already
     # exist or not.
     account_storage = account.AccountFileStorage(config)
@@ -551,13 +735,37 @@ def register(config, unused_plugins):
     acc, acme = _determine_account(config)
     cb_client = client.Client(config, acc, None, None, acme=acme)
     # We rely on an exception to interrupt this process if it didn't work.
+    acc_contacts = ['mailto:' + email for email in config.email.split(',')]
+    prev_regr_uri = acc.regr.uri
     acc.regr = cb_client.acme.update_registration(acc.regr.update(
-        body=acc.regr.body.update(contact=('mailto:' + config.email,))))
+        body=acc.regr.body.update(contact=acc_contacts)))
+    # A v1 account being used as a v2 account will result in changing the uri to
+    # the v2 uri. Since it's the same object on disk, put it back to the v1 uri
+    # so that we can also continue to use the account object with acmev1.
+    acc.regr = acc.regr.update(uri=prev_regr_uri)
     account_storage.save_regr(acc, cb_client.acme)
     eff.handle_subscription(config)
     add_msg("Your e-mail address was updated to {0}.".format(config.email))
 
 def _install_cert(config, le_client, domains, lineage=None):
+    """Install a cert
+
+    :param config: Configuration object
+    :type config: interfaces.IConfig
+
+    :param le_client: Client object
+    :type le_client: client.Client
+
+    :param domains: List of domains
+    :type domains: `list` of `str`
+
+    :param lineage: Certificate lineage object. Defaults to `None`
+    :type lineage: storage.RenewableCert
+
+    :returns: `None`
+    :rtype: None
+
+    """
     path_provider = lineage if lineage else config
     assert path_provider.cert_path is not None
 
@@ -566,7 +774,18 @@ def _install_cert(config, le_client, domains, lineage=None):
     le_client.enhance_config(domains, path_provider.chain_path)
 
 def install(config, plugins):
-    """Install a previously obtained cert in a server."""
+    """Install a previously obtained cert in a server.
+
+    :param config: Configuration object
+    :type config: interfaces.IConfig
+
+    :param plugins: List of plugins
+    :type plugins: `list` of `str`
+
+    :returns: `None`
+    :rtype: None
+
+    """
     # XXX: Update for renewer/RenewableCert
     # FIXME: be consistent about whether errors are raised or returned from
     # this function ...
@@ -576,13 +795,78 @@ def install(config, plugins):
     except errors.PluginSelectionError as e:
         return str(e)
 
-    domains, _ = _find_domains_or_certname(config, installer)
-    le_client = _init_le_client(config, authenticator=None, installer=installer)
-    _install_cert(config, le_client, domains)
+    custom_cert = (config.key_path and config.cert_path)
+    if not config.certname and not custom_cert:
+        certname_question = "Which certificate would you like to install?"
+        config.certname = cert_manager.get_certnames(
+            config, "install", allow_multiple=False,
+            custom_prompt=certname_question)[0]
 
+    if not enhancements.are_supported(config, installer):
+        raise errors.NotSupportedError("One ore more of the requested enhancements "
+                                       "are not supported by the selected installer")
+    # If cert-path is defined, populate missing (ie. not overridden) values.
+    # Unfortunately this can't be done in argument parser, as certificate
+    # manager needs the access to renewal directory paths
+    if config.certname:
+        config = _populate_from_certname(config)
+    elif enhancements.are_requested(config):
+        # Preflight config check
+        raise errors.ConfigurationError("One or more of the requested enhancements "
+                                        "require --cert-name to be provided")
 
+    if config.key_path and config.cert_path:
+        _check_certificate_and_key(config)
+        domains, _ = _find_domains_or_certname(config, installer)
+        le_client = _init_le_client(config, authenticator=None, installer=installer)
+        _install_cert(config, le_client, domains)
+    else:
+        raise errors.ConfigurationError("Path to certificate or key was not defined. "
+            "If your certificate is managed by Certbot, please use --cert-name "
+            "to define which certificate you would like to install.")
+
+    if enhancements.are_requested(config):
+        # In the case where we don't have certname, we have errored out already
+        lineage = cert_manager.lineage_for_certname(config, config.certname)
+        enhancements.enable(lineage, domains, installer, config)
+
+def _populate_from_certname(config):
+    """Helper function for install to populate missing config values from lineage
+    defined by --cert-name."""
+
+    lineage = cert_manager.lineage_for_certname(config, config.certname)
+    if not lineage:
+        return config
+    if not config.key_path:
+        config.namespace.key_path = lineage.key_path
+    if not config.cert_path:
+        config.namespace.cert_path = lineage.cert_path
+    if not config.chain_path:
+        config.namespace.chain_path = lineage.chain_path
+    if not config.fullchain_path:
+        config.namespace.fullchain_path = lineage.fullchain_path
+    return config
+
+def _check_certificate_and_key(config):
+    if not os.path.isfile(os.path.realpath(config.cert_path)):
+        raise errors.ConfigurationError("Error while reading certificate from path "
+                                       "{0}".format(config.cert_path))
+    if not os.path.isfile(os.path.realpath(config.key_path)):
+        raise errors.ConfigurationError("Error while reading private key from path "
+                                       "{0}".format(config.key_path))
 def plugins_cmd(config, plugins):
-    """List server software plugins."""
+    """List server software plugins.
+
+    :param config: Configuration object
+    :type config: interfaces.IConfig
+
+    :param plugins: List of plugins
+    :type plugins: `list` of `str`
+
+    :returns: `None`
+    :rtype: None
+
+    """
     logger.debug("Expected interfaces: %s", config.ifaces)
 
     ifaces = [] if config.ifaces is None else config.ifaces
@@ -608,9 +892,76 @@ def plugins_cmd(config, plugins):
     logger.debug("Prepared plugins: %s", available)
     notify(str(available))
 
+def enhance(config, plugins):
+    """Add security enhancements to existing configuration
+
+    :param config: Configuration object
+    :type config: interfaces.IConfig
+
+    :param plugins: List of plugins
+    :type plugins: `list` of `str`
+
+    :returns: `None`
+    :rtype: None
+
+    """
+    supported_enhancements = ["hsts", "redirect", "uir", "staple"]
+    # Check that at least one enhancement was requested on command line
+    oldstyle_enh = any([getattr(config, enh) for enh in supported_enhancements])
+    if not enhancements.are_requested(config) and not oldstyle_enh:
+        msg = ("Please specify one or more enhancement types to configure. To list "
+               "the available enhancement types, run:\n\n%s --help enhance\n")
+        logger.warning(msg, sys.argv[0])
+        raise errors.MisconfigurationError("No enhancements requested, exiting.")
+
+    try:
+        installer, _ = plug_sel.choose_configurator_plugins(config, plugins, "enhance")
+    except errors.PluginSelectionError as e:
+        return str(e)
+
+    if not enhancements.are_supported(config, installer):
+        raise errors.NotSupportedError("One ore more of the requested enhancements "
+                                       "are not supported by the selected installer")
+
+    certname_question = ("Which certificate would you like to use to enhance "
+                         "your configuration?")
+    config.certname = cert_manager.get_certnames(
+        config, "enhance", allow_multiple=False,
+        custom_prompt=certname_question)[0]
+    cert_domains = cert_manager.domains_for_certname(config, config.certname)
+    if config.noninteractive_mode:
+        domains = cert_domains
+    else:
+        domain_question = ("Which domain names would you like to enable the "
+                           "selected enhancements for?")
+        domains = display_ops.choose_values(cert_domains, domain_question)
+        if not domains:
+            raise errors.Error("User cancelled the domain selection. No domains "
+                               "defined, exiting.")
+
+    lineage = cert_manager.lineage_for_certname(config, config.certname)
+    if not config.chain_path:
+        config.chain_path = lineage.chain_path
+    if oldstyle_enh:
+        le_client = _init_le_client(config, authenticator=None, installer=installer)
+        le_client.enhance_config(domains, config.chain_path, ask_redirect=False)
+    if enhancements.are_requested(config):
+        enhancements.enable(lineage, domains, installer, config)
+
 
 def rollback(config, plugins):
-    """Rollback server configuration changes made during install."""
+    """Rollback server configuration changes made during install.
+
+    :param config: Configuration object
+    :type config: interfaces.IConfig
+
+    :param plugins: List of plugins
+    :type plugins: `list` of `str`
+
+    :returns: `None`
+    :rtype: None
+
+    """
     client.rollback(config.installer, config.checkpoints, config, plugins)
 
 
@@ -618,6 +969,15 @@ def config_changes(config, unused_plugins):
     """Show changes made to server config during installation
 
     View checkpoints and associated configuration changes.
+
+    :param config: Configuration object
+    :type config: interfaces.IConfig
+
+    :param unused_plugins: List of plugins (deprecated)
+    :type unused_plugins: `list` of `str`
+
+    :returns: `None`
+    :rtype: None
 
     """
     client.view_config_changes(config, num=config.num)
@@ -627,6 +987,16 @@ def update_symlinks(config, unused_plugins):
 
     Use the information in the config file to make symlinks point to
     the correct archive directory.
+
+    :param config: Configuration object
+    :type config: interfaces.IConfig
+
+    :param unused_plugins: List of plugins (deprecated)
+    :type unused_plugins: `list` of `str`
+
+    :returns: `None`
+    :rtype: None
+
     """
     cert_manager.update_live_symlinks(config)
 
@@ -635,6 +1005,16 @@ def rename(config, unused_plugins):
 
     Use the information in the config file to rename an existing
     lineage.
+
+    :param config: Configuration object
+    :type config: interfaces.IConfig
+
+    :param unused_plugins: List of plugins (deprecated)
+    :type unused_plugins: `list` of `str`
+
+    :returns: `None`
+    :rtype: None
+
     """
     cert_manager.rename_lineage(config)
 
@@ -643,18 +1023,49 @@ def delete(config, unused_plugins):
 
     Use the information in the config file to delete an existing
     lineage.
+
+    :param config: Configuration object
+    :type config: interfaces.IConfig
+
+    :param unused_plugins: List of plugins (deprecated)
+    :type unused_plugins: `list` of `str`
+
+    :returns: `None`
+    :rtype: None
+
     """
     cert_manager.delete(config)
 
 def certificates(config, unused_plugins):
     """Display information about certs configured with Certbot
+
+    :param config: Configuration object
+    :type config: interfaces.IConfig
+
+    :param unused_plugins: List of plugins (deprecated)
+    :type unused_plugins: `list` of `str`
+
+    :returns: `None`
+    :rtype: None
+
     """
     cert_manager.certificates(config)
 
 def revoke(config, unused_plugins):  # TODO: coop with renewal config
-    """Revoke a previously obtained certificate."""
+    """Revoke a previously obtained certificate.
+
+    :param config: Configuration object
+    :type config: interfaces.IConfig
+
+    :param unused_plugins: List of plugins (deprecated)
+    :type unused_plugins: `list` of `str`
+
+    :returns: `None` or string indicating error in case of error
+    :rtype: None or str
+
+    """
     # For user-agent construction
-    config.installer = config.authenticator = "None"
+    config.installer = config.authenticator = None
 
     if config.cert_path is None and config.certname:
         config.cert_path = storage.cert_path_for_cert_name(config, config.certname)
@@ -668,11 +1079,11 @@ def revoke(config, unused_plugins):  # TODO: coop with renewal config
                      config.cert_path[0], config.key_path[0])
         crypto_util.verify_cert_matches_priv_key(config.cert_path[0], config.key_path[0])
         key = jose.JWK.load(config.key_path[1])
+        acme = client.acme_from_config_key(config, key)
     else:  # revocation by account key
         logger.debug("Revoking %s using Account Key", config.cert_path[0])
         acc, _ = _determine_account(config)
-        key = acc.key
-    acme = client.acme_from_config_key(config, key)
+        acme = client.acme_from_config_key(config, acc.key, acc.regr)
     cert = crypto_util.pyopenssl_load_certificate(config.cert_path[1])[0]
     logger.debug("Reason code for revocation: %s", config.reason)
     try:
@@ -685,13 +1096,29 @@ def revoke(config, unused_plugins):  # TODO: coop with renewal config
 
 
 def run(config, plugins):  # pylint: disable=too-many-branches,too-many-locals
-    """Obtain a certificate and install."""
+    """Obtain a certificate and install.
+
+    :param config: Configuration object
+    :type config: interfaces.IConfig
+
+    :param plugins: List of plugins
+    :type plugins: `list` of `str`
+
+    :returns: `None`
+    :rtype: None
+
+    """
     # TODO: Make run as close to auth + install as possible
     # Possible difficulties: config.csr was hacked into auth
     try:
         installer, authenticator = plug_sel.choose_configurator_plugins(config, plugins, "run")
     except errors.PluginSelectionError as e:
         return str(e)
+
+    # Preflight check for enhancement support by the selected installer
+    if not enhancements.are_supported(config, installer):
+        raise errors.NotSupportedError("One ore more of the requested enhancements "
+                                       "are not supported by the selected installer")
 
     # TODO: Handle errors from _init_le_client?
     le_client = _init_le_client(config, authenticator, installer)
@@ -711,6 +1138,9 @@ def run(config, plugins):  # pylint: disable=too-many-branches,too-many-locals
 
     _install_cert(config, le_client, domains, new_lineage)
 
+    if enhancements.are_requested(config) and new_lineage:
+        enhancements.enable(new_lineage, domains, installer, config)
+
     if lineage is None or not should_get_cert:
         display_ops.success_installation(domains)
     else:
@@ -725,29 +1155,54 @@ def _csr_get_and_save_cert(config, le_client):
     This works differently in the CSR case (for now) because we don't
     have the privkey, and therefore can't construct the files for a lineage.
     So we just save the cert & chain to disk :/
+
+    :param config: Configuration object
+    :type config: interfaces.IConfig
+
+    :param client: Client object
+    :type client: client.Client
+
+    :returns: `cert_path` and `fullchain_path` as absolute paths to the actual files
+    :rtype: `tuple` of `str`
+
     """
     csr, _ = config.actual_csr
-    certr, chain = le_client.obtain_certificate_from_csr(config.domains, csr)
+    cert, chain = le_client.obtain_certificate_from_csr(csr)
     if config.dry_run:
         logger.debug(
             "Dry run: skipping saving certificate to %s", config.cert_path)
         return None, None
     cert_path, _, fullchain_path = le_client.save_certificate(
-            certr, chain, config.cert_path, config.chain_path, config.fullchain_path)
+            cert, chain, config.cert_path, config.chain_path, config.fullchain_path)
     return cert_path, fullchain_path
 
 def renew_cert(config, plugins, lineage):
-    """Renew & save an existing cert. Do not install it."""
+    """Renew & save an existing cert. Do not install it.
+
+    :param config: Configuration object
+    :type config: interfaces.IConfig
+
+    :param plugins: List of plugins
+    :type plugins: `list` of `str`
+
+    :param lineage: Certificate lineage object
+    :type lineage: storage.RenewableCert
+
+    :returns: `None`
+    :rtype: None
+
+    :raises errors.PluginSelectionError: MissingCommandlineFlag if supplied parameters do not pass
+
+    """
     try:
         # installers are used in auth mode to determine domain names
         installer, auth = plug_sel.choose_configurator_plugins(config, plugins, "certonly")
     except errors.PluginSelectionError as e:
         logger.info("Could not choose appropriate plugin: %s", e)
         raise
-
     le_client = _init_le_client(config, auth, installer)
 
-    _get_and_save_cert(le_client, config, lineage=lineage)
+    renewed_lineage = _get_and_save_cert(le_client, config, lineage=lineage)
 
     notify = zope.component.getUtility(interfaces.IDisplay).notification
     if installer is None:
@@ -757,6 +1212,8 @@ def renew_cert(config, plugins, lineage):
         # In case of a renewal, reload server to pick up new certificate.
         # In principle we could have a configuration option to inhibit this
         # from happening.
+        # Run deployer
+        updater.run_renewal_deployer(config, renewed_lineage, installer)
         installer.restart()
         notify("new certificate deployed with reload of {0} server; fullchain is {1}".format(
                config.installer, lineage.fullchain), pause=False)
@@ -764,8 +1221,20 @@ def renew_cert(config, plugins, lineage):
 def certonly(config, plugins):
     """Authenticate & obtain cert, but do not install it.
 
-    This implements the 'certonly' subcommand."""
+    This implements the 'certonly' subcommand.
 
+    :param config: Configuration object
+    :type config: interfaces.IConfig
+
+    :param plugins: List of plugins
+    :type plugins: `list` of `str`
+
+    :returns: `None`
+    :rtype: None
+
+    :raises errors.Error: If specified plugin could not be used
+
+    """
     # SETUP: Select plugins and construct a client instance
     try:
         # installers are used in auth mode to determine domain names
@@ -799,7 +1268,18 @@ def certonly(config, plugins):
     _suggest_donation_if_appropriate(config)
 
 def renew(config, unused_plugins):
-    """Renew previously-obtained certificates."""
+    """Renew previously-obtained certificates.
+
+    :param config: Configuration object
+    :type config: interfaces.IConfig
+
+    :param unused_plugins: List of plugins (deprecated)
+    :type unused_plugins: `list` of `str`
+
+    :returns: `None`
+    :rtype: None
+
+    """
     try:
         renewal.handle_renewal_request(config)
     finally:
@@ -807,26 +1287,43 @@ def renew(config, unused_plugins):
 
 
 def make_or_verify_needed_dirs(config):
-    """Create or verify existence of config, work, and hook directories."""
+    """Create or verify existence of config, work, and hook directories.
+
+    :param config: Configuration object
+    :type config: interfaces.IConfig
+
+    :returns: `None`
+    :rtype: None
+
+    """
     util.set_up_core_dir(config.config_dir, constants.CONFIG_DIRS_MODE,
-                         os.geteuid(), config.strict_permissions)
+                         compat.os_geteuid(), config.strict_permissions)
     util.set_up_core_dir(config.work_dir, constants.CONFIG_DIRS_MODE,
-                         os.geteuid(), config.strict_permissions)
+                         compat.os_geteuid(), config.strict_permissions)
 
     hook_dirs = (config.renewal_pre_hooks_dir,
                  config.renewal_deploy_hooks_dir,
                  config.renewal_post_hooks_dir,)
     for hook_dir in hook_dirs:
         util.make_or_verify_dir(hook_dir,
-                                uid=os.geteuid(),
+                                uid=compat.os_geteuid(),
                                 strict=config.strict_permissions)
 
 
 def set_displayer(config):
-    """Set the displayer"""
+    """Set the displayer
+
+    :param config: Configuration object
+    :type config: interfaces.IConfig
+
+    :returns: `None`
+    :rtype: None
+
+    """
     if config.quiet:
         config.noninteractive_mode = True
-        displayer = display_util.NoninteractiveDisplay(open(os.devnull, "w"))
+        displayer = display_util.NoninteractiveDisplay(open(os.devnull, "w")) \
+        # type: Union[None, display_util.NoninteractiveDisplay, display_util.FileDisplay]
     elif config.noninteractive_mode:
         displayer = display_util.NoninteractiveDisplay(sys.stdout)
     else:
@@ -836,7 +1333,15 @@ def set_displayer(config):
 
 
 def main(cli_args=sys.argv[1:]):
-    """Command line argument parsing and main script execution."""
+    """Command line argument parsing and main script execution.
+
+    :returns: result of requested command
+
+    :raises errors.Error: OS errors triggered by wrong permissions
+    :raises errors.Error: error if plugin command is not supported
+
+    """
+
     log.pre_arg_parse_setup()
 
     plugins = plugins_disco.PluginsRegistry.find_all()
@@ -849,6 +1354,10 @@ def main(cli_args=sys.argv[1:]):
     args = cli.prepare_and_parse_args(plugins, cli_args)
     config = configuration.NamespaceConfig(args)
     zope.component.provideUtility(config)
+
+    # On windows, shell without administrative right cannot create symlinks required by certbot.
+    # So we check the rights before continuing.
+    compat.raise_for_non_administrative_windows_rights(config.verb)
 
     try:
         log.post_arg_parse_setup(config)

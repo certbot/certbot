@@ -18,10 +18,10 @@ import sys
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization
+import josepy as jose
 
 from acme import client as acme_client
 from acme import errors as acme_errors
-from acme import jose
 from acme import messages
 
 DIRECTORY = os.getenv('DIRECTORY', 'http://localhost:4000/directory')

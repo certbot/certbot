@@ -1,10 +1,10 @@
 """ACME utilities for testing."""
 import datetime
 
+import josepy as jose
 import six
 
 from acme import challenges
-from acme import jose
 from acme import messages
 
 from certbot import auth_handler

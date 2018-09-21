@@ -5,7 +5,6 @@ from __future__ import print_function
 
 import argparse
 import atexit
-import contextlib
 import os
 import re
 import shutil
@@ -16,6 +15,8 @@ import tempfile
 import textwrap
 
 import six
+
+from letshelp_certbot.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
 
 _DESCRIPTION = """
 Let's Help is a simple script you can run to help out the Certbot
@@ -88,7 +89,8 @@ def copy_config(server_root, temp_dir):
     :rtype: `tuple` of `list` of `str`
 
     """
-    copied_files, copied_dirs = [], []
+    copied_files = [] # type: List[str]
+    copied_dirs = [] # type: List[str]
     dir_len = len(os.path.dirname(server_root))
 
     for config_path, config_dirs, config_files in os.walk(server_root):
@@ -302,8 +304,7 @@ def main():
     make_and_verify_selection(args.server_root, tempdir)
 
     tarpath = os.path.join(tempdir, "config.tar.gz")
-    # contextlib.closing used for py26 support
-    with contextlib.closing(tarfile.open(tarpath, mode="w:gz")) as tar:
+    with tarfile.open(tarpath, mode="w:gz") as tar:
         tar.add(tempdir, arcname=".")
 
     # TODO: Submit tarpath

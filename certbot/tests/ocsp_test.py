@@ -13,7 +13,6 @@ ocsp: Use -help for summary.
 
 class OCSPTest(unittest.TestCase):
 
-    _multiprocess_can_split_ = True
 
     def setUp(self):
         from certbot import ocsp
