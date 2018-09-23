@@ -195,7 +195,7 @@ if [ "$1" = "--cb-auto-has-root" ]; then
 else
   SetRootAuthMechanism
   if [ -n "$SUDO" ]; then
-    echo "Requesting to rerun $0 with root privileges..."
+    say "Requesting to rerun $0 with root privileges..."
     $SUDO "$0" --cb-auto-has-root "$@"
     exit 0
   fi
