@@ -508,7 +508,7 @@ class NginxConfigurator(common.Installer):
         return vhosts
 
     def choose_http_and_https_vhosts(self, target_name, http_port):
-        """Chooses a single http virtual host and a single https virtual host.
+        """Chooses at least one http virtual host and at least one https virtual host.
 
         Chooses the vhosts most closely matching target_name that are
         listening without using ssl on http_port and with ssl.
