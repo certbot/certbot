@@ -584,9 +584,7 @@ class NginxConfigurator(common.Installer):
 
         matching_vhosts = [vhost for vhost in all_vhosts if _vhost_matches(vhost, port)]
 
-        # We can use this ranking function because sslishness doesn't matter to us, and
-        # there shouldn't be conflicting plaintextish servers listening on 80.
-        return self._rank_matches_by_name_and_ssl(matching_vhosts, target_name)
+        return self._rank_matches_by_name(matching_vhosts, target_name)
 
     def get_all_names(self):
         """Returns all names found in the Nginx Configuration.
