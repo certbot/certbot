@@ -4,7 +4,9 @@ from __future__ import print_function
 import functools
 import logging.handlers
 import os
+import random
 import sys
+import time
 
 import configobj
 import josepy as jose
@@ -1273,6 +1275,14 @@ def renew(config, unused_plugins):
     :rtype: None
 
     """
+    if not sys.stdout.isatty():
+        # Noninteractive renewals include a random delay in order to spread
+        # out the load on the certificate authority servers, even if many
+        # users all pick the same time for renewals.  This delay precedes
+        # running any hooks, so that side effects of the hooks (such as
+        # shutting down a web service) aren't prolonged unnecessarily.
+        time.sleep(random.randint(1, 60*8))
+
     try:
         renewal.handle_renewal_request(config)
     finally:
