@@ -136,7 +136,9 @@ class NginxConfigurator(common.Installer):
         """
         # Verify Nginx is installed
         if not util.exe_exists(self.conf('ctl')):
-            raise errors.NoInstallationError
+            raise errors.NoInstallationError(
+                "Could not find a usable 'nginx' binary. Ensure nginx exists, "
+                "the binary is executable, and your PATH is set correctly.")
 
         # Make sure configuration is valid
         self.config_test()
