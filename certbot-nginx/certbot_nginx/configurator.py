@@ -525,18 +525,13 @@ class NginxConfigurator(common.Installer):
         if util.is_wildcard_domain(target_name):
             raise errors.NotSupportedError("Wildcard issuance not supported by this method.")
 
-        # first, fix choose_vhost to prefer all matching ssl server blocks over all matching
-        # non-ssl server blocks
-
-        # after that, just run choose_vhosts with create_if_no_match
         try:
             https_vhosts = self.choose_vhosts(target_name, create_if_no_match=True)
         except errors.MisconfigurationError:
             # we couldn't choose a default and there was no match
             https_vhosts = []
-        # the thing it returns will be definitely https, maybe also http
-        # what if there's an ssl-only block?
-        # run choose_redirect vhosts to find a matching http block
+        # https_vhosts will be definitely have an https block, maybe also http. in case there's
+        # an ssl-only block, run choose_redirect vhosts to find a matching http block
         try:
             http_vhosts = self.choose_redirect_vhosts(target_name, http_port,
                 create_if_no_match=True)
