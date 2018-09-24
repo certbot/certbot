@@ -459,7 +459,7 @@ class NginxConfigurator(common.Installer):
 
     def _rank_matches_by_name_and_ssl(self, vhost_list, target_name):
         """Returns a ranked list of vhosts from vhost_list that match target_name.
-        The ranking gives preference to SSL vhosts.
+        The ranking gives preference to SSLishness before name match level.
 
         :param list vhost_list: list of vhosts to filter and rank
         :param str target_name: The name to match
