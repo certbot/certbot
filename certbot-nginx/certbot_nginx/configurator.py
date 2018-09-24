@@ -32,6 +32,12 @@ from certbot_nginx import obj # pylint: disable=unused-import
 from acme.magic_typing import List, Dict, Set # pylint: disable=unused-import, no-name-in-module
 
 
+NAME_RANK = 0
+START_WILDCARD_RANK = 1
+END_WILDCARD_RANK = 2
+REGEX_RANK = 3
+NO_SSL_MODIFIER = 4
+
 
 logger = logging.getLogger(__name__)
 
@@ -405,7 +411,8 @@ class NginxConfigurator(common.Installer):
         """
         if not matches:
             return None
-        elif matches[0]['rank'] in six.moves.range(2, 6):
+        elif matches[0]['rank'] in [START_WILDCARD_RANK, END_WILDCARD_RANK,
+            START_WILDCARD_RANK + NO_SSL_MODIFIER, END_WILDCARD_RANK + NO_SSL_MODIFIER]:
             # Wildcard match - need to find the longest one
             rank = matches[0]['rank']
             wildcards = [x for x in matches if x['rank'] == rank]
@@ -435,19 +442,19 @@ class NginxConfigurator(common.Installer):
             if name_type == 'exact':
                 matches.append({'vhost': vhost,
                                 'name': name,
-                                'rank': 0})
+                                'rank': NAME_RANK})
             elif name_type == 'wildcard_start':
                 matches.append({'vhost': vhost,
                                 'name': name,
-                                'rank': 1})
+                                'rank': START_WILDCARD_RANK})
             elif name_type == 'wildcard_end':
                 matches.append({'vhost': vhost,
                                 'name': name,
-                                'rank': 2})
+                                'rank': END_WILDCARD_RANK})
             elif name_type == 'regex':
                 matches.append({'vhost': vhost,
                                 'name': name,
-                                'rank': 3})
+                                'rank': REGEX_RANK})
         return sorted(matches, key=lambda x: x['rank'])
 
     def _rank_matches_by_name_and_ssl(self, vhost_list, target_name):
@@ -464,7 +471,7 @@ class NginxConfigurator(common.Installer):
         matches = self._rank_matches_by_name(vhost_list, target_name)
         for match in matches:
             if not match['vhost'].ssl:
-                match['rank'] += 4
+                match['rank'] += NO_SSL_MODIFIER
         return sorted(matches, key=lambda x: x['rank'])
 
     def choose_redirect_vhosts(self, target_name, port, create_if_no_match=False):
