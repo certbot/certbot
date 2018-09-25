@@ -8,7 +8,6 @@ import tempfile
 import time
 
 import OpenSSL
-import six
 import zope.interface
 
 from acme import challenges
