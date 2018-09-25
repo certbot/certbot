@@ -532,8 +532,7 @@ def _determine_account(config):
 
 def _delete_if_appropriate(config): # pylint: disable=too-many-locals,too-many-branches
     """Does the user want to delete their now-revoked certs? If run in non-interactive mode,
-    deleting happens automatically, unless if both `--cert-name` and `--cert-path` were
-    specified with conflicting values.
+    deleting happens automatically.
 
     :param config: parsed command line arguments
     :type config: interfaces.IConfig
@@ -557,49 +556,12 @@ def _delete_if_appropriate(config): # pylint: disable=too-many-locals,too-many-b
         reporter_util.add_message("Not deleting revoked certs.", reporter_util.LOW_PRIORITY)
         return
 
-    if not (config.certname or config.cert_path):
-        raise errors.Error('At least one of --cert-path or --cert-name must be specified.')
+    # config.cert_path must have been set
+    # config.certname may have been set
+    assert config.cert_path
 
-    if config.certname and config.cert_path:
-        # first, check if certname and cert_path imply the same certs
-        implied_cert_name = cert_manager.cert_path_to_lineage(config)
-
-        if implied_cert_name != config.certname:
-            cert_path_implied_cert_name = cert_manager.cert_path_to_lineage(config)
-            cert_path_implied_conf = storage.renewal_file_for_certname(config,
-                    cert_path_implied_cert_name)
-            cert_path_cert = storage.RenewableCert(cert_path_implied_conf, config)
-            cert_path_info = cert_manager.human_readable_cert_info(config, cert_path_cert,
-                    skip_filter_checks=True)
-
-            cert_name_implied_conf = storage.renewal_file_for_certname(config, config.certname)
-            cert_name_cert = storage.RenewableCert(cert_name_implied_conf, config)
-            cert_name_info = cert_manager.human_readable_cert_info(config, cert_name_cert)
-
-            msg = ("You specified conflicting values for --cert-path and --cert-name. "
-                    "Which did you mean to select?")
-            choices = [cert_path_info, cert_name_info]
-            try:
-                code, index = display.menu(msg,
-                        choices, ok_label="Select", force_interactive=True)
-            except errors.MissingCommandlineFlag:
-                error_msg = ('To run in non-interactive mode, you must either specify only one of '
-                '--cert-path or --cert-name, or both must point to the same certificate lineages.')
-                raise errors.Error(error_msg)
-
-            if code != display_util.OK or not index in range(0, len(choices)):
-                raise errors.Error("User ended interaction.")
-
-            if index == 0:
-                config.certname = cert_path_implied_cert_name
-            else:
-                config.cert_path = storage.cert_path_for_cert_name(config, config.certname)
-
-    elif config.cert_path:
+    if not config.certname:
         config.certname = cert_manager.cert_path_to_lineage(config)
-
-    else: # if only config.certname was specified
-        config.cert_path = storage.cert_path_for_cert_name(config, config.certname)
 
     # don't delete if the archive_dir is used by some other lineage
     archive_dir = storage.full_archive_path(
@@ -1066,6 +1028,14 @@ def revoke(config, unused_plugins):  # TODO: coop with renewal config
     """
     # For user-agent construction
     config.installer = config.authenticator = None
+
+    if config.cert_path is None and config.certname:
+        config.cert_path = storage.cert_path_for_cert_name(config, config.certname)
+    elif not config.cert_path or (config.cert_path and config.certname):
+        # intentionally not supporting --cert-path & --cert-name together,
+        # to avoid dealing with mismatched values
+        raise errors.Error("Error! Exactly one of --cert-path or --cert-name must be specified!")
+
     if config.key_path is not None:  # revocation by cert key
         logger.debug("Revoking %s using cert key %s",
                      config.cert_path[0], config.key_path[0])
@@ -1078,7 +1048,6 @@ def revoke(config, unused_plugins):  # TODO: coop with renewal config
         acme = client.acme_from_config_key(config, acc.key, acc.regr)
     cert = crypto_util.pyopenssl_load_certificate(config.cert_path[1])[0]
     logger.debug("Reason code for revocation: %s", config.reason)
-
     try:
         acme.revoke(jose.ComparableX509(cert), config.reason)
         _delete_if_appropriate(config)
