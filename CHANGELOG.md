@@ -7,6 +7,7 @@ Certbot adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 
 * Also create an https vhost when using http-01 authentication in Nginx.
+* `revoke` accepts `--cert-name`, and doesn't accept both `--cert-name` and `--cert-path`.
 
 ### Changed
 
