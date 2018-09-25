@@ -991,5 +991,46 @@ class DetermineDefaultServerRootTest(certbot_test_util.ConfigTestCase):
             self.assertTrue(server_root == "/etc/nginx" or server_root == "/usr/local/etc/nginx")
 
 
+class ChooseHttpAndHttpsVhostsTest(util.NginxTest):
+    """Tests for certbot_nginx.configurator.choose_http_and_https_vhosts."""
+
+    def setUp(self):
+        super(ChooseHttpAndHttpsVhostsTest, self).setUp()
+
+        self.config = util.get_nginx_configurator(
+            self.config_path, self.config_dir, self.work_dir, self.logs_dir)
+
+    def _call(self, target_name, http_port):
+        return self.config.choose_http_and_https_vhosts(target_name, http_port)
+
+    def test_wildcard(self):
+        self.assertRaises(errors.NotSupportedError, self._call, "*.example.com", "80")
+
+    def test_http_only_initial(self):
+        # only an http server initially
+        # http server gets made https by choose_vhosts
+        (http, https) = self._call("example.com", "80")
+        self.assertTrue(http)
+        self.assertEqual(http, https)
+
+    def test_only_https(self):
+        # only an https server initially
+        (http, https) = self._call("globalsslsetssl.com", "80")
+        self.assertFalse(http)
+        self.assertTrue(https)
+
+    def test_different_servers(self):
+        # separate http and http servers
+        (http, https) = self._call("migration.com", "80")
+        self.assertTrue(http)
+        self.assertTrue(https)
+        self.assertNotEqual(http, https)
+
+    def test_no_match(self):
+        (http, https) = self._call("uttergarbage.com", "80")
+        self.assertFalse(http)
+        self.assertFalse(https)
+
+
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
