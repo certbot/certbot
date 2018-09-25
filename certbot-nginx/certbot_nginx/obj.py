@@ -36,7 +36,7 @@ class Addr(common.Addr):
     UNSPECIFIED_IPV4_ADDRESSES = ('', '*', '0.0.0.0')
     CANONICAL_UNSPECIFIED_ADDRESS = UNSPECIFIED_IPV4_ADDRESSES[0]
 
-    def __init__(self, host, port, ssl, default, ipv6, ipv6only):
+    def __init__(self, host, port, ssl, default, ipv6, ipv6only, otherparts):
         # pylint: disable=too-many-arguments
         super(Addr, self).__init__((host, port))
         self.ssl = ssl
@@ -44,6 +44,7 @@ class Addr(common.Addr):
         self.ipv6 = ipv6
         self.ipv6only = ipv6only
         self.unspecified_address = host in self.UNSPECIFIED_IPV4_ADDRESSES
+        self.otherparts = otherparts
 
     @classmethod
     def fromstring(cls, str_addr):
@@ -84,6 +85,7 @@ class Addr(common.Addr):
                 port = tup[2]
 
         # The rest of the parts are options; we only care about ssl and default
+        otherparts = set()
         while len(parts) > 0:
             nextpart = parts.pop()
             if nextpart == 'ssl':
@@ -94,8 +96,10 @@ class Addr(common.Addr):
                 default = True
             elif nextpart == "ipv6only=on":
                 ipv6only = True
+            else:
+                otherparts.add(nextpart)
 
-        return cls(host, port, ssl, default, ipv6, ipv6only)
+        return cls(host, port, ssl, default, ipv6, ipv6only, otherparts)
 
     def to_string(self, include_default=True):
         """Return string representation of Addr"""
@@ -111,6 +115,11 @@ class Addr(common.Addr):
             parts += ' default_server'
         if self.ssl:
             parts += ' ssl'
+        if self.ipv6only:
+            parts += ' ipv6only=on'
+        for word in self.otherparts:
+            parts += ' '
+            parts += word
 
         return parts
 
