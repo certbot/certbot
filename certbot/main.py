@@ -1281,6 +1281,7 @@ def renew(config, unused_plugins):
         # users all pick the same time for renewals.  This delay precedes
         # running any hooks, so that side effects of the hooks (such as
         # shutting down a web service) aren't prolonged unnecessarily.
+        logger.info("Non-interactive renewal: delaying for a random time")
         time.sleep(random.randint(1, 60*8))
 
     try:
