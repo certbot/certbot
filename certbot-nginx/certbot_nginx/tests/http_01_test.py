@@ -111,6 +111,7 @@ class HttpPerformTest(util.NginxTest):
 
     @mock.patch("certbot_nginx.configurator.NginxConfigurator.ipv6_info")
     def test_default_listen_addresses_memoization(self, ipv6_info):
+        # pylint: disable=protected-access
         ipv6_info.return_value = (True, True)
         self.http01._default_listen_addresses()
         ipv6_info.return_value = (False, False)
@@ -120,6 +121,7 @@ class HttpPerformTest(util.NginxTest):
 
     @mock.patch("certbot_nginx.configurator.NginxConfigurator.ipv6_info")
     def test_default_listen_addresses_t_t(self, ipv6_info):
+        # pylint: disable=protected-access
         ipv6_info.return_value = (True, True)
         addrs = self.http01._default_listen_addresses()
         http_addr = Addr.fromstring("80")
@@ -130,6 +132,7 @@ class HttpPerformTest(util.NginxTest):
 
     @mock.patch("certbot_nginx.configurator.NginxConfigurator.ipv6_info")
     def test_default_listen_addresses_t_f(self, ipv6_info):
+        # pylint: disable=protected-access
         ipv6_info.return_value = (True, False)
         addrs = self.http01._default_listen_addresses()
         http_addr = Addr.fromstring("80")
@@ -140,6 +143,7 @@ class HttpPerformTest(util.NginxTest):
 
     @mock.patch("certbot_nginx.configurator.NginxConfigurator.ipv6_info")
     def test_default_listen_addresses_f_f(self, ipv6_info):
+        # pylint: disable=protected-access
         ipv6_info.return_value = (False, False)
         addrs = self.http01._default_listen_addresses()
         http_addr = Addr.fromstring("80")
