@@ -1,10 +1,10 @@
 .. certbot-dns-plesk documentation master file, created by
-   sphinx-quickstart on Wed May 10 10:52:06 2017.
+   sphinx-quickstart on Wed May 10 18:23:41 2017.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
 Welcome to certbot-dns-plesk's documentation!
-====================================================
+================================================
 
 .. toctree::
    :maxdepth: 2

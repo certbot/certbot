@@ -9,10 +9,9 @@ version = '0.28.0.dev0'
 install_requires = [
     'acme>=0.21.1',
     'certbot>=0.21.1',
+    'dns-lexicon>=2.2.1', # Support for >1 TXT record per name
     'mock',
-    'python-plesk>=1.11',
     'setuptools',
-    'six',
     'zope.interface',
 ]
 

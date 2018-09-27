@@ -7,34 +7,36 @@ subsequently removing, TXT records using the Plesk API.
 Named Arguments
 ---------------
 
-==========================================  ===================================
-``--dns-plesk-credentials``          Plesk credentials_ INI file.
-                                            (Required)
-``--dns-plesk-propagation-seconds``  The number of seconds to wait for
-                                            DNS to propagate before asking the
-                                            ACME server to verify the DNS
-                                            record.
-                                            (Default: 10)
-==========================================  ===================================
+========================================  =====================================
+``--dns-plesk-credentials``            Plesk credentials_ INI file.
+                                          (Required)
+``--dns-plesk-propagation-seconds``    The number of seconds to wait for DNS
+                                          to propagate before asking the ACME
+                                          server to verify the DNS record.
+                                          (Default: 30)
+========================================  =====================================
 
 
 Credentials
 -----------
 
 Use of this plugin requires a configuration file containing Plesk API
-credentials, obtained from your Plesk account's `Applications & API
-Tokens page <https://cloud.plesk.com/settings/api/tokens>`_.
+credentials, obtained from your Plesk
+`account page <https://plesk.com/user>`_.
 
 .. code-block:: ini
    :name: credentials.ini
    :caption: Example credentials file:
 
    # Plesk API credentials used by Certbot
-   dns_plesk_token = 0000111122223333444455556666777788889999aaaabbbbccccddddeeeeffff
+   dns_plesk_user = Username
+   dns_plesk_password = PassWord
+   dns_plesk_server = Server
+   dns_plesk_port = Port
 
 The path to this file can be provided interactively or using the
-``--dns-plesk-credentials`` command-line argument. Certbot records the
-path to this file for use during renewal, but does not store the file's contents.
+``--dns-plesk-credentials`` command-line argument. Certbot records the path
+to this file for use during renewal, but does not store the file's contents.
 
 .. caution::
    You should protect these API credentials as you would the password to your
