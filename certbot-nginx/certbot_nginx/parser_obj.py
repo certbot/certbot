@@ -7,11 +7,13 @@ import six
 
 from certbot import errors
 
+from acme.magic_typing import List # pylint: disable=unused-import, no-name-in-module
+
 logger = logging.getLogger(__name__)
 COMMENT = " managed by Certbot"
 COMMENT_BLOCK = ["#", COMMENT]
 
-class WithLists(object):
+class Parsable(object):
     """ Abstract base class for "Parsable" objects whose underlying representation
     is a tree of lists.
 
@@ -22,14 +24,14 @@ class WithLists(object):
     __metaclass__ = abc.ABCMeta
 
     def __init__(self, context):
-        self._data = []
+        self._data = [] # type: List[object]
         self._tabs = None
         self.context = context
 
     @staticmethod
     @abc.abstractmethod
     def should_parse(lists):
-        """ Returns whether the contests of `lists` can be parsed into this object.
+        """ Returns whether the contents of `lists` can be parsed into this object.
 
         :returns: Whether `lists` can be parsed as this object.
         :rtype bool:
@@ -109,7 +111,7 @@ class WithLists(object):
         """
         return [elem.dump(include_spaces) for elem in self._data]
 
-class Statements(WithLists):
+class Statements(Parsable):
     """ A group or list of "Statements". A Statement is either a Block or a Sentence.
 
     The underlying representation is simply a list of these Statement objects, with
@@ -178,14 +180,14 @@ class Statements(WithLists):
 
 def _space_list(list_):
     """ Inserts whitespace between adjacent non-whitespace tokens. """
-    spaced_statement = []
+    spaced_statement = [] # type: List[str]
     for i in reversed(six.moves.xrange(len(list_))):
         spaced_statement.insert(0, list_[i])
         if i > 0 and not list_[i].isspace() and not list_[i-1].isspace():
             spaced_statement.insert(0, " ")
     return spaced_statement
 
-class Sentence(WithLists):
+class Sentence(Parsable):
     """ A list of words. Non-whitespace words are typically separated with whitespace tokens. """
 
     # ======== Begin overridden functions
@@ -249,7 +251,10 @@ class Sentence(WithLists):
     def __getitem__(self, index):
         return self.words[index]
 
-class Block(WithLists):
+    def __contains__(self, word):
+        return word in self.words
+
+class Block(Parsable):
     """ Any sort of bloc, denoted by a block name and curly braces, like so:
     The parsed block:
         block name {
@@ -262,8 +267,8 @@ class Block(WithLists):
     """
     def __init__(self, context=None):
         super(Block, self).__init__(context)
-        self.names = None
-        self.contents = None
+        self.names = None # type: Sentence
+        self.contents = None # type: Block
 
     @staticmethod
     def should_parse(lists):
@@ -320,7 +325,7 @@ class Block(WithLists):
 def _is_comment(parsed_obj):
     """ Checks whether parsed_obj is a comment.
 
-    :param .WithLists parsed_obj:
+    :param .Parsable parsed_obj:
 
     :returns: whether parsed_obj represents a comment sentence.
     :rtype bool:
@@ -332,7 +337,7 @@ def _is_comment(parsed_obj):
 def _is_certbot_comment(parsed_obj):
     """ Checks whether parsed_obj is a "managed by Certbot" comment.
 
-    :param .WithLists parsed_obj:
+    :param .Parsable parsed_obj:
 
     :returns: whether parsed_obj is a "managed by Certbot" comment.
     :rtype bool:
@@ -367,14 +372,14 @@ def _choose_parser(child_context, list_):
 
 def parse_raw(lists_, context=None, add_spaces=False):
     """ Primary parsing factory function. Based on `context.parsing_hooks`, chooses
-    WithLists objects with which it recursively parses `lists_`.
+    Parsable objects with which it recursively parses `lists_`.
 
     :param list lists_: raw lists from pyparsing to parse.
     :param .ParseContext context: Context containing parsing hooks. If not set,
         uses default parsing hooks.
     :param bool add_spaces: Whether to pass add_spaces to the parser.
 
-    :returns .WithLists: The parsed object.
+    :returns .Parsable: The parsed object.
 
     :raises errors.MisconfigurationError: If no parsing hook passes, and we can't
         determine which type to parse the raw lists into.
@@ -393,7 +398,7 @@ DEFAULT_PARSING_HOOKS = (Block, Sentence, Statements)
 class ParseContext(object):
     """ Context information held by parsed objects.
 
-    :param .WithLists parent: The parent object containing the associated object.
+    :param .Parsable parent: The parent object containing the associated object.
     :param tuple parsing_hooks: Parsing order for `parse_raw` to use.
     """
     def __init__(self, parent=None, parsing_hooks=DEFAULT_PARSING_HOOKS):

@@ -54,6 +54,7 @@ class ParsingHooksTest(unittest.TestCase):
         self.assertTrue(Block.should_parse([['block_name'], ['hi', []]]))
         self.assertTrue(Block.should_parse([['hello'], []]))
         self.assertTrue(Block.should_parse([['block_name'], [['many'], ['statements'], 'here']]))
+        self.assertTrue(Block.should_parse([['if', ' ', '(whatever)'], ['hi']]))
 
     def test_parse_raw(self):
         from certbot_nginx.parser_obj import ParseContext
