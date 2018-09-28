@@ -57,48 +57,37 @@ class ParsingHooksTest(unittest.TestCase):
         self.assertTrue(Block.should_parse([['if', ' ', '(whatever)'], ['hi']]))
 
     def test_parse_raw(self):
-        from certbot_nginx.parser_obj import ParseContext
         fake_parser1 = mock.Mock()
         fake_parser1.should_parse = lambda x: True
         fake_parser2 = mock.Mock()
         fake_parser2.should_parse = lambda x: False
         # First encountered "match" should parse.
-        fake_context = ParseContext(parsing_hooks=(fake_parser1, fake_parser2))
-        parse_raw([], fake_context)
+        parse_raw([])
         fake_parser1.called_once()
         fake_parser2.not_called()
         fake_parser1.reset_mock()
         # "match" that returns False shouldn't parse.
-        fake_context = ParseContext(parsing_hooks=(fake_parser2, fake_parser1))
-        parse_raw([], fake_context)
+        parse_raw([])
         fake_parser1.not_called()
         fake_parser2.called_once()
 
-    def test_parse_raw_no_match(self):
-        from certbot_nginx.parser_obj import ParseContext
+    @mock.patch("certbot_nginx.parser_obj.Parsable.parsing_hooks")
+    def test_parse_raw_no_match(self, parsing_hooks):
         from certbot import errors
         fake_parser1 = mock.Mock()
         fake_parser1.should_parse = lambda x: False
-        fake_context = ParseContext(parsing_hooks=(fake_parser1,))
-        self.assertRaises(errors.MisconfigurationError, parse_raw, [], fake_context)
-        fake_context = ParseContext(parsing_hooks=tuple())
-        self.assertRaises(errors.MisconfigurationError, parse_raw, [], fake_context)
+        parsing_hooks.return_value = (fake_parser1,)
+        self.assertRaises(errors.MisconfigurationError, parse_raw, [])
+        parsing_hooks.return_value=  tuple()
+        self.assertRaises(errors.MisconfigurationError, parse_raw, [])
 
     def test_parse_raw_passes_add_spaces(self):
-        from certbot_nginx.parser_obj import ParseContext
         fake_parser1 = mock.Mock()
         fake_parser1.should_parse = lambda x: True
-        fake_context = ParseContext(parsing_hooks=(fake_parser1,))
-        parse_raw([], fake_context)
+        parse_raw([])
         fake_parser1.parse.called_with([None])
-        parse_raw([], fake_context, add_spaces=True)
+        parse_raw([], add_spaces=True)
         fake_parser1.parse.called_with([None, True])
-
-    def test_parse_raw_uses_default_hooks(self):
-        from certbot_nginx.parser_obj import ParseContext
-        from certbot_nginx.parser_obj import DEFAULT_PARSING_HOOKS
-        default_context = ParseContext()
-        self.assertEqual(default_context.parsing_hooks, DEFAULT_PARSING_HOOKS)
 
 class SentenceTest(unittest.TestCase):
     def setUp(self):
@@ -226,8 +215,8 @@ class StatementsTest(unittest.TestCase):
     def test_set_tabs_with_parent(self):
         # Trailing whitespace should inherit from parent tabbing.
         self.statements.parse(self.raw)
-        self.statements.context = mock.Mock()
-        self.statements.context.parent.get_tabs.return_value = '\t\t'
+        self.statements.parent = mock.Mock()
+        self.statements.parent.get_tabs.return_value = '\t\t'
         self.statements.set_tabs()
         for statement in self.statements.iterate():
             self.assertEquals(statement.dump(True)[0], '\n    ')

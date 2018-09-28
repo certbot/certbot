@@ -17,16 +17,19 @@ class Parsable(object):
     """ Abstract base class for "Parsable" objects whose underlying representation
     is a tree of lists.
 
-    :param .ParseContext context: Contains contextual information that this object may need
-        to perform parsing and dumping operations properly.
+    :param .Parsable parent: This object's parsed parent in the tree
     """
 
     __metaclass__ = abc.ABCMeta
 
-    def __init__(self, context):
+    def __init__(self, parent=None):
         self._data = [] # type: List[object]
         self._tabs = None
-        self.context = context
+        self.parent = parent
+
+    @classmethod
+    def parsing_hooks(cls):
+        return (Block, Sentence, Statements)
 
     @staticmethod
     @abc.abstractmethod
@@ -52,14 +55,6 @@ class Parsable(object):
             raw_list are not met.
         """
         raise NotImplementedError()
-
-    def child_context(self):
-        """ Spans a child context (with this object as the parent). """
-        if self.context is None:
-            # This is really only for testing purposes. The context should otherwise never
-            # be set to None.
-            return ParseContext(self, None)
-        return self.context.child(self)
 
     @abc.abstractmethod
     def iterate(self, expanded=False, match=None):
@@ -118,8 +113,8 @@ class Statements(Parsable):
     an extra `_trailing_whitespace` string to keep track of the whitespace that does not
     precede any more statements.
     """
-    def __init__(self, context=None):
-        super(Statements, self).__init__(context)
+    def __init__(self, parent=None):
+        super(Statements, self).__init__(parent)
         self._trailing_whitespace = None
 
     # ======== Begin overridden functions
@@ -138,12 +133,12 @@ class Statements(Parsable):
         """
         for statement in self._data:
             statement.set_tabs(tabs)
-        if self.context is not None and self.context.parent is not None:
-            self._trailing_whitespace = "\n" + self.context.parent.get_tabs()
+        if self.parent is not None:
+            self._trailing_whitespace = "\n" + self.parent.get_tabs()
 
     def parse(self, parse_this, add_spaces=False):
         """ Parses a list of statements.
-        Expects all elements in `parse_this` to be parseable by `context.parsing_hooks`,
+        Expects all elements in `parse_this` to be parseable by `type(self).parsing_hooks`,
         with an optional whitespace string at the last index of `parse_this`.
         """
         if not isinstance(parse_this, list):
@@ -153,7 +148,7 @@ class Statements(Parsable):
                                and parse_this[-1].isspace():
             self._trailing_whitespace = parse_this[-1]
             parse_this = parse_this[:-1]
-        self._data = [parse_raw(elem, self.child_context(), add_spaces) for elem in parse_this]
+        self._data = [parse_raw(elem, self, add_spaces) for elem in parse_this]
 
     def get_tabs(self):
         """ Takes a guess at the tabbing of all contained Statements by retrieving the
@@ -265,8 +260,8 @@ class Block(Parsable):
         names = ["block", " ", "name", " "]
         contents = [["\n    ", "content", " ", "1"], ["\n    ", "content", " ", "2"], "\n"]
     """
-    def __init__(self, context=None):
-        super(Block, self).__init__(context)
+    def __init__(self, parent=None):
+        super(Block, self).__init__(parent)
         self.names = None # type: Sentence
         self.contents = None # type: Block
 
@@ -310,11 +305,11 @@ class Block(Parsable):
             raise errors.MisconfigurationError("Block parsing expects a list of length 2. "
                 "First element should be a list of string types (the bloc names), "
                 "and second should be another list of statements (the bloc content).")
-        self.names = Sentence(self.child_context())
+        self.names = Sentence(self)
         if add_spaces:
             parse_this[0].append(" ")
         self.names.parse(parse_this[0], add_spaces)
-        self.contents = Statements(self.child_context())
+        self.contents = Statements(self)
         self.contents.parse(parse_this[1], add_spaces)
         self._data = [self.names, self.contents]
 
@@ -351,62 +346,43 @@ def _is_certbot_comment(parsed_obj):
             return False
     return True
 
-def _certbot_comment(context, preceding_spaces=4):
+def _certbot_comment(parent, preceding_spaces=4):
     """ A "Managed by Certbot" comment.
     :param int preceding_spaces: Number of spaces between the end of the previous
         statement and the comment.
     :returns: Sentence containing the comment.
     :rtype: .Sentence
     """
-    result = Sentence(context)
+    result = Sentence(parent)
     result.parse([" " * preceding_spaces] + COMMENT_BLOCK)
     return result
 
-def _choose_parser(child_context, list_):
-    """ Choose a parser from child_context, based on whichever hook returns True first. """
-    for type_ in child_context.parsing_hooks:
+def _choose_parser(parent, list_):
+    """ Choose a parser from type(parent).parsing_hooks, depending on whichever hook
+    returns True first. """
+    hooks = Parsable.parsing_hooks()
+    if parent:
+        hooks = type(parent).parsing_hooks()
+    for type_ in hooks:
         if type_.should_parse(list_):
-            return type_(child_context)
+            return type_(parent)
     raise errors.MisconfigurationError(
         "None of the parsing hooks succeeded, so we don't know how to parse this set of lists.")
 
-def parse_raw(lists_, context=None, add_spaces=False):
-    """ Primary parsing factory function. Based on `context.parsing_hooks`, chooses
-    Parsable objects with which it recursively parses `lists_`.
+def parse_raw(lists_, parent=None, add_spaces=False, parsing_hooks=None):
+    """ Primary parsing factory function. Based on `type(parent).parsing_hooks` or
+    `parsing_hooks`,  chooses Parsable objects with which it recursively parses `lists_`.
 
     :param list lists_: raw lists from pyparsing to parse.
-    :param .ParseContext context: Context containing parsing hooks. If not set,
-        uses default parsing hooks.
+    :param .Parent parent: The parent containing this object.
     :param bool add_spaces: Whether to pass add_spaces to the parser.
+    :param list parsing_hooks: A list of parsing hooks to use if no parent is supplied.
 
     :returns .Parsable: The parsed object.
 
     :raises errors.MisconfigurationError: If no parsing hook passes, and we can't
         determine which type to parse the raw lists into.
     """
-    if context is None:
-        context = ParseContext()
-    if context.parsing_hooks is None:
-        context.parsing_hooks = DEFAULT_PARSING_HOOKS
-    parser = _choose_parser(context, lists_)
+    parser = _choose_parser(parent, lists_)
     parser.parse(lists_, add_spaces)
     return parser
-
-# Default set of parsing hooks. By default, lists go to Statements.
-DEFAULT_PARSING_HOOKS = (Block, Sentence, Statements)
-
-class ParseContext(object):
-    """ Context information held by parsed objects.
-
-    :param .Parsable parent: The parent object containing the associated object.
-    :param tuple parsing_hooks: Parsing order for `parse_raw` to use.
-    """
-    def __init__(self, parent=None, parsing_hooks=DEFAULT_PARSING_HOOKS):
-        self.parsing_hooks = parsing_hooks
-        self.parent = parent
-
-    def child(self, parent):
-        """ Spawn a child context.
-        """
-        return ParseContext(parent=parent, parsing_hooks=self.parsing_hooks)
-
