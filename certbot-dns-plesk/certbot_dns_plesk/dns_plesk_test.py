@@ -22,7 +22,7 @@ class AuthenticatorTest(test_util.TempDirTestCase,
         from certbot_dns_plesk.dns_plesk import Authenticator
 
         path = os.path.join(self.tempdir, 'file.ini')
-        dns_test_common.write({"plesk_token": TOKEN}, path)
+        dns_test_common.write({"username": "User", "password": "Passwd", "pleskuser": "https://example.com:8444" }, path)
 
         self.config = mock.MagicMock(plesk_credentials=path,
                                      plesk_propagation_seconds=0)  # don't wait during tests
@@ -41,7 +41,7 @@ class PleskLexiconClientTest(unittest.TestCase, dns_test_common_lexicon.BaseLexi
     def setUp(self):
         from certbot_dns_plesk.dns_plesk import _PleskLexiconClient
 
-        self.client = _PleskLexiconClient(TOKEN, 0)
+        self.client = _PleskLexiconClient(pleskserver, username, password,domain)
 
         self.provider_mock = mock.MagicMock()
         self.client.provider = self.provider_mock
