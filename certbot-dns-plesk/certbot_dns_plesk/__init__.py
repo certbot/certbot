@@ -29,10 +29,9 @@ credentials, obtained from your Plesk
    :caption: Example credentials file:
 
    # Plesk API credentials used by Certbot
-   dns_plesk_user = Username
+   dns_plesk_username = Username
    dns_plesk_password = PassWord
-   dns_plesk_server = Server
-   dns_plesk_port = Port
+   dns_plesk_pleskserver = https://server:port
 
 The path to this file can be provided interactively or using the
 ``--dns-plesk-credentials`` command-line argument. Certbot records the path
