@@ -1,7 +1,7 @@
 """
 The `~certbot_dns_gandi.dns_gandi` plugin automates the process of
 completing a ``dns-01`` challenge (`~acme.challenges.DNS01`) by creating, and
-subsequently removing, TXT records using the Gandi LiveDNS API.
+subsequently removing, TXT records using the Gandi API.
 
 
 Named Arguments
@@ -20,9 +20,9 @@ Named Arguments
 Credentials
 -----------
 
-Use of this plugin requires a configuration file containing Gandi LiveDNS API
-credentials, obtained from your Gandi account's `Security
-page <https://account.gandi.net>`_.
+Use of this plugin requires a configuration file containing Gandi API
+credentials, obtained from your either your `API Key Page <https://www.gandi.net/admin/apixml>`_
+for XML-RPC API or your account's `Security page <https://account.gandi.net>`_ for LiveDNS API.
 
 .. code-block:: ini
    :name: credentials.ini
@@ -30,6 +30,7 @@ page <https://account.gandi.net>`_.
 
    # Gandi API credentials used by Certbot
    dns_gandi_token = MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAw
+   dns_gandi_api_protocol = rpc
 
 The path to this file can be provided interactively or using the
 ``--dns-gandi-credentials`` command-line argument. Certbot records the path

@@ -11,7 +11,8 @@ from certbot.plugins import dns_common_lexicon
 
 logger = logging.getLogger(__name__)
 
-ACCOUNT_URL = 'https://account.gandi.net'
+XMLRPC_TOKEN_URL = 'https://www.gandi.net/admin/apixml'
+LIVEDNS_TOKEN_URL = 'https://account.gandi.net'
 
 
 @zope.interface.implementer(interfaces.IAuthenticator)
@@ -19,11 +20,11 @@ ACCOUNT_URL = 'https://account.gandi.net'
 class Authenticator(dns_common.DNSAuthenticator):
     """DNS Authenticator for Gandi
 
-    This Authenticator uses the Gandi LiveDNS API to fulfill a dns-01 challenge.
+    This Authenticator uses the Gandi XML-RPC or LiveDNS API to fulfill a dns-01 challenge.
     """
 
     description = 'Obtain certificates using a DNS TXT record (if you are using Gandi for DNS).'
-    ttl = 300 # minimum TTL allowed by Gandi LiveDNS API
+    ttl = 300  # minimum TTL allowed by Gandi LiveDNS API
 
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
@@ -36,14 +37,17 @@ class Authenticator(dns_common.DNSAuthenticator):
 
     def more_info(self):  # pylint: disable=missing-docstring,no-self-use
         return 'This plugin configures a DNS TXT record to respond to a dns-01 challenge using ' + \
-               'the Gandi LiveDNS API.'
+               'the Gandi API (either XML-RPC or LiveDNS, depending on your domain configuration).'
 
     def _setup_credentials(self):
         self.credentials = self._configure_credentials(
             'credentials',
             'Gandi credentials INI file',
             {
-                'token': 'User access token for Gandi LiveDNS API. (See {0}.)'.format(ACCOUNT_URL)
+                'api-protocol': 'Gandi API protocol (rpc or rest)',
+                'token': 'User access token for Gandi API. (See {0} for '
+                         'XML-RPC API or {1} for LiveDNS REST API.)'.format(
+                    XMLRPC_TOKEN_URL, LIVEDNS_TOKEN_URL),
             }
         )
 
@@ -54,19 +58,24 @@ class Authenticator(dns_common.DNSAuthenticator):
         self._get_gandi_client(domain).del_txt_record(domain, validation_name, validation)
 
     def _get_gandi_client(self, domain):
-        return _GandiLexiconClient(self.credentials.conf('token'), domain, self.ttl)
+        return _GandiLexiconClient(
+            self.credentials.conf('api-protocol'),
+            self.credentials.conf('token'),
+            domain,
+            self.ttl
+        )
 
 
 class _GandiLexiconClient(dns_common_lexicon.LexiconClient):
     """
-    Encapsulates all communication with the Gandi LiveDNS API via Lexicon.
+    Encapsulates all communication with the Gandi API via Lexicon.
     """
 
-    def __init__(self, token, domain, ttl):
+    def __init__(self, protocol, token, domain, ttl):
         super(_GandiLexiconClient, self).__init__()
 
         self.provider = gandi.Provider({
-            'api_protocol': 'rest',
+            'api_protocol': protocol,
             'auth_token': token,
             'domain': domain,
             'ttl': ttl,
