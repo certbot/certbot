@@ -503,15 +503,6 @@ apache:
                         Full path to Apache control script (default:
                         apache2ctl)
 
-certbot-route53:auth:
-  Obtain certificates using a DNS TXT record (if you are using AWS Route53
-  for DNS).
-
-  --certbot-route53:auth-propagation-seconds CERTBOT_ROUTE53:AUTH_PROPAGATION_SECONDS
-                        The number of seconds to wait for DNS to propagate
-                        before asking the ACME server to verify the DNS
-                        record. (default: 10)
-
 dns-cloudflare:
   Obtain certificates using a DNS TXT record (if you are using Cloudflare
   for DNS).
