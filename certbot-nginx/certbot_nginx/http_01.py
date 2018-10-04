@@ -40,10 +40,6 @@ class NginxHttp01(common.ChallengePerformer):
         super(NginxHttp01, self).__init__(configurator)
         self.challenge_conf = os.path.join(
             configurator.config.config_dir, "le_http_01_cert_challenge.conf")
-        self._ipv6 = None
-        self._ipv6only = None
-        self._ssl_ipv6 = None
-        self._ssl_ipv6only = None
 
     def perform(self):
         """Perform a challenge on Nginx.
@@ -126,16 +122,13 @@ class NginxHttp01(common.ChallengePerformer):
         ipv4_ssl_addr = '{0} ssl'.format(ssl_port)
         ipv6_ssl_addr = '[::]:{0} ssl'.format(ssl_port)
 
-        # memoization
-        if self._ipv6 is None or self._ipv6only is None:
-            self._ipv6, self._ipv6only = self.configurator.ipv6_info(port)
-        if self._ssl_ipv6 is None or self._ssl_ipv6only is None:
-            self._ssl_ipv6, self._ssl_ipv6only = self.configurator.ipv6_info(ssl_port)
+        _ipv6, _ipv6only = self.configurator.ipv6_info(port)
+        _ssl_ipv6, _ssl_ipv6only = self.configurator.ipv6_info(ssl_port)
 
         addresses = []
         for (ipv6, ipv6only, ipv4_addr, ipv6_addr) in [
-            (self._ipv6, self._ipv6only, ipv4_http_addr, ipv6_http_addr),
-            (self._ssl_ipv6, self._ssl_ipv6only, ipv4_ssl_addr, ipv6_ssl_addr)]:
+            (_ipv6, _ipv6only, ipv4_http_addr, ipv6_http_addr),
+            (_ssl_ipv6, _ssl_ipv6only, ipv4_ssl_addr, ipv6_ssl_addr)]:
             addresses.append(obj.Addr.fromstring(ipv4_addr))
             if ipv6:
                 # If IPv6 is active in Nginx configuration
