@@ -114,11 +114,9 @@ class HttpPerformTest(util.NginxTest):
         # pylint: disable=protected-access
         ipv6_info.return_value = (True, True)
         self.http01._default_listen_addresses()
-        self.assertTrue(self.http01._ipv6)
         ipv6_info.return_value = (False, False)
         self.http01._default_listen_addresses()
         self.assertEqual(ipv6_info.call_count, 4)
-        self.assertFalse(self.http01._ipv6)
 
     @mock.patch("certbot_nginx.configurator.NginxConfigurator.ipv6_info")
     def test_default_listen_addresses_t_t(self, ipv6_info):
