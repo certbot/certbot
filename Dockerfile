@@ -5,7 +5,7 @@ EXPOSE 80 443
 VOLUME /etc/letsencrypt /var/lib/letsencrypt
 WORKDIR /opt/certbot
 
-COPY CHANGES.rst README.rst setup.py src/
+COPY CHANGELOG.md README.rst setup.py src/
 COPY acme src/acme
 COPY certbot src/certbot
 

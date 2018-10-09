@@ -10,6 +10,7 @@ import mock
 import six
 from six.moves import reload_module  # pylint: disable=import-error
 
+from certbot import compat
 from certbot import errors
 import certbot.tests.util as test_util
 
@@ -116,7 +117,7 @@ class SetUpCoreDirTest(test_util.TempDirTestCase):
     @mock.patch('certbot.util.lock_dir_until_exit')
     def test_success(self, mock_lock):
         new_dir = os.path.join(self.tempdir, 'new')
-        self._call(new_dir, 0o700, os.geteuid(), False)
+        self._call(new_dir, 0o700, compat.os_geteuid(), False)
         self.assertTrue(os.path.exists(new_dir))
         self.assertEqual(mock_lock.call_count, 1)
 
@@ -124,7 +125,7 @@ class SetUpCoreDirTest(test_util.TempDirTestCase):
     def test_failure(self, mock_make_or_verify):
         mock_make_or_verify.side_effect = OSError
         self.assertRaises(errors.Error, self._call,
-                          self.tempdir, 0o700, os.geteuid(), False)
+                          self.tempdir, 0o700, compat.os_geteuid(), False)
 
 
 class MakeOrVerifyDirTest(test_util.TempDirTestCase):
