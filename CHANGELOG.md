@@ -14,6 +14,7 @@ Certbot adheres to [Semantic Versioning](http://semver.org/).
   and execute existing unit tests on Windows Server 2016 + Windows Server 2012 R2 for Python
   3.4, 3.5, 3.6 and 3.7.
 * Add a decorator `@broken_on_windows` to skip temporarily tests that fail on Windows.
+* `revoke` accepts `--cert-name`, and doesn't accept both `--cert-name` and `--cert-path`.
 
 ### Changed
 
