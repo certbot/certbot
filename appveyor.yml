@@ -1,0 +1,12 @@
+# AppVeyor CI pipeline, executed on Windows Server 2016/2012 R2
+branches:
+  only:
+    - master
+    - /^\d+\.\d+\.x$/ # version branches like X.X.X
+    - /^test-.*$/
+
+build: off
+
+test_script:
+  - ps: Write-Host "Hello, world!"
+  

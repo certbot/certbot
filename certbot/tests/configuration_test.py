@@ -48,18 +48,23 @@ class NamespaceConfigTest(test_util.ConfigTestCase):
         mock_constants.TEMP_CHECKPOINT_DIR = 't'
 
         self.assertEqual(
-            self.config.accounts_dir, os.path.join(
-                self.config.config_dir, 'acc/acme-server.org:443/new'))
+            os.path.normpath(self.config.accounts_dir),
+            os.path.normpath(os.path.join(self.config.config_dir, 'acc/acme-server.org:443/new')))
         self.assertEqual(
-                self.config.backup_dir, os.path.join(self.config.work_dir, 'backups'))
+            os.path.normpath(self.config.backup_dir),
+            os.path.normpath(os.path.join(self.config.work_dir, 'backups')))
         self.assertEqual(
-                self.config.csr_dir, os.path.join(self.config.config_dir, 'csr'))
+            os.path.normpath(self.config.csr_dir),
+            os.path.normpath(os.path.join(self.config.config_dir, 'csr')))
         self.assertEqual(
-                self.config.in_progress_dir, os.path.join(self.config.work_dir, '../p'))
+            os.path.normpath(self.config.in_progress_dir),
+            os.path.normpath(os.path.join(self.config.work_dir, '../p')))
         self.assertEqual(
-                self.config.key_dir, os.path.join(self.config.config_dir, 'keys'))
+            os.path.normpath(self.config.key_dir),
+            os.path.normpath(os.path.join(self.config.config_dir, 'keys')))
         self.assertEqual(
-                self.config.temp_checkpoint_dir, os.path.join(self.config.work_dir, 't'))
+            os.path.normpath(self.config.temp_checkpoint_dir),
+            os.path.normpath(os.path.join(self.config.work_dir, 't')))
 
     def test_absolute_paths(self):
         from certbot.configuration import NamespaceConfig

@@ -2,6 +2,82 @@
 
 Certbot adheres to [Semantic Versioning](http://semver.org/).
 
+## 0.28.0 - master
+
+### Added
+
+* `revoke` accepts `--cert-name`, and doesn't accept both `--cert-name` and `--cert-path`.
+
+### Changed
+
+*
+
+### Fixed
+
+* Match Nginx parser update in allowing variable names to start with `${`.
+* Correct OVH integration tests on machines without internet access.
+
+## 0.27.1 - 2018-09-06
+
+### Fixed
+
+* Fixed parameter name in OpenSUSE overrides for default parameters in the
+  Apache plugin. Certbot on OpenSUSE works again.
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+package with changes other than its version number was:
+
+* certbot-apache
+
+More details about these changes can be found on our GitHub repo:
+https://github.com/certbot/certbot/milestone/60?closed=1
+
+## 0.27.0 - 2018-09-05
+
+### Added
+
+* The Apache plugin now accepts the parameter --apache-ctl which can be
+  used to configure the path to the Apache control script.
+
+### Changed
+
+* When using `acme.client.ClientV2` (or
+ `acme.client.BackwardsCompatibleClientV2` with an ACME server that supports a
+ newer version of the ACME protocol), an `acme.errors.ConflictError` will be
+ raised if you try to create an ACME account with a key that has already been
+ used. Previously, a JSON parsing error was raised in this scenario when using
+ the library with Let's Encrypt's ACMEv2 endpoint.
+
+### Fixed
+
+* When Apache is not installed, Certbot's Apache plugin no longer prints
+  messages about being unable to find apachectl to the terminal when the plugin
+  is not selected.
+* If you're using the Apache plugin with the --apache-vhost-root flag set to a
+  directory containing a disabled virtual host for the domain you're requesting
+  a certificate for, the virtual host will now be temporarily enabled if
+  necessary to pass the HTTP challenge.
+* The documentation for the Certbot package can now be built using Sphinx 1.6+.
+* You can now call `query_registration` without having to first call
+  `new_account` on `acme.client.ClientV2` objects.
+* The requirement of `setuptools>=1.0` has been removed from `certbot-dns-ovh`.
+* Names in certbot-dns-sakuracloud's tests have been updated to refer to Sakura
+  Cloud rather than NS1 whose plugin certbot-dns-sakuracloud was based on.
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+package with changes other than its version number was:
+
+* acme
+* certbot
+* certbot-apache
+* certbot-dns-ovh
+* certbot-dns-sakuracloud
+
+More details about these changes can be found on our GitHub repo:
+https://github.com/certbot/certbot/milestone/57?closed=1
+
 ## 0.26.1 - 2018-07-17
 
 ### Fixed
