@@ -142,7 +142,7 @@ class NginxTlsSni01(common.TLSSNI01):
         with open(self.challenge_conf, "w") as new_conf:
             nginxparser.dump(config, new_conf)
 
-        logger.debug("Generated challenge conf:\n%s", str(new_conf))
+        logger.debug("Generated challenge conf:\n%s", str(config))
 
     def _make_server_block(self, achall, addrs):
         """Creates a server block for a challenge.
