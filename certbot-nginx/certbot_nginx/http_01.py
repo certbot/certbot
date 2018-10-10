@@ -118,25 +118,26 @@ class NginxHttp01(common.ChallengePerformer):
         port = self.configurator.config.http01_port
         ssl_port = self.configurator.config.tls_sni_01_port
 
-        ipv4_http_addr = "%s" % port
-        ipv6_http_addr = "[::]:{0}".format(port)
-        ipv4_ssl_addr = '{0} ssl'.format(ssl_port)
-        ipv6_ssl_addr = '[::]:{0} ssl'.format(ssl_port)
+        http_items = {}
+        https_items = {}
 
-        _ipv6, _ipv6only = self.configurator.ipv6_info(port)
-        _ssl_ipv6, _ssl_ipv6only = self.configurator.ipv6_info(ssl_port)
+        http_items["ipv4_addr"] = "%s" % port
+        http_items["ipv6_addr"] = "[::]:{0}".format(port)
+        https_items["ipv4_addr"] = '{0} ssl'.format(ssl_port)
+        https_items["ipv6_addr"] = '[::]:{0} ssl'.format(ssl_port)
+
+        http_items["ipv6"], http_items["ipv6only"] = self.configurator.ipv6_info(port)
+        https_items["ipv6"], https_items["ipv6only"] = self.configurator.ipv6_info(ssl_port)
 
         addresses = []
-        for (ipv6, ipv6only, ipv4_addr, ipv6_addr) in [
-            (_ipv6, _ipv6only, ipv4_http_addr, ipv6_http_addr),
-            (_ssl_ipv6, _ssl_ipv6only, ipv4_ssl_addr, ipv6_ssl_addr)]:
-            addresses.append(obj.Addr.fromstring(ipv4_addr))
-            if ipv6:
+        for items in (http_items, https_items):
+            addresses.append(obj.Addr.fromstring(items["ipv4_addr"]))
+            if items["ipv6"]:
                 # If IPv6 is active in Nginx configuration
-                if not ipv6only:
+                if not items["ipv6only"]:
                     # If ipv6only=on is not already present in the config
-                    ipv6_addr = ipv6_addr + " ipv6only=on"
-                addresses.append(obj.Addr.fromstring(ipv6_addr))
+                    items["ipv6_addr"] = items["ipv6_addr"] + " ipv6only=on"
+                addresses.append(obj.Addr.fromstring(items["ipv6_addr"]))
 
         logger.info("Using default addresses for authentication.")
         return addresses
