@@ -51,7 +51,7 @@ http {
     # IPv4.
     listen 5002 $default_server;
     # IPv6.
-    listen [::]:5002 $default_server ipv6only=on;
+    listen [::]:5002 $default_server;
     server_name nginx.wtf nginx2.wtf;
 
     root $root/webroot;
