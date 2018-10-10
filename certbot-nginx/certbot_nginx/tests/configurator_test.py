@@ -128,22 +128,39 @@ class NginxConfiguratorTest(util.NginxTest):
                             ['#', parser.COMMENT]]]],
                          parsed[0])
 
-    def test_choose_vhosts(self):
-        localhost_conf = set(['localhost', r'~^(www\.)?(example|bar)\.'])
-        server_conf = set(['somename', 'another.alias', 'alias'])
-        example_conf = set(['.example.com', 'example.*'])
-        foo_conf = set(['*.www.foo.com', '*.www.example.com'])
-        ipv6_conf = set(['ipv6.com'])
+    def test_choose_vhosts_alias(self):
+        self._test_choose_vhosts_common('alias', 'server_conf')
 
-        results = {'localhost': localhost_conf,
-                   'alias': server_conf,
-                   'example.com': example_conf,
-                   'example.com.uk.test': example_conf,
-                   'www.example.com': example_conf,
-                   'test.www.example.com': foo_conf,
-                   'abc.www.foo.com': foo_conf,
-                   'www.bar.co.uk': localhost_conf,
-                   'ipv6.com': ipv6_conf}
+    def test_choose_vhosts_example_com(self):
+        self._test_choose_vhosts_common('example.com', 'example_conf')
+
+    def test_choose_vhosts_localhost(self):
+        self._test_choose_vhosts_common('localhost', 'localhost_conf')
+
+    def test_choose_vhosts_example_com_uk_test(self):
+        self._test_choose_vhosts_common('example.com.uk.test', 'example_conf')
+
+    def test_choose_vhosts_www_example_com(self):
+        self._test_choose_vhosts_common('www.example.com', 'example_conf')
+
+    def test_choose_vhosts_test_www_example_com(self):
+        self._test_choose_vhosts_common('test.www.example.com', 'foo_conf')
+
+    def test_choose_vhosts_abc_www_foo_com(self):
+        self._test_choose_vhosts_common('abc.www.foo.com', 'foo_conf')
+
+    def test_choose_vhosts_www_bar_co_uk(self):
+        self._test_choose_vhosts_common('www.bar.co.uk', 'localhost_conf')
+
+    def test_choose_vhosts_ipv6_com(self):
+        self._test_choose_vhosts_common('ipv6.com', 'ipv6_conf')
+
+    def _test_choose_vhosts_common(self, name, conf):
+        conf_names = {'localhost_conf': set(['localhost', r'~^(www\.)?(example|bar)\.']),
+                 'server_conf': set(['somename', 'another.alias', 'alias']),
+                 'example_conf': set(['.example.com', 'example.*']),
+                 'foo_conf': set(['*.www.foo.com', '*.www.example.com']),
+                 'ipv6_conf': set(['ipv6.com'])}
 
         conf_path = {'localhost': "etc_nginx/nginx.conf",
                    'alias': "etc_nginx/nginx.conf",
@@ -155,21 +172,21 @@ class NginxConfiguratorTest(util.NginxTest):
                    'www.bar.co.uk': "etc_nginx/nginx.conf",
                    'ipv6.com': "etc_nginx/sites-enabled/ipv6.com"}
 
+        vhost = self.config.choose_vhosts(name)[0]
+        path = os.path.relpath(vhost.filep, self.temp_dir)
+
+        self.assertEqual(conf_names[conf], vhost.names)
+        self.assertEqual(conf_path[name], path)
+        # IPv6 specific checks
+        if name == "ipv6.com":
+            self.assertTrue(vhost.ipv6_enabled())
+            # Make sure that we have SSL enabled also for IPv6 addr
+            self.assertTrue(
+                any([True for x in vhost.addrs if x.ssl and x.ipv6]))
+
+    def test_choose_vhosts_bad(self):
         bad_results = ['www.foo.com', 'example', 't.www.bar.co',
                        '69.255.225.155']
-
-        for name in results:
-            vhost = self.config.choose_vhosts(name)[0]
-            path = os.path.relpath(vhost.filep, self.temp_dir)
-
-            self.assertEqual(results[name], vhost.names)
-            self.assertEqual(conf_path[name], path)
-            # IPv6 specific checks
-            if name == "ipv6.com":
-                self.assertTrue(vhost.ipv6_enabled())
-                # Make sure that we have SSL enabled also for IPv6 addr
-                self.assertTrue(
-                    any([True for x in vhost.addrs if x.ssl and x.ipv6]))
 
         for name in bad_results:
             self.assertRaises(errors.MisconfigurationError,
@@ -448,7 +465,7 @@ class NginxConfiguratorTest(util.NginxTest):
 
     def test_get_snakeoil_paths(self):
         # pylint: disable=protected-access
-        cert, key = self.config._get_snakeoil_paths()
+        cert, key = self.config.get_snakeoil_paths()
         self.assertTrue(os.path.exists(cert))
         self.assertTrue(os.path.exists(key))
         with open(cert) as cert_file:
@@ -972,6 +989,47 @@ class DetermineDefaultServerRootTest(certbot_test_util.ConfigTestCase):
             self.assertIn("/etc/nginx", server_root)
         else:
             self.assertTrue(server_root == "/etc/nginx" or server_root == "/usr/local/etc/nginx")
+
+
+class ChooseHttpAndHttpsVhostsTest(util.NginxTest):
+    """Tests for certbot_nginx.configurator.choose_http_and_https_vhosts."""
+
+    def setUp(self):
+        super(ChooseHttpAndHttpsVhostsTest, self).setUp()
+
+        self.config = util.get_nginx_configurator(
+            self.config_path, self.config_dir, self.work_dir, self.logs_dir)
+
+    def _call(self, target_name, http_port):
+        return self.config.choose_http_and_https_vhosts(target_name, http_port)
+
+    def test_wildcard(self):
+        self.assertRaises(errors.NotSupportedError, self._call, "*.example.com", "80")
+
+    def test_http_only_initial(self):
+        # only an http server initially
+        # http server gets made https by choose_vhosts
+        (http, https) = self._call("example.com", "80")
+        self.assertTrue(http)
+        self.assertEqual(http, https)
+
+    def test_only_https(self):
+        # only an https server initially
+        (http, https) = self._call("globalsslsetssl.com", "80")
+        self.assertFalse(http)
+        self.assertTrue(https)
+
+    def test_different_servers(self):
+        # separate http and http servers
+        (http, https) = self._call("migration.com", "80")
+        self.assertTrue(http)
+        self.assertTrue(https)
+        self.assertNotEqual(http, https)
+
+    def test_no_match(self):
+        (http, https) = self._call("uttergarbage.com", "80")
+        self.assertFalse(http)
+        self.assertFalse(https)
 
 
 if __name__ == "__main__":

@@ -40,8 +40,6 @@ class NginxHttp01(common.ChallengePerformer):
         super(NginxHttp01, self).__init__(configurator)
         self.challenge_conf = os.path.join(
             configurator.config.config_dir, "le_http_01_cert_challenge.conf")
-        self._ipv6 = None
-        self._ipv6only = None
 
     def perform(self):
         """Perform a challenge on Nginx.
@@ -102,6 +100,7 @@ class NginxHttp01(common.ChallengePerformer):
         config = [self._make_or_mod_server_block(achall) for achall in self.achalls]
         config = [x for x in config if x is not None]
         config = nginxparser.UnspacedList(config)
+        logger.debug("Generated server block:\n%s", str(config))
 
         self.configurator.reverter.register_file_creation(
             True, self.challenge_conf)
@@ -115,29 +114,32 @@ class NginxHttp01(common.ChallengePerformer):
         :rtype: list
         """
         addresses = [] # type: List[obj.Addr]
-        default_addr = "%s" % self.configurator.config.http01_port
-        ipv6_addr = "[::]:{0}".format(
-            self.configurator.config.http01_port)
+
         port = self.configurator.config.http01_port
+        ssl_port = self.configurator.config.tls_sni_01_port
 
-        if self._ipv6 is None or self._ipv6only is None:
-            self._ipv6, self._ipv6only = self.configurator.ipv6_info(port)
-        ipv6, ipv6only = self._ipv6, self._ipv6only
+        http_items = {}
+        https_items = {}
 
-        if ipv6:
-            # If IPv6 is active in Nginx configuration
-            if not ipv6only:
-                # If ipv6only=on is not already present in the config
-                ipv6_addr = ipv6_addr + " ipv6only=on"
-            addresses = [obj.Addr.fromstring(default_addr),
-                         obj.Addr.fromstring(ipv6_addr)]
-            logger.info(("Using default addresses %s and %s for authentication."),
-                        default_addr,
-                        ipv6_addr)
-        else:
-            addresses = [obj.Addr.fromstring(default_addr)]
-            logger.info("Using default address %s for authentication.",
-                        default_addr)
+        http_items["ipv4_addr"] = "%s" % port
+        http_items["ipv6_addr"] = "[::]:{0}".format(port)
+        https_items["ipv4_addr"] = '{0} ssl'.format(ssl_port)
+        https_items["ipv6_addr"] = '[::]:{0} ssl'.format(ssl_port)
+
+        http_items["ipv6"], http_items["ipv6only"] = self.configurator.ipv6_info(port)
+        https_items["ipv6"], https_items["ipv6only"] = self.configurator.ipv6_info(ssl_port)
+
+        addresses = []
+        for items in (http_items, https_items):
+            addresses.append(obj.Addr.fromstring(items["ipv4_addr"]))
+            if items["ipv6"]:
+                # If IPv6 is active in Nginx configuration
+                if not items["ipv6only"]:
+                    # If ipv6only=on is not already present in the config
+                    items["ipv6_addr"] = items["ipv6_addr"] + " ipv6only=on"
+                addresses.append(obj.Addr.fromstring(items["ipv6_addr"]))
+
+        logger.info("Using default addresses for authentication.")
         return addresses
 
     def _get_validation_path(self, achall):
@@ -164,6 +166,17 @@ class NginxHttp01(common.ChallengePerformer):
                       ['root', ' ', document_root],
                       self._location_directive_for_achall(achall)
                       ])
+
+        snakeoil_cert, snakeoil_key = self.configurator.get_snakeoil_paths()
+
+        ssl_block = ([
+            ['\n    ', 'ssl_certificate', ' ', snakeoil_cert],
+            ['\n    ', 'ssl_certificate_key', ' ', snakeoil_key],
+            ['\n    ', 'include', ' ', self.configurator.mod_ssl_conf],
+            ['\n    ', 'ssl_dhparam', ' ', self.configurator.ssl_dhparams],
+        ])
+        block.extend(ssl_block)
+
         # TODO: do we want to return something else if they otherwise access this block?
         return [['server'], block]
 
@@ -185,25 +198,25 @@ class NginxHttp01(common.ChallengePerformer):
             :class:`certbot.achallenges.KeyAuthorizationAnnotatedChallenge`
 
         """
-        try:
-            vhosts = self.configurator.choose_redirect_vhosts(achall.domain,
-                '%i' % self.configurator.config.http01_port, create_if_no_match=True)
-        except errors.MisconfigurationError:
+        http_vhosts, https_vhosts = self.configurator.choose_http_and_https_vhosts(achall.domain,
+            '%i' % self.configurator.config.http01_port)
+
+        vhosts = set(https_vhosts).union(http_vhosts)
+
+        for vhost in vhosts:
+            # Modify existing server block
+            location_directive = [self._location_directive_for_achall(achall)]
+
+            self.configurator.parser.add_server_directives(vhost,
+                location_directive)
+
+            rewrite_directive = [['rewrite', ' ', '^(/.well-known/acme-challenge/.*)',
+                                    ' ', '$1', ' ', 'break']]
+            self.configurator.parser.add_server_directives(vhost,
+                rewrite_directive, insert_at_top=True)
+
+        # if vhosts doesn't contain at least one http and one https, make our own
+        if not http_vhosts or not https_vhosts:
             # Couldn't find either a matching name+port server block
             # or a port+default_server block, so create a dummy block
             return self._make_server_block(achall)
-
-        # len is max 1 because Nginx doesn't authenticate wildcards
-        # if len were or vhosts None, we would have errored
-        vhost = vhosts[0]
-
-        # Modify existing server block
-        location_directive = [self._location_directive_for_achall(achall)]
-
-        self.configurator.parser.add_server_directives(vhost,
-            location_directive)
-
-        rewrite_directive = [['rewrite', ' ', '^(/.well-known/acme-challenge/.*)',
-                                ' ', '$1', ' ', 'break']]
-        self.configurator.parser.add_server_directives(vhost,
-            rewrite_directive, insert_at_top=True)
