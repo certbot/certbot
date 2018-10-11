@@ -40,8 +40,6 @@ class NginxHttp01(common.ChallengePerformer):
         super(NginxHttp01, self).__init__(configurator)
         self.challenge_conf = os.path.join(
             configurator.config.config_dir, "le_http_01_cert_challenge.conf")
-        self._ipv6 = None
-        self._ipv6only = None
 
     def perform(self):
         """Perform a challenge on Nginx.
@@ -120,9 +118,7 @@ class NginxHttp01(common.ChallengePerformer):
             self.configurator.config.http01_port)
         port = self.configurator.config.http01_port
 
-        if self._ipv6 is None or self._ipv6only is None:
-            self._ipv6, self._ipv6only = self.configurator.ipv6_info(port)
-        ipv6, ipv6only = self._ipv6, self._ipv6only
+        ipv6, ipv6only = self.configurator.ipv6_info(port)
 
         if ipv6:
             # If IPv6 is active in Nginx configuration
