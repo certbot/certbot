@@ -138,3 +138,29 @@ def release_locked_file(fd, path):
             raise
     finally:
         os.close(fd)
+
+WINDOWS_DEFAULT_FOLDERS = {
+    'config': 'C:\\letsencrypt',
+    'workdir': 'C:\\letsencrypt\\lib',
+    'logs': 'C:\\letsencrypt\\log',
+}
+LINUX_DEFAULT_FOLDERS = {
+    'config': '/etc/letsencrypt',
+    'workdir': '/var/letsencrypt/lib',
+    'logs': '/var/letsencrypt/log',
+}
+def get_default_folder(folder_type):
+    """
+    Return the relevant default folder for the current OS
+
+    :param str folder_type: The type of folder to retrieve (config, workdir or logs)
+
+    :returns: The relevant default folder.
+    :rtype: str
+
+    """
+    if 'fcntl' in sys.modules:
+        # Linux specific
+        return LINUX_DEFAULT_FOLDERS[folder_type]
+    # Windows specific
+    return WINDOWS_DEFAULT_FOLDERS[folder_type]
