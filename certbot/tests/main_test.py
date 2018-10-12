@@ -1262,7 +1262,8 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         with mock.patch('certbot.main._init_le_client') as mock_init:
             mock_init.return_value = mock_client
             with test_util.patch_get_utility() as mock_get_utility:
-                chain_path = os.path.normpath(os.path.join(CONFIG_DIR, 'live/example.com/chain.pem'))
+                chain_path = os.path.normpath(
+                    os.path.join(CONFIG_DIR, 'live/example.com/chain.pem'))
                 args = ('-a standalone certonly --csr {0} --cert-path {1} '
                         '--chain-path {2} --fullchain-path {3}').format(
                             CSR, cert_path, chain_path, full_path).split()
