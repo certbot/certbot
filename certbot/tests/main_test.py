@@ -44,6 +44,8 @@ JWK = jose.JWKRSA.load(test_util.load_vector('rsa512_key.pem'))
 RSA2048_KEY_PATH = test_util.vector_path('rsa2048_key.pem')
 SS_CERT_PATH = test_util.vector_path('cert_2048.pem')
 
+CONFIG_DIR = compat.get_default_folder('config')
+
 
 class TestHandleIdenticalCerts(unittest.TestCase):
     """Test for certbot.main._handle_identical_cert_request"""
@@ -931,8 +933,8 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
     @mock.patch('certbot.crypto_util.notAfter')
     @test_util.patch_get_utility()
     def test_certonly_new_request_success(self, mock_get_utility, mock_notAfter):
-        cert_path = '/etc/letsencrypt/live/foo.bar'
-        key_path = '/etc/letsencrypt/live/baz.qux'
+        cert_path = os.path.normpath(os.path.join(CONFIG_DIR, 'live/foo.bar'))
+        key_path = os.path.normpath(os.path.join(CONFIG_DIR, 'live/baz.qux'))
         date = '1970-01-01'
         mock_notAfter().date.return_value = date
 
@@ -962,7 +964,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
                              reuse_key=False):
         # pylint: disable=too-many-locals,too-many-arguments,too-many-branches
         cert_path = test_util.vector_path('cert_512.pem')
-        chain_path = '/etc/letsencrypt/live/foo.bar/fullchain.pem'
+        chain_path = os.path.normpath(os.path.join(CONFIG_DIR, 'live/foo.bar/fullchain.pem'))
         mock_lineage = mock.MagicMock(cert=cert_path, fullchain=chain_path,
                                       cert_path=cert_path, fullchain_path=chain_path)
         mock_lineage.should_autorenew.return_value = due_for_renewal
@@ -1254,13 +1256,13 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         chain = 'chain'
         mock_client = mock.MagicMock()
         mock_client.obtain_certificate_from_csr.return_value = (certr, chain)
-        cert_path = '/etc/letsencrypt/live/example.com/cert_512.pem'
-        full_path = '/etc/letsencrypt/live/example.com/fullchain.pem'
+        cert_path = os.path.normpath(os.path.join(CONFIG_DIR, 'live/example.com/cert_512.pem'))
+        full_path = os.path.normpath(os.path.join(CONFIG_DIR, 'live/example.com/fullchain.pem'))
         mock_client.save_certificate.return_value = cert_path, None, full_path
         with mock.patch('certbot.main._init_le_client') as mock_init:
             mock_init.return_value = mock_client
             with test_util.patch_get_utility() as mock_get_utility:
-                chain_path = '/etc/letsencrypt/live/example.com/chain.pem'
+                chain_path = os.path.normpath(os.path.join(CONFIG_DIR, 'live/example.com/chain.pem'))
                 args = ('-a standalone certonly --csr {0} --cert-path {1} '
                         '--chain-path {2} --fullchain-path {3}').format(
                             CSR, cert_path, chain_path, full_path).split()
