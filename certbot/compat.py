@@ -64,6 +64,23 @@ def os_geteuid():
         # Windows specific
         return 0
 
+def os_rename(src, dst):
+    """
+    Rename a file to a destination path and handles situations where the destination exists.
+
+    :param str src: The current file path.
+    :param str dst: The new file path.
+    """
+    try:
+        os.rename(src, dst)
+    except OSError as err:
+        # Windows specific, renaming a file on an existing path is not possible.
+        # And changes cannot be done atomically. So we do it by ourselves.
+        if err.errno != errno.EEXIST:
+            raise
+        os.remove(dst)
+        os.rename(src, dst)
+
 def readline_with_timeout(timeout, prompt):
     """
     Read user input to return the first line entered, or raise after specified timeout.
