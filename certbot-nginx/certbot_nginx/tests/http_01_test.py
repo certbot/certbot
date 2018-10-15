@@ -142,7 +142,6 @@ class HttpPerformTest(util.NginxTest):
         ipv6_info.return_value = (False, False)
         addrs = self.http01._default_listen_addresses()
         http_addr = Addr.fromstring("80")
-        ssl_addr = Addr.fromstring("5001 ssl")
         self.assertEqual(addrs, [http_addr])
 
 if __name__ == "__main__":
