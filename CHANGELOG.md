@@ -10,7 +10,7 @@ Certbot adheres to [Semantic Versioning](http://semver.org/).
 
 ### Changed
 
-*
+* Removed documentation mentions of `#letsencrypt` IRC on Freenode.
 
 ### Fixed
 
