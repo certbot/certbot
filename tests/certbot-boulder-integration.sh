@@ -10,16 +10,8 @@
 
 set -eux
 
-# Check that python executable is available in the PATH. Fail immediately if not.
+# Check that python executable is available in the PATH. Fail immediatly if not.
 command -v python > /dev/null || (echo "Error, python executable is not in the PATH" && exit 1)
-
-# Regardless of whether we're running on a terminal or in a headless
-# test environment like Travis, restart this entire script inside of
-# a PTY to ensure that Certbot thinks it's running on a TTY (to avoid
-# deliberate sleeps associated with noninteractive renewal).
-#    [NOTE: if this causes compatibility problems, we could also try
-#    running it only when the CI environment variable is already set.]
-[ -z "$SYNTHETIC_PTY" ] && SYNTHETIC_PTY=true exec python -c 'import pty, sys; pty.spawn(sys.argv[1:])' "$0" "$@"
 
 . ./tests/integration/_common.sh
 export PATH="$PATH:/usr/sbin"  # /usr/sbin/nginx
