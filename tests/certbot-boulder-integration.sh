@@ -8,7 +8,7 @@
 #
 # Note: this script is called by Boulder integration test suite!
 
-set -eux
+set -ex
 
 # Check that python executable is available in the PATH. Fail immediately if not.
 command -v python > /dev/null || (echo "Error, python executable is not in the PATH" && exit 1)
@@ -20,6 +20,9 @@ command -v python > /dev/null || (echo "Error, python executable is not in the P
 #    [NOTE: if this causes compatibility problems, we could also try
 #    running it only when the CI environment variable is already set.]
 [ -z "$SYNTHETIC_PTY" ] && SYNTHETIC_PTY=true exec python -c 'import pty, sys; pty.spawn(sys.argv[1:])' "$0" "$@"
+
+# The SYNTHETIC_PTY item above doesn't work if set -u has already been run.
+set -u
 
 . ./tests/integration/_common.sh
 export PATH="$PATH:/usr/sbin"  # /usr/sbin/nginx
