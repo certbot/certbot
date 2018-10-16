@@ -10,6 +10,8 @@ Certbot adheres to [Semantic Versioning](http://semver.org/).
   terminal) now randomly sleep 1-480 seconds before beginning work in
   order to spread out load spikes on the server side.
 
+* `revoke` accepts `--cert-name`, and doesn't accept both `--cert-name` and `--cert-path`.
+
 ### Changed
 
 *
