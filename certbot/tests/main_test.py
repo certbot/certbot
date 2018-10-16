@@ -68,8 +68,7 @@ class RunTest(test_util.ConfigTestCase):
             mock.patch('certbot.main._init_le_client'),
             mock.patch('certbot.main._suggest_donation_if_appropriate'),
             mock.patch('certbot.main._report_new_cert'),
-            mock.patch('certbot.main._find_cert'),
-            mock.patch('certbot.time.sleep')]
+            mock.patch('certbot.main._find_cert')]
 
         self.mock_auth = self.patches[0].start()
         self.mock_success_installation = self.patches[1].start()
@@ -78,7 +77,6 @@ class RunTest(test_util.ConfigTestCase):
         self.mock_suggest_donation = self.patches[4].start()
         self.mock_report_cert = self.patches[5].start()
         self.mock_find_cert = self.patches[6].start()
-        self.mock_sleep = self.patches[7].start()
 
     def tearDown(self):
         for patch in self.patches:
@@ -518,6 +516,8 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         self.standard_args = ['--config-dir', self.config.config_dir,
                               '--work-dir', self.config.work_dir,
                               '--logs-dir', self.config.logs_dir, '--text']
+
+        self.mock_sleep = mock.patch('certbot.time.sleep').start()
 
     def tearDown(self):
         # Reset globals in cli
