@@ -517,7 +517,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
                               '--work-dir', self.config.work_dir,
                               '--logs-dir', self.config.logs_dir, '--text']
 
-        self.mock_sleep = mock.patch('certbot.time.sleep').start()
+        self.mock_sleep = mock.patch('time.sleep').start()
 
     def tearDown(self):
         # Reset globals in cli
