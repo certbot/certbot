@@ -4,10 +4,10 @@ import shutil
 import socket
 import threading
 import tempfile
-import time
 import unittest
 
 from six.moves import http_client  # pylint: disable=import-error
+from six.moves import queue  # pylint: disable=import-error
 from six.moves import socketserver  # type: ignore  # pylint: disable=import-error
 
 import josepy as jose
@@ -16,7 +16,6 @@ import requests
 
 from acme import challenges
 from acme import crypto_util
-from acme import errors
 from acme import test_util
 from acme.magic_typing import Set # pylint: disable=unused-import, no-name-in-module
 
@@ -261,10 +260,9 @@ class TestSimpleTLSSNI01Server(unittest.TestCase):
                     os.path.join(localhost_dir, 'key.pem'))
 
         from acme.standalone import simple_tls_sni_01_server
-        self.port = 1234
         self.thread = threading.Thread(
             target=simple_tls_sni_01_server, kwargs={
-                'cli_args': ('xxx', '--port', str(self.port)),
+                'cli_args': ('filename',),
                 'forever': False,
             },
         )
@@ -276,25 +274,20 @@ class TestSimpleTLSSNI01Server(unittest.TestCase):
         self.thread.join()
         shutil.rmtree(self.test_cwd)
 
-    def test_it(self):
-        max_attempts = 5
-        for attempt in range(max_attempts):
-            try:
-                cert = crypto_util.probe_sni(
-                    b'localhost', b'0.0.0.0', self.port)
-            except errors.Error:
-                self.assertTrue(attempt + 1 < max_attempts, "Timeout!")
-                time.sleep(1)  # wait until thread starts
-            else:
-                self.assertEqual(jose.ComparableX509(cert),
-                                 test_util.load_comparable_cert(
-                                     'rsa2048_cert.pem'))
-                break
+    @mock.patch('acme.standalone.logger')
+    def test_it(self, mock_logger):
+        # Use a Queue because mock objects aren't thread safe.
+        q = queue.Queue()  # type: queue.Queue[int]
+        # Add port number to the queue.
+        mock_logger.info.side_effect = lambda *args: q.put(args[-1])
+        self.thread.start()
 
-            if attempt == 0:
-                # the first attempt is always meant to fail, so we can test
-                # the socket failure code-path for probe_sni, as well
-                self.thread.start()
+        # After the timeout, an exception is raised if the queue is empty.
+        port = q.get(timeout=5)
+        cert = crypto_util.probe_sni(b'localhost', b'0.0.0.0', port)
+        self.assertEqual(jose.ComparableX509(cert),
+                         test_util.load_comparable_cert(
+                             'rsa2048_cert.pem'))
 
 
 if __name__ == "__main__":

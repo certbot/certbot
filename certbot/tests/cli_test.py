@@ -495,7 +495,8 @@ class SetByCliTest(unittest.TestCase):
         for v in ('manual', 'manual_auth_hook', 'manual_public_ip_logging_ok'):
             self.assertTrue(_call_set_by_cli(v, args, verb))
 
-        cli.set_by_cli.detector = None
+        # https://github.com/python/mypy/issues/2087
+        cli.set_by_cli.detector = None  # type: ignore
 
         args = ['--manual-auth-hook', 'command']
         for v in ('manual_auth_hook', 'manual_public_ip_logging_ok'):

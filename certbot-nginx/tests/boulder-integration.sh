@@ -35,6 +35,7 @@ test_deployment_and_rollback() {
 }
 
 export default_server="default_server"
+nginx -v
 reload_nginx
 certbot_test_nginx --domains nginx.wtf run
 test_deployment_and_rollback nginx.wtf
@@ -62,3 +63,5 @@ test_deployment_and_rollback nginx6.wtf
 # note: not reached if anything above fails, hence "killall" at the
 # top
 nginx -c $nginx_root/nginx.conf -s stop
+
+coverage report --fail-under 75 --include 'certbot-nginx/*' --show-missing

@@ -1,10 +1,8 @@
 import codecs
 import os
 import re
-import sys
 
-from setuptools import setup
-from setuptools import find_packages
+from setuptools import find_packages, setup
 
 # Workaround for http://bugs.python.org/issue8876, see
 # http://bugs.python.org/issue8876#msg208792
@@ -27,14 +25,13 @@ init_fn = os.path.join(here, 'certbot', '__init__.py')
 meta = dict(re.findall(r"""__([a-z]+)__ = '([^']+)""", read_file(init_fn)))
 
 readme = read_file(os.path.join(here, 'README.rst'))
-changes = read_file(os.path.join(here, 'CHANGES.rst'))
 version = meta['version']
 
 # This package relies on PyOpenSSL, requests, and six, however, it isn't
 # specified here to avoid masking the more specific request requirements in
 # acme. See https://github.com/pypa/pip/issues/988 for more info.
 install_requires = [
-    'acme>=0.22.1',
+    'acme>=0.26.0',
     # We technically need ConfigArgParse 0.10.0 for Python 2.6 support, but
     # saying so here causes a runtime error against our temporary fork of 0.9.3
     # in which we added 2.6 support (see #2243), so we relax the requirement.
@@ -72,8 +69,8 @@ dev3_extras = [
 
 docs_extras = [
     'repoze.sphinx.autointerface',
-    # autodoc_member_order = 'bysource', autodoc_default_flags, and #4686
-    'Sphinx >=1.0,<=1.5.6',
+    # sphinx.ext.imgconverter
+    'Sphinx >=1.6',
     'sphinx_rtd_theme',
 ]
 
@@ -81,14 +78,14 @@ setup(
     name='certbot',
     version=version,
     description="ACME client",
-    long_description=readme,  # later: + '\n\n' + changes
+    long_description=readme,
     url='https://github.com/letsencrypt/letsencrypt',
     author="Certbot Project",
     author_email='client-dev@letsencrypt.org',
     license='Apache License 2.0',
     python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*',
     classifiers=[
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 5 - Production/Stable',
         'Environment :: Console',
         'Environment :: Console :: Curses',
         'Intended Audience :: System Administrators',
@@ -101,6 +98,7 @@ setup(
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Security',
         'Topic :: System :: Installation/Setup',

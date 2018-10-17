@@ -12,12 +12,18 @@ else
   pip_install="$(dirname $0)/pip_install_editable.sh"
 fi
 
+temp_cwd=$(mktemp -d)
+trap "rm -rf $temp_cwd" EXIT
+
 set -x
 for requirement in "$@" ; do
   $pip_install $requirement
   pkg=$(echo $requirement | cut -f1 -d\[)  # remove any extras such as [dev]
+  pkg=$(echo "$pkg" | tr - _ )  # convert package names to Python import names
   if [ $pkg = "." ]; then
     pkg="certbot"
   fi
+  cd "$temp_cwd"
   pytest --numprocesses auto --quiet --pyargs $pkg
+  cd -
 done

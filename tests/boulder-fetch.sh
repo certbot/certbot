@@ -11,22 +11,20 @@ if [ ! -d ${BOULDERPATH} ]; then
 fi
 
 cd ${BOULDERPATH}
-FAKE_DNS=$(ifconfig docker0 | grep "inet addr:" | cut -d: -f2 | awk '{ print $1}')
-[ -z "$FAKE_DNS" ] && FAKE_DNS=$(ifconfig docker0 | grep "inet " | xargs | cut -d ' ' -f 2)
-[ -z "$FAKE_DNS" ] && FAKE_DNS=$(ip addr show dev docker0 | grep "inet " | xargs | cut -d ' ' -f 2 | cut -d '/' -f 1)
-[ -z "$FAKE_DNS" ] && echo Unable to find the IP for docker0 && exit 1
-sed -i "s/FAKE_DNS: .*/FAKE_DNS: ${FAKE_DNS}/" docker-compose.yml
+sed -i "s/FAKE_DNS: .*/FAKE_DNS: 10.77.77.1/" docker-compose.yml
 
-# If we're testing against ACMEv2, we need to use a newer boulder config for
-# now. See https://github.com/letsencrypt/boulder#quickstart.
-if [ "$BOULDER_INTEGRATION" = "v2" ]; then
-    sed -i 's/BOULDER_CONFIG_DIR: .*/BOULDER_CONFIG_DIR: test\/config-next/' docker-compose.yml
-fi
-
-docker-compose up -d
+docker-compose up -d boulder
 
 set +x  # reduce verbosity while waiting for boulder
-until curl http://localhost:4000/directory 2>/dev/null; do
-  echo waiting for boulder
-  sleep 1
+for n in `seq 1 150` ; do
+  if curl http://localhost:4000/directory 2>/dev/null; then
+    break
+  else
+    sleep 1
+  fi
 done
+
+if ! curl http://localhost:4000/directory 2>/dev/null; then
+  echo "timed out waiting for boulder to start"
+  exit 1
+fi

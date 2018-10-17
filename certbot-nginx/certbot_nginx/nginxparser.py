@@ -26,7 +26,7 @@ class RawNginxParser(object):
     dquoted = QuotedString('"', multiline=True, unquoteResults=False, escChar='\\')
     squoted = QuotedString("'", multiline=True, unquoteResults=False, escChar='\\')
     quoted = dquoted | squoted
-    head_tokenchars = Regex(r"[^{};\s'\"]") # if (last_space)
+    head_tokenchars = Regex(r"(\$\{)|[^{};\s'\"]") # if (last_space)
     tail_tokenchars = Regex(r"(\$\{)|[^{;\s]") # else
     tokenchars = Combine(head_tokenchars + ZeroOrMore(tail_tokenchars))
     paren_quote_extend = Combine(quoted + Literal(')') + ZeroOrMore(tail_tokenchars))
@@ -248,7 +248,7 @@ class UnspacedList(list):
         """Recurse through the parse tree to figure out if any sublists are dirty"""
         if self.dirty:
             return True
-        return any((isinstance(x, list) and x.is_dirty() for x in self))
+        return any((isinstance(x, UnspacedList) and x.is_dirty() for x in self))
 
     def _spaced_position(self, idx):
         "Convert from indexes in the unspaced list to positions in the spaced one"
