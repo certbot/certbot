@@ -29,6 +29,12 @@ class Parsable(object):
 
     @classmethod
     def parsing_hooks(cls):
+        """Returns object types that this class should be able to `parse` recusrively.
+        The order of the objects indicates the order in which the parser should
+        try to parse each subitem.
+        :returns: A list of Parsable classes.
+        :rtype list:
+        """
         return (Block, Sentence, Statements)
 
     @staticmethod
@@ -369,14 +375,12 @@ def _choose_parser(parent, list_):
     raise errors.MisconfigurationError(
         "None of the parsing hooks succeeded, so we don't know how to parse this set of lists.")
 
-def parse_raw(lists_, parent=None, add_spaces=False, parsing_hooks=None):
-    """ Primary parsing factory function. Based on `type(parent).parsing_hooks` or
-    `parsing_hooks`,  chooses Parsable objects with which it recursively parses `lists_`.
+def parse_raw(lists_, parent=None, add_spaces=False):
+    """ Primary parsing factory function.
 
     :param list lists_: raw lists from pyparsing to parse.
     :param .Parent parent: The parent containing this object.
     :param bool add_spaces: Whether to pass add_spaces to the parser.
-    :param list parsing_hooks: A list of parsing hooks to use if no parent is supplied.
 
     :returns .Parsable: The parsed object.
 
