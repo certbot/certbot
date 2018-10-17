@@ -95,11 +95,11 @@ using the secret key
 when it receives a TLS ClientHello with the SNI extension set to
 {sni_domain}
 """
-    _SUBSEQUENT_CHALLENGE_INSTRUCTIONS = """\
+    _SUBSEQUENT_CHALLENGE_INSTRUCTIONS = """
 (This must be set up in addition to the previous challenges; do not remove,
 replace, or undo the previous challenge tasks yet.)
 """
-    _SUBSEQUENT_DNS_CHALLENGE_INSTRUCTIONS = """\
+    _SUBSEQUENT_DNS_CHALLENGE_INSTRUCTIONS = """
 (This must be set up in addition to the previous challenges; do not remove,
 replace, or undo the previous challenge tasks yet. Note that you might be
 asked to create multiple distinct TXT records with the same name. This is
@@ -227,11 +227,11 @@ permitted by DNS standards.)
         if isinstance(achall.chall, challenges.DNS01):
             if self.subsequent_dns_challenge:
                 # 2nd or later dns-01 challenge
-                msg += _SUBSEQUENT_DNS_CHALLENGE_INSTRUCTIONS
+                msg += self._SUBSEQUENT_DNS_CHALLENGE_INSTRUCTIONS
             self.subsequent_dns_challenge = True
         elif self.subsequent_any_challenge:
             # 2nd or later challenge of another type
-            msg += _SUBSEQUENT_CHALLENGE_INSTRUCTIONS
+            msg += self._SUBSEQUENT_CHALLENGE_INSTRUCTIONS
         display = zope.component.getUtility(interfaces.IDisplay)
         display.notification(msg, wrap=False, force_interactive=True)
         self.subsequent_any_challenge = True
