@@ -6,23 +6,26 @@ Certbot adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 
-*
+* `revoke` accepts `--cert-name`, and doesn't accept both `--cert-name` and `--cert-path`.
 
 ### Changed
 
 * Write README to the base of (config-dir)/live directory
+* `--manual` will explicitly warn users that earlier challenges should remain in place when setting up subsequent challenges.
 
 ### Fixed
 
-*
-  
+* Match Nginx parser update in allowing variable names to start with `${`.
+* Correct OVH integration tests on machines without internet access.
+* Stop caching the results of ipv6_info in http01.py
+
 ## 0.27.1 - 2018-09-06
 
 ### Fixed
 
 * Fixed parameter name in OpenSUSE overrides for default parameters in the
   Apache plugin. Certbot on OpenSUSE works again.
-  
+
 Despite us having broken lockstep, we are continuing to release new versions of
 all Certbot components during releases for the time being, however, the only
 package with changes other than its version number was:

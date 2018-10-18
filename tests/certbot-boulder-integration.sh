@@ -440,22 +440,12 @@ for subdomain in $subdomains; do
     fi
 done
 
-# Test that revocation raises correct error if --cert-name and --cert-path don't match
+# Test that revocation raises correct error when both --cert-name and --cert-path specified
 common --domains le1.wtf
-common --domains le2.wtf
-out=$(common revoke --cert-path "$root/conf/live/le1.wtf/fullchain.pem" --cert-name "le2.wtf" 2>&1) || true
-if ! echo $out | grep "or both must point to the same certificate lineages."; then
-    echo "Non-interactive revoking with mismatched --cert-name and --cert-path "
+out=$(common revoke --cert-path "$root/conf/live/le1.wtf/fullchain.pem" --cert-name "le1.wtf" 2>&1) || true
+if ! echo $out | grep "Exactly one of --cert-path or --cert-name must be specified"; then
+    echo "Non-interactive revoking with both --cert-name and --cert-path "
     echo "did not raise the correct error!"
-    exit 1
-fi
-
-# Revoking by matching --cert-name and --cert-path deletes
-common --domains le1.wtf
-common revoke --cert-path "$root/conf/live/le1.wtf/fullchain.pem" --cert-name "le1.wtf"
-out=$(common certificates)
-if echo $out | grep "le1.wtf"; then
-    echo "Cert le1.wtf should've been deleted! Was revoked via matching --cert-path & --cert-name"
     exit 1
 fi
 
