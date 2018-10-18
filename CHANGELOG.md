@@ -10,6 +10,7 @@ Certbot adheres to [Semantic Versioning](http://semver.org/).
 
 ### Changed
 
+* Removed documentation mentions of `#letsencrypt` IRC on Freenode.
 * Write README to the base of (config-dir)/live directory
 * `--manual` will explicitly warn users that earlier challenges should remain in place when setting up subsequent challenges.
 
