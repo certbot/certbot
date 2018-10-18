@@ -108,7 +108,7 @@ optional arguments:
                         case, and to know when to deprecate support for past
                         Python versions and flags. If you wish to hide this
                         information from the Let's Encrypt server, set this to
-                        "". (default: CertbotACMEClient/0.26.1
+                        "". (default: CertbotACMEClient/0.27.1
                         (certbot(-auto); OS_NAME OS_VERSION) Authenticator/XXX
                         Installer/YYY (SUBCOMMAND; flags: FLAGS)
                         Py/major.minor.patchlevel). The flags encoded in the
@@ -475,16 +475,15 @@ apache:
   Apache Web Server plugin - Beta
 
   --apache-enmod APACHE_ENMOD
-                        Path to the Apache 'a2enmod' binary. (default:
-                        a2enmod)
+                        Path to the Apache 'a2enmod' binary (default: a2enmod)
   --apache-dismod APACHE_DISMOD
-                        Path to the Apache 'a2dismod' binary. (default:
+                        Path to the Apache 'a2dismod' binary (default:
                         a2dismod)
   --apache-le-vhost-ext APACHE_LE_VHOST_EXT
-                        SSL vhost configuration extension. (default: -le-
+                        SSL vhost configuration extension (default: -le-
                         ssl.conf)
   --apache-server-root APACHE_SERVER_ROOT
-                        Apache server root directory. (default: /etc/apache2)
+                        Apache server root directory (default: /etc/apache2)
   --apache-vhost-root APACHE_VHOST_ROOT
                         Apache server VirtualHost configuration root (default:
                         None)
@@ -492,14 +491,17 @@ apache:
                         Apache server logs directory (default:
                         /var/log/apache2)
   --apache-challenge-location APACHE_CHALLENGE_LOCATION
-                        Directory path for challenge configuration. (default:
+                        Directory path for challenge configuration (default:
                         /etc/apache2)
   --apache-handle-modules APACHE_HANDLE_MODULES
-                        Let installer handle enabling required modules for
-                        you. (Only Ubuntu/Debian currently) (default: True)
+                        Let installer handle enabling required modules for you
+                        (Only Ubuntu/Debian currently) (default: True)
   --apache-handle-sites APACHE_HANDLE_SITES
-                        Let installer handle enabling sites for you. (Only
+                        Let installer handle enabling sites for you (Only
                         Ubuntu/Debian currently) (default: True)
+  --apache-ctl APACHE_CTL
+                        Full path to Apache control script (default:
+                        apache2ctl)
 
 certbot-route53:auth:
   Obtain certificates using a DNS TXT record (if you are using AWS Route53

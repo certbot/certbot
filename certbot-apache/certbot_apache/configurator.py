@@ -1,5 +1,6 @@
 """Apache Configuration based off of Augeas Configurator."""
 # pylint: disable=too-many-lines
+import copy
 import fnmatch
 import logging
 import os
@@ -97,48 +98,72 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         vhost_root="/etc/apache2/sites-available",
         vhost_files="*",
         logs_root="/var/log/apache2",
+        ctl="apache2ctl",
         version_cmd=['apache2ctl', '-v'],
-        apache_cmd="apache2ctl",
         restart_cmd=['apache2ctl', 'graceful'],
         conftest_cmd=['apache2ctl', 'configtest'],
         enmod=None,
         dismod=None,
         le_vhost_ext="-le-ssl.conf",
-        handle_mods=False,
+        handle_modules=False,
         handle_sites=False,
         challenge_location="/etc/apache2",
         MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
             "certbot_apache", "options-ssl-apache.conf")
     )
 
-    def constant(self, key):
-        """Get constant for OS_DEFAULTS"""
-        return self.OS_DEFAULTS.get(key)
+    def option(self, key):
+        """Get a value from options"""
+        return self.options.get(key)
+
+    def _prepare_options(self):
+        """
+        Set the values possibly changed by command line parameters to
+        OS_DEFAULTS constant dictionary
+        """
+        opts = ["enmod", "dismod", "le_vhost_ext", "server_root", "vhost_root",
+                "logs_root", "challenge_location", "handle_modules", "handle_sites",
+                "ctl"]
+        for o in opts:
+            # Config options use dashes instead of underscores
+            if self.conf(o.replace("_", "-")) is not None:
+                self.options[o] = self.conf(o.replace("_", "-"))
+            else:
+                self.options[o] = self.OS_DEFAULTS[o]
+
+        # Special cases
+        self.options["version_cmd"][0] = self.option("ctl")
+        self.options["restart_cmd"][0] = self.option("ctl")
+        self.options["conftest_cmd"][0] = self.option("ctl")
 
     @classmethod
     def add_parser_arguments(cls, add):
+        # When adding, modifying or deleting command line arguments, be sure to
+        # include the changes in the list used in method _prepare_options() to
+        # ensure consistent behavior.
         add("enmod", default=cls.OS_DEFAULTS["enmod"],
-            help="Path to the Apache 'a2enmod' binary.")
+            help="Path to the Apache 'a2enmod' binary")
         add("dismod", default=cls.OS_DEFAULTS["dismod"],
-            help="Path to the Apache 'a2dismod' binary.")
+            help="Path to the Apache 'a2dismod' binary")
         add("le-vhost-ext", default=cls.OS_DEFAULTS["le_vhost_ext"],
-            help="SSL vhost configuration extension.")
+            help="SSL vhost configuration extension")
         add("server-root", default=cls.OS_DEFAULTS["server_root"],
-            help="Apache server root directory.")
+            help="Apache server root directory")
         add("vhost-root", default=None,
             help="Apache server VirtualHost configuration root")
         add("logs-root", default=cls.OS_DEFAULTS["logs_root"],
             help="Apache server logs directory")
         add("challenge-location",
             default=cls.OS_DEFAULTS["challenge_location"],
-            help="Directory path for challenge configuration.")
-        add("handle-modules", default=cls.OS_DEFAULTS["handle_mods"],
-            help="Let installer handle enabling required modules for you. " +
+            help="Directory path for challenge configuration")
+        add("handle-modules", default=cls.OS_DEFAULTS["handle_modules"],
+            help="Let installer handle enabling required modules for you " +
                  "(Only Ubuntu/Debian currently)")
         add("handle-sites", default=cls.OS_DEFAULTS["handle_sites"],
-            help="Let installer handle enabling sites for you. " +
+            help="Let installer handle enabling sites for you " +
                  "(Only Ubuntu/Debian currently)")
-        util.add_deprecated_argument(add, argument_name="ctl", nargs=1)
+        add("ctl", default=cls.OS_DEFAULTS["ctl"],
+            help="Full path to Apache control script")
         util.add_deprecated_argument(
             add, argument_name="init-script", nargs=1)
 
@@ -169,7 +194,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.parser = None
         self.version = version
         self.vhosts = None
-        self.vhostroot = None
+        self.options = copy.deepcopy(self.OS_DEFAULTS)
         self._enhance_func = {"redirect": self._enable_redirect,
                               "ensure-http-header": self._set_http_header,
                               "staple-ocsp": self._enable_ocsp_stapling}
@@ -201,12 +226,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         except ImportError:
             raise errors.NoInstallationError("Problem in Augeas installation")
 
+        self._prepare_options()
+
         # Verify Apache is installed
-        restart_cmd = self.constant("restart_cmd")[0]
-        if not util.exe_exists(restart_cmd):
-            if not path_surgery(restart_cmd):
-                raise errors.NoInstallationError(
-                    'Cannot find Apache control command {0}'.format(restart_cmd))
+        self._verify_exe_availability(self.option("ctl"))
 
         # Make sure configuration is valid
         self.config_test()
@@ -226,12 +249,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 "version 1.2.0 or higher, please make sure you have you have "
                 "those installed.")
 
-        # Parse vhost-root if defined on cli
-        if not self.conf("vhost-root"):
-            self.vhostroot = self.constant("vhost_root")
-        else:
-            self.vhostroot = os.path.abspath(self.conf("vhost-root"))
-
         self.parser = self.get_parser()
 
         # Check for errors in parsing files with Augeas
@@ -245,12 +262,19 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         # Prevent two Apache plugins from modifying a config at once
         try:
-            util.lock_dir_until_exit(self.conf("server-root"))
+            util.lock_dir_until_exit(self.option("server_root"))
         except (OSError, errors.LockError):
             logger.debug("Encountered error:", exc_info=True)
             raise errors.PluginError(
-                "Unable to lock %s", self.conf("server-root"))
+                "Unable to lock %s", self.option("server_root"))
         self._prepared = True
+
+    def _verify_exe_availability(self, exe):
+        """Checks availability of Apache executable"""
+        if not util.exe_exists(exe):
+            if not path_surgery(exe):
+                raise errors.NoInstallationError(
+                    'Cannot find Apache executable {0}'.format(exe))
 
     def _check_aug_version(self):
         """ Checks that we have recent enough version of libaugeas.
@@ -269,8 +293,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
     def get_parser(self):
         """Initializes the ApacheParser"""
+        # If user provided vhost_root value in command line, use it
         return parser.ApacheParser(
-            self.aug, self.conf("server-root"), self.conf("vhost-root"),
+            self.aug, self.option("server_root"), self.conf("vhost-root"),
             self.version, configurator=self)
 
     def _wildcard_domain(self, domain):
@@ -1037,7 +1062,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :param boolean temp: If the change is temporary
         """
 
-        if self.conf("handle-modules"):
+        if self.option("handle_modules"):
             if self.version >= (2, 4) and ("socache_shmcb_module" not in
                                            self.parser.modules):
                 self.enable_mod("socache_shmcb", temp=temp)
@@ -1066,7 +1091,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         Duplicates vhost and adds default ssl options
         New vhost will reside as (nonssl_vhost.path) +
-        ``self.constant("le_vhost_ext")``
+        ``self.option("le_vhost_ext")``
 
         .. note:: This function saves the configuration
 
@@ -1165,18 +1190,16 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
 
         if self.conf("vhost-root") and os.path.exists(self.conf("vhost-root")):
-            # Defined by user on CLI
-
-            fp = os.path.join(os.path.realpath(self.vhostroot),
+            fp = os.path.join(os.path.realpath(self.option("vhost_root")),
                               os.path.basename(non_ssl_vh_fp))
         else:
             # Use non-ssl filepath
             fp = os.path.realpath(non_ssl_vh_fp)
 
         if fp.endswith(".conf"):
-            return fp[:-(len(".conf"))] + self.conf("le_vhost_ext")
+            return fp[:-(len(".conf"))] + self.option("le_vhost_ext")
         else:
-            return fp + self.conf("le_vhost_ext")
+            return fp + self.option("le_vhost_ext")
 
     def _sift_rewrite_rule(self, line):
         """Decides whether a line should be copied to a SSL vhost.
@@ -2025,7 +2048,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                             addr in self._get_proposed_addrs(ssl_vhost)),
                    servername, serveralias,
                    " ".join(rewrite_rule_args),
-                   self.conf("logs-root")))
+                   self.option("logs_root")))
 
     def _write_out_redirect(self, ssl_vhost, text):
         # This is the default name
@@ -2037,7 +2060,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             if len(ssl_vhost.name) < (255 - (len(redirect_filename) + 1)):
                 redirect_filename = "le-redirect-%s.conf" % ssl_vhost.name
 
-        redirect_filepath = os.path.join(self.vhostroot,
+        redirect_filepath = os.path.join(self.option("vhost_root"),
                                          redirect_filename)
 
         # Register the new file that will be created
@@ -2158,18 +2181,18 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         error = ""
         try:
-            util.run_script(self.constant("restart_cmd"))
+            util.run_script(self.option("restart_cmd"))
         except errors.SubprocessError as err:
             logger.info("Unable to restart apache using %s",
-                        self.constant("restart_cmd"))
-            alt_restart = self.constant("restart_cmd_alt")
+                        self.option("restart_cmd"))
+            alt_restart = self.option("restart_cmd_alt")
             if alt_restart:
                 logger.debug("Trying alternative restart command: %s",
                              alt_restart)
                 # There is an alternative restart command available
                 # This usually is "restart" verb while original is "graceful"
                 try:
-                    util.run_script(self.constant(
+                    util.run_script(self.option(
                         "restart_cmd_alt"))
                     return
                 except errors.SubprocessError as secerr:
@@ -2185,7 +2208,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         try:
-            util.run_script(self.constant("conftest_cmd"))
+            util.run_script(self.option("conftest_cmd"))
         except errors.SubprocessError as err:
             raise errors.MisconfigurationError(str(err))
 
@@ -2201,11 +2224,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         try:
-            stdout, _ = util.run_script(self.constant("version_cmd"))
+            stdout, _ = util.run_script(self.option("version_cmd"))
         except errors.SubprocessError:
             raise errors.PluginError(
                 "Unable to run %s -v" %
-                self.constant("version_cmd"))
+                self.option("version_cmd"))
 
         regex = re.compile(r"Apache/([0-9\.]*)", re.IGNORECASE)
         matches = regex.findall(stdout)
@@ -2295,7 +2318,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # certbot for unprivileged users via setuid), this function will need
         # to be modified.
         return common.install_version_controlled_file(options_ssl, options_ssl_digest,
-            self.constant("MOD_SSL_CONF_SRC"), constants.ALL_SSL_OPTIONS_HASHES)
+            self.option("MOD_SSL_CONF_SRC"), constants.ALL_SSL_OPTIONS_HASHES)
 
     def enable_autohsts(self, _unused_lineage, domains):
         """

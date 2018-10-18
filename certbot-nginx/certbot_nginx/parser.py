@@ -222,7 +222,7 @@ class NginxParser(object):
                 return os.path.join(self.root, name)
 
         raise errors.NoInstallationError(
-            "Could not find configuration root")
+            "Could not find Nginx root configuration file (nginx.conf)")
 
     def filedump(self, ext='tmp', lazy=True):
         """Dumps parsed configurations into files.
@@ -395,12 +395,17 @@ class NginxParser(object):
                 addr.ipv6only = False
             for directive in enclosing_block[new_vhost.path[-1]][1]:
                 if len(directive) > 0 and directive[0] == 'listen':
-                    if 'default_server' in directive:
-                        del directive[directive.index('default_server')]
-                    if 'default' in directive:
-                        del directive[directive.index('default')]
-                    if 'ipv6only=on' in directive:
-                        del directive[directive.index('ipv6only=on')]
+                    # Exclude one-time use parameters which will cause an error if repeated.
+                    # https://nginx.org/en/docs/http/ngx_http_core_module.html#listen
+                    exclude = set(('default_server', 'default', 'setfib', 'fastopen', 'backlog',
+                                   'rcvbuf', 'sndbuf', 'accept_filter', 'deferred', 'bind',
+                                   'ipv6only', 'reuseport', 'so_keepalive'))
+
+                    for param in exclude:
+                        # See: github.com/certbot/certbot/pull/6223#pullrequestreview-143019225
+                        keys = [x.split('=')[0] for x in directive]
+                        if param in keys:
+                            del directive[keys.index(param)]
         return new_vhost
 
 

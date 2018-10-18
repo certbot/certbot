@@ -12,7 +12,7 @@ botocore==1.7.41
 cloudflare==1.5.1
 coverage==4.4.2
 decorator==4.1.2
-dns-lexicon==2.2.1
+dns-lexicon==2.7.3
 dnspython==1.15.0
 docutils==0.14
 execnet==1.5.0
@@ -48,7 +48,7 @@ pylint==1.4.2
 pytest==3.2.5
 pytest-cov==2.5.1
 pytest-forked==0.2
-pytest-xdist==1.20.1
+pytest-xdist==1.22.5
 python-dateutil==2.6.1
 python-digitalocean==1.11
 PyYAML==3.13
@@ -60,8 +60,9 @@ s3transfer==0.1.11
 scandir==1.6
 simplegeneric==0.8.1
 snowballstemmer==1.2.1
-Sphinx==1.5.6
+Sphinx==1.7.5
 sphinx-rtd-theme==0.2.4
+sphinxcontrib-websupport==1.0.1
 tldextract==2.2.0
 tox==2.9.1
 tqdm==4.19.4

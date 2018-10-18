@@ -6,7 +6,7 @@ Anyone who has gone through the trouble of setting up a secure website knows wha
 
 How you use Certbot depends on the configuration of your web server. The best way to get started is to use our `interactive guide <https://certbot.eff.org>`_. It generates instructions based on your configuration settings. In most cases, you’ll need `root or administrator access <https://certbot.eff.org/faq/#does-certbot-require-root-administrator-privileges>`_ to your web server to run Certbot.
 
-If you’re using a hosted service and don’t have direct access to your web server, you might not be able to use Certbot. Check with your hosting provider for documentation about uploading certificates or using certificates issued by Let’s Encrypt.
+Certbot is meant to be run directly on your web server, not on your personal computer. If you’re using a hosted service and don’t have direct access to your web server, you might not be able to use Certbot. Check with your hosting provider for documentation about uploading certificates or using certificates issued by Let’s Encrypt.
 
 Certbot is a fully-featured, extensible client for the Let's
 Encrypt CA (or any other CA that speaks the `ACME
@@ -107,8 +107,8 @@ ACME working area in github: https://github.com/ietf-wg-acme/acme
    :target: https://travis-ci.org/certbot/certbot
    :alt: Travis CI status
 
-.. |coverage| image:: https://coveralls.io/repos/certbot/certbot/badge.svg?branch=master
-   :target: https://coveralls.io/r/certbot/certbot
+.. |coverage| image:: https://codecov.io/gh/certbot/certbot/branch/master/graph/badge.svg
+   :target: https://codecov.io/gh/certbot/certbot
    :alt: Coverage status
 
 .. |docs| image:: https://readthedocs.org/projects/letsencrypt/badge/
