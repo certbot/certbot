@@ -18,7 +18,7 @@ cover () {
   if [ "$1" = "certbot" ]; then
     min=98
   elif [ "$1" = "acme" ]; then
-    min=99
+    min=100
   elif [ "$1" = "certbot_apache" ]; then
     min=100
   elif [ "$1" = "certbot_dns_cloudflare" ]; then
