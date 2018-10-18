@@ -513,6 +513,7 @@ class Order(ResourceBody):
     """Order Resource Body.
 
     :ivar list of .Identifier: List of identifiers for the certificate.
+    :ivar acme.messages.Status status:
     :ivar list of str authorizations: URLs of authorizations.
     :ivar str certificate: URL to download certificate as a fullchain PEM.
     :ivar str finalize: URL to POST to to request issuance once all
@@ -521,6 +522,8 @@ class Order(ResourceBody):
     :ivar .Error error: Any error that occurred during finalization, if applicable.
     """
     identifiers = jose.Field('identifiers', omitempty=True)
+    status = jose.Field('status', decoder=Status.from_json,
+                        omitempty=True, default=STATUS_PENDING)
     authorizations = jose.Field('authorizations', omitempty=True)
     certificate = jose.Field('certificate', omitempty=True)
     finalize = jose.Field('finalize', omitempty=True)
