@@ -3,13 +3,13 @@ import os
 try:
     import readline # pylint: disable=import-error
 except ImportError:
-    import pyreadline # pylint: disable=import-error
-    readline = pyreadline
+    import certbot.display.dummy_readline as readline # type: ignore
 import string
 import sys
 import unittest
 
 import mock
+import pytest
 from six.moves import reload_module  # pylint: disable=import-error
 
 from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
@@ -51,6 +51,8 @@ class CompleterTest(test_util.TempDirTestCase):
         completion = my_completer.complete(self.tempdir, num_paths)
         self.assertEqual(completion, None)
 
+    @pytest.mark.skipif('readline' not in sys.modules, 
+                        reason='Not relevant if readline is not available.')
     def test_import_error(self):
         original_readline = sys.modules['readline']
         sys.modules['readline'] = None
