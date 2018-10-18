@@ -99,8 +99,6 @@ ACME working area in github: https://github.com/ietf-wg-acme/acme
 
 |build-status| |coverage| |docs| |container|
 
-.. _Freenode: https://webchat.freenode.net?channels=%23letsencrypt
-
 .. |build-status| image:: https://travis-ci.org/certbot/certbot.svg?branch=master
    :target: https://travis-ci.org/certbot/certbot
    :alt: Travis CI status
