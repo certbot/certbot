@@ -16,6 +16,7 @@ Certbot adheres to [Semantic Versioning](http://semver.org/).
 
 * Match Nginx parser update in allowing variable names to start with `${`.
 * Correct OVH integration tests on machines without internet access.
+* Stop caching the results of ipv6_info in http01.py
 
 ## 0.27.1 - 2018-09-06
 
