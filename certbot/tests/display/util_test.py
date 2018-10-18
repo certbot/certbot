@@ -1,6 +1,5 @@
 """Test :mod:`certbot.display.util`."""
 import inspect
-import os
 import socket
 import tempfile
 import unittest
