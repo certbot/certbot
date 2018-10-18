@@ -514,19 +514,18 @@ class OsInfoTest(unittest.TestCase):
 
     def test_systemd_os_release(self):
         from certbot.util import (get_os_info, get_systemd_os_info,
-                                     get_os_info_ua)
+                                  get_os_info_ua)
 
         with mock.patch('os.path.isfile', return_value=True):
             self.assertEqual(get_os_info(
                 test_util.vector_path("os-release"))[0], 'systemdos')
             self.assertEqual(get_os_info(
                 test_util.vector_path("os-release"))[1], '42')
+            self.assertEqual(get_systemd_os_info(os.devnull), ("", ""))
             self.assertEqual(get_os_info_ua(
                 test_util.vector_path("os-release")), "SystemdOS")
         with mock.patch('os.path.isfile', return_value=False):
             self.assertEqual(get_systemd_os_info(), ("", ""))
-
-        self.assertEqual(get_systemd_os_info("/dev/null"), ("", ""))
 
     def test_systemd_os_release_like(self):
         from certbot.util import get_systemd_os_like
