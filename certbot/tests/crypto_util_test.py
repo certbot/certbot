@@ -393,7 +393,7 @@ class CertAndChainFromFullchainTest(unittest.TestCase):
         from certbot.crypto_util import cert_and_chain_from_fullchain
         for fullchain in (fullchain_pem, spacey_fullchain_pem):
             cert_out, chain_out = cert_and_chain_from_fullchain(fullchain)
-            self.assertEqual(cert_out, cert_pem.replace('\r\n', '\n'))
+            self.assertEqual(cert_out, cert_pem)
             self.assertEqual(chain_out, chain_pem)
 
 
