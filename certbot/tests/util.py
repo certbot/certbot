@@ -416,7 +416,7 @@ def broken_on_windows(function):
 
 def temp_join(path):
     """
-    Return the given path joined to the tempdir path for the current plateform
+    Return the given path joined to the tempdir path for the current platform
     Eg.: 'cert' => /tmp/cert (Linux) or 'C:\\Users\\currentuser\\AppData\\Temp\\cert' (Windows)
     """
     return  os.path.join(tempfile.gettempdir(), path)

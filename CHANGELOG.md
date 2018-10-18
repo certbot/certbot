@@ -7,7 +7,7 @@ Certbot adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 
 * Add a compatibility layer to make Certbot runnable on Windows. It requires Python >= 3.4,
-  and delegate to plateform specific os calls when needed (eg. lockfiles, uid).
+  and delegate to platform specific os calls when needed (eg. lockfiles, uid).
 * Ensure that `help` and `certonly` commands, for plugins standalone/webroot/manual, behave
   correctly when executed on Windows. Manually tested on Python 3.x for Windows 10.
 * Connect AppVeyor to Certbot GitHub repository, in order to provide a specific CI pipeline
@@ -19,8 +19,8 @@ Certbot adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 
 * Aggregate code coverage reports of Travis (Linux) and AppVeyor (Windows) on Codecov.io.
-* Normalize paths on codebase to make them plateform independant (Linux/Windows).
-* Handle CRLF/LF end lines to make file parsing plateform independant (Linux/Windows)
+* Normalize paths on codebase to make them platform independant (Linux/Windows).
+* Handle CRLF/LF end lines to make file parsing platform independant (Linux/Windows)
 
 ### Fixed
 
