@@ -10,7 +10,8 @@ Certbot adheres to [Semantic Versioning](http://semver.org/).
 
 ### Changed
 
-*  `--manual` will explicitly warn users that earlier challenges should remain in place when setting up subsequent challenges.
+* Write README to the base of (config-dir)/live directory
+* `--manual` will explicitly warn users that earlier challenges should remain in place when setting up subsequent challenges.
 
 ### Fixed
 
