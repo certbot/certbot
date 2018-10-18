@@ -48,7 +48,7 @@ class TLSSNI01ServerTest(unittest.TestCase):
             test_util.load_cert('rsa2048_cert.pem'),
         )}
         from acme.standalone import TLSSNI01Server
-        self.server = TLSSNI01Server(("localhost", 0), certs=self.certs)
+        self.server = TLSSNI01Server(('localhost', 0), certs=self.certs)
         # pylint: disable=no-member
         self.thread = threading.Thread(target=self.server.serve_forever)
         self.thread.start()
@@ -75,7 +75,7 @@ class HTTP01ServerTest(unittest.TestCase):
         self.resources = set() # type: Set
 
         from acme.standalone import HTTP01Server
-        self.server = HTTP01Server(('localhost', 0), resources=self.resources)
+        self.server = HTTP01Server(('', 0), resources=self.resources)
 
         # pylint: disable=no-member
         self.port = self.server.socket.getsockname()[1]
@@ -151,14 +151,14 @@ class BaseDualNetworkedServersTest(unittest.TestCase):
         from acme.standalone import BaseDualNetworkedServers
         self.assertRaises(socket.error, BaseDualNetworkedServers,
                           BaseDualNetworkedServersTest.SingleProtocolServer,
-                          ("localhost", 0),
+                          ('', 0),
                           socketserver.BaseRequestHandler)
 
     def test_ports_equal(self):
         from acme.standalone import BaseDualNetworkedServers
         servers = BaseDualNetworkedServers(
             BaseDualNetworkedServersTest.SingleProtocolServer,
-            ("localhost", 0),
+            ('', 0),
             socketserver.BaseRequestHandler)
         socknames = servers.getsocknames()
         prev_port = None
@@ -180,7 +180,7 @@ class TLSSNI01DualNetworkedServersTest(unittest.TestCase):
             test_util.load_cert('rsa2048_cert.pem'),
         )}
         from acme.standalone import TLSSNI01DualNetworkedServers
-        self.servers = TLSSNI01DualNetworkedServers(("localhost", 0), certs=self.certs)
+        self.servers = TLSSNI01DualNetworkedServers(('localhost', 0), certs=self.certs)
         self.servers.serve_forever()
 
     def tearDown(self):
