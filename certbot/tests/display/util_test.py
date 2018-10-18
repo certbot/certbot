@@ -280,10 +280,10 @@ class FileOutputDisplayTest(unittest.TestCase):
         msg = ("This is just a weak test{0}"
                "This function is only meant to be for easy viewing{0}"
                "Test a really really really really really really really really "
-               "really really really really long line...".format(os.linesep))
+               "really really really really long line...".format('\n'))
         text = display_util._wrap_lines(msg)
 
-        self.assertEqual(text.count(os.linesep), 3)
+        self.assertEqual(text.count('\n'), 3)
 
     def test_get_valid_int_ans_valid(self):
         # pylint: disable=protected-access

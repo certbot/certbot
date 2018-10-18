@@ -51,9 +51,9 @@ def _wrap_lines(msg):
             line,
             80,
             break_long_words=False,
-            break_on_hyphens=False).replace('\n', os.linesep))
+            break_on_hyphens=False))
 
-    return os.linesep.join(fixed_l)
+    return '\n'.join(fixed_l)
 
 
 def input_with_timeout(prompt=None, timeout=36000.0):
