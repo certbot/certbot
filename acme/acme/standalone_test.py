@@ -133,10 +133,11 @@ class BaseDualNetworkedServersTest(unittest.TestCase):
                 self.address_family = socket.AF_INET
             socketserver.TCPServer.__init__(self, *args, **kwargs)
             if ipv6:
-                # pylint: disable=no-member
                 # NB: On Windows, socket.IPPROTO_IPV6 constant may be missing.
                 # We use the corresponding value (41) instead.
-                self.socket.setsockopt(41, socket.IPV6_V6ONLY, 1)
+                level = getattr(socket, "IPPROTO_IPV6", 41)
+                # pylint: disable=no-member
+                self.socket.setsockopt(level, socket.IPV6_V6ONLY, 1)
                 try:
                     self.server_bind()
                     self.server_activate()
