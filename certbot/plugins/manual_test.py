@@ -20,8 +20,9 @@ class AuthenticatorTest(test_util.TempDirTestCase):
         super(AuthenticatorTest, self).setUp()
         self.http_achall = acme_util.HTTP01_A
         self.dns_achall = acme_util.DNS01_A
+        self.dns_achall_2 = acme_util.DNS01_A_2
         self.tls_sni_achall = acme_util.TLSSNI01_A
-        self.achalls = [self.http_achall, self.dns_achall, self.tls_sni_achall]
+        self.achalls = [self.http_achall, self.dns_achall, self.tls_sni_achall, self.dns_achall_2]
         for d in ["config_dir", "work_dir", "in_progress"]:
             os.mkdir(os.path.join(self.tempdir, d))
             # "backup_dir" and "temp_checkpoint_dir" get created in
