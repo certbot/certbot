@@ -6,29 +6,16 @@ Certbot adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 
-* Add a compatibility layer to make Certbot runnable on Windows. It requires Python >= 3.4,
-  and delegate to platform specific os calls when needed (eg. lockfiles, uid).
-* Ensure that `help` and `certonly` commands, for plugins standalone/webroot/manual, behave
-  correctly when executed on Windows. Manually tested on Python 3.x for Windows 10.
-* Connect AppVeyor to Certbot GitHub repository, in order to provide a specific CI pipeline
-  and execute existing unit tests on Windows Server 2016 + Windows Server 2012 R2 for Python
-  3.4, 3.5, 3.6 and 3.7.
-* Add a decorator `@broken_on_windows` to skip temporarily tests that fail on Windows.
 * `revoke` accepts `--cert-name`, and doesn't accept both `--cert-name` and `--cert-path`.
 
 ### Changed
 
-* Aggregate code coverage reports of Travis (Linux) and AppVeyor (Windows) on Codecov.io.
-* Normalize paths on codebase to make them platform independant (Linux/Windows).
-* Handle CRLF/LF end lines to make file parsing platform independant (Linux/Windows)
+*
 
 ### Fixed
 
 * Match Nginx parser update in allowing variable names to start with `${`.
 * Correct OVH integration tests on machines without internet access.
-* First phase of tests correction to ensure a correct execution on both Linux and Windows.
-  1045 out of the 1086 tests available for acme and certbot core behave correctly, 
-  representing 95% of code coverage on Windows.
 
 ## 0.27.1 - 2018-09-06
 
