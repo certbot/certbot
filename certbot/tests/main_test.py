@@ -1220,7 +1220,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         renewalparams = {'authenticator': 'webroot'}
         self._test_renew_common(
             renewalparams=renewalparams, assert_oc_called=True,
-            args=['renew', '--webroot-map', json.dumps({'example.com', tempfile.gettempdir()})])
+            args=['renew', '--webroot-map', json.dumps({'example.com': tempfile.gettempdir()})])
 
     def test_renew_reconstitute_error(self):
         # pylint: disable=protected-access
