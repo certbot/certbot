@@ -91,8 +91,6 @@ Main Website: https://certbot.eff.org
 
 Let's Encrypt Website: https://letsencrypt.org
 
-IRC Channel: #letsencrypt on `Freenode`_
-
 Community: https://community.letsencrypt.org
 
 ACME spec: http://ietf-wg-acme.github.io/acme/
@@ -100,8 +98,6 @@ ACME spec: http://ietf-wg-acme.github.io/acme/
 ACME working area in github: https://github.com/ietf-wg-acme/acme
 
 |build-status| |coverage| |docs| |container|
-
-.. _Freenode: https://webchat.freenode.net?channels=%23letsencrypt
 
 .. |build-status| image:: https://travis-ci.org/certbot/certbot.svg?branch=master
    :target: https://travis-ci.org/certbot/certbot
