@@ -4,6 +4,7 @@ from __future__ import print_function
 
 import argparse
 import errno
+import json
 import os
 import shutil
 import tempfile
@@ -273,7 +274,7 @@ class WebrootActionTest(unittest.TestCase):
 
     def test_webroot_map_action(self):
         args = self.parser.parse_args(
-            ["--webroot-map", '{{"thing.com":"{0}"}}'.format(self.path).replace('\\', '\\\\')])
+            ["--webroot-map", json.dumps({'thing.com': self.path})])
         self.assertEqual(args.webroot_map["thing.com"], self.path)
 
     def test_domain_before_webroot(self):

@@ -905,7 +905,7 @@ Lock Files
 
 When processing a validation Certbot writes a number of lock files on your system
 to prevent multiple instances from overwriting each other's changes. This means
-that be default two instances of Certbot will not be able to run in parallel.
+that by default two instances of Certbot will not be able to run in parallel.
 
 Since the directories used by Certbot are configurable, Certbot
 will write a lock file for all of the directories it uses. This include Certbot's
@@ -987,9 +987,6 @@ Getting help
 
 If you're having problems, we recommend posting on the Let's Encrypt
 `Community Forum <https://community.letsencrypt.org>`_.
-
-You can also chat with us on IRC: `(#letsencrypt @
-freenode) <https://webchat.freenode.net?channels=%23letsencrypt>`_
 
 If you find a bug in the software, please do report it in our `issue
 tracker <https://github.com/certbot/certbot/issues>`_. Remember to

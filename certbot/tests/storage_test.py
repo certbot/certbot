@@ -627,6 +627,8 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertTrue(os.path.exists(os.path.join(
             self.config.renewal_configs_dir, "the-lineage.com.conf")))
         self.assertTrue(os.path.exists(os.path.join(
+            self.config.live_dir, "README")))
+        self.assertTrue(os.path.exists(os.path.join(
             self.config.live_dir, "the-lineage.com", "README")))
         with open(result.fullchain, "rb") as f:
             self.assertEqual(f.read(), b"cert" + b"chain")

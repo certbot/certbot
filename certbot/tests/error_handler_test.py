@@ -66,7 +66,7 @@ class ErrorHandlerTest(unittest.TestCase):
         self.init_func.assert_called_once_with(*self.init_args,
                                                **self.init_kwargs)
 
-    # On Windows, this test kill pytest itself !
+    # On Windows, this test kills pytest itself !
     @test_util.broken_on_windows
     def test_context_manager_with_signal(self):
         init_signals = get_signals(self.signals)
@@ -98,7 +98,7 @@ class ErrorHandlerTest(unittest.TestCase):
                                                **self.init_kwargs)
         bad_func.assert_called_once_with()
 
-    # On Windows, this test kill pytest itself !
+    # On Windows, this test kills pytest itself !
     @test_util.broken_on_windows
     def test_bad_recovery_with_signal(self):
         sig1 = self.signals[0]
@@ -149,7 +149,7 @@ class ExitHandlerTest(ErrorHandlerTest):
                                                **self.init_kwargs)
         func.assert_called_once_with()
 
-    # On Windows, this test kill pytest itself !
+    # On Windows, this test kills pytest itself !
     @test_util.broken_on_windows
     def test_bad_recovery_with_signal(self):
         super(ExitHandlerTest, self).test_bad_recovery_with_signal()

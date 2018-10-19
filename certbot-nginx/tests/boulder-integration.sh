@@ -35,6 +35,7 @@ test_deployment_and_rollback() {
 }
 
 export default_server="default_server"
+nginx -v
 reload_nginx
 certbot_test_nginx --domains nginx.wtf run
 test_deployment_and_rollback nginx.wtf
