@@ -75,7 +75,7 @@ class HTTP01ServerTest(unittest.TestCase):
         self.resources = set() # type: Set
 
         from acme.standalone import HTTP01Server
-        self.server = HTTP01Server(('localhost', 0), resources=self.resources)
+        self.server = HTTP01Server(('', 0), resources=self.resources)
 
         # pylint: disable=no-member
         self.port = self.server.socket.getsockname()[1]

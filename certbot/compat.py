@@ -86,7 +86,7 @@ def readline_with_timeout(timeout, prompt):
         return sys.stdin.readline()
 
 def compare_file_modes(mode1, mode2):
-    """Return true if the two modes can be considered as equals for this plateform"""
+    """Return true if the two modes can be considered as equals for this platform"""
     if 'fcntl' in sys.modules:
         # Linux specific: standard compare
         return oct(stat.S_IMODE(mode1)) == oct(stat.S_IMODE(mode2))
