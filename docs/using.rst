@@ -988,9 +988,6 @@ Getting help
 If you're having problems, we recommend posting on the Let's Encrypt
 `Community Forum <https://community.letsencrypt.org>`_.
 
-You can also chat with us on IRC: `(#letsencrypt @
-freenode) <https://webchat.freenode.net?channels=%23letsencrypt>`_
-
 If you find a bug in the software, please do report it in our `issue
 tracker <https://github.com/certbot/certbot/issues>`_. Remember to
 give us as much information as possible:

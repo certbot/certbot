@@ -301,7 +301,7 @@ def renew_cert(config, domains, le_client, lineage):
         domains = lineage.names()
     # The private key is the existing lineage private key if reuse_key is set.
     # Otherwise, generate a fresh private key by passing None.
-    new_key = lineage.privkey if config.reuse_key else None
+    new_key = os.path.normpath(lineage.privkey) if config.reuse_key else None
     new_cert, new_chain, new_key, _ = le_client.obtain_certificate(domains, new_key)
     if config.dry_run:
         logger.debug("Dry run: skipping updating lineage at %s",
