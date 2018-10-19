@@ -24,14 +24,18 @@ class OCSPBase(object):
         :returns: (OCSP server URL or None, OCSP server host or None)
 
         """
-        url = self._ocsp_host_from_cert(cert_path)
-        if url:
-            url = url.strip()
-        host = url.partition("://")[2].rstrip("/")
+        try:
+            url = self._ocsp_host_from_cert(cert_path)
+            if url:
+                url = url.strip()
+            host = url.partition("://")[2].rstrip("/")
+        except IOError:
+            url = host = None
+
         if host:
             return url, host
         else:
-            logger.info("Cannot process OCSP host from URL (%s) in cert at %s", url, cert_path)
+            logger.info("Cannot process OCSP host for cert at %s", cert_path)
             return None, None
 
     def _ocsp_host_from_cert(self, cert_path):
@@ -43,9 +47,8 @@ class OCSPBase(object):
         for obj in ocsp_authinfo.value:
             if obj.access_method == AuthorityInformationAccessOID.OCSP:
                 return obj.access_location.value
-        return None
 
-    def _request_status(self, response):
+    def _request_success(self, response):
         """Checks that the OCSP response was successful from the text output"""
         pattern = re.compile(r"OCSP Response Status: (.*)\n")
         return "successful (0x0)" in pattern.findall(response)
@@ -56,6 +59,7 @@ class OCSPBase(object):
         if "revoked" in pattern.findall(response):
             raise errors.OCSPRevokedError("Certificate is revoked")
         return "good" in pattern.findall(response)
+
 
 class OCSPResponseHandler(OCSPBase):
     """Class for handling OCSP requests"""
@@ -92,7 +96,7 @@ class OCSPResponseHandler(OCSPBase):
             logger.info("OCSP check failed for %s (are we offline?)", self.cert_path)
             return False
 
-        if not self._request_status(output):
+        if not self._request_success(output):
             raise errors.OCSPRequestError("OCSP request returned an error")
         try:
             if self._response_successful(output, self.cert_path):

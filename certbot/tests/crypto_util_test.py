@@ -383,6 +383,15 @@ class Sha256sumTest(unittest.TestCase):
             '914ffed8daf9e2c99d90ac95c77d54f32cbd556672facac380f0c063498df84e')
 
 
+class Sha1FingerprintTest(unittest.TestCase):
+    """Tests certbot.crypto_util.cert_sha1_fingerprint"""
+
+    def test_sha1fingerprint(self):
+        from certbot.crypto_util import cert_sha1_fingerprint
+        self.assertEqual(cert_sha1_fingerprint(CERT_PATH),
+                         '\t\xf8\xce\x01E\r(\x84g\xc32j\xc0E~5\x199\xc7.')
+
+
 class CertAndChainFromFullchainTest(unittest.TestCase):
     """Tests for certbot.crypto_util.cert_and_chain_from_fullchain"""
 
