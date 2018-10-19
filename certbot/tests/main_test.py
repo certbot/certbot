@@ -1708,5 +1708,3 @@ class InstallTest(test_util.ConfigTestCase):
 
 if __name__ == '__main__':
     unittest.main()  # pragma: no cover
-
-# Test
