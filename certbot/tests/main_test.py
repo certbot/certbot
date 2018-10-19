@@ -4,6 +4,7 @@
 from __future__ import print_function
 
 import itertools
+import json
 import mock
 import os
 import shutil
