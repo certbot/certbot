@@ -145,7 +145,7 @@ def probe_sni(name, host, port=443, timeout=300,
                 source_address[1]
             ) if socket_kwargs else ""
         )
-        socket_tuple = (host, port)  # type: Tuple[Optional[str], int]
+        socket_tuple = (host, port)  # type: Tuple[str, int]
         sock = socket.create_connection(socket_tuple, **socket_kwargs)  # type: ignore
     except socket.error as error:
         raise errors.Error(error)
