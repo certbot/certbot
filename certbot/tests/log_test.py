@@ -12,6 +12,7 @@ import six
 from acme import messages
 from acme.magic_typing import Optional  # pylint: disable=unused-import, no-name-in-module
 
+from certbot import compat
 from certbot import constants
 from certbot import errors
 from certbot import util
@@ -259,7 +260,7 @@ class TempHandlerTest(unittest.TestCase):
 
     def test_permissions(self):
         self.assertTrue(
-            util.check_permissions(self.handler.path, 0o600, os.getuid()))
+            util.check_permissions(self.handler.path, 0o600, compat.os_geteuid()))
 
     def test_delete(self):
         self.handler.close()
