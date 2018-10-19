@@ -9,7 +9,6 @@ import sys
 import unittest
 
 import mock
-import pytest
 from six.moves import reload_module  # pylint: disable=import-error
 
 from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
@@ -51,8 +50,8 @@ class CompleterTest(test_util.TempDirTestCase):
         completion = my_completer.complete(self.tempdir, num_paths)
         self.assertEqual(completion, None)
 
-    @pytest.mark.skipif('readline' not in sys.modules,
-                        reason='Not relevant if readline is not available.')
+    @unittest.skipIf('readline' not in sys.modules,
+                     reason='Not relevant if readline is not available.')
     def test_import_error(self):
         original_readline = sys.modules['readline']
         sys.modules['readline'] = None
