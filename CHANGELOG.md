@@ -7,6 +7,8 @@ Certbot adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 
 * `revoke` accepts `--cert-name`, and doesn't accept both `--cert-name` and `--cert-path`.
+* Added OCSP prefetching functionality for Apache plugin that attempts to refresh the OCSP
+  response cache for managed certificates when scheduled Certbot renew is being run.
 
 ### Changed
 
