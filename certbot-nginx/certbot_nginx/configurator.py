@@ -422,6 +422,7 @@ class NginxConfigurator(common.Installer):
 
     def _rank_matches_by_name(self, vhost_list, target_name):
         """Returns a ranked list of vhosts from vhost_list that match target_name.
+        This method should always be followed by a call to _select_best_name_match.
 
         :param list vhost_list: list of vhosts to filter and rank
         :param str target_name: The name to match
