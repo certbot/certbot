@@ -1038,8 +1038,8 @@ class ClientNetworkTest(unittest.TestCase):
 
         # Requests Library Exceptions
         except requests.exceptions.ConnectionError as z: #pragma: no cover
-            self.assertEqual("('Connection aborted.', "
-                             "error(111, 'Connection refused'))", str(z))
+            self.assertTrue("('Connection aborted.', error(111, 'Connection refused'))"
+                              == str(z) or "[WinError 10061]" in str(z))
 
 class ClientNetworkWithMockedResponseTest(unittest.TestCase):
     """Tests for acme.client.ClientNetwork which mock out response."""
