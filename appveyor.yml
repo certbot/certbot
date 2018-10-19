@@ -12,10 +12,6 @@ branches:
 
 install:
   # Fail fast if a newer build is queued for the same PR
-  - ps: if ($env:APPVEYOR_PULL_REQUEST_NUMBER -and $env:APPVEYOR_BUILD_NUMBER -ne ((Invoke-RestMethod `
-        https://ci.appveyor.com/api/projects/$env:APPVEYOR_ACCOUNT_NAME/$env:APPVEYOR_PROJECT_SLUG/history?recordsNumber=50).builds | `
-        Where-Object pullRequestId -eq $env:APPVEYOR_PULL_REQUEST_NUMBER)[0].buildNumber) { `
-          throw "There are newer queued builds for this pull request, failing early." }
   # Use Python 3.7 by default
   - "SET PATH=C:\\Python37;C:\\Python37\\Scripts;%PATH%"
   # Check env
