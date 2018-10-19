@@ -1,4 +1,5 @@
 """Tests for certbot.crypto_util."""
+import binascii
 import logging
 import os
 import unittest
@@ -389,7 +390,7 @@ class Sha1FingerprintTest(unittest.TestCase):
     def test_sha1fingerprint(self):
         from certbot.crypto_util import cert_sha1_fingerprint
         self.assertEqual(cert_sha1_fingerprint(CERT_PATH),
-                         '\t\xf8\xce\x01E\r(\x84g\xc32j\xc0E~5\x199\xc7.')
+                         binascii.unhexlify("09f8ce01450d288467c3326ac0457e351939c72e"))
 
 
 class CertAndChainFromFullchainTest(unittest.TestCase):
