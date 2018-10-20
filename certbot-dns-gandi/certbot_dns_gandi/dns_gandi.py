@@ -83,6 +83,7 @@ class _GandiLexiconClient(dns_common_lexicon.LexiconClient):
 
     def _handle_http_error(self, e, domain_name):
         hint = None
+
         if str(e).startswith('401 Client Error: Unauthorized for url:'):
             hint = 'Is your API token value correct?'
 
@@ -91,3 +92,17 @@ class _GandiLexiconClient(dns_common_lexicon.LexiconClient):
 
         return errors.PluginError('Error determining zone identifier for {0}: {1}.{2}'
                                   .format(domain_name, e, ' ({0})'.format(hint) if hint else ''))
+
+    def _handle_general_error(self, e, domain_name):
+        hint = None
+
+        if 'OBJECT_ACCOUNT' in str(e) and 'CAUSE_NORIGHT' in str(e):
+            hint = 'Is your API token value correct?'
+
+        if 'OBJECT_DOMAIN' in str(e) and 'CAUSE_NOTFOUND' in str(e) and domain_name in str(e):
+            return  # Expected errors when zone name guess is wrong
+
+        if not str(e).startswith('No domain found'):
+            hint_str = ' ({0})'.format(hint) if hint else ''
+            return errors.PluginError('Unexpected error determining zone identifier'
+                                      ' for {0}: {1}.{2}'.format(domain_name, e, hint_str))

@@ -42,8 +42,12 @@ class AuthenticatorTest(test_util.TempDirTestCase,
 
 
 class GandiLexiconClientRpcTest(unittest.TestCase, dns_test_common_lexicon.BaseLexiconClientTest):
-    DOMAIN_NOT_FOUND = HTTPError('404 Client Error: Not Found for url: {0}.'.format(DOMAIN))
-    LOGIN_ERROR = HTTPError('401 Client Error: Unauthorized for url: {0}.'.format(DOMAIN))
+    DOMAIN_NOT_FOUND = Exception(
+        "Failed to authenticate: '<Fault 510042: \"Error on object : "
+        "OBJECT_DOMAIN (CAUSE_NOTFOUND) [Domain '{0}' doesn't exist.]\">'".format(DOMAIN))
+    LOGIN_ERROR = Exception(
+        "Failed to authenticate: '<Fault 510150: 'Error on object : "
+        "OBJECT_ACCOUNT (CAUSE_NORIGHT) [Invalid API key]'>'")
 
     def setUp(self):
         from certbot_dns_gandi.dns_gandi import _GandiLexiconClient
