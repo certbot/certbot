@@ -35,7 +35,7 @@ RUN virtualenv --no-site-packages -p python2 /opt/certbot/venv && \
     /opt/certbot/venv/bin/pip install -U setuptools && \
     /opt/certbot/venv/bin/pip install -U pip
 ENV PATH /opt/certbot/venv/bin:$PATH
-RUN /opt/certbot/src/tools/pip_install_editable.sh \
+RUN /opt/certbot/src/tools/pip_install_editable.py \
     /opt/certbot/src/acme \
     /opt/certbot/src \
     /opt/certbot/src/certbot-apache \

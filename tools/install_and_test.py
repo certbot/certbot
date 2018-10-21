@@ -3,7 +3,7 @@
 # them. Each package is installed and tested in the order they are provided
 # before the script moves on to the next package. If CERTBOT_NO_PIN is set not
 # set to 1, packages are installed using pinned versions of all of our
-# dependencies. See pip_install.sh for more information on the versions pinned
+# dependencies. See pip_install.py for more information on the versions pinned
 # to.
 import os
 import sys

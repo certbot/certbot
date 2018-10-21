@@ -19,7 +19,7 @@ virtualenv --no-site-packages --setuptools $VENV_NAME $VENV_ARGS
 # version and to work around https://github.com/pypa/pip/issues/4817 on older
 # systems.
 python letsencrypt-auto-source/pieces/pipstrap.py
-./tools/pip_install.sh "$@"
+python ./tools/pip_install.py "$@"
 
 set +x
 echo "Please run the following command to activate developer environment:"
