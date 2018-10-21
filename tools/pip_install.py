@@ -24,6 +24,7 @@ def find_tools_path(script_path):
     return os.path.dirname(readlink.main(script_path))
 
 def certbot_oldest_processing(tools_path, args, test_constraints):
+    print(args)
     if args[0] != '-e' or len(args) != 2:
         raise ValueError('When CERTBOT_OLDEST is set, this script must be run '
                          'with a single -e <path> argument.')
@@ -69,7 +70,7 @@ def main(tools_path, args):
 
         requirements = None
         if os.environ.get('CERTBOT_OLDEST') == '1':
-            requirements = certbot_oldest_processing(tools_path, sys.argv[1:], test_constraints)
+            requirements = certbot_oldest_processing(tools_path, args, test_constraints)
         else:
             certbot_normal_processing(tools_path, test_constraints)
 
@@ -80,11 +81,10 @@ def main(tools_path, args):
                 '--requirement', requirements]))
 
         command = [sys.executable, '-m', 'pip', 'install', '-q', '--constraint', all_constraints]
-        command.extend(sys.argv[1:])
+        command.extend(args)
         call_with_print(' '.join(command))
     finally:
         shutil.rmtree(working_dir)
 
 if __name__ == '__main__':
-    tools_path = find_tools_path(sys.argv[0])
-    main(tools_path, sys.argv[1:])
+    main(find_tools_path(sys.argv[0]), sys.argv[1:])
