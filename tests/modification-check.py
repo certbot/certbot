@@ -10,7 +10,7 @@ import shutil
 try:
     from urllib.request import urlretrieve
 except ImportError:
-    from urllib2 import urlretrieve
+    from urllib import urlretrieve
 
 def find_repo_path(script_path):
     return os.path.dirname(os.path.realpath(script_path))
