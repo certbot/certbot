@@ -33,8 +33,8 @@ class BaseLexiconAuthenticatorTest(dns_test_common.BaseAuthenticatorTest):
 class BaseLexiconClientTest(object):
     DOMAIN_NOT_FOUND = Exception('No domain found')
     GENERIC_ERROR = RequestException
-    LOGIN_ERROR = HTTPError('400 Client Error: ...')
-    UNKNOWN_LOGIN_ERROR = HTTPError('500 Surprise! Error: ...')
+    LOGIN_ERROR = HTTPError('400 Client Error: ...')  # type: Exception
+    UNKNOWN_LOGIN_ERROR = HTTPError('500 Surprise! Error: ...')  # type: Exception
 
     record_prefix = "_acme-challenge"
     record_name = record_prefix + "." + DOMAIN
