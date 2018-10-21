@@ -3,6 +3,7 @@ import logging
 
 import zope.interface
 from lexicon.providers import gandi
+from requests.exceptions import HTTPError
 
 from certbot import errors
 from certbot import interfaces
@@ -46,8 +47,8 @@ class Authenticator(dns_common.DNSAuthenticator):
             {
                 'api-protocol': 'Gandi API protocol (rpc or rest)',
                 'token': 'User access token for Gandi API. (See {0} for '
-                         'XML-RPC API or {1} for LiveDNS REST API.)'.format(
-                    XMLRPC_TOKEN_URL, LIVEDNS_TOKEN_URL),
+                         'XML-RPC API or {1} for LiveDNS REST API.)'
+                    .format(XMLRPC_TOKEN_URL, LIVEDNS_TOKEN_URL)
             }
         )
 
@@ -74,11 +75,44 @@ class _GandiLexiconClient(dns_common_lexicon.LexiconClient):
     def __init__(self, protocol, token, domain, ttl):
         super(_GandiLexiconClient, self).__init__()
 
-        self.provider = gandi.Provider({
-            'api_protocol': protocol,
-            'auth_token': token,
-            'domain': domain,
-            'ttl': ttl,
+        self._protocol = protocol
+        self._token = token
+        self._ttl = ttl
+
+        self.provider = self._get_provider(domain)
+
+    def _find_domain_id(self, domain):
+        domain_name_guesses = dns_common.base_domain_name_guesses(domain)
+
+        for domain_name in domain_name_guesses:
+            try:
+                # we need to instantiate a new provider here since simply setting options['domain']
+                # (as is done in base class) is not propagated to internal GandiRPCSubProvider
+                self.provider = self._get_provider(domain_name)
+
+                self.provider.authenticate()
+
+                return  # If `authenticate` doesn't throw an exception, we've found the right name
+            except HTTPError as e:
+                result = self._handle_http_error(e, domain_name)
+
+                if result:
+                    raise result  # pylint: disable=raising-bad-type
+            except Exception as e:  # pylint: disable=broad-except
+                result = self._handle_general_error(e, domain_name)
+
+                if result:
+                    raise result  # pylint: disable=raising-bad-type
+
+        raise errors.PluginError('Unable to determine zone identifier for {0} using zone names: {1}'
+                                 .format(domain, domain_name_guesses))
+
+    def _get_provider(self, domain_name):
+        return gandi.Provider({
+            'api_protocol': self._protocol,
+            'auth_token': self._token,
+            'domain': domain_name,
+            'ttl': self._ttl,
         })
 
     def _handle_http_error(self, e, domain_name):

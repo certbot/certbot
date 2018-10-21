@@ -53,9 +53,16 @@ class GandiLexiconClientRpcTest(unittest.TestCase, dns_test_common_lexicon.BaseL
         from certbot_dns_gandi.dns_gandi import _GandiLexiconClient
 
         self.client = _GandiLexiconClient(API_PROTOCOL_RPC, TOKEN, DOMAIN, 0)
-
         self.provider_mock = mock.MagicMock()
+
+        self.mock_get_provider = mock.patch.object(self.client, '_get_provider',
+                                                   return_value=self.provider_mock)
+        self.mock_get_provider.start()
+
         self.client.provider = self.provider_mock
+
+    def tearDown(self):
+        self.mock_get_provider.stop()
 
 
 class GandiLexiconClientRestTest(unittest.TestCase, dns_test_common_lexicon.BaseLexiconClientTest):
@@ -66,9 +73,16 @@ class GandiLexiconClientRestTest(unittest.TestCase, dns_test_common_lexicon.Base
         from certbot_dns_gandi.dns_gandi import _GandiLexiconClient
 
         self.client = _GandiLexiconClient(API_PROTOCOL_REST, TOKEN, DOMAIN, 0)
-
         self.provider_mock = mock.MagicMock()
+
+        self.mock_get_provider = mock.patch.object(self.client, '_get_provider',
+                                                   return_value=self.provider_mock)
+        self.mock_get_provider.start()
+
         self.client.provider = self.provider_mock
+
+    def tearDown(self):
+        self.mock_get_provider.stop()
 
 
 if __name__ == "__main__":
