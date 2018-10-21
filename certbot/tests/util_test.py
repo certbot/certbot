@@ -529,8 +529,6 @@ class OsInfoTest(unittest.TestCase):
         with mock.patch('os.path.isfile', return_value=False):
             self.assertEqual(get_systemd_os_info(), ("", ""))
 
-        self.assertEqual(get_systemd_os_info("/dev/null"), ("", ""))
-
     def test_systemd_os_release_like(self):
         from certbot.util import get_systemd_os_like
 
