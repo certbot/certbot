@@ -12,8 +12,6 @@ import shutil
 import subprocess
 import re
 
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-
 def call_with_print(command, cwd=None):
     print(command)
     subprocess.call(command, shell=True, cwd=cwd or os.getcwd())
@@ -22,10 +20,13 @@ def main():
     if os.environ.get('CERTBOT_NO_PIN') == '1':
         command = [sys.executable, '-m', 'pip', '-q', '-e']
     else:
-        command = [sys.executable, os.path.join(SCRIPT_DIR, 'pip_install_editable.py')]
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        command = [sys.executable, os.path.join(script_dir, 'pip_install_editable.py')]
     
     for requirement in sys.argv[1:]:
-        call_with_print(' '.join([*command, requirement]))
+        current_command = command[:]
+        current_command.append(requirement)
+        call_with_print(' '.join(current_command))
         pkg = re.sub(r'\[\w+\]', '', requirement)
         pkg = pkg.replace('_', '-')
 
