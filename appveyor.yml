@@ -23,7 +23,7 @@ install:
 build: off
 
 test_script:
-  - tox -c tox-win.ini -e py34,py35,py36,py37-cover
+  - tox -e py34,py35,py36,py37-cover
 
 on_success:
   - codecov
