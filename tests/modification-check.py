@@ -10,10 +10,10 @@ import shutil
 try:
     from urllib.request import urlretrieve
 except ImportError:
-    from urllib2 import urlretrieve
+    from urllib import urlretrieve
 
-def find_repo_path(script_path):
-    return os.path.dirname(os.path.realpath(script_path))
+def find_repo_path():
+    return os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
 # We do not use filecmp.cmp to not be sensitive to CRLF/LF during comparison
 def compare_files(path_1, path_2):
@@ -72,7 +72,7 @@ def validate_scripts_content(repo_path, temp_cwd):
     return errors
 
 def main(args):
-    repo_path = find_repo_path(args[0])
+    repo_path = find_repo_path()
     errors = False
 
     try:

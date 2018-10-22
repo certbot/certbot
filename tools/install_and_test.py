@@ -5,6 +5,8 @@
 # set to 1, packages are installed using pinned versions of all of our
 # dependencies. See pip_install.py for more information on the versions pinned
 # to.
+from __future__ import print_function
+
 import os
 import sys
 import tempfile
@@ -12,20 +14,32 @@ import shutil
 import subprocess
 import re
 
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-
 def call_with_print(command, cwd=None):
     print(command)
     subprocess.call(command, shell=True, cwd=cwd or os.getcwd())
 
-def main():
+def main(args):
     if os.environ.get('CERTBOT_NO_PIN') == '1':
         command = [sys.executable, '-m', 'pip', '-q', '-e']
     else:
-        command = [sys.executable, os.path.join(SCRIPT_DIR, 'pip_install_editable.py')]
-    
-    for requirement in sys.argv[1:]:
-        call_with_print(' '.join([*command, requirement]))
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        command = [sys.executable, os.path.join(script_dir, 'pip_install_editable.py')]
+
+    skip_projects_on_windows = [
+        'certbot-apache', 'certbot-nginx', 'certbot-postfix', 'letshelp-certbot']
+    new_args = []
+    for arg in args:
+        if os.name == 'nt' and arg in skip_projects_on_windows:
+            print((
+                'Info: currently {0} is not supported on Windows and will not be tested.'
+                .format(arg)))
+        else:
+            new_args.append(arg)
+
+    for requirement in new_args:
+        current_command = command[:]
+        current_command.append(requirement)
+        call_with_print(' '.join(current_command))
         pkg = re.sub(r'\[\w+\]', '', requirement)
         pkg = pkg.replace('_', '-')
 
@@ -36,9 +50,9 @@ def main():
             temp_cwd = tempfile.mkdtemp()
             call_with_print(' '.join([
                 sys.executable, '-m', 'pytest', '--numprocesses', 'auto',
-                '--quiet', '--pyargs', pkg]), cwd=temp_cwd)
+                '--quiet', '--pyargs', pkg.replace('-', '_')]), cwd=temp_cwd)
         finally:
             shutil.rmtree(temp_cwd)
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv[1:])
