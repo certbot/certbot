@@ -313,7 +313,6 @@ def post_arg_parse_except_hook(exc_type, exc_value, trace, debug, log_path):
     :param str log_path: path to file or directory containing the log
 
     """
-    debug = True
     exc_info = (exc_type, exc_value, trace)
     # constants.QUIET_LOGGING_LEVEL or higher should be used to
     # display message the user, otherwise, a lower level like
