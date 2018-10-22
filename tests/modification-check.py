@@ -18,11 +18,20 @@ def find_repo_path():
 # We do not use filecmp.cmp to not be sensitive to CRLF/LF during comparison
 def compare_files(path_1, path_2):
     l1 = l2 = True
-    with open(path_1, 'r') as f1, open(path_2, 'r') as f2:
+    with open(path_1, 'rU') as f1, open(path_2, 'rU') as f2:
+        line = 1
         while l1 and l2:
+            line += 1
             l1 = f1.readline()
             l2 = f2.readline()
             if l1 != l2:
+                print('---')
+                print((
+                    'While comparing {0} (1) and {1} (2), a difference was found at line {2}:'
+                    .format(os.path.basename(path_1), os.path.basename(path_2), line)))
+                print('(1): {0}'.format(repr(l1)))
+                print('(2): {0}'.format(repr(l2)))
+                print('---')
                 return False
 
     return True
