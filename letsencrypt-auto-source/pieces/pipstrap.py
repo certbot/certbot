@@ -45,7 +45,7 @@ except ImportError:
                 cmd = popenargs[0]
             raise CalledProcessError(retcode, cmd)
         return output
-from sys import exit, version_info
+from sys import exit, version_info, executable
 from tempfile import mkdtemp
 try:
     from urllib2 import build_opener, HTTPHandler, HTTPSHandler
@@ -150,7 +150,7 @@ def get_index_base():
 
 
 def main():
-    pip_version = StrictVersion(check_output(['pip', '--version'])
+    pip_version = StrictVersion(check_output([executable, '-m', 'pip', '--version'])
                                 .decode('utf-8').split()[1])
     min_pip_version = StrictVersion(PIP_VERSION)
     if pip_version >= min_pip_version:
@@ -163,7 +163,7 @@ def main():
                                      temp,
                                      digest)
                      for path, digest in PACKAGES]
-        check_output('pip install --no-index --no-deps -U ' +
+        check_output('{0} -m pip install --no-index --no-deps -U '.format(executable) +
                      # Disable cache since we're not using it and it otherwise
                      # sometimes throws permission warnings:
                      ('--no-cache-dir ' if has_pip_cache else '') +
