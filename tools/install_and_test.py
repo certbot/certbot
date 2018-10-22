@@ -25,16 +25,17 @@ def main(args):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         command = [sys.executable, os.path.join(script_dir, 'pip_install_editable.py')]
 
-    skip_projects_on_windows = ['certbot-apache', 'certbot-nginx', 'certbot-postfix', 'letshelp-certbot']
+    skip_projects_on_windows = [
+        'certbot-apache', 'certbot-nginx', 'certbot-postfix', 'letshelp-certbot']
     new_args = []
     for arg in args:
         if os.name == 'nt' and arg in skip_projects_on_windows:
             print((
-                'Info: {0} is not supported on Windows currently and will not be tested.'
+                'Info: currently {0} is not supported on Windows and will not be tested.'
                 .format(arg)))
         else:
             new_args.append(arg)
-    
+
     for requirement in new_args:
         current_command = command[:]
         current_command.append(requirement)
@@ -49,7 +50,7 @@ def main(args):
             temp_cwd = tempfile.mkdtemp()
             call_with_print(' '.join([
                 sys.executable, '-m', 'pytest', '--numprocesses', 'auto',
-                '--quiet', '--pyargs', pkg]), cwd=temp_cwd)
+                '--quiet', '--pyargs', pkg.replace('-', '_')]), cwd=temp_cwd)
         finally:
             shutil.rmtree(temp_cwd)
 

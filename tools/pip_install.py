@@ -20,8 +20,8 @@ import tempfile
 import merge_requirements as merge_module
 import readlink
 
-def find_tools_path(script_path):
-    return os.path.dirname(readlink.main(script_path))
+def find_tools_path():
+    return os.path.dirname(readlink.main(__file__))
 
 def certbot_oldest_processing(tools_path, args, test_constraints):
     print(args)
@@ -62,7 +62,8 @@ def call_with_print(command, cwd=None):
     print(command)
     subprocess.call(command, shell=True, cwd=cwd or os.getcwd())
 
-def main(tools_path, args):
+def main(args):
+    tools_path = find_tools_path()
     try:
         working_dir = tempfile.mkdtemp()
         test_constraints = os.path.join(working_dir, 'test_constraints.txt')
@@ -87,4 +88,4 @@ def main(tools_path, args):
         shutil.rmtree(working_dir)
 
 if __name__ == '__main__':
-    main(find_tools_path(sys.argv[0]), sys.argv[1:])
+    main(sys.argv[1:])
