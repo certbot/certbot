@@ -5,11 +5,11 @@ import os
 import sys
 
 DEFAULT_PACKAGES = [
-    'certbot','acme','certbot_apache','certbot_dns_cloudflare','certbot_dns_cloudxns',
-    'certbot_dns_digitalocean','certbot_dns_dnsimple','certbot_dns_dnsmadeeasy',
-    'certbot_dns_gehirn','certbot_dns_google','certbot_dns_linode','certbot_dns_luadns',
-    'certbot_dns_nsone','certbot_dns_ovh','certbot_dns_rfc2136','certbot_dns_route53',
-    'certbot_dns_sakuracloud','certbot_nginx','certbot_postfix','letshelp_certbot']
+    'certbot', 'acme', 'certbot_apache', 'certbot_dns_cloudflare', 'certbot_dns_cloudxns',
+    'certbot_dns_digitalocean', 'certbot_dns_dnsimple', 'certbot_dns_dnsmadeeasy',
+    'certbot_dns_gehirn', 'certbot_dns_google', 'certbot_dns_linode', 'certbot_dns_luadns',
+    'certbot_dns_nsone', 'certbot_dns_ovh', 'certbot_dns_rfc2136', 'certbot_dns_route53',
+    'certbot_dns_sakuracloud', 'certbot_nginx', 'certbot_postfix', 'letshelp_certbot']
 
 COVER_THRESHOLDS = {
     'certbot': 98,
@@ -41,15 +41,25 @@ def cover(package):
         raise ValueError('Unrecognized package: {0}'.format(package))
 
     pkg_dir = package.replace('_', '-')
+
+    skip_projects_on_windows = [
+        'certbot-apache', 'certbot-nginx', 'certbot-postfix', 'letshelp-certbot']
+
+    if os.name == 'nt' and pkg_dir in skip_projects_on_windows:
+        print((
+            'Info: currently {0} is not supported on Windows and will not be tested/covered.'
+            .format(pkg_dir)))
+        return
+
     subprocess.call([
-        sys.executable, '-m', 'pytest' , '--cov', pkg_dir, '--cov-append', '--cov-report=',
+        sys.executable, '-m', 'pytest', '--cov', pkg_dir, '--cov-append', '--cov-report=',
         '--numprocesses', 'auto', '--pyargs', package])
     subprocess.call([
         sys.executable, '-m', 'coverage', 'report', '--fail-under', str(threshold), '--include',
         '{0}/*'.format(pkg_dir), '--show-missing'])
 
 def main():
-    description="""
+    description = """
 This script is used by tox.ini (and thus by Travis CI and AppVeyor) in order
 to generate separate stats for each package. It should be removed once those
 packages are moved to a separate repo.
