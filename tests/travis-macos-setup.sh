@@ -1,7 +1,6 @@
 #!/bin/bash -e
 #
 # Set up the test environment for macOS on Travis.
-set -e
 
 # Install the given package with brew if it's not already installed.
 brew_install() {
