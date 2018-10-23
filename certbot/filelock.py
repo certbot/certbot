@@ -11,26 +11,28 @@ import threading
 try:
     import warnings
 except ImportError:
-    warnings = None
+    warnings = None  # type: ignore
 
 try:
     import msvcrt
 except ImportError:
-    msvcrt = None
+    msvcrt = None  # type: ignore
 
 try:
     import fcntl
 except ImportError:
-    fcntl = None
+    fcntl = None # type: ignore
 
 from certbot import errors
+from acme.magic_typing import List
 
 logger = logging.getLogger(__name__)
 
-# Handling atexit
-# ~~~~~~~~~~~~~~~
+# Handling exit
+# ~~~~~~~~~~~~~
 _INITIAL_PID = os.getpid()
-_LOCKS = []
+_LOCKS = []  # type: List[FileLock]
+
 
 def _release_all_locks():
     if _INITIAL_PID == os.getpid():
@@ -39,14 +41,17 @@ def _release_all_locks():
                 try:
                     lock.release()
                     logger.debug('Lock released: %s', lock.lock_file)
-                except: # pylint: disable=bare-except
+                except (OSError, IOError):
                     logger.error('Exception occurred releasing lock: %s',
-                                  lock.lock_file, exc_info=True)
+                                 lock.lock_file, exc_info=True)
+
 
 atexit.register(_release_all_locks)
 
 # Classes
 # ------------------------------------------------
+
+
 class BaseFileLock(object):
     """
     Implements the base class of a file lock.
@@ -76,7 +81,6 @@ class BaseFileLock(object):
         # Pass itelf to the _LOCK global variable to ensure that all locks are
         # released at least when the program exit.
         _LOCKS.append(self)
-        return None
 
     @property
     def lock_file(self):
@@ -149,7 +153,7 @@ class BaseFileLock(object):
                     'Error, the filelock "{0}" could not be acquired. '
                     'It is likely that another Certbot instance is still running.'
                     .format(self.lock_file)))
-        except:
+        except (OSError, IOError):
             # Something did go wrong, so decrement the counter.
             with self._thread_lock:
                 self._lock_counter = max(0, self._lock_counter - 1)
@@ -157,7 +161,7 @@ class BaseFileLock(object):
             raise
 
         # This class wraps the lock to make sure __enter__ is not called
-        # twiced when entering the with statement.
+        # twice when entering the with statement.
         # If we would simply return *self*, the lock would be acquired again
         # in the *__enter__* method of the BaseFileLock, but not released again
         # automatically.
@@ -165,7 +169,6 @@ class BaseFileLock(object):
 
             def __init__(self, lock):
                 self.lock = lock
-                return None
 
             def __enter__(self):
                 return self.lock
@@ -179,7 +182,7 @@ class BaseFileLock(object):
     def release(self, force=False):
         """
         Releases the file lock.
-        Please note, that the lock is only completly released, if the lock
+        Please note, that the lock is only completely released, if the lock
         counter is 0.
         Also note, that the lock file itself is not automatically deleted.
         :arg bool force:
@@ -211,11 +214,12 @@ class BaseFileLock(object):
         return None
 
     def __del__(self):
-        self.release(force = True)
+        self.release(force=True)
         return None
 
 # Windows locking mechanism
 # ~~~~~~~~~~~~~~~~~~~~~~~~~
+
 
 class WindowsFileLock(BaseFileLock):
     """
@@ -255,6 +259,7 @@ class WindowsFileLock(BaseFileLock):
 
 # Unix locking mechanism
 # ~~~~~~~~~~~~~~~~~~~~~~
+
 
 class UnixFileLock(BaseFileLock):
     """
@@ -298,6 +303,7 @@ class UnixFileLock(BaseFileLock):
 # Soft lock
 # ~~~~~~~~~
 
+
 class SoftFileLock(BaseFileLock):
     """
     Simply watches the existence of the lock file.
@@ -331,8 +337,6 @@ class SoftFileLock(BaseFileLock):
 #: Alias for the lock, which should be used for the current platform. On
 #: Windows, this is an alias for :class:`WindowsFileLock`, on Unix for
 #: :class:`UnixFileLock` and otherwise for :class:`SoftFileLock`.
-FileLock = None # pylint: disable-msg=C0103
-
 if msvcrt:
     FileLock = WindowsFileLock
 elif fcntl:
@@ -340,15 +344,17 @@ elif fcntl:
 else:
     FileLock = SoftFileLock
 
-    if warnings is not None:
-        warnings.warn("only soft file lock is available")
+    if warnings:
+        warnings.warn("Only soft file lock is available")
 
 # Utility functions
 # ~~~~~~~~~~~~~~~~~
 
+
 def lock_for_file(path):
-    """Create a lockefile for a file"""
+    """Create a lockfile for a file"""
     return FileLock('{0}.certbot.lock'.format(path))
+
 
 def lock_for_dir(path):
     """Create a lockfile for a dir"""
