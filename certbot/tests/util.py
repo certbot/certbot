@@ -330,7 +330,7 @@ class TempDirTestCase(unittest.TestCase):
         """Execute after test"""
         # On Windows we have various files which are not correctly closed at the time of tearDown.
         # For know, we log them until a proper file close handling is written.
-        # Usefule for development only, so no warning when we are on a CI process.
+        # Useful for development only, so no warning when we are on a CI process.
         def onerror_handler(_, path, excinfo):
             """On error handler"""
             if not os.environ.get('APPVEYOR'): # pragma: no cover
