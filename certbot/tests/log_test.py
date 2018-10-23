@@ -129,7 +129,7 @@ class SetupLogFileHandlerTest(test_util.ConfigTestCase):
     def _call(cls, *args, **kwargs):
         from certbot.log import setup_log_file_handler
         with setup_log_file_handler(*args, **kwargs):
-            print('Dummy implementation')
+            pass
 
     def setUp(self):
         super(SetupLogFileHandlerTest, self).setUp()

@@ -1337,7 +1337,7 @@ def main(cli_args=sys.argv[1:]):
             log.post_arg_parse_setup(config)
             dir_context = set_up_needed_dirs(config)
             dir_context.__enter__()
-        except:
+        except:  # pylint: disable=bare-except
             # Let plugins_cmd be run as un-privileged user.
             if config.func != plugins_cmd:
                 raise

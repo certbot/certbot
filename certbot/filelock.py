@@ -1,6 +1,6 @@
 """
 Library to lock a directory or a file using a lockfile.
-This implementation heavily relies on the work of benediktschmitt 
+This implementation heavily relies on the work of benediktschmitt
 (https://github.com/benediktschmitt/py-filelock)
 and should be considered as a fork of its project.
 """
@@ -21,10 +21,10 @@ except ImportError:
 try:
     import fcntl
 except ImportError:
-    fcntl = None # type: ignore
+    fcntl = None  # type: ignore
 
 from certbot import errors
-from acme.magic_typing import List
+from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
 
 logger = logging.getLogger(__name__)
 
@@ -160,13 +160,14 @@ class BaseFileLock(object):
 
             raise
 
-        # This class wraps the lock to make sure __enter__ is not called
-        # twice when entering the with statement.
-        # If we would simply return *self*, the lock would be acquired again
-        # in the *__enter__* method of the BaseFileLock, but not released again
-        # automatically.
         class ReturnProxy(object):
-
+            """
+            This class wraps the lock to make sure __enter__ is not called
+            twice when entering the with statement.
+            If we would simply return *self*, the lock would be acquired again
+            in the *__enter__* method of the BaseFileLock, but not released again
+            automatically.
+            """
             def __init__(self, lock):
                 self.lock = lock
 
@@ -334,10 +335,12 @@ class SoftFileLock(BaseFileLock):
 # Platform filelock
 # ~~~~~~~~~~~~~~~~~
 
-#: Alias for the lock, which should be used for the current platform. On
-#: Windows, this is an alias for :class:`WindowsFileLock`, on Unix for
-#: :class:`UnixFileLock` and otherwise for :class:`SoftFileLock`.
 def FileLock(*args, **kwargs):
+    """
+    Alias for the lock, which should be used for the current platform. On
+    Windows, this is an alias for :class:`WindowsFileLock`, on Unix for
+    :class:`UnixFileLock` and otherwise for :class:`SoftFileLock`.
+    """
     if msvcrt:
         return WindowsFileLock(*args, **kwargs)
     elif fcntl:

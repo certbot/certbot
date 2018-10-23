@@ -11,6 +11,7 @@ from certbot.filelock import lock_for_dir
 from certbot.filelock import lock_for_file
 
 def subprocess_acquire_lock_dir(dir_path):
+    """Test a lock is correctly acquired on a directory."""
     command = (
         '{0} -c "from certbot.filelock import lock_for_dir; '
         'lock = lock_for_dir(\'{1}\'); lock.acquire();"'
@@ -18,6 +19,7 @@ def subprocess_acquire_lock_dir(dir_path):
     return subprocess.call(command, shell=True)
 
 def subprocess_acquire_lock_file(file_path):
+    """Test a lock is correctly acquired on a file."""
     command = (
         '{0} -c "from certbot.filelock import lock_for_file; '
         'lock = lock_for_file(\'{1}\'); lock.acquire();"'

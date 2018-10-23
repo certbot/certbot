@@ -46,7 +46,7 @@ PERM_ERR_FMT = os.linesep.join((
     "Either run as root, or set --config-dir, "
     "--work-dir, and --logs-dir to writeable paths."))
 
-    
+
 # Stores importing process ID to be used by atexit_register()
 _INITIAL_PID = os.getpid()
 

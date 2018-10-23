@@ -2,7 +2,6 @@
 import argparse
 import errno
 import os
-import shutil
 import unittest
 
 import mock
@@ -99,7 +98,7 @@ class LockDirUntilExit(test_util.TempDirTestCase):
 
         with filelock.lock_for_dir(self.tempdir):
             with filelock.lock_for_dir(subdir) as sub_lock:
-                with sub_lock:
+                with sub_lock: # <-- and we acquire sub_lock again !
                     self.assertEqual(len(mock_locks.mock_calls), 2) # pylint: disable=protected-access
                     # exception not raised
                     filelock._release_all_locks() # pylint: disable=protected-access
@@ -114,7 +113,7 @@ class SetUpCoreDirTest(test_util.TempDirTestCase):
     def _call(self, *args, **kwargs):
         from certbot.util import set_up_core_dir
         with set_up_core_dir(*args, **kwargs):
-            print('Dummy implementation')
+            pass
 
     @mock.patch('certbot.util.filelock.lock_for_dir')
     def test_success(self, mock_lock):
