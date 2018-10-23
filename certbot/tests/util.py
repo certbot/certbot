@@ -333,10 +333,10 @@ class TempDirTestCase(unittest.TestCase):
         # Usefule for development only, so no warning when we are on a CI process.
         def onerror_handler(_, path, excinfo):
             """On error handler"""
-            if not os.environ.get('APPVEYOR'):
+            if not os.environ.get('APPVEYOR'): # pragma: no cover
                 message = ('Following error occurred when deleting the tempdir {0}'
-                        ' for path {1} during tearDown process: {2}'
-                        .format(self.tempdir, path, str(excinfo)))
+                           ' for path {1} during tearDown process: {2}'
+                           .format(self.tempdir, path, str(excinfo)))
                 warnings.warn(message)
         shutil.rmtree(self.tempdir, onerror=onerror_handler)
 
