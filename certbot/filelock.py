@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 # Handling exit
 # ~~~~~~~~~~~~~
 _INITIAL_PID = os.getpid()
-_LOCKS = []  # type: List[FileLock]
+_LOCKS = []  # type: List[BaseFileLock]
 
 
 def _release_all_locks():
@@ -354,9 +354,9 @@ def FileLock(*args, **kwargs):
 
 def lock_for_file(path):
     """Create a lockfile for a file"""
-    return FileLock('{0}.certbot.lock'.format(path))  # mypy: ignore
+    return FileLock('{0}.{1}.{2}'.format(path, 'certbot', 'lock'))
 
 
 def lock_for_dir(path):
     """Create a lockfile for a dir"""
-    return FileLock(os.path.join(path, '.certbot.lock'))  # mypy: ignore
+    return FileLock(os.path.join(path, '.{0}.{1}'.format('certbot', 'lock')))
