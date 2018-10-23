@@ -28,6 +28,8 @@ ERROR_CODES = {
     'tls': 'The server experienced a TLS error during domain verification',
     'unauthorized': 'The client lacks sufficient authorization',
     'unknownHost': 'The server could not resolve a domain name',
+
+    'externalAccountRequired': 'The server requires external account binding',
 }
 
 ERROR_TYPE_DESCRIPTIONS = dict(
@@ -177,6 +179,7 @@ class Directory(jose.JSONDeSerializable):
         _terms_of_service_v2 = jose.Field('termsOfService', omitempty=True)
         website = jose.Field('website', omitempty=True)
         caa_identities = jose.Field('caaIdentities', omitempty=True)
+        external_account_required = jose.Field('externalAccountRequired', omitempty=True)
 
         def __init__(self, **kwargs):
             kwargs = dict((self._internal_name(k), v) for k, v in kwargs.items())
