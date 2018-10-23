@@ -23,7 +23,8 @@ install:
 build: off
 
 test_script:
-  - tox -e py34,py35,py36,py37-cover
+  # As it is the default python env, py37 is also tested by cover
+  - tox -e py34,py35,cover
 
 on_success:
   - codecov
