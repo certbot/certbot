@@ -9,9 +9,8 @@ environment:
     - FYI: Python 3.5 on Windows Server 2016
       TOXENV: py35
       APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
-    # Env cover is executed with the Python version in PATH
-    - FYI: Python 3.7 on Windows Server 2016 with code coverage
-      TOXENV: cover
+    - FYI: Python 3.7 on Windows Server 2016 + code coverage
+      TOXENV: py37-cover
       APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
 
 branches:
