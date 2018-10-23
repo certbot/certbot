@@ -194,9 +194,9 @@ def perform_registration(acme, config, tos_cb):
 
     account_public_key = acme.client.net.key.public_key()
     try:
-        return acme.new_account_and_tos(messages.NewRegistration.from_data(key=account_public_key,
+        return acme.new_account_and_tos(messages.NewRegistration.from_data(account_public_key=account_public_key,
                                                                            kid=config.eab_kid,
-                                                                           hmac=config.eab_hmac,
+                                                                           hmac_key=config.eab_hmac_key,
                                                                            email=config.email),
                                         tos_cb)
     except messages.Error as e:

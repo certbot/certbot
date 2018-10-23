@@ -266,14 +266,14 @@ class ExternalAccountBinding:
     """ACME External Account Binding"""
 
     @classmethod
-    def from_data(cls, key=None, kid=None, hmac=None):
+    def from_data(cls, account_public_key, kid, hmac_key):
         """Create External Account Binding Resource from contact details, kid and hmac."""
 
-        key_json = json.dumps(key.to_partial_json())
-        decoded_hmac = jose.b64.b64decode(hmac)
+        key_json = json.dumps(account_public_key.to_partial_json())
+        decoded_hmac_key = jose.b64.b64decode(hmac_key)
         jws = jose.JWS.sign(
             payload=key_json,
-            key=jose.jwk.JWKOct(key=decoded_hmac),
+            key=jose.jwk.JWKOct(key=decoded_hmac_key),
             alg=jose.jwa.HS256,
             kid=kid,
             include_jwk=False,
@@ -305,7 +305,7 @@ class Registration(ResourceBody):
     email_prefix = 'mailto:'
 
     @classmethod
-    def from_data(cls, key=None, kid=None, hmac=None, phone=None, email=None, **kwargs):
+    def from_data(cls, account_public_key=None, kid=None, hmac_key=None, phone=None, email=None, **kwargs):
         """Create registration resource from contact details."""
         details = list(kwargs.pop('contact', ()))
         if phone is not None:
@@ -314,8 +314,8 @@ class Registration(ResourceBody):
             details.append(cls.email_prefix + email)
         kwargs['contact'] = tuple(details)
 
-        if kid is not None and hmac is not None:
-            kwargs['external_account_binding'] = ExternalAccountBinding.from_data(key, kid, hmac)
+        if kid is not None and hmac_key is not None:
+            kwargs['external_account_binding'] = ExternalAccountBinding.from_data(account_public_key, kid, hmac_key)
 
         return cls(**kwargs)
 

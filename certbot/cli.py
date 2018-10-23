@@ -943,9 +943,9 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
     )
     helpful.add(
         [None, "run", "certonly", "register"],
-        "--eab-hmac", dest="eab_hmac",
-        metavar="EAB_HMAC",
-        help="HMAC for External Account Binding"
+        "--eab-hmac-key", dest="eab_hmac_key",
+        metavar="EAB_HMAC_KEY",
+        help="HMAC key for External Account Binding"
     )
     helpful.add(
         [None, "run", "certonly", "manage", "delete", "certificates",
