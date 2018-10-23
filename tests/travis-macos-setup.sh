@@ -5,7 +5,7 @@ set -e
 
 # Install the given package with brew if it's not already installed.
 brew_install() {
-    if ! brew list "$1" > /dev/null; then
+    if ! brew list "$1" > /dev/null 2>&1; then
         brew install "$1"
     fi
 }
