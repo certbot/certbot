@@ -9,7 +9,7 @@ import subprocess
 import sys
 import tempfile
 
-from certbot import lock
+from certbot import filelock
 from certbot import util
 
 from certbot.tests import util as test_util
@@ -143,10 +143,10 @@ def test_command(command, directories):
         to acquire the lock on in sorted order
 
     """
-    locks = [lock.lock_dir(directory) for directory in directories]
+    locks = [filelock.lock_for_dir(directory) for directory in directories]
     for dir_path, dir_lock in zip(directories, locks):
-        check_error(command, dir_path)
-        dir_lock.release()
+        with dir_lock:
+            check_error(command, dir_path)
 
 
 def check_error(command, dir_path):
