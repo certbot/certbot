@@ -337,15 +337,16 @@ class SoftFileLock(BaseFileLock):
 #: Alias for the lock, which should be used for the current platform. On
 #: Windows, this is an alias for :class:`WindowsFileLock`, on Unix for
 #: :class:`UnixFileLock` and otherwise for :class:`SoftFileLock`.
-if msvcrt:
-    FileLock = WindowsFileLock
-elif fcntl:
-    FileLock = UnixFileLock
-else:
-    FileLock = SoftFileLock
+def FileLock(*args, **kwargs):
+    if msvcrt:
+        return WindowsFileLock(*args, **kwargs)
+    elif fcntl:
+        return UnixFileLock(*args, **kwargs)
+    else:
+        if warnings:
+            warnings.warn("Only soft file lock is available")
+        return SoftFileLock(*args, **kwargs)
 
-    if warnings:
-        warnings.warn("Only soft file lock is available")
 
 # Utility functions
 # ~~~~~~~~~~~~~~~~~
@@ -353,9 +354,9 @@ else:
 
 def lock_for_file(path):
     """Create a lockfile for a file"""
-    return FileLock('{0}.certbot.lock'.format(path))
+    return FileLock('{0}.certbot.lock'.format(path))  # mypy: ignore
 
 
 def lock_for_dir(path):
     """Create a lockfile for a dir"""
-    return FileLock(os.path.join(path, '.certbot.lock'))
+    return FileLock(os.path.join(path, '.certbot.lock'))  # mypy: ignore
