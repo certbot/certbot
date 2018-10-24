@@ -1133,5 +1133,6 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         data = self._wrap_in_jws(obj, self._get_nonce(url), url, acme_version)
         kwargs.setdefault('headers', {'Content-Type': content_type})
         response = self._send_request('POST', url, data=data, **kwargs)
+        response = self._check_response(response, content_type=content_type)
         self._add_nonce(response)
-        return self._check_response(response, content_type=content_type)
+        return response
