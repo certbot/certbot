@@ -95,7 +95,10 @@ class MultipleVhostsTest(util.ApacheTest):
     def test_prepare_locked(self):
         server_root = self.config.conf("server-root")
         self.config.config_test = mock.Mock()
-        os.remove(os.path.join(server_root, ".certbot.lock"))
+        try:
+            os.remove(os.path.join(server_root, ".certbot.lock"))
+        except OSError:
+            pass
         certbot_util.lock_and_call(self._test_prepare_locked, server_root)
 
     @mock.patch("certbot_apache.parser.ApacheParser")
