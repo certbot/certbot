@@ -108,7 +108,8 @@ def get_apache_configurator(  # pylint: disable=too-many-arguments, too-many-loc
         in_progress_dir=os.path.join(backups, "IN_PROGRESS"),
         work_dir=work_dir)
 
-    with mock.patch("certbot_apache.configurator.util.run_script"):
+    with mock.patch("certbot_apache.configurator.filelock.lock_for_dir"), \
+         mock.patch("certbot_apache.configurator.util.run_script"):
         with mock.patch("certbot_apache.configurator.util."
                         "exe_exists") as mock_exe_exists:
             mock_exe_exists.return_value = True
