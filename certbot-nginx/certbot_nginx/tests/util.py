@@ -47,10 +47,9 @@ def get_nginx_configurator(
 
     backups = os.path.join(work_dir, "backups")
 
-    with mock.patch("certbot_nginx.configurator.NginxConfigurator."
-                    "config_test"):
-        with mock.patch("certbot_nginx.configurator.util."
-                        "exe_exists") as mock_exe_exists:
+    with mock.patch("certbot_nginx.configurator.filelock.lock_for_dir"), \
+         mock.patch("certbot_nginx.configurator.NginxConfigurator.config_test"):
+        with mock.patch("certbot_nginx.configurator.util.exe_exists") as mock_exe_exists:
             mock_exe_exists.return_value = True
             config = configurator.NginxConfigurator(
                 config=mock.MagicMock(
