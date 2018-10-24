@@ -47,10 +47,21 @@ def main(venv_name, venv_args, args):
     command.extend(args)
     subprocess_with_print(' '.join(command))
 
-    print('-------------------------------------------------------------------')
-    print('Please run the following command to activate developer environment:')
-    print('source {0}/bin/activate'.format(venv_name))
-    print('-------------------------------------------------------------------')
+    if os.path.isdir(os.path.join(venv_name, 'bin')):
+        # Linux/OSX specific
+        print('-------------------------------------------------------------------')
+        print('Please run the following command to activate developer environment:')
+        print('source {0}/bin/activate'.format(venv_name))
+        print('-------------------------------------------------------------------')
+    elif os.path.isdir(os.path.join(venv_args, 'Scripts')):
+        # Windows specific
+        print('---------------------------------------------------------------------------')
+        print('Please run one of the following commands to activate developer environment:')
+        print('{0}\\bin\\activate.bat (for Batch)'.format(venv_name))
+        print('.\\{0}\\Scripts\\Activate.ps1 (for Powershell)'.format(venv_name))
+        print('---------------------------------------------------------------------------')
+    else:
+        raise ValueError('Error, directory {0} is not a valid venv.'.format(venv_name))
 
 if __name__ == '__main__':
     main(os.environ.get('VENV_NAME', 'venv'), os.environ.get('VENV_ARGS', ''), sys.argv[1:])
