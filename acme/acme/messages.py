@@ -28,7 +28,6 @@ ERROR_CODES = {
     'tls': 'The server experienced a TLS error during domain verification',
     'unauthorized': 'The client lacks sufficient authorization',
     'unknownHost': 'The server could not resolve a domain name',
-
     'externalAccountRequired': 'The server requires external account binding',
 }
 
