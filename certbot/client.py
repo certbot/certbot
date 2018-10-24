@@ -192,6 +192,10 @@ def perform_registration(acme, config, tos_cb):
     :rtype: `acme.messages.RegistrationResource`
     """
 
+    if acme.client.directory.meta.external_account_required:
+        if config.eab_kid is None or config.eab_hmac_key is None:
+            raise errors.Error("Server requires external account binding. Please use --eab-kid and --eab-hmac-key.")
+
     account_public_key = acme.client.net.key.public_key()
     try:
         return acme.new_account_and_tos(messages.NewRegistration.from_data(account_public_key=account_public_key,
