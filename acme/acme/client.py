@@ -569,6 +569,7 @@ class ClientV2(ClientBase):
         :param .messages.Directory directory: Directory Resource
         :param .ClientNetwork net: Client network.
         """
+        net.new_nonce_url = getattr(directory, "newNonce")
         super(ClientV2, self).__init__(directory=directory,
             net=net, acme_version=2)
 
@@ -914,6 +915,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         self.user_agent = user_agent
         self.session = requests.Session()
         self._default_timeout = timeout
+        self.new_nonce_url = None # set by ClientV2
         adapter = HTTPAdapter()
 
         if source_address is not None:
@@ -1113,7 +1115,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
                 new_nonce = self.head(url)
             else:
                 # TODO: request a new nonce from the acme newNonce endpoint
-                new_nonce = self.head(url)
+                new_nonce = self.head(new_nonce_url)
             self._add_nonce(new_nonce)
         return self._nonces.pop()
 
