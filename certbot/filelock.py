@@ -8,19 +8,15 @@ import atexit
 import logging
 import os
 import threading
-try:
-    import warnings
-except ImportError:  # pragma: no cover
-    warnings = None  # type: ignore
 
 try:
     import msvcrt
-except ImportError:  # pragma: no cover
+except ImportError:
     msvcrt = None  # type: ignore
 
 try:
     import fcntl
-except ImportError:  # pragma: no cover
+except ImportError:
     fcntl = None  # type: ignore
 
 from certbot import errors
@@ -304,36 +300,6 @@ class UnixFileLock(BaseFileLock):
             os.close(fd)
         return None
 
-# Soft lock
-# ~~~~~~~~~
-
-
-class SoftFileLock(BaseFileLock):
-    """
-    Simply watches the existence of the lock file.
-    """
-
-    def _acquire(self):
-        open_mode = os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_TRUNC
-        try:
-            fd = os.open(self._lock_file, open_mode)
-        except (IOError, OSError):
-            pass
-        else:
-            self._lock_file_fd = fd
-        return None
-
-    def _release(self):
-        os.close(self._lock_file_fd)
-        self._lock_file_fd = None
-
-        try:
-            os.remove(self._lock_file)
-        # The file is already deleted and that's what we want.
-        except OSError:
-            pass
-        return None
-
 
 # Platform filelock
 # ~~~~~~~~~~~~~~~~~
@@ -348,10 +314,8 @@ def FileLock(*args, **kwargs):
         return WindowsFileLock(*args, **kwargs)
     elif fcntl:
         return UnixFileLock(*args, **kwargs)
-    else:
-        if warnings:
-            warnings.warn("Only soft file lock is available")
-        return SoftFileLock(*args, **kwargs)
+    else:  #pragma: no-cover
+        raise ValueError('Could not get a relevant file lock provider.')
 
 
 # Utility functions
