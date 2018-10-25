@@ -1053,6 +1053,9 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
         self.response.headers = {}
         self.response.links = {}
         self.response.checked = False
+        self.acmev1_nonce_response = mock.MagicMock(ok=False,
+            status_code=http_client.METHOD_NOT_ALLOWED)
+        self.acmev1_nonce_response.headers = {}
         self.obj = mock.MagicMock()
         self.wrapped_obj = mock.MagicMock()
         self.content_type = mock.sentinel.content_type
@@ -1064,13 +1067,20 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
 
         def send_request(*args, **kwargs):
             # pylint: disable=unused-argument,missing-docstring
+            method = args[0]
+            uri = args[1]
+            if method == 'HEAD' and uri != "new_nonce_uri":
+                response = self.acmev1_nonce_response
+            else:
+                response = self.response
+
             if self.available_nonces:
-                self.response.headers = {
+                response.headers = {
                     self.net.REPLAY_NONCE_HEADER:
                     self.available_nonces.pop().decode()}
             else:
-                self.response.headers = {}
-            return self.response
+                response.headers = {}
+            return response
 
         # pylint: disable=protected-access
         self.net._send_request = self.send_request = mock.MagicMock(
@@ -1082,14 +1092,21 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
         # pylint: disable=missing-docstring
         self.assertEqual(self.response, response)
         self.assertEqual(self.content_type, content_type)
+        self.assertTrue(self.response.ok)
         self.response.checked = True
         return self.response
 
     def test_head(self):
-        self.assertEqual(self.response, self.net.head(
+        self.assertEqual(self.acmev1_nonce_response, self.net.head(
             'http://example.com/', 'foo', bar='baz'))
         self.send_request.assert_called_once_with(
             'HEAD', 'http://example.com/', 'foo', bar='baz')
+
+    def test_head_v2(self):
+        self.assertEqual(self.response, self.net.head(
+            'new_nonce_uri', 'foo', bar='baz'))
+        self.send_request.assert_called_once_with(
+            'HEAD', 'new_nonce_uri', 'foo', bar='baz')
 
     def test_get(self):
         self.assertEqual(self.response, self.net.get(
@@ -1162,6 +1179,20 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
                 requests.exceptions.RequestException, method, 'GET', 'uri')
         self.assertRaises(requests.exceptions.RequestException,
                           self.net.post, 'uri', obj=self.obj)
+
+    def test_post_bad_nonce_head(self):
+        # regression test for https://github.com/certbot/certbot/issues/6092
+        bad_response = mock.MagicMock(ok=False, status_code=http_client.SERVICE_UNAVAILABLE)
+        self.net._send_request = mock.MagicMock()
+        self.net._send_request.return_value = bad_response
+        self.net.new_nonce_url = 'new_nonce_uri'
+        self.content_type = None
+        check_response = mock.MagicMock()
+        self.net._check_response = check_response
+        self.assertRaises(errors.ClientError, self.net.post, 'uri',
+                          self.obj, content_type=self.content_type, acme_version=2)
+        self.assertEqual(check_response.call_count, 1)
+
 
 class ClientNetworkSourceAddressBindingTest(unittest.TestCase):
     """Tests that if ClientNetwork has a source IP set manually, the underlying library has

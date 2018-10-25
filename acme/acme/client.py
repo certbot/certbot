@@ -1116,7 +1116,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
                 response = self.head(url)
             else:
                 # request a new nonce from the acme newNonce endpoint
-                response = self._check_response(self.head(self.new_nonce_url))
+                response = self._check_response(self.head(self.new_nonce_url), content_type=None)
             self._add_nonce(response)
         return self._nonces.pop()
 
