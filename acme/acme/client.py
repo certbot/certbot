@@ -978,7 +978,11 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         :raises .ClientError: In case of other networking errors.
 
         """
-        response_ct = response.headers.get('Content-Type')
+        try:
+            response_ct = response.headers.get('Content-Type')
+        except:
+            response_ct = None
+
         try:
             # TODO: response.json() is called twice, once here, and
             # once in _get and _post clients
@@ -1112,11 +1116,11 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         if not self._nonces:
             logger.debug('Requesting fresh nonce')
             if acme_version == 1:
-                new_nonce = self.head(url)
+                response = self.head(url)
             else:
-                # TODO: request a new nonce from the acme newNonce endpoint
-                new_nonce = self.head(new_nonce_url)
-            self._add_nonce(new_nonce)
+                # request a new nonce from the acme newNonce endpoint
+                response = self._check_response(self.head(new_nonce_url))
+            self._add_nonce(response)
         return self._nonces.pop()
 
     def post(self, *args, **kwargs):
