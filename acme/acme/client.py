@@ -978,10 +978,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         :raises .ClientError: In case of other networking errors.
 
         """
-        try:
-            response_ct = response.headers.get('Content-Type')
-        except:
-            response_ct = None
+        response_ct = response.headers.get('Content-Type')
 
         try:
             # TODO: response.json() is called twice, once here, and
