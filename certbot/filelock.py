@@ -10,17 +10,17 @@ import os
 import threading
 try:
     import warnings
-except ImportError:
+except ImportError:  # pragma: no cover
     warnings = None  # type: ignore
 
 try:
     import msvcrt
-except ImportError:
+except ImportError:  # pragma: no cover
     msvcrt = None  # type: ignore
 
 try:
     import fcntl
-except ImportError:
+except ImportError:  # pragma: no cover
     fcntl = None  # type: ignore
 
 from certbot import errors
@@ -41,7 +41,7 @@ def _release_all_locks():
                 try:
                     lock.release()
                     logger.debug('Lock released: %s', lock.lock_file)
-                except (OSError, IOError):
+                except (OSError, IOError):  # pragma: no cover
                     logger.error('Exception occurred releasing lock: %s',
                                  lock.lock_file, exc_info=True)
 
@@ -98,13 +98,13 @@ class BaseFileLock(object):
         acquired, self._lock_file_fd holds the file descriptor
         of the lock file.
         """
-        raise NotImplementedError()
+        raise NotImplementedError()  # pragma: no cover
 
     def _release(self):
         """
         Releases the lock and sets self._lock_file_fd to None.
         """
-        raise NotImplementedError()
+        raise NotImplementedError()  # pragma: no cover
 
     # Platform independent methods
     # --------------------------------------------
@@ -150,7 +150,7 @@ class BaseFileLock(object):
                 logger.info('Lock %s acquired on %s', lock_id, lock_filename)
             else:
                 self._raise_for_certbot_lock()
-        except (OSError, IOError):
+        except (OSError, IOError):  # pragma: no cover
             # Something did go wrong, so decrement the counter.
             with self._thread_lock:
                 self._lock_counter = max(0, self._lock_counter - 1)
