@@ -357,8 +357,7 @@ class ConfigTestCase(TempDirTestCase):
 
 def lock_and_call(func, dir_path):
     """
-    Mock a lock on given directory path, call the given func, and wait for expected Exception
-    because func tried to lock again the given path.
+    Mock a lock on given directory path and call the given func.
 
     :param callable func: the function to call
     :param str dir_path: the directory path to lock
@@ -366,21 +365,15 @@ def lock_and_call(func, dir_path):
     """
     lock_file = os.path.join(dir_path, '.certbot.lock')
     orig = filelock.BaseFileLock.acquire
-    error_message = 'Mocked acquire function has raised for {0}'.format(lock_file)
 
     def mocked_acquire(self):
         """This mock will raise for specific file lock, or delegate to the real method"""
         if self._lock_file == lock_file:  # pylint: disable=protected-access
-            raise ValueError(error_message)
+            self._raise_for_certbot_lock()  # pylint: disable=protected-access
         orig(self)
 
-    try:
-        with mock.patch('certbot.filelock.BaseFileLock.acquire', new=mocked_acquire):
-            func()
-    except ValueError as error:
-        assert error_message == str(error)
-    else: # pragma: no cover
-        raise ValueError('Error, call should raise an exception.')
+    with mock.patch('certbot.filelock.BaseFileLock.acquire', new=mocked_acquire):
+        func()
 
 def hold_lock(cv, lock_path):  # pragma: no cover
     """Acquire a file lock at lock_path and wait to release it.

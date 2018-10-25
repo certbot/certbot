@@ -6,7 +6,6 @@ import unittest
 
 import mock
 import six
-from six.moves import reload_module  # pylint: disable=import-error
 
 from certbot import compat
 from certbot import errors
@@ -77,12 +76,6 @@ class ExeExistsTest(unittest.TestCase):
 
 class LockDirUntilExit(test_util.TempDirTestCase):
     """Tests for certbot.util.lock_dir_until_exit."""
-    def setUp(self):
-        super(LockDirUntilExit, self).setUp()
-        # reset global state from other tests
-        import certbot.util
-        reload_module(certbot.util)
-
     @mock.patch('certbot.filelock.logger')
     @mock.patch('certbot.filelock._LOCKS')
     def test_it(self, mock_locks, mock_logger):
@@ -103,8 +96,13 @@ class LockDirUntilExit(test_util.TempDirTestCase):
         def func():
             """Simple call to lock current tempdir"""
             with filelock.lock_for_dir(self.tempdir):
-                pass
-        test_util.lock_and_call(func, self.tempdir)
+                pass  # pragma: no cover
+        try:
+            test_util.lock_and_call(func, self.tempdir)
+        except errors.LockError as error:
+            self.assertTrue(self.tempdir in str(error))
+        else:  # pragma: no cover
+            self.fail('Because self.tempdir is locked, errors.LockError should have been raised.')
 
 
 class SetUpCoreDirTest(test_util.TempDirTestCase):

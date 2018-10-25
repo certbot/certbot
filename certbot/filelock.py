@@ -149,10 +149,7 @@ class BaseFileLock(object):
             if self.is_locked:
                 logger.info('Lock %s acquired on %s', lock_id, lock_filename)
             else:
-                raise errors.LockError((
-                    'Error, the filelock "{0}" could not be acquired. '
-                    'It is likely that another Certbot instance is still running.'
-                    .format(self.lock_file)))
+                self._raise_for_certbot_lock()
         except (OSError, IOError):
             # Something did go wrong, so decrement the counter.
             with self._thread_lock:
@@ -205,6 +202,12 @@ class BaseFileLock(object):
                     logger.info('Lock %s released on %s', lock_id, lock_filename)
 
         return None
+
+    def _raise_for_certbot_lock(self):
+        raise errors.LockError((
+            'Error, the filelock "{0}" could not be acquired. '
+            'It is likely that another Certbot instance is still running.'
+            .format(self.lock_file)))
 
     def __enter__(self):
         self.acquire()
