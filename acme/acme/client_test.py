@@ -1052,7 +1052,7 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
         self.response = mock.MagicMock(ok=True, status_code=http_client.OK)
         self.response.headers = {}
         self.response.links = {}
-        self.checked_response = mock.MagicMock()
+        self.response.checked = False
         self.obj = mock.MagicMock()
         self.wrapped_obj = mock.MagicMock()
         self.content_type = mock.sentinel.content_type
@@ -1082,7 +1082,8 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
         # pylint: disable=missing-docstring
         self.assertEqual(self.response, response)
         self.assertEqual(self.content_type, content_type)
-        return self.checked_response
+        self.response.checked = True
+        return self.response
 
     def test_head(self):
         self.assertEqual(self.response, self.net.head(
@@ -1091,19 +1092,22 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
             'HEAD', 'http://example.com/', 'foo', bar='baz')
 
     def test_get(self):
-        self.assertEqual(self.checked_response, self.net.get(
+        self.assertEqual(self.response, self.net.get(
             'http://example.com/', content_type=self.content_type, bar='baz'))
+        self.assertTrue(self.response.checked)
         self.send_request.assert_called_once_with(
             'GET', 'http://example.com/', bar='baz')
 
     def test_post_no_content_type(self):
         self.content_type = self.net.JOSE_CONTENT_TYPE
-        self.assertEqual(self.checked_response, self.net.post('uri', self.obj))
+        self.assertEqual(self.response, self.net.post('uri', self.obj))
+        self.assertTrue(self.response.checked)
 
     def test_post(self):
         # pylint: disable=protected-access
-        self.assertEqual(self.checked_response, self.net.post(
+        self.assertEqual(self.response, self.net.post(
             'uri', self.obj, content_type=self.content_type))
+        self.assertTrue(self.response.checked)
         self.net._wrap_in_jws.assert_called_once_with(
             self.obj, jose.b64decode(self.all_nonces.pop()), "uri", 1)
 
@@ -1135,7 +1139,7 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
     def test_post_not_retried(self):
         check_response = mock.MagicMock()
         check_response.side_effect = [messages.Error.with_code('malformed'),
-                                      self.checked_response]
+                                      self.response]
 
         # pylint: disable=protected-access
         self.net._check_response = check_response
@@ -1143,13 +1147,12 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
                           self.obj, content_type=self.content_type)
 
     def test_post_successful_retry(self):
-        check_response = mock.MagicMock()
-        check_response.side_effect = [messages.Error.with_code('badNonce'),
-                                      self.checked_response]
+        post_once = mock.MagicMock()
+        post_once.side_effect = [messages.Error.with_code('badNonce'),
+                                      self.response]
 
         # pylint: disable=protected-access
-        self.net._check_response = check_response
-        self.assertEqual(self.checked_response, self.net.post(
+        self.assertEqual(self.response, self.net.post(
             'uri', self.obj, content_type=self.content_type))
 
     def test_head_get_post_error_passthrough(self):
