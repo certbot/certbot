@@ -1181,6 +1181,7 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
                           self.net.post, 'uri', obj=self.obj)
 
     def test_post_bad_nonce_head(self):
+        # pylint: disable=protected-access
         # regression test for https://github.com/certbot/certbot/issues/6092
         bad_response = mock.MagicMock(ok=False, status_code=http_client.SERVICE_UNAVAILABLE)
         self.net._send_request = mock.MagicMock()
