@@ -1106,10 +1106,15 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         else:
             raise errors.MissingNonce(response)
 
-    def _get_nonce(self, url):
+    def _get_nonce(self, url, acme_version):
         if not self._nonces:
             logger.debug('Requesting fresh nonce')
-            self._add_nonce(self.head(url))
+            if acme_version == 1:
+                new_nonce = self.head(url)
+            else:
+                # TODO: request a new nonce from the acme newNonce endpoint
+                new_nonce = self.head(url)
+            self._add_nonce(new_nonce)
         return self._nonces.pop()
 
     def post(self, *args, **kwargs):
@@ -1130,7 +1135,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
 
     def _post_once(self, url, obj, content_type=JOSE_CONTENT_TYPE,
             acme_version=1, **kwargs):
-        data = self._wrap_in_jws(obj, self._get_nonce(url), url, acme_version)
+        data = self._wrap_in_jws(obj, self._get_nonce(url, acme_version), url, acme_version)
         kwargs.setdefault('headers', {'Content-Type': content_type})
         response = self._send_request('POST', url, data=data, **kwargs)
         response = self._check_response(response, content_type=content_type)
