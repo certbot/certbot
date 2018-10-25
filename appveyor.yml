@@ -23,7 +23,8 @@ install:
 build: off
 
 test_script:
-  - tox -c tox-win.ini -e py34,py35,py36,py37-cover
+  # As py37 is the default python interpreter, it is tested through cover env
+  - tox -c tox-win.ini -e py34,py35,py36,cover
 
 on_success:
   - codecov
