@@ -46,6 +46,8 @@ class FileChanges(object):
             result = re.search(p, line)
             if not result or not result.group("value"):
                 continue
+            if result.group("value") == replace_value:
+                return # already set correctly
             start, end = result.span("value")
             self._diff[i] = line[0:start] + replace_value + line[end:]
             return
@@ -62,7 +64,11 @@ class FileChanges(object):
         new_filelines.extend(self._append)
 
         diff = "".join(difflib.unified_diff(self._lines, new_filelines))
-        if diff_file:
+        pause = True
+        if len(self._append) == 0 and len(self._diff) == 0:
+            message = "Your config files are already up-to-date!\n"
+            pause = False
+        elif diff_file:
             with open(diff_file, "w") as f:
                 f.write(diff)
             message = ("The appropriate diff has been written to {diff_file}.\n"
@@ -71,7 +77,7 @@ class FileChanges(object):
                 "This should also create a backup of the original file at {tls_file}.orig\n").format(
                 diff_file=diff_file, tls_file=self._filepath)
         else:
-            message = ("Review and apply the following diff to {tls_file}."
+            message = ("Review and apply the following diff to {tls_file}.\n"
                 "Continue when finished:\n\n{content}\n\n".format(
                 tls_file=self._filepath, content=diff))
         zope.component.getUtility(interfaces.IDisplay).notification(message, pause=True)
@@ -122,6 +128,7 @@ class SendmailConfigurator(common.Installer):
         self.save_notes = ""
         self.reverter.recovery_routine()
         self.changes = None
+        self._keypath = None
 
     # This is called in determine_authenticator and determine_installer
     def prepare(self):
@@ -164,7 +171,7 @@ class SendmailConfigurator(common.Installer):
             self.changes.replace_first(yay_for_regex_parsing,
                 config_params[param],
                 full_string.format(param=param, value=config_params[param]))
-        os.chmod(key_path, 0o644)
+        self._keypath = key_path
 
     ##################################
     # enhancement methods (IInstaller)
@@ -191,8 +198,12 @@ class SendmailConfigurator(common.Installer):
     ######################################
     def restart(self):
         """Restarts sendmail. Not implemented. """
+        if self._keypath:
+            os.chmod(self._keypath, 0o640)
         try:
-            proc = subprocess.Popen(["make", "-C", self.config("server_root")])
+            proc = subprocess.Popen(["make", "-C", self.conf("server_root")])
+            out, err = proc.communicate()
+            proc = subprocess.Popen(["make", "install", "-C", self.conf("server_root")])
             out, err = proc.communicate()
             proc = subprocess.Popen(["service", "sendmail", "restart"])
             out, err = proc.communicate()
