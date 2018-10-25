@@ -25,6 +25,7 @@ from certbot import interfaces
 from certbot import storage
 from certbot import util
 from certbot import configuration
+from certbot import filelock
 
 from certbot.display import util as display_util
 
@@ -357,30 +358,31 @@ class ConfigTestCase(TempDirTestCase):
         self.config.chain_path = constants.CLI_DEFAULTS['auth_chain_path']
         self.config.server = "https://example.com"
 
-def lock_and_call(func, lock_path):
-    """Grab a lock for lock_path and call func.
+def lock_and_call(func, dir_path):
+    """
+    Mock a lock on given directory path, call the given func, and wait for expected Exception
+    because func tried to lock again the given path.
 
-    :param callable func: object to call after acquiring the lock
-    :param str lock_path: path to file or directory to lock
+    :param callable func: the function to call
+    :param str dir_path: the directory path to lock
 
     """
-    # Reload module to reset internal _LOCKS dictionary
-    reload_module(util)
+    lock_file = os.path.join(dir_path, '.certbot.lock')
+    orig = filelock.BaseFileLock.acquire
+    error_message = 'Mocked acquire function has raised for {0}'.format(lock_file)
 
-    # start child and wait for it to grab the lock
-    cv = multiprocessing.Condition()
-    cv.acquire()
-    child_args = (cv, lock_path,)
-    child = multiprocessing.Process(target=hold_lock, args=child_args)
-    child.start()
-    cv.wait()
+    def mocked_acquire(self):
+        if self._lock_file == lock_file:  # pylint: disable=protected-access
+            raise ValueError(error_message)
+        orig(self)
 
-    # call func and terminate the child
-    func()
-    cv.notify()
-    cv.release()
-    child.join()
-    assert child.exitcode == 0
+    try:
+        with mock.patch('certbot.filelock.BaseFileLock.acquire', new=mocked_acquire):
+            func()
+    except ValueError as error:
+        assert error_message == str(error)
+    else: # pragma: no cover
+        raise ValueError('Error, call should raise an exception.')
 
 def hold_lock(cv, lock_path):  # pragma: no cover
     """Acquire a file lock at lock_path and wait to release it.

@@ -10,6 +10,7 @@ from six.moves import reload_module  # pylint: disable=import-error
 
 from certbot import compat
 from certbot import errors
+from certbot import filelock
 import certbot.tests.util as test_util
 
 
@@ -76,12 +77,6 @@ class ExeExistsTest(unittest.TestCase):
 
 class LockDirUntilExit(test_util.TempDirTestCase):
     """Tests for certbot.util.lock_dir_until_exit."""
-    @classmethod
-    def _call(cls, *args, **kwargs):
-        from certbot.util import filelock
-        lock = filelock.lock_for_dir(*args, **kwargs)
-        lock.acquire()
-
     def setUp(self):
         super(LockDirUntilExit, self).setUp()
         # reset global state from other tests
@@ -105,6 +100,12 @@ class LockDirUntilExit(test_util.TempDirTestCase):
                     # logger.debug is only called twice because the third call
                     # to lock subdir was ignored as it was already unlocked
                     self.assertEqual(mock_logger.debug.call_count, 2)
+
+    def test_raise_on_locked_dir(self):
+        def func():
+            with filelock.lock_for_dir(self.tempdir):
+                pass
+        test_util.lock_and_call(func, self.tempdir)
 
 
 class SetUpCoreDirTest(test_util.TempDirTestCase):
