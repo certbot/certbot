@@ -167,7 +167,7 @@ def check_error(command, dir_path):
         with open(match.group(1)) as f:
             err = f.read()
 
-    pattern = 'A lock on {0}.* is held by another process'.format(dir_path)
+    pattern = 'Error, the filelock "{0}/.certbot.lock" could not be acquired.'.format(dir_path)
     if not re.search(pattern, err):
         err_msg = 'Directory path {0} not in error output!'.format(dir_path)
         report_failure(err_msg, out, err)
