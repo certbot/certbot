@@ -86,8 +86,6 @@ class LockDirUntilExit(test_util.TempDirTestCase):
     @mock.patch('certbot.filelock.logger')
     @mock.patch('certbot.filelock._LOCKS')
     def test_it(self, mock_locks, mock_logger):
-        from certbot import filelock
-
         subdir = os.path.join(self.tempdir, 'subdir')
         os.mkdir(subdir)
 
@@ -103,6 +101,7 @@ class LockDirUntilExit(test_util.TempDirTestCase):
 
     def test_raise_on_locked_dir(self):
         def func():
+            """Simple call to lock current tempdir"""
             with filelock.lock_for_dir(self.tempdir):
                 pass
         test_util.lock_and_call(func, self.tempdir)

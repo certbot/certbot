@@ -3,27 +3,24 @@
 .. warning:: This module is not part of the public API.
 
 """
-import multiprocessing
 import os
-import pkg_resources
 import shutil
 import tempfile
 import unittest
 import sys
 import warnings
 
+import pkg_resources
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 import mock
 import OpenSSL
 import josepy as jose
 import six
-from six.moves import reload_module  # pylint: disable=import-error
 
 from certbot import constants
 from certbot import interfaces
 from certbot import storage
-from certbot import util
 from certbot import configuration
 from certbot import filelock
 
@@ -372,6 +369,7 @@ def lock_and_call(func, dir_path):
     error_message = 'Mocked acquire function has raised for {0}'.format(lock_file)
 
     def mocked_acquire(self):
+        """This mock will raise for specific file lock, or delegate to the real method"""
         if self._lock_file == lock_file:  # pylint: disable=protected-access
             raise ValueError(error_message)
         orig(self)
@@ -391,7 +389,6 @@ def hold_lock(cv, lock_path):  # pragma: no cover
     :param str lock_path: path to the file lock
 
     """
-    from certbot import filelock
     if os.path.isdir(lock_path):
         my_lock = filelock.lock_for_dir(lock_path)
     else:
