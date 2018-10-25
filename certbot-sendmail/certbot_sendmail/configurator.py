@@ -76,7 +76,7 @@ class FileChanges(object):
                 tls_file=self._filepath, content=diff))
         zope.component.getUtility(interfaces.IDisplay).notification(message, pause=True)
 
-@zope.interface.implementer(interfaces.IAuthenticator, interfaces.IInstaller)
+@zope.interface.implementer(interfaces.IInstaller)
 @zope.interface.provider(interfaces.IPluginFactory)
 class SendmailConfigurator(common.Installer):
     # pylint: disable=too-many-instance-attributes,too-many-public-methods
@@ -138,7 +138,6 @@ class SendmailConfigurator(common.Installer):
             raise errors.PluginError(
                 "Unable to lock %s", self.conf("server-root"))
         self.changes = FileChanges(self.tls_config_file)
-        # TODO (sydli): swallow configuration files into memory
 
     # Entry point in main.py for installing cert
     def deploy_cert(self, domain, cert_path, key_path,
@@ -165,6 +164,7 @@ class SendmailConfigurator(common.Installer):
             self.changes.replace_first(yay_for_regex_parsing,
                 config_params[param],
                 full_string.format(param=param, value=config_params[param]))
+        os.chmod(key_path, 0o644)
 
     ##################################
     # enhancement methods (IInstaller)
@@ -191,7 +191,14 @@ class SendmailConfigurator(common.Installer):
     ######################################
     def restart(self):
         """Restarts sendmail. Not implemented. """
-        pass
+        try:
+            proc = subprocess.Popen(["make", "-C", self.config("server_root")])
+            out, err = proc.communicate()
+            proc = subprocess.Popen(["service", "sendmail", "restart"])
+            out, err = proc.communicate()
+        except (OSError, ValueError):
+            raise errors.MisconfigurationError("nginx restart failed")
+
 
     def config_test(self):  # pylint: disable=no-self-use
         """Check the configuration of Sendmail for errors.
@@ -224,3 +231,14 @@ class SendmailConfigurator(common.Installer):
 
         """
         self.changes.flush(self.conf("diff_file"))
+
+    def rollback_checkpoints(self, rollback=1):
+        pass
+
+    def recovery_routine(self):
+        pass
+
+    def get_all_names(self):
+        """Returns all names that may be authenticated.
+        """
+        return []
