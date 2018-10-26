@@ -9,6 +9,7 @@ from acme import challenges
 from acme import errors
 from acme import fields
 from acme import util
+from acme import jws
 
 OLD_ERROR_PREFIX = "urn:acme:error:"
 ERROR_PREFIX = "urn:ietf:params:acme:error:"
@@ -265,21 +266,18 @@ class ExternalAccountBinding:
     """ACME External Account Binding"""
 
     @classmethod
-    def from_data(cls, account_public_key, kid, hmac_key):
+    def from_data(cls, account_public_key, kid, hmac_key, directory):
         """Create External Account Binding Resource from contact details, kid and hmac."""
 
         key_json = json.dumps(account_public_key.to_partial_json())
         decoded_hmac_key = jose.b64.b64decode(hmac_key)
-        jws = jose.JWS.sign(
-            payload=key_json,
-            key=jose.jwk.JWKOct(key=decoded_hmac_key),
-            alg=jose.jwa.HS256,
-            kid=kid,
-            include_jwk=False,
-            protect=frozenset(['alg', 'kid'])
-        )
+        url = directory["newAccount"]
 
-        return jws.to_partial_json()
+        eab = jws.JWS.sign(key_json, jose.jwk.JWKOct(key=decoded_hmac_key),
+                           jose.jwa.HS256, None,
+                           url, kid)
+
+        return eab.to_partial_json()
 
 
 class Registration(ResourceBody):
@@ -304,7 +302,9 @@ class Registration(ResourceBody):
     email_prefix = 'mailto:'
 
     @classmethod
-    def from_data(cls, account_public_key=None, kid=None, hmac_key=None, phone=None, email=None, **kwargs):
+    def from_data(cls, account_public_key=None, kid=None,
+                  hmac_key=None, phone=None, email=None,
+                  directory=None, **kwargs):
         """Create registration resource from contact details."""
         details = list(kwargs.pop('contact', ()))
         if phone is not None:
@@ -314,7 +314,8 @@ class Registration(ResourceBody):
         kwargs['contact'] = tuple(details)
 
         if kid is not None and hmac_key is not None:
-            kwargs['external_account_binding'] = ExternalAccountBinding.from_data(account_public_key, kid, hmac_key)
+            kwargs['external_account_binding'] = ExternalAccountBinding.from_data(account_public_key, kid,
+                                                                                  hmac_key, directory)
 
         return cls(**kwargs)
 

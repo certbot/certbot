@@ -201,7 +201,8 @@ def perform_registration(acme, config, tos_cb):
         return acme.new_account_and_tos(messages.NewRegistration.from_data(account_public_key=account_public_key,
                                                                            kid=config.eab_kid,
                                                                            hmac_key=config.eab_hmac_key,
-                                                                           email=config.email),
+                                                                           email=config.email,
+                                                                           directory=acme.client.directory),
                                         tos_cb)
     except messages.Error as e:
         if e.code == "invalidEmail" or e.code == "invalidContact":
