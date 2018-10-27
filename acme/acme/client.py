@@ -979,7 +979,6 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
 
         """
         response_ct = response.headers.get('Content-Type')
-
         try:
             # TODO: response.json() is called twice, once here, and
             # once in _get and _post clients
