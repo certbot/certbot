@@ -24,7 +24,6 @@ def find_tools_path():
     return os.path.dirname(readlink.main(__file__))
 
 def certbot_oldest_processing(tools_path, args, test_constraints):
-    print(args)
     if args[0] != '-e' or len(args) != 2:
         raise ValueError('When CERTBOT_OLDEST is set, this script must be run '
                          'with a single -e <path> argument.')
@@ -64,8 +63,8 @@ def call_with_print(command, cwd=None):
 
 def main(args):
     tools_path = find_tools_path()
+    working_dir = tempfile.mkdtemp()
     try:
-        working_dir = tempfile.mkdtemp()
         test_constraints = os.path.join(working_dir, 'test_constraints.txt')
         all_constraints = os.path.join(working_dir, 'all_constraints.txt')
 

@@ -14,6 +14,9 @@ import shutil
 import subprocess
 import re
 
+SKIP_PROJECTS_ON_WINDOWS = [
+    'certbot-apache', 'certbot-nginx', 'certbot-postfix', 'letshelp-certbot']
+
 def call_with_print(command, cwd=None):
     print(command)
     subprocess.call(command, shell=True, cwd=cwd or os.getcwd())
@@ -25,11 +28,9 @@ def main(args):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         command = [sys.executable, os.path.join(script_dir, 'pip_install_editable.py')]
 
-    skip_projects_on_windows = [
-        'certbot-apache', 'certbot-nginx', 'certbot-postfix', 'letshelp-certbot']
     new_args = []
     for arg in args:
-        if os.name == 'nt' and arg in skip_projects_on_windows:
+        if os.name == 'nt' and arg in SKIP_PROJECTS_ON_WINDOWS:
             print((
                 'Info: currently {0} is not supported on Windows and will not be tested.'
                 .format(arg)))
@@ -41,13 +42,12 @@ def main(args):
         current_command.append(requirement)
         call_with_print(' '.join(current_command))
         pkg = re.sub(r'\[\w+\]', '', requirement)
-        pkg = pkg.replace('_', '-')
 
         if pkg == '.':
             pkg = 'certbot'
 
+        temp_cwd = tempfile.mkdtemp()
         try:
-            temp_cwd = tempfile.mkdtemp()
             call_with_print(' '.join([
                 sys.executable, '-m', 'pytest', '--numprocesses', 'auto',
                 '--quiet', '--pyargs', pkg.replace('-', '_')]), cwd=temp_cwd)

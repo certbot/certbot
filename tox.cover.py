@@ -34,18 +34,18 @@ COVER_THRESHOLDS = {
     'letshelp_certbot': 100
 }
 
+SKIP_PROJECTS_ON_WINDOWS = [
+    'certbot-apache', 'certbot-nginx', 'certbot-postfix', 'letshelp-certbot']
+
 def cover(package):
-    threshold = COVER_THRESHOLDS[package]
+    threshold = COVER_THRESHOLDS.get(package)
 
     if not threshold:
         raise ValueError('Unrecognized package: {0}'.format(package))
 
     pkg_dir = package.replace('_', '-')
 
-    skip_projects_on_windows = [
-        'certbot-apache', 'certbot-nginx', 'certbot-postfix', 'letshelp-certbot']
-
-    if os.name == 'nt' and pkg_dir in skip_projects_on_windows:
+    if os.name == 'nt' and pkg_dir in SKIP_PROJECTS_ON_WINDOWS:
         print((
             'Info: currently {0} is not supported on Windows and will not be tested/covered.'
             .format(pkg_dir)))
