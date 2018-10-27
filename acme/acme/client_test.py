@@ -805,7 +805,8 @@ class ClientV2Test(ClientTestBase):
     def test_revoke(self):
         self.client.revoke(messages_test.CERT, self.rsn)
         self.net.post.assert_called_once_with(
-            self.directory["revokeCert"], mock.ANY, acme_version=2)
+            self.directory["revokeCert"], mock.ANY, acme_version=2,
+            new_nonce_url=DIRECTORY_V2['newNonce'])
 
     def test_update_registration(self):
         # "Instance of 'Field' has no to_json/update member" bug:
@@ -1186,12 +1187,12 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
         bad_response = mock.MagicMock(ok=False, status_code=http_client.SERVICE_UNAVAILABLE)
         self.net._send_request = mock.MagicMock()
         self.net._send_request.return_value = bad_response
-        self.net.new_nonce_url = 'new_nonce_uri'
         self.content_type = None
         check_response = mock.MagicMock()
         self.net._check_response = check_response
         self.assertRaises(errors.ClientError, self.net.post, 'uri',
-                          self.obj, content_type=self.content_type, acme_version=2)
+                          self.obj, content_type=self.content_type, acme_version=2,
+                          new_nonce_url='new_nonce_uri')
         self.assertEqual(check_response.call_count, 1)
 
 
