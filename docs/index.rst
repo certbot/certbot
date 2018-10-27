@@ -1,3 +1,6 @@
+> **THIS DOCUMENT IS DEPRECATED**: 
+> The up-to-date documentation has been moved to [https://certbot.eff.org/docs/](https://certbot.eff.org/docs/)
+
 Welcome to the Certbot documentation!
 ==================================================
 
