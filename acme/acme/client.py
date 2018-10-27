@@ -89,6 +89,8 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
 
         """
         kwargs.setdefault('acme_version', self.acme_version)
+        if hasattr(self.directory, 'newNonce'):
+            kwargs.setdefault('new_nonce_url', getattr(self.directory, 'newNonce'))
         return self.net.post(*args, **kwargs)
 
     def update_registration(self, regr, update=None):
@@ -569,7 +571,6 @@ class ClientV2(ClientBase):
         :param .messages.Directory directory: Directory Resource
         :param .ClientNetwork net: Client network.
         """
-        net.new_nonce_url = getattr(directory, "newNonce")
         super(ClientV2, self).__init__(directory=directory,
             net=net, acme_version=2)
 
@@ -915,7 +916,6 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         self.user_agent = user_agent
         self.session = requests.Session()
         self._default_timeout = timeout
-        self.new_nonce_url = None # set by ClientV2
         adapter = HTTPAdapter()
 
         if source_address is not None:
@@ -1109,14 +1109,16 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         else:
             raise errors.MissingNonce(response)
 
-    def _get_nonce(self, url, acme_version):
+    def _get_nonce(self, url, acme_version, new_nonce_url):
         if not self._nonces:
             logger.debug('Requesting fresh nonce')
             if acme_version == 1:
                 response = self.head(url)
-            else:
+            elif new_nonce_url is not None:
                 # request a new nonce from the acme newNonce endpoint
-                response = self._check_response(self.head(self.new_nonce_url), content_type=None)
+                response = self._check_response(self.head(new_nonce_url), content_type=None)
+            else:
+                raise errors.Error("URL of newNonce endpoint must be set when using ACMEv2.")
             self._add_nonce(response)
         return self._nonces.pop()
 
@@ -1138,7 +1140,9 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
 
     def _post_once(self, url, obj, content_type=JOSE_CONTENT_TYPE,
             acme_version=1, **kwargs):
-        data = self._wrap_in_jws(obj, self._get_nonce(url, acme_version), url, acme_version)
+        new_nonce_url = kwargs.get('new_nonce_url')
+        nonce = self._get_nonce(url, acme_version, new_nonce_url)
+        data = self._wrap_in_jws(obj, nonce, url, acme_version)
         kwargs.setdefault('headers', {'Content-Type': content_type})
         response = self._send_request('POST', url, data=data, **kwargs)
         response = self._check_response(response, content_type=content_type)
