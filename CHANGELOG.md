@@ -2,6 +2,12 @@
 
 Certbot adheres to [Semantic Versioning](http://semver.org/).
 
+## 0.28.1 - master
+
+### Added
+
+* banner to deprecate old documentation hosted on readthedocs.io and refer to the up-to-date link
+
 ## 0.28.0 - master
 
 ### Added
