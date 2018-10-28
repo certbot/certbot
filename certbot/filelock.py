@@ -2,7 +2,7 @@
 Library to lock a directory or a file using a lockfile.
 This implementation heavily relies on the work of benediktschmitt
 (https://github.com/benediktschmitt/py-filelock)
-and should be considered as a fork of its project.
+and should be considered as a fork of his project.
 """
 import atexit
 import logging
@@ -31,6 +31,7 @@ _LOCKS = []  # type: List[BaseFileLock]
 
 
 def _release_all_locks():
+    """Release all locks acquired by FileLock."""
     if _INITIAL_PID == os.getpid():
         for lock in _LOCKS:
             if lock.is_locked:
@@ -42,6 +43,7 @@ def _release_all_locks():
                                  lock.lock_file, exc_info=True)
 
 
+# Every lock is released at least when Certbot exit.
 atexit.register(_release_all_locks)
 
 # Classes
