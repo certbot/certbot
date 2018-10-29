@@ -16,6 +16,7 @@ from requests_toolbelt.adapters.source import SourceAddressAdapter
 import requests
 from requests.adapters import HTTPAdapter
 import sys
+import json
 
 from acme import crypto_util
 from acme import errors
@@ -831,6 +832,35 @@ class BackwardsCompatibleClientV2(object):
 
         """
         return self.client.revoke(cert, rsn)
+
+    def build_new_registration(self, email, kid=None, hmac_key=None, phone=None, **kwargs):
+        """Create registration resource from contact details."""
+        details = list(kwargs.pop('contact', ()))
+        if phone is not None:
+            details.append(messages.Registration.phone_prefix + phone)
+        if email is not None:
+            details.append(messages.Registration.email_prefix + email)
+        kwargs['contact'] = tuple(details)
+
+        if kid is not None and hmac_key is not None:
+            kwargs['external_account_binding'] = self.build_external_account_binding(kid, hmac_key)
+
+        return messages.NewRegistration(**kwargs)
+
+    def build_external_account_binding(self, kid, hmac_key):
+        account_public_key = self.client.net.key.public_key()
+        directory = self.client.directory
+
+        key_json = json.dumps(account_public_key.to_partial_json())
+        decoded_hmac_key = jose.b64.b64decode(hmac_key)
+        url = directory["newAccount"]
+
+        eab = jws.JWS.sign(key_json, jose.jwk.JWKOct(key=decoded_hmac_key),
+                           jose.jwa.HS256, None,
+                           url, kid)
+
+        return eab.to_partial_json()
+
 
     def _acme_version_from_directory(self, directory):
         if hasattr(directory, 'newNonce'):

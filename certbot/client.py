@@ -196,13 +196,10 @@ def perform_registration(acme, config, tos_cb):
         if config.eab_kid is None or config.eab_hmac_key is None:
             raise errors.Error("Server requires external account binding. Please use --eab-kid and --eab-hmac-key.")
 
-    account_public_key = acme.client.net.key.public_key()
     try:
-        return acme.new_account_and_tos(messages.NewRegistration.from_data(account_public_key=account_public_key,
-                                                                           kid=config.eab_kid,
-                                                                           hmac_key=config.eab_hmac_key,
-                                                                           email=config.email,
-                                                                           directory=acme.client.directory),
+        return acme.new_account_and_tos(acme.build_new_registration(config.eab_kid,
+                                                                    config.eab_hmac_key,
+                                                                    config.email),
                                         tos_cb)
     except messages.Error as e:
         if e.code == "invalidEmail" or e.code == "invalidContact":
