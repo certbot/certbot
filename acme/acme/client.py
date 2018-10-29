@@ -1137,7 +1137,10 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
 
     def _post_once(self, url, obj, content_type=JOSE_CONTENT_TYPE,
             acme_version=1, **kwargs):
-        new_nonce_url = kwargs.get('new_nonce_url')
+        try:
+            new_nonce_url = kwargs.pop('new_nonce_url')
+        except KeyError:
+            new_nonce_url = None
         data = self._wrap_in_jws(obj, self._get_nonce(url, new_nonce_url), url, acme_version)
         kwargs.setdefault('headers', {'Content-Type': content_type})
         response = self._send_request('POST', url, data=data, **kwargs)
