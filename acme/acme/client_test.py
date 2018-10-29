@@ -1068,6 +1068,7 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
 
         def send_request(*args, **kwargs):
             # pylint: disable=unused-argument,missing-docstring
+            self.assertFalse("new_nonce_url" in kwargs)
             method = args[0]
             uri = args[1]
             if method == 'HEAD' and uri != "new_nonce_uri":
@@ -1194,6 +1195,11 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
                           self.obj, content_type=self.content_type, acme_version=2,
                           new_nonce_url='new_nonce_uri')
         self.assertEqual(check_response.call_count, 1)
+
+    def test_new_nonce_uri_removed(self):
+        self.content_type = None
+        self.net.post('uri', self.obj, content_type=None,
+            acme_version=2, new_nonce_url='new_nonce_uri')
 
 
 class ClientNetworkSourceAddressBindingTest(unittest.TestCase):
