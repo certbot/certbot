@@ -302,9 +302,7 @@ class Registration(ResourceBody):
     email_prefix = 'mailto:'
 
     @classmethod
-    def from_data(cls, account_public_key=None, kid=None,
-                  hmac_key=None, phone=None, email=None,
-                  directory=None, **kwargs):
+    def from_data(cls, phone=None, email=None, external_account_binding=None, **kwargs):
         """Create registration resource from contact details."""
         details = list(kwargs.pop('contact', ()))
         if phone is not None:
@@ -313,9 +311,8 @@ class Registration(ResourceBody):
             details.append(cls.email_prefix + email)
         kwargs['contact'] = tuple(details)
 
-        if kid is not None and hmac_key is not None:
-            kwargs['external_account_binding'] = ExternalAccountBinding.from_data(account_public_key, kid,
-                                                                                  hmac_key, directory)
+        if external_account_binding:
+            kwargs['external_account_binding'] = external_account_binding
 
         return cls(**kwargs)
 
