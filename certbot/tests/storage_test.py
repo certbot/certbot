@@ -92,12 +92,16 @@ class BaseRenewableCertTest(test_util.ConfigTestCase):
                    link)
         with open(link, "wb") as f:
             f.write(kind.encode('ascii') if value is None else value)
+        if kind == "privkey":
+            os.chmod(link, 0o600)
 
     def _write_out_ex_kinds(self):
         for kind in ALL_FOUR:
             self._write_out_kind(kind, 12)
             self._write_out_kind(kind, 11)
 
+def _get_file_permissions(filepath):
+    return stat.S_IMODE(os.stat(filepath).st_mode)
 
 class RenewableCertTests(BaseRenewableCertTest):
     # pylint: disable=too-many-public-methods
@@ -542,6 +546,7 @@ class RenewableCertTests(BaseRenewableCertTest):
                                             b'key', self.config))
         self.assertTrue(os.path.exists(self.test_rc.version("privkey", 10)))
         self.assertFalse(os.path.islink(self.test_rc.version("privkey", 10)))
+        self.assertEqual(0o600, _get_file_permissions(self.test_rc.version("privkey", 10)))
         self.assertFalse(os.path.exists(temp_config_file))
 
     def _test_relevant_values_common(self, values):
@@ -630,6 +635,7 @@ class RenewableCertTests(BaseRenewableCertTest):
             self.config.live_dir, "README")))
         self.assertTrue(os.path.exists(os.path.join(
             self.config.live_dir, "the-lineage.com", "README")))
+        self.assertEqual(_get_file_permissions(result.key_path), 0o600)
         with open(result.fullchain, "rb") as f:
             self.assertEqual(f.read(), b"cert" + b"chain")
         # Let's do it again and make sure it makes a different lineage

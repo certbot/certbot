@@ -1047,20 +1047,21 @@ class RenewableCert(object):
         # Put the data into the appropriate files on disk
         target = dict([(kind, os.path.join(live_dir, kind + ".pem"))
                        for kind in ALL_FOUR])
+        archive_target = dict([(kind, os.path.join(archive, kind + "1.pem"))
+                               for kind in ALL_FOUR])
         for kind in ALL_FOUR:
-            os.symlink(os.path.join(_relpath_from_file(archive, target[kind]), kind + "1.pem"),
-                       target[kind])
-        with open(target["cert"], "wb") as f:
+            os.symlink(_relpath_from_file(archive_target[kind], target[kind]), target[kind])
+        with open(archive_target["cert"], "wb") as f:
             logger.debug("Writing certificate to %s.", target["cert"])
             f.write(cert)
-        with open(target["privkey"], "wb") as f:
+        with util.safe_open(archive_target["privkey"], "wb", chmod=0o600) as f:
             logger.debug("Writing private key to %s.", target["privkey"])
             f.write(privkey)
             # XXX: Let's make sure to get the file permissions right here
-        with open(target["chain"], "wb") as f:
+        with open(archive_target["chain"], "wb") as f:
             logger.debug("Writing chain to %s.", target["chain"])
             f.write(chain)
-        with open(target["fullchain"], "wb") as f:
+        with open(archive_target["fullchain"], "wb") as f:
             # assumes that OpenSSL.crypto.dump_certificate includes
             # ending newline character
             logger.debug("Writing full chain to %s.", target["fullchain"])
@@ -1132,7 +1133,7 @@ class RenewableCert(object):
             logger.debug("Writing symlink to old private key, %s.", old_privkey)
             os.symlink(old_privkey, target["privkey"])
         else:
-            with open(target["privkey"], "wb") as f:
+            with util.safe_open(target["privkey"], "wb", chmod=0o600) as f:
                 logger.debug("Writing new private key to %s.", target["privkey"])
                 f.write(new_privkey)
 
