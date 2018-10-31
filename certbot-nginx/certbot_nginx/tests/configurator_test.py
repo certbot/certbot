@@ -128,22 +128,39 @@ class NginxConfiguratorTest(util.NginxTest):
                             ['#', parser.COMMENT]]]],
                          parsed[0])
 
-    def test_choose_vhosts(self):
-        localhost_conf = set(['localhost', r'~^(www\.)?(example|bar)\.'])
-        server_conf = set(['somename', 'another.alias', 'alias'])
-        example_conf = set(['.example.com', 'example.*'])
-        foo_conf = set(['*.www.foo.com', '*.www.example.com'])
-        ipv6_conf = set(['ipv6.com'])
+    def test_choose_vhosts_alias(self):
+        self._test_choose_vhosts_common('alias', 'server_conf')
 
-        results = {'localhost': localhost_conf,
-                   'alias': server_conf,
-                   'example.com': example_conf,
-                   'example.com.uk.test': example_conf,
-                   'www.example.com': example_conf,
-                   'test.www.example.com': foo_conf,
-                   'abc.www.foo.com': foo_conf,
-                   'www.bar.co.uk': localhost_conf,
-                   'ipv6.com': ipv6_conf}
+    def test_choose_vhosts_example_com(self):
+        self._test_choose_vhosts_common('example.com', 'example_conf')
+
+    def test_choose_vhosts_localhost(self):
+        self._test_choose_vhosts_common('localhost', 'localhost_conf')
+
+    def test_choose_vhosts_example_com_uk_test(self):
+        self._test_choose_vhosts_common('example.com.uk.test', 'example_conf')
+
+    def test_choose_vhosts_www_example_com(self):
+        self._test_choose_vhosts_common('www.example.com', 'example_conf')
+
+    def test_choose_vhosts_test_www_example_com(self):
+        self._test_choose_vhosts_common('test.www.example.com', 'foo_conf')
+
+    def test_choose_vhosts_abc_www_foo_com(self):
+        self._test_choose_vhosts_common('abc.www.foo.com', 'foo_conf')
+
+    def test_choose_vhosts_www_bar_co_uk(self):
+        self._test_choose_vhosts_common('www.bar.co.uk', 'localhost_conf')
+
+    def test_choose_vhosts_ipv6_com(self):
+        self._test_choose_vhosts_common('ipv6.com', 'ipv6_conf')
+
+    def _test_choose_vhosts_common(self, name, conf):
+        conf_names = {'localhost_conf': set(['localhost', r'~^(www\.)?(example|bar)\.']),
+                 'server_conf': set(['somename', 'another.alias', 'alias']),
+                 'example_conf': set(['.example.com', 'example.*']),
+                 'foo_conf': set(['*.www.foo.com', '*.www.example.com']),
+                 'ipv6_conf': set(['ipv6.com'])}
 
         conf_path = {'localhost': "etc_nginx/nginx.conf",
                    'alias': "etc_nginx/nginx.conf",
@@ -155,21 +172,21 @@ class NginxConfiguratorTest(util.NginxTest):
                    'www.bar.co.uk': "etc_nginx/nginx.conf",
                    'ipv6.com': "etc_nginx/sites-enabled/ipv6.com"}
 
+        vhost = self.config.choose_vhosts(name)[0]
+        path = os.path.relpath(vhost.filep, self.temp_dir)
+
+        self.assertEqual(conf_names[conf], vhost.names)
+        self.assertEqual(conf_path[name], path)
+        # IPv6 specific checks
+        if name == "ipv6.com":
+            self.assertTrue(vhost.ipv6_enabled())
+            # Make sure that we have SSL enabled also for IPv6 addr
+            self.assertTrue(
+                any([True for x in vhost.addrs if x.ssl and x.ipv6]))
+
+    def test_choose_vhosts_bad(self):
         bad_results = ['www.foo.com', 'example', 't.www.bar.co',
                        '69.255.225.155']
-
-        for name in results:
-            vhost = self.config.choose_vhosts(name)[0]
-            path = os.path.relpath(vhost.filep, self.temp_dir)
-
-            self.assertEqual(results[name], vhost.names)
-            self.assertEqual(conf_path[name], path)
-            # IPv6 specific checks
-            if name == "ipv6.com":
-                self.assertTrue(vhost.ipv6_enabled())
-                # Make sure that we have SSL enabled also for IPv6 addr
-                self.assertTrue(
-                    any([True for x in vhost.addrs if x.ssl and x.ipv6]))
 
         for name in bad_results:
             self.assertRaises(errors.MisconfigurationError,
@@ -177,9 +194,9 @@ class NginxConfiguratorTest(util.NginxTest):
 
     def test_ipv6only(self):
         # ipv6_info: (ipv6_active, ipv6only_present)
-        self.assertEquals((True, False), self.config.ipv6_info("80"))
+        self.assertEqual((True, False), self.config.ipv6_info("80"))
         # Port 443 has ipv6only=on because of ipv6ssl.com vhost
-        self.assertEquals((True, True), self.config.ipv6_info("443"))
+        self.assertEqual((True, True), self.config.ipv6_info("443"))
 
     def test_ipv6only_detection(self):
         self.config.version = (1, 3, 1)
@@ -790,7 +807,7 @@ class NginxConfiguratorTest(util.NginxTest):
             self.assertTrue(vhost in mock_select_vhs.call_args[0][0])
 
             # And the actual returned values
-            self.assertEquals(len(vhs), 1)
+            self.assertEqual(len(vhs), 1)
             self.assertEqual(vhs[0], vhost)
 
     def test_choose_vhosts_wildcard_redirect(self):
@@ -806,7 +823,7 @@ class NginxConfiguratorTest(util.NginxTest):
             self.assertTrue(vhost in mock_select_vhs.call_args[0][0])
 
             # And the actual returned values
-            self.assertEquals(len(vhs), 1)
+            self.assertEqual(len(vhs), 1)
             self.assertEqual(vhs[0], vhost)
 
     def test_deploy_cert_wildcard(self):
@@ -821,7 +838,7 @@ class NginxConfiguratorTest(util.NginxTest):
             self.config.deploy_cert("*.com", "/tmp/path",
                                     "/tmp/path", "/tmp/path", "/tmp/path")
             self.assertTrue(mock_dep.called)
-            self.assertEquals(len(mock_dep.call_args_list), 1)
+            self.assertEqual(len(mock_dep.call_args_list), 1)
             self.assertEqual(vhost, mock_dep.call_args_list[0][0][0])
 
     @mock.patch("certbot_nginx.display_ops.select_vhost_multiple")

@@ -424,6 +424,19 @@ class OrderResourceTest(unittest.TestCase):
             'authorizations': None,
         })
 
+class NewOrderTest(unittest.TestCase):
+    """Tests for acme.messages.NewOrder."""
+
+    def setUp(self):
+        from acme.messages import NewOrder
+        self.reg = NewOrder(
+            identifiers=mock.sentinel.identifiers)
+
+    def test_to_partial_json(self):
+        self.assertEqual(self.reg.to_json(), {
+            'identifiers': mock.sentinel.identifiers,
+        })
+
 
 if __name__ == '__main__':
     unittest.main()  # pragma: no cover

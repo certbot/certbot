@@ -4,6 +4,7 @@
 
 """
 import os
+import sys
 import pkg_resources
 import unittest
 
@@ -94,3 +95,11 @@ def skip_unless(condition, reason):  # pragma: no cover
         return lambda cls: cls
     else:
         return lambda cls: None
+
+def broken_on_windows(function):
+    """Decorator to skip temporarily a broken test on Windows."""
+    reason = 'Test is broken and ignored on windows but should be fixed.'
+    return unittest.skipIf(
+        sys.platform == 'win32'
+        and os.environ.get('SKIP_BROKEN_TESTS_ON_WINDOWS', 'true') == 'true',
+        reason)(function)

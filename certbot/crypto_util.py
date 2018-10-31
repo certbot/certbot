@@ -449,14 +449,17 @@ def _notAfterBefore(cert_path, method):
 def sha256sum(filename):
     """Compute a sha256sum of a file.
 
+    NB: In given file, platform specific newlines characters will be converted
+    into their equivalent unicode counterparts before calculating the hash.
+
     :param str filename: path to the file whose hash will be computed
 
     :returns: sha256 digest of the file in hexadecimal
     :rtype: str
     """
     sha256 = hashlib.sha256()
-    with open(filename, 'rb') as f:
-        sha256.update(f.read())
+    with open(filename, 'rU') as file_d:
+        sha256.update(file_d.read().encode('UTF-8'))
     return sha256.hexdigest()
 
 def cert_and_chain_from_fullchain(fullchain_pem):

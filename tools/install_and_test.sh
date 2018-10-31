@@ -14,6 +14,7 @@ fi
 
 temp_cwd=$(mktemp -d)
 trap "rm -rf $temp_cwd" EXIT
+cp pytest.ini "$temp_cwd"
 
 set -x
 for requirement in "$@" ; do
@@ -24,6 +25,6 @@ for requirement in "$@" ; do
     pkg="certbot"
   fi
   cd "$temp_cwd"
-  pytest --numprocesses auto --quiet --pyargs $pkg
+  pytest --quiet $pkg
   cd -
 done

@@ -665,7 +665,7 @@ class ClientTest(ClientTestBase):
     def test_revocation_payload(self):
         obj = messages.Revocation(certificate=self.certr.body, reason=self.rsn)
         self.assertTrue('reason' in obj.to_partial_json().keys())
-        self.assertEquals(self.rsn, obj.to_partial_json()['reason'])
+        self.assertEqual(self.rsn, obj.to_partial_json()['reason'])
 
     def test_revoke_bad_status_raises_error(self):
         self.response.status_code = http_client.METHOD_NOT_ALLOWED
@@ -1038,8 +1038,8 @@ class ClientNetworkTest(unittest.TestCase):
 
         # Requests Library Exceptions
         except requests.exceptions.ConnectionError as z: #pragma: no cover
-            self.assertEqual("('Connection aborted.', "
-                             "error(111, 'Connection refused'))", str(z))
+            self.assertTrue("('Connection aborted.', error(111, 'Connection refused'))"
+                              == str(z) or "[WinError 10061]" in str(z))
 
 class ClientNetworkWithMockedResponseTest(unittest.TestCase):
     """Tests for acme.client.ClientNetwork which mock out response."""

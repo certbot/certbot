@@ -523,7 +523,7 @@ class Order(ResourceBody):
     """
     identifiers = jose.Field('identifiers', omitempty=True)
     status = jose.Field('status', decoder=Status.from_json,
-                        omitempty=True, default=STATUS_PENDING)
+                        omitempty=True)
     authorizations = jose.Field('authorizations', omitempty=True)
     certificate = jose.Field('certificate', omitempty=True)
     finalize = jose.Field('finalize', omitempty=True)
@@ -553,4 +553,3 @@ class OrderResource(ResourceWithURI):
 class NewOrder(Order):
     """New order."""
     resource_type = 'new-order'
-    resource = fields.Resource(resource_type)
