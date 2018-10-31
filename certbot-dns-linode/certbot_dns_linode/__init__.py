@@ -14,11 +14,9 @@ Named Arguments
                                             DNS to propagate before asking the
                                             ACME server to verify the DNS
                                             record.
-                                            (Default: 1200 because Linode
-                                            updates its first DNS every 15
-                                            minutes and we allow 5 more minutes
-                                            for the update to reach the other 5
-                                            servers)
+                                            (Default: 1800 because Linode
+                                            recommend 30 minutes for DNS
+                                            propagation over the Linode DNS)
 ==========================================  ===================================
 
 
