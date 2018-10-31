@@ -25,6 +25,7 @@ from OpenSSL import SSL  # type: ignore
 
 from acme import crypto_util as acme_crypto_util
 from acme.magic_typing import IO  # pylint: disable=unused-import, no-name-in-module
+from certbot import compat
 from certbot import errors
 from certbot import interfaces
 from certbot import util
@@ -60,7 +61,7 @@ def init_save_key(key_size, key_dir, keyname="key-certbot.pem"):
 
     config = zope.component.getUtility(interfaces.IConfig)
     # Save file
-    util.make_or_verify_dir(key_dir, 0o700, os.geteuid(),
+    util.make_or_verify_dir(key_dir, 0o700, compat.os_geteuid(),
                             config.strict_permissions)
     key_f, key_path = util.unique_file(
         os.path.join(key_dir, keyname), 0o600, "wb")
@@ -91,7 +92,7 @@ def init_save_csr(privkey, names, path):
         privkey.pem, names, must_staple=config.must_staple)
 
     # Save CSR
-    util.make_or_verify_dir(path, 0o755, os.geteuid(),
+    util.make_or_verify_dir(path, 0o755, compat.os_geteuid(),
                                config.strict_permissions)
     csr_f, csr_filename = util.unique_file(
         os.path.join(path, "csr-certbot.pem"), 0o644, "wb")
@@ -448,14 +449,17 @@ def _notAfterBefore(cert_path, method):
 def sha256sum(filename):
     """Compute a sha256sum of a file.
 
+    NB: In given file, platform specific newlines characters will be converted
+    into their equivalent unicode counterparts before calculating the hash.
+
     :param str filename: path to the file whose hash will be computed
 
     :returns: sha256 digest of the file in hexadecimal
     :rtype: str
     """
     sha256 = hashlib.sha256()
-    with open(filename, 'rb') as f:
-        sha256.update(f.read())
+    with open(filename, 'rU') as file_d:
+        sha256.update(file_d.read().encode('UTF-8'))
     return sha256.hexdigest()
 
 def cert_and_chain_from_fullchain(fullchain_pem):

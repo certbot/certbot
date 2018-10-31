@@ -2,6 +2,147 @@
 
 Certbot adheres to [Semantic Versioning](http://semver.org/).
 
+## 0.28.0 - master
+
+### Added
+
+* `revoke` accepts `--cert-name`, and doesn't accept both `--cert-name` and `--cert-path`.
+
+### Changed
+
+* Removed documentation mentions of `#letsencrypt` IRC on Freenode.
+* Write README to the base of (config-dir)/live directory
+* `--manual` will explicitly warn users that earlier challenges should remain in place when setting up subsequent challenges.
+
+### Fixed
+
+* Match Nginx parser update in allowing variable names to start with `${`.
+* Fix ranking of vhosts in Nginx so that all port-matching vhosts come first
+* Correct OVH integration tests on machines without internet access.
+* Stop caching the results of ipv6_info in http01.py
+
+## 0.27.1 - 2018-09-06
+
+### Fixed
+
+* Fixed parameter name in OpenSUSE overrides for default parameters in the
+  Apache plugin. Certbot on OpenSUSE works again.
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+package with changes other than its version number was:
+
+* certbot-apache
+
+More details about these changes can be found on our GitHub repo:
+https://github.com/certbot/certbot/milestone/60?closed=1
+
+## 0.27.0 - 2018-09-05
+
+### Added
+
+* The Apache plugin now accepts the parameter --apache-ctl which can be
+  used to configure the path to the Apache control script.
+
+### Changed
+
+* When using `acme.client.ClientV2` (or
+ `acme.client.BackwardsCompatibleClientV2` with an ACME server that supports a
+ newer version of the ACME protocol), an `acme.errors.ConflictError` will be
+ raised if you try to create an ACME account with a key that has already been
+ used. Previously, a JSON parsing error was raised in this scenario when using
+ the library with Let's Encrypt's ACMEv2 endpoint.
+
+### Fixed
+
+* When Apache is not installed, Certbot's Apache plugin no longer prints
+  messages about being unable to find apachectl to the terminal when the plugin
+  is not selected.
+* If you're using the Apache plugin with the --apache-vhost-root flag set to a
+  directory containing a disabled virtual host for the domain you're requesting
+  a certificate for, the virtual host will now be temporarily enabled if
+  necessary to pass the HTTP challenge.
+* The documentation for the Certbot package can now be built using Sphinx 1.6+.
+* You can now call `query_registration` without having to first call
+  `new_account` on `acme.client.ClientV2` objects.
+* The requirement of `setuptools>=1.0` has been removed from `certbot-dns-ovh`.
+* Names in certbot-dns-sakuracloud's tests have been updated to refer to Sakura
+  Cloud rather than NS1 whose plugin certbot-dns-sakuracloud was based on.
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+package with changes other than its version number was:
+
+* acme
+* certbot
+* certbot-apache
+* certbot-dns-ovh
+* certbot-dns-sakuracloud
+
+More details about these changes can be found on our GitHub repo:
+https://github.com/certbot/certbot/milestone/57?closed=1
+
+## 0.26.1 - 2018-07-17
+
+### Fixed
+
+* Fix a bug that was triggered when users who had previously manually set `--server` to get ACMEv2 certs tried to renew ACMEv1 certs.
+
+Despite us having broken lockstep, we are continuing to release new versions of all Certbot components during releases for the time being, however, the only package with changes other than its version number was:
+
+* certbot
+
+More details about these changes can be found on our GitHub repo:
+https://github.com/certbot/certbot/milestone/58?closed=1
+
+## 0.26.0 - 2018-07-11
+
+### Added
+
+* A new security enhancement which we're calling AutoHSTS has been added to
+  Certbot's Apache plugin. This enhancement configures your webserver to send a
+  HTTP Strict Transport Security header with a low max-age value that is slowly
+  increased over time. The max-age value is not increased to a large value
+  until you've successfully managed to renew your certificate. This enhancement
+  can be requested with the --auto-hsts flag.
+* New official DNS plugins have been created for Gehirn Infrastracture Service,
+  Linode, OVH, and Sakura Cloud. These plugins can be found on our Docker Hub
+  page at https://hub.docker.com/u/certbot and on PyPI.
+* The ability to reuse ACME accounts from Let's Encrypt's ACMEv1 endpoint on
+  Let's Encrypt's ACMEv2 endpoint has been added.
+* Certbot and its components now support Python 3.7.
+* Certbot's install subcommand now allows you to interactively choose which
+  certificate to install from the list of certificates managed by Certbot.
+* Certbot now accepts the flag `--no-autorenew` which causes any obtained
+  certificates to not be automatically renewed when it approaches expiration.
+* Support for parsing the TLS-ALPN-01 challenge has been added back to the acme
+  library.
+
+### Changed
+
+* Certbot's default ACME server has been changed to Let's Encrypt's ACMEv2
+  endpoint. By default, this server will now be used for both new certificate
+  lineages and renewals.
+* The Nginx plugin is no longer marked labeled as an "Alpha" version.
+* The `prepare` method of Certbot's plugins is no longer called before running
+  "Updater" enhancements that are run on every invocation of `certbot renew`.
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+packages with functional changes were:
+
+* acme
+* certbot
+* certbot-apache
+* certbot-dns-gehirn
+* certbot-dns-linode
+* certbot-dns-ovh
+* certbot-dns-sakuracloud
+* certbot-nginx
+
+More details about these changes can be found on our GitHub repo:
+https://github.com/certbot/certbot/milestone/55?closed=1
+
 ## 0.25.1 - 2018-06-13
 
 ### Fixed
@@ -735,7 +876,7 @@ https://github.com/certbot/certbot/pulls?q=is%3Apr%20milestone%3A0.11.1%20is%3Ac
 
 ### Added
 
-* When using the standalone plugin while running Certbot interactively 
+* When using the standalone plugin while running Certbot interactively
 and a required port is bound by another process, Certbot will give you
 the option to retry to grab the port rather than immediately exiting.
 * You are now able to deactivate your account with the Let's Encrypt

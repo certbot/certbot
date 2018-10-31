@@ -190,10 +190,11 @@ If you'd like to obtain a wildcard certificate from Let's Encrypt or run
 ``certbot`` on a machine other than your target webserver, you can use one of
 Certbot's DNS plugins.
 
-These plugins are still in the process of being packaged
-by many distributions and cannot currently be installed with ``certbot-auto``.
-If, however, you are comfortable installing the certificates yourself,
-you can run these plugins with :ref:`Docker <docker-user>`.
+These plugins are not included in a default Certbot installation and must be
+installed separately. While the DNS plugins cannot currently be used with
+``certbot-auto``, they are available in many OS package managers and as Docker
+images. Visit https://certbot.eff.org to learn the best way to use the DNS
+plugins on your system.
 
 Once installed, you can find documentation on how to use each plugin at:
 
@@ -904,7 +905,7 @@ Lock Files
 
 When processing a validation Certbot writes a number of lock files on your system
 to prevent multiple instances from overwriting each other's changes. This means
-that be default two instances of Certbot will not be able to run in parallel.
+that by default two instances of Certbot will not be able to run in parallel.
 
 Since the directories used by Certbot are configurable, Certbot
 will write a lock file for all of the directories it uses. This include Certbot's
@@ -986,9 +987,6 @@ Getting help
 
 If you're having problems, we recommend posting on the Let's Encrypt
 `Community Forum <https://community.letsencrypt.org>`_.
-
-You can also chat with us on IRC: `(#letsencrypt @
-freenode) <https://webchat.freenode.net?channels=%23letsencrypt>`_
 
 If you find a bug in the software, please do report it in our `issue
 tracker <https://github.com/certbot/certbot/issues>`_. Remember to

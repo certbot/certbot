@@ -14,7 +14,11 @@ Named Arguments
                                             DNS to propagate before asking the
                                             ACME server to verify the DNS
                                             record.
-                                            (Default: 960)
+                                            (Default: 1200 because Linode
+                                            updates its first DNS every 15
+                                            minutes and we allow 5 more minutes
+                                            for the update to reach the other 5
+                                            servers)
 ==========================================  ===================================
 
 
@@ -23,7 +27,7 @@ Credentials
 
 Use of this plugin requires a configuration file containing Linode API
 credentials, obtained from your Linode account's `Applications & API
-Tokens page <https://cloud.linode.com/settings/api/tokens>`_.
+Tokens page <https://manager.linode.com/profile/api>`_.
 
 .. code-block:: ini
    :name: credentials.ini
@@ -74,13 +78,15 @@ Examples
      -d www.example.com
 
 .. code-block:: bash
-   :caption: To acquire a certificate for ``example.com``, waiting 60 seconds
-             for DNS propagation
+   :caption: To acquire a certificate for ``example.com``, waiting 1000 seconds
+             for DNS propagation (Linode updates its first DNS every 15 minutes
+             and we allow some extra time for the update to reach the other 5
+             servers)
 
    certbot certonly \\
      --dns-linode \\
      --dns-linode-credentials ~/.secrets/certbot/linode.ini \\
-     --dns-linode-propagation-seconds 60 \\
+     --dns-linode-propagation-seconds 1000 \\
      -d example.com
 
 """

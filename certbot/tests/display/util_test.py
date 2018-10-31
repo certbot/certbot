@@ -1,6 +1,5 @@
 """Test :mod:`certbot.display.util`."""
 import inspect
-import os
 import socket
 import tempfile
 import unittest
@@ -10,7 +9,6 @@ import mock
 
 from certbot import errors
 from certbot import interfaces
-
 from certbot.display import util as display_util
 
 
@@ -34,7 +32,7 @@ class InputWithTimeoutTest(unittest.TestCase):
     def test_input(self, prompt=None):
         expected = "foo bar"
         stdin = six.StringIO(expected + "\n")
-        with mock.patch("certbot.display.util.select.select") as mock_select:
+        with mock.patch("certbot.compat.select.select") as mock_select:
             mock_select.return_value = ([stdin], [], [],)
             self.assertEqual(self._call(prompt), expected)
 
@@ -281,10 +279,10 @@ class FileOutputDisplayTest(unittest.TestCase):
         msg = ("This is just a weak test{0}"
                "This function is only meant to be for easy viewing{0}"
                "Test a really really really really really really really really "
-               "really really really really long line...".format(os.linesep))
+               "really really really really long line...".format('\n'))
         text = display_util._wrap_lines(msg)
 
-        self.assertEqual(text.count(os.linesep), 3)
+        self.assertEqual(text.count('\n'), 3)
 
     def test_get_valid_int_ans_valid(self):
         # pylint: disable=protected-access
@@ -321,11 +319,7 @@ class FileOutputDisplayTest(unittest.TestCase):
 
 
 class NoninteractiveDisplayTest(unittest.TestCase):
-    """Test non-interactive display.
-
-    These tests are pretty easy!
-
-    """
+    """Test non-interactive display. These tests are pretty easy!"""
     def setUp(self):
         super(NoninteractiveDisplayTest, self).setUp()
         self.mock_stdout = mock.MagicMock()

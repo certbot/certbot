@@ -4,18 +4,16 @@ from setuptools import setup
 from setuptools import find_packages
 
 
-version = '0.25.0.dev0'
+version = '0.28.0.dev0'
 
 # Remember to update local-oldest-requirements.txt when changing the minimum
 # acme/certbot version.
 install_requires = [
     'acme>=0.21.1',
     'certbot>=0.21.1',
-    'dns-lexicon>=2.2.1', # Support for >1 TXT record per name
+    'dns-lexicon>=2.7.3', # Correct OVH integration tests
     'mock',
-    # For pkg_resources. >=1.0 so pip resolves it to a version cryptography
-    # will tolerate; see #2599:
-    'setuptools>=1.0',
+    'setuptools',
     'zope.interface',
 ]
 
