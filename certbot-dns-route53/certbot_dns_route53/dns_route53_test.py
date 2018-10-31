@@ -1,5 +1,6 @@
 """Tests for certbot_dns_route53.dns_route53.Authenticator"""
 
+import os
 import unittest
 
 import mock
@@ -19,6 +20,10 @@ class AuthenticatorTest(unittest.TestCase, dns_test_common.BaseAuthenticatorTest
         super(AuthenticatorTest, self).setUp()
 
         self.config = mock.MagicMock()
+
+        # Set up dummy credentials for testing
+        os.environ["AWS_ACCESS_KEY_ID"] = "dummy_access_key"
+        os.environ["AWS_SECRET_ACCESS_KEY"] = "dummy_secret_access_key"
 
         self.auth = Authenticator(self.config, "route53")
 
@@ -116,6 +121,10 @@ class ClientTest(unittest.TestCase):
         super(ClientTest, self).setUp()
 
         self.config = mock.MagicMock()
+
+        # Set up dummy credentials for testing
+        os.environ["AWS_ACCESS_KEY_ID"] = "dummy_access_key"
+        os.environ["AWS_SECRET_ACCESS_KEY"] = "dummy_secret_access_key"
 
         self.client = Authenticator(self.config, "route53")
 
