@@ -239,10 +239,15 @@ def relevant_values(all_values):
     :rtype dict:
 
     """
-    return dict(
+    rv = dict(
         (option, value)
         for option, value in six.iteritems(all_values)
         if _relevant(option) and cli.option_was_set(option, value))
+    # We always save the server value to help with forward compatibility
+    # and behavioral consistency when versions of Certbot with different
+    # server defaults are used.
+    rv["server"] = all_values["server"]
+    return rv
 
 def lineagename_for_filename(config_filename):
     """Returns the lineagename for a configuration filename.

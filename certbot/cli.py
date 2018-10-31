@@ -1415,10 +1415,18 @@ def _plugins_parsing(helpful, plugins):
                 default=flag_default("dns_dnsmadeeasy"),
                 help=("Obtain certificates using a DNS TXT record (if you are"
                       "using DNS Made Easy for DNS)."))
+    helpful.add(["plugins", "certonly"], "--dns-gehirn", action="store_true",
+                default=flag_default("dns_gehirn"),
+                help=("Obtain certificates using a DNS TXT record "
+                     "(if you are using Gehirn Infrastracture Service for DNS)."))
     helpful.add(["plugins", "certonly"], "--dns-google", action="store_true",
                 default=flag_default("dns_google"),
                 help=("Obtain certificates using a DNS TXT record (if you are "
                       "using Google Cloud DNS)."))
+    helpful.add(["plugins", "certonly"], "--dns-linode", action="store_true",
+                default=flag_default("dns_linode"),
+                help=("Obtain certificates using a DNS TXT record (if you are "
+                      "using Linode for DNS)."))
     helpful.add(["plugins", "certonly"], "--dns-luadns", action="store_true",
                 default=flag_default("dns_luadns"),
                 help=("Obtain certificates using a DNS TXT record (if you are "
@@ -1427,6 +1435,10 @@ def _plugins_parsing(helpful, plugins):
                 default=flag_default("dns_nsone"),
                 help=("Obtain certificates using a DNS TXT record (if you are "
                       "using NS1 for DNS)."))
+    helpful.add(["plugins", "certonly"], "--dns-ovh", action="store_true",
+                default=flag_default("dns_ovh"),
+                help=("Obtain certificates using a DNS TXT record (if you are "
+                      "using OVH for DNS)."))
     helpful.add(["plugins", "certonly"], "--dns-rfc2136", action="store_true",
                 default=flag_default("dns_rfc2136"),
                 help="Obtain certificates using a DNS TXT record (if you are using BIND for DNS).")
@@ -1434,6 +1446,10 @@ def _plugins_parsing(helpful, plugins):
                 default=flag_default("dns_route53"),
                 help=("Obtain certificates using a DNS TXT record (if you are using Route53 for "
                       "DNS)."))
+    helpful.add(["plugins", "certonly"], "--dns-sakuracloud", action="store_true",
+                default=flag_default("dns_sakuracloud"),
+                help=("Obtain certificates using a DNS TXT record "
+                     "(if you are using Sakura Cloud for DNS)."))
 
     # things should not be reorder past/pre this comment:
     # plugins_group should be displayed in --help before plugin

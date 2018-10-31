@@ -60,7 +60,7 @@ class NginxConfigurator(common.Installer):
 
     """
 
-    description = "Nginx Web Server plugin - Alpha"
+    description = "Nginx Web Server plugin"
 
     DEFAULT_LISTEN_PORT = '80'
 

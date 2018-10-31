@@ -620,6 +620,9 @@ class GenericUpdater(object):
     methods, and interfaces.GenericUpdater.register(InstallerClass) should
     be called from the installer code.
 
+    The plugins implementing this enhancement are responsible of handling
+    the saving of configuration checkpoints as well as other calls to
+    interface methods of `interfaces.IInstaller` such as prepare() and restart()
     """
 
     @abc.abstractmethod

@@ -55,20 +55,23 @@ class AutoHSTSTest(util.ApacheTest):
 
     @mock.patch("certbot_apache.constants.AUTOHSTS_FREQ", 0)
     @mock.patch("certbot_apache.configurator.ApacheConfigurator.restart")
-    def test_autohsts_increase(self, _mock_restart):
+    @mock.patch("certbot_apache.configurator.ApacheConfigurator.prepare")
+    def test_autohsts_increase(self, mock_prepare, _mock_restart):
+        self.config._prepared = False
         maxage = "\"max-age={0}\""
         initial_val = maxage.format(constants.AUTOHSTS_STEPS[0])
         inc_val = maxage.format(constants.AUTOHSTS_STEPS[1])
 
         self.config.enable_autohsts(mock.MagicMock(), ["ocspvhost.com"])
         # Verify initial value
-        self.assertEquals(self.get_autohsts_value(self.vh_truth[7].path),
+        self.assertEqual(self.get_autohsts_value(self.vh_truth[7].path),
                           initial_val)
         # Increase
         self.config.update_autohsts(mock.MagicMock())
         # Verify increased value
-        self.assertEquals(self.get_autohsts_value(self.vh_truth[7].path),
+        self.assertEqual(self.get_autohsts_value(self.vh_truth[7].path),
                           inc_val)
+        self.assertTrue(mock_prepare.called)
 
     @mock.patch("certbot_apache.configurator.ApacheConfigurator.restart")
     @mock.patch("certbot_apache.configurator.ApacheConfigurator._autohsts_increase")
@@ -77,7 +80,7 @@ class AutoHSTSTest(util.ApacheTest):
         initial_val = maxage.format(constants.AUTOHSTS_STEPS[0])
         self.config.enable_autohsts(mock.MagicMock(), ["ocspvhost.com"])
         # Verify initial value
-        self.assertEquals(self.get_autohsts_value(self.vh_truth[7].path),
+        self.assertEqual(self.get_autohsts_value(self.vh_truth[7].path),
                           initial_val)
 
         self.config.update_autohsts(mock.MagicMock())
@@ -114,11 +117,11 @@ class AutoHSTSTest(util.ApacheTest):
             self.config.update_autohsts(mock.MagicMock())
             # Value should match pre-permanent increment step
             cur_val = maxage.format(constants.AUTOHSTS_STEPS[i+1])
-            self.assertEquals(self.get_autohsts_value(self.vh_truth[7].path),
+            self.assertEqual(self.get_autohsts_value(self.vh_truth[7].path),
                               cur_val)
         # Make permanent
         self.config.deploy_autohsts(mock_lineage)
-        self.assertEquals(self.get_autohsts_value(self.vh_truth[7].path),
+        self.assertEqual(self.get_autohsts_value(self.vh_truth[7].path),
                           max_val)
 
     def test_autohsts_update_noop(self):
@@ -150,7 +153,7 @@ class AutoHSTSTest(util.ApacheTest):
         mock_id.return_value = "1234567"
         self.config.enable_autohsts(mock.MagicMock(),
                                     ["ocspvhost.com", "ocspvhost.com"])
-        self.assertEquals(mock_id.call_count, 1)
+        self.assertEqual(mock_id.call_count, 1)
 
     def test_autohsts_remove_orphaned(self):
         # pylint: disable=protected-access

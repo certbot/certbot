@@ -18,10 +18,14 @@ fi
   -e certbot-dns-digitalocean \
   -e certbot-dns-dnsimple \
   -e certbot-dns-dnsmadeeasy \
+  -e certbot-dns-gehirn \
   -e certbot-dns-google \
+  -e certbot-dns-linode \
   -e certbot-dns-luadns \
   -e certbot-dns-nsone \
+  -e certbot-dns-ovh \
   -e certbot-dns-route53 \
+  -e certbot-dns-sakuracloud \
   -e certbot-nginx \
   -e certbot-postfix \
   -e letshelp-certbot \
