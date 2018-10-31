@@ -103,7 +103,7 @@ class NginxConfiguratorTest(util.NginxTest):
             errors.PluginError, self.config.enhance, 'myhost', 'unknown_enhancement')
 
     def test_get_chall_pref(self):
-        self.assertEqual([challenges.TLSSNI01, challenges.HTTP01],
+        self.assertEqual([challenges.HTTP01,challenges.TLSSNI01],
                          self.config.get_chall_pref('myhost'))
 
     def test_save(self):
