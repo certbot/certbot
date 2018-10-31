@@ -163,7 +163,7 @@ def main():
                                      temp,
                                      digest)
                      for path, digest in PACKAGES]
-        check_output('{0} -m pip install --no-index --no-deps -U '.format(executable) +
+        check_output('{0} -m pip install --no-index --no-deps -U '.format(quote(executable)) +
                      # Disable cache since we're not using it and it otherwise
                      # sometimes throws permission warnings:
                      ('--no-cache-dir ' if has_pip_cache else '') +
