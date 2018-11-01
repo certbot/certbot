@@ -120,7 +120,7 @@ class AutoHSTSTest(util.ApacheTest):
             self.assertEqual(self.get_autohsts_value(self.vh_truth[7].path),
                               cur_val)
         # Ensure that the value is raised to max
-        self.assertEquals(self.get_autohsts_value(self.vh_truth[7].path),
+        self.assertEqual(self.get_autohsts_value(self.vh_truth[7].path),
                           maxage.format(constants.AUTOHSTS_STEPS[-1]))
         # Make permanent
         self.config.deploy_autohsts(mock_lineage)
