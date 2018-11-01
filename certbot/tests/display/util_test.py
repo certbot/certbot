@@ -16,11 +16,6 @@ CHOICES = [("First", "Description1"), ("Second", "Description2")]
 TAGS = ["tag1", "tag2", "tag3"]
 TAGS_CHOICES = [("1", "tag1"), ("2", "tag2"), ("3", "tag3")]
 
-if six.PY2:
-    getargspec = inspect.getargspec # pylint:disable=no-member
-else:
-    getargspec = inspect.getfullargspec # pylint:disable=no-member
-
 
 class InputWithTimeoutTest(unittest.TestCase):
     """Tests for certbot.display.util.input_with_timeout."""
@@ -319,6 +314,10 @@ class FileOutputDisplayTest(unittest.TestCase):
         # Every IDisplay method implemented by FileDisplay must take
         # force_interactive to prevent workflow regressions.
         for name in interfaces.IDisplay.names():  # pylint: disable=no-member
+            if six.PY2:
+                getargspec = inspect.getargspec
+            else:
+                getargspec = inspect.getfullargspec
             arg_spec = getargspec(getattr(self.displayer, name))
             self.assertTrue("force_interactive" in arg_spec.args)
 
@@ -376,7 +375,10 @@ class NoninteractiveDisplayTest(unittest.TestCase):
         for name in interfaces.IDisplay.names():  # pylint: disable=no-member
             method = getattr(self.displayer, name)
             # asserts method accepts arbitrary keyword arguments
-            self.assertFalse(getargspec(method).keywords is None)
+            if six.PY2:
+                self.assertFalse(inspect.getargspec(method).keywords is None)
+            else:
+                self.assertFalse(inspect.getfullargspec(method).varkw is None)
 
 
 class SeparateListInputTest(unittest.TestCase):
