@@ -112,7 +112,7 @@ class AutoHSTSTest(util.ApacheTest):
         for i in range(len(constants.AUTOHSTS_STEPS)-1):
             # Ensure that value is not made permanent prematurely
             self.config.deploy_autohsts(mock_lineage)
-            self.assertNotEquals(self.get_autohsts_value(self.vh_truth[7].path),
+            self.assertNotEqual(self.get_autohsts_value(self.vh_truth[7].path),
                                  max_val)
             self.config.update_autohsts(mock.MagicMock())
             # Value should match pre-permanent increment step
