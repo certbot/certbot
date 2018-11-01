@@ -17,9 +17,9 @@ TAGS = ["tag1", "tag2", "tag3"]
 TAGS_CHOICES = [("1", "tag1"), ("2", "tag2"), ("3", "tag3")]
 
 if six.PY2:
-    getargspec = inspect.getargspec
+    getargspec = inspect.getargspec # pylint:disable=no-member
 else:
-    getargspec = inspect.getfullargspec
+    getargspec = inspect.getfullargspec # pylint:disable=no-member
 
 
 class InputWithTimeoutTest(unittest.TestCase):
