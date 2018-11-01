@@ -73,9 +73,8 @@ class BaseRenewableCertTest(test_util.ConfigTestCase):
         # We also create a file that isn't a renewal config in the same
         # location to test that logic that reads in all-and-only renewal
         # configs will ignore it and NOT attempt to parse it.
-        junk = open(os.path.join(self.config.config_dir, "renewal", "IGNORE.THIS"), "w")
-        junk.write("This file should be ignored!")
-        junk.close()
+        with open(os.path.join(self.config.config_dir, "renewal", "IGNORE.THIS"), "w") as junk:
+            junk.write("This file should be ignored!")
 
         self.defaults = configobj.ConfigObj()
 

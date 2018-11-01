@@ -1034,9 +1034,11 @@ class RenewableCert(object):
         archive = full_archive_path(None, cli_config, lineagename)
         live_dir = _full_live_path(cli_config, lineagename)
         if os.path.exists(archive):
+            config_file.close()
             raise errors.CertStorageError(
                 "archive directory exists for " + lineagename)
         if os.path.exists(live_dir):
+            config_file.close()
             raise errors.CertStorageError(
                 "live directory exists for " + lineagename)
         os.mkdir(archive)

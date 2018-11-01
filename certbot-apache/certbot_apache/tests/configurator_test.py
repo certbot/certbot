@@ -1651,7 +1651,8 @@ class MultiVhostsTest(util.ApacheTest):
         self.assertTrue(self.config.parser.find_dir(
             "RewriteEngine", "on", ssl_vhost.path, False))
 
-        conf_text = open(ssl_vhost.filep).read()
+        with open(ssl_vhost.filep) as the_file:
+            conf_text = the_file.read()
         commented_rewrite_rule = ("# RewriteRule \"^/secrets/(.+)\" "
                                   "\"https://new.example.com/docs/$1\" [R,L]")
         uncommented_rewrite_rule = ("RewriteRule \"^/docs/(.+)\"  "
@@ -1667,7 +1668,8 @@ class MultiVhostsTest(util.ApacheTest):
 
         ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[3])
 
-        conf_lines = open(ssl_vhost.filep).readlines()
+        with open(ssl_vhost.filep) as the_file:
+            conf_lines = the_file.readlines()
         conf_line_set = [l.strip() for l in conf_lines]
         not_commented_cond1 = ("RewriteCond "
                 "%{DOCUMENT_ROOT}/%{REQUEST_FILENAME} !-f")

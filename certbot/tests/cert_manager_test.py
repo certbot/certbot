@@ -39,9 +39,8 @@ class BaseCertManagerTest(test_util.ConfigTestCase):
         # We also create a file that isn't a renewal config in the same
         # location to test that logic that reads in all-and-only renewal
         # configs will ignore it and NOT attempt to parse it.
-        junk = open(os.path.join(self.config.renewal_configs_dir, "IGNORE.THIS"), "w")
-        junk.write("This file should be ignored!")
-        junk.close()
+        with open(os.path.join(self.config.renewal_configs_dir, "IGNORE.THIS"), "w") as junk:
+            junk.write("This file should be ignored!")
 
     def _set_up_config(self, domain, custom_archive):
         # TODO: maybe provide NamespaceConfig.make_dirs?

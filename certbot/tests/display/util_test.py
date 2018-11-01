@@ -49,6 +49,7 @@ class InputWithTimeoutTest(unittest.TestCase):
         stdin.listen(1)
         with mock.patch("certbot.display.util.sys.stdin", stdin):
             self.assertRaises(errors.Error, self._call, timeout=0.001)
+        stdin.close()
 
 
 class FileOutputDisplayTest(unittest.TestCase):
