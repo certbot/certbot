@@ -791,7 +791,7 @@ class RenewableCert(object):
         May need to recover from rare interrupted / crashed states."""
 
         if self.has_pending_deployment():
-            logger.warn("Found a new cert /archive/ that was not linked to in /live/; "
+            logger.warning("Found a new cert /archive/ that was not linked to in /live/; "
                         "fixing...")
             self.update_all_links_to(self.latest_common_version())
             return False
