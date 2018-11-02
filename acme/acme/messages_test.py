@@ -3,6 +3,7 @@ import unittest
 
 import josepy as jose
 import mock
+import pytest
 
 from acme import challenges
 from acme import test_util
@@ -166,6 +167,7 @@ class DirectoryTest(unittest.TestCase):
         from acme.messages import Directory
         Directory.from_json({'foo': 'bar'})
 
+    @pytest.mark.filterwarnings("ignore::ResourceWarning")
     def test_iter_meta(self):
         result = False
         for k in self.dir.meta:

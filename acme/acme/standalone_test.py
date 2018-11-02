@@ -12,12 +12,16 @@ from six.moves import socketserver  # type: ignore  # pylint: disable=import-err
 
 import josepy as jose
 import mock
+import pytest
 import requests
 
 from acme import challenges
 from acme import crypto_util
 from acme import test_util
 from acme.magic_typing import Set # pylint: disable=unused-import, no-name-in-module
+
+# turns all warnings into errors for this module
+pytestmark = pytest.mark.filterwarnings("ignore::ResourceWarning")
 
 
 class TLSServerTest(unittest.TestCase):
