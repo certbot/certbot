@@ -17,7 +17,7 @@ install_requires = [
     'PyOpenSSL>=0.13',
     'pyrfc3339',
     'pytz',
-    'requests[security]>=2.4.1',  # security extras added in 2.4.1
+    'requests[security]>=2.20.0',  # DeprecationWarning on Callable in Python3.7
     'requests-toolbelt>=0.3.0',
     'setuptools',
     'six>=1.9.0',  # needed for python_2_unicode_compatible
