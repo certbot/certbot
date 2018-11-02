@@ -48,6 +48,9 @@ JWK = jose.JWKRSA.load(test_util.load_vector('rsa512_key.pem'))
 RSA2048_KEY_PATH = test_util.vector_path('rsa2048_key.pem')
 SS_CERT_PATH = test_util.vector_path('cert_2048.pem')
 
+# turns all warnings into errors for this module
+pytestmark = pytest.mark.filterwarnings("ignore::ResourceWarning")
+
 
 class TestHandleIdenticalCerts(unittest.TestCase):
     """Test for certbot.main._handle_identical_cert_request"""
@@ -1360,7 +1363,6 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         self.assertTrue(mocked_run.called)
 
     @test_util.broken_on_windows
-    @pytest.mark.filterwarnings("ignore::ResourceWarning")
     def test_register(self):
         with mock.patch('certbot.main.client') as mocked_client:
             acc = mock.MagicMock()
