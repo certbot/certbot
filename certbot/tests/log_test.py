@@ -19,6 +19,9 @@ from certbot import errors
 from certbot import util
 from certbot.tests import util as test_util
 
+# turns all warnings into errors for this module
+pytestmark = pytest.mark.filterwarnings("ignore::ResourceWarning")
+
 
 class PreArgParseSetupTest(unittest.TestCase):
     """Tests for certbot.log.pre_arg_parse_setup."""
@@ -90,7 +93,6 @@ class PostArgParseSetupTest(test_util.ConfigTestCase):
         self.devnull.close()
         super(PostArgParseSetupTest, self).tearDown()
 
-    @pytest.mark.filterwarnings("ignore::ResourceWarning")
     def test_common(self):
         with mock.patch('certbot.log.logging.getLogger') as mock_get_logger:
             mock_get_logger.return_value = self.root_logger
@@ -269,7 +271,6 @@ class TempHandlerTest(unittest.TestCase):
         self.handler.close()
         self.assertFalse(os.path.exists(self.handler.path))
 
-    @pytest.mark.filterwarnings("ignore::ResourceWarning")
     def test_no_delete(self):
         self.handler.emit(mock.MagicMock())
         self.handler.close()
