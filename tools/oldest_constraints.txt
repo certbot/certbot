@@ -49,3 +49,7 @@ requests[security]==2.4.1
 ConfigArgParse==0.10.0
 funcsigs==0.4
 zope.hookable==4.0.4
+
+# Plugin constraints
+boto3==1.4.7
+botocore==1.7.41
