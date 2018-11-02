@@ -316,9 +316,9 @@ class FileOutputDisplayTest(unittest.TestCase):
         # force_interactive to prevent workflow regressions.
         for name in interfaces.IDisplay.names():  # pylint: disable=no-member
             if six.PY2:
-                getargspec = inspect.getargspec
+                getargspec = inspect.getargspec # pylint: disable=no-member
             else:
-                getargspec = inspect.getfullargspec
+                getargspec = inspect.getfullargspec # pylint: disable=no-member
             arg_spec = getargspec(getattr(self.displayer, name))
             self.assertTrue("force_interactive" in arg_spec.args)
 
@@ -377,9 +377,11 @@ class NoninteractiveDisplayTest(unittest.TestCase):
             method = getattr(self.displayer, name)
             # asserts method accepts arbitrary keyword arguments
             if six.PY2:
-                self.assertFalse(inspect.getargspec(method).keywords is None)
+                result = inspect.getargspec(method).keywords # pylint: disable=no-member
+                self.assertFalse(result is None)
             else:
-                self.assertFalse(inspect.getfullargspec(method).varkw is None)
+                result = inspect.getfullargspec(method).varkw # pylint: disable=no-member
+                self.assertFalse(result is None)
 
 
 class SeparateListInputTest(unittest.TestCase):
