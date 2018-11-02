@@ -71,9 +71,6 @@ class ServerManager(object):
             if challenge_type is challenges.TLSSNI01:
                 servers = acme_standalone.TLSSNI01DualNetworkedServers(
                     address, self.certs)  # type: acme_standalone.BaseDualNetworkedServers
-                logger.warning("TLS-SNI-01 is deprecated, and will stop working in February 2019. "
-                    "Remove tls-sni from the --preferred-challenges flag to test issuance with "
-                    "other challenge types before it is shut down at the server.")
             else:  # challenges.HTTP01
                 servers = acme_standalone.HTTP01DualNetworkedServers(
                     address, self.http_01_resources)
@@ -248,6 +245,9 @@ class Authenticator(common.Plugin):
             servers, response = self._perform_http_01(achall)
         else:  # tls-sni-01
             servers, response = self._perform_tls_sni_01(achall)
+            logger.warning("TLS-SNI-01 is deprecated, and will stop working in February 2019. "
+                    "Remove tls-sni from the --preferred-challenges flag to test issuance with "
+                    "other challenge types before it is shut down at the server.")
         self.served[servers].add(achall)
         return response
 

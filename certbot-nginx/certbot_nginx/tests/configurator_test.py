@@ -349,7 +349,9 @@ class NginxConfiguratorTest(util.NginxTest):
 
         mock_tls_perform.return_value = expected[:1]
         mock_http_perform.return_value = expected[1:]
-        responses = self.config.perform([achall1, achall2])
+        with mock.patch("certbot_nginx.configurator.logger") as mock_logger:
+            responses = self.config.perform([achall1, achall2])
+            self.assertTrue("deprecated" in mock_logger.warning.call_args[0][0])
 
         self.assertEqual(mock_tls_perform.call_count, 1)
         self.assertEqual(mock_http_perform.call_count, 1)
