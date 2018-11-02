@@ -2276,6 +2276,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 http_doer.add_chall(achall, i)
             else:  # tls-sni-01
                 sni_doer.add_chall(achall, i)
+                logger.warning("TLS-SNI-01 is deprecated, and will stop working in February 2019. "
+                    "Remove tls-sni from the --preferred-challenges flag to test issuance with "
+                    "other challenge types before it is shut down at the server.")
 
         http_response = http_doer.perform()
         sni_response = sni_doer.perform()
