@@ -20,6 +20,8 @@ Certbot adheres to [Semantic Versioning](http://semver.org/).
 * Fix ranking of vhosts in Nginx so that all port-matching vhosts come first
 * Correct OVH integration tests on machines without internet access.
 * Stop caching the results of ipv6_info in http01.py
+* Test fix for Route53 plugin to prevent boto3 making outgoing connections.
+* The grammar used by Augeas parser in Apache plugin was updated to fix various parsing errors.
 
 ## 0.27.1 - 2018-09-06
 
