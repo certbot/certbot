@@ -193,7 +193,13 @@ Certbot's DNS plugins.
 These plugins are not included in a default Certbot installation and must be
 installed separately. While the DNS plugins cannot currently be used with
 ``certbot-auto``, they are available in many OS package managers and as Docker
-images. Visit https://certbot.eff.org to learn the best way to use the DNS
+images.
+
+Note that the names of the OS packages may not match the names of the
+plugins as listed below due to package naming standards. For example the package
+for the CloudflareDNS plugin is actually ``python3-certbot-dns-cloudflare``.
+
+Visit https://certbot.eff.org to learn the best way to use the DNS
 plugins on your system.
 
 Once installed, you can find documentation on how to use each plugin at:
