@@ -16,8 +16,9 @@ from acme import errors
 from acme import test_util
 from acme.magic_typing import List # pylint: disable=unused-import, no-name-in-module
 
-# turns all warnings into errors for this module
-pytestmark = pytest.mark.filterwarnings("ignore::ResourceWarning")
+# turns all ResourceWarnings into errors for this module
+if six.PY3:
+    pytestmark = pytest.mark.filterwarnings("ignore::ResourceWarning")
 
 
 class SSLSocketAndProbeSNITest(unittest.TestCase):

@@ -4,6 +4,7 @@ import unittest
 import josepy as jose
 import mock
 import pytest
+import six
 
 from acme import challenges
 from acme import test_util
@@ -13,6 +14,10 @@ from acme.magic_typing import Dict # pylint: disable=unused-import, no-name-in-m
 CERT = test_util.load_comparable_cert('cert.der')
 CSR = test_util.load_comparable_csr('csr.der')
 KEY = test_util.load_rsa_private_key('rsa512_key.pem')
+
+# turns all ResourceWarnings into errors for this module
+if six.PY3:
+    pytestmark = pytest.mark.filterwarnings("ignore::ResourceWarning")
 
 
 class ErrorTest(unittest.TestCase):
@@ -167,7 +172,6 @@ class DirectoryTest(unittest.TestCase):
         from acme.messages import Directory
         Directory.from_json({'foo': 'bar'})
 
-    @pytest.mark.filterwarnings("ignore::ResourceWarning")
     def test_iter_meta(self):
         result = False
         for k in self.dir.meta:

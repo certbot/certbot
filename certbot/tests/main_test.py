@@ -48,8 +48,9 @@ JWK = jose.JWKRSA.load(test_util.load_vector('rsa512_key.pem'))
 RSA2048_KEY_PATH = test_util.vector_path('rsa2048_key.pem')
 SS_CERT_PATH = test_util.vector_path('cert_2048.pem')
 
-# turns all warnings into errors for this module
-pytestmark = pytest.mark.filterwarnings("ignore::ResourceWarning")
+# turns all ResourceWarnings into errors for this module
+if six.PY3:
+    pytestmark = pytest.mark.filterwarnings("ignore::ResourceWarning")
 
 
 class TestHandleIdenticalCerts(unittest.TestCase):
