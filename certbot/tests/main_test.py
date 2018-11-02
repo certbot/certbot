@@ -16,6 +16,7 @@ import tempfile
 import sys
 
 import josepy as jose
+import pytest
 import six
 from six.moves import reload_module  # pylint: disable=import-error
 
@@ -1359,6 +1360,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         self.assertTrue(mocked_run.called)
 
     @test_util.broken_on_windows
+    @pytest.mark.filterwarnings("ignore::ResourceWarning")
     def test_register(self):
         with mock.patch('certbot.main.client') as mocked_client:
             acc = mock.MagicMock()

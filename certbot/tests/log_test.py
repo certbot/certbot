@@ -7,6 +7,7 @@ import time
 import unittest
 
 import mock
+import pytest
 import six
 
 from acme import messages
@@ -89,6 +90,7 @@ class PostArgParseSetupTest(test_util.ConfigTestCase):
         self.devnull.close()
         super(PostArgParseSetupTest, self).tearDown()
 
+    @pytest.mark.filterwarnings("ignore::ResourceWarning")
     def test_common(self):
         with mock.patch('certbot.log.logging.getLogger') as mock_get_logger:
             mock_get_logger.return_value = self.root_logger
@@ -267,6 +269,7 @@ class TempHandlerTest(unittest.TestCase):
         self.handler.close()
         self.assertFalse(os.path.exists(self.handler.path))
 
+    @pytest.mark.filterwarnings("ignore::ResourceWarning")
     def test_no_delete(self):
         self.handler.emit(mock.MagicMock())
         self.handler.close()
