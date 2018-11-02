@@ -21,7 +21,7 @@ from certbot.tests import util as test_util
 
 # turns all ResourceWarnings into errors for this module
 if six.PY3:
-    pytestmark = pytest.mark.filterwarnings("ignore::ResourceWarning")
+    pytestmark = pytest.mark.filterwarnings("ignore::ResourceWarning") # pragma: no cover
 
 
 class PreArgParseSetupTest(unittest.TestCase):

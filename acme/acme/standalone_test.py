@@ -23,7 +23,7 @@ from acme.magic_typing import Set # pylint: disable=unused-import, no-name-in-mo
 
 # turns all ResourceWarnings into errors for this module
 if six.PY3:
-    pytestmark = pytest.mark.filterwarnings("ignore::ResourceWarning")
+    pytestmark = pytest.mark.filterwarnings("ignore::ResourceWarning") # pragma: no cover
 
 
 class TLSServerTest(unittest.TestCase):

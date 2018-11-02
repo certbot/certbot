@@ -23,7 +23,7 @@ VALID_CONFIG = {"rfc2136_server": SERVER, "rfc2136_name": NAME, "rfc2136_secret"
 
 # turns all ResourceWarnings into errors for this module
 if six.PY3:
-    pytestmark = pytest.mark.filterwarnings("ignore::ResourceWarning")
+    pytestmark = pytest.mark.filterwarnings("ignore::ResourceWarning") # pragma: no cover
 
 
 class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthenticatorTest):
