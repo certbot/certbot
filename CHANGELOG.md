@@ -7,6 +7,8 @@ Certbot adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 
 * `revoke` accepts `--cert-name`, and doesn't accept both `--cert-name` and `--cert-path`.
+* certbot-dns-route53 follow CNAME records before attempting auth allowing for users to auth
+  with a different domain as described in https://community.letsencrypt.org/t/renew-using-dns-01-challenge/53498/10
 
 ### Changed
 
