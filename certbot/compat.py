@@ -80,13 +80,13 @@ def os_rename(src, dst):
         if err.errno != errno.EEXIST:
             # Every other error is a legitimate exception.
             raise
-        if not os.replace:
+        if not hasattr(os, 'replace'):  # pragma: no cover
             # We should never go on this line. Either we are on Linux and os.rename has succeeded,
             # either we are on Windows, and only Python >= 3.4 is supported where os.replace is
             # available.
             raise RuntimeError('Error: tried to run os_rename on Python < 3.3. '
                                'Certbot supports only Python 3.4 >= on Windows.')
-        os.replace(src, dst)
+        getattr(os, 'replace')(src, dst)
 
 
 def readline_with_timeout(timeout, prompt):
