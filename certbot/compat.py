@@ -76,11 +76,18 @@ def os_rename(src, dst):
         os.rename(src, dst)
     except OSError as err:
         # Windows specific, renaming a file on an existing path is not possible.
-        # And changes cannot be done atomically. So we do it by ourselves.
+        # On Python 3, the best fallback with atomic capabilities we have is os.replace.
         if err.errno != errno.EEXIST:
+            # Every other error is a legitimate exception.
             raise
-        os.remove(dst)
-        os.rename(src, dst)
+        if not os.replace:
+            # We should never go on this line. Either we are on Linux and os.rename has succeeded,
+            # either we are on Windows, and only Python >= 3.4 is supported where os.replace is
+            # available.
+            raise RuntimeError('Error: tried to run os_rename on Python < 3.3. '
+                               'Certbot supports only Python 3.4 >= on Windows.')
+        os.replace(src, dst)
+
 
 def readline_with_timeout(timeout, prompt):
     """
