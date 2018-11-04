@@ -8,6 +8,7 @@ Certbot adheres to [Semantic Versioning](http://semver.org/).
 
 * `revoke` accepts `--cert-name`, and doesn't accept both `--cert-name` and `--cert-path`.
 * Use the ACMEv2 newNonce endpoint when a new nonce is needed, and newNonce is available in the directory.
+* Removed mentions of deprecated TLS-SNI-01 from directory.
 
 ### Changed
 
