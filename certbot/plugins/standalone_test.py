@@ -158,10 +158,7 @@ class AuthenticatorTest(unittest.TestCase):
 
     def test_perform(self):
         achalls = self._get_achalls()
-
-        with mock.patch("certbot.plugins.standalone.logger") as mock_logger:
-            response = self.auth.perform(achalls)
-            self.assertTrue("deprecated" in mock_logger.warning.call_args[0][0])
+        response = self.auth.perform(achalls)
 
         expected = [achall.response(achall.account_key) for achall in achalls]
         self.assertEqual(response, expected)

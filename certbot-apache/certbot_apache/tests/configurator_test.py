@@ -802,9 +802,7 @@ class MultipleVhostsTest(util.ApacheTest):
         mock_http_perform.return_value = http_expected
         mock_tls_perform.return_value = tls_expected
 
-        with mock.patch("certbot_apache.configurator.logger") as mock_logger:
-            responses = self.config.perform(achalls)
-            self.assertTrue("deprecated" in mock_logger.warning.call_args[0][0])
+        responses = self.config.perform(achalls)
 
         self.assertEqual(mock_http_perform.call_count, 1)
         self.assertEqual(mock_tls_perform.call_count, 1)
