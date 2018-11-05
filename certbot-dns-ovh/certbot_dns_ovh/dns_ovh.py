@@ -78,6 +78,7 @@ class _OVHLexiconClient(dns_common_lexicon.LexiconClient):
         super(_OVHLexiconClient, self).__init__()
 
         self.provider = ovh.Provider({
+            'provider_name': 'ovh',
             'auth_entrypoint': endpoint,
             'auth_application_key': application_key,
             'auth_application_secret': application_secret,

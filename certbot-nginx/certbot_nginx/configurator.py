@@ -1040,7 +1040,7 @@ class NginxConfigurator(common.Installer):
     ###########################################################################
     def get_chall_pref(self, unused_domain):  # pylint: disable=no-self-use
         """Return list of challenge preferences."""
-        return [challenges.TLSSNI01, challenges.HTTP01]
+        return [challenges.HTTP01, challenges.TLSSNI01]
 
     # Entry point in main.py for performing challenges
     def perform(self, achalls):
