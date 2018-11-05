@@ -89,6 +89,8 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
 
         """
         kwargs.setdefault('acme_version', self.acme_version)
+        if hasattr(self.directory, 'newNonce'):
+            kwargs.setdefault('new_nonce_url', getattr(self.directory, 'newNonce'))
         return self.net.post(*args, **kwargs)
 
     def update_registration(self, regr, update=None):
@@ -1106,10 +1108,15 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         else:
             raise errors.MissingNonce(response)
 
-    def _get_nonce(self, url):
+    def _get_nonce(self, url, new_nonce_url):
         if not self._nonces:
             logger.debug('Requesting fresh nonce')
-            self._add_nonce(self.head(url))
+            if new_nonce_url is None:
+                response = self.head(url)
+            else:
+                # request a new nonce from the acme newNonce endpoint
+                response = self._check_response(self.head(new_nonce_url), content_type=None)
+            self._add_nonce(response)
         return self._nonces.pop()
 
     def post(self, *args, **kwargs):
@@ -1130,8 +1137,13 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
 
     def _post_once(self, url, obj, content_type=JOSE_CONTENT_TYPE,
             acme_version=1, **kwargs):
-        data = self._wrap_in_jws(obj, self._get_nonce(url), url, acme_version)
+        try:
+            new_nonce_url = kwargs.pop('new_nonce_url')
+        except KeyError:
+            new_nonce_url = None
+        data = self._wrap_in_jws(obj, self._get_nonce(url, new_nonce_url), url, acme_version)
         kwargs.setdefault('headers', {'Content-Type': content_type})
         response = self._send_request('POST', url, data=data, **kwargs)
+        response = self._check_response(response, content_type=content_type)
         self._add_nonce(response)
-        return self._check_response(response, content_type=content_type)
+        return response
