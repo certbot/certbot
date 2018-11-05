@@ -368,13 +368,14 @@ class TLSSNI01Test(unittest.TestCase):
 
     def _msg(self):
         from acme.challenges import TLSSNI01
-        with warnings.catch_warnings(record=True) as w:
+        with warnings.catch_warnings(record=True) as warn:
             warnings.simplefilter("always")
             msg = TLSSNI01(
                 token=jose.b64decode('a82d5ff8ef740d12881f6d3c2277ab2e'))
-            self.assertTrue(len(w) == 1)
-            self.assertTrue(issubclass(w[-1].category, DeprecationWarning))
-            self.assertTrue('deprecated' in str(w[-1].message))
+            assert warn is not None # using a raw assert for mypy
+            self.assertTrue(len(warn) == 1)
+            self.assertTrue(issubclass(warn[-1].category, DeprecationWarning))
+            self.assertTrue('deprecated' in str(warn[-1].message))
         return msg
 
     def test_to_partial_json(self):
