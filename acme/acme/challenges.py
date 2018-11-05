@@ -495,7 +495,7 @@ class TLSSNI01(KeyAuthorizationChallenge):
     #n = jose.Field("n", encoder=int, decoder=int)
 
     def __init__(self, *args, **kwargs):
-        warnings.warn("TLS-SNI-01 is deprecated, and will stop working in February 2019.",
+        warnings.warn("TLS-SNI-01 is deprecated, and will stop working soon.",
             DeprecationWarning, stacklevel=2)
         super(TLSSNI01, self).__init__(*args, **kwargs)
 
