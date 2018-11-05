@@ -7,12 +7,14 @@ Certbot adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 
 * `revoke` accepts `--cert-name`, and doesn't accept both `--cert-name` and `--cert-path`.
+* Use the ACMEv2 newNonce endpoint when a new nonce is needed, and newNonce is available in the directory.
 
 ### Changed
 
 * Removed documentation mentions of `#letsencrypt` IRC on Freenode.
 * Write README to the base of (config-dir)/live directory
 * `--manual` will explicitly warn users that earlier challenges should remain in place when setting up subsequent challenges.
+* Stop preferring TLS-SNI in the Apache, Nginx, and standalone plugins
 
 ### Fixed
 
@@ -20,6 +22,8 @@ Certbot adheres to [Semantic Versioning](http://semver.org/).
 * Fix ranking of vhosts in Nginx so that all port-matching vhosts come first
 * Correct OVH integration tests on machines without internet access.
 * Stop caching the results of ipv6_info in http01.py
+* Test fix for Route53 plugin to prevent boto3 making outgoing connections.
+* The grammar used by Augeas parser in Apache plugin was updated to fix various parsing errors.
 
 ## 0.27.1 - 2018-09-06
 
