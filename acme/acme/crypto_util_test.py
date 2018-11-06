@@ -10,15 +10,10 @@ from six.moves import socketserver  #type: ignore  # pylint: disable=import-erro
 
 import josepy as jose
 import OpenSSL
-import pytest
 
 from acme import errors
 from acme import test_util
 from acme.magic_typing import List # pylint: disable=unused-import, no-name-in-module
-
-# turns all ResourceWarnings into errors for this module
-if six.PY3:
-    pytestmark = pytest.mark.filterwarnings("ignore::ResourceWarning") # pragma: no cover
 
 
 class SSLSocketAndProbeSNITest(unittest.TestCase):

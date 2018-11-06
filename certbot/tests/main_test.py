@@ -16,7 +16,6 @@ import tempfile
 import sys
 
 import josepy as jose
-import pytest
 import six
 from six.moves import reload_module  # pylint: disable=import-error
 
@@ -47,10 +46,6 @@ KEY = test_util.vector_path('rsa256_key.pem')
 JWK = jose.JWKRSA.load(test_util.load_vector('rsa512_key.pem'))
 RSA2048_KEY_PATH = test_util.vector_path('rsa2048_key.pem')
 SS_CERT_PATH = test_util.vector_path('cert_2048.pem')
-
-# turns all ResourceWarnings into errors for this module
-if six.PY3:
-    pytestmark = pytest.mark.filterwarnings("ignore::ResourceWarning") # pragma: no cover
 
 
 class TestHandleIdenticalCerts(unittest.TestCase):

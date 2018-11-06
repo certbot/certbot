@@ -7,7 +7,6 @@ import time
 import unittest
 
 import mock
-import pytest
 import six
 
 from acme import messages
@@ -18,10 +17,6 @@ from certbot import constants
 from certbot import errors
 from certbot import util
 from certbot.tests import util as test_util
-
-# turns all ResourceWarnings into errors for this module
-if six.PY3:
-    pytestmark = pytest.mark.filterwarnings("ignore::ResourceWarning") # pragma: no cover
 
 
 class PreArgParseSetupTest(unittest.TestCase):

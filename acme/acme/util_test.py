@@ -1,12 +1,7 @@
 """Tests for acme.util."""
 import unittest
 
-import pytest
 import six
-
-# turns all ResourceWarnings into errors for this module
-if six.PY3:
-    pytestmark = pytest.mark.filterwarnings("ignore::ResourceWarning") # pragma: no cover
 
 
 class MapKeysTest(unittest.TestCase):

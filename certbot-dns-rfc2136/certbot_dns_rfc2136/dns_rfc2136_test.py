@@ -7,7 +7,6 @@ import dns.flags
 import dns.rcode
 import dns.tsig
 import mock
-import pytest
 import six
 
 from certbot import errors
@@ -20,10 +19,6 @@ PORT = 53
 NAME = 'a-tsig-key.'
 SECRET = 'SSB3b25kZXIgd2hvIHdpbGwgYm90aGVyIHRvIGRlY29kZSB0aGlzIHRleHQK'
 VALID_CONFIG = {"rfc2136_server": SERVER, "rfc2136_name": NAME, "rfc2136_secret": SECRET}
-
-# turns all ResourceWarnings into errors for this module
-if six.PY3:
-    pytestmark = pytest.mark.filterwarnings("ignore::ResourceWarning") # pragma: no cover
 
 
 class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthenticatorTest):
