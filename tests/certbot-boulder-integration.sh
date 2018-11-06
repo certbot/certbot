@@ -280,28 +280,23 @@ CheckCertCount() {
     fi
 }
 
-permissions_mask() {
-    echo $((0$(stat -c "%a" $1) & $2))
-}
-
 CheckGroup() {
-    group_permissions_1=`permissions_mask $1 070`
-    group_permissions_2=`permissions_mask $2 070`
-    group_owner_1=`stat -c "%G" $1`
-    group_owner_2=`stat -c "%G" $2`
-    if [ $group_permissions_1 -ne $group_permissions_2 ] ; then
-        echo Expected group permission $group_permissions_1, got $group_permissions_2 on file $2
+    group_mode() { echo $((0`stat -c %a $1` & 070)); }
+    group_owner() { echo `stat -c %G $1`; }
+    if [ `group_mode $1` -ne `group_mode $2` ] ; then
+        echo "Expected group permission `group_mode $1`, got `group_mode $2` on file $2"
         exit 1
     fi
-    if [ $group_owner_1 -ne $group_owner_2 ] ; then
-        echo Expected group owner $group_owner_1, got $group_owner_2 on file $2
+    if [ `group_owner $1` != `group_owner $2` ] ; then
+        echo "Expected group owner `group_owner $1`, got `group_owner $2` on file $2"
         exit 1
     fi
 }
 
-CheckNotWorldReadable() {
-    if [ `permissions_mask $1 07` -ne 0 ] ; then
-        echo Expected file $1 not to be world-readable
+CheckOthersPermission() {
+    other_permission=$((0`stat -c %a $1` & 07))
+    if [ $other_permission -ne 0 ] ; then
+        echo "Expected file $1 not to be accessible by others"
         exit 1
     fi
 }
@@ -321,8 +316,8 @@ rm -rf "$renewal_hooks_root"
 common renew --cert-name le.wtf --authenticator manual
 CheckCertCount "le.wtf" 2
 
-CheckNotWorldReadable "${root}/conf/archive/le.wtf/privkey1.pem"
-CheckNotWorldReadable "${root}/conf/archive/le.wtf/privkey2.pem"
+CheckOthersPermission "${root}/conf/archive/le.wtf/privkey1.pem"
+CheckOthersPermission "${root}/conf/archive/le.wtf/privkey2.pem"
 CheckGroup "${root}/conf/archive/le.wtf/privkey1.pem" "${root}/conf/archive/le.wtf/privkey2.pem"
 chmod 0444 "${root}/conf/archive/le.wtf/privkey2.pem"
 
@@ -343,7 +338,7 @@ sed -i "4arenew_before_expiry = 4 years" "$root/conf/renewal/le.wtf.conf"
 common_no_force_renew renew --rsa-key-size 2048 --no-directory-hooks
 CheckCertCount "le.wtf" 3
 CheckGroup "${root}/conf/archive/le.wtf/privkey2.pem" "${root}/conf/archive/le.wtf/privkey3.pem"
-CheckNotWorldReadable "${root}/conf/archive/le.wtf/privkey3.pem"
+CheckOthersPermission "${root}/conf/archive/le.wtf/privkey3.pem"
 
 if [ -s "$HOOK_DIRS_TEST" ]; then
     echo "Directory hooks were executed with --no-directory-hooks!" >&2
