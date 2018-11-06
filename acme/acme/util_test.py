@@ -1,8 +1,6 @@
 """Tests for acme.util."""
 import unittest
 
-import six
-
 
 class MapKeysTest(unittest.TestCase):
     """Tests for acme.util.map_keys."""

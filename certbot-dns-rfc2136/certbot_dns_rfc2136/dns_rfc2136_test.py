@@ -7,7 +7,6 @@ import dns.flags
 import dns.rcode
 import dns.tsig
 import mock
-import six
 
 from certbot import errors
 from certbot.plugins import dns_test_common

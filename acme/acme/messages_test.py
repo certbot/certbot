@@ -3,7 +3,6 @@ import unittest
 
 import josepy as jose
 import mock
-import six
 
 from acme import challenges
 from acme import test_util

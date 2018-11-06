@@ -6,7 +6,6 @@ import threading
 import tempfile
 import unittest
 
-import six
 from six.moves import http_client  # pylint: disable=import-error
 from six.moves import queue  # pylint: disable=import-error
 from six.moves import socketserver  # type: ignore  # pylint: disable=import-error
