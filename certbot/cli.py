@@ -32,6 +32,7 @@ from certbot import util
 
 from certbot.display import util as display_util
 from certbot.plugins import disco as plugins_disco
+import certbot.plugins.enhancements as enhancements
 import certbot.plugins.selection as plugin_selection
 
 logger = logging.getLogger(__name__)
@@ -95,7 +96,7 @@ obtain, install, and renew certificates:
 
 manage certificates:
     certificates    Display information about certificates you have from Certbot
-    revoke          Revoke a certificate (supply --cert-path)
+    revoke          Revoke a certificate (supply --cert-path or --cert-name)
     delete          Delete a certificate
 
 manage your account with Let's Encrypt:
@@ -386,9 +387,10 @@ VERB_HELP = [
         "usage": "\n\n  certbot delete --cert-name CERTNAME\n\n"
     }),
     ("revoke", {
-        "short": "Revoke a certificate specified with --cert-path",
+        "short": "Revoke a certificate specified with --cert-path or --cert-name",
         "opts": "Options for revocation of certificates",
-        "usage": "\n\n  certbot revoke --cert-path /path/to/fullchain.pem [options]\n\n"
+        "usage": "\n\n  certbot revoke [--cert-path /path/to/fullchain.pem | "
+        "--cert-name example.com] [options]\n\n"
     }),
     ("register", {
         "short": "Register for account with Let's Encrypt / other ACME server",
@@ -430,7 +432,7 @@ VERB_HELP = [
     }),
     ("enhance", {
         "short": "Add security enhancements to your existing configuration",
-        "opts": ("Helps to harden the TLS configration by adding security enhancements "
+        "opts": ("Helps to harden the TLS configuration by adding security enhancements "
                  "to already existing configuration."),
         "usage": "\n\n  certbot enhance [options]\n\n"
     }),
@@ -626,6 +628,10 @@ class HelpfulArgumentParser(object):
             if any(util.is_wildcard_domain(d) for d in parsed_args.domains):
                 raise errors.Error("Using --allow-subset-of-names with a"
                                    " wildcard domain is not supported.")
+
+        if parsed_args.hsts and parsed_args.auto_hsts:
+            raise errors.Error(
+                "Parameters --hsts and --auto-hsts cannot be used simultaneously.")
 
         possible_deprecation_warning(parsed_args)
 
@@ -1030,6 +1036,12 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              "but does not match the requested domains, renew it now, "
              "regardless of whether it is near expiry.")
     helpful.add(
+        "automation", "--reuse-key", dest="reuse_key",
+        action="store_true", default=flag_default("reuse_key"),
+        help="When renewing, use the same private key as the existing "
+             "certificate.")
+
+    helpful.add(
         ["automation", "renew", "certonly"],
         "--allow-subset-of-names", action="store_true",
         default=flag_default("allow_subset_of_names"),
@@ -1083,7 +1095,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         help="Show tracebacks in case of errors, and allow certbot-auto "
              "execution on experimental platforms")
     helpful.add(
-        [None, "certonly", "renew", "run"], "--debug-challenges", action="store_true",
+        [None, "certonly", "run"], "--debug-challenges", action="store_true",
         default=flag_default("debug_challenges"),
         help="After setting up challenges, wait for user input before "
              "submitting to CA")
@@ -1226,9 +1238,16 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         " when the user executes \"certbot renew\", regardless of if the certificate"
         " is renewed. This setting does not apply to important TLS configuration"
         " updates.")
+    helpful.add(
+        "renew", "--no-autorenew", action="store_false",
+        default=flag_default("autorenew"), dest="autorenew",
+        help="Disable auto renewal of certificates.")
 
     helpful.add_deprecated_argument("--agree-dev-preview", 0)
     helpful.add_deprecated_argument("--dialog", 0)
+
+    # Populate the command line parameters for new style enhancements
+    enhancements.populate_cli(helpful.add)
 
     _create_subparsers(helpful)
     _paths_parser(helpful)
@@ -1327,7 +1346,7 @@ def _paths_parser(helpful):
         add(sections, "--cert-path", type=os.path.abspath,
             default=flag_default("auth_cert_path"), help=cph)
     elif verb == "revoke":
-        add(sections, "--cert-path", type=read_file, required=True, help=cph)
+        add(sections, "--cert-path", type=read_file, required=False, help=cph)
     else:
         add(sections, "--cert-path", type=os.path.abspath, help=cph)
 
@@ -1409,10 +1428,18 @@ def _plugins_parsing(helpful, plugins):
                 default=flag_default("dns_dnsmadeeasy"),
                 help=("Obtain certificates using a DNS TXT record (if you are"
                       "using DNS Made Easy for DNS)."))
+    helpful.add(["plugins", "certonly"], "--dns-gehirn", action="store_true",
+                default=flag_default("dns_gehirn"),
+                help=("Obtain certificates using a DNS TXT record "
+                     "(if you are using Gehirn Infrastracture Service for DNS)."))
     helpful.add(["plugins", "certonly"], "--dns-google", action="store_true",
                 default=flag_default("dns_google"),
                 help=("Obtain certificates using a DNS TXT record (if you are "
                       "using Google Cloud DNS)."))
+    helpful.add(["plugins", "certonly"], "--dns-linode", action="store_true",
+                default=flag_default("dns_linode"),
+                help=("Obtain certificates using a DNS TXT record (if you are "
+                      "using Linode for DNS)."))
     helpful.add(["plugins", "certonly"], "--dns-luadns", action="store_true",
                 default=flag_default("dns_luadns"),
                 help=("Obtain certificates using a DNS TXT record (if you are "
@@ -1421,6 +1448,10 @@ def _plugins_parsing(helpful, plugins):
                 default=flag_default("dns_nsone"),
                 help=("Obtain certificates using a DNS TXT record (if you are "
                       "using NS1 for DNS)."))
+    helpful.add(["plugins", "certonly"], "--dns-ovh", action="store_true",
+                default=flag_default("dns_ovh"),
+                help=("Obtain certificates using a DNS TXT record (if you are "
+                      "using OVH for DNS)."))
     helpful.add(["plugins", "certonly"], "--dns-rfc2136", action="store_true",
                 default=flag_default("dns_rfc2136"),
                 help="Obtain certificates using a DNS TXT record (if you are using BIND for DNS).")
@@ -1428,6 +1459,10 @@ def _plugins_parsing(helpful, plugins):
                 default=flag_default("dns_route53"),
                 help=("Obtain certificates using a DNS TXT record (if you are using Route53 for "
                       "DNS)."))
+    helpful.add(["plugins", "certonly"], "--dns-sakuracloud", action="store_true",
+                default=flag_default("dns_sakuracloud"),
+                help=("Obtain certificates using a DNS TXT record "
+                     "(if you are using Sakura Cloud for DNS)."))
 
     # things should not be reorder past/pre this comment:
     # plugins_group should be displayed in --help before plugin

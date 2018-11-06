@@ -214,6 +214,26 @@ def get_link_target(link):
         target = os.path.join(os.path.dirname(link), target)
     return os.path.abspath(target)
 
+def _write_live_readme_to(readme_path, is_base_dir=False):
+    prefix = ""
+    if is_base_dir:
+        prefix = "[cert name]/"
+    with open(readme_path, "w") as f:
+        logger.debug("Writing README to %s.", readme_path)
+        f.write("This directory contains your keys and certificates.\n\n"
+                "`{prefix}privkey.pem`  : the private key for your certificate.\n"
+                "`{prefix}fullchain.pem`: the certificate file used in most server software.\n"
+                "`{prefix}chain.pem`    : used for OCSP stapling in Nginx >=1.3.7.\n"
+                "`{prefix}cert.pem`     : will break many server configurations, and "
+                                    "should not be used\n"
+                "                 without reading further documentation (see link below).\n\n"
+                "WARNING: DO NOT MOVE OR RENAME THESE FILES!\n"
+                "         Certbot expects these files to remain in this location in order\n"
+                "         to function properly!\n\n"
+                "We recommend not moving these files. For more information, see the Certbot\n"
+                "User Guide at https://certbot.eff.org/docs/using.html#where-are-my-"
+                                    "certificates.\n".format(prefix=prefix))
+
 
 def _relevant(option):
     """
@@ -239,10 +259,15 @@ def relevant_values(all_values):
     :rtype dict:
 
     """
-    return dict(
+    rv = dict(
         (option, value)
         for option, value in six.iteritems(all_values)
         if _relevant(option) and cli.option_was_set(option, value))
+    # We always save the server value to help with forward compatibility
+    # and behavioral consistency when versions of Certbot with different
+    # server defaults are used.
+    rv["server"] = all_values["server"]
+    return rv
 
 def lineagename_for_filename(config_filename):
     """Returns the lineagename for a configuration filename.
@@ -920,10 +945,10 @@ class RenewableCert(object):
         :rtype: bool
 
         """
-        return ("autorenew" not in self.configuration or
-                self.configuration.as_bool("autorenew"))
+        return ("autorenew" not in self.configuration["renewalparams"] or
+                self.configuration["renewalparams"].as_bool("autorenew"))
 
-    def should_autorenew(self, interactive=False):
+    def should_autorenew(self):
         """Should we now try to autorenew the most recent cert version?
 
         This is a policy question and does not only depend on whether
@@ -934,16 +959,12 @@ class RenewableCert(object):
         Note that this examines the numerically most recent cert version,
         not the currently deployed version.
 
-        :param bool interactive: set to True to examine the question
-            regardless of whether the renewal configuration allows
-            automated renewal (for interactive use). Default False.
-
         :returns: whether an attempt should now be made to autorenew the
             most current cert version in this lineage
         :rtype: bool
 
         """
-        if interactive or self.autorenewal_is_enabled():
+        if self.autorenewal_is_enabled():
             # Consider whether to attempt to autorenew this cert now
 
             # Renewals on the basis of revocation
@@ -1002,6 +1023,9 @@ class RenewableCert(object):
                 logger.debug("Creating directory %s.", i)
         config_file, config_filename = util.unique_lineage_name(
             cli_config.renewal_configs_dir, lineagename)
+        base_readme_path = os.path.join(cli_config.live_dir, README)
+        if not os.path.exists(base_readme_path):
+            _write_live_readme_to(base_readme_path, is_base_dir=True)
 
         # Determine where on disk everything will go
         # lineagename will now potentially be modified based on which
@@ -1044,21 +1068,7 @@ class RenewableCert(object):
 
         # Write a README file to the live directory
         readme_path = os.path.join(live_dir, README)
-        with open(readme_path, "w") as f:
-            logger.debug("Writing README to %s.", readme_path)
-            f.write("This directory contains your keys and certificates.\n\n"
-                    "`privkey.pem`  : the private key for your certificate.\n"
-                    "`fullchain.pem`: the certificate file used in most server software.\n"
-                    "`chain.pem`    : used for OCSP stapling in Nginx >=1.3.7.\n"
-                    "`cert.pem`     : will break many server configurations, and "
-                                        "should not be used\n"
-                    "                 without reading further documentation (see link below).\n\n"
-                    "WARNING: DO NOT MOVE THESE FILES!\n"
-                    "         Certbot expects these files to remain in this location in order\n"
-                    "         to function properly!\n\n"
-                    "We recommend not moving these files. For more information, see the Certbot\n"
-                    "User Guide at https://certbot.eff.org/docs/using.html#where-are-my-"
-                                        "certificates.\n")
+        _write_live_readme_to(readme_path)
 
         # Document what we've done in a new renewal config file
         config_file.close()

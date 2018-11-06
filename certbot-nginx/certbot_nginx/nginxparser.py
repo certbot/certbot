@@ -26,7 +26,7 @@ class RawNginxParser(object):
     dquoted = QuotedString('"', multiline=True, unquoteResults=False, escChar='\\')
     squoted = QuotedString("'", multiline=True, unquoteResults=False, escChar='\\')
     quoted = dquoted | squoted
-    head_tokenchars = Regex(r"[^{};\s'\"]") # if (last_space)
+    head_tokenchars = Regex(r"(\$\{)|[^{};\s'\"]") # if (last_space)
     tail_tokenchars = Regex(r"(\$\{)|[^{;\s]") # else
     tokenchars = Combine(head_tokenchars + ZeroOrMore(tail_tokenchars))
     paren_quote_extend = Combine(quoted + Literal(')') + ZeroOrMore(tail_tokenchars))

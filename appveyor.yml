@@ -1,0 +1,29 @@
+image:
+  # => Windows Server 2012 R2
+  - Visual Studio 2015
+  # => Windows Server 2016
+  - Visual Studio 2017
+
+branches:
+  only:
+    - master
+    - /^\d+\.\d+\.x$/ # Version branches like X.X.X
+    - /^test-.*$/
+
+install:
+  # Use Python 3.7 by default
+  - "SET PATH=C:\\Python37;C:\\Python37\\Scripts;%PATH%"
+  # Check env
+  - "python --version"
+  # Upgrade pip to avoid warnings
+  - "python -m pip install --upgrade pip"
+  # Ready to install tox and coverage
+  - "pip install tox codecov"
+
+build: off
+
+test_script:
+  - tox -c tox-win.ini -e py34,py35,py36,py37-cover
+
+on_success:
+  - codecov

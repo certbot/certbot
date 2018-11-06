@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 class ApacheParser(object):
+    # pylint: disable=too-many-public-methods
     """Class handles the fine details of parsing the Apache Configuration.
 
     .. todo:: Make parsing general... remove sites-available etc...
@@ -68,7 +69,7 @@ class ApacheParser(object):
         # Must also attempt to parse additional virtual host root
         if vhostroot:
             self.parse_file(os.path.abspath(vhostroot) + "/" +
-                            self.configurator.constant("vhost_files"))
+                            self.configurator.option("vhost_files"))
 
         # check to see if there were unparsed define statements
         if version < (2, 4):
@@ -151,7 +152,7 @@ class ApacheParser(object):
         """Get Defines from httpd process"""
 
         variables = dict()
-        define_cmd = [self.configurator.constant("apache_cmd"), "-t", "-D",
+        define_cmd = [self.configurator.option("ctl"), "-t", "-D",
                       "DUMP_RUN_CFG"]
         matches = self.parse_from_subprocess(define_cmd, r"Define: ([^ \n]*)")
         try:
@@ -178,7 +179,7 @@ class ApacheParser(object):
         # configuration files
         _ = self.find_dir("Include")
 
-        inc_cmd = [self.configurator.constant("apache_cmd"), "-t", "-D",
+        inc_cmd = [self.configurator.option("ctl"), "-t", "-D",
                    "DUMP_INCLUDES"]
         matches = self.parse_from_subprocess(inc_cmd, r"\(.*\) (.*)")
         if matches:
@@ -189,7 +190,7 @@ class ApacheParser(object):
     def update_modules(self):
         """Get loaded modules from httpd process, and add them to DOM"""
 
-        mod_cmd = [self.configurator.constant("apache_cmd"), "-t", "-D",
+        mod_cmd = [self.configurator.option("ctl"), "-t", "-D",
                        "DUMP_MODULES"]
         matches = self.parse_from_subprocess(mod_cmd, r"(.*)_module")
         for mod in matches:
@@ -349,6 +350,37 @@ class ApacheParser(object):
                 self.aug.set(first_dir + "/arg[%d]" % (i), value)
         else:
             self.aug.set(first_dir + "/arg", args)
+
+    def add_comment(self, aug_conf_path, comment):
+        """Adds the comment to the augeas path
+
+        :param str aug_conf_path: Augeas configuration path to add directive
+        :param str comment: Comment content
+
+        """
+        self.aug.set(aug_conf_path + "/#comment[last() + 1]", comment)
+
+    def find_comments(self, arg, start=None):
+        """Finds a comment with specified content from the provided DOM path
+
+        :param str arg: Comment content to search
+        :param str start: Beginning Augeas path to begin looking
+
+        :returns: List of augeas paths containing the comment content
+        :rtype: list
+
+        """
+        if not start:
+            start = get_aug_path(self.root)
+
+        comments = self.aug.match("%s//*[label() = '#comment']" % start)
+
+        results = []
+        for comment in comments:
+            c_content = self.aug.get(comment)
+            if c_content and arg in c_content:
+                results.append(comment)
+        return results
 
     def find_dir(self, directive, arg=None, start=None, exclude=True):
         """Finds directive in the configuration.

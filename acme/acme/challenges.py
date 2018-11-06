@@ -4,6 +4,7 @@ import functools
 import hashlib
 import logging
 import socket
+import warnings
 
 from cryptography.hazmat.primitives import hashes  # type: ignore
 import josepy as jose
@@ -493,6 +494,11 @@ class TLSSNI01(KeyAuthorizationChallenge):
     # boulder#962, ietf-wg-acme#22
     #n = jose.Field("n", encoder=int, decoder=int)
 
+    def __init__(self, *args, **kwargs):
+        warnings.warn("TLS-SNI-01 is deprecated, and will stop working soon.",
+            DeprecationWarning, stacklevel=2)
+        super(TLSSNI01, self).__init__(*args, **kwargs)
+
     def validation(self, account_key, **kwargs):
         """Generate validation.
 
@@ -505,6 +511,21 @@ class TLSSNI01(KeyAuthorizationChallenge):
 
         """
         return self.response(account_key).gen_cert(key=kwargs.get('cert_key'))
+
+
+@Challenge.register  # pylint: disable=too-many-ancestors
+class TLSALPN01(KeyAuthorizationChallenge):
+    """ACME tls-alpn-01 challenge.
+
+    This class simply allows parsing the TLS-ALPN-01 challenge returned from
+    the CA. Full TLS-ALPN-01 support is not currently provided.
+
+    """
+    typ = "tls-alpn-01"
+
+    def validation(self, account_key, **kwargs):
+        """Generate validation for the challenge."""
+        raise NotImplementedError()
 
 
 @Challenge.register  # pylint: disable=too-many-ancestors
