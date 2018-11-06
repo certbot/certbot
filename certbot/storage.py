@@ -28,6 +28,7 @@ logger = logging.getLogger(__name__)
 ALL_FOUR = ("cert", "privkey", "chain", "fullchain")
 README = "README"
 CURRENT_VERSION = util.get_strict_version(certbot.__version__)
+BASE_PRIVKEY_MODE = 0o600
 
 
 def renewal_conf_files(config):
@@ -1054,7 +1055,7 @@ class RenewableCert(object):
         with open(archive_target["cert"], "wb") as f:
             logger.debug("Writing certificate to %s.", target["cert"])
             f.write(cert)
-        with util.safe_open(archive_target["privkey"], "wb", chmod=0o600) as f:
+        with util.safe_open(archive_target["privkey"], "wb", chmod=BASE_PRIVKEY_MODE) as f:
             logger.debug("Writing private key to %s.", target["privkey"])
             f.write(privkey)
             # XXX: Let's make sure to get the file permissions right here
@@ -1118,14 +1119,15 @@ class RenewableCert(object):
               os.path.join(self.archive_dir, "{0}{1}.pem".format(kind, target_version)))
              for kind in ALL_FOUR])
 
+        old_privkey = os.path.join(
+            self.archive_dir, "privkey{0}.pem".format(prior_version))
+
         # Distinguish the cases where the privkey has changed and where it
         # has not changed (in the latter case, making an appropriate symlink
         # to an earlier privkey version)
         if new_privkey is None:
             # The behavior below keeps the prior key by creating a new
             # symlink to the old key or the target of the old key symlink.
-            old_privkey = os.path.join(
-                self.archive_dir, "privkey{0}.pem".format(prior_version))
             if os.path.islink(old_privkey):
                 old_privkey = os.readlink(old_privkey)
             else:
@@ -1133,9 +1135,16 @@ class RenewableCert(object):
             logger.debug("Writing symlink to old private key, %s.", old_privkey)
             os.symlink(old_privkey, target["privkey"])
         else:
-            with util.safe_open(target["privkey"], "wb", chmod=0o600) as f:
+            # If the previous privkey in this lineage has an existing group mode > 0,
+            # let's keep that mode.
+            group_mode = stat.S_IMODE(os.stat(old_privkey).st_mode) & \
+                (stat.S_IRGRP | stat.S_IWGRP | stat.S_IXGRP)
+            mode = BASE_PRIVKEY_MODE | group_mode
+            with util.safe_open(target["privkey"], "wb", chmod=mode) as f:
                 logger.debug("Writing new private key to %s.", target["privkey"])
                 f.write(new_privkey)
+            # We should also maintain gid from previous privkey in this lineage.
+            os.chown(target["privkey"], -1, os.stat(old_privkey).st_gid)
 
         # Save everything else
         with open(target["cert"], "wb") as f:

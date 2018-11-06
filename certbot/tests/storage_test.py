@@ -546,8 +546,29 @@ class RenewableCertTests(BaseRenewableCertTest):
                                             b'key', self.config))
         self.assertTrue(os.path.exists(self.test_rc.version("privkey", 10)))
         self.assertFalse(os.path.islink(self.test_rc.version("privkey", 10)))
-        self.assertEqual(0o600, _get_file_permissions(self.test_rc.version("privkey", 10)))
         self.assertFalse(os.path.exists(temp_config_file))
+
+    @test_util.broken_on_windows
+    @mock.patch("certbot.storage.relevant_values")
+    def test_save_successor_maintains_group_permissions(self, mock_rv):
+        # Mock relevant_values() to claim that all values are relevant here
+        # (to avoid instantiating parser)
+        mock_rv.side_effect = lambda x: x
+        for kind in ALL_FOUR:
+            self._write_out_kind(kind, 1)
+        self.test_rc.update_all_links_to(1)
+        self.assertEqual(_get_file_permissions(self.test_rc.version("privkey", 1)), 0o600)
+        os.chmod(self.test_rc.version("privkey", 1), 0o444)
+        # If no new key, permissions should be the same (we didn't write any keys)
+        self.test_rc.save_successor(1, b"newcert", None, b"new chain", self.config)
+        self.assertEqual(_get_file_permissions(self.test_rc.version("privkey", 2)), 0o444)
+        # If new key, permissions should be rest to 600 + preserved group
+        self.test_rc.save_successor(2, b"newcert", b"new_privkey", b"new chain", self.config)
+        self.assertEqual(_get_file_permissions(self.test_rc.version("privkey", 3)), 0o640)
+        # If permissions reverted, next renewal will also revert permissions of new key
+        os.chmod(self.test_rc.version("privkey", 3), 0o404)
+        self.test_rc.save_successor(3, b"newcert", b"new_privkey", b"new chain", self.config)
+        self.assertEqual(_get_file_permissions(self.test_rc.version("privkey", 4)), 0o600)
 
     def _test_relevant_values_common(self, values):
         defaults = dict((option, cli.flag_default(option))
