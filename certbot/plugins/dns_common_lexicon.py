@@ -68,7 +68,12 @@ class LexiconClient(object):
 
         for domain_name in domain_name_guesses:
             try:
-                self.provider.options['domain'] = domain_name
+                if hasattr(self.provider, 'options'):
+                    # For Lexicon 2.x
+                    self.provider.options['domain'] = domain_name
+                else:
+                    # For Lexicon 3.x
+                    self.provider.domain = domain_name
 
                 self.provider.authenticate()
 

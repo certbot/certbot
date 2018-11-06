@@ -7,12 +7,15 @@ Certbot adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 
 * `revoke` accepts `--cert-name`, and doesn't accept both `--cert-name` and `--cert-path`.
+* Use the ACMEv2 newNonce endpoint when a new nonce is needed, and newNonce is available in the directory.
 
 ### Changed
 
 * Removed documentation mentions of `#letsencrypt` IRC on Freenode.
 * Write README to the base of (config-dir)/live directory
 * `--manual` will explicitly warn users that earlier challenges should remain in place when setting up subsequent challenges.
+* Warn when using deprecated acme.challenges.TLSSNI01
+* Stop preferring TLS-SNI in the Apache, Nginx, and standalone plugins
 
 ### Fixed
 
