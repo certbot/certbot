@@ -70,7 +70,6 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         self.auth.perform([self.achall])
 
 
-@pytest.mark.filterwarnings("ignore:decodestring:DeprecationWarning")
 class RFC2136ClientTest(unittest.TestCase):
 
     def setUp(self):
