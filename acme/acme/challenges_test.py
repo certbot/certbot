@@ -1,5 +1,6 @@
 """Tests for acme.challenges."""
 import unittest
+import warnings
 
 import josepy as jose
 import mock
@@ -360,20 +361,29 @@ class TLSSNI01ResponseTest(unittest.TestCase):
 class TLSSNI01Test(unittest.TestCase):
 
     def setUp(self):
-        from acme.challenges import TLSSNI01
-        self.msg = TLSSNI01(
-            token=jose.b64decode('a82d5ff8ef740d12881f6d3c2277ab2e'))
         self.jmsg = {
             'type': 'tls-sni-01',
             'token': 'a82d5ff8ef740d12881f6d3c2277ab2e',
         }
 
+    def _msg(self):
+        from acme.challenges import TLSSNI01
+        with warnings.catch_warnings(record=True) as warn:
+            warnings.simplefilter("always")
+            msg = TLSSNI01(
+                token=jose.b64decode('a82d5ff8ef740d12881f6d3c2277ab2e'))
+            assert warn is not None # using a raw assert for mypy
+            self.assertTrue(len(warn) == 1)
+            self.assertTrue(issubclass(warn[-1].category, DeprecationWarning))
+            self.assertTrue('deprecated' in str(warn[-1].message))
+        return msg
+
     def test_to_partial_json(self):
-        self.assertEqual(self.jmsg, self.msg.to_partial_json())
+        self.assertEqual(self.jmsg, self._msg().to_partial_json())
 
     def test_from_json(self):
         from acme.challenges import TLSSNI01
-        self.assertEqual(self.msg, TLSSNI01.from_json(self.jmsg))
+        self.assertEqual(self._msg(), TLSSNI01.from_json(self.jmsg))
 
     def test_from_json_hashable(self):
         from acme.challenges import TLSSNI01
@@ -388,7 +398,7 @@ class TLSSNI01Test(unittest.TestCase):
     @mock.patch('acme.challenges.TLSSNI01Response.gen_cert')
     def test_validation(self, mock_gen_cert):
         mock_gen_cert.return_value = ('cert', 'key')
-        self.assertEqual(('cert', 'key'), self.msg.validation(
+        self.assertEqual(('cert', 'key'), self._msg().validation(
             KEY, cert_key=mock.sentinel.cert_key))
         mock_gen_cert.assert_called_once_with(key=mock.sentinel.cert_key)
 
