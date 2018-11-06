@@ -458,12 +458,8 @@ def sha256sum(filename):
     :rtype: str
     """
     sha256 = hashlib.sha256()
-    if six.PY2:
-        with open(filename, 'rU') as file_d:
-            sha256.update(file_d.read().encode('UTF-8'))
-    else:
-        with open(filename, 'r', newline=None) as file_d:
-            sha256.update(file_d.read().encode('UTF-8'))
+    with open(filename, 'r', newline=None) as file_d:
+        sha256.update(file_d.read().encode('UTF-8'))
     return sha256.hexdigest()
 
 def cert_and_chain_from_fullchain(fullchain_pem):
