@@ -12,6 +12,8 @@ from certbot import util
 
 import certbot.tests.util as test_util
 
+from josepy import interfaces
+
 KEY = test_util.load_vector("rsa512_key.pem")
 CSR_SAN = test_util.load_vector("csr-san_512.pem")
 
@@ -25,15 +27,29 @@ class RegisterTest(test_util.ConfigTestCase):
         self.config.register_unsafely_without_email = False
         self.config.email = "alias@example.com"
         self.account_storage = account.AccountMemoryStorage()
+        self.config.eab_hmac_key = "hmac-key-for-testing"
+        self.config.eab_kid = "kid-for-testing"
 
     def _call(self):
         from certbot.client import register
         tos_cb = mock.MagicMock()
         return register(self.config, self.account_storage, tos_cb)
 
+    @staticmethod
+    def _public_key_mock():
+        m = mock.Mock(__class__=interfaces.JSONDeSerializable)
+        m.to_partial_json.return_value = '{"a": 1}'
+        return m
+
+    @staticmethod
+    def _directory_getitem_mock(input):
+        return "/acme/new-account"
+
     def test_no_tos(self):
         with mock.patch("certbot.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
             mock_client.new_account_and_tos().terms_of_service = "http://tos"
+            mock_client().client.net.key.public_key = mock.Mock(side_effect=self._public_key_mock)
+            mock_client().client.directory.__getitem__ = mock.Mock(side_effect=self._directory_getitem_mock)
             with mock.patch("certbot.eff.handle_subscription") as mock_handle:
                 with mock.patch("certbot.account.report_new_account"):
                     mock_client().new_account_and_tos.side_effect = errors.Error
@@ -45,7 +61,9 @@ class RegisterTest(test_util.ConfigTestCase):
                     self.assertTrue(mock_handle.called)
 
     def test_it(self):
-        with mock.patch("certbot.client.acme_client.BackwardsCompatibleClientV2"):
+        with mock.patch("certbot.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
+            mock_client().client.net.key.public_key = mock.Mock(side_effect=self._public_key_mock)
+            mock_client().client.directory.__getitem__ = mock.Mock(side_effect=self._directory_getitem_mock)
             with mock.patch("certbot.account.report_new_account"):
                 with mock.patch("certbot.eff.handle_subscription"):
                     self._call()
@@ -58,6 +76,8 @@ class RegisterTest(test_util.ConfigTestCase):
         msg = "DNS problem: NXDOMAIN looking up MX for example.com"
         mx_err = messages.Error.with_code('invalidContact', detail=msg)
         with mock.patch("certbot.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
+            mock_client().client.net.key.public_key = mock.Mock(side_effect=self._public_key_mock)
+            mock_client().client.directory.__getitem__ = mock.Mock(side_effect=self._directory_getitem_mock)
             with mock.patch("certbot.eff.handle_subscription") as mock_handle:
                 mock_client().new_account_and_tos.side_effect = [mx_err, mock.MagicMock()]
                 self._call()
@@ -71,6 +91,8 @@ class RegisterTest(test_util.ConfigTestCase):
         msg = "DNS problem: NXDOMAIN looking up MX for example.com"
         mx_err = messages.Error.with_code('invalidContact', detail=msg)
         with mock.patch("certbot.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
+            mock_client().client.net.key.public_key = mock.Mock(side_effect=self._public_key_mock)
+            mock_client().client.directory.__getitem__ = mock.Mock(side_effect=self._directory_getitem_mock)
             with mock.patch("certbot.eff.handle_subscription"):
                 mock_client().new_account_and_tos.side_effect = [mx_err, mock.MagicMock()]
                 self.assertRaises(errors.Error, self._call)
@@ -82,7 +104,9 @@ class RegisterTest(test_util.ConfigTestCase):
     @mock.patch("certbot.client.logger")
     def test_without_email(self, mock_logger):
         with mock.patch("certbot.eff.handle_subscription") as mock_handle:
-            with mock.patch("certbot.client.acme_client.BackwardsCompatibleClientV2"):
+            with mock.patch("certbot.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
+                mock_client().client.net.key.public_key = mock.Mock(side_effect=self._public_key_mock)
+                mock_client().client.directory.__getitem__ = mock.Mock(side_effect=self._directory_getitem_mock)
                 with mock.patch("certbot.account.report_new_account"):
                     self.config.email = None
                     self.config.register_unsafely_without_email = True
@@ -96,6 +120,8 @@ class RegisterTest(test_util.ConfigTestCase):
     def test_dry_run_no_staging_account(self, _rep, mock_get_email):
         """Tests dry-run for no staging account, expect account created with no email"""
         with mock.patch("certbot.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
+            mock_client().client.net.key.public_key = mock.Mock(side_effect=self._public_key_mock)
+            mock_client().client.directory.__getitem__ = mock.Mock(side_effect=self._directory_getitem_mock)
             with mock.patch("certbot.eff.handle_subscription"):
                 with mock.patch("certbot.account.report_new_account"):
                     self.config.dry_run = True
@@ -110,6 +136,8 @@ class RegisterTest(test_util.ConfigTestCase):
         msg = "Test"
         mx_err = messages.Error(detail=msg, typ="malformed", title="title")
         with mock.patch("certbot.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
+            mock_client().client.net.key.public_key = mock.Mock(side_effect=self._public_key_mock)
+            mock_client().client.directory.__getitem__ = mock.Mock(side_effect=self._directory_getitem_mock)
             with mock.patch("certbot.eff.handle_subscription") as mock_handle:
                 mock_client().new_account_and_tos.side_effect = [mx_err, mock.MagicMock()]
                 self.assertRaises(messages.Error, self._call)
