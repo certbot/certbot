@@ -66,6 +66,23 @@ class BasicParserTest(util.ParserTest):
         for i, match in enumerate(matches):
             self.assertEqual(self.parser.aug.get(match), str(i + 1))
 
+    def test_add_dir_beginning(self):
+        aug_default = "/files" + self.parser.loc["default"]
+        self.parser.add_dir_beginning(aug_default,
+                                      "AddDirectiveBeginning",
+                                      "testBegin")
+
+        self.assertTrue(
+            self.parser.find_dir("AddDirectiveBeginning", "testBegin", aug_default))
+
+        self.assertEqual(
+            self.parser.aug.get(aug_default+"/directive[1]"),
+                                "AddDirectiveBeginning")
+        self.parser.add_dir_beginning(aug_default, "AddList", ["1", "2", "3", "4"])
+        matches = self.parser.find_dir("AddList", None, aug_default)
+        for i, match in enumerate(matches):
+            self.assertEqual(self.parser.aug.get(match), str(i + 1))
+
     def test_empty_arg(self):
         self.assertEquals(None,
                           self.parser.get_arg("/files/whatever/nonexistent"))
@@ -265,11 +282,11 @@ class BasicParserTest(util.ParserTest):
         self.assertRaises(
             errors.PluginError, self.parser.update_runtime_variables)
 
-    @mock.patch("certbot_apache.configurator.ApacheConfigurator.constant")
+    @mock.patch("certbot_apache.configurator.ApacheConfigurator.option")
     @mock.patch("certbot_apache.parser.subprocess.Popen")
-    def test_update_runtime_vars_bad_ctl(self, mock_popen, mock_const):
+    def test_update_runtime_vars_bad_ctl(self, mock_popen, mock_opt):
         mock_popen.side_effect = OSError
-        mock_const.return_value = "nonexistent"
+        mock_opt.return_value = "nonexistent"
         self.assertRaises(
             errors.MisconfigurationError,
             self.parser.update_runtime_variables)
@@ -281,6 +298,13 @@ class BasicParserTest(util.ParserTest):
         self.assertRaises(
             errors.MisconfigurationError,
             self.parser.update_runtime_variables)
+
+    def test_add_comment(self):
+        from certbot_apache.parser import get_aug_path
+        self.parser.add_comment(get_aug_path(self.parser.loc["name"]), "123456")
+        comm = self.parser.find_comments("123456")
+        self.assertEquals(len(comm), 1)
+        self.assertTrue(self.parser.loc["name"] in comm[0])
 
 
 class ParserInitTest(util.ApacheTest):

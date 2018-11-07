@@ -51,15 +51,16 @@ class NginxTlsSni01(common.TLSSNI01):
         default_addr = "{0} ssl".format(
             self.configurator.config.tls_sni_01_port)
 
-        ipv6, ipv6only = self.configurator.ipv6_info(
-            self.configurator.config.tls_sni_01_port)
-
         for achall in self.achalls:
-            vhost = self.configurator.choose_vhost(achall.domain, create_if_no_match=True)
+            vhosts = self.configurator.choose_vhosts(achall.domain, create_if_no_match=True)
 
-            if vhost is not None and vhost.addrs:
-                addresses.append(list(vhost.addrs))
+            # len is max 1 because Nginx doesn't authenticate wildcards
+            if vhosts and vhosts[0].addrs:
+                addresses.append(list(vhosts[0].addrs))
             else:
+                # choose_vhosts might have modified vhosts, so put this after
+                ipv6, ipv6only = self.configurator.ipv6_info(
+                    self.configurator.config.tls_sni_01_port)
                 if ipv6:
                     # If IPv6 is active in Nginx configuration
                     ipv6_addr = "[::]:{0} ssl".format(
@@ -139,6 +140,8 @@ class NginxTlsSni01(common.TLSSNI01):
 
         with open(self.challenge_conf, "w") as new_conf:
             nginxparser.dump(config, new_conf)
+
+        logger.debug("Generated server block:\n%s", str(config))
 
     def _make_server_block(self, achall, addrs):
         """Creates a server block for a challenge.

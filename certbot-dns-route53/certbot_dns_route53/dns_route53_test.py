@@ -1,5 +1,6 @@
 """Tests for certbot_dns_route53.dns_route53.Authenticator"""
 
+import os
 import unittest
 
 import mock
@@ -20,7 +21,17 @@ class AuthenticatorTest(unittest.TestCase, dns_test_common.BaseAuthenticatorTest
 
         self.config = mock.MagicMock()
 
+        # Set up dummy credentials for testing
+        os.environ["AWS_ACCESS_KEY_ID"] = "dummy_access_key"
+        os.environ["AWS_SECRET_ACCESS_KEY"] = "dummy_secret_access_key"
+
         self.auth = Authenticator(self.config, "route53")
+
+    def tearDown(self):
+        # Remove the dummy credentials from env vars
+        del os.environ["AWS_ACCESS_KEY_ID"]
+        del os.environ["AWS_SECRET_ACCESS_KEY"]
+        super(AuthenticatorTest, self).tearDown()
 
     def test_perform(self):
         self.auth._change_txt_record = mock.MagicMock()
@@ -117,7 +128,17 @@ class ClientTest(unittest.TestCase):
 
         self.config = mock.MagicMock()
 
+        # Set up dummy credentials for testing
+        os.environ["AWS_ACCESS_KEY_ID"] = "dummy_access_key"
+        os.environ["AWS_SECRET_ACCESS_KEY"] = "dummy_secret_access_key"
+
         self.client = Authenticator(self.config, "route53")
+
+    def tearDown(self):
+        # Remove the dummy credentials from env vars
+        del os.environ["AWS_ACCESS_KEY_ID"]
+        del os.environ["AWS_SECRET_ACCESS_KEY"]
+        super(ClientTest, self).tearDown()
 
     def test_find_zone_id_for_domain(self):
         self.client.r53.get_paginator = mock.MagicMock()
@@ -184,6 +205,48 @@ class ClientTest(unittest.TestCase):
         self.client._change_txt_record("FOO", DOMAIN, "foo")
 
         call_count = self.client.r53.change_resource_record_sets.call_count
+        self.assertEqual(call_count, 1)
+
+    def test_change_txt_record_delete(self):
+        self.client._find_zone_id_for_domain = mock.MagicMock()
+        self.client.r53.change_resource_record_sets = mock.MagicMock(
+            return_value={"ChangeInfo": {"Id": 1}})
+
+        validation = "some-value"
+        validation_record = {"Value": '"{0}"'.format(validation)}
+        self.client._resource_records[DOMAIN] = [validation_record]
+
+        self.client._change_txt_record("DELETE", DOMAIN, validation)
+
+        call_count = self.client.r53.change_resource_record_sets.call_count
+        self.assertEqual(call_count, 1)
+        call_args = self.client.r53.change_resource_record_sets.call_args_list[0][1]
+        call_args_batch = call_args["ChangeBatch"]["Changes"][0]
+        self.assertEqual(call_args_batch["Action"], "DELETE")
+        self.assertEqual(
+            call_args_batch["ResourceRecordSet"]["ResourceRecords"],
+            [validation_record])
+
+    def test_change_txt_record_multirecord(self):
+        self.client._find_zone_id_for_domain = mock.MagicMock()
+        self.client._get_validation_rrset = mock.MagicMock()
+        self.client._resource_records[DOMAIN] = [
+            {"Value": "\"pre-existing-value\""},
+            {"Value": "\"pre-existing-value-two\""},
+        ]
+        self.client.r53.change_resource_record_sets = mock.MagicMock(
+            return_value={"ChangeInfo": {"Id": 1}})
+
+        self.client._change_txt_record("DELETE", DOMAIN, "pre-existing-value")
+
+        call_count = self.client.r53.change_resource_record_sets.call_count
+        call_args = self.client.r53.change_resource_record_sets.call_args_list[0][1]
+        call_args_batch = call_args["ChangeBatch"]["Changes"][0]
+        self.assertEqual(call_args_batch["Action"], "UPSERT")
+        self.assertEqual(
+            call_args_batch["ResourceRecordSet"]["ResourceRecords"],
+            [{"Value": "\"pre-existing-value-two\""}])
+
         self.assertEqual(call_count, 1)
 
     def test_wait_for_change(self):

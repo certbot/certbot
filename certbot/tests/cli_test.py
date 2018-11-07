@@ -76,6 +76,7 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
         return output.getvalue()
 
+    @test_util.broken_on_windows
     @mock.patch("certbot.cli.flag_default")
     def test_cli_ini_domains(self, mock_flag_default):
         tmp_config = tempfile.NamedTemporaryFile()
@@ -164,6 +165,8 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertTrue("--cert-path" in out)
         self.assertTrue("--key-path" in out)
         self.assertTrue("--reason" in out)
+        self.assertTrue("--delete-after-revoke" in out)
+        self.assertTrue("--no-delete-after-revoke" in out)
 
         out = self._help_output(['-h', 'config_changes'])
         self.assertTrue("--cert-path" not in out)
@@ -412,6 +415,22 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     def test_no_directory_hooks_unset(self):
         self.assertTrue(self.parse([]).directory_hooks)
 
+    def test_delete_after_revoke(self):
+        namespace = self.parse(["--delete-after-revoke"])
+        self.assertTrue(namespace.delete_after_revoke)
+
+    def test_delete_after_revoke_default(self):
+        namespace = self.parse([])
+        self.assertEqual(namespace.delete_after_revoke, None)
+
+    def test_no_delete_after_revoke(self):
+        namespace = self.parse(["--no-delete-after-revoke"])
+        self.assertFalse(namespace.delete_after_revoke)
+
+    def test_allow_subset_with_wildcard(self):
+        self.assertRaises(errors.Error, self.parse,
+                          "--allow-subset-of-names -d *.example.org".split())
+
 
 class DefaultTest(unittest.TestCase):
     """Tests for certbot.cli._Default."""
@@ -477,7 +496,8 @@ class SetByCliTest(unittest.TestCase):
         for v in ('manual', 'manual_auth_hook', 'manual_public_ip_logging_ok'):
             self.assertTrue(_call_set_by_cli(v, args, verb))
 
-        cli.set_by_cli.detector = None
+        # https://github.com/python/mypy/issues/2087
+        cli.set_by_cli.detector = None  # type: ignore
 
         args = ['--manual-auth-hook', 'command']
         for v in ('manual_auth_hook', 'manual_public_ip_logging_ok'):

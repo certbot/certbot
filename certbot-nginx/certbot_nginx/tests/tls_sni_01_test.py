@@ -20,7 +20,7 @@ from certbot_nginx.tests import util
 class TlsSniPerformTest(util.NginxTest):
     """Test the NginxTlsSni01 challenge."""
 
-    account_key = common_test.TLSSNI01Test.auth_key
+    account_key = common_test.AUTH_KEY
     achalls = [
         achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=acme_util.chall_to_challb(
@@ -61,10 +61,10 @@ class TlsSniPerformTest(util.NginxTest):
         shutil.rmtree(self.work_dir)
 
     @mock.patch("certbot_nginx.configurator"
-                ".NginxConfigurator.choose_vhost")
+                ".NginxConfigurator.choose_vhosts")
     def test_perform(self, mock_choose):
         self.sni.add_chall(self.achalls[1])
-        mock_choose.return_value = None
+        mock_choose.return_value = []
         result = self.sni.perform()
         self.assertFalse(result is None)
 

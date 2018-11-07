@@ -5,6 +5,7 @@ import requests
 import zope.interface
 
 import six
+from six.moves import xrange  # pylint: disable=import-error,redefined-builtin
 
 from acme import crypto_util
 from acme import errors as acme_errors
@@ -32,7 +33,7 @@ class Validator(object):
         try:
             presented_cert = crypto_util.probe_sni(name, host, port)
         except acme_errors.Error as error:
-            logger.exception(error)
+            logger.exception(str(error))
             return False
 
         return presented_cert.digest("sha256") == cert.digest("sha256")
@@ -85,8 +86,7 @@ class Validator(object):
             return False
 
         try:
-            _, max_age_value = max_age[0]
-            max_age_value = int(max_age_value)
+            max_age_value = int(max_age[0][1])
         except ValueError:
             logger.error("Server responded with invalid HSTS header field")
             return False

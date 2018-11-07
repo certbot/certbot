@@ -11,12 +11,16 @@ import zope.interface
 
 from josepy import util as jose_util
 
+from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
+from certbot import achallenges  # pylint: disable=unused-import
 from certbot import constants
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
 from certbot import reverter
 from certbot import util
+
+from certbot.plugins.storage import PluginStorage
 
 logger = logging.getLogger(__name__)
 
@@ -99,7 +103,6 @@ class Plugin(object):
     def conf(self, var):
         """Find a configuration value for variable ``var``."""
         return getattr(self.config, self.dest(var))
-# other
 
 
 class Installer(Plugin):
@@ -110,6 +113,7 @@ class Installer(Plugin):
     """
     def __init__(self, *args, **kwargs):
         super(Installer, self).__init__(*args, **kwargs)
+        self.storage = PluginStorage(self.config, self.name)
         self.reverter = reverter.Reverter(self.config)
 
     def add_to_checkpoint(self, save_files, save_notes, temporary=False):
@@ -315,29 +319,55 @@ class Addr(object):
         return result
 
 
-class TLSSNI01(object):
-    """Abstract base for TLS-SNI-01 challenge performers"""
+class ChallengePerformer(object):
+    """Abstract base for challenge performers.
+
+    :ivar configurator: Authenticator and installer plugin
+    :ivar achalls: Annotated challenges
+    :vartype achalls: `list` of `.KeyAuthorizationAnnotatedChallenge`
+    :ivar indices: Holds the indices of challenges from a larger array
+        so the user of the class doesn't have to.
+    :vartype indices: `list` of `int`
+
+    """
 
     def __init__(self, configurator):
         self.configurator = configurator
-        self.achalls = []
-        self.indices = []
-        self.challenge_conf = os.path.join(
-            configurator.config.config_dir, "le_tls_sni_01_cert_challenge.conf")
-        # self.completed = 0
+        self.achalls = []  # type: List[achallenges.KeyAuthorizationAnnotatedChallenge]
+        self.indices = []  # type: List[int]
 
     def add_chall(self, achall, idx=None):
-        """Add challenge to TLSSNI01 object to perform at once.
+        """Store challenge to be performed when perform() is called.
 
         :param .KeyAuthorizationAnnotatedChallenge achall: Annotated
-            TLSSNI01 challenge.
-
+            challenge.
         :param int idx: index to challenge in a larger array
 
         """
         self.achalls.append(achall)
         if idx is not None:
             self.indices.append(idx)
+
+    def perform(self):
+        """Perform all added challenges.
+
+        :returns: challenge respones
+        :rtype: `list` of `acme.challenges.KeyAuthorizationChallengeResponse`
+
+
+        """
+        raise NotImplementedError()
+
+
+class TLSSNI01(ChallengePerformer):
+    # pylint: disable=abstract-method
+    """Abstract base for TLS-SNI-01 challenge performers"""
+
+    def __init__(self, configurator):
+        super(TLSSNI01, self).__init__(configurator)
+        self.challenge_conf = os.path.join(
+            configurator.config.config_dir, "le_tls_sni_01_cert_challenge.conf")
+        # self.completed = 0
 
     def get_cert_path(self, achall):
         """Returns standardized name for challenge certificate.

@@ -4,6 +4,7 @@ import unittest
 
 import six
 import mock
+import sys
 
 from acme import challenges
 
@@ -20,8 +21,9 @@ class AuthenticatorTest(test_util.TempDirTestCase):
         super(AuthenticatorTest, self).setUp()
         self.http_achall = acme_util.HTTP01_A
         self.dns_achall = acme_util.DNS01_A
+        self.dns_achall_2 = acme_util.DNS01_A_2
         self.tls_sni_achall = acme_util.TLSSNI01_A
-        self.achalls = [self.http_achall, self.dns_achall, self.tls_sni_achall]
+        self.achalls = [self.http_achall, self.dns_achall, self.tls_sni_achall, self.dns_achall_2]
         for d in ["config_dir", "work_dir", "in_progress"]:
             os.mkdir(os.path.join(self.tempdir, d))
             # "backup_dir" and "temp_checkpoint_dir" get created in
@@ -74,12 +76,14 @@ class AuthenticatorTest(test_util.TempDirTestCase):
     def test_script_perform(self):
         self.config.manual_public_ip_logging_ok = True
         self.config.manual_auth_hook = (
-            'echo ${CERTBOT_DOMAIN}; '
-            'echo ${CERTBOT_TOKEN:-notoken}; '
-            'echo ${CERTBOT_CERT_PATH:-nocert}; '
-            'echo ${CERTBOT_KEY_PATH:-nokey}; '
-            'echo ${CERTBOT_SNI_DOMAIN:-nosnidomain}; '
-            'echo ${CERTBOT_VALIDATION:-novalidation};')
+            '{0} -c "from __future__ import print_function;'
+            'import os;  print(os.environ.get(\'CERTBOT_DOMAIN\'));'
+            'print(os.environ.get(\'CERTBOT_TOKEN\', \'notoken\'));'
+            'print(os.environ.get(\'CERTBOT_CERT_PATH\', \'nocert\'));'
+            'print(os.environ.get(\'CERTBOT_KEY_PATH\', \'nokey\'));'
+            'print(os.environ.get(\'CERTBOT_SNI_DOMAIN\', \'nosnidomain\'));'
+            'print(os.environ.get(\'CERTBOT_VALIDATION\', \'novalidation\'));"'
+            .format(sys.executable))
         dns_expected = '{0}\n{1}\n{2}\n{3}\n{4}\n{5}'.format(
             self.dns_achall.domain, 'notoken',
             'nocert', 'nokey', 'nosnidomain',
@@ -93,10 +97,10 @@ class AuthenticatorTest(test_util.TempDirTestCase):
             self.auth.perform(self.achalls),
             [achall.response(achall.account_key) for achall in self.achalls])
         self.assertEqual(
-            self.auth.env[self.dns_achall.domain]['CERTBOT_AUTH_OUTPUT'],
+            self.auth.env[self.dns_achall]['CERTBOT_AUTH_OUTPUT'],
             dns_expected)
         self.assertEqual(
-            self.auth.env[self.http_achall.domain]['CERTBOT_AUTH_OUTPUT'],
+            self.auth.env[self.http_achall]['CERTBOT_AUTH_OUTPUT'],
             http_expected)
         # tls_sni_01 challenge must be perform()ed above before we can
         # get the cert_path and key_path.
@@ -107,7 +111,7 @@ class AuthenticatorTest(test_util.TempDirTestCase):
             self.auth.tls_sni_01.get_z_domain(self.tls_sni_achall),
             'novalidation')
         self.assertEqual(
-            self.auth.env[self.tls_sni_achall.domain]['CERTBOT_AUTH_OUTPUT'],
+            self.auth.env[self.tls_sni_achall]['CERTBOT_AUTH_OUTPUT'],
             tls_sni_expected)
 
     @test_util.patch_get_utility()
@@ -127,6 +131,7 @@ class AuthenticatorTest(test_util.TempDirTestCase):
                         achall.validation(achall.account_key) in args[0])
             self.assertFalse(kwargs['wrap'])
 
+    @test_util.broken_on_windows
     def test_cleanup(self):
         self.config.manual_public_ip_logging_ok = True
         self.config.manual_auth_hook = 'echo foo;'

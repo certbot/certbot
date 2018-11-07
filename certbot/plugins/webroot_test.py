@@ -4,9 +4,9 @@ from __future__ import print_function
 
 import argparse
 import errno
+import json
 import os
 import shutil
-import stat
 import tempfile
 import unittest
 
@@ -17,6 +17,7 @@ import six
 from acme import challenges
 
 from certbot import achallenges
+from certbot import compat
 from certbot import errors
 from certbot.display import util as display_util
 
@@ -36,6 +37,8 @@ class AuthenticatorTest(unittest.TestCase):
     def setUp(self):
         from certbot.plugins.webroot import Authenticator
         self.path = tempfile.mkdtemp()
+        self.partial_root_challenge_path = os.path.join(
+            self.path, ".well-known")
         self.root_challenge_path = os.path.join(
             self.path, ".well-known", "acme-challenge")
         self.validation_path = os.path.join(
@@ -140,6 +143,7 @@ class AuthenticatorTest(unittest.TestCase):
             self.assertRaises(errors.PluginError, self.auth.perform, [])
         os.chmod(self.path, 0o700)
 
+    @test_util.skip_on_windows('On Windows, there is no chown.')
     @mock.patch("certbot.plugins.webroot.os.chown")
     def test_failed_chown(self, mock_chown):
         mock_chown.side_effect = OSError(errno.EACCES, "msg")
@@ -167,16 +171,14 @@ class AuthenticatorTest(unittest.TestCase):
         # Remove exec bit from permission check, so that it
         # matches the file
         self.auth.perform([self.achall])
-        path_permissions = stat.S_IMODE(os.stat(self.validation_path).st_mode)
-        self.assertEqual(path_permissions, 0o644)
+        self.assertTrue(compat.compare_file_modes(os.stat(self.validation_path).st_mode, 0o644))
 
         # Check permissions of the directories
 
         for dirpath, dirnames, _ in os.walk(self.path):
             for directory in dirnames:
                 full_path = os.path.join(dirpath, directory)
-                dir_permissions = stat.S_IMODE(os.stat(full_path).st_mode)
-                self.assertEqual(dir_permissions, 0o755)
+                self.assertTrue(compat.compare_file_modes(os.stat(full_path).st_mode, 0o755))
 
         parent_gid = os.stat(self.path).st_gid
         parent_uid = os.stat(self.path).st_uid
@@ -197,6 +199,35 @@ class AuthenticatorTest(unittest.TestCase):
                     self.achall.chall, KEY.public_key()))
 
         self.auth.cleanup([self.achall])
+        self.assertFalse(os.path.exists(self.validation_path))
+        self.assertFalse(os.path.exists(self.root_challenge_path))
+        self.assertFalse(os.path.exists(self.partial_root_challenge_path))
+
+    def test_perform_cleanup_existing_dirs(self):
+        os.mkdir(self.partial_root_challenge_path)
+        self.auth.prepare()
+        self.auth.perform([self.achall])
+        self.auth.cleanup([self.achall])
+
+        # Ensure we don't "clean up" directories that previously existed
+        self.assertFalse(os.path.exists(self.validation_path))
+        self.assertFalse(os.path.exists(self.root_challenge_path))
+
+    def test_perform_cleanup_multiple_challenges(self):
+        bingo_achall = achallenges.KeyAuthorizationAnnotatedChallenge(
+            challb=acme_util.chall_to_challb(
+                challenges.HTTP01(token=b"bingo"), "pending"),
+            domain="thing.com", account_key=KEY)
+
+        bingo_validation_path = "YmluZ28"
+        os.mkdir(self.partial_root_challenge_path)
+        self.auth.prepare()
+        self.auth.perform([bingo_achall, self.achall])
+
+        self.auth.cleanup([self.achall])
+        self.assertFalse(os.path.exists(bingo_validation_path))
+        self.assertTrue(os.path.exists(self.root_challenge_path))
+        self.auth.cleanup([bingo_achall])
         self.assertFalse(os.path.exists(self.validation_path))
         self.assertFalse(os.path.exists(self.root_challenge_path))
 
@@ -243,7 +274,7 @@ class WebrootActionTest(unittest.TestCase):
 
     def test_webroot_map_action(self):
         args = self.parser.parse_args(
-            ["--webroot-map", '{{"thing.com":"{0}"}}'.format(self.path)])
+            ["--webroot-map", json.dumps({'thing.com': self.path})])
         self.assertEqual(args.webroot_map["thing.com"], self.path)
 
     def test_domain_before_webroot(self):

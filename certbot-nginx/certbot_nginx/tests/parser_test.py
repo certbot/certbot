@@ -11,6 +11,7 @@ from certbot_nginx import nginxparser
 from certbot_nginx import obj
 from certbot_nginx import parser
 from certbot_nginx.tests import util
+from acme.magic_typing import List # pylint: disable=unused-import, no-name-in-module
 
 
 class NginxParserTest(util.NginxTest): #pylint: disable=too-many-public-methods
@@ -48,6 +49,7 @@ class NginxParserTest(util.NginxTest): #pylint: disable=too-many-public-methods
                               ['foo.conf', 'nginx.conf', 'server.conf',
                                'sites-enabled/default',
                                'sites-enabled/example.com',
+                               'sites-enabled/headers.com',
                                'sites-enabled/migration.com',
                                'sites-enabled/sslon.com',
                                'sites-enabled/globalssl.com',
@@ -76,7 +78,7 @@ class NginxParserTest(util.NginxTest): #pylint: disable=too-many-public-methods
         parsed = nparser._parse_files(nparser.abs_path(
             'sites-enabled/example.com.test'))
         self.assertEqual(3, len(glob.glob(nparser.abs_path('*.test'))))
-        self.assertEqual(7, len(
+        self.assertEqual(8, len(
             glob.glob(nparser.abs_path('sites-enabled/*.test'))))
         self.assertEqual([[['server'], [['listen', '69.50.225.155:9000'],
                                         ['listen', '127.0.0.1'],
@@ -99,7 +101,7 @@ class NginxParserTest(util.NginxTest): #pylint: disable=too-many-public-methods
                    ([[[0], [3], [4]], [[5], [3], [0]]], [])]
 
         for mylist, result in mylists:
-            paths = []
+            paths = [] # type: List[List[int]]
             parser._do_for_subarray(mylist,
                                     lambda x: isinstance(x, list) and
                                     len(x) >= 1 and
@@ -159,7 +161,7 @@ class NginxParserTest(util.NginxTest): #pylint: disable=too-many-public-methods
                                                   '*.www.example.com']),
                                  [], [2, 1, 0])
 
-        self.assertEqual(12, len(vhosts))
+        self.assertEqual(13, len(vhosts))
         example_com = [x for x in vhosts if 'example.com' in x.filep][0]
         self.assertEqual(vhost3, example_com)
         default = [x for x in vhosts if 'default' in x.filep][0]
@@ -191,6 +193,31 @@ class NginxParserTest(util.NginxTest): #pylint: disable=too-many-public-methods
                           ['server_name', '*.www.foo.com', '*.www.example.com']]
         self.assertTrue(nparser.has_ssl_on_directive(mock_vhost))
 
+
+    def test_remove_server_directives(self):
+        nparser = parser.NginxParser(self.config_path)
+        mock_vhost = obj.VirtualHost(nparser.abs_path('nginx.conf'),
+                                     None, None, None,
+                                     set(['localhost',
+                                           r'~^(www\.)?(example|bar)\.']),
+                                     None, [10, 1, 9])
+        example_com = nparser.abs_path('sites-enabled/example.com')
+        names = set(['.example.com', 'example.*'])
+        mock_vhost.filep = example_com
+        mock_vhost.names = names
+        mock_vhost.path = [0]
+        nparser.add_server_directives(mock_vhost,
+                                      [['foo', 'bar'], ['ssl_certificate',
+                                                        '/etc/ssl/cert2.pem']])
+        nparser.remove_server_directives(mock_vhost, 'foo')
+        nparser.remove_server_directives(mock_vhost, 'ssl_certificate')
+        self.assertEqual(nparser.parsed[example_com],
+            [[['server'], [['listen', '69.50.225.155:9000'],
+                           ['listen', '127.0.0.1'],
+                           ['server_name', '.example.com'],
+                           ['server_name', 'example.*'],
+                           []]]])
+
     def test_add_server_directives(self):
         nparser = parser.NginxParser(self.config_path)
         mock_vhost = obj.VirtualHost(nparser.abs_path('nginx.conf'),
@@ -200,8 +227,7 @@ class NginxParserTest(util.NginxTest): #pylint: disable=too-many-public-methods
                                      None, [10, 1, 9])
         nparser.add_server_directives(mock_vhost,
                                       [['foo', 'bar'], ['\n ', 'ssl_certificate', ' ',
-                                                        '/etc/ssl/cert.pem']],
-                                      replace=False)
+                                                        '/etc/ssl/cert.pem']])
         ssl_re = re.compile(r'\n\s+ssl_certificate /etc/ssl/cert.pem')
         dump = nginxparser.dumps(nparser.parsed[nparser.abs_path('nginx.conf')])
         self.assertEqual(1, len(re.findall(ssl_re, dump)))
@@ -213,10 +239,8 @@ class NginxParserTest(util.NginxTest): #pylint: disable=too-many-public-methods
         mock_vhost.path = [0]
         nparser.add_server_directives(mock_vhost,
                                       [['foo', 'bar'], ['ssl_certificate',
-                                                        '/etc/ssl/cert2.pem']],
-                                      replace=False)
-        nparser.add_server_directives(mock_vhost, [['foo', 'bar']],
-                                      replace=False)
+                                                        '/etc/ssl/cert2.pem']])
+        nparser.add_server_directives(mock_vhost, [['foo', 'bar']])
         from certbot_nginx.parser import COMMENT
         self.assertEqual(nparser.parsed[example_com],
             [[['server'], [['listen', '69.50.225.155:9000'],
@@ -238,8 +262,7 @@ class NginxParserTest(util.NginxTest): #pylint: disable=too-many-public-methods
                           nparser.add_server_directives,
                           mock_vhost,
                           [['foo', 'bar'],
-                           ['ssl_certificate', '/etc/ssl/cert2.pem']],
-                          replace=False)
+                           ['ssl_certificate', '/etc/ssl/cert2.pem']])
 
     def test_comment_is_repeatable(self):
         nparser = parser.NginxParser(self.config_path)
@@ -249,12 +272,10 @@ class NginxParserTest(util.NginxTest): #pylint: disable=too-many-public-methods
                                      set(['.example.com', 'example.*']),
                                      None, [0])
         nparser.add_server_directives(mock_vhost,
-                                      [['\n  ', '#', ' ', 'what a nice comment']],
-                                      replace=False)
+                                      [['\n  ', '#', ' ', 'what a nice comment']])
         nparser.add_server_directives(mock_vhost,
                                       [['\n  ', 'include', ' ',
-                                      nparser.abs_path('comment_in_file.conf')]],
-                                      replace=False)
+                                      nparser.abs_path('comment_in_file.conf')]])
         from certbot_nginx.parser import COMMENT
         self.assertEqual(nparser.parsed[example_com],
             [[['server'], [['listen', '69.50.225.155:9000'],
@@ -273,8 +294,8 @@ class NginxParserTest(util.NginxTest): #pylint: disable=too-many-public-methods
         target = set(['.example.com', 'example.*'])
         filep = nparser.abs_path('sites-enabled/example.com')
         mock_vhost = obj.VirtualHost(filep, None, None, None, target, None, [0])
-        nparser.add_server_directives(
-            mock_vhost, [['server_name', 'foobar.com']], replace=True)
+        nparser.update_or_add_server_directives(
+            mock_vhost, [['server_name', 'foobar.com']])
         from certbot_nginx.parser import COMMENT
         self.assertEqual(
             nparser.parsed[filep],
@@ -284,8 +305,8 @@ class NginxParserTest(util.NginxTest): #pylint: disable=too-many-public-methods
                            ['server_name', 'example.*'], []
                            ]]])
         mock_vhost.names = set(['foobar.com', 'example.*'])
-        nparser.add_server_directives(
-            mock_vhost, [['ssl_certificate', 'cert.pem']], replace=True)
+        nparser.update_or_add_server_directives(
+            mock_vhost, [['ssl_certificate', 'cert.pem']])
         self.assertEqual(
             nparser.parsed[filep],
             [[['server'], [['listen', '69.50.225.155:9000'],
@@ -411,7 +432,7 @@ class NginxParserTest(util.NginxTest): #pylint: disable=too-many-public-methods
 
         vhosts = nparser.get_vhosts()
         default = [x for x in vhosts if 'default' in x.filep][0]
-        new_vhost = nparser.duplicate_vhost(default, delete_default=True)
+        new_vhost = nparser.duplicate_vhost(default, remove_singleton_listen_params=True)
         nparser.filedump(ext='')
 
         # check properties of new vhost
@@ -441,6 +462,29 @@ class NginxParserTest(util.NginxTest): #pylint: disable=too-many-public-methods
         # pylint: disable=protected-access
         parsed = nparser._parse_files(nparser.abs_path('unicode_support/invalid_unicode_comments.conf'))
         self.assertEqual([], parsed)
+
+    def test_duplicate_vhost_remove_ipv6only(self):
+        nparser = parser.NginxParser(self.config_path)
+
+        vhosts = nparser.get_vhosts()
+        ipv6ssl = [x for x in vhosts if 'ipv6ssl' in x.filep][0]
+        new_vhost = nparser.duplicate_vhost(ipv6ssl, remove_singleton_listen_params=True)
+        nparser.filedump(ext='')
+
+        for addr in new_vhost.addrs:
+            self.assertFalse(addr.ipv6only)
+
+        identical_vhost = nparser.duplicate_vhost(ipv6ssl, remove_singleton_listen_params=False)
+        nparser.filedump(ext='')
+
+        called = False
+        for addr in identical_vhost.addrs:
+            if addr.ipv6:
+                self.assertTrue(addr.ipv6only)
+                called = True
+        self.assertTrue(called)
+
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

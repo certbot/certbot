@@ -38,6 +38,7 @@ from multiprocessing import Manager
 import urllib2
 import yaml
 import boto3
+from botocore.exceptions import ClientError
 import fabric
 from fabric.api import run, execute, local, env, sudo, cd, lcd
 from fabric.operations import get, put
@@ -102,13 +103,32 @@ LOGDIR = "" #points to logging / working directory
 # boto3/AWS api globals
 AWS_SESSION = None
 EC2 = None
+SECURITY_GROUP_NAME = 'certbot-security-group'
+SUBNET_NAME = 'certbot-subnet'
 
 # Boto3/AWS automation functions
 #-------------------------------------------------------------------------------
-def make_security_group():
+def should_use_subnet(subnet):
+    """Should we use the given subnet for these tests?
+
+    We should if it is the default subnet for the availability zone or the
+    subnet is named "certbot-subnet".
+
+    """
+    if not subnet.map_public_ip_on_launch:
+        return False
+    if subnet.default_for_az:
+        return True
+    for tag in subnet.tags:
+        if tag['Key'] == 'Name' and tag['Value'] == SUBNET_NAME:
+            return True
+    return False
+
+def make_security_group(vpc):
+    """Creates a security group in the given VPC."""
     # will fail if security group of GroupName already exists
     # cannot have duplicate SGs of the same name
-    mysg = EC2.create_security_group(GroupName="letsencrypt_test",
+    mysg = vpc.create_security_group(GroupName=SECURITY_GROUP_NAME,
                                      Description='security group for automated testing')
     mysg.authorize_ingress(IpProtocol="tcp", CidrIp="0.0.0.0/0", FromPort=22, ToPort=22)
     mysg.authorize_ingress(IpProtocol="tcp", CidrIp="0.0.0.0/0", FromPort=80, ToPort=80)
@@ -122,13 +142,16 @@ def make_security_group():
 def make_instance(instance_name,
                   ami_id,
                   keyname,
+                  security_group_id,
+                  subnet_id,
                   machine_type='t2.micro',
-                  security_groups=['letsencrypt_test'],
                   userdata=""): #userdata contains bash or cloud-init script
 
     new_instance = EC2.create_instances(
+        BlockDeviceMappings=_get_block_device_mappings(ami_id),
         ImageId=ami_id,
-        SecurityGroups=security_groups,
+        SecurityGroupIds=[security_group_id],
+        SubnetId=subnet_id,
         KeyName=keyname,
         MinCount=1,
         MaxCount=1,
@@ -141,7 +164,7 @@ def make_instance(instance_name,
     # give instance a name
     try:
         new_instance.create_tags(Tags=[{'Key': 'Name', 'Value': instance_name}])
-    except botocore.exceptions.ClientError as e:
+    except ClientError as e:
         if "InvalidInstanceID.NotFound" in str(e):
             # This seems to be ephemeral... retry
             time.sleep(1)
@@ -150,38 +173,21 @@ def make_instance(instance_name,
             raise
     return new_instance
 
-def terminate_and_clean(instances):
+def _get_block_device_mappings(ami_id):
+    """Returns the list of block device mappings to ensure cleanup.
+
+    This list sets connected EBS volumes to be deleted when the EC2
+    instance is terminated.
+
     """
-    Some AMIs specify EBS stores that won't delete on instance termination.
-    These must be manually deleted after shutdown.
-    """
-    volumes_to_delete = []
-    for instance in instances:
-        for bdmap in instance.block_device_mappings:
-            if 'Ebs' in bdmap.keys():
-                if not bdmap['Ebs']['DeleteOnTermination']:
-                    volumes_to_delete.append(bdmap['Ebs']['VolumeId'])
-
-    for instance in instances:
-        instance.terminate()
-
-    # can't delete volumes until all attaching instances are terminated
-    _ids = [instance.id for instance in instances]
-    all_terminated = False
-    while not all_terminated:
-        all_terminated = True
-        for _id in _ids:
-            # necessary to reinit object for boto3 to get true state
-            inst = EC2.Instance(id=_id)
-            if inst.state['Name'] != 'terminated':
-                all_terminated = False
-        time.sleep(5)
-
-    for vol_id in volumes_to_delete:
-        volume = EC2.Volume(id=vol_id)
-        volume.delete()
-
-    return volumes_to_delete
+    # Not all devices use EBS, but the default value for DeleteOnTermination
+    # when the device does use EBS is true. See:
+    # * https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ec2-blockdev-mapping.html
+    # * https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ec2-blockdev-template.html
+    return [{'DeviceName': mapping['DeviceName'],
+             'Ebs': {'DeleteOnTermination': True}}
+            for mapping in EC2.Image(ami_id).block_device_mappings
+            if not mapping.get('Ebs', {}).get('DeleteOnTermination', True)]
 
 
 # Helper Routines
@@ -309,7 +315,7 @@ def grab_certbot_log():
     sudo('if [ -f ./certbot.log ]; then \
     cat ./certbot.log; else echo "[nolocallog]"; fi')
 
-def create_client_instances(targetlist):
+def create_client_instances(targetlist, security_group_id, subnet_id):
     "Create a fleet of client instances"
     instances = []
     print("Creating instances: ", end="")
@@ -329,6 +335,8 @@ def create_client_instances(targetlist):
                                        target['ami'],
                                        KEYNAME,
                                        machine_type=machine_type,
+                                       security_group_id=security_group_id,
+                                       subnet_id=subnet_id,
                                        userdata=userdata))
     print()
     return instances
@@ -369,10 +377,11 @@ def test_client_process(inqueue, outqueue):
 def cleanup(cl_args, instances, targetlist):
     print('Logs in ', LOGDIR)
     if not cl_args.saveinstances:
-        print('Terminating EC2 Instances and Cleaning Dangling EBS Volumes')
+        print('Terminating EC2 Instances')
         if cl_args.killboulder:
             boulder_server.terminate()
-        terminate_and_clean(instances)
+        for instance in instances:
+            instance.terminate()
     else:
         # print login information for the boxes for debugging
         for ii, target in enumerate(targetlist):
@@ -432,14 +441,28 @@ print("Connecting to EC2 using\n profile %s\n keyname %s\n keyfile %s"%(PROFILE,
 AWS_SESSION = boto3.session.Session(profile_name=PROFILE)
 EC2 = AWS_SESSION.resource('ec2')
 
+print("Determining Subnet")
+for subnet in EC2.subnets.all():
+    if should_use_subnet(subnet):
+        subnet_id = subnet.id
+        vpc_id = subnet.vpc.id
+        break
+else:
+    print("No usable subnet exists!")
+    print("Please create a VPC with a subnet named {0}".format(SUBNET_NAME))
+    print("that maps public IPv4 addresses to instances launched in the subnet.")
+    sys.exit(1)
+
 print("Making Security Group")
+vpc = EC2.Vpc(vpc_id)
 sg_exists = False
-for sg in EC2.security_groups.all():
-    if sg.group_name == 'letsencrypt_test':
+for sg in vpc.security_groups.all():
+    if sg.group_name == SECURITY_GROUP_NAME:
+        security_group_id = sg.id
         sg_exists = True
-        print("  %s already exists"%'letsencrypt_test')
+        print("  %s already exists"%SECURITY_GROUP_NAME)
 if not sg_exists:
-    make_security_group()
+    security_group_id = make_security_group(vpc).id
     time.sleep(30)
 
 boulder_preexists = False
@@ -460,11 +483,12 @@ else:
                                    KEYNAME,
                                    machine_type='t2.micro',
                                    #machine_type='t2.medium',
-                                   security_groups=['letsencrypt_test'])
+                                   security_group_id=security_group_id,
+                                   subnet_id=subnet_id)
 
 try:
     if not cl_args.boulderonly:
-        instances = create_client_instances(targetlist)
+        instances = create_client_instances(targetlist, security_group_id, subnet_id)
 
     # Configure and launch boulder server
     #-------------------------------------------------------------------------------

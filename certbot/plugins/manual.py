@@ -5,7 +5,9 @@ import zope.component
 import zope.interface
 
 from acme import challenges
+from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
 
+from certbot import achallenges  # pylint: disable=unused-import
 from certbot import interfaces
 from certbot import errors
 from certbot import hooks
@@ -93,13 +95,26 @@ using the secret key
 when it receives a TLS ClientHello with the SNI extension set to
 {sni_domain}
 """
+    _SUBSEQUENT_CHALLENGE_INSTRUCTIONS = """
+(This must be set up in addition to the previous challenges; do not remove,
+replace, or undo the previous challenge tasks yet.)
+"""
+    _SUBSEQUENT_DNS_CHALLENGE_INSTRUCTIONS = """
+(This must be set up in addition to the previous challenges; do not remove,
+replace, or undo the previous challenge tasks yet. Note that you might be
+asked to create multiple distinct TXT records with the same name. This is
+permitted by DNS standards.)
+"""
 
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
         self.reverter = reverter.Reverter(self.config)
         self.reverter.recovery_routine()
-        self.env = dict()
+        self.env = dict() \
+        # type: Dict[achallenges.KeyAuthorizationAnnotatedChallenge, Dict[str, str]]
         self.tls_sni_01 = None
+        self.subsequent_dns_challenge = False
+        self.subsequent_any_challenge = False
 
     @classmethod
     def add_parser_arguments(cls, add):
@@ -189,7 +204,7 @@ when it receives a TLS ClientHello with the SNI extension set to
         os.environ.update(env)
         _, out = hooks.execute(self.conf('auth-hook'))
         env['CERTBOT_AUTH_OUTPUT'] = out.strip()
-        self.env[achall.domain] = env
+        self.env[achall] = env
 
     def _perform_achall_manually(self, achall):
         validation = achall.validation(achall.account_key)
@@ -209,13 +224,22 @@ when it receives a TLS ClientHello with the SNI extension set to
                 key=self.tls_sni_01.get_key_path(achall),
                 port=self.config.tls_sni_01_port,
                 sni_domain=self.tls_sni_01.get_z_domain(achall))
+        if isinstance(achall.chall, challenges.DNS01):
+            if self.subsequent_dns_challenge:
+                # 2nd or later dns-01 challenge
+                msg += self._SUBSEQUENT_DNS_CHALLENGE_INSTRUCTIONS
+            self.subsequent_dns_challenge = True
+        elif self.subsequent_any_challenge:
+            # 2nd or later challenge of another type
+            msg += self._SUBSEQUENT_CHALLENGE_INSTRUCTIONS
         display = zope.component.getUtility(interfaces.IDisplay)
         display.notification(msg, wrap=False, force_interactive=True)
+        self.subsequent_any_challenge = True
 
     def cleanup(self, achalls):  # pylint: disable=missing-docstring
         if self.conf('cleanup-hook'):
             for achall in achalls:
-                env = self.env.pop(achall.domain)
+                env = self.env.pop(achall)
                 if 'CERTBOT_TOKEN' not in env:
                     os.environ.pop('CERTBOT_TOKEN', None)
                 os.environ.update(env)

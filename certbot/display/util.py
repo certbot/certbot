@@ -1,12 +1,12 @@
 """Certbot display."""
 import logging
 import os
-import select
 import sys
 import textwrap
 
 import zope.interface
 
+from certbot import compat
 from certbot import constants
 from certbot import interfaces
 from certbot import errors
@@ -29,6 +29,10 @@ HELP = "help"
 ESC = "esc"
 """Display exit code when the user hits Escape (UNUSED)"""
 
+# Display constants
+SIDE_FRAME = ("- " * 39) + "-"
+"""Display boundary (alternates spaces, so when copy-pasted, markdown doesn't interpret
+it as a heading)"""
 
 def _wrap_lines(msg):
     """Format lines nicely to 80 chars.
@@ -49,7 +53,7 @@ def _wrap_lines(msg):
             break_long_words=False,
             break_on_hyphens=False))
 
-    return os.linesep.join(fixed_l)
+    return '\n'.join(fixed_l)
 
 
 def input_with_timeout(prompt=None, timeout=36000.0):
@@ -75,13 +79,8 @@ def input_with_timeout(prompt=None, timeout=36000.0):
         sys.stdout.write(prompt)
         sys.stdout.flush()
 
-    # select can only be used like this on UNIX
-    rlist, _, _ = select.select([sys.stdin], [], [], timeout)
-    if not rlist:
-        raise errors.Error(
-            "Timed out waiting for answer to prompt '{0}'".format(prompt))
+    line = compat.readline_with_timeout(timeout, prompt)
 
-    line = rlist[0].readline()
     if not line:
         raise EOFError
     return line.rstrip('\n')
@@ -111,12 +110,11 @@ class FileDisplay(object):
             because it won't cause any workflow regressions
 
         """
-        side_frame = "-" * 79
         if wrap:
             message = _wrap_lines(message)
         self.outfile.write(
             "{line}{frame}{line}{msg}{line}{frame}{line}".format(
-                line=os.linesep, frame=side_frame, msg=message))
+                line=os.linesep, frame=SIDE_FRAME, msg=message))
         self.outfile.flush()
         if pause:
             if self._can_interact(force_interactive):
@@ -208,12 +206,10 @@ class FileDisplay(object):
         if self._return_default(message, default, cli_flag, force_interactive):
             return default
 
-        side_frame = ("-" * 79) + os.linesep
-
         message = _wrap_lines(message)
 
         self.outfile.write("{0}{frame}{msg}{0}{frame}".format(
-            os.linesep, frame=side_frame, msg=message))
+            os.linesep, frame=SIDE_FRAME + os.linesep, msg=message))
         self.outfile.flush()
 
         while True:
@@ -386,8 +382,7 @@ class FileDisplay(object):
         # Write out the message to the user
         self.outfile.write(
             "{new}{msg}{new}".format(new=os.linesep, msg=message))
-        side_frame = ("-" * 79) + os.linesep
-        self.outfile.write(side_frame)
+        self.outfile.write(SIDE_FRAME + os.linesep)
 
         # Write out the menu choices
         for i, desc in enumerate(choices, 1):
@@ -397,7 +392,7 @@ class FileDisplay(object):
             # Keep this outside of the textwrap
             self.outfile.write(os.linesep)
 
-        self.outfile.write(side_frame)
+        self.outfile.write(SIDE_FRAME + os.linesep)
         self.outfile.flush()
 
     def _get_valid_int_ans(self, max_):
@@ -482,12 +477,11 @@ class NoninteractiveDisplay(object):
         :param bool wrap: Whether or not the application should wrap text
 
         """
-        side_frame = "-" * 79
         if wrap:
             message = _wrap_lines(message)
         self.outfile.write(
             "{line}{frame}{line}{msg}{line}{frame}{line}".format(
-                line=os.linesep, frame=side_frame, msg=message))
+                line=os.linesep, frame=SIDE_FRAME, msg=message))
         self.outfile.flush()
 
     def menu(self, message, choices, ok_label=None, cancel_label=None,

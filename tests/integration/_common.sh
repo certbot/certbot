@@ -16,10 +16,16 @@ certbot_test () {
         "$@"
 }
 
+# Use local ACMEv2 endpoint if requested and SERVER isn't already set.
+if [ "${BOULDER_INTEGRATION:-v1}" = "v2" -a -z "${SERVER:+x}" ]; then
+    SERVER="http://localhost:4001/directory"
+fi
+
 certbot_test_no_force_renew () {
     omit_patterns="*/*.egg-info/*,*/dns_common*,*/setup.py,*/test_*,*/tests/*"
-    omit_patterns="$omit_patterns,*_test.py,*_test_*,"
+    omit_patterns="$omit_patterns,*_test.py,*_test_*,certbot-apache/*"
     omit_patterns="$omit_patterns,certbot-compatibility-test/*,certbot-dns*/"
+    omit_patterns="$omit_patterns,certbot-nginx/certbot_nginx/parser_obj.py"
     coverage run \
         --append \
         --source $sources \
