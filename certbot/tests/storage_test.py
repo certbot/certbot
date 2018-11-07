@@ -13,6 +13,7 @@ import six
 
 import certbot
 from certbot import cli
+from certbot import compat
 from certbot import errors
 from certbot.storage import ALL_FOUR
 
@@ -100,8 +101,6 @@ class BaseRenewableCertTest(test_util.ConfigTestCase):
             self._write_out_kind(kind, 12)
             self._write_out_kind(kind, 11)
 
-def _get_file_permissions(filepath):
-    return stat.S_IMODE(os.stat(filepath).st_mode)
 
 class RenewableCertTests(BaseRenewableCertTest):
     # pylint: disable=too-many-public-methods
@@ -557,18 +556,22 @@ class RenewableCertTests(BaseRenewableCertTest):
         for kind in ALL_FOUR:
             self._write_out_kind(kind, 1)
         self.test_rc.update_all_links_to(1)
-        self.assertEqual(_get_file_permissions(self.test_rc.version("privkey", 1)), 0o600)
+        self.assertTrue(compat.compare_file_modes(
+            os.stat(self.test_rc.version("privkey", 1)).st_mode, 0o600))
         os.chmod(self.test_rc.version("privkey", 1), 0o444)
         # If no new key, permissions should be the same (we didn't write any keys)
         self.test_rc.save_successor(1, b"newcert", None, b"new chain", self.config)
-        self.assertEqual(_get_file_permissions(self.test_rc.version("privkey", 2)), 0o444)
+        self.assertTrue(compat.compare_file_modes(
+            os.stat(self.test_rc.version("privkey", 2)).st_mode, 0o444))
         # If new key, permissions should be rest to 600 + preserved group
         self.test_rc.save_successor(2, b"newcert", b"new_privkey", b"new chain", self.config)
-        self.assertEqual(_get_file_permissions(self.test_rc.version("privkey", 3)), 0o640)
+        self.assertTrue(compat.compare_file_modes(
+            os.stat(self.test_rc.version("privkey", 3)).st_mode, 0o640))
         # If permissions reverted, next renewal will also revert permissions of new key
         os.chmod(self.test_rc.version("privkey", 3), 0o404)
         self.test_rc.save_successor(3, b"newcert", b"new_privkey", b"new chain", self.config)
-        self.assertEqual(_get_file_permissions(self.test_rc.version("privkey", 4)), 0o600)
+        self.assertTrue(compat.compare_file_modes(
+            os.stat(self.test_rc.version("privkey", 4)).st_mode, 0o600))
 
     def _test_relevant_values_common(self, values):
         defaults = dict((option, cli.flag_default(option))
@@ -656,7 +659,7 @@ class RenewableCertTests(BaseRenewableCertTest):
             self.config.live_dir, "README")))
         self.assertTrue(os.path.exists(os.path.join(
             self.config.live_dir, "the-lineage.com", "README")))
-        self.assertEqual(_get_file_permissions(result.key_path), 0o600)
+        self.assertTrue(compat.compare_file_modes(os.stat(result.key_path).st_mode, 0o600))
         with open(result.fullchain, "rb") as f:
             self.assertEqual(f.read(), b"cert" + b"chain")
         # Let's do it again and make sure it makes a different lineage
