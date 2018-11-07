@@ -2,7 +2,7 @@
 
 Certbot adheres to [Semantic Versioning](http://semver.org/).
 
-## 0.28.0 - master
+## 0.28.0 - 2018-11-7
 
 ### Added
 
@@ -18,6 +18,7 @@ Certbot adheres to [Semantic Versioning](http://semver.org/).
 * Log warning about TLS-SNI deprecation in Certbot
 * Stop preferring TLS-SNI in the Apache, Nginx, and standalone plugins
 * OVH DNS plugin now relies on Lexicon>=2.7.14 to support HTTP proxies
+* Default time the Linode plugin waits for DNS changes to propogate is now 1200 seconds.
 
 ### Fixed
 
@@ -27,6 +28,30 @@ Certbot adheres to [Semantic Versioning](http://semver.org/).
 * Stop caching the results of ipv6_info in http01.py
 * Test fix for Route53 plugin to prevent boto3 making outgoing connections.
 * The grammar used by Augeas parser in Apache plugin was updated to fix various parsing errors.
+* The CloudXNS, DNSimple, DNS Made Easy, Gehirn, Linode, LuaDNS, NS1, OVH, and
+  Sakura Cloud DNS plugins are now compatible with Lexicon 3.0+.
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+package with changes other than its version number was:
+
+* acme
+* certbot
+* certbot-apache
+* certbot-dns-cloudxns
+* certbot-dns-dnsimple
+* certbot-dns-dnsmadeeasy
+* certbot-dns-gehirn
+* certbot-dns-linode
+* certbot-dns-luadns
+* certbot-dns-nsone
+* certbot-dns-ovh
+* certbot-dns-route53
+* certbot-dns-sakuracloud
+* certbot-nginx
+
+More details about these changes can be found on our GitHub repo:
+https://github.com/certbot/certbot/milestone/59?closed=1
 
 ## 0.27.1 - 2018-09-06
 
