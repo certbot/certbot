@@ -57,7 +57,7 @@ except ImportError:
     from urllib.parse import urlparse  # 3.4
 
 
-__version__ = 1, 5, 1
+__version__ = 2, 0, 0
 PIP_VERSION = '9.0.1'
 DEFAULT_INDEX_BASE = 'https://pypi.python.org'
 
