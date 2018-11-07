@@ -17,6 +17,7 @@ Certbot adheres to [Semantic Versioning](http://semver.org/).
 * Warn when using deprecated acme.challenges.TLSSNI01
 * Log warning about TLS-SNI deprecation in Certbot
 * Stop preferring TLS-SNI in the Apache, Nginx, and standalone plugins
+* OVH DNS plugin now rely on Lexicon>=2.7.14 to support HTTP proxies
 
 ### Fixed
 
