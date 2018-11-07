@@ -68,6 +68,8 @@ CLI_DEFAULTS = dict(
     directory_hooks=True,
     reuse_key=False,
     disable_renew_updates=False,
+    eab_hmac_key=None,
+    eab_kid=None,
 
     # Subparsers
     num=None,
