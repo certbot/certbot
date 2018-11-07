@@ -269,7 +269,7 @@ class ExternalAccountBinding(object):
     def from_data(cls, account_public_key, kid, hmac_key, directory):
         """Create External Account Binding Resource from contact details, kid and hmac."""
 
-        key_json = json.dumps(account_public_key.to_partial_json())
+        key_json = json.dumps(account_public_key.to_partial_json()).encode()
         decoded_hmac_key = jose.b64.b64decode(hmac_key)
         url = directory["newAccount"]
 
