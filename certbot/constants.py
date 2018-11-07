@@ -86,7 +86,7 @@ CLI_DEFAULTS = dict(
     auth_chain_path="./chain.pem",
     key_path=None,
     config_dir=compat.get_default_folder('config'),
-    work_dir=compat.get_default_folder('workdir'),
+    work_dir=compat.get_default_folder('workspace'),
     logs_dir=compat.get_default_folder('logs'),
     server="https://acme-v02.api.letsencrypt.org/directory",
 

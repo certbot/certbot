@@ -175,19 +175,19 @@ def compare_file_modes(mode1, mode2):
 
 WINDOWS_DEFAULT_FOLDERS = {
     'config': 'C:\\letsencrypt',
-    'workdir': 'C:\\letsencrypt\\lib',
+    'workspace': 'C:\\letsencrypt\\lib',
     'logs': 'C:\\letsencrypt\\log',
 }
 LINUX_DEFAULT_FOLDERS = {
     'config': '/etc/letsencrypt',
-    'workdir': '/var/letsencrypt/lib',
+    'workspace': '/var/letsencrypt/lib',
     'logs': '/var/letsencrypt/log',
 }
 def get_default_folder(folder_type):
     """
     Return the relevant default folder for the current OS
 
-    :param str folder_type: The type of folder to retrieve (config, workdir or logs)
+    :param str folder_type: The type of folder to retrieve (config, workspace or logs)
 
     :returns: The relevant default folder.
     :rtype: str
