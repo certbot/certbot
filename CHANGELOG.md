@@ -2,6 +2,29 @@
 
 Certbot adheres to [Semantic Versioning](http://semver.org/).
 
+## 0.29.0 - master
+
+### Added
+
+*
+
+### Changed
+
+*
+
+### Fixed
+
+*
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+package with changes other than its version number was:
+
+*
+
+More details about these changes can be found on our GitHub repo:
+https://github.com/certbot/certbot/milestone/62?closed=1
+
 ## 0.28.0 - 2018-11-7
 
 ### Added
