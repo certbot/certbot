@@ -11,7 +11,7 @@ version = '0.28.0.dev0'
 install_requires = [
     'acme>=0.21.1',
     'certbot>=0.21.1',
-    'dns-lexicon>=2.7.3', # Correct OVH integration tests
+    'dns-lexicon>=2.7.14', # Correct proxy use on OVH provider
     'mock',
     'setuptools',
     'zope.interface',
