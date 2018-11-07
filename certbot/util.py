@@ -207,8 +207,8 @@ def check_permissions(filepath, mode, uid=0):
     return compat.compare_file_modes(file_stat.st_mode, mode) and file_stat.st_uid == uid
 
 
-def safe_open(path, mode="w", chmod=None, buffering=None):
-    """Safely open a file.
+def safe_open(path, mode="w", chmod=None, buffering=None, symlink=False):
+    """Safely open a file for writing. Fails if that file already exists.
 
     :param str path: Path to a file.
     :param str mode: Same os `mode` for `open`.
@@ -216,6 +216,7 @@ def safe_open(path, mode="w", chmod=None, buffering=None):
         if ``None``.
     :param int buffering: Same as `bufsize` for `os.fdopen`, uses Python
         defaults if ``None``.
+    :param bool symlink: True if path refers to a symlink.
 
     """
     # pylint: disable=star-args
@@ -225,9 +226,13 @@ def safe_open(path, mode="w", chmod=None, buffering=None):
     fdopen_args = ()  # type: Union[Tuple[()], Tuple[int]]
     if buffering is not None:
         fdopen_args = (buffering,)
-    return os.fdopen(
-        os.open(path, os.O_CREAT | os.O_EXCL | os.O_RDWR, *open_args),
-        mode, *fdopen_args)
+    flags = os.O_RDWR | os.O_CREAT
+    # Don't set O_EXCL for symlinks, since O_CREAT | O_EXCL will always fail
+    # for symlinks even if symlinked file doesn't exist yet.
+    if not symlink:
+        flags = flags | os.O_EXCL
+    return os.fdopen(os.open(path, flags, *open_args),
+                     mode, *fdopen_args)
 
 
 def _unique_file(path, filename_pat, count, chmod, mode):
