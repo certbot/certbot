@@ -38,13 +38,13 @@ Certbot.
 
    cd certbot
    ./certbot-auto --debug --os-packages-only
-   tools/venv.sh
+   python tools/venv.py
 
-If you have Python3 available and want to use it, run the ``venv3.sh`` script.
+If you have Python3 available and want to use it, run the ``venv3.py`` script.
 
 .. code-block:: shell
 
-   tools/venv3.sh
+   python tools/venv3.py
 
 .. note:: You may need to repeat this when
   Certbot's dependencies change or when a new plugin is introduced.
@@ -353,7 +353,7 @@ Steps:
 
 1. Write your code!
 2. Make sure your environment is set up properly and that you're in your
-   virtualenv. You can do this by running ``./tools/venv.sh``.
+   virtualenv. You can do this by running ``pip tools/venv.py``.
    (this is a **very important** step)
 3. Run ``tox -e lint`` to check for pylint errors. Fix any errors.
 4. Run ``tox --skip-missing-interpreters`` to run the entire test suite
