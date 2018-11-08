@@ -5,6 +5,7 @@ from __future__ import absolute_import
 
 import os
 import subprocess
+import sys
 
 import _venv_common
 
@@ -47,7 +48,7 @@ def get_venv_args():
 def main():
     venv_args = get_venv_args()
 
-    _venv_common.main('venv3', venv_args, REQUIREMENTS)
+    return _venv_common.main('venv3', venv_args, REQUIREMENTS)
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())
