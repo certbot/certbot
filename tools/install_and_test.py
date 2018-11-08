@@ -19,7 +19,7 @@ SKIP_PROJECTS_ON_WINDOWS = [
 
 def call_with_print(command, cwd=None):
     print(command)
-    subprocess.call(command, shell=True, cwd=cwd or os.getcwd())
+    return subprocess.call(command, shell=True, cwd=cwd or os.getcwd())
 
 def main(args):
     if os.environ.get('CERTBOT_NO_PIN') == '1':
@@ -37,10 +37,12 @@ def main(args):
         else:
             new_args.append(arg)
 
+    exit_code = 0
+
     for requirement in new_args:
         current_command = command[:]
         current_command.append(requirement)
-        call_with_print(' '.join(current_command))
+        exit_code = call_with_print(' '.join(current_command)) or exit_code
         pkg = re.sub(r'\[\w+\]', '', requirement)
 
         if pkg == '.':
@@ -48,11 +50,13 @@ def main(args):
 
         temp_cwd = tempfile.mkdtemp()
         try:
-            call_with_print(' '.join([
+            exit_code = call_with_print(' '.join([
                 sys.executable, '-m', 'pytest', '--numprocesses', 'auto',
-                '--quiet', '--pyargs', pkg.replace('-', '_')]), cwd=temp_cwd)
+                '--quiet', '--pyargs', pkg.replace('-', '_')]), cwd=temp_cwd) or exit_code
         finally:
             shutil.rmtree(temp_cwd)
 
+    return exit_code
+
 if __name__ == '__main__':
-    main(sys.argv[1:])
+    sys.exit(main(sys.argv[1:]))
