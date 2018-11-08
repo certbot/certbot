@@ -11,6 +11,7 @@ We release packages and upload them to PyPI (wheels and source tarballs).
 - https://pypi.python.org/pypi/certbot
 - https://pypi.python.org/pypi/certbot-apache
 - https://pypi.python.org/pypi/certbot-nginx
+- https://pypi.python.org/pypi/certbot-dns-alwaysdata
 - https://pypi.python.org/pypi/certbot-dns-cloudflare
 - https://pypi.python.org/pypi/certbot-dns-cloudxns
 - https://pypi.python.org/pypi/certbot-dns-digitalocean
@@ -59,6 +60,7 @@ From our official releases:
 - https://www.archlinux.org/packages/community/any/certbot
 - https://www.archlinux.org/packages/community/any/certbot-apache
 - https://www.archlinux.org/packages/community/any/certbot-nginx
+- https://www.archlinux.org/packages/community/any/certbot-dns-alwaysdata
 - https://www.archlinux.org/packages/community/any/certbot-dns-cloudflare
 - https://www.archlinux.org/packages/community/any/certbot-dns-cloudxns
 - https://www.archlinux.org/packages/community/any/certbot-dns-digitalocean

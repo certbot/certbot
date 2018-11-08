@@ -1,0 +1,31 @@
+[
+    {
+        "alias_mail_of": null,
+        "auto_renew": false,
+        "date_expiration": null,
+        "default_ip_addresses": [],
+        "default_ssl_certificate": null,
+        "dkim_private_key": null,
+        "dkim_public_key": null,
+        "dkim_selector": null,
+        "href": "/v1/domain/1234/",
+        "id": 1234,
+        "is_internal": false,
+        "name": "example.org"
+    },
+    {
+        "alias_mail_of": null,
+        "auto_renew": false,
+        "date_expiration": null,
+        "default_ip_addresses": [],
+        "default_ssl_certificate": null,
+        "dkim_private_key": null,
+        "dkim_public_key": null,
+        "dkim_selector": null,
+        "href": "/v1/domain/4321/",
+        "id": 4321,
+        "is_internal": false,
+        "name": "example.com"
+    }
+]
+

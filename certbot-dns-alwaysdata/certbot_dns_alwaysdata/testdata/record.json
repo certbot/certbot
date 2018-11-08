@@ -1,0 +1,41 @@
+[
+    {
+        "domain": {
+            "href": "/v1/domain/1234/"
+        },
+        "href": "/v1/record/12340/",
+        "id": 12340,
+        "is_user_defined": true,
+        "name": "",
+        "priority": null,
+        "ttl": 60,
+        "type": "TXT",
+        "value": "empty name"
+    },
+    {
+        "domain": {
+            "href": "/v1/domain/1234/"
+        },
+        "href": "/v1/record/12341/",
+        "id": 12341,
+        "is_user_defined": false,
+        "name": "_acme-challenge.test",
+        "priority": null,
+        "ttl": 300,
+        "type": "TXT",
+        "value": "test value"
+    },
+    {
+        "domain": {
+            "href": "/v1/domain/1234/"
+        },
+        "href": "/v1/record/12342/",
+        "id": 12342,
+        "is_user_defined": true,
+        "name": "_acme-challenge.test",
+        "priority": null,
+        "ttl": 20,
+        "type": "TXT",
+        "value": "another test value"
+    }
+]
