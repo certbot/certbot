@@ -750,6 +750,9 @@ class HelpfulArgumentParser(object):
 
         """
 
+        if args[0] == '--certbot-route53:auth-propagation-seconds':  # Remove duplicate route53 options from help.
+           kwargs["help"] = argparse.SUPPRESS
+
         if isinstance(topics, list):
             # if this flag can be listed in multiple sections, try to pick the one
             # that the user has asked for help about
@@ -836,8 +839,9 @@ class HelpfulArgumentParser(object):
 
         """
         for name, plugin_ep in six.iteritems(plugins):
-            parser_or_group = self.add_group(name,
-                                             description=plugin_ep.long_description)
+            if name != 'certbot-route53:auth':  # Remove duplicate route53 options from help.
+                parser_or_group = self.add_group(name,
+                                                 description=plugin_ep.long_description)
             plugin_ep.plugin_cls.inject_parser_options(parser_or_group, name)
 
     def determine_help_topics(self, chosen_topic):
