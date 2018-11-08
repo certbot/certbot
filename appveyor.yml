@@ -1,8 +1,17 @@
-image:
-  # => Windows Server 2012 R2
-  - Visual Studio 2015
-  # => Windows Server 2016
-  - Visual Studio 2017
+environment:
+  matrix:
+    - FYI: Python 3.4 on Windows Server 2012 R2
+      TOXENV: py34
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+    - FYI: Python 3.4 on Windows Server 2016
+      TOXENV: py34
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+    - FYI: Python 3.5 on Windows Server 2016
+      TOXENV: py35
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+    - FYI: Python 3.7 on Windows Server 2016 + code coverage
+      TOXENV: py37-cover
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
 
 branches:
   only:
@@ -14,6 +23,7 @@ install:
   # Use Python 3.7 by default
   - "SET PATH=C:\\Python37;C:\\Python37\\Scripts;%PATH%"
   # Check env
+  - "echo %APPVEYOR_BUILD_WORKER_IMAGE%"
   - "python --version"
   # Upgrade pip to avoid warnings
   - "python -m pip install --upgrade pip"
@@ -23,8 +33,8 @@ install:
 build: off
 
 test_script:
-  # As py37 is the default python interpreter, it is tested through cover env
-  - tox -c tox-win.ini -e py34,py35,py36,cover
+  # Test env is set by TOXENV env variable
+  - tox
 
 on_success:
-  - codecov
+  - if exist .coverage codecov

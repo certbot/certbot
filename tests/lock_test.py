@@ -1,4 +1,6 @@
 """Tests to ensure the lock order is preserved."""
+from __future__ import print_function
+
 import atexit
 import functools
 import logging
@@ -235,4 +237,9 @@ def log_output(level, out, err):
 
 
 if __name__ == "__main__":
-    main()
+    if os.name != 'nt':
+        main()
+    else:
+        print(
+            'Warning: lock_test cannot be executed on Windows, '
+            'as it relies on a Nginx distribution for Linux.')
