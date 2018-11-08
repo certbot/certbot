@@ -750,8 +750,9 @@ class HelpfulArgumentParser(object):
 
         """
 
-        if args[0] == '--certbot-route53:auth-propagation-seconds':  # Remove duplicate route53 options from help.
-           kwargs["help"] = argparse.SUPPRESS
+        # Remove duplicate route53 options from help.
+        if args[0] == '--certbot-route53:auth-propagation-seconds':
+            kwargs["help"] = argparse.SUPPRESS
 
         if isinstance(topics, list):
             # if this flag can be listed in multiple sections, try to pick the one
