@@ -14,5 +14,5 @@ VENV_BIN=${VENV_PATH}/bin
 "$LEA_PATH/letsencrypt-auto" --os-packages-only
 
 cd letsencrypt
-./tools/venv.sh
+python tools/venv.py
 venv/bin/tox -e py27
