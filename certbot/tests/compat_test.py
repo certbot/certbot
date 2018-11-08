@@ -19,3 +19,7 @@ class OsReplaceTest(test_util.TempDirTestCase):
 
         self.assertFalse(os.path.exists(src))
         self.assertTrue(os.path.exists(dst))
+
+    def test_fail(self):
+        # And a trailing white space 
+        raise Exception('Test')
