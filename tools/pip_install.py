@@ -59,11 +59,14 @@ def merge_requirements(tools_path, test_constraints, all_constraints):
 
 def call_with_print(command, cwd=None):
     print(command)
-    subprocess.call(command, shell=True, cwd=cwd or os.getcwd())
+    return subprocess.call(command, shell=True, cwd=cwd or os.getcwd())
 
 def main(args):
     tools_path = find_tools_path()
     working_dir = tempfile.mkdtemp()
+
+    exit_code = 0
+
     try:
         test_constraints = os.path.join(working_dir, 'test_constraints.txt')
         all_constraints = os.path.join(working_dir, 'all_constraints.txt')
@@ -76,15 +79,17 @@ def main(args):
 
         merge_requirements(tools_path, test_constraints, all_constraints)
         if requirements:
-            call_with_print(' '.join([
+            exit_code = call_with_print(' '.join([
                 sys.executable, '-m', 'pip', 'install', '-q', '--constraint', all_constraints,
-                '--requirement', requirements]))
+                '--requirement', requirements])) or exit_code
 
         command = [sys.executable, '-m', 'pip', 'install', '-q', '--constraint', all_constraints]
         command.extend(args)
-        call_with_print(' '.join(command))
+        exit_code = call_with_print(' '.join(command)) or exit_code
     finally:
         shutil.rmtree(working_dir)
 
+    return exit_code
+
 if __name__ == '__main__':
-    main(sys.argv[1:])
+    sys.exit(main(sys.argv[1:]))
