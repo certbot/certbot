@@ -140,7 +140,7 @@ class MakeOrVerifyDirTest(test_util.TempDirTestCase):
         super(MakeOrVerifyDirTest, self).setUp()
 
         self.path = os.path.join(self.tempdir, "foo")
-        os.mkdir(self.path, 0o600)
+        compat.os.mkdir(self.path, 0o600)
 
         self.uid = compat.os.geteuid()
 
@@ -186,11 +186,11 @@ class CheckPermissionsTest(test_util.TempDirTestCase):
         return check_permissions(self.tempdir, mode, self.uid)
 
     def test_ok_mode(self):
-        os.chmod(self.tempdir, 0o600)
+        compat.os.chmod(self.tempdir, 0o600)
         self.assertTrue(self._call(0o600))
 
     def test_wrong_mode(self):
-        os.chmod(self.tempdir, 0o400)
+        compat.os.chmod(self.tempdir, 0o400)
         self.assertFalse(self._call(0o600))
 
 

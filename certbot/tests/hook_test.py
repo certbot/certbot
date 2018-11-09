@@ -484,7 +484,7 @@ def create_hook(file_path):
 
     """
     open(file_path, "w").close()
-    os.chmod(file_path, os.stat(file_path).st_mode | stat.S_IXUSR)
+    compat.os.chmod(file_path, os.stat(file_path).st_mode | stat.S_IXUSR)
 
 
 if __name__ == '__main__':

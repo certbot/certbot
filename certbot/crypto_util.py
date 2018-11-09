@@ -93,7 +93,7 @@ def init_save_csr(privkey, names, path):
 
     # Save CSR
     util.make_or_verify_dir(path, 0o755, compat.os.geteuid(),
-                               config.strict_permissions)
+                            config.strict_permissions)
     csr_f, csr_filename = util.unique_file(
         os.path.join(path, "csr-certbot.pem"), 0o644, "wb")
     with csr_f:

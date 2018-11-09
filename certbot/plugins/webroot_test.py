@@ -134,14 +134,14 @@ class AuthenticatorTest(unittest.TestCase):
         permission_canary = os.path.join(self.path, "rnd")
         with open(permission_canary, "w") as f:
             f.write("thingimy")
-        os.chmod(self.path, 0o000)
+        compat.os.chmod(self.path, 0o000)
         try:
             open(permission_canary, "r")
             print("Warning, running tests as root skips permissions tests...")
         except IOError:
             # ok, permissions work, test away...
             self.assertRaises(errors.PluginError, self.auth.perform, [])
-        os.chmod(self.path, 0o700)
+        compat.os.chmod(self.path, 0o700)
 
     @test_util.skip_on_windows('On Windows, there is no chown.')
     @mock.patch("certbot.plugins.webroot.os.chown")

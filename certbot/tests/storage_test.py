@@ -783,7 +783,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         with open(temp, "w") as f:
             f.write("[renewalparams]\nuseful = value # A useful value\n"
                     "useless = value # Not needed\n")
-        os.chmod(temp, 0o640)
+        compat.os.chmod(temp, 0o640)
         target = {}
         for x in ALL_FOUR:
             target[x] = "somewhere"

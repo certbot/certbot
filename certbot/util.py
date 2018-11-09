@@ -181,7 +181,7 @@ def make_or_verify_dir(directory, mode=0o755, uid=0, strict=False):
 
     """
     try:
-        os.makedirs(directory, mode)
+        compat.os.makedirs(directory, mode)
     except OSError as exception:
         if exception.errno == errno.EEXIST:
             if strict and not check_permissions(directory, mode, uid):
@@ -226,7 +226,7 @@ def safe_open(path, mode="w", chmod=None, buffering=None):
     if buffering is not None:
         fdopen_args = (buffering,)
     return os.fdopen(
-        os.open(path, os.O_CREAT | os.O_EXCL | os.O_RDWR, *open_args),
+        compat.os.open(path, os.O_CREAT | os.O_EXCL | os.O_RDWR, *open_args),
         mode, *fdopen_args)
 
 

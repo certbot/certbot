@@ -9,6 +9,7 @@ import six
 from acme import challenges
 
 from certbot import achallenges
+from certbot import compat
 from certbot.tests import acme_util
 from certbot.tests import util as test_util
 
@@ -60,4 +61,4 @@ def write(values, path):
     with open(path, "wb") as f:
         config.write(outfile=f)
 
-    os.chmod(path, 0o600)
+    compat.os.chmod(path, 0o600)

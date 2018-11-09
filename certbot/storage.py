@@ -141,7 +141,7 @@ def write_renewal_config(o_filename, n_filename, archive_dir, target, relevant_d
     # Copy permissions from the old version of the file, if it exists.
     if os.path.exists(o_filename):
         current_permissions = stat.S_IMODE(os.lstat(o_filename).st_mode)
-        os.chmod(n_filename, current_permissions)
+        compat.os.chmod(n_filename, current_permissions)
 
     with open(n_filename, "wb") as f:
         config.write(outfile=f)
@@ -1020,7 +1020,7 @@ class RenewableCert(object):
         for i in (cli_config.renewal_configs_dir, cli_config.default_archive_dir,
                   cli_config.live_dir):
             if not os.path.exists(i):
-                os.makedirs(i, 0o700)
+                compat.os.makedirs(i, 0o700)
                 logger.debug("Creating directory %s.", i)
         config_file, config_filename = util.unique_lineage_name(
             cli_config.renewal_configs_dir, lineagename)

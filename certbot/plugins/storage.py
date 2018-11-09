@@ -4,6 +4,7 @@ import logging
 import os
 
 from acme.magic_typing import Any, Dict  # pylint: disable=unused-import, no-name-in-module
+from certbot import compat
 from certbot import errors
 
 logger = logging.getLogger(__name__)
@@ -77,19 +78,20 @@ class PluginStorage(object):
 
         try:
             serialized = json.dumps(self._data)
-        except TypeError as e:
+        except TypeError as err:
             errmsg = "Could not serialize PluginStorage data: {0}".format(
-                str(e))
+                str(err))
             logger.error(errmsg)
             raise errors.PluginStorageError(errmsg)
         try:
-            with os.fdopen(os.open(self._storagepath,
-                                   os.O_WRONLY | os.O_CREAT | os.O_TRUNC,
-                                   0o600), 'w') as fh:
-                fh.write(serialized)
-        except IOError as e:
+            with os.fdopen(compat.os.open(
+                    self._storagepath,
+                    os.O_WRONLY | os.O_CREAT | os.O_TRUNC,
+                    0o600), 'w') as file_handler:
+                file_handler.write(serialized)
+        except IOError as err:
             errmsg = "Could not write PluginStorage data to file {0} : {1}".format(
-                self._storagepath, str(e))
+                self._storagepath, str(err))
             logger.error(errmsg)
             raise errors.PluginStorageError(errmsg)
 

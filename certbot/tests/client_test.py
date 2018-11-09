@@ -8,6 +8,7 @@ import unittest
 import mock
 
 from certbot import account
+from certbot import compat
 from certbot import errors
 from certbot import util
 
@@ -357,7 +358,7 @@ class ClientTest(ClientTestCommon):
         # pylint: disable=too-many-locals
         certs = ["cert_512.pem", "cert-san_512.pem"]
         tmp_path = tempfile.mkdtemp()
-        os.chmod(tmp_path, 0o755)  # TODO: really??
+        compat.os.chmod(tmp_path, 0o755)  # TODO: really??
 
         cert_pem = test_util.load_vector(certs[0])
         chain_pem = (test_util.load_vector(certs[0]) + test_util.load_vector(certs[1]))

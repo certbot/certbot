@@ -27,7 +27,7 @@ def apply_mode(filepath, mode):
           Certbot context, and applied to the file using kernel calls.
 
     :param str filename: Path of the file
-    :param octal mode: POSIX mode to apply
+    :param int mode: POSIX mode to apply
     """
     if not win32security:
         os.chmod(filepath, mode)

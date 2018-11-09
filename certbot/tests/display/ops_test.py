@@ -11,6 +11,7 @@ import zope.component
 from acme import messages
 
 from certbot import account
+from certbot import compat
 from certbot import errors
 
 from certbot.display import util as display_util
@@ -96,7 +97,7 @@ class ChooseAccountTest(test_util.TempDirTestCase):
                                                                False))
 
         self.account_keys_dir = os.path.join(self.tempdir, "keys")
-        os.makedirs(self.account_keys_dir, 0o700)
+        compat.os.makedirs(self.account_keys_dir, 0o700)
 
         self.config = mock.MagicMock(
             accounts_dir=self.tempdir,
