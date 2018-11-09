@@ -173,6 +173,17 @@ def compare_file_modes(mode1, mode2):
     return (stat.S_IMODE(mode1) & stat.S_IREAD == stat.S_IMODE(mode2) & stat.S_IREAD
             and stat.S_IMODE(mode1) & stat.S_IWRITE == stat.S_IMODE(mode2) & stat.S_IWRITE)
 
+WINDOWS_DEFAULT_FOLDERS = {
+    'config': 'C:\\Certbot',
+    'work': 'C:\\Certbot\\lib',
+    'logs': 'C:\\Certbot\\log',
+}
+LINUX_DEFAULT_FOLDERS = {
+    'config': '/etc/letsencrypt',
+    'work': '/var/letsencrypt/lib',
+    'logs': '/var/letsencrypt/log',
+}
+
 def get_default_folder(folder_type):
     """
     Return the relevant default folder for the current OS
@@ -183,21 +194,8 @@ def get_default_folder(folder_type):
     :rtype: str
 
     """
-    # Theses dicts are set within the method to mitigate
-    # the risk that someone modifies their values.
-    windows_default_folders = {
-        'config': 'C:\\Certbot',
-        'workspace': 'C:\\Certbot\\lib',
-        'logs': 'C:\\Certbot\\log',
-    }
-    linux_default_folders = {
-        'config': '/etc/letsencrypt',
-        'workspace': '/var/letsencrypt/lib',
-        'logs': '/var/letsencrypt/log',
-    }
-
     if 'fcntl' in sys.modules:
         # Linux specific
-        return linux_default_folders[folder_type]
+        return LINUX_DEFAULT_FOLDERS[folder_type]
     # Windows specific
-    return windows_default_folders[folder_type]
+    return WINDOWS_DEFAULT_FOLDERS[folder_type]
