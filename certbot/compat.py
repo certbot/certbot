@@ -188,7 +188,7 @@ def get_default_folder(folder_type):
     """
     Return the relevant default folder for the current OS
 
-    :param str folder_type: The type of folder to retrieve (config, workspace or logs)
+    :param str folder_type: The type of folder to retrieve (config, work or logs)
 
     :returns: The relevant default folder.
     :rtype: str
