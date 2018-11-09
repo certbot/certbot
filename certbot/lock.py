@@ -74,7 +74,7 @@ class LockFile(object):
 
         """
         try:
-            compat.lock_file(fd)
+            compat.lock.lock_file(fd)
         except IOError as err:
             if err.errno in (errno.EACCES, errno.EAGAIN):
                 logger.debug(
@@ -119,6 +119,6 @@ class LockFile(object):
     def release(self):
         """Remove, close, and release the lock file."""
         try:
-            compat.release_locked_file(self._fd, self._path)
+            compat.lock.release_locked_file(self._fd, self._path)
         finally:
             self._fd = None

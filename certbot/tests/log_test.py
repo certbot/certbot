@@ -260,7 +260,7 @@ class TempHandlerTest(unittest.TestCase):
 
     def test_permissions(self):
         self.assertTrue(
-            util.check_permissions(self.handler.path, 0o600, compat.os_geteuid()))
+            util.check_permissions(self.handler.path, 0o600, compat.os.geteuid()))
 
     def test_delete(self):
         self.handler.close()

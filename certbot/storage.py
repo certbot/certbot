@@ -189,7 +189,7 @@ def update_configuration(lineagename, archive_dir, target, cli_config):
     # Save only the config items that are relevant to renewal
     values = relevant_values(vars(cli_config.namespace))
     write_renewal_config(config_filename, temp_filename, archive_dir, target, values)
-    compat.os_rename(temp_filename, config_filename)
+    compat.os.rename(temp_filename, config_filename)
 
     return configobj.ConfigObj(config_filename)
 

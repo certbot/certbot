@@ -141,7 +141,7 @@ class AccountFileStorage(interfaces.AccountStorage):
     """
     def __init__(self, config):
         self.config = config
-        util.make_or_verify_dir(config.accounts_dir, 0o700, compat.os_geteuid(),
+        util.make_or_verify_dir(config.accounts_dir, 0o700, compat.os.geteuid(),
                                    self.config.strict_permissions)
 
     def _account_dir_path(self, account_id):
@@ -324,7 +324,7 @@ class AccountFileStorage(interfaces.AccountStorage):
 
     def _save(self, account, acme, regr_only):
         account_dir_path = self._account_dir_path(account.id)
-        util.make_or_verify_dir(account_dir_path, 0o700, compat.os_geteuid(),
+        util.make_or_verify_dir(account_dir_path, 0o700, compat.os.geteuid(),
                                 self.config.strict_permissions)
         try:
             with open(self._regr_path(account_dir_path), "w") as regr_file:

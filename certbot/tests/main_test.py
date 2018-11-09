@@ -1517,7 +1517,7 @@ class MakeOrVerifyNeededDirs(test_util.ConfigTestCase):
         for core_dir in (self.config.config_dir, self.config.work_dir,):
             mock_util.set_up_core_dir.assert_any_call(
                 core_dir, constants.CONFIG_DIRS_MODE,
-                compat.os_geteuid(), self.config.strict_permissions
+                compat.os.geteuid(), self.config.strict_permissions
             )
 
         hook_dirs = (self.config.renewal_pre_hooks_dir,
@@ -1526,7 +1526,7 @@ class MakeOrVerifyNeededDirs(test_util.ConfigTestCase):
         for hook_dir in hook_dirs:
             # default mode of 755 is used
             mock_util.make_or_verify_dir.assert_any_call(
-                hook_dir, uid=compat.os_geteuid(),
+                hook_dir, uid=compat.os.geteuid(),
                 strict=self.config.strict_permissions)
 
 

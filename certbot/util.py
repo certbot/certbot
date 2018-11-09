@@ -204,7 +204,7 @@ def check_permissions(filepath, mode, uid=0):
 
     """
     file_stat = os.stat(filepath)
-    return compat.compare_file_modes(file_stat.st_mode, mode) and file_stat.st_uid == uid
+    return compat.misc.compare_file_modes(file_stat.st_mode, mode) and file_stat.st_uid == uid
 
 
 def safe_open(path, mode="w", chmod=None, buffering=None):
