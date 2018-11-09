@@ -17,8 +17,8 @@ import six
 from acme import challenges
 
 from certbot import achallenges
-from certbot import compat
 from certbot import errors
+from certbot.compat import os as os_compat, misc
 from certbot.display import util as display_util
 
 from certbot.tests import acme_util
@@ -134,14 +134,14 @@ class AuthenticatorTest(unittest.TestCase):
         permission_canary = os.path.join(self.path, "rnd")
         with open(permission_canary, "w") as f:
             f.write("thingimy")
-        compat.os.chmod(self.path, 0o000)
+        os_compat.chmod(self.path, 0o000)
         try:
             open(permission_canary, "r")
             print("Warning, running tests as root skips permissions tests...")
         except IOError:
             # ok, permissions work, test away...
             self.assertRaises(errors.PluginError, self.auth.perform, [])
-        compat.os.chmod(self.path, 0o700)
+        os_compat.chmod(self.path, 0o700)
 
     @test_util.skip_on_windows('On Windows, there is no chown.')
     @mock.patch("certbot.plugins.webroot.os.chown")
@@ -171,14 +171,14 @@ class AuthenticatorTest(unittest.TestCase):
         # Remove exec bit from permission check, so that it
         # matches the file
         self.auth.perform([self.achall])
-        self.assertTrue(compat.misc.compare_file_modes(os.stat(self.validation_path).st_mode, 0o644))
+        self.assertTrue(misc.compare_file_modes(os.stat(self.validation_path).st_mode, 0o644))
 
         # Check permissions of the directories
 
         for dirpath, dirnames, _ in os.walk(self.path):
             for directory in dirnames:
                 full_path = os.path.join(dirpath, directory)
-                self.assertTrue(compat.misc.compare_file_modes(os.stat(full_path).st_mode, 0o755))
+                self.assertTrue(misc.compare_file_modes(os.stat(full_path).st_mode, 0o755))
 
         parent_gid = os.stat(self.path).st_gid
         parent_uid = os.stat(self.path).st_uid

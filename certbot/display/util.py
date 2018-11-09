@@ -6,10 +6,10 @@ import textwrap
 
 import zope.interface
 
-from certbot import compat
 from certbot import constants
 from certbot import interfaces
 from certbot import errors
+from certbot.compat import misc
 from certbot.display import completer
 
 logger = logging.getLogger(__name__)
@@ -79,7 +79,7 @@ def input_with_timeout(prompt=None, timeout=36000.0):
         sys.stdout.write(prompt)
         sys.stdout.flush()
 
-    line = compat.misc.readline_with_timeout(timeout, prompt)
+    line = misc.readline_with_timeout(timeout, prompt)
 
     if not line:
         raise EOFError

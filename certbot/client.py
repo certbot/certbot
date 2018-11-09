@@ -24,7 +24,6 @@ import certbot
 from certbot import account
 from certbot import auth_handler
 from certbot import cli
-from certbot import compat
 from certbot import constants
 from certbot import crypto_util
 from certbot import eff
@@ -35,6 +34,7 @@ from certbot import reverter
 from certbot import storage
 from certbot import util
 
+from certbot.compat import os as os_compat
 from certbot.display import ops as display_ops
 from certbot.display import enhancements
 from certbot.plugins import selection as plugin_selection
@@ -448,7 +448,7 @@ class Client(object):
         """
         for path in cert_path, chain_path, fullchain_path:
             util.make_or_verify_dir(
-                os.path.dirname(path), 0o755, compat.os.geteuid(),
+                os.path.dirname(path), 0o755, os_compat.geteuid(),
                 self.config.strict_permissions)
 
 

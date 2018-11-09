@@ -22,7 +22,6 @@ from six.moves import reload_module  # pylint: disable=import-error
 from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
 from certbot import account
 from certbot import cli
-from certbot import compat
 from certbot import constants
 from certbot import configuration
 from certbot import crypto_util
@@ -31,6 +30,8 @@ from certbot import interfaces  # pylint: disable=unused-import
 from certbot import main
 from certbot import updater
 from certbot import util
+
+from certbot.compat import os as os_compat
 
 from certbot.plugins import disco
 from certbot.plugins import enhancements
@@ -1517,7 +1518,7 @@ class MakeOrVerifyNeededDirs(test_util.ConfigTestCase):
         for core_dir in (self.config.config_dir, self.config.work_dir,):
             mock_util.set_up_core_dir.assert_any_call(
                 core_dir, constants.CONFIG_DIRS_MODE,
-                compat.os.geteuid(), self.config.strict_permissions
+                os_compat.geteuid(), self.config.strict_permissions
             )
 
         hook_dirs = (self.config.renewal_pre_hooks_dir,
@@ -1526,7 +1527,7 @@ class MakeOrVerifyNeededDirs(test_util.ConfigTestCase):
         for hook_dir in hook_dirs:
             # default mode of 755 is used
             mock_util.make_or_verify_dir.assert_any_call(
-                hook_dir, uid=compat.os.geteuid(),
+                hook_dir, uid=os_compat.geteuid(),
                 strict=self.config.strict_permissions)
 
 

@@ -20,10 +20,10 @@ from collections import OrderedDict
 import configargparse
 
 from acme.magic_typing import Tuple, Union  # pylint: disable=unused-import, no-name-in-module
-from certbot import compat
 from certbot import constants
 from certbot import errors
 from certbot import lock
+from certbot.compat import os as os_compat, misc
 
 
 logger = logging.getLogger(__name__)
@@ -181,7 +181,7 @@ def make_or_verify_dir(directory, mode=0o755, uid=0, strict=False):
 
     """
     try:
-        compat.os.makedirs(directory, mode)
+        os_compat.makedirs(directory, mode)
     except OSError as exception:
         if exception.errno == errno.EEXIST:
             if strict and not check_permissions(directory, mode, uid):
@@ -204,7 +204,7 @@ def check_permissions(filepath, mode, uid=0):
 
     """
     file_stat = os.stat(filepath)
-    return compat.misc.compare_file_modes(file_stat.st_mode, mode) and file_stat.st_uid == uid
+    return misc.compare_file_modes(file_stat.st_mode, mode) and file_stat.st_uid == uid
 
 
 def safe_open(path, mode="w", chmod=None, buffering=None):
@@ -226,7 +226,7 @@ def safe_open(path, mode="w", chmod=None, buffering=None):
     if buffering is not None:
         fdopen_args = (buffering,)
     return os.fdopen(
-        compat.os.open(path, os.O_CREAT | os.O_EXCL | os.O_RDWR, *open_args),
+        os_compat.open(path, os.O_CREAT | os.O_EXCL | os.O_RDWR, *open_args),
         mode, *fdopen_args)
 
 

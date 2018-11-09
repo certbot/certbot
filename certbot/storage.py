@@ -14,12 +14,12 @@ import six
 
 import certbot
 from certbot import cli
-from certbot import compat
 from certbot import constants
 from certbot import crypto_util
 from certbot import errors
 from certbot import error_handler
 from certbot import util
+from certbot.compat import os as os_compat
 
 from certbot.plugins import common as plugins_common
 from certbot.plugins import disco as plugins_disco
@@ -141,7 +141,7 @@ def write_renewal_config(o_filename, n_filename, archive_dir, target, relevant_d
     # Copy permissions from the old version of the file, if it exists.
     if os.path.exists(o_filename):
         current_permissions = stat.S_IMODE(os.lstat(o_filename).st_mode)
-        compat.os.chmod(n_filename, current_permissions)
+        os_compat.chmod(n_filename, current_permissions)
 
     with open(n_filename, "wb") as f:
         config.write(outfile=f)
@@ -189,7 +189,7 @@ def update_configuration(lineagename, archive_dir, target, cli_config):
     # Save only the config items that are relevant to renewal
     values = relevant_values(vars(cli_config.namespace))
     write_renewal_config(config_filename, temp_filename, archive_dir, target, values)
-    compat.os.rename(temp_filename, config_filename)
+    os_compat.rename(temp_filename, config_filename)
 
     return configobj.ConfigObj(config_filename)
 
@@ -1020,7 +1020,7 @@ class RenewableCert(object):
         for i in (cli_config.renewal_configs_dir, cli_config.default_archive_dir,
                   cli_config.live_dir):
             if not os.path.exists(i):
-                compat.os.makedirs(i, 0o700)
+                os_compat.makedirs(i, 0o700)
                 logger.debug("Creating directory %s.", i)
         config_file, config_filename = util.unique_lineage_name(
             cli_config.renewal_configs_dir, lineagename)

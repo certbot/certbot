@@ -3,8 +3,8 @@ import errno
 import logging
 import os
 
-from certbot import compat
 from certbot import errors
+from certbot.compat import lock as lock_compat
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +74,7 @@ class LockFile(object):
 
         """
         try:
-            compat.lock.lock_file(fd)
+            lock_compat.lock_file(fd)
         except IOError as err:
             if err.errno in (errno.EACCES, errno.EAGAIN):
                 logger.debug(
@@ -119,6 +119,6 @@ class LockFile(object):
     def release(self):
         """Remove, close, and release the lock file."""
         try:
-            compat.lock.release_locked_file(self._fd, self._path)
+            lock_compat.release_locked_file(self._fd, self._path)
         finally:
             self._fd = None
