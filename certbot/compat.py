@@ -13,6 +13,7 @@ import select
 import sys
 import ctypes
 import stat
+import errno
 
 from certbot import errors
 
