@@ -17,40 +17,44 @@ try:
 except ImportError:  # pragma: no cover
     win32api = None  # type: ignore
 
+from acme.magic_typing import Union  # pylint: disable=unused-import, no-name-in-module
 
-def apply_mode(filepath, mode):
+
+def apply_mode(file_path, mode):
+    # type: (Union[str, unicode], int) -> None
     """
-    Apply a POSIX mode on given filepath:
+    Apply a POSIX mode on given file_path:
         * for Linux, the POSIX mode will be directly applied using chmod,
         * for Windows, the POSIX mode will be translated into a Windows DACL that make sense for
           Certbot context, and applied to the file using kernel calls.
 
-    :param str filename: Path of the file
+    :param str file_path: Path of the file
     :param int mode: POSIX mode to apply
     """
     if not win32security:
-        os.chmod(filepath, mode)
+        os.chmod(file_path, mode)
     else:
-        _apply_win_mode(filepath, mode)
+        _apply_win_mode(file_path, mode)
 
 
-def take_ownership(filepath):
+def take_ownership(file_path):
+    # type: (Union[str, unicode]) -> None
     """
-    Take ownership on the given filepath, in compatible way for Linux and Windows.
+    Take ownership on the given file path, in compatible way for Linux and Windows.
 
-    :param str filepath: Path of the file
+    :param str file_path: Path of the file
     """
     if not win32security:
-        os.chown(os.geteuid(), -1)
+        os.chown(file_path, os.geteuid(), -1)
     else:
-        _take_win_ownership(filepath)
+        _take_win_ownership(file_path)
 
 
-def _apply_win_mode(filepath, mode):
+def _apply_win_mode(file_path, mode):
     analysis = _analyze_mode(mode)
 
     # Get owner sid of the file
-    security = win32security.GetFileSecurity(filepath, win32security.OWNER_SECURITY_INFORMATION)
+    security = win32security.GetFileSecurity(file_path, win32security.OWNER_SECURITY_INFORMATION)
     user = security.GetSecurityDescriptorOwner()
 
     # Get standard accounts sid
@@ -77,17 +81,17 @@ def _apply_win_mode(filepath, mode):
 
     # Apply the new DACL
     security.SetSecurityDescriptorDacl(1, dacl, 0)
-    win32security.SetFileSecurity(filepath, win32security.DACL_SECURITY_INFORMATION, security)
+    win32security.SetFileSecurity(file_path, win32security.DACL_SECURITY_INFORMATION, security)
 
 
-def _take_win_ownership(filepath):
+def _take_win_ownership(file_path):
     username = win32api.GetUserName()
     user = win32security.LookupAccountName('', username)[0]
 
-    security = win32security.GetFileSecurity(filepath, win32security.OWNER_SECURITY_INFORMATION)
+    security = win32security.GetFileSecurity(file_path, win32security.OWNER_SECURITY_INFORMATION)
     security.SetSecurityDescriptorOwner(user, False)
 
-    win32security.SetFileSecurity(filepath, win32security.OWNER_SECURITY_INFORMATION, security)
+    win32security.SetFileSecurity(file_path, win32security.OWNER_SECURITY_INFORMATION, security)
 
 
 def _analyze_mode(mode):
