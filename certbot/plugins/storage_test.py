@@ -1,11 +1,10 @@
 """Tests for certbot.plugins.storage.PluginStorage"""
 import json
 import mock
-import os
 import unittest
 
 from certbot import errors
-
+from certbot.compat import os
 from certbot.plugins import common
 from certbot.tests import util as test_util
 

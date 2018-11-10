@@ -1,8 +1,9 @@
 """Tests for certbot.plugins.util."""
-import os
 import unittest
 
 import mock
+
+from certbot.compat import os
 
 class GetPrefixTest(unittest.TestCase):
     """Tests for certbot.plugins.get_prefixes."""

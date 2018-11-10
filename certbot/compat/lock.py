@@ -5,8 +5,9 @@ It is deprecated and will be removed once new lock file mechanism is integrated.
 from __future__ import absolute_import
 
 import errno
-import os
 import sys
+
+from certbot.compat import os
 
 try:
     # Linux specific

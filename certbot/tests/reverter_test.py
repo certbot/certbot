@@ -1,7 +1,6 @@
 """Test certbot.reverter."""
 import csv
 import logging
-import os
 import shutil
 import tempfile
 import unittest
@@ -10,7 +9,7 @@ import mock
 import six
 
 from certbot import errors
-
+from certbot.compat import os
 from certbot.tests import util as test_util
 
 

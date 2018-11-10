@@ -1,7 +1,5 @@
 """Base test class for DNS authenticators."""
 
-import os
-
 import configobj
 import josepy as jose
 import mock
@@ -9,7 +7,7 @@ import six
 from acme import challenges
 
 from certbot import achallenges
-from certbot.compat import os as os_compat
+from certbot.compat import os
 from certbot.tests import acme_util
 from certbot.tests import util as test_util
 
@@ -61,4 +59,4 @@ def write(values, path):
     with open(path, "wb") as f:
         config.write(outfile=f)
 
-    os_compat.chmod(path, 0o600)
+    os.chmod(path, 0o600)

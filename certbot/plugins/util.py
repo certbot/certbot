@@ -1,8 +1,8 @@
 """Plugin utilities."""
 import logging
-import os
 
 from certbot import util
+from certbot.compat import os
 
 logger = logging.getLogger(__name__)
 

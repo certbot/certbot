@@ -2,7 +2,6 @@
 import csv
 import glob
 import logging
-import os
 import shutil
 import time
 import traceback
@@ -14,8 +13,7 @@ from certbot import constants
 from certbot import errors
 from certbot import interfaces
 from certbot import util
-from certbot.compat import os as os_compat
-
+from certbot.compat import os
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +64,7 @@ class Reverter(object):
         self.config = config
 
         util.make_or_verify_dir(
-            config.backup_dir, constants.CONFIG_DIRS_MODE, os_compat.geteuid(),
+            config.backup_dir, constants.CONFIG_DIRS_MODE, os.geteuid(),
             self.config.strict_permissions)
 
     def revert_temporary_config(self):
@@ -220,7 +218,7 @@ class Reverter(object):
 
         """
         util.make_or_verify_dir(
-            cp_dir, constants.CONFIG_DIRS_MODE, os_compat.geteuid(),
+            cp_dir, constants.CONFIG_DIRS_MODE, os.geteuid(),
             self.config.strict_permissions)
 
         op_fd, existing_filepaths = self._read_and_append(
@@ -434,7 +432,7 @@ class Reverter(object):
             cp_dir = self.config.in_progress_dir
 
         util.make_or_verify_dir(
-            cp_dir, constants.CONFIG_DIRS_MODE, os_compat.geteuid(),
+            cp_dir, constants.CONFIG_DIRS_MODE, os.geteuid(),
             self.config.strict_permissions)
 
         return cp_dir
@@ -576,7 +574,7 @@ class Reverter(object):
             timestamp = self._checkpoint_timestamp()
             final_dir = os.path.join(self.config.backup_dir, timestamp)
             try:
-                os_compat.rename(self.config.in_progress_dir, final_dir)
+                os.rename(self.config.in_progress_dir, final_dir)
                 return
             except OSError:
                 logger.warning("Extreme, unexpected race condition, retrying (%s)", timestamp)

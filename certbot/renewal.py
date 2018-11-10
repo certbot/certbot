@@ -3,7 +3,6 @@ from __future__ import print_function
 import copy
 import itertools
 import logging
-import os
 import traceback
 
 import six
@@ -21,7 +20,7 @@ from certbot import util
 from certbot import hooks
 from certbot import storage
 from certbot import updater
-
+from certbot.compat import os
 from certbot.plugins import disco as plugins_disco
 
 logger = logging.getLogger(__name__)

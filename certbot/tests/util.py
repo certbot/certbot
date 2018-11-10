@@ -4,7 +4,6 @@
 
 """
 import multiprocessing
-import os
 import pkg_resources
 import shutil
 import tempfile
@@ -25,7 +24,7 @@ from certbot import interfaces
 from certbot import storage
 from certbot import util
 from certbot import configuration
-
+from certbot.compat import os
 from certbot.display import util as display_util
 
 

@@ -1,6 +1,5 @@
 """Tests for certbot.plugins.common."""
 import functools
-import os
 import shutil
 import tempfile
 import unittest
@@ -14,7 +13,7 @@ from acme import challenges
 from certbot import achallenges
 from certbot import crypto_util
 from certbot import errors
-
+from certbot.compat import os
 from certbot.tests import acme_util
 from certbot.tests import util as test_util
 

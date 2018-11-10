@@ -1,7 +1,6 @@
 """Compat module to handle files security on Windows and Linux"""
 from __future__ import absolute_import
 
-import os
 import stat
 
 try:

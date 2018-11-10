@@ -1,11 +1,15 @@
 """
 This compat modules extends native capabilities of core os module to handle correctly platform
-specific operations (eg. chown, chmod, geuid)
+specific operations (eg. chown, chmod, geuid).
+This module is intended to replace standard os module throughout certbot projects (except acme)
 """
 from __future__ import absolute_import
 
+# Expose everything from standard os package to make current package a complete replacement of os.
+from os import *
+
 import errno
-import os
+import os as std_os
 
 from certbot.compat import security
 
@@ -19,7 +23,7 @@ def geteuid():
     """
     try:
         # Linux specific
-        return os.geteuid()
+        return std_os.geteuid()
     except AttributeError:
         # Windows specific
         return 0
@@ -32,20 +36,20 @@ def rename(src, dst):
     :param str dst: The new file path.
     """
     try:
-        os.rename(src, dst)
+        std_os.rename(src, dst)
     except OSError as err:
         # Windows specific, renaming a file on an existing path is not possible.
         # On Python 3, the best fallback with atomic capabilities we have is os.replace.
         if err.errno != errno.EEXIST:
             # Every other error is a legitimate exception.
             raise
-        if not hasattr(os, 'replace'):  # pragma: no cover
+        if not hasattr(std_os, 'replace'):  # pragma: no cover
             # We should never go on this line. Either we are on Linux and os.rename has succeeded,
             # either we are on Windows, and only Python >= 3.4 is supported where os.replace is
             # available.
             raise RuntimeError('Error: tried to run os.replace on Python < 3.3. '
                                'Certbot supports only Python 3.4 >= on Windows.')
-        getattr(os, 'replace')(src, dst)
+        getattr(std_os, 'replace')(src, dst)
 
 def open(file, flags, mode=None):  # pylint: disable=redefined-builtin
     """
@@ -64,7 +68,7 @@ def open(file, flags, mode=None):  # pylint: disable=redefined-builtin
     if mode:
         open_args = (mode,)
 
-    file_descriptor = os.open(file, flags, *open_args)
+    file_descriptor = std_os.open(file, flags, *open_args)
 
     if mode:
         security.apply_mode(file, mode)
@@ -81,7 +85,7 @@ def mkdir(path, mode=None, mkdir_fn=None):
         Python defaults will be applied if ``None``
     :param callable mkdir_fn: The undelying mkdir function to use
     """
-    mkdir_fn = mkdir_fn or os.mkdir
+    mkdir_fn = mkdir_fn or std_os.mkdir
     mkdir_args = ()
     if mode:
         mkdir_args = (mode,)
@@ -103,21 +107,21 @@ def makedirs(path, mode=None):
     # As we know that os.mkdir is called internally by os.makedirs, we will swap the function in 
     # os module for the time of makedirs execution.
     try:
-        orig_mkdir_fn = os.mkdir
+        orig_mkdir_fn = std_os.mkdir
         def wrapper(path, mode=None):
             # Note, we need to provide the origin os.mkdir to our mkdir function,
             # or we will have a nice infinite loop ...
             mkdir(path, mode=mode, mkdir_fn=orig_mkdir_fn)
 
-        os.mkdir = wrapper
+        std_os.mkdir = wrapper
 
         makedirs_args = ()
         if mode:
             makedirs_args = (mode,)
 
-        os.makedirs(path, *makedirs_args)
+        std_os.makedirs(path, *makedirs_args)
     finally:
-        os.mkdir = orig_mkdir_fn
+        std_os.mkdir = orig_mkdir_fn
 
 def chmod(path, mode):
     """

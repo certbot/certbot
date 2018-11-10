@@ -6,7 +6,6 @@ import copy
 import glob
 import logging
 import logging.handlers
-import os
 import sys
 
 import configargparse
@@ -17,19 +16,15 @@ import zope.interface
 from zope.interface import interfaces as zope_interfaces
 
 from acme import challenges
-# pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Any, Dict, Optional
-# pylint: enable=unused-import, no-name-in-module
-
+from acme.magic_typing import Any, Dict, Optional  # pylint: disable=unused-import, no-name-in-module
 import certbot
-
 from certbot import constants
 from certbot import crypto_util
 from certbot import errors
 from certbot import hooks
 from certbot import interfaces
 from certbot import util
-
+from certbot.compat import os
 from certbot.display import util as display_util
 from certbot.plugins import disco as plugins_disco
 import certbot.plugins.enhancements as enhancements

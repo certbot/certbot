@@ -12,13 +12,10 @@ import zope.interface
 
 from acme import challenges
 from acme import standalone as acme_standalone
-# pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import DefaultDict, Dict, Set, Tuple, List, Type, TYPE_CHECKING
-
+from acme.magic_typing import DefaultDict, Dict, Set, Tuple, List, Type, TYPE_CHECKING  # pylint: disable=unused-import, no-name-in-module
 from certbot import achallenges  # pylint: disable=unused-import
 from certbot import errors
 from certbot import interfaces
-
 from certbot.plugins import common
 
 logger = logging.getLogger(__name__)

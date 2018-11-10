@@ -1,7 +1,6 @@
 """Tests for certbot.storage."""
 # pylint disable=protected-access
 import datetime
-import os
 import shutil
 import stat
 import unittest
@@ -14,6 +13,7 @@ import six
 import certbot
 from certbot import cli
 from certbot import errors
+from certbot.compat import os
 from certbot.storage import ALL_FOUR
 
 import certbot.tests.util as test_util
@@ -783,7 +783,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         with open(temp, "w") as f:
             f.write("[renewalparams]\nuseful = value # A useful value\n"
                     "useless = value # Not needed\n")
-        compat.os.chmod(temp, 0o640)
+        os.chmod(temp, 0o640)
         target = {}
         for x in ALL_FOUR:
             target[x] = "somewhere"

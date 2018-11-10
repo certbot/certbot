@@ -1,6 +1,5 @@
 # coding=utf-8
 """Test certbot.display.ops."""
-import os
 import sys
 import unittest
 
@@ -12,8 +11,7 @@ from acme import messages
 
 from certbot import account
 from certbot import errors
-from certbot.compat import os as os_compat
-
+from certbot.compat import os
 from certbot.display import util as display_util
 from certbot.display import ops
 
@@ -97,7 +95,7 @@ class ChooseAccountTest(test_util.TempDirTestCase):
                                                                False))
 
         self.account_keys_dir = os.path.join(self.tempdir, "keys")
-        os_compat.makedirs(self.account_keys_dir, 0o700)
+        os.makedirs(self.account_keys_dir, 0o700)
 
         self.config = mock.MagicMock(
             accounts_dir=self.tempdir,

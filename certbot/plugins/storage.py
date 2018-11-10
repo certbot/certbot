@@ -1,11 +1,10 @@
 """Plugin storage class."""
 import json
 import logging
-import os
 
 from acme.magic_typing import Any, Dict  # pylint: disable=unused-import, no-name-in-module
 from certbot import errors
-from certbot.compat import os as os_compat
+from certbot.compat import os
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +83,7 @@ class PluginStorage(object):
             logger.error(errmsg)
             raise errors.PluginStorageError(errmsg)
         try:
-            with os.fdopen(os_compat.open(
+            with os.fdopen(os.open(
                     self._storagepath,
                     os.O_WRONLY | os.O_CREAT | os.O_TRUNC,
                     0o600), 'w') as file_handler:

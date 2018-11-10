@@ -4,7 +4,6 @@ import os
 
 from acme.magic_typing import Set  # pylint: disable=unused-import, no-name-in-module
 from certbot import errors
-from certbot.compat import os as os_compat
 from certbot.plugins import common
 from certbot_apache.obj import VirtualHost  # pylint: disable=unused-import
 from certbot_apache.parser import get_aug_path
@@ -141,7 +140,7 @@ class ApacheHttp01(common.TLSSNI01):
     def _set_up_challenges(self):
         if not os.path.isdir(self.challenge_dir):
             os.makedirs(self.challenge_dir)
-            os_compat.chmod(self.challenge_dir, 0o755)
+            os.chmod(self.challenge_dir, 0o755)
 
         responses = []
         for achall in self.achalls:
@@ -157,7 +156,7 @@ class ApacheHttp01(common.TLSSNI01):
         self.configurator.reverter.register_file_creation(True, name)
         with open(name, 'wb') as f:
             f.write(validation.encode())
-        os_compat.chmod(name, 0o644)
+        os.chmod(name, 0o644)
 
         return response
 

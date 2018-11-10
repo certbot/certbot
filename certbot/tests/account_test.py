@@ -1,7 +1,6 @@
 """Tests for certbot.account."""
 import datetime
 import json
-import os
 import shutil
 import stat
 import unittest
@@ -11,9 +10,8 @@ import mock
 import pytz
 
 from acme import messages
-
 from certbot import errors
-
+from certbot.compat import os
 import certbot.tests.util as test_util
 
 

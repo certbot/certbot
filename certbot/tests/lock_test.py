@@ -1,12 +1,12 @@
 """Tests for certbot.lock."""
 import functools
 import multiprocessing
-import os
 import unittest
 
 import mock
 
 from certbot import errors
+from certbot.compat import os
 from certbot.tests import util as test_util
 
 

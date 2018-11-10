@@ -1,12 +1,11 @@
 """Tests for certbot.configuration."""
-import os
 import unittest
 
 import mock
 
 from certbot import constants
 from certbot import errors
-
+from certbot.compat import os
 from certbot.tests import util as test_util
 
 class NamespaceConfigTest(test_util.ConfigTestCase):

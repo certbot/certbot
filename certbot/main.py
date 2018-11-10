@@ -3,7 +3,6 @@
 from __future__ import print_function
 import functools
 import logging.handlers
-import os
 import sys
 
 import configobj
@@ -12,9 +11,7 @@ import zope.component
 
 from acme import errors as acme_errors
 from acme.magic_typing import Union  # pylint: disable=unused-import, no-name-in-module
-
 import certbot
-
 from certbot import account
 from certbot import cert_manager
 from certbot import cli
@@ -32,8 +29,7 @@ from certbot import reporter
 from certbot import storage
 from certbot import updater
 from certbot import util
-
-from certbot.compat import os as os_compat, misc
+from certbot.compat import os, misc
 from certbot.display import util as display_util, ops as display_ops
 from certbot.plugins import disco as plugins_disco
 from certbot.plugins import selection as plug_sel
@@ -1260,16 +1256,16 @@ def make_or_verify_needed_dirs(config):
 
     """
     util.set_up_core_dir(config.config_dir, constants.CONFIG_DIRS_MODE,
-                         os_compat.geteuid(), config.strict_permissions)
+                         os.geteuid(), config.strict_permissions)
     util.set_up_core_dir(config.work_dir, constants.CONFIG_DIRS_MODE,
-                         os_compat.geteuid(), config.strict_permissions)
+                         os.geteuid(), config.strict_permissions)
 
     hook_dirs = (config.renewal_pre_hooks_dir,
                  config.renewal_deploy_hooks_dir,
                  config.renewal_post_hooks_dir,)
     for hook_dir in hook_dirs:
         util.make_or_verify_dir(hook_dir,
-                                uid=os_compat.geteuid(),
+                                uid=os.geteuid(),
                                 strict=config.strict_permissions)
 
 

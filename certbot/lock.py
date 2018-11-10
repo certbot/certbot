@@ -1,10 +1,9 @@
 """Implements file locks for locking files and directories in UNIX."""
 import errno
 import logging
-import os
 
 from certbot import errors
-from certbot.compat import lock as lock_compat
+from certbot.compat import os, lock as lock_compat
 
 logger = logging.getLogger(__name__)
 

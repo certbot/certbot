@@ -1,7 +1,6 @@
 """Tests for certbot.util."""
 import argparse
 import errno
-import os
 import shutil
 import unittest
 
@@ -10,7 +9,6 @@ import six
 from six.moves import reload_module  # pylint: disable=import-error
 
 from certbot import errors
-from certbot.compat import os as os_compat, misc
 import certbot.tests.util as test_util
 
 
@@ -117,7 +115,7 @@ class SetUpCoreDirTest(test_util.TempDirTestCase):
     @mock.patch('certbot.util.lock_dir_until_exit')
     def test_success(self, mock_lock):
         new_dir = os.path.join(self.tempdir, 'new')
-        self._call(new_dir, 0o700, os_compat.geteuid(), False)
+        self._call(new_dir, 0o700, os.geteuid(), False)
         self.assertTrue(os.path.exists(new_dir))
         self.assertEqual(mock_lock.call_count, 1)
 
@@ -125,7 +123,7 @@ class SetUpCoreDirTest(test_util.TempDirTestCase):
     def test_failure(self, mock_make_or_verify):
         mock_make_or_verify.side_effect = OSError
         self.assertRaises(errors.Error, self._call,
-                          self.tempdir, 0o700, os_compat.geteuid(), False)
+                          self.tempdir, 0o700, os.geteuid(), False)
 
 
 class MakeOrVerifyDirTest(test_util.TempDirTestCase):
@@ -140,9 +138,9 @@ class MakeOrVerifyDirTest(test_util.TempDirTestCase):
         super(MakeOrVerifyDirTest, self).setUp()
 
         self.path = os.path.join(self.tempdir, "foo")
-        os_compat.mkdir(self.path, 0o600)
+        os.mkdir(self.path, 0o600)
 
-        self.uid = os_compat.geteuid()
+        self.uid = os.geteuid()
 
     def _call(self, directory, mode):
         from certbot.util import make_or_verify_dir
@@ -179,18 +177,18 @@ class CheckPermissionsTest(test_util.TempDirTestCase):
     def setUp(self):
         super(CheckPermissionsTest, self).setUp()
 
-        self.uid = os_compat.geteuid()
+        self.uid = os.geteuid()
 
     def _call(self, mode):
         from certbot.util import check_permissions
         return check_permissions(self.tempdir, mode, self.uid)
 
     def test_ok_mode(self):
-        os_compat.chmod(self.tempdir, 0o600)
+        os.chmod(self.tempdir, 0o600)
         self.assertTrue(self._call(0o600))
 
     def test_wrong_mode(self):
-        os_compat.chmod(self.tempdir, 0o400)
+        os.chmod(self.tempdir, 0o400)
         self.assertFalse(self._call(0o600))
 
 

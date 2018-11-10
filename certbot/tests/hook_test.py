@@ -1,5 +1,4 @@
 """Tests for certbot.hooks."""
-import os
 import stat
 import unittest
 

@@ -1,15 +1,12 @@
 """Registers functions to be called if an exception or signal occurs."""
 import functools
 import logging
-import os
 import signal
 import traceback
 
-# pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Any, Callable, Dict, List, Union
-# pylint: enable=unused-import, no-name-in-module
-
+from acme.magic_typing import Any, Callable, Dict, List, Union  # pylint: disqble=unused-import, no-name-in-module
 from certbot import errors
+from certbot.compat import os
 
 logger = logging.getLogger(__name__)
 

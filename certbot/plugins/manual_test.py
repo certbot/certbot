@@ -1,5 +1,4 @@
 """Tests for certbot.plugins.manual"""
-import os
 import unittest
 
 import six
@@ -9,7 +8,7 @@ import sys
 from acme import challenges
 
 from certbot import errors
-
+from certbot.compat import os
 from certbot.tests import acme_util
 from certbot.tests import util as test_util
 

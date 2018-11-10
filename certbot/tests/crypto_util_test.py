@@ -1,6 +1,5 @@
 """Tests for certbot.crypto_util."""
 import logging
-import os
 import unittest
 
 import OpenSSL
@@ -10,6 +9,7 @@ import zope.component
 from certbot import errors
 from certbot import interfaces
 from certbot import util
+from certbot.compat import os
 import certbot.tests.util as test_util
 
 

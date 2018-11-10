@@ -1,5 +1,4 @@
 """Tests for certbot.client."""
-import os
 import platform
 import shutil
 import tempfile
@@ -11,7 +10,7 @@ from certbot import account
 from certbot import compat
 from certbot import errors
 from certbot import util
-
+from certbot.compat import os
 import certbot.tests.util as test_util
 
 KEY = test_util.load_vector("rsa512_key.pem")

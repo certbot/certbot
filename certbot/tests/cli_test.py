@@ -1,7 +1,6 @@
 """Tests for certbot.cli."""
 import argparse
 import unittest
-import os
 import tempfile
 import copy
 
@@ -14,10 +13,9 @@ from acme import challenges
 from certbot import cli
 from certbot import constants
 from certbot import errors
+from certbot.compat import os
 from certbot.plugins import disco
-
 import certbot.tests.util as test_util
-
 from certbot.tests.util import TempDirTestCase
 
 PLUGINS = disco.PluginsRegistry.find_all()

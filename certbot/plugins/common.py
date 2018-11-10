@@ -1,6 +1,5 @@
 """Plugin common functions."""
 import logging
-import os
 import re
 import shutil
 import tempfile
@@ -19,7 +18,7 @@ from certbot import errors
 from certbot import interfaces
 from certbot import reverter
 from certbot import util
-
+from certbot.compat import os
 from certbot.plugins.storage import PluginStorage
 
 logger = logging.getLogger(__name__)
