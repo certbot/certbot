@@ -1,12 +1,11 @@
 """A class that performs TLS-SNI-01 challenges for Apache"""
 
-import os
 import logging
 
 from acme.magic_typing import Set  # pylint: disable=unused-import, no-name-in-module
 from certbot.plugins import common
 from certbot.errors import PluginError, MissingCommandlineFlag
-
+from certbot.compat import os
 from certbot_apache import obj
 
 logger = logging.getLogger(__name__)

@@ -1,13 +1,12 @@
 """A class that performs TLS-SNI-01 challenges for Nginx"""
 
 import logging
-import os
 
 import six
 
 from certbot import errors
+from certbot.compat import os
 from certbot.plugins import common
-
 from certbot_nginx import obj
 from certbot_nginx import nginxparser
 

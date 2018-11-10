@@ -1,6 +1,5 @@
 """Test for certbot_apache.http_01."""
 import mock
-import os
 import unittest
 
 from acme import challenges
@@ -8,7 +7,7 @@ from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-
 
 from certbot import achallenges
 from certbot import errors
-
+from certbot.compat import os
 from certbot.tests import acme_util
 from certbot_apache.parser import get_aug_path
 from certbot_apache.tests import util

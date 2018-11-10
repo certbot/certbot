@@ -1,12 +1,11 @@
 """Contains UI methods for Apache operations."""
 import logging
-import os
 
 import zope.component
 
 from certbot import errors
 from certbot import interfaces
-
+from certbot.compat import os
 import certbot.display.util as display_util
 
 

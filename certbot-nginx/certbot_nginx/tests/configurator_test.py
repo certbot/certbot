@@ -1,6 +1,5 @@
 # pylint: disable=too-many-public-methods
 """Test for certbot_nginx.configurator."""
-import os
 import shutil
 import unittest
 
@@ -9,12 +8,11 @@ import OpenSSL
 
 from acme import challenges
 from acme import messages
-
 from certbot import achallenges
 from certbot import crypto_util
 from certbot import errors
+from certbot.compat import os
 from certbot.tests import util as certbot_test_util
-
 from certbot_nginx import constants
 from certbot_nginx import obj
 from certbot_nginx import parser

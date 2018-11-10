@@ -2,7 +2,6 @@
 from contextlib import contextmanager
 import copy
 import functools
-import os
 import pkg_resources
 import six
 import unittest
@@ -10,6 +9,7 @@ import unittest
 import mock
 
 from certbot import errors
+from certbot.compat import os
 from certbot.tests import util as certbot_test_util
 
 # pylint: disable=unused-import, no-name-in-module

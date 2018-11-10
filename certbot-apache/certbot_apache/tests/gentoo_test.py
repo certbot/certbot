@@ -1,11 +1,10 @@
 """Test for certbot_apache.configurator for Gentoo overrides"""
-import os
 import unittest
 
 import mock
 
 from certbot import errors
-
+from certbot.compat import os
 from certbot_apache import override_gentoo
 from certbot_apache import obj
 from certbot_apache.tests import util

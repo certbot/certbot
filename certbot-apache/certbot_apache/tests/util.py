@@ -1,5 +1,4 @@
 """Common utilities for certbot_apache."""
-import os
 import shutil
 import sys
 import unittest
@@ -9,12 +8,10 @@ import josepy as jose
 import mock
 import zope.component
 
+from certbot.compat import os
 from certbot.display import util as display_util
-
 from certbot.plugins import common
-
 from certbot.tests import util as test_util
-
 from certbot_apache import configurator
 from certbot_apache import entrypoint
 from certbot_apache import obj

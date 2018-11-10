@@ -2,7 +2,6 @@
 import copy
 import fnmatch
 import logging
-import os
 import re
 import subprocess
 import sys
@@ -11,6 +10,7 @@ import six
 
 from acme.magic_typing import Dict, List, Set  # pylint: disable=unused-import, no-name-in-module
 from certbot import errors
+from certbot.compat import os
 
 logger = logging.getLogger(__name__)
 

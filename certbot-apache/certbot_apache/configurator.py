@@ -3,7 +3,6 @@
 import copy
 import fnmatch
 import logging
-import os
 import pkg_resources
 import re
 import six
@@ -12,19 +11,18 @@ import time
 
 import zope.component
 import zope.interface
+from collections import defaultdict
 
 from acme import challenges
 from acme.magic_typing import Any, DefaultDict, Dict, List, Set, Union  # pylint: disable=unused-import, no-name-in-module
-
 from certbot import errors
 from certbot import interfaces
 from certbot import util
-
 from certbot.achallenges import KeyAuthorizationAnnotatedChallenge  # pylint: disable=unused-import
+from certbot.compat import os
 from certbot.plugins import common
 from certbot.plugins.util import path_surgery
 from certbot.plugins.enhancements import AutoHSTSEnhancement
-
 from certbot_apache import apache_util
 from certbot_apache import augeas_configurator
 from certbot_apache import constants
@@ -33,8 +31,6 @@ from certbot_apache import http_01
 from certbot_apache import obj
 from certbot_apache import parser
 from certbot_apache import tls_sni_01
-
-from collections import defaultdict
 
 logger = logging.getLogger(__name__)
 
