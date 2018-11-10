@@ -2,18 +2,27 @@
 import glob
 import os
 import re
+import subprocess
 import sys
 
-CERTBOT_ROOT = os.path.dirname(os.path.dirname(__file__))
 WHITELIST_PATTERNS = [
     r'^.*/docs/conf\.py$',
     r'^certbot/compat/os\.py$',
     r'^certbot-compatibility-test/.*$']
+
 IMPORT_OS_PATTERN = r'^\s*(import\s+os|from\s+os)(\s*$|\s.*$)'
 
-def main():
+
+def enforce_linting(projects):
+    command = [sys.executable, '-m', 'pylint', '--reports=n', '--rcfile=.pylintrc']
+    command.extend(projects)
+    sys.stdout.write('{0}\n'.format(' '.join(command)))
+    return subprocess.call(' '.join(command), shell=True)
+
+
+def enforce_compat_os():
     faulty_files = []
-    for python_file in glob.glob(os.path.join(CERTBOT_ROOT, 'certbot*/**/*.py')):
+    for python_file in glob.glob('certbot*/**/*.py'):
         if not [item for item in WHITELIST_PATTERNS
                 if re.match(item, python_file.replace(os.path.sep, '/'))]:
             with open(python_file, 'r') as file:
@@ -38,5 +47,12 @@ def main():
     return 0
 
 
+def main(projects):
+    exit_code = enforce_linting(projects)
+    if exit_code:
+        sys.stderr.write('Pylint raised errors.\n')
+    return enforce_compat_os() or exit_code
+
+
 if __name__ == '__main__':
-    sys.exit(main())
+    sys.exit(main(sys.argv[1:]))
