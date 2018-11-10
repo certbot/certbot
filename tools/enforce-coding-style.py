@@ -7,7 +7,7 @@ import sys
 
 WHITELIST_PATTERNS = [
     r'^.*/docs/conf\.py$',
-    r'^certbot/compat/os\.py$',
+    r'^certbot/compat/.*$',
     r'^certbot-compatibility-test/.*$']
 
 IMPORT_OS_PATTERN = r'^\s*(import\s+os|from\s+os)(\s*$|\s.*$)'

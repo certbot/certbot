@@ -1,6 +1,7 @@
 """Compat module to handle files security on Windows and Linux"""
 from __future__ import absolute_import
 
+import os
 import stat
 
 try:
@@ -15,8 +16,6 @@ try:
     import win32api  # pylint: disable=import-error
 except ImportError:  # pragma: no cover
     win32api = None  # type: ignore
-
-from certbot.compat import os
 
 
 def apply_mode(filepath, mode):
@@ -42,7 +41,7 @@ def take_ownership(filepath):
     :param str filepath: Path of the file
     """
     if not win32security:
-        os.chown(os.geteuid(), -1)  # pylint: disable=no-member
+        os.chown(os.geteuid(), -1)
     else:
         _take_win_ownership(filepath)
 
