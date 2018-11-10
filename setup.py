@@ -43,7 +43,7 @@ install_requires = [
     'parsedatetime>=1.3',  # Calendar.parseDT
     'pyrfc3339',
     'pytz',
-    'pywin32 >= 221;platform_system=="Windows"', # handle low-level calls on Windows kernel
+    'pywin32;platform_system=="Windows"',  # handle low-level calls on Windows kernel
     'setuptools',
     'zope.component',
     'zope.interface',

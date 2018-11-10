@@ -28,7 +28,7 @@ class PluginStorageTest(test_util.ConfigTestCase):
         self.plugin.storage.storagepath = os.path.join(self.config.config_dir,
                                                        ".pluginstorage.json")
         with mock.patch("six.moves.builtins.open", mock_open):
-            with mock.patch('os.path.isfile', return_value=True):
+            with mock.patch('certbot.compat.os.path.isfile', return_value=True):
                 with mock.patch("certbot.reverter.util"):
                     self.assertRaises(errors.PluginStorageError,
                                       self.plugin.storage._load)  # pylint: disable=protected-access
@@ -70,7 +70,7 @@ class PluginStorageTest(test_util.ConfigTestCase):
     def test_save_errors_unable_to_write_file(self):
         mock_open = mock.mock_open()
         mock_open.side_effect = IOError
-        with mock.patch("os.open", mock_open):
+        with mock.patch("certbot.compat.os.open", mock_open):
             with mock.patch("certbot.plugins.storage.logger.error") as mock_log:
                 self.plugin.storage._data = {"valid": "data"}  # pylint: disable=protected-access
                 self.plugin.storage._initialized = True  # pylint: disable=protected-access

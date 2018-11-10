@@ -32,7 +32,7 @@ class InputWithTimeoutTest(unittest.TestCase):
     def test_input(self, prompt=None):
         expected = "foo bar"
         stdin = six.StringIO(expected + "\n")
-        with mock.patch("certbot.compat.select.select") as mock_select:
+        with mock.patch("certbot.compat.misc.select.select") as mock_select:
             mock_select.return_value = ([stdin], [], [],)
             self.assertEqual(self._call(prompt), expected)
 
