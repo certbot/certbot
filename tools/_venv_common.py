@@ -59,7 +59,7 @@ def main(venv_name, venv_args, args):
         # Windows specific
         print('---------------------------------------------------------------------------')
         print('Please run one of the following commands to activate developer environment:')
-        print('{0}\\bin\\activate.bat (for Batch)'.format(venv_name))
+        print('{0}\\Scripts\\activate.bat (for Batch)'.format(venv_name))
         print('.\\{0}\\Scripts\\Activate.ps1 (for Powershell)'.format(venv_name))
         print('---------------------------------------------------------------------------')
     else:
