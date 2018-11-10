@@ -7,16 +7,17 @@ try:
     import ntsecuritycon  # pylint: disable=import-error
 except ImportError:  # pragma: no cover
     ntsecuritycon = None  # type: ignore
-
 try:
     import win32security  # pylint: disable=import-error
 except ImportError:  # pragma: no cover
     win32security = None  # type: ignore
-
 try:
     import win32api  # pylint: disable=import-error
 except ImportError:  # pragma: no cover
     win32api = None  # type: ignore
+
+from certbot.compat import os
+
 
 def apply_mode(filepath, mode):
     """
@@ -33,6 +34,7 @@ def apply_mode(filepath, mode):
     else:
         _apply_win_mode(filepath, mode)
 
+
 def take_ownership(filepath):
     """
     Take ownership on the given filepath, in compatible way for Linux and Windows.
@@ -43,6 +45,7 @@ def take_ownership(filepath):
         os.chown(os.geteuid(), -1)  # pylint: disable=no-member
     else:
         _take_win_ownership(filepath)
+
 
 def _apply_win_mode(filepath, mode):
     analysis = _analyze_mode(mode)
@@ -77,6 +80,7 @@ def _apply_win_mode(filepath, mode):
     security.SetSecurityDescriptorDacl(1, dacl, 0)
     win32security.SetFileSecurity(filepath, win32security.DACL_SECURITY_INFORMATION, security)
 
+
 def _take_win_ownership(filepath):
     username = win32api.GetUserName()
     user = win32security.LookupAccountName('', username)[0]
@@ -85,6 +89,7 @@ def _take_win_ownership(filepath):
     security.SetSecurityDescriptorOwner(user, False)
 
     win32security.SetFileSecurity(filepath, win32security.OWNER_SECURITY_INFORMATION, security)
+
 
 def _analyze_mode(mode):
     return {
@@ -99,6 +104,7 @@ def _analyze_mode(mode):
             'execute': mode & stat.S_IXOTH,
         },
     }
+
 
 def _generate_windows_flags(rights_desc):
     # Some notes about how each POSIX right is interpreted.

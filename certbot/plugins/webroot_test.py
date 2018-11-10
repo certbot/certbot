@@ -17,7 +17,7 @@ from acme import challenges
 
 from certbot import achallenges
 from certbot import errors
-from certbot.compat import os
+from certbot.compat import os, misc
 from certbot.display import util as display_util
 from certbot.tests import acme_util
 from certbot.tests import util as test_util

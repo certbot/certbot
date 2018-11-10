@@ -25,7 +25,8 @@ def main():
 
     if faulty_files:
         sys.stderr.write('Some python files are importing the standard \'os\' module.\n')
-        sys.stderr.write('This is forbidden, \'certbot.compat.os\' module must be used instead.\n')
+        sys.stderr.write('For security reasons, this is forbidden and \'certbot.compat.os\' '
+                         'module must be used instead.\n')
         sys.stderr.write('Faulty files:\n')
         for faulty_file in faulty_files:
             sys.stderr.write('\t-> {0} at line {1}: {2}\n'.format(

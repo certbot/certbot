@@ -1355,7 +1355,7 @@ class MultipleVhostsTest(util.ApacheTest):
         self.config.parser.modules.add("mod_ssl.c")
         self.config.parser.modules.add("socache_shmcb_module")
         tmp_path = os.path.realpath(tempfile.mkdtemp("vhostroot"))
-        compat.os.chmod(tmp_path, 0o755)
+        os.chmod(tmp_path, 0o755)
         mock_p = "certbot_apache.configurator.ApacheConfigurator._get_ssl_vhost_path"
         mock_a = "certbot_apache.parser.ApacheParser.add_include"
 

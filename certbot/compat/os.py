@@ -6,14 +6,14 @@ This module is intended to replace standard os module throughout certbot project
 from __future__ import absolute_import
 
 # Expose everything from standard os package to make current package a complete replacement of os.
-from os import *
+from os import *  # pylint: disable=wildcard-import,unused-wildcard-import,redefined-builtin
 
 import errno
 import os as std_os
 
 from certbot.compat import security
 
-def geteuid():
+def geteuid():  # pylint: disable=function-redefined
     """
     Get current user uid
 
@@ -28,7 +28,7 @@ def geteuid():
         # Windows specific
         return 0
 
-def rename(src, dst):
+def rename(src, dst):  # pylint: disable=function-redefined
     """
     Rename a file to a destination path and handles situations where the destination exists.
 
@@ -51,7 +51,7 @@ def rename(src, dst):
                                'Certbot supports only Python 3.4 >= on Windows.')
         getattr(std_os, 'replace')(src, dst)
 
-def open(file, flags, mode=None):  # pylint: disable=redefined-builtin
+def open(file, flags, mode=None):  # pylint: disable=function-redefined,redefined-builtin
     """
     Wrapper of original os.open function, that will ensure on Windows that given mode
     is correctly applied.
@@ -75,12 +75,12 @@ def open(file, flags, mode=None):  # pylint: disable=redefined-builtin
 
     return file_descriptor
 
-def mkdir(path, mode=None, mkdir_fn=None):
+def mkdir(file_path, mode=None, mkdir_fn=None):
     """
     Wrapper of original os.mkdir function, that will ensure on Windows that given mode
     is correctly applied.
 
-    :param str file: The file path to open
+    :param str file_path: The file path to open
     :param int mode: POSIX mode to apply on file when opened,
         Python defaults will be applied if ``None``
     :param callable mkdir_fn: The undelying mkdir function to use
@@ -90,28 +90,28 @@ def mkdir(path, mode=None, mkdir_fn=None):
     if mode:
         mkdir_args = (mode,)
 
-    mkdir_fn(path, *mkdir_args)
+    mkdir_fn(file_path, *mkdir_args)
 
     if mode:
-        security.apply_mode(path, mode)
+        security.apply_mode(file_path, mode)
 
-def makedirs(path, mode=None):
+def makedirs(file_path, mode=None):
     """
     Wrapper of original os.makedirs function, that will ensure on Windows that given mode
     is correctly applied.
 
-    :param str file: The file path to open
+    :param str file_path: The file path to open
     :param int mode: POSIX mode to apply on file when opened,
         Python defaults will be applied if ``None``
     """
-    # As we know that os.mkdir is called internally by os.makedirs, we will swap the function in 
+    # As we know that os.mkdir is called internally by os.makedirs, we will swap the function in
     # os module for the time of makedirs execution.
+    orig_mkdir_fn = std_os.mkdir
     try:
-        orig_mkdir_fn = std_os.mkdir
-        def wrapper(path, mode=None):
+        def wrapper(one_path, mode=None):  # pylint: disable=missing-docstring
             # Note, we need to provide the origin os.mkdir to our mkdir function,
             # or we will have a nice infinite loop ...
-            mkdir(path, mode=mode, mkdir_fn=orig_mkdir_fn)
+            mkdir(one_path, mode=mode, mkdir_fn=orig_mkdir_fn)
 
         std_os.mkdir = wrapper
 
@@ -119,7 +119,7 @@ def makedirs(path, mode=None):
         if mode:
             makedirs_args = (mode,)
 
-        std_os.makedirs(path, *makedirs_args)
+        std_os.makedirs(file_path, *makedirs_args)
     finally:
         std_os.mkdir = orig_mkdir_fn
 

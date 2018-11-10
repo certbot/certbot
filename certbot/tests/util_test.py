@@ -9,6 +9,7 @@ import six
 from six.moves import reload_module  # pylint: disable=import-error
 
 from certbot import errors
+from certbot.compat import os, misc
 import certbot.tests.util as test_util
 
 

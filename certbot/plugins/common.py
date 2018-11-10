@@ -482,9 +482,9 @@ def dir_setup(test_dir, pkg):  # pragma: no cover
     config_dir = expanded_tempdir("config")
     work_dir = expanded_tempdir("work")
 
-    compat.os.chmod(temp_dir, constants.CONFIG_DIRS_MODE)
-    compat.os.chmod(config_dir, constants.CONFIG_DIRS_MODE)
-    compat.os.chmod(work_dir, constants.CONFIG_DIRS_MODE)
+    os.chmod(temp_dir, constants.CONFIG_DIRS_MODE)
+    os.chmod(config_dir, constants.CONFIG_DIRS_MODE)
+    os.chmod(work_dir, constants.CONFIG_DIRS_MODE)
 
     test_configs = pkg_resources.resource_filename(
         pkg, os.path.join("testdata", test_dir))
