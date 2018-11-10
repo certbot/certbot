@@ -749,11 +749,6 @@ class HelpfulArgumentParser(object):
         :param dict **kwargs: various argparse settings for this argument
 
         """
-
-        # Remove duplicate route53 options from help.
-        if args[0] == '--certbot-route53:auth-propagation-seconds':
-            kwargs["help"] = argparse.SUPPRESS
-
         if isinstance(topics, list):
             # if this flag can be listed in multiple sections, try to pick the one
             # that the user has asked for help about
@@ -840,9 +835,8 @@ class HelpfulArgumentParser(object):
 
         """
         for name, plugin_ep in six.iteritems(plugins):
-            if name != 'certbot-route53:auth':  # Remove duplicate route53 options from help.
-                parser_or_group = self.add_group(name,
-                                                 description=plugin_ep.long_description)
+            parser_or_group = self.add_group(name,
+                                             description=plugin_ep.long_description)
             plugin_ep.plugin_cls.inject_parser_options(parser_or_group, name)
 
     def determine_help_topics(self, chosen_topic):
@@ -861,7 +855,8 @@ class HelpfulArgumentParser(object):
         if chosen_topic == "everything":
             chosen_topic = "run"
         if chosen_topic == "all":
-            return dict([(t, True) for t in self.help_topics])
+            # Addition of condition closes #6209 (removal of duplicate route53 option).
+            return dict([(t, True) if t != 'certbot-route53:auth' else (t, False) for t in self.help_topics])
         elif not chosen_topic:
             return dict([(t, False) for t in self.help_topics])
         else:
