@@ -37,9 +37,9 @@ def main(venv_name, venv_args, args):
 
     exit_code = 0
 
-    exit_code = subprocess_with_print(' '.join([
-        sys.executable, '-m', 'virtualenv', '--no-site-packages', '--setuptools',
-        venv_name, venv_args])) or exit_code
+    command = ('"{0}" -m virtualenv --no-site-packages --setuptools {1} {2}'
+               .format(sys.executable, venv_name, venv_args))
+    exit_code = subprocess_with_print(command) or exit_code
 
     python_executable = get_venv_python(venv_name)
 

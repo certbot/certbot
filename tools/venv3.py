@@ -43,6 +43,16 @@ def get_venv_args():
     if not where_python3_st_code or not command_python3_st_code:
         return '--python python3'
 
+    # On Windows, default installation procedure will not put python executable in PATH
+    # but the Python launcher instead: we get the python 3 executable path from it.
+    try:
+        python3_path = subprocess.check_output('py -3 -c "import sys; print(sys.executable);"', 
+                                               universal_newlines=True).strip()
+    except subprocess.CalledProcessError:
+        python3_path = None
+    if python3_path:
+        return '--python "{0}"'.format(python3_path)
+
     raise ValueError('Couldn\'t find python3 in {0}'.format(os.environ.get('PATH')))
 
 def main():
