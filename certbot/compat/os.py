@@ -13,6 +13,7 @@ import os as std_os
 
 from certbot.compat import security
 
+
 def geteuid():  # pylint: disable=function-redefined
     """
     Get current user uid
@@ -27,6 +28,7 @@ def geteuid():  # pylint: disable=function-redefined
     except AttributeError:
         # Windows specific
         return 0
+
 
 def rename(src, dst):  # pylint: disable=function-redefined
     """
@@ -51,6 +53,7 @@ def rename(src, dst):  # pylint: disable=function-redefined
                                'Certbot supports only Python 3.4 >= on Windows.')
         getattr(std_os, 'replace')(src, dst)
 
+
 def open(file, flags, mode=None):  # pylint: disable=function-redefined,redefined-builtin
     """
     Wrapper of original os.open function, that will ensure on Windows that given mode
@@ -68,14 +71,15 @@ def open(file, flags, mode=None):  # pylint: disable=function-redefined,redefine
     if mode:
         open_args = (mode,)
 
-    file_descriptor = std_os.open(file, flags, *open_args)
+    file_descriptor = std_os.open(file, flags, *open_args)  # pylint: disable=star-args
 
     if mode:
         security.apply_mode(file, mode)
 
     return file_descriptor
 
-def mkdir(file_path, mode=None, mkdir_fn=None):
+
+def mkdir(file_path, mode=None, mkdir_fn=None):  # pylint: disable=function-redefined
     """
     Wrapper of original os.mkdir function, that will ensure on Windows that given mode
     is correctly applied.
@@ -90,12 +94,13 @@ def mkdir(file_path, mode=None, mkdir_fn=None):
     if mode:
         mkdir_args = (mode,)
 
-    mkdir_fn(file_path, *mkdir_args)
+    mkdir_fn(file_path, *mkdir_args)  # pylint: disable=star-args
 
     if mode:
         security.apply_mode(file_path, mode)
 
-def makedirs(file_path, mode=None):
+
+def makedirs(file_path, mode=None):  # pylint: disable=function-redefined
     """
     Wrapper of original os.makedirs function, that will ensure on Windows that given mode
     is correctly applied.
@@ -119,16 +124,17 @@ def makedirs(file_path, mode=None):
         if mode:
             makedirs_args = (mode,)
 
-        std_os.makedirs(file_path, *makedirs_args)
+        std_os.makedirs(file_path, *makedirs_args)  # pylint: disable=star-args
     finally:
         std_os.mkdir = orig_mkdir_fn
 
-def chmod(path, mode):
+
+def chmod(file_path, mode):  # pylint: disable=function-redefined
     """
     Wrapper of original os.chmod function, that will ensure on Windows that given mode
     is correctly applied.
 
-    :param str file: The file path to modify
+    :param str file_path: The file path to modify
     :param int mode: POSIX mode to apply on file
     """
-    security.apply_mode(path, mode)
+    security.apply_mode(file_path, mode)

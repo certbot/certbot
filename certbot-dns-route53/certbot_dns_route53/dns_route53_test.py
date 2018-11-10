@@ -1,12 +1,12 @@
 """Tests for certbot_dns_route53.dns_route53.Authenticator"""
 
-import os
 import unittest
 
 import mock
 from botocore.exceptions import NoCredentialsError, ClientError
 
 from certbot import errors
+from certbot.compat import os
 from certbot.plugins import dns_test_common
 from certbot.plugins.dns_test_common import DOMAIN
 
