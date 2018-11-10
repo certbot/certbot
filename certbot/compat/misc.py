@@ -9,7 +9,7 @@ import stat
 import sys
 
 try:
-    from win32com import shell as shellwin32  # pylint: disable=import-error
+    from win32com.shell import shell as shellwin32  # pylint: disable=import-error
 except ImportError:  # pragma: no cover
     shellwin32 = None  # type: ignore
 
