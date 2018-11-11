@@ -102,8 +102,9 @@ def _generate_dacl(user_sid, mode):
         dacl.AddAccessAllowedAce(win32security.ACL_REVISION, everybody_flags, everyone)
 
     # Handle administrator rights
-    dacl.AddAccessAllowedAce(win32security.ACL_REVISION, ntsecuritycon.FILE_ALL_ACCESS, system)
-    dacl.AddAccessAllowedAce(win32security.ACL_REVISION, ntsecuritycon.FILE_ALL_ACCESS, admins)
+    full_permissions = _generate_windows_flags({'read': True, 'write': True, 'execute': True})
+    dacl.AddAccessAllowedAce(win32security.ACL_REVISION, full_permissions, system)
+    dacl.AddAccessAllowedAce(win32security.ACL_REVISION, full_permissions, admins)
 
     return dacl
 
@@ -139,7 +140,24 @@ def _get_win_permissions(file_path, mode):
 
 
 def _compare_dacls(dacl1, dacl2):
-    return True
+    aces1 = [dacl1.GetAce(index) for index in range(0, dacl1.GetAceCount())]
+    aces2 = [dacl2.GetAce(index) for index in range(0, dacl2.GetAceCount())]
+
+    # Convert PySIDs into hashable objects
+    aces1_refined = []
+    aces2_refined = []
+    for ace in aces1:
+        if len(ace) == 3:
+            aces1_refined.append((ace[0], ace[1], str(ace[2])))
+        else:
+            aces1_refined.append((ace[0], ace[1], ace[2], ace[3], str(ace[4])))
+    for index, ace in enumerate(aces2):
+        if len(ace) == 3:
+            aces2_refined.append((ace[0], ace[1], str(ace[2])))
+        else:
+            aces2_refined.append((ace[0], ace[1], ace[2], ace[3], str(ace[4])))
+
+    return set(aces1_refined) == set(aces2_refined)
 
 
 def _generate_windows_flags(rights_desc):
@@ -163,9 +181,11 @@ def _generate_windows_flags(rights_desc):
     if rights_desc['write']:
         flag = flag | (ntsecuritycon.FILE_ALL_ACCESS
                        ^ ntsecuritycon.FILE_GENERIC_READ
-                       ^ ntsecuritycon.FILE_GENERIC_EXECUTE)
+                       ^ ntsecuritycon.FILE_GENERIC_EXECUTE
+                       ^ 512)  # Do not no why for 512, but this bit is never set even if we ask for it
     if rights_desc['execute']:
         flag = flag | ntsecuritycon.FILE_GENERIC_EXECUTE
+
     return flag
 
 
