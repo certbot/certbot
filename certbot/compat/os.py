@@ -17,7 +17,7 @@ from acme.magic_typing import Callable, Union  # pylint: disable=unused-import, 
 from certbot.compat import security
 
 # os.environ is not imported by default
-environ = os.environ
+environ = std_os.environ
 
 
 def geteuid():  # pylint: disable=function-redefined
