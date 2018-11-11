@@ -5,6 +5,10 @@ import os
 import stat
 
 try:
+    import pwd  # pylint: disable=import-error
+except ImportError:  # pragma: no cover
+    pwd = None  # type: ignore
+try:
     import ntsecuritycon  # pylint: disable=import-error
 except ImportError:  # pragma: no cover
     ntsecuritycon = None  # type: ignore
@@ -18,6 +22,21 @@ except ImportError:  # pragma: no cover
     win32api = None  # type: ignore
 
 from acme.magic_typing import Union  # pylint: disable=unused-import, no-name-in-module
+
+
+def get_current_user():
+    # type: () -> str
+    """
+    Get current username, in a platform independent way.
+    :rtype: str
+    :return: Current username.
+    """
+    if not win32api:
+        # Module pwd is available on all Unix version,
+        # so it will be here if were are not on Windows.
+        return pwd.getpwuid(os.getuid()).pw_name
+
+    return win32api.GetUserName()
 
 
 def apply_mode(file_path, mode):
@@ -50,22 +69,54 @@ def take_ownership(file_path):
         _take_win_ownership(file_path)
 
 
-def check_permissions(file_path, mode):
+def check_mode(file_path, mode):
     # type: (Union[str, unicode], int) -> bool
     """
-    Return true if the given mode matches the permissions of the given file.
+    Check if the given mode matches the permissions of the given file.
     On Linux, will make a direct comparison, on Windows, mode will be compared against
     the security model.
 
     :param str file_path: Path of the file
     :param mode int: POSIX mode to test
+    :rtype: bool
     :return: True if the POSIX mode matches the file permissions
     """
     if not win32security:
         return stat.S_IMODE(os.stat(file_path)) == mode
 
-    return _get_win_permissions(file_path, mode)
+    return _check_win_mode(file_path, mode)
 
+
+def check_owner(file_path):
+    # type: (Union[str, unicode]) -> bool
+    """
+    Check if given file is owner by current user.
+    :param str file_path: File path to check
+    :rtype: bool
+    :return: True if given file is owned by current user, False otherwise.
+    """
+    if not win32security:
+        return os.stat(file_path).st_uid == os.getuid()
+
+    # Get owner sid of the file
+    security = win32security.GetFileSecurity(file_path, win32security.OWNER_SECURITY_INFORMATION)
+    user = security.GetSecurityDescriptorOwner()
+
+    current_user = win32api.GetUserName()
+
+    return str(current_user) == str(user)
+
+
+def check_permissions(file_path, mode):
+    # type: (Union[str, unicode], int) -> bool
+    """
+    Check if given file has the given mode and is owned by current user.
+    :param str file_path: File path to check
+    :param int mode: POSIX mode to check
+    :rtype: bool
+    :return: True if file has correct mode and owner, False otherwise.
+    """
+    return check_owner(file_path) and check_mode(file_path, mode)
 
 def _apply_win_mode(file_path, mode):
     # Get owner sid of the file
@@ -119,7 +170,7 @@ def _take_win_ownership(file_path):
     win32security.SetFileSecurity(file_path, win32security.OWNER_SECURITY_INFORMATION, security)
 
 
-def _get_win_permissions(file_path, mode):
+def _check_win_mode(file_path, mode):
     # Get current dacl file
     security = win32security.GetFileSecurity(file_path, win32security.OWNER_SECURITY_INFORMATION
                                              | win32security.DACL_SECURITY_INFORMATION)

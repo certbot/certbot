@@ -69,7 +69,7 @@ class InitSaveCSRTest(test_util.TempDirTestCase):
 
     @mock.patch('acme.crypto_util.make_csr')
     @mock.patch('certbot.crypto_util.util.make_or_verify_dir')
-    def test_it(self, unused_mock_verify, mock_csr):
+    def test_it(self, _, mock_csr):
         from certbot.crypto_util import init_save_csr
 
         mock_csr.return_value = b'csr_pem'

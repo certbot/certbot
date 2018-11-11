@@ -896,13 +896,12 @@ class NginxConfigurator(common.Installer):
         have permissions of root.
 
         """
-        uid = os.geteuid()
         util.make_or_verify_dir(
-            self.config.work_dir, core_constants.CONFIG_DIRS_MODE, uid)
+            self.config.work_dir, core_constants.CONFIG_DIRS_MODE)
         util.make_or_verify_dir(
-            self.config.backup_dir, core_constants.CONFIG_DIRS_MODE, uid)
+            self.config.backup_dir, core_constants.CONFIG_DIRS_MODE)
         util.make_or_verify_dir(
-            self.config.config_dir, core_constants.CONFIG_DIRS_MODE, uid)
+            self.config.config_dir, core_constants.CONFIG_DIRS_MODE)
 
     def get_version(self):
         """Return version of Nginx Server.

@@ -65,13 +65,3 @@ def readline_with_timeout(timeout, prompt):
         # as select only supports socket in this case.
         # So no timeout on Windows for now.
         return sys.stdin.readline()
-
-
-def compare_file_modes(mode1, mode2):
-    """Return true if the two modes can be considered as equals for this platform"""
-    if 'fcntl' in sys.modules:
-        # Linux specific: standard compare
-        return oct(stat.S_IMODE(mode1)) == oct(stat.S_IMODE(mode2))
-    # Windows specific: most of mode bits are ignored on Windows. Only check user R/W rights.
-    return (stat.S_IMODE(mode1) & stat.S_IREAD == stat.S_IMODE(mode2) & stat.S_IREAD
-            and stat.S_IMODE(mode1) & stat.S_IWRITE == stat.S_IMODE(mode2) & stat.S_IWRITE)
