@@ -448,7 +448,7 @@ class Client(object):
                 self.config.strict_permissions)
 
 
-        cert_file, abs_cert_path = open_pem_file('cert_path', cert_path)
+        cert_file, abs_cert_path = _open_pem_file('cert_path', cert_path)
 
         try:
             cert_file.write(cert_pem)

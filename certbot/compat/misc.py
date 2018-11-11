@@ -5,7 +5,6 @@ particular category.
 from __future__ import absolute_import
 
 import select
-import stat
 import sys
 
 try:

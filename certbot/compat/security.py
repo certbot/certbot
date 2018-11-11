@@ -201,12 +201,12 @@ def _compare_dacls(dacl1, dacl2):
         if len(ace) == 3:
             aces1_refined.append((ace[0], ace[1], str(ace[2])))
         else:
-            aces1_refined.append((ace[0], ace[1], ace[2], ace[3], str(ace[4])))
+            aces1_refined.append((ace[0], ace[1], ace[2], ace[3], str(ace[4])))  # type: ignore
     for index, ace in enumerate(aces2):
         if len(ace) == 3:
             aces2_refined.append((ace[0], ace[1], str(ace[2])))
         else:
-            aces2_refined.append((ace[0], ace[1], ace[2], ace[3], str(ace[4])))
+            aces2_refined.append((ace[0], ace[1], ace[2], ace[3], str(ace[4])))  # type: ignore
 
     return set(aces1_refined) == set(aces2_refined)
 
@@ -233,7 +233,7 @@ def _generate_windows_flags(rights_desc):
         flag = flag | (ntsecuritycon.FILE_ALL_ACCESS
                        ^ ntsecuritycon.FILE_GENERIC_READ
                        ^ ntsecuritycon.FILE_GENERIC_EXECUTE
-                       ^ 512)  # Do not no why for 512, but this bit is never set even if we ask for it
+                       ^ 512)  # This bit is never set with file/directory objects
     if rights_desc['execute']:
         flag = flag | ntsecuritycon.FILE_GENERIC_EXECUTE
 
