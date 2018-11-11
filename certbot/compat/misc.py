@@ -19,6 +19,7 @@ UNPRIVILEGED_SUBCOMMANDS_ALLOWED = [
     'certificates', 'enhance', 'revoke', 'delete',
     'register', 'unregister', 'config_changes', 'plugins']
 
+
 def raise_for_non_administrative_windows_rights(subcommand):
     """
     On Windows, raise if current shell does not have the administrative rights.
@@ -35,6 +36,7 @@ def raise_for_non_administrative_windows_rights(subcommand):
             raise errors.Error(
                 'Error, "{0}" subcommand must be run on a shell with administrative rights.'
                 .format(subcommand))
+
 
 def readline_with_timeout(timeout, prompt):
     """
@@ -63,6 +65,7 @@ def readline_with_timeout(timeout, prompt):
         # as select only supports socket in this case.
         # So no timeout on Windows for now.
         return sys.stdin.readline()
+
 
 def compare_file_modes(mode1, mode2):
     """Return true if the two modes can be considered as equals for this platform"""

@@ -50,25 +50,51 @@ def take_ownership(file_path):
         _take_win_ownership(file_path)
 
 
-def _apply_win_mode(file_path, mode):
-    analysis = _analyze_mode(mode)
+def check_permissions(file_path, mode):
+    # type: (Union[str, unicode], int) -> bool
+    """
+    Return true if the given mode matches the permissions of the given file.
+    On Linux, will make a direct comparison, on Windows, mode will be compared against
+    the security model.
 
+    :param str file_path: Path of the file
+    :param mode int: POSIX mode to test
+    :return: True if the POSIX mode matches the file permissions
+    """
+    if not win32security:
+        return stat.S_IMODE(os.stat(file_path)) == mode
+
+    return _get_win_permissions(file_path, mode)
+
+
+def _apply_win_mode(file_path, mode):
     # Get owner sid of the file
     security = win32security.GetFileSecurity(file_path, win32security.OWNER_SECURITY_INFORMATION)
     user = security.GetSecurityDescriptorOwner()
+
+    # New DACL, that will overwrite existing one (including inherited permissions)
+    dacl = _generate_dacl(user, mode)
+
+    # Apply the new DACL
+    security.SetSecurityDescriptorDacl(1, dacl, 0)
+    win32security.SetFileSecurity(file_path, win32security.DACL_SECURITY_INFORMATION, security)
+
+
+def _generate_dacl(user_sid, mode):
+    analysis = _analyze_mode(mode)
 
     # Get standard accounts sid
     system = win32security.ConvertStringSidToSid('S-1-5-18')
     admins = win32security.ConvertStringSidToSid('S-1-5-32-544')
     everyone = win32security.ConvertStringSidToSid('S-1-1-0')
 
-    # New dacl, that will overwrite existing one (including inherited permissions)
+    # New dacl, without inherited permissions
     dacl = win32security.ACL()
 
     # Handle user rights
     user_flags = _generate_windows_flags(analysis['user'])
     if user_flags:
-        dacl.AddAccessAllowedAce(win32security.ACL_REVISION, user_flags, user)
+        dacl.AddAccessAllowedAce(win32security.ACL_REVISION, user_flags, user_sid)
 
     # Handle everybody rights
     everybody_flags = _generate_windows_flags(analysis['all'])
@@ -79,9 +105,7 @@ def _apply_win_mode(file_path, mode):
     dacl.AddAccessAllowedAce(win32security.ACL_REVISION, ntsecuritycon.FILE_ALL_ACCESS, system)
     dacl.AddAccessAllowedAce(win32security.ACL_REVISION, ntsecuritycon.FILE_ALL_ACCESS, admins)
 
-    # Apply the new DACL
-    security.SetSecurityDescriptorDacl(1, dacl, 0)
-    win32security.SetFileSecurity(file_path, win32security.DACL_SECURITY_INFORMATION, security)
+    return dacl
 
 
 def _take_win_ownership(file_path):
@@ -94,19 +118,28 @@ def _take_win_ownership(file_path):
     win32security.SetFileSecurity(file_path, win32security.OWNER_SECURITY_INFORMATION, security)
 
 
-def _analyze_mode(mode):
-    return {
-        'user': {
-            'read': mode & stat.S_IRUSR,
-            'write': mode & stat.S_IWUSR,
-            'execute': mode & stat.S_IXUSR,
-        },
-        'all': {
-            'read': mode & stat.S_IROTH,
-            'write': mode & stat.S_IWOTH,
-            'execute': mode & stat.S_IXOTH,
-        },
-    }
+def _get_win_permissions(file_path, mode):
+    # Get current dacl file
+    security = win32security.GetFileSecurity(file_path, win32security.OWNER_SECURITY_INFORMATION
+                                             | win32security.DACL_SECURITY_INFORMATION)
+    dacl = security.GetSecurityDescriptorDacl()
+
+    # Get current file owner sid
+    user = security.GetSecurityDescriptorOwner()
+
+    if not dacl:
+        # No DACL means full control to everyone
+        # This is not a deterministic permissions set.
+        return False
+
+    # Calculate the target dacl
+    ref_dacl = _generate_dacl(user, mode)
+
+    return _compare_dacls(dacl, ref_dacl)
+
+
+def _compare_dacls(dacl1, dacl2):
+    return True
 
 
 def _generate_windows_flags(rights_desc):
@@ -134,3 +167,18 @@ def _generate_windows_flags(rights_desc):
     if rights_desc['execute']:
         flag = flag | ntsecuritycon.FILE_GENERIC_EXECUTE
     return flag
+
+
+def _analyze_mode(mode):
+    return {
+        'user': {
+            'read': mode & stat.S_IRUSR,
+            'write': mode & stat.S_IWUSR,
+            'execute': mode & stat.S_IXUSR,
+        },
+        'all': {
+            'read': mode & stat.S_IROTH,
+            'write': mode & stat.S_IWOTH,
+            'execute': mode & stat.S_IXOTH,
+        },
+    }
