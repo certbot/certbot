@@ -82,7 +82,7 @@ def check_mode(file_path, mode):
     :return: True if the POSIX mode matches the file permissions
     """
     if not win32security:
-        return stat.S_IMODE(os.stat(file_path)) == mode
+        return os.stat(file_path).st_mode == mode
 
     return _check_win_mode(file_path, mode)
 
