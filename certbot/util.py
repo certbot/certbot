@@ -182,7 +182,7 @@ def make_or_verify_dir(directory, mode=0o755, strict=False):
         if exception.errno == errno.EEXIST:
             if strict and not security.check_permissions(directory, mode):
                 raise errors.Error(
-                    '%s exists, but it should be owned by user %s with permissions %s'
+                    '{0} exists, but it should be owned by user {1} with permissions {2}'
                     .format(directory, security.get_current_user(), oct(mode)))
         else:
             raise
