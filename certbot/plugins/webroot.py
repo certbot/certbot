@@ -18,6 +18,7 @@ from certbot import achallenges  # pylint: disable=unused-import
 from certbot import cli
 from certbot import errors
 from certbot import interfaces
+from certbot import util as certbot_util
 from certbot.compat import os, security
 from certbot.display import util as display_util
 from certbot.display import ops
@@ -202,14 +203,9 @@ to serve all files under specified web root ({0})."""
         validation_path = self._get_validation_path(root_path, achall)
         logger.debug("Attempting to save validation to %s", validation_path)
 
-        # Change permissions to be world-readable, owner-writable (GH #1795)
-        old_umask = os.umask(0o022)
-
-        try:
-            with open(validation_path, "wb") as validation_file:
-                validation_file.write(validation.encode())
-        finally:
-            os.umask(old_umask)
+        # Permissions of validation_file must be world-readable, owner-writable (GH #1795)
+        with certbot_util.safe_open(validation_path, "wb", chmod=0o644) as validation_file:
+            validation_file.write(validation.encode())
 
         self.performed[root_path].add(achall)
         return response
