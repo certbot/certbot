@@ -102,8 +102,11 @@ def check_owner(file_path):
     security = win32security.GetFileSecurity(file_path, win32security.OWNER_SECURITY_INFORMATION)
     user = security.GetSecurityDescriptorOwner()
 
-    current_user = win32api.GetUserName()
+    # Get current user sid
+    current_username = win32api.GetUserName()
+    current_user = win32security.LookupAccountName('', current_username)[0]
 
+    # Compare sids
     return str(current_user) == str(user)
 
 
@@ -142,10 +145,13 @@ def _generate_dacl(user_sid, mode):
     # New dacl, without inherited permissions
     dacl = win32security.ACL()
 
-    # Handle user rights
-    user_flags = _generate_windows_flags(analysis['user'])
-    if user_flags:
-        dacl.AddAccessAllowedAce(win32security.ACL_REVISION, user_flags, user_sid)
+    # If user is already system or admins, any ACE defined here would be superseeded by
+    # the full control ACE that will be added after.
+    if str(user_sid) not in [str(system), str(admins)]:
+        # Handle user rights
+        user_flags = _generate_windows_flags(analysis['user'])
+        if user_flags:
+            dacl.AddAccessAllowedAce(win32security.ACL_REVISION, user_flags, user_sid)
 
     # Handle everybody rights
     everybody_flags = _generate_windows_flags(analysis['all'])

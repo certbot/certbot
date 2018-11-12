@@ -67,13 +67,13 @@ def rename(src, dst):  # pylint: disable=function-redefined
         getattr(std_os, 'replace')(src, dst)
 
 
-def open(file, flags, mode=0o777):  # pylint: disable=function-redefined,redefined-builtin
+def open(file_path, flags, mode=0o777):  # pylint: disable=function-redefined,redefined-builtin
     # type: (Union[str, unicode], int, int) -> int
     """
     Wrapper of original os.open function, that will ensure on Windows that given mode
     is correctly applied.
 
-    :param str file: The file path to open
+    :param str file_path: The file path to open
     :param int flags: Flags to apply on file while opened
     :param int mode: POSIX mode to apply on file when opened,
         Python defaults will be applied if ``None``
@@ -81,8 +81,9 @@ def open(file, flags, mode=0o777):  # pylint: disable=function-redefined,redefin
     :returns: the file descriptor to the opened file
     :rtype: int
     """
-    file_descriptor = std_os.open(file, flags, mode)
-    security.apply_mode(file, mode)
+    file_descriptor = std_os.open(file_path, flags, mode)
+    security.take_ownership(file_path)
+    security.apply_mode(file_path, mode)
 
     return file_descriptor
 
@@ -101,6 +102,7 @@ def mkdir(file_path, mode=0o777, mkdir_fn=None):  # pylint: disable=function-red
     mkdir_fn = mkdir_fn or std_os.mkdir
 
     mkdir_fn(file_path, mode)
+    security.take_ownership(file_path)
     security.apply_mode(file_path, mode)
 
 

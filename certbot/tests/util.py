@@ -24,7 +24,7 @@ from certbot import interfaces
 from certbot import storage
 from certbot import util
 from certbot import configuration
-from certbot.compat import os
+from certbot.compat import os, security
 from certbot.display import util as display_util
 
 
@@ -324,10 +324,14 @@ class TempDirTestCase(unittest.TestCase):
     def setUp(self):
         """Execute before test"""
         self.tempdir = tempfile.mkdtemp()
+        # On Windows using a shell with administrative rights, directories/files will be created
+        # with the Administrators group as a owner. We fix that to set the owner as the actual
+        # logged user.
+        security.take_ownership(self.tempdir)
 
     def tearDown(self):
         """Execute after test"""
-        # On Windows we have various files which are not correctly closed at the time of tearDown.
+        # On Windows we have various files that are not correctly closed at the time of tearDown.
         # For know, we log them until a proper file close handling is written.
         # Useful for development only, so no warning when we are on a CI process.
         def onerror_handler(_, path, excinfo):
