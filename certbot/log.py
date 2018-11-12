@@ -24,7 +24,7 @@ from acme import messages
 from certbot import constants
 from certbot import errors
 from certbot import util
-from certbot.compat import os
+from certbot.compat import os, security
 
 # Logging format
 CLI_FMT = "%(message)s"
@@ -241,6 +241,10 @@ class TempHandler(logging.StreamHandler):
         stream = tempfile.NamedTemporaryFile('w', delete=False)
         super(TempHandler, self).__init__(stream)
         self.path = stream.name
+        # On Windows using a shell with administrative rights, directories/files will be created
+        # with the Administrators group as a owner. We fix that to set the owner as the actual
+        # logged user.
+        security.take_ownership(self.path)
         self._delete = True
 
     def emit(self, record):
