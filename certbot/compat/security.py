@@ -71,6 +71,23 @@ def take_ownership(file_path, group=False):
         _take_win_ownership(file_path)
 
 
+def copy_ownership(src, dst, group=False):
+    # type: (Union[str, unicode], Union[str, unicode], bool) -> None
+    """
+    Copy ownership (user and optionally group) from the source to the destination,
+    in compatible way for Linux and Windows.
+
+    :param str src: Path of the source file
+    :param str src: Path of the destination file
+    :param bool group: Copy also group (False by default)
+    """
+    if not win32security:
+        stats = os.stat(src)
+        os.chown(dst, stats.st_uid, stats.st_gid)
+    else:
+        _copy_win_ownership(src, dst)
+
+
 def check_mode(file_path, mode):
     # type: (Union[str, unicode], int) -> bool
     """
@@ -176,6 +193,16 @@ def _take_win_ownership(file_path):
     security.SetSecurityDescriptorOwner(user, False)
 
     win32security.SetFileSecurity(file_path, win32security.OWNER_SECURITY_INFORMATION, security)
+
+
+def _copy_win_ownership(src, dst):
+    security_src = win32security.GetFileSecurity(src, win32security.OWNER_SECURITY_INFORMATION)
+    user_src = security_src.GetSecurityDescriptorOwner()
+
+    security_dst = win32security.GetFileSecurity(dst, win32security.OWNER_SECURITY_INFORMATION)
+    security_dst.SetSecurityDescriptorOwner(user_src, False)
+
+    win32security.SetFileSecurity(dst, win32security.OWNER_SECURITY_INFORMATION, security_dst)
 
 
 def _check_win_mode(file_path, mode):
