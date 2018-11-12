@@ -14,27 +14,17 @@ except ImportError:  # pragma: no cover
 
 from certbot import errors
 
-UNPRIVILEGED_SUBCOMMANDS_ALLOWED = [
-    'certificates', 'enhance', 'revoke', 'delete',
-    'register', 'unregister', 'config_changes', 'plugins']
 
-
-def raise_for_non_administrative_windows_rights(subcommand):
+def raise_for_non_administrative_windows_rights():
     """
     On Windows, raise if current shell does not have the administrative rights.
     Do nothing on Linux.
 
-    :param str subcommand: The subcommand (like 'certonly') passed to the certbot client.
-
-    :raises .errors.Error: If the provided subcommand must be run on a shell with
-        administrative rights, and current shell does not have these rights.
+    :raises .errors.Error: If the current shell does not have administrative rights on Windows.
 
     """
-    if shellwin32 and subcommand not in UNPRIVILEGED_SUBCOMMANDS_ALLOWED:
-        if shellwin32.IsUserAnAdmin() == 0:
-            raise errors.Error(
-                'Error, "{0}" subcommand must be run on a shell with administrative rights.'
-                .format(subcommand))
+    if shellwin32 and shellwin32.IsUserAnAdmin() == 0:
+        raise errors.Error('Error, certbot must be run on a shell with administrative rights.')
 
 
 def readline_with_timeout(timeout, prompt):
