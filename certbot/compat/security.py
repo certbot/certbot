@@ -56,15 +56,17 @@ def apply_mode(file_path, mode):
         _apply_win_mode(file_path, mode)
 
 
-def take_ownership(file_path):
-    # type: (Union[str, unicode]) -> None
+def take_ownership(file_path, group=False):
+    # type: (Union[str, unicode], bool) -> None
     """
     Take ownership on the given file path, in compatible way for Linux and Windows.
 
     :param str file_path: Path of the file
+    :param bool group: Set also file group to current user group (False by default)
     """
     if not win32security:
-        os.chown(file_path, os.geteuid(), -1)
+        group = os.getegid() if group else -1
+        os.chown(file_path, os.geteuid(), group)
     else:
         _take_win_ownership(file_path)
 

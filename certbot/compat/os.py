@@ -17,7 +17,7 @@ import sys
 from acme.magic_typing import Callable, Union  # pylint: disable=unused-import, no-name-in-module
 from certbot.compat import security
 
-# Monkey patch ourselves to get os attributes that are not in __all__ (so not from os import *)
+# Monkey patch ourselves to get os attributes that are not in __all__ (so not from os import *).
 ourselves = sys.modules[__name__]
 for attribute in dir(std_os):
     if not hasattr(ourselves, attribute):
@@ -34,12 +34,22 @@ def geteuid():  # pylint: disable=function-redefined
     :rtype: int
 
     """
-    try:
-        # Linux specific
-        return std_os.geteuid()
-    except AttributeError:
-        # Windows specific
-        return 0
+    raise RuntimeError('Usage of os.geteuid() is forbidden. '
+                       'Use certbot.compat.security.get_current_user() instead.')
+
+
+def chown(file_path, uid, gid):  # pylint: disable=function-redefined, unused-argument
+    """
+    Change the owner and group id of path to the numeric uid and gid.
+    To leave one of the ids unchanged, set it to -1.
+
+    :param str file_name: The current file path.
+    :param int uid: Owner user id.
+    :param int gid: Group user id.
+    """
+    raise RuntimeError('Usage of os.chown() is forbidden.'
+                       'Use certbot.compat.security.take_ownership() or '
+                       'certbot.compat.security.copy_ownership() instead.')
 
 
 def rename(src, dst):  # pylint: disable=function-redefined
