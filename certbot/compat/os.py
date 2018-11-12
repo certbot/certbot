@@ -12,9 +12,17 @@ from os import *  # type: ignore
 
 import errno
 import os as std_os
+import sys
 
 from acme.magic_typing import Callable, Union  # pylint: disable=unused-import, no-name-in-module
 from certbot.compat import security
+
+# Monkey patch ourselves to get os attributes that are not in __all__ (so not from os import *)
+ourselves = sys.modules[__name__]
+for attribute in dir(std_os):
+    if not hasattr(ourselves, attribute):
+        setattr(ourselves, attribute, getattr(std_os, attribute))
+del ourselves
 
 
 def geteuid():  # pylint: disable=function-redefined
