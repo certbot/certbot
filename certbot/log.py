@@ -245,6 +245,9 @@ class TempHandler(logging.StreamHandler):
         # with the Administrators group as a owner. We fix that to set the owner as the actual
         # logged user.
         security.take_ownership(self.path)
+        # On Windows, built-in support of POSIX mode is extremely limited. So the underlying file
+        # will not have 0600 by default on this platform. We ensure manually that.
+        security.apply_mode(self.path, 0o600)
         self._delete = True
 
     def emit(self, record):
