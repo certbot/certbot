@@ -65,8 +65,8 @@ def take_ownership(file_path, group=False):
     :param bool group: Set also file group to current user group (False by default)
     """
     if not win32security:
-        group = os.getegid() if group else -1
-        os.chown(file_path, os.geteuid(), group)
+        group_id = os.getegid() if group else -1
+        os.chown(file_path, os.geteuid(), group_id)
     else:
         _take_win_ownership(file_path)
 
@@ -83,7 +83,8 @@ def copy_ownership(src, dst, group=False):
     """
     if not win32security:
         stats = os.stat(src)
-        os.chown(dst, stats.st_uid, stats.st_gid)
+        group_id = stats.st_gid if group else -1
+        os.chown(dst, stats.st_uid, group_id)
     else:
         _copy_win_ownership(src, dst)
 
