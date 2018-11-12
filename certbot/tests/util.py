@@ -328,6 +328,10 @@ class TempDirTestCase(unittest.TestCase):
         # with the Administrators group as a owner. We fix that to set the owner as the actual
         # logged user.
         security.take_ownership(self.tempdir)
+        # Normally mkdtemp() generates a directory with mode 0o700. But this is not enforced on
+        # Windows, as standard os library is extremely limited with modes on this platform.
+        # So we use our own functions to apply strict permissions on this folder.
+        security.apply_mode(self.tempdir, 0o700)
 
     def tearDown(self):
         """Execute after test"""

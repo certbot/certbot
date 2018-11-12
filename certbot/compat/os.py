@@ -140,9 +140,6 @@ def makedirs(file_path, mode=0o777):  # pylint: disable=function-redefined
         std_os.makedirs(file_path, mode)
     finally:
         std_os.mkdir = orig_mkdir_fn
-        # Ensure to apply given mode to file_path nonetheless
-        if std_os.path.exists(file_path):
-            security.apply_mode(file_path, mode)
 
 
 def chmod(file_path, mode):  # pylint: disable=function-redefined
