@@ -8,7 +8,6 @@ import tempfile
 import time
 
 import OpenSSL
-import six
 import zope.interface
 
 from acme import challenges
@@ -31,6 +30,12 @@ from certbot_nginx import http_01
 from certbot_nginx import obj # pylint: disable=unused-import
 from acme.magic_typing import List, Dict, Set # pylint: disable=unused-import, no-name-in-module
 
+
+NAME_RANK = 0
+START_WILDCARD_RANK = 1
+END_WILDCARD_RANK = 2
+REGEX_RANK = 3
+NO_SSL_MODIFIER = 4
 
 
 logger = logging.getLogger(__name__)
@@ -405,7 +410,8 @@ class NginxConfigurator(common.Installer):
         """
         if not matches:
             return None
-        elif matches[0]['rank'] in six.moves.range(2, 6):
+        elif matches[0]['rank'] in [START_WILDCARD_RANK, END_WILDCARD_RANK,
+            START_WILDCARD_RANK + NO_SSL_MODIFIER, END_WILDCARD_RANK + NO_SSL_MODIFIER]:
             # Wildcard match - need to find the longest one
             rank = matches[0]['rank']
             wildcards = [x for x in matches if x['rank'] == rank]
@@ -414,10 +420,9 @@ class NginxConfigurator(common.Installer):
             # Exact or regex match
             return matches[0]['vhost']
 
-
-    def _rank_matches_by_name_and_ssl(self, vhost_list, target_name):
+    def _rank_matches_by_name(self, vhost_list, target_name):
         """Returns a ranked list of vhosts from vhost_list that match target_name.
-        The ranking gives preference to SSL vhosts.
+        This method should always be followed by a call to _select_best_name_match.
 
         :param list vhost_list: list of vhosts to filter and rank
         :param str target_name: The name to match
@@ -437,21 +442,37 @@ class NginxConfigurator(common.Installer):
             if name_type == 'exact':
                 matches.append({'vhost': vhost,
                                 'name': name,
-                                'rank': 0 if vhost.ssl else 1})
+                                'rank': NAME_RANK})
             elif name_type == 'wildcard_start':
                 matches.append({'vhost': vhost,
                                 'name': name,
-                                'rank': 2 if vhost.ssl else 3})
+                                'rank': START_WILDCARD_RANK})
             elif name_type == 'wildcard_end':
                 matches.append({'vhost': vhost,
                                 'name': name,
-                                'rank': 4 if vhost.ssl else 5})
+                                'rank': END_WILDCARD_RANK})
             elif name_type == 'regex':
                 matches.append({'vhost': vhost,
                                 'name': name,
-                                'rank': 6 if vhost.ssl else 7})
+                                'rank': REGEX_RANK})
         return sorted(matches, key=lambda x: x['rank'])
 
+    def _rank_matches_by_name_and_ssl(self, vhost_list, target_name):
+        """Returns a ranked list of vhosts from vhost_list that match target_name.
+        The ranking gives preference to SSLishness before name match level.
+
+        :param list vhost_list: list of vhosts to filter and rank
+        :param str target_name: The name to match
+        :returns: list of dicts containing the vhost, the matching name, and
+            the numerical rank
+        :rtype: list
+
+        """
+        matches = self._rank_matches_by_name(vhost_list, target_name)
+        for match in matches:
+            if not match['vhost'].ssl:
+                match['rank'] += NO_SSL_MODIFIER
+        return sorted(matches, key=lambda x: x['rank'])
 
     def choose_redirect_vhosts(self, target_name, port, create_if_no_match=False):
         """Chooses a single virtual host for redirect enhancement.
@@ -531,9 +552,7 @@ class NginxConfigurator(common.Installer):
 
         matching_vhosts = [vhost for vhost in all_vhosts if _vhost_matches(vhost, port)]
 
-        # We can use this ranking function because sslishness doesn't matter to us, and
-        # there shouldn't be conflicting plaintextish servers listening on 80.
-        return self._rank_matches_by_name_and_ssl(matching_vhosts, target_name)
+        return self._rank_matches_by_name(matching_vhosts, target_name)
 
     def get_all_names(self):
         """Returns all names found in the Nginx Configuration.
@@ -568,6 +587,7 @@ class NginxConfigurator(common.Installer):
         return util.get_filtered_names(all_names)
 
     def _get_snakeoil_paths(self):
+        """Generate invalid certs that let us create ssl directives for Nginx"""
         # TODO: generate only once
         tmp_dir = os.path.join(self.config.work_dir, "snakeoil")
         le_key = crypto_util.init_save_key(
@@ -1019,7 +1039,7 @@ class NginxConfigurator(common.Installer):
     ###########################################################################
     def get_chall_pref(self, unused_domain):  # pylint: disable=no-self-use
         """Return list of challenge preferences."""
-        return [challenges.TLSSNI01, challenges.HTTP01]
+        return [challenges.HTTP01, challenges.TLSSNI01]
 
     # Entry point in main.py for performing challenges
     def perform(self, achalls):

@@ -805,7 +805,8 @@ class ClientV2Test(ClientTestBase):
     def test_revoke(self):
         self.client.revoke(messages_test.CERT, self.rsn)
         self.net.post.assert_called_once_with(
-            self.directory["revokeCert"], mock.ANY, acme_version=2)
+            self.directory["revokeCert"], mock.ANY, acme_version=2,
+            new_nonce_url=DIRECTORY_V2['newNonce'])
 
     def test_update_registration(self):
         # "Instance of 'Field' has no to_json/update member" bug:
@@ -1038,8 +1039,8 @@ class ClientNetworkTest(unittest.TestCase):
 
         # Requests Library Exceptions
         except requests.exceptions.ConnectionError as z: #pragma: no cover
-            self.assertEqual("('Connection aborted.', "
-                             "error(111, 'Connection refused'))", str(z))
+            self.assertTrue("('Connection aborted.', error(111, 'Connection refused'))"
+                              == str(z) or "[WinError 10061]" in str(z))
 
 class ClientNetworkWithMockedResponseTest(unittest.TestCase):
     """Tests for acme.client.ClientNetwork which mock out response."""
@@ -1052,7 +1053,10 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
         self.response = mock.MagicMock(ok=True, status_code=http_client.OK)
         self.response.headers = {}
         self.response.links = {}
-        self.checked_response = mock.MagicMock()
+        self.response.checked = False
+        self.acmev1_nonce_response = mock.MagicMock(ok=False,
+            status_code=http_client.METHOD_NOT_ALLOWED)
+        self.acmev1_nonce_response.headers = {}
         self.obj = mock.MagicMock()
         self.wrapped_obj = mock.MagicMock()
         self.content_type = mock.sentinel.content_type
@@ -1064,13 +1068,21 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
 
         def send_request(*args, **kwargs):
             # pylint: disable=unused-argument,missing-docstring
+            self.assertFalse("new_nonce_url" in kwargs)
+            method = args[0]
+            uri = args[1]
+            if method == 'HEAD' and uri != "new_nonce_uri":
+                response = self.acmev1_nonce_response
+            else:
+                response = self.response
+
             if self.available_nonces:
-                self.response.headers = {
+                response.headers = {
                     self.net.REPLAY_NONCE_HEADER:
                     self.available_nonces.pop().decode()}
             else:
-                self.response.headers = {}
-            return self.response
+                response.headers = {}
+            return response
 
         # pylint: disable=protected-access
         self.net._send_request = self.send_request = mock.MagicMock(
@@ -1082,28 +1094,39 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
         # pylint: disable=missing-docstring
         self.assertEqual(self.response, response)
         self.assertEqual(self.content_type, content_type)
-        return self.checked_response
+        self.assertTrue(self.response.ok)
+        self.response.checked = True
+        return self.response
 
     def test_head(self):
-        self.assertEqual(self.response, self.net.head(
+        self.assertEqual(self.acmev1_nonce_response, self.net.head(
             'http://example.com/', 'foo', bar='baz'))
         self.send_request.assert_called_once_with(
             'HEAD', 'http://example.com/', 'foo', bar='baz')
 
+    def test_head_v2(self):
+        self.assertEqual(self.response, self.net.head(
+            'new_nonce_uri', 'foo', bar='baz'))
+        self.send_request.assert_called_once_with(
+            'HEAD', 'new_nonce_uri', 'foo', bar='baz')
+
     def test_get(self):
-        self.assertEqual(self.checked_response, self.net.get(
+        self.assertEqual(self.response, self.net.get(
             'http://example.com/', content_type=self.content_type, bar='baz'))
+        self.assertTrue(self.response.checked)
         self.send_request.assert_called_once_with(
             'GET', 'http://example.com/', bar='baz')
 
     def test_post_no_content_type(self):
         self.content_type = self.net.JOSE_CONTENT_TYPE
-        self.assertEqual(self.checked_response, self.net.post('uri', self.obj))
+        self.assertEqual(self.response, self.net.post('uri', self.obj))
+        self.assertTrue(self.response.checked)
 
     def test_post(self):
         # pylint: disable=protected-access
-        self.assertEqual(self.checked_response, self.net.post(
+        self.assertEqual(self.response, self.net.post(
             'uri', self.obj, content_type=self.content_type))
+        self.assertTrue(self.response.checked)
         self.net._wrap_in_jws.assert_called_once_with(
             self.obj, jose.b64decode(self.all_nonces.pop()), "uri", 1)
 
@@ -1135,7 +1158,7 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
     def test_post_not_retried(self):
         check_response = mock.MagicMock()
         check_response.side_effect = [messages.Error.with_code('malformed'),
-                                      self.checked_response]
+                                      self.response]
 
         # pylint: disable=protected-access
         self.net._check_response = check_response
@@ -1143,13 +1166,12 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
                           self.obj, content_type=self.content_type)
 
     def test_post_successful_retry(self):
-        check_response = mock.MagicMock()
-        check_response.side_effect = [messages.Error.with_code('badNonce'),
-                                      self.checked_response]
+        post_once = mock.MagicMock()
+        post_once.side_effect = [messages.Error.with_code('badNonce'),
+                                      self.response]
 
         # pylint: disable=protected-access
-        self.net._check_response = check_response
-        self.assertEqual(self.checked_response, self.net.post(
+        self.assertEqual(self.response, self.net.post(
             'uri', self.obj, content_type=self.content_type))
 
     def test_head_get_post_error_passthrough(self):
@@ -1159,6 +1181,26 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
                 requests.exceptions.RequestException, method, 'GET', 'uri')
         self.assertRaises(requests.exceptions.RequestException,
                           self.net.post, 'uri', obj=self.obj)
+
+    def test_post_bad_nonce_head(self):
+        # pylint: disable=protected-access
+        # regression test for https://github.com/certbot/certbot/issues/6092
+        bad_response = mock.MagicMock(ok=False, status_code=http_client.SERVICE_UNAVAILABLE)
+        self.net._send_request = mock.MagicMock()
+        self.net._send_request.return_value = bad_response
+        self.content_type = None
+        check_response = mock.MagicMock()
+        self.net._check_response = check_response
+        self.assertRaises(errors.ClientError, self.net.post, 'uri',
+                          self.obj, content_type=self.content_type, acme_version=2,
+                          new_nonce_url='new_nonce_uri')
+        self.assertEqual(check_response.call_count, 1)
+
+    def test_new_nonce_uri_removed(self):
+        self.content_type = None
+        self.net.post('uri', self.obj, content_type=None,
+            acme_version=2, new_nonce_url='new_nonce_uri')
+
 
 class ClientNetworkSourceAddressBindingTest(unittest.TestCase):
     """Tests that if ClientNetwork has a source IP set manually, the underlying library has

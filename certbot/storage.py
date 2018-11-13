@@ -14,6 +14,7 @@ import six
 
 import certbot
 from certbot import cli
+from certbot import compat
 from certbot import constants
 from certbot import crypto_util
 from certbot import errors
@@ -188,7 +189,7 @@ def update_configuration(lineagename, archive_dir, target, cli_config):
     # Save only the config items that are relevant to renewal
     values = relevant_values(vars(cli_config.namespace))
     write_renewal_config(config_filename, temp_filename, archive_dir, target, values)
-    os.rename(temp_filename, config_filename)
+    compat.os_rename(temp_filename, config_filename)
 
     return configobj.ConfigObj(config_filename)
 
@@ -213,6 +214,26 @@ def get_link_target(link):
     if not os.path.isabs(target):
         target = os.path.join(os.path.dirname(link), target)
     return os.path.abspath(target)
+
+def _write_live_readme_to(readme_path, is_base_dir=False):
+    prefix = ""
+    if is_base_dir:
+        prefix = "[cert name]/"
+    with open(readme_path, "w") as f:
+        logger.debug("Writing README to %s.", readme_path)
+        f.write("This directory contains your keys and certificates.\n\n"
+                "`{prefix}privkey.pem`  : the private key for your certificate.\n"
+                "`{prefix}fullchain.pem`: the certificate file used in most server software.\n"
+                "`{prefix}chain.pem`    : used for OCSP stapling in Nginx >=1.3.7.\n"
+                "`{prefix}cert.pem`     : will break many server configurations, and "
+                                    "should not be used\n"
+                "                 without reading further documentation (see link below).\n\n"
+                "WARNING: DO NOT MOVE OR RENAME THESE FILES!\n"
+                "         Certbot expects these files to remain in this location in order\n"
+                "         to function properly!\n\n"
+                "We recommend not moving these files. For more information, see the Certbot\n"
+                "User Guide at https://certbot.eff.org/docs/using.html#where-are-my-"
+                                    "certificates.\n".format(prefix=prefix))
 
 
 def _relevant(option):
@@ -1003,6 +1024,9 @@ class RenewableCert(object):
                 logger.debug("Creating directory %s.", i)
         config_file, config_filename = util.unique_lineage_name(
             cli_config.renewal_configs_dir, lineagename)
+        base_readme_path = os.path.join(cli_config.live_dir, README)
+        if not os.path.exists(base_readme_path):
+            _write_live_readme_to(base_readme_path, is_base_dir=True)
 
         # Determine where on disk everything will go
         # lineagename will now potentially be modified based on which
@@ -1045,21 +1069,7 @@ class RenewableCert(object):
 
         # Write a README file to the live directory
         readme_path = os.path.join(live_dir, README)
-        with open(readme_path, "w") as f:
-            logger.debug("Writing README to %s.", readme_path)
-            f.write("This directory contains your keys and certificates.\n\n"
-                    "`privkey.pem`  : the private key for your certificate.\n"
-                    "`fullchain.pem`: the certificate file used in most server software.\n"
-                    "`chain.pem`    : used for OCSP stapling in Nginx >=1.3.7.\n"
-                    "`cert.pem`     : will break many server configurations, and "
-                                        "should not be used\n"
-                    "                 without reading further documentation (see link below).\n\n"
-                    "WARNING: DO NOT MOVE THESE FILES!\n"
-                    "         Certbot expects these files to remain in this location in order\n"
-                    "         to function properly!\n\n"
-                    "We recommend not moving these files. For more information, see the Certbot\n"
-                    "User Guide at https://certbot.eff.org/docs/using.html#where-are-my-"
-                                        "certificates.\n")
+        _write_live_readme_to(readme_path)
 
         # Document what we've done in a new renewal config file
         config_file.close()

@@ -14,7 +14,7 @@ RUN /opt/certbot/src/letsencrypt-auto-source/letsencrypt-auto --os-packages-only
 # the above is not likely to change, so by putting it further up the
 # Dockerfile we make sure we cache as much as possible
 
-COPY setup.py README.rst CHANGELOG.md MANIFEST.in linter_plugin.py tox.cover.sh tox.ini .pylintrc /opt/certbot/src/
+COPY setup.py README.rst CHANGELOG.md MANIFEST.in linter_plugin.py tox.cover.py tox.ini .pylintrc /opt/certbot/src/
 
 # all above files are necessary for setup.py, however, package source
 # code directory has to be copied separately to a subdirectory...
@@ -35,7 +35,8 @@ RUN virtualenv --no-site-packages -p python2 /opt/certbot/venv && \
     /opt/certbot/venv/bin/pip install -U setuptools && \
     /opt/certbot/venv/bin/pip install -U pip
 ENV PATH /opt/certbot/venv/bin:$PATH
-RUN /opt/certbot/src/tools/pip_install_editable.sh \
+RUN /opt/certbot/venv/bin/python \
+    /opt/certbot/src/tools/pip_install_editable.py \
     /opt/certbot/src/acme \
     /opt/certbot/src \
     /opt/certbot/src/certbot-apache \

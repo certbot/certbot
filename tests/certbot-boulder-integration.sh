@@ -394,7 +394,7 @@ openssl x509 -in "${root}/csr/cert-p384.pem" -text | grep 'ASN1 OID: secp384r1'
 
 # OCSP Must Staple
 common auth --must-staple --domains "must-staple.le.wtf"
-openssl x509 -in "${root}/conf/live/must-staple.le.wtf/cert.pem" -text | grep '1.3.6.1.5.5.7.1.24'
+openssl x509 -in "${root}/conf/live/must-staple.le.wtf/cert.pem" -text | grep -E 'status_request|1\.3\.6\.1\.5\.5\.7\.1\.24'
 
 # revoke by account key
 common revoke --cert-path "$root/conf/live/le.wtf/cert.pem" --delete-after-revoke
