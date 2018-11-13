@@ -874,6 +874,12 @@ class BackwardsCompatibleClientV2(object):
         """
         return self.client.revoke(cert, rsn)
 
+    def external_account_required(self):
+        if self.client.directory.meta.external_account_required:
+            return True
+        else:
+            return False
+
     def _acme_version_from_directory(self, directory):
         if hasattr(directory, 'newNonce'):
             return 2

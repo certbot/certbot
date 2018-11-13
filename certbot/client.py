@@ -214,7 +214,7 @@ def perform_registration(acme, config, tos_cb):
     else:
         eab = None
 
-    if acme.client.directory.meta.external_account_required:
+    if acme.external_account_required():
         if not eab_credentials_supplied:
             raise errors.Error("Server requires external account binding. Please use --eab-kid and --eab-hmac-key.")
 

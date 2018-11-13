@@ -73,19 +73,21 @@ class RegisterTest(test_util.ConfigTestCase):
         return m
 
     @staticmethod
-    def _directory_mock(ea_required):
-        def _directory_getitem_mock(input):
-            if input == "meta":
-                return {'externalAccountRequired': ea_required}
-            else:
-                return "/acme/new-account"
+    def _new_acct_dir_mock():
+        return "/acme/new-account"
 
-        return _directory_getitem_mock
+    @staticmethod
+    def _true_mock():
+        return True
+
+    @staticmethod
+    def _false_mock():
+        return False
 
     def test_no_tos(self):
         with mock.patch("certbot.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
             mock_client.new_account_and_tos().terms_of_service = "http://tos"
-            mock_client().client.directory.__getitem__ = mock.Mock(side_effect=self._directory_mock(False))
+            mock_client().external_account_required.side_effect = self._false_mock
             with mock.patch("certbot.eff.handle_subscription") as mock_handle:
                 with mock.patch("certbot.account.report_new_account"):
                     mock_client().new_account_and_tos.side_effect = errors.Error
@@ -98,7 +100,7 @@ class RegisterTest(test_util.ConfigTestCase):
 
     def test_it(self):
         with mock.patch("certbot.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
-            mock_client().client.directory.__getitem__ = mock.Mock(side_effect=self._directory_mock(False))
+            mock_client().external_account_required.side_effect = self._false_mock
             with mock.patch("certbot.account.report_new_account"):
                 with mock.patch("certbot.eff.handle_subscription"):
                     self._call()
@@ -111,7 +113,7 @@ class RegisterTest(test_util.ConfigTestCase):
         msg = "DNS problem: NXDOMAIN looking up MX for example.com"
         mx_err = messages.Error.with_code('invalidContact', detail=msg)
         with mock.patch("certbot.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
-            mock_client().client.directory.__getitem__ = mock.Mock(side_effect=self._directory_mock(False))
+            mock_client().external_account_required.side_effect = self._false_mock
             with mock.patch("certbot.eff.handle_subscription") as mock_handle:
                 mock_client().new_account_and_tos.side_effect = [mx_err, mock.MagicMock()]
                 self._call()
@@ -125,7 +127,7 @@ class RegisterTest(test_util.ConfigTestCase):
         msg = "DNS problem: NXDOMAIN looking up MX for example.com"
         mx_err = messages.Error.with_code('invalidContact', detail=msg)
         with mock.patch("certbot.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
-            mock_client().client.directory.__getitem__ = mock.Mock(side_effect=self._directory_mock(False))
+            mock_client().external_account_required.side_effect = self._false_mock
             with mock.patch("certbot.eff.handle_subscription"):
                 mock_client().new_account_and_tos.side_effect = [mx_err, mock.MagicMock()]
                 self.assertRaises(errors.Error, self._call)
@@ -138,7 +140,7 @@ class RegisterTest(test_util.ConfigTestCase):
     def test_without_email(self, mock_logger):
         with mock.patch("certbot.eff.handle_subscription") as mock_handle:
             with mock.patch("certbot.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
-                mock_client().client.directory.__getitem__ = mock.Mock(side_effect=self._directory_mock(False))
+                mock_client().external_account_required.side_effect = self._false_mock
                 with mock.patch("certbot.account.report_new_account"):
                     self.config.email = None
                     self.config.register_unsafely_without_email = True
@@ -152,7 +154,7 @@ class RegisterTest(test_util.ConfigTestCase):
     def test_dry_run_no_staging_account(self, _rep, mock_get_email):
         """Tests dry-run for no staging account, expect account created with no email"""
         with mock.patch("certbot.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
-            mock_client().client.directory.__getitem__ = mock.Mock(side_effect=self._directory_mock(False))
+            mock_client().external_account_required.side_effect = self._false_mock
             with mock.patch("certbot.eff.handle_subscription"):
                 with mock.patch("certbot.account.report_new_account"):
                     self.config.dry_run = True
@@ -164,7 +166,8 @@ class RegisterTest(test_util.ConfigTestCase):
 
     def test_with_eab_arguments(self):
         with mock.patch("certbot.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
-            mock_client().client.directory.__getitem__ = mock.Mock(side_effect=self._directory_mock(False))
+            mock_client().client.directory.__getitem__ = mock.Mock(side_effect=self._new_acct_dir_mock)
+            mock_client().external_account_required.side_effect = self._false_mock
             with mock.patch("certbot.eff.handle_subscription"):
                 with mock.patch("certbot.client.messages.ExternalAccountBinding.from_data") as mock_eab_from_data:
                     self.config.eab_kid = "test-kid"
@@ -175,7 +178,7 @@ class RegisterTest(test_util.ConfigTestCase):
 
     def test_without_eab_arguments(self):
         with mock.patch("certbot.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
-            mock_client().client.directory.__getitem__ = mock.Mock(side_effect=self._directory_mock(False))
+            mock_client().external_account_required.side_effect = self._false_mock
             with mock.patch("certbot.eff.handle_subscription"):
                 with mock.patch("certbot.client.messages.ExternalAccountBinding.from_data") as mock_eab_from_data:
                     self.config.eab_kid = None
@@ -187,9 +190,9 @@ class RegisterTest(test_util.ConfigTestCase):
     def test_external_account_required_without_eab_arguments(self):
         with mock.patch("certbot.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
             mock_client().client.net.key.public_key = mock.Mock(side_effect=self._public_key_mock)
-            mock_client().client.directory.__getitem__ = mock.Mock(side_effect=self._directory_mock(True))
+            mock_client().external_account_required.side_effect = self._true_mock
             with mock.patch("certbot.eff.handle_subscription"):
-                with mock.patch("certbot.client.messages.ExternalAccountBinding.from_data") as mock_eab_from_data:
+                with mock.patch("certbot.client.messages.ExternalAccountBinding.from_data"):
                     self.config.eab_kid = None
                     self.config.eab_hmac_key = None
 
@@ -200,7 +203,8 @@ class RegisterTest(test_util.ConfigTestCase):
         msg = "Test"
         mx_err = messages.Error(detail=msg, typ="malformed", title="title")
         with mock.patch("certbot.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
-            mock_client().client.directory.__getitem__ = mock.Mock(side_effect=self._directory_mock(False))
+            mock_client().client.directory.__getitem__ = mock.Mock(side_effect=self._new_acct_dir_mock)
+            mock_client().external_account_required.side_effect = self._false_mock
             with mock.patch("certbot.eff.handle_subscription") as mock_handle:
                 mock_client().new_account_and_tos.side_effect = [mx_err, mock.MagicMock()]
                 self.assertRaises(messages.Error, self._call)
