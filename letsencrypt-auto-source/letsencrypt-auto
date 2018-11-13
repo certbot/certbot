@@ -1239,7 +1239,7 @@ from __future__ import print_function
 from distutils.version import StrictVersion
 from hashlib import sha256
 from os import environ
-from os.path import join
+from os.path import join, basename, dirname
 from pipes import quote
 from shutil import rmtree
 try:
@@ -1365,7 +1365,10 @@ def get_index_base():
 
 
 def main():
-    pip_version = StrictVersion(check_output([executable, '-m', 'pip', '--version'])
+    # We should do 'python -m pip' here, but some old pip versions are not exposed
+    # as an importable module for Python, but only as an executable wrapper.
+    pip_executable = join(dirname(executable), basename(executable).replace('python', 'pip'))
+    pip_version = StrictVersion(check_output([quote(pip_executable), '--version'])
                                 .decode('utf-8').split()[1])
     min_pip_version = StrictVersion(PIP_VERSION)
     if pip_version >= min_pip_version:
@@ -1378,7 +1381,7 @@ def main():
                                      temp,
                                      digest)
                      for path, digest in PACKAGES]
-        check_output('{0} -m pip install --no-index --no-deps -U '.format(quote(executable)) +
+        check_output('{0} install --no-index --no-deps -U '.format(quote(pip_executable)) +
                      # Disable cache since we're not using it and it otherwise
                      # sometimes throws permission warnings:
                      ('--no-cache-dir ' if has_pip_cache else '') +
