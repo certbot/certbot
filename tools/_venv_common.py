@@ -55,7 +55,7 @@ def main(venv_name, venv_args, args):
         print('Please run the following command to activate developer environment:')
         print('source {0}/bin/activate'.format(venv_name))
         print('-------------------------------------------------------------------')
-    elif os.path.isdir(os.path.join(venv_args, 'Scripts')):
+    elif os.path.isdir(os.path.join(venv_name, 'Scripts')):
         # Windows specific
         print('---------------------------------------------------------------------------')
         print('Please run one of the following commands to activate developer environment:')
