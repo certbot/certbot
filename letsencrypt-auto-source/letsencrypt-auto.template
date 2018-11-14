@@ -667,7 +667,7 @@ UNLIKELY_EOF
 
     LE_VERSION_STATE=`CompareVersions "$LE_PYTHON" "$LE_AUTO_VERSION" "$REMOTE_VERSION"`
     if [ "$LE_VERSION_STATE" = "UNOFFICIAL" ]; then
-      echo "Unofficial certbot-auto version detected, self-upgrade is disabled: $LE_AUTO_VERSION"
+      say "Unofficial certbot-auto version detected, self-upgrade is disabled: $LE_AUTO_VERSION"
     elif [ "$LE_VERSION_STATE" = "OUTDATED" ]; then
       say "Upgrading certbot-auto $LE_AUTO_VERSION to $REMOTE_VERSION..."
 
