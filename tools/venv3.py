@@ -48,7 +48,7 @@ def get_venv_args():
 def main():
     venv_args = get_venv_args()
 
-    return _venv_common.main('venv3', venv_args, REQUIREMENTS)
+    _venv_common.main('venv3', venv_args, REQUIREMENTS)
 
 if __name__ == '__main__':
-    sys.exit(main())
+    main()
