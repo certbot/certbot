@@ -11,13 +11,13 @@ import sys
 
 def subprocess_with_print(command):
     print(command)
-    subprocess.call(command, shell=True)
+    subprocess.check_call(command, shell=True)
 
 def get_venv_python(venv_path):
     python_linux = os.path.join(venv_path, 'bin/python')
-    python_windows = os.path.join(venv_path, 'Scripts\\python.exe')
     if os.path.isfile(python_linux):
         return python_linux
+    python_windows = os.path.join(venv_path, 'Scripts\\python.exe')
     if os.path.isfile(python_windows):
         return python_windows
 
@@ -53,7 +53,7 @@ def main(venv_name, venv_args, args):
         print('Please run the following command to activate developer environment:')
         print('source {0}/bin/activate'.format(venv_name))
         print('-------------------------------------------------------------------')
-    elif os.path.isdir(os.path.join(venv_args, 'Scripts')):
+    elif os.path.isdir(os.path.join(venv_name, 'Scripts')):
         # Windows specific
         print('---------------------------------------------------------------------------')
         print('Please run one of the following commands to activate developer environment:')
@@ -64,4 +64,6 @@ def main(venv_name, venv_args, args):
         raise ValueError('Error, directory {0} is not a valid venv.'.format(venv_name))
 
 if __name__ == '__main__':
-    main(os.environ.get('VENV_NAME', 'venv'), os.environ.get('VENV_ARGS', ''), sys.argv[1:])
+    main(os.environ.get('VENV_NAME', 'venv'),
+         os.environ.get('VENV_ARGS', ''),
+         sys.argv[1:])
