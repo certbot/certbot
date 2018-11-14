@@ -19,7 +19,7 @@ SKIP_PROJECTS_ON_WINDOWS = [
 
 def call_with_print(command, cwd=None):
     print(command)
-    subprocess.call(command, shell=True, cwd=cwd or os.getcwd())
+    subprocess.check_call(command, shell=True, cwd=cwd or os.getcwd())
 
 def main(args):
     if os.environ.get('CERTBOT_NO_PIN') == '1':

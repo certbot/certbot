@@ -12,36 +12,33 @@ DEFAULT_PACKAGES = [
     'certbot_dns_sakuracloud', 'certbot_nginx', 'certbot_postfix', 'letshelp_certbot']
 
 COVER_THRESHOLDS = {
-    'certbot': 98,
-    'acme': 100,
-    'certbot_apache': 100,
-    'certbot_dns_cloudflare': 98,
-    'certbot_dns_cloudxns': 99,
-    'certbot_dns_digitalocean': 98,
-    'certbot_dns_dnsimple': 98,
-    'certbot_dns_dnsmadeeasy': 99,
-    'certbot_dns_gehirn': 97,
-    'certbot_dns_google': 99,
-    'certbot_dns_linode': 98,
-    'certbot_dns_luadns': 98,
-    'certbot_dns_nsone': 99,
-    'certbot_dns_ovh': 97,
-    'certbot_dns_rfc2136': 99,
-    'certbot_dns_route53': 92,
-    'certbot_dns_sakuracloud': 97,
-    'certbot_nginx': 97,
-    'certbot_postfix': 100,
-    'letshelp_certbot': 100
+    'certbot': {'linux': 98, 'windows': 94},
+    'acme': {'linux': 100, 'windows': 99},
+    'certbot_apache': {'linux': 100, 'windows': 100},
+    'certbot_dns_cloudflare': {'linux': 98, 'windows': 98},
+    'certbot_dns_cloudxns': {'linux': 99, 'windows': 99},
+    'certbot_dns_digitalocean': {'linux': 98, 'windows': 98},
+    'certbot_dns_dnsimple': {'linux': 98, 'windows': 98},
+    'certbot_dns_dnsmadeeasy': {'linux': 99, 'windows': 99},
+    'certbot_dns_gehirn': {'linux': 97, 'windows': 97},
+    'certbot_dns_google': {'linux': 99, 'windows': 99},
+    'certbot_dns_linode': {'linux': 98, 'windows': 98},
+    'certbot_dns_luadns': {'linux': 98, 'windows': 98},
+    'certbot_dns_nsone': {'linux': 99, 'windows': 99},
+    'certbot_dns_ovh': {'linux': 97, 'windows': 97},
+    'certbot_dns_rfc2136': {'linux': 99, 'windows': 99},
+    'certbot_dns_route53': {'linux': 92, 'windows': 92},
+    'certbot_dns_sakuracloud': {'linux': 97, 'windows': 97},
+    'certbot_nginx': {'linux': 97, 'windows': 97},
+    'certbot_postfix': {'linux': 100, 'windows': 100},
+    'letshelp_certbot': {'linux': 100, 'windows': 100}
 }
 
 SKIP_PROJECTS_ON_WINDOWS = [
     'certbot-apache', 'certbot-nginx', 'certbot-postfix', 'letshelp-certbot']
 
 def cover(package):
-    threshold = COVER_THRESHOLDS.get(package)
-
-    if not threshold:
-        raise ValueError('Unrecognized package: {0}'.format(package))
+    threshold = COVER_THRESHOLDS.get(package)['windows' if os.name == 'nt' else 'linux']
 
     pkg_dir = package.replace('_', '-')
 
@@ -51,10 +48,10 @@ def cover(package):
             .format(pkg_dir)))
         return
 
-    subprocess.call([
+    subprocess.check_call([
         sys.executable, '-m', 'pytest', '--cov', pkg_dir, '--cov-append', '--cov-report=',
         '--numprocesses', 'auto', '--pyargs', package])
-    subprocess.call([
+    subprocess.check_call([
         sys.executable, '-m', 'coverage', 'report', '--fail-under', str(threshold), '--include',
         '{0}/*'.format(pkg_dir), '--show-missing'])
 

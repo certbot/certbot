@@ -59,11 +59,12 @@ def merge_requirements(tools_path, test_constraints, all_constraints):
 
 def call_with_print(command, cwd=None):
     print(command)
-    subprocess.call(command, shell=True, cwd=cwd or os.getcwd())
+    subprocess.check_call(command, shell=True, cwd=cwd or os.getcwd())
 
 def main(args):
     tools_path = find_tools_path()
     working_dir = tempfile.mkdtemp()
+
     try:
         test_constraints = os.path.join(working_dir, 'test_constraints.txt')
         all_constraints = os.path.join(working_dir, 'all_constraints.txt')
