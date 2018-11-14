@@ -913,8 +913,9 @@ OldVenvExists() {
 }
 
 # Given python path, version 1 and version 2, check if version 1 is outdated compared to version 2.
-# Unofficial versions (eg. 0.28.0.dev0) will be treated specifically by printing "UNOFFICIAL".
-# Otherwise, print "OUTDATED" if version 1 is outdated, or "UP_TO_DATE" if not.
+# An unofficial version provided as version 1 (eg. 0.28.0.dev0) will be treated
+# specifically by printing "UNOFFICIAL". Otherwise, print "OUTDATED" if version 1
+# is outdated, and "UP_TO_DATE" if not.
 # This function relies only on installed python environment (2.x or 3.x) by certbot-auto.
 CompareVersions() {
     "$1" - "$2" "$3" << "UNLIKELY_EOF"
@@ -923,17 +924,17 @@ from distutils.version import StrictVersion
 
 try:
     current = StrictVersion(sys.argv[1])
-except:
+except ValueError:
     sys.stdout.write('UNOFFICIAL')
     sys.exit()
 
 try:
-    target = StrictVersion(sys.argv[2])
-except:
+    remote = StrictVersion(sys.argv[2])
+except ValueError:
     sys.stdout.write('UP_TO_DATE')
     sys.exit()
 
-if current < target:
+if current < remote:
     sys.stdout.write('OUTDATED')
 else:
     sys.stdout.write('UP_TO_DATE')
@@ -1672,7 +1673,7 @@ UNLIKELY_EOF
 
     LE_VERSION_STATE=`CompareVersions "$LE_PYTHON" "$LE_AUTO_VERSION" "$REMOTE_VERSION"`
     if [ "$LE_VERSION_STATE" = "UNOFFICIAL" ]; then
-      echo "Unofficial certbot-auto version detected, self-upgrade is disabled: $LE_AUTO_VERSION"
+      say "Unofficial certbot-auto version detected, self-upgrade is disabled: $LE_AUTO_VERSION"
     elif [ "$LE_VERSION_STATE" = "OUTDATED" ]; then
       say "Upgrading certbot-auto $LE_AUTO_VERSION to $REMOTE_VERSION..."
 
