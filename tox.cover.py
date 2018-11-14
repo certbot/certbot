@@ -40,9 +40,6 @@ SKIP_PROJECTS_ON_WINDOWS = [
 def cover(package):
     threshold = COVER_THRESHOLDS.get(package)['windows' if os.name == 'nt' else 'linux']
 
-    if not threshold:
-        raise ValueError('Unrecognized package: {0}'.format(package))
-
     pkg_dir = package.replace('_', '-')
 
     if os.name == 'nt' and pkg_dir in SKIP_PROJECTS_ON_WINDOWS:
