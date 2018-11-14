@@ -11,13 +11,13 @@ import sys
 
 def subprocess_with_print(command):
     print(command)
-    return subprocess.call(command, shell=True)
+    subprocess.check_call(command, shell=True)
 
 def get_venv_python(venv_path):
     python_linux = os.path.join(venv_path, 'bin/python')
-    python_windows = os.path.join(venv_path, 'Scripts\\python.exe')
     if os.path.isfile(python_linux):
         return python_linux
+    python_windows = os.path.join(venv_path, 'Scripts\\python.exe')
     if os.path.isfile(python_windows):
         return python_windows
 
@@ -35,19 +35,17 @@ def main(venv_name, venv_args, args):
     if os.path.isdir(venv_name):
         os.rename(venv_name, '{0}.{1}.bak'.format(venv_name, int(time.time())))
 
-    exit_code = 0
-
-    exit_code = subprocess_with_print(' '.join([
+    subprocess_with_print(' '.join([
         sys.executable, '-m', 'virtualenv', '--no-site-packages', '--setuptools',
-        venv_name, venv_args])) or exit_code
+        venv_name, venv_args]))
 
     python_executable = get_venv_python(venv_name)
 
-    exit_code = subprocess_with_print(' '.join([
+    subprocess_with_print(' '.join([
         python_executable, os.path.normpath('./letsencrypt-auto-source/pieces/pipstrap.py')]))
-    command = [python_executable, os.path.normpath('./tools/pip_install.py')] or exit_code
+    command = [python_executable, os.path.normpath('./tools/pip_install.py')]
     command.extend(args)
-    exit_code = subprocess_with_print(' '.join(command)) or exit_code
+    subprocess_with_print(' '.join(command))
 
     if os.path.isdir(os.path.join(venv_name, 'bin')):
         # Linux/OSX specific
@@ -65,9 +63,7 @@ def main(venv_name, venv_args, args):
     else:
         raise ValueError('Error, directory {0} is not a valid venv.'.format(venv_name))
 
-    return exit_code
-
 if __name__ == '__main__':
-    sys.exit(main(os.environ.get('VENV_NAME', 'venv'),
-                  os.environ.get('VENV_ARGS', ''), 
-                  sys.argv[1:]))
+    main(os.environ.get('VENV_NAME', 'venv'),
+         os.environ.get('VENV_ARGS', ''),
+         sys.argv[1:])
