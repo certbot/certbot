@@ -8,6 +8,79 @@ import glob
 import time
 import subprocess
 import sys
+import re
+
+VERSION_PATTERN = re.compile(r'^(\d+)\.(\d+).*$')
+
+
+class PythonExecutableNotFoundError(Exception):
+    pass
+
+
+def find_python_executable(python_major):
+    # type: (int) -> str
+    """
+    Find the relevant python executable that is of the given python major version.
+    Will test, in decreasing priority order:
+    * the current Python interpreter
+    * 'pythonX' executable in PATH (with X the given major version) if available
+    * 'python' executable in PATH if available
+    * Windows Python launcher 'py' executable in PATH if available
+    Incompatible python versions for Certbot will be evicted (eg. Python < 3.5 on Windows)
+    :param int python_major: the Python major version to target (2 or 3)
+    :rtype: str
+    :return: the relevant python executable path
+    :raise: RuntimeError if no relevant python executable path could be found
+    """
+    python_executable_path = None
+
+    # First try, current python executable
+    # if _check_version('{0}.{1}'.format(sys.version_info[0], sys.version_info[1]), python_major):
+    #     return sys.executable
+
+    # Second try, with python executables in path
+    versions_to_test = ['2.7', '2', ''] if python_major == 2 else ['3', '']
+    for one_version in versions_to_test:
+        try:
+            output = subprocess.check_output('python{0} --version'.format(one_version),
+                                             universal_newlines=True, shell=True,
+                                             stderr=subprocess.STDOUT)
+            if _check_version(output.strip().split()[1], python_major):
+                return 'python{0}'.format(python_major)
+        except (subprocess.CalledProcessError, OSError):
+            pass
+
+    # Last try, with Windows Python launcher
+    try:
+        output_version = subprocess.check_output('py -{0} --version'.format(python_major),
+                                                 universal_newlines=True, shell=True,
+                                                 stderr=subprocess.STDOUT)
+        if _check_version(output_version.strip().split()[1], python_major):
+            command = 'py -{0} -c "import sys; sys.stdout.write(sys.executable);"'.format(python_major)
+            return subprocess.check_output(command, universal_newlines=True, shell=True)
+    except (subprocess.CalledProcessError, OSError):
+        pass
+
+    if not python_executable_path:
+        raise RuntimeError('Error, no compatible Python {0} executable for Certbot could be found.'
+                           .format(python_major))
+
+
+def _check_version(version_str, major_version):
+    search = VERSION_PATTERN.search(version_str)
+
+    if not search:
+        return False
+
+    version = (int(search.group(1)), int(search.group(2)))
+
+    minimal_version_supported = (2, 7)
+    if major_version == 3 and os.name == 'nt':
+        minimal_version_supported = (3, 5)
+    elif major_version == 3:
+        minimal_version_supported = (3, 4)
+
+    return version >= minimal_version_supported
 
 
 def subprocess_with_print(command):
