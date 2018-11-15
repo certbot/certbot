@@ -95,6 +95,16 @@ using the secret key
 when it receives a TLS ClientHello with the SNI extension set to
 {sni_domain}
 """
+    _SUBSEQUENT_CHALLENGE_INSTRUCTIONS = """
+(This must be set up in addition to the previous challenges; do not remove,
+replace, or undo the previous challenge tasks yet.)
+"""
+    _SUBSEQUENT_DNS_CHALLENGE_INSTRUCTIONS = """
+(This must be set up in addition to the previous challenges; do not remove,
+replace, or undo the previous challenge tasks yet. Note that you might be
+asked to create multiple distinct TXT records with the same name. This is
+permitted by DNS standards.)
+"""
 
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
@@ -103,6 +113,8 @@ when it receives a TLS ClientHello with the SNI extension set to
         self.env = dict() \
         # type: Dict[achallenges.KeyAuthorizationAnnotatedChallenge, Dict[str, str]]
         self.tls_sni_01 = None
+        self.subsequent_dns_challenge = False
+        self.subsequent_any_challenge = False
 
     @classmethod
     def add_parser_arguments(cls, add):
@@ -212,8 +224,17 @@ when it receives a TLS ClientHello with the SNI extension set to
                 key=self.tls_sni_01.get_key_path(achall),
                 port=self.config.tls_sni_01_port,
                 sni_domain=self.tls_sni_01.get_z_domain(achall))
+        if isinstance(achall.chall, challenges.DNS01):
+            if self.subsequent_dns_challenge:
+                # 2nd or later dns-01 challenge
+                msg += self._SUBSEQUENT_DNS_CHALLENGE_INSTRUCTIONS
+            self.subsequent_dns_challenge = True
+        elif self.subsequent_any_challenge:
+            # 2nd or later challenge of another type
+            msg += self._SUBSEQUENT_CHALLENGE_INSTRUCTIONS
         display = zope.component.getUtility(interfaces.IDisplay)
         display.notification(msg, wrap=False, force_interactive=True)
+        self.subsequent_any_challenge = True
 
     def cleanup(self, achalls):  # pylint: disable=missing-docstring
         if self.conf('cleanup-hook'):

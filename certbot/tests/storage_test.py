@@ -480,6 +480,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertTrue(self.test_rc.should_autorenew())
         mock_ocsp.return_value = False
 
+    @test_util.broken_on_windows
     @mock.patch("certbot.storage.relevant_values")
     def test_save_successor(self, mock_rv):
         # Mock relevant_values() to claim that all values are relevant here
@@ -625,6 +626,8 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertTrue(result._consistent())
         self.assertTrue(os.path.exists(os.path.join(
             self.config.renewal_configs_dir, "the-lineage.com.conf")))
+        self.assertTrue(os.path.exists(os.path.join(
+            self.config.live_dir, "README")))
         self.assertTrue(os.path.exists(os.path.join(
             self.config.live_dir, "the-lineage.com", "README")))
         with open(result.fullchain, "rb") as f:

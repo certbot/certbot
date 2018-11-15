@@ -327,6 +327,11 @@ class HandleAuthorizationsTest(unittest.TestCase):
                 azr.body.combinations)
             aauthzrs[i] = type(aauthzr)(updated_azr, aauthzr.achalls)
 
+    @mock.patch("certbot.auth_handler.logger")
+    def test_tls_sni_logs(self, logger):
+        self._test_name1_tls_sni_01_1_common(combos=True)
+        self.assertTrue("deprecated" in logger.warning.call_args[0][0])
+
 
 class PollChallengesTest(unittest.TestCase):
     # pylint: disable=protected-access
