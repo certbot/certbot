@@ -30,7 +30,7 @@ def find_python_executable(python_major):
     :param int python_major: the Python major version to target (2 or 3)
     :rtype: str
     :return: the relevant python executable path
-    :raise: RuntimeError if no relevant python executable path could be found
+    :raise RuntimeError: if no relevant python executable path could be found
     """
     python_executable_path = None
 
@@ -43,22 +43,25 @@ def find_python_executable(python_major):
     versions_to_test = ['2.7', '2', ''] if python_major == 2 else ['3', '']
     for one_version in versions_to_test:
         try:
-            output = subprocess.check_output('python{0} --version'.format(one_version),
-                                             universal_newlines=True, shell=True,
-                                             stderr=subprocess.STDOUT)
+            one_python = 'python{0}'.format(one_version)
+            output = subprocess.check_output([one_python, '--version'],
+                                             universal_newlines=True, stderr=subprocess.STDOUT)
             if _check_version(output.strip().split()[1], python_major):
-                return 'python{0}'.format(python_major)
+                return subprocess.check_output([one_python, '-c',
+                                                'import sys; sys.stdout.write(sys.executable);'],
+                                               universal_newlines=True)
         except (subprocess.CalledProcessError, OSError):
             pass
 
     # Last try, with Windows Python launcher
     try:
-        output_version = subprocess.check_output('py -{0} --version'.format(python_major),
-                                                 universal_newlines=True, shell=True,
-                                                 stderr=subprocess.STDOUT)
+        env_arg = '-{0}'.format(python_major)
+        output_version = subprocess.check_output(['py', env_arg],
+                                                 universal_newlines=True, stderr=subprocess.STDOUT)
         if _check_version(output_version.strip().split()[1], python_major):
-            command = 'py -{0} -c "import sys; sys.stdout.write(sys.executable);"'.format(python_major)
-            return subprocess.check_output(command, universal_newlines=True, shell=True)
+            return subprocess.check_output(['py', env_arg, '-c',
+                                            'import sys; sys.stdout.write(sys.executable);'],
+                                           universal_newlines=True)
     except (subprocess.CalledProcessError, OSError):
         pass
 
