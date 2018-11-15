@@ -56,7 +56,7 @@ def find_python_executable(python_major):
     # Last try, with Windows Python launcher
     try:
         env_arg = '-{0}'.format(python_major)
-        output_version = subprocess.check_output(['py', env_arg],
+        output_version = subprocess.check_output(['py', env_arg, '--version'],
                                                  universal_newlines=True, stderr=subprocess.STDOUT)
         if _check_version(output_version.strip().split()[1], python_major):
             return subprocess.check_output(['py', env_arg, '-c',
