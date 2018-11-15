@@ -35,8 +35,9 @@ def find_python_executable(python_major):
     python_executable_path = None
 
     # First try, current python executable
-    # if _check_version('{0}.{1}'.format(sys.version_info[0], sys.version_info[1]), python_major):
-    #     return sys.executable
+    if _check_version('{0}.{1}.{2}'.format(
+            sys.version_info[0], sys.version_info[1], sys.version_info[2]), python_major):
+        return sys.executable
 
     # Second try, with python executables in path
     versions_to_test = ['2.7', '2', ''] if python_major == 2 else ['3', '']
@@ -80,7 +81,11 @@ def _check_version(version_str, major_version):
     elif major_version == 3:
         minimal_version_supported = (3, 4)
 
-    return version >= minimal_version_supported
+    if version >= minimal_version_supported:
+        return True
+
+    print('Incompatible python version for Certbot found: {0}'.format(version_str))
+    return False
 
 
 def subprocess_with_print(command):
