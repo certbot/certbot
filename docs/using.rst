@@ -696,7 +696,9 @@ Where are my certificates?
 ==========================
 
 All generated keys and issued certificates can be found in
-``/etc/letsencrypt/live/$domain``. Rather than copying, please point
+``/etc/letsencrypt/live/$domain`` In the case of creating a SAN certificate 
+with multiple alternative names, ``$domain`` is the first domain passed in 
+via -d parameter. Rather than copying, please point
 your (web) server configuration directly to those files (or create
 symlinks). During the renewal_, ``/etc/letsencrypt/live`` is updated
 with the latest necessary files.
