@@ -1214,7 +1214,7 @@ UNLIKELY_EOF
     # -------------------------------------------------------------------------
     cat << "UNLIKELY_EOF" > "$TEMP_DIR/pipstrap.py"
 #!/usr/bin/env python
-"""A small script that can act as a trust root for installing pip >=8
+"""A small script that can act as a trust root for installing pip 8
 
 Embed this in your project, and your VCS checkout is all you have to trust. In
 a post-peep era, this lets you claw your way to a hash-checking version of pip,
@@ -1239,7 +1239,7 @@ from __future__ import print_function
 from distutils.version import StrictVersion
 from hashlib import sha256
 from os import environ
-from os.path import join, basename, dirname
+from os.path import join
 from pipes import quote
 from shutil import rmtree
 try:
@@ -1260,7 +1260,7 @@ except ImportError:
                 cmd = popenargs[0]
             raise CalledProcessError(retcode, cmd)
         return output
-from sys import exit, version_info, executable
+from sys import exit, version_info
 from tempfile import mkdtemp
 try:
     from urllib2 import build_opener, HTTPHandler, HTTPSHandler
@@ -1272,7 +1272,7 @@ except ImportError:
     from urllib.parse import urlparse  # 3.4
 
 
-__version__ = 2, 0, 0
+__version__ = 1, 5, 0
 PIP_VERSION = '9.0.1'
 DEFAULT_INDEX_BASE = 'https://pypi.python.org'
 
@@ -1365,10 +1365,7 @@ def get_index_base():
 
 
 def main():
-    # We should do 'python -m pip' here, but some old pip versions are not exposed
-    # as an importable module for Python, but only as an executable wrapper.
-    pip_executable = join(dirname(executable), basename(executable).replace('python', 'pip'))
-    pip_version = StrictVersion(check_output([quote(pip_executable), '--version'])
+    pip_version = StrictVersion(check_output(['pip', '--version'])
                                 .decode('utf-8').split()[1])
     min_pip_version = StrictVersion(PIP_VERSION)
     if pip_version >= min_pip_version:
@@ -1381,7 +1378,7 @@ def main():
                                      temp,
                                      digest)
                      for path, digest in PACKAGES]
-        check_output('{0} install --no-index --no-deps -U '.format(quote(pip_executable)) +
+        check_output('pip install --no-index --no-deps -U ' +
                      # Disable cache since we're not using it and it otherwise
                      # sometimes throws permission warnings:
                      ('--no-cache-dir ' if has_pip_cache else '') +
