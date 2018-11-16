@@ -23,7 +23,7 @@ def call_with_print(command, cwd=None):
 
 def main(args):
     if os.environ.get('CERTBOT_NO_PIN') == '1':
-        command = [sys.executable, '-m', 'pip', '-q', '-e']
+        command = [sys.executable, '-m', 'pip', '-e']
     else:
         script_dir = os.path.dirname(os.path.abspath(__file__))
         command = [sys.executable, os.path.join(script_dir, 'pip_install_editable.py')]
