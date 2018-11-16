@@ -158,5 +158,5 @@ def main(venv_name, venv_args, args):
 
 if __name__ == '__main__':
     main('venv',
-         os.environ.get('VENV_ARGS', ''),
+         '',
          sys.argv[1:])
