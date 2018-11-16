@@ -10,6 +10,7 @@ import subprocess
 import sys
 import re
 
+VENV_NAME_ENV_VAR = 'VENV_NAME'
 VERSION_PATTERN = re.compile(r'^(\d+)\.(\d+).*$')
 
 
@@ -116,6 +117,12 @@ def main(venv_name, venv_args, args):
         else:
             os.remove(path)
 
+    env_venv_name = os.environ.get(VENV_NAME_ENV_VAR)
+    if env_venv_name:
+        print('Creating venv at {0}'
+              ' as specified in {1}'.format(env_venv_name, VENV_NAME_ENV_VAR))
+        venv_name = env_venv_name
+
     if os.path.isdir(venv_name):
         os.rename(venv_name, '{0}.{1}.bak'.format(venv_name, int(time.time())))
 
@@ -150,6 +157,6 @@ def main(venv_name, venv_args, args):
 
 
 if __name__ == '__main__':
-    main(os.environ.get('VENV_NAME', 'venv'),
+    main('venv',
          os.environ.get('VENV_ARGS', ''),
          sys.argv[1:])
