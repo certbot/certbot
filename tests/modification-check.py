@@ -70,7 +70,7 @@ def validate_scripts_content(repo_path, temp_cwd):
             # Compare file against the latest released version
             latest_version = subprocess.check_output(
                 [sys.executable, 'fetch.py', '--latest-version'], cwd=temp_cwd)
-            subprocess.call(
+            subprocess.check_call(
                 [sys.executable, 'fetch.py', '--le-auto-script', 
                  'v{0}'.format(latest_version.decode().strip())], cwd=temp_cwd)
             if compare_files(
@@ -95,7 +95,7 @@ def main():
             os.path.normpath(os.path.join(repo_path, 'letsencrypt-auto-source/letsencrypt-auto')),
             os.path.join(temp_cwd, 'original-lea')
         )
-        subprocess.call([sys.executable, os.path.normpath(os.path.join(
+        subprocess.check_call([sys.executable, os.path.normpath(os.path.join(
             repo_path, 'letsencrypt-auto-source/build.py'))])
         shutil.copyfile(
             os.path.normpath(os.path.join(repo_path, 'letsencrypt-auto-source/letsencrypt-auto')),
