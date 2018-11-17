@@ -65,12 +65,6 @@ if [ "$RELEASE_BRANCH" != "candidate-$version" ] ; then
 fi
 git checkout "$RELEASE_BRANCH"
 
-for pkg_dir in $SUBPKGS_NO_CERTBOT certbot-compatibility-test .
-do
-  sed -i 's/\.dev0//' "$pkg_dir/setup.py"
-  git add "$pkg_dir/setup.py"
-done
-
 # Update changelog
 sed -i "s/master/$(date +'%Y-%m-%d')/" CHANGELOG.md
 git add CHANGELOG.md
@@ -80,6 +74,12 @@ while ! git commit --gpg-sign="$RELEASE_GPG_KEY" -m "Update changelog for $versi
     echo "You may have to configure git to use gpg2 by running:"
     echo 'git config --global gpg.program $(command -v gpg2)'
     read -p "Press enter to try signing again."
+done
+
+for pkg_dir in $SUBPKGS_NO_CERTBOT certbot-compatibility-test .
+do
+  sed -i 's/\.dev0//' "$pkg_dir/setup.py"
+  git add "$pkg_dir/setup.py"
 done
 
 
