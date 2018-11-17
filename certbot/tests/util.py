@@ -328,15 +328,16 @@ class TempDirTestCase(unittest.TestCase):
 
     def tearDown(self):
         """Execute after test"""
-        # Then we have various files which are not correctly closed at the time of tearDown.
-        # On Windows, it is visible for the same reasons as above.
+        # On Windows we have various files which are not correctly closed at the time of tearDown.
         # For know, we log them until a proper file close handling is written.
+        # Useful for development only, so no warning when we are on a CI process.
         def onerror_handler(_, path, excinfo):
             """On error handler"""
-            message = ('Following error occurred when deleting the tempdir {0}'
-                       ' for path {1} during tearDown process: {2}'
-                       .format(self.tempdir, path, str(excinfo)))
-            warnings.warn(message)
+            if not os.environ.get('APPVEYOR'): # pragma: no cover
+                message = ('Following error occurred when deleting the tempdir {0}'
+                           ' for path {1} during tearDown process: {2}'
+                           .format(self.tempdir, path, str(excinfo)))
+                warnings.warn(message)
         shutil.rmtree(self.tempdir, onerror=onerror_handler)
 
 class ConfigTestCase(TempDirTestCase):
