@@ -283,6 +283,12 @@ class BackwardsCompatibleClientV2Test(ClientTestBase):
             client.update_registration(mock.sentinel.regr, None)
         mock_client().update_registration.assert_called_once_with(mock.sentinel.regr, None)
 
+    def test_post_as_get(self):
+        client = self._init()
+        client._post_as_get('http://dummy_url.net')
+
+        client.net.get.assert_called_with('http://dummy_url.net')
+
 
 class ClientTest(ClientTestBase):
     """Tests for acme.client.Client."""
@@ -821,6 +827,26 @@ class ClientV2Test(ClientTestBase):
 
         self.response.json.return_value = self.regr.body.update(
             contact=()).to_json()
+
+    def test_post_as_get(self):
+        self.client._post_as_get('http://dummy_url.net')
+
+        self.client.net.post.assert_called_once_with(
+            'http://dummy_url.net', None, acme_version=2,
+            new_nonce_url='https://www.letsencrypt-demo.org/acme/new-nonce')
+        self.client.net.get.assert_not_called()
+
+        class FakeError(messages.Error):
+            def __init__(self):
+                pass
+            @property
+            def code(self):
+                return 'malformed'
+        self.client.net.post.side_effect = FakeError()
+
+        self.client._post_as_get('http://dummy_url.net')
+
+        self.client.net.get.assert_called_once_with('http://dummy_url.net')
 
 
 class MockJSONDeSerializable(jose.JSONDeSerializable):

@@ -104,7 +104,7 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
                     logger.debug('Error during a POST-as-GET request, '
                                  'your ACME CA may not support it:\n%s', error)
                     logger.debug('Retrying request with GET.')
-                else:
+                else:  # pragma: no cover
                     raise
 
         # If ACME v1 or POST-as-GET not supported, we use a GET instead.
