@@ -98,7 +98,7 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
             # We add an empty payload for POST-as-GET requests
             new_args = args[:1] + (None,) + args[1:]
             try:
-                return self._post(*new_args, **kwargs)
+                return self._post(*new_args, **kwargs)  # pylint: disable=star-args
             except messages.Error as error:
                 if error.code == 'malformed':
                     logger.debug('Error during a POST-as-GET request, '
