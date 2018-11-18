@@ -730,9 +730,10 @@ class ClientV2Test(ClientTestBase):
         authz_response2 = self.response
         authz_response2.json.return_value = self.authz2.to_json()
         authz_response2.headers['Location'] = self.authzr2.uri
-        self.net.get.side_effect = (authz_response, authz_response2)
-
-        self.assertEqual(self.client.new_order(CSR_SAN_PEM), self.orderr)
+        
+        with mock.patch('acme.client.ClientV2._post_as_get') as mock_post_as_get:
+            mock_post_as_get.side_effect = (authz_response, authz_response2)
+            self.assertEqual(self.client.new_order(CSR_SAN_PEM), self.orderr)
 
     @mock.patch('acme.client.datetime')
     def test_poll_and_finalize(self, mock_datetime):
