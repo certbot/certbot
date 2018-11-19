@@ -1,4 +1,14 @@
 #!/usr/bin/env python
+"""Aids in creating a developer virtual environment for Certbot.
+
+When this module is run as a script, it takes the arguments that should
+be passed to pip to install the Certbot packages as command line
+arguments. The virtual environment will be created with the name "venv"
+in the current working directory and will use the default version of
+Python for the virtualenv executable in your PATH. You can change the
+name of the virtual environment by setting the environment variable
+VENV_NAME.
+"""
 
 from __future__ import print_function
 
@@ -10,7 +20,6 @@ import subprocess
 import sys
 import re
 
-VENV_NAME_ENV_VAR = 'VENV_NAME'
 VERSION_PATTERN = re.compile(r'^(\d+)\.(\d+).*$')
 
 
@@ -111,16 +120,25 @@ def get_venv_python(venv_path):
 
 
 def main(venv_name, venv_args, args):
+    """Creates a virtual environment and installs packages.
+
+    :param str venv_name: The name or path at where the virtual
+        environment should be created.
+    :param str venv_args: Command line arguments for virtualenv
+    :param str args: Command line arguments that should be given to pip
+        to install packages
+    """
+
     for path in glob.glob('*.egg-info'):
         if os.path.isdir(path):
             shutil.rmtree(path)
         else:
             os.remove(path)
 
-    env_venv_name = os.environ.get(VENV_NAME_ENV_VAR)
+    env_venv_name = os.environ.get('VENV_NAME')
     if env_venv_name:
         print('Creating venv at {0}'
-              ' as specified in {1}'.format(env_venv_name, VENV_NAME_ENV_VAR))
+              ' as specified in VENV_NAME'.format(env_venv_name))
         venv_name = env_venv_name
 
     if os.path.isdir(venv_name):
