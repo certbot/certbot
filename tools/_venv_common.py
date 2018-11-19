@@ -100,10 +100,10 @@ def subprocess_with_print(cmd, env=os.environ, shell=False):
 def get_venv_bin_path(venv_path):
     python_linux = os.path.join(venv_path, 'bin/python')
     if os.path.isfile(python_linux):
-        return os.path.join(os.getcwd(), os.path.dirname(python_linux))
+        return os.path.abspath(os.path.dirname(python_linux))
     python_windows = os.path.join(venv_path, 'Scripts\\python.exe')
     if os.path.isfile(python_windows):
-        return os.path.join(os.getcwd(), os.path.dirname(python_windows))
+        return os.path.abspath(os.path.dirname(python_windows))
 
     raise ValueError((
         'Error, could not find python executable in venv path {0}: is it a valid venv ?'
