@@ -152,14 +152,6 @@ class BackwardsCompatibleClientV2Test(ClientTestBase):
         client = self._init()
         self.assertFalse(client.external_account_required())
 
-    def test_external_account_required_missing(self):
-        self.response.json.return_value = messages.Directory({
-            'meta': {
-            },
-        }).to_json()
-        client = self._init()
-        self.assertFalse(client.external_account_required())
-
     def test_query_registration_client_v2(self):
         self.response.json.return_value = DIRECTORY_V2.to_json()
         client = self._init()
