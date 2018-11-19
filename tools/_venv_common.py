@@ -124,7 +124,7 @@ def main(venv_name, venv_args, args):
     command.extend(shlex.split(venv_args))
     subprocess_with_print(command)
 
-    # We execute the two following command in the context of the virtual environment, to install
+    # We execute the two following commands in the context of the virtual environment, to install
     # the packages in it. To do so, we append the venv binary to the PATH that will be used for
     # these commands. With this trick, correct python executable will be selected.
     new_environ = os.environ.copy()

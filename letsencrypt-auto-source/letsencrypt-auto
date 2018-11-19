@@ -1393,6 +1393,7 @@ def main():
 
 if __name__ == '__main__':
     exit(main())
+
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
     # Set PATH so pipstrap upgrades the right (v)env:
