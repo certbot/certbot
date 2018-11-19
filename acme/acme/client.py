@@ -875,6 +875,7 @@ class BackwardsCompatibleClientV2(object):
         return self.client.revoke(cert, rsn)
 
     def external_account_required(self):
+        """Checks if ACME server requires External Account Binding authentication."""
         if self.client.directory.meta.external_account_required:
             return True
         else:

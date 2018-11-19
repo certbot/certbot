@@ -139,8 +139,8 @@ class RegisterTest(test_util.ConfigTestCase):
     @mock.patch("certbot.client.logger")
     def test_without_email(self, mock_logger):
         with mock.patch("certbot.eff.handle_subscription") as mock_handle:
-            with mock.patch("certbot.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
-                mock_client().external_account_required.side_effect = self._false_mock
+            with mock.patch("certbot.client.acme_client.BackwardsCompatibleClientV2") as mock_clnt:
+                mock_clnt().external_account_required.side_effect = self._false_mock
                 with mock.patch("certbot.account.report_new_account"):
                     self.config.email = None
                     self.config.register_unsafely_without_email = True
@@ -166,10 +166,13 @@ class RegisterTest(test_util.ConfigTestCase):
 
     def test_with_eab_arguments(self):
         with mock.patch("certbot.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
-            mock_client().client.directory.__getitem__ = mock.Mock(side_effect=self._new_acct_dir_mock)
+            mock_client().client.directory.__getitem__ = mock.Mock(
+                side_effect=self._new_acct_dir_mock
+            )
             mock_client().external_account_required.side_effect = self._false_mock
             with mock.patch("certbot.eff.handle_subscription"):
-                with mock.patch("certbot.client.messages.ExternalAccountBinding.from_data") as mock_eab_from_data:
+                target = "certbot.client.messages.ExternalAccountBinding.from_data"
+                with mock.patch(target) as mock_eab_from_data:
                     self.config.eab_kid = "test-kid"
                     self.config.eab_hmac_key = "J2OAqW4MHXsrHVa_PVg0Y-L_R4SYw0_aL1le6mfblbE"
                     self._call()
@@ -180,7 +183,8 @@ class RegisterTest(test_util.ConfigTestCase):
         with mock.patch("certbot.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
             mock_client().external_account_required.side_effect = self._false_mock
             with mock.patch("certbot.eff.handle_subscription"):
-                with mock.patch("certbot.client.messages.ExternalAccountBinding.from_data") as mock_eab_from_data:
+                target = "certbot.client.messages.ExternalAccountBinding.from_data"
+                with mock.patch(target) as mock_eab_from_data:
                     self.config.eab_kid = None
                     self.config.eab_hmac_key = None
                     self._call()
@@ -203,7 +207,9 @@ class RegisterTest(test_util.ConfigTestCase):
         msg = "Test"
         mx_err = messages.Error(detail=msg, typ="malformed", title="title")
         with mock.patch("certbot.client.acme_client.BackwardsCompatibleClientV2") as mock_client:
-            mock_client().client.directory.__getitem__ = mock.Mock(side_effect=self._new_acct_dir_mock)
+            mock_client().client.directory.__getitem__ = mock.Mock(
+                side_effect=self._new_acct_dir_mock
+            )
             mock_client().external_account_required.side_effect = self._false_mock
             with mock.patch("certbot.eff.handle_subscription") as mock_handle:
                 mock_client().new_account_and_tos.side_effect = [mx_err, mock.MagicMock()]

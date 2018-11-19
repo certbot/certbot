@@ -236,7 +236,8 @@ class RegistrationTest(unittest.TestCase):
         self.assertEqual(reg.contact, (
             'mailto:admin@foo.com',
         ))
-        self.assertEqual(sorted(reg.external_account_binding.keys()), sorted(['protected', 'payload', 'signature']))
+        self.assertEqual(sorted(reg.external_account_binding.keys()),
+                         sorted(['protected', 'payload', 'signature']))
 
     def test_phones(self):
         self.assertEqual(('1234',), self.reg.phones)

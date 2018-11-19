@@ -4,7 +4,6 @@ import logging
 import os
 import platform
 
-
 from cryptography.hazmat.backends import default_backend
 # https://github.com/python/typeshed/blob/master/third_party/
 # 2/cryptography/hazmat/primitives/asymmetric/rsa.pyi
@@ -38,7 +37,6 @@ from certbot import util
 from certbot.display import ops as display_ops
 from certbot.display import enhancements
 from certbot.plugins import selection as plugin_selection
-
 
 logger = logging.getLogger(__name__)
 
@@ -82,6 +80,7 @@ def determine_user_agent(config):
         ua = config.user_agent
     return ua
 
+
 def ua_flags(config):
     "Turn some very important CLI flags into clues in the user agent."
     if isinstance(config, DummyConfig):
@@ -101,8 +100,10 @@ def ua_flags(config):
         flags.append("hook")
     return " ".join(flags)
 
+
 class DummyConfig(object):
     "Shim for computing a sample user agent."
+
     def __init__(self):
         self.authenticator = "XXX"
         self.installer = "YYY"
@@ -112,6 +113,7 @@ class DummyConfig(object):
     def __getattr__(self, name):
         "Any config properties we might have are None."
         return None
+
 
 def sample_user_agent():
     "Document what this Certbot's user agent string will be like."
@@ -174,9 +176,9 @@ def register(config, account_storage, tos_cb=None):
 
     # Each new registration shall use a fresh new key
     rsa_key = generate_private_key(
-            public_exponent=65537,
-            key_size=config.rsa_key_size,
-            backend=default_backend())
+        public_exponent=65537,
+        key_size=config.rsa_key_size,
+        backend=default_backend())
     key = jose.JWKRSA(key=jose.ComparableRSAKey(rsa_key))
     acme = acme_from_config_key(config, key)
     # TODO: add phone?
@@ -216,12 +218,14 @@ def perform_registration(acme, config, tos_cb):
 
     if acme.external_account_required():
         if not eab_credentials_supplied:
-            raise errors.Error("Server requires external account binding. Please use --eab-kid and --eab-hmac-key.")
+            msg = ("Server requires external account binding."
+                   " Please use --eab-kid and --eab-hmac-key.")
+            raise errors.Error(msg)
 
     try:
-        return acme.new_account_and_tos(messages.NewRegistration.from_data(email=config.email,
-                                                                           external_account_binding=eab),
-                                        tos_cb)
+        newreg = messages.NewRegistration.from_data(email=config.email,
+                                                    external_account_binding=eab)
+        return acme.new_account_and_tos(newreg, tos_cb)
     except messages.Error as e:
         if e.code == "invalidEmail" or e.code == "invalidContact":
             if config.noninteractive_mode:
@@ -330,7 +334,7 @@ class Client(object):
             with open(old_keypath, "rb") as f:
                 keypath = old_keypath
                 keypem = f.read()
-            key = util.Key(file=keypath, pem=keypem) # type: Optional[util.Key]
+            key = util.Key(file=keypath, pem=keypem)  # type: Optional[util.Key]
             logger.info("Reusing existing private key from %s.", old_keypath)
         else:
             # The key is set to None here but will be created below.
@@ -417,7 +421,7 @@ class Client(object):
 
         if self.config.dry_run:
             logger.debug("Dry run: Skipping creating new lineage for %s",
-                        new_name)
+                         new_name)
             return None
         else:
             return storage.RenewableCert.new_lineage(
@@ -467,7 +471,6 @@ class Client(object):
                 os.path.dirname(path), 0o755, compat.os_geteuid(),
                 self.config.strict_permissions)
 
-
         cert_file, abs_cert_path = _open_pem_file('cert_path', cert_path)
 
         try:
@@ -477,10 +480,10 @@ class Client(object):
         logger.info("Server issued certificate; certificate written to %s",
                     abs_cert_path)
 
-        chain_file, abs_chain_path =\
-                _open_pem_file('chain_path', chain_path)
-        fullchain_file, abs_fullchain_path =\
-                _open_pem_file('fullchain_path', fullchain_path)
+        chain_file, abs_chain_path = \
+            _open_pem_file('chain_path', chain_path)
+        fullchain_file, abs_fullchain_path = \
+            _open_pem_file('fullchain_path', fullchain_path)
 
         _save_chain(chain_pem, chain_file)
         _save_chain(cert_pem + chain_pem, fullchain_file)
@@ -590,13 +593,13 @@ class Client(object):
                 except errors.PluginEnhancementAlreadyPresent:
                     if enhancement == "ensure-http-header":
                         logger.warning("Enhancement %s was already set.",
-                                options)
+                                       options)
                     else:
                         logger.warning("Enhancement %s was already set.",
-                                enhancement)
+                                       enhancement)
                 except errors.PluginError:
                     logger.warning("Unable to set enhancement %s for %s",
-                            enhancement, dom)
+                                   enhancement, dom)
                     raise
 
             self.installer.save("Add enhancement %s" % (enhancement))
@@ -691,7 +694,7 @@ def rollback(default_installer, checkpoints, config, plugins):
     # Misconfigurations are only a slight problems... allow the user to rollback
     installer = plugin_selection.pick_installer(
         config, default_installer, plugins, question="Which installer "
-        "should be used for rollback?")
+                                                     "should be used for rollback?")
 
     # No Errors occurred during init... proceed normally
     # If installer is None... couldn't find an installer... there shouldn't be
@@ -714,6 +717,7 @@ def view_config_changes(config, num=None):
     rev.recovery_routine()
     rev.view_config_changes(num)
 
+
 def _open_pem_file(cli_arg_path, pem_path):
     """Open a pem file.
 
@@ -727,11 +731,12 @@ def _open_pem_file(cli_arg_path, pem_path):
 
     """
     if cli.set_by_cli(cli_arg_path):
-        return util.safe_open(pem_path, chmod=0o644, mode="wb"),\
-            os.path.abspath(pem_path)
+        return util.safe_open(pem_path, chmod=0o644, mode="wb"), \
+               os.path.abspath(pem_path)
     else:
         uniq = util.unique_file(pem_path, 0o644, "wb")
         return uniq[0], os.path.abspath(uniq[1])
+
 
 def _save_chain(chain_pem, chain_file):
     """Saves chain_pem at a unique path based on chain_path.
