@@ -5,11 +5,26 @@ import subprocess
 import time
 import shutil
 import ssl
+import pytest
 
 from six.moves.urllib.request import urlopen
 
 
 PEBBLE_VERSION = '2018-11-02'
+
+
+@pytest.fixture(scope='session')
+def acme_url():
+    integration = os.environ.get('CERTBOT_INTEGRATION')
+
+    if integration == 'boulder-v1':
+        return 'http://localhost:4000/directory'
+    if integration == 'boulder-v2':
+        return 'http://localhost:4001/directory'
+    if integration == 'pebble' or integration == 'pebble-strict':
+        return 'https://localhost:4000/dir'
+
+    raise ValueError('Invalid CERTBOT_INTEGRATION value')
 
 
 def pytest_configure(config):
@@ -41,18 +56,33 @@ def pytest_configure(config):
     os.makedirs(workspace)
 
     if acme_ca == 'Boulder':
-        url = setup_boulder(workspace)
+        url = _setup_boulder(workspace)
     else:
-        url = setup_pebble(workspace)
+        url = _setup_pebble(workspace)
 
     print('=> Waiting for {0} instance to respond ...'.format(acme_ca))
 
-    check_until_timeout(url)
+    _check_until_timeout(url)
 
     print('=> {0} instance ready.'.format(acme_ca))
 
 
-def setup_boulder(workspace):
+def pytest_runtest_makereport(item, call):
+    if 'incremental' in item.keywords:
+        if call.excinfo is not None:
+            parent = item.parent
+            parent._previousfailed = item
+
+
+def pytest_runtest_setup(item):
+    if 'incremental' in item.keywords:
+        previousfailed = getattr(item.parent, '_previousfailed', None)
+        if previousfailed is not None:
+            pytest.xfail('Previous test failed in incremental test suite: {0}'
+                         .format(previousfailed.name))
+
+
+def _setup_boulder(workspace):
     subprocess.check_call(['git', 'clone', '--depth', '1', '--single-branch',
                            'https://github.com/letsencrypt/boulder', workspace])
 
@@ -70,7 +100,7 @@ def setup_boulder(workspace):
     return 'http://localhost:4000/directory'
 
 
-def setup_pebble(workspace, strict=False):
+def _setup_pebble(workspace, strict=False):
     data = '''\
 version: '3'
 services:
@@ -91,7 +121,7 @@ services:
     return 'https://localhost:14000/dir'
 
 
-def check_until_timeout(url):
+def _check_until_timeout(url):
     context = ssl.SSLContext(ssl.CERT_NONE)
 
     for _ in range(0, 150):

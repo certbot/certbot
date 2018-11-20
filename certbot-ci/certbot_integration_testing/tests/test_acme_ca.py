@@ -1,6 +1,18 @@
-import time
+import ssl
+
+import pytest
+from six.moves.urllib.request import urlopen
 
 
-def test_setup():
-    time.sleep(30)
-    print('pouet')
+@pytest.mark.incremental
+class TestSuite(object):
+
+    def test_directory_accessibility(self, acme_url):
+        context = ssl.SSLContext(ssl.CERT_NONE)
+        urlopen(acme_url, context=context)
+
+    def test_will_fail(selfs):
+        assert False
+
+    def test_should_success(self):
+        assert True
