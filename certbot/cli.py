@@ -983,7 +983,8 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              "certificates. Updates to the Subscriber Agreement will still "
              "affect you, and will be effective 14 days after posting an "
              "update to the web site.")
-    # TODO: When `certbot register --update-registration` is fully deprecated, delete following helpful.add
+    # TODO: When `certbot register --update-registration` is fully deprecated,
+    # delete following helpful.add
     helpful.add(
         "register", "--update-registration", action="store_true",
         default=flag_default("update_registration"), dest="update_registration",
@@ -995,8 +996,8 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
     helpful.add(["register", "update_account", "automation"], "--eff-email", action="store_true",
                 default=flag_default("eff_email"), dest="eff_email",
                 help="Share your e-mail address with EFF")
-    helpful.add(["register", "update_account", "automation"], "--no-eff-email", action="store_false",
-                default=flag_default("eff_email"), dest="eff_email",
+    helpful.add(["register", "update_account", "automation"], "--no-eff-email",
+                action="store_false", default=flag_default("eff_email"), dest="eff_email",
                 help="Don't share your e-mail address with EFF")
     helpful.add(
         ["automation", "certonly", "run"],
