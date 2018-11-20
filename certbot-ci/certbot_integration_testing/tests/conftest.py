@@ -3,20 +3,22 @@ import os
 import re
 import subprocess
 import time
-import atexit
 import shutil
 
 from six.moves.urllib.request import urlopen
 
 
 def pytest_configure(config):
-    print('=> Setting up a Boulder instance ...')
+    if not os.environ.get('CERTBOT_INTEGRATION'):
+        raise ValueError('Error, CERTBOT_INTEGRATION environment variable is not setted.')
+    acme_ca = 'Bouler' if 'boulder' in os.environ.get('CERTBOT_INTEGRATION') else 'Pebble'
 
+    print('=> Setting up a {0} instance ...'.format(acme_ca))
     tempdir = tempfile.mkdtemp()
-    workspace = os.path.join(tempdir, 'src/github.com/letsencrypt/boulder')
+    workspace = os.path.join(tempdir, 'src/github.com/letsencrypt/{0}'.format(acme_ca.lower()))
 
     def cleanup():
-        print('=> Tear down the Boulder instance ...')
+        print('=> Tear down the {0} instance ...'.format(acme_ca))
 
         try:
             subprocess.check_call(['docker-compose', 'down'], cwd=workspace)
@@ -28,12 +30,25 @@ def pytest_configure(config):
             except IOError:
                 pass
 
-        print('=> Boulder instance stopped.')
+        print('=> {0} instance stopped.'.format(acme_ca))
 
     config.add_cleanup(cleanup)
 
     os.makedirs(workspace)
 
+    if acme_ca == 'Boulder':
+        url = setup_boulder(workspace)
+    else:
+        url = setup_pebble(workspace)
+
+    print('=> Waiting for {0} instance to respond ...'.format(acme_ca))
+
+    check_until_timeout(url)
+
+    print('=> {0} instance ready.'.format(acme_ca))
+
+
+def setup_boulder(workspace):
     subprocess.check_call(['git', 'clone', '--depth', '1', '--single-branch',
                            'https://github.com/letsencrypt/boulder', workspace])
 
@@ -48,11 +63,11 @@ def pytest_configure(config):
 
     subprocess.check_call(['docker-compose', 'up', '-d', 'boulder'], cwd=workspace)
 
-    print('=> Waiting for boulder instance to respond ...')
+    return 'http://localhost:4000/directory'
 
-    check_until_timeout('http://localhost:4000/directory')
 
-    print('=> Boulder instance ready.')
+def setup_pebble(workspace):
+    raise RuntimeError('No supported yet')
 
 
 def check_until_timeout(url):

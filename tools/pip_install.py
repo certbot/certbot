@@ -83,10 +83,10 @@ def main(args):
 
         merge_requirements(tools_path, test_constraints, all_constraints)
         if requirements:
-            call_with_print('"{0}" -m pip install -q --constraint "{1}" --requirement "{2}"'
+            call_with_print('"{0}" -m pip install --constraint "{1}" --requirement "{2}"'
                             .format(sys.executable, all_constraints, requirements))
 
-        call_with_print('"{0}" -m pip install -q --constraint "{1}" {2}'
+        call_with_print('"{0}" -m pip install --constraint "{1}" {2}'
                         .format(sys.executable, all_constraints, ' '.join(args)))
     finally:
         shutil.rmtree(working_dir)
