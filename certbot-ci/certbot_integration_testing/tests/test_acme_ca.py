@@ -8,7 +8,7 @@ from six.moves.urllib.request import urlopen
 class TestSuite(object):
 
     def test_directory_accessibility(self, acme_url):
-        context = ssl.SSLContext(ssl.CERT_NONE)
+        context = ssl.SSLContext()
         urlopen(acme_url, context=context)
 
     def test_will_fail(selfs):

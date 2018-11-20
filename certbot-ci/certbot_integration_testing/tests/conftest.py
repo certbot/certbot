@@ -122,7 +122,7 @@ services:
 
 
 def _check_until_timeout(url):
-    context = ssl.SSLContext(ssl.CERT_NONE)
+    context = ssl.SSLContext()
 
     for _ in range(0, 150):
         time.sleep(1)
