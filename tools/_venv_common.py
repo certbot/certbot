@@ -1,4 +1,14 @@
 #!/usr/bin/env python
+"""Aids in creating a developer virtual environment for Certbot.
+
+When this module is run as a script, it takes the arguments that should
+be passed to pip to install the Certbot packages as command line
+arguments. The virtual environment will be created with the name "venv"
+in the current working directory and will use the default version of
+Python for the virtualenv executable in your PATH. You can change the
+name of the virtual environment by setting the environment variable
+VENV_NAME.
+"""
 
 from __future__ import print_function
 
@@ -9,6 +19,7 @@ import time
 import subprocess
 import sys
 import re
+import shlex
 
 VERSION_PATTERN = re.compile(r'^(\d+)\.(\d+).*$')
 
@@ -91,18 +102,18 @@ def _check_version(version_str, major_version):
     return False
 
 
-def subprocess_with_print(command):
-    print(command)
-    subprocess.check_call(command, shell=True)
+def subprocess_with_print(cmd, env=os.environ, shell=False):
+    print('+ {0}'.format(subprocess.list2cmdline(cmd)) if isinstance(cmd, list) else cmd)
+    subprocess.check_call(cmd, env=env, shell=shell)
 
 
-def get_venv_python(venv_path):
+def get_venv_bin_path(venv_path):
     python_linux = os.path.join(venv_path, 'bin/python')
     if os.path.isfile(python_linux):
-        return python_linux
+        return os.path.abspath(os.path.dirname(python_linux))
     python_windows = os.path.join(venv_path, 'Scripts\\python.exe')
     if os.path.isfile(python_windows):
-        return python_windows
+        return os.path.abspath(os.path.dirname(python_windows))
 
     raise ValueError((
         'Error, could not find python executable in venv path {0}: is it a valid venv ?'
@@ -110,27 +121,43 @@ def get_venv_python(venv_path):
 
 
 def main(venv_name, venv_args, args):
+    """Creates a virtual environment and installs packages.
+
+    :param str venv_name: The name or path at where the virtual
+        environment should be created.
+    :param str venv_args: Command line arguments for virtualenv
+    :param str args: Command line arguments that should be given to pip
+        to install packages
+    """
+
     for path in glob.glob('*.egg-info'):
         if os.path.isdir(path):
             shutil.rmtree(path)
         else:
             os.remove(path)
 
+    env_venv_name = os.environ.get('VENV_NAME')
+    if env_venv_name:
+        print('Creating venv at {0}'
+              ' as specified in VENV_NAME'.format(env_venv_name))
+        venv_name = env_venv_name
+
     if os.path.isdir(venv_name):
         os.rename(venv_name, '{0}.{1}.bak'.format(venv_name, int(time.time())))
 
-    subprocess_with_print('"{0}" -m virtualenv --no-site-packages --setuptools {1} {2}'
-                          .format(sys.executable, venv_name, venv_args))
+    command = [sys.executable, '-m', 'virtualenv', '--no-site-packages', '--setuptools', venv_name]
+    command.extend(shlex.split(venv_args))
+    subprocess_with_print(command)
 
-    python_executable = get_venv_python(venv_name)
-
-    subprocess_with_print('"{0}" {1}'.format(
-        python_executable,
-        os.path.normpath('./letsencrypt-auto-source/pieces/pipstrap.py')))
-    subprocess_with_print('"{0}" {1} {2}'.format(
-        python_executable,
-        os.path.normpath('./tools/pip_install.py'),
-        ' '.join(args)))
+    # We execute the two following commands in the context of the virtual environment, to install
+    # the packages in it. To do so, we append the venv binary to the PATH that will be used for
+    # these commands. With this trick, correct python executable will be selected.
+    new_environ = os.environ.copy()
+    new_environ['PATH'] = os.pathsep.join([get_venv_bin_path(venv_name), new_environ['PATH']])
+    subprocess_with_print('python {0}'.format('./letsencrypt-auto-source/pieces/pipstrap.py'),
+                          env=new_environ, shell=True)
+    subprocess_with_print('python {0} {1}'.format('./tools/pip_install.py', ' '.join(args)),
+                          env=new_environ, shell=True)
 
     if os.path.isdir(os.path.join(venv_name, 'bin')):
         # Linux/OSX specific
@@ -150,6 +177,6 @@ def main(venv_name, venv_args, args):
 
 
 if __name__ == '__main__':
-    main(os.environ.get('VENV_NAME', 'venv'),
-         os.environ.get('VENV_ARGS', ''),
+    main('venv',
+         '',
          sys.argv[1:])
