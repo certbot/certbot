@@ -70,6 +70,7 @@ class _CloudXNSLexiconClient(dns_common_lexicon.LexiconClient):
         super(_CloudXNSLexiconClient, self).__init__()
 
         self.provider = cloudxns.Provider({
+            'provider_name': 'cloudxns',
             'auth_username': api_key,
             'auth_token': secret_key,
             'ttl': ttl,

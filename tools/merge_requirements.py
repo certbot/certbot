@@ -10,7 +10,6 @@ from __future__ import print_function
 
 import sys
 
-
 def read_file(file_path):
     """Reads in a Python requirements file.
 
@@ -32,17 +31,17 @@ def read_file(file_path):
     return d
 
 
-def print_requirements(requirements):
-    """Prints requirements to stdout.
+def output_requirements(requirements):
+    """Prepare print requirements to stdout.
 
     :param dict requirements: mapping from a project to its pinned version
 
     """
-    print('\n'.join('{0}=={1}'.format(k, v)
-          for k, v in sorted(requirements.items())))
+    return '\n'.join('{0}=={1}'.format(k, v)
+          for k, v in sorted(requirements.items()))
 
 
-def merge_requirements_files(*files):
+def main(*files):
     """Merges multiple requirements files together and prints the result.
 
     Requirement files specified later in the list take precedence over earlier
@@ -54,8 +53,9 @@ def merge_requirements_files(*files):
     d = {}
     for f in files:
         d.update(read_file(f))
-    print_requirements(d)
+    return output_requirements(d)
 
 
 if __name__ == '__main__':
-    merge_requirements_files(*sys.argv[1:])
+    merged_requirements = main(*sys.argv[1:])
+    print(merged_requirements)

@@ -12,7 +12,6 @@ import platform
 import re
 import six
 import socket
-import stat
 import subprocess
 import sys
 
@@ -21,6 +20,7 @@ from collections import OrderedDict
 import configargparse
 
 from acme.magic_typing import Tuple, Union  # pylint: disable=unused-import, no-name-in-module
+from certbot import compat
 from certbot import constants
 from certbot import errors
 from certbot import lock
@@ -204,7 +204,7 @@ def check_permissions(filepath, mode, uid=0):
 
     """
     file_stat = os.stat(filepath)
-    return stat.S_IMODE(file_stat.st_mode) == mode and file_stat.st_uid == uid
+    return compat.compare_file_modes(file_stat.st_mode, mode) and file_stat.st_uid == uid
 
 
 def safe_open(path, mode="w", chmod=None, buffering=None):
