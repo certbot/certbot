@@ -7,7 +7,6 @@ version = '0.29.0.dev0'
 install_requires = [
     'pytest',
     'six',
-    'docker-compose'
 ]
 
 setup(

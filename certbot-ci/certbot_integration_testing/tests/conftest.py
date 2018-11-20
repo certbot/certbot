@@ -9,25 +9,28 @@ import shutil
 from six.moves.urllib.request import urlopen
 
 
-def cleanup(workspace, tempdir):
-    print('=> Tear down the Boulder instance ...')
-
-    try:
-        subprocess.check_call(['docker-compose', 'down'], cwd=workspace)
-    finally:
-        shutil.rmtree(tempdir)
-
-    print('=> Boulder instance stopped.')
-
-
 def pytest_configure(config):
-    assert config
     print('=> Setting up a Boulder instance ...')
 
     tempdir = tempfile.mkdtemp()
     workspace = os.path.join(tempdir, 'src/github.com/letsencrypt/boulder')
 
-    atexit.register(cleanup, workspace, tempdir)
+    def cleanup():
+        print('=> Tear down the Boulder instance ...')
+
+        try:
+            subprocess.check_call(['docker-compose', 'down'], cwd=workspace)
+        except subprocess.CalledProcessError:
+            pass
+        finally:
+            try:
+                shutil.rmtree(tempdir)
+            except IOError:
+                pass
+
+        print('=> Boulder instance stopped.')
+
+    config.add_cleanup(cleanup)
 
     os.makedirs(workspace)
 
