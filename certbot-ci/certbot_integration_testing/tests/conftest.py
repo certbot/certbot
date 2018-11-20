@@ -1,15 +1,14 @@
 import tempfile
-import os
 import re
-import subprocess
 import time
 import shutil
 import ssl
-import pytest
+import subprocess
+import os
 
 from six.moves.urllib.request import urlopen
 
-from certbot_integration_testing.fixtures import *
+from certbot_integration_testing.utils.fixtures import *
 
 PEBBLE_VERSION = '2018-11-02'
 
