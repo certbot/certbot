@@ -912,6 +912,35 @@ OldVenvExists() {
     [ -n "$OLD_VENV_PATH" -a -f "$OLD_VENV_PATH/bin/letsencrypt" ]
 }
 
+# Given python path, version 1 and version 2, check if version 1 is outdated compared to version 2.
+# An unofficial version provided as version 1 (eg. 0.28.0.dev0) will be treated
+# specifically by printing "UNOFFICIAL". Otherwise, print "OUTDATED" if version 1
+# is outdated, and "UP_TO_DATE" if not.
+# This function relies only on installed python environment (2.x or 3.x) by certbot-auto.
+CompareVersions() {
+    "$1" - "$2" "$3" << "UNLIKELY_EOF"
+import sys
+from distutils.version import StrictVersion
+
+try:
+    current = StrictVersion(sys.argv[1])
+except ValueError:
+    sys.stdout.write('UNOFFICIAL')
+    sys.exit()
+
+try:
+    remote = StrictVersion(sys.argv[2])
+except ValueError:
+    sys.stdout.write('UP_TO_DATE')
+    sys.exit()
+
+if current < remote:
+    sys.stdout.write('OUTDATED')
+else:
+    sys.stdout.write('UP_TO_DATE')
+UNLIKELY_EOF
+}
+
 if [ "$1" = "--le-auto-phase2" ]; then
   # Phase 2: Create venv, install LE, and run.
 
@@ -1215,13 +1244,11 @@ UNLIKELY_EOF
     cat << "UNLIKELY_EOF" > "$TEMP_DIR/pipstrap.py"
 #!/usr/bin/env python
 """A small script that can act as a trust root for installing pip >=8
-
 Embed this in your project, and your VCS checkout is all you have to trust. In
 a post-peep era, this lets you claw your way to a hash-checking version of pip,
 with which you can install the rest of your dependencies safely. All it assumes
 is Python 2.6 or better and *some* version of pip already installed. If
 anything goes wrong, it will exit with a non-zero status code.
-
 """
 # This is here so embedded copies are MIT-compliant:
 # Copyright (c) 2016 Erik Rose
@@ -1260,7 +1287,7 @@ except ImportError:
                 cmd = popenargs[0]
             raise CalledProcessError(retcode, cmd)
         return output
-from sys import exit, version_info, executable
+from sys import exit, version_info
 from tempfile import mkdtemp
 try:
     from urllib2 import build_opener, HTTPHandler, HTTPSHandler
@@ -1272,7 +1299,7 @@ except ImportError:
     from urllib.parse import urlparse  # 3.4
 
 
-__version__ = 2, 0, 0
+__version__ = 1, 5, 1
 PIP_VERSION = '9.0.1'
 DEFAULT_INDEX_BASE = 'https://pypi.python.org'
 
@@ -1348,10 +1375,8 @@ def hashed_download(url, temp, digest):
 
 def get_index_base():
     """Return the URL to the dir containing the "packages" folder.
-
     Try to wring something out of PIP_INDEX_URL, if set. Hack "/simple" off the
     end if it's there; that is likely to give us the right dir.
-
     """
     env_var = environ.get('PIP_INDEX_URL', '').rstrip('/')
     if env_var:
@@ -1365,7 +1390,7 @@ def get_index_base():
 
 
 def main():
-    pip_version = StrictVersion(check_output([executable, '-m', 'pip', '--version'])
+    pip_version = StrictVersion(check_output(['pip', '--version'])
                                 .decode('utf-8').split()[1])
     min_pip_version = StrictVersion(PIP_VERSION)
     if pip_version >= min_pip_version:
@@ -1378,7 +1403,7 @@ def main():
                                      temp,
                                      digest)
                      for path, digest in PACKAGES]
-        check_output('{0} -m pip install --no-index --no-deps -U '.format(quote(executable)) +
+        check_output('pip install --no-index --no-deps -U ' +
                      # Disable cache since we're not using it and it otherwise
                      # sometimes throws permission warnings:
                      ('--no-cache-dir ' if has_pip_cache else '') +
@@ -1397,6 +1422,7 @@ def main():
 
 if __name__ == '__main__':
     exit(main())
+
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
     # Set PATH so pipstrap upgrades the right (v)env:
@@ -1640,7 +1666,12 @@ UNLIKELY_EOF
       error "WARNING: couldn't find Python $MIN_PYTHON_VERSION+ to check for updates."
     elif ! REMOTE_VERSION=`"$LE_PYTHON" "$TEMP_DIR/fetch.py" --latest-version` ; then
       error "WARNING: unable to check for updates."
-    elif [ "$LE_AUTO_VERSION" != "$REMOTE_VERSION" ]; then
+    fi
+
+    LE_VERSION_STATE=`CompareVersions "$LE_PYTHON" "$LE_AUTO_VERSION" "$REMOTE_VERSION"`
+    if [ "$LE_VERSION_STATE" = "UNOFFICIAL" ]; then
+      say "Unofficial certbot-auto version detected, self-upgrade is disabled: $LE_AUTO_VERSION"
+    elif [ "$LE_VERSION_STATE" = "OUTDATED" ]; then
       say "Upgrading certbot-auto $LE_AUTO_VERSION to $REMOTE_VERSION..."
 
       # Now we drop into Python so we don't have to install even more
