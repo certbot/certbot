@@ -4,8 +4,12 @@ import re
 import subprocess
 import time
 import shutil
+import ssl
 
 from six.moves.urllib.request import urlopen
+
+
+PEBBLE_VERSION = '2018-11-02'
 
 
 def pytest_configure(config):
@@ -66,15 +70,34 @@ def setup_boulder(workspace):
     return 'http://localhost:4000/directory'
 
 
-def setup_pebble(workspace):
-    raise RuntimeError('No supported yet')
+def setup_pebble(workspace, strict=False):
+    data = '''\
+version: '3'
+services:
+ pebble:
+  image: letsencrypt/pebble:{0}
+  command: pebble -strict {1} -dnsserver 10.77.77.1
+  ports:
+    - 14000:14000
+  environment:
+    - PEBBLE_VA_NOSLEEP=1
+'''.format(PEBBLE_VERSION, 'false' if not strict else 'true')
+
+    with open(os.path.join(workspace, 'docker-compose.yml'), 'w') as file:
+        file.write(data)
+
+    subprocess.check_call(['docker-compose', 'up', '-d', 'pebble'], cwd=workspace)
+
+    return 'https://localhost:14000/dir'
 
 
 def check_until_timeout(url):
+    context = ssl.SSLContext(ssl.CERT_NONE)
+
     for _ in range(0, 150):
         time.sleep(1)
         try:
-            if urlopen(url).getcode() == 200:
+            if urlopen(url, context=context).getcode() == 200:
                 return
         except IOError:
             pass
