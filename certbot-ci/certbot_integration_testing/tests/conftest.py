@@ -11,7 +11,7 @@ from six.moves.urllib.request import urlopen
 def pytest_configure(config):
     if not os.environ.get('CERTBOT_INTEGRATION'):
         raise ValueError('Error, CERTBOT_INTEGRATION environment variable is not setted.')
-    acme_ca = 'Bouler' if 'boulder' in os.environ.get('CERTBOT_INTEGRATION') else 'Pebble'
+    acme_ca = 'Boulder' if 'boulder' in os.environ.get('CERTBOT_INTEGRATION') else 'Pebble'
 
     print('=> Setting up a {0} instance ...'.format(acme_ca))
     tempdir = tempfile.mkdtemp()
