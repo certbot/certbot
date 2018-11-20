@@ -944,8 +944,8 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
     @mock.patch('certbot.crypto_util.notAfter')
     @test_util.patch_get_utility()
     def test_certonly_new_request_success(self, mock_get_utility, mock_notAfter):
-        cert_path = '/etc/letsencrypt/live/foo.bar'
-        key_path = '/etc/letsencrypt/live/baz.qux'
+        cert_path = os.path.normpath(os.path.join(self.config.config_dir, 'live/foo.bar'))
+        key_path = os.path.normpath(os.path.join(self.config.config_dir, 'live/baz.qux'))
         date = '1970-01-01'
         mock_notAfter().date.return_value = date
 
@@ -975,7 +975,8 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
                              reuse_key=False):
         # pylint: disable=too-many-locals,too-many-arguments,too-many-branches
         cert_path = test_util.vector_path('cert_512.pem')
-        chain_path = '/etc/letsencrypt/live/foo.bar/fullchain.pem'
+        chain_path = os.path.normpath(os.path.join(self.config.config_dir,
+                                                   'live/foo.bar/fullchain.pem'))
         mock_lineage = mock.MagicMock(cert=cert_path, fullchain=chain_path,
                                       cert_path=cert_path, fullchain_path=chain_path)
         mock_lineage.should_autorenew.return_value = due_for_renewal
