@@ -22,7 +22,7 @@ def acme_url():
     if integration == 'boulder-v2':
         return 'http://localhost:4001/directory'
     if integration == 'pebble' or integration == 'pebble-strict':
-        return 'https://localhost:4000/dir'
+        return 'https://localhost:14000/dir'
 
     raise ValueError('Invalid CERTBOT_INTEGRATION value')
 
