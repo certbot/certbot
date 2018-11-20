@@ -9,22 +9,9 @@ import pytest
 
 from six.moves.urllib.request import urlopen
 
+from certbot_integration_testing.fixtures import *
 
 PEBBLE_VERSION = '2018-11-02'
-
-
-@pytest.fixture(scope='session')
-def acme_url():
-    integration = os.environ.get('CERTBOT_INTEGRATION')
-
-    if integration == 'boulder-v1':
-        return 'http://localhost:4000/directory'
-    if integration == 'boulder-v2':
-        return 'http://localhost:4001/directory'
-    if integration == 'pebble' or integration == 'pebble-strict':
-        return 'https://localhost:14000/dir'
-
-    raise ValueError('Invalid CERTBOT_INTEGRATION value')
 
 
 def pytest_configure(config):
