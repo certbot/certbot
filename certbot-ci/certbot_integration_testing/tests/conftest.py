@@ -14,8 +14,7 @@ def pytest_configure(config):
     acme_ca = 'Boulder' if 'boulder' in os.environ.get('CERTBOT_INTEGRATION') else 'Pebble'
 
     print('=> Setting up a {0} instance ...'.format(acme_ca))
-    tempdir = tempfile.mkdtemp()
-    workspace = os.path.join(tempdir, 'src/github.com/letsencrypt/{0}'.format(acme_ca.lower()))
+    workspace = tempfile.mkdtemp()
 
     def cleanup():
         print('=> Tear down the {0} instance ...'.format(acme_ca))
@@ -26,7 +25,7 @@ def pytest_configure(config):
             pass
         finally:
             try:
-                shutil.rmtree(tempdir)
+                shutil.rmtree(workspace)
             except IOError:
                 pass
 
