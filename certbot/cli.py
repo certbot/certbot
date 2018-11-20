@@ -986,7 +986,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
     # TODO: When `certbot register --update-registration` is fully deprecated, delete following helpful.add
     helpful.add(
         "register", "--update-registration", action="store_true",
-        default=flag_default("update_account"), dest="update_registration",
+        default=flag_default("update_registration"), dest="update_registration",
         help=argparse.SUPPRESS)
     helpful.add(
         ["register", "update_account", "unregister", "automation"], "-m", "--email",
