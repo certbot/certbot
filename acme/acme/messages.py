@@ -274,6 +274,7 @@ class Registration(ResourceBody):
     agreement = jose.Field('agreement', omitempty=True)
     status = jose.Field('status', omitempty=True)
     terms_of_service_agreed = jose.Field('termsOfServiceAgreed', omitempty=True)
+    only_return_existing = jose.Field('onlyReturnExisting', omitempty=True)
 
     phone_prefix = 'tel:'
     email_prefix = 'mailto:'
@@ -285,7 +286,7 @@ class Registration(ResourceBody):
         if phone is not None:
             details.append(cls.phone_prefix + phone)
         if email is not None:
-            details.append(cls.email_prefix + email)
+            details.extend([cls.email_prefix + mail for mail in email.split(',')])
         kwargs['contact'] = tuple(details)
         return cls(**kwargs)
 
@@ -522,7 +523,7 @@ class Order(ResourceBody):
     """
     identifiers = jose.Field('identifiers', omitempty=True)
     status = jose.Field('status', decoder=Status.from_json,
-                        omitempty=True, default=STATUS_PENDING)
+                        omitempty=True)
     authorizations = jose.Field('authorizations', omitempty=True)
     certificate = jose.Field('certificate', omitempty=True)
     finalize = jose.Field('finalize', omitempty=True)
@@ -552,4 +553,3 @@ class OrderResource(ResourceWithURI):
 class NewOrder(Order):
     """New order."""
     resource_type = 'new-order'
-    resource = fields.Resource(resource_type)

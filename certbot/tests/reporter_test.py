@@ -12,7 +12,7 @@ class ReporterTest(unittest.TestCase):
         from certbot import reporter
         self.reporter = reporter.Reporter(mock.MagicMock(quiet=False))
 
-        self.old_stdout = sys.stdout
+        self.old_stdout = sys.stdout  # type: ignore
         sys.stdout = six.StringIO()
 
     def tearDown(self):
@@ -21,32 +21,32 @@ class ReporterTest(unittest.TestCase):
     def test_multiline_message(self):
         self.reporter.add_message("Line 1\nLine 2", self.reporter.LOW_PRIORITY)
         self.reporter.print_messages()
-        output = sys.stdout.getvalue()
+        output = sys.stdout.getvalue()  # type: ignore
         self.assertTrue("Line 1\n" in output)
         self.assertTrue("Line 2" in output)
 
     def test_tty_print_empty(self):
-        sys.stdout.isatty = lambda: True
+        sys.stdout.isatty = lambda: True  # type: ignore
         self.test_no_tty_print_empty()
 
     def test_no_tty_print_empty(self):
         self.reporter.print_messages()
-        self.assertEqual(sys.stdout.getvalue(), "")
+        self.assertEqual(sys.stdout.getvalue(), "")  # type: ignore
         try:
             raise ValueError
         except ValueError:
             self.reporter.print_messages()
-        self.assertEqual(sys.stdout.getvalue(), "")
+        self.assertEqual(sys.stdout.getvalue(), "")  # type: ignore
 
     def test_tty_successful_exit(self):
-        sys.stdout.isatty = lambda: True
+        sys.stdout.isatty = lambda: True  # type: ignore
         self._successful_exit_common()
 
     def test_no_tty_successful_exit(self):
         self._successful_exit_common()
 
     def test_tty_unsuccessful_exit(self):
-        sys.stdout.isatty = lambda: True
+        sys.stdout.isatty = lambda: True  # type: ignore
         self._unsuccessful_exit_common()
 
     def test_no_tty_unsuccessful_exit(self):
@@ -55,7 +55,7 @@ class ReporterTest(unittest.TestCase):
     def _successful_exit_common(self):
         self._add_messages()
         self.reporter.print_messages()
-        output = sys.stdout.getvalue()
+        output = sys.stdout.getvalue()  # type: ignore
         self.assertTrue("IMPORTANT NOTES:" in output)
         self.assertTrue("High" in output)
         self.assertTrue("Med" in output)
@@ -67,7 +67,7 @@ class ReporterTest(unittest.TestCase):
             raise ValueError
         except ValueError:
             self.reporter.print_messages()
-        output = sys.stdout.getvalue()
+        output = sys.stdout.getvalue()  # type: ignore
         self.assertTrue("IMPORTANT NOTES:" in output)
         self.assertTrue("High" in output)
         self.assertTrue("Med" not in output)

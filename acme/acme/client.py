@@ -50,7 +50,6 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
     :ivar .ClientNetwork net: Client network.
     :ivar int acme_version: ACME protocol version. 1 or 2.
     """
-
     def __init__(self, directory, net, acme_version):
         """Initialize.
 
@@ -90,6 +89,8 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
 
         """
         kwargs.setdefault('acme_version', self.acme_version)
+        if hasattr(self.directory, 'newNonce'):
+            kwargs.setdefault('new_nonce_url', getattr(self.directory, 'newNonce'))
         return self.net.post(*args, **kwargs)
 
     def update_registration(self, regr, update=None):
@@ -578,15 +579,56 @@ class ClientV2(ClientBase):
 
         :param .NewRegistration new_account:
 
+        :raises .ConflictError: in case the account already exists
+
         :returns: Registration Resource.
         :rtype: `.RegistrationResource`
         """
         response = self._post(self.directory['newAccount'], new_account)
+        # if account already exists
+        if response.status_code == 200 and 'Location' in response.headers:
+            raise errors.ConflictError(response.headers.get('Location'))
         # "Instance of 'Field' has no key/contact member" bug:
         # pylint: disable=no-member
         regr = self._regr_from_response(response)
         self.net.account = regr
         return regr
+
+    def query_registration(self, regr):
+        """Query server about registration.
+
+        :param messages.RegistrationResource: Existing Registration
+            Resource.
+
+        """
+        self.net.account = regr
+        updated_regr = super(ClientV2, self).query_registration(regr)
+        self.net.account = updated_regr
+        return updated_regr
+
+    def update_registration(self, regr, update=None):
+        """Update registration.
+
+        :param messages.RegistrationResource regr: Registration Resource.
+        :param messages.Registration update: Updated body of the
+            resource. If not provided, body will be taken from `regr`.
+
+        :returns: Updated Registration Resource.
+        :rtype: `.RegistrationResource`
+
+        """
+        # https://github.com/certbot/certbot/issues/6155
+        new_regr = self._get_v2_account(regr)
+        return super(ClientV2, self).update_registration(new_regr, update)
+
+    def _get_v2_account(self, regr):
+        self.net.account = None
+        only_existing_reg = regr.body.update(only_return_existing=True)
+        response = self._post(self.directory['newAccount'], only_existing_reg)
+        updated_uri = response.headers['Location']
+        new_regr = regr.update(uri=updated_uri)
+        self.net.account = new_regr
+        return new_regr
 
     def new_order(self, csr_pem):
         """Request a new Order object from the server.
@@ -910,6 +952,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         if acme_version == 2:
             kwargs["url"] = url
             # newAccount and revokeCert work without the kid
+            # newAccount must not have kid
             if self.account is not None:
                 kwargs["kid"] = self.account["uri"]
         kwargs["key"] = self.key
@@ -1065,10 +1108,15 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         else:
             raise errors.MissingNonce(response)
 
-    def _get_nonce(self, url):
+    def _get_nonce(self, url, new_nonce_url):
         if not self._nonces:
             logger.debug('Requesting fresh nonce')
-            self._add_nonce(self.head(url))
+            if new_nonce_url is None:
+                response = self.head(url)
+            else:
+                # request a new nonce from the acme newNonce endpoint
+                response = self._check_response(self.head(new_nonce_url), content_type=None)
+            self._add_nonce(response)
         return self._nonces.pop()
 
     def post(self, *args, **kwargs):
@@ -1089,8 +1137,13 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
 
     def _post_once(self, url, obj, content_type=JOSE_CONTENT_TYPE,
             acme_version=1, **kwargs):
-        data = self._wrap_in_jws(obj, self._get_nonce(url), url, acme_version)
+        try:
+            new_nonce_url = kwargs.pop('new_nonce_url')
+        except KeyError:
+            new_nonce_url = None
+        data = self._wrap_in_jws(obj, self._get_nonce(url, new_nonce_url), url, acme_version)
         kwargs.setdefault('headers', {'Content-Type': content_type})
         response = self._send_request('POST', url, data=data, **kwargs)
+        response = self._check_response(response, content_type=content_type)
         self._add_nonce(response)
-        return self._check_response(response, content_type=content_type)
+        return response

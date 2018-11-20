@@ -10,6 +10,7 @@ import zope.component
 from acme import challenges
 from acme import client as acme_client
 from acme import messages
+from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
 
 from certbot import achallenges
 from certbot import errors
@@ -326,6 +327,11 @@ class HandleAuthorizationsTest(unittest.TestCase):
                 azr.body.combinations)
             aauthzrs[i] = type(aauthzr)(updated_azr, aauthzr.achalls)
 
+    @mock.patch("certbot.auth_handler.logger")
+    def test_tls_sni_logs(self, logger):
+        self._test_name1_tls_sni_01_1_common(combos=True)
+        self.assertTrue("deprecated" in logger.warning.call_args[0][0])
+
 
 class PollChallengesTest(unittest.TestCase):
     # pylint: disable=protected-access
@@ -354,11 +360,12 @@ class PollChallengesTest(unittest.TestCase):
                 acme_util.CHALLENGES, [messages.STATUS_PENDING] * 3, False), [])
         ]
 
-        self.chall_update = {}
+        self.chall_update = {}  # type: Dict[int, achallenges.KeyAuthorizationAnnotatedChallenge]
         for i, aauthzr in enumerate(self.aauthzrs):
             self.chall_update[i] = [
                 challb_to_achall(challb, mock.Mock(key="dummy_key"), self.doms[i])
                 for challb in aauthzr.authzr.body.challenges]
+
 
     @mock.patch("certbot.auth_handler.time")
     def test_poll_challenges(self, unused_mock_time):

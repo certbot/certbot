@@ -190,10 +190,11 @@ If you'd like to obtain a wildcard certificate from Let's Encrypt or run
 ``certbot`` on a machine other than your target webserver, you can use one of
 Certbot's DNS plugins.
 
-These plugins are still in the process of being packaged
-by many distributions and cannot currently be installed with ``certbot-auto``.
-If, however, you are comfortable installing the certificates yourself,
-you can run these plugins with :ref:`Docker <docker-user>`.
+These plugins are not included in a default Certbot installation and must be
+installed separately. While the DNS plugins cannot currently be used with
+``certbot-auto``, they are available in many OS package managers and as Docker
+images. Visit https://certbot.eff.org to learn the best way to use the DNS
+plugins on your system.
 
 Once installed, you can find documentation on how to use each plugin at:
 
@@ -203,8 +204,10 @@ Once installed, you can find documentation on how to use each plugin at:
 * `certbot-dns-dnsimple <https://certbot-dns-dnsimple.readthedocs.io>`_
 * `certbot-dns-dnsmadeeasy <https://certbot-dns-dnsmadeeasy.readthedocs.io>`_
 * `certbot-dns-google <https://certbot-dns-google.readthedocs.io>`_
+* `certbot-dns-linode <https://certbot-dns-linode.readthedocs.io>`_
 * `certbot-dns-luadns <https://certbot-dns-luadns.readthedocs.io>`_
 * `certbot-dns-nsone <https://certbot-dns-nsone.readthedocs.io>`_
+* `certbot-dns-ovh <https://certbot-dns-ovh.readthedocs.io>`_
 * `certbot-dns-rfc2136 <https://certbot-dns-rfc2136.readthedocs.io>`_
 * `certbot-dns-route53 <https://certbot-dns-route53.readthedocs.io>`_
 
@@ -454,6 +457,12 @@ Renewing certificates
    days). Make sure you renew the certificates at least once in 3
    months.
 
+.. seealso:: Many of the certbot clients obtained through a
+   distribution come with automatic renewal out of the box,
+   such as Debian and Ubuntu versions installed through `apt`,
+   CentOS/RHEL 7 through EPEL, etc.  See `Automated Renewals`_
+   for more details.
+
 As of version 0.10.0, Certbot supports a ``renew`` action to check
 all installed certificates for impending expiry and attempt to renew
 them. The simplest form is simply
@@ -559,12 +568,6 @@ are only renewed when they're determined to be near expiry, the command
 can run on a regular basis, like every week or every day). In that case,
 you are likely to want to use the ``-q`` or ``--quiet`` quiet flag to
 silence all output except errors.
-
-.. seealso:: Many of the certbot clients obtained through a
-   distribution come with automatic renewal out of the box,
-   such as Debian and Ubuntu versions installed through `apt`,
-   CentOS/RHEL 7 through EPEL, etc.  See `Automated Renewals`_
-   for more details.
 
 If you are manually renewing all of your certificates, the
 ``--force-renewal`` flag may be helpful; it causes the expiration time of
@@ -902,7 +905,7 @@ Lock Files
 
 When processing a validation Certbot writes a number of lock files on your system
 to prevent multiple instances from overwriting each other's changes. This means
-that be default two instances of Certbot will not be able to run in parallel.
+that by default two instances of Certbot will not be able to run in parallel.
 
 Since the directories used by Certbot are configurable, Certbot
 will write a lock file for all of the directories it uses. This include Certbot's
@@ -984,9 +987,6 @@ Getting help
 
 If you're having problems, we recommend posting on the Let's Encrypt
 `Community Forum <https://community.letsencrypt.org>`_.
-
-You can also chat with us on IRC: `(#letsencrypt @
-freenode) <https://webchat.freenode.net?channels=%23letsencrypt>`_
 
 If you find a bug in the software, please do report it in our `issue
 tracker <https://github.com/certbot/certbot/issues>`_. Remember to
