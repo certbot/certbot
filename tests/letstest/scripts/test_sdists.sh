@@ -10,7 +10,7 @@ VERSION=$(letsencrypt-auto-source/version.py)
 export VENV_ARGS="-p $PYTHON"
 
 # setup venv
-tools/_venv_common.sh --requirement letsencrypt-auto-source/pieces/dependency-requirements.txt
+tools/_venv_common.py --requirement letsencrypt-auto-source/pieces/dependency-requirements.txt
 . ./venv/bin/activate
 
 # build sdists
