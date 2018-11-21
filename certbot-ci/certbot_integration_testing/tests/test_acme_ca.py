@@ -1,5 +1,8 @@
 import ssl
 import multiprocessing
+import tempfile
+import subprocess
+import os
 
 import pytest
 from six.moves.urllib.request import urlopen
@@ -48,9 +51,14 @@ class TestSuite(object):
         context = ssl.SSLContext()
         urlopen(acme_url, context=context)
 
-    def test_will_fail(self, common_no_force_renew):
-        common_no_force_renew(['register'])
-        assert False
+    def test_basic_commands(self, common):
+        initial_count_tmpfiles = len(os.listdir(tempfile.tempdir))
 
-    def test_should_success(self):
-        assert True
+        with pytest.raises(subprocess.CalledProcessError):
+            common(['--csr'])
+        common(['--help'])
+        common(['--help', 'all'])
+        common(['--version'])
+
+        new_count_tmpfiles = len(os.listdir(tempfile.tempdir))
+        assert initial_count_tmpfiles == new_count_tmpfiles
