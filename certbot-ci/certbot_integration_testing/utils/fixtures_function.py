@@ -41,9 +41,9 @@ def tls_sni_01_server(tls_sni_01_port):
 def hook_probe():
     probe = tempfile.mkstemp()
     try:
-        yield probe[0]
+        yield probe[1]
     finally:
-        os.unlink(probe)
+        os.unlink(probe[1])
 
 
 @pytest.fixture

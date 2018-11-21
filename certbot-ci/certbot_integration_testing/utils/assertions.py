@@ -5,6 +5,7 @@ def assert_hook_execution(probe_path, probe_content):
     with open(probe_path, 'r') as file:
         data = file.read()
 
+    print(data)
     assert probe_content in data
 
 

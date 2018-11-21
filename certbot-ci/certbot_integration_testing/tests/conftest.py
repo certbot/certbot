@@ -6,7 +6,6 @@ import ssl
 import subprocess
 import os
 import pytest
-import sys
 
 from six.moves.urllib.request import urlopen
 
@@ -22,12 +21,12 @@ def pytest_configure(config):
         raise ValueError('Error, CERTBOT_INTEGRATION environment variable is not setted.')
     acme_ca = 'Boulder' if 'boulder' in os.environ.get('CERTBOT_INTEGRATION') else 'Pebble'
 
-    sys.stdout.write('=> Setting up a {0} instance ...'.format(acme_ca))
+    print('=> Setting up a {0} instance ...'.format(acme_ca))
     tempdir = tempfile.mkdtemp()
     workspace = os.path.join(tempdir, 'src/github.com/letsencrypt/{0}'.format(acme_ca.lower()))
 
     def cleanup():
-        sys.stdout.write('=> Tear down the {0} instance ...'.format(acme_ca))
+        print('=> Tear down the {0} instance ...'.format(acme_ca))
 
         try:
             subprocess.check_call(['docker-compose', 'down'], cwd=workspace)
@@ -39,7 +38,7 @@ def pytest_configure(config):
             except IOError:
                 pass
 
-        sys.stdout.write(' OK.\n')
+        print('=> {0} instance stopped.'.format(acme_ca))
 
     config.add_cleanup(cleanup)
 
@@ -50,13 +49,11 @@ def pytest_configure(config):
     else:
         url = _setup_pebble(workspace)
 
-    sys.stdout.write(' OK.\n')
-
-    sys.stdout.write('=> Waiting for {0} instance to respond ...'.format(acme_ca))
+    print('=> Waiting for {0} instance to respond ...'.format(acme_ca))
 
     _check_until_timeout(url)
 
-    sys.stdout.write(' OK.\n')
+    print('=> {0} instance ready.'.format(acme_ca))
 
 
 def pytest_runtest_makereport(item, call):
