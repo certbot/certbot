@@ -18,7 +18,7 @@ def http_01_server(http_01_port):
     process = multiprocessing.Process(target=run)
     process.start()
 
-    yield
+    yield process.is_alive()
 
     process.terminate()
 
@@ -32,7 +32,7 @@ def tls_sni_01_server(tls_sni_01_port):
     process = multiprocessing.Process(target=run)
     process.start()
 
-    yield
+    yield process.is_alive()
 
     process.terminate()
 

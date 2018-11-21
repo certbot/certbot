@@ -7,6 +7,8 @@ import pytest
 from six.moves.urllib.request import urlopen
 
 
+from certbot_integration_testing.utils import assertions
+
 @pytest.mark.incremental
 class TestSuite(object):
 
@@ -39,6 +41,21 @@ class TestSuite(object):
         common(['register', '--update-registration', '--email', 'ex1@domain.org,ex2@domain.org'])
 
     def test_prepare_plugins(self, common):
-        output = common(['plugins', '--init', 'prepare'])
+        output = common(['plugins', '--init', '--prepare'])
 
         assert 'webroot' in output
+
+    def test_http_01(self, common, config_dir, tls_sni_01_server):
+        assert tls_sni_01_server
+
+        with tempfile.TemporaryFile() as probe:
+            certname = 'le1.wtf'
+            common([
+                '--domains', certname, '--preferred-challenges', 'http-01', 'run',
+                '--cert-name', certname,
+                '--pre-hook', 'echo wtf.pre >> "{0}"'.format(probe),
+                '--post-hook', 'echo wtf.post >> "{0}"'.format(probe),
+                '--deploy-hook', 'echo deploy >> "{0}"'.format(probe)
+            ])
+            assertions.assert_hook_execution(probe, 'deploy')
+            assertions.assert_save_renew_hook(config_dir, certname)
