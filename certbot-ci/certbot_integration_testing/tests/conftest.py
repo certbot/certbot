@@ -9,7 +9,9 @@ import pytest
 
 from six.moves.urllib.request import urlopen
 
-from certbot_integration_testing.utils.fixtures import *
+from certbot_integration_testing.utils.fixtures_session import *
+from certbot_integration_testing.utils.fixtures_module import *
+from certbot_integration_testing.utils.fixtures_function import *
 
 PEBBLE_VERSION = '2018-11-02'
 
