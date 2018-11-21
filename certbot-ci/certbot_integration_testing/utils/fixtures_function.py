@@ -38,8 +38,16 @@ def tls_sni_01_server(tls_sni_01_port):
 
 
 @pytest.fixture
-def generate_test_hooks(renewal_hooks_dirs):
-    renewal_hooks_execution_probe = tempfile.mkstemp()
+def hook_probe():
+    probe = tempfile.mkstemp()
+    try:
+        yield probe[0]
+    finally:
+        os.unlink(probe)
+
+
+@pytest.fixture
+def generate_test_hooks(renewal_hooks_dirs, hook_probe):
     if sys.platform == 'win32':
         extension = 'bat'
     else:
@@ -62,7 +70,7 @@ if [ "$0" ] == "{0}" ]; then
     fi
 fi
 echo $(basename $(dirname "$0")) >> "{1}"\
-'''.format(renewal_dir_deploy_hook, renewal_hooks_execution_probe)
+'''.format(renewal_dir_deploy_hook, hook_probe)
             else:
                 data = '''\
 
@@ -72,12 +80,11 @@ echo $(basename $(dirname "$0")) >> "{1}"\
             os.chmod(hook_path, os.stat(hook_path).st_mode | stat.S_IEXEC)
 
             yield {
-                'renewal_hooks_execution_probe': renewal_hooks_execution_probe,
+                'renewal_hooks_execution_probe': hook_probe,
                 'renewal_dir_pre_hook': renewal_dir_pre_hook,
                 'renewal_dir_deploy_hook': renewal_dir_deploy_hook,
                 'renewal_dir_post_hook': renewal_dir_post_hook
             }
     finally:
-        os.unlink(renewal_hooks_execution_probe)
         for hook_dir in renewal_hooks_dirs:
             os.unlink(os.path.join(hook_dir, 'hook.{0}'.format(extension)))

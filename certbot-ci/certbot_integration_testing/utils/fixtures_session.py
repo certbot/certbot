@@ -37,11 +37,6 @@ def config_dir(workspace):
 
 
 @pytest.fixture(scope='session')
-def work_dir(workspace):
-    return os.path.join(workspace, 'work')
-
-
-@pytest.fixture(scope='session')
 def renewal_hooks_dirs(config_dir):
     renewal_hooks_root = os.path.join(config_dir, 'renewal-hooks')
     return [os.path.join(renewal_hooks_root, item) for item in ['pre', 'deploy', 'post']]
@@ -58,7 +53,7 @@ def http_01_port():
 
 
 @pytest.fixture(scope='session')
-def certbot_test_no_force_renew(config_dir, work_dir, acme_url):
+def certbot_test_no_force_renew(workspace, config_dir, acme_url, http_01_port, tls_sni_01_port):
     certbot = find_certbot_executable()
     sources = find_certbot_sources()
     omit_patterns = (
@@ -71,10 +66,12 @@ def certbot_test_no_force_renew(config_dir, work_dir, acme_url):
     def func(args):
         command = [
             'coverage', 'run', '--append', '--source', ','.join(sources), '--omit', omit_patterns,
-            certbot, '--server', acme_url, '--no-verify-ssl', '--tls-sni-01-port', '5001',
-            '--http-01-port', '5002', '--manual-public-ip-logging-ok', '--config-dir',
-            config_dir, '--work-dir', work_dir, '--non-interactive', '--no-redirect',
-            '--agree-tos', '--register-unsafely-without-email', '--debug', '-vv'
+            certbot, '--server', acme_url, '--no-verify-ssl', '--tls-sni-01-port',
+            str(tls_sni_01_port), '--http-01-port', str(http_01_port),
+            '--manual-public-ip-logging-ok', '--config-dir', config_dir, '--work-dir',
+            os.path.join(workspace, 'work'), '--logs-dir', os.path.join(workspace, 'logs'),
+            '--non-interactive', '--no-redirect', '--agree-tos',
+            '--register-unsafely-without-email', '--debug', '-vv'
         ]
 
         command.extend(args)
@@ -86,7 +83,7 @@ def certbot_test_no_force_renew(config_dir, work_dir, acme_url):
 
 
 @pytest.fixture(scope='session')
-def certbot_test(certbot_test_no_force_renew):
+def certbot_test(config_dir, acme_url, http_01_port, tls_sni_01_port):
     def func(args):
         command = ['--renew-by-default']
         command.extend(args)

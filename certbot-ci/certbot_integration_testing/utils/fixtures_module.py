@@ -6,7 +6,7 @@ def common_no_force_renew(certbot_test_no_force_renew):
     def func(args):
         command = ['--authenticator', 'standalone', '--installer', 'null']
         command.extend(args)
-        return certbot_test_no_force_renew(args)
+        return certbot_test_no_force_renew(command)
 
     return func
 
@@ -16,6 +16,6 @@ def common(common_no_force_renew):
     def func(args):
         command = ['--renew-by-default']
         command.extend(args)
-        return common_no_force_renew(args)
+        return common_no_force_renew(command)
 
     return func
