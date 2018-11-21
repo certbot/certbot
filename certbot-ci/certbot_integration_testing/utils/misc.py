@@ -1,0 +1,34 @@
+import subprocess
+import os
+import re
+
+
+def find_certbot_executable():
+    try:
+        return subprocess.check_output('which certbot',
+                                       shell=True, universal_newlines=True).strip()
+    except subprocess.CalledProcessError:
+        try:
+            return subprocess.check_output('where certbot',
+                                           shell=True, universal_newlines=True).strip()
+        except subprocess.CalledProcessError:
+            pass
+
+    raise ValueError('Error, could not find certbot executable')
+
+
+def find_certbot_sources():
+    script_path = os.path.realpath(__file__)
+    current_dir = os.path.dirname(script_path)
+
+    while '.git' not in os.listdir(current_dir) and current_dir != os.path.dirname(current_dir):
+        current_dir = os.path.dirname(current_dir)
+
+    dirs = os.listdir(current_dir)
+    if '.git' not in dirs:
+        raise ValueError('Error, could not find certbot sources root directory')
+
+    return [os.path.join(current_dir, dir) for dir in dirs
+            if (dir == 'acme' or (re.match('^certbot.*$', dir)
+                                  and dir not in ['certbot-ci', 'certbot.egg-info']))
+            and os.path.isdir(dir)]
