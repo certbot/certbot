@@ -80,7 +80,7 @@ def certbot_test_no_force_renew(config_dir, work_dir, acme_url):
         command.extend(args)
 
         print('Invoke command:\n{0}'.format(subprocess.list2cmdline(command)))
-        subprocess.check_call(command)
+        return subprocess.check_output(command, universal_newlines=True)
 
     return func
 
@@ -90,6 +90,6 @@ def certbot_test(certbot_test_no_force_renew):
     def func(args):
         command = ['--renew-by-default']
         command.extend(args)
-        certbot_test_no_force_renew(command)
+        return certbot_test_no_force_renew(command)
 
     return func

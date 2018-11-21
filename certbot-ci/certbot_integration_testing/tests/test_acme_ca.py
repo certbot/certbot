@@ -5,7 +5,6 @@ import subprocess
 import os
 import sys
 import stat
-import shutil
 
 import pytest
 from six.moves.urllib.request import urlopen
@@ -18,7 +17,7 @@ def common_no_force_renew(certbot_test_no_force_renew):
     def func(args):
         command = ['--authenticator', 'standalone', '--installer', 'null']
         command.extend(args)
-        certbot_test_no_force_renew(args)
+        return certbot_test_no_force_renew(args)
 
     return func
 
@@ -28,7 +27,7 @@ def common(common_no_force_renew):
     def func(args):
         command = ['--renew-by-default']
         command.extend(args)
-        common_no_force_renew(args)
+        return common_no_force_renew(args)
 
     return func
 
@@ -117,3 +116,15 @@ class TestSuite(object):
 
         for hook_dir in renewal_hooks_dirs:
             assert os.path.isdir(hook_dir)
+
+    def test_registration_override(self, common):
+        common(['unregister'])
+        common(['register', '--email', 'ex1@domain.org,ex2@domain.org'])
+        common(['register', '--update-registration', '--email', 'ex1@domain.org'])
+        common(['register', '--update-registration', '--email', 'ex1@domain.org,ex2@domain.org'])
+
+    def test_prepare_plugins(self, common):
+        output = common(['plugins', '--init', 'prepare'])
+
+        assert 'webroot' in output
+

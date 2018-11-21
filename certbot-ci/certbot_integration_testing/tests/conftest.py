@@ -5,6 +5,7 @@ import shutil
 import ssl
 import subprocess
 import os
+import pytest
 
 from six.moves.urllib.request import urlopen
 
