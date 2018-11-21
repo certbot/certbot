@@ -45,17 +45,32 @@ class TestSuite(object):
 
         assert 'webroot' in output
 
+    def test_tls_sni_01(self, common, config_dir, hook_probe, http_01_server):
+        assert http_01_server
+
+        certname = 'le1.wtf'
+        common([
+            '--domains', certname, '--preferred-challenges', 'tls-sni-01', 'run',
+            '--cert-name', certname,
+            '--pre-hook', 'echo wtf.pre >> "{0}"'.format(hook_probe),
+            '--post-hook', 'echo wtf.post >> "{0}"'.format(hook_probe),
+            '--deploy-hook', 'echo deploy >> "{0}"'.format(hook_probe)
+        ])
+
+        assertions.assert_hook_execution(hook_probe, 'deploy')
+        assertions.assert_save_renew_hook(config_dir, certname)
+
     def test_http_01(self, common, config_dir, hook_probe, tls_sni_01_server):
         assert tls_sni_01_server
 
-        with tempfile.NamedTemporaryFile() as probe:
-            certname = 'le1.wtf'
-            common([
-                '--domains', certname, '--preferred-challenges', 'http-01', 'run',
-                '--cert-name', certname,
-                '--pre-hook', 'echo wtf.pre >> "{0}"'.format(hook_probe),
-                '--post-hook', 'echo wtf.post >> "{0}"'.format(hook_probe),
-                '--deploy-hook', 'echo deploy >> "{0}"'.format(hook_probe)
-            ])
-            assertions.assert_hook_execution(hook_probe, 'deploy')
-            assertions.assert_save_renew_hook(config_dir, certname)
+        certname = 'le2.wtf'
+        common([
+            '--domains', certname, '--preferred-challenges', 'http-01', 'run',
+            '--cert-name', certname,
+            '--pre-hook', 'echo wtf.pre >> "{0}"'.format(hook_probe),
+            '--post-hook', 'echo wtf.post >> "{0}"'.format(hook_probe),
+            '--deploy-hook', 'echo deploy >> "{0}"'.format(hook_probe)
+        ])
+
+        assertions.assert_hook_execution(hook_probe, 'deploy')
+        assertions.assert_save_renew_hook(config_dir, certname)
