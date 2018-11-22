@@ -20,20 +20,6 @@ class GraceFullTCPServer(socketserver.TCPServer):
     allow_reuse_address = True
 
 
-def find_certbot_executable():
-    try:
-        return subprocess.check_output('which certbot',
-                                       shell=True, universal_newlines=True).strip()
-    except subprocess.CalledProcessError:
-        try:
-            return subprocess.check_output('where certbot',
-                                           shell=True, universal_newlines=True).strip()
-        except subprocess.CalledProcessError:
-            pass
-
-    raise ValueError('Error, could not find certbot executable')
-
-
 def find_certbot_root_directory():
     script_path = os.path.realpath(__file__)
     current_dir = os.path.dirname(script_path)
@@ -46,15 +32,6 @@ def find_certbot_root_directory():
         raise ValueError('Error, could not find certbot sources root directory')
 
     return current_dir
-
-
-def find_certbot_sources():
-    certbot_root_directory = find_certbot_root_directory()
-
-    return [os.path.join(certbot_root_directory, dir) for dir in os.listdir(certbot_root_directory)
-            if (dir == 'acme' or (re.match('^certbot.*$', dir)
-                                  and dir not in ['certbot-ci', 'certbot.egg-info']))
-            and os.path.isdir(dir)]
 
 
 def generate_csr(domains, key_path, csr_path):

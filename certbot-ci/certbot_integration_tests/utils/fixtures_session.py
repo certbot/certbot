@@ -5,8 +5,6 @@ import shutil
 
 import pytest
 
-from certbot_integration_tests.utils.misc import find_certbot_executable, find_certbot_sources
-
 
 @pytest.fixture(scope='session')
 def acme_url():
@@ -54,19 +52,9 @@ def http_01_port():
 
 @pytest.fixture(scope='session')
 def certbot_test_no_force_renew(workspace, config_dir, acme_url, http_01_port, tls_sni_01_port):
-    certbot = find_certbot_executable()
-    sources = find_certbot_sources()
-    omit_patterns = (
-        '*/*.egg-info/*,*/dns_common*,*/setup.py,*/test_*,*/tests/*,'
-        '$omit_patterns,*_test.py,*_test_*,certbot-apache/*,'
-        '$omit_patterns,certbot-compatibility-test/*,certbot-dns*/,'
-        '$omit_patterns,certbot-nginx/certbot_nginx/parser_obj.py'
-    )
-
     def func(args):
         command = [
-            'coverage', 'run', '--append', '--source', ','.join(sources), '--omit', omit_patterns,
-            certbot, '--server', acme_url, '--no-verify-ssl', '--tls-sni-01-port',
+            'certbot', '--server', acme_url, '--no-verify-ssl', '--tls-sni-01-port',
             str(tls_sni_01_port), '--http-01-port', str(http_01_port),
             '--manual-public-ip-logging-ok', '--config-dir', config_dir, '--work-dir',
             os.path.join(workspace, 'work'), '--logs-dir', os.path.join(workspace, 'logs'),
