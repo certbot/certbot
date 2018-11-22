@@ -741,7 +741,7 @@ class ClientV2(ClientBase):
 
     def external_account_required(self):
         """Checks if ACME server requires External Account Binding authentication."""
-        if self.directory.meta['externalAccountRequired']:
+        if hasattr(self.directory, 'meta') and self.directory.meta.external_account_required:
             return True
         else:
             return False

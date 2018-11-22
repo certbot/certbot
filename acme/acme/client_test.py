@@ -42,9 +42,6 @@ DIRECTORY_V2 = messages.Directory({
     'newNonce': 'https://www.letsencrypt-demo.org/acme/new-nonce',
     'newOrder': 'https://www.letsencrypt-demo.org/acme/new-order',
     'revokeCert': 'https://www.letsencrypt-demo.org/acme/revoke-cert',
-    'meta': {
-        'externalAccountRequired': False,
-    },
 })
 
 
@@ -825,12 +822,16 @@ class ClientV2Test(ClientTestBase):
             contact=()).to_json()
 
     def test_external_account_required_true(self):
-        self.client.directory['meta']['externalAccountRequired'] = True
+        self.client.directory = messages.Directory({
+            'meta': messages.Directory.Meta(external_account_required=True)
+        })
 
         self.assertTrue(self.client.external_account_required())
 
     def test_external_account_required_false(self):
-        self.client.directory['meta']['externalAccountRequired'] = False
+        self.client.directory = messages.Directory({
+            'meta': messages.Directory.Meta(external_account_required=False)
+        })
 
         self.assertFalse(self.client.external_account_required())
 
