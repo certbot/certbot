@@ -63,8 +63,6 @@ def pytest_configure(config):
 
 def pytest_runtest_makereport(item, call):
     if 'incremental' in item.keywords:
-        print('pouet {0} pouet'.format(call.excinfo.typename if call.excinfo else None))
-        print(type(call.excinfo))
         if call.excinfo is not None and call.excinfo.typename != 'SkipTest':
             parent = item.parent
             parent._previousfailed = item

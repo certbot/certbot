@@ -10,6 +10,7 @@ from six.moves.urllib.request import urlopen
 from certbot_integration_testing.utils import assertions
 from certbot_integration_testing.utils.misc import skip_on_pebble
 
+
 @pytest.mark.incremental
 class TestSuite(object):
 
