@@ -6,7 +6,9 @@ Certbot adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 
-*
+* Noninteractive renewals with `certbot renew` (those not started from a
+  terminal) now randomly sleep 1-480 seconds before beginning work in
+  order to spread out load spikes on the server side.
 
 ### Changed
 
