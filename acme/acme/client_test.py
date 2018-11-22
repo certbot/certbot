@@ -1,4 +1,5 @@
 """Tests for acme.client."""
+# pylint: disable=too-many-lines
 import copy
 import datetime
 import json
@@ -282,6 +283,12 @@ class BackwardsCompatibleClientV2Test(ClientTestBase):
             client = self._init()
             client.update_registration(mock.sentinel.regr, None)
         mock_client().update_registration.assert_called_once_with(mock.sentinel.regr, None)
+
+    def test_post_as_get(self):
+        client = self._init()
+        client._post_as_get('http://dummy_url.net')  # pylint: disable=protected-access
+
+        client.net.get.assert_called_with('http://dummy_url.net')
 
 
 class ClientTest(ClientTestBase):
@@ -730,9 +737,10 @@ class ClientV2Test(ClientTestBase):
         authz_response2 = self.response
         authz_response2.json.return_value = self.authz2.to_json()
         authz_response2.headers['Location'] = self.authzr2.uri
-        self.net.get.side_effect = (authz_response, authz_response2)
 
-        self.assertEqual(self.client.new_order(CSR_SAN_PEM), self.orderr)
+        with mock.patch('acme.client.ClientV2._post_as_get') as mock_post_as_get:
+            mock_post_as_get.side_effect = (authz_response, authz_response2)
+            self.assertEqual(self.client.new_order(CSR_SAN_PEM), self.orderr)
 
     @mock.patch('acme.client.datetime')
     def test_poll_and_finalize(self, mock_datetime):
@@ -820,6 +828,27 @@ class ClientV2Test(ClientTestBase):
 
         self.response.json.return_value = self.regr.body.update(
             contact=()).to_json()
+
+    def test_post_as_get(self):
+        self.client._post_as_get('http://dummy_url.net')  # pylint: disable=protected-access
+
+        self.client.net.post.assert_called_once_with(
+            'http://dummy_url.net', None, acme_version=2,
+            new_nonce_url='https://www.letsencrypt-demo.org/acme/new-nonce')
+        self.client.net.get.assert_not_called()
+
+        class FakeError(messages.Error):  # pylint: disable=too-many-ancestors
+            """Fake error to reproduce a malformed request ACME error"""
+            def __init__(self):  # pylint: disable=super-init-not-called
+                pass
+            @property
+            def code(self):
+                return 'malformed'
+        self.client.net.post.side_effect = FakeError()
+
+        self.client._post_as_get('http://dummy_url.net')  # pylint: disable=protected-access
+
+        self.client.net.get.assert_called_once_with('http://dummy_url.net')
 
 
 class MockJSONDeSerializable(jose.JSONDeSerializable):

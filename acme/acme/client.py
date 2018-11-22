@@ -84,6 +84,32 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
             response, uri=regr.uri,
             terms_of_service=regr.terms_of_service)
 
+    def _post_as_get(self, *args, **kwargs):
+        """
+        Send GET request using the POST-as-GET protocol if needed.
+        The request will be first issued using POST-as-GET for ACME v2. If the ACME CA servers do
+        not support this yet and return an error, request will be retried using GET.
+        For ACME v1, only GET request will be tried, as POST-as-GET is not supported.
+        :param args:
+        :param kwargs:
+        :return:
+        """
+        if self.acme_version >= 2:
+            # We add an empty payload for POST-as-GET requests
+            new_args = args[:1] + (None,) + args[1:]
+            try:
+                return self._post(*new_args, **kwargs)  # pylint: disable=star-args
+            except messages.Error as error:
+                if error.code == 'malformed':
+                    logger.debug('Error during a POST-as-GET request, '
+                                 'your ACME CA may not support it:\n%s', error)
+                    logger.debug('Retrying request with GET.')
+                else:  # pragma: no cover
+                    raise
+
+        # If ACME v1 or POST-as-GET not supported, we use a GET instead.
+        return self.net.get(*args, **kwargs)
+
     def _post(self, *args, **kwargs):
         """Wrapper around self.net.post that adds the acme_version.
 
@@ -210,7 +236,7 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
         :rtype: (`.AuthorizationResource`, `requests.Response`)
 
         """
-        response = self.net.get(authzr.uri)
+        response = self._post_as_get(authzr.uri)
         updated_authzr = self._authzr_from_response(
             response, authzr.body.identifier, authzr.uri)
         return updated_authzr, response
@@ -476,7 +502,7 @@ class Client(ClientBase):
 
         """
         content_type = DER_CONTENT_TYPE  # TODO: make it a param
-        response = self.net.get(uri, headers={'Accept': content_type},
+        response = self._post_as_get(uri, headers={'Accept': content_type},
                                 content_type=content_type)
         return response, jose.ComparableX509(OpenSSL.crypto.load_certificate(
             OpenSSL.crypto.FILETYPE_ASN1, response.content))
@@ -651,7 +677,7 @@ class ClientV2(ClientBase):
         body = messages.Order.from_json(response.json())
         authorizations = []
         for url in body.authorizations:
-            authorizations.append(self._authzr_from_response(self.net.get(url), uri=url))
+            authorizations.append(self._authzr_from_response(self._post_as_get(url), uri=url))
         return messages.OrderResource(
             body=body,
             uri=response.headers.get('Location'),
@@ -681,7 +707,7 @@ class ClientV2(ClientBase):
         responses = []
         for url in orderr.body.authorizations:
             while datetime.datetime.now() < deadline:
-                authzr = self._authzr_from_response(self.net.get(url), uri=url)
+                authzr = self._authzr_from_response(self._post_as_get(url), uri=url)
                 if authzr.body.status != messages.STATUS_PENDING:
                     responses.append(authzr)
                     break
@@ -716,12 +742,12 @@ class ClientV2(ClientBase):
         self._post(orderr.body.finalize, wrapped_csr)
         while datetime.datetime.now() < deadline:
             time.sleep(1)
-            response = self.net.get(orderr.uri)
+            response = self._post_as_get(orderr.uri)
             body = messages.Order.from_json(response.json())
             if body.error is not None:
                 raise errors.IssuanceError(body.error)
             if body.certificate is not None:
-                certificate_response = self.net.get(body.certificate,
+                certificate_response = self._post_as_get(body.certificate,
                                                     content_type=DER_CONTENT_TYPE).text
                 return orderr.update(body=body, fullchain_pem=certificate_response)
         raise errors.TimeoutError()
@@ -943,7 +969,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         :rtype: `josepy.JWS`
 
         """
-        jobj = obj.json_dumps(indent=2).encode()
+        jobj = obj.json_dumps(indent=2).encode() if obj else b''
         logger.debug('JWS payload:\n%s', jobj)
         kwargs = {
             "alg": self.alg,
