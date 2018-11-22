@@ -2,6 +2,10 @@ import subprocess
 import os
 import re
 import unittest
+import ssl
+import time
+
+from six.moves.urllib_request import urlopen
 
 
 def find_certbot_executable():
@@ -56,3 +60,17 @@ def skip_on_pebble_strict(reason):
         return unittest.skipIf(os.environ.get('CERTBOT_INTEGRATION')
                                == 'pebble-strict', reason)(func)
     return wrapper
+
+
+def check_until_timeout(url):
+    context = ssl.SSLContext()
+
+    for _ in range(0, 150):
+        time.sleep(1)
+        try:
+            if urlopen(url, context=context).getcode() == 200:
+                return
+        except IOError:
+            pass
+
+    raise ValueError('Error, url did not respond after 150 attempts: {0}'.format(url))

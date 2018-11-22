@@ -1,14 +1,11 @@
 import tempfile
 import re
-import time
 import shutil
-import ssl
 import subprocess
 import os
 import pytest
-import unittest
 
-from six.moves.urllib.request import urlopen
+from certbot_integration_testing.utils import misc
 
 
 PEBBLE_VERSION = '2018-11-02'
@@ -56,7 +53,7 @@ def pytest_configure(config):
 
     print('=> Waiting for {0} instance to respond ...'.format(acme_ca))
 
-    _check_until_timeout(url)
+    misc.check_until_timeout(url)
 
     print('=> {0} instance ready.'.format(acme_ca))
 
@@ -99,7 +96,7 @@ version: '3'
 services:
  pebble:
   image: letsencrypt/pebble:{0}
-  command: pebble -dnsserver 10.77.77.1 {1}
+  command: pebble -dnsserver 10.77.77.1:53 {1}
   ports:
     - 14000:14000
   environment:
@@ -115,16 +112,3 @@ services:
 
     return 'https://localhost:14000/dir'
 
-
-def _check_until_timeout(url):
-    context = ssl.SSLContext()
-
-    for _ in range(0, 150):
-        time.sleep(1)
-        try:
-            if urlopen(url, context=context).getcode() == 200:
-                return
-        except IOError:
-            pass
-
-    raise ValueError('Error, url did not respond after 150 attempts: {0}'.format(url))

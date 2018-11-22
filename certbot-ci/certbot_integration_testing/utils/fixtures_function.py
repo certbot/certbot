@@ -8,6 +8,8 @@ import pytest
 from six.moves import socketserver
 from six.moves import SimpleHTTPServer
 
+from certbot_integration_testing.utils import misc
+
 
 @pytest.fixture
 def http_01_server(http_01_port):
@@ -26,9 +28,12 @@ def http_01_server(http_01_port):
     finally:
         os.chdir(current_cwd)
 
-    yield webroot if process.is_alive() else None
+    misc.check_until_timeout('http://localhost:{0}/'.format(http_01_port))
+
+    yield webroot
 
     process.terminate()
+    process.join()
 
 
 @pytest.fixture
@@ -48,9 +53,12 @@ def tls_sni_01_server(tls_sni_01_port):
     finally:
         os.chdir(current_cwd)
 
-    yield webroot if process.is_alive() else None
+    misc.check_until_timeout('http://localhost:{0}/'.format(tls_sni_01_port))
+
+    yield webroot
 
     process.terminate()
+    process.join()
 
 
 @pytest.fixture
