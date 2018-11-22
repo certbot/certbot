@@ -32,8 +32,11 @@ logger = logging.getLogger(__name__)
 # for SSL, which does allow these options to be configured.
 # https://urllib3.readthedocs.org/en/latest/security.html#insecureplatformwarning
 if sys.version_info < (2, 7, 9):  # pragma: no cover
-    import urllib3.contrib.pyopenssl  # pylint: disable=import-error
-    urllib3.contrib.pyopenssl.inject_into_urllib3()
+    try:
+        requests.packages.urllib3.contrib.pyopenssl.inject_into_urllib3()  # type: ignore
+    except AttributeError:
+        import urllib3.contrib.pyopenssl  # pylint: disable=import-error
+        urllib3.contrib.pyopenssl.inject_into_urllib3()
 
 DEFAULT_NETWORK_TIMEOUT = 45
 
