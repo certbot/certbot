@@ -140,7 +140,7 @@ class ImportCSRFileTest(unittest.TestCase):
              util.CSR(file=csrfile,
                       data=data_pem,
                       form="pem"),
-             ["Example.com"],),
+             ["Example.com"]),
             self._call(csrfile, data))
 
     def test_pem_csr(self):
@@ -376,7 +376,6 @@ class NotAfterTest(unittest.TestCase):
 
 class Sha256sumTest(unittest.TestCase):
     """Tests for certbot.crypto_util.notAfter"""
-
     def test_sha256sum(self):
         from certbot.crypto_util import sha256sum
         self.assertEqual(sha256sum(CERT_PATH),

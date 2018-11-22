@@ -72,6 +72,7 @@ class _DNSMadeEasyLexiconClient(dns_common_lexicon.LexiconClient):
         super(_DNSMadeEasyLexiconClient, self).__init__()
 
         self.provider = dnsmadeeasy.Provider({
+            'provider_name': 'dnsmadeeasy',
             'auth_username': api_key,
             'auth_token': secret_key,
             'ttl': ttl,

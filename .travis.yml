@@ -48,10 +48,7 @@ matrix:
       sudo: required
       services: docker
     - python: "2.7"
-      env: TOXENV='py27-{acme,apache,certbot,dns,postfix}-oldest'
-    - sudo: required
-      env: TOXENV=apache_compat
-      services: docker
+      env: TOXENV=py27-cover FYI="py27 tests + code coverage"
     - sudo: required
       env: TOXENV=nginx_compat
       services: docker
@@ -157,7 +154,7 @@ script:
     - travis_retry tox
     - '[ -z "${BOULDER_INTEGRATION+x}" ] || (travis_retry tests/boulder-fetch.sh && tests/tox-boulder-integration.sh)'
 
-after_success: '[ "$TOXENV" == "cover" ] && codecov'
+after_success: '[ "$TOXENV" == "py27-cover" ] && codecov'
 
 notifications:
   email: false
