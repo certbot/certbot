@@ -242,14 +242,14 @@ cd ~-
 # Add master section to CHANGELOG.md
 header=$(head -n 4 CHANGELOG.md)
 body=$(sed s/nextversion/$nextversion/ tools/_changelog_top.txt)
-footer=$(tail -n $(expr $(wc -l CHANGELOG.md | sed 's/ CHANGELOG.md//') - 4) CHANGELOG.md)
+footer=$(tail -n +5 CHANGELOG.md)
 echo "$header
 
 $body
 
 $footer" > CHANGELOG.md
 git add CHANGELOG.md
-git diff
+git diff --cached
 git commit -m "Add contents to CHANGELOG.md for next version"
 
 echo "New root: $root"
