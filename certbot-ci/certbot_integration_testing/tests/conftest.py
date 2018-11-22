@@ -99,12 +99,14 @@ version: '3'
 services:
  pebble:
   image: letsencrypt/pebble:{0}
-  command: pebble -strict {1} -dnsserver 10.77.77.1
+  command: pebble -dnsserver 10.77.77.1 {1}
   ports:
     - 14000:14000
   environment:
     - PEBBLE_VA_NOSLEEP=1
-'''.format(PEBBLE_VERSION, 'false' if not strict else 'true')
+'''.format(PEBBLE_VERSION, '-strict' if strict else '')
+
+    print(data)
 
     with open(os.path.join(workspace, 'docker-compose.yml'), 'w') as file:
         file.write(data)

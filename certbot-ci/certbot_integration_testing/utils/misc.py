@@ -36,8 +36,23 @@ def find_certbot_sources():
 
 
 def skip_on_pebble(reason):
-    """Decorator to skip a test against Pebble instances. A reason is required."""
+    """
+    Decorator to skip a test against Pebble instances.
+    A reason is required.
+    """
     def wrapper(func):
         """Wrapped version"""
         return unittest.skipIf('pebble' in os.environ.get('CERTBOT_INTEGRATION'), reason)(func)
+    return wrapper
+
+
+def skip_on_pebble_strict(reason):
+    """
+    Decorator to skip a test against Pebble instances with strict mode enabled.
+    A reason is required.
+    """
+    def wrapper(func):
+        """Wrapped version"""
+        return unittest.skipIf(os.environ.get('CERTBOT_INTEGRATION')
+                               == 'pebble-strict', reason)(func)
     return wrapper
