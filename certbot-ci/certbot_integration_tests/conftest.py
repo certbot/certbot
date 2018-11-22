@@ -5,15 +5,15 @@ import subprocess
 import os
 import pytest
 
-from certbot_integration_testing.utils import misc
+from certbot_integration_tests.utils import misc
 
 
 PEBBLE_VERSION = '2018-11-02'
 
 pytest_plugins = [
-    'certbot_integration_testing.utils.fixtures_session',
-    'certbot_integration_testing.utils.fixtures_module',
-    'certbot_integration_testing.utils.fixtures_function'
+    'certbot_integration_tests.utils.fixtures_session',
+    'certbot_integration_tests.utils.fixtures_module',
+    'certbot_integration_tests.utils.fixtures_function'
 ]
 
 

@@ -5,7 +5,7 @@ import shutil
 
 import pytest
 
-from certbot_integration_testing.utils.misc import find_certbot_executable, find_certbot_sources
+from certbot_integration_tests.utils.misc import find_certbot_executable, find_certbot_sources
 
 
 @pytest.fixture(scope='session')

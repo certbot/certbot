@@ -1,64 +1,23 @@
 import os
-import multiprocessing
 import tempfile
 import sys
 import stat
 
 import pytest
-from six.moves import socketserver
-from six.moves import SimpleHTTPServer
 
-from certbot_integration_testing.utils import misc
+from certbot_integration_tests.utils import misc
 
 
 @pytest.fixture
 def http_01_server(http_01_port):
-    current_cwd = os.getcwd()
-    webroot = tempfile.mkdtemp()
-
-    try:
-        os.chdir(webroot)
-
-        def run():
-            socketserver.TCPServer(('', http_01_port),
-                                   SimpleHTTPServer.SimpleHTTPRequestHandler).serve_forever()
-
-        process = multiprocessing.Process(target=run)
-        process.start()
-    finally:
-        os.chdir(current_cwd)
-
-    misc.check_until_timeout('http://localhost:{0}/'.format(http_01_port))
-
-    yield webroot
-
-    process.terminate()
-    process.join()
+    with misc.create_tcp_server(http_01_port) as webroot:
+        yield webroot
 
 
 @pytest.fixture
 def tls_sni_01_server(tls_sni_01_port):
-    current_cwd = os.getcwd()
-    webroot = tempfile.mkdtemp()
-
-    try:
-        os.chdir(webroot)
-
-        def run():
-            socketserver.TCPServer(('', tls_sni_01_port),
-                                   SimpleHTTPServer.SimpleHTTPRequestHandler).serve_forever()
-
-        process = multiprocessing.Process(target=run)
-        process.start()
-    finally:
-        os.chdir(current_cwd)
-
-    misc.check_until_timeout('http://localhost:{0}/'.format(tls_sni_01_port))
-
-    yield webroot
-
-    process.terminate()
-    process.join()
+    with misc.create_tcp_server(tls_sni_01_port) as webroot:
+        yield webroot
 
 
 @pytest.fixture

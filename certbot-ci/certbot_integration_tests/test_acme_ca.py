@@ -7,9 +7,9 @@ import sys
 import pytest
 from six.moves.urllib.request import urlopen
 
-
-from certbot_integration_testing.utils import assertions
-from certbot_integration_testing.utils.misc import skip_on_pebble, skip_on_pebble_strict
+from certbot_integration_tests.utils import assertions
+from certbot_integration_tests.utils import misc
+from certbot_integration_tests.utils.misc import skip_on_pebble, skip_on_pebble_strict, generate_csr
 
 
 @pytest.mark.incremental
@@ -84,16 +84,16 @@ class TestSuite(object):
     def test_manual_http_auth(self, common, hook_probe, http_01_server, config_dir):
         manual_auth_hook = (
             '{0} -c "import os; '
-            'challenge_dir = os.path.join(\'{1}\', \'.well-known/acme-challenge\'); '
+            "challenge_dir = os.path.join('{1}', '.well-known/acme-challenge'); "
             'os.makedirs(challenge_dir); '
-            'challenge_file = os.path.join(challenge_dir, os.environ.get(\'CERTBOT_TOKEN\')); '
-            'open(challenge_file, \'w\').write(os.environ.get(\'CERTBOT_VALIDATION\')); '
+            "challenge_file = os.path.join(challenge_dir, os.environ.get('CERTBOT_TOKEN')); "
+            "open(challenge_file, 'w').write(os.environ.get('CERTBOT_VALIDATION')); "
             '"'
         ).format(sys.executable, http_01_server)
 
         manual_cleanup_hook = (
             '{0} -c "import os; import shutil; '
-            'well_known = os.path.join(\'{1}\', \'.well-known\'); '
+            "well_known = os.path.join('{1}', '.well-known'); "
             'shutil.rmtree(well_known); '
             '"'
         ).format(sys.executable, http_01_server)
@@ -106,8 +106,71 @@ class TestSuite(object):
             '--manual-cleanup-hook', manual_cleanup_hook,
             '--pre-hook', 'echo wtf.pre >> "{0}"'.format(hook_probe),
             '--post-hook', 'echo wtf.post >> "{0}"'.format(hook_probe),
-            '--renew-hook', 'echo renew >> "{0}"'.format(hook_probe)
+            '--deploy-hook', 'echo deploy >> "{0}"'.format(hook_probe)
         ])
 
-        assertions.assert_hook_execution(hook_probe, 'renew')
+        assertions.assert_hook_execution(hook_probe, 'deploy')
         assertions.assert_save_renew_hook(config_dir, certname)
+
+    def test_manual_dns_auth(self, common, hook_probe, config_dir):
+        manual_auth_hook = (
+            '{0} -c "import os; '
+            'from six.moves import http_client, urllib; '
+            "params = urllib.urlencode({{'host':'_acme-challenge.{{0}}'.format("
+            "os.environ.get('CERTBOT_DOMAIN')), 'value':"
+            "os.environ.get('CERTBOT_VALIDATION')}}); "
+            "conn = http_client.HttpConnection('localhost:8055'); "
+            "con.request('POST', '/set-txt', params); "
+            '"'
+        ).format(sys.executable)
+
+        manual_cleanup_hook = (
+            '{0} -c "import os; '
+            'from six.moves import http_client, urllib; '
+            "params = urllib.urlencode({{'host':'_acme-challenge.{{0}}'.format("
+            "os.environ.get('CERTBOT_DOMAIN'))}}); "
+            "conn = http_client.HttpConnection('localhost:8055'); "
+            "con.request('POST', '/clear-txt', params); "
+            '"'
+        ).format(sys.executable)
+
+        certname = 'le.wtf'
+        common([
+            '-a', 'manual', '-d', certname, '--rsa-key-size', '4096',
+            '--cert-name', certname,
+            '--manual-auth-hook', manual_auth_hook,
+            '--manual-cleanup-hook', manual_cleanup_hook,
+            '--pre-hook', 'echo wtf.pre >> "{0}"'.format(hook_probe),
+            '--post-hook', 'echo wtf.post >> "{0}"'.format(hook_probe),
+            '--deploy-hook', 'echo deploy >> "{0}"'.format(hook_probe)
+        ])
+
+        assertions.assert_hook_execution(hook_probe, 'deploy')
+        assertions.assert_save_renew_hook(config_dir, certname)
+
+    def test_certonly(self, common):
+        common(['certonly', '--cert-name', 'newname', '-d', 'newname.le.wtf'])
+
+    def test_auth_and_install_with_csr(self, workspace, common):
+        key_path = os.path.join(workspace, 'key.pem')
+        csr_path = os.path.join(workspace, 'csr.der')
+
+        misc.generate_csr(['le3.wtf'], key_path, csr_path)
+
+        cert_path = os.path.join(workspace, 'csr/cert.pem')
+        chain_path = os.path.join(workspace, 'csr/chain.pem')
+
+        common([
+            'auth', '--csr', csr_path,
+            '--cert-path', cert_path,
+            '--chain-path', chain_path
+        ])
+
+        misc.print_certificate(cert_path)
+        misc.print_certificate(chain_path)
+
+        common([
+            '--domains', 'le3.wtf', 'install',
+            '--cert-path', cert_path,
+            '--key-path', key_path
+        ])

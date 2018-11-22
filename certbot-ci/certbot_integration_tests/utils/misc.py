@@ -4,8 +4,20 @@ import re
 import unittest
 import ssl
 import time
+import contextlib
+import tempfile
+import shutil
+import multiprocessing
+import sys
+from pprint import pprint
 
-from six.moves.urllib_request import urlopen
+from six.moves.urllib.request import urlopen
+from six.moves import socketserver, SimpleHTTPServer
+from OpenSSL import crypto
+
+
+class GraceFullTCPServer(socketserver.TCPServer):
+    allow_reuse_address = True
 
 
 def find_certbot_executable():
@@ -22,7 +34,7 @@ def find_certbot_executable():
     raise ValueError('Error, could not find certbot executable')
 
 
-def find_certbot_sources():
+def find_certbot_root_directory():
     script_path = os.path.realpath(__file__)
     current_dir = os.path.dirname(script_path)
 
@@ -33,10 +45,24 @@ def find_certbot_sources():
     if '.git' not in dirs:
         raise ValueError('Error, could not find certbot sources root directory')
 
-    return [os.path.join(current_dir, dir) for dir in dirs
+    return current_dir
+
+
+def find_certbot_sources():
+    certbot_root_directory = find_certbot_root_directory()
+
+    return [os.path.join(certbot_root_directory, dir) for dir in os.listdir(certbot_root_directory)
             if (dir == 'acme' or (re.match('^certbot.*$', dir)
                                   and dir not in ['certbot-ci', 'certbot.egg-info']))
             and os.path.isdir(dir)]
+
+
+def generate_csr(domains, key_path, csr_path):
+    certbot_root_directory = find_certbot_root_directory()
+    script_path = os.path.normpath(os.path.join(certbot_root_directory, 'examples/generate-csr.py'))
+
+    subprocess.check_call([
+        sys.executable, script_path, '--key-path', key_path, '--csr-path', csr_path, *domains])
 
 
 def skip_on_pebble(reason):
@@ -74,3 +100,40 @@ def check_until_timeout(url):
             pass
 
     raise ValueError('Error, url did not respond after 150 attempts: {0}'.format(url))
+
+
+def print_certificate(cert_path):
+    with open(cert_path, 'r') as file:
+        data = file.read()
+
+    cert = crypto.load_certificate(crypto.FILETYPE_PEM, data.encode('utf-8'))
+    print(crypto.dump_certificate(crypto.FILETYPE_TEXT, cert).decode('utf-8'))
+
+
+@contextlib.contextmanager
+def create_tcp_server(port):
+    current_cwd = os.getcwd()
+    webroot = tempfile.mkdtemp()
+
+    def run():
+        GraceFullTCPServer(('', port), SimpleHTTPServer.SimpleHTTPRequestHandler).serve_forever()
+
+    process = multiprocessing.Process(target=run)
+
+    try:
+        try:
+            os.chdir(webroot)
+            process.start()
+        finally:
+            os.chdir(current_cwd)
+
+        check_until_timeout('http://localhost:{0}/'.format(port))
+
+        yield webroot
+    finally:
+        try:
+            if process.is_alive():
+                process.terminate()
+                process.join()  # Block until process is effectively terminated
+        finally:
+            shutil.rmtree(webroot)
