@@ -149,12 +149,14 @@ def main(venv_name, venv_args, args):
     command.extend(shlex.split(venv_args))
     subprocess_with_print(command)
 
-    # We execute the two following commands in the context of the virtual environment, to install
+    # We execute the following commands in the context of the virtual environment, to install
     # the packages in it. To do so, we append the venv binary to the PATH that will be used for
     # these commands. With this trick, correct python executable will be selected.
     new_environ = os.environ.copy()
     new_environ['PATH'] = os.pathsep.join([get_venv_bin_path(venv_name), new_environ['PATH']])
     subprocess_with_print('python {0}'.format('./letsencrypt-auto-source/pieces/pipstrap.py'),
+                          env=new_environ, shell=True)
+    subprocess_with_print("python -m pip install --upgrade 'setuptools>=30.3'",
                           env=new_environ, shell=True)
     subprocess_with_print('python {0} {1}'.format('./tools/pip_install.py', ' '.join(args)),
                           env=new_environ, shell=True)
