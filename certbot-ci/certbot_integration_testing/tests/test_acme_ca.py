@@ -8,6 +8,7 @@ from six.moves.urllib.request import urlopen
 
 
 from certbot_integration_testing.utils import assertions
+from certbot_integration_testing.utils.misc import skip_on_pebble
 
 @pytest.mark.incremental
 class TestSuite(object):
@@ -45,6 +46,7 @@ class TestSuite(object):
 
         assert 'webroot' in output
 
+    @skip_on_pebble('TLS-SNI-01 challenges are deprecated, and so not supported by Pebble')
     def test_tls_sni_01(self, common, config_dir, hook_probe, http_01_server):
         assert http_01_server
 

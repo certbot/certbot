@@ -6,14 +6,18 @@ import ssl
 import subprocess
 import os
 import pytest
+import unittest
 
 from six.moves.urllib.request import urlopen
 
-from certbot_integration_testing.utils.fixtures_session import *
-from certbot_integration_testing.utils.fixtures_module import *
-from certbot_integration_testing.utils.fixtures_function import *
 
 PEBBLE_VERSION = '2018-11-02'
+
+pytest_plugins = [
+    'certbot_integration_testing.utils.fixtures_session',
+    'certbot_integration_testing.utils.fixtures_module',
+    'certbot_integration_testing.utils.fixtures_function'
+]
 
 
 def pytest_configure(config):
@@ -47,7 +51,8 @@ def pytest_configure(config):
     if acme_ca == 'Boulder':
         url = _setup_boulder(workspace)
     else:
-        url = _setup_pebble(workspace)
+        url = _setup_pebble(workspace,
+                            strict=os.environ.get('CERTBOT_INTEGRATION') == 'pebble-strict')
 
     print('=> Waiting for {0} instance to respond ...'.format(acme_ca))
 
@@ -58,7 +63,9 @@ def pytest_configure(config):
 
 def pytest_runtest_makereport(item, call):
     if 'incremental' in item.keywords:
-        if call.excinfo is not None:
+        print('pouet {0} pouet'.format(call.excinfo.typename if call.excinfo else None))
+        print(type(call.excinfo))
+        if call.excinfo is not None and call.excinfo.typename != 'SkipTest':
             parent = item.parent
             parent._previousfailed = item
 
@@ -79,7 +86,6 @@ def _setup_boulder(workspace):
         data = file.read()
 
     data = re.sub('FAKE_DNS: .*\n', 'FAKE_DNS: 10.77.77.1\n', data)
-    data = re.sub('driver: none', 'driver: json-file', data)
 
     with open(os.path.join(workspace, 'docker-compose.yml'), 'w') as file:
         file.write(data)

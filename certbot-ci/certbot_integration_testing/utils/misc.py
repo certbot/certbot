@@ -1,6 +1,7 @@
 import subprocess
 import os
 import re
+import unittest
 
 
 def find_certbot_executable():
@@ -32,3 +33,11 @@ def find_certbot_sources():
             if (dir == 'acme' or (re.match('^certbot.*$', dir)
                                   and dir not in ['certbot-ci', 'certbot.egg-info']))
             and os.path.isdir(dir)]
+
+
+def skip_on_pebble(reason):
+    """Decorator to skip a test against Pebble instances. A reason is required."""
+    def wrapper(func):
+        """Wrapped version"""
+        return unittest.skipIf('pebble' in os.environ.get('CERTBOT_INTEGRATION'), reason)(func)
+    return wrapper

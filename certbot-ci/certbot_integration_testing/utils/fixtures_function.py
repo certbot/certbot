@@ -11,28 +11,44 @@ from six.moves import SimpleHTTPServer
 
 @pytest.fixture
 def http_01_server(http_01_port):
-    def run():
-        socketserver.TCPServer(('', http_01_port),
-                               SimpleHTTPServer.SimpleHTTPRequestHandler).serve_forever()
+    current_cwd = os.getcwd()
+    webroot = tempfile.mkdtemp()
 
-    process = multiprocessing.Process(target=run)
-    process.start()
+    try:
+        os.chdir(webroot)
 
-    yield process.is_alive()
+        def run():
+            socketserver.TCPServer(('', http_01_port),
+                                   SimpleHTTPServer.SimpleHTTPRequestHandler).serve_forever()
+
+        process = multiprocessing.Process(target=run)
+        process.start()
+    finally:
+        os.chdir(current_cwd)
+
+    yield webroot if process.is_alive() else None
 
     process.terminate()
 
 
 @pytest.fixture
 def tls_sni_01_server(tls_sni_01_port):
-    def run():
-        socketserver.TCPServer(('', tls_sni_01_port),
-                               SimpleHTTPServer.SimpleHTTPRequestHandler).serve_forever()
+    current_cwd = os.getcwd()
+    webroot = tempfile.mkdtemp()
 
-    process = multiprocessing.Process(target=run)
-    process.start()
+    try:
+        os.chdir(webroot)
 
-    yield process.is_alive()
+        def run():
+            socketserver.TCPServer(('', tls_sni_01_port),
+                                   SimpleHTTPServer.SimpleHTTPRequestHandler).serve_forever()
+
+        process = multiprocessing.Process(target=run)
+        process.start()
+    finally:
+        os.chdir(current_cwd)
+
+    yield webroot if process.is_alive() else None
 
     process.terminate()
 

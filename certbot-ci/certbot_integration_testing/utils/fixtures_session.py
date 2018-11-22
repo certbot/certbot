@@ -16,10 +16,10 @@ def acme_url():
         return 'http://localhost:4000/directory'
     if integration == 'boulder-v2':
         return 'http://localhost:4001/directory'
-    if integration == 'pebble' or integration == 'pebble-strict':
+    if integration == 'pebble-nonstrict' or integration == 'pebble-strict':
         return 'https://localhost:14000/dir'
 
-    raise ValueError('Invalid CERTBOT_INTEGRATION value')
+    raise ValueError('Invalid CERTBOT_INTEGRATION value: {0}'.format(integration))
 
 
 @pytest.fixture(scope='session')
