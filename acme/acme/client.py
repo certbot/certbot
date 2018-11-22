@@ -888,6 +888,9 @@ class BackwardsCompatibleClientV2(object):
             return 1
 
     def external_account_required(self):
+        """Checks if the server requires an external account for ACMEv2 servers.
+
+        Always return False for ACMEv1 servers, as it doesn't use External Account Binding."""
         if self.acme_version == 1:
             return False
         else:
