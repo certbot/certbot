@@ -69,12 +69,7 @@ git checkout "$RELEASE_BRANCH"
 sed -i "s/master/$(date +'%Y-%m-%d')/" CHANGELOG.md
 git add CHANGELOG.md
 git diff --cached
-while ! git commit --gpg-sign="$RELEASE_GPG_KEY" -m "Update changelog for $version release"; do
-    echo "Unable to sign the release commit using git."
-    echo "You may have to configure git to use gpg2 by running:"
-    echo 'git config --global gpg.program $(command -v gpg2)'
-    read -p "Press enter to try signing again."
-done
+git commit -m "Update changelog for $version release"
 
 for pkg_dir in $SUBPKGS_NO_CERTBOT certbot-compatibility-test .
 do
