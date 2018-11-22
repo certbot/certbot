@@ -739,6 +739,13 @@ class ClientV2(ClientBase):
         """
         return self._revoke(cert, rsn, self.directory['revokeCert'])
 
+    def external_account_required(self):
+        """Checks if ACME server requires External Account Binding authentication."""
+        if self.directory.meta['externalAccountRequired']:
+            return True
+        else:
+            return False
+
 
 class BackwardsCompatibleClientV2(object):
     """ACME client wrapper that tends towards V2-style calls, but
@@ -874,18 +881,17 @@ class BackwardsCompatibleClientV2(object):
         """
         return self.client.revoke(cert, rsn)
 
-    def external_account_required(self):
-        """Checks if ACME server requires External Account Binding authentication."""
-        if self.client.directory.meta.external_account_required:
-            return True
-        else:
-            return False
-
     def _acme_version_from_directory(self, directory):
         if hasattr(directory, 'newNonce'):
             return 2
         else:
             return 1
+
+    def external_account_required(self):
+        if self.acme_version == 1:
+            return False
+        else:
+            return self.client.external_account_required()
 
 
 class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes

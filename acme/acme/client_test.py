@@ -42,6 +42,9 @@ DIRECTORY_V2 = messages.Directory({
     'newNonce': 'https://www.letsencrypt-demo.org/acme/new-nonce',
     'newOrder': 'https://www.letsencrypt-demo.org/acme/new-order',
     'revokeCert': 'https://www.letsencrypt-demo.org/acme/revoke-cert',
+    'meta': {
+        'externalAccountRequired': False,
+    },
 })
 
 
@@ -133,24 +136,6 @@ class BackwardsCompatibleClientV2Test(ClientTestBase):
         self.response.json.return_value = DIRECTORY_V2.to_json()
         client = self._init()
         self.assertEqual(client.acme_version, 2)
-
-    def test_external_account_required_true(self):
-        self.response.json.return_value = messages.Directory({
-            'meta': {
-                'externalAccountRequired': True,
-            },
-        }).to_json()
-        client = self._init()
-        self.assertTrue(client.external_account_required())
-
-    def test_external_account_required_false(self):
-        self.response.json.return_value = messages.Directory({
-            'meta': {
-                'externalAccountRequired': False,
-            },
-        }).to_json()
-        client = self._init()
-        self.assertFalse(client.external_account_required())
 
     def test_query_registration_client_v2(self):
         self.response.json.return_value = DIRECTORY_V2.to_json()
@@ -838,6 +823,19 @@ class ClientV2Test(ClientTestBase):
 
         self.response.json.return_value = self.regr.body.update(
             contact=()).to_json()
+
+    def test_external_account_required_true(self):
+        self.client.directory['meta']['externalAccountRequired'] = True
+
+        self.assertTrue(self.client.external_account_required())
+
+    def test_external_account_required_false(self):
+        self.client.directory['meta']['externalAccountRequired'] = False
+
+        self.assertFalse(self.client.external_account_required())
+
+    def test_external_account_required_default(self):
+        self.assertFalse(self.client.external_account_required())
 
 
 class MockJSONDeSerializable(jose.JSONDeSerializable):
