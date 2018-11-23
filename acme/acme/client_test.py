@@ -283,6 +283,26 @@ class BackwardsCompatibleClientV2Test(ClientTestBase):
             client.update_registration(mock.sentinel.regr, None)
         mock_client().update_registration.assert_called_once_with(mock.sentinel.regr, None)
 
+    def test_external_account_required_true(self):
+        self.response.json.return_value = messages.Directory({
+            'newNonce': 'http://letsencrypt-test.com/acme/new-nonce',
+            'meta': messages.Directory.Meta(external_account_required=True),
+        }).to_json()
+
+        client = self._init()
+
+        self.assertTrue(client.external_account_required())
+
+    def test_external_account_required_false(self):
+        self.response.json.return_value = messages.Directory({
+            'newNonce': 'http://letsencrypt-test.com/acme/new-nonce',
+            'meta': messages.Directory.Meta(external_account_required=False),
+        }).to_json()
+
+        client = self._init()
+
+        self.assertFalse(client.external_account_required())
+
 
 class ClientTest(ClientTestBase):
     """Tests for acme.client.Client."""
