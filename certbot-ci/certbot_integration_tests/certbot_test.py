@@ -2,7 +2,6 @@ import ssl
 import tempfile
 import subprocess
 import os
-import sys
 
 import pytest
 from six.moves.urllib.request import urlopen
@@ -82,70 +81,35 @@ class TestSuite(object):
         assertions.assert_save_renew_hook(config_dir, certname)
 
     def test_manual_http_auth(self, common, hook_probe, http_01_server, config_dir):
-        manual_auth_hook = (
-            '{0} -c "import os; '
-            "challenge_dir = os.path.join('{1}', '.well-known/acme-challenge'); "
-            'os.makedirs(challenge_dir); '
-            "challenge_file = os.path.join(challenge_dir, os.environ.get('CERTBOT_TOKEN')); "
-            "open(challenge_file, 'w').write(os.environ.get('CERTBOT_VALIDATION')); "
-            '"'
-        ).format(sys.executable, http_01_server)
-
-        manual_cleanup_hook = (
-            '{0} -c "import os; import shutil; '
-            "well_known = os.path.join('{1}', '.well-known'); "
-            'shutil.rmtree(well_known); '
-            '"'
-        ).format(sys.executable, http_01_server)
-
         certname = 'le.wtf'
         common([
-            '-a', 'manual', '-d', certname, '--rsa-key-size', '4096',
+            'certonly', '-a', 'manual', '-d', certname, '--rsa-key-size', '4096',
             '--cert-name', certname,
-            '--manual-auth-hook', manual_auth_hook,
-            '--manual-cleanup-hook', manual_cleanup_hook,
+            '--manual-auth-hook', misc.generate_manual_http_auth_hook(http_01_server),
+            '--manual-cleanup-hook', misc.generate_manual_http_cleanup_hook(http_01_server),
             '--pre-hook', 'echo wtf.pre >> "{0}"'.format(hook_probe),
             '--post-hook', 'echo wtf.post >> "{0}"'.format(hook_probe),
-            '--deploy-hook', 'echo deploy >> "{0}"'.format(hook_probe)
+            '--renew-hook', 'echo renew >> "{0}"'.format(hook_probe)
         ])
 
-        assertions.assert_hook_execution(hook_probe, 'deploy')
+        with pytest.raises(AssertionError):
+            assertions.assert_hook_execution(hook_probe, 'renew')
         assertions.assert_save_renew_hook(config_dir, certname)
 
     def test_manual_dns_auth(self, common, hook_probe, config_dir):
-        manual_auth_hook = (
-            '{0} -c "import os; '
-            'from six.moves import http_client, urllib; '
-            "params = urllib.urlencode({{'host':'_acme-challenge.{{0}}'.format("
-            "os.environ.get('CERTBOT_DOMAIN')), 'value':"
-            "os.environ.get('CERTBOT_VALIDATION')}}); "
-            "conn = http_client.HttpConnection('localhost:8055'); "
-            "con.request('POST', '/set-txt', params); "
-            '"'
-        ).format(sys.executable)
-
-        manual_cleanup_hook = (
-            '{0} -c "import os; '
-            'from six.moves import http_client, urllib; '
-            "params = urllib.urlencode({{'host':'_acme-challenge.{{0}}'.format("
-            "os.environ.get('CERTBOT_DOMAIN'))}}); "
-            "conn = http_client.HttpConnection('localhost:8055'); "
-            "con.request('POST', '/clear-txt', params); "
-            '"'
-        ).format(sys.executable)
-
-        certname = 'le.wtf'
+        certname = 'dns.le.wtf'
         common([
-            '-a', 'manual', '-d', certname, '--rsa-key-size', '4096',
-            '--cert-name', certname,
-            '--manual-auth-hook', manual_auth_hook,
-            '--manual-cleanup-hook', manual_cleanup_hook,
+            '-a', 'manual', '-d', certname, '--preferred-challenges', 'dns,tls-sni',
+            'run', '--cert-name', certname,
+            '--manual-auth-hook', misc.generate_manual_dns_auth_hook(),
+            '--manual-cleanup-hook', misc.generate_manual_dns_cleanup_hook(),
             '--pre-hook', 'echo wtf.pre >> "{0}"'.format(hook_probe),
             '--post-hook', 'echo wtf.post >> "{0}"'.format(hook_probe),
-            '--deploy-hook', 'echo deploy >> "{0}"'.format(hook_probe)
+            '--renew-hook', 'echo renew >> "{0}"'.format(hook_probe)
         ])
 
-        assertions.assert_hook_execution(hook_probe, 'deploy')
+        with pytest.raises(AssertionError):
+            assertions.assert_hook_execution(hook_probe, 'renew')
         assertions.assert_save_renew_hook(config_dir, certname)
 
     def test_certonly(self, common):
@@ -174,3 +138,13 @@ class TestSuite(object):
             '--cert-path', cert_path,
             '--key-path', key_path
         ])
+
+    # def test_renew(self, config_dir, common_no_force_renew, common):
+    #     certificate = 'le.wtf'
+    #     assertions.assert_certs_count_for_lineage(config_dir, certificate, 1)
+    #
+    #     common_no_force_renew(['renew'])
+    #     assertions.assert_certs_count_for_lineage(config_dir, certificate, 1)
+    #
+    #     common(['renew', '--cert-name', certificate, '--authenticator', 'manual'])
+    #     assertions.assert_certs_count_for_lineage(config_dir, certificate, 2)

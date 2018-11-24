@@ -1,6 +1,5 @@
 import subprocess
 import os
-import re
 import unittest
 import ssl
 import time
@@ -9,7 +8,6 @@ import tempfile
 import shutil
 import multiprocessing
 import sys
-from pprint import pprint
 
 from six.moves.urllib.request import urlopen
 from six.moves import socketserver, SimpleHTTPServer
@@ -114,3 +112,44 @@ def create_tcp_server(port):
                 process.join()  # Block until process is effectively terminated
         finally:
             shutil.rmtree(webroot)
+
+
+def generate_manual_http_auth_hook(webroot):
+    return (
+        '{0} -c "import os; '
+        "challenge_dir = os.path.join('{1}', '.well-known/acme-challenge'); "
+        'os.makedirs(challenge_dir); '
+        "challenge_file = os.path.join(challenge_dir, os.environ.get('CERTBOT_TOKEN')); "
+        "open(challenge_file, 'w').write(os.environ.get('CERTBOT_VALIDATION')); "
+        '"'
+    ).format(sys.executable, webroot)
+
+
+def generate_manual_http_cleanup_hook(webroot):
+    return (
+        '{0} -c "import os; import shutil; '
+        "well_known = os.path.join('{1}', '.well-known'); "
+        'shutil.rmtree(well_known); '
+        '"'
+    ).format(sys.executable, webroot)
+
+
+def generate_manual_dns_auth_hook():
+    return (
+        '{0} -c "import os; import requests; import json; '
+        "data = {{'host':'_acme-challenge.{{0}}.'.format(os.environ.get('CERTBOT_DOMAIN')),"
+        "'value':os.environ.get('CERTBOT_VALIDATION')}}; "
+        "request = requests.post('http://localhost:8055/set-txt', data=json.dumps(data)); "
+        "request.raise_for_status(); "
+        '"'
+    ).format(sys.executable)
+
+
+def generate_manual_dns_cleanup_hook():
+    return (
+        '{0} -c "import os; import requests; '
+        "data = {{'host':'_acme-challenge.{{0}}.'.format(os.environ.get('CERTBOT_DOMAIN')}}; "
+        "request = requests.post('http://localhost:8055/clear-txt', data=json.dumps(data)); "
+        "request.raise_for_status(); "
+        '"'
+    ).format(sys.executable)
