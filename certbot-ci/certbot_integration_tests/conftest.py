@@ -12,7 +12,6 @@ PEBBLE_VERSION = '2018-11-02'
 
 pytest_plugins = [
     'certbot_integration_tests.utils.fixtures_session',
-    'certbot_integration_tests.utils.fixtures_module',
     'certbot_integration_tests.utils.fixtures_function'
 ]
 

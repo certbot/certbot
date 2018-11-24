@@ -2,7 +2,7 @@ import os
 import subprocess
 import tempfile
 import shutil
-
+import sys
 import pytest
 
 
@@ -49,32 +49,3 @@ def tls_sni_01_port():
 def http_01_port():
     return 5002
 
-
-@pytest.fixture(scope='session')
-def certbot_test_no_force_renew(workspace, config_dir, acme_url, http_01_port, tls_sni_01_port):
-    def func(args):
-        command = [
-            'certbot', '--server', acme_url, '--no-verify-ssl', '--tls-sni-01-port',
-            str(tls_sni_01_port), '--http-01-port', str(http_01_port),
-            '--manual-public-ip-logging-ok', '--config-dir', config_dir, '--work-dir',
-            os.path.join(workspace, 'work'), '--logs-dir', os.path.join(workspace, 'logs'),
-            '--non-interactive', '--no-redirect', '--agree-tos',
-            '--register-unsafely-without-email', '--debug', '-vv'
-        ]
-
-        command.extend(args)
-
-        print('Invoke command:\n{0}'.format(subprocess.list2cmdline(command)))
-        return subprocess.check_output(command, universal_newlines=True)
-
-    return func
-
-
-@pytest.fixture(scope='session')
-def certbot_test(config_dir, acme_url, http_01_port, tls_sni_01_port):
-    def func(args):
-        command = ['--renew-by-default']
-        command.extend(args)
-        return certbot_test_no_force_renew(command)
-
-    return func

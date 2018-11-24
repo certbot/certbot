@@ -1,10 +1,9 @@
-import ssl
 import tempfile
 import subprocess
 import os
+import sys
 
 import pytest
-from six.moves.urllib.request import urlopen
 
 from certbot_integration_tests.utils import assertions
 from certbot_integration_tests.utils import misc
@@ -14,18 +13,15 @@ from certbot_integration_tests.utils.misc import skip_on_pebble, skip_on_pebble_
 @pytest.mark.incremental
 class TestSuite(object):
 
-    def test_directory_accessibility(self, acme_url):
-        context = ssl.SSLContext()
-        urlopen(acme_url, context=context)
-
     def test_basic_commands(self, common):
         initial_count_tmpfiles = len(os.listdir(tempfile.tempdir))
 
-        with pytest.raises(subprocess.CalledProcessError):
-            common(['--csr'])
         common(['--help'])
         common(['--help', 'all'])
         common(['--version'])
+
+        with pytest.raises(subprocess.CalledProcessError):
+            common(['--csr'])
 
         new_count_tmpfiles = len(os.listdir(tempfile.tempdir))
         assert initial_count_tmpfiles == new_count_tmpfiles
@@ -42,7 +38,7 @@ class TestSuite(object):
         common(['register', '--update-registration', '--email', 'ex1@domain.org'])
         common(['register', '--update-registration', '--email', 'ex1@domain.org,ex2@domain.org'])
 
-    def test_prepare_plugins(self, common):
+    def test_prepare_plugins(self, common, capsys):
         output = common(['plugins', '--init', '--prepare'])
 
         assert 'webroot' in output
@@ -139,12 +135,21 @@ class TestSuite(object):
             '--key-path', key_path
         ])
 
-    # def test_renew(self, config_dir, common_no_force_renew, common):
-    #     certificate = 'le.wtf'
-    #     assertions.assert_certs_count_for_lineage(config_dir, certificate, 1)
-    #
-    #     common_no_force_renew(['renew'])
-    #     assertions.assert_certs_count_for_lineage(config_dir, certificate, 1)
-    #
-    #     common(['renew', '--cert-name', certificate, '--authenticator', 'manual'])
-    #     assertions.assert_certs_count_for_lineage(config_dir, certificate, 2)
+    def test_renew(self, config_dir, common_no_force_renew, common, monkeypatch):
+        certname = 'renew.le.wtf'
+        common([
+            '-a', 'manual', '-d', certname, '--preferred-challenges', 'dns,tls-sni',
+            'run', '--cert-name', certname,
+            '--manual-auth-hook', misc.generate_manual_dns_auth_hook(),
+            '--manual-cleanup-hook', misc.generate_manual_dns_cleanup_hook()
+        ])
+
+        assertions.assert_certs_count_for_lineage(config_dir, certname, 1)
+
+        common_no_force_renew(['renew'])
+
+        assertions.assert_certs_count_for_lineage(config_dir, certname, 1)
+
+        common(['renew', '--cert-name', certname, '--authenticator', 'manual'])
+
+        assertions.assert_certs_count_for_lineage(config_dir, certname, 2)

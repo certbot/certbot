@@ -148,7 +148,7 @@ def generate_manual_dns_auth_hook():
 def generate_manual_dns_cleanup_hook():
     return (
         '{0} -c "import os; import requests; '
-        "data = {{'host':'_acme-challenge.{{0}}.'.format(os.environ.get('CERTBOT_DOMAIN')}}; "
+        "data = {{'host':'_acme-challenge.{{0}}.'.format(os.environ.get('CERTBOT_DOMAIN'))}}; "
         "request = requests.post('http://localhost:8055/clear-txt', data=json.dumps(data)); "
         "request.raise_for_status(); "
         '"'
