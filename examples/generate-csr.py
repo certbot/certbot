@@ -8,6 +8,14 @@ import os
 import argparse
 from OpenSSL import crypto
 
+try:
+    from cryptography.hazmat.backends import default_backend
+    from cryptography.hazmat.primitives.asymmetric import rsa, ec
+    from cryptography.hazmat.primitives.serialization import Encoding, PrivateFormat, NoEncryption
+    cryptography=True
+except ImportError:
+    cryptography=False
+
 CWD = os.getcwd()
 
 
@@ -20,15 +28,31 @@ def generate_parser():
     one_parser.add_argument('--csr-path', default=os.path.join(CWD, 'csr.der'),
                             help='Path for the generated certificate '
                                  '(default is csr.der in current directory)')
+    one_parser.add_argument('--key-type', default='RSA',
+                            choices=['RSA', 'ECDSA'],
+                            help='Key type to use, ECDSA is supported only '
+                                 'if cryptography module is available')
 
     return one_parser
 
 
-def main(domains, key_path, csr_path):
+def main(domains, key_path, csr_path, key_type):
     san = ', '.join(['DNS: {0}'.format(item) for item in domains])
 
-    key = crypto.PKey()
-    key.generate_key(crypto.TYPE_RSA, 2048)
+    if key_type == 'RSA':
+        key = crypto.PKey()
+        key.generate_key(crypto.TYPE_RSA, 2048)
+    elif key_type == 'ECDSA':
+        if not cryptography:
+            raise ValueError('Error, cryptography module is not installed,'
+                             'but is required to use ECDSA')
+
+        key = ec.generate_private_key(ec.SECP384R1(), default_backend())
+        key = key.private_bytes(encoding=Encoding.PEM, format=PrivateFormat.TraditionalOpenSSL,
+                                encryption_algorithm=NoEncryption())
+        key = crypto.load_privatekey(crypto.FILETYPE_PEM, key)
+    else:
+        raise ValueError('Invalid key type: {0}'.format(key_type))
 
     with open(key_path, 'bw') as file:
         file.write(crypto.dump_privatekey(crypto.FILETYPE_PEM, key))
@@ -49,4 +73,4 @@ def main(domains, key_path, csr_path):
 if __name__ == '__main__':
     parser = generate_parser()
     namespace = parser.parse_args()
-    main(namespace.domain, namespace.key_path, namespace.csr_path)
+    main(namespace.domain, namespace.key_path, namespace.csr_path, namespace.key_type)

@@ -3,10 +3,10 @@ import os
 
 def assert_hook_execution(probe_path, probe_content):
     with open(probe_path, 'r') as file:
-        data = file.read()
+        lines = file.readlines()
 
-    print(data)
-    assert probe_content in data
+    # Comparing pattern to each line avoids to match "pre" for a line with "pre-override"
+    assert [line for line in lines if line == '{0}{1}'.format(probe_content, os.linesep)]
 
 
 def assert_save_renew_hook(config_dir, lineage):

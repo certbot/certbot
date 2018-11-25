@@ -1,13 +1,35 @@
 import os
 import tempfile
-import sys
-import stat
 import subprocess
 import shutil
 
 import pytest
 
 from certbot_integration_tests.utils import misc
+
+
+@pytest.fixture(scope='session')
+def acme_url():
+    integration = os.environ.get('CERTBOT_INTEGRATION')
+
+    if integration == 'boulder-v1':
+        return 'http://localhost:4000/directory'
+    if integration == 'boulder-v2':
+        return 'http://localhost:4001/directory'
+    if integration == 'pebble-nonstrict' or integration == 'pebble-strict':
+        return 'https://localhost:14000/dir'
+
+    raise ValueError('Invalid CERTBOT_INTEGRATION value: {0}'.format(integration))
+
+
+@pytest.fixture(scope='session')
+def tls_sni_01_port():
+    return 5001
+
+
+@pytest.fixture(scope='session')
+def http_01_port():
+    return 5002
 
 
 @pytest.fixture
@@ -22,12 +44,6 @@ def workspace():
 @pytest.fixture
 def config_dir(workspace):
     return os.path.join(workspace, 'conf')
-
-
-@pytest.fixture
-def renewal_hooks_dirs(config_dir):
-    renewal_hooks_root = os.path.join(config_dir, 'renewal-hooks')
-    return [os.path.join(renewal_hooks_root, item) for item in ['pre', 'deploy', 'post']]
 
 
 @pytest.fixture
@@ -99,47 +115,3 @@ def hook_probe():
         yield probe[1]
     finally:
         os.unlink(probe[1])
-
-
-@pytest.fixture
-def generate_test_hooks(renewal_hooks_dirs, hook_probe):
-    if sys.platform == 'win32':
-        extension = 'bat'
-    else:
-        extension = 'sh'
-    try:
-        renewal_dir_pre_hook = os.path.join(renewal_hooks_dirs[0], 'hook.{0}'.format(extension))
-        renewal_dir_deploy_hook = os.path.join(renewal_hooks_dirs[1], 'hook.{0}'.format(extension))
-        renewal_dir_post_hook = os.path.join(renewal_hooks_dirs[2], 'hook.{0}'.format(extension))
-
-        for hook_dir in renewal_hooks_dirs:
-            os.makedirs(hook_dir)
-            hook_path = os.path.join(hook_dir, 'hook.{0}'.format(extension))
-            if extension == 'sh':
-                data = '''\
-#!/bin/bash -xe
-if [ "$0" ] == "{0}" ]; then
-    if [ -z "$RENEWED_DOMAINS" -o -z "$RENEWED_LINEAGE" ]; then
-        echo "Environment variables not properly set!" >&2
-        exit 1
-    fi
-fi
-echo $(basename $(dirname "$0")) >> "{1}"\
-'''.format(renewal_dir_deploy_hook, hook_probe)
-            else:
-                data = '''\
-
-'''
-            with open(hook_path, 'w') as file:
-                file.write(data)
-            os.chmod(hook_path, os.stat(hook_path).st_mode | stat.S_IEXEC)
-
-            yield {
-                'renewal_hooks_execution_probe': hook_probe,
-                'renewal_dir_pre_hook': renewal_dir_pre_hook,
-                'renewal_dir_deploy_hook': renewal_dir_deploy_hook,
-                'renewal_dir_post_hook': renewal_dir_post_hook
-            }
-    finally:
-        for hook_dir in renewal_hooks_dirs:
-            os.unlink(os.path.join(hook_dir, 'hook.{0}'.format(extension)))
