@@ -3,7 +3,6 @@ import re
 import shutil
 import subprocess
 import os
-import pytest
 
 from certbot_integration_tests.utils import misc
 
@@ -19,6 +18,7 @@ pytest_plugins = [
 def pytest_configure(config):
     if not os.environ.get('CERTBOT_INTEGRATION'):
         raise ValueError('Error, CERTBOT_INTEGRATION environment variable is not setted.')
+
     acme_ca = 'Boulder' if 'boulder' in os.environ.get('CERTBOT_INTEGRATION') else 'Pebble'
 
     print('=> Setting up a {0} instance ...'.format(acme_ca))
@@ -55,21 +55,6 @@ def pytest_configure(config):
     misc.check_until_timeout(url)
 
     print('=> {0} instance ready.'.format(acme_ca))
-
-
-def pytest_runtest_makereport(item, call):
-    if 'incremental' in item.keywords:
-        if call.excinfo is not None and call.excinfo.typename != 'SkipTest':
-            parent = item.parent
-            parent._previousfailed = item
-
-
-def pytest_runtest_setup(item):
-    if 'incremental' in item.keywords:
-        previousfailed = getattr(item.parent, '_previousfailed', None)
-        if previousfailed is not None:
-            pytest.xfail('Previous test failed in incremental test suite: {0}'
-                         .format(previousfailed.name))
 
 
 def _setup_boulder(workspace):
