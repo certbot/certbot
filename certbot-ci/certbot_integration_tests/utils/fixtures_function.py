@@ -3,10 +3,31 @@ import tempfile
 import sys
 import stat
 import subprocess
+import shutil
 
 import pytest
 
 from certbot_integration_tests.utils import misc
+
+
+@pytest.fixture
+def workspace():
+    workspace = tempfile.mkdtemp()
+    try:
+        yield workspace
+    finally:
+        shutil.rmtree(workspace)
+
+
+@pytest.fixture
+def config_dir(workspace):
+    return os.path.join(workspace, 'conf')
+
+
+@pytest.fixture
+def renewal_hooks_dirs(config_dir):
+    renewal_hooks_root = os.path.join(config_dir, 'renewal-hooks')
+    return [os.path.join(renewal_hooks_root, item) for item in ['pre', 'deploy', 'post']]
 
 
 @pytest.fixture
@@ -23,16 +44,8 @@ def certbot_test_no_force_renew(workspace, config_dir, acme_url, http_01_port, t
 
         command.extend(args)
 
-        # Normally during a test with capture enabled, stdin is set to null
-        # and stdin.isatty returns false.
-        # This non-interactive situation would lead certbot renew operations to wait a random
-        # number of minutes before executing, and we obviously want to avoid that during tests.
-        # So we get real stdin without capture to be used in the subprocess call.
-        with capsys.disabled():
-            real_stdin = sys.stdin
-
         print('Invoke command:\n{0}'.format(subprocess.list2cmdline(command)))
-        return subprocess.check_output(command, universal_newlines=True, stdin=real_stdin)
+        return subprocess.check_output(command, universal_newlines=True)
 
     return func
 
