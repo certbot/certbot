@@ -68,6 +68,7 @@ CLI_DEFAULTS = dict(
     directory_hooks=True,
     reuse_key=False,
     disable_renew_updates=False,
+    renew_time_shuffle=True,
 
     # Subparsers
     num=None,
