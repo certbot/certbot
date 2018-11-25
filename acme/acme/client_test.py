@@ -1,4 +1,5 @@
 """Tests for acme.client."""
+# pylint: disable=too-many-lines
 import copy
 import datetime
 import json
