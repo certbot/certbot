@@ -24,7 +24,8 @@ def setup_acme_server(acme_server):
         print('=> Tear down the {0} instance ...'.format(acme_type))
 
         try:
-            subprocess.check_call(['docker-compose', 'down'], cwd=workspace)
+            if os.path.isfile(os.path.join(workspace, 'docker-compose.yml')):
+                subprocess.check_call(['docker-compose', 'down'], cwd=workspace)
         except subprocess.CalledProcessError:
             pass
         finally:
@@ -71,19 +72,56 @@ def _setup_boulder(workspace):
 
 
 def _setup_pebble(workspace, strict=False):
+    subprocess.check_call(['git', 'clone', '--depth', '1', '--single-branch',
+                           'https://github.com/letsencrypt/boulder',
+                           os.path.join(workspace, 'boulder')])
+    data = '''
+FROM golang:stretch
+RUN mkdir -p /go/src/github.com/letsencrypt/boulder
+WORKDIR /go/src/github.com/letsencrypt/boulder
+COPY . .
+RUN go install ./test/challtestsrv/...
+'''
+
+    with open(os.path.join(workspace, 'boulder/Dockerfile'), 'w') as file:
+        file.write(data)
+
     data = '''\
 version: '3'
 services:
- pebble:
-  image: letsencrypt/pebble:{0}
-  command: pebble -dnsserver 10.77.77.1:53 {1}
-  ports:
-    - 14000:14000
-  environment:
-    - PEBBLE_VA_NOSLEEP=1
-'''.format(PEBBLE_VERSION, '-strict' if strict else '')
+  challtestsrv:
+    build: ./boulder
+    networks:
+      bluenet:
+        ipv4_address: 10.77.77.78
+    ports:
+      - 8055:8055
+    environment:
+      - FAKE_DNS=10.77.77.1
+    command: challtestsrv -http01 "" -tlsalpn01 "" -dns01 ":53" -management ":8055"
+  pebble:
+    image: letsencrypt/pebble:{0}
+    command: pebble -dnsserver 10.77.77.78:53 {1}
+    networks:
+      bluenet:
+        ipv4_address: 10.77.77.77
+    dns: 10.77.77.78
+    ports:
+      - 14000:14000
+    environment:
+      - PEBBLE_VA_NOSLEEP=1
+      - PEBBLE_WFE_NONCEREJECT=0
+    depends_on:
+      - challtestsrv
+networks:
+  bluenet:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.77.77.0/24
 
-    print(data)
+'''.format(PEBBLE_VERSION, '-strict' if strict else '')
 
     with open(os.path.join(workspace, 'docker-compose.yml'), 'w') as file:
         file.write(data)

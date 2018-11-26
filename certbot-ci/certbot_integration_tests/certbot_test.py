@@ -203,6 +203,7 @@ def test_renew(config_dir, common_no_force_renew, common, hook_probe):
 
     assertions.assert_certs_count_for_lineage(config_dir, certname, 4)
 
+
 def test_hook_override(common, hook_probe):
     certname = 'override.le.wtf'
     common([

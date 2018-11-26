@@ -61,7 +61,7 @@ def certbot_test_no_force_renew(workspace, config_dir, acme_url, http_01_port, t
         command.extend(args)
 
         print('Invoke command:\n{0}'.format(subprocess.list2cmdline(command)))
-        return subprocess.check_output(command, universal_newlines=True)
+        return subprocess.check_output(command, universal_newlines=True, cwd=workspace)
 
     return func
 

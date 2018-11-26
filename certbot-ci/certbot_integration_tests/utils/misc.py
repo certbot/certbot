@@ -177,13 +177,12 @@ def generate_test_file_hooks(config_dir, hook_probe):
         if extension == 'sh':
             data = '''\
 #!/bin/bash -xe
-if [ "$0" ] == "{0}" ]; then
+if [ "$0" == "{0}" ]; then
     if [ -z "$RENEWED_DOMAINS" -o -z "$RENEWED_LINEAGE" ]; then
         echo "Environment variables not properly set!" >&2
         exit 1
     fi
 fi
-echo 'HELLO WORLD'
 echo $(basename $(dirname "$0")) >> "{1}"\
 '''.format(hook_path, hook_probe)
         else:
