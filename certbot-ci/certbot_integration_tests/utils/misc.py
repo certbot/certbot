@@ -1,6 +1,5 @@
 import subprocess
 import os
-import unittest
 import ssl
 import time
 import contextlib
@@ -37,13 +36,16 @@ def generate_csr(domains, key_path, csr_path, key_type='RSA'):
     certbot_root_directory = find_certbot_root_directory()
     script_path = os.path.normpath(os.path.join(certbot_root_directory, 'examples/generate-csr.py'))
 
-    subprocess.check_call([
+    command = [
         sys.executable, script_path, '--key-path', key_path, '--csr-path', csr_path,
-        '--key-type', key_type, *domains])
+        '--key-type', key_type
+    ]
+    command.extend(domains)
+    subprocess.check_call(command)
 
 
 def check_until_timeout(url):
-    context = ssl.SSLContext()
+    context = ssl.SSLContext(protocol=ssl.PROTOCOL_TLS)
 
     for _ in range(0, 150):
         time.sleep(1)
@@ -149,7 +151,10 @@ def generate_test_file_hooks(config_dir, hook_probe):
     renewal_hooks_dirs = list_renewal_hooks_dirs(config_dir)
 
     for hook_dir in renewal_hooks_dirs:
-        os.makedirs(hook_dir, exist_ok=True)
+        try:
+            os.makedirs(hook_dir)
+        except FileExistsError:
+            pass
         hook_path = os.path.join(hook_dir, 'hook.{0}'.format(extension))
         if extension == 'sh':
             data = '''\

@@ -54,7 +54,7 @@ def main(domains, key_path, csr_path, key_type):
     else:
         raise ValueError('Invalid key type: {0}'.format(key_type))
 
-    with open(key_path, 'bw') as file:
+    with open(key_path, 'wb') as file:
         file.write(crypto.dump_privatekey(crypto.FILETYPE_PEM, key))
 
     req = crypto.X509Req()
@@ -64,7 +64,7 @@ def main(domains, key_path, csr_path, key_type):
     req.set_pubkey(key)
     req.sign(key, 'sha256')
 
-    with open(csr_path, 'bw') as file:
+    with open(csr_path, 'wb') as file:
         file.write(crypto.dump_certificate_request(crypto.FILETYPE_ASN1, req))
 
     print('You can now run: certbot auth --csr {0}'.format(csr_path))
