@@ -8,6 +8,7 @@ import shutil
 import multiprocessing
 import sys
 import stat
+import errno
 
 from six.moves.urllib.request import urlopen
 from six.moves import socketserver, SimpleHTTPServer
@@ -95,48 +96,6 @@ def create_tcp_server(port):
             shutil.rmtree(webroot)
 
 
-def generate_manual_http_auth_hook(webroot):
-    return (
-        '{0} -c "import os; '
-        "challenge_dir = os.path.join('{1}', '.well-known/acme-challenge'); "
-        'os.makedirs(challenge_dir); '
-        "challenge_file = os.path.join(challenge_dir, os.environ.get('CERTBOT_TOKEN')); "
-        "open(challenge_file, 'w').write(os.environ.get('CERTBOT_VALIDATION')); "
-        '"'
-    ).format(sys.executable, webroot)
-
-
-def generate_manual_http_cleanup_hook(webroot):
-    return (
-        '{0} -c "import os; import shutil; '
-        "well_known = os.path.join('{1}', '.well-known'); "
-        'shutil.rmtree(well_known); '
-        '"'
-    ).format(sys.executable, webroot)
-
-
-def generate_manual_dns_auth_hook():
-    return (
-        '{0} -c "import os; import requests; import json; '
-        "assert not os.environ.get('CERTBOT_DOMAIN').startswith('fail'); "
-        "data = {{'host':'_acme-challenge.{{0}}.'.format(os.environ.get('CERTBOT_DOMAIN')),"
-        "'value':os.environ.get('CERTBOT_VALIDATION')}}; "
-        "request = requests.post('http://localhost:8055/set-txt', data=json.dumps(data)); "
-        "request.raise_for_status(); "
-        '"'
-    ).format(sys.executable)
-
-
-def generate_manual_dns_cleanup_hook():
-    return (
-        '{0} -c "import os; import requests; import json; '
-        "data = {{'host':'_acme-challenge.{{0}}.'.format(os.environ.get('CERTBOT_DOMAIN'))}}; "
-        "request = requests.post('http://localhost:8055/clear-txt', data=json.dumps(data)); "
-        "request.raise_for_status(); "
-        '"'
-    ).format(sys.executable)
-
-
 def list_renewal_hooks_dirs(config_dir):
     renewal_hooks_root = os.path.join(config_dir, 'renewal-hooks')
     return [os.path.join(renewal_hooks_root, item) for item in ['pre', 'deploy', 'post']]
@@ -153,8 +112,10 @@ def generate_test_file_hooks(config_dir, hook_probe):
     for hook_dir in renewal_hooks_dirs:
         try:
             os.makedirs(hook_dir)
-        except FileExistsError:
-            pass
+        except OSError as error:
+            if error.errno == errno.EEXIST:
+                pass
+            raise
         hook_path = os.path.join(hook_dir, 'hook.{0}'.format(extension))
         if extension == 'sh':
             data = '''\
@@ -174,3 +135,12 @@ echo $(basename $(dirname "$0")) >> "{1}"\
         with open(hook_path, 'w') as file:
             file.write(data)
         os.chmod(hook_path, os.stat(hook_path).st_mode | stat.S_IEXEC)
+
+
+def node_is_master(config):
+    """
+    Check if current config node represents the master node in pytest-xdist execution.
+    :param config: Node configuration object
+    :return: True if current node is master (or xdist is not used), False otherwise
+    """
+    return hasattr(config, 'slaveinput')

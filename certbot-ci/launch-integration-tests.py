@@ -4,6 +4,7 @@ import sys
 import pytest
 import os
 import contextlib
+import json
 
 import coverage
 
@@ -59,8 +60,9 @@ def main(cli_args=sys.argv[1:]):
     command.extend(cover)
     command.extend(tests)
 
-    with acme.setup_acme_server(args.acme_server):
+    with acme.setup_acme_server(args.acme_server) as acme_xdist:
         os.environ['CERTBOT_INTEGRATION'] = args.acme_server
+        os.environ['CERTBOT_ACME_XDIST'] = json.dumps(acme_xdist)
         with execute_in_given_cwd(os.path.join(CURRENT_DIR, 'certbot_integration_tests')):
             exit_code = pytest.main(command)
 

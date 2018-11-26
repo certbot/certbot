@@ -84,13 +84,14 @@ def test_http_01(common, config_dir, hook_probe, tls_sni_01_server):
     assertions.assert_save_renew_hook(config_dir, certname)
 
 
-def test_manual_http_auth(common, hook_probe, http_01_server, config_dir):
+def test_manual_http_auth(common, hook_probe, config_dir,
+                          manual_http_auth_hook, manual_http_cleanup_hook):
     certname = 'le.wtf'
     common([
         'certonly', '-a', 'manual', '-d', certname,
         '--cert-name', certname,
-        '--manual-auth-hook', misc.generate_manual_http_auth_hook(http_01_server),
-        '--manual-cleanup-hook', misc.generate_manual_http_cleanup_hook(http_01_server),
+        '--manual-auth-hook', manual_http_auth_hook,
+        '--manual-cleanup-hook', manual_http_cleanup_hook,
         '--pre-hook', 'echo wtf.pre >> "{0}"'.format(hook_probe),
         '--post-hook', 'echo wtf.post >> "{0}"'.format(hook_probe),
         '--renew-hook', 'echo renew >> "{0}"'.format(hook_probe)
@@ -101,13 +102,14 @@ def test_manual_http_auth(common, hook_probe, http_01_server, config_dir):
     assertions.assert_save_renew_hook(config_dir, certname)
 
 
-def test_manual_dns_auth(common, hook_probe, config_dir):
+def test_manual_dns_auth(common, hook_probe, config_dir,
+                         manual_dns_auth_hook, manual_dns_cleanup_hook):
     certname = 'dns.le.wtf'
     common([
         '-a', 'manual', '-d', certname, '--preferred-challenges', 'dns,tls-sni',
         'run', '--cert-name', certname,
-        '--manual-auth-hook', misc.generate_manual_dns_auth_hook(),
-        '--manual-cleanup-hook', misc.generate_manual_dns_cleanup_hook(),
+        '--manual-auth-hook', manual_dns_auth_hook,
+        '--manual-cleanup-hook', manual_dns_cleanup_hook,
         '--pre-hook', 'echo wtf.pre >> "{0}"'.format(hook_probe),
         '--post-hook', 'echo wtf.post >> "{0}"'.format(hook_probe),
         '--renew-hook', 'echo renew >> "{0}"'.format(hook_probe)
@@ -249,13 +251,13 @@ def test_hook_override(common, hook_probe):
     assertions.assert_hook_execution(hook_probe, 'deploy-override')
 
 
-def test_invalid_domain_with_dns_challenge(common):
+def test_invalid_domain_with_dns_challenge(common, manual_dns_auth_hook, manual_dns_cleanup_hook):
     common([
         '-a', 'manual', '-d', 'dns1.le.wtf,fail.dns1.le.wtf',
         '--allow-subset-of-names',
         '--preferred-challenges', 'dns,tls-sni',
-        '--manual-auth-hook', misc.generate_manual_dns_auth_hook(),
-        '--manual-cleanup-hook', misc.generate_manual_dns_cleanup_hook()
+        '--manual-auth-hook', manual_dns_auth_hook,
+        '--manual-cleanup-hook', manual_dns_cleanup_hook
     ])
 
     output = common(['certificates'])
@@ -391,12 +393,12 @@ def test_revoke_corner_cases(common, config_dir):
 
 
 @skip_on_boulder_v1('Wildcard certificates are not supported on ACME v1')
-def test_wildcard_certificates(common, config_dir):
+def test_wildcard_certificates(common, config_dir, manual_dns_auth_hook, manual_dns_cleanup_hook):
     common([
         '-a', 'manual', '-d', '*.wild.le.wtf,wild.le.wtf',
         '--preferred-challenge', 'dns',
-        '--manual-auth-hook', misc.generate_manual_dns_auth_hook(),
-        '--manual-cleanup-hook', misc.generate_manual_dns_cleanup_hook()
+        '--manual-auth-hook', manual_dns_auth_hook,
+        '--manual-cleanup-hook', manual_dns_cleanup_hook
     ])
 
     assert os.path.exists(os.path.join(config_dir, 'live/wild.le.wtf/fullchain.pem'))

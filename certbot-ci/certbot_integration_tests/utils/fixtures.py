@@ -2,34 +2,39 @@ import os
 import tempfile
 import subprocess
 import shutil
+import sys
 
 import pytest
 
 from certbot_integration_tests.utils import misc
 
 
-@pytest.fixture(scope='session')
-def acme_url():
-    integration = os.environ.get('CERTBOT_INTEGRATION')
-
-    if integration == 'boulder-v1':
-        return 'http://localhost:4000/directory'
-    if integration == 'boulder-v2':
-        return 'http://localhost:4001/directory'
-    if integration == 'pebble-nonstrict' or integration == 'pebble-strict':
-        return 'https://localhost:14000/dir'
-
-    raise ValueError('Invalid CERTBOT_INTEGRATION value: {0}'.format(integration))
+@pytest.fixture
+def worker_id(request):
+    if hasattr(request.config, 'slaveinput'):
+        return request.config.slaveinput['slaveid']
+    else:
+        return 'master'
 
 
-@pytest.fixture(scope='session')
-def tls_sni_01_port():
-    return 5001
+@pytest.fixture
+def acme_url(request, worker_id):
+    return request.config.acme_xdist[worker_id]['directory_url']
 
 
-@pytest.fixture(scope='session')
-def http_01_port():
-    return 5002
+@pytest.fixture
+def tls_sni_01_port(request, worker_id):
+    return request.config.acme_xdist[worker_id]['tls_sni_01_port']
+
+
+@pytest.fixture
+def http_01_port(request, worker_id):
+    return request.config.acme_xdist[worker_id]['http_01_port']
+
+
+@pytest.fixture
+def challsrvtest_mgt_port(request, worker_id):
+    return request.config.acme_xdist[worker_id]['challsrvtest_mgt_port']
 
 
 @pytest.fixture
@@ -115,3 +120,49 @@ def hook_probe():
         yield probe[1]
     finally:
         os.unlink(probe[1])
+
+
+@pytest.fixture
+def manual_http_auth_hook(http_01_server):
+    return (
+        '{0} -c "import os; '
+        "challenge_dir = os.path.join('{1}', '.well-known/acme-challenge'); "
+        'os.makedirs(challenge_dir); '
+        "challenge_file = os.path.join(challenge_dir, os.environ.get('CERTBOT_TOKEN')); "
+        "open(challenge_file, 'w').write(os.environ.get('CERTBOT_VALIDATION')); "
+        '"'
+    ).format(sys.executable, http_01_server)
+
+
+@pytest.fixture
+def manual_http_cleanup_hook(http_01_server):
+    return (
+        '{0} -c "import os; import shutil; '
+        "well_known = os.path.join('{1}', '.well-known'); "
+        'shutil.rmtree(well_known); '
+        '"'
+    ).format(sys.executable, http_01_server)
+
+
+@pytest.fixture
+def manual_dns_auth_hook(challsrvtest_mgt_port):
+    return (
+        '{0} -c "import os; import requests; import json; '
+        "assert not os.environ.get('CERTBOT_DOMAIN').startswith('fail'); "
+        "data = {{'host':'_acme-challenge.{{0}}.'.format(os.environ.get('CERTBOT_DOMAIN')),"
+        "'value':os.environ.get('CERTBOT_VALIDATION')}}; "
+        "request = requests.post('http://localhost:{1}/set-txt', data=json.dumps(data)); "
+        "request.raise_for_status(); "
+        '"'
+    ).format(sys.executable, challsrvtest_mgt_port)
+
+
+@pytest.fixture
+def manual_dns_cleanup_hook(challsrvtest_mgt_port):
+    return (
+        '{0} -c "import os; import requests; import json; '
+        "data = {{'host':'_acme-challenge.{{0}}.'.format(os.environ.get('CERTBOT_DOMAIN'))}}; "
+        "request = requests.post('http://localhost:{1}/clear-txt', data=json.dumps(data)); "
+        "request.raise_for_status(); "
+        '"'
+    ).format(sys.executable, challsrvtest_mgt_port)

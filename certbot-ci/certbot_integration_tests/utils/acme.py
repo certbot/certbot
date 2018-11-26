@@ -51,7 +51,14 @@ def setup_acme_server(acme_server):
     misc.check_until_timeout(url)
 
     print('=> {0} instance ready.'.format(acme_type))
-    yield
+    yield {
+        'master': {
+            'directory_url': url,
+            'tls_sni_01_port': 5001,
+            'http_01_port': 5002,
+            'challsrvtest_mgt_port': 8055
+        }
+    }
 
 
 def _setup_boulder(workspace):
