@@ -52,7 +52,7 @@ def config_dir(workspace):
 
 
 @pytest.fixture
-def certbot_test_no_force_renew(workspace, config_dir, acme_url, http_01_port, tls_sni_01_port, capsys):
+def certbot_test_no_force_renew(workspace, config_dir, acme_url, http_01_port, tls_sni_01_port):
     def func(args):
         command = [
             'certbot', '--server', acme_url, '--no-verify-ssl', '--tls-sni-01-port',

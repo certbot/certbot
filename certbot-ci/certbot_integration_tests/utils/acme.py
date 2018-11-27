@@ -6,6 +6,7 @@ import subprocess
 import shutil
 import re
 import contextlib
+import multiprocessing
 
 from certbot_integration_tests.utils import misc
 
@@ -17,13 +18,29 @@ TRAVIS_GO_VERSION = '1.11.2'
 @contextlib.contextmanager
 def setup_acme_server(acme_server, nodes):
     acme_type = 'Boulder' if 'boulder' in acme_server else 'Pebble'
+    acme_xdist = {'master': {}}
 
-    print('=> Setting up a {0} instance ...'.format(acme_type))
+    pool = multiprocessing.Pool(processes=len(nodes))
+    expected_results = [_setup_one_node(index, node, acme_type, acme_server, pool)
+                        for (index, node) in enumerate(nodes)]
+    results = [result.get() for result in expected_results]
+
+    if False in results:
+        raise ValueError('One instance of {0} did not start correctly.'.format(acme_type))
+
+    for (index, node) in enumerate(nodes):
+        acme_xdist[node] = results[index]
+
+    yield acme_xdist
+
+
+def _setup_one_node(index, node, acme_type, acme_server, pool):
+    print('=> Setting up a {0} instance ({1})...'.format(acme_type, node))
     tempdir = tempfile.mkdtemp()
     workspace = os.path.join(tempdir, 'src/github.com/letsencrypt/{0}'.format(acme_type.lower()))
 
     def cleanup():
-        print('=> Tear down the {0} instance ...'.format(acme_type))
+        print('=> Tear down the {0} instance ({1}) ...'.format(acme_type, node))
 
         try:
             if os.path.isfile(os.path.join(workspace, 'docker-compose.yml')):
@@ -32,46 +49,46 @@ def setup_acme_server(acme_server, nodes):
             pass
         finally:
             try:
-                shutil.rmtree(tempdir)
+                #shutil.rmtree(tempdir)
+                pass
             except IOError:
                 pass
 
-        print('=> {0} instance stopped.'.format(acme_type))
+        print('=> {0} instance stopped ({1}).'.format(acme_type, node))
 
     atexit.register(cleanup)
 
+    return pool.apply_async(_async_work, (workspace, acme_type, index, acme_server, node))
+
+
+def _async_work(workspace, acme_type, index, acme_server, node):
     os.makedirs(workspace)
 
     if acme_type == 'Boulder':
-        url = _setup_boulder(workspace)
+        config = _setup_boulder(workspace, index)
     else:
-        url = _setup_pebble(workspace,
-                            strict=acme_server == 'pebble-strict')
+        config = _setup_pebble(workspace,
+                               strict=acme_server == 'pebble-strict')
 
-    print('=> Waiting for {0} instance to respond ...'.format(acme_type))
+    print('=> Waiting for {0} instance to respond ({1}) ...'.format(acme_type, node))
 
-    misc.check_until_timeout(url)
+    try:
+        misc.check_until_timeout(config['directory_url'])
+    except ValueError:
+        return False
 
     print('=> {0} instance ready.'.format(acme_type))
-    yield {
-        'master': {
-            'directory_url': url,
-            'tls_sni_01_port': 5001,
-            'http_01_port': 5002,
-            'challsrvtest_mgt_port': 8055
-        }
-    }
 
 
-def _setup_boulder(workspace, index, acme):
+def _setup_boulder(workspace, index, acme_v2=True):
     tls_sni_01_port = 5000 + 10 * index
     http_01_port = 6000 + 10 * index
     directory_v1_port = 4000 + 10 * index
     directory_v2_port = 7000 + 10 * index
     challsrvport_mgt_port = 8000 + 10 * index
 
-    bluenet_network = '10.77.{0}.'.format(index)
-    rednet_network = '10.88.{0}.'.format(index)
+    bluenet_network = '10.77.{0}'.format(index)
+    rednet_network = '10.88.{0}'.format(index)
 
     subprocess.check_call(['git', 'clone', '--depth', '1', '--single-branch',
                            'https://github.com/letsencrypt/boulder', workspace])
@@ -133,13 +150,13 @@ services:
         expose:
           - 5657
         networks:
-          bluenet:
+          bluenet_{index}:
             aliases:
               - boulder-hsm
     bmysql:
         image: mariadb:10.3
         networks:
-          bluenet:
+          bluenet_{index}:
             aliases:
               - boulder-mysql
         environment:
@@ -171,7 +188,14 @@ networks:
       driver: default
       config:
         - subnet: {rednet_network}.0/24
-'''
+'''.format(travis_go_version=TRAVIS_GO_VERSION,
+           boulder_version=BOULDER_VERSION,
+           bluenet_network=bluenet_network,
+           rednet_network=rednet_network,
+           index=index,
+           directory_v1_port=directory_v1_port,
+           directory_v2_port=directory_v2_port,
+           challsrvport_mgt_port=challsrvport_mgt_port)
 
     with open(os.path.join(workspace, 'docker-compose.yml'), 'w') as file:
         file.write(data)
@@ -186,16 +210,24 @@ networks:
     with open(os.path.join(workspace, 'test/config/va.json'), 'w') as file:
         file.write(data)
 
+    with open(os.path.join(workspace, 'test/sd-test-srv/main.go'), 'r') as file:
+        data = file.read()
+
+    data = re.sub('10.77.77', bluenet_network, data)
+    data = re.sub('10.88.88', rednet_network, data)
+
+    with open(os.path.join(workspace, 'test/sd-test-srv/main.go'), 'w') as file:
+        file.write(data)
+
     subprocess.check_call(['docker-compose', 'up', '-d', 'boulder'], cwd=workspace)
 
-
     return {
-        'directory_url': url,
-        'tls_sni_01_port': 5001,
-        'http_01_port': 5002,
-        'challsrvtest_mgt_port': 8055
+        'directory_url': 'http://localhost:{0}/directory'.format(
+            directory_v2_port if acme_v2 else directory_v1_port),
+        'tls_sni_01_port': tls_sni_01_port,
+        'http_01_port': http_01_port,
+        'challsrvtest_mgt_port': challsrvport_mgt_port
     }
-    return 'http://localhost:4000/directory'
 
 
 def _setup_pebble(workspace, strict=False):

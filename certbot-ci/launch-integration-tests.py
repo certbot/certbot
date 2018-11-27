@@ -37,6 +37,8 @@ def create_parser():
                              help='run code coverage during integration tests')
     main_parser.add_argument('--no-capture', action='store_true',
                              help='disable output capturing while running tests')
+    main_parser.add_argument('--parallel-executions', metavar='N', type=int, default=1,
+                             help='number of parallel executions, defaulting to 1')
 
     return main_parser
 
@@ -44,6 +46,9 @@ def create_parser():
 def main(cli_args=sys.argv[1:]):
     main_parser = create_parser()
     args = main_parser.parse_args(cli_args)
+
+    workers = ['gw{0}'.format(i) for i in range(args.parallel_executions)] \
+        if args.parallel_executions > 1 else ['master']
 
     tests = []
     if args.campaign == 'all' or args.campaign == 'certbot':
@@ -60,9 +65,10 @@ def main(cli_args=sys.argv[1:]):
     command.extend(cover)
     command.extend(tests)
 
-    with acme.setup_acme_server(args.acme_server) as acme_xdist:
+    with acme.setup_acme_server(args.acme_server, workers) as acme_xdist:
         os.environ['CERTBOT_INTEGRATION'] = args.acme_server
         os.environ['CERTBOT_ACME_XDIST'] = json.dumps(acme_xdist)
+        print(acme_xdist)
         with execute_in_given_cwd(os.path.join(CURRENT_DIR, 'certbot_integration_tests')):
             exit_code = pytest.main(command)
 
