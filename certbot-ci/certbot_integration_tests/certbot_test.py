@@ -184,7 +184,7 @@ def test_renew(config_dir, common_no_force_renew, common, hook_probe):
     open(hook_probe, 'w').close()
     with open(os.path.join(config_dir, 'renewal/{0}.conf'.format(certname)), 'r') as file:
         lines = file.readlines()
-    lines.insert(4, 'renew_before_expiry = 4 years{0}'.format(os.linesep))
+    lines.insert(4, 'renew_before_expiry = 100 years{0}'.format(os.linesep))
     with open(os.path.join(config_dir, 'renewal/{0}.conf'.format(certname)), 'w') as file:
         file.writelines(lines)
     common_no_force_renew(['renew', '--no-renew-time-shuffle', '--no-directory-hooks',
