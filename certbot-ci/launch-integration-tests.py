@@ -5,6 +5,8 @@ import pytest
 import os
 import contextlib
 import json
+import tempfile
+import errno
 
 import coverage
 
@@ -22,6 +24,21 @@ def execute_in_given_cwd(cwd):
         yield
     finally:
         os.chdir(current_cwd)
+
+
+@contextlib.contextmanager
+def certbot_ci_workspace():
+    original_tempdir = tempfile.tempdir
+    try:
+        tempfile.tempdir = os.path.join(tempfile.gettempdir(), 'certbot_ci_tmp')
+        try:
+            os.mkdir(tempfile.tempdir)
+        except OSError as error:
+            if error.errno != errno.EEXIST:
+                raise
+        yield
+    finally:
+        tempfile.tempdir = original_tempdir
 
 
 def create_parser():
@@ -49,6 +66,8 @@ def main(cli_args=sys.argv[1:]):
 
     workers = ['gw{0}'.format(i) for i in range(args.parallel_executions)] \
         if args.parallel_executions > 1 else ['master']
+    processes_cmd = ['--numprocesses', str(args.parallel_executions)] \
+        if args.parallel_executions > 1 else []
 
     tests = []
     if args.campaign == 'all' or args.campaign == 'certbot':
@@ -61,29 +80,31 @@ def main(cli_args=sys.argv[1:]):
     capture = ['-s'] if args.no_capture else []
 
     command = ['--pyargs']
+    command.extend(processes_cmd)
     command.extend(capture)
     command.extend(cover)
     command.extend(tests)
 
-    with acme.setup_acme_server(args.acme_server, workers) as acme_xdist:
-        os.environ['CERTBOT_INTEGRATION'] = args.acme_server
-        os.environ['CERTBOT_ACME_XDIST'] = json.dumps(acme_xdist)
-        print(acme_xdist)
-        with execute_in_given_cwd(os.path.join(CURRENT_DIR, 'certbot_integration_tests')):
-            exit_code = pytest.main(command)
+    with certbot_ci_workspace():
+        with acme.setup_acme_server(args.acme_server, workers) as acme_xdist:
+            os.environ['CERTBOT_INTEGRATION'] = args.acme_server
+            os.environ['CERTBOT_ACME_XDIST'] = json.dumps(acme_xdist)
+            print(acme_xdist)
+            with execute_in_given_cwd(os.path.join(CURRENT_DIR, 'certbot_integration_tests')):
+                exit_code = pytest.main(command)
 
-            if args.coverage:
-                cov = coverage.Coverage()
-                cov.load()
-                covered = cov.report(show_missing=True)
+                if args.coverage:
+                    cov = coverage.Coverage()
+                    cov.load()
+                    covered = cov.report(show_missing=True)
 
-                if covered < COVERAGE_THRESHOLD:
-                    sys.stderr.write('Current coverage ({0}) is under threshold ({1})!{2}'
-                                     .format(round(covered, 2), COVERAGE_THRESHOLD, os.linesep))
+                    if covered < COVERAGE_THRESHOLD:
+                        sys.stderr.write('Current coverage ({0}) is under threshold ({1})!{2}'
+                                         .format(round(covered, 2), COVERAGE_THRESHOLD, os.linesep))
 
-                    exit_code = max(exit_code, 1)
+                        exit_code = max(exit_code, 1)
 
-            return exit_code
+                return exit_code
 
 
 if __name__ == '__main__':

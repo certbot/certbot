@@ -113,9 +113,8 @@ def generate_test_file_hooks(config_dir, hook_probe):
         try:
             os.makedirs(hook_dir)
         except OSError as error:
-            if error.errno == errno.EEXIST:
-                pass
-            raise
+            if error.errno != errno.EEXIST:
+                raise
         hook_path = os.path.join(hook_dir, 'hook.{0}'.format(extension))
         if extension == 'sh':
             data = '''\
