@@ -10,20 +10,10 @@ import errno
 
 import coverage
 
-from certbot_integration_tests.utils import acme
+from certbot_integration_tests.utils import acme, misc
 
 CURRENT_DIR = os.path.dirname(__file__)
 COVERAGE_THRESHOLD = 75
-
-
-@contextlib.contextmanager
-def execute_in_given_cwd(cwd):
-    current_cwd = os.getcwd()
-    try:
-        os.chdir(cwd)
-        yield
-    finally:
-        os.chdir(current_cwd)
 
 
 @contextlib.contextmanager
@@ -79,7 +69,7 @@ def main(cli_args=sys.argv[1:]):
 
     capture = ['-s'] if args.no_capture else []
 
-    command = ['--pyargs']
+    command = ['--pyargs', '-W', 'ignore:Unverified HTTPS request']
     command.extend(processes_cmd)
     command.extend(capture)
     command.extend(cover)
@@ -90,7 +80,7 @@ def main(cli_args=sys.argv[1:]):
             os.environ['CERTBOT_INTEGRATION'] = args.acme_server
             os.environ['CERTBOT_ACME_XDIST'] = json.dumps(acme_xdist)
             print(acme_xdist)
-            with execute_in_given_cwd(os.path.join(CURRENT_DIR, 'certbot_integration_tests')):
+            with misc.execute_in_given_cwd(os.path.join(CURRENT_DIR, 'certbot_integration_tests')):
                 exit_code = pytest.main(command)
 
                 if args.coverage:

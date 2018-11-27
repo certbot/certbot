@@ -7,6 +7,7 @@ import sys
 import pytest
 
 from certbot_integration_tests.utils import misc
+from certbot.main import main as certbot_main
 
 
 @pytest.fixture
@@ -52,10 +53,11 @@ def config_dir(workspace):
 
 
 @pytest.fixture
-def certbot_test_no_force_renew(workspace, config_dir, acme_url, http_01_port, tls_sni_01_port):
+def certbot_test_no_force_renew(workspace, config_dir, acme_url,
+                                http_01_port, tls_sni_01_port, capsys):
     def func(args):
         command = [
-            'certbot', '--server', acme_url, '--no-verify-ssl', '--tls-sni-01-port',
+            '--server', acme_url, '--no-verify-ssl', '--tls-sni-01-port',
             str(tls_sni_01_port), '--http-01-port', str(http_01_port),
             '--manual-public-ip-logging-ok', '--config-dir', config_dir, '--work-dir',
             os.path.join(workspace, 'work'), '--logs-dir', os.path.join(workspace, 'logs'),
@@ -64,9 +66,23 @@ def certbot_test_no_force_renew(workspace, config_dir, acme_url, http_01_port, t
         ]
 
         command.extend(args)
+        pseudo_command = command[:]
+        pseudo_command.append('certbot')
 
-        print('Invoke command:\n{0}'.format(subprocess.list2cmdline(command)))
-        return subprocess.check_output(command, universal_newlines=True, cwd=workspace)
+        print('Invoke command:\n{0}'.format(subprocess.list2cmdline(pseudo_command)))
+        try:
+            with misc.execute_in_given_cwd(workspace):
+                capsys.readouterr()
+                certbot_main(cli_args=command)
+                out, _ = capsys.readouterr()
+
+                return out
+        except SystemExit as sys_exit:
+            out, err = capsys.readouterr()
+            if sys_exit.code != 0:
+                raise misc.CertbotSystemExitError(out, err, sys_exit.code)
+
+            return out
 
     return func
 
