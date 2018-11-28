@@ -824,25 +824,32 @@ class ClientV2Test(ClientTestBase):
             contact=()).to_json()
 
     def test_post_as_get(self):
-        self.client._post_as_get('http://dummy_url.net')  # pylint: disable=protected-access
+        with mock.patch('acme.client.ClientV2._authzr_from_response') as mock_client:
+            def return_auth(*args):
+                """Return authzr2 itself"""
+                return self.authzr2
 
-        self.client.net.post.assert_called_once_with(
-            'http://dummy_url.net', None, acme_version=2,
-            new_nonce_url='https://www.letsencrypt-demo.org/acme/new-nonce')
-        self.client.net.get.assert_not_called()
+            mock_client.return_value = return_auth
 
-        class FakeError(messages.Error):  # pylint: disable=too-many-ancestors
-            """Fake error to reproduce a malformed request ACME error"""
-            def __init__(self):  # pylint: disable=super-init-not-called
-                pass
-            @property
-            def code(self):
-                return 'malformed'
-        self.client.net.post.side_effect = FakeError()
+            self.client.poll(self.authzr2)  # pylint: disable=protected-access
 
-        self.client._post_as_get('http://dummy_url.net')  # pylint: disable=protected-access
+            self.client.net.post.assert_called_once_with(
+                self.authzr2.uri, None, acme_version=2,
+                new_nonce_url='https://www.letsencrypt-demo.org/acme/new-nonce')
+            self.client.net.get.assert_not_called()
 
-        self.client.net.get.assert_called_once_with('http://dummy_url.net')
+            class FakeError(messages.Error):  # pylint: disable=too-many-ancestors
+                """Fake error to reproduce a malformed request ACME error"""
+                def __init__(self):  # pylint: disable=super-init-not-called
+                    pass
+                @property
+                def code(self):
+                    return 'malformed'
+            self.client.net.post.side_effect = FakeError()
+
+            self.client.poll(self.authzr2)  # pylint: disable=protected-access
+
+            self.client.net.get.assert_called_once_with(self.authzr2.uri)
 
 
 class MockJSONDeSerializable(jose.JSONDeSerializable):
