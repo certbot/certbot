@@ -811,12 +811,7 @@ class BackwardsCompatibleClientV2(object):
             self.client = ClientV2(directory, net=net)
 
     def __getattr__(self, name):
-        if name in vars(self.client):
-            return getattr(self.client, name)
-        elif name in dir(ClientBase):
-            return getattr(self.client, name)
-        else:
-            raise AttributeError()
+        return getattr(self.client, name)
 
     def new_account_and_tos(self, regr, check_tos_cb=None):
         """Combined register and agree_tos for V1, new_account for V2
