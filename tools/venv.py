@@ -26,6 +26,7 @@ REQUIREMENTS = [
     '-e certbot-postfix',
     '-e letshelp-certbot',
     '-e certbot-compatibility-test',
+    '-e certbot-ci',
 ]
 
 
