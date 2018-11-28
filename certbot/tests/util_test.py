@@ -210,16 +210,21 @@ class UniqueFileTest(test_util.TempDirTestCase):
         fd, name = self._call()
         fd.write("bar")
         fd.close()
-        self.assertEqual(open(name).read(), "bar")
+        with open(name) as f:
+            self.assertEqual(f.read(), "bar")
 
     def test_right_mode(self):
-        self.assertTrue(compat.compare_file_modes(0o700, os.stat(self._call(0o700)[1]).st_mode))
-        self.assertTrue(compat.compare_file_modes(0o600, os.stat(self._call(0o600)[1]).st_mode))
+        fd1, name1 = self._call(0o700)
+        fd2, name2 = self._call(0o600)
+        self.assertTrue(compat.compare_file_modes(0o700, os.stat(name1).st_mode))
+        self.assertTrue(compat.compare_file_modes(0o600, os.stat(name2).st_mode))
+        fd1.close()
+        fd2.close()
 
     def test_default_exists(self):
-        name1 = self._call()[1]  # create 0000_foo.txt
-        name2 = self._call()[1]
-        name3 = self._call()[1]
+        fd1, name1 = self._call()  # create 0000_foo.txt
+        fd2, name2 = self._call()
+        fd3, name3 = self._call()
 
         self.assertNotEqual(name1, name2)
         self.assertNotEqual(name1, name3)
@@ -235,6 +240,10 @@ class UniqueFileTest(test_util.TempDirTestCase):
         self.assertTrue(basename2.endswith("foo.txt"))
         basename3 = os.path.basename(name3)
         self.assertTrue(basename3.endswith("foo.txt"))
+
+        fd1.close()
+        fd2.close()
+        fd3.close()
 
 
 try:
@@ -255,13 +264,18 @@ class UniqueLineageNameTest(test_util.TempDirTestCase):
         f, path = self._call("wow")
         self.assertTrue(isinstance(f, file_type))
         self.assertEqual(os.path.join(self.tempdir, "wow.conf"), path)
+        f.close()
 
     def test_multiple(self):
+        items = []
         for _ in six.moves.range(10):
-            f, name = self._call("wow")
+            items.append(self._call("wow"))
+        f, name = items[-1]
         self.assertTrue(isinstance(f, file_type))
         self.assertTrue(isinstance(name, six.string_types))
         self.assertTrue("wow-0009.conf" in name)
+        for f, _ in items:
+            f.close()
 
     @mock.patch("certbot.util.os.fdopen")
     def test_failure(self, mock_fdopen):

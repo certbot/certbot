@@ -7,8 +7,7 @@ BootstrapArchCommon() {
   #   - ArchLinux (x86_64)
   #
   # "python-virtualenv" is Python3, but "python2-virtualenv" provides
-  # only "virtualenv2" binary, not "virtualenv" necessary in
-  # ./tools/_venv_common.sh
+  # only "virtualenv2" binary, not "virtualenv".
 
   deps="
     python2

@@ -14,6 +14,7 @@ import six
 
 import certbot
 from certbot import cli
+from certbot import compat
 from certbot import constants
 from certbot import crypto_util
 from certbot import errors
@@ -189,7 +190,7 @@ def update_configuration(lineagename, archive_dir, target, cli_config):
     # Save only the config items that are relevant to renewal
     values = relevant_values(vars(cli_config.namespace))
     write_renewal_config(config_filename, temp_filename, archive_dir, target, values)
-    os.rename(temp_filename, config_filename)
+    compat.os_rename(temp_filename, config_filename)
 
     return configobj.ConfigObj(config_filename)
 
@@ -792,7 +793,7 @@ class RenewableCert(object):
         May need to recover from rare interrupted / crashed states."""
 
         if self.has_pending_deployment():
-            logger.warn("Found a new cert /archive/ that was not linked to in /live/; "
+            logger.warning("Found a new cert /archive/ that was not linked to in /live/; "
                         "fixing...")
             self.update_all_links_to(self.latest_common_version())
             return False
@@ -1035,9 +1036,11 @@ class RenewableCert(object):
         archive = full_archive_path(None, cli_config, lineagename)
         live_dir = _full_live_path(cli_config, lineagename)
         if os.path.exists(archive):
+            config_file.close()
             raise errors.CertStorageError(
                 "archive directory exists for " + lineagename)
         if os.path.exists(live_dir):
+            config_file.close()
             raise errors.CertStorageError(
                 "live directory exists for " + lineagename)
         os.mkdir(archive)

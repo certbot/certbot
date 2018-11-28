@@ -24,7 +24,7 @@ obtain, install, and renew certificates:
 
 manage certificates:
     certificates    Display information about certificates you have from Certbot
-    revoke          Revoke a certificate (supply --cert-path)
+    revoke          Revoke a certificate (supply --cert-path or --cert-name)
     delete          Delete a certificate
 
 manage your account with Let's Encrypt:
@@ -108,7 +108,7 @@ optional arguments:
                         case, and to know when to deprecate support for past
                         Python versions and flags. If you wish to hide this
                         information from the Let's Encrypt server, set this to
-                        "". (default: CertbotACMEClient/0.27.1
+                        "". (default: CertbotACMEClient/0.28.0
                         (certbot(-auto); OS_NAME OS_VERSION) Authenticator/XXX
                         Installer/YYY (SUBCOMMAND; flags: FLAGS)
                         Py/major.minor.patchlevel). The flags encoded in the
@@ -261,7 +261,8 @@ manage:
   delete                Clean up all files related to a certificate
   renew                 Renew all certificates (or one specified with --cert-
                         name)
-  revoke                Revoke a certificate specified with --cert-path
+  revoke                Revoke a certificate specified with --cert-path or
+                        --cert-name
   update_symlinks       Recreate symlinks in your /etc/letsencrypt/live/
                         directory
 
@@ -475,10 +476,9 @@ apache:
   Apache Web Server plugin - Beta
 
   --apache-enmod APACHE_ENMOD
-                        Path to the Apache 'a2enmod' binary (default: a2enmod)
+                        Path to the Apache 'a2enmod' binary (default: None)
   --apache-dismod APACHE_DISMOD
-                        Path to the Apache 'a2dismod' binary (default:
-                        a2dismod)
+                        Path to the Apache 'a2dismod' binary (default: None)
   --apache-le-vhost-ext APACHE_LE_VHOST_EXT
                         SSL vhost configuration extension (default: -le-
                         ssl.conf)
@@ -492,16 +492,16 @@ apache:
                         /var/log/apache2)
   --apache-challenge-location APACHE_CHALLENGE_LOCATION
                         Directory path for challenge configuration (default:
-                        /etc/apache2)
+                        /etc/apache2/other)
   --apache-handle-modules APACHE_HANDLE_MODULES
                         Let installer handle enabling required modules for you
-                        (Only Ubuntu/Debian currently) (default: True)
+                        (Only Ubuntu/Debian currently) (default: False)
   --apache-handle-sites APACHE_HANDLE_SITES
                         Let installer handle enabling sites for you (Only
-                        Ubuntu/Debian currently) (default: True)
+                        Ubuntu/Debian currently) (default: False)
   --apache-ctl APACHE_CTL
                         Full path to Apache control script (default:
-                        apache2ctl)
+                        apachectl)
 
 certbot-route53:auth:
   Obtain certificates using a DNS TXT record (if you are using AWS Route53
@@ -602,7 +602,7 @@ dns-linode:
   --dns-linode-propagation-seconds DNS_LINODE_PROPAGATION_SECONDS
                         The number of seconds to wait for DNS to propagate
                         before asking the ACME server to verify the DNS
-                        record. (default: 960)
+                        record. (default: 1200)
   --dns-linode-credentials DNS_LINODE_CREDENTIALS
                         Linode credentials INI file. (default: None)
 

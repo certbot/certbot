@@ -113,6 +113,12 @@ class AuthHandler(object):
                 aauthzr.authzr, path)
             aauthzr.achalls.extend(aauthzr_achalls)
 
+        for aauthzr in aauthzrs:
+            for achall in aauthzr.achalls:
+                if isinstance(achall.chall, challenges.TLSSNI01):
+                    logger.warning("TLS-SNI-01 is deprecated, and will stop working soon.")
+                    return
+
     def _has_challenges(self, aauthzrs):
         """Do we have any challenges to perform?"""
         return any(aauthzr.achalls for aauthzr in aauthzrs)

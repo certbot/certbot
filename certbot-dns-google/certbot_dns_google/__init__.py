@@ -98,7 +98,7 @@ Examples
 
    certbot certonly \\
      --dns-google \\
-     --dns-google-credentials ~/.secrets/certbot/google.ini \\
+     --dns-google-credentials ~/.secrets/certbot/google.json \\
      --dns-google-propagation-seconds 120 \\
      -d example.com
 

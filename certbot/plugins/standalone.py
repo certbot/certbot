@@ -114,7 +114,7 @@ class ServerManager(object):
         return self._instances.copy()
 
 
-SUPPORTED_CHALLENGES = [challenges.TLSSNI01, challenges.HTTP01] \
+SUPPORTED_CHALLENGES = [challenges.HTTP01, challenges.TLSSNI01] \
 # type: List[Type[challenges.KeyAuthorizationChallenge]]
 
 

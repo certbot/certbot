@@ -458,7 +458,7 @@ def sha256sum(filename):
     :rtype: str
     """
     sha256 = hashlib.sha256()
-    with open(filename, 'rU') as file_d:
+    with open(filename, 'r') as file_d:
         sha256.update(file_d.read().encode('UTF-8'))
     return sha256.hexdigest()
 
