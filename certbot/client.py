@@ -479,9 +479,9 @@ class Client(object):
         logger.info("Server issued certificate; certificate written to %s",
                     abs_cert_path)
 
-        chain_file, abs_chain_path = \
+        chain_file, abs_chain_path =\
             _open_pem_file('chain_path', chain_path)
-        fullchain_file, abs_fullchain_path = \
+        fullchain_file, abs_fullchain_path =\
             _open_pem_file('fullchain_path', fullchain_path)
 
         _save_chain(chain_pem, chain_file)
