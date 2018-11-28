@@ -1,10 +1,12 @@
 import os
-import shutil
+import getpass
 import subprocess
+import sys
 
 import pytest
 
 from certbot_integration_tests.utils import misc
+
 
 @pytest.fixture
 def certbot_test_nginx(certbot_test):
@@ -19,11 +21,8 @@ def certbot_test_nginx(certbot_test):
 @pytest.fixture
 def nginx_root(workspace):
     root = os.path.join(workspace, 'nginx')
-    try:
-        os.mkdir(root)
-        yield root
-    finally:
-        shutil.rmtree(root)
+    os.mkdir(root)
+    yield root
 
 
 @pytest.fixture
@@ -38,6 +37,8 @@ error_log {root}/error.log;
 
 # The pidfile will be written to /var/run unless this is set.
 pid {root}/nginx.pid;
+
+user {user};
 
 worker_processes 1;
 
@@ -121,14 +122,32 @@ http {{
   }}
 }}
 '''.format(root=nginx_root,
+           user=getpass.getuser(),
            http_01_port=http_01_port,
            tls_sni_01_port=tls_sni_01_port,
            default_server='default_server')
 
+    nginx_conf_path = os.path.join(nginx_root, 'nginx.conf')
+    with open(nginx_conf_path, 'w') as file:
+        file.write(config)
+
+    yield nginx_conf_path
+
+
+@pytest.fixture
+def webroot(nginx_root):
+    path = os.path.join(nginx_root, 'webroot')
+    os.mkdir(path)
+    with open(os.path.join(path, 'index.html'), 'w') as file:
+        file.write('Hello World!')
+
+    yield path
+
 
 @pytest.fixture(autouse=True)
-def nginx(nginx_config, http_01_port):
-    process = subprocess.Popen(['nginx', '-c', nginx_config])
+def nginx(nginx_config, webroot, http_01_port):
+    assert webroot
+    process = subprocess.Popen(['nginx', '-c', nginx_config, '-g', 'daemon off;'], stdout=sys.stdout, stderr=sys.stderr)
     try:
         assert not process.poll()
         misc.check_until_timeout('http://localhost:{0}'.format(http_01_port))
