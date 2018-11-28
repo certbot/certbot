@@ -1,4 +1,7 @@
 #!/bin/bash
+# Simple integration test. Make sure to activate virtualenv beforehand
+# (source venv/bin/activate) and that you are running Pebble test
+# instance (see ./pebble-fetch.sh).
 
 cleanup_and_exit() {
     EXIT_STATUS=$?

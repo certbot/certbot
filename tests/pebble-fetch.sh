@@ -5,7 +5,7 @@ set -xe
 PEBBLE_VERSION=2018-11-02
 
 # We reuse the same GOPATH-style directory than for Boulder.
-# Pebble sto not need it, but it will make the installation consistent with Boulder's one.
+# Pebble does not need it, but it will make the installation consistent with Boulder's one.
 export GOPATH=${GOPATH:-$HOME/gopath}
 PEBBLEPATH=${PEBBLEPATH:-$GOPATH/src/github.com/letsencrypt/pebble}
 

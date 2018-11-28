@@ -84,32 +84,6 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
             response, uri=regr.uri,
             terms_of_service=regr.terms_of_service)
 
-    def _post_as_get(self, *args, **kwargs):
-        """
-        Send GET request using the POST-as-GET protocol if needed.
-        The request will be first issued using POST-as-GET for ACME v2. If the ACME CA servers do
-        not support this yet and return an error, request will be retried using GET.
-        For ACME v1, only GET request will be tried, as POST-as-GET is not supported.
-        :param args:
-        :param kwargs:
-        :return:
-        """
-        if self.acme_version >= 2:
-            # We add an empty payload for POST-as-GET requests
-            new_args = args[:1] + (None,) + args[1:]
-            try:
-                return self._post(*new_args, **kwargs)  # pylint: disable=star-args
-            except messages.Error as error:
-                if error.code == 'malformed':
-                    logger.debug('Error during a POST-as-GET request, '
-                                 'your ACME CA may not support it:\n%s', error)
-                    logger.debug('Retrying request with GET.')
-                else:  # pragma: no cover
-                    raise
-
-        # If ACME v1 or POST-as-GET not supported, we use a GET instead.
-        return self.net.get(*args, **kwargs)
-
     def _post(self, *args, **kwargs):
         """Wrapper around self.net.post that adds the acme_version.
 
@@ -225,22 +199,6 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
 
         return datetime.datetime.now() + datetime.timedelta(seconds=seconds)
 
-    def poll(self, authzr):
-        """Poll Authorization Resource for status.
-
-        :param authzr: Authorization Resource
-        :type authzr: `.AuthorizationResource`
-
-        :returns: Updated Authorization Resource and HTTP response.
-
-        :rtype: (`.AuthorizationResource`, `requests.Response`)
-
-        """
-        response = self._post_as_get(authzr.uri)
-        updated_authzr = self._authzr_from_response(
-            response, authzr.body.identifier, authzr.uri)
-        return updated_authzr, response
-
     def _revoke(self, cert, rsn, url):
         """Revoke certificate.
 
@@ -261,6 +219,7 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
         if response.status_code != http_client.OK:
             raise errors.ClientError(
                 'Successful revocation must return HTTP OK status')
+
 
 class Client(ClientBase):
     """ACME client for a v1 API.
@@ -414,6 +373,22 @@ class Client(ClientBase):
             body=jose.ComparableX509(OpenSSL.crypto.load_certificate(
                 OpenSSL.crypto.FILETYPE_ASN1, response.content)))
 
+    def poll(self, authzr):
+        """Poll Authorization Resource for status.
+
+        :param authzr: Authorization Resource
+        :type authzr: `.AuthorizationResource`
+
+        :returns: Updated Authorization Resource and HTTP response.
+
+        :rtype: (`.AuthorizationResource`, `requests.Response`)
+
+        """
+        response = self.net.get(authzr.uri)
+        updated_authzr = self._authzr_from_response(
+            response, authzr.body.identifier, authzr.uri)
+        return updated_authzr, response
+
     def poll_and_request_issuance(
             self, csr, authzrs, mintime=5, max_attempts=10):
         """Poll and request issuance.
@@ -502,7 +477,7 @@ class Client(ClientBase):
 
         """
         content_type = DER_CONTENT_TYPE  # TODO: make it a param
-        response = self._post_as_get(uri, headers={'Accept': content_type},
+        response = self.net.get(uri, headers={'Accept': content_type},
                                 content_type=content_type)
         return response, jose.ComparableX509(OpenSSL.crypto.load_certificate(
             OpenSSL.crypto.FILETYPE_ASN1, response.content))
@@ -684,6 +659,22 @@ class ClientV2(ClientBase):
             authorizations=authorizations,
             csr_pem=csr_pem)
 
+    def poll(self, authzr):
+        """Poll Authorization Resource for status.
+
+        :param authzr: Authorization Resource
+        :type authzr: `.AuthorizationResource`
+
+        :returns: Updated Authorization Resource and HTTP response.
+
+        :rtype: (`.AuthorizationResource`, `requests.Response`)
+
+        """
+        response = self._post_as_get(authzr.uri)
+        updated_authzr = self._authzr_from_response(
+            response, authzr.body.identifier, authzr.uri)
+        return updated_authzr, response
+
     def poll_and_finalize(self, orderr, deadline=None):
         """Poll authorizations and finalize the order.
 
@@ -764,6 +755,32 @@ class ClientV2(ClientBase):
 
         """
         return self._revoke(cert, rsn, self.directory['revokeCert'])
+
+    def _post_as_get(self, *args, **kwargs):
+        """
+        Send GET request using the POST-as-GET protocol if needed.
+        The request will be first issued using POST-as-GET for ACME v2. If the ACME CA servers do
+        not support this yet and return an error, request will be retried using GET.
+        For ACME v1, only GET request will be tried, as POST-as-GET is not supported.
+        :param args:
+        :param kwargs:
+        :return:
+        """
+        if self.acme_version >= 2:
+            # We add an empty payload for POST-as-GET requests
+            new_args = args[:1] + (None,) + args[1:]
+            try:
+                return self._post(*new_args, **kwargs)  # pylint: disable=star-args
+            except messages.Error as error:
+                if error.code == 'malformed':
+                    logger.debug('Error during a POST-as-GET request, '
+                                 'your ACME CA may not support it:\n%s', error)
+                    logger.debug('Retrying request with GET.')
+                else:  # pragma: no cover
+                    raise
+
+        # If ACME v1 or POST-as-GET not supported, we use a GET instead.
+        return self.net.get(*args, **kwargs)
 
 
 class BackwardsCompatibleClientV2(object):
