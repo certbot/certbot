@@ -19,14 +19,6 @@ class GraceFullTCPServer(socketserver.TCPServer):
     allow_reuse_address = True
 
 
-class CertbotSystemExitError(ValueError):
-    def __init__(self, out, err, code):
-        self.out = out
-        self.err = err
-        self.code = code
-        super(CertbotSystemExitError, self).__init__('Certbot exited abnormally.')
-
-
 def find_certbot_root_directory():
     script_path = os.path.realpath(__file__)
     current_dir = os.path.dirname(script_path)

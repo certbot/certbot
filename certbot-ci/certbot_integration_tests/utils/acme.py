@@ -45,14 +45,14 @@ def _prepare_repositories(repositories_path):
     try:
         if not os.path.exists(boulder_repo):
             subprocess.check_call(['git', 'clone', 'https://github.com/letsencrypt/boulder',
-                                   boulder_repo], stdout=FNULL, stderr=subprocess.STDOUT)
+                                   boulder_repo], stdout=FNULL, stderr=FNULL)
 
         subprocess.check_call(['git', 'clean', '-fd'],
-                              cwd=boulder_repo, stdout=FNULL, stderr=subprocess.STDOUT)
+                              cwd=boulder_repo, stdout=FNULL, stderr=FNULL)
         subprocess.check_call(['git', 'checkout', '-B', 'master', 'origin/master'],
-                              cwd=boulder_repo, stdout=FNULL, stderr=subprocess.STDOUT)
+                              cwd=boulder_repo, stdout=FNULL, stderr=FNULL)
         subprocess.check_call(['git', 'pull'],
-                              cwd=boulder_repo, stdout=FNULL, stderr=subprocess.STDOUT)
+                              cwd=boulder_repo, stdout=FNULL, stderr=FNULL)
         print('=> GIT repositories ready.')
         yield (boulder_repo)
     except (OSError, subprocess.CalledProcessError):
@@ -70,7 +70,7 @@ def _setup_one_node(index, node, acme_type, acme_server, pool, repos):
             if os.path.isfile(os.path.join(workspace, 'docker-compose.yml')):
                 subprocess.check_call(['docker-compose', '-p',
                                        'gw{0}'.format(index), 'down'],
-                                      cwd=workspace, stdout=FNULL, stderr=subprocess.STDOUT)
+                                      cwd=workspace, stdout=FNULL, stderr=FNULL)
         except subprocess.CalledProcessError:
             pass
         finally:
@@ -257,7 +257,7 @@ networks:
 
     subprocess.check_call(['docker-compose', '--project-name', 'gw{0}'.format(index),
                            'up', '--force-recreate', '-d', 'boulder'],
-                          cwd=workspace, stdout=FNULL, stderr=subprocess.STDOUT)
+                          cwd=workspace, stdout=FNULL, stderr=FNULL)
 
     return {
         'directory_url': 'http://localhost:{0}/directory'.format(
@@ -362,7 +362,7 @@ networks:
 
     subprocess.check_call(['docker-compose', '--project-name', 'gw{0}'.format(index),
                            'up', '--force-recreate', '-d', 'pebble'],
-                          cwd=workspace)
+                          cwd=workspace, stdout=FNULL, stderr=FNULL)
 
     return {
         'directory_url': 'https://localhost:{0}/dir'.format(directory_v2_port),

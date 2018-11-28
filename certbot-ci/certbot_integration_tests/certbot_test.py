@@ -14,18 +14,21 @@ from certbot_integration_tests.utils.markers import (
 )
 
 
-def test_basic_commands(common):
-    initial_count_tmpfiles = len(os.listdir(tempfile.tempdir))
+def test_basic_commands(common, workspace):
+    # TMPDIR env variable is set to workspace for the certbot subprocess.
+    # So tempdir module will create any temporary files/dirs in workspace,
+    # and its content can be tested to check correct certbot cleanup.
+    initial_count_tmpfiles = len(os.listdir(workspace))
 
     common(['--help'])
     common(['--help', 'all'])
     common(['--version'])
 
-    with pytest.raises(misc.CertbotSystemExitError):
+    with pytest.raises(subprocess.CalledProcessError):
         common(['--csr'])
 
-    new_count_tmpfiles = len(os.listdir(tempfile.tempdir))
-    #assert initial_count_tmpfiles == new_count_tmpfiles
+    new_count_tmpfiles = len(os.listdir(workspace))
+    assert initial_count_tmpfiles == new_count_tmpfiles
 
 
 def test_hook_dirs_creation(common, config_dir):
@@ -364,7 +367,7 @@ def test_revoke_and_unregister(common, config_dir):
 
 def test_revoke_corner_cases(common, config_dir):
     common(['-d', 'le1.wtf'])
-    with pytest.raises(misc.CertbotSystemExitError) as error:
+    with pytest.raises(subprocess.CalledProcessError) as error:
         common([
             'revoke', '--cert-name', 'le.wtf'
             '--cert-path', os.path.join(config_dir, 'live/le1.wtf/fullchain.pem')
