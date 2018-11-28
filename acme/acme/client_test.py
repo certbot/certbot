@@ -284,12 +284,6 @@ class BackwardsCompatibleClientV2Test(ClientTestBase):
             client.update_registration(mock.sentinel.regr, None)
         mock_client().update_registration.assert_called_once_with(mock.sentinel.regr, None)
 
-    def test_post_as_get(self):
-        client = self._init()
-        client._post_as_get('http://dummy_url.net')  # pylint: disable=protected-access
-
-        client.net.get.assert_called_with('http://dummy_url.net')
-
 
 class ClientTest(ClientTestBase):
     """Tests for acme.client.Client."""
