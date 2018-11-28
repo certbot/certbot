@@ -75,8 +75,15 @@ def main(cli_args=sys.argv[1:]):
     command.extend(cover)
     command.extend(tests)
 
+    repositories_path = os.path.join(CURRENT_DIR, '.ci_assets/integration_tests')
+    try:
+        os.makedirs(repositories_path)
+    except OSError as error:
+        if error.errno != errno.EEXIST:
+            raise
+
     with certbot_ci_workspace():
-        with acme.setup_acme_server(args.acme_server, workers) as acme_xdist:
+        with acme.setup_acme_server(args.acme_server, workers, repositories_path) as acme_xdist:
             os.environ['CERTBOT_INTEGRATION'] = args.acme_server
             os.environ['CERTBOT_ACME_XDIST'] = json.dumps(acme_xdist)
             print(acme_xdist)

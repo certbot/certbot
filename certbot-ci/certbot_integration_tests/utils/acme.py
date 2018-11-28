@@ -18,11 +18,11 @@ FNULL = open(os.devnull, 'wb')
 
 
 @contextlib.contextmanager
-def setup_acme_server(acme_server, nodes):
+def setup_acme_server(acme_server, nodes, repositories_path):
     acme_type = 'Boulder' if 'boulder' in acme_server else 'Pebble'
     acme_xdist = {'master': {}}
 
-    with _prepare_repositories() as repos:
+    with _prepare_repositories(repositories_path) as repos:
         pool = multiprocessing.Pool(processes=len(nodes))
         expected_results = [_setup_one_node(index, node, acme_type, acme_server, pool, repos)
                             for (index, node) in enumerate(nodes)]
@@ -38,24 +38,25 @@ def setup_acme_server(acme_server, nodes):
 
 
 @contextlib.contextmanager
-def _prepare_repositories():
+def _prepare_repositories(repositories_path):
     print('=> Preparing GIT repositories ...')
-    boulder_repo = tempfile.mkdtemp()
+    boulder_repo = os.path.join(repositories_path, 'boulder')
 
     try:
-        subprocess.check_call(['git', 'clone', '--depth', '1', '--single-branch',
-                               'https://github.com/letsencrypt/boulder',
-                               boulder_repo], stdout=FNULL, stderr=subprocess.STDOUT)
+        if not os.path.exists(boulder_repo):
+            subprocess.check_call(['git', 'clone', 'https://github.com/letsencrypt/boulder',
+                                   boulder_repo], stdout=FNULL, stderr=subprocess.STDOUT)
 
+        subprocess.check_call(['git', 'clean', '-fd'],
+                              cwd=boulder_repo, stdout=FNULL, stderr=subprocess.STDOUT)
+        subprocess.check_call(['git', 'checkout', '-B', 'master', 'origin/master'],
+                              cwd=boulder_repo, stdout=FNULL, stderr=subprocess.STDOUT)
+        subprocess.check_call(['git', 'pull'],
+                              cwd=boulder_repo, stdout=FNULL, stderr=subprocess.STDOUT)
         print('=> GIT repositories ready.')
         yield (boulder_repo)
-    finally:
-        print('=> Cleaning GIT repositories ...')
-        try:
-            shutil.rmtree(boulder_repo)
-        except OSError:
-            pass
-        print('=> GIT repositories cleaned.')
+    except (OSError, subprocess.CalledProcessError):
+        shutil.rmtree(repositories_path)
 
 
 def _setup_one_node(index, node, acme_type, acme_server, pool, repos):
