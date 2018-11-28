@@ -480,9 +480,9 @@ class Client(object):
                     abs_cert_path)
 
         chain_file, abs_chain_path =\
-            _open_pem_file('chain_path', chain_path)
+                _open_pem_file('chain_path', chain_path)
         fullchain_file, abs_fullchain_path =\
-            _open_pem_file('fullchain_path', fullchain_path)
+                _open_pem_file('fullchain_path', fullchain_path)
 
         _save_chain(chain_pem, chain_file)
         _save_chain(cert_pem + chain_pem, fullchain_file)
