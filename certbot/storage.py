@@ -1048,13 +1048,14 @@ class RenewableCert(object):
         # Put the data into the appropriate files on disk
         target = dict([(kind, os.path.join(live_dir, kind + ".pem"))
                        for kind in ALL_FOUR])
+        archive_target = dict([(kind, os.path.join(archive, kind + "1.pem"))
+                               for kind in ALL_FOUR])
         for kind in ALL_FOUR:
-            os.symlink(os.path.join(_relpath_from_file(archive, target[kind]), kind + "1.pem"),
-                       target[kind])
+            os.symlink(_relpath_from_file(archive_target[kind], target[kind]), target[kind])
         with open(target["cert"], "wb") as f:
             logger.debug("Writing certificate to %s.", target["cert"])
             f.write(cert)
-        with util.safe_open(target["privkey"], "wb", chmod=BASE_PRIVKEY_MODE, symlink=True) as f:
+        with util.safe_open(archive_target["privkey"], "wb", chmod=BASE_PRIVKEY_MODE) as f:
             logger.debug("Writing private key to %s.", target["privkey"])
             f.write(privkey)
             # XXX: Let's make sure to get the file permissions right here
@@ -1134,16 +1135,16 @@ class RenewableCert(object):
             logger.debug("Writing symlink to old private key, %s.", old_privkey)
             os.symlink(old_privkey, target["privkey"])
         else:
-            # If the previous privkey in this lineage has an existing group mode > 0,
-            # let's keep that mode.
+            with util.safe_open(target["privkey"], "wb", chmod=BASE_PRIVKEY_MODE) as f:
+                logger.debug("Writing new private key to %s.", target["privkey"])
+                f.write(new_privkey)
+            # If the previous privkey in this lineage has an existing gid or group mode > 0,
+            # let's keep those.
             group_mode = stat.S_IMODE(os.stat(old_privkey).st_mode) & \
                 (stat.S_IRGRP | stat.S_IWGRP | stat.S_IXGRP)
             mode = BASE_PRIVKEY_MODE | group_mode
-            with util.safe_open(target["privkey"], "wb", chmod=mode) as f:
-                logger.debug("Writing new private key to %s.", target["privkey"])
-                f.write(new_privkey)
-            # We should also maintain gid from previous privkey in this lineage.
             os.chown(target["privkey"], -1, os.stat(old_privkey).st_gid)
+            os.chmod(target["privkey"], mode)
 
         # Save everything else
         with open(target["cert"], "wb") as f:

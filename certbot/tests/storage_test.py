@@ -549,7 +549,7 @@ class RenewableCertTests(BaseRenewableCertTest):
 
     @test_util.broken_on_windows
     @mock.patch("certbot.storage.relevant_values")
-    def test_save_successor_maintains_group_permissions(self, mock_rv):
+    def test_save_successor_maintains_group_mode(self, mock_rv):
         # Mock relevant_values() to claim that all values are relevant here
         # (to avoid instantiating parser)
         mock_rv.side_effect = lambda x: x
@@ -572,6 +572,21 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.test_rc.save_successor(3, b"newcert", b"new_privkey", b"new chain", self.config)
         self.assertTrue(compat.compare_file_modes(
             os.stat(self.test_rc.version("privkey", 4)).st_mode, 0o600))
+
+    @test_util.broken_on_windows
+    @mock.patch("certbot.storage.relevant_values")
+    @mock.patch("certbot.storage.os.chown")
+    def test_save_successor_maintains_gid(self, mock_chown, mock_rv):
+        # Mock relevant_values() to claim that all values are relevant here
+        # (to avoid instantiating parser)
+        mock_rv.side_effect = lambda x: x
+        for kind in ALL_FOUR:
+            self._write_out_kind(kind, 1)
+        self.test_rc.update_all_links_to(1)
+        self.test_rc.save_successor(1, b"newcert", None, b"new chain", self.config)
+        self.assertFalse(mock_chown.called)
+        self.test_rc.save_successor(2, b"newcert", b"new_privkey", b"new chain", self.config)
+        self.assertTrue(mock_chown.called)
 
     def _test_relevant_values_common(self, values):
         defaults = dict((option, cli.flag_default(option))
