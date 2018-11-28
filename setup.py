@@ -70,7 +70,7 @@ dev3_extras = [
 docs_extras = [
     'repoze.sphinx.autointerface',
     # sphinx.ext.imgconverter
-    'Sphinx >=1.6',
+    'Sphinx >=1.0',
     'sphinx_rtd_theme',
 ]
 

@@ -17,6 +17,8 @@ import os
 import re
 import sys
 
+import pkg_resources
+
 
 here = os.path.abspath(os.path.dirname(__file__))
 
@@ -40,13 +42,15 @@ needs_sphinx = '1.0'
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
-    'sphinx.ext.imgconverter',
     'sphinx.ext.intersphinx',
     'sphinx.ext.todo',
     'sphinx.ext.coverage',
     'sphinx.ext.viewcode',
     'repoze.sphinx.autointerface',
 ]
+
+if pkg_resources.get_distribution('sphinx').version >= '1.6':
+    extensions.append('sphinx.ext.imgconverter')
 
 autodoc_member_order = 'bysource'
 autodoc_default_flags = ['show-inheritance', 'private-members']
