@@ -76,7 +76,6 @@ def _setup_one_node(index, node, acme_type, acme_server, pool, repos):
         finally:
             try:
                 shutil.rmtree(workspace)
-                pass
             except IOError:
                 pass
 
@@ -122,8 +121,6 @@ def _setup_boulder(workspace, index, repos, acme_v2=True):
     ignore = shutil.ignore_patterns('.git')
     shutil.copytree(boulder_repo, os.path.join(workspace, 'boulder'), ignore=ignore)
 
-    workspace = os.path.join(workspace, 'boulder')
-
     data = '''
 version: '3'
 services:
@@ -135,8 +132,8 @@ services:
             PKCS11_PROXY_SOCKET: tcp://boulder-hsm:5657
             BOULDER_CONFIG_DIR: test/config
         volumes:
-          - .:/go/src/github.com/letsencrypt/boulder
-          - ./.gocache:/root/.cache/go-build
+          - ./boulder:/go/src/github.com/letsencrypt/boulder
+          - ./boulder/.gocache:/root/.cache/go-build
         networks:
           bluenet_{index}:
             ipv4_address: 10.77.77.77
@@ -229,14 +226,14 @@ networks:
     with open(os.path.join(workspace, 'docker-compose.yml'), 'w') as file:
         file.write(data)
 
-    with open(os.path.join(workspace, 'test/config/va.json'), 'r') as file:
+    with open(os.path.join(workspace, 'boulder/test/config/va.json'), 'r') as file:
         data = file.read()
 
     data = re.sub('"httpPort": 5002,', '"httpPort": {0},'.format(http_01_port), data)
     data = re.sub('"httpsPort": 5001,', '"httpsPort": {0},'.format(tls_sni_01_port), data)
-    data = re.sub('"tlsPort": 5001,', '"tlsPort": {0},'.format(tls_sni_01_port), data)
+    data = re.sub('"tlsPort": 5001', '"tlsPort": {0}'.format(tls_sni_01_port), data)
 
-    with open(os.path.join(workspace, 'test/config/va.json'), 'w') as file:
+    with open(os.path.join(workspace, 'boulder/test/config/va.json'), 'w') as file:
         file.write(data)
 
     for root, dirs, files in os.walk(os.path.join(workspace)):
