@@ -717,6 +717,10 @@ The following files are available:
      put it into a safe, however - your server still needs to access
      this file in order for SSL/TLS to work.
 
+.. note:: As of Certbot version 0.29.0, private keys for new certificate
+   default to ``0600``. Any changes to the group mode or group owner (gid)
+   of this file will be preserved on renewals.
+
   This is what Apache needs for `SSLCertificateKeyFile
   <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatekeyfile>`_,
   and Nginx for `ssl_certificate_key
