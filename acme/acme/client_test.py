@@ -825,11 +825,7 @@ class ClientV2Test(ClientTestBase):
 
     def test_post_as_get(self):
         with mock.patch('acme.client.ClientV2._authzr_from_response') as mock_client:
-            def return_auth(*args):
-                """Return authzr2 itself"""
-                return self.authzr2
-
-            mock_client.return_value = return_auth
+            mock_client.return_value = self.authzr2
 
             self.client.poll(self.authzr2)  # pylint: disable=protected-access
 
