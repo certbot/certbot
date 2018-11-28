@@ -86,6 +86,7 @@ class PostArgParseSetupTest(test_util.ConfigTestCase):
         self.memory_handler.close()
         self.stream_handler.close()
         self.temp_handler.close()
+        self.devnull.close()
         super(PostArgParseSetupTest, self).tearDown()
 
     def test_common(self):

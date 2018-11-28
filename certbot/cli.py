@@ -287,7 +287,9 @@ def read_file(filename, mode="rb"):
     """
     try:
         filename = os.path.abspath(filename)
-        return filename, open(filename, mode).read()
+        with open(filename, mode) as the_file:
+            contents = the_file.read()
+        return filename, contents
     except IOError as exc:
         raise argparse.ArgumentTypeError(exc.strerror)
 

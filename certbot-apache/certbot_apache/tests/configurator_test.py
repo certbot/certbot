@@ -1402,11 +1402,11 @@ class MultipleVhostsTest(util.ApacheTest):
             vhs = self.config._choose_vhosts_wildcard("*.certbot.demo",
                                                      create_ssl=True)
             # Check that the dialog was called with one vh: certbot.demo
-            self.assertEquals(mock_select_vhs.call_args[0][0][0], self.vh_truth[3])
-            self.assertEquals(len(mock_select_vhs.call_args_list), 1)
+            self.assertEqual(mock_select_vhs.call_args[0][0][0], self.vh_truth[3])
+            self.assertEqual(len(mock_select_vhs.call_args_list), 1)
 
             # And the actual returned values
-            self.assertEquals(len(vhs), 1)
+            self.assertEqual(len(vhs), 1)
             self.assertTrue(vhs[0].name == "certbot.demo")
             self.assertTrue(vhs[0].ssl)
 
@@ -1421,7 +1421,7 @@ class MultipleVhostsTest(util.ApacheTest):
             vhs = self.config._choose_vhosts_wildcard("*.certbot.demo",
                                                      create_ssl=False)
             self.assertFalse(mock_makessl.called)
-            self.assertEquals(vhs[0], self.vh_truth[1])
+            self.assertEqual(vhs[0], self.vh_truth[1])
 
     @mock.patch("certbot_apache.configurator.ApacheConfigurator._vhosts_for_wildcard")
     @mock.patch("certbot_apache.configurator.ApacheConfigurator.make_vhost_ssl")
@@ -1434,15 +1434,15 @@ class MultipleVhostsTest(util.ApacheTest):
             mock_select_vhs.return_value = [self.vh_truth[7]]
             vhs = self.config._choose_vhosts_wildcard("whatever",
                                                      create_ssl=True)
-            self.assertEquals(mock_select_vhs.call_args[0][0][0], self.vh_truth[7])
-            self.assertEquals(len(mock_select_vhs.call_args_list), 1)
+            self.assertEqual(mock_select_vhs.call_args[0][0][0], self.vh_truth[7])
+            self.assertEqual(len(mock_select_vhs.call_args_list), 1)
             # Ensure that make_vhost_ssl was not called, vhost.ssl == true
             self.assertFalse(mock_makessl.called)
 
             # And the actual returned values
-            self.assertEquals(len(vhs), 1)
+            self.assertEqual(len(vhs), 1)
             self.assertTrue(vhs[0].ssl)
-            self.assertEquals(vhs[0], self.vh_truth[7])
+            self.assertEqual(vhs[0], self.vh_truth[7])
 
 
     def test_deploy_cert_wildcard(self):
@@ -1455,7 +1455,7 @@ class MultipleVhostsTest(util.ApacheTest):
             self.config.deploy_cert("*.wildcard.example.org", "/tmp/path",
                                     "/tmp/path", "/tmp/path", "/tmp/path")
             self.assertTrue(mock_dep.called)
-            self.assertEquals(len(mock_dep.call_args_list), 1)
+            self.assertEqual(len(mock_dep.call_args_list), 1)
             self.assertEqual(self.vh_truth[7], mock_dep.call_args_list[0][0][0])
 
     @mock.patch("certbot_apache.display_ops.select_vhost_multiple")
@@ -1651,7 +1651,8 @@ class MultiVhostsTest(util.ApacheTest):
         self.assertTrue(self.config.parser.find_dir(
             "RewriteEngine", "on", ssl_vhost.path, False))
 
-        conf_text = open(ssl_vhost.filep).read()
+        with open(ssl_vhost.filep) as the_file:
+            conf_text = the_file.read()
         commented_rewrite_rule = ("# RewriteRule \"^/secrets/(.+)\" "
                                   "\"https://new.example.com/docs/$1\" [R,L]")
         uncommented_rewrite_rule = ("RewriteRule \"^/docs/(.+)\"  "
@@ -1667,7 +1668,8 @@ class MultiVhostsTest(util.ApacheTest):
 
         ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[3])
 
-        conf_lines = open(ssl_vhost.filep).readlines()
+        with open(ssl_vhost.filep) as the_file:
+            conf_lines = the_file.readlines()
         conf_line_set = [l.strip() for l in conf_lines]
         not_commented_cond1 = ("RewriteCond "
                 "%{DOCUMENT_ROOT}/%{REQUEST_FILENAME} !-f")

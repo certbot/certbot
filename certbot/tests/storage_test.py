@@ -73,9 +73,8 @@ class BaseRenewableCertTest(test_util.ConfigTestCase):
         # We also create a file that isn't a renewal config in the same
         # location to test that logic that reads in all-and-only renewal
         # configs will ignore it and NOT attempt to parse it.
-        junk = open(os.path.join(self.config.config_dir, "renewal", "IGNORE.THIS"), "w")
-        junk.write("This file should be ignored!")
-        junk.close()
+        with open(os.path.join(self.config.config_dir, "renewal", "IGNORE.THIS"), "w") as junk:
+            junk.write("This file should be ignored!")
 
         self.defaults = configobj.ConfigObj()
 
@@ -264,12 +263,12 @@ class RenewableCertTests(BaseRenewableCertTest):
         mock_has_pending.return_value = False
         self.assertEqual(self.test_rc.ensure_deployed(), True)
         self.assertEqual(mock_update.call_count, 0)
-        self.assertEqual(mock_logger.warn.call_count, 0)
+        self.assertEqual(mock_logger.warning.call_count, 0)
 
         mock_has_pending.return_value = True
         self.assertEqual(self.test_rc.ensure_deployed(), False)
         self.assertEqual(mock_update.call_count, 1)
-        self.assertEqual(mock_logger.warn.call_count, 1)
+        self.assertEqual(mock_logger.warning.call_count, 1)
 
 
     def test_update_link_to(self):

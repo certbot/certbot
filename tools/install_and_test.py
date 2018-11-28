@@ -47,10 +47,10 @@ def main(args):
             pkg = 'certbot'
 
         temp_cwd = tempfile.mkdtemp()
+        shutil.copy2("pytest.ini", temp_cwd)
         try:
             call_with_print(' '.join([
-                sys.executable, '-m', 'pytest', '--numprocesses', 'auto',
-                '--quiet', '--pyargs', pkg.replace('-', '_')]), cwd=temp_cwd)
+                sys.executable, '-m', 'pytest', '--quiet', pkg.replace('-', '_')]), cwd=temp_cwd)
         finally:
             shutil.rmtree(temp_cwd)
 
