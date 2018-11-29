@@ -57,7 +57,7 @@ def create_parser():
 
 
 def prepare_pytest_command(args):
-    nb_workers = multiprocessing.cpu_count() if args.numprocesses \
+    nb_workers = multiprocessing.cpu_count() if args.numprocesses == 'auto' \
         else int(args.numprocesses)
 
     workers = ['gw{0}'.format(i) for i in range(nb_workers)] \
@@ -71,12 +71,14 @@ def prepare_pytest_command(args):
     if args.campaign == 'all' or args.campaign == 'nginx':
         tests.append('certbot_integration_tests.nginx_tests')
 
-    cover = ['--cov-report=', '--cov=acme', '--cov=certbot'] if args.coverage else []
-    if cover and 'certbot_integration_tests.nginx' in tests:
-        cover.extend('--cov=certbot-nginx')
+    cover = ['--cov-report='] if args.coverage else []
+    if cover and 'certbot_integration_tests.cerbot_tests' in tests:
+        cover.extend(['--cov=acme', '--cov=certbot'])
+    if cover and 'certbot_integration_tests.nginx_tests' in tests:
+        cover.append('--cov=certbot_nginx')
 
         try:
-            subprocess.check_call(['nginx', '-v'])
+            subprocess.check_call(['nginx', '-v'], stdout=acme.FNULL, stderr=acme.FNULL)
         except (subprocess.CalledProcessError, OSError):
             raise ValueError('Nginx is required in PATH to launch the nginx integration tests, '
                              'but is not installed or not available for current user.')
@@ -113,7 +115,7 @@ def main(cli_args=sys.argv[1:]):
     args = main_parser.parse_args(cli_args)
 
     try:
-        subprocess.check_call(['docker', '-v'])
+        subprocess.check_call(['docker', '-v'], stdout=acme.FNULL, stderr=acme.FNULL)
     except (subprocess.CalledProcessError, OSError):
         raise ValueError('Docker is required in PATH to launch the integration tests, '
                          'but is not installed or not available for current user.')

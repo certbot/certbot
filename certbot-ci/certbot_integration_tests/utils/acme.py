@@ -39,7 +39,7 @@ def setup_acme_server(acme_server, nodes, repositories_path):
 
 @contextlib.contextmanager
 def _prepare_repositories(repositories_path):
-    print('=> Preparing GIT repositories ...')
+    print('=> Preparing GIT repositories...')
     boulder_repo = os.path.join(repositories_path, 'boulder')
 
     try:
@@ -64,7 +64,7 @@ def _setup_one_node(index, node, acme_type, acme_server, pool, repos):
     workspace = tempfile.mkdtemp()
 
     def cleanup():
-        print('=> Tear down the {0} instance ({1}) ...'.format(acme_type, node))
+        print('=> Tear down the {0} instance ({1})...'.format(acme_type, node))
 
         try:
             if os.path.isfile(os.path.join(workspace, 'docker-compose.yml')):
@@ -94,7 +94,7 @@ def _async_work(workspace, acme_type, index, acme_server, node, repos):
         config = _setup_pebble(workspace, index, repos,
                                strict=acme_server == 'pebble-strict')
 
-    print('=> Waiting for {0} instance to respond ({1}) ...'.format(acme_type, node))
+    print('=> Waiting for {0} instance to respond ({1})...'.format(acme_type, node))
 
     try:
         misc.check_until_timeout(config['directory_url'])
