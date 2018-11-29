@@ -93,7 +93,7 @@ addons:
 install: "travis_retry $(command -v pip || command -v pip3) install codecov tox"
 script:
     - travis_retry tox
-    - '[ -z "${TEST_CAMPAIGN+x}" ] || (certbot-ci/launch-integration-tests.py --campaign=${TEST_CAMPAIGN} --numprocesses=auto --acme-server=${ACME_SERVER} --coverage'
+    - '[ -z "${TEST_CAMPAIGN+x}" ] || (certbot-ci/launch-integration-tests.py --campaign=${TEST_CAMPAIGN} --numprocesses=auto --acme-server=${ACME_SERVER} --coverage)'
 
 after_success: '[ "$TOXENV" == "py27-cover" ] && codecov'
 
