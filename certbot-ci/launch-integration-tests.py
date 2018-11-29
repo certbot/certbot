@@ -61,9 +61,9 @@ def prepare_pytest_command(args):
         else int(args.numprocesses)
 
     workers = ['gw{0}'.format(i) for i in range(nb_workers)] \
-        if args.parallel_executions > 1 else ['master']
+        if nb_workers > 1 else ['master']
     processes_cmd = ['--numprocesses', str(nb_workers)] \
-        if args.parallel_executions > 1 else []
+        if nb_workers > 1 else []
 
     tests = []
     if args.campaign == 'all' or args.campaign == 'certbot':
