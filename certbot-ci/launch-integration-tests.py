@@ -73,7 +73,7 @@ def prepare_pytest_command(args):
         tests.append('certbot_integration_tests.nginx_tests')
 
     cover = ['--cov-report='] if args.coverage else []
-    if cover and 'certbot_integration_tests.cerbot_tests' in tests:
+    if cover and 'certbot_integration_tests.certbot_tests' in tests:
         cover.extend(['--cov=acme', '--cov=certbot'])
     if cover and 'certbot_integration_tests.nginx_tests' in tests:
         cover.append('--cov=certbot_nginx')
