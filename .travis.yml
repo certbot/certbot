@@ -13,11 +13,11 @@ before_script:
 matrix:
   include:
     - python: "2.7"
-      env: ACME_SERVER=boulder-v1 TEST_CAMPAIGN=all TOXENV=py27_install
+      env: ACME_SERVER=boulder-v1 TEST_CAMPAIGN=all TOXENV=py27-integration
       sudo: required
       services: docker
     - python: "2.7"
-      env: ACME_SERVER=boulder-v2 TEST_CAMPAIGN=all TOXENV=py27_install
+      env: ACME_SERVER=boulder-v2 TEST_CAMPAIGN=all TOXENV=py27-integration
       sudo: required
       services: docker
     - python: "2.7"
@@ -92,8 +92,7 @@ addons:
 
 install: "travis_retry $(command -v pip || command -v pip3) install codecov tox"
 script:
-    - travis_retry tox
-    - '[ -z "${TEST_CAMPAIGN+x}" ] || (certbot-ci/launch-integration-tests.py --campaign=${TEST_CAMPAIGN} --numprocesses=auto --acme-server=${ACME_SERVER} --coverage)'
+    - 'if [ -z "${TEST_CAMPAIGN+x}" ] ; then travis_retry tox ; else tox ; fi'
 
 after_success: '[ "$TOXENV" == "py27-cover" ] && codecov'
 
