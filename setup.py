@@ -68,9 +68,11 @@ dev3_extras = [
 ]
 
 docs_extras = [
+    # Bug in Sphinx < 1.5.1
+    # https://github.com/sphinx-doc/sphinx/issues/3212
+    'docutils<0.13.1',
     'repoze.sphinx.autointerface',
-    # sphinx.ext.imgconverter
-    'Sphinx >=1.0',
+    'Sphinx>=1.2', # Annotation support
     'sphinx_rtd_theme',
 ]
 
