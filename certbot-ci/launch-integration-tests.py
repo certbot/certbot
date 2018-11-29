@@ -35,7 +35,8 @@ def certbot_ci_workspace():
 
 def create_parser():
     main_parser = argparse.ArgumentParser(description='Run the integration tests. '
-                                                      'Docker needs to be installed and available to current user. '
+                                                      'Docker and docker-compose needs to be '
+                                                      'installed and available to current user. '
                                                       'Nginx also, for the nginx test campaign.')
     main_parser.add_argument('--acme-server', default='pebble-nonstrict',
                              choices=['boulder-v1', 'boulder-v2',
@@ -80,7 +81,7 @@ def prepare_pytest_command(args):
         try:
             subprocess.check_call(['nginx', '-v'], stdout=acme.FNULL, stderr=acme.FNULL)
         except (subprocess.CalledProcessError, OSError):
-            raise ValueError('Nginx is required in PATH to launch the nginx integration tests, '
+            raise ValueError('Error: nginx is required in PATH to launch the nginx integration tests, '
                              'but is not installed or not available for current user.')
 
     capture = ['-s'] if args.no_capture else []
@@ -117,7 +118,13 @@ def main(cli_args=sys.argv[1:]):
     try:
         subprocess.check_call(['docker', '-v'], stdout=acme.FNULL, stderr=acme.FNULL)
     except (subprocess.CalledProcessError, OSError):
-        raise ValueError('Docker is required in PATH to launch the integration tests, '
+        raise ValueError('Error: docker is required in PATH to launch the integration tests, '
+                         'but is not installed or not available for current user.')
+
+    try:
+        subprocess.check_call(['docker-compose', '-v'], stdout=acme.FNULL, stderr=acme.FNULL)
+    except (subprocess.CalledProcessError, OSError):
+        raise ValueError('Error: docker-compose is required in PATH to launch the integration tests, '
                          'but is not installed or not available for current user.')
 
     (command, workers) = prepare_pytest_command(args)
