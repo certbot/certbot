@@ -7,6 +7,7 @@ import contextlib
 import json
 import tempfile
 import errno
+import multiprocessing
 
 import coverage
 
@@ -34,7 +35,8 @@ def certbot_ci_workspace():
 def create_parser():
     main_parser = argparse.ArgumentParser(description='Run the integration tests')
     main_parser.add_argument('--acme-server', default='boulder-v2',
-                             choices=['boulder-v1', 'boulder-v2', 'pebble-nonstrict', 'pebble-strict'],
+                             choices=['boulder-v1', 'boulder-v2',
+                                      'pebble-nonstrict', 'pebble-strict'],
                              help='select the ACME server to use (boulder-v1, boulder-v2, '
                                   'pebble-nonstrict or pebble-strict), defaulting to boulder-v2')
     main_parser.add_argument('--campaign', choices=['all', 'certbot', 'nginx'], default='certbot',
@@ -44,8 +46,9 @@ def create_parser():
                              help='run code coverage during integration tests')
     main_parser.add_argument('--no-capture', action='store_true',
                              help='disable output capturing while running tests')
-    main_parser.add_argument('--parallel-executions', metavar='N', type=int, default=1,
-                             help='number of parallel executions, defaulting to 1')
+    main_parser.add_argument('--numprocesses', metavar='N/auto', default=1,
+                             help='number of parallel executions (or \'auto\' to scale '
+                                  'to number of CPUs available), defaulting to 1')
 
     return main_parser
 
@@ -54,9 +57,12 @@ def main(cli_args=sys.argv[1:]):
     main_parser = create_parser()
     args = main_parser.parse_args(cli_args)
 
-    workers = ['gw{0}'.format(i) for i in range(args.parallel_executions)] \
+    nb_workers = multiprocessing.cpu_count() if args.parallel_executions \
+        else int(args.parallel_executions)
+
+    workers = ['gw{0}'.format(i) for i in range(nb_workers)] \
         if args.parallel_executions > 1 else ['master']
-    processes_cmd = ['--numprocesses', str(args.parallel_executions)] \
+    processes_cmd = ['--numprocesses', str(nb_workers)] \
         if args.parallel_executions > 1 else []
 
     tests = []
@@ -66,6 +72,8 @@ def main(cli_args=sys.argv[1:]):
         tests.append('certbot_integration_tests.nginx')
 
     cover = ['--cov-report=', '--cov=acme', '--cov=certbot'] if args.coverage else []
+    if cover and 'certbot_integration_tests.nginx' in tests:
+        cover.extend('--cov=certbot-nginx')
 
     capture = ['-s'] if args.no_capture else []
 
@@ -84,7 +92,7 @@ def main(cli_args=sys.argv[1:]):
 
     with certbot_ci_workspace():
         with acme.setup_acme_server(args.acme_server, workers, repositories_path) as acme_xdist:
-            os.environ['CERTBOT_INTEGRATION'] = args.acme_server
+            os.environ['CERTBOT_ACME_TYPE'] = args.acme_server
             os.environ['CERTBOT_ACME_XDIST'] = json.dumps(acme_xdist)
             print(acme_xdist)
             with misc.execute_in_given_cwd(os.path.join(CURRENT_DIR, 'certbot_integration_tests')):
@@ -97,7 +105,8 @@ def main(cli_args=sys.argv[1:]):
 
                     if covered < COVERAGE_THRESHOLD:
                         sys.stderr.write('Current coverage ({0}) is under threshold ({1})!{2}'
-                                         .format(round(covered, 2), COVERAGE_THRESHOLD, os.linesep))
+                                         .format(round(covered, 2),
+                                                 COVERAGE_THRESHOLD, os.linesep))
 
                         exit_code = max(exit_code, 1)
 

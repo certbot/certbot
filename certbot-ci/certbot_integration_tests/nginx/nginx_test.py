@@ -15,7 +15,7 @@ testdata = [
     ('nginx4.wtf', ['--preferred-challenges', 'http']),
 ]
 
-if 'boulder' in os.environ.get('CERTBOT_INTEGRATION'):
+if 'boulder' in os.environ.get('CERTBOT_ACME_TYPE'):
     testdata.insert(2, ('nginx.wtf', ['run', '--preferred-challenges', 'tls-sni']))
 
 

@@ -3,8 +3,8 @@ import json
 
 
 def pytest_configure(config):
-    if not os.environ.get('CERTBOT_INTEGRATION'):
-        raise ValueError('Error, CERTBOT_INTEGRATION environment variable is not set !')
+    if not os.environ.get('CERTBOT_ACME_TYPE'):
+        raise ValueError('Error, CERTBOT_ACME_TYPE environment variable is not set !')
     config.acme_xdist = _get_acme_xdist()
 
 
