@@ -1,10 +1,6 @@
 import os
 import json
 
-pytest_plugins = [
-    'certbot_integration_tests.utils.fixtures',
-]
-
 
 def pytest_configure(config):
     if not os.environ.get('CERTBOT_INTEGRATION'):

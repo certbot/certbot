@@ -61,9 +61,9 @@ def main(cli_args=sys.argv[1:]):
 
     tests = []
     if args.campaign == 'all' or args.campaign == 'certbot':
-        tests.append('certbot_integration_tests.certbot_test')
+        tests.append('certbot_integration_tests.certbot')
     if args.campaign == 'all' or args.campaign == 'nginx':
-        tests.append('certbot_integration_tests.nginx_test')
+        tests.append('certbot_integration_tests.nginx')
 
     cover = ['--cov-report=', '--cov=acme', '--cov=certbot'] if args.coverage else []
 

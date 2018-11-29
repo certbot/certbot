@@ -2,8 +2,13 @@ import os
 import getpass
 import subprocess
 import sys
+import random
+import shutil
+import filecmp
 
 import pytest
+import ssl
+from OpenSSL import crypto
 
 from certbot_integration_tests.utils import misc
 
@@ -22,11 +27,26 @@ def certbot_test_nginx(certbot_test):
 def nginx_root(workspace):
     root = os.path.join(workspace, 'nginx')
     os.mkdir(root)
-    yield root
+    return root
 
 
 @pytest.fixture
-def nginx_config(nginx_root, tls_sni_01_port, http_01_port):
+def webroot(nginx_root):
+    path = os.path.join(nginx_root, 'webroot')
+    os.mkdir(path)
+    with open(os.path.join(path, 'index.html'), 'w') as file:
+        file.write('Hello World!')
+
+    return path
+
+
+@pytest.fixture
+def other_port():
+    return random.randint(6000,6999)
+
+
+@pytest.fixture
+def nginx_configs(nginx_root, webroot, tls_sni_01_port, http_01_port, other_port):
     config = '''\
 # This error log will be written regardless of server scope error_log
 # definitions, so we have to set this here in the main scope.
@@ -95,7 +115,7 @@ http {{
     listen [::]:{http_01_port};
     server_name nginx3.wtf;
 
-    root {root}/webroot;
+    root {webroot};
 
     location /.well-known/ {{
       return 404;
@@ -105,8 +125,8 @@ http {{
   }}
 
   server {{
-    listen 8082;
-    listen [::]:8082;
+    listen {other_port};
+    listen [::]:{other_port};
     server_name nginx4.wtf nginx5.wtf;
   }}
 
@@ -122,30 +142,25 @@ http {{
   }}
 }}
 '''.format(root=nginx_root,
+           webroot=webroot,
            user=getpass.getuser(),
            http_01_port=http_01_port,
            tls_sni_01_port=tls_sni_01_port,
+           other_port=other_port,
            default_server='default_server')
 
     nginx_conf_path = os.path.join(nginx_root, 'nginx.conf')
+    nginx_conf_original_path = os.path.join(nginx_root, 'nginx-original.conf')
     with open(nginx_conf_path, 'w') as file:
         file.write(config)
+    shutil.copy(nginx_conf_path, nginx_conf_original_path)
 
-    yield nginx_conf_path
-
-
-@pytest.fixture
-def webroot(nginx_root):
-    path = os.path.join(nginx_root, 'webroot')
-    os.mkdir(path)
-    with open(os.path.join(path, 'index.html'), 'w') as file:
-        file.write('Hello World!')
-
-    yield path
+    return nginx_conf_path, nginx_conf_original_path
 
 
 @pytest.fixture(autouse=True)
-def nginx(nginx_config, webroot, http_01_port):
+def nginx(nginx_configs, webroot, http_01_port):
+    (nginx_config, _) = nginx_configs
     assert webroot
     process = subprocess.Popen(['nginx', '-c', nginx_config, '-g', 'daemon off;'], stdout=sys.stdout, stderr=sys.stderr)
     try:
@@ -157,5 +172,22 @@ def nginx(nginx_config, webroot, http_01_port):
         process.wait()
 
 
-def test_all(workspace):
-    assert workspace
+@pytest.fixture
+def assert_deployment_and_rollback(workspace, nginx_root, nginx_configs,
+                                   tls_sni_01_port, certbot_test_no_force_renew):
+    def func(certname):
+        server_cert = ssl.get_server_certificate(('localhost', tls_sni_01_port))
+        with open(os.path.join(workspace, 'conf/live/{0}/cert.pem'.format(certname)), 'r') as file:
+            certbot_cert = file.read()
+
+        assert server_cert == certbot_cert
+
+        command = ['--authenticator', 'nginx', '--installer', 'nginx',
+                   '--nginx-server-root', nginx_root,
+                   'rollback', '--checkpoints', '1']
+        certbot_test_no_force_renew(command)
+        (nginx_config, nginx_original_config) = nginx_configs
+
+        assert filecmp.cmp(nginx_config, nginx_original_config)
+
+    return func
