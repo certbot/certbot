@@ -37,11 +37,11 @@ def create_parser():
     main_parser = argparse.ArgumentParser(description='Run the integration tests. '
                                                       'Docker needs to be installed and available to current user. '
                                                       'Nginx also, for the nginx test campaign.')
-    main_parser.add_argument('--acme-server', default='boulder-v2',
+    main_parser.add_argument('--acme-server', default='pebble-nonstrict',
                              choices=['boulder-v1', 'boulder-v2',
                                       'pebble-nonstrict', 'pebble-strict'],
                              help='select the ACME server to use (boulder-v1, boulder-v2, '
-                                  'pebble-nonstrict or pebble-strict), defaulting to boulder-v2')
+                                  'pebble-nonstrict or pebble-strict), defaulting to pebble-nonstrict')
     main_parser.add_argument('--campaign', choices=['all', 'certbot', 'nginx'], default='certbot',
                              help='select the test campaign to run (all, certbot or nginx),'
                                   'defaulting to certbot')
@@ -51,7 +51,7 @@ def create_parser():
                              help='disable output capturing while running tests')
     main_parser.add_argument('--numprocesses', metavar='N/auto', default=1,
                              help='number of parallel executions (or \'auto\' to scale '
-                                  'to number of CPUs available), defaulting to 1')
+                                  'up to all CPUs available), defaulting to 1')
 
     return main_parser
 
