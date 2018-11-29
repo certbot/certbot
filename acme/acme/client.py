@@ -779,7 +779,7 @@ class ClientV2(ClientBase):
                 else:  # pragma: no cover
                     raise
 
-        # If ACME v1 or POST-as-GET not supported, we use a GET instead.
+        # If POST-as-GET is not supported yet, we use a GET instead.
         return self.net.get(*args, **kwargs)
 
 
