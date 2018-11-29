@@ -792,7 +792,7 @@ class RenewableCert(object):
         May need to recover from rare interrupted / crashed states."""
 
         if self.has_pending_deployment():
-            logger.warn("Found a new cert /archive/ that was not linked to in /live/; "
+            logger.warning("Found a new cert /archive/ that was not linked to in /live/; "
                         "fixing...")
             self.update_all_links_to(self.latest_common_version())
             return False
@@ -1035,9 +1035,11 @@ class RenewableCert(object):
         archive = full_archive_path(None, cli_config, lineagename)
         live_dir = _full_live_path(cli_config, lineagename)
         if os.path.exists(archive):
+            config_file.close()
             raise errors.CertStorageError(
                 "archive directory exists for " + lineagename)
         if os.path.exists(live_dir):
+            config_file.close()
             raise errors.CertStorageError(
                 "live directory exists for " + lineagename)
         os.mkdir(archive)

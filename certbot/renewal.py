@@ -276,8 +276,10 @@ def _avoid_invalidating_lineage(config, lineage, original_server):
     "Do not renew a valid cert with one from a staging server!"
     # Some lineages may have begun with --staging, but then had production certs
     # added to them
+    with open(lineage.cert) as the_file:
+        contents = the_file.read()
     latest_cert = OpenSSL.crypto.load_certificate(
-        OpenSSL.crypto.FILETYPE_PEM, open(lineage.cert).read())
+        OpenSSL.crypto.FILETYPE_PEM, contents)
     # all our test certs are from happy hacker fake CA, though maybe one day
     # we should test more methodically
     now_valid = "fake" not in repr(latest_cert.get_issuer()).lower()

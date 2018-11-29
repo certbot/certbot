@@ -415,7 +415,7 @@ def _parse_ssl_options(ssl_options):
             with open(ssl_options) as _file:
                 return nginxparser.load(_file)
         except IOError:
-            logger.warn("Missing NGINX TLS options file: %s", ssl_options)
+            logger.warning("Missing NGINX TLS options file: %s", ssl_options)
         except pyparsing.ParseBaseException as err:
             logger.debug("Could not parse file: %s due to %s", ssl_options, err)
     return []
