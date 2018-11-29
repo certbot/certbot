@@ -13,11 +13,11 @@ before_script:
 matrix:
   include:
     - python: "3.6"
-      env: ACME_SERVER=boulder-v1 TEST_CAMPAIGN=all TOXENV=py36-integration
+      env: ACME_SERVER=boulder-v1 TEST_CAMPAIGN=all TOXENV=integration
       sudo: required
       services: docker
     - python: "3.6"
-      env: ACME_SERVER=boulder-v2 TEST_CAMPAIGN=all TOXENV=py36-integration
+      env: ACME_SERVER=boulder-v2 TEST_CAMPAIGN=all TOXENV=integration
       sudo: required
       services: docker
     - python: "2.7"
