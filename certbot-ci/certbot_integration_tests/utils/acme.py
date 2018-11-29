@@ -279,7 +279,6 @@ def _setup_pebble(workspace, index, repos, strict=False):
 
     ignore = shutil.ignore_patterns('.git')
     shutil.copytree(boulder_repo, os.path.join(workspace, 'boulder'), ignore=ignore)
-    os.mkdir(os.path.join(workspace, 'pebble'))
 
     data = '''
 FROM golang:stretch
@@ -290,14 +289,6 @@ RUN go install ./test/challtestsrv/...
 '''
 
     with open(os.path.join(workspace, 'boulder/Dockerfile'), 'w') as file:
-        file.write(data)
-
-        data = '''
-FROM letsencrypt/pebble:{0}
-COPY . /go/src/github.com/letsencrypt/pebble/test/config/.
-'''.format(PEBBLE_VERSION)
-
-    with open(os.path.join(workspace, 'pebble/Dockerfile'), 'w') as file:
         file.write(data)
 
     data = '''\
@@ -314,8 +305,8 @@ services:
       - FAKE_DNS={bluenet_network}.1
     command: challtestsrv -http01 "" -tlsalpn01 "" -dns01 ":53" -management ":8055"
   pebble:
-    build: ./pebble
-    command: pebble -dnsserver {bluenet_network}.78:53 {strict}
+    image: letsencrypt/pebble:{pebble_version}
+    command: pebble -dnsserver {bluenet_network}.78:53 {strict} -config ./test/pebble-config.json
     networks:
       bluenet_{index}:
         ipv4_address: {bluenet_network}.77
@@ -325,6 +316,8 @@ services:
     environment:
       - PEBBLE_VA_NOSLEEP=1
       - PEBBLE_WFE_NONCEREJECT=0
+    volumes:
+      - ./pebble-config.json:/test/pebble-config.json
     depends_on:
       - challtestsrv
 networks:
@@ -339,6 +332,7 @@ networks:
            bluenet_network=bluenet_network,
            challsrvport_mgt_port=challsrvport_mgt_port,
            directory_v2_port=directory_v2_port,
+           pebble_version=PEBBLE_VERSION,
            strict='-strict' if strict else '')
 
     with open(os.path.join(workspace, 'docker-compose.yml'), 'w') as file:
@@ -356,7 +350,7 @@ networks:
 }}
 '''.format(http_01_port=http_01_port, tls_alpn_01_port=tls_alpn_01_port)
 
-    with open(os.path.join(workspace, 'pebble/pebble-config.json'), 'w') as file:
+    with open(os.path.join(workspace, 'pebble-config.json'), 'w') as file:
         file.write(data)
 
     subprocess.call(['docker-compose', '--project-name', 'gw{0}'.format(index), 'down'],

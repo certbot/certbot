@@ -20,6 +20,10 @@ matrix:
       env: ACME_SERVER=boulder-v2 TEST_CAMPAIGN=all TOXENV=integration
       sudo: required
       services: docker
+    - python: "3.6"
+      env: ACME_SERVER=pebble-nonstrict TEST_CAMPAIGN=all TOXENV=integration
+      sudo: required
+      services: docker
     - python: "2.7"
       env: TOXENV=py27-cover FYI="py27 tests + code coverage"
     - sudo: required
