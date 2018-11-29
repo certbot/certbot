@@ -8,6 +8,7 @@ import json
 import tempfile
 import errno
 import multiprocessing
+import subprocess
 
 import coverage
 
@@ -33,7 +34,9 @@ def certbot_ci_workspace():
 
 
 def create_parser():
-    main_parser = argparse.ArgumentParser(description='Run the integration tests')
+    main_parser = argparse.ArgumentParser(description='Run the integration tests. '
+                                                      'Docker needs to be installed and available to current user. '
+                                                      'Nginx also, for the nginx test campaign.')
     main_parser.add_argument('--acme-server', default='boulder-v2',
                              choices=['boulder-v1', 'boulder-v2',
                                       'pebble-nonstrict', 'pebble-strict'],
@@ -53,10 +56,7 @@ def create_parser():
     return main_parser
 
 
-def main(cli_args=sys.argv[1:]):
-    main_parser = create_parser()
-    args = main_parser.parse_args(cli_args)
-
+def prepare_pytest_command(args):
     nb_workers = multiprocessing.cpu_count() if args.parallel_executions \
         else int(args.parallel_executions)
 
@@ -75,6 +75,12 @@ def main(cli_args=sys.argv[1:]):
     if cover and 'certbot_integration_tests.nginx' in tests:
         cover.extend('--cov=certbot-nginx')
 
+        try:
+            subprocess.check_call(['nginx', '-v'])
+        except (subprocess.CalledProcessError, OSError):
+            raise ValueError('Nginx is required in PATH to launch the nginx integration tests, '
+                             'but is not installed or not available for current user.')
+
     capture = ['-s'] if args.no_capture else []
 
     command = ['--pyargs', '-W', 'ignore:Unverified HTTPS request']
@@ -82,6 +88,37 @@ def main(cli_args=sys.argv[1:]):
     command.extend(capture)
     command.extend(cover)
     command.extend(tests)
+
+    return command, workers
+
+
+def process_coverage(args):
+    if args.coverage:
+        cov = coverage.Coverage()
+        cov.load()
+        covered = cov.report(show_missing=True)
+
+        if covered < COVERAGE_THRESHOLD:
+            sys.stderr.write('Current coverage ({0}) is under threshold ({1})!{2}'
+                             .format(round(covered, 2),
+                                     COVERAGE_THRESHOLD, os.linesep))
+
+            return 1
+
+    return 0
+
+
+def main(cli_args=sys.argv[1:]):
+    main_parser = create_parser()
+    args = main_parser.parse_args(cli_args)
+
+    try:
+        subprocess.check_call(['docker', '-v'])
+    except (subprocess.CalledProcessError, OSError):
+        raise ValueError('Docker is required in PATH to launch the integration tests, '
+                         'but is not installed or not available for current user.')
+
+    (command, workers) = prepare_pytest_command(args)
 
     repositories_path = os.path.join(CURRENT_DIR, '.ci_assets/integration_tests')
     try:
@@ -94,23 +131,8 @@ def main(cli_args=sys.argv[1:]):
         with acme.setup_acme_server(args.acme_server, workers, repositories_path) as acme_xdist:
             os.environ['CERTBOT_ACME_TYPE'] = args.acme_server
             os.environ['CERTBOT_ACME_XDIST'] = json.dumps(acme_xdist)
-            print(acme_xdist)
             with misc.execute_in_given_cwd(os.path.join(CURRENT_DIR, 'certbot_integration_tests')):
-                exit_code = pytest.main(command)
-
-                if args.coverage:
-                    cov = coverage.Coverage()
-                    cov.load()
-                    covered = cov.report(show_missing=True)
-
-                    if covered < COVERAGE_THRESHOLD:
-                        sys.stderr.write('Current coverage ({0}) is under threshold ({1})!{2}'
-                                         .format(round(covered, 2),
-                                                 COVERAGE_THRESHOLD, os.linesep))
-
-                        exit_code = max(exit_code, 1)
-
-                return exit_code
+                return max(pytest.main(command), process_coverage(args))
 
 
 if __name__ == '__main__':
