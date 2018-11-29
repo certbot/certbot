@@ -1,6 +1,6 @@
-"""Example ACME API for HTTP-01 challenge.
+"""Example ACME-V2 API for HTTP-01 challenge.
 
-Copyright 2017 Juliana Rodrigueiro
+Copyright 2018 Intra2net AG - Juliana Rodrigueiro
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,14 +16,12 @@ limitations under the License.
 
 Brief:
 
-This example requires a Boulder CA server running, possibly locally.
-Instructions to set up: https://github.com/letsencrypt/boulder
-Run server with the argument FAKE_DNS, so any domain name will be accepted.
-# docker-compose run -e FAKE_DNS=<client-ip> --service-ports boulder ./start.py
+This a complete usage example of the python-acme API.
 
 Limitations of this example:
     - Works for only one Domain name.
     - Performs only HTTP-01 challenge.
+    - Uses ACME-v2
 
 Workflow:
     - Create account key.
@@ -38,32 +36,24 @@ Workflow:
     - Deactivate Account
 """
 import logging
-import os
 
 from contextlib import contextmanager
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa
-import josepy as jose
 import OpenSSL
 
 from acme import challenges
 from acme import client
 from acme import crypto_util
 from acme import errors
-from acme import fields
 from acme import messages
 from acme import standalone
+import josepy as jose
 
 # Constants:
 
-# IP of the machine running Boulder.
-BOULDER_SERVER_IP = '172.16.1.111'
-
-# Boulder binds by default to port 4000.
-BOULDER_SERVER_PORT = 4000
-
-SERVER_URL = 'http://' + BOULDER_SERVER_IP + ':' + repr(BOULDER_SERVER_PORT)
-DIRECTORY_URL = SERVER_URL + '/directory'
+# This is the staging point for ACME-V2 within Let's Encrypt.
+DIRECTORY_URL = 'http://boulder:4001/directory'
 
 USER_AGENT = 'python-acme-example'
 
@@ -74,18 +64,12 @@ ACC_KEY_BITS = 2048
 CERT_PKEY_BITS = 2048
 
 # Domain name for the certificate.
-DOMAIN = 'client.example.com'
+DOMAIN = 'client3.testemail5.com'
 
-# The Boulder fake CA tries to connect by default through the port number 5002,
-# so this is where the standalone web server has to bind to. Real CA servers
-# will always use port 80, though.
-PORT = 5002
-
-ACC_FILEPATH = os.path.join('/tmp', DOMAIN + '-account.json')
-REGR_FILEPATH = os.path.join('/tmp', DOMAIN + '-regr.json')
-PKEY_FILEPATH = os.path.join('/tmp', DOMAIN + '-pkey.pem')
-CERT_FILEPATH = os.path.join('/tmp', DOMAIN + '-cert.pem')
-CHAIN_FILEPATH = os.path.join('/tmp', DOMAIN + '-fullchain.pem')
+# If you are running Boulder locally, it is possible to configure any port
+# number to execute the challenge, but real CA servers will obviously always
+# use port 80.
+PORT = 80
 
 # ACME API can be quite verbose.
 logging.basicConfig(level=logging.INFO)
@@ -104,10 +88,9 @@ def generate_client_account_key():
 
 def create_client(acc_key):
     """Create client from existing account key."""
-    # Here we generate a ClientNetwork with customized user_agent, otherwise
-    # the 'net' argument could have been omitted.
     net = client.ClientNetwork(acc_key, user_agent=USER_AGENT)
-    return client.Client(DIRECTORY_URL, acc_key, net=net)
+    directory = messages.Directory.from_json(net.get(DIRECTORY_URL).json())
+    return client.ClientV2(directory, net=net)
 
 
 def new_pkey_pem():
@@ -124,91 +107,12 @@ def new_csr_comp(domain_name, pkey_pem=None):
     if pkey_pem is None:
         pkey_pem = new_pkey_pem()
     csr_pem = crypto_util.make_csr(pkey_pem, [domain_name])
-    csr_comp = jose.ComparableX509(
-        OpenSSL.crypto.load_certificate_request(
-            OpenSSL.crypto.FILETYPE_PEM, csr_pem))
-    return csr_comp, pkey_pem
-
-
-def deactivate_authorization(client_acme, authz):
-    """Deactivate an authorization resource."""
-    class DeactivateAuthzResource(messages.Resource):
-        resource = fields.Resource('authz')
-        status = jose.Field('status', default='deactivated')
-
-    response = client_acme.net.post(authz.uri, DeactivateAuthzResource())
-
-
-def save_data(regr, client_acme, pkey_pem, cert_res):
-    """Persist data."""
-
-    if regr is not None:
-        # Registration resource
-        with open(REGR_FILEPATH, 'w') as regr_fd:
-            regr_fd.write(regr.json_dumps())
-
-    if client_acme is not None:
-        # Account Key
-        with open(ACC_FILEPATH, 'w') as acc_fd:
-            acc_fd.write(client_acme.key.json_dumps())
-
-    if pkey_pem is not None:
-        # Private Key
-        with open(PKEY_FILEPATH, 'wb') as pkey_fd:
-            pkey_fd.write(pkey_pem)
-
-    if cert_res is not None:
-        # Certificate
-        with open(CERT_FILEPATH, 'wb') as cert_fd:
-            cert_fd.write(
-                OpenSSL.crypto.dump_certificate(
-                    OpenSSL.crypto.FILETYPE_PEM, cert_res.body.wrapped))
-            logging.info('Certificate saved at %s', CERT_FILEPATH)
-
-        # Chain
-        chain = client_acme.fetch_chain(cert_res)
-        with open(CHAIN_FILEPATH, 'wb') as chain_fd:
-            for item in chain:
-                chain_fd.write(
-                    OpenSSL.crypto.dump_certificate(
-                        OpenSSL.crypto.FILETYPE_PEM, item))
-
-
-def load_data():
-    """Recover data from disk."""
-    client_acme = create_client(load_accountkey(ACC_FILEPATH))
-    regr = load_registration(REGR_FILEPATH)
-    pkey = load_privatekey(PKEY_FILEPATH)
-    cert = jose.ComparableX509(load_certificate(CERT_FILEPATH))
-    # chain is not loaded since it is not used in any of the examples.
-
-    return client_acme, regr, pkey, cert
-
-
-def load_accountkey(filepath):
-    with open(filepath, 'r') as account_fd:
-        return jose.JWK.json_loads(account_fd.read())
-
-
-def load_registration(filepath):
-    with open(filepath, 'r') as regr_fd:
-        return messages.RegistrationResource.json_loads(regr_fd.read())
-
-
-def load_certificate(filepath):
-    with open(filepath, 'rb') as pem_fd:
-        return OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM,
-                                               pem_fd.read())
-
-
-def load_privatekey(filepath):
-    with open(filepath, 'rb') as pem_fd:
-        return OpenSSL.crypto.load_privatekey(OpenSSL.crypto.FILETYPE_PEM,
-                                              pem_fd.read())
+    return pkey_pem, csr_pem
 
 
 def verify_registration(client_acme, regr):
     """Query registration status."""
+    client_acme.net.account = regr
     try:
         return client_acme.query_registration(regr)
     except errors.Error as err:
@@ -218,33 +122,19 @@ def verify_registration(client_acme, regr):
         raise
 
 
-def verify_account(client_acme):
-    """Verify if account is already registered with the server."""
-    # Boulder diverges from the protocol in some points listed in (https://
-    # github.com/letsencrypt/boulder/blob/master/docs/acme-divergences.md):
-    # "Boulder does not implement the only-return-existing behaviour and "
-    # will always create a new account if an account for the given key does
-    # not exist."
-    try:
-        new_regr = client_acme.register()
-    except errors.ConflictError:
-        logging.info('Account already exist')
-    else:
-        client_acme.deactivate_registration(new_regr)
-        raise Exception('Account should already exist in the server')
-
-
-def select_http01_chall(client_acme):
+def select_http01_chall(orderr):
+    """Extract authorization resource from within order resource."""
     # Authorization Resource: authz.
     # This object holds the offered challenges by the server and their status.
-    authz = client_acme.request_domain_challenges(DOMAIN)
+    authz_list = orderr.authorizations
 
-    # Choosing challenge.
-    # authz.body.challenges is a set of ChallengeBody objects.
-    for i in authz.body.challenges:
-        # Find the supported challenge.
-        if isinstance(i.chall, challenges.HTTP01):
-            return authz, i
+    for authz in authz_list:
+        # Choosing challenge.
+        # authz.body.challenges is a set of ChallengeBody objects.
+        for i in authz.body.challenges:
+            # Find the supported challenge.
+            if isinstance(i.chall, challenges.HTTP01):
+                return i
 
     raise Exception('HTTP-01 challenge was not offered by the CA server.')
 
@@ -266,13 +156,13 @@ def challenge_server(http_01_resources):
         servers.shutdown_and_server_close()
 
 
-def perform_http01(client_acme, authz, challb, csr_comp):
+def perform_http01(client_acme, challb, orderr):
     """Set up standalone webserver and perform HTTP-01 challenge."""
 
-    response, validation = challb.response_and_validation(client_acme.key)
+    response, validation = challb.response_and_validation(client_acme.net.key)
 
     resource = standalone.HTTP01RequestHandler.HTTP01Resource(
-            chall=challb.chall, response=response, validation=validation)
+        chall=challb.chall, response=response, validation=validation)
 
     with challenge_server({resource}):
 
@@ -285,7 +175,7 @@ def perform_http01(client_acme, authz, challb, csr_comp):
         domain = 'localhost'
         if not response.simple_verify(challb.chall,
                                       domain,
-                                      client_acme.key.public_key(),
+                                      client_acme.net.key.public_key(),
                                       PORT):
             raise Exception('Verification failed')
 
@@ -293,11 +183,10 @@ def perform_http01(client_acme, authz, challb, csr_comp):
         client_acme.answer_challenge(challb, response)
 
         # Wait for challenge status and then issue a certificate.
-        # cert_res = Certificate Resource
-        # It is possible to set max retries and min time.
-        cert_res, _ = client_acme.poll_and_request_issuance(csr_comp, [authz])
+        # It is possible to set a deadline time.
+        finalized_orderr = client_acme.poll_and_finalize(orderr)
 
-    return cert_res
+    return finalized_orderr.fullchain_pem
 
 
 # Main examples:
@@ -315,56 +204,42 @@ def example_http():
     - Set up standalone web server.
     - Create domain private key and CSR.
     - Issue certificate.
-    - Save certificate and account to disk.
+    - Change contact information.
+    - Renew Certificate
+    - Revoke Certificate
+    - Deactivate Account
 
     """
     logging.info('Example Challenge HTTP01')
 
     client_acme = generate_client_account_key()
 
+    logging.info('Terms of Service URL: %s',
+                 client_acme.directory.meta.terms_of_service)
+
     # Registration Resource: regr
     # Creates account with contact information.
-    email = 'fake@example.com'
-    regr = client_acme.register(
+    email = ('fake@emailtest.com')
+    regr = client_acme.new_account(
         messages.NewRegistration.from_data(
-            email=email))
+            email=email, terms_of_service_agreed=True))
 
     logging.info('Account registered.')
 
-    # Updating the registration
-    regr = client_acme.agree_to_tos(regr)
+    pkey_pem, csr_pem = new_csr_comp(DOMAIN)
+    orderr = client_acme.new_order(csr_pem)
 
-    logging.info('Terms of Service URL: %s', regr.terms_of_service)
+    challb = select_http01_chall(orderr)
 
-    authz, challb = select_http01_chall(client_acme)
+    # The certificate is ready to be used in the variable "fullchain_pem".
+    fullchain_pem = perform_http01(client_acme, challb, orderr)
 
-    csr_comp, pkey_pem = new_csr_comp(DOMAIN)
-
-    cert_res = perform_http01(client_acme, authz, challb, csr_comp)
-
-    save_data(regr, client_acme, pkey_pem, cert_res)
-
-
-def example_edit_account():
-    """This example edits the contact information of an account.
-
-    The workflow consists of:
-    - Load data from disk
-    - Verify that account exist in the server
-    - Change contact information
-    - Save data to disk
-
-    """
-    logging.info('Example Edit Account Info')
-
-    client_acme, regr, _, _ = load_data()
-
-    verify_account(client_acme)
+    logging.info('Certificate issued: \n%s', fullchain_pem)
 
     regr = verify_registration(client_acme, regr)
 
     # Change contact information
-    email = 'newfake@example.com'
+    email = 'newfake@emailtest.com'
     regr = client_acme.update_registration(
         regr.update(
             body=regr.body.update(
@@ -374,79 +249,32 @@ def example_edit_account():
     )
     logging.info('New contact info: %s', repr(regr.body.contact))
 
-    save_data(regr, client_acme, None, None)
+    logging.info('Renew Certificate')
 
+    _, csr_pem = new_csr_comp(DOMAIN, pkey_pem)
 
-def example_renew_cert():
-    """This example renews an existing certificate.
+    orderr = client_acme.new_order(csr_pem)
 
-    The workflow consists of:
-    - Load data from disk
-    - Verify that account exist in the server
-    - Select HTTP-01 within offered challenges by the CA server.
-    - Set up standalone web server
-    - Reuse cert private key to generate CSR
-    - Renew Certificate
-    - Save certificate and account to disk.
+    challb = select_http01_chall(orderr)
 
-    """
-    logging.info('Example Renew Certificate')
+    logging.info('Performing challenge')
 
-    client_acme, regr, pkey, _ = load_data()
+    fullchain_pem = perform_http01(client_acme, challb, orderr)
 
-    verify_account(client_acme)
+    logging.info('Certificate renewed: \n%s', fullchain_pem)
 
-    regr = verify_registration(client_acme, regr)
+    logging.info('Revoke and Deactivate')
 
-    authz, challb = select_http01_chall(client_acme)
-
-    pkey_pem = OpenSSL.crypto.dump_privatekey(OpenSSL.crypto.FILETYPE_PEM,
-                                              pkey)
-    csr_comp, _ = new_csr_comp(DOMAIN, pkey_pem)
-
-    # When the authorization is still valid it is not necessary to fulfil a
-    # challenge in order to obtain a new certificate.
-    if challb.status is messages.STATUS_VALID:
-        logging.info('Status is valid')
-        cert_res, _ = client_acme.poll_and_request_issuance(csr_comp, [authz])
-    else:
-        logging.info('Performing challenge')
-        cert_res = perform_http01(client_acme, authz, challb, csr_comp)
-
-    save_data(regr, client_acme, pkey_pem, cert_res)
-
-
-def example_revoke_deactivate():
-    """This example revokes a certificate, deactivates an account and a
-    authorization resource.
-
-    The workflow consists of:
-    - Load data from disk
-    - Verify that account exist in the server
-    - Revoke Certificate
-    - Deactivate Authorization
-    - Deactivate Account
-
-    """
-    logging.info('Example Revoke and Deactivate')
-
-    client_acme, regr, _, cert = load_data()
-
-    verify_account(client_acme)
-
-    regr = verify_registration(client_acme, regr)
+    fullchain_com = jose.ComparableX509(
+        OpenSSL.crypto.load_certificate(
+            OpenSSL.crypto.FILETYPE_PEM, fullchain_pem))
 
     try:
-        client_acme.revoke(cert, 0)  # revocation reason = 0
+        client_acme.revoke(fullchain_com, 0)  # revocation reason = 0
     except errors.ConflictError:
         logging.info('Certificate already revoked.')
     else:
         logging.info('Successfully revoked cert.')
-
-    # Deactivate Authorization
-    authz = client_acme.request_domain_challenges(DOMAIN)
-    deactivate_authorization(client_acme, authz)
-    logging.info('Successfully deactivated authorization.')
 
     # Deactivate registration
     regr = client_acme.deactivate_registration(regr)
@@ -455,6 +283,3 @@ def example_revoke_deactivate():
 
 if __name__ == "__main__":
     example_http()
-    example_edit_account()
-    example_renew_cert()
-    example_revoke_deactivate()
