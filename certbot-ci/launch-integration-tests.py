@@ -85,7 +85,7 @@ def prepare_pytest_command(args):
 
     capture = ['-s'] if args.no_capture else []
 
-    command = ['--pyargs', '-W', 'ignore:Unverified HTTPS request']
+    command = ['--pyargs', '-W', 'ignore:Unverified HTTPS request', '--reruns', '2']
     command.extend(processes_cmd)
     command.extend(capture)
     command.extend(cover)
