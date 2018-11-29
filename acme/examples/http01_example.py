@@ -53,7 +53,7 @@ import josepy as jose
 # Constants:
 
 # This is the staging point for ACME-V2 within Let's Encrypt.
-DIRECTORY_URL = 'http://boulder:4001/directory'
+DIRECTORY_URL = 'https://acme-staging-v02.api.letsencrypt.org'
 
 USER_AGENT = 'python-acme-example'
 
@@ -64,7 +64,7 @@ ACC_KEY_BITS = 2048
 CERT_PKEY_BITS = 2048
 
 # Domain name for the certificate.
-DOMAIN = 'client3.testemail5.com'
+DOMAIN = 'client.example.com'
 
 # If you are running Boulder locally, it is possible to configure any port
 # number to execute the challenge, but real CA servers will obviously always
@@ -219,7 +219,7 @@ def example_http():
 
     # Registration Resource: regr
     # Creates account with contact information.
-    email = ('fake@emailtest.com')
+    email = ('fake@example.com')
     regr = client_acme.new_account(
         messages.NewRegistration.from_data(
             email=email, terms_of_service_agreed=True))
@@ -239,7 +239,7 @@ def example_http():
     regr = verify_registration(client_acme, regr)
 
     # Change contact information
-    email = 'newfake@emailtest.com'
+    email = 'newfake@example.com'
     regr = client_acme.update_registration(
         regr.update(
             body=regr.body.update(
