@@ -57,8 +57,8 @@ def create_parser():
 
 
 def prepare_pytest_command(args):
-    nb_workers = multiprocessing.cpu_count() if args.parallel_executions \
-        else int(args.parallel_executions)
+    nb_workers = multiprocessing.cpu_count() if args.numprocesses \
+        else int(args.numprocesses)
 
     workers = ['gw{0}'.format(i) for i in range(nb_workers)] \
         if args.parallel_executions > 1 else ['master']
