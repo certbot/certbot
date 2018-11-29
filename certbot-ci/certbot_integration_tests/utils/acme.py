@@ -45,7 +45,8 @@ def _prepare_repositories(repositories_path):
     try:
         if not os.path.exists(boulder_repo):
             subprocess.check_call(['git', 'clone', 'https://github.com/letsencrypt/boulder',
-                                   boulder_repo], stdout=FNULL, stderr=FNULL)
+                                   '--single-branch', '--depth=1', boulder_repo],
+                                  stdout=FNULL, stderr=FNULL)
 
         subprocess.check_call(['git', 'clean', '-fd'],
                               cwd=boulder_repo, stdout=FNULL, stderr=FNULL)
@@ -251,7 +252,8 @@ networks:
                     file.write(data)
             except UnicodeDecodeError:
                 pass
-
+    subprocess.call(['docker-compose', '--project-name', 'gw{0}'.format(index), 'down'],
+                    stdout=FNULL, stderr=FNULL)
     subprocess.check_call(['docker-compose', '--project-name', 'gw{0}'.format(index),
                            'up', '--force-recreate', '-d', 'boulder'],
                           cwd=workspace, stdout=FNULL, stderr=FNULL)
@@ -357,6 +359,8 @@ networks:
     with open(os.path.join(workspace, 'pebble/pebble-config.json'), 'w') as file:
         file.write(data)
 
+    subprocess.call(['docker-compose', '--project-name', 'gw{0}'.format(index), 'down'],
+                    stdout=FNULL, stderr=FNULL)
     subprocess.check_call(['docker-compose', '--project-name', 'gw{0}'.format(index),
                            'up', '--force-recreate', '-d', 'pebble'],
                           cwd=workspace, stdout=FNULL, stderr=FNULL)
