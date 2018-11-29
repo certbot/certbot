@@ -6,7 +6,7 @@ import re
 
 import pytest
 
-from certbot_integration_tests.certbot import assertions
+from certbot_integration_tests.certbot_tests import assertions
 from certbot_integration_tests.utils import misc
 from certbot_integration_tests.utils.markers import (
     skip_on_pebble, skip_on_pebble_strict, skip_on_boulder_v1

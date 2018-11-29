@@ -1,26 +1,15 @@
 import os
 import getpass
 import subprocess
-import sys
 import random
 import shutil
 import filecmp
+import contextlib
 
 import pytest
 import ssl
-from OpenSSL import crypto
 
 from certbot_integration_tests.utils import misc
-
-
-@pytest.fixture
-def certbot_test_nginx(certbot_test):
-    def func(args):
-        command = ['--authenticator', 'nginx', '--installer', 'nginx']
-        command.extend(args)
-        return certbot_test(command)
-
-    return func
 
 
 @pytest.fixture
@@ -46,8 +35,20 @@ def other_port():
 
 
 @pytest.fixture
-def nginx_configs(nginx_root, webroot, tls_sni_01_port, http_01_port, other_port):
-    config = '''\
+def nginx_config(nginx_root):
+    return os.path.join(nginx_root, 'nginx.conf')
+
+
+@pytest.fixture
+def nginx_original_config(nginx_root):
+    return os.path.join(nginx_root, 'nginx-original.conf')
+
+
+@pytest.fixture
+def nginx_config_gen(nginx_root, nginx_config, nginx_original_config, webroot,
+                     tls_sni_01_port, http_01_port, other_port):
+    def func(default_server):
+        config = '''\
 # This error log will be written regardless of server scope error_log
 # definitions, so we have to set this here in the main scope.
 #
@@ -141,39 +142,61 @@ http {{
     server_name nginx6.wtf nginx7.wtf;
   }}
 }}
-'''.format(root=nginx_root,
-           webroot=webroot,
-           user=getpass.getuser(),
-           http_01_port=http_01_port,
-           tls_sni_01_port=tls_sni_01_port,
-           other_port=other_port,
-           default_server='default_server')
+    '''.format(root=nginx_root,
+               webroot=webroot,
+               user=getpass.getuser(),
+               http_01_port=http_01_port,
+               tls_sni_01_port=tls_sni_01_port,
+               other_port=other_port,
+               default_server=default_server)
 
-    nginx_conf_path = os.path.join(nginx_root, 'nginx.conf')
-    nginx_conf_original_path = os.path.join(nginx_root, 'nginx-original.conf')
-    with open(nginx_conf_path, 'w') as file:
-        file.write(config)
-    shutil.copy(nginx_conf_path, nginx_conf_original_path)
+        with open(nginx_config, 'w') as file:
+            file.write(config)
+        shutil.copy(nginx_config, nginx_original_config)
 
-    return nginx_conf_path, nginx_conf_original_path
+        return nginx_config
+
+    return func
 
 
-@pytest.fixture(autouse=True)
-def nginx(nginx_configs, webroot, http_01_port):
-    (nginx_config, _) = nginx_configs
+@pytest.fixture
+def nginx(nginx_config_gen, webroot, http_01_port):
+    with _nginx_setup(nginx_config_gen('default_server'), webroot, http_01_port) as configured:
+        yield configured
+
+
+@pytest.fixture
+def nginx_no_default_srv(nginx_config_gen, webroot, http_01_port):
+    with _nginx_setup(nginx_config_gen(''), webroot, http_01_port) as configured:
+        yield configured
+
+
+@contextlib.contextmanager
+def _nginx_setup(nginx_config, webroot, http_01_port):
     assert webroot
-    process = subprocess.Popen(['nginx', '-c', nginx_config, '-g', 'daemon off;'], stdout=sys.stdout, stderr=sys.stderr)
+    process = subprocess.Popen(['nginx', '-c', nginx_config, '-g', 'daemon off;'])
     try:
         assert not process.poll()
         misc.check_until_timeout('http://localhost:{0}'.format(http_01_port))
-        yield
+        yield True
     finally:
         process.terminate()
         process.wait()
 
 
 @pytest.fixture
-def assert_deployment_and_rollback(workspace, nginx_root, nginx_configs,
+def certbot_test_nginx(certbot_test, nginx_root):
+    def func(args):
+        command = ['--authenticator', 'nginx', '--installer', 'nginx',
+                   '--nginx-server-root', nginx_root]
+        command.extend(args)
+        return certbot_test(command)
+
+    return func
+
+
+@pytest.fixture
+def assert_deployment_and_rollback(workspace, nginx_root, nginx_config, nginx_original_config,
                                    tls_sni_01_port, certbot_test_no_force_renew):
     def func(certname):
         server_cert = ssl.get_server_certificate(('localhost', tls_sni_01_port))
@@ -186,7 +209,6 @@ def assert_deployment_and_rollback(workspace, nginx_root, nginx_configs,
                    '--nginx-server-root', nginx_root,
                    'rollback', '--checkpoints', '1']
         certbot_test_no_force_renew(command)
-        (nginx_config, nginx_original_config) = nginx_configs
 
         assert filecmp.cmp(nginx_config, nginx_original_config)
 

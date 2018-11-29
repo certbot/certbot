@@ -67,9 +67,9 @@ def prepare_pytest_command(args):
 
     tests = []
     if args.campaign == 'all' or args.campaign == 'certbot':
-        tests.append('certbot_integration_tests.certbot')
+        tests.append('certbot_integration_tests.certbot_tests')
     if args.campaign == 'all' or args.campaign == 'nginx':
-        tests.append('certbot_integration_tests.nginx')
+        tests.append('certbot_integration_tests.nginx_tests')
 
     cover = ['--cov-report=', '--cov=acme', '--cov=certbot'] if args.coverage else []
     if cover and 'certbot_integration_tests.nginx' in tests:

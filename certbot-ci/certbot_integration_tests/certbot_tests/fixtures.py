@@ -77,7 +77,7 @@ def certbot_test_no_force_renew(workspace, config_dir, acme_url,
 
 
 @pytest.fixture
-def certbot_test(config_dir, acme_url, http_01_port, tls_sni_01_port):
+def certbot_test(certbot_test_no_force_renew):
     def func(args):
         command = ['--renew-by-default']
         command.extend(args)
