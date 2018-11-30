@@ -281,7 +281,7 @@ CheckCertCount() {
 }
 
 CheckGroup() {
-    group_mode() { echo $((0`stat -c %a $1` & 070)); }
+    group_mode() { echo $((0`stat -c %a $1` & 074)); }
     group_owner() { echo `stat -c %G $1`; }
     if [ `group_mode $1` -ne `group_mode $2` ] ; then
         echo "Expected group permission `group_mode $1`, got `group_mode $2` on file $2"
