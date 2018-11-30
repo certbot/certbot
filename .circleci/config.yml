@@ -1,0 +1,16 @@
+version: 2
+jobs:
+  test:
+    machine: true
+    steps:
+      - checkout
+      - run:
+          name: Install packages
+          command: |
+            apt-get update
+            apt-get install python3-pip
+            pip3 install tox
+      - run:
+          name: Launch tests
+          command: |
+            tox -e integration
