@@ -687,7 +687,9 @@ class NginxConfigurator(common.Installer):
         test_redirect_block = _test_block_from_block(_redirect_block_for_domain(domain))
         redirect_block_for_server = [['\n    ', 'return', '301', 'https://$host$request_uri']]
         test_custom_redirect_block = _test_block_from_block(redirect_block_for_server)
-        return vhost.contains_list(test_redirect_block) or vhost.contains_list(test_custom_redirect_block)
+        return (
+            vhost.contains_list(test_redirect_block) or
+            vhost.contains_list(test_custom_redirect_block))
 
     def _set_http_header(self, domain, header_substring):
         """Enables header identified by header_substring on domain.
