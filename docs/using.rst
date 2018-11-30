@@ -696,7 +696,9 @@ Where are my certificates?
 ==========================
 
 All generated keys and issued certificates can be found in
-``/etc/letsencrypt/live/$domain``. Rather than copying, please point
+``/etc/letsencrypt/live/$domain``. In the case of creating a SAN certificate 
+with multiple alternative names, ``$domain`` is the first domain passed in 
+via -d parameter. Rather than copying, please point
 your (web) server configuration directly to those files (or create
 symlinks). During the renewal_, ``/etc/letsencrypt/live`` is updated
 with the latest necessary files.
@@ -714,6 +716,10 @@ The following files are available:
      it with anyone, including Certbot developers. You cannot
      put it into a safe, however - your server still needs to access
      this file in order for SSL/TLS to work.
+
+  .. note:: As of Certbot version 0.29.0, private keys for new certificate
+     default to ``0600``. Any changes to the group mode or group owner (gid)
+     of this file will be preserved on renewals.
 
   This is what Apache needs for `SSLCertificateKeyFile
   <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatekeyfile>`_,

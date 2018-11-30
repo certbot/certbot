@@ -18,3 +18,20 @@ def assert_certs_count_for_lineage(config_dir, lineage, count):
     lineage_dir = os.path.join(archive_dir, lineage)
     certs = [file for file in os.listdir(lineage_dir) if file.startswith('cert')]
     assert len(certs) == count
+
+
+def assert_equals_user_group_permissions(file1, file2):
+    mode_file1 = os.stat(file1).st_mode & 0o777
+    mode_file2 = os.stat(file2).st_mode & 0o777
+
+    # Check the user permissions
+    assert mode_file1 & 0o700 == mode_file2 & 0o700
+
+    # Check the group permissions
+    assert mode_file1 & 0o070 == mode_file2 & 0o070
+
+
+def assert_not_world_readable(file):
+    mode_file_all = os.stat(file).st_mode & 0o007
+
+    assert mode_file_all == 0

@@ -91,7 +91,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
     """
 
-    description = "Apache Web Server plugin - Beta"
+    description = "Apache Web Server plugin"
 
     OS_DEFAULTS = dict(
         server_root="/etc/apache2",

@@ -154,6 +154,7 @@ def test_auth_and_install_with_csr(workspace, common):
 def test_renew(config_dir, common_no_force_renew, common, hook_probe):
     # First, we create a target certificate, with all hook dirs instantiated.
     # We should have a new certificate, with hooks executed.
+    # Check also file permissions.
     certname = 'renew.le.wtf'
     common([
         'certonly', '-d', certname, '--rsa-key-size', '4096',
@@ -161,13 +162,23 @@ def test_renew(config_dir, common_no_force_renew, common, hook_probe):
     ])
 
     assertions.assert_certs_count_for_lineage(config_dir, certname, 1)
+    assertions.assert_not_world_readable(
+        os.path.join(config_dir, 'archive/{0}/privkey1.pem'.format(certname)))
 
     # Second, we force renew, and ensure that renewal hooks files are executed.
+    # Also check that file permissions are correct.
     misc.generate_test_file_hooks(config_dir, hook_probe)
     common(['renew', '--no-renew-time-shuffle'])
 
     assertions.assert_certs_count_for_lineage(config_dir, certname, 2)
     assertions.assert_hook_execution(hook_probe, 'deploy')
+    assertions.assert_not_world_readable(
+        os.path.join(config_dir, 'archive/{0}/privkey2.pem'.format(certname)))
+    assertions.assert_equals_user_group_permissions(
+        os.path.join(config_dir, 'archive/{0}/privkey1.pem'.format(certname)),
+        os.path.join(config_dir, 'archive/{0}/privkey2.pem'.format(certname)))
+
+    os.chmod(os.path.join(config_dir, 'archive/{0}/privkey2.pem'.format(certname)), 0o444)
 
     # Third, we try to renew without force.
     # It is not time, so no renew should occur, and no hooks should be executed.
@@ -182,7 +193,8 @@ def test_renew(config_dir, common_no_force_renew, common, hook_probe):
     # Fourth, we modify the time when renew occur to 4 years before expiration.
     # When trying renew without force, then renew should occur for this large time.
     # Also we specify to not use hooks dir, so no hook should be run during this renew.
-    # Finally, this renew will use explicitly a 2048 key size.
+    # Also this renew should use explicitly a 2048 key size.
+    # And finally we check the file permissions.
     open(hook_probe, 'w').close()
     with open(os.path.join(config_dir, 'renewal/{0}.conf'.format(certname)), 'r') as file:
         lines = file.readlines()
@@ -199,6 +211,12 @@ def test_renew(config_dir, common_no_force_renew, common, hook_probe):
     key3 = os.path.join(config_dir, 'archive/{0}/privkey3.pem'.format(certname))
     assert os.stat(key2).st_size > 3000  # 4096 bits keys takes more than 3000 bytes
     assert os.stat(key3).st_size < 1800  # 2048 bits keys takes less than 1800 bytes
+
+    assertions.assert_not_world_readable(
+        os.path.join(config_dir, 'archive/{0}/privkey3.pem'.format(certname)))
+    assertions.assert_equals_user_group_permissions(
+        os.path.join(config_dir, 'archive/{0}/privkey2.pem'.format(certname)),
+        os.path.join(config_dir, 'archive/{0}/privkey3.pem'.format(certname)))
 
     # Fifth, we clean every dir hook, and replace their content by empty dir and empty files.
     # Everything should renew correctly.

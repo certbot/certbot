@@ -12,11 +12,13 @@ Certbot adheres to [Semantic Versioning](http://semver.org/).
 
 ### Changed
 
-*
+* Private key permissioning changes: Renewal preserves existing group mode
+  & gid of previous private key material. Private keys for new
+  lineages (i.e. new certs, not renewed) default to 0o600.
 
 ### Fixed
 
-*
+* Update code and dependencies to clean up Resource and Deprecation Warnings.
 
 Despite us having broken lockstep, we are continuing to release new versions of
 all Certbot components during releases for the time being, however, the only
