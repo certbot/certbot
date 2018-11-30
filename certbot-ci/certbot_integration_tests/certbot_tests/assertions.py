@@ -1,4 +1,9 @@
 import os
+import grp
+
+
+__all__ = ['assert_hook_execution', 'assert_save_renew_hook', 'assert_certs_count_for_lineage',
+           'assert_equals_group_permissions', 'assert_not_world_readable']
 
 
 def assert_hook_execution(probe_path, probe_content):
@@ -20,15 +25,18 @@ def assert_certs_count_for_lineage(config_dir, lineage, count):
     assert len(certs) == count
 
 
-def assert_equals_user_group_permissions(file1, file2):
+def assert_equals_group_permissions(file1, file2):
     mode_file1 = os.stat(file1).st_mode & 0o777
     mode_file2 = os.stat(file2).st_mode & 0o777
 
-    # Check the user permissions
+    # Check the group permissions
     assert mode_file1 & 0o700 == mode_file2 & 0o700
 
-    # Check the group permissions
-    assert mode_file1 & 0o070 == mode_file2 & 0o070
+    group_owner_file1 = grp.getgrgid(os.stat(file1).st_gid)[0]
+    group_owner_file2 = grp.getgrgid(os.stat(file2).st_gid)[0]
+
+    # Check the group owner
+    assert group_owner_file1 == group_owner_file2
 
 
 def assert_not_world_readable(file):

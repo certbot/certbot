@@ -42,7 +42,8 @@ def create_parser():
                              choices=['boulder-v1', 'boulder-v2',
                                       'pebble-nonstrict', 'pebble-strict'],
                              help='select the ACME server to use (boulder-v1, boulder-v2, '
-                                  'pebble-nonstrict or pebble-strict), defaulting to pebble-nonstrict')
+                                  'pebble-nonstrict or pebble-strict), '
+                                  'defaulting to pebble-nonstrict')
     main_parser.add_argument('--campaign', choices=['all', 'certbot', 'nginx'], default='certbot',
                              help='select the test campaign to run (all, certbot or nginx),'
                                   'defaulting to certbot')

@@ -7,6 +7,7 @@ import re
 import contextlib
 import multiprocessing
 import shutil
+from os.path import join, exists
 
 from certbot_integration_tests.utils import misc
 
@@ -40,10 +41,10 @@ def setup_acme_server(acme_server, nodes, repositories_path):
 @contextlib.contextmanager
 def _prepare_repositories(repositories_path):
     print('=> Preparing GIT repositories...')
-    boulder_repo = os.path.join(repositories_path, 'boulder')
+    boulder_repo = join(repositories_path, 'boulder')
 
     try:
-        if not os.path.exists(boulder_repo):
+        if not exists(boulder_repo):
             subprocess.check_call(['git', 'clone', 'https://github.com/letsencrypt/boulder',
                                    '--single-branch', '--depth=1', boulder_repo],
                                   stdout=FNULL, stderr=FNULL)
@@ -68,7 +69,7 @@ def _setup_one_node(index, node, acme_type, acme_server, pool, repos):
         print('=> Tear down the {0} instance ({1})...'.format(acme_type, node))
 
         try:
-            if os.path.isfile(os.path.join(workspace, 'docker-compose.yml')):
+            if os.path.isfile(join(workspace, 'docker-compose.yml')):
                 subprocess.check_call(['docker-compose', '-p',
                                        'gw{0}'.format(index), 'down'],
                                       cwd=workspace, stdout=FNULL, stderr=FNULL)
@@ -120,7 +121,7 @@ def _setup_boulder(workspace, index, repos, acme_v2=True):
     rednet_network = '10.88.{0}'.format(index)
 
     ignore = shutil.ignore_patterns('.git')
-    shutil.copytree(boulder_repo, os.path.join(workspace, 'boulder'), ignore=ignore)
+    shutil.copytree(boulder_repo, join(workspace, 'boulder'), ignore=ignore)
 
     data = '''
 version: '3'
@@ -224,23 +225,23 @@ networks:
            directory_v2_port=directory_v2_port,
            challsrvport_mgt_port=challsrvport_mgt_port)
 
-    with open(os.path.join(workspace, 'docker-compose.yml'), 'w') as file:
+    with open(join(workspace, 'docker-compose.yml'), 'w') as file:
         file.write(data)
 
-    with open(os.path.join(workspace, 'boulder/test/config/va.json'), 'r') as file:
+    with open(join(workspace, 'boulder/test/config/va.json'), 'r') as file:
         data = file.read()
 
     data = re.sub('"httpPort": 5002,', '"httpPort": {0},'.format(http_01_port), data)
     data = re.sub('"httpsPort": 5001,', '"httpsPort": {0},'.format(tls_sni_01_port), data)
     data = re.sub('"tlsPort": 5001', '"tlsPort": {0}'.format(tls_sni_01_port), data)
 
-    with open(os.path.join(workspace, 'boulder/test/config/va.json'), 'w') as file:
+    with open(join(workspace, 'boulder/test/config/va.json'), 'w') as file:
         file.write(data)
 
-    for root, dirs, files in os.walk(os.path.join(workspace)):
+    for root, dirs, files in os.walk(join(workspace)):
         for name in files:
             try:
-                with open(os.path.join(root, name), 'r') as file:
+                with open(join(root, name), 'r') as file:
                     data = file.read()
 
                 data = re.sub('10.77.77', bluenet_network, data)
@@ -248,7 +249,7 @@ networks:
                 data = re.sub('boulder-hsm', 'boulder-hsm_{0}'.format(index), data)
                 data = re.sub('boulder-mysql', 'boulder-mysql_{0}'.format(index), data)
 
-                with open(os.path.join(root, name), 'w') as file:
+                with open(join(root, name), 'w') as file:
                     file.write(data)
             except UnicodeDecodeError:
                 pass
@@ -278,7 +279,7 @@ def _setup_pebble(workspace, index, repos, strict=False):
     bluenet_network = '10.77.{0}'.format(index)
 
     ignore = shutil.ignore_patterns('.git')
-    shutil.copytree(boulder_repo, os.path.join(workspace, 'boulder'), ignore=ignore)
+    shutil.copytree(boulder_repo, join(workspace, 'boulder'), ignore=ignore)
 
     data = '''
 FROM golang:stretch
@@ -288,7 +289,7 @@ COPY . .
 RUN go install ./test/challtestsrv/...
 '''
 
-    with open(os.path.join(workspace, 'boulder/Dockerfile'), 'w') as file:
+    with open(join(workspace, 'boulder/Dockerfile'), 'w') as file:
         file.write(data)
 
     data = '''\
@@ -335,7 +336,7 @@ networks:
            pebble_version=PEBBLE_VERSION,
            strict='-strict' if strict else '')
 
-    with open(os.path.join(workspace, 'docker-compose.yml'), 'w') as file:
+    with open(join(workspace, 'docker-compose.yml'), 'w') as file:
         file.write(data)
 
     data = '''
@@ -350,7 +351,7 @@ networks:
 }}
 '''.format(http_01_port=http_01_port, tls_alpn_01_port=tls_alpn_01_port)
 
-    with open(os.path.join(workspace, 'pebble-config.json'), 'w') as file:
+    with open(join(workspace, 'pebble-config.json'), 'w') as file:
         file.write(data)
 
     subprocess.call(['docker-compose', '--project-name', 'gw{0}'.format(index), 'down'],
