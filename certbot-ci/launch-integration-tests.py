@@ -15,7 +15,7 @@ import coverage
 from certbot_integration_tests.utils import acme, misc
 
 CURRENT_DIR = os.path.dirname(__file__)
-COVERAGE_THRESHOLD = 75
+COVERAGE_THRESHOLD = 65
 
 
 @contextlib.contextmanager
