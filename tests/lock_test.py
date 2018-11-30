@@ -16,6 +16,8 @@ from certbot import util
 
 from certbot.tests import util as test_util
 
+from certbot_nginx.tests.nginx_config import construct_nginx_config
+
 
 logger = logging.getLogger(__name__)
 
@@ -99,14 +101,10 @@ def set_up_nginx_dir(root_path):
 
     """
     # Get the root of the git repository
-    repo_root = check_call('git rev-parse --show-toplevel'.split()).strip()
-    conf_script = os.path.join(
-        repo_root, 'certbot-nginx', 'tests', 'boulder-integration.conf.sh')
-    # boulder-integration.conf.sh uses the root environment variable as
-    # the Nginx server root when writing paths
-    os.environ['root'] = root_path
+    config = construct_nginx_config(root_path, os.path.join(root_path, 'webroot'),
+                                    5002, 5001, 8082, '')
     with open(os.path.join(root_path, 'nginx.conf'), 'w') as f:
-        f.write(check_call(['/bin/sh', conf_script]))
+        f.write(config)
     del os.environ['root']
 
 
