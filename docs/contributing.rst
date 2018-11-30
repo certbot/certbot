@@ -359,7 +359,10 @@ Steps:
 4. Run ``tox --skip-missing-interpreters`` to run the entire test suite
    including coverage. The ``--skip-missing-interpreters`` argument ignores
    missing versions of Python needed for running the tests. Fix any errors.
-5. Submit the PR.
+5. Submit the PR. Once your PR is open, please do not force push to the branch
+   containing your pull request to squash or amend commits. We use `squash
+   merges <https://github.com/blog/2141-squash-your-commits>`_ on PRs and
+   rewriting commits makes changes harder to track between reviews.
 6. Did your tests pass on Travis? If they didn't, fix any errors.
 
 Asking for help

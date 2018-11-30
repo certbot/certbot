@@ -280,7 +280,29 @@ CheckCertCount() {
     fi
 }
 
+CheckGroup() {
+    group_mode() { echo $((0`stat -c %a $1` & 070)); }
+    group_owner() { echo `stat -c %G $1`; }
+    if [ `group_mode $1` -ne `group_mode $2` ] ; then
+        echo "Expected group permission `group_mode $1`, got `group_mode $2` on file $2"
+        exit 1
+    fi
+    if [ `group_owner $1` != `group_owner $2` ] ; then
+        echo "Expected group owner `group_owner $1`, got `group_owner $2` on file $2"
+        exit 1
+    fi
+}
+
+CheckOthersPermission() {
+    other_permission=$((0`stat -c %a $1` & 07))
+    if [ $other_permission -ne 0 ] ; then
+        echo "Expected file $1 not to be accessible by others"
+        exit 1
+    fi
+}
+
 CheckCertCount "le.wtf" 1
+
 # This won't renew (because it's not time yet)
 common_no_force_renew renew
 CheckCertCount "le.wtf" 1
@@ -293,6 +315,11 @@ rm -rf "$renewal_hooks_root"
 # renew using HTTP manual auth hooks
 common renew --cert-name le.wtf --authenticator manual
 CheckCertCount "le.wtf" 2
+
+CheckOthersPermission "${root}/conf/archive/le.wtf/privkey1.pem"
+CheckOthersPermission "${root}/conf/archive/le.wtf/privkey2.pem"
+CheckGroup "${root}/conf/archive/le.wtf/privkey1.pem" "${root}/conf/archive/le.wtf/privkey2.pem"
+chmod 0444 "${root}/conf/archive/le.wtf/privkey2.pem"
 
 # test renewal with no executables in hook directories
 for hook_dir in $renewal_hooks_dirs; do
@@ -310,6 +337,9 @@ CreateDirHooks
 sed -i "4arenew_before_expiry = 4 years" "$root/conf/renewal/le.wtf.conf"
 common_no_force_renew renew --rsa-key-size 2048 --no-directory-hooks
 CheckCertCount "le.wtf" 3
+CheckGroup "${root}/conf/archive/le.wtf/privkey2.pem" "${root}/conf/archive/le.wtf/privkey3.pem"
+CheckOthersPermission "${root}/conf/archive/le.wtf/privkey3.pem"
+
 if [ -s "$HOOK_DIRS_TEST" ]; then
     echo "Directory hooks were executed with --no-directory-hooks!" >&2
     exit 1
