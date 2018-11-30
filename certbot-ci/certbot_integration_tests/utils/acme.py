@@ -253,6 +253,10 @@ networks:
                     file.write(data)
             except UnicodeDecodeError:
                 pass
+
+    os.rename(join(workspace, 'boulder/test/rate-limit-policies-b.yml'),
+              join(workspace, 'boulder/test/rate-limit-policies.yml'))
+
     subprocess.call(['docker-compose', '--project-name', 'gw{0}'.format(index), 'down'],
                     stdout=FNULL, stderr=FNULL)
     subprocess.check_call(['docker-compose', '--project-name', 'gw{0}'.format(index),

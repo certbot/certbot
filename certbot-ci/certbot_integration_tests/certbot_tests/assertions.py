@@ -30,7 +30,7 @@ def assert_equals_group_permissions(file1, file2):
     mode_file2 = os.stat(file2).st_mode & 0o777
 
     # Check the group permissions
-    assert mode_file1 & 0o700 == mode_file2 & 0o700
+    assert mode_file1 & 0o070 == mode_file2 & 0o070
 
     group_owner_file1 = grp.getgrgid(os.stat(file1).st_gid)[0]
     group_owner_file2 = grp.getgrgid(os.stat(file2).st_gid)[0]
