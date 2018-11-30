@@ -105,7 +105,6 @@ def set_up_nginx_dir(root_path):
                                     5002, 5001, 8082, '')
     with open(os.path.join(root_path, 'nginx.conf'), 'w') as f:
         f.write(config)
-    del os.environ['root']
 
 
 def set_up_command(config_dir, logs_dir, work_dir, nginx_dir):
