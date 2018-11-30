@@ -685,7 +685,9 @@ class NginxConfigurator(common.Installer):
 
     def _has_certbot_redirect(self, vhost, domain):
         test_redirect_block = _test_block_from_block(_redirect_block_for_domain(domain))
-        return vhost.contains_list(test_redirect_block)
+        redirect_block_for_server = [['\n    ', 'return', '301', 'https://$host$request_uri']]
+        test_custom_redirect_block = _test_block_from_block(redirect_block_for_server)
+        return vhost.contains_list(test_redirect_block) or vhost.contains_list(test_custom_redirect_block)
 
     def _set_http_header(self, domain, header_substring):
         """Enables header identified by header_substring on domain.
@@ -766,7 +768,7 @@ class NginxConfigurator(common.Installer):
         """Redirect all equivalent HTTP traffic to ssl_vhost.
 
         If the vhost is listening plaintextishly, separate out the
-        relevant directives into a new server block and add a rewrite directive.
+        relevant directives into a new server block and add a return 301 directive.
 
         .. note:: This function saves the configuration
 
@@ -793,7 +795,7 @@ class NginxConfigurator(common.Installer):
         """Redirect all equivalent HTTP traffic to ssl_vhost.
 
         If the vhost is listening plaintextishly, separate out the
-        relevant directives into a new server block and add a rewrite directive.
+        relevant directives into a new server block and add a return 301 directive.
 
         .. note:: This function saves the configuration
 
