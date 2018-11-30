@@ -1144,7 +1144,8 @@ class RenewableCert(object):
             # If the previous privkey in this lineage has an existing gid or group mode > 0,
             # let's keep those.
             group_mode = stat.S_IMODE(os.stat(old_privkey).st_mode) & \
-                (stat.S_IRGRP | stat.S_IWGRP | stat.S_IXGRP)
+                (stat.S_IRGRP | stat.S_IWGRP | stat.S_IXGRP | \
+                 stat.S_IROTH)
             mode = BASE_PRIVKEY_MODE | group_mode
             os.chown(target["privkey"], -1, os.stat(old_privkey).st_gid)
             os.chmod(target["privkey"], mode)

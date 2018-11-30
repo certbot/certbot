@@ -565,12 +565,12 @@ class RenewableCertTests(BaseRenewableCertTest):
         # If new key, permissions should be rest to 600 + preserved group
         self.test_rc.save_successor(2, b"newcert", b"new_privkey", b"new chain", self.config)
         self.assertTrue(compat.compare_file_modes(
-            os.stat(self.test_rc.version("privkey", 3)).st_mode, 0o640))
+            os.stat(self.test_rc.version("privkey", 3)).st_mode, 0o644))
         # If permissions reverted, next renewal will also revert permissions of new key
         os.chmod(self.test_rc.version("privkey", 3), 0o404)
         self.test_rc.save_successor(3, b"newcert", b"new_privkey", b"new chain", self.config)
         self.assertTrue(compat.compare_file_modes(
-            os.stat(self.test_rc.version("privkey", 4)).st_mode, 0o600))
+            os.stat(self.test_rc.version("privkey", 4)).st_mode, 0o604))
 
     @test_util.broken_on_windows
     @mock.patch("certbot.storage.relevant_values")
