@@ -749,6 +749,7 @@ class HelpfulArgumentParser(object):
         :param dict **kwargs: various argparse settings for this argument
 
         """
+
         if isinstance(topics, list):
             # if this flag can be listed in multiple sections, try to pick the one
             # that the user has asked for help about
