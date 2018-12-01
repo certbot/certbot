@@ -264,7 +264,7 @@ if [ "$RELEASE_BRANCH" = candidate-"$version" ] ; then
     SetVersion "$nextversion".dev0
     letsencrypt-auto-source/build.py
     git add letsencrypt-auto-source/letsencrypt-auto
-    for pkg_dir in $SUBPKGS_NO_CERTBOT certbot-compatibility-test .
+    for pkg_dir in $SUBPKGS_NO_CERTBOT .
     do
       if [ -f "$pkg_dir/local-oldest-requirements.txt" ]; then
         sed -i 's/-e acme[dev]/acme[dev]==$version/' "$pkg_dir/local-oldest-requirements.txt"
