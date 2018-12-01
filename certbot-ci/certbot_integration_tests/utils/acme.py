@@ -7,6 +7,7 @@ import re
 import contextlib
 import multiprocessing
 import shutil
+import sys
 from os.path import join, exists
 
 from certbot_integration_tests.utils import misc
@@ -15,7 +16,13 @@ PEBBLE_VERSION = '2018-11-02'
 BOULDER_VERSION = '2018-11-19'
 TRAVIS_GO_VERSION = '1.11.2'
 
-FNULL = open(os.devnull, 'wb')
+
+def launch_command(command, cwd=os.getcwd()):
+    try:
+        subprocess.check_output(command, stderr=subprocess.STDOUT, cwd=cwd)
+    except subprocess.CalledProcessError as e:
+        sys.stderr.write(e.output)
+        raise
 
 
 @contextlib.contextmanager
@@ -45,16 +52,12 @@ def _prepare_repositories(repositories_path):
 
     try:
         if not exists(boulder_repo):
-            subprocess.check_call(['git', 'clone', 'https://github.com/letsencrypt/boulder',
-                                   '--single-branch', '--depth=1', boulder_repo],
-                                  stdout=FNULL, stderr=FNULL)
+            launch_command(['git', 'clone', 'https://github.com/letsencrypt/boulder',
+                            '--single-branch', '--depth=1', boulder_repo])
 
-        subprocess.check_call(['git', 'clean', '-fd'],
-                              cwd=boulder_repo, stdout=FNULL, stderr=FNULL)
-        subprocess.check_call(['git', 'checkout', '-B', 'master', 'origin/master'],
-                              cwd=boulder_repo, stdout=FNULL, stderr=FNULL)
-        subprocess.check_call(['git', 'pull'],
-                              cwd=boulder_repo, stdout=FNULL, stderr=FNULL)
+        launch_command(['git', 'clean', '-fd'], cwd=boulder_repo)
+        launch_command(['git', 'checkout', '-B', 'master', 'origin/master'], cwd=boulder_repo)
+        launch_command(['git', 'pull'], cwd=boulder_repo)
         print('=> GIT repositories ready.')
         yield (boulder_repo)
     except (OSError, subprocess.CalledProcessError):
@@ -70,9 +73,8 @@ def _setup_one_node(index, node, acme_type, acme_server, pool, repos):
 
         try:
             if os.path.isfile(join(workspace, 'docker-compose.yml')):
-                subprocess.check_call(['docker-compose', '-p',
-                                       'gw{0}'.format(index), 'down'],
-                                      cwd=workspace, stdout=FNULL, stderr=FNULL)
+                launch_command(['docker-compose', '-p', 'gw{0}'.format(index), 'down'],
+                               cwd=workspace)
         except subprocess.CalledProcessError:
             pass
         finally:
@@ -257,11 +259,8 @@ networks:
     os.rename(join(workspace, 'boulder/test/rate-limit-policies-b.yml'),
               join(workspace, 'boulder/test/rate-limit-policies.yml'))
 
-    subprocess.call(['docker-compose', '--project-name', 'gw{0}'.format(index), 'down'],
-                    stdout=FNULL, stderr=FNULL)
-    subprocess.check_call(['docker-compose', '--project-name', 'gw{0}'.format(index),
-                           'up', '--force-recreate', '-d', 'boulder'],
-                          cwd=workspace, stdout=FNULL, stderr=FNULL)
+    launch_command(['docker-compose', '--project-name', 'gw{0}'.format(index),
+                    'up', '--force-recreate', '-d', 'boulder'], cwd=workspace)
 
     return {
         'directory_url': 'http://localhost:{0}/directory'.format(
@@ -358,11 +357,8 @@ networks:
     with open(join(workspace, 'pebble-config.json'), 'w') as file:
         file.write(data)
 
-    subprocess.call(['docker-compose', '--project-name', 'gw{0}'.format(index), 'down'],
-                    stdout=FNULL, stderr=FNULL)
-    subprocess.check_call(['docker-compose', '--project-name', 'gw{0}'.format(index),
-                           'up', '--force-recreate', '-d', 'pebble'],
-                          cwd=workspace, stdout=FNULL, stderr=FNULL)
+    launch_command(['docker-compose', '--project-name', 'gw{0}'.format(index),
+                    'up', '--force-recreate', '-d', 'pebble'], cwd=workspace)
 
     return {
         'directory_url': 'https://localhost:{0}/dir'.format(directory_v2_port),
