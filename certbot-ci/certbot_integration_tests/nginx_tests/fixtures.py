@@ -9,7 +9,7 @@ import pytest
 import ssl
 
 from certbot_integration_tests.utils import misc
-from certbot_nginx.tests.nginx_config import construct_nginx_config
+from certbot_integration_tests.nginx_tests.nginx_config import construct_nginx_config
 
 
 @pytest.fixture

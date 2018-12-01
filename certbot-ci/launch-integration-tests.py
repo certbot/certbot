@@ -80,7 +80,7 @@ def prepare_pytest_command(args):
         cover.append('--cov=certbot_nginx')
 
         try:
-            subprocess.check_call(['nginx', '-v'], stdout=acme.FNULL, stderr=acme.FNULL)
+            subprocess.check_output(['nginx', '-v'], stderr=subprocess.STDOUT)
         except (subprocess.CalledProcessError, OSError):
             raise ValueError('Error: nginx is required in PATH to launch the nginx integration tests, '
                              'but is not installed or not available for current user.')
@@ -117,13 +117,13 @@ def main(cli_args=sys.argv[1:]):
     args = main_parser.parse_args(cli_args)
 
     try:
-        subprocess.check_call(['docker', '-v'], stdout=acme.FNULL, stderr=acme.FNULL)
+        subprocess.check_output(['docker', '-v'], stderr=subprocess.STDOUT)
     except (subprocess.CalledProcessError, OSError):
         raise ValueError('Error: docker is required in PATH to launch the integration tests, '
                          'but is not installed or not available for current user.')
 
     try:
-        subprocess.check_call(['docker-compose', '-v'], stdout=acme.FNULL, stderr=acme.FNULL)
+        subprocess.check_output(['docker-compose', '-v'], stderr=subprocess.STDOUT)
     except (subprocess.CalledProcessError, OSError):
         raise ValueError('Error: docker-compose is required in PATH to launch the integration tests, '
                          'but is not installed or not available for current user.')

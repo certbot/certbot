@@ -16,9 +16,6 @@ from certbot import util
 
 from certbot.tests import util as test_util
 
-from certbot_nginx.tests.nginx_config import construct_nginx_config
-
-
 logger = logging.getLogger(__name__)
 
 
@@ -101,6 +98,11 @@ def set_up_nginx_dir(root_path):
 
     """
     # Get the root of the git repository
+    repo_root = check_call('git rev-parse --show-toplevel'.split()).strip()
+    # We add manually nginx_config module, because certbot_integration_tests may not be installed.
+    conf_path = os.path.join(repo_root, 'certbot-ci', 'certbot_integration_tests', 'nginx_tests')
+    sys.path.append(conf_path)
+    from nginx_config import construct_nginx_config
     config = construct_nginx_config(root_path, os.path.join(root_path, 'webroot'),
                                     5002, 5001, 8082, '')
     with open(os.path.join(root_path, 'nginx.conf'), 'w') as f:
