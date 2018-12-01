@@ -1,3 +1,4 @@
+"""General test purpose nginx configuration generator."""
 import getpass
 
 
