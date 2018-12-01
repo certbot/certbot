@@ -169,7 +169,8 @@ pip freeze | tee $kgs
 pip install pytest
 for module in $subpkgs_modules ; do
     echo testing $module
-    pytest --pyargs $module
+    # use an empty configuration file rather than the one in the repo root
+    pytest -c <(echo '') --pyargs $module
 done
 cd ~-
 
