@@ -24,7 +24,7 @@ Despite us having broken lockstep, we are continuing to release new versions of
 all Certbot components during releases for the time being, however, the only
 package with changes other than its version number was:
 
-*
+* Only depend on imgconverter extension for Sphinx >= 1.6
 
 More details about these changes can be found on our GitHub repo:
 https://github.com/certbot/certbot/milestone/62?closed=1
@@ -57,7 +57,6 @@ https://github.com/certbot/certbot/milestone/62?closed=1
 * The grammar used by Augeas parser in Apache plugin was updated to fix various parsing errors.
 * The CloudXNS, DNSimple, DNS Made Easy, Gehirn, Linode, LuaDNS, NS1, OVH, and
   Sakura Cloud DNS plugins are now compatible with Lexicon 3.0+.
-* Only depend on imgconverter extension for Sphinx >= 1.6
 
 Despite us having broken lockstep, we are continuing to release new versions of
 all Certbot components during releases for the time being, however, the only
@@ -80,7 +79,6 @@ package with changes other than its version number was:
 
 More details about these changes can be found on our GitHub repo:
 https://github.com/certbot/certbot/milestone/59?closed=1
->>>>>>> master
 
 ## 0.27.1 - 2018-09-06
 
