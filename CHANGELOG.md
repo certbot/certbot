@@ -20,6 +20,7 @@ Certbot adheres to [Semantic Versioning](http://semver.org/).
 * Fix ranking of vhosts in Nginx so that all port-matching vhosts come first
 * Correct OVH integration tests on machines without internet access.
 * Stop caching the results of ipv6_info in http01.py
+* Only depend on imgconverter extension for Sphinx >= 1.6
 
 ## 0.27.1 - 2018-09-06
 
