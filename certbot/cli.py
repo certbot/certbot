@@ -859,7 +859,9 @@ class HelpfulArgumentParser(object):
         if chosen_topic == "everything":
             chosen_topic = "run"
         if chosen_topic == "all":
-            return dict([(t, True) for t in self.help_topics])
+            # Addition of condition closes #6209 (removal of duplicate route53 option).
+            return dict([(t, True) if t != 'certbot-route53:auth' else (t, False)
+                         for t in self.help_topics])
         elif not chosen_topic:
             return dict([(t, False) for t in self.help_topics])
         else:
