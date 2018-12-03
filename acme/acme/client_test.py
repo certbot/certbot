@@ -284,6 +284,37 @@ class BackwardsCompatibleClientV2Test(ClientTestBase):
             client.update_registration(mock.sentinel.regr, None)
         mock_client().update_registration.assert_called_once_with(mock.sentinel.regr, None)
 
+    # newNonce present means it will pick acme_version 2
+    def test_external_account_required_true(self):
+        self.response.json.return_value = messages.Directory({
+            'newNonce': 'http://letsencrypt-test.com/acme/new-nonce',
+            'meta': messages.Directory.Meta(external_account_required=True),
+        }).to_json()
+
+        client = self._init()
+
+        self.assertTrue(client.external_account_required())
+
+    # newNonce present means it will pick acme_version 2
+    def test_external_account_required_false(self):
+        self.response.json.return_value = messages.Directory({
+            'newNonce': 'http://letsencrypt-test.com/acme/new-nonce',
+            'meta': messages.Directory.Meta(external_account_required=False),
+        }).to_json()
+
+        client = self._init()
+
+        self.assertFalse(client.external_account_required())
+
+    def test_external_account_required_false_v1(self):
+        self.response.json.return_value = messages.Directory({
+            'meta': messages.Directory.Meta(external_account_required=False),
+        }).to_json()
+
+        client = self._init()
+
+        self.assertFalse(client.external_account_required())
+
 
 class ClientTest(ClientTestBase):
     """Tests for acme.client.Client."""
@@ -822,6 +853,23 @@ class ClientV2Test(ClientTestBase):
 
         self.response.json.return_value = self.regr.body.update(
             contact=()).to_json()
+
+    def test_external_account_required_true(self):
+        self.client.directory = messages.Directory({
+            'meta': messages.Directory.Meta(external_account_required=True)
+        })
+
+        self.assertTrue(self.client.external_account_required())
+
+    def test_external_account_required_false(self):
+        self.client.directory = messages.Directory({
+            'meta': messages.Directory.Meta(external_account_required=False)
+        })
+
+        self.assertFalse(self.client.external_account_required())
+
+    def test_external_account_required_default(self):
+        self.assertFalse(self.client.external_account_required())
 
     def test_post_as_get(self):
         with mock.patch('acme.client.ClientV2._authzr_from_response') as mock_client:

@@ -945,6 +945,18 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              "name. In the case of a name collision it will append a number "
              "like 0001 to the file path name. (default: Ask)")
     helpful.add(
+        [None, "run", "certonly", "register"],
+        "--eab-kid", dest="eab_kid",
+        metavar="EAB_KID",
+        help="Key Identifier for External Account Binding"
+    )
+    helpful.add(
+        [None, "run", "certonly", "register"],
+        "--eab-hmac-key", dest="eab_hmac_key",
+        metavar="EAB_HMAC_KEY",
+        help="HMAC key for External Account Binding"
+    )
+    helpful.add(
         [None, "run", "certonly", "manage", "delete", "certificates",
          "renew", "enhance"], "--cert-name", dest="certname",
         metavar="CERTNAME", default=flag_default("certname"),
