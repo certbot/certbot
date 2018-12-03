@@ -283,9 +283,9 @@ CheckCertCount() {
 CheckPermissions() {
 # Args: <filepath_1> <filepath_2> <mask>
 # Checks mode of two files match under <mask>
-    masked_mode() { echo $((0`stat -c %a $1` & 0`$3`)); }
-    if [ `masked_mode $1` -ne `masked_mode $2` ] ; then
-        echo "With $3 mask, expected mode `masked_mode $1`, got `masked_mode $2` on file $2"
+    masked_mode() { echo $((0`stat -c %a $1` & 0`$2`)); }
+    if [ `masked_mode $1 $3` -ne `masked_mode $2 $3` ] ; then
+        echo "With $3 mask, expected mode `masked_mode $1 $3`, got `masked_mode $2 $3` on file $2"
         exit 1
     fi
 }
