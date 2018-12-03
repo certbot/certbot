@@ -267,10 +267,10 @@ if [ "$RELEASE_BRANCH" = candidate-"$version" ] ; then
     for pkg_dir in $SUBPKGS_NO_CERTBOT .
     do
       if [ -f "$pkg_dir/local-oldest-requirements.txt" ]; then
-        sed -i 's/-e acme[dev]/acme[dev]==$version/' "$pkg_dir/local-oldest-requirements.txt"
-        sed -i 's/-e acme/acme[dev]==$version/' "$pkg_dir/local-oldest-requirements.txt"
-        sed -i 's/-e .[dev]/certbot[dev]==$version/' "$pkg_dir/local-oldest-requirements.txt"
-        sed -i 's/-e ./certbot[dev]==$version/' "$pkg_dir/local-oldest-requirements.txt"
+        sed -i s/-e "acme[dev]/acme[dev]==$version/" "$pkg_dir/local-oldest-requirements.txt"
+        sed -i s/-e "acme/acme[dev]==$version/" "$pkg_dir/local-oldest-requirements.txt"
+        sed -i s/-e ".[dev]/certbot[dev]==$version/" "$pkg_dir/local-oldest-requirements.txt"
+        sed -i s/-e "./certbot[dev]==$version/" "$pkg_dir/local-oldest-requirements.txt"
         git add "$pkg_dir/local-oldest-requirements.txt"
       fi
     done
