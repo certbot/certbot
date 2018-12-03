@@ -121,7 +121,8 @@ class AuthHandler(object):
 
     def _has_challenges(self, aauthzrs):
         """Do we have any challenges to perform?"""
-        return any(aauthzr.achalls for aauthzr in aauthzrs)
+        return any(aauthzr.achalls for aauthzr in aauthzrs
+                   if aauthzr.authzr.body.status != messages.STATUS_VALID)
 
     def _solve_challenges(self, aauthzrs):
         """Get Responses for challenges from authenticators."""
