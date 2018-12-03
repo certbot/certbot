@@ -33,6 +33,7 @@ logger = logging.getLogger(__name__)
 # https://urllib3.readthedocs.org/en/latest/security.html#insecureplatformwarning
 if sys.version_info < (2, 7, 9):  # pragma: no cover
     try:
+        # pylint: disable=no-member
         requests.packages.urllib3.contrib.pyopenssl.inject_into_urllib3()  # type: ignore
     except AttributeError:
         import urllib3.contrib.pyopenssl  # pylint: disable=import-error
@@ -89,6 +90,8 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
 
         """
         kwargs.setdefault('acme_version', self.acme_version)
+        if hasattr(self.directory, 'newNonce'):
+            kwargs.setdefault('new_nonce_url', getattr(self.directory, 'newNonce'))
         return self.net.post(*args, **kwargs)
 
     def update_registration(self, regr, update=None):
@@ -197,22 +200,6 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
 
         return datetime.datetime.now() + datetime.timedelta(seconds=seconds)
 
-    def poll(self, authzr):
-        """Poll Authorization Resource for status.
-
-        :param authzr: Authorization Resource
-        :type authzr: `.AuthorizationResource`
-
-        :returns: Updated Authorization Resource and HTTP response.
-
-        :rtype: (`.AuthorizationResource`, `requests.Response`)
-
-        """
-        response = self.net.get(authzr.uri)
-        updated_authzr = self._authzr_from_response(
-            response, authzr.body.identifier, authzr.uri)
-        return updated_authzr, response
-
     def _revoke(self, cert, rsn, url):
         """Revoke certificate.
 
@@ -233,6 +220,7 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
         if response.status_code != http_client.OK:
             raise errors.ClientError(
                 'Successful revocation must return HTTP OK status')
+
 
 class Client(ClientBase):
     """ACME client for a v1 API.
@@ -385,6 +373,22 @@ class Client(ClientBase):
             uri=uri, authzrs=authzrs, cert_chain_uri=cert_chain_uri,
             body=jose.ComparableX509(OpenSSL.crypto.load_certificate(
                 OpenSSL.crypto.FILETYPE_ASN1, response.content)))
+
+    def poll(self, authzr):
+        """Poll Authorization Resource for status.
+
+        :param authzr: Authorization Resource
+        :type authzr: `.AuthorizationResource`
+
+        :returns: Updated Authorization Resource and HTTP response.
+
+        :rtype: (`.AuthorizationResource`, `requests.Response`)
+
+        """
+        response = self.net.get(authzr.uri)
+        updated_authzr = self._authzr_from_response(
+            response, authzr.body.identifier, authzr.uri)
+        return updated_authzr, response
 
     def poll_and_request_issuance(
             self, csr, authzrs, mintime=5, max_attempts=10):
@@ -649,12 +653,28 @@ class ClientV2(ClientBase):
         body = messages.Order.from_json(response.json())
         authorizations = []
         for url in body.authorizations:
-            authorizations.append(self._authzr_from_response(self.net.get(url), uri=url))
+            authorizations.append(self._authzr_from_response(self._post_as_get(url), uri=url))
         return messages.OrderResource(
             body=body,
             uri=response.headers.get('Location'),
             authorizations=authorizations,
             csr_pem=csr_pem)
+
+    def poll(self, authzr):
+        """Poll Authorization Resource for status.
+
+        :param authzr: Authorization Resource
+        :type authzr: `.AuthorizationResource`
+
+        :returns: Updated Authorization Resource and HTTP response.
+
+        :rtype: (`.AuthorizationResource`, `requests.Response`)
+
+        """
+        response = self._post_as_get(authzr.uri)
+        updated_authzr = self._authzr_from_response(
+            response, authzr.body.identifier, authzr.uri)
+        return updated_authzr, response
 
     def poll_and_finalize(self, orderr, deadline=None):
         """Poll authorizations and finalize the order.
@@ -679,7 +699,7 @@ class ClientV2(ClientBase):
         responses = []
         for url in orderr.body.authorizations:
             while datetime.datetime.now() < deadline:
-                authzr = self._authzr_from_response(self.net.get(url), uri=url)
+                authzr = self._authzr_from_response(self._post_as_get(url), uri=url)
                 if authzr.body.status != messages.STATUS_PENDING:
                     responses.append(authzr)
                     break
@@ -714,12 +734,12 @@ class ClientV2(ClientBase):
         self._post(orderr.body.finalize, wrapped_csr)
         while datetime.datetime.now() < deadline:
             time.sleep(1)
-            response = self.net.get(orderr.uri)
+            response = self._post_as_get(orderr.uri)
             body = messages.Order.from_json(response.json())
             if body.error is not None:
                 raise errors.IssuanceError(body.error)
             if body.certificate is not None:
-                certificate_response = self.net.get(body.certificate,
+                certificate_response = self._post_as_get(body.certificate,
                                                     content_type=DER_CONTENT_TYPE).text
                 return orderr.update(body=body, fullchain_pem=certificate_response)
         raise errors.TimeoutError()
@@ -736,6 +756,32 @@ class ClientV2(ClientBase):
 
         """
         return self._revoke(cert, rsn, self.directory['revokeCert'])
+
+    def _post_as_get(self, *args, **kwargs):
+        """
+        Send GET request using the POST-as-GET protocol if needed.
+        The request will be first issued using POST-as-GET for ACME v2. If the ACME CA servers do
+        not support this yet and return an error, request will be retried using GET.
+        For ACME v1, only GET request will be tried, as POST-as-GET is not supported.
+        :param args:
+        :param kwargs:
+        :return:
+        """
+        if self.acme_version >= 2:
+            # We add an empty payload for POST-as-GET requests
+            new_args = args[:1] + (None,) + args[1:]
+            try:
+                return self._post(*new_args, **kwargs)  # pylint: disable=star-args
+            except messages.Error as error:
+                if error.code == 'malformed':
+                    logger.debug('Error during a POST-as-GET request, '
+                                 'your ACME CA may not support it:\n%s', error)
+                    logger.debug('Retrying request with GET.')
+                else:  # pragma: no cover
+                    raise
+
+        # If POST-as-GET is not supported yet, we use a GET instead.
+        return self.net.get(*args, **kwargs)
 
 
 class BackwardsCompatibleClientV2(object):
@@ -766,12 +812,7 @@ class BackwardsCompatibleClientV2(object):
             self.client = ClientV2(directory, net=net)
 
     def __getattr__(self, name):
-        if name in vars(self.client):
-            return getattr(self.client, name)
-        elif name in dir(ClientBase):
-            return getattr(self.client, name)
-        else:
-            raise AttributeError()
+        return getattr(self.client, name)
 
     def new_account_and_tos(self, regr, check_tos_cb=None):
         """Combined register and agree_tos for V1, new_account for V2
@@ -941,7 +982,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         :rtype: `josepy.JWS`
 
         """
-        jobj = obj.json_dumps(indent=2).encode()
+        jobj = obj.json_dumps(indent=2).encode() if obj else b''
         logger.debug('JWS payload:\n%s', jobj)
         kwargs = {
             "alg": self.alg,
@@ -1106,10 +1147,15 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         else:
             raise errors.MissingNonce(response)
 
-    def _get_nonce(self, url):
+    def _get_nonce(self, url, new_nonce_url):
         if not self._nonces:
             logger.debug('Requesting fresh nonce')
-            self._add_nonce(self.head(url))
+            if new_nonce_url is None:
+                response = self.head(url)
+            else:
+                # request a new nonce from the acme newNonce endpoint
+                response = self._check_response(self.head(new_nonce_url), content_type=None)
+            self._add_nonce(response)
         return self._nonces.pop()
 
     def post(self, *args, **kwargs):
@@ -1130,8 +1176,13 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
 
     def _post_once(self, url, obj, content_type=JOSE_CONTENT_TYPE,
             acme_version=1, **kwargs):
-        data = self._wrap_in_jws(obj, self._get_nonce(url), url, acme_version)
+        try:
+            new_nonce_url = kwargs.pop('new_nonce_url')
+        except KeyError:
+            new_nonce_url = None
+        data = self._wrap_in_jws(obj, self._get_nonce(url, new_nonce_url), url, acme_version)
         kwargs.setdefault('headers', {'Content-Type': content_type})
         response = self._send_request('POST', url, data=data, **kwargs)
+        response = self._check_response(response, content_type=content_type)
         self._add_nonce(response)
-        return self._check_response(response, content_type=content_type)
+        return response

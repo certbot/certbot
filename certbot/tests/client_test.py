@@ -487,7 +487,7 @@ class EnhanceConfigTest(ClientTestCommon):
         self.config.hsts = True
         self._test_with_already_existing()
         self.assertTrue(mock_log.warning.called)
-        self.assertEquals(mock_log.warning.call_args[0][1],
+        self.assertEqual(mock_log.warning.call_args[0][1],
                           'Strict-Transport-Security')
 
     @mock.patch("certbot.client.logger")
@@ -495,7 +495,7 @@ class EnhanceConfigTest(ClientTestCommon):
         self.config.redirect = True
         self._test_with_already_existing()
         self.assertTrue(mock_log.warning.called)
-        self.assertEquals(mock_log.warning.call_args[0][1],
+        self.assertEqual(mock_log.warning.call_args[0][1],
                           'redirect')
 
     def test_no_ask_hsts(self):

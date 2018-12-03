@@ -65,11 +65,18 @@ if [ "$RELEASE_BRANCH" != "candidate-$version" ] ; then
 fi
 git checkout "$RELEASE_BRANCH"
 
+# Update changelog
+sed -i "s/master/$(date +'%Y-%m-%d')/" CHANGELOG.md
+git add CHANGELOG.md
+git diff --cached
+git commit -m "Update changelog for $version release"
+
 for pkg_dir in $SUBPKGS_NO_CERTBOT certbot-compatibility-test .
 do
   sed -i 's/\.dev0//' "$pkg_dir/setup.py"
   git add "$pkg_dir/setup.py"
 done
+
 
 SetVersion() {
     ver="$1"
@@ -162,7 +169,8 @@ pip freeze | tee $kgs
 pip install pytest
 for module in $subpkgs_modules ; do
     echo testing $module
-    pytest --pyargs $module
+    # use an empty configuration file rather than the one in the repo root
+    pytest -c <(echo '') --pyargs $module
 done
 cd ~-
 
@@ -231,6 +239,19 @@ rev="$(git rev-parse --short HEAD)"
 echo tar cJvf $name.$rev.tar.xz $name.$rev
 echo gpg2 -U $RELEASE_GPG_KEY --detach-sign --armor $name.$rev.tar.xz
 cd ~-
+
+# Add master section to CHANGELOG.md
+header=$(head -n 4 CHANGELOG.md)
+body=$(sed s/nextversion/$nextversion/ tools/_changelog_top.txt)
+footer=$(tail -n +5 CHANGELOG.md)
+echo "$header
+
+$body
+
+$footer" > CHANGELOG.md
+git add CHANGELOG.md
+git diff --cached
+git commit -m "Add contents to CHANGELOG.md for next version"
 
 echo "New root: $root"
 echo "Test commands (in the letstest repo):"

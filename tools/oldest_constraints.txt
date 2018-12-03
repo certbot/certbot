@@ -49,3 +49,9 @@ requests[security]==2.4.1
 ConfigArgParse==0.10.0
 funcsigs==0.4
 zope.hookable==4.0.4
+
+# Plugin constraints
+# These aren't necessarily the oldest versions we need to support
+# Tracking at https://github.com/certbot/certbot/issues/6473
+boto3==1.4.7
+botocore==1.7.41
