@@ -67,7 +67,7 @@ class BaseRenewableCertTest(test_util.ConfigTestCase):
             pass
         config_file["archive"] = archive_path
         config_file.filename = os.path.join(self.config.config_dir, "renewal",
-                                       "example.org.conf")
+                                            "example.org.conf")
         config_file.write()
         self.config_file = config_file
 
@@ -87,9 +87,9 @@ class BaseRenewableCertTest(test_util.ConfigTestCase):
         link = getattr(self.test_rc, kind)
         if os.path.lexists(link):
             os.unlink(link)
-        os.symlink(os.path.join(os.path.pardir, os.path.pardir, "archive",
-                                "example.org", "{0}{1}.pem".format(kind, ver)),
-                   link)
+        target = os.path.join(self.config.config_dir, "archive",
+                              "example.org", "{0}{1}.pem".format(kind, ver))
+        os.symlink(target, link)
         with open(link, "wb") as f:
             f.write(kind.encode('ascii') if value is None else value)
         if kind == "privkey":
@@ -568,8 +568,8 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertTrue(self.test_rc.version("privkey", 4), 0o600)
 
     @mock.patch("certbot.storage.relevant_values")
-    @mock.patch("certbot.storage.os.chown")
-    def test_save_successor_maintains_gid(self, mock_chown, mock_rv):
+    @mock.patch("certbot.storage.security.copy_ownership")
+    def test_save_successor_maintains_gid(self, mock_ownership, mock_rv):
         # Mock relevant_values() to claim that all values are relevant here
         # (to avoid instantiating parser)
         mock_rv.side_effect = lambda x: x
@@ -577,9 +577,9 @@ class RenewableCertTests(BaseRenewableCertTest):
             self._write_out_kind(kind, 1)
         self.test_rc.update_all_links_to(1)
         self.test_rc.save_successor(1, b"newcert", None, b"new chain", self.config)
-        self.assertFalse(mock_chown.called)
+        self.assertFalse(mock_ownership.called)
         self.test_rc.save_successor(2, b"newcert", b"new_privkey", b"new chain", self.config)
-        self.assertTrue(mock_chown.called)
+        self.assertTrue(mock_ownership.called)
 
     def _test_relevant_values_common(self, values):
         defaults = dict((option, cli.flag_default(option))

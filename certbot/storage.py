@@ -18,7 +18,7 @@ from certbot import crypto_util
 from certbot import errors
 from certbot import error_handler
 from certbot import util
-from certbot.compat import os
+from certbot.compat import os, security
 from certbot.plugins import common as plugins_common
 from certbot.plugins import disco as plugins_disco
 
@@ -1144,7 +1144,7 @@ class RenewableCert(object):
             group_mode = stat.S_IMODE(os.stat(old_privkey).st_mode) & \
                 (stat.S_IRGRP | stat.S_IWGRP | stat.S_IXGRP)
             mode = BASE_PRIVKEY_MODE | group_mode
-            os.chown(target["privkey"], -1, os.stat(old_privkey).st_gid)
+            security.copy_ownership(old_privkey, target["privkey"], user=False, group=True)
             os.chmod(target["privkey"], mode)
 
         # Save everything else

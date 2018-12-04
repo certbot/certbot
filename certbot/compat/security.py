@@ -71,21 +71,24 @@ def take_ownership(file_path, group=False):
         _take_win_ownership(file_path)
 
 
-def copy_ownership(src, dst, group=False):
-    # type: (Union[str, unicode], Union[str, unicode], bool) -> None
+def copy_ownership(src, dst, user=True, group=False):
+    # type: (Union[str, unicode], Union[str, unicode], bool, bool) -> None
     """
     Copy ownership (user and optionally group) from the source to the destination,
     in compatible way for Linux and Windows.
 
     :param str src: Path of the source file
-    :param str src: Path of the destination file
-    :param bool group: Copy also group (False by default)
+    :param str dst: Path of the destination file
+    :param bool user: Copy user (True by default)
+    :param bool group: Copy group (False by default)
     """
     if not win32security:
         stats = os.stat(src)
+        user_id = stats.st_uid if user else -1
         group_id = stats.st_gid if group else -1
-        os.chown(dst, stats.st_uid, group_id)
-    else:
+        os.chown(dst, user_id, group_id)
+    elif user:
+        # There is no group handling in Windows
         _copy_win_ownership(src, dst)
 
 
@@ -97,7 +100,7 @@ def check_mode(file_path, mode):
     the security model.
 
     :param str file_path: Path of the file
-    :param mode int: POSIX mode to test
+    :param int mode: POSIX mode to test
     :rtype: bool
     :return: True if the POSIX mode matches the file permissions
     """
@@ -141,7 +144,10 @@ def check_permissions(file_path, mode):
     """
     return check_owner(file_path) and check_mode(file_path, mode)
 
+
 def _apply_win_mode(file_path, mode):
+    # Resolve symbolic links
+    file_path = file_path if not os.path.islink(file_path) else os.readlink(file_path)
     # Get owner sid of the file
     security = win32security.GetFileSecurity(file_path, win32security.OWNER_SECURITY_INFORMATION)
     user = security.GetSecurityDescriptorOwner()

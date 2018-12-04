@@ -206,9 +206,14 @@ def safe_open(path, mode="w", chmod=None, buffering=None):
     fdopen_args = ()  # type: Union[Tuple[()], Tuple[int]]
     if buffering is not None:
         fdopen_args = (buffering,)
-    return os.fdopen(
+    file_handle = os.fdopen(
         os.open(path, os.O_CREAT | os.O_EXCL | os.O_RDWR, *open_args),
         mode, *fdopen_args)
+    # Apply now the security model (required for Windows)
+    if chmod is not None:
+        security.apply_mode(path, chmod)
+
+    return file_handle
 
 
 def _unique_file(path, filename_pat, count, chmod, mode):
