@@ -1,4 +1,5 @@
 """Tests for acme.client."""
+# pylint: disable=too-many-lines
 import copy
 import datetime
 import json
@@ -282,6 +283,37 @@ class BackwardsCompatibleClientV2Test(ClientTestBase):
             client = self._init()
             client.update_registration(mock.sentinel.regr, None)
         mock_client().update_registration.assert_called_once_with(mock.sentinel.regr, None)
+
+    # newNonce present means it will pick acme_version 2
+    def test_external_account_required_true(self):
+        self.response.json.return_value = messages.Directory({
+            'newNonce': 'http://letsencrypt-test.com/acme/new-nonce',
+            'meta': messages.Directory.Meta(external_account_required=True),
+        }).to_json()
+
+        client = self._init()
+
+        self.assertTrue(client.external_account_required())
+
+    # newNonce present means it will pick acme_version 2
+    def test_external_account_required_false(self):
+        self.response.json.return_value = messages.Directory({
+            'newNonce': 'http://letsencrypt-test.com/acme/new-nonce',
+            'meta': messages.Directory.Meta(external_account_required=False),
+        }).to_json()
+
+        client = self._init()
+
+        self.assertFalse(client.external_account_required())
+
+    def test_external_account_required_false_v1(self):
+        self.response.json.return_value = messages.Directory({
+            'meta': messages.Directory.Meta(external_account_required=False),
+        }).to_json()
+
+        client = self._init()
+
+        self.assertFalse(client.external_account_required())
 
 
 class ClientTest(ClientTestBase):
@@ -665,7 +697,7 @@ class ClientTest(ClientTestBase):
     def test_revocation_payload(self):
         obj = messages.Revocation(certificate=self.certr.body, reason=self.rsn)
         self.assertTrue('reason' in obj.to_partial_json().keys())
-        self.assertEquals(self.rsn, obj.to_partial_json()['reason'])
+        self.assertEqual(self.rsn, obj.to_partial_json()['reason'])
 
     def test_revoke_bad_status_raises_error(self):
         self.response.status_code = http_client.METHOD_NOT_ALLOWED
@@ -730,9 +762,10 @@ class ClientV2Test(ClientTestBase):
         authz_response2 = self.response
         authz_response2.json.return_value = self.authz2.to_json()
         authz_response2.headers['Location'] = self.authzr2.uri
-        self.net.get.side_effect = (authz_response, authz_response2)
 
-        self.assertEqual(self.client.new_order(CSR_SAN_PEM), self.orderr)
+        with mock.patch('acme.client.ClientV2._post_as_get') as mock_post_as_get:
+            mock_post_as_get.side_effect = (authz_response, authz_response2)
+            self.assertEqual(self.client.new_order(CSR_SAN_PEM), self.orderr)
 
     @mock.patch('acme.client.datetime')
     def test_poll_and_finalize(self, mock_datetime):
@@ -820,6 +853,47 @@ class ClientV2Test(ClientTestBase):
 
         self.response.json.return_value = self.regr.body.update(
             contact=()).to_json()
+
+    def test_external_account_required_true(self):
+        self.client.directory = messages.Directory({
+            'meta': messages.Directory.Meta(external_account_required=True)
+        })
+
+        self.assertTrue(self.client.external_account_required())
+
+    def test_external_account_required_false(self):
+        self.client.directory = messages.Directory({
+            'meta': messages.Directory.Meta(external_account_required=False)
+        })
+
+        self.assertFalse(self.client.external_account_required())
+
+    def test_external_account_required_default(self):
+        self.assertFalse(self.client.external_account_required())
+
+    def test_post_as_get(self):
+        with mock.patch('acme.client.ClientV2._authzr_from_response') as mock_client:
+            mock_client.return_value = self.authzr2
+
+            self.client.poll(self.authzr2)  # pylint: disable=protected-access
+
+            self.client.net.post.assert_called_once_with(
+                self.authzr2.uri, None, acme_version=2,
+                new_nonce_url='https://www.letsencrypt-demo.org/acme/new-nonce')
+            self.client.net.get.assert_not_called()
+
+            class FakeError(messages.Error):  # pylint: disable=too-many-ancestors
+                """Fake error to reproduce a malformed request ACME error"""
+                def __init__(self):  # pylint: disable=super-init-not-called
+                    pass
+                @property
+                def code(self):
+                    return 'malformed'
+            self.client.net.post.side_effect = FakeError()
+
+            self.client.poll(self.authzr2)  # pylint: disable=protected-access
+
+            self.client.net.get.assert_called_once_with(self.authzr2.uri)
 
 
 class MockJSONDeSerializable(jose.JSONDeSerializable):

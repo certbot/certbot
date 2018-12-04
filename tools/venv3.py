@@ -1,12 +1,5 @@
 #!/usr/bin/env python
 # Developer virtualenv setup for Certbot client
-
-from __future__ import absolute_import
-
-import os
-import subprocess
-import sys
-
 import _venv_common
 
 REQUIREMENTS = [
@@ -33,22 +26,11 @@ REQUIREMENTS = [
     '-e certbot-compatibility-test',
 ]
 
-def get_venv_args():
-    with open(os.devnull, 'w') as fnull:
-        where_python3_st_code = subprocess.call(
-            'where python3', shell=True, stdout=fnull, stderr=fnull)
-        command_python3_st_code = subprocess.call(
-            'command -v python3', shell=True, stdout=fnull, stderr=fnull)
-
-    if not where_python3_st_code or not command_python3_st_code:
-        return '--python python3'
-
-    raise ValueError('Couldn\'t find python3 in {0}'.format(os.environ.get('PATH')))
 
 def main():
-    venv_args = get_venv_args()
-
+    venv_args = '--python "{0}"'.format(_venv_common.find_python_executable(3))
     _venv_common.main('venv3', venv_args, REQUIREMENTS)
+
 
 if __name__ == '__main__':
     main()

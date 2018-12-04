@@ -451,6 +451,35 @@ OldVenvExists() {
     [ -n "$OLD_VENV_PATH" -a -f "$OLD_VENV_PATH/bin/letsencrypt" ]
 }
 
+# Given python path, version 1 and version 2, check if version 1 is outdated compared to version 2.
+# An unofficial version provided as version 1 (eg. 0.28.0.dev0) will be treated
+# specifically by printing "UNOFFICIAL". Otherwise, print "OUTDATED" if version 1
+# is outdated, and "UP_TO_DATE" if not.
+# This function relies only on installed python environment (2.x or 3.x) by certbot-auto.
+CompareVersions() {
+    "$1" - "$2" "$3" << "UNLIKELY_EOF"
+import sys
+from distutils.version import StrictVersion
+
+try:
+    current = StrictVersion(sys.argv[1])
+except ValueError:
+    sys.stdout.write('UNOFFICIAL')
+    sys.exit()
+
+try:
+    remote = StrictVersion(sys.argv[2])
+except ValueError:
+    sys.stdout.write('UP_TO_DATE')
+    sys.exit()
+
+if current < remote:
+    sys.stdout.write('OUTDATED')
+else:
+    sys.stdout.write('UP_TO_DATE')
+UNLIKELY_EOF
+}
+
 if [ "$1" = "--le-auto-phase2" ]; then
   # Phase 2: Create venv, install LE, and run.
 
@@ -635,7 +664,12 @@ UNLIKELY_EOF
       error "WARNING: couldn't find Python $MIN_PYTHON_VERSION+ to check for updates."
     elif ! REMOTE_VERSION=`"$LE_PYTHON" "$TEMP_DIR/fetch.py" --latest-version` ; then
       error "WARNING: unable to check for updates."
-    elif [ "$LE_AUTO_VERSION" != "$REMOTE_VERSION" ]; then
+    fi
+
+    LE_VERSION_STATE=`CompareVersions "$LE_PYTHON" "$LE_AUTO_VERSION" "$REMOTE_VERSION"`
+    if [ "$LE_VERSION_STATE" = "UNOFFICIAL" ]; then
+      say "Unofficial certbot-auto version detected, self-upgrade is disabled: $LE_AUTO_VERSION"
+    elif [ "$LE_VERSION_STATE" = "OUTDATED" ]; then
       say "Upgrading certbot-auto $LE_AUTO_VERSION to $REMOTE_VERSION..."
 
       # Now we drop into Python so we don't have to install even more

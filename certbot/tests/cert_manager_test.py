@@ -37,9 +37,8 @@ class BaseCertManagerTest(test_util.ConfigTestCase):
         # We also create a file that isn't a renewal config in the same
         # location to test that logic that reads in all-and-only renewal
         # configs will ignore it and NOT attempt to parse it.
-        junk = open(os.path.join(self.config.renewal_configs_dir, "IGNORE.THIS"), "w")
-        junk.write("This file should be ignored!")
-        junk.close()
+        with open(os.path.join(self.config.renewal_configs_dir, "IGNORE.THIS"), "w") as junk:
+            junk.write("This file should be ignored!")
 
     def _set_up_config(self, domain, custom_archive):
         # TODO: maybe provide NamespaceConfig.make_dirs?
@@ -587,7 +586,7 @@ class GetCertnameTest(unittest.TestCase):
         from certbot import cert_manager
         prompt = "Which certificate would you"
         self.mock_get_utility().menu.return_value = (display_util.OK, 0)
-        self.assertEquals(
+        self.assertEqual(
             cert_manager.get_certnames(
                 self.config, "verb", allow_multiple=False), ['example.com'])
         self.assertTrue(
@@ -601,11 +600,11 @@ class GetCertnameTest(unittest.TestCase):
         from certbot import cert_manager
         prompt = "custom prompt"
         self.mock_get_utility().menu.return_value = (display_util.OK, 0)
-        self.assertEquals(
+        self.assertEqual(
             cert_manager.get_certnames(
                 self.config, "verb", allow_multiple=False, custom_prompt=prompt),
             ['example.com'])
-        self.assertEquals(self.mock_get_utility().menu.call_args[0][0],
+        self.assertEqual(self.mock_get_utility().menu.call_args[0][0],
                           prompt)
 
     @mock.patch('certbot.storage.renewal_conf_files')
@@ -629,7 +628,7 @@ class GetCertnameTest(unittest.TestCase):
         prompt = "Which certificate(s) would you"
         self.mock_get_utility().checklist.return_value = (display_util.OK,
                                                           ['example.com'])
-        self.assertEquals(
+        self.assertEqual(
             cert_manager.get_certnames(
                 self.config, "verb", allow_multiple=True), ['example.com'])
         self.assertTrue(
@@ -644,11 +643,11 @@ class GetCertnameTest(unittest.TestCase):
         prompt = "custom prompt"
         self.mock_get_utility().checklist.return_value = (display_util.OK,
                                                           ['example.com'])
-        self.assertEquals(
+        self.assertEqual(
             cert_manager.get_certnames(
                 self.config, "verb", allow_multiple=True, custom_prompt=prompt),
             ['example.com'])
-        self.assertEquals(
+        self.assertEqual(
             self.mock_get_utility().checklist.call_args[0][0],
             prompt)
 

@@ -54,3 +54,32 @@ def readline_with_timeout(timeout, prompt):
         # as select only supports socket in this case.
         # So no timeout on Windows for now.
         return sys.stdin.readline()
+
+
+WINDOWS_DEFAULT_FOLDERS = {
+    'config': 'C:\\Certbot',
+    'work': 'C:\\Certbot\\lib',
+    'logs': 'C:\\Certbot\\log',
+}
+LINUX_DEFAULT_FOLDERS = {
+    'config': '/etc/letsencrypt',
+    'work': '/var/letsencrypt/lib',
+    'logs': '/var/letsencrypt/log',
+}
+
+
+def get_default_folder(folder_type):
+    """
+    Return the relevant default folder for the current OS
+
+    :param str folder_type: The type of folder to retrieve (config, work or logs)
+
+    :returns: The relevant default folder.
+    :rtype: str
+
+    """
+    if 'fcntl' in sys.modules:
+        # Linux specific
+        return LINUX_DEFAULT_FOLDERS[folder_type]
+    # Windows specific
+    return WINDOWS_DEFAULT_FOLDERS[folder_type]

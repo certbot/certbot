@@ -209,8 +209,8 @@ class MakeCSRTest(unittest.TestCase):
         # have a get_extensions() method, so we skip this test if the method
         # isn't available.
         if hasattr(csr, 'get_extensions'):
-            self.assertEquals(len(csr.get_extensions()), 1)
-            self.assertEquals(csr.get_extensions()[0].get_data(),
+            self.assertEqual(len(csr.get_extensions()), 1)
+            self.assertEqual(csr.get_extensions()[0].get_data(),
                 OpenSSL.crypto.X509Extension(
                     b'subjectAltName',
                     critical=False,
@@ -227,7 +227,7 @@ class MakeCSRTest(unittest.TestCase):
         # have a get_extensions() method, so we skip this test if the method
         # isn't available.
         if hasattr(csr, 'get_extensions'):
-            self.assertEquals(len(csr.get_extensions()), 2)
+            self.assertEqual(len(csr.get_extensions()), 2)
             # NOTE: Ideally we would filter by the TLS Feature OID, but
             # OpenSSL.crypto.X509Extension doesn't give us the extension's raw OID,
             # and the shortname field is just "UNDEF"
