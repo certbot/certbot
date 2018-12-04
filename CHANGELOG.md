@@ -9,6 +9,8 @@ Certbot adheres to [Semantic Versioning](http://semver.org/).
 * Noninteractive renewals with `certbot renew` (those not started from a
   terminal) now randomly sleep 1-480 seconds before beginning work in
   order to spread out load spikes on the server side.
+* Added External Account Binding support in cli and acme library.
+  Command line arguments --eab-kid and --eab-hmac-key added.
 
 ### Changed
 

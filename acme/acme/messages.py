@@ -1,6 +1,7 @@
 """ACME protocol messages."""
 import collections
 import six
+import json
 
 import josepy as jose
 
@@ -8,6 +9,7 @@ from acme import challenges
 from acme import errors
 from acme import fields
 from acme import util
+from acme import jws
 
 OLD_ERROR_PREFIX = "urn:acme:error:"
 ERROR_PREFIX = "urn:ietf:params:acme:error:"
@@ -27,6 +29,7 @@ ERROR_CODES = {
     'tls': 'The server experienced a TLS error during domain verification',
     'unauthorized': 'The client lacks sufficient authorization',
     'unknownHost': 'The server could not resolve a domain name',
+    'externalAccountRequired': 'The server requires external account binding',
 }
 
 ERROR_TYPE_DESCRIPTIONS = dict(
@@ -176,6 +179,7 @@ class Directory(jose.JSONDeSerializable):
         _terms_of_service_v2 = jose.Field('termsOfService', omitempty=True)
         website = jose.Field('website', omitempty=True)
         caa_identities = jose.Field('caaIdentities', omitempty=True)
+        external_account_required = jose.Field('externalAccountRequired', omitempty=True)
 
         def __init__(self, **kwargs):
             kwargs = dict((self._internal_name(k), v) for k, v in kwargs.items())
@@ -258,6 +262,24 @@ class ResourceBody(jose.JSONObjectWithFields):
     """ACME Resource Body."""
 
 
+class ExternalAccountBinding(object):
+    """ACME External Account Binding"""
+
+    @classmethod
+    def from_data(cls, account_public_key, kid, hmac_key, directory):
+        """Create External Account Binding Resource from contact details, kid and hmac."""
+
+        key_json = json.dumps(account_public_key.to_partial_json()).encode()
+        decoded_hmac_key = jose.b64.b64decode(hmac_key)
+        url = directory["newAccount"]
+
+        eab = jws.JWS.sign(key_json, jose.jwk.JWKOct(key=decoded_hmac_key),
+                           jose.jwa.HS256, None,
+                           url, kid)
+
+        return eab.to_partial_json()
+
+
 class Registration(ResourceBody):
     """Registration Resource Body.
 
@@ -275,12 +297,13 @@ class Registration(ResourceBody):
     status = jose.Field('status', omitempty=True)
     terms_of_service_agreed = jose.Field('termsOfServiceAgreed', omitempty=True)
     only_return_existing = jose.Field('onlyReturnExisting', omitempty=True)
+    external_account_binding = jose.Field('externalAccountBinding', omitempty=True)
 
     phone_prefix = 'tel:'
     email_prefix = 'mailto:'
 
     @classmethod
-    def from_data(cls, phone=None, email=None, **kwargs):
+    def from_data(cls, phone=None, email=None, external_account_binding=None, **kwargs):
         """Create registration resource from contact details."""
         details = list(kwargs.pop('contact', ()))
         if phone is not None:
@@ -288,6 +311,10 @@ class Registration(ResourceBody):
         if email is not None:
             details.extend([cls.email_prefix + mail for mail in email.split(',')])
         kwargs['contact'] = tuple(details)
+
+        if external_account_binding:
+            kwargs['external_account_binding'] = external_account_binding
+
         return cls(**kwargs)
 
     def _filter_contact(self, prefix):

@@ -69,6 +69,8 @@ CLI_DEFAULTS = dict(
     reuse_key=False,
     disable_renew_updates=False,
     renew_time_shuffle=True,
+    eab_hmac_key=None,
+    eab_kid=None,
 
     # Subparsers
     num=None,

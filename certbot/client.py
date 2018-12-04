@@ -203,9 +203,27 @@ def perform_registration(acme, config, tos_cb):
     :returns: Registration Resource.
     :rtype: `acme.messages.RegistrationResource`
     """
+
+    eab_credentials_supplied = config.eab_kid and config.eab_hmac_key
+    if eab_credentials_supplied:
+        account_public_key = acme.client.net.key.public_key()
+        eab = messages.ExternalAccountBinding.from_data(account_public_key=account_public_key,
+                                                        kid=config.eab_kid,
+                                                        hmac_key=config.eab_hmac_key,
+                                                        directory=acme.client.directory)
+    else:
+        eab = None
+
+    if acme.external_account_required():
+        if not eab_credentials_supplied:
+            msg = ("Server requires external account binding."
+                   " Please use --eab-kid and --eab-hmac-key.")
+            raise errors.Error(msg)
+
     try:
-        return acme.new_account_and_tos(messages.NewRegistration.from_data(email=config.email),
-            tos_cb)
+        newreg = messages.NewRegistration.from_data(email=config.email,
+                                                    external_account_binding=eab)
+        return acme.new_account_and_tos(newreg, tos_cb)
     except messages.Error as e:
         if e.code == "invalidEmail" or e.code == "invalidContact":
             if config.noninteractive_mode:
