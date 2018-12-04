@@ -19,12 +19,13 @@ Certbot adheres to [Semantic Versioning](http://semver.org/).
 ### Fixed
 
 * Update code and dependencies to clean up Resource and Deprecation Warnings.
+* Only depend on imgconverter extension for Sphinx >= 1.6
 
 Despite us having broken lockstep, we are continuing to release new versions of
 all Certbot components during releases for the time being, however, the only
 package with changes other than its version number was:
 
-* Only depend on imgconverter extension for Sphinx >= 1.6
+*
 
 More details about these changes can be found on our GitHub repo:
 https://github.com/certbot/certbot/milestone/62?closed=1
