@@ -20,8 +20,10 @@ import tempfile
 import merge_requirements as merge_module
 import readlink
 
+
 def find_tools_path():
     return os.path.dirname(readlink.main(__file__))
+
 
 def certbot_oldest_processing(tools_path, args, test_constraints):
     if args[0] != '-e' or len(args) != 2:
@@ -37,6 +39,7 @@ def certbot_oldest_processing(tools_path, args, test_constraints):
 
     return requirements
 
+
 def certbot_normal_processing(tools_path, test_constraints):
     repo_path = os.path.dirname(tools_path)
     certbot_requirements = os.path.normpath(os.path.join(
@@ -49,6 +52,7 @@ def certbot_normal_processing(tools_path, test_constraints):
             if search:
                 fd.write('{0}{1}'.format(search.group(1), os.linesep))
 
+
 def merge_requirements(tools_path, test_constraints, all_constraints):
     merged_requirements = merge_module.main(
         os.path.join(tools_path, 'dev_constraints.txt'),
@@ -57,9 +61,11 @@ def merge_requirements(tools_path, test_constraints, all_constraints):
     with open(all_constraints, 'w') as fd:
         fd.write(merged_requirements)
 
+
 def call_with_print(command, cwd=None):
     print(command)
     subprocess.check_call(command, shell=True, cwd=cwd or os.getcwd())
+
 
 def main(args):
     tools_path = find_tools_path()
@@ -77,15 +83,14 @@ def main(args):
 
         merge_requirements(tools_path, test_constraints, all_constraints)
         if requirements:
-            call_with_print(' '.join([
-                sys.executable, '-m', 'pip', 'install', '-q', '--constraint', all_constraints,
-                '--requirement', requirements]))
+            call_with_print('"{0}" -m pip install -q --constraint "{1}" --requirement "{2}"'
+                            .format(sys.executable, all_constraints, requirements))
 
-        command = [sys.executable, '-m', 'pip', 'install', '-q', '--constraint', all_constraints]
-        command.extend(args)
-        call_with_print(' '.join(command))
+        call_with_print('"{0}" -m pip install -q --constraint "{1}" {2}'
+                        .format(sys.executable, all_constraints, ' '.join(args)))
     finally:
         shutil.rmtree(working_dir)
+
 
 if __name__ == '__main__':
     main(sys.argv[1:])

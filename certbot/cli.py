@@ -172,10 +172,11 @@ def possible_deprecation_warning(config):
         # need warnings
         return
     if "CERTBOT_AUTO" not in os.environ:
-        logger.warning("You are running with an old copy of letsencrypt-auto that does "
-            "not receive updates, and is less reliable than more recent versions. "
-            "We recommend upgrading to the latest certbot-auto script, or using native "
-            "OS packages.")
+        logger.warning("You are running with an old copy of letsencrypt-auto"
+            " that does not receive updates, and is less reliable than more"
+            " recent versions. The letsencrypt client has also been renamed"
+            " to Certbot. We recommend upgrading to the latest certbot-auto"
+            " script, or using native OS packages.")
         logger.debug("Deprecation warning circumstances: %s / %s", sys.argv[0], os.environ)
 
 
@@ -286,7 +287,9 @@ def read_file(filename, mode="rb"):
     """
     try:
         filename = os.path.abspath(filename)
-        return filename, open(filename, mode).read()
+        with open(filename, mode) as the_file:
+            contents = the_file.read()
+        return filename, contents
     except IOError as exc:
         raise argparse.ArgumentTypeError(exc.strerror)
 
@@ -856,7 +859,9 @@ class HelpfulArgumentParser(object):
         if chosen_topic == "everything":
             chosen_topic = "run"
         if chosen_topic == "all":
-            return dict([(t, True) for t in self.help_topics])
+            # Addition of condition closes #6209 (removal of duplicate route53 option).
+            return dict([(t, True) if t != 'certbot-route53:auth' else (t, False)
+                         for t in self.help_topics])
         elif not chosen_topic:
             return dict([(t, False) for t in self.help_topics])
         else:
@@ -941,6 +946,18 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              "specified or you already have a certificate with the same "
              "name. In the case of a name collision it will append a number "
              "like 0001 to the file path name. (default: Ask)")
+    helpful.add(
+        [None, "run", "certonly", "register"],
+        "--eab-kid", dest="eab_kid",
+        metavar="EAB_KID",
+        help="Key Identifier for External Account Binding"
+    )
+    helpful.add(
+        [None, "run", "certonly", "register"],
+        "--eab-hmac-key", dest="eab_hmac_key",
+        metavar="EAB_HMAC_KEY",
+        help="HMAC key for External Account Binding"
+    )
     helpful.add(
         [None, "run", "certonly", "manage", "delete", "certificates",
          "renew", "enhance"], "--cert-name", dest="certname",

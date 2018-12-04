@@ -13,6 +13,7 @@ import six
 
 import certbot
 from certbot import cli
+from certbot import compat
 from certbot import errors
 from certbot.storage import ALL_FOUR
 
@@ -73,9 +74,8 @@ class BaseRenewableCertTest(test_util.ConfigTestCase):
         # We also create a file that isn't a renewal config in the same
         # location to test that logic that reads in all-and-only renewal
         # configs will ignore it and NOT attempt to parse it.
-        junk = open(os.path.join(self.config.config_dir, "renewal", "IGNORE.THIS"), "w")
-        junk.write("This file should be ignored!")
-        junk.close()
+        with open(os.path.join(self.config.config_dir, "renewal", "IGNORE.THIS"), "w") as junk:
+            junk.write("This file should be ignored!")
 
         self.defaults = configobj.ConfigObj()
 
@@ -92,6 +92,8 @@ class BaseRenewableCertTest(test_util.ConfigTestCase):
                    link)
         with open(link, "wb") as f:
             f.write(kind.encode('ascii') if value is None else value)
+        if kind == "privkey":
+            os.chmod(link, 0o600)
 
     def _write_out_ex_kinds(self):
         for kind in ALL_FOUR:
@@ -264,12 +266,12 @@ class RenewableCertTests(BaseRenewableCertTest):
         mock_has_pending.return_value = False
         self.assertEqual(self.test_rc.ensure_deployed(), True)
         self.assertEqual(mock_update.call_count, 0)
-        self.assertEqual(mock_logger.warn.call_count, 0)
+        self.assertEqual(mock_logger.warning.call_count, 0)
 
         mock_has_pending.return_value = True
         self.assertEqual(self.test_rc.ensure_deployed(), False)
         self.assertEqual(mock_update.call_count, 1)
-        self.assertEqual(mock_logger.warn.call_count, 1)
+        self.assertEqual(mock_logger.warning.call_count, 1)
 
 
     def test_update_link_to(self):
@@ -544,6 +546,47 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertFalse(os.path.islink(self.test_rc.version("privkey", 10)))
         self.assertFalse(os.path.exists(temp_config_file))
 
+    @test_util.broken_on_windows
+    @mock.patch("certbot.storage.relevant_values")
+    def test_save_successor_maintains_group_mode(self, mock_rv):
+        # Mock relevant_values() to claim that all values are relevant here
+        # (to avoid instantiating parser)
+        mock_rv.side_effect = lambda x: x
+        for kind in ALL_FOUR:
+            self._write_out_kind(kind, 1)
+        self.test_rc.update_all_links_to(1)
+        self.assertTrue(compat.compare_file_modes(
+            os.stat(self.test_rc.version("privkey", 1)).st_mode, 0o600))
+        os.chmod(self.test_rc.version("privkey", 1), 0o444)
+        # If no new key, permissions should be the same (we didn't write any keys)
+        self.test_rc.save_successor(1, b"newcert", None, b"new chain", self.config)
+        self.assertTrue(compat.compare_file_modes(
+            os.stat(self.test_rc.version("privkey", 2)).st_mode, 0o444))
+        # If new key, permissions should be rest to 600 + preserved group
+        self.test_rc.save_successor(2, b"newcert", b"new_privkey", b"new chain", self.config)
+        self.assertTrue(compat.compare_file_modes(
+            os.stat(self.test_rc.version("privkey", 3)).st_mode, 0o640))
+        # If permissions reverted, next renewal will also revert permissions of new key
+        os.chmod(self.test_rc.version("privkey", 3), 0o404)
+        self.test_rc.save_successor(3, b"newcert", b"new_privkey", b"new chain", self.config)
+        self.assertTrue(compat.compare_file_modes(
+            os.stat(self.test_rc.version("privkey", 4)).st_mode, 0o600))
+
+    @test_util.broken_on_windows
+    @mock.patch("certbot.storage.relevant_values")
+    @mock.patch("certbot.storage.os.chown")
+    def test_save_successor_maintains_gid(self, mock_chown, mock_rv):
+        # Mock relevant_values() to claim that all values are relevant here
+        # (to avoid instantiating parser)
+        mock_rv.side_effect = lambda x: x
+        for kind in ALL_FOUR:
+            self._write_out_kind(kind, 1)
+        self.test_rc.update_all_links_to(1)
+        self.test_rc.save_successor(1, b"newcert", None, b"new chain", self.config)
+        self.assertFalse(mock_chown.called)
+        self.test_rc.save_successor(2, b"newcert", b"new_privkey", b"new chain", self.config)
+        self.assertTrue(mock_chown.called)
+
     def _test_relevant_values_common(self, values):
         defaults = dict((option, cli.flag_default(option))
                         for option in ("authenticator", "installer",
@@ -630,6 +673,7 @@ class RenewableCertTests(BaseRenewableCertTest):
             self.config.live_dir, "README")))
         self.assertTrue(os.path.exists(os.path.join(
             self.config.live_dir, "the-lineage.com", "README")))
+        self.assertTrue(compat.compare_file_modes(os.stat(result.key_path).st_mode, 0o600))
         with open(result.fullchain, "rb") as f:
             self.assertEqual(f.read(), b"cert" + b"chain")
         # Let's do it again and make sure it makes a different lineage

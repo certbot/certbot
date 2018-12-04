@@ -431,6 +431,11 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertRaises(errors.Error, self.parse,
                           "--allow-subset-of-names -d *.example.org".split())
 
+    def test_route53_no_revert(self):
+        for help_flag in ['-h', '--help']:
+            for topic in ['all', 'plugins', 'dns-route53']:
+                self.assertFalse('certbot-route53:auth' in self._help_output([help_flag, topic]))
+
 
 class DefaultTest(unittest.TestCase):
     """Tests for certbot.cli._Default."""

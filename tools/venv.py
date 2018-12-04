@@ -1,11 +1,6 @@
 #!/usr/bin/env python
 # Developer virtualenv setup for Certbot client
-
-from __future__ import absolute_import
-
 import os
-import subprocess
-import sys
 
 import _venv_common
 
@@ -33,27 +28,14 @@ REQUIREMENTS = [
     '-e certbot-compatibility-test',
 ]
 
-def get_venv_args():
-    with open(os.devnull, 'w') as fnull:
-        command_python2_st_code = subprocess.call(
-            'command -v python2', shell=True, stdout=fnull, stderr=fnull)
-        if not command_python2_st_code:
-            return '--python python2'
-
-        command_python27_st_code = subprocess.call(
-            'command -v python2.7', shell=True, stdout=fnull, stderr=fnull)
-        if not command_python27_st_code:
-            return '--python python2.7'
-
-    raise ValueError('Couldn\'t find python2 or python2.7 in {0}'.format(os.environ.get('PATH')))
 
 def main():
     if os.name == 'nt':
         raise ValueError('Certbot for Windows is not supported on Python 2.x.')
 
-    venv_args = get_venv_args()
-
+    venv_args = '--python "{0}"'.format(_venv_common.find_python_executable(2))
     _venv_common.main('venv', venv_args, REQUIREMENTS)
+
 
 if __name__ == '__main__':
     main()
