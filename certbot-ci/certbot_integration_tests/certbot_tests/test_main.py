@@ -163,8 +163,8 @@ def test_renew(config_dir, common_no_force_renew, common, hook_probe):
     ])
 
     assert_certs_count_for_lineage(config_dir, certname, 1)
-    assert_not_world_readable(
-        join(config_dir, 'archive/{0}/privkey1.pem'.format(certname)))
+    assert_world_permissions(
+        join(config_dir, 'archive/{0}/privkey1.pem'.format(certname)), 0)
 
     # Second, we force renew, and ensure that renewal hooks files are executed.
     # Also check that file permissions are correct.
@@ -173,11 +173,14 @@ def test_renew(config_dir, common_no_force_renew, common, hook_probe):
 
     assert_certs_count_for_lineage(config_dir, certname, 2)
     assert_hook_execution(hook_probe, 'deploy')
-    assert_not_world_readable(
-        join(config_dir, 'archive/{0}/privkey2.pem'.format(certname)))
-    assert_equals_group_permissions(
+    assert_world_permissions(
+        join(config_dir, 'archive/{0}/privkey2.pem'.format(certname)), 0)
+    assert_equals_group_owner(
         join(config_dir, 'archive/{0}/privkey1.pem'.format(certname)),
         join(config_dir, 'archive/{0}/privkey2.pem'.format(certname)))
+    assert_equals_permissions(
+        join(config_dir, 'archive/{0}/privkey1.pem'.format(certname)),
+        join(config_dir, 'archive/{0}/privkey2.pem'.format(certname)), 0o074)
 
     os.chmod(join(config_dir, 'archive/{0}/privkey2.pem'.format(certname)), 0o444)
 
@@ -213,11 +216,14 @@ def test_renew(config_dir, common_no_force_renew, common, hook_probe):
     assert os.stat(key2).st_size > 3000  # 4096 bits keys takes more than 3000 bytes
     assert os.stat(key3).st_size < 1800  # 2048 bits keys takes less than 1800 bytes
 
-    assert_not_world_readable(
-        join(config_dir, 'archive/{0}/privkey3.pem'.format(certname)))
-    assert_equals_group_permissions(
+    assert_world_permissions(
+        join(config_dir, 'archive/{0}/privkey3.pem'.format(certname)), 4)
+    assert_equals_group_owner(
         join(config_dir, 'archive/{0}/privkey2.pem'.format(certname)),
         join(config_dir, 'archive/{0}/privkey3.pem'.format(certname)))
+    assert_equals_permissions(
+        join(config_dir, 'archive/{0}/privkey2.pem'.format(certname)),
+        join(config_dir, 'archive/{0}/privkey3.pem'.format(certname)), 0o074)
 
     # Fifth, we clean every dir hook, and replace their content by empty dir and empty files.
     # Everything should renew correctly.

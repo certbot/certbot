@@ -14,7 +14,7 @@ coverage==4.4.2
 decorator==4.1.2
 dns-lexicon==2.7.14
 dnspython==1.15.0
-docutils==0.14
+docutils==0.12
 execnet==1.5.0
 future==0.16.0
 futures==3.1.1
