@@ -27,7 +27,13 @@ Despite us having broken lockstep, we are continuing to release new versions of
 all Certbot components during releases for the time being, however, the only
 package with changes other than its version number was:
 
-*
+* acme
+* certbot
+* certbot-apache
+* certbot-dns-cloudflare
+* certbot-dns-digitalocean
+* certbot-dns-google
+* certbot-nginx
 
 More details about these changes can be found on our GitHub repo:
 https://github.com/certbot/certbot/milestone/62?closed=1
