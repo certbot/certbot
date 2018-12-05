@@ -1139,11 +1139,11 @@ class RenewableCert(object):
             with util.safe_open(target["privkey"], "wb", chmod=BASE_PRIVKEY_MODE) as f:
                 logger.debug("Writing new private key to %s.", target["privkey"])
                 f.write(new_privkey)
-            # If the previous privkey in this lineage has an existing gid or group mode > 0,
-            # let's keep those.
-            group_mode = stat.S_IMODE(os.stat(old_privkey).st_mode) & \
-                (stat.S_IRGRP | stat.S_IWGRP | stat.S_IXGRP)
-            mode = BASE_PRIVKEY_MODE | group_mode
+            # Preserve gid and (mode & 074) from previous privkey in this lineage.
+            old_mode = stat.S_IMODE(os.stat(old_privkey).st_mode) & \
+                (stat.S_IRGRP | stat.S_IWGRP | stat.S_IXGRP | \
+                 stat.S_IROTH)
+            mode = BASE_PRIVKEY_MODE | old_mode
             security.copy_ownership(old_privkey, target["privkey"], user=False, group=True)
             os.chmod(target["privkey"], mode)
 

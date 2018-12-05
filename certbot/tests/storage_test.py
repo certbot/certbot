@@ -12,7 +12,6 @@ import six
 
 import certbot
 from certbot import cli
-from certbot import compat
 from certbot import errors
 from certbot.compat import os, security
 from certbot.storage import ALL_FOUR
@@ -559,11 +558,11 @@ class RenewableCertTests(BaseRenewableCertTest):
         # If no new key, permissions should be the same (we didn't write any keys)
         self.test_rc.save_successor(1, b"newcert", None, b"new chain", self.config)
         self.assertTrue(self.test_rc.version("privkey", 2), 0o444)
-        # If new key, permissions should be rest to 600 + preserved group
+        # If new key, permissions should be kept as 644
         self.test_rc.save_successor(2, b"newcert", b"new_privkey", b"new chain", self.config)
-        self.assertTrue(self.test_rc.version("privkey", 3), 0o640)
+        self.assertTrue(self.test_rc.version("privkey", 3), 0o644)
         # If permissions reverted, next renewal will also revert permissions of new key
-        os.chmod(self.test_rc.version("privkey", 3), 0o404)
+        os.chmod(self.test_rc.version("privkey", 3), 0o400)
         self.test_rc.save_successor(3, b"newcert", b"new_privkey", b"new chain", self.config)
         self.assertTrue(self.test_rc.version("privkey", 4), 0o600)
 
@@ -691,8 +690,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         # Make sure it can accept renewal parameters
         result = storage.RenewableCert.new_lineage(
             "the-lineage.com", b"cert2", b"privkey2", b"chain2", self.config)
-        # TODO: Conceivably we could test that the renewal parameters actually
-        #       got saved
+        # TODO: Conceivably we could test that the renewal parameters actually got saved
 
     @mock.patch("certbot.storage.relevant_values")
     def test_new_lineage_nonexistent_dirs(self, mock_rv):

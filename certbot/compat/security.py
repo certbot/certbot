@@ -147,7 +147,11 @@ def check_permissions(file_path, mode):
 
 def _apply_win_mode(file_path, mode):
     # Resolve symbolic links
-    file_path = file_path if not os.path.islink(file_path) else os.readlink(file_path)
+    if os.path.islink(file_path):
+        link_path = file_path
+        file_path = os.readlink(file_path)
+        if not os.path.isabs(file_path):
+            file_path = os.path.join(os.path.dirname(link_path), file_path)
     # Get owner sid of the file
     security = win32security.GetFileSecurity(file_path, win32security.OWNER_SECURITY_INFORMATION)
     user = security.GetSecurityDescriptorOwner()
@@ -213,6 +217,12 @@ def _copy_win_ownership(src, dst):
 
 
 def _check_win_mode(file_path, mode):
+    # Resolve symbolic links
+    if os.path.islink(file_path):
+        link_path = file_path
+        file_path = os.readlink(file_path)
+        if not os.path.isabs(file_path):
+            file_path = os.path.join(os.path.dirname(link_path), file_path)
     # Get current dacl file
     security = win32security.GetFileSecurity(file_path, win32security.OWNER_SECURITY_INFORMATION
                                              | win32security.DACL_SECURITY_INFORMATION)
