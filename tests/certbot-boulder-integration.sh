@@ -280,13 +280,20 @@ CheckCertCount() {
     fi
 }
 
-CheckGroup() {
-    group_mode() { echo $((0`stat -c %a $1` & 070)); }
-    group_owner() { echo `stat -c %G $1`; }
-    if [ `group_mode $1` -ne `group_mode $2` ] ; then
-        echo "Expected group permission `group_mode $1`, got `group_mode $2` on file $2"
+CheckPermissions() {
+# Args: <filepath_1> <filepath_2> <mask>
+# Checks mode of two files match under <mask>
+    masked_mode() { echo $((0`stat -c %a $1` & 0$2)); }
+    if [ `masked_mode $1 $3` -ne `masked_mode $2 $3` ] ; then
+        echo "With $3 mask, expected mode `masked_mode $1 $3`, got `masked_mode $2 $3` on file $2"
         exit 1
     fi
+}
+
+CheckGID() {
+# Args: <filepath_1> <filepath_2>
+# Checks group owner of two files match
+    group_owner() { echo `stat -c %G $1`; }
     if [ `group_owner $1` != `group_owner $2` ] ; then
         echo "Expected group owner `group_owner $1`, got `group_owner $2` on file $2"
         exit 1
@@ -294,9 +301,11 @@ CheckGroup() {
 }
 
 CheckOthersPermission() {
+# Args: <filepath_1> <expected mode>
+# Tests file's other/world permission against expected mode
     other_permission=$((0`stat -c %a $1` & 07))
-    if [ $other_permission -ne 0 ] ; then
-        echo "Expected file $1 not to be accessible by others"
+    if [ $other_permission -ne $2 ] ; then
+        echo "Expected file $1 to have others mode $2, got $other_permission instead"
         exit 1
     fi
 }
@@ -316,9 +325,10 @@ rm -rf "$renewal_hooks_root"
 common renew --cert-name le.wtf --authenticator manual
 CheckCertCount "le.wtf" 2
 
-CheckOthersPermission "${root}/conf/archive/le.wtf/privkey1.pem"
-CheckOthersPermission "${root}/conf/archive/le.wtf/privkey2.pem"
-CheckGroup "${root}/conf/archive/le.wtf/privkey1.pem" "${root}/conf/archive/le.wtf/privkey2.pem"
+CheckOthersPermission "${root}/conf/archive/le.wtf/privkey1.pem" 0
+CheckOthersPermission "${root}/conf/archive/le.wtf/privkey2.pem" 0
+CheckPermissions "${root}/conf/archive/le.wtf/privkey1.pem" "${root}/conf/archive/le.wtf/privkey2.pem" 074
+CheckGID "${root}/conf/archive/le.wtf/privkey1.pem" "${root}/conf/archive/le.wtf/privkey2.pem"
 chmod 0444 "${root}/conf/archive/le.wtf/privkey2.pem"
 
 # test renewal with no executables in hook directories
@@ -337,8 +347,9 @@ CreateDirHooks
 sed -i "4arenew_before_expiry = 4 years" "$root/conf/renewal/le.wtf.conf"
 common_no_force_renew renew --rsa-key-size 2048 --no-directory-hooks
 CheckCertCount "le.wtf" 3
-CheckGroup "${root}/conf/archive/le.wtf/privkey2.pem" "${root}/conf/archive/le.wtf/privkey3.pem"
-CheckOthersPermission "${root}/conf/archive/le.wtf/privkey3.pem"
+CheckGID "${root}/conf/archive/le.wtf/privkey2.pem" "${root}/conf/archive/le.wtf/privkey3.pem"
+CheckPermissions "${root}/conf/archive/le.wtf/privkey2.pem" "${root}/conf/archive/le.wtf/privkey3.pem" 074
+CheckOthersPermission "${root}/conf/archive/le.wtf/privkey3.pem" 04
 
 if [ -s "$HOOK_DIRS_TEST" ]; then
     echo "Directory hooks were executed with --no-directory-hooks!" >&2
