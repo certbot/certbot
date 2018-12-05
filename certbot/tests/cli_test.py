@@ -4,6 +4,7 @@ import unittest
 import os
 import tempfile
 import copy
+import sys
 
 import mock
 import six
@@ -40,6 +41,15 @@ class TestReadFile(TempDirTestCase):
         self.assertEqual(path, os.path.abspath(path))
         self.assertEqual(contents, test_contents)
 
+
+class FlagDefaultTest(unittest.TestCase):
+    """Tests cli.flag_default"""
+
+    def test_linux_directories(self):
+        if 'fcntl' in sys.modules:
+            self.assertEqual(cli.flag_default('config_dir'), '/etc/letsencrypt')
+            self.assertEqual(cli.flag_default('work_dir'), '/var/lib/letsencrypt')
+            self.assertEqual(cli.flag_default('logs_dir'), '/var/log/letsencrypt')
 
 
 class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
