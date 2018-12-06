@@ -30,7 +30,7 @@ def raise_for_non_administrative_windows_rights():
 
 
 def readline_with_timeout(timeout, prompt):
-    # type: (float, Union[str, unicode]) -> None
+    # type: (float, str) -> str
     """
     Read user input to return the first line entered, or raise after specified timeout.
 
@@ -72,7 +72,7 @@ LINUX_DEFAULT_FOLDERS = {
 
 
 def get_default_folder(folder_type):
-    # type: (Union[str, unicode]) -> str
+    # type: (str) -> str
     """
     Return the relevant default folder for the current OS
 
@@ -84,7 +84,7 @@ def get_default_folder(folder_type):
     """
     try:
         # Linux specific
-        import fcntl  # pylint: disable=import-error,unused-import
+        import fcntl  # pylint: disable=import-error,unused-import,unused-variable
         return LINUX_DEFAULT_FOLDERS[folder_type]
     except ImportError:
         # Windows specific
