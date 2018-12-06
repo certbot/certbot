@@ -6,6 +6,7 @@ import time
 import six
 import zope.component
 
+import acme
 from acme import challenges
 from acme import messages
 # pylint: disable=unused-import, no-name-in-module
@@ -321,7 +322,6 @@ class AuthHandler(object):
                         aauthzr.achalls.remove(achall)
                         break
 
-
     def verify_authzr_complete(self, aauthzrs):
         """Verifies that all authorizations have been decided.
 
@@ -536,7 +536,7 @@ def _report_failed_challs(failed_achalls):
 
     """
     problems = collections.defaultdict(list)\
-    # type: DefaultDict[str, List[achallenges.KeyAuthorizationAnnotatedChallenge]]
+        # type: DefaultDict[str, List[achallenges.KeyAuthorizationAnnotatedChallenge]]
     for achall in failed_achalls:
         if achall.error:
             problems[achall.error.typ].append(achall)
