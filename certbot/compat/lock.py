@@ -11,10 +11,11 @@ from certbot.compat import os
 
 try:
     # Linux specific
-    import fcntl # pylint: disable=import-error
+    import fcntl  # pylint: disable=import-error
 except ImportError:
     # Windows specific
-    import msvcrt # pylint: disable=import-error
+    import msvcrt  # pylint: disable=import-error
+
 
 def lock_file(file_descriptor):
     """
@@ -29,6 +30,7 @@ def lock_file(file_descriptor):
     else:
         # Windows specific
         msvcrt.locking(file_descriptor, msvcrt.LK_NBLCK, 1)
+
 
 def release_locked_file(file_descriptor, path):
     """

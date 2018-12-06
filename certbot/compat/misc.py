@@ -12,10 +12,12 @@ try:
 except ImportError:  # pragma: no cover
     shellwin32 = None  # type: ignore
 
+from acme.magic_typing import Union  # pylint: disable=unused-import, no-name-in-module
 from certbot import errors
 
 
 def raise_for_non_administrative_windows_rights():
+    # type: () -> None
     """
     On Windows, raise if current shell does not have the administrative rights.
     Do nothing on Linux.
@@ -28,6 +30,7 @@ def raise_for_non_administrative_windows_rights():
 
 
 def readline_with_timeout(timeout, prompt):
+    # type: (float, Union[str, unicode]) -> None
     """
     Read user input to return the first line entered, or raise after specified timeout.
 
@@ -69,6 +72,7 @@ LINUX_DEFAULT_FOLDERS = {
 
 
 def get_default_folder(folder_type):
+    # type: (Union[str, unicode]) -> str
     """
     Return the relevant default folder for the current OS
 
@@ -78,8 +82,10 @@ def get_default_folder(folder_type):
     :rtype: str
 
     """
-    if 'fcntl' in sys.modules:
+    try:
         # Linux specific
+        import fcntl  # pylint: disable=import-error,unused-import
         return LINUX_DEFAULT_FOLDERS[folder_type]
-    # Windows specific
-    return WINDOWS_DEFAULT_FOLDERS[folder_type]
+    except ImportError:
+        # Windows specific
+        return WINDOWS_DEFAULT_FOLDERS[folder_type]
