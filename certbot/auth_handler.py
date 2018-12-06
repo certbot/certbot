@@ -96,7 +96,7 @@ class AuthHandler(object):
 
     def _choose_challenges(self, aauthzrs):
         """Retrieve necessary challenges to satisfy server."""
-        logger.info("Performing the following challenges:")
+        logger.info("Following challenges are required:")
         for aauthzr in aauthzrs:
             aauthzr_challenges = aauthzr.authzr.body.challenges
             if self.acme.acme_version == 1:
@@ -321,6 +321,7 @@ class AuthHandler(object):
                         aauthzr.achalls.remove(achall)
                         break
 
+
     def verify_authzr_complete(self, aauthzrs):
         """Verifies that all authorizations have been decided.
 
@@ -357,24 +358,27 @@ class AuthHandler(object):
         for index in path:
             challb = authzr.body.challenges[index]
             achalls.append(challb_to_achall(
-                challb, self.account.key, authzr.body.identifier.value))
+                challb, self.account.key, authzr.body.identifier.value,
+                status='validated' if authzr.body.status == messages.STATUS_VALID else 'pending'))
 
         return achalls
 
 
-def challb_to_achall(challb, account_key, domain):
+def challb_to_achall(challb, account_key, domain, status=None):
     """Converts a ChallengeBody object to an AnnotatedChallenge.
 
     :param .ChallengeBody challb: ChallengeBody
     :param .JWK account_key: Authorized Account Key
     :param str domain: Domain of the challb
+    :param str status: Optional status to display in the log
 
     :returns: Appropriate AnnotatedChallenge
     :rtype: :class:`certbot.achallenges.AnnotatedChallenge`
 
     """
     chall = challb.chall
-    logger.info("%s challenge for %s", chall.typ, domain)
+    logger.info("%s challenge for %s%s", chall.typ, domain,
+                '' if not status else ' ({0})'.format(status))
 
     if isinstance(chall, challenges.KeyAuthorizationChallenge):
         return achallenges.KeyAuthorizationAnnotatedChallenge(
