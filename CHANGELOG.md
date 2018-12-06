@@ -14,6 +14,28 @@ Certbot adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+*
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+package with changes other than its version number was:
+
+*
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.29.1 - 2018-12-05
+
+### Added
+
+*
+
+### Changed
+
+*
+
+### Fixed
+
 * The default work and log directories have been changed back to
   /var/lib/letsencrypt and /var/log/letsencrypt respectively.
 
