@@ -23,8 +23,7 @@ PLUGINS = disco.PluginsRegistry.find_all()
 
 
 class TestReadFile(TempDirTestCase):
-    '''Test cli.read_file'''
-
+    """Test cli.read_file"""
 
     def test_read_file(self):
         rel_test_path = os.path.relpath(os.path.join(self.tempdir, 'foo'))
@@ -48,11 +47,14 @@ class FlagDefaultTest(unittest.TestCase):
             self.assertEqual(cli.flag_default('config_dir'), '/etc/letsencrypt')
             self.assertEqual(cli.flag_default('work_dir'), '/var/lib/letsencrypt')
             self.assertEqual(cli.flag_default('logs_dir'), '/var/log/letsencrypt')
+        else:
+            self.assertEqual(cli.flag_default('config_dir'), 'C:\\Certbot')
+            self.assertEqual(cli.flag_default('work_dir'), 'C:\\Certbot\\lib')
+            self.assertEqual(cli.flag_default('logs_dir'), 'C:\\Certbot\\log')
 
 
 class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
-    '''Test the cli args entrypoint'''
-
+    """Test the cli args entrypoint"""
 
     def setUp(self):
         reload_module(cli)
@@ -69,7 +71,7 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             return ParseTest._unmocked_parse(*args, **kwargs)
 
     def _help_output(self, args):
-        "Run a command, and return the output string for scrutiny"
+        """Run a command, and return the output string for scrutiny"""
 
         output = six.StringIO()
 
