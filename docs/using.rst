@@ -44,10 +44,13 @@ a combination_ of distinct authenticator and installer plugins.
 =========== ==== ==== =============================================================== =============================
 Plugin      Auth Inst Notes                                                           Challenge types (and port)
 =========== ==== ==== =============================================================== =============================
+apache_     Y    Y    | Automates obtaining and installing a certificate with Apache  http-01_ (80)
+                      | 2.4 on OSes with ``libaugeas0`` 1.0+.
+nginx_      Y    Y    | Automates obtaining and installing a certificate with Nginx.  http-01_ (80)
 webroot_    Y    N    | Obtains a certificate by writing to the webroot directory of  http-01_ (80)
                       | an already running webserver.
-standalone_ Y    N    | Uses a "standalone" webserver to obtain a certificate.        http-01_ (80) 
-                      | Requires port 80 to be available. This is useful on    
+standalone_ Y    N    | Uses a "standalone" webserver to obtain a certificate.        http-01_ (80)
+                      | Requires port 80 to be available. This is useful on
                       | systems with no webserver, or when direct integration with
                       | the local webserver is not supported or not desired.
 |dns_plugs| Y    N    | This category of plugins automates obtaining a certificate by dns-01_ (53)
@@ -156,10 +159,7 @@ To obtain a certificate using a "standalone" webserver, you can use the
 standalone plugin by including ``certonly`` and ``--standalone``
 on the command line. This plugin needs to bind to port 80 in
 order to perform domain validation, so you may need to stop your
-existing webserver. To control which port the plugin uses, include
-one of the options shown below on the command line.
-
-    * ``--preferred-challenges http`` to use port 80
+existing webserver.
 
 It must still be possible for your machine to accept inbound connections from
 the Internet on the specified port using each requested domain name.
@@ -252,7 +252,7 @@ installer plugins. To do so, specify the authenticator plugin with
 
 For instance, you may want to create a certificate using the webroot_ plugin
 for authentication and the apache_ plugin for installation, perhaps because you
-use a proxy or CDN for SSL and only want to secure the connection between them
+use a proxy or CDN for HTTPS and only want to secure the connection between them
 and your origin server.
 
 ::
