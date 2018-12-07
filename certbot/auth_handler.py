@@ -6,7 +6,7 @@ import time
 import six
 import zope.component
 
-import acme
+import acme  # pylint: disable=unused-import
 from acme import challenges
 from acme import messages
 # pylint: disable=unused-import, no-name-in-module
@@ -32,7 +32,7 @@ class AuthHandler(object):
         :class:`~acme.challenges.Challenge` types
     :type auth: :class:`certbot.interfaces.IAuthenticator`
 
-    :ivar acme.client.BackwardsCompatibleClientV2 acme: ACME client API.
+    :ivar acme.client.BackwardsCompatibleClientV2 acme_client: ACME client API.
 
     :ivar account: Client's Account
     :type account: :class:`certbot.account.Account`
@@ -41,9 +41,9 @@ class AuthHandler(object):
         type strings with the most preferred challenge listed first
 
     """
-    def __init__(self, auth, acme, account, pref_challs):
+    def __init__(self, auth, acme_client, account, pref_challs):
         self.auth = auth
-        self.acme = acme
+        self.acme = acme_client
 
         self.account = account
         self.pref_challs = pref_challs
