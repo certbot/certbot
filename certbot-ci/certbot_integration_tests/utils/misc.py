@@ -1,5 +1,5 @@
 """
-Misc module contains stateless function that could be used during pytest execution,
+Misc module contains stateless functions that could be used during pytest execution,
 or outside during setup/teardown of the integration tests environment.
 """
 import os

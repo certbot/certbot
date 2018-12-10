@@ -3,7 +3,7 @@ This module contains all relevant methods to construct in parallel independent a
 instances. Independent here means that these instances do not see each other, and that each
 pytest node will access to only one acme server, that is reserved for this node exclusively.
 The mapping between a node and an instance takes the form of a map whose keys are the node names,
-and values are dictionnaries that contains the ACME directory URL, and ports to use to validate
+and values are dictionaries that contains the ACME directory URL, and ports to use to validate
 each available challenge.
 """
 from __future__ import print_function

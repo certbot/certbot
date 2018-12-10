@@ -5,6 +5,8 @@ from setuptools import find_packages
 version = '0.29.0.dev0'
 
 install_requires = [
+    'acme',
+    'certbot',
     'pytest',
     'pytest-cov',
     'pytest-xdist',
