@@ -1,3 +1,11 @@
+"""
+This module contains all relevant methods to construct in parallel independent acme server
+instances. Independent here means that these instances do not see each other, and that each
+pytest node will access to only one acme server, that is reserved for this node exclusively.
+The mapping between a node and an instance takes the form of a map whose keys are the node names,
+and values are dictionnaries that contains the ACME directory URL, and ports to use to validate
+each available challenge.
+"""
 from __future__ import print_function
 import tempfile
 import atexit
@@ -13,19 +21,37 @@ from os.path import join, exists
 import requests
 
 from certbot_integration_tests.utils import misc
+from acme.magic_typing import List
 
+# Current boulder version to test. Pebble do not have it, so master will always be executed.
 BOULDER_VERSION = '2018-11-19'
 TRAVIS_GO_VERSION = '1.11.2'
 
 
 @contextlib.contextmanager
 def setup_acme_server(acme_config, nodes, repositories_path):
+    # type: (dict, List[str], str) -> dict
+    """
+    Main purpose of this module. This contextmanager will ensure that every acme server instance
+    is correctly setup and responding upon context entering. Instances are properly closed and
+    cleaned when the context is destroyed.
+    Typically all pytest integration tests will be executed in this context.
+    The contextmanager returns an object describing ports and directory url to use for each acme
+    server with the relevant pytest xdist node.
+    :param dict acme_config: adict describing the current acme server characteristics to setup.
+    :param str[] nodes: list of nodes name that will be setup by pytest xdist
+    :param str repositories_path: the persistent repository path to use to retrieve
+                                  acme server source code
+    :return: a dict describing the acme server instances that have been setup for the nodes
+    :rtype: dict
+    """
     acme_type = acme_config['type']
     acme_xdist = {'master': {}}
 
     with _prepare_repository(repositories_path, acme_type) as repo_path:
         print('=> Warming up Docker engine ...')
         _warm_up_docker(acme_type)
+        # All acme servers setup are run in parallel, to speed up the processing
         pool = multiprocessing.Pool(processes=len(nodes))
         expected_results = [_setup_one_node(index, node, acme_config, pool, repo_path)
                             for (index, node) in enumerate(nodes)]
@@ -34,6 +60,7 @@ def setup_acme_server(acme_config, nodes, repositories_path):
         if False in results:
             raise ValueError('One instance of {0} did not start correctly.'.format(acme_type))
 
+        # Gather all acme server instances description, and associate one for each node
         for (index, node) in enumerate(nodes):
             acme_xdist[node] = results[index]
 
@@ -42,6 +69,16 @@ def setup_acme_server(acme_config, nodes, repositories_path):
 
 @contextlib.contextmanager
 def _prepare_repository(repositories_path, acme_type):
+    # type: (str, str) -> str
+    """
+    This contextmanager will construct a local GIT repository of the relevant ACME server,
+    either pebble or boulder. And ensure to clean up correctly when context is destroyed if
+    something goes wrong. Otherwise the repository is conserved, to speed up further executions.
+    :param str repositories_path: the repositories path to use to store the GIT repo.
+    :param str acme_type: type of acme server, pebble or boulder
+    :return: the repository path
+    :rtype: str
+    """
     print('=> Preparing GIT repositories...')
     repo_path = join(repositories_path, acme_type)
 
@@ -56,10 +93,20 @@ def _prepare_repository(repositories_path, acme_type):
         print('=> GIT repositories ready.')
         yield repo_path
     except (OSError, subprocess.CalledProcessError):
-        shutil.rmtree(repositories_path)
+        try:
+            shutil.rmtree(repo_path)
+        except OSError:
+            pass
 
 
 def _warm_up_docker(acme_type):
+    # type: (str) -> None
+    """
+    This function will download the relevant docker files before any docker-compose call,
+    to speed up theses calls. Indeed in a paralleled execution, a given image could be
+    downloaded several times in parallel, which is not efficient.
+    :param str acme_type: the acme server type, pebble or boulder
+    """
     if acme_type == 'boulder':
         launch_command(['docker', 'pull', 'letsencrypt/boulder-tools-go{0}:{1}'
                        .format(TRAVIS_GO_VERSION, BOULDER_VERSION)])
@@ -69,11 +116,30 @@ def _warm_up_docker(acme_type):
 
 
 def _setup_one_node(index, node, acme_config, pool, repo_path):
+    # type: (int, str, dict, multiprocessing.Pool, str) -> multiprocessing.pool.AsyncResult
+    """
+    Build and start an acme server for one node.
+    This implies to create ad-hoc docker-compose.yml, launched it, wait for the dockers to be up,
+    and setup a safe teardown at the end of the integration tests campaign execution.
+    When the server is up, the relevant acme server config will be asynchronously returned
+    to the caller.
+    :param int index: index of current node
+    :param str node: name of current node
+    :param dict acme_config: configuration of acme server to setup
+    :param multiprocessing.Pool pool: the asynchronous execution pool from
+                                      which result must be returned
+    :param str repo_path: GIT repository path of the acme server sources
+    :return: an promise containing the acme server characteristics in case of success
+    :rtype: multiprocessing.pool.AsyncResult
+    """
     acme_type = acme_config['type']
     print('=> Setting up a {0} instance ({1})...'.format(acme_type, node))
     workspace = tempfile.mkdtemp()
 
     def cleanup():
+        """
+        The cleanup function to call that will teardown relevant dockers and their configuration.
+        """
         print('=> Tear down the {0} instance ({1})...'.format(acme_type, node))
 
         try:
@@ -90,13 +156,29 @@ def _setup_one_node(index, node, acme_config, pool, repo_path):
 
         print('=> One {0} instance stopped ({1}).'.format(acme_type, node))
 
+    # Here with atexit we ensure that clean function is called no matter what.
     atexit.register(cleanup)
 
     return pool.apply_async(_async_work, (workspace, index, acme_config, node, repo_path))
 
 
 def _async_work(workspace, index, acme_config, node, repo_path):
+    """
+    Asynchronous part of the work to execute to setup an acme server.
+    It is here that the ad-hoc docker-compose.yml and its execution will be done.
+    The exact content of the docker-compose.yml depends on the acme server type, and is delegated
+    to a specialised task.
+    :param str workspace: temporary directory where all docker setup will be done
+    :param int index: index of current node
+    :param dict acme_config: dict describing the acme server to setup
+    :param str node: name of current node
+    :param str repo_path: path to the GIT repository of current acme server sources
+    :return: the acme server characteristics in case of success, false otherwise
+    :rtype: dict
+    """
     acme_type = acme_config['type']
+    # Each acme server is assigned specific ports, to avoid any collision between them and allow
+    # full integration tests paralleled execution.
     params = {
         'node': node,
         'https_01_port': 5001 + 10 * index,
@@ -108,6 +190,8 @@ def _async_work(workspace, index, acme_config, node, repo_path):
         'rednet_network': '10.88.{0}'.format(index),
     }
 
+    # Current acme servers sources are copied into the temporary workspace, to allow
+    # customisations to a specific acme server instance.
     ignore = shutil.ignore_patterns('.git')
     shutil.copytree(repo_path, join(workspace, acme_type), ignore=ignore)
 
@@ -129,10 +213,15 @@ def _async_work(workspace, index, acme_config, node, repo_path):
     print('=> Waiting for {0} instance to respond ({1})...'.format(acme_type, node))
 
     try:
+        # ACME servers can take a long time to be ready to server.
+        # This is particulary true with Boulder (1 min in average).
+        # So we really wait for the directory url to respond to be sure that server is ready.
         misc.check_until_timeout(directory_url)
     except ValueError:
         return False
 
+    # Specific for Pebble, that use an API to setup the default A record, instead of the
+    # FAKE_DNS environment variable used in Boulder. Will be harmonised soon.
     if acme_type == 'pebble':
         response = requests.post('http://localhost:{0}/set-default-ipv4'
                                  .format(params['challsrvport_mgt_port']),
@@ -141,10 +230,24 @@ def _async_work(workspace, index, acme_config, node, repo_path):
 
     print('=> One {0} instance ready ({1}).'.format(acme_type, node))
 
+    # The xdist object contains everything needed by a pytest method to execute tests against the
+    # ACME server instance (http/tls ports, directory url, fake dns server and so one)
     return xdist
 
 
 def _setup_boulder(workspace, params, acme_v2):
+    # type: (str, dict, bool) -> str
+    """
+    Specific docker-compose.yml to setup Boulder.
+    Boulder is not suited well for integration tests, so customization is quite complex.
+    Several services layers are needed, and some hard-coded values must be modified from the
+    source code before dockers are built.
+    :param str workspace: Path of current workspace where the dockers will be built and launched
+    :param dict params: a dict of all customisations to apply to this particular boulder instance
+    :param bool acme_v2: True if the boulder instance should server the ACME v2 protocol
+    :return: the directory url of this boulder instance
+    :rtype: str
+    """
     data = '''
 version: '3'
 services:
@@ -239,6 +342,7 @@ networks:
     with open(join(workspace, 'docker-compose.yml'), 'w') as file:
         file.write(data)
 
+    # Here we will have some reprocessing to modify inplace boulder source code
     with open(join(workspace, 'boulder/test/config/va.json'), 'r') as file:
         data = file.read()
 
@@ -265,14 +369,28 @@ networks:
             except UnicodeDecodeError:
                 pass
 
+    # In particular this allow Boulder to ignore usual limit rate policies, useful to execute
+    # a lot of repetitive operations on the server instance.
     os.rename(join(workspace, 'boulder/test/rate-limit-policies-b.yml'),
               join(workspace, 'boulder/test/rate-limit-policies.yml'))
 
+    # Watch out to use the correct port, as Boulder support both ACME v1 amd v2
     return 'http://localhost:{0}/directory'.format(
         params['directory_v2_port'] if acme_v2 else params['directory_v1_port'])
 
 
 def _setup_pebble(workspace, params, strict=False):
+    # type: (str, dict, bool) -> str
+    """
+    Specific docker-compose.yml to setup Pebble.
+    Boulder is not suited well suited for integration tests. All that is required, apart the ad-hoc
+    docker-compose.yml, is to provide a custom conf file pebble-config.json.
+    :param str workspace: Path of current workspace where the dockers will be built and launched
+    :param dict params: a dict of all customisations to apply to this particular pebble instance
+    :param strict: True if pebble needs to be run in strict mode
+    :return: the directory url of this boulder instance
+    :rtype: str
+    """
     data = '''\
 version: '3'
 services:
@@ -315,6 +433,8 @@ networks:
     with open(join(workspace, 'docker-compose.yml'), 'w') as file:
         file.write(data)
 
+    # After registering the ad-hoc docker-compose.yml file, all customisations are contained
+    # in a pebble-config.json file, that is written in the copied sources.
     data = '''
 {{
   "pebble": {{
@@ -330,10 +450,18 @@ networks:
     with open(join(workspace, 'pebble/test/config/pebble-config.json'), 'w') as file:
         file.write(data)
 
+    # No ACME v1 here. However, directory is server under HTTPS
     return 'https://localhost:{0}/dir'.format(params['directory_v2_port'])
 
 
 def launch_command(command, cwd=os.getcwd()):
+    # type: (List[str], str) -> None
+    """
+    Launch a subprocess command, turning off all output, and raising and exception if anything
+    goes wrong with a print of the captured output.
+    :param str[] command: the command to launch
+    :param str cwd: workspace path to use for this command
+    """
     try:
         subprocess.check_output(command, stderr=subprocess.STDOUT, cwd=cwd, universal_newlines=True)
     except subprocess.CalledProcessError as e:
