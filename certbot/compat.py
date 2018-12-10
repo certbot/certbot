@@ -110,14 +110,18 @@ def readline_with_timeout(timeout, prompt):
         # So no timeout on Windows for now.
         return sys.stdin.readline()
 
+
 def compare_file_modes(mode1, mode2):
     """Return true if the two modes can be considered as equals for this platform"""
-    if 'fcntl' in sys.modules:
+    try:
         # Linux specific: standard compare
+        import fcntl  # pylint: disable=import-error,unused-import
         return oct(stat.S_IMODE(mode1)) == oct(stat.S_IMODE(mode2))
-    # Windows specific: most of mode bits are ignored on Windows. Only check user R/W rights.
-    return (stat.S_IMODE(mode1) & stat.S_IREAD == stat.S_IMODE(mode2) & stat.S_IREAD
-            and stat.S_IMODE(mode1) & stat.S_IWRITE == stat.S_IMODE(mode2) & stat.S_IWRITE)
+    except ImportError:
+        # Windows specific: most of mode bits are ignored on Windows. Only check user R/W rights.
+        return (stat.S_IMODE(mode1) & stat.S_IREAD == stat.S_IMODE(mode2) & stat.S_IREAD
+                and stat.S_IMODE(mode1) & stat.S_IWRITE == stat.S_IMODE(mode2) & stat.S_IWRITE)
+
 
 WINDOWS_DEFAULT_FOLDERS = {
     'config': 'C:\\Certbot',
@@ -130,6 +134,7 @@ LINUX_DEFAULT_FOLDERS = {
     'logs': '/var/log/letsencrypt',
 }
 
+
 def get_default_folder(folder_type):
     """
     Return the relevant default folder for the current OS
@@ -140,8 +145,10 @@ def get_default_folder(folder_type):
     :rtype: str
 
     """
-    if 'fcntl' in sys.modules:
+    try:
         # Linux specific
+        import fcntl  # pylint: disable=import-error,unused-import
         return LINUX_DEFAULT_FOLDERS[folder_type]
-    # Windows specific
-    return WINDOWS_DEFAULT_FOLDERS[folder_type]
+    except ImportError:
+        # Windows specific
+        return WINDOWS_DEFAULT_FOLDERS[folder_type]
