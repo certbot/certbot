@@ -6,11 +6,11 @@ for a directory a specific configuration using built-in pytest hooks.
 """
 import os
 import json
-from _pytest import config as pytest_config
+from _pytest import config as config_pytest
 
 
 def pytest_configure(config):
-    # type: (pytest_config.Config) -> None
+    # type: (config_pytest.Config) -> None
     """
     Standard pytest hook used to add a configuration logic for each node of a pytest run.
     :param pytest_config.Config config: the current pytest configuration
