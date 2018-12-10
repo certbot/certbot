@@ -207,7 +207,7 @@ def main(cli_args=sys.argv[1:]):
         # utils.acme_server will handle theses specifics.
         if 'pebble' in args.acme_server:
             acme_config['type'] = 'pebble'
-            acme_config['option'] = 'strict' if 'strict' in args.acme_server else 'nonstrict'
+            acme_config['option'] = 'nonstrict' if 'nonstrict' in args.acme_server else 'strict'
         else:
             acme_config['type'] = 'boulder'
             acme_config['option'] = 'v1' if 'v1' in args.acme_server else 'v2'
