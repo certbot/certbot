@@ -24,7 +24,7 @@ def acme_url(request, worker_id):
 
 @pytest.fixture
 def tls_sni_01_port(request, worker_id):
-    return request.config.acme_xdist[worker_id]['tls_sni_01_port']
+    return request.config.acme_xdist[worker_id]['https_01_port']
 
 
 @pytest.fixture
