@@ -180,8 +180,8 @@ WINDOWS_DEFAULT_FOLDERS = {
 }
 LINUX_DEFAULT_FOLDERS = {
     'config': '/etc/letsencrypt',
-    'work': '/var/letsencrypt/lib',
-    'logs': '/var/letsencrypt/log',
+    'work': '/var/lib/letsencrypt',
+    'logs': '/var/log/letsencrypt',
 }
 
 def get_default_folder(folder_type):

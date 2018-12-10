@@ -1,17 +1,9 @@
+image: Visual Studio 2015
+
 environment:
   matrix:
-    - FYI: Python 3.4 on Windows Server 2012 R2
-      TOXENV: py34
-      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
-    - FYI: Python 3.4 on Windows Server 2016
-      TOXENV: py34
-      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
-    - FYI: Python 3.5 on Windows Server 2016
-      TOXENV: py35
-      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
-    - FYI: Python 3.7 on Windows Server 2016 + code coverage
-      TOXENV: py37-cover
-      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+    - TOXENV: py35
+    - TOXENV: py37-cover
 
 branches:
   only:
@@ -23,7 +15,6 @@ install:
   # Use Python 3.7 by default
   - "SET PATH=C:\\Python37;C:\\Python37\\Scripts;%PATH%"
   # Check env
-  - "echo %APPVEYOR_BUILD_WORKER_IMAGE%"
   - "python --version"
   # Upgrade pip to avoid warnings
   - "python -m pip install --upgrade pip"
