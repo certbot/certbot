@@ -31,7 +31,7 @@ if [ -z "$VENV_PATH" ]; then
 fi
 VENV_BIN="$VENV_PATH/bin"
 BOOTSTRAP_VERSION_PATH="$VENV_PATH/certbot-auto-bootstrap-version.txt"
-LE_AUTO_VERSION="0.28.0"
+LE_AUTO_VERSION="0.29.1"
 BASENAME=$(basename $0)
 USAGE="Usage: $BASENAME [OPTIONS]
 A self-updating wrapper script for the Certbot ACME client. When run, updates
@@ -593,8 +593,7 @@ BootstrapArchCommon() {
   #   - ArchLinux (x86_64)
   #
   # "python-virtualenv" is Python3, but "python2-virtualenv" provides
-  # only "virtualenv2" binary, not "virtualenv" necessary in
-  # ./tools/_venv_common.sh
+  # only "virtualenv2" binary, not "virtualenv".
 
   deps="
     python2
@@ -912,6 +911,35 @@ OldVenvExists() {
     [ -n "$OLD_VENV_PATH" -a -f "$OLD_VENV_PATH/bin/letsencrypt" ]
 }
 
+# Given python path, version 1 and version 2, check if version 1 is outdated compared to version 2.
+# An unofficial version provided as version 1 (eg. 0.28.0.dev0) will be treated
+# specifically by printing "UNOFFICIAL". Otherwise, print "OUTDATED" if version 1
+# is outdated, and "UP_TO_DATE" if not.
+# This function relies only on installed python environment (2.x or 3.x) by certbot-auto.
+CompareVersions() {
+    "$1" - "$2" "$3" << "UNLIKELY_EOF"
+import sys
+from distutils.version import StrictVersion
+
+try:
+    current = StrictVersion(sys.argv[1])
+except ValueError:
+    sys.stdout.write('UNOFFICIAL')
+    sys.exit()
+
+try:
+    remote = StrictVersion(sys.argv[2])
+except ValueError:
+    sys.stdout.write('UP_TO_DATE')
+    sys.exit()
+
+if current < remote:
+    sys.stdout.write('OUTDATED')
+else:
+    sys.stdout.write('UP_TO_DATE')
+UNLIKELY_EOF
+}
+
 if [ "$1" = "--le-auto-phase2" ]; then
   # Phase 2: Create venv, install LE, and run.
 
@@ -1017,43 +1045,39 @@ pycparser==2.14 \
 asn1crypto==0.22.0 \
     --hash=sha256:d232509fefcfcdb9a331f37e9c9dc20441019ad927c7d2176cf18ed5da0ba097 \
     --hash=sha256:cbbadd640d3165ab24b06ef25d1dca09a3441611ac15f6a6b452474fdf0aed1a
-cffi==1.10.0 \
-    --hash=sha256:446699c10f3c390633d0722bc19edbc7ac4b94761918a4a4f7908a24e86ebbd0 \
-    --hash=sha256:562326fc7f55a59ef3fef5e82908fe938cdc4bbda32d734c424c7cd9ed73e93a \
-    --hash=sha256:7f732ad4a30db0b39400c3f7011249f7d0701007d511bf09604729aea222871f \
-    --hash=sha256:94fb8410c6c4fc48e7ea759d3d1d9ca561171a88d00faddd4aa0306f698ad6a0 \
-    --hash=sha256:587a5043df4b00a2130e09fed42da02a4ed3c688bd9bf07a3ac89d2271f4fb07 \
-    --hash=sha256:ec08b88bef627ec1cea210e1608c85d3cf44893bcde74e41b7f7dbdfd2c1bad6 \
-    --hash=sha256:a41406f6d62abcdf3eef9fd998d8dcff04fd2a7746644143045feeebd76352d1 \
-    --hash=sha256:b560916546b2f209d74b82bdbc3223cee9a165b0242fa00a06dfc48a2054864a \
-    --hash=sha256:e74896774e437f4715c57edeb5cf3d3a40d7727f541c2c12156617b5a15d1829 \
-    --hash=sha256:9a31c18ba4881a116e448c52f3f5d3e14401cf7a9c43cc88f06f2a7f5428da0e \
-    --hash=sha256:80796ea68e11624a0279d3b802f88a7fe7214122b97a15a6c97189934a2cc776 \
-    --hash=sha256:f4019826a2dec066c909a1f483ef0dcf9325d6740cc0bd15308942b28b0930f7 \
-    --hash=sha256:7248506981eeba23888b4140a69a53c4c0c0a386abcdca61ed8dd790a73e64b9 \
-    --hash=sha256:a8955265d146e86fe2ce116394be4eaf0cb40314a79b19f11c4fa574cd639572 \
-    --hash=sha256:c49187260043bd4c1d6a52186f9774f17d9b1da0a406798ebf4bfc12da166ade \
-    --hash=sha256:c1d8b3d8dcb5c23ac1a8bf56422036f3f305a3c5a8bc8c354256579a1e2aa2c1 \
-    --hash=sha256:9e389615bcecb8c782a87939d752340bb0a3a097e90bae54d7f0915bc12f45bd \
-    --hash=sha256:d09ff358f75a874f69fa7d1c2b4acecf4282a950293fcfcf89aa606da8a9a500 \
-    --hash=sha256:b69b4557aae7de18b7c174a917fe19873529d927ac592762d9771661875bbd40 \
-    --hash=sha256:5de52b081a2775e76b971de9d997d85c4457fc0a09079e12d66849548ae60981 \
-    --hash=sha256:e7d88fecb7b6250a1fd432e6dc64890342c372fce13dbfe4bb6f16348ad00c14 \
-    --hash=sha256:1426e67e855ef7f5030c9184f4f1a9f4bfa020c31c962cd41fd129ec5aef4a6a \
-    --hash=sha256:267dd2c66a5760c5f4d47e2ebcf8eeac7ef01e1ae6ae7a6d0d241a290068bc38 \
-    --hash=sha256:e553eb489511cacf19eda6e52bc9e151316f0d721724997dda2c4d3079b778db \
-    --hash=sha256:98b89b2c57f97ce2db7aeba60db173c84871d73b40e41a11ea95de1500ddc57e \
-    --hash=sha256:e2b7e090188833bc58b2ae03fb864c22688654ebd2096bcf38bc860c4f38a3d8 \
-    --hash=sha256:afa7d8b8d38ad40db8713ee053d41b36d87d6ae5ec5ad36f9210b548a18dc214 \
-    --hash=sha256:4fc9c2ff7924b3a1fa326e1799e5dd58cac585d7fb25fe53ccaa1333b0453d65 \
-    --hash=sha256:937db39a1ec5af3003b16357b2042bba67c88d43bc11aaa203fa8a5924524209 \
-    --hash=sha256:ab22285797631df3b513b2cd3ecdc51cd8e3d36788e3991d93d0759d6883b027 \
-    --hash=sha256:96e599b924ef009aa867f725b3249ee51d76489f484d3a45b4bd219c5ec6ed59 \
-    --hash=sha256:bea842a0512be6a8007e585790bccd5d530520fc025ce63b03e139be373b0063 \
-    --hash=sha256:e7175287f7fe7b1cc203bb958b17db40abd732690c1e18e700f10e0843a58598 \
-    --hash=sha256:285ab352552f52f1398c912556d4d36d4ea9b8450e5c65d03809bf9886755533 \
-    --hash=sha256:5576644b859197da7bbd8f8c7c2fb5dcc6cd505cadb42992d5f104c013f8a214 \
-    --hash=sha256:b3b02911eb1f6ada203b0763ba924234629b51586f72a21faacc638269f4ced5
+cffi==1.11.5 \
+    --hash=sha256:1b0493c091a1898f1136e3f4f991a784437fac3673780ff9de3bcf46c80b6b50 \
+    --hash=sha256:87f37fe5130574ff76c17cab61e7d2538a16f843bb7bca8ebbc4b12de3078596 \
+    --hash=sha256:1553d1e99f035ace1c0544050622b7bc963374a00c467edafac50ad7bd276aef \
+    --hash=sha256:151b7eefd035c56b2b2e1eb9963c90c6302dc15fbd8c1c0a83a163ff2c7d7743 \
+    --hash=sha256:edabd457cd23a02965166026fd9bfd196f4324fe6032e866d0f3bd0301cd486f \
+    --hash=sha256:ba5e697569f84b13640c9e193170e89c13c6244c24400fc57e88724ef610cd31 \
+    --hash=sha256:79f9b6f7c46ae1f8ded75f68cf8ad50e5729ed4d590c74840471fc2823457d04 \
+    --hash=sha256:b0f7d4a3df8f06cf49f9f121bead236e328074de6449866515cea4907bbc63d6 \
+    --hash=sha256:4c91af6e967c2015729d3e69c2e51d92f9898c330d6a851bf8f121236f3defd3 \
+    --hash=sha256:7a33145e04d44ce95bcd71e522b478d282ad0eafaf34fe1ec5bbd73e662f22b6 \
+    --hash=sha256:95d5251e4b5ca00061f9d9f3d6fe537247e145a8524ae9fd30a2f8fbce993b5b \
+    --hash=sha256:b75110fb114fa366b29a027d0c9be3709579602ae111ff61674d28c93606acca \
+    --hash=sha256:ae5e35a2c189d397b91034642cb0eab0e346f776ec2eb44a49a459e6615d6e2e \
+    --hash=sha256:fdf1c1dc5bafc32bc5d08b054f94d659422b05aba244d6be4ddc1c72d9aa70fb \
+    --hash=sha256:9d1d3e63a4afdc29bd76ce6aa9d58c771cd1599fbba8cf5057e7860b203710dd \
+    --hash=sha256:be2a9b390f77fd7676d80bc3cdc4f8edb940d8c198ed2d8c0be1319018c778e1 \
+    --hash=sha256:ed01918d545a38998bfa5902c7c00e0fee90e957ce036a4000a88e3fe2264917 \
+    --hash=sha256:857959354ae3a6fa3da6651b966d13b0a8bed6bbc87a0de7b38a549db1d2a359 \
+    --hash=sha256:2ba8a45822b7aee805ab49abfe7eec16b90587f7f26df20c71dd89e45a97076f \
+    --hash=sha256:a36c5c154f9d42ec176e6e620cb0dd275744aa1d804786a71ac37dc3661a5e95 \
+    --hash=sha256:e55e22ac0a30023426564b1059b035973ec82186ddddbac867078435801c7801 \
+    --hash=sha256:3eb6434197633b7748cea30bf0ba9f66727cdce45117a712b29a443943733257 \
+    --hash=sha256:ecbb7b01409e9b782df5ded849c178a0aa7c906cf8c5a67368047daab282b184 \
+    --hash=sha256:770f3782b31f50b68627e22f91cb182c48c47c02eb405fd689472aa7b7aa16dc \
+    --hash=sha256:d5d8555d9bfc3f02385c1c37e9f998e2011f0db4f90e250e5bc0c0a85a813085 \
+    --hash=sha256:3c85641778460581c42924384f5e68076d724ceac0f267d66c757f7535069c93 \
+    --hash=sha256:ca1bd81f40adc59011f58159e4aa6445fc585a32bb8ac9badf7a2c1aa23822f2 \
+    --hash=sha256:3bb6bd7266598f318063e584378b8e27c67de998a43362e8fce664c54ee52d30 \
+    --hash=sha256:a6a5cb8809091ec9ac03edde9304b3ad82ad4466333432b16d78ef40e0cce0d5 \
+    --hash=sha256:57b2533356cb2d8fac1555815929f7f5f14d68ac77b085d2326b571310f34f6e \
+    --hash=sha256:495c5c2d43bf6cebe0178eb3e88f9c4aa48d8934aa6e3cddb865c058da76756b \
+    --hash=sha256:e90f17980e6ab0f3c2f3730e56d1fe9bcba1891eeea58966e89d352492cc74f4
 ConfigArgParse==0.12.0 \
     --hash=sha256:28cd7d67669651f2a4518367838c49539457504584a139709b2b8f6c208ef339 \
     --no-binary ConfigArgParse
@@ -1146,9 +1170,9 @@ pytz==2015.7 \
     --hash=sha256:fbd26746772c24cb93c8b97cbdad5cb9e46c86bbdb1b9d8a743ee00e2fb1fc5d \
     --hash=sha256:99266ef30a37e43932deec2b7ca73e83c8dbc3b9ff703ec73eca6b1dae6befea \
     --hash=sha256:8b6ce1c993909783bc96e0b4f34ea223bff7a4df2c90bdb9c4e0f1ac928689e3
-requests==2.12.1 \
-    --hash=sha256:3f3f27a9d0f9092935efc78054ef324eb9f8166718270aefe036dfa1e4f68e1e \
-    --hash=sha256:2109ecea94df90980be040490ff1d879971b024861539abb00054062388b612e
+requests==2.20.0 \
+    --hash=sha256:99dcfdaaeb17caf6e526f32b6a7b780461512ab3f1d992187801694cba42770c \
+    --hash=sha256:a84b8c9ab6239b578f22d1c21d51b696dcfe004032bb80ea832398d6909d7279
 six==1.10.0 \
     --hash=sha256:0ff78c403d9bccf5a425a6d31a12aa6b47f1c21ca4dc2573a7e2f32a97335eb1 \
     --hash=sha256:105f8d68616f8248e24bf0e9372ef04d3cc10104f1980f54d57b2ce73a5ad56a
@@ -1185,6 +1209,15 @@ zope.interface==4.1.3 \
 requests-toolbelt==0.8.0 \
     --hash=sha256:42c9c170abc2cacb78b8ab23ac957945c7716249206f90874651971a4acff237 \
     --hash=sha256:f6a531936c6fa4c6cfce1b9c10d5c4f498d16528d2a54a22ca00011205a187b5
+chardet==3.0.2 \
+    --hash=sha256:4f7832e7c583348a9eddd927ee8514b3bf717c061f57b21dbe7697211454d9bb \
+    --hash=sha256:6ebf56457934fdce01fb5ada5582762a84eed94cad43ed877964aebbdd8174c0
+urllib3==1.21.1 \
+    --hash=sha256:8ed6d5c1ff9d6ba84677310060d6a3a78ca3072ce0684cb3c645023009c114b1 \
+    --hash=sha256:b14486978518ca0901a76ba973d7821047409d7f726f22156b24e83fd71382a5
+certifi==2017.4.17 \
+    --hash=sha256:f4318671072f030a33c7ca6acaef720ddd50ff124d1388e50c1bda4cbd6d7010 \
+    --hash=sha256:f7527ebf7461582ce95f7a9e03dd141ce810d40590834f4ec20cddd54234c10a
 
 # Contains the requirements for the letsencrypt package.
 #
@@ -1197,31 +1230,29 @@ letsencrypt==0.7.0 \
     --hash=sha256:105a5fb107e45bcd0722eb89696986dcf5f08a86a321d6aef25a0c7c63375ade \
     --hash=sha256:c36e532c486a7e92155ee09da54b436a3c420813ec1c590b98f635d924720de9
 
-certbot==0.28.0 \
-    --hash=sha256:f2f7c816acd695cbcda713a779b0db2b08e9de407146b46e1c4ef5561e0f5417 \
-    --hash=sha256:31e3e2ee2a25c009a621c59ac9182f85d937a897c7bd1d47d0e01f3c712a090a
-acme==0.28.0 \
-    --hash=sha256:d3a564031155fece3f6edce8c5246d4cf34be0977b4c7c5ce84e86c68601c895 \
-    --hash=sha256:bf7c2f1c24a26ab5b9fce3a6abca1d74a5914d46919649ae00ad5817db62bb85
-certbot-apache==0.28.0 \
-    --hash=sha256:a57d7bac4f13ae5ecea4f4cbd479d381c02316c4832b25ab5a9d7c6826166370 \
-    --hash=sha256:3f93f5de4a548e973c493a6cac5eeeb3dbbcae2988b61299ea0727d04a00f5bb
-certbot-nginx==0.28.0 \
-    --hash=sha256:1822a65910f0801087fa20a3af3fc94f878f93e0f11809483bb5387df861e296 \
-    --hash=sha256:426fb403b0a7b203629f4e350a862cbc3bc1f69936fdab8ec7eafe0d8a3b5ddb
+certbot==0.29.1 \
+    --hash=sha256:2ba2c60fd1969e75d3e5048d3f7d95afd0949670b39a6a0037ba4a594e9f26a5 \
+    --hash=sha256:6fc604d207c48b95dea3458bb33a11b17aa625628eb197927ffee8b458f62692
+acme==0.29.1 \
+    --hash=sha256:4be3848f8813c455021f13519642d8ec2746b78d4d0bc2ae04c3dcb1d8862f60 \
+    --hash=sha256:a2e203ade83cd1eaf19112004a63073830211cf7759d437f634babb08c49b47c
+certbot-apache==0.29.1 \
+    --hash=sha256:8d8b6b7c5f333cf5297153c6a1eacc09b4a5c73e8f93544800b3ad016d5e34d0 \
+    --hash=sha256:c3af1c66c86cfeef7dac4fe9b16c7c755ebd12bc526408c27781bd34b9de8128
+certbot-nginx==0.29.1 \
+    --hash=sha256:5ba3a7d93d3ce317fb8b3d0222c708fb79e96c7a9b1ba56e12e46892c2d12869 \
+    --hash=sha256:0c1205ebb91eef4b7d15293c6778ffc962d09563b315120b2d226348d751e38d
 
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
     cat << "UNLIKELY_EOF" > "$TEMP_DIR/pipstrap.py"
 #!/usr/bin/env python
 """A small script that can act as a trust root for installing pip >=8
-
 Embed this in your project, and your VCS checkout is all you have to trust. In
 a post-peep era, this lets you claw your way to a hash-checking version of pip,
 with which you can install the rest of your dependencies safely. All it assumes
 is Python 2.6 or better and *some* version of pip already installed. If
 anything goes wrong, it will exit with a non-zero status code.
-
 """
 # This is here so embedded copies are MIT-compliant:
 # Copyright (c) 2016 Erik Rose
@@ -1348,10 +1379,8 @@ def hashed_download(url, temp, digest):
 
 def get_index_base():
     """Return the URL to the dir containing the "packages" folder.
-
     Try to wring something out of PIP_INDEX_URL, if set. Hack "/simple" off the
     end if it's there; that is likely to give us the right dir.
-
     """
     env_var = environ.get('PIP_INDEX_URL', '').rstrip('/')
     if env_var:
@@ -1641,7 +1670,12 @@ UNLIKELY_EOF
       error "WARNING: couldn't find Python $MIN_PYTHON_VERSION+ to check for updates."
     elif ! REMOTE_VERSION=`"$LE_PYTHON" "$TEMP_DIR/fetch.py" --latest-version` ; then
       error "WARNING: unable to check for updates."
-    elif [ "$LE_AUTO_VERSION" != "$REMOTE_VERSION" ]; then
+    fi
+
+    LE_VERSION_STATE=`CompareVersions "$LE_PYTHON" "$LE_AUTO_VERSION" "$REMOTE_VERSION"`
+    if [ "$LE_VERSION_STATE" = "UNOFFICIAL" ]; then
+      say "Unofficial certbot-auto version detected, self-upgrade is disabled: $LE_AUTO_VERSION"
+    elif [ "$LE_VERSION_STATE" = "OUTDATED" ]; then
       say "Upgrading certbot-auto $LE_AUTO_VERSION to $REMOTE_VERSION..."
 
       # Now we drop into Python so we don't have to install even more
