@@ -1,3 +1,7 @@
+"""
+Misc module contains stateless functions that could be used during pytest execution,
+or outside during setup/teardown of the integration tests environment.
+"""
 import subprocess
 import os
 import ssl
@@ -15,8 +19,41 @@ from six.moves import socketserver, SimpleHTTPServer
 from OpenSSL import crypto
 
 
-class GraceFullTCPServer(socketserver.TCPServer):
-    allow_reuse_address = True
+def check_until_timeout(url):
+    # type: (str) -> None
+    """
+    Wait and block until given url responds with status 200, or raise and exception
+    after 150 attempts.
+    :param str url: the URL to test
+    :raise ValueError: exception raised after 150 unsuccessful attempts to reach the URL
+    """
+    context = ssl.SSLContext(protocol=ssl.PROTOCOL_TLS)
+
+    for _ in range(0, 150):
+        time.sleep(1)
+        try:
+            if urlopen(url, context=context).getcode() == 200:
+                return
+        except IOError:
+            pass
+
+    raise ValueError('Error, url did not respond after 150 attempts: {0}'.format(url))
+
+
+@contextlib.contextmanager
+def execute_in_given_cwd(cwd):
+    # type: (str) -> None
+    """
+    Context manager that will execute any command in the given cwd after context entering,
+    and restore current cwd when context is destroyed.
+    :param str cwd: the path to use as the temporary current workspace for python execution
+    """
+    current_cwd = os.getcwd()
+    try:
+        os.chdir(cwd)
+        yield
+    finally:
+        os.chdir(current_cwd)
 
 
 def find_certbot_root_directory():
@@ -45,26 +82,16 @@ def generate_csr(domains, key_path, csr_path, key_type='RSA'):
     subprocess.check_call(command)
 
 
-def check_until_timeout(url):
-    context = ssl.SSLContext(protocol=ssl.PROTOCOL_TLS)
-
-    for _ in range(0, 150):
-        time.sleep(1)
-        try:
-            if urlopen(url, context=context).getcode() == 200:
-                return
-        except IOError:
-            pass
-
-    raise ValueError('Error, url did not respond after 150 attempts: {0}'.format(url))
-
-
 def read_certificate(cert_path):
     with open(cert_path, 'r') as file:
         data = file.read()
 
     cert = crypto.load_certificate(crypto.FILETYPE_PEM, data.encode('utf-8'))
     return crypto.dump_certificate(crypto.FILETYPE_TEXT, cert).decode('utf-8')
+
+
+class GraceFullTCPServer(socketserver.TCPServer):
+    allow_reuse_address = True
 
 
 @contextlib.contextmanager
@@ -143,13 +170,3 @@ def node_is_master(config):
     :return: True if current node is master (or xdist is not used), False otherwise
     """
     return hasattr(config, 'slaveinput')
-
-
-@contextlib.contextmanager
-def execute_in_given_cwd(cwd):
-    current_cwd = os.getcwd()
-    try:
-        os.chdir(cwd)
-        yield
-    finally:
-        os.chdir(current_cwd)
