@@ -148,6 +148,7 @@ def main(cli_args=sys.argv[1:]):
         with acme.setup_acme_server(acme_config, workers, repositories_path) as acme_xdist:
             os.environ['CERTBOT_ACME_TYPE'] = args.acme_server
             os.environ['CERTBOT_ACME_XDIST'] = json.dumps(acme_xdist)
+            print('ACME xdist config:\n{0}'.format(os.environ['CERTBOT_ACME_XDIST']))
             with misc.execute_in_given_cwd(os.path.join(CURRENT_DIR, 'certbot_integration_tests')):
                 return max(pytest.main(command), process_coverage(args))
 

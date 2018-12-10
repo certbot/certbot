@@ -24,6 +24,8 @@ def setup_acme_server(acme_config, nodes, repositories_path):
     acme_xdist = {'master': {}}
 
     with _prepare_repository(repositories_path, acme_type) as repo_path:
+        print('=> Warming up Docker engine ...')
+        _warm_up_docker(acme_type)
         pool = multiprocessing.Pool(processes=len(nodes))
         expected_results = [_setup_one_node(index, node, acme_config, pool, repo_path)
                             for (index, node) in enumerate(nodes)]
@@ -57,6 +59,15 @@ def _prepare_repository(repositories_path, acme_type):
         shutil.rmtree(repositories_path)
 
 
+def _warm_up_docker(acme_type):
+    if acme_type == 'boulder':
+        launch_command(['docker', 'pull', 'letsencrypt/boulder-tools-go{0}:{1}'
+                       .format(TRAVIS_GO_VERSION, BOULDER_VERSION)])
+        launch_command(['docker', 'pull', 'mariadb:10.3'])
+    else:
+        launch_command(['docker', 'pull', 'golang:1.11-alpine'])
+
+
 def _setup_one_node(index, node, acme_config, pool, repo_path):
     acme_type = acme_config['type']
     print('=> Setting up a {0} instance ({1})...'.format(acme_type, node))
@@ -77,7 +88,7 @@ def _setup_one_node(index, node, acme_config, pool, repo_path):
             except IOError:
                 pass
 
-        print('=> {0} instance stopped ({1}).'.format(acme_type, node))
+        print('=> One {0} instance stopped ({1}).'.format(acme_type, node))
 
     atexit.register(cleanup)
 
@@ -112,23 +123,15 @@ def _async_work(workspace, index, acme_config, node, repo_path):
         'challsrvtest_mgt_port': params['challsrvport_mgt_port']
     }
 
-    print('configured')
-
     launch_command(['docker-compose', '--project-name', params['node'],
                     'up', '--force-recreate', '-d', acme_config['type']], cwd=workspace)
 
     print('=> Waiting for {0} instance to respond ({1})...'.format(acme_type, node))
 
-    print(directory_url)
-
-    # try:
-    #     misc.check_until_timeout(directory_url)
-    # except ValueError:
-    #     print('check error')
-    #     return False
-    # except:
-    #     print('error !!!!')
-    #     raise
+    try:
+        misc.check_until_timeout(directory_url)
+    except ValueError:
+        return False
 
     if acme_type == 'pebble':
         response = requests.post('http://localhost:{0}/set-default-ipv4'
@@ -136,7 +139,7 @@ def _async_work(workspace, index, acme_config, node, repo_path):
                                  '{{"ip":"{0}.1"}}'.format(params['bluenet_network']))
         response.raise_for_status()
 
-    print('=> {0} instance ready ({1}).'.format(acme_type, node))
+    print('=> One {0} instance ready ({1}).'.format(acme_type, node))
 
     return xdist
 
@@ -332,7 +335,7 @@ networks:
 
 def launch_command(command, cwd=os.getcwd()):
     try:
-        subprocess.check_call(command, stderr=subprocess.STDOUT, cwd=cwd, universal_newlines=True)
+        subprocess.check_output(command, stderr=subprocess.STDOUT, cwd=cwd, universal_newlines=True)
     except subprocess.CalledProcessError as e:
         sys.stderr.write(e.output)
         raise
