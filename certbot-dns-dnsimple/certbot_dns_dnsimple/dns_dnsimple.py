@@ -67,6 +67,7 @@ class _DNSimpleLexiconClient(dns_common_lexicon.LexiconClient):
 
         config = dns_common_lexicon.build_lexicon_config({
             'ttl': ttl,
+            'provider': 'dnssimple',
             'dnssimple': {
                 'auth_token': token,
             }

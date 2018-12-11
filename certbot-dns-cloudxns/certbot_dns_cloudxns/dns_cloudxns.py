@@ -71,6 +71,7 @@ class _CloudXNSLexiconClient(dns_common_lexicon.LexiconClient):
 
         config = dns_common_lexicon.build_lexicon_config({
             'ttl': ttl,
+            'provider': 'cloudxns',
             'cloudxns': {
                 'auth_username': api_key,
                 'auth_token': secret_key,

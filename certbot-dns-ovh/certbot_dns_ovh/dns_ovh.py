@@ -79,6 +79,7 @@ class _OVHLexiconClient(dns_common_lexicon.LexiconClient):
 
         config = dns_common_lexicon.build_lexicon_config({
             'ttl': ttl,
+            'provider': 'ovh',
             'ovh': {
                 'auth_entrypoint': endpoint,
                 'auth_application_key': application_key,

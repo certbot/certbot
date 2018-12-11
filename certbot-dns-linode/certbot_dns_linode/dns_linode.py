@@ -63,6 +63,7 @@ class _LinodeLexiconClient(dns_common_lexicon.LexiconClient):
         super(_LinodeLexiconClient, self).__init__()
 
         config = dns_common_lexicon.build_lexicon_config({
+            'provider': 'linode',
             'linode': {
                 'auth_token': api_key
             }

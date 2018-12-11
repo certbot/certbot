@@ -73,6 +73,7 @@ class _DNSMadeEasyLexiconClient(dns_common_lexicon.LexiconClient):
 
         config = dns_common_lexicon.build_lexicon_config({
             'ttl': ttl,
+            'provider': 'dnsmadeeasy',
             'dnsmadeeasy': {
                 'auth_username': api_key,
                 'auth_token': secret_key,
