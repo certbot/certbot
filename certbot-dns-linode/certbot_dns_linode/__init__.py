@@ -27,7 +27,8 @@ Credentials
 
 Use of this plugin requires a configuration file containing Linode API
 credentials, obtained from your Linode account's `Applications & API
-Tokens page <https://manager.linode.com/profile/api>`_.
+Tokens page v3 <https://manager.linode.com/profile/api>`_ or `Applications &
+API Tokens page v4 <https://cloud.linode.com/profile/tokens>`_.
 
 .. code-block:: ini
    :name: credentials.ini
