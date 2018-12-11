@@ -123,6 +123,9 @@ matrix:
     - language: generic
       env: TOXENV=py3
       os: osx
+    - python: "3.7"
+      dist: xenial
+      env: TOXENV=py37 CERTBOT_NO_PIN=1
 
 
 # Only build pushes to the master branch, PRs, and branches beginning with
