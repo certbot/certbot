@@ -18,7 +18,7 @@ Some plugins offer an *authenticator*, meaning that they can satisfy challenges:
 * Apache plugin: (HTTP-01) Tries to edit your Apache configuration files to temporarily serve files to
   satisfy challenges from the certificate authority. Use the Apache plugin when you're running Certbot on a
   web server with Apache listening on port 80.
-* nginx plugin: (HTTP-01) Tries to edit your nginx configuration files to temporarily serve files to
+* Nginx plugin: (HTTP-01) Tries to edit your nginx configuration files to temporarily serve files to
   satisfy challenges from the certificate authority. Use the nginx plugin when you're running Certbot on a
   web server with nginx listening on port 80.
 * Webroot plugin: (HTTP-01) Tries to place a file where it can be served over HTTP on port 80 by a
