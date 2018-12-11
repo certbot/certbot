@@ -67,7 +67,7 @@ manual_     Y    N    | Helps you obtain a certificate by giving you instruction
 .. |dns_plugs| replace:: :ref:`DNS plugins <dns_plugins>`
 
 Under the hood, plugins use one of several ACME protocol challenges_ to
-prove you control a domain. The options are http-01_ (which uses port 80),
+prove you control a domain. The options are http-01_ (which uses port 80)
 and dns-01_ (requiring configuration of a DNS server on
 port 53, though that's often not the same machine as your webserver). A few
 plugins support more than one challenge type, in which case you can choose one
