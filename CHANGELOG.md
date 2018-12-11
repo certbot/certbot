@@ -14,7 +14,8 @@ Certbot adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
-*
+* The josepy library can now be accessed through acme.jose like it could in
+  previous versions of acme.
 
 Despite us having broken lockstep, we are continuing to release new versions of
 all Certbot components during releases for the time being, however, the only
