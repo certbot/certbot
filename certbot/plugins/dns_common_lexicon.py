@@ -7,6 +7,11 @@ from requests.exceptions import HTTPError, RequestException
 from certbot import errors
 from certbot.plugins import dns_common
 
+try:
+    from lexicon.config import ConfigResolver
+except ImportError:
+    ConfigResolver = None  # type: ignore
+
 logger = logging.getLogger(__name__)
 
 
@@ -100,3 +105,14 @@ class LexiconClient(object):
         if not str(e).startswith('No domain found'):
             return errors.PluginError('Unexpected error determining zone identifier for {0}: {1}'
                                       .format(domain_name, e))
+
+
+def build_lexicon_config(config_dict):
+    # type: (dict) -> ConfigResolver
+    """
+    Convenient function to build a Lexicon 3.x config object.
+    :param dict config_dict: the configuration specifics to apply
+    :return: an instanciated ConfigResolver object
+    :rtype: ConfigResolver
+    """
+    return ConfigResolver().with_dict(config_dict).with_env()

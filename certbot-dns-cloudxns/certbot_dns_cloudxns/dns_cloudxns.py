@@ -69,12 +69,14 @@ class _CloudXNSLexiconClient(dns_common_lexicon.LexiconClient):
     def __init__(self, api_key, secret_key, ttl):
         super(_CloudXNSLexiconClient, self).__init__()
 
-        self.provider = cloudxns.Provider({
-            'provider_name': 'cloudxns',
-            'auth_username': api_key,
-            'auth_token': secret_key,
+        config = dns_common_lexicon.build_lexicon_config({
             'ttl': ttl,
+            'cloudxns': {
+                'auth_username': api_key,
+                'auth_token': secret_key,
+            }
         })
+        self.provider = cloudxns.Provider(config)
 
     def _handle_http_error(self, e, domain_name):
         hint = None
