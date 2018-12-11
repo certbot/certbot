@@ -74,7 +74,7 @@ def main(args):
     if os.environ.get('TRAVIS'):
         # When this script is executed on Travis, the following print will make the log
         # be folded until the end command is printed (see finally section).
-        print('travis_fold:start:install_certbot_dependencies')
+        print('travis_fold:start:install_certbot_deps')
 
     try:
         test_constraints = os.path.join(working_dir, 'test_constraints.txt')
@@ -95,7 +95,7 @@ def main(args):
                         .format(sys.executable, all_constraints, ' '.join(args)))
     finally:
         if os.environ.get('TRAVIS'):
-            print('travis_fold:end:install_certbot_dependencies')
+            print('travis_fold:end:inst_certbot_deps')
         shutil.rmtree(working_dir)
 
 
