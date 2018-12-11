@@ -2,7 +2,7 @@
 import six
 import json
 try:
-    from collections.abc import Hashable
+    from collections.abc import Hashable  # pylint: disable=no-name-in-module
 except ImportError:
     from collections import Hashable
 
