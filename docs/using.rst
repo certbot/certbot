@@ -250,14 +250,19 @@ installer plugins. To do so, specify the authenticator plugin with
 ``--authenticator`` or ``-a`` and the installer plugin with ``--installer`` or
 ``-i``.
 
-For instance, you may want to create a certificate using the webroot_ plugin
-for authentication and the apache_ plugin for installation, perhaps because you
-use a proxy or CDN for HTTPS and only want to secure the connection between them
-and your origin server.
+For instance, you could create a certificate using the webroot_ plugin
+for authentication and the apache_ plugin for installation.
 
 ::
 
     certbot run -a webroot -i apache -w /var/www/html -d example.com
+
+Or you could create a certificate using the manual_ plugin for authentication
+and the nginx_ plugin for installation. (Note that this certificate cannot
+be renewed automatically.)
+
+::
+    certbot run -a manual -i nginx -d example.com
 
 .. _third-party-plugins:
 
