@@ -115,7 +115,7 @@ def compare_file_modes(mode1, mode2):
     """Return true if the two modes can be considered as equals for this platform"""
     try:
         # Linux specific: standard compare
-        import fcntl  # pylint: disable=import-error,unused-import
+        import fcntl  # pylint: disable=import-error,unused-import,unused-variable
         return oct(stat.S_IMODE(mode1)) == oct(stat.S_IMODE(mode2))
     except ImportError:
         # Windows specific: most of mode bits are ignored on Windows. Only check user R/W rights.
@@ -147,7 +147,7 @@ def get_default_folder(folder_type):
     """
     try:
         # Linux specific
-        import fcntl  # pylint: disable=import-error,unused-import
+        import fcntl  # pylint: disable=import-error,unused-import,unused-variable
         return LINUX_DEFAULT_FOLDERS[folder_type]
     except ImportError:
         # Windows specific
