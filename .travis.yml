@@ -9,6 +9,7 @@ before_install:
 
 before_script:
   - 'if [ $TRAVIS_OS_NAME = osx ] ; then ulimit -n 1024 ; fi'
+  - export TOX_TESTENV_PASSENV=TRAVIS
 
 matrix:
   include:
@@ -92,7 +93,7 @@ addons:
 
 install: "travis_retry $(command -v pip || command -v pip3) install codecov tox"
 script:
-    - TOX_TESTENV_PASSENV=TRAVIS travis_retry tox
+    - travis_retry tox
     - '[ -z "${BOULDER_INTEGRATION+x}" ] || (travis_retry tests/boulder-fetch.sh && tests/tox-boulder-integration.sh)'
 
 after_success: '[ "$TOXENV" == "py27-cover" ] && codecov'

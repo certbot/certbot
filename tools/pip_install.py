@@ -95,7 +95,7 @@ def main(args):
                         .format(sys.executable, all_constraints, ' '.join(args)))
     finally:
         if os.environ.get('TRAVIS'):
-            print('travis_fold:end:inst_certbot_deps')
+            print('travis_fold:end:install_certbot_deps')
         shutil.rmtree(working_dir)
 
 
