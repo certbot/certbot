@@ -4,6 +4,7 @@ import unittest
 
 import mock
 
+from certbot import errors
 from certbot.compat import os
 from certbot.plugins import dns_test_common
 from certbot.plugins import dns_test_common_lexicon
@@ -32,10 +33,9 @@ class AuthenticatorTest(test_util.TempDirTestCase,
         # _get_linode_client | pylint: disable=protected-access
         self.auth._get_linode_client = mock.MagicMock(return_value=self.mock_client)
 
-    # _get_linode_client | pylint: disable=protected-access
-    # _setup_credentials | pylint: disable=protected-access
-    def test_api_v3(self):
-        path = os.path.join(self.tempdir, 'file_3.ini')
+    # pylint: disable=protected-access
+    def test_api_version_3_detection(self):
+        path = os.path.join(self.tempdir, 'file_3_auto.ini')
         dns_test_common.write({"linode_key": TOKEN_V3}, path)
 
         config = mock.MagicMock(linode_credentials=path,
@@ -45,10 +45,9 @@ class AuthenticatorTest(test_util.TempDirTestCase,
         client = auth._get_linode_client()
         self.assertEqual(3, client.api_version)
 
-    # _get_linode_client | pylint: disable=protected-access
-    # _setup_credentials | pylint: disable=protected-access
-    def test_api_v4(self):
-        path = os.path.join(self.tempdir, 'file_4.ini')
+    # pylint: disable=protected-access
+    def test_api_version_4_detection(self):
+        path = os.path.join(self.tempdir, 'file_4_auto.ini')
         dns_test_common.write({"linode_key": TOKEN_V4}, path)
 
         config = mock.MagicMock(linode_credentials=path,
@@ -57,6 +56,41 @@ class AuthenticatorTest(test_util.TempDirTestCase,
         auth._setup_credentials()
         client = auth._get_linode_client()
         self.assertEqual(4, client.api_version)
+
+    # pylint: disable=protected-access
+    def test_api_version_3_manual(self):
+        path = os.path.join(self.tempdir, 'file_3_manual.ini')
+        dns_test_common.write({"linode_key": TOKEN_V4, "linode_version": 3}, path)
+
+        config = mock.MagicMock(linode_credentials=path,
+                                linode_propagation_seconds=0)
+        auth = Authenticator(config, "linode")
+        auth._setup_credentials()
+        client = auth._get_linode_client()
+        self.assertEqual(3, client.api_version)
+
+    # pylint: disable=protected-access
+    def test_api_version_4_manual(self):
+        path = os.path.join(self.tempdir, 'file_4_manual.ini')
+        dns_test_common.write({"linode_key": TOKEN_V3, "linode_version": 4}, path)
+
+        config = mock.MagicMock(linode_credentials=path,
+                                linode_propagation_seconds=0)
+        auth = Authenticator(config, "linode")
+        auth._setup_credentials()
+        client = auth._get_linode_client()
+        self.assertEqual(4, client.api_version)
+
+    # pylint: disable=protected-access
+    def test_api_version_error(self):
+        path = os.path.join(self.tempdir, 'file_version_error.ini')
+        dns_test_common.write({"linode_key": TOKEN_V3, "linode_version": 5}, path)
+
+        config = mock.MagicMock(linode_credentials=path,
+                                linode_propagation_seconds=0)
+        auth = Authenticator(config, "linode")
+        auth._setup_credentials()
+        self.assertRaises(errors.PluginError, auth._get_linode_client)
 
 class LinodeLexiconClientTest(unittest.TestCase, dns_test_common_lexicon.BaseLexiconClientTest):
 

@@ -57,13 +57,18 @@ class Authenticator(dns_common.DNSAuthenticator):
 
     def _get_linode_client(self):
         api_key = self.credentials.conf('key')
-        api_version = 3
+        api_version = self.credentials.conf('version')
 
-        # Match for v4 api key
-        regex_v4 = re.compile('^[0-9a-f]{64}$')
-        regex_match = regex_v4.match(api_key)
-        if regex_match:
-            api_version = 4
+        if not api_version:
+            api_version = 3
+
+            # Match for v4 api key
+            regex_v4 = re.compile('^[0-9a-f]{64}$')
+            regex_match = regex_v4.match(api_key)
+            if regex_match:
+                api_version = 4
+        else:
+            api_version = int(api_version)
 
         return _LinodeLexiconClient(api_key, api_version)
 
@@ -77,6 +82,7 @@ class _LinodeLexiconClient(dns_common_lexicon.LexiconClient):
         super(_LinodeLexiconClient, self).__init__()
 
         self.api_version = api_version
+
         if api_version == 3:
             config = dns_common_lexicon.build_lexicon_config('linode', {}, {
                 'auth_token': api_key,
@@ -87,6 +93,9 @@ class _LinodeLexiconClient(dns_common_lexicon.LexiconClient):
             config = dns_common_lexicon.build_lexicon_config('linode4', {}, {
                 'auth_token': api_key,
             })
+        else:
+            raise errors.PluginError('Invalid api version specified: {0}.'
+                                     .format(api_version))
 
             self.provider = linode4.Provider(config)
 
