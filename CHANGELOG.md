@@ -14,6 +14,8 @@ Certbot adheres to [Semantic Versioning](http://semver.org/).
   to the `update_account` subcommand.
 * Marked usage `register --update-registration` for deprecation and 
   removal in a future release.
+* Apache plugin now respects CERTBOT_DOCS environment variable when adding
+  command line defaults.
 
 ### Fixed
 
