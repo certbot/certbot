@@ -1,2 +1,2 @@
-acme[dev]==0.21.1
--e certbot[dev]
+-e acme[dev]
+-e .[dev]
