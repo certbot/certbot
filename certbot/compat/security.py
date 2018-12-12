@@ -33,7 +33,7 @@ def get_current_user():
     """
     if not win32api:
         # Module pwd is available on all Unix version,
-        # so it will be here if were are not on Windows.
+        # so it will be here if we are not on Windows.
         return pwd.getpwuid(os.getuid()).pw_name
 
     return win32api.GetUserName()
