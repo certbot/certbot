@@ -101,6 +101,7 @@ manage certificates:
 
 manage your account with Let's Encrypt:
     register        Create a Let's Encrypt ACME account
+    update_account  Update a Let's Encrypt ACME account
   --agree-tos       Agree to the ACME server's Subscriber Agreement
    -m EMAIL         Email address for important account notifications
 """
@@ -397,8 +398,13 @@ VERB_HELP = [
     }),
     ("register", {
         "short": "Register for account with Let's Encrypt / other ACME server",
-        "opts": "Options for account registration & modification",
+        "opts": "Options for account registration",
         "usage": "\n\n  certbot register --email user@example.com [options]\n\n"
+    }),
+    ("update_account", {
+        "short": "Update existing account with Let's Encrypt / other ACME server",
+        "opts": "Options for account modification",
+        "usage": "\n\n  certbot update_account --email updated_email@example.com [options]\n\n"
     }),
     ("unregister", {
         "short": "Irrevocably deactivate your account",
@@ -465,6 +471,7 @@ class HelpfulArgumentParser(object):
             "install": main.install,
             "plugins": main.plugins_cmd,
             "register": main.register,
+            "update_account": main.update_account,
             "unregister": main.unregister,
             "renew": main.renew,
             "revoke": main.revoke,
@@ -993,21 +1000,21 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              "certificates. Updates to the Subscriber Agreement will still "
              "affect you, and will be effective 14 days after posting an "
              "update to the web site.")
+    # TODO: When `certbot register --update-registration` is fully deprecated,
+    # delete following helpful.add
     helpful.add(
         "register", "--update-registration", action="store_true",
-        default=flag_default("update_registration"),
-        help="With the register verb, indicates that details associated "
-             "with an existing registration, such as the e-mail address, "
-             "should be updated, rather than registering a new account.")
+        default=flag_default("update_registration"), dest="update_registration",
+        help=argparse.SUPPRESS)
     helpful.add(
-        ["register", "unregister", "automation"], "-m", "--email",
+        ["register", "update_account", "unregister", "automation"], "-m", "--email",
         default=flag_default("email"),
         help=config_help("email"))
-    helpful.add(["register", "automation"], "--eff-email", action="store_true",
+    helpful.add(["register", "update_account", "automation"], "--eff-email", action="store_true",
                 default=flag_default("eff_email"), dest="eff_email",
                 help="Share your e-mail address with EFF")
-    helpful.add(["register", "automation"], "--no-eff-email", action="store_false",
-                default=flag_default("eff_email"), dest="eff_email",
+    helpful.add(["register", "update_account", "automation"], "--no-eff-email",
+                action="store_false", default=flag_default("eff_email"), dest="eff_email",
                 help="Don't share your e-mail address with EFF")
     helpful.add(
         ["automation", "certonly", "run"],
