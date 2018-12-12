@@ -21,8 +21,6 @@ CLI_DEFAULTS = dict(
     ],
 
     # Main parser
-    # TODO: When `certbot register --update-registration` is fully deprecated,
-    # delete 'update_registration'.
     verbose_count=-int(logging.INFO / 10),
     text_mode=False,
     max_log_backups=1000,
@@ -32,7 +30,6 @@ CLI_DEFAULTS = dict(
     certname=None,
     dry_run=False,
     register_unsafely_without_email=False,
-    update_account=False,
     update_registration=False,
     email=None,
     eff_email=None,
