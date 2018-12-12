@@ -51,7 +51,8 @@ install_requires = [
 # Add pywin32 on Windows platform to handle low-level system calls.
 # This dependency needs to be added dynamically to avoid being here
 # when certbot-oldest tests are launched.
-# Indeed, associated with --constraint, pip will ignore platform_system directive and try
+# Indeed, during these tests, a requirements constraints file will be
+# passed to pip, pip will ignore platform_system directive and try
 # to install pywin32 on Unix systems.
 # This would fail and break certbot-oldest tests.
 if os.environ.get('CERTBOT_OLDEST') != '1':
