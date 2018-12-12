@@ -19,6 +19,7 @@ import time
 import subprocess
 import sys
 import re
+import shlex
 
 VERSION_PATTERN = re.compile(r'^(\d+)\.(\d+).*$')
 
@@ -101,18 +102,18 @@ def _check_version(version_str, major_version):
     return False
 
 
-def subprocess_with_print(command):
-    print(command)
-    subprocess.check_call(command, shell=True)
+def subprocess_with_print(cmd, env=os.environ, shell=False):
+    print('+ {0}'.format(subprocess.list2cmdline(cmd)) if isinstance(cmd, list) else cmd)
+    subprocess.check_call(cmd, env=env, shell=shell)
 
 
-def get_venv_python(venv_path):
+def get_venv_bin_path(venv_path):
     python_linux = os.path.join(venv_path, 'bin/python')
     if os.path.isfile(python_linux):
-        return python_linux
+        return os.path.abspath(os.path.dirname(python_linux))
     python_windows = os.path.join(venv_path, 'Scripts\\python.exe')
     if os.path.isfile(python_windows):
-        return python_windows
+        return os.path.abspath(os.path.dirname(python_windows))
 
     raise ValueError((
         'Error, could not find python executable in venv path {0}: is it a valid venv ?'
@@ -144,18 +145,21 @@ def main(venv_name, venv_args, args):
     if os.path.isdir(venv_name):
         os.rename(venv_name, '{0}.{1}.bak'.format(venv_name, int(time.time())))
 
-    subprocess_with_print('"{0}" -m virtualenv --no-site-packages --setuptools {1} {2}'
-                          .format(sys.executable, venv_name, venv_args))
+    command = [sys.executable, '-m', 'virtualenv', '--no-site-packages', '--setuptools', venv_name]
+    command.extend(shlex.split(venv_args))
+    subprocess_with_print(command)
 
-    python_executable = get_venv_python(venv_name)
-
-    subprocess_with_print('"{0}" {1}'.format(
-        python_executable,
-        os.path.normpath('./letsencrypt-auto-source/pieces/pipstrap.py')))
-    subprocess_with_print('"{0}" {1} {2}'.format(
-        python_executable,
-        os.path.normpath('./tools/pip_install.py'),
-        ' '.join(args)))
+    # We execute the following commands in the context of the virtual environment, to install
+    # the packages in it. To do so, we append the venv binary to the PATH that will be used for
+    # these commands. With this trick, correct python executable will be selected.
+    new_environ = os.environ.copy()
+    new_environ['PATH'] = os.pathsep.join([get_venv_bin_path(venv_name), new_environ['PATH']])
+    subprocess_with_print('python {0}'.format('./letsencrypt-auto-source/pieces/pipstrap.py'),
+                          env=new_environ, shell=True)
+    subprocess_with_print("python -m pip install --upgrade 'setuptools>=30.3'",
+                          env=new_environ, shell=True)
+    subprocess_with_print('python {0} {1}'.format('./tools/pip_install.py', ' '.join(args)),
+                          env=new_environ, shell=True)
 
     if os.path.isdir(os.path.join(venv_name, 'bin')):
         # Linux/OSX specific

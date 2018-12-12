@@ -31,7 +31,7 @@ version = meta['version']
 # specified here to avoid masking the more specific request requirements in
 # acme. See https://github.com/pypa/pip/issues/988 for more info.
 install_requires = [
-    'acme>=0.26.0',
+    'acme>=0.29.0',
     # We technically need ConfigArgParse 0.10.0 for Python 2.6 support, but
     # saying so here causes a runtime error against our temporary fork of 0.9.3
     # in which we added 2.6 support (see #2243), so we relax the requirement.
@@ -68,9 +68,10 @@ dev3_extras = [
 ]
 
 docs_extras = [
+    # If you have Sphinx<1.5.1, you need docutils<0.13.1
+    # https://github.com/sphinx-doc/sphinx/issues/3212
     'repoze.sphinx.autointerface',
-    # sphinx.ext.imgconverter
-    'Sphinx >=1.6',
+    'Sphinx>=1.2', # Annotation support
     'sphinx_rtd_theme',
 ]
 
