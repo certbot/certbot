@@ -733,7 +733,6 @@ def update_account(config, unused_plugins):
     eff.handle_subscription(config)
     add_msg("Your e-mail address was updated to {0}.".format(config.email))
 
-
 def _install_cert(config, le_client, domains, lineage=None):
     """Install a cert
 
