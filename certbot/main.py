@@ -1269,7 +1269,7 @@ def renew(config, unused_plugins):
     :rtype: None
 
     """
-    if not sys.stdin.isatty():
+    if not sys.stdin.isatty() and config.random_sleep_on_renew:
         # Noninteractive renewals include a random delay in order to spread
         # out the load on the certificate authority servers, even if many
         # users all pick the same time for renewals.  This delay precedes
