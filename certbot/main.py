@@ -4,9 +4,7 @@ from __future__ import print_function
 import functools
 import logging.handlers
 import os
-import random
 import sys
-import time
 
 import configobj
 import josepy as jose
@@ -67,6 +65,7 @@ def _suggest_donation_if_appropriate(config):
            "Donating to ISRG / Let's Encrypt:   https://letsencrypt.org/donate\n"
            "Donating to EFF:                    https://eff.org/donate-le\n\n")
     reporter_util.add_message(msg, reporter_util.LOW_PRIORITY)
+
 
 def _report_successful_dry_run(config):
     """Reports on successful dry run
@@ -229,6 +228,7 @@ def _handle_identical_cert_request(config, lineage):
     else:
         assert False, "This is impossible"
 
+
 def _find_lineage_for_domains(config, domains):
     """Determine whether there are duplicated names and how to handle
     them (renew, reinstall, newcert, or raising an error to stop
@@ -267,6 +267,7 @@ def _find_lineage_for_domains(config, domains):
     elif subset_names_cert is not None:
         return _handle_subset_cert_request(config, domains, subset_names_cert)
 
+
 def _find_cert(config, domains, certname):
     """Finds an existing certificate object given domains and/or a certificate name.
 
@@ -289,6 +290,7 @@ def _find_cert(config, domains, certname):
     if action == "reinstall":
         logger.info("Keeping the existing certificate")
     return (action != "reinstall"), lineage
+
 
 def _find_lineage_for_domains_and_certname(config, domains, certname):
     """Find appropriate lineage based on given domains and/or certname.
@@ -331,6 +333,7 @@ def _find_lineage_for_domains_and_certname(config, domains, certname):
                     "Use -d to specify domains, or run certbot certificates to see "
                     "possible certificate names.".format(certname))
 
+
 def _get_added_removed(after, before):
     """Get lists of items removed from `before`
     and a lists of items added to `after`
@@ -340,6 +343,7 @@ def _get_added_removed(after, before):
     added.sort()
     removed.sort()
     return added, removed
+
 
 def _format_list(character, strings):
     """Format list with given character
@@ -352,6 +356,7 @@ def _format_list(character, strings):
         ch=character,
         br=os.linesep
     )
+
 
 def _ask_user_to_confirm_new_names(config, new_domains, certname, old_domains):
     """Ask user to confirm update cert certname to contain new_domains.
@@ -389,6 +394,7 @@ def _ask_user_to_confirm_new_names(config, new_domains, certname, old_domains):
     obj = zope.component.getUtility(interfaces.IDisplay)
     if not obj.yesno(msg, "Update cert", "Cancel", default=True):
         raise errors.ConfigurationError("Specified mismatched cert name and domains.")
+
 
 def _find_domains_or_certname(config, installer, question=None):
     """Retrieve domains and certname from config or user input.
@@ -735,6 +741,7 @@ def update_account(config, unused_plugins):
     eff.handle_subscription(config)
     add_msg("Your e-mail address was updated to {0}.".format(config.email))
 
+
 def _install_cert(config, le_client, domains, lineage=None):
     """Install a cert
 
@@ -760,6 +767,7 @@ def _install_cert(config, le_client, domains, lineage=None):
     le_client.deploy_certificate(domains, path_provider.key_path,
         path_provider.cert_path, path_provider.chain_path, path_provider.fullchain_path)
     le_client.enhance_config(domains, path_provider.chain_path)
+
 
 def install(config, plugins):
     """Install a previously obtained cert in a server.
@@ -818,6 +826,7 @@ def install(config, plugins):
         lineage = cert_manager.lineage_for_certname(config, config.certname)
         enhancements.enable(lineage, domains, installer, config)
 
+
 def _populate_from_certname(config):
     """Helper function for install to populate missing config values from lineage
     defined by --cert-name."""
@@ -835,6 +844,7 @@ def _populate_from_certname(config):
         config.namespace.fullchain_path = lineage.fullchain_path
     return config
 
+
 def _check_certificate_and_key(config):
     if not os.path.isfile(os.path.realpath(config.cert_path)):
         raise errors.ConfigurationError("Error while reading certificate from path "
@@ -842,6 +852,8 @@ def _check_certificate_and_key(config):
     if not os.path.isfile(os.path.realpath(config.key_path)):
         raise errors.ConfigurationError("Error while reading private key from path "
                                        "{0}".format(config.key_path))
+
+
 def plugins_cmd(config, plugins):
     """List server software plugins.
 
@@ -879,6 +891,7 @@ def plugins_cmd(config, plugins):
     available = verified.available()
     logger.debug("Prepared plugins: %s", available)
     notify(str(available))
+
 
 def enhance(config, plugins):
     """Add security enhancements to existing configuration
@@ -970,6 +983,7 @@ def config_changes(config, unused_plugins):
     """
     client.view_config_changes(config, num=config.num)
 
+
 def update_symlinks(config, unused_plugins):
     """Update the certificate file family symlinks
 
@@ -987,6 +1001,7 @@ def update_symlinks(config, unused_plugins):
 
     """
     cert_manager.update_live_symlinks(config)
+
 
 def rename(config, unused_plugins):
     """Rename a certificate
@@ -1006,6 +1021,7 @@ def rename(config, unused_plugins):
     """
     cert_manager.rename_lineage(config)
 
+
 def delete(config, unused_plugins):
     """Delete a certificate
 
@@ -1024,6 +1040,7 @@ def delete(config, unused_plugins):
     """
     cert_manager.delete(config)
 
+
 def certificates(config, unused_plugins):
     """Display information about certs configured with Certbot
 
@@ -1038,6 +1055,7 @@ def certificates(config, unused_plugins):
 
     """
     cert_manager.certificates(config)
+
 
 def revoke(config, unused_plugins):  # TODO: coop with renewal config
     """Revoke a previously obtained certificate.
@@ -1165,6 +1183,7 @@ def _csr_get_and_save_cert(config, le_client):
         os.path.normpath(config.chain_path), os.path.normpath(config.fullchain_path))
     return cert_path, fullchain_path
 
+
 def renew_cert(config, plugins, lineage):
     """Renew & save an existing cert. Do not install it.
 
@@ -1206,6 +1225,7 @@ def renew_cert(config, plugins, lineage):
         installer.restart()
         notify("new certificate deployed with reload of {0} server; fullchain is {1}".format(
                config.installer, lineage.fullchain), pause=False)
+
 
 def certonly(config, plugins):
     """Authenticate & obtain cert, but do not install it.
@@ -1256,6 +1276,7 @@ def certonly(config, plugins):
     _report_new_cert(config, cert_path, fullchain_path, key_path)
     _suggest_donation_if_appropriate(config)
 
+
 def renew(config, unused_plugins):
     """Renew previously-obtained certificates.
 
@@ -1269,16 +1290,6 @@ def renew(config, unused_plugins):
     :rtype: None
 
     """
-    if not sys.stdin.isatty() and config.random_sleep_on_renew:
-        # Noninteractive renewals include a random delay in order to spread
-        # out the load on the certificate authority servers, even if many
-        # users all pick the same time for renewals.  This delay precedes
-        # running any hooks, so that side effects of the hooks (such as
-        # shutting down a web service) aren't prolonged unnecessarily.
-        sleep_time = random.randint(1, 60*8)
-        logger.info("Non-interactive renewal: random delay of %s seconds", sleep_time)
-        time.sleep(sleep_time)
-
     try:
         renewal.handle_renewal_request(config)
     finally:
