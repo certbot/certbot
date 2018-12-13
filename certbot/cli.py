@@ -1213,11 +1213,16 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         " run if an attempt was made to obtain/renew a certificate. If"
         " multiple renewed certificates have identical post-hooks, only"
         " one will be run.")
-    helpful.add("renew", "--renew-hook",
-                action=_RenewHookAction, help=argparse.SUPPRESS)
-    helpful.add("renew", "--no-random-sleep-on-renew", action="store_false",
-                default=flag_default("random_sleep_on_renew"), dest="random_sleep_on_renew",
-                help=argparse.SUPPRESS)
+    helpful.add(
+        "renew", "--renew-hook",
+        action=_RenewHookAction, help=argparse.SUPPRESS)
+    helpful.add(
+        "renew", "--no-random-sleep-on-renew", action="store_false",
+        default=flag_default("random_sleep_on_renew"), dest="random_sleep_on_renew",
+        help='By default, renew action called from non interactive shells will be delayed'
+        ' of a random time between 1s to 8min, in order to spread the load to certificate'
+        ' authority servers that would arise from bunch of automated cron tasks at specific'
+        ' times of the day. Setting this flag will disable this delay for the current renew task.')
     helpful.add(
         "renew", "--deploy-hook", action=_DeployHookAction,
         help='Command to be run in a shell once for each successfully'
