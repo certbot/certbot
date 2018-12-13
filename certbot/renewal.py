@@ -391,10 +391,8 @@ def handle_renewal_request(config):
                            "instead. The renew verb may provide other options "
                            "for selecting certificates to renew in the future.")
 
-    if config.certname:
-        conf_files = [storage.renewal_file_for_certname(config, config.certname)]
-    else:
-        conf_files = storage.renewal_conf_files(config)
+    conf_files = [storage.renewal_file_for_certname(config, config.certname)] if config.certname \
+        else storage.renewal_conf_files(config)
 
     renew_successes = []
     renew_failures = []
@@ -439,7 +437,8 @@ def handle_renewal_request(config):
                     # Apply random sleep upon first renewal if needed
                     if apply_random_sleep:
                         sleep_time = random.randint(1, 60 * 8)
-                        logger.info("Non-interactive renewal: random delay of %s seconds", sleep_time)
+                        logger.info("Non-interactive renewal: random delay of %s seconds",
+                                    sleep_time)
                         time.sleep(sleep_time)
                         # We will sleep only once this day, folks.
                         apply_random_sleep = True
@@ -457,14 +456,12 @@ def handle_renewal_request(config):
                     renew_skipped.append("%s expires on %s" % (renewal_candidate.fullchain,
                                          expiry.strftime("%Y-%m-%d")))
                 # Run updater interface methods
-                updater.run_generic_updaters(lineage_config, renewal_candidate,
-                                             plugins)
+                updater.run_generic_updaters(lineage_config, renewal_candidate, plugins)
 
         except Exception as e:  # pylint: disable=broad-except
             # obtain_cert (presumably) encountered an unanticipated problem.
             logger.warning("Attempting to renew cert (%s) from %s produced an "
-                           "unexpected error: %s. Skipping.", lineagename,
-                               renewal_file, e)
+                           "unexpected error: %s. Skipping.", lineagename, renewal_file, e)
             logger.debug("Traceback was:\n%s", traceback.format_exc())
             renew_failures.append(renewal_candidate.fullchain)
 
@@ -475,5 +472,5 @@ def handle_renewal_request(config):
     if renew_failures or parse_failures:
         raise errors.Error("{0} renew failure(s), {1} parse failure(s)".format(
             len(renew_failures), len(parse_failures)))
-    else:
-        logger.debug("no renewal failures")
+
+    logger.debug("no renewal failures")
