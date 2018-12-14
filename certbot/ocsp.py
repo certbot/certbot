@@ -82,11 +82,9 @@ class RevocationChecker(object):
             return _translate_ocsp_query(cert_path, output, err)
         else:
             with open(chain_path, 'rb') as file:
-                data = file.read()
-            issuer = x509.load_pem_x509_certificate(data, default_backend())
+                issuer = x509.load_pem_x509_certificate(file.read(), default_backend())
             with open(cert_path, 'rb') as file:
-                data = file.read()
-            cert = x509.load_pem_x509_certificate(data, default_backend())
+                cert = x509.load_pem_x509_certificate(file.read(), default_backend())
             builder = x509.ocsp.OCSPRequestBuilder()
             builder = builder.add_certificate(cert, issuer, SHA1())
             request = builder.build()
@@ -128,8 +126,7 @@ class RevocationChecker(object):
         else:
             try:
                 with open(cert_path, 'rb') as file:
-                    data = file.read()
-                cert = x509.load_pem_x509_certificate(data, default_backend())
+                    cert = x509.load_pem_x509_certificate(file.read(), default_backend())
                 extension = cert.extensions.get_extension_for_class(x509.AuthorityInformationAccess)
                 descriptions = [description for description in extension.value
                                 if description.access_method == x509.AuthorityInformationAccessOID.OCSP]
