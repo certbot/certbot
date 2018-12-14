@@ -7,9 +7,9 @@ import shutil
 
 from cryptography import x509
 try:
-    from cryptography.x509 import ocsp  # pylint: disable=import-error
+    from cryptography.x509 import ocsp as oscp_lib  # pylint: disable=import-error
 except ImportError:
-    ocsp = None  # type: ignore
+    oscp_lib = None  # type: ignore
 import mock
 
 from certbot import errors
@@ -121,7 +121,7 @@ class OCSPTestOpenSSL(unittest.TestCase):
         self.assertEqual(mock_log.info.call_count, 1)
 
 
-@unittest.skipIf(not ocsp,
+@unittest.skipIf(not oscp_lib,
                  reason='This class tests functionalities available only on cryptograpy >= 2.4.0')
 class OSCPTestCryptography(unittest.TestCase):
     """
@@ -153,9 +153,8 @@ class OSCPTestCryptography(unittest.TestCase):
     @mock.patch('certbot.ocsp.requests.post')
     @mock.patch('certbot.ocsp.ocsp.load_der_ocsp_response')
     def test_revoke(self, mock_ocsp_response, mock_post):
-        from cryptography.x509 import ocsp
-
-        mock_ocsp_response.return_value = mock.Mock(certificate_status=ocsp.OCSPCertStatus.REVOKED)
+        mock_ocsp_response.return_value = mock.Mock(
+            certificate_status=oscp_lib.OCSPCertStatus.REVOKED)
         mock_post.return_value = mock.Mock(status_code=200)
         revoked = self.checker.ocsp_revoked(self.cert_path, self.chain_path)
 
@@ -164,21 +163,22 @@ class OSCPTestCryptography(unittest.TestCase):
     @mock.patch('certbot.ocsp.requests.post')
     @mock.patch('certbot.ocsp.ocsp.load_der_ocsp_response')
     def test_revoke_resiliency(self, mock_ocsp_response, mock_post):
-        from cryptography.x509 import ocsp
-
-        mock_ocsp_response.return_value = mock.Mock(certificate_status=ocsp.OCSPCertStatus.REVOKED)
+        mock_ocsp_response.return_value = mock.Mock(
+            certificate_status=oscp_lib.OCSPCertStatus.REVOKED)
         mock_post.return_value = mock.Mock(status_code=400)
         revoked = self.checker.ocsp_revoked(self.cert_path, self.chain_path)
 
         self.assertFalse(revoked)
 
-        mock_ocsp_response.return_value = mock.Mock(certificate_status=ocsp.OCSPCertStatus.UNKNOWN)
+        mock_ocsp_response.return_value = mock.Mock(
+            certificate_status=oscp_lib.OCSPCertStatus.UNKNOWN)
         mock_post.return_value = mock.Mock(status_code=200)
         revoked = self.checker.ocsp_revoked(self.cert_path, self.chain_path)
 
         self.assertFalse(revoked)
 
-        mock_ocsp_response.return_value = mock.Mock(certificate_status=ocsp.OCSPCertStatus.REVOKED)
+        mock_ocsp_response.return_value = mock.Mock(
+            certificate_status=oscp_lib.OCSPCertStatus.REVOKED)
         mock_post.return_value = mock.Mock(status_code=200)
         with mock.patch('cryptography.x509.Extensions.get_extension_for_class',
                         side_effect=x509.ExtensionNotFound(
