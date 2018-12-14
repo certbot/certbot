@@ -1,9 +1,8 @@
 """Tools for checking certificate revocation."""
 import logging
 import re
-import base64
-
 from subprocess import Popen, PIPE
+
 try:
     from cryptography.x509 import ocsp  # pylint: disable=import-error
 except ImportError:
@@ -61,51 +60,54 @@ class RevocationChecker(object):
             return False
 
         if self.use_openssl_binary:
-            # jdkasten thanks "Bulletproof SSL and TLS - Ivan Ristic" for documenting this!
-            cmd = ["openssl", "ocsp",
-                   "-no_nonce",
-                   "-issuer", chain_path,
-                   "-cert", cert_path,
-                   "-url", url,
-                   "-CAfile", chain_path,
-                   "-verify_other", chain_path,
-                   "-trust_other",
-                   "-header"] + self.host_args(host)
-            logger.debug("Querying OCSP for %s", cert_path)
-            logger.debug(" ".join(cmd))
-            try:
-                output, err = util.run_script(cmd, log=logger.debug)
-            except errors.SubprocessError:
-                logger.info("OCSP check failed for %s (are we offline?)", cert_path)
-                return False
-
-            return _translate_ocsp_query(cert_path, output, err)
+            return self._ocsp_revoke_openssl_bin(cert_path, chain_path, host, url)
         else:
-            with open(chain_path, 'rb') as file:
-                issuer = x509.load_pem_x509_certificate(file.read(), default_backend())
-            with open(cert_path, 'rb') as file:
-                cert = x509.load_pem_x509_certificate(file.read(), default_backend())
-            builder = x509.ocsp.OCSPRequestBuilder()
-            builder = builder.add_certificate(cert, issuer, SHA1())
-            request = builder.build()
+            return RevocationChecker._ocsp_revoke_cryptography(cert_path, chain_path, url)
 
-            request_binary = request.public_bytes(serialization.Encoding.DER)
-            response = requests.post(url, data=request_binary,
-                                     headers={'Content-Type': 'application/ocsp-request'})
+    def _ocsp_revoke_openssl_bin(self, cert_path, chain_path, host, url):
+        # jdkasten thanks "Bulletproof SSL and TLS - Ivan Ristic" for documenting this!
+        cmd = ["openssl", "ocsp",
+               "-no_nonce",
+               "-issuer", chain_path,
+               "-cert", cert_path,
+               "-url", url,
+               "-CAfile", chain_path,
+               "-verify_other", chain_path,
+               "-trust_other",
+               "-header"] + self.host_args(host)
+        logger.debug("Querying OCSP for %s", cert_path)
+        logger.debug(" ".join(cmd))
+        try:
+            output, err = util.run_script(cmd, log=logger.debug)
+        except errors.SubprocessError:
+            logger.info("OCSP check failed for %s (are we offline?)", cert_path)
+            return False
+        return _translate_ocsp_query(cert_path, output, err)
 
-            if not response.status_code == 200:
-                logger.info("OCSP check failed for %s (are we offline?)", cert_path)
-                return False
-
-            response_ocsp = ocsp.load_der_ocsp_response(response.content)
-
-            try:
-                logger.debug("OCSP certificate status for %s is: %s",
-                             cert_path, response_ocsp.certificate_status)
-                return response_ocsp.certificate_status == ocsp.OCSPCertStatus.REVOKED
-            except ValueError:
-                logger.info("Invalid OCSP response status for %s: %s",
-                            cert_path, response_ocsp.response_status)
+    @staticmethod
+    def _ocsp_revoke_cryptography(cert_path, chain_path, url):
+        with open(chain_path, 'rb') as file_handler:
+            issuer = x509.load_pem_x509_certificate(file_handler.read(), default_backend())
+        with open(cert_path, 'rb') as file_handler:
+            cert = x509.load_pem_x509_certificate(file_handler.read(), default_backend())
+        builder = x509.ocsp.OCSPRequestBuilder()
+        builder = builder.add_certificate(cert, issuer, SHA1())
+        request = builder.build()
+        request_binary = request.public_bytes(serialization.Encoding.DER)
+        response = requests.post(url, data=request_binary,
+                                 headers={'Content-Type': 'application/ocsp-request'})
+        if not response.status_code == 200:
+            logger.info("OCSP check failed for %s (are we offline?)", cert_path)
+            return False
+        response_ocsp = ocsp.load_der_ocsp_response(response.content)
+        try:
+            logger.debug("OCSP certificate status for %s is: %s",
+                         cert_path, response_ocsp.certificate_status)
+            return response_ocsp.certificate_status == ocsp.OCSPCertStatus.REVOKED
+        except ValueError:
+            logger.info("Invalid OCSP response status for %s: %s",
+                        cert_path, response_ocsp.response_status)
+            return False
 
     def determine_ocsp_server(self, cert_path):
         """Extract the OCSP server host from a certificate.
@@ -125,11 +127,12 @@ class RevocationChecker(object):
                 return None, None
         else:
             try:
-                with open(cert_path, 'rb') as file:
-                    cert = x509.load_pem_x509_certificate(file.read(), default_backend())
+                with open(cert_path, 'rb') as file_handler:
+                    cert = x509.load_pem_x509_certificate(file_handler.read(), default_backend())
                 extension = cert.extensions.get_extension_for_class(x509.AuthorityInformationAccess)
+                ocsp_oid = x509.AuthorityInformationAccessOID.OCSP
                 descriptions = [description for description in extension.value
-                                if description.access_method == x509.AuthorityInformationAccessOID.OCSP]
+                                if description.access_method == ocsp_oid]
 
                 url = descriptions[0].access_location.value
             except (x509.ExtensionNotFound, IndexError):
@@ -155,7 +158,7 @@ def _translate_ocsp_query(cert_path, ocsp_output, ocsp_errors):
 
     warning = good.group(1) if good else None
 
-    if (not "Response verify OK" in ocsp_errors) or (good and warning) or unknown:
+    if ("Response verify OK" not in ocsp_errors) or (good and warning) or unknown:
         logger.info("Revocation status for %s is unknown", cert_path)
         logger.debug("Uncertain output:\n%s\nstderr:\n%s", ocsp_output, ocsp_errors)
         return False
@@ -168,6 +171,6 @@ def _translate_ocsp_query(cert_path, ocsp_output, ocsp_errors):
         return True
     else:
         logger.warning("Unable to properly parse OCSP output: %s\nstderr:%s",
-                    ocsp_output, ocsp_errors)
+                       ocsp_output, ocsp_errors)
         return False
 
