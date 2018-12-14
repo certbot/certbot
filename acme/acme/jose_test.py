@@ -21,8 +21,22 @@ class JoseTest(unittest.TestCase):
     def test_top_level(self):
         self._test_it('', 'RS512')
 
-    def test_submodule(self):
-        self._test_it('jws', 'JWS')
+    def test_submodules(self):
+        # This test ensures that the modules in josepy that were
+        # available at the time it was moved into its own package are
+        # available under acme.jose. Backwards compatibility with new
+        # modules or testing code is not maintained.
+        mods_and_attrs = [('b64', 'b64decode',),
+                          ('errors', 'Error',),
+                          ('interfaces', 'JSONDeSerializable',),
+                          ('json_util', 'Field',),
+                          ('jwa', 'HS256',),
+                          ('jwk', 'JWK',),
+                          ('jws', 'JWS',),
+                          ('util', 'ImmutableMap',),]
+
+        for mod, attr in mods_and_attrs:
+            self._test_it(mod, attr)
 
 
 if __name__ == '__main__':
