@@ -5,7 +5,7 @@ from subprocess import Popen, PIPE
 
 try:
     from cryptography.x509 import ocsp  # pylint: disable=import-error
-except ImportError:
+except ImportError:  # pragma: no cover
     ocsp = None  # type: ignore
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
@@ -79,7 +79,7 @@ class RevocationChecker(object):
         logger.debug(" ".join(cmd))
         try:
             output, err = util.run_script(cmd, log=logger.debug)
-        except errors.SubprocessError:
+        except errors.SubprocessError:  # pragma: no cover
             logger.info("OCSP check failed for %s (are we offline?)", cert_path)
             return False
         return _translate_ocsp_query(cert_path, output, err)
@@ -104,7 +104,7 @@ class RevocationChecker(object):
             logger.debug("OCSP certificate status for %s is: %s",
                          cert_path, response_ocsp.certificate_status)
             return response_ocsp.certificate_status == ocsp.OCSPCertStatus.REVOKED
-        except ValueError:
+        except ValueError:  # pragma: no cover
             logger.info("Invalid OCSP response status for %s: %s",
                         cert_path, response_ocsp.response_status)
             return False
