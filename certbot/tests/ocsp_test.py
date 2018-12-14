@@ -11,8 +11,8 @@ out = """Missing = in header key=value
 ocsp: Use -help for summary.
 """
 
-class OCSPTest(unittest.TestCase):
 
+class OCSPTest(unittest.TestCase):
 
     def setUp(self):
         from certbot import ocsp
@@ -22,7 +22,7 @@ class OCSPTest(unittest.TestCase):
                 mock_communicate.communicate.return_value = (None, out)
                 mock_popen.return_value = mock_communicate
                 mock_exists.return_value = True
-                self.checker = ocsp.RevocationChecker()
+                self.checker = ocsp.RevocationChecker(enforce_openssl_binary_usage=True)
 
     def tearDown(self):
         pass
@@ -37,18 +37,18 @@ class OCSPTest(unittest.TestCase):
         mock_exists.return_value = True
 
         from certbot import ocsp
-        checker = ocsp.RevocationChecker()
+        checker = ocsp.RevocationChecker(enforce_openssl_binary_usage=True)
         self.assertEqual(mock_popen.call_count, 1)
         self.assertEqual(checker.host_args("x"), ["Host=x"])
 
         mock_communicate.communicate.return_value = (None, out.partition("\n")[2])
-        checker = ocsp.RevocationChecker()
+        checker = ocsp.RevocationChecker(enforce_openssl_binary_usage=True)
         self.assertEqual(checker.host_args("x"), ["Host", "x"])
         self.assertEqual(checker.broken, False)
 
         mock_exists.return_value = False
         mock_popen.call_count = 0
-        checker = ocsp.RevocationChecker()
+        checker = ocsp.RevocationChecker(enforce_openssl_binary_usage=True)
         self.assertEqual(mock_popen.call_count, 0)
         self.assertEqual(mock_log.call_count, 1)
         self.assertEqual(checker.broken, True)

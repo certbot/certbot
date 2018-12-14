@@ -23,10 +23,11 @@ logger = logging.getLogger(__name__)
 class RevocationChecker(object):
     """This class figures out OCSP checking on this system, and performs it."""
 
-    def __init__(self):
+    def __init__(self, enforce_openssl_binary_usage=False):
         self.broken = False
+        self.use_openssl_binary = not ocsp or enforce_openssl_binary_usage
 
-        if not ocsp:
+        if self.use_openssl_binary:
             if not util.exe_exists("openssl"):
                 logger.info("openssl not installed, can't check revocation")
                 self.broken = True
@@ -59,7 +60,7 @@ class RevocationChecker(object):
         if not host:
             return False
 
-        if not ocsp:
+        if self.use_openssl_binary:
             # jdkasten thanks "Bulletproof SSL and TLS - Ivan Ristic" for documenting this!
             cmd = ["openssl", "ocsp",
                    "-no_nonce",
@@ -116,7 +117,7 @@ class RevocationChecker(object):
         :returns: (OCSP server URL or None, OCSP server host or None)
 
         """
-        if not ocsp:
+        if self.use_openssl_binary:
             try:
                 url, _err = util.run_script(
                     ["openssl", "x509", "-in", cert_path, "-noout", "-ocsp_uri"],
