@@ -4,7 +4,6 @@ import os
 import unittest
 import tempfile
 import shutil
-from distutils.version import StrictVersion
 
 from cryptography import x509
 import mock
@@ -17,6 +16,9 @@ ocsp: Use -help for summary.
 
 
 class OCSPTestOpenSSL(unittest.TestCase):
+    """
+    OCSP revokation tests using OpenSSL binary.
+    """
 
     def setUp(self):
         from certbot import ocsp
@@ -118,6 +120,9 @@ class OCSPTestOpenSSL(unittest.TestCase):
 @unittest.skipIf(not hasattr(x509, 'ocsp'),
                  reason='This class tests functionalities available only on cryptograpy >= 2.4.0')
 class OSCPTestCryptography(unittest.TestCase):
+    """
+    OCSP revokation tests using Cryptography >= 2.4.0
+    """
 
     def setUp(self):
         from certbot import ocsp
