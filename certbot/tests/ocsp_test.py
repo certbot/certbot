@@ -6,7 +6,7 @@ import tempfile
 import shutil
 from distutils.version import StrictVersion
 
-from cryptography import __version__ as cryptography_version
+from cryptography import x509
 import mock
 
 from certbot import errors
@@ -115,7 +115,7 @@ class OCSPTestOpenSSL(unittest.TestCase):
         self.assertEqual(mock_log.info.call_count, 1)
 
 
-@unittest.skipIf(StrictVersion(cryptography_version) < StrictVersion('2.4.0'),
+@unittest.skipIf(not hasattr(x509, 'ocsp'),
                  reason='This class tests functionalities available only on cryptograpy >= 2.4.0')
 class OSCPTestCryptography(unittest.TestCase):
 
