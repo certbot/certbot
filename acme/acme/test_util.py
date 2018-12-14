@@ -4,13 +4,14 @@
 
 """
 import os
+import sys
 import pkg_resources
 import unittest
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 import josepy as jose
-import OpenSSL
+from OpenSSL import crypto
 
 
 def vector_path(*names):
@@ -39,8 +40,8 @@ def _guess_loader(filename, loader_pem, loader_der):
 def load_cert(*names):
     """Load certificate."""
     loader = _guess_loader(
-        names[-1], OpenSSL.crypto.FILETYPE_PEM, OpenSSL.crypto.FILETYPE_ASN1)
-    return OpenSSL.crypto.load_certificate(loader, load_vector(*names))
+        names[-1], crypto.FILETYPE_PEM, crypto.FILETYPE_ASN1)
+    return crypto.load_certificate(loader, load_vector(*names))
 
 
 def load_comparable_cert(*names):
@@ -51,8 +52,8 @@ def load_comparable_cert(*names):
 def load_csr(*names):
     """Load certificate request."""
     loader = _guess_loader(
-        names[-1], OpenSSL.crypto.FILETYPE_PEM, OpenSSL.crypto.FILETYPE_ASN1)
-    return OpenSSL.crypto.load_certificate_request(loader, load_vector(*names))
+        names[-1], crypto.FILETYPE_PEM, crypto.FILETYPE_ASN1)
+    return crypto.load_certificate_request(loader, load_vector(*names))
 
 
 def load_comparable_csr(*names):
@@ -71,8 +72,8 @@ def load_rsa_private_key(*names):
 def load_pyopenssl_private_key(*names):
     """Load pyOpenSSL private key."""
     loader = _guess_loader(
-        names[-1], OpenSSL.crypto.FILETYPE_PEM, OpenSSL.crypto.FILETYPE_ASN1)
-    return OpenSSL.crypto.load_privatekey(loader, load_vector(*names))
+        names[-1], crypto.FILETYPE_PEM, crypto.FILETYPE_ASN1)
+    return crypto.load_privatekey(loader, load_vector(*names))
 
 
 def skip_unless(condition, reason):  # pragma: no cover
@@ -94,3 +95,11 @@ def skip_unless(condition, reason):  # pragma: no cover
         return lambda cls: cls
     else:
         return lambda cls: None
+
+def broken_on_windows(function):
+    """Decorator to skip temporarily a broken test on Windows."""
+    reason = 'Test is broken and ignored on windows but should be fixed.'
+    return unittest.skipIf(
+        sys.platform == 'win32'
+        and os.environ.get('SKIP_BROKEN_TESTS_ON_WINDOWS', 'true') == 'true',
+        reason)(function)

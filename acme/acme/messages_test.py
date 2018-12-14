@@ -6,6 +6,7 @@ import mock
 
 from acme import challenges
 from acme import test_util
+from acme.magic_typing import Dict # pylint: disable=unused-import, no-name-in-module
 
 
 CERT = test_util.load_comparable_cert('cert.der')
@@ -85,7 +86,7 @@ class ConstantTest(unittest.TestCase):
         from acme.messages import _Constant
 
         class MockConstant(_Constant):  # pylint: disable=missing-docstring
-            POSSIBLE_NAMES = {}
+            POSSIBLE_NAMES = {} # type: Dict
 
         self.MockConstant = MockConstant  # pylint: disable=invalid-name
         self.const_a = MockConstant('a')
@@ -173,6 +174,24 @@ class DirectoryTest(unittest.TestCase):
         self.assertTrue(result)
 
 
+class ExternalAccountBindingTest(unittest.TestCase):
+    def setUp(self):
+        from acme.messages import Directory
+        self.key = jose.jwk.JWKRSA(key=KEY.public_key())
+        self.kid = "kid-for-testing"
+        self.hmac_key = "hmac-key-for-testing"
+        self.dir = Directory({
+            'newAccount': 'http://url/acme/new-account',
+        })
+
+    def test_from_data(self):
+        from acme.messages import ExternalAccountBinding
+        eab = ExternalAccountBinding.from_data(self.key, self.kid, self.hmac_key, self.dir)
+
+        self.assertEqual(len(eab), 3)
+        self.assertEqual(sorted(eab.keys()), sorted(['protected', 'payload', 'signature']))
+
+
 class RegistrationTest(unittest.TestCase):
     """Tests for acme.messages.Registration."""
 
@@ -203,6 +222,22 @@ class RegistrationTest(unittest.TestCase):
             'tel:1234',
             'mailto:admin@foo.com',
         ))
+
+    def test_new_registration_from_data_with_eab(self):
+        from acme.messages import NewRegistration, ExternalAccountBinding, Directory
+        key = jose.jwk.JWKRSA(key=KEY.public_key())
+        kid = "kid-for-testing"
+        hmac_key = "hmac-key-for-testing"
+        directory = Directory({
+            'newAccount': 'http://url/acme/new-account',
+        })
+        eab = ExternalAccountBinding.from_data(key, kid, hmac_key, directory)
+        reg = NewRegistration.from_data(email='admin@foo.com', external_account_binding=eab)
+        self.assertEqual(reg.contact, (
+            'mailto:admin@foo.com',
+        ))
+        self.assertEqual(sorted(reg.external_account_binding.keys()),
+                         sorted(['protected', 'payload', 'signature']))
 
     def test_phones(self):
         self.assertEqual(('1234',), self.reg.phones)
@@ -421,6 +456,19 @@ class OrderResourceTest(unittest.TestCase):
             'body': mock.sentinel.body,
             'uri': mock.sentinel.uri,
             'authorizations': None,
+        })
+
+class NewOrderTest(unittest.TestCase):
+    """Tests for acme.messages.NewOrder."""
+
+    def setUp(self):
+        from acme.messages import NewOrder
+        self.reg = NewOrder(
+            identifiers=mock.sentinel.identifiers)
+
+    def test_to_partial_json(self):
+        self.assertEqual(self.reg.to_json(), {
+            'identifiers': mock.sentinel.identifiers,
         })
 
 

@@ -49,9 +49,9 @@ http {
 
   server {
     # IPv4.
-    listen 5002;
+    listen 5002 $default_server;
     # IPv6.
-    listen [::]:5002 default ipv6only=on;
+    listen [::]:5002 $default_server;
     server_name nginx.wtf nginx2.wtf;
 
     root $root/webroot;
@@ -61,6 +61,37 @@ http {
       # back to index.html.
       try_files \$uri \$uri/ /index.html;
     }
+  }
+
+  server {
+    listen 5002;
+    listen [::]:5002;
+    server_name nginx3.wtf;
+
+    root $root/webroot;
+
+    location /.well-known/ {
+      return 404;
+    }
+
+    return 301 https://\$host\$request_uri;
+  }
+
+  server {
+    listen 8082;
+    listen [::]:8082;
+    server_name nginx4.wtf nginx5.wtf;
+  }
+
+  server {
+    listen 5002;
+    listen [::]:5002;
+    listen 5001 ssl;
+    listen [::]:5001 ssl;
+    if (\$scheme != "https") {
+      return 301 https://\$host\$request_uri;
+    }
+    server_name nginx6.wtf nginx7.wtf;
   }
 }
 EOF

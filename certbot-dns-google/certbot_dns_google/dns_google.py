@@ -81,7 +81,7 @@ class _GoogleClient(object):
     Encapsulates all communication with the Google Cloud DNS API.
     """
 
-    def __init__(self, account_json=None):
+    def __init__(self, account_json=None, dns_api=None):
 
         scopes = ['https://www.googleapis.com/auth/ndev.clouddns.readwrite']
         if account_json is not None:
@@ -92,7 +92,12 @@ class _GoogleClient(object):
             credentials = None
             self.project_id = self.get_project_id()
 
-        self.dns = discovery.build('dns', 'v1', credentials=credentials, cache_discovery=False)
+        if not dns_api:
+            self.dns = discovery.build('dns', 'v1',
+                                       credentials=credentials,
+                                       cache_discovery=False)
+        else:
+            self.dns = dns_api
 
     def add_txt_record(self, domain, record_name, record_content, record_ttl):
         """
@@ -174,7 +179,7 @@ class _GoogleClient(object):
         try:
             zone_id = self._find_managed_zone_id(domain)
         except errors.PluginError as e:
-            logger.warn('Error finding zone. Skipping cleanup.')
+            logger.warning('Error finding zone. Skipping cleanup.')
             return
 
         record_contents = self.get_existing_txt_rrset(zone_id, record_name)
@@ -214,7 +219,7 @@ class _GoogleClient(object):
             request = changes.create(project=self.project_id, managedZone=zone_id, body=data)
             request.execute()
         except googleapiclient_errors.Error as e:
-            logger.warn('Encountered error deleting TXT record: %s', e)
+            logger.warning('Encountered error deleting TXT record: %s', e)
 
     def get_existing_txt_rrset(self, zone_id, record_name):
         """

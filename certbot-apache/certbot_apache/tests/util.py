@@ -87,7 +87,6 @@ class ParserTest(ApacheTest):
 def get_apache_configurator(  # pylint: disable=too-many-arguments, too-many-locals
         config_path, vhost_path,
         config_dir, work_dir, version=(2, 4, 7),
-        conf=None,
         os_info="generic",
         conf_vhost_path=None):
     """Create an Apache Configurator with the specified options.
@@ -98,9 +97,10 @@ def get_apache_configurator(  # pylint: disable=too-many-arguments, too-many-loc
     backups = os.path.join(work_dir, "backups")
     mock_le_config = mock.MagicMock(
         apache_server_root=config_path,
-        apache_vhost_root=conf_vhost_path,
+        apache_vhost_root=None,
         apache_le_vhost_ext="-le-ssl.conf",
         apache_challenge_location=config_path,
+        apache_enmod=None,
         backup_dir=backups,
         config_dir=config_dir,
         http01_port=80,
@@ -108,37 +108,25 @@ def get_apache_configurator(  # pylint: disable=too-many-arguments, too-many-loc
         in_progress_dir=os.path.join(backups, "IN_PROGRESS"),
         work_dir=work_dir)
 
-    orig_os_constant = configurator.ApacheConfigurator(mock_le_config,
-                                                       name="apache",
-                                                       version=version).constant
-
-    def mock_os_constant(key, vhost_path=vhost_path):
-        """Mock default vhost path"""
-        if key == "vhost_root":
-            return vhost_path
-        else:
-            return orig_os_constant(key)
-
-    with mock.patch("certbot_apache.configurator.ApacheConfigurator.constant") as mock_cons:
-        mock_cons.side_effect = mock_os_constant
-        with mock.patch("certbot_apache.configurator.util.run_script"):
-            with mock.patch("certbot_apache.configurator.util."
-                            "exe_exists") as mock_exe_exists:
-                mock_exe_exists.return_value = True
-                with mock.patch("certbot_apache.parser.ApacheParser."
-                                "update_runtime_variables"):
-                    try:
-                        config_class = entrypoint.OVERRIDE_CLASSES[os_info]
-                    except KeyError:
-                        config_class = configurator.ApacheConfigurator
-                    config = config_class(config=mock_le_config, name="apache",
-                        version=version)
-                    # This allows testing scripts to set it a bit more
-                    # quickly
-                    if conf is not None:
-                        config.conf = conf  # pragma: no cover
-
-                    config.prepare()
+    with mock.patch("certbot_apache.configurator.util.run_script"):
+        with mock.patch("certbot_apache.configurator.util."
+                        "exe_exists") as mock_exe_exists:
+            mock_exe_exists.return_value = True
+            with mock.patch("certbot_apache.parser.ApacheParser."
+                            "update_runtime_variables"):
+                try:
+                    config_class = entrypoint.OVERRIDE_CLASSES[os_info]
+                except KeyError:
+                    config_class = configurator.ApacheConfigurator
+                config = config_class(config=mock_le_config, name="apache",
+                    version=version)
+                if not conf_vhost_path:
+                    config_class.OS_DEFAULTS["vhost_root"] = vhost_path
+                else:
+                    # Custom virtualhost path was requested
+                    config.config.apache_vhost_root = conf_vhost_path
+                config.config.apache_ctl = config_class.OS_DEFAULTS["ctl"]
+                config.prepare()
     return config
 
 

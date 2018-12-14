@@ -11,12 +11,16 @@ import zope.interface
 
 from josepy import util as jose_util
 
+from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
+from certbot import achallenges  # pylint: disable=unused-import
 from certbot import constants
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
 from certbot import reverter
 from certbot import util
+
+from certbot.plugins.storage import PluginStorage
 
 logger = logging.getLogger(__name__)
 
@@ -99,7 +103,6 @@ class Plugin(object):
     def conf(self, var):
         """Find a configuration value for variable ``var``."""
         return getattr(self.config, self.dest(var))
-# other
 
 
 class Installer(Plugin):
@@ -110,6 +113,7 @@ class Installer(Plugin):
     """
     def __init__(self, *args, **kwargs):
         super(Installer, self).__init__(*args, **kwargs)
+        self.storage = PluginStorage(self.config, self.name)
         self.reverter = reverter.Reverter(self.config)
 
     def add_to_checkpoint(self, save_files, save_notes, temporary=False):
@@ -329,8 +333,8 @@ class ChallengePerformer(object):
 
     def __init__(self, configurator):
         self.configurator = configurator
-        self.achalls = []
-        self.indices = []
+        self.achalls = []  # type: List[achallenges.KeyAuthorizationAnnotatedChallenge]
+        self.indices = []  # type: List[int]
 
     def add_chall(self, achall, idx=None):
         """Store challenge to be performed when perform() is called.

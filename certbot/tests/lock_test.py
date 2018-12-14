@@ -10,6 +10,7 @@ from certbot import errors
 from certbot.tests import util as test_util
 
 
+@test_util.broken_on_windows
 class LockDirTest(test_util.TempDirTestCase):
     """Tests for certbot.lock.lock_dir."""
     @classmethod
@@ -24,6 +25,7 @@ class LockDirTest(test_util.TempDirTestCase):
         test_util.lock_and_call(assert_raises, lock_path)
 
 
+@test_util.broken_on_windows
 class LockFileTest(test_util.TempDirTestCase):
     """Tests for certbot.lock.LockFile."""
     @classmethod
@@ -89,7 +91,7 @@ class LockFileTest(test_util.TempDirTestCase):
         lock_file.release()
         self.assertFalse(os.path.exists(self.lock_path))
 
-    @mock.patch('certbot.lock.fcntl.lockf')
+    @mock.patch('certbot.compat.fcntl.lockf')
     def test_unexpected_lockf_err(self, mock_lockf):
         msg = 'hi there'
         mock_lockf.side_effect = IOError(msg)

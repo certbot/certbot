@@ -84,7 +84,7 @@ class BasicParserTest(util.ParserTest):
             self.assertEqual(self.parser.aug.get(match), str(i + 1))
 
     def test_empty_arg(self):
-        self.assertEquals(None,
+        self.assertEqual(None,
                           self.parser.get_arg("/files/whatever/nonexistent"))
 
     def test_add_dir_to_ifmodssl(self):
@@ -282,11 +282,11 @@ class BasicParserTest(util.ParserTest):
         self.assertRaises(
             errors.PluginError, self.parser.update_runtime_variables)
 
-    @mock.patch("certbot_apache.configurator.ApacheConfigurator.constant")
+    @mock.patch("certbot_apache.configurator.ApacheConfigurator.option")
     @mock.patch("certbot_apache.parser.subprocess.Popen")
-    def test_update_runtime_vars_bad_ctl(self, mock_popen, mock_const):
+    def test_update_runtime_vars_bad_ctl(self, mock_popen, mock_opt):
         mock_popen.side_effect = OSError
-        mock_const.return_value = "nonexistent"
+        mock_opt.return_value = "nonexistent"
         self.assertRaises(
             errors.MisconfigurationError,
             self.parser.update_runtime_variables)
@@ -298,6 +298,13 @@ class BasicParserTest(util.ParserTest):
         self.assertRaises(
             errors.MisconfigurationError,
             self.parser.update_runtime_variables)
+
+    def test_add_comment(self):
+        from certbot_apache.parser import get_aug_path
+        self.parser.add_comment(get_aug_path(self.parser.loc["name"]), "123456")
+        comm = self.parser.find_comments("123456")
+        self.assertEqual(len(comm), 1)
+        self.assertTrue(self.parser.loc["name"] in comm[0])
 
 
 class ParserInitTest(util.ApacheTest):

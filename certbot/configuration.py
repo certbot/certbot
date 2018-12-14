@@ -65,8 +65,12 @@ class NamespaceConfig(object):
 
     @property
     def accounts_dir(self):  # pylint: disable=missing-docstring
+        return self.accounts_dir_for_server_path(self.server_path)
+
+    def accounts_dir_for_server_path(self, server_path):
+        """Path to accounts directory based on server_path"""
         return os.path.join(
-            self.namespace.config_dir, constants.ACCOUNTS_DIR, self.server_path)
+            self.namespace.config_dir, constants.ACCOUNTS_DIR, server_path)
 
     @property
     def backup_dir(self):  # pylint: disable=missing-docstring

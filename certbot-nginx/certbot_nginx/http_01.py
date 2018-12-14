@@ -10,6 +10,7 @@ from certbot.plugins import common
 
 from certbot_nginx import obj
 from certbot_nginx import nginxparser
+from acme.magic_typing import List # pylint: disable=unused-import, no-name-in-module
 
 
 logger = logging.getLogger(__name__)
@@ -39,8 +40,6 @@ class NginxHttp01(common.ChallengePerformer):
         super(NginxHttp01, self).__init__(configurator)
         self.challenge_conf = os.path.join(
             configurator.config.config_dir, "le_http_01_cert_challenge.conf")
-        self._ipv6 = None
-        self._ipv6only = None
 
     def perform(self):
         """Perform a challenge on Nginx.
@@ -101,6 +100,7 @@ class NginxHttp01(common.ChallengePerformer):
         config = [self._make_or_mod_server_block(achall) for achall in self.achalls]
         config = [x for x in config if x is not None]
         config = nginxparser.UnspacedList(config)
+        logger.debug("Generated server block:\n%s", str(config))
 
         self.configurator.reverter.register_file_creation(
             True, self.challenge_conf)
@@ -113,15 +113,13 @@ class NginxHttp01(common.ChallengePerformer):
         :returns: list of :class:`certbot_nginx.obj.Addr` to apply
         :rtype: list
         """
-        addresses = []
+        addresses = [] # type: List[obj.Addr]
         default_addr = "%s" % self.configurator.config.http01_port
         ipv6_addr = "[::]:{0}".format(
             self.configurator.config.http01_port)
         port = self.configurator.config.http01_port
 
-        if self._ipv6 is None or self._ipv6only is None:
-            self._ipv6, self._ipv6only = self.configurator.ipv6_info(port)
-        ipv6, ipv6only = self._ipv6, self._ipv6only
+        ipv6, ipv6only = self.configurator.ipv6_info(port)
 
         if ipv6:
             # If IPv6 is active in Nginx configuration
@@ -159,16 +157,22 @@ class NginxHttp01(common.ChallengePerformer):
         document_root = os.path.join(
             self.configurator.config.work_dir, "http_01_nonexistent")
 
+        block.extend([['server_name', ' ', achall.domain],
+                      ['root', ' ', document_root],
+                      self._location_directive_for_achall(achall)
+                      ])
+        # TODO: do we want to return something else if they otherwise access this block?
+        return [['server'], block]
+
+    def _location_directive_for_achall(self, achall):
         validation = achall.validation(achall.account_key)
         validation_path = self._get_validation_path(achall)
 
-        block.extend([['server_name', ' ', achall.domain],
-                      ['root', ' ', document_root],
-                      [['location', ' ', '=', ' ', validation_path],
-                        [['default_type', ' ', 'text/plain'],
-                         ['return', ' ', '200', ' ', validation]]]])
-        # TODO: do we want to return something else if they otherwise access this block?
-        return [['server'], block]
+        location_directive = [['location', ' ', '=', ' ', validation_path],
+                              [['default_type', ' ', 'text/plain'],
+                               ['return', ' ', '200', ' ', validation]]]
+        return location_directive
+
 
     def _make_or_mod_server_block(self, achall):
         """Modifies a server block to respond to a challenge.
@@ -191,17 +195,12 @@ class NginxHttp01(common.ChallengePerformer):
         vhost = vhosts[0]
 
         # Modify existing server block
-        validation = achall.validation(achall.account_key)
-        validation_path = self._get_validation_path(achall)
-
-        location_directive = [[['location', ' ', '=', ' ', validation_path],
-                               [['default_type', ' ', 'text/plain'],
-                                ['return', ' ', '200', ' ', validation]]]]
+        location_directive = [self._location_directive_for_achall(achall)]
 
         self.configurator.parser.add_server_directives(vhost,
-            location_directive, replace=False)
+            location_directive)
 
         rewrite_directive = [['rewrite', ' ', '^(/.well-known/acme-challenge/.*)',
                                 ' ', '$1', ' ', 'break']]
         self.configurator.parser.add_server_directives(vhost,
-            rewrite_directive, replace=False, insert_at_top=True)
+            rewrite_directive, insert_at_top=True)

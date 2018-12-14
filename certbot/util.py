@@ -12,7 +12,6 @@ import platform
 import re
 import six
 import socket
-import stat
 import subprocess
 import sys
 
@@ -20,6 +19,8 @@ from collections import OrderedDict
 
 import configargparse
 
+from acme.magic_typing import Tuple, Union  # pylint: disable=unused-import, no-name-in-module
+from certbot import compat
 from certbot import constants
 from certbot import errors
 from certbot import lock
@@ -54,7 +55,7 @@ _INITIAL_PID = os.getpid()
 # the dict are attempted to be cleaned up at program exit. If the
 # program exits before the lock is cleaned up, it is automatically
 # released, but the file isn't deleted.
-_LOCKS = OrderedDict()
+_LOCKS = OrderedDict() # type: OrderedDict[str, lock.LockFile]
 
 
 def run_script(params, log=logger.error):
@@ -203,7 +204,7 @@ def check_permissions(filepath, mode, uid=0):
 
     """
     file_stat = os.stat(filepath)
-    return stat.S_IMODE(file_stat.st_mode) == mode and file_stat.st_uid == uid
+    return compat.compare_file_modes(file_stat.st_mode, mode) and file_stat.st_uid == uid
 
 
 def safe_open(path, mode="w", chmod=None, buffering=None):
@@ -218,8 +219,12 @@ def safe_open(path, mode="w", chmod=None, buffering=None):
 
     """
     # pylint: disable=star-args
-    open_args = () if chmod is None else (chmod,)
-    fdopen_args = () if buffering is None else (buffering,)
+    open_args = ()  # type: Union[Tuple[()], Tuple[int]]
+    if chmod is not None:
+        open_args = (chmod,)
+    fdopen_args = ()  # type: Union[Tuple[()], Tuple[int]]
+    if buffering is not None:
+        fdopen_args = (buffering,)
     return os.fdopen(
         os.open(path, os.O_CREAT | os.O_EXCL | os.O_RDWR, *open_args),
         mode, *fdopen_args)
@@ -303,9 +308,8 @@ def get_filtered_names(all_names):
     for name in all_names:
         try:
             filtered_names.add(enforce_le_validity(name))
-        except errors.ConfigurationError as error:
-            logger.debug('Not suggesting name "%s"', name)
-            logger.debug(error)
+        except errors.ConfigurationError:
+            logger.debug('Not suggesting name "%s"', name, exc_info=True)
     return filtered_names
 
 
@@ -604,7 +608,7 @@ def enforce_domain_sanity(domain):
 def is_wildcard_domain(domain):
     """"Is domain a wildcard domain?
 
-    :param damain: domain to check
+    :param domain: domain to check
     :type domain: `bytes` or `str` or `unicode`
 
     :returns: True if domain is a wildcard, otherwise, False

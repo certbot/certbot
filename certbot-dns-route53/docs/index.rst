@@ -10,13 +10,13 @@ Welcome to certbot-dns-route53's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+.. automodule:: certbot_dns_route53
+   :members:
+
 .. toctree::
    :maxdepth: 1
 
    api
-
-.. automodule:: certbot_dns_route53
-   :members:
 
 
 

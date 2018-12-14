@@ -7,6 +7,8 @@ import re
 import traceback
 import zope.component
 
+from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
+from certbot import compat
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
@@ -46,7 +48,7 @@ def rename_lineage(config):
     """
     disp = zope.component.getUtility(interfaces.IDisplay)
 
-    certname = _get_certnames(config, "rename")[0]
+    certname = get_certnames(config, "rename")[0]
 
     new_certname = config.new_certname
     if not new_certname:
@@ -88,7 +90,7 @@ def certificates(config):
 
 def delete(config):
     """Delete Certbot files associated with a certificate lineage."""
-    certnames = _get_certnames(config, "delete", allow_multiple=True)
+    certnames = get_certnames(config, "delete", allow_multiple=True)
     for certname in certnames:
         storage.delete_files(config, certname)
         disp = zope.component.getUtility(interfaces.IDisplay)
@@ -103,7 +105,7 @@ def lineage_for_certname(cli_config, certname):
     """Find a lineage object with name certname."""
     configs_dir = cli_config.renewal_configs_dir
     # Verify the directory is there
-    util.make_or_verify_dir(configs_dir, mode=0o755, uid=os.geteuid())
+    util.make_or_verify_dir(configs_dir, mode=0o755, uid=compat.os_geteuid())
     try:
         renewal_file = storage.renewal_file_for_certname(cli_config, certname)
     except errors.CertStorageError:
@@ -226,7 +228,7 @@ def match_and_check_overlaps(cli_config, acceptable_matches, match_func, rv_func
     def find_matches(candidate_lineage, return_value, acceptable_matches):
         """Returns a list of matches using _search_lineages."""
         acceptable_matches = [func(candidate_lineage) for func in acceptable_matches]
-        acceptable_matches_rv = []
+        acceptable_matches_rv = []  # type: List[str]
         for item in acceptable_matches:
             if isinstance(item, list):
                 acceptable_matches_rv += item
@@ -288,11 +290,7 @@ def human_readable_cert_info(config, cert, skip_filter_checks=False):
                          cert.privkey))
     return "".join(certinfo)
 
-###################
-# Private Helpers
-###################
-
-def _get_certnames(config, verb, allow_multiple=False):
+def get_certnames(config, verb, allow_multiple=False, custom_prompt=None):
     """Get certname from flag, interactively, or error out.
     """
     certname = config.certname
@@ -305,21 +303,31 @@ def _get_certnames(config, verb, allow_multiple=False):
         if not choices:
             raise errors.Error("No existing certificates found.")
         if allow_multiple:
+            if not custom_prompt:
+                prompt = "Which certificate(s) would you like to {0}?".format(verb)
+            else:
+                prompt = custom_prompt
             code, certnames = disp.checklist(
-                                    "Which certificate(s) would you like to {0}?".format(verb),
-                                    choices, cli_flag="--cert-name",
-                                    force_interactive=True)
+                prompt, choices, cli_flag="--cert-name", force_interactive=True)
             if code != display_util.OK:
                 raise errors.Error("User ended interaction.")
         else:
-            code, index = disp.menu("Which certificate would you like to {0}?".format(verb),
-                                    choices, cli_flag="--cert-name",
-                                    force_interactive=True)
+            if not custom_prompt:
+                prompt = "Which certificate would you like to {0}?".format(verb)
+            else:
+                prompt = custom_prompt
+
+            code, index = disp.menu(
+                prompt, choices, cli_flag="--cert-name", force_interactive=True)
 
             if code != display_util.OK or index not in range(0, len(choices)):
                 raise errors.Error("User ended interaction.")
             certnames = [choices[index]]
     return certnames
+
+###################
+# Private Helpers
+###################
 
 def _report_lines(msgs):
     """Format a results report for a category of single-line renewal outcomes"""
@@ -334,7 +342,7 @@ def _report_human_readable(config, parsed_certs):
 
 def _describe_certs(config, parsed_certs, parse_failures):
     """Print information about the certs we know about"""
-    out = []
+    out = []  # type: List[str]
 
     notify = out.append
 
@@ -346,7 +354,7 @@ def _describe_certs(config, parsed_certs, parse_failures):
             notify("Found the following {0}certs:".format(match))
             notify(_report_human_readable(config, parsed_certs))
         if parse_failures:
-            notify("\nThe following renewal configuration files "
+            notify("\nThe following renewal configurations "
                "were invalid:")
             notify(_report_lines(parse_failures))
 
@@ -367,7 +375,7 @@ def _search_lineages(cli_config, func, initial_rv, *args):
     """
     configs_dir = cli_config.renewal_configs_dir
     # Verify the directory is there
-    util.make_or_verify_dir(configs_dir, mode=0o755, uid=os.geteuid())
+    util.make_or_verify_dir(configs_dir, mode=0o755, uid=compat.os_geteuid())
 
     rv = initial_rv
     for renewal_file in storage.renewal_conf_files(cli_config):
