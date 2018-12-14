@@ -71,7 +71,6 @@ class OCSPTest(unittest.TestCase):
         self.assertEqual(self.checker.ocsp_revoked("x", "y"), False)
         self.assertEqual(mock_run.call_count, 2)
 
-
     @mock.patch('certbot.ocsp.logger.info')
     @mock.patch('certbot.util.run_script')
     def test_determine_ocsp_server(self, mock_run, mock_info):

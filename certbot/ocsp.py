@@ -7,10 +7,11 @@ from subprocess import Popen, PIPE
 try:
     from cryptography.x509 import ocsp  # pylint: disable=import-error
 except ImportError:
-    oscp = None  # type: ignore
+    ocsp = None  # type: ignore
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.hashes import SHA1
 import requests
 
 from certbot import errors
@@ -58,7 +59,7 @@ class RevocationChecker(object):
         if not host:
             return False
 
-        if not self.ocsp_builtin:
+        if not ocsp:
             # jdkasten thanks "Bulletproof SSL and TLS - Ivan Ristic" for documenting this!
             cmd = ["openssl", "ocsp",
                    "-no_nonce",
@@ -86,7 +87,7 @@ class RevocationChecker(object):
                 data = file.read()
             cert = x509.load_pem_x509_certificate(data, default_backend())
             builder = x509.ocsp.OCSPRequestBuilder()
-            builder.add_certificate(cert, issuer)
+            builder = builder.add_certificate(cert, issuer, SHA1())
             request = builder.build()
 
             request_binary = request.public_bytes(serialization.Encoding.DER)
@@ -97,9 +98,15 @@ class RevocationChecker(object):
                 logger.info("OCSP check failed for %s (are we offline?)", cert_path)
                 return False
 
-            response_ocsp = ocsp.load_der_ocsp_response(response.raw)
-            return response_ocsp.response_status in (
-                    ocsp.OCSPCertStatus.UNKNOWN or ocsp.OCSPCertStatus.GOOD)
+            response_ocsp = ocsp.load_der_ocsp_response(response.content)
+
+            try:
+                logger.debug("OCSP certificate status for %s is: %s",
+                             cert_path, response_ocsp.certificate_status)
+                return response_ocsp.certificate_status == ocsp.OCSPCertStatus.REVOKED
+            except ValueError:
+                logger.info("Invalid OCSP response status for %s: %s",
+                            cert_path, response_ocsp.response_status)
 
     def determine_ocsp_server(self, cert_path):
         """Extract the OCSP server host from a certificate.
@@ -117,9 +124,6 @@ class RevocationChecker(object):
             except errors.SubprocessError:
                 logger.info("Cannot extract OCSP URI from %s", cert_path)
                 return None, None
-
-            url = url.rstrip()
-            host = url.partition("://")[2].rstrip("/")
         else:
             try:
                 with open(cert_path, 'rb') as file:
@@ -130,10 +134,12 @@ class RevocationChecker(object):
                                 if description.access_method == x509.AuthorityInformationAccessOID.OCSP]
 
                 url = descriptions[0].access_location.value
-                host = url.partition("://")[2].rstrip("/")
             except (x509.ExtensionNotFound, IndexError):
                 logger.info("Cannot extract OCSP URI from %s", cert_path)
                 return None, None
+
+        url = url.rstrip()
+        host = url.partition("://")[2].rstrip("/")
 
         if host:
             return url, host
