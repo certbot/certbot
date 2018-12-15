@@ -7,6 +7,7 @@ Certbot adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 
 * Added the `update_account` subcommand for account management commands.
+* Added a --manual-delay-hook argument that can be used to wait for DNS updates.
 
 ### Changed
 
