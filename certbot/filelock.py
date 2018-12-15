@@ -11,7 +11,7 @@ except ImportError:
     POSIX_MODE = False
 
 from certbot import errors
-from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import List, Optional  # pylint: disable=unused-import, no-name-in-module
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +61,7 @@ class _UnixLockMechanism(object):
         :param str path: the path to the lock file
         """
         self._path = path
-        self._fd = None
+        self._fd = None  # type: Optional[int]
 
     def acquire(self):
         # type: () -> None
@@ -197,8 +197,7 @@ class _WindowsLockMechanism(object):
                 except OSError as e:
                     # If the lock file cannot be removed, it is not a big deal.
                     # Likely another instance is acquiring the lock we just released.
-                    logger.debug(e)
-                    pass
+                    logger.debug(str(e))
             finally:
                 self._fd = None
 
@@ -238,7 +237,7 @@ class FileLock(object):
     """
 
     def __init__(self, path):
-        # type: (str) -> FileLock
+        # type: (str) -> None
         """
         Create a FileLock instance on the given file path.
         :param str path: the path to the file that will hold a lock
