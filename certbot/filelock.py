@@ -1,286 +1,126 @@
-"""
-Library to lock a directory or a file using a lockfile.
-This implementation heavily relies on the work of benediktschmitt
-(https://github.com/benediktschmitt/py-filelock)
-and should be considered as a fork of his project.
-"""
-import atexit
+"""Implements file locks for locking files and directories in UNIX and Windows."""
+import errno
 import logging
 import os
-import threading
-
-try:
-    import msvcrt
-except ImportError:
-    msvcrt = None  # type: ignore
-
+import atexit
 try:
     import fcntl
+    POSIX_MODE = True
 except ImportError:
-    fcntl = None  # type: ignore
+    import msvcrt
+    POSIX_MODE = False
 
 from certbot import errors
 from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
 
 logger = logging.getLogger(__name__)
 
+
 # Handling exit
 # ~~~~~~~~~~~~~
+
+
 _INITIAL_PID = os.getpid()
-_LOCKS = []  # type: List[BaseFileLock]
+_LOCKS = []  # type: List[FileLock]
 
 
 def _release_all_locks():
     """Release all locks acquired by FileLock."""
     if _INITIAL_PID == os.getpid():
         for lock in _LOCKS:
-            if lock.is_locked:
+            if lock.is_locked():
                 try:
                     lock.release()
-                    logger.debug('Lock released: %s', lock.lock_file)
+                    logger.debug('Lock released: %s', lock)
                 except (OSError, IOError):  # pragma: no cover
                     logger.error('Exception occurred releasing lock: %s',
-                                 lock.lock_file, exc_info=True)
+                                 lock, exc_info=True)
 
 
 # Every lock is released at least when Certbot exit.
 atexit.register(_release_all_locks)
 
-# Classes
-# ------------------------------------------------
-
-
-class BaseFileLock(object):
-    """
-    Implements the base class of a file lock.
-    """
-
-    def __init__(self, lock_file):
-        """
-        Create a new Lock. Note that this lock is set to be release when program exit.
-        """
-        # The path to the lock file.
-        self._lock_file = lock_file
-
-        # The file descriptor for the *_lock_file* as it is returned by the
-        # os.open() function.
-        # This file lock is only NOT None, if the object currently holds the
-        # lock.
-        self._lock_file_fd = None
-
-        # We use this lock primarily for the lock counter.
-        self._thread_lock = threading.Lock()
-
-        # The lock counter is used for implementing the nested locking
-        # mechanism. Whenever the lock is acquired, the counter is increased and
-        # the lock is only released, when this value is 0 again.
-        self._lock_counter = 0
-
-        # Pass itelf to the _LOCK global variable to ensure that all locks are
-        # released at least when the program exit.
-        _LOCKS.append(self)
-
-    @property
-    def lock_file(self):
-        """
-        The path to the lock file.
-        """
-        return self._lock_file
-
-    # Platform dependent locking
-    # --------------------------------------------
-
-    def _acquire(self):
-        """
-        Platform dependent. If the file lock could be
-        acquired, self._lock_file_fd holds the file descriptor
-        of the lock file.
-        """
-        raise NotImplementedError()  # pragma: no cover
-
-    def _release(self):
-        """
-        Releases the lock and sets self._lock_file_fd to None.
-        """
-        raise NotImplementedError()  # pragma: no cover
-
-    # Platform independent methods
-    # --------------------------------------------
-
-    @property
-    def is_locked(self):
-        """
-        True, if the object holds the file lock.
-        .. versionchanged:: 2.0.0
-            This was previously a method and is now a property.
-        """
-        return self._lock_file_fd is not None
-
-    def acquire(self):
-        """
-        Acquires the file lock or fails with a :exc:`Timeout` error.
-        .. code-block:: python
-            # You can use this method in the context manager (recommended)
-            with lock.acquire():
-                pass
-            # Or use an equivalent try-finally construct:
-            lock.acquire()
-            try:
-                pass
-            finally:
-                lock.release()
-        """
-        # Increment the number right at the beginning.
-        # We can still undo it, if something fails.
-        with self._thread_lock:
-            self._lock_counter += 1
-
-        lock_id = id(self)
-        lock_filename = self._lock_file
-
-        try:
-            with self._thread_lock:
-                if not self.is_locked:
-                    logger.debug('Attempting to acquire lock %s on %s', lock_id, lock_filename)
-                    self._acquire()
-
-            if self.is_locked:
-                logger.info('Lock %s acquired on %s', lock_id, lock_filename)
-            else:
-                self._raise_for_certbot_lock()
-        except (OSError, IOError):  # pragma: no cover
-            # Something did go wrong, so decrement the counter.
-            with self._thread_lock:
-                self._lock_counter = max(0, self._lock_counter - 1)
-
-            raise
-
-        class ReturnProxy(object):
-            """
-            This class wraps the lock to make sure __enter__ is not called
-            twice when entering the with statement.
-            If we would simply return *self*, the lock would be acquired again
-            in the *__enter__* method of the BaseFileLock, but not released again
-            automatically.
-            """
-            def __init__(self, lock):
-                self.lock = lock
-
-            def __enter__(self):
-                return self.lock
-
-            def __exit__(self, exc_type, exc_value, traceback):
-                self.lock.release()
-                return None
-
-        return ReturnProxy(lock=self)
-
-    def release(self, force=False):
-        """
-        Releases the file lock.
-        Please note, that the lock is only completely released, if the lock
-        counter is 0.
-        Also note, that the lock file itself is not automatically deleted.
-        :arg bool force:
-            If true, the lock counter is ignored and the lock is released in
-            every case.
-        """
-        with self._thread_lock:
-
-            if self.is_locked:
-                self._lock_counter -= 1
-
-                if self._lock_counter == 0 or force:
-                    lock_id = id(self)
-                    lock_filename = self._lock_file
-
-                    logger.debug('Attempting to release lock %s on %s', lock_id, lock_filename)
-                    self._release()
-                    self._lock_counter = 0
-                    logger.info('Lock %s released on %s', lock_id, lock_filename)
-
-        return None
-
-    def _raise_for_certbot_lock(self):
-        raise errors.LockError((
-            'Error, the filelock "{0}" could not be acquired. '
-            'It is likely that another Certbot instance is still running.'
-            .format(self.lock_file)))
-
-    def __enter__(self):
-        self.acquire()
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        self.release()
-        return None
-
-    def __del__(self):
-        self.release(force=True)
-        return None
-
-# Windows locking mechanism
-# ~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
-class WindowsFileLock(BaseFileLock):
-    """
-    Uses the :func:`msvcrt.locking` function to hard lock the lock file on
-    windows systems.
-    """
-
-    def _acquire(self):
-        open_mode = os.O_RDWR | os.O_CREAT | os.O_TRUNC
-
-        try:
-            fd = os.open(self._lock_file, open_mode)
-        except OSError:
-            pass
-        else:
-            try:
-                msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
-            except (IOError, OSError):
-                os.close(fd)
-            else:
-                self._lock_file_fd = fd
-        return None
-
-    def _release(self):
-        fd = self._lock_file_fd
-        self._lock_file_fd = None
-        msvcrt.locking(fd, msvcrt.LK_UNLCK, 1)
-        os.close(fd)
-
-        try:
-            os.remove(self._lock_file)
-        # Probably another instance of the application
-        # that acquired the file lock.
-        except OSError:
-            pass
-        return None
 
 # Unix locking mechanism
 # ~~~~~~~~~~~~~~~~~~~~~~
 
 
-class UnixFileLock(BaseFileLock):
+class _UnixLockMechanism(object):
     """
-    Uses the :func:`fcntl.flock` to hard lock the lock file on unix systems.
+    A UNIX lock file mechanism.
+
+    This lock file is released when the locked file is closed or the
+    process exits. It cannot be used to provide synchronization between
+    threads. It is based on the lock_file package by Martin Horcicka.
     """
 
-    def _acquire(self):
-        open_mode = os.O_RDWR | os.O_CREAT | os.O_TRUNC
-        fd = os.open(self._lock_file, open_mode)
+    def __init__(self, path):
+        # type: (str) -> _UnixLockMechanism
+        """
+        Create a lock file mechanism for Unix.
+        :param str path: the path to the lock file
+        """
+        self._path = path
+        self._fd = None
 
+    def acquire(self):
+        # type: () -> None
+        """Acquire the lock."""
+        while self._fd is None:
+            # Open the file
+            fd = os.open(self._path, os.O_CREAT | os.O_WRONLY, 0o600)
+            try:
+                self._try_lock(fd)
+                if self._lock_success(fd):
+                    self._fd = fd
+            finally:
+                # Close the file if it is not the required one
+                if self._fd is None:
+                    os.close(fd)
+
+    def _try_lock(self, fd):
+        # type: (int) -> None
+        """
+        Try to acquire the lock file without blocking.
+        :param int fd: file descriptor of the opened file to lock
+        """
         try:
-            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except (IOError, OSError):
-            os.close(fd)
-        else:
-            self._lock_file_fd = fd
-        return None
+            fcntl.lockf(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except IOError as err:
+            if err.errno in (errno.EACCES, errno.EAGAIN):
+                logger.debug(
+                    "A lock on %s is held by another process.", self._path)
+                _raise_for_certbot_lock(self._path)
+            raise
 
-    def _release(self):
+    def _lock_success(self, fd):
+        # type: (int) -> bool
+        """
+        Did we successfully grab the lock?
+
+        Because this class deletes the locked file when the lock is
+        released, it is possible another process removed and recreated
+        the file between us opening the file and acquiring the lock.
+
+        :param int fd: file descriptor of the opened file to lock
+        :returns: True if the lock was successfully acquired
+        :rtype: bool
+        """
+        try:
+            stat1 = os.stat(self._path)
+        except OSError as err:
+            if err.errno == errno.ENOENT:
+                return False
+            raise
+
+        stat2 = os.fstat(fd)
+        # If our locked file descriptor and the file on disk refer to
+        # the same device and inode, they're the same file.
+        return stat1.st_dev == stat2.st_dev and stat1.st_ino == stat2.st_ino
+
+    def release(self):
+        # type: () -> None
+        """Remove, close, and release the lock file."""
         # It is important the lock file is removed before it's released,
         # otherwise:
         #
@@ -290,34 +130,159 @@ class UnixFileLock(BaseFileLock):
         # process A: check device and inode
         # process B: delete file
         # process C: open and lock a different file at the same path
-        fd = self._lock_file_fd
-        self._lock_file_fd = None
+        #
+        # Calling os.remove on a file that's in use doesn't work on
+        # Windows, but neither does locking with fcntl.
         try:
-            os.remove(self.lock_file)
-            fcntl.flock(fd, fcntl.LOCK_UN)
-        # The file is already deleted and that's what we want.
-        except OSError:
-            pass
+            os.remove(self._path)
         finally:
+            try:
+                os.close(self._fd)
+            finally:
+                self._fd = None
+
+    def is_locked(self):
+        # type: () -> bool
+        """Check if lock file is currently locked.
+
+        :return: True if the lock file is locked
+        :rtype: bool
+        """
+        return self._fd is not None
+
+
+# Windows locking mechanism
+# ~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+class _WindowsLockMechanism(object):
+    """
+    A Windows lock file mechanism.
+
+    On Windows in general, access to a file is exclusive, so opening a file
+    is an effective lock. This default behavior may be modified by an administrator,
+    so we ensure correct behavior with msvcrt. Moreover on Windows a file can be removed
+    only after it has been released: so the concurrency access that may occur on POSIX
+    system is irrelevant here, leading to a quite simple code.
+    """
+
+    def __init__(self, path):
+        # type: (str) -> _WindowsLockMechanism
+        self._path = path
+        self._fd = None
+
+    def acquire(self):
+        """Acquire the lock"""
+        open_mode = os.O_RDWR | os.O_CREAT | os.O_TRUNC
+
+        fd = os.open(self._path, open_mode, 0o600)
+        try:
+            msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
+        except (IOError, OSError):
             os.close(fd)
-        return None
+            _raise_for_certbot_lock(self._path)
+
+        self._fd = fd
+
+    def release(self):
+        """Release the lock."""
+        try:
+            msvcrt.locking(self._fd, msvcrt.LK_UNLCK, 1)
+            os.close(self._fd)
+
+            try:
+                os.remove(self._path)
+            except OSError:
+                # If the lock file cannot be removed, it is not a big deal.
+                # Likely another instance is acquiring the lock we just released.
+                pass
+        finally:
+            self._fd = None
+
+    def is_locked(self):
+        # type: () -> bool
+        """Check if lock file is currently lock.
+
+        :return: True if the lock file is locked
+        :rtype: bool
+        """
+        return self._fd is not None
 
 
-# Platform filelock
-# ~~~~~~~~~~~~~~~~~
+# Filelock platform independent utility
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-def FileLock(*args, **kwargs):
+
+class FileLock(object):
     """
-    Alias for the lock, which should be used for the current platform. On
-    Windows, this is an alias for :class:`WindowsFileLock`, on Unix for
-    :class:`UnixFileLock` and otherwise for :class:`SoftFileLock`.
+    Platform independent file lock system.
+
+    FileLock accepts a parameter, the path to a file, and offers two main methods,
+    acquire and release. Once acquire has been executed, the associated file is 'locked'
+    from the point of view of the OS, meaning that if another instance of Certbot try at
+    the same time to acquire the same lock, it will raise an Exception. Calling release
+    method will release the lock, and make it available to every other instance.
+
+    This allows to protect a file or a directory to be concurrently accessed and modified
+    by two Certbot instances in parallel.
+
+    FileLock is platform independent: it will proceed to the appropriate OS lock mechanism
+    depending on Linux or Windows.
+
+    Furthermore FileLock is a context manager. It can be used with the python `with` statement.
+    In this case, lock will be automatically acquired when entering the context, and automatically
+    released when exiting the context.
     """
-    if msvcrt:
-        return WindowsFileLock(*args, **kwargs)
-    elif fcntl:
-        return UnixFileLock(*args, **kwargs)
-    else:  #pragma: no-cover
-        raise ValueError('Could not get a relevant file lock provider.')
+
+    def __init__(self, path):
+        # type: (str) -> FileLock
+        """
+        Create a FileLock instance on the given file path.
+        :param str path: the path to the file that will hold a lock
+        """
+        self._path = path
+        self._lock_mechanism = _UnixLockMechanism(path) if POSIX_MODE\
+            else _WindowsLockMechanism(path)
+        _LOCKS.append(self)
+
+    def __enter__(self):
+        self._lock_mechanism.acquire()
+        return True
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self._lock_mechanism.release()
+
+    def __repr__(self):
+        # type: () -> str
+        repr_str = '{0}({1}) <'.format(self.__class__.__name__, self._path)
+        if self.is_locked():
+            repr_str += 'released>'
+        else:
+            repr_str += 'acquired>'
+        return repr_str
+
+    def acquire(self):
+        # type: () -> None
+        """
+        Acquire the lock on the file, forbidding any other Certbot instance to acquire it.
+        :raises errors.LockError: if unable to acquire the lock
+        """
+        self._lock_mechanism.acquire()
+
+    def release(self):
+        # type: () -> None
+        """
+        Release the lock on the file, allowing any other Certbot instance to acquire it.
+        """
+        self._lock_mechanism.release()
+
+    def is_locked(self):
+        # type: () -> True
+        """
+        Check if the file is currently locked.
+        :return: True if the file is locked, False otherwise
+        """
+        return self._lock_mechanism.is_locked()
 
 
 # Utility functions
@@ -325,10 +290,32 @@ def FileLock(*args, **kwargs):
 
 
 def lock_for_file(path):
-    """Create a lockfile for a file"""
-    return FileLock('{0}.{1}.{2}'.format(path, 'certbot', 'lock'))
+    # type: (str) -> FileLock
+    """
+    Create a lock for a file.
+    :param str path: the file path to lock
+    :return: a FileLock instance
+    """
+    return FileLock('{0}.certbot.lock'.format(path))
 
 
 def lock_for_dir(path):
-    """Create a lockfile for a dir"""
-    return FileLock(os.path.join(path, '.{0}.{1}'.format('certbot', 'lock')))
+    # type: (str) -> FileLock
+    """
+    Create a lock for a directory.
+    :param str path: the directory path to lock
+    :return: a FileLock instance
+    """
+    return FileLock(os.path.join(path, '.certbot.lock'))
+
+
+def _raise_for_certbot_lock(lock_file_path):
+    # type: (str) -> None
+    """
+    Raise a certbot error when lock file cannot be acquired.
+    :param str lock_file_path: the path to the lock file
+    """
+    raise errors.LockError(
+        'Error, the lock file "{0}" could not be acquired. '
+        'It is likely that another Certbot instance is still running.'
+        .format(lock_file_path))

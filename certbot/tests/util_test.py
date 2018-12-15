@@ -83,14 +83,11 @@ class LockDirUntilExit(test_util.TempDirTestCase):
         os.mkdir(subdir)
 
         with filelock.lock_for_dir(self.tempdir):
-            with filelock.lock_for_dir(subdir) as sub_lock:
-                with sub_lock: # <-- and we acquire sub_lock again !
-                    self.assertEqual(len(mock_locks.mock_calls), 2) # pylint: disable=protected-access
-                    # exception not raised
-                    filelock._release_all_locks() # pylint: disable=protected-access
-                    # logger.debug is only called twice because the third call
-                    # to lock subdir was ignored as it was already unlocked
-                    self.assertEqual(mock_logger.debug.call_count, 2)
+            with filelock.lock_for_dir(subdir):
+                self.assertEqual(len(mock_locks.mock_calls), 2)
+                # exception not raised
+                filelock._release_all_locks() # pylint: disable=protected-access
+                self.assertEqual(mock_logger.debug.call_count, 2)
 
     def test_raise_on_locked_dir(self):
         def func():
