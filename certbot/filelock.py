@@ -187,19 +187,20 @@ class _WindowsLockMechanism(object):
 
     def release(self):
         """Release the lock."""
-        try:
-            msvcrt.locking(self._fd, msvcrt.LK_UNLCK, 1)
-            os.close(self._fd)
-
+        if self._fd:
             try:
-                os.remove(self._path)
-            except OSError as e:
-                # If the lock file cannot be removed, it is not a big deal.
-                # Likely another instance is acquiring the lock we just released.
-                logger.debug(e)
-                pass
-        finally:
-            self._fd = None
+                msvcrt.locking(self._fd, msvcrt.LK_UNLCK, 1)
+                os.close(self._fd)
+
+                try:
+                    os.remove(self._path)
+                except OSError as e:
+                    # If the lock file cannot be removed, it is not a big deal.
+                    # Likely another instance is acquiring the lock we just released.
+                    logger.debug(e)
+                    pass
+            finally:
+                self._fd = None
 
     def is_locked(self):
         # type: () -> bool
