@@ -130,16 +130,17 @@ class _UnixLockMechanism(object):
         # process A: check device and inode
         # process B: delete file
         # process C: open and lock a different file at the same path
-        #
-        # Calling os.remove on a file that's in use doesn't work on
-        # Windows, but neither does locking with fcntl.
         try:
             os.remove(self._path)
+        except OSError as e:
+            if e.errno != errno.ENOENT:
+                raise
         finally:
-            try:
-                os.close(self._fd)
-            finally:
-                self._fd = None
+            if self._fd:
+                try:
+                    os.close(self._fd)
+                finally:
+                    self._fd = None
 
     def is_locked(self):
         # type: () -> bool
@@ -274,7 +275,8 @@ class FileLock(object):
         """
         Release the lock on the file, allowing any other Certbot instance to acquire it.
         """
-        self._lock_mechanism.release()
+        if self.is_locked():
+            self._lock_mechanism.release()
 
     def is_locked(self):
         # type: () -> True

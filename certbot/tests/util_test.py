@@ -82,24 +82,15 @@ class LockDirUntilExit(test_util.TempDirTestCase):
         subdir = os.path.join(self.tempdir, 'subdir')
         os.mkdir(subdir)
 
-        with filelock.lock_for_dir(self.tempdir):
-            with filelock.lock_for_dir(subdir):
+        lock1 = filelock.lock_for_dir(self.tempdir)
+        lock2 = filelock.lock_for_dir(subdir)
+        with lock1:
+            with lock2:
                 self.assertEqual(len(mock_locks.mock_calls), 2)
                 # exception not raised
+                mock_locks.__iter__.return_value = [lock1, lock2]
                 filelock._release_all_locks() # pylint: disable=protected-access
                 self.assertEqual(mock_logger.debug.call_count, 2)
-
-    def test_raise_on_locked_dir(self):
-        def func():
-            """Simple call to lock current tempdir"""
-            with filelock.lock_for_dir(self.tempdir):
-                pass  # pragma: no cover
-        try:
-            test_util.lock_and_call(func, self.tempdir)
-        except errors.LockError as error:
-            self.assertTrue(self.tempdir in str(error))
-        else:  # pragma: no cover
-            self.fail('Because self.tempdir is locked, errors.LockError should have been raised.')
 
 
 class SetUpCoreDirTest(test_util.TempDirTestCase):

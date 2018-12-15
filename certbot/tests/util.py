@@ -369,8 +369,8 @@ def lock_and_call(func, dir_path):
 
     def mocked_acquire(self):
         """This mock will raise for specific file lock, or delegate to the real method"""
-        if self._lock_file == lock_file:  # pylint: disable=protected-access
-            self._raise_for_certbot_lock()  # pylint: disable=protected-access
+        if self._path == lock_file:  # pylint: disable=protected-access
+            filelock._raise_for_certbot_lock(self._path)  # pylint: disable=protected-access
         orig(self)
 
     with mock.patch('certbot.filelock.FileLock.acquire', new=mocked_acquire):
