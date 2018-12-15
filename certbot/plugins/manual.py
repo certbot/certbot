@@ -120,6 +120,8 @@ permitted by DNS standards.)
     def add_parser_arguments(cls, add):
         add('auth-hook',
             help='Path or command to execute for the authentication script')
+        add('delay-hook',
+            help='Path or command to execute for the DNS propagation delay script')
         add('cleanup-hook',
             help='Path or command to execute for the cleanup script')
         add('public-ip-logging-ok', action='store_true',
@@ -135,7 +137,7 @@ permitted by DNS standards.)
 
     def _validate_hooks(self):
         if self.config.validate_hooks:
-            for name in ('auth-hook', 'cleanup-hook'):
+            for name in ('auth-hook', 'delay-hook', 'cleanup-hook'):
                 hook = self.conf(name)
                 if hook is not None:
                     hook_prefix = self.option_name(name)[:-len('-hook')]
@@ -166,8 +168,13 @@ permitted by DNS standards.)
                 self.tls_sni_01 = ManualTlsSni01(self)
                 self.tls_sni_01.add_chall(achall)
                 self.tls_sni_01.perform()
-            perform_achall(achall)
+            perform_achall(achall, False)
             responses.append(achall.response(achall.account_key))
+
+        if self.conf('delay-hook'):
+            for achall in achalls:
+                self._perform_achall_with_script(achall, True)
+
         return responses
 
     def _verify_ip_logging_ok(self):
@@ -184,7 +191,7 @@ permitted by DNS standards.)
             else:
                 raise errors.PluginError('Must agree to IP logging to proceed')
 
-    def _perform_achall_with_script(self, achall):
+    def _perform_achall_with_script(self, achall, isdelay):
         env = dict(CERTBOT_DOMAIN=achall.domain,
                    CERTBOT_VALIDATION=achall.validation(achall.account_key))
         if isinstance(achall.chall, challenges.HTTP01):
@@ -202,11 +209,14 @@ permitted by DNS standards.)
             os.environ.pop('CERTBOT_KEY_PATH', None)
             os.environ.pop('CERTBOT_SNI_DOMAIN', None)
         os.environ.update(env)
-        _, out = hooks.execute(self.conf('auth-hook'))
-        env['CERTBOT_AUTH_OUTPUT'] = out.strip()
+        if isdelay:
+            hooks.execute(self.conf('delay-hook'))
+        else:
+            _, out = hooks.execute(self.conf('auth-hook'))
+            env['CERTBOT_AUTH_OUTPUT'] = out.strip()
         self.env[achall] = env
 
-    def _perform_achall_manually(self, achall):
+    def _perform_achall_manually(self, achall, isdelay):
         validation = achall.validation(achall.account_key)
         if isinstance(achall.chall, challenges.HTTP01):
             msg = self._HTTP_INSTRUCTIONS.format(
