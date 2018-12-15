@@ -4,10 +4,10 @@ import logging
 import os
 import atexit
 try:
-    import fcntl
+    import fcntl  # pylint: disable=import-error
     POSIX_MODE = True
 except ImportError:
-    import msvcrt
+    import msvcrt  # pylint: disable=import-error
     POSIX_MODE = False
 
 from certbot import errors
@@ -55,7 +55,7 @@ class _UnixLockMechanism(object):
     """
 
     def __init__(self, path):
-        # type: (str) -> _UnixLockMechanism
+        # type: (str) -> None
         """
         Create a lock file mechanism for Unix.
         :param str path: the path to the lock file
@@ -168,7 +168,7 @@ class _WindowsLockMechanism(object):
     """
 
     def __init__(self, path):
-        # type: (str) -> _WindowsLockMechanism
+        # type: (str) -> None
         self._path = path
         self._fd = None
 
@@ -193,9 +193,10 @@ class _WindowsLockMechanism(object):
 
             try:
                 os.remove(self._path)
-            except OSError:
+            except OSError as e:
                 # If the lock file cannot be removed, it is not a big deal.
                 # Likely another instance is acquiring the lock we just released.
+                logger.debug(e)
                 pass
         finally:
             self._fd = None
@@ -268,7 +269,7 @@ class FileLock(object):
         Acquire the lock on the file, forbidding any other Certbot instance to acquire it.
         :raises errors.LockError: if unable to acquire the lock
         """
-        self._lock_mechanism.acquire()
+        self._lock_mechanism.acquire()  # type: ignore
 
     def release(self):
         # type: () -> None
@@ -276,15 +277,15 @@ class FileLock(object):
         Release the lock on the file, allowing any other Certbot instance to acquire it.
         """
         if self.is_locked():
-            self._lock_mechanism.release()
+            self._lock_mechanism.release()  # type: ignore
 
     def is_locked(self):
-        # type: () -> True
+        # type: () -> bool
         """
         Check if the file is currently locked.
         :return: True if the file is locked, False otherwise
         """
-        return self._lock_mechanism.is_locked()
+        return self._lock_mechanism.is_locked()  # type: ignore
 
 
 # Utility functions

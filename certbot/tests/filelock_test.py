@@ -4,7 +4,6 @@ import unittest
 import os
 import sys
 
-from certbot import errors
 from certbot.tests import util as test_util
 
 from certbot.filelock import lock_for_dir
