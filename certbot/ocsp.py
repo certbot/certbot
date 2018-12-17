@@ -24,7 +24,7 @@ class RevocationChecker(object):
 
     def __init__(self, enforce_openssl_binary_usage=False):
         self.broken = False
-        self.use_openssl_binary = not ocsp or enforce_openssl_binary_usage
+        self.use_openssl_binary = enforce_openssl_binary_usage or not ocsp
 
         if self.use_openssl_binary:
             if not util.exe_exists("openssl"):
