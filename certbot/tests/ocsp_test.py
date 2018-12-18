@@ -122,7 +122,7 @@ class OCSPTestOpenSSL(unittest.TestCase):
 
 
 @unittest.skipIf(not oscp_lib,
-                 reason='This class tests functionalities available only on cryptograpy >= 2.4.0')
+                 reason='This class tests functionalities available only on cryptography >= 2.4.0')
 class OSCPTestCryptography(unittest.TestCase):
     """
     OCSP revokation tests using Cryptography >= 2.4.0
