@@ -1213,9 +1213,8 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         " run if an attempt was made to obtain/renew a certificate. If"
         " multiple renewed certificates have identical post-hooks, only"
         " one will be run.")
-    helpful.add(
-        "renew", "--renew-hook",
-        action=_RenewHookAction, help=argparse.SUPPRESS)
+    helpful.add("renew", "--renew-hook",
+                action=_RenewHookAction, help=argparse.SUPPRESS)
     helpful.add(
         "renew", "--no-random-sleep-on-renew", action="store_false",
         default=flag_default("random_sleep_on_renew"), dest="random_sleep_on_renew",
