@@ -3,8 +3,18 @@
 # A hackish script to see if the client is behaving as expected 
 # with each of the "passing" conf files.
 
+# Staging server is set explicitly to stop tests from trying to use the live
+# server again if the server value set by --staging changes again.
+SERVER="https://acme-staging-v02.api.letsencrypt.org"
 export EA=/etc/apache2/ 
 TESTDIR="`dirname $0`"
+
+# Copy over a deactivated staging account so we don't need to register a new
+# one.
+CONFIG_DIR=$(mktemp -d)
+trap 'rm -rf "$CONFIG_DIR"' EXIT
+cp -R "$TESTDIR/accounts" "$CONFIG_DIR"
+
 cd $TESTDIR/passing
 
 function CleanupExit() {
@@ -62,7 +72,7 @@ trap CleanupExit INT
 for f in *.conf ; do 
     echo -n  testing "$f"...
     Setup
-    RESULT=`echo c | sudo $(command -v certbot) -vvvv --debug --staging --apache --register-unsafely-without-email --agree-tos certonly -t 2>&1`
+    RESULT=`echo c | sudo $(command -v certbot) -vvvv --debug --server "$SERVER" --config-dir "$CONFIG_DIR" --apache certonly -t 2>&1`
     if echo $RESULT | grep -Eq \("Which names would you like"\|"mod_macro is not yet"\) ; then
         echo passed
     else
