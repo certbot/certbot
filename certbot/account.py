@@ -54,13 +54,14 @@ class Account(object):  # pylint: disable=too-few-public-methods
         self.key = key
         self.regr = regr
         try:
-            self.meta = self.Meta(
-                # pyrfc3339 drops microseconds, make sure __eq__ is sane
-                creation_dt=datetime.datetime.now(
-                    tz=pytz.UTC).replace(microsecond=0),
-                creation_host=socket.getfqdn()) if meta is None else meta
+            creation_hostname = socket.getfqdn()
         except UnicodeError:
             raise errors.HostnameTooLong("Expected hostname to be <= 63 characters according to RFC3490.")
+        else:
+            self.meta = self.Meta(# pyrfc3339 drops microseconds, make sure __eq__ is sane
+                creation_dt=datetime.datetime.now(
+                    tz=pytz.UTC).replace(microsecond=0),
+                creation_host=creation_hostname) if meta is None else meta
 
         self.id = hashlib.md5(
             self.key.key.public_key().public_bytes(
