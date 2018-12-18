@@ -13,6 +13,10 @@ class AccountNotFound(AccountStorageError):
     """Account not found error."""
 
 
+class HostnameTooLong(Error):
+    """Hostname length too long error"""
+
+
 class ReverterError(Error):
     """Certbot Reverter error."""
 
