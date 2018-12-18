@@ -5,7 +5,7 @@
 
 # Staging server is set explicitly to stop tests from trying to use the live
 # server again if the server value set by --staging changes again.
-SERVER="https://acme-staging-v02.api.letsencrypt.org"
+SERVER="https://acme-staging-v02.api.letsencrypt.org/directory"
 export EA=/etc/apache2/ 
 TESTDIR="`dirname $0`"
 
