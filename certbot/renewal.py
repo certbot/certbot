@@ -321,10 +321,9 @@ def renew_cert(config, domains, le_client, lineage):
 
 
 def report(msgs, category):
-    """Format a results report for a category of renewal outcomes"""
+    "Format a results report for a category of renewal outcomes"
     lines = ("%s (%s)" % (m, category) for m in msgs)
     return "  " + "\n  ".join(lines)
-
 
 def _renew_describe_results(config, renew_successes, renew_failures,
                             renew_skipped, parse_failures):
@@ -391,8 +390,10 @@ def handle_renewal_request(config):  # pylint: disable=too-many-locals
                            "instead. The renew verb may provide other options "
                            "for selecting certificates to renew in the future.")
 
-    conf_files = [storage.renewal_file_for_certname(config, config.certname)] if config.certname \
-        else storage.renewal_conf_files(config)
+    if config.certname:
+        conf_files = [storage.renewal_file_for_certname(config, config.certname)]
+    else:
+        conf_files = storage.renewal_conf_files(config)
 
     renew_successes = []
     renew_failures = []
@@ -441,9 +442,9 @@ def handle_renewal_request(config):  # pylint: disable=too-many-locals
                                     sleep_time)
                         time.sleep(sleep_time)
                         # We will sleep only once this day, folks.
-                        apply_random_sleep = True
+                        apply_random_sleep = False
 
-                    # Domains have been restored into lineage_config by reconstitute
+                    # domains have been restored into lineage_config by reconstitute
                     # but they're unnecessary anyway because renew_cert here
                     # will just grab them from the certificate
                     # we already know it's time to renew based on should_renew
@@ -456,12 +457,14 @@ def handle_renewal_request(config):  # pylint: disable=too-many-locals
                     renew_skipped.append("%s expires on %s" % (renewal_candidate.fullchain,
                                          expiry.strftime("%Y-%m-%d")))
                 # Run updater interface methods
-                updater.run_generic_updaters(lineage_config, renewal_candidate, plugins)
+                updater.run_generic_updaters(lineage_config, renewal_candidate,
+                                             plugins)
 
         except Exception as e:  # pylint: disable=broad-except
             # obtain_cert (presumably) encountered an unanticipated problem.
             logger.warning("Attempting to renew cert (%s) from %s produced an "
-                           "unexpected error: %s. Skipping.", lineagename, renewal_file, e)
+                           "unexpected error: %s. Skipping.", lineagename,
+                               renewal_file, e)
             logger.debug("Traceback was:\n%s", traceback.format_exc())
             renew_failures.append(renewal_candidate.fullchain)
 
@@ -472,5 +475,5 @@ def handle_renewal_request(config):  # pylint: disable=too-many-locals
     if renew_failures or parse_failures:
         raise errors.Error("{0} renew failure(s), {1} parse failure(s)".format(
             len(renew_failures), len(parse_failures)))
-
-    logger.debug("no renewal failures")
+    else:
+        logger.debug("no renewal failures")
