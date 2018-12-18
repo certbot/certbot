@@ -7,6 +7,7 @@ Certbot adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 
 * Added the `update_account` subcommand for account management commands.
+* Added the `HostnameTooLong` error type for catching a UnicodeError from `socket.getfqdn()`.
 
 ### Changed
 
@@ -22,6 +23,9 @@ Certbot adheres to [Semantic Versioning](http://semver.org/).
   backwards compatibility and support for doing this with new modules in josepy
   will not be added. Users of the acme library should switch to using josepy
   directly if they haven't done so already.
+* Fixed the error displayed by a hostname over 63 characters by adding an exception
+  that would more accurately describe the issue. Which is that the FQDN does not
+  abide by RFC3490.
 
 Despite us having broken lockstep, we are continuing to release new versions of
 all Certbot components during releases for the time being, however, the only
