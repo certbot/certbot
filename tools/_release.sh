@@ -166,7 +166,7 @@ fi
 mkdir kgs
 kgs="kgs/$version"
 pip freeze | tee $kgs
-pip install pytest
+python ../tools/pip_install.py pytest
 for module in $subpkgs_modules ; do
     echo testing $module
     # use an empty configuration file rather than the one in the repo root
