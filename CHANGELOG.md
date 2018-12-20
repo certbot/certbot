@@ -7,12 +7,13 @@ Certbot adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 
 * Added the `update_account` subcommand for account management commands.
+* New DNS plugin has been created for ConoHa.
 
 ### Changed
 
 * Copied account management functionality from the `register` subcommand
   to the `update_account` subcommand.
-* Marked usage `register --update-registration` for deprecation and 
+* Marked usage `register --update-registration` for deprecation and
   removal in a future release.
 
 ### Fixed
