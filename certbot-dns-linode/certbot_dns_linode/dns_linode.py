@@ -58,6 +58,8 @@ class Authenticator(dns_common.DNSAuthenticator):
     def _get_linode_client(self):
         api_key = self.credentials.conf('key')
         api_version = self.credentials.conf('version')
+        if api_version == '':
+            api_version = None
 
         if not api_version:
             api_version = 3

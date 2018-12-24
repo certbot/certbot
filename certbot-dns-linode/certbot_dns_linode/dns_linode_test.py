@@ -58,6 +58,30 @@ class AuthenticatorTest(test_util.TempDirTestCase,
         self.assertEqual(4, client.api_version)
 
     # pylint: disable=protected-access
+    def test_api_version_3_detection_empty_version(self):
+        path = os.path.join(self.tempdir, 'file_3_auto_empty.ini')
+        dns_test_common.write({"linode_key": TOKEN_V3, "linode_version": ""}, path)
+
+        config = mock.MagicMock(linode_credentials=path,
+                                linode_propagation_seconds=0)
+        auth = Authenticator(config, "linode")
+        auth._setup_credentials()
+        client = auth._get_linode_client()
+        self.assertEqual(3, client.api_version)
+
+    # pylint: disable=protected-access
+    def test_api_version_4_detection_empty_version(self):
+        path = os.path.join(self.tempdir, 'file_4_auto_empty.ini')
+        dns_test_common.write({"linode_key": TOKEN_V4, "linode_version": ""}, path)
+
+        config = mock.MagicMock(linode_credentials=path,
+                                linode_propagation_seconds=0)
+        auth = Authenticator(config, "linode")
+        auth._setup_credentials()
+        client = auth._get_linode_client()
+        self.assertEqual(4, client.api_version)
+
+    # pylint: disable=protected-access
     def test_api_version_3_manual(self):
         path = os.path.join(self.tempdir, 'file_3_manual.ini')
         dns_test_common.write({"linode_key": TOKEN_V4, "linode_version": 3}, path)
