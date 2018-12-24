@@ -112,7 +112,7 @@ def build_lexicon_config(config_dict):
     """
     Convenient function to build a Lexicon 3.x config object.
     :param dict config_dict: the configuration specifics to apply
-    :return: an instanciated ConfigResolver object
+    :return: an instantiated ConfigResolver object
     :rtype: ConfigResolver
     """
     return ConfigResolver().with_dict(config_dict).with_env()
