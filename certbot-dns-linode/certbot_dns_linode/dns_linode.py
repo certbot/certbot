@@ -94,7 +94,7 @@ class _LinodeLexiconClient(dns_common_lexicon.LexiconClient):
                 'auth_token': api_key,
             })
         else:
-            raise errors.PluginError('Invalid api version specified: {0}.'
+            raise errors.PluginError('Invalid api version specified: {0}. (Supported: 3, 4)'
                                      .format(api_version))
 
             self.provider = linode4.Provider(config)
