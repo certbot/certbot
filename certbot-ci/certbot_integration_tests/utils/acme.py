@@ -16,6 +16,7 @@ import contextlib
 import multiprocessing
 import shutil
 import sys
+import traceback
 from os.path import join, exists
 
 import requests
@@ -24,19 +25,18 @@ from certbot_integration_tests.utils import misc
 from acme.magic_typing import List
 
 # Current boulder version to test. Pebble do not have it, so master will always be executed.
-BOULDER_VERSION = '2018-11-19'
+BOULDER_VERSION = '2018-12-13'
 TRAVIS_GO_VERSION = '1.11.2'
 
 
-@contextlib.contextmanager
 def setup_acme_server(acme_config, nodes, repositories_path):
     # type: (dict, List[str], str) -> dict
     """
-    Main purpose of this module. This contextmanager will ensure that every acme server instance
-    is correctly setup and responding upon context entering. Instances are properly closed and
-    cleaned when the context is destroyed.
+    Main purpose of this module. This method will ensure that every acme server instance
+    is correctly setup and responding. Instances are properly closed and cleaned when
+    the Python process exit, using atexit.
     Typically all pytest integration tests will be executed in this context.
-    The contextmanager returns an object describing ports and directory url to use for each acme
+    This method returns an object describing ports and directory url to use for each acme
     server with the relevant pytest xdist node.
     :param dict acme_config: adict describing the current acme server characteristics to setup.
     :param str[] nodes: list of nodes name that will be setup by pytest xdist
@@ -64,7 +64,7 @@ def setup_acme_server(acme_config, nodes, repositories_path):
         for (index, node) in enumerate(nodes):
             acme_xdist[node] = results[index]
 
-        yield acme_xdist
+        return acme_xdist
 
 
 @contextlib.contextmanager
@@ -84,12 +84,12 @@ def _prepare_repository(repositories_path, acme_type):
 
     try:
         if not exists(repo_path):
-            launch_command(['git', 'clone', 'https://github.com/letsencrypt/{0}'.format(acme_type),
+            _launch_command(['git', 'clone', 'https://github.com/letsencrypt/{0}'.format(acme_type),
                             '--single-branch', '--depth=1', repo_path])
 
-        launch_command(['git', 'clean', '-fd'], cwd=repo_path)
-        launch_command(['git', 'checkout', '-B', 'master', 'origin/master'], cwd=repo_path)
-        launch_command(['git', 'pull'], cwd=repo_path)
+        _launch_command(['git', 'clean', '-fd'], cwd=repo_path)
+        _launch_command(['git', 'checkout', '-B', 'master', 'origin/master'], cwd=repo_path)
+        _launch_command(['git', 'pull'], cwd=repo_path)
         print('=> GIT repositories ready.')
         yield repo_path
     except (OSError, subprocess.CalledProcessError):
@@ -108,11 +108,11 @@ def _warm_up_docker(acme_type):
     :param str acme_type: the acme server type, pebble or boulder
     """
     if acme_type == 'boulder':
-        launch_command(['docker', 'pull', 'letsencrypt/boulder-tools-go{0}:{1}'
+        _launch_command(['docker', 'pull', 'letsencrypt/boulder-tools-go{0}:{1}'
                        .format(TRAVIS_GO_VERSION, BOULDER_VERSION)])
-        launch_command(['docker', 'pull', 'mariadb:10.3'])
+        _launch_command(['docker', 'pull', 'mariadb:10.3'])
     else:
-        launch_command(['docker', 'pull', 'golang:1.11-alpine'])
+        _launch_command(['docker', 'pull', 'golang:1.11-alpine'])
 
 
 def _setup_one_node(index, node, acme_config, pool, repo_path):
@@ -144,8 +144,7 @@ def _setup_one_node(index, node, acme_config, pool, repo_path):
 
         try:
             if os.path.isfile(join(workspace, 'docker-compose.yml')):
-                launch_command(['docker-compose', '-p', node, 'down'],
-                               cwd=workspace)
+                _launch_command(['docker-compose', 'down'], cwd=workspace)
         except subprocess.CalledProcessError:
             pass
         finally:
@@ -177,62 +176,65 @@ def _async_work(workspace, index, acme_config, node, repo_path):
     :rtype: dict
     """
     acme_type = acme_config['type']
-    # Each acme server is assigned specific ports, to avoid any collision between them and allow
-    # full integration tests paralleled execution.
-    params = {
-        'node': node,
-        'https_01_port': 5001 + 10 * index,
-        'http_01_port': 5002 + 10 * index,
-        'directory_v1_port': 5003 + 10 * index,
-        'directory_v2_port': 5004 + 10 * index,
-        'challsrvport_mgt_port': 5005 + 10 * index,
-        'bluenet_network': '10.77.{0}'.format(index),
-        'rednet_network': '10.88.{0}'.format(index),
-    }
-
-    # Current acme servers sources are copied into the temporary workspace, to allow
-    # customisations to a specific acme server instance.
-    ignore = shutil.ignore_patterns('.git')
-    shutil.copytree(repo_path, join(workspace, acme_type), ignore=ignore)
-
-    if acme_type == 'boulder':
-        directory_url = _setup_boulder(workspace, params, acme_v2=acme_config['option'] == 'v2')
-    else:
-        directory_url = _setup_pebble(workspace, params, strict=acme_config['option'] == 'strict')
-
-    xdist = {
-        'directory_url': directory_url,
-        'https_01_port': params['https_01_port'],
-        'http_01_port': params['http_01_port'],
-        'challsrvtest_mgt_port': params['challsrvport_mgt_port']
-    }
-
-    launch_command(['docker-compose', '--project-name', params['node'],
-                    'up', '--force-recreate', '-d', acme_config['type']], cwd=workspace)
-
-    print('=> Waiting for {0} instance to respond ({1})...'.format(acme_type, node))
-
     try:
-        # ACME servers can take a long time to be ready to server.
-        # This is particulary true with Boulder (1 min in average).
-        # So we really wait for the directory url to respond to be sure that server is ready.
-        misc.check_until_timeout(directory_url)
-    except ValueError:
-        return False
+        # Each acme server is assigned specific ports, to avoid any collision between them and allow
+        # full integration tests paralleled execution.
+        params = {
+            'node': node,
+            'https_01_port': 5001 + 10 * index,
+            'http_01_port': 5002 + 10 * index,
+            'directory_v1_port': 5003 + 10 * index,
+            'directory_v2_port': 5004 + 10 * index,
+            'challsrvport_mgt_port': 5005 + 10 * index,
+            'bluenet_network': '10.77.{0}'.format(index),
+            'rednet_network': '10.88.{0}'.format(index),
+        }
 
-    # Specific for Pebble, that use an API to setup the default A record, instead of the
-    # FAKE_DNS environment variable used in Boulder. Will be harmonised soon.
-    if acme_type == 'pebble':
+        # Current acme servers sources are copied into the temporary workspace, to allow
+        # customisations to a specific acme server instance.
+        ignore = shutil.ignore_patterns('.git')
+        shutil.copytree(repo_path, join(workspace, acme_type), ignore=ignore)
+
+        if acme_type == 'boulder':
+            directory_url = _setup_boulder(workspace, params, acme_v2=acme_config['option'] == 'v2')
+        else:
+            directory_url = _setup_pebble(workspace, params, strict=acme_config['option'] == 'strict')
+
+        xdist = {
+            'directory_url': directory_url,
+            'https_01_port': params['https_01_port'],
+            'http_01_port': params['http_01_port'],
+            'challsrvtest_mgt_port': params['challsrvport_mgt_port']
+        }
+
+        _launch_command(['docker-compose', 'up', '--force-recreate', '-d'], cwd=workspace)
+
+        print('=> Waiting for {0} instance to respond ({1})...'.format(acme_type, node))
+
+        try:
+            # ACME servers can take a long time to be ready to server.
+            # This is particulary true with Boulder (1 min in average).
+            # So we really wait for the directory url to respond to be sure that server is ready.
+            misc.check_until_timeout(directory_url)
+        except ValueError:
+            return False
+
+        # Configure challtestsrv to answer any A record request with ip of the docker host.
         response = requests.post('http://localhost:{0}/set-default-ipv4'
                                  .format(params['challsrvport_mgt_port']),
                                  '{{"ip":"{0}.1"}}'.format(params['bluenet_network']))
         response.raise_for_status()
 
-    print('=> One {0} instance ready ({1}).'.format(acme_type, node))
+        print('=> One {0} instance ready ({1}).'.format(acme_type, node))
 
-    # The xdist object contains everything needed by a pytest method to execute tests against the
-    # ACME server instance (http/tls ports, directory url, fake dns server and so one)
-    return xdist
+        # The xdist object contains everything needed by a pytest method to execute tests against the
+        # ACME server instance (http/tls ports, directory url, fake dns server and so one)
+        return xdist
+    except Exception as e:
+        print('Error while setting up the {0} instance ({1}):'.format(acme_type, node))
+        print(e)
+        traceback.print_exc()
+        return False
 
 
 def _setup_boulder(workspace, params, acme_v2):
@@ -255,14 +257,14 @@ services:
         # To minimize fetching this should be the same version used below
         image: letsencrypt/boulder-tools-go{travis_go_version}:{boulder_version}
         environment:
-            FAKE_DNS: 10.77.77.1
+            FAKE_DNS: 127.0.0.1
             PKCS11_PROXY_SOCKET: tcp://boulder-hsm:5657
             BOULDER_CONFIG_DIR: test/config
         volumes:
           - ./boulder:/go/src/github.com/letsencrypt/boulder
           - ./boulder/.gocache:/root/.cache/go-build
         networks:
-          bluenet_{node}:
+          bluenet:
             ipv4_address: 10.77.77.77
             aliases:
               - sa1.boulder
@@ -272,7 +274,7 @@ services:
               - publisher1.boulder
               - ocsp-updater.boulder
               - admin-revoker.boulder
-          rednet_{node}:
+          rednet:
             ipv4_address: 10.88.88.88
             aliases:
               - sa2.boulder
@@ -305,13 +307,13 @@ services:
         expose:
           - 5657
         networks:
-          bluenet_{node}:
+          bluenet:
             aliases:
               - boulder-hsm
     bmysql:
         image: mariadb:10.3
         networks:
-          bluenet_{node}:
+          bluenet:
             aliases:
               - boulder-mysql
         environment:
@@ -320,13 +322,13 @@ services:
         logging:
             driver: none
 networks:
-  bluenet_{node}:
+  bluenet:
     driver: bridge
     ipam:
       driver: default
       config:
         - subnet: 10.77.77.0/24
-  rednet_{node}:
+  rednet:
     driver: bridge
     ipam:
       driver: default
@@ -334,7 +336,6 @@ networks:
         - subnet: 10.88.88.0/24
 '''.format(travis_go_version=TRAVIS_GO_VERSION,
            boulder_version=BOULDER_VERSION,
-           node=params['node'],
            directory_v1_port=params['directory_v1_port'],
            directory_v2_port=params['directory_v2_port'],
            challsrvport_mgt_port=params['challsrvport_mgt_port'])
@@ -403,7 +404,7 @@ services:
       # HTTPS ACME API
       - {directory_v2_port}:14000
     networks:
-      acmenet_{node}:
+      acmenet:
         ipv4_address: {bluenet_network}.2
     depends_on:
       - challtestsrv
@@ -411,21 +412,21 @@ services:
     build:
       context: ./pebble
       dockerfile: docker/pebble-challtestsrv/Dockerfile
+    command: pebble-challtestsrv -defaultIPv6 "" -defaultIPv4 {bluenet_network}.3
     ports:
       # HTTP Management Interface
       - {challsrvport_mgt_port}:8055
     networks:
-      acmenet_{node}:
+      acmenet:
         ipv4_address: {bluenet_network}.3
 networks:
-  acmenet_{node}:
+  acmenet:
     driver: bridge
     ipam:
       driver: default
       config:
         - subnet: {bluenet_network}.0/24
-'''.format(node=params['node'],
-           bluenet_network=params['bluenet_network'],
+'''.format(bluenet_network=params['bluenet_network'],
            challsrvport_mgt_port=params['challsrvport_mgt_port'],
            directory_v2_port=params['directory_v2_port'],
            strict='-strict' if strict else '')
@@ -454,7 +455,7 @@ networks:
     return 'https://localhost:{0}/dir'.format(params['directory_v2_port'])
 
 
-def launch_command(command, cwd=os.getcwd()):
+def _launch_command(command, cwd=os.getcwd()):
     # type: (List[str], str) -> None
     """
     Launch a subprocess command, turning off all output, and raising and exception if anything
