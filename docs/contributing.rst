@@ -186,8 +186,8 @@ Authenticators
 --------------
 
 Authenticators are plugins that prove control of a domain name by solving a
-challenge provided by the ACME server. ACME currently defines three types of
-challenges: HTTP, TLS-SNI, and DNS, represented by classes in `acme.challenges`.
+challenge provided by the ACME server. ACME currently defines several types of
+challenges: HTTP, TLS-SNI (deprecated), TLS-ALPR, and DNS, represented by classes in `acme.challenges`.
 An authenticator plugin should implement support for at least one challenge type.
 
 An Authenticator indicates which challenges it supports by implementing
@@ -215,7 +215,7 @@ support for IIS, Icecast and Plesk.
 Installers and Authenticators will oftentimes be the same class/object
 (because for instance both tasks can be performed by a webserver like nginx)
 though this is not always the case (the standalone plugin is an authenticator
-that listens on port 443, but it cannot install certs; a postfix plugin would
+that listens on port 80, but it cannot install certs; a postfix plugin would
 be an installer but not an authenticator).
 
 Installers and Authenticators are kept separate because
