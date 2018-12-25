@@ -42,8 +42,14 @@ def test_registration_override(common):
     common(['register'])
     common(['unregister'])
     common(['register', '--email', 'ex1@domain.org,ex2@domain.org'])
+
+    # TODO: When `certbot register --update-registration` is fully deprecated,
+    #  delete the two following deprecated uses
     common(['register', '--update-registration', '--email', 'ex1@domain.org'])
     common(['register', '--update-registration', '--email', 'ex1@domain.org,ex2@domain.org'])
+
+    common(['update_account', '--email', 'example@domain.org'])
+    common(['update_account', '--email', 'ex1@domain.org,ex2@domain.org'])
 
 
 def test_prepare_plugins(common, capsys):
