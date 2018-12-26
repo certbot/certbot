@@ -4,10 +4,8 @@ import os
 import unittest
 import tempfile
 import shutil
-import datetime
 
-from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.backends import default_backend
+from cryptography.exceptions import InvalidSignature
 from cryptography import x509
 try:
     from cryptography.x509 import ocsp as ocsp_lib  # pylint: disable=import-error
@@ -189,6 +187,25 @@ class OSCPTestCryptography(unittest.TestCase):
             revoked = self.checker.ocsp_revoked(self.cert_path, self.chain_path)
 
         self.assertFalse(revoked)
+
+        mock_ocsp_response.return_value = mock.Mock(
+            certificate_status=ocsp_lib.OCSPCertStatus.REVOKED)
+        mock_post.return_value = mock.Mock(status_code=200)
+        from certbot import ocsp
+        with mock.patch('certbot.ocsp._check_ocsp_response_signature',
+                        side_effect=ocsp.UnsupportedOCSPSignatureAlgorithm('pouet')):
+            revoked = self.checker.ocsp_revoked(self.cert_path, self.chain_path)
+
+        self.assertFalse(revoked)
+
+        # Same mock_post/mock_ocsp_response as before
+        with mock.patch('certbot.ocsp._check_ocsp_response_signature',
+                        side_effect=ocsp.InvalidSignature('pouet')):
+            revoked = self.checker.ocsp_revoked(self.cert_path, self.chain_path)
+
+        self.assertFalse(revoked)
+
+
 
 
 # pylint: disable=line-too-long

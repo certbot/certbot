@@ -10,8 +10,8 @@ except ImportError:  # pragma: no cover
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.asymmetric import padding, utils as asym_utils
+from cryptography.hazmat.primitives import hashes  # type: ignore
+from cryptography.hazmat.primitives.asymmetric import padding, utils as asym_utils  # type: ignore
 from cryptography.exceptions import InvalidSignature
 import requests
 
@@ -60,7 +60,7 @@ class RevocationChecker(object):
             return False
 
         url, host = RevocationChecker._determine_ocsp_server(cert_path)
-        if not host:
+        if not host or not url:
             return False
 
         if self.use_openssl_binary:
@@ -112,10 +112,10 @@ class RevocationChecker(object):
         try:
             _check_ocsp_response_signature(response_ocsp, issuer)
         except UnsupportedOCSPSignatureAlgorithm as e:
-            logger.error(e)
+            logger.error(str(e))
             return False
         except InvalidSignature:
-            logger.error('Invalid signature for OCSP response on {0}'.format(cert_path))
+            logger.error('Invalid signature for OCSP response on %s', cert_path)
             return False
 
         # Check OCSP certificate status
@@ -164,6 +164,7 @@ class RevocationChecker(object):
 class UnsupportedOCSPSignatureAlgorithm(Exception):
     """Custom exception for unsupported OCSP signatures algorithn."""
     def __init__(self, signature_algorithm_oid):
+        super(UnsupportedOCSPSignatureAlgorithm, self).__init__()
         self.value = signature_algorithm_oid
 
     def __str__(self):
