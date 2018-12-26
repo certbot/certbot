@@ -4,12 +4,15 @@ import os
 import unittest
 import tempfile
 import shutil
+import datetime
 
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.backends import default_backend
 from cryptography import x509
 try:
-    from cryptography.x509 import ocsp as oscp_lib  # pylint: disable=import-error
+    from cryptography.x509 import ocsp as ocsp_lib  # pylint: disable=import-error
 except ImportError:
-    oscp_lib = None  # type: ignore
+    ocsp_lib = None  # type: ignore
 import mock
 
 from certbot import errors
@@ -63,7 +66,7 @@ class OCSPTestOpenSSL(unittest.TestCase):
         self.assertEqual(mock_log.call_count, 1)
         self.assertEqual(checker.broken, True)
 
-    @mock.patch('certbot.ocsp.RevocationChecker.determine_ocsp_server')
+    @mock.patch('certbot.ocsp.RevocationChecker._determine_ocsp_server')
     @mock.patch('certbot.util.run_script')
     def test_ocsp_revoked(self, mock_run, mock_determine):
         self.checker.broken = True
@@ -81,20 +84,18 @@ class OCSPTestOpenSSL(unittest.TestCase):
         self.assertEqual(self.checker.ocsp_revoked("x", "y"), False)
         self.assertEqual(mock_run.call_count, 2)
 
-    @mock.patch('certbot.ocsp.logger.info')
-    @mock.patch('certbot.util.run_script')
-    def test_determine_ocsp_server(self, mock_run, mock_info):
-        uri = "http://ocsp.stg-int-x1.letsencrypt.org/"
-        host = "ocsp.stg-int-x1.letsencrypt.org"
-        mock_run.return_value = uri, ""
-        self.assertEqual(self.checker.determine_ocsp_server("beep"), (uri, host))
-        mock_run.return_value = "ftp:/" + host + "/", ""
-        self.assertEqual(self.checker.determine_ocsp_server("beep"), (None, None))
-        self.assertEqual(mock_info.call_count, 1)
+    def test_determine_ocsp_server(self):
+        tmpdir = tempfile.mkdtemp()
+        try:
+            cert_path = os.path.join(tmpdir, 'cert.pem')
+            with open(cert_path, 'w') as file_handler:
+                file_handler.write(google_certificate)
 
-        c = "confusion"
-        mock_run.side_effect = errors.SubprocessError(c)
-        self.assertEqual(self.checker.determine_ocsp_server("beep"), (None, None))
+            from certbot import ocsp
+            result = ocsp.RevocationChecker._determine_ocsp_server(cert_path)
+            self.assertEqual(('http://ocsp.digicert.com', 'ocsp.digicert.com'), result)
+        finally:
+            shutil.rmtree(tmpdir)
 
     @mock.patch('certbot.ocsp.logger')
     @mock.patch('certbot.util.run_script')
@@ -121,7 +122,7 @@ class OCSPTestOpenSSL(unittest.TestCase):
         self.assertEqual(mock_log.info.call_count, 1)
 
 
-@unittest.skipIf(not oscp_lib,
+@unittest.skipIf(not ocsp_lib,
                  reason='This class tests functionalities available only on cryptography >= 2.4.0')
 class OSCPTestCryptography(unittest.TestCase):
     """
@@ -142,7 +143,7 @@ class OSCPTestCryptography(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.tmpdir)
 
-    @mock.patch('certbot.ocsp.RevocationChecker.determine_ocsp_server')
+    @mock.patch('certbot.ocsp.RevocationChecker._determine_ocsp_server')
     @mock.patch('certbot.ocsp.RevocationChecker._ocsp_revoke_cryptography')
     def test_ensure_cryptography_toggled(self, mock_revoke, mock_determine):
         mock_determine.return_value = ('http://example.com', 'example.com')
@@ -150,35 +151,37 @@ class OSCPTestCryptography(unittest.TestCase):
 
         mock_revoke.assert_called_once_with(self.cert_path, self.chain_path, 'http://example.com')
 
+    @mock.patch('certbot.ocsp._check_ocsp_response_signature')
     @mock.patch('certbot.ocsp.requests.post')
     @mock.patch('certbot.ocsp.ocsp.load_der_ocsp_response')
-    def test_revoke(self, mock_ocsp_response, mock_post):
+    def test_revoke(self, mock_ocsp_response, mock_post, _):
         mock_ocsp_response.return_value = mock.Mock(
-            certificate_status=oscp_lib.OCSPCertStatus.REVOKED)
+            certificate_status=ocsp_lib.OCSPCertStatus.REVOKED)
         mock_post.return_value = mock.Mock(status_code=200)
         revoked = self.checker.ocsp_revoked(self.cert_path, self.chain_path)
 
         self.assertTrue(revoked)
 
+    @mock.patch('certbot.ocsp._check_ocsp_response_signature')
     @mock.patch('certbot.ocsp.requests.post')
     @mock.patch('certbot.ocsp.ocsp.load_der_ocsp_response')
-    def test_revoke_resiliency(self, mock_ocsp_response, mock_post):
+    def test_revoke_resiliency(self, mock_ocsp_response, mock_post, _):
         mock_ocsp_response.return_value = mock.Mock(
-            certificate_status=oscp_lib.OCSPCertStatus.REVOKED)
+            certificate_status=ocsp_lib.OCSPCertStatus.REVOKED)
         mock_post.return_value = mock.Mock(status_code=400)
         revoked = self.checker.ocsp_revoked(self.cert_path, self.chain_path)
 
         self.assertFalse(revoked)
 
         mock_ocsp_response.return_value = mock.Mock(
-            certificate_status=oscp_lib.OCSPCertStatus.UNKNOWN)
+            certificate_status=ocsp_lib.OCSPCertStatus.UNKNOWN)
         mock_post.return_value = mock.Mock(status_code=200)
         revoked = self.checker.ocsp_revoked(self.cert_path, self.chain_path)
 
         self.assertFalse(revoked)
 
         mock_ocsp_response.return_value = mock.Mock(
-            certificate_status=oscp_lib.OCSPCertStatus.REVOKED)
+            certificate_status=ocsp_lib.OCSPCertStatus.REVOKED)
         mock_post.return_value = mock.Mock(status_code=200)
         with mock.patch('cryptography.x509.Extensions.get_extension_for_class',
                         side_effect=x509.ExtensionNotFound(
@@ -186,6 +189,7 @@ class OSCPTestCryptography(unittest.TestCase):
             revoked = self.checker.ocsp_revoked(self.cert_path, self.chain_path)
 
         self.assertFalse(revoked)
+
 
 # pylint: disable=line-too-long
 openssl_confused = ("", """

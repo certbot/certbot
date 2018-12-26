@@ -59,7 +59,7 @@ class RevocationChecker(object):
         if self.broken:
             return False
 
-        url, host = self.determine_ocsp_server(cert_path)
+        url, host = RevocationChecker._determine_ocsp_server(cert_path)
         if not host:
             return False
 
@@ -109,39 +109,11 @@ class RevocationChecker(object):
         response_ocsp = ocsp.load_der_ocsp_response(response.content)
 
         # Check OCSP signature
-        algo_sig_oid = response_ocsp.signature_algorithm_oid
-        if algo_sig_oid in (x509.oid.SignatureAlgorithmOID.DSA_WITH_SHA1,
-                            x509.oid.SignatureAlgorithmOID.RSA_WITH_SHA1,
-                            x509.oid.SignatureAlgorithmOID.ECDSA_WITH_SHA1):
-            chosen_hash = hashes.SHA1()
-        elif algo_sig_oid in (x509.oid.SignatureAlgorithmOID.DSA_WITH_SHA224,
-                              x509.oid.SignatureAlgorithmOID.RSA_WITH_SHA224,
-                              x509.oid.SignatureAlgorithmOID.ECDSA_WITH_SHA224):
-            chosen_hash = hashes.SHA224()
-        elif algo_sig_oid in (x509.oid.SignatureAlgorithmOID.DSA_WITH_SHA256,
-                              x509.oid.SignatureAlgorithmOID.RSA_WITH_SHA256,
-                              x509.oid.SignatureAlgorithmOID.ECDSA_WITH_SHA256):
-            chosen_hash = hashes.SHA256()
-        elif algo_sig_oid in (x509.oid.SignatureAlgorithmOID.RSA_WITH_SHA384,
-                              x509.oid.SignatureAlgorithmOID.ECDSA_WITH_SHA384):
-            chosen_hash = hashes.SHA384()
-        elif algo_sig_oid in (x509.oid.SignatureAlgorithmOID.RSA_WITH_SHA512,
-                              x509.oid.SignatureAlgorithmOID.ECDSA_WITH_SHA512):
-            chosen_hash = hashes.SHA512()
-        else:
-            logger.error('Unsupported OCSP signature: {0}'.format(algo_sig_oid))
-            return False
-
         try:
-            issuer.public_key().verify(
-                response_ocsp.signature,
-                response_ocsp.tbs_response_bytes,
-                padding.PSS(
-                    mgf=padding.MGF1(chosen_hash),
-                    salt_length=padding.PSS.MAX_LENGTH
-                ),
-                asym_utils.Prehashed(chosen_hash)
-            )
+            _check_ocsp_response_signature(response_ocsp, issuer)
+        except UnsupportedOCSPSignatureAlgorithm as e:
+            logger.error(e)
+            return False
         except InvalidSignature:
             logger.error('Invalid signature for OCSP response on {0}'.format(cert_path))
             return False
@@ -156,7 +128,8 @@ class RevocationChecker(object):
                         cert_path, response_ocsp.response_status)
             return False
 
-    def determine_ocsp_server(self, cert_path):
+    @staticmethod
+    def _determine_ocsp_server(cert_path):
         # type: (str) -> Tuple[Optional[str], Optional[str]]
         """Extract the OCSP server host from a certificate.
 
@@ -186,6 +159,52 @@ class RevocationChecker(object):
         else:
             logger.info("Cannot process OCSP host from URL (%s) in cert at %s", url, cert_path)
             return None, None
+
+
+class UnsupportedOCSPSignatureAlgorithm(Exception):
+    """Custom exception for unsupported OCSP signatures algorithn."""
+    def __init__(self, signature_algorithm_oid):
+        self.value = signature_algorithm_oid
+
+    def __str__(self):
+        return 'Unsupported OCSP signature algorithm: {0}'.format(repr(self.value))
+
+
+def _check_ocsp_response_signature(response_ocsp, issuer_cert):
+    """Verify an OCSP response signature against certificate issuer"""
+    algo_sig_oid = response_ocsp.signature_algorithm_oid
+    if algo_sig_oid in (x509.oid.SignatureAlgorithmOID.DSA_WITH_SHA1,
+                        x509.oid.SignatureAlgorithmOID.RSA_WITH_SHA1,
+                        x509.oid.SignatureAlgorithmOID.ECDSA_WITH_SHA1):
+        chosen_hash = hashes.SHA1()
+    elif algo_sig_oid in (x509.oid.SignatureAlgorithmOID.DSA_WITH_SHA224,
+                          x509.oid.SignatureAlgorithmOID.RSA_WITH_SHA224,
+                          x509.oid.SignatureAlgorithmOID.ECDSA_WITH_SHA224):
+        chosen_hash = hashes.SHA224()
+    elif algo_sig_oid in (x509.oid.SignatureAlgorithmOID.DSA_WITH_SHA256,
+                          x509.oid.SignatureAlgorithmOID.RSA_WITH_SHA256,
+                          x509.oid.SignatureAlgorithmOID.ECDSA_WITH_SHA256):
+        chosen_hash = hashes.SHA256()
+    elif algo_sig_oid in (x509.oid.SignatureAlgorithmOID.RSA_WITH_SHA384,
+                          x509.oid.SignatureAlgorithmOID.ECDSA_WITH_SHA384):
+        chosen_hash = hashes.SHA384()
+    elif algo_sig_oid in (x509.oid.SignatureAlgorithmOID.RSA_WITH_SHA512,
+                          x509.oid.SignatureAlgorithmOID.ECDSA_WITH_SHA512):
+        chosen_hash = hashes.SHA512()
+    else:
+        # As cryptography OSCPResponse documentation states,
+        # other signature algorithm are not supported.
+        raise UnsupportedOCSPSignatureAlgorithm(algo_sig_oid)
+
+    issuer_cert.public_key().verify(
+        response_ocsp.signature,
+        response_ocsp.tbs_response_bytes,
+        padding.PSS(
+            mgf=padding.MGF1(chosen_hash),
+            salt_length=padding.PSS.MAX_LENGTH
+        ),
+        asym_utils.Prehashed(chosen_hash)
+    )
 
 
 def _translate_ocsp_query(cert_path, ocsp_output, ocsp_errors):
