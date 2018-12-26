@@ -10,9 +10,12 @@ except ImportError:  # pragma: no cover
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.hashes import SHA1
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import padding, utils as asym_utils
+from cryptography.exceptions import InvalidSignature
 import requests
 
+from acme.magic_typing import Optional, Tuple  # pylint: disable=unused-import, no-name-in-module
 from certbot import errors
 from certbot import util
 
@@ -42,6 +45,7 @@ class RevocationChecker(object):
                 self.host_args = lambda host: ["Host", host]
 
     def ocsp_revoked(self, cert_path, chain_path):
+        # type: (str, str) -> bool
         """Get revoked status for a particular cert version.
 
         .. todo:: Make this a non-blocking call
@@ -65,6 +69,7 @@ class RevocationChecker(object):
             return RevocationChecker._ocsp_revoke_cryptography(cert_path, chain_path, url)
 
     def _ocsp_revoke_openssl_bin(self, cert_path, chain_path, host, url):
+        # type: (str, str, str, str) -> bool
         # jdkasten thanks "Bulletproof SSL and TLS - Ivan Ristic" for documenting this!
         cmd = ["openssl", "ocsp",
                "-no_nonce",
@@ -86,12 +91,14 @@ class RevocationChecker(object):
 
     @staticmethod
     def _ocsp_revoke_cryptography(cert_path, chain_path, url):
+        # type: (str, str, str) -> bool
+        # Retrieve OCSP response
         with open(chain_path, 'rb') as file_handler:
             issuer = x509.load_pem_x509_certificate(file_handler.read(), default_backend())
         with open(cert_path, 'rb') as file_handler:
             cert = x509.load_pem_x509_certificate(file_handler.read(), default_backend())
         builder = x509.ocsp.OCSPRequestBuilder()
-        builder = builder.add_certificate(cert, issuer, SHA1())
+        builder = builder.add_certificate(cert, issuer, hashes.SHA1())
         request = builder.build()
         request_binary = request.public_bytes(serialization.Encoding.DER)
         response = requests.post(url, data=request_binary,
@@ -100,6 +107,46 @@ class RevocationChecker(object):
             logger.info("OCSP check failed for %s (are we offline?)", cert_path)
             return False
         response_ocsp = ocsp.load_der_ocsp_response(response.content)
+
+        # Check OCSP signature
+        algo_sig_oid = response_ocsp.signature_algorithm_oid
+        if algo_sig_oid in (x509.oid.SignatureAlgorithmOID.DSA_WITH_SHA1,
+                            x509.oid.SignatureAlgorithmOID.RSA_WITH_SHA1,
+                            x509.oid.SignatureAlgorithmOID.ECDSA_WITH_SHA1):
+            chosen_hash = hashes.SHA1()
+        elif algo_sig_oid in (x509.oid.SignatureAlgorithmOID.DSA_WITH_SHA224,
+                              x509.oid.SignatureAlgorithmOID.RSA_WITH_SHA224,
+                              x509.oid.SignatureAlgorithmOID.ECDSA_WITH_SHA224):
+            chosen_hash = hashes.SHA224()
+        elif algo_sig_oid in (x509.oid.SignatureAlgorithmOID.DSA_WITH_SHA256,
+                              x509.oid.SignatureAlgorithmOID.RSA_WITH_SHA256,
+                              x509.oid.SignatureAlgorithmOID.ECDSA_WITH_SHA256):
+            chosen_hash = hashes.SHA256()
+        elif algo_sig_oid in (x509.oid.SignatureAlgorithmOID.RSA_WITH_SHA384,
+                              x509.oid.SignatureAlgorithmOID.ECDSA_WITH_SHA384):
+            chosen_hash = hashes.SHA384()
+        elif algo_sig_oid in (x509.oid.SignatureAlgorithmOID.RSA_WITH_SHA512,
+                              x509.oid.SignatureAlgorithmOID.ECDSA_WITH_SHA512):
+            chosen_hash = hashes.SHA512()
+        else:
+            logger.error('Unsupported OCSP signature: {0}'.format(algo_sig_oid))
+            return False
+
+        try:
+            issuer.public_key().verify(
+                response_ocsp.signature,
+                response_ocsp.tbs_response_bytes,
+                padding.PSS(
+                    mgf=padding.MGF1(chosen_hash),
+                    salt_length=padding.PSS.MAX_LENGTH
+                ),
+                asym_utils.Prehashed(chosen_hash)
+            )
+        except InvalidSignature:
+            logger.error('Invalid signature for OCSP response on {0}'.format(cert_path))
+            return False
+
+        # Check OCSP certificate status
         try:
             logger.debug("OCSP certificate status for %s is: %s",
                          cert_path, response_ocsp.certificate_status)
@@ -110,6 +157,7 @@ class RevocationChecker(object):
             return False
 
     def determine_ocsp_server(self, cert_path):
+        # type: (str) -> Tuple[Optional[str], Optional[str]]
         """Extract the OCSP server host from a certificate.
 
         :param str cert_path: Path to the cert we're checking OCSP for
@@ -117,27 +165,18 @@ class RevocationChecker(object):
         :returns: (OCSP server URL or None, OCSP server host or None)
 
         """
-        if self.use_openssl_binary:
-            try:
-                url, _err = util.run_script(
-                    ["openssl", "x509", "-in", cert_path, "-noout", "-ocsp_uri"],
-                    log=logger.debug)
-            except errors.SubprocessError:
-                logger.info("Cannot extract OCSP URI from %s", cert_path)
-                return None, None
-        else:
-            try:
-                with open(cert_path, 'rb') as file_handler:
-                    cert = x509.load_pem_x509_certificate(file_handler.read(), default_backend())
-                extension = cert.extensions.get_extension_for_class(x509.AuthorityInformationAccess)
-                ocsp_oid = x509.AuthorityInformationAccessOID.OCSP
-                descriptions = [description for description in extension.value
-                                if description.access_method == ocsp_oid]
+        with open(cert_path, 'rb') as file_handler:
+            cert = x509.load_pem_x509_certificate(file_handler.read(), default_backend())
+        try:
+            extension = cert.extensions.get_extension_for_class(x509.AuthorityInformationAccess)
+            ocsp_oid = x509.AuthorityInformationAccessOID.OCSP
+            descriptions = [description for description in extension.value
+                            if description.access_method == ocsp_oid]
 
-                url = descriptions[0].access_location.value
-            except (x509.ExtensionNotFound, IndexError):
-                logger.info("Cannot extract OCSP URI from %s", cert_path)
-                return None, None
+            url = descriptions[0].access_location.value
+        except (x509.ExtensionNotFound, IndexError):
+            logger.info("Cannot extract OCSP URI from %s", cert_path)
+            return None, None
 
         url = url.rstrip()
         host = url.partition("://")[2].rstrip("/")
