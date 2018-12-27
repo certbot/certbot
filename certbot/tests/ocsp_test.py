@@ -5,7 +5,7 @@ import unittest
 import tempfile
 import shutil
 
-from cryptography.exceptions import InvalidSignature
+from cryptography.exceptions import UnsupportedAlgorithm, InvalidSignature
 from cryptography import x509
 try:
     from cryptography.x509 import ocsp as ocsp_lib  # pylint: disable=import-error
@@ -191,16 +191,15 @@ class OSCPTestCryptography(unittest.TestCase):
         mock_ocsp_response.return_value = mock.Mock(
             certificate_status=ocsp_lib.OCSPCertStatus.REVOKED)
         mock_post.return_value = mock.Mock(status_code=200)
-        from certbot import ocsp
         with mock.patch('certbot.ocsp._check_ocsp_response_signature',
-                        side_effect=ocsp.UnsupportedOCSPSignatureAlgorithm('pouet')):
+                        side_effect=UnsupportedAlgorithm('pouet')):
             revoked = self.checker.ocsp_revoked(self.cert_path, self.chain_path)
 
         self.assertFalse(revoked)
 
         # Same mock_post/mock_ocsp_response as before
         with mock.patch('certbot.ocsp._check_ocsp_response_signature',
-                        side_effect=ocsp.InvalidSignature('pouet')):
+                        side_effect=InvalidSignature('pouet')):
             revoked = self.checker.ocsp_revoked(self.cert_path, self.chain_path)
 
         self.assertFalse(revoked)
