@@ -62,7 +62,7 @@ def run_script(params, log=logger.error):
     """Run the script with the given params.
 
     :param list params: List of parameters to pass to Popen
-    :param logging.Logger log: Logger to use for errors
+    :param callable log: Logger method to use for errors
 
     """
     try:
