@@ -10,6 +10,7 @@ import traceback
 import six
 import zope.component
 
+from certbot import compat
 from certbot import constants
 from certbot import errors
 from certbot import interfaces
@@ -65,7 +66,7 @@ class Reverter(object):
         self.config = config
 
         util.make_or_verify_dir(
-            config.backup_dir, constants.CONFIG_DIRS_MODE, os.geteuid(),
+            config.backup_dir, constants.CONFIG_DIRS_MODE, compat.os_geteuid(),
             self.config.strict_permissions)
 
     def revert_temporary_config(self):
@@ -219,7 +220,7 @@ class Reverter(object):
 
         """
         util.make_or_verify_dir(
-            cp_dir, constants.CONFIG_DIRS_MODE, os.geteuid(),
+            cp_dir, constants.CONFIG_DIRS_MODE, compat.os_geteuid(),
             self.config.strict_permissions)
 
         op_fd, existing_filepaths = self._read_and_append(
@@ -433,7 +434,7 @@ class Reverter(object):
             cp_dir = self.config.in_progress_dir
 
         util.make_or_verify_dir(
-            cp_dir, constants.CONFIG_DIRS_MODE, os.geteuid(),
+            cp_dir, constants.CONFIG_DIRS_MODE, compat.os_geteuid(),
             self.config.strict_permissions)
 
         return cp_dir
@@ -575,7 +576,7 @@ class Reverter(object):
             timestamp = self._checkpoint_timestamp()
             final_dir = os.path.join(self.config.backup_dir, timestamp)
             try:
-                os.rename(self.config.in_progress_dir, final_dir)
+                compat.os_rename(self.config.in_progress_dir, final_dir)
                 return
             except OSError:
                 logger.warning("Extreme, unexpected race condition, retrying (%s)", timestamp)

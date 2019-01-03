@@ -1,17 +1,15 @@
-import sys
-
 from setuptools import setup
 from setuptools import find_packages
 
 
-version = '0.27.0.dev0'
+version = '0.31.0.dev0'
 
 # Remember to update local-oldest-requirements.txt when changing the minimum
 # acme/certbot version.
 install_requires = [
     'acme>=0.21.1',
     'certbot>=0.21.1',
-    'dns-lexicon>=2.2.1', # Support for >1 TXT record per name
+    'dns-lexicon>=2.7.14', # Correct proxy use on OVH provider
     'mock',
     'setuptools',
     'zope.interface',

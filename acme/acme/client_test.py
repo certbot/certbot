@@ -1,4 +1,5 @@
 """Tests for acme.client."""
+# pylint: disable=too-many-lines
 import copy
 import datetime
 import json
@@ -282,6 +283,37 @@ class BackwardsCompatibleClientV2Test(ClientTestBase):
             client = self._init()
             client.update_registration(mock.sentinel.regr, None)
         mock_client().update_registration.assert_called_once_with(mock.sentinel.regr, None)
+
+    # newNonce present means it will pick acme_version 2
+    def test_external_account_required_true(self):
+        self.response.json.return_value = messages.Directory({
+            'newNonce': 'http://letsencrypt-test.com/acme/new-nonce',
+            'meta': messages.Directory.Meta(external_account_required=True),
+        }).to_json()
+
+        client = self._init()
+
+        self.assertTrue(client.external_account_required())
+
+    # newNonce present means it will pick acme_version 2
+    def test_external_account_required_false(self):
+        self.response.json.return_value = messages.Directory({
+            'newNonce': 'http://letsencrypt-test.com/acme/new-nonce',
+            'meta': messages.Directory.Meta(external_account_required=False),
+        }).to_json()
+
+        client = self._init()
+
+        self.assertFalse(client.external_account_required())
+
+    def test_external_account_required_false_v1(self):
+        self.response.json.return_value = messages.Directory({
+            'meta': messages.Directory.Meta(external_account_required=False),
+        }).to_json()
+
+        client = self._init()
+
+        self.assertFalse(client.external_account_required())
 
 
 class ClientTest(ClientTestBase):
@@ -665,7 +697,7 @@ class ClientTest(ClientTestBase):
     def test_revocation_payload(self):
         obj = messages.Revocation(certificate=self.certr.body, reason=self.rsn)
         self.assertTrue('reason' in obj.to_partial_json().keys())
-        self.assertEquals(self.rsn, obj.to_partial_json()['reason'])
+        self.assertEqual(self.rsn, obj.to_partial_json()['reason'])
 
     def test_revoke_bad_status_raises_error(self):
         self.response.status_code = http_client.METHOD_NOT_ALLOWED
@@ -730,9 +762,10 @@ class ClientV2Test(ClientTestBase):
         authz_response2 = self.response
         authz_response2.json.return_value = self.authz2.to_json()
         authz_response2.headers['Location'] = self.authzr2.uri
-        self.net.get.side_effect = (authz_response, authz_response2)
 
-        self.assertEqual(self.client.new_order(CSR_SAN_PEM), self.orderr)
+        with mock.patch('acme.client.ClientV2._post_as_get') as mock_post_as_get:
+            mock_post_as_get.side_effect = (authz_response, authz_response2)
+            self.assertEqual(self.client.new_order(CSR_SAN_PEM), self.orderr)
 
     @mock.patch('acme.client.datetime')
     def test_poll_and_finalize(self, mock_datetime):
@@ -805,7 +838,8 @@ class ClientV2Test(ClientTestBase):
     def test_revoke(self):
         self.client.revoke(messages_test.CERT, self.rsn)
         self.net.post.assert_called_once_with(
-            self.directory["revokeCert"], mock.ANY, acme_version=2)
+            self.directory["revokeCert"], mock.ANY, acme_version=2,
+            new_nonce_url=DIRECTORY_V2['newNonce'])
 
     def test_update_registration(self):
         # "Instance of 'Field' has no to_json/update member" bug:
@@ -819,6 +853,47 @@ class ClientV2Test(ClientTestBase):
 
         self.response.json.return_value = self.regr.body.update(
             contact=()).to_json()
+
+    def test_external_account_required_true(self):
+        self.client.directory = messages.Directory({
+            'meta': messages.Directory.Meta(external_account_required=True)
+        })
+
+        self.assertTrue(self.client.external_account_required())
+
+    def test_external_account_required_false(self):
+        self.client.directory = messages.Directory({
+            'meta': messages.Directory.Meta(external_account_required=False)
+        })
+
+        self.assertFalse(self.client.external_account_required())
+
+    def test_external_account_required_default(self):
+        self.assertFalse(self.client.external_account_required())
+
+    def test_post_as_get(self):
+        with mock.patch('acme.client.ClientV2._authzr_from_response') as mock_client:
+            mock_client.return_value = self.authzr2
+
+            self.client.poll(self.authzr2)  # pylint: disable=protected-access
+
+            self.client.net.post.assert_called_once_with(
+                self.authzr2.uri, None, acme_version=2,
+                new_nonce_url='https://www.letsencrypt-demo.org/acme/new-nonce')
+            self.client.net.get.assert_not_called()
+
+            class FakeError(messages.Error):  # pylint: disable=too-many-ancestors
+                """Fake error to reproduce a malformed request ACME error"""
+                def __init__(self):  # pylint: disable=super-init-not-called
+                    pass
+                @property
+                def code(self):
+                    return 'malformed'
+            self.client.net.post.side_effect = FakeError()
+
+            self.client.poll(self.authzr2)  # pylint: disable=protected-access
+
+            self.client.net.get.assert_called_once_with(self.authzr2.uri)
 
 
 class MockJSONDeSerializable(jose.JSONDeSerializable):
@@ -1038,8 +1113,8 @@ class ClientNetworkTest(unittest.TestCase):
 
         # Requests Library Exceptions
         except requests.exceptions.ConnectionError as z: #pragma: no cover
-            self.assertEqual("('Connection aborted.', "
-                             "error(111, 'Connection refused'))", str(z))
+            self.assertTrue("('Connection aborted.', error(111, 'Connection refused'))"
+                              == str(z) or "[WinError 10061]" in str(z))
 
 class ClientNetworkWithMockedResponseTest(unittest.TestCase):
     """Tests for acme.client.ClientNetwork which mock out response."""
@@ -1052,7 +1127,10 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
         self.response = mock.MagicMock(ok=True, status_code=http_client.OK)
         self.response.headers = {}
         self.response.links = {}
-        self.checked_response = mock.MagicMock()
+        self.response.checked = False
+        self.acmev1_nonce_response = mock.MagicMock(ok=False,
+            status_code=http_client.METHOD_NOT_ALLOWED)
+        self.acmev1_nonce_response.headers = {}
         self.obj = mock.MagicMock()
         self.wrapped_obj = mock.MagicMock()
         self.content_type = mock.sentinel.content_type
@@ -1064,13 +1142,21 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
 
         def send_request(*args, **kwargs):
             # pylint: disable=unused-argument,missing-docstring
+            self.assertFalse("new_nonce_url" in kwargs)
+            method = args[0]
+            uri = args[1]
+            if method == 'HEAD' and uri != "new_nonce_uri":
+                response = self.acmev1_nonce_response
+            else:
+                response = self.response
+
             if self.available_nonces:
-                self.response.headers = {
+                response.headers = {
                     self.net.REPLAY_NONCE_HEADER:
                     self.available_nonces.pop().decode()}
             else:
-                self.response.headers = {}
-            return self.response
+                response.headers = {}
+            return response
 
         # pylint: disable=protected-access
         self.net._send_request = self.send_request = mock.MagicMock(
@@ -1082,28 +1168,39 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
         # pylint: disable=missing-docstring
         self.assertEqual(self.response, response)
         self.assertEqual(self.content_type, content_type)
-        return self.checked_response
+        self.assertTrue(self.response.ok)
+        self.response.checked = True
+        return self.response
 
     def test_head(self):
-        self.assertEqual(self.response, self.net.head(
+        self.assertEqual(self.acmev1_nonce_response, self.net.head(
             'http://example.com/', 'foo', bar='baz'))
         self.send_request.assert_called_once_with(
             'HEAD', 'http://example.com/', 'foo', bar='baz')
 
+    def test_head_v2(self):
+        self.assertEqual(self.response, self.net.head(
+            'new_nonce_uri', 'foo', bar='baz'))
+        self.send_request.assert_called_once_with(
+            'HEAD', 'new_nonce_uri', 'foo', bar='baz')
+
     def test_get(self):
-        self.assertEqual(self.checked_response, self.net.get(
+        self.assertEqual(self.response, self.net.get(
             'http://example.com/', content_type=self.content_type, bar='baz'))
+        self.assertTrue(self.response.checked)
         self.send_request.assert_called_once_with(
             'GET', 'http://example.com/', bar='baz')
 
     def test_post_no_content_type(self):
         self.content_type = self.net.JOSE_CONTENT_TYPE
-        self.assertEqual(self.checked_response, self.net.post('uri', self.obj))
+        self.assertEqual(self.response, self.net.post('uri', self.obj))
+        self.assertTrue(self.response.checked)
 
     def test_post(self):
         # pylint: disable=protected-access
-        self.assertEqual(self.checked_response, self.net.post(
+        self.assertEqual(self.response, self.net.post(
             'uri', self.obj, content_type=self.content_type))
+        self.assertTrue(self.response.checked)
         self.net._wrap_in_jws.assert_called_once_with(
             self.obj, jose.b64decode(self.all_nonces.pop()), "uri", 1)
 
@@ -1135,7 +1232,7 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
     def test_post_not_retried(self):
         check_response = mock.MagicMock()
         check_response.side_effect = [messages.Error.with_code('malformed'),
-                                      self.checked_response]
+                                      self.response]
 
         # pylint: disable=protected-access
         self.net._check_response = check_response
@@ -1143,13 +1240,12 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
                           self.obj, content_type=self.content_type)
 
     def test_post_successful_retry(self):
-        check_response = mock.MagicMock()
-        check_response.side_effect = [messages.Error.with_code('badNonce'),
-                                      self.checked_response]
+        post_once = mock.MagicMock()
+        post_once.side_effect = [messages.Error.with_code('badNonce'),
+                                      self.response]
 
         # pylint: disable=protected-access
-        self.net._check_response = check_response
-        self.assertEqual(self.checked_response, self.net.post(
+        self.assertEqual(self.response, self.net.post(
             'uri', self.obj, content_type=self.content_type))
 
     def test_head_get_post_error_passthrough(self):
@@ -1159,6 +1255,26 @@ class ClientNetworkWithMockedResponseTest(unittest.TestCase):
                 requests.exceptions.RequestException, method, 'GET', 'uri')
         self.assertRaises(requests.exceptions.RequestException,
                           self.net.post, 'uri', obj=self.obj)
+
+    def test_post_bad_nonce_head(self):
+        # pylint: disable=protected-access
+        # regression test for https://github.com/certbot/certbot/issues/6092
+        bad_response = mock.MagicMock(ok=False, status_code=http_client.SERVICE_UNAVAILABLE)
+        self.net._send_request = mock.MagicMock()
+        self.net._send_request.return_value = bad_response
+        self.content_type = None
+        check_response = mock.MagicMock()
+        self.net._check_response = check_response
+        self.assertRaises(errors.ClientError, self.net.post, 'uri',
+                          self.obj, content_type=self.content_type, acme_version=2,
+                          new_nonce_url='new_nonce_uri')
+        self.assertEqual(check_response.call_count, 1)
+
+    def test_new_nonce_uri_removed(self):
+        self.content_type = None
+        self.net.post('uri', self.obj, content_type=None,
+            acme_version=2, new_nonce_url='new_nonce_uri')
+
 
 class ClientNetworkSourceAddressBindingTest(unittest.TestCase):
     """Tests that if ClientNetwork has a source IP set manually, the underlying library has

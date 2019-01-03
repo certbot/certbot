@@ -27,6 +27,19 @@ def tests_dir():
     return dirname(abspath(__file__))
 
 
+def copy_stable(src, dst):
+    """
+    Copy letsencrypt-auto, and replace its current version to its equivalent stable one.
+    This is needed to test correctly the self-upgrade functionality.
+    """
+    copy(src, dst)
+    with open(dst, 'r') as file:
+        filedata = file.read()
+    filedata = re.sub(r'LE_AUTO_VERSION="(.*)\.dev0"', r'LE_AUTO_VERSION="\1"', filedata)
+    with open(dst, 'w') as file:
+        file.write(filedata)
+
+
 sys.path.insert(0, dirname(tests_dir()))
 from build import build as build_le_auto
 
@@ -343,7 +356,7 @@ class AutoTests(TestCase):
                          'v99.9.9/letsencrypt-auto': build_le_auto(version='99.9.9'),
                          'v99.9.9/letsencrypt-auto.sig': signed('something else')}
             with serving(resources) as base_url:
-                copy(LE_AUTO_PATH, le_auto_path)
+                copy_stable(LE_AUTO_PATH, le_auto_path)
                 try:
                     out, err = run_le_auto(le_auto_path, venv_dir, base_url)
                 except CalledProcessError as exc:

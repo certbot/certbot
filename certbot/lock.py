@@ -1,9 +1,9 @@
 """Implements file locks for locking files and directories in UNIX."""
 import errno
-import fcntl
 import logging
 import os
 
+from certbot import compat
 from certbot import errors
 
 logger = logging.getLogger(__name__)
@@ -74,7 +74,7 @@ class LockFile(object):
 
         """
         try:
-            fcntl.lockf(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            compat.lock_file(fd)
         except IOError as err:
             if err.errno in (errno.EACCES, errno.EAGAIN):
                 logger.debug(
@@ -118,22 +118,7 @@ class LockFile(object):
 
     def release(self):
         """Remove, close, and release the lock file."""
-        # It is important the lock file is removed before it's released,
-        # otherwise:
-        #
-        # process A: open lock file
-        # process B: release lock file
-        # process A: lock file
-        # process A: check device and inode
-        # process B: delete file
-        # process C: open and lock a different file at the same path
-        #
-        # Calling os.remove on a file that's in use doesn't work on
-        # Windows, but neither does locking with fcntl.
         try:
-            os.remove(self._path)
+            compat.release_locked_file(self._fd, self._path)
         finally:
-            try:
-                os.close(self._fd)
-            finally:
-                self._fd = None
+            self._fd = None

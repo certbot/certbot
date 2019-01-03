@@ -73,6 +73,7 @@ class _GehirnLexiconClient(dns_common_lexicon.LexiconClient):
         super(_GehirnLexiconClient, self).__init__()
 
         self.provider = gehirn.Provider({
+            'provider_name': 'gehirn',
             'auth_token': api_token,
             'auth_secret': api_secret,
             'ttl': ttl,

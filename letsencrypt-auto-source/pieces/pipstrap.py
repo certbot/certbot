@@ -1,12 +1,10 @@
 #!/usr/bin/env python
 """A small script that can act as a trust root for installing pip >=8
-
 Embed this in your project, and your VCS checkout is all you have to trust. In
 a post-peep era, this lets you claw your way to a hash-checking version of pip,
 with which you can install the rest of your dependencies safely. All it assumes
 is Python 2.6 or better and *some* version of pip already installed. If
 anything goes wrong, it will exit with a non-zero status code.
-
 """
 # This is here so embedded copies are MIT-compliant:
 # Copyright (c) 2016 Erik Rose
@@ -133,10 +131,8 @@ def hashed_download(url, temp, digest):
 
 def get_index_base():
     """Return the URL to the dir containing the "packages" folder.
-
     Try to wring something out of PIP_INDEX_URL, if set. Hack "/simple" off the
     end if it's there; that is likely to give us the right dir.
-
     """
     env_var = environ.get('PIP_INDEX_URL', '').rstrip('/')
     if env_var:

@@ -9,6 +9,8 @@ import pkg_resources
 import shutil
 import tempfile
 import unittest
+import sys
+import warnings
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
@@ -36,8 +38,15 @@ def vector_path(*names):
 def load_vector(*names):
     """Load contents of a test vector."""
     # luckily, resource_string opens file in binary mode
-    return pkg_resources.resource_string(
+    data = pkg_resources.resource_string(
         __name__, os.path.join('testdata', *names))
+    # Try at most to convert CRLF to LF when data is text
+    try:
+        return data.decode().replace('\r\n', '\n').encode()
+    except ValueError:
+        # Failed to process the file with standard encoding.
+        # Most likely not a text file, return its bytes untouched.
+        return data
 
 
 def _guess_loader(filename, loader_pem, loader_der):
@@ -318,7 +327,18 @@ class TempDirTestCase(unittest.TestCase):
         self.tempdir = tempfile.mkdtemp()
 
     def tearDown(self):
-        shutil.rmtree(self.tempdir)
+        """Execute after test"""
+        # On Windows we have various files which are not correctly closed at the time of tearDown.
+        # For know, we log them until a proper file close handling is written.
+        # Useful for development only, so no warning when we are on a CI process.
+        def onerror_handler(_, path, excinfo):
+            """On error handler"""
+            if not os.environ.get('APPVEYOR'): # pragma: no cover
+                message = ('Following error occurred when deleting the tempdir {0}'
+                           ' for path {1} during tearDown process: {2}'
+                           .format(self.tempdir, path, str(excinfo)))
+                warnings.warn(message)
+        shutil.rmtree(self.tempdir, onerror=onerror_handler)
 
 class ConfigTestCase(TempDirTestCase):
     """Test class which sets up a NamespaceConfig object.
@@ -363,7 +383,6 @@ def lock_and_call(func, lock_path):
     child.join()
     assert child.exitcode == 0
 
-
 def hold_lock(cv, lock_path):  # pragma: no cover
     """Acquire a file lock at lock_path and wait to release it.
 
@@ -380,3 +399,25 @@ def hold_lock(cv, lock_path):  # pragma: no cover
     cv.notify()
     cv.wait()
     my_lock.release()
+
+def skip_on_windows(reason):
+    """Decorator to skip permanently a test on Windows. A reason is required."""
+    def wrapper(function):
+        """Wrapped version"""
+        return unittest.skipIf(sys.platform == 'win32', reason)(function)
+    return wrapper
+
+def broken_on_windows(function):
+    """Decorator to skip temporarily a broken test on Windows."""
+    reason = 'Test is broken and ignored on windows but should be fixed.'
+    return unittest.skipIf(
+        sys.platform == 'win32'
+        and os.environ.get('SKIP_BROKEN_TESTS_ON_WINDOWS', 'true') == 'true',
+        reason)(function)
+
+def temp_join(path):
+    """
+    Return the given path joined to the tempdir path for the current platform
+    Eg.: 'cert' => /tmp/cert (Linux) or 'C:\\Users\\currentuser\\AppData\\Temp\\cert' (Windows)
+    """
+    return  os.path.join(tempfile.gettempdir(), path)

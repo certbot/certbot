@@ -115,9 +115,22 @@ class MultipleVhostsTest(util.ApacheTest):
         # Weak test..
         ApacheConfigurator.add_parser_arguments(mock.MagicMock())
 
+    def test_add_parser_arguments_all_configurators(self):  # pylint: disable=no-self-use
+        from certbot_apache.entrypoint import OVERRIDE_CLASSES
+        for cls in OVERRIDE_CLASSES.values():
+            cls.add_parser_arguments(mock.MagicMock())
+
+    def test_all_configurators_defaults_defined(self):
+        from certbot_apache.entrypoint import OVERRIDE_CLASSES
+        from certbot_apache.configurator import ApacheConfigurator
+        parameters = set(ApacheConfigurator.OS_DEFAULTS.keys())
+        for cls in OVERRIDE_CLASSES.values():
+            self.assertTrue(parameters.issubset(set(cls.OS_DEFAULTS.keys())))
+
     def test_constant(self):
-        self.assertEqual(self.config.constant("server_root"), "/etc/apache2")
-        self.assertEqual(self.config.constant("nonexistent"), None)
+        self.assertTrue("debian_apache_2_4/multiple_vhosts/apache" in
+                        self.config.option("server_root"))
+        self.assertEqual(self.config.option("nonexistent"), None)
 
     @certbot_util.patch_get_utility()
     def test_get_all_names(self, mock_getutility):
@@ -651,22 +664,10 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertEqual(ssl_vhost_slink.name, "nonsym.link")
 
     def test_make_vhost_ssl_nonexistent_vhost_path(self):
-        def conf_side_effect(arg):
-            """ Mock function for ApacheConfigurator.conf """
-            confvars = {
-                "vhost-root": "/tmp/nonexistent",
-                "le_vhost_ext": "-le-ssl.conf",
-                "handle-sites": True}
-            return confvars[arg]
-
-        with mock.patch(
-                "certbot_apache.configurator.ApacheConfigurator.conf"
-        ) as mock_conf:
-            mock_conf.side_effect = conf_side_effect
-            ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[1])
-            self.assertEqual(os.path.dirname(ssl_vhost.filep),
-                             os.path.dirname(os.path.realpath(
-                                 self.vh_truth[1].filep)))
+        ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[1])
+        self.assertEqual(os.path.dirname(ssl_vhost.filep),
+                            os.path.dirname(os.path.realpath(
+                                self.vh_truth[1].filep)))
 
     def test_make_vhost_ssl(self):
         ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[0])
@@ -1401,11 +1402,11 @@ class MultipleVhostsTest(util.ApacheTest):
             vhs = self.config._choose_vhosts_wildcard("*.certbot.demo",
                                                      create_ssl=True)
             # Check that the dialog was called with one vh: certbot.demo
-            self.assertEquals(mock_select_vhs.call_args[0][0][0], self.vh_truth[3])
-            self.assertEquals(len(mock_select_vhs.call_args_list), 1)
+            self.assertEqual(mock_select_vhs.call_args[0][0][0], self.vh_truth[3])
+            self.assertEqual(len(mock_select_vhs.call_args_list), 1)
 
             # And the actual returned values
-            self.assertEquals(len(vhs), 1)
+            self.assertEqual(len(vhs), 1)
             self.assertTrue(vhs[0].name == "certbot.demo")
             self.assertTrue(vhs[0].ssl)
 
@@ -1420,7 +1421,7 @@ class MultipleVhostsTest(util.ApacheTest):
             vhs = self.config._choose_vhosts_wildcard("*.certbot.demo",
                                                      create_ssl=False)
             self.assertFalse(mock_makessl.called)
-            self.assertEquals(vhs[0], self.vh_truth[1])
+            self.assertEqual(vhs[0], self.vh_truth[1])
 
     @mock.patch("certbot_apache.configurator.ApacheConfigurator._vhosts_for_wildcard")
     @mock.patch("certbot_apache.configurator.ApacheConfigurator.make_vhost_ssl")
@@ -1433,15 +1434,15 @@ class MultipleVhostsTest(util.ApacheTest):
             mock_select_vhs.return_value = [self.vh_truth[7]]
             vhs = self.config._choose_vhosts_wildcard("whatever",
                                                      create_ssl=True)
-            self.assertEquals(mock_select_vhs.call_args[0][0][0], self.vh_truth[7])
-            self.assertEquals(len(mock_select_vhs.call_args_list), 1)
+            self.assertEqual(mock_select_vhs.call_args[0][0][0], self.vh_truth[7])
+            self.assertEqual(len(mock_select_vhs.call_args_list), 1)
             # Ensure that make_vhost_ssl was not called, vhost.ssl == true
             self.assertFalse(mock_makessl.called)
 
             # And the actual returned values
-            self.assertEquals(len(vhs), 1)
+            self.assertEqual(len(vhs), 1)
             self.assertTrue(vhs[0].ssl)
-            self.assertEquals(vhs[0], self.vh_truth[7])
+            self.assertEqual(vhs[0], self.vh_truth[7])
 
 
     def test_deploy_cert_wildcard(self):
@@ -1454,7 +1455,7 @@ class MultipleVhostsTest(util.ApacheTest):
             self.config.deploy_cert("*.wildcard.example.org", "/tmp/path",
                                     "/tmp/path", "/tmp/path", "/tmp/path")
             self.assertTrue(mock_dep.called)
-            self.assertEquals(len(mock_dep.call_args_list), 1)
+            self.assertEqual(len(mock_dep.call_args_list), 1)
             self.assertEqual(self.vh_truth[7], mock_dep.call_args_list[0][0][0])
 
     @mock.patch("certbot_apache.display_ops.select_vhost_multiple")
@@ -1583,7 +1584,7 @@ class AugeasVhostsTest(util.ApacheTest):
                           broken_vhost)
 
 class MultiVhostsTest(util.ApacheTest):
-    """Test vhosts with illegal names dependent on augeas version."""
+    """Test configuration with multiple virtualhosts in a single file."""
     # pylint: disable=protected-access
 
     def setUp(self):  # pylint: disable=arguments-differ
@@ -1650,7 +1651,8 @@ class MultiVhostsTest(util.ApacheTest):
         self.assertTrue(self.config.parser.find_dir(
             "RewriteEngine", "on", ssl_vhost.path, False))
 
-        conf_text = open(ssl_vhost.filep).read()
+        with open(ssl_vhost.filep) as the_file:
+            conf_text = the_file.read()
         commented_rewrite_rule = ("# RewriteRule \"^/secrets/(.+)\" "
                                   "\"https://new.example.com/docs/$1\" [R,L]")
         uncommented_rewrite_rule = ("RewriteRule \"^/docs/(.+)\"  "
@@ -1666,7 +1668,8 @@ class MultiVhostsTest(util.ApacheTest):
 
         ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[3])
 
-        conf_lines = open(ssl_vhost.filep).readlines()
+        with open(ssl_vhost.filep) as the_file:
+            conf_lines = the_file.readlines()
         conf_line_set = [l.strip() for l in conf_lines]
         not_commented_cond1 = ("RewriteCond "
                 "%{DOCUMENT_ROOT}/%{REQUEST_FILENAME} !-f")
@@ -1703,7 +1706,7 @@ class InstallSslOptionsConfTest(util.ApacheTest):
                                              self.config.updated_mod_ssl_conf_digest)
 
     def _current_ssl_options_hash(self):
-        return crypto_util.sha256sum(self.config.constant("MOD_SSL_CONF_SRC"))
+        return crypto_util.sha256sum(self.config.option("MOD_SSL_CONF_SRC"))
 
     def _assert_current_file(self):
         self.assertTrue(os.path.isfile(self.config.mod_ssl_conf))
@@ -1739,7 +1742,7 @@ class InstallSslOptionsConfTest(util.ApacheTest):
             self.assertFalse(mock_logger.warning.called)
         self.assertTrue(os.path.isfile(self.config.mod_ssl_conf))
         self.assertEqual(crypto_util.sha256sum(
-            self.config.constant("MOD_SSL_CONF_SRC")),
+            self.config.option("MOD_SSL_CONF_SRC")),
             self._current_ssl_options_hash())
         self.assertNotEqual(crypto_util.sha256sum(self.config.mod_ssl_conf),
             self._current_ssl_options_hash())
@@ -1755,7 +1758,7 @@ class InstallSslOptionsConfTest(util.ApacheTest):
                 "%s has been manually modified; updated file "
                 "saved to %s. We recommend updating %s for security purposes.")
         self.assertEqual(crypto_util.sha256sum(
-            self.config.constant("MOD_SSL_CONF_SRC")),
+            self.config.option("MOD_SSL_CONF_SRC")),
             self._current_ssl_options_hash())
         # only print warning once
         with mock.patch("certbot.plugins.common.logger") as mock_logger:

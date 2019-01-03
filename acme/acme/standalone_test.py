@@ -48,7 +48,7 @@ class TLSSNI01ServerTest(unittest.TestCase):
             test_util.load_cert('rsa2048_cert.pem'),
         )}
         from acme.standalone import TLSSNI01Server
-        self.server = TLSSNI01Server(("", 0), certs=self.certs)
+        self.server = TLSSNI01Server(('localhost', 0), certs=self.certs)
         # pylint: disable=no-member
         self.thread = threading.Thread(target=self.server.serve_forever)
         self.thread.start()
@@ -133,8 +133,11 @@ class BaseDualNetworkedServersTest(unittest.TestCase):
                 self.address_family = socket.AF_INET
             socketserver.TCPServer.__init__(self, *args, **kwargs)
             if ipv6:
+                # NB: On Windows, socket.IPPROTO_IPV6 constant may be missing.
+                # We use the corresponding value (41) instead.
+                level = getattr(socket, "IPPROTO_IPV6", 41)
                 # pylint: disable=no-member
-                self.socket.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 1)
+                self.socket.setsockopt(level, socket.IPV6_V6ONLY, 1)
                 try:
                     self.server_bind()
                     self.server_activate()
@@ -147,15 +150,15 @@ class BaseDualNetworkedServersTest(unittest.TestCase):
         mock_bind.side_effect = socket.error
         from acme.standalone import BaseDualNetworkedServers
         self.assertRaises(socket.error, BaseDualNetworkedServers,
-            BaseDualNetworkedServersTest.SingleProtocolServer,
-            ("", 0),
-            socketserver.BaseRequestHandler)
+                          BaseDualNetworkedServersTest.SingleProtocolServer,
+                          ('', 0),
+                          socketserver.BaseRequestHandler)
 
     def test_ports_equal(self):
         from acme.standalone import BaseDualNetworkedServers
         servers = BaseDualNetworkedServers(
             BaseDualNetworkedServersTest.SingleProtocolServer,
-            ("", 0),
+            ('', 0),
             socketserver.BaseRequestHandler)
         socknames = servers.getsocknames()
         prev_port = None
@@ -177,7 +180,7 @@ class TLSSNI01DualNetworkedServersTest(unittest.TestCase):
             test_util.load_cert('rsa2048_cert.pem'),
         )}
         from acme.standalone import TLSSNI01DualNetworkedServers
-        self.servers = TLSSNI01DualNetworkedServers(("", 0), certs=self.certs)
+        self.servers = TLSSNI01DualNetworkedServers(('localhost', 0), certs=self.certs)
         self.servers.serve_forever()
 
     def tearDown(self):
@@ -245,6 +248,7 @@ class HTTP01DualNetworkedServersTest(unittest.TestCase):
         self.assertFalse(self._test_http01(add=False))
 
 
+@test_util.broken_on_windows
 class TestSimpleTLSSNI01Server(unittest.TestCase):
     """Tests for acme.standalone.simple_tls_sni_01_server."""
 

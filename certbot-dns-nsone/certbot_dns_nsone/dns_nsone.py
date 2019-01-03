@@ -66,6 +66,7 @@ class _NS1LexiconClient(dns_common_lexicon.LexiconClient):
         super(_NS1LexiconClient, self).__init__()
 
         self.provider = nsone.Provider({
+            'provider_name': 'nsone',
             'auth_token': api_key,
             'ttl': ttl,
         })

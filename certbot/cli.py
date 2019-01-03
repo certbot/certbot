@@ -96,11 +96,12 @@ obtain, install, and renew certificates:
 
 manage certificates:
     certificates    Display information about certificates you have from Certbot
-    revoke          Revoke a certificate (supply --cert-path)
+    revoke          Revoke a certificate (supply --cert-path or --cert-name)
     delete          Delete a certificate
 
 manage your account with Let's Encrypt:
     register        Create a Let's Encrypt ACME account
+    update_account  Update a Let's Encrypt ACME account
   --agree-tos       Agree to the ACME server's Subscriber Agreement
    -m EMAIL         Email address for important account notifications
 """
@@ -172,10 +173,11 @@ def possible_deprecation_warning(config):
         # need warnings
         return
     if "CERTBOT_AUTO" not in os.environ:
-        logger.warning("You are running with an old copy of letsencrypt-auto that does "
-            "not receive updates, and is less reliable than more recent versions. "
-            "We recommend upgrading to the latest certbot-auto script, or using native "
-            "OS packages.")
+        logger.warning("You are running with an old copy of letsencrypt-auto"
+            " that does not receive updates, and is less reliable than more"
+            " recent versions. The letsencrypt client has also been renamed"
+            " to Certbot. We recommend upgrading to the latest certbot-auto"
+            " script, or using native OS packages.")
         logger.debug("Deprecation warning circumstances: %s / %s", sys.argv[0], os.environ)
 
 
@@ -286,7 +288,9 @@ def read_file(filename, mode="rb"):
     """
     try:
         filename = os.path.abspath(filename)
-        return filename, open(filename, mode).read()
+        with open(filename, mode) as the_file:
+            contents = the_file.read()
+        return filename, contents
     except IOError as exc:
         raise argparse.ArgumentTypeError(exc.strerror)
 
@@ -391,14 +395,20 @@ VERB_HELP = [
         "usage": "\n\n  certbot delete --cert-name CERTNAME\n\n"
     }),
     ("revoke", {
-        "short": "Revoke a certificate specified with --cert-path",
+        "short": "Revoke a certificate specified with --cert-path or --cert-name",
         "opts": "Options for revocation of certificates",
-        "usage": "\n\n  certbot revoke --cert-path /path/to/fullchain.pem [options]\n\n"
+        "usage": "\n\n  certbot revoke [--cert-path /path/to/fullchain.pem | "
+        "--cert-name example.com] [options]\n\n"
     }),
     ("register", {
         "short": "Register for account with Let's Encrypt / other ACME server",
-        "opts": "Options for account registration & modification",
+        "opts": "Options for account registration",
         "usage": "\n\n  certbot register --email user@example.com [options]\n\n"
+    }),
+    ("update_account", {
+        "short": "Update existing account with Let's Encrypt / other ACME server",
+        "opts": "Options for account modification",
+        "usage": "\n\n  certbot update_account --email updated_email@example.com [options]\n\n"
     }),
     ("unregister", {
         "short": "Irrevocably deactivate your account",
@@ -465,6 +475,7 @@ class HelpfulArgumentParser(object):
             "install": main.install,
             "plugins": main.plugins_cmd,
             "register": main.register,
+            "update_account": main.update_account,
             "unregister": main.unregister,
             "renew": main.renew,
             "revoke": main.revoke,
@@ -859,7 +870,9 @@ class HelpfulArgumentParser(object):
         if chosen_topic == "everything":
             chosen_topic = "run"
         if chosen_topic == "all":
-            return dict([(t, True) for t in self.help_topics])
+            # Addition of condition closes #6209 (removal of duplicate route53 option).
+            return dict([(t, True) if t != 'certbot-route53:auth' else (t, False)
+                         for t in self.help_topics])
         elif not chosen_topic:
             return dict([(t, False) for t in self.help_topics])
         else:
@@ -945,6 +958,18 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              "name. In the case of a name collision it will append a number "
              "like 0001 to the file path name. (default: Ask)")
     helpful.add(
+        [None, "run", "certonly", "register"],
+        "--eab-kid", dest="eab_kid",
+        metavar="EAB_KID",
+        help="Key Identifier for External Account Binding"
+    )
+    helpful.add(
+        [None, "run", "certonly", "register"],
+        "--eab-hmac-key", dest="eab_hmac_key",
+        metavar="EAB_HMAC_KEY",
+        help="HMAC key for External Account Binding"
+    )
+    helpful.add(
         [None, "run", "certonly", "manage", "delete", "certificates",
          "renew", "enhance"], "--cert-name", dest="certname",
         metavar="CERTNAME", default=flag_default("certname"),
@@ -979,21 +1004,21 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
              "certificates. Updates to the Subscriber Agreement will still "
              "affect you, and will be effective 14 days after posting an "
              "update to the web site.")
+    # TODO: When `certbot register --update-registration` is fully deprecated,
+    # delete following helpful.add
     helpful.add(
         "register", "--update-registration", action="store_true",
-        default=flag_default("update_registration"),
-        help="With the register verb, indicates that details associated "
-             "with an existing registration, such as the e-mail address, "
-             "should be updated, rather than registering a new account.")
+        default=flag_default("update_registration"), dest="update_registration",
+        help=argparse.SUPPRESS)
     helpful.add(
-        ["register", "unregister", "automation"], "-m", "--email",
+        ["register", "update_account", "unregister", "automation"], "-m", "--email",
         default=flag_default("email"),
         help=config_help("email"))
-    helpful.add(["register", "automation"], "--eff-email", action="store_true",
+    helpful.add(["register", "update_account", "automation"], "--eff-email", action="store_true",
                 default=flag_default("eff_email"), dest="eff_email",
                 help="Share your e-mail address with EFF")
-    helpful.add(["register", "automation"], "--no-eff-email", action="store_false",
-                default=flag_default("eff_email"), dest="eff_email",
+    helpful.add(["register", "update_account", "automation"], "--no-eff-email",
+                action="store_false", default=flag_default("eff_email"), dest="eff_email",
                 help="Don't share your e-mail address with EFF")
     helpful.add(
         ["automation", "certonly", "run"],
@@ -1195,6 +1220,10 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
     helpful.add("renew", "--renew-hook",
                 action=_RenewHookAction, help=argparse.SUPPRESS)
     helpful.add(
+        "renew", "--no-random-sleep-on-renew", action="store_false",
+        default=flag_default("random_sleep_on_renew"), dest="random_sleep_on_renew",
+        help=argparse.SUPPRESS)
+    helpful.add(
         "renew", "--deploy-hook", action=_DeployHookAction,
         help='Command to be run in a shell once for each successfully'
         ' issued certificate. For this command, the shell variable'
@@ -1337,7 +1366,7 @@ def _paths_parser(helpful):
         add(sections, "--cert-path", type=os.path.abspath,
             default=flag_default("auth_cert_path"), help=cph)
     elif verb == "revoke":
-        add(sections, "--cert-path", type=read_file, required=True, help=cph)
+        add(sections, "--cert-path", type=read_file, required=False, help=cph)
     else:
         add(sections, "--cert-path", type=os.path.abspath, help=cph)
 

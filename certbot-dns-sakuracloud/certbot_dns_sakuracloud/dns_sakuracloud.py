@@ -74,6 +74,7 @@ class _SakuraCloudLexiconClient(dns_common_lexicon.LexiconClient):
         super(_SakuraCloudLexiconClient, self).__init__()
 
         self.provider = sakuracloud.Provider({
+            'provider_name': 'sakuracloud',
             'auth_token': api_token,
             'auth_secret': api_secret,
             'ttl': ttl,

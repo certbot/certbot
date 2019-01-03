@@ -3,13 +3,13 @@ import argparse
 import errno
 import os
 import shutil
-import stat
 import unittest
 
 import mock
 import six
 from six.moves import reload_module  # pylint: disable=import-error
 
+from certbot import compat
 from certbot import errors
 import certbot.tests.util as test_util
 
@@ -88,6 +88,7 @@ class LockDirUntilExit(test_util.TempDirTestCase):
         import certbot.util
         reload_module(certbot.util)
 
+    @test_util.broken_on_windows
     @mock.patch('certbot.util.logger')
     @mock.patch('certbot.util.atexit_register')
     def test_it(self, mock_register, mock_logger):
@@ -116,7 +117,7 @@ class SetUpCoreDirTest(test_util.TempDirTestCase):
     @mock.patch('certbot.util.lock_dir_until_exit')
     def test_success(self, mock_lock):
         new_dir = os.path.join(self.tempdir, 'new')
-        self._call(new_dir, 0o700, os.geteuid(), False)
+        self._call(new_dir, 0o700, compat.os_geteuid(), False)
         self.assertTrue(os.path.exists(new_dir))
         self.assertEqual(mock_lock.call_count, 1)
 
@@ -124,7 +125,7 @@ class SetUpCoreDirTest(test_util.TempDirTestCase):
     def test_failure(self, mock_make_or_verify):
         mock_make_or_verify.side_effect = OSError
         self.assertRaises(errors.Error, self._call,
-                          self.tempdir, 0o700, os.geteuid(), False)
+                          self.tempdir, 0o700, compat.os_geteuid(), False)
 
 
 class MakeOrVerifyDirTest(test_util.TempDirTestCase):
@@ -139,9 +140,9 @@ class MakeOrVerifyDirTest(test_util.TempDirTestCase):
         super(MakeOrVerifyDirTest, self).setUp()
 
         self.path = os.path.join(self.tempdir, "foo")
-        os.mkdir(self.path, 0o400)
+        os.mkdir(self.path, 0o600)
 
-        self.uid = os.getuid()
+        self.uid = compat.os_geteuid()
 
     def _call(self, directory, mode):
         from certbot.util import make_or_verify_dir
@@ -151,14 +152,15 @@ class MakeOrVerifyDirTest(test_util.TempDirTestCase):
         path = os.path.join(self.tempdir, "bar")
         self._call(path, 0o650)
         self.assertTrue(os.path.isdir(path))
-        self.assertEqual(stat.S_IMODE(os.stat(path).st_mode), 0o650)
+        self.assertTrue(compat.compare_file_modes(os.stat(path).st_mode, 0o650))
 
     def test_existing_correct_mode_does_not_fail(self):
-        self._call(self.path, 0o400)
-        self.assertEqual(stat.S_IMODE(os.stat(self.path).st_mode), 0o400)
+        self._call(self.path, 0o600)
+        self.assertTrue(compat.compare_file_modes(os.stat(self.path).st_mode, 0o600))
 
+    @test_util.skip_on_windows('Umask modes are mostly ignored on Windows.')
     def test_existing_wrong_mode_fails(self):
-        self.assertRaises(errors.Error, self._call, self.path, 0o600)
+        self.assertRaises(errors.Error, self._call, self.path, 0o400)
 
     def test_reraises_os_error(self):
         with mock.patch.object(os, "makedirs") as makedirs:
@@ -177,7 +179,7 @@ class CheckPermissionsTest(test_util.TempDirTestCase):
     def setUp(self):
         super(CheckPermissionsTest, self).setUp()
 
-        self.uid = os.getuid()
+        self.uid = compat.os_geteuid()
 
     def _call(self, mode):
         from certbot.util import check_permissions
@@ -208,16 +210,21 @@ class UniqueFileTest(test_util.TempDirTestCase):
         fd, name = self._call()
         fd.write("bar")
         fd.close()
-        self.assertEqual(open(name).read(), "bar")
+        with open(name) as f:
+            self.assertEqual(f.read(), "bar")
 
     def test_right_mode(self):
-        self.assertEqual(0o700, os.stat(self._call(0o700)[1]).st_mode & 0o777)
-        self.assertEqual(0o100, os.stat(self._call(0o100)[1]).st_mode & 0o777)
+        fd1, name1 = self._call(0o700)
+        fd2, name2 = self._call(0o600)
+        self.assertTrue(compat.compare_file_modes(0o700, os.stat(name1).st_mode))
+        self.assertTrue(compat.compare_file_modes(0o600, os.stat(name2).st_mode))
+        fd1.close()
+        fd2.close()
 
     def test_default_exists(self):
-        name1 = self._call()[1]  # create 0000_foo.txt
-        name2 = self._call()[1]
-        name3 = self._call()[1]
+        fd1, name1 = self._call()  # create 0000_foo.txt
+        fd2, name2 = self._call()
+        fd3, name3 = self._call()
 
         self.assertNotEqual(name1, name2)
         self.assertNotEqual(name1, name3)
@@ -233,6 +240,10 @@ class UniqueFileTest(test_util.TempDirTestCase):
         self.assertTrue(basename2.endswith("foo.txt"))
         basename3 = os.path.basename(name3)
         self.assertTrue(basename3.endswith("foo.txt"))
+
+        fd1.close()
+        fd2.close()
+        fd3.close()
 
 
 try:
@@ -253,13 +264,18 @@ class UniqueLineageNameTest(test_util.TempDirTestCase):
         f, path = self._call("wow")
         self.assertTrue(isinstance(f, file_type))
         self.assertEqual(os.path.join(self.tempdir, "wow.conf"), path)
+        f.close()
 
     def test_multiple(self):
+        items = []
         for _ in six.moves.range(10):
-            f, name = self._call("wow")
+            items.append(self._call("wow"))
+        f, name = items[-1]
         self.assertTrue(isinstance(f, file_type))
         self.assertTrue(isinstance(name, six.string_types))
         self.assertTrue("wow-0009.conf" in name)
+        for f, _ in items:
+            f.close()
 
     @mock.patch("certbot.util.os.fdopen")
     def test_failure(self, mock_fdopen):
@@ -512,17 +528,16 @@ class OsInfoTest(unittest.TestCase):
 
     def test_systemd_os_release(self):
         from certbot.util import (get_os_info, get_systemd_os_info,
-                                     get_os_info_ua)
+                                  get_os_info_ua)
 
         with mock.patch('os.path.isfile', return_value=True):
             self.assertEqual(get_os_info(
                 test_util.vector_path("os-release"))[0], 'systemdos')
             self.assertEqual(get_os_info(
                 test_util.vector_path("os-release"))[1], '42')
-            self.assertEqual(get_systemd_os_info("/dev/null"), ("", ""))
+            self.assertEqual(get_systemd_os_info(os.devnull), ("", ""))
             self.assertEqual(get_os_info_ua(
-                test_util.vector_path("os-release")),
-                "SystemdOS")
+                test_util.vector_path("os-release")), "SystemdOS")
         with mock.patch('os.path.isfile', return_value=False):
             self.assertEqual(get_systemd_os_info(), ("", ""))
 

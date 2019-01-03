@@ -69,6 +69,7 @@ class _LuaDNSLexiconClient(dns_common_lexicon.LexiconClient):
         super(_LuaDNSLexiconClient, self).__init__()
 
         self.provider = luadns.Provider({
+            'provider_name': 'luadns',
             'auth_username': email,
             'auth_token': token,
             'ttl': ttl,

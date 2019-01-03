@@ -7,7 +7,7 @@ feature requests for this plugin.
 
 To install this plugin, in the root of this repo, run::
 
-    ./tools/venv.sh
+    python tools/venv.py
     source venv/bin/activate
 
 You can use this installer with any `authenticator plugin

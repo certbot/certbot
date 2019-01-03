@@ -66,6 +66,7 @@ class _DNSimpleLexiconClient(dns_common_lexicon.LexiconClient):
         super(_DNSimpleLexiconClient, self).__init__()
 
         self.provider = dnsimple.Provider({
+            'provider_name': 'dnssimple',
             'auth_token': token,
             'ttl': ttl,
         })

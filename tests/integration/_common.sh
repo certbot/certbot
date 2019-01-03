@@ -25,6 +25,7 @@ certbot_test_no_force_renew () {
     omit_patterns="*/*.egg-info/*,*/dns_common*,*/setup.py,*/test_*,*/tests/*"
     omit_patterns="$omit_patterns,*_test.py,*_test_*,certbot-apache/*"
     omit_patterns="$omit_patterns,certbot-compatibility-test/*,certbot-dns*/"
+    omit_patterns="$omit_patterns,certbot-nginx/certbot_nginx/parser_obj.py"
     coverage run \
         --append \
         --source $sources \
@@ -42,5 +43,6 @@ certbot_test_no_force_renew () {
             --register-unsafely-without-email \
             --debug \
             -vv \
+            --no-random-sleep-on-renew \
             "$@"
 }

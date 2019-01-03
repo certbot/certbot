@@ -1,12 +1,12 @@
 """Certbot display."""
 import logging
 import os
-import select
 import sys
 import textwrap
 
 import zope.interface
 
+from certbot import compat
 from certbot import constants
 from certbot import interfaces
 from certbot import errors
@@ -53,7 +53,7 @@ def _wrap_lines(msg):
             break_long_words=False,
             break_on_hyphens=False))
 
-    return os.linesep.join(fixed_l)
+    return '\n'.join(fixed_l)
 
 
 def input_with_timeout(prompt=None, timeout=36000.0):
@@ -79,13 +79,8 @@ def input_with_timeout(prompt=None, timeout=36000.0):
         sys.stdout.write(prompt)
         sys.stdout.flush()
 
-    # select can only be used like this on UNIX
-    rlist, _, _ = select.select([sys.stdin], [], [], timeout)
-    if not rlist:
-        raise errors.Error(
-            "Timed out waiting for answer to prompt '{0}'".format(prompt))
+    line = compat.readline_with_timeout(timeout, prompt)
 
-    line = rlist[0].readline()
     if not line:
         raise EOFError
     return line.rstrip('\n')

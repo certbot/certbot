@@ -2,6 +2,229 @@
 
 Certbot adheres to [Semantic Versioning](http://semver.org/).
 
+## 0.31.0 - master
+
+### Added
+
+*
+
+### Changed
+
+*
+
+### Fixed
+
+* Fixed accessing josepy contents through acme.jose when the full acme.jose
+  path is used.
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+package with changes other than its version number was:
+
+* acme
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.30.0 - 2019-01-02
+
+### Added
+
+* Added the `update_account` subcommand for account management commands.
+
+### Changed
+
+* Copied account management functionality from the `register` subcommand
+  to the `update_account` subcommand.
+* Marked usage `register --update-registration` for deprecation and 
+  removal in a future release.
+
+### Fixed
+
+* Older modules in the josepy library can now be accessed through acme.jose
+  like it could in previous versions of acme. This is only done to preserve
+  backwards compatibility and support for doing this with new modules in josepy
+  will not be added. Users of the acme library should switch to using josepy
+  directly if they haven't done so already.
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+package with changes other than its version number was:
+
+* acme
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.29.1 - 2018-12-05
+
+### Added
+
+*
+
+### Changed
+
+*
+
+### Fixed
+
+* The default work and log directories have been changed back to
+  /var/lib/letsencrypt and /var/log/letsencrypt respectively.
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+package with changes other than its version number was:
+
+* certbot
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.29.0 - 2018-12-05
+
+### Added
+
+* Noninteractive renewals with `certbot renew` (those not started from a
+  terminal) now randomly sleep 1-480 seconds before beginning work in
+  order to spread out load spikes on the server side.
+* Added External Account Binding support in cli and acme library.
+  Command line arguments --eab-kid and --eab-hmac-key added.
+
+### Changed
+
+* Private key permissioning changes: Renewal preserves existing group mode
+  & gid of previous private key material. Private keys for new
+  lineages (i.e. new certs, not renewed) default to 0o600.
+
+### Fixed
+
+* Update code and dependencies to clean up Resource and Deprecation Warnings.
+* Only depend on imgconverter extension for Sphinx >= 1.6
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+package with changes other than its version number was:
+
+* acme
+* certbot
+* certbot-apache
+* certbot-dns-cloudflare
+* certbot-dns-digitalocean
+* certbot-dns-google
+* certbot-nginx
+
+More details about these changes can be found on our GitHub repo:
+https://github.com/certbot/certbot/milestone/62?closed=1
+
+## 0.28.0 - 2018-11-7
+
+### Added
+
+* `revoke` accepts `--cert-name`, and doesn't accept both `--cert-name` and `--cert-path`.
+* Use the ACMEv2 newNonce endpoint when a new nonce is needed, and newNonce is available in the directory.
+
+### Changed
+
+* Removed documentation mentions of `#letsencrypt` IRC on Freenode.
+* Write README to the base of (config-dir)/live directory
+* `--manual` will explicitly warn users that earlier challenges should remain in place when setting up subsequent challenges.
+* Warn when using deprecated acme.challenges.TLSSNI01
+* Log warning about TLS-SNI deprecation in Certbot
+* Stop preferring TLS-SNI in the Apache, Nginx, and standalone plugins
+* OVH DNS plugin now relies on Lexicon>=2.7.14 to support HTTP proxies
+* Default time the Linode plugin waits for DNS changes to propogate is now 1200 seconds.
+
+### Fixed
+
+* Match Nginx parser update in allowing variable names to start with `${`.
+* Fix ranking of vhosts in Nginx so that all port-matching vhosts come first
+* Correct OVH integration tests on machines without internet access.
+* Stop caching the results of ipv6_info in http01.py
+* Test fix for Route53 plugin to prevent boto3 making outgoing connections.
+* The grammar used by Augeas parser in Apache plugin was updated to fix various parsing errors.
+* The CloudXNS, DNSimple, DNS Made Easy, Gehirn, Linode, LuaDNS, NS1, OVH, and
+  Sakura Cloud DNS plugins are now compatible with Lexicon 3.0+.
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+package with changes other than its version number was:
+
+* acme
+* certbot
+* certbot-apache
+* certbot-dns-cloudxns
+* certbot-dns-dnsimple
+* certbot-dns-dnsmadeeasy
+* certbot-dns-gehirn
+* certbot-dns-linode
+* certbot-dns-luadns
+* certbot-dns-nsone
+* certbot-dns-ovh
+* certbot-dns-route53
+* certbot-dns-sakuracloud
+* certbot-nginx
+
+More details about these changes can be found on our GitHub repo:
+https://github.com/certbot/certbot/milestone/59?closed=1
+
+## 0.27.1 - 2018-09-06
+
+### Fixed
+
+* Fixed parameter name in OpenSUSE overrides for default parameters in the
+  Apache plugin. Certbot on OpenSUSE works again.
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+package with changes other than its version number was:
+
+* certbot-apache
+
+More details about these changes can be found on our GitHub repo:
+https://github.com/certbot/certbot/milestone/60?closed=1
+
+## 0.27.0 - 2018-09-05
+
+### Added
+
+* The Apache plugin now accepts the parameter --apache-ctl which can be
+  used to configure the path to the Apache control script.
+
+### Changed
+
+* When using `acme.client.ClientV2` (or
+ `acme.client.BackwardsCompatibleClientV2` with an ACME server that supports a
+ newer version of the ACME protocol), an `acme.errors.ConflictError` will be
+ raised if you try to create an ACME account with a key that has already been
+ used. Previously, a JSON parsing error was raised in this scenario when using
+ the library with Let's Encrypt's ACMEv2 endpoint.
+
+### Fixed
+
+* When Apache is not installed, Certbot's Apache plugin no longer prints
+  messages about being unable to find apachectl to the terminal when the plugin
+  is not selected.
+* If you're using the Apache plugin with the --apache-vhost-root flag set to a
+  directory containing a disabled virtual host for the domain you're requesting
+  a certificate for, the virtual host will now be temporarily enabled if
+  necessary to pass the HTTP challenge.
+* The documentation for the Certbot package can now be built using Sphinx 1.6+.
+* You can now call `query_registration` without having to first call
+  `new_account` on `acme.client.ClientV2` objects.
+* The requirement of `setuptools>=1.0` has been removed from `certbot-dns-ovh`.
+* Names in certbot-dns-sakuracloud's tests have been updated to refer to Sakura
+  Cloud rather than NS1 whose plugin certbot-dns-sakuracloud was based on.
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+package with changes other than its version number was:
+
+* acme
+* certbot
+* certbot-apache
+* certbot-dns-ovh
+* certbot-dns-sakuracloud
+
+More details about these changes can be found on our GitHub repo:
+https://github.com/certbot/certbot/milestone/57?closed=1
+
 ## 0.26.1 - 2018-07-17
 
 ### Fixed
