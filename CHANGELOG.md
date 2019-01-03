@@ -14,13 +14,14 @@ Certbot adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
-*
+* Fixed accessing josepy contents through acme.jose when the full acme.jose
+  path is used.
 
 Despite us having broken lockstep, we are continuing to release new versions of
 all Certbot components during releases for the time being, however, the only
 package with changes other than its version number was:
 
-*
+* acme
 
 More details about these changes can be found on our GitHub repo.
 
