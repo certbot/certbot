@@ -43,5 +43,6 @@ certbot_test_no_force_renew () {
             --register-unsafely-without-email \
             --debug \
             -vv \
+            --no-random-sleep-on-renew
             "$@"
 }
