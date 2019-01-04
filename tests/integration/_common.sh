@@ -3,16 +3,15 @@
 root=${root:-$(mktemp -d -t leitXXXX)}
 echo "Root integration tests directory: $root"
 config_dir="$root/conf"
-store_flags="--config-dir $config_dir --work-dir $root/work"
-store_flags="$store_flags --logs-dir $root/logs"
 tls_sni_01_port=5001
 http_01_port=5002
 sources="acme/,$(ls -dm certbot*/ | tr -d ' \n')"
-export root config_dir store_flags tls_sni_01_port http_01_port sources
+export root config_dir tls_sni_01_port http_01_port sources
 certbot_path="$(command -v certbot)"
 # Flags that are added here will be added to Certbot calls within
 # certbot_test_no_force_renew.
-other_flags=""
+other_flags="--config-dir $config_dir --work-dir $root/work"
+other_flags="$other_flags --logs-dir $root/logs"
 
 certbot_test () {
     certbot_test_no_force_renew \
@@ -44,7 +43,7 @@ if [ "${BOULDER_INTEGRATION:-v1}" = "v2" -a -z "${SERVER:+x}" ]; then
 fi
 
 if version_at_least 0 30; then
-  other_flags="--no-random-sleep-on-renew"
+  other_flags="$other_flags --no-random-sleep-on-renew"
 fi
 
 certbot_test_no_force_renew () {
@@ -62,13 +61,12 @@ certbot_test_no_force_renew () {
             --tls-sni-01-port $tls_sni_01_port \
             --http-01-port $http_01_port \
             --manual-public-ip-logging-ok \
-            $store_flags \
+            $other_flags \
             --non-interactive \
             --no-redirect \
             --agree-tos \
             --register-unsafely-without-email \
             --debug \
             -vv \
-            "$other_flags" \
             "$@"
 }
