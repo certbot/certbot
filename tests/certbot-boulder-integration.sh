@@ -174,7 +174,7 @@ CheckRenewHook() {
 TotalAndDistinctLines() {
     total=$1
     distinct=$2
-    awk '{a[$1] = 1}; END {exit(NR !='$total' || length(a) !='$distinct')}'
+    awk '{a[$1] = 1}; END {n = 0; for (i in a) { n++ }; exit(NR !='$total' || n !='$distinct')}'
 }
 
 # Cleanup coverage data
