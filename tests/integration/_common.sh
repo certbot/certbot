@@ -19,10 +19,9 @@ certbot_test () {
         "$@"
 }
 
-# Checks that the Certbot version is at least the given version number. This is
-# useful for making sure Certbot has certain features available. The patch
-# version is currently ignored. You use the exit code of this function to
-# determine the result of the comparison.
+# Succeeds if Certbot version is at least the given version number and fails
+# otherwise. This is useful for making sure Certbot has certain features
+# available. The patch version is currently ignored.
 #
 # Arguments:
 #   First argument is the minimum major version
@@ -42,6 +41,9 @@ if [ "${BOULDER_INTEGRATION:-v1}" = "v2" -a -z "${SERVER:+x}" ]; then
     SERVER="http://localhost:4001/directory"
 fi
 
+# --no-random-sleep-on-renew was added in
+# https://github.com/certbot/certbot/pull/6599 and first released in Certbot
+# 0.30.0.
 if version_at_least 0 30; then
   other_flags="$other_flags --no-random-sleep-on-renew"
 fi
