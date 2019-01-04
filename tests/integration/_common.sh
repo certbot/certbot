@@ -12,7 +12,7 @@ export root config_dir store_flags tls_sni_01_port http_01_port sources
 certbot_path="$(command -v certbot)"
 # Flags that are added here will be added to Certbot calls within
 # certbot_test_no_force_renew.
-other_flags="-vv"
+other_flags=""
 
 certbot_test () {
     certbot_test_no_force_renew \
@@ -44,7 +44,7 @@ if [ "${BOULDER_INTEGRATION:-v1}" = "v2" -a -z "${SERVER:+x}" ]; then
 fi
 
 if version_at_least 0 30; then
-  other_flags="$other_flags --no-random-sleep-on-renew"
+  other_flags="--no-random-sleep-on-renew"
 fi
 
 certbot_test_no_force_renew () {
@@ -68,6 +68,7 @@ certbot_test_no_force_renew () {
             --agree-tos \
             --register-unsafely-without-email \
             --debug \
+            -vv \
             "$other_flags" \
             "$@"
 }
