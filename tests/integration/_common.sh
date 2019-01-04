@@ -10,6 +10,9 @@ http_01_port=5002
 sources="acme/,$(ls -dm certbot*/ | tr -d ' \n')"
 export root config_dir store_flags tls_sni_01_port http_01_port sources
 certbot_path="$(command -v certbot)"
+# Flags that are added here will be added to Certbot calls within
+# certbot_test_no_force_renew.
+other_flags=""
 
 certbot_test () {
     certbot_test_no_force_renew \
@@ -40,6 +43,10 @@ if [ "${BOULDER_INTEGRATION:-v1}" = "v2" -a -z "${SERVER:+x}" ]; then
     SERVER="http://localhost:4001/directory"
 fi
 
+if version_at_least 0 30; then
+  other_flags="--no-random-sleep-on-renew"
+fi
+
 certbot_test_no_force_renew () {
     omit_patterns="*/*.egg-info/*,*/dns_common*,*/setup.py,*/test_*,*/tests/*"
     omit_patterns="$omit_patterns,*_test.py,*_test_*,certbot-apache/*"
@@ -62,6 +69,6 @@ certbot_test_no_force_renew () {
             --register-unsafely-without-email \
             --debug \
             -vv \
-            --no-random-sleep-on-renew \
+            "$other_flags" \
             "$@"
 }
