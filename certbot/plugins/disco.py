@@ -39,6 +39,7 @@ class PluginEntryPoint(object):
         "certbot-dns-rfc2136",
         "certbot-dns-route53",
         "certbot-dns-sakuracloud",
+        "certbot-dns-standalone",
         "certbot-nginx",
         "certbot-postfix",
     ]
