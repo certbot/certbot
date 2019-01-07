@@ -73,7 +73,7 @@ def certbot_test_no_force_renew(workspace, config_dir, acme_url,
 
     def func(args):
         command = [
-            'certbot'
+            'certbot',
             '--server', acme_url,
             '--no-verify-ssl',
             '--tls-sni-01-port', str(tls_sni_01_port),

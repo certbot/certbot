@@ -211,7 +211,7 @@ def test_renew(config_dir, common_no_force_renew, common, hook_probe):
     lines.insert(4, 'renew_before_expiry = 100 years{0}'.format(os.linesep))
     with open(join(config_dir, 'renewal/{0}.conf'.format(certname)), 'w') as file:
         file.writelines(lines)
-    common_no_force_renew(['renew''--no-directory-hooks',
+    common_no_force_renew(['renew', '--no-directory-hooks',
                            '--rsa-key-size', '2048'])
 
     assert_certs_count_for_lineage(config_dir, certname, 3)
