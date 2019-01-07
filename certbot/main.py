@@ -4,9 +4,7 @@ from __future__ import print_function
 import functools
 import logging.handlers
 import os
-import random
 import sys
-import time
 
 import configobj
 import josepy as jose
@@ -654,7 +652,45 @@ def unregister(config, unused_plugins):
 
 
 def register(config, unused_plugins):
-    """Create or modify accounts on the server.
+    """Create accounts on the server.
+
+    :param config: Configuration object
+    :type config: interfaces.IConfig
+
+    :param unused_plugins: List of plugins (deprecated)
+    :type unused_plugins: `list` of `str`
+
+    :returns: `None` or a string indicating and error
+    :rtype: None or str
+
+    """
+    # TODO: When `certbot register --update-registration` is fully deprecated,
+    # delete the true case of if block
+    if config.update_registration:
+        msg = ("Usage 'certbot register --update-registration' is deprecated.\n"
+               "Please use 'cerbot update_account [options]' instead.\n")
+        logger.warning(msg)
+        return update_account(config, unused_plugins)
+
+    # Portion of _determine_account logic to see whether accounts already
+    # exist or not.
+    account_storage = account.AccountFileStorage(config)
+    accounts = account_storage.find_all()
+
+    if len(accounts) > 0:
+        # TODO: add a flag to register a duplicate account (this will
+        #       also require extending _determine_account's behavior
+        #       or else extracting the registration code from there)
+        return ("There is an existing account; registration of a "
+                "duplicate account with this command is currently "
+                "unsupported.")
+    # _determine_account will register an account
+    _determine_account(config)
+    return
+
+
+def update_account(config, unused_plugins):
+    """Modify accounts on the server.
 
     :param config: Configuration object
     :type config: interfaces.IConfig
@@ -673,20 +709,6 @@ def register(config, unused_plugins):
     reporter_util = zope.component.getUtility(interfaces.IReporter)
     add_msg = lambda m: reporter_util.add_message(m, reporter_util.MEDIUM_PRIORITY)
 
-    # registering a new account
-    if not config.update_registration:
-        if len(accounts) > 0:
-            # TODO: add a flag to register a duplicate account (this will
-            #       also require extending _determine_account's behavior
-            #       or else extracting the registration code from there)
-            return ("There is an existing account; registration of a "
-                    "duplicate account with this command is currently "
-                    "unsupported.")
-        # _determine_account will register an account
-        _determine_account(config)
-        return
-
-    # --update-registration
     if len(accounts) == 0:
         return "Could not find an existing account to update."
     if config.email is None:
@@ -1245,16 +1267,6 @@ def renew(config, unused_plugins):
     :rtype: None
 
     """
-    if not sys.stdin.isatty():
-        # Noninteractive renewals include a random delay in order to spread
-        # out the load on the certificate authority servers, even if many
-        # users all pick the same time for renewals.  This delay precedes
-        # running any hooks, so that side effects of the hooks (such as
-        # shutting down a web service) aren't prolonged unnecessarily.
-        sleep_time = random.randint(1, 60*8)
-        logger.info("Non-interactive renewal: random delay of %s seconds", sleep_time)
-        time.sleep(sleep_time)
-
     try:
         renewal.handle_renewal_request(config)
     finally:
