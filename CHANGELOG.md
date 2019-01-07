@@ -2,7 +2,30 @@
 
 Certbot adheres to [Semantic Versioning](http://semver.org/).
 
-## 0.30.0 - master
+## 0.31.0 - master
+
+### Added
+
+*
+
+### Changed
+
+*
+
+### Fixed
+
+* Fixed accessing josepy contents through acme.jose when the full acme.jose
+  path is used.
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+package with changes other than its version number was:
+
+* acme
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.30.0 - 2019-01-02
 
 ### Added
 
@@ -17,13 +40,17 @@ Certbot adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
-*
+* Older modules in the josepy library can now be accessed through acme.jose
+  like it could in previous versions of acme. This is only done to preserve
+  backwards compatibility and support for doing this with new modules in josepy
+  will not be added. Users of the acme library should switch to using josepy
+  directly if they haven't done so already.
 
 Despite us having broken lockstep, we are continuing to release new versions of
 all Certbot components during releases for the time being, however, the only
 package with changes other than its version number was:
 
-*
+* acme
 
 More details about these changes can be found on our GitHub repo.
 
