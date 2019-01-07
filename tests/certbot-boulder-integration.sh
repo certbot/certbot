@@ -174,7 +174,7 @@ CheckRenewHook() {
 TotalAndDistinctLines() {
     total=$1
     distinct=$2
-    awk '{a[$1] = 1}; END {exit(NR !='$total' || length(a) !='$distinct')}'
+    awk '{a[$1] = 1}; END {n = 0; for (i in a) { n++ }; exit(NR !='$total' || n !='$distinct')}'
 }
 
 # Cleanup coverage data
@@ -207,9 +207,15 @@ common unregister
 
 common register --email ex1@domain.org,ex2@domain.org
 
+# TODO: When `certbot register --update-registration` is fully deprecated, delete the two following deprecated uses
+
 common register --update-registration --email ex1@domain.org
 
 common register --update-registration --email ex1@domain.org,ex2@domain.org
+
+common update_account --email example@domain.org
+
+common update_account --email ex1@domain.org,ex2@domain.org
 
 common plugins --init --prepare | grep webroot
 
