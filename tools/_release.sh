@@ -143,7 +143,7 @@ pip install -U pip
 # (or our dependencies) have conditional dependencies implemented with if
 # statements in setup.py and we have cached wheels lying around that would
 # cause those ifs to not be evaluated.
-pip install \
+python ../tools/pip_install.py \
   --no-cache-dir \
   --extra-index-url http://localhost:$PORT \
   $SUBPKGS
@@ -166,7 +166,7 @@ fi
 mkdir kgs
 kgs="kgs/$version"
 pip freeze | tee $kgs
-pip install pytest
+python ../tools/pip_install.py pytest
 for module in $subpkgs_modules ; do
     echo testing $module
     # use an empty configuration file rather than the one in the repo root
