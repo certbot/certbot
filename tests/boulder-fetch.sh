@@ -11,7 +11,6 @@ if [ ! -d ${BOULDERPATH} ]; then
 fi
 
 cd ${BOULDERPATH}
-sed -i "s/FAKE_DNS: .*/FAKE_DNS: 10.77.77.1/" docker-compose.yml
 
 docker-compose up -d boulder
 
@@ -28,3 +27,6 @@ if ! curl http://localhost:4000/directory 2>/dev/null; then
   echo "timed out waiting for boulder to start"
   exit 1
 fi
+
+# Setup the DNS resolution used by boulder instance to docker host
+curl -X POST -d '{"ip":"10.77.77.1"}' http://localhost:8055/set-default-ipv4
