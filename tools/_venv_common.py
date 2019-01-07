@@ -59,7 +59,7 @@ def find_python_executable(python_major):
                                              universal_newlines=True, stderr=subprocess.STDOUT)
             if _check_version(output.strip().split()[1], python_major):
                 return subprocess.check_output([one_python, '-c',
-                                               'import sys; sys.stdout.write(sys.executable);'],
+                                                'import sys; sys.stdout.write(sys.executable);'],
                                                universal_newlines=True)
         except (subprocess.CalledProcessError, OSError):
             pass
