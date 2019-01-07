@@ -3,6 +3,7 @@ import tempfile
 import subprocess
 import shutil
 import sys
+from distutils.version import LooseVersion
 
 import pytest
 
@@ -51,23 +52,46 @@ def config_dir(workspace):
     return os.path.join(workspace, 'conf')
 
 
+@pytest.fixture(scope='session')
+def certbot_version():
+    output = subprocess.check_output(['certbot', '--version'], universal_newlines=True)
+    # Typical response is: output = 'certbot 0.31.0.dev0'
+    version_str = output.split(' ')[1]
+    return LooseVersion(version_str)
+
+
 @pytest.fixture
 def certbot_test_no_force_renew(workspace, config_dir, acme_url,
-                                http_01_port, tls_sni_01_port, capsys):
+                                http_01_port, tls_sni_01_port,
+                                certbot_version, capsys):
     new_environ = os.environ.copy()
     new_environ['TMPDIR'] = workspace
 
+    additional_args = []
+    if certbot_version >= LooseVersion('0.30.0'):
+        additional_args.append('--no-random-sleep-on-renew')
+
     def func(args):
         command = [
-            'certbot', '--server', acme_url, '--no-verify-ssl', '--tls-sni-01-port',
-            str(tls_sni_01_port), '--http-01-port', str(http_01_port),
-            '--manual-public-ip-logging-ok', '--config-dir', config_dir, '--work-dir',
-            os.path.join(workspace, 'work'), '--logs-dir', os.path.join(workspace, 'logs'),
-            '--non-interactive', '--no-redirect', '--agree-tos',
-            '--register-unsafely-without-email', '--debug', '-vv'
+            'certbot'
+            '--server', acme_url,
+            '--no-verify-ssl',
+            '--tls-sni-01-port', str(tls_sni_01_port),
+            '--http-01-port', str(http_01_port),
+            '--manual-public-ip-logging-ok',
+            '--config-dir', config_dir,
+            '--work-dir', os.path.join(workspace, 'work'),
+            '--logs-dir', os.path.join(workspace, 'logs'),
+            '--non-interactive',
+            '--no-redirect',
+            '--agree-tos',
+            '--register-unsafely-without-email',
+            '--debug',
+            '-vv'
         ]
 
         command.extend(args)
+        command.extend(additional_args)
 
         print('Invoke command:\n{0}'.format(subprocess.list2cmdline(command)))
         return subprocess.check_output(command, universal_newlines=True,

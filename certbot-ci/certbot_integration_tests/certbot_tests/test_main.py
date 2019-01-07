@@ -175,7 +175,7 @@ def test_renew(config_dir, common_no_force_renew, common, hook_probe):
     # Second, we force renew, and ensure that renewal hooks files are executed.
     # Also check that file permissions are correct.
     misc.generate_test_file_hooks(config_dir, hook_probe)
-    common(['renew', '--no-random-sleep-on-renew'])
+    common(['renew'])
 
     assert_certs_count_for_lineage(config_dir, certname, 2)
     assert_hook_execution(hook_probe, 'deploy')
@@ -194,7 +194,7 @@ def test_renew(config_dir, common_no_force_renew, common, hook_probe):
     # It is not time, so no renew should occur, and no hooks should be executed.
     open(hook_probe, 'w').close()
     misc.generate_test_file_hooks(config_dir, hook_probe)
-    common_no_force_renew(['renew', '--no-random-sleep-on-renew'])
+    common_no_force_renew(['renew'])
 
     assert_certs_count_for_lineage(config_dir, certname, 2)
     with pytest.raises(AssertionError):
@@ -211,7 +211,7 @@ def test_renew(config_dir, common_no_force_renew, common, hook_probe):
     lines.insert(4, 'renew_before_expiry = 100 years{0}'.format(os.linesep))
     with open(join(config_dir, 'renewal/{0}.conf'.format(certname)), 'w') as file:
         file.writelines(lines)
-    common_no_force_renew(['renew', '--no-random-sleep-on-renew', '--no-directory-hooks',
+    common_no_force_renew(['renew''--no-directory-hooks',
                            '--rsa-key-size', '2048'])
 
     assert_certs_count_for_lineage(config_dir, certname, 3)
@@ -237,7 +237,7 @@ def test_renew(config_dir, common_no_force_renew, common, hook_probe):
         shutil.rmtree(hook_dir)
         os.makedirs(join(hook_dir, 'dir'))
         open(join(hook_dir, 'file'), 'w').close()
-    common(['renew', '--no-random-sleep-on-renew'])
+    common(['renew'])
 
     assert_certs_count_for_lineage(config_dir, certname, 4)
 
@@ -258,7 +258,7 @@ def test_hook_override(common, hook_probe):
 
     open(hook_probe, 'w').close()
     common([
-        'renew', '--cert-name', certname, '--no-random-sleep-on-renew',
+        'renew', '--cert-name', certname,
         '--pre-hook', 'echo pre-override >> "{0}"'.format(hook_probe),
         '--post-hook', 'echo post-override >> "{0}"'.format(hook_probe),
         '--deploy-hook', 'echo deploy-override >> "{0}"'.format(hook_probe)
@@ -275,9 +275,7 @@ def test_hook_override(common, hook_probe):
         assert_hook_execution(hook_probe, 'deploy')
 
     open(hook_probe, 'w').close()
-    common([
-        'renew', '--cert-name', certname, '--no-random-sleep-on-renew'
-    ])
+    common(['renew', '--cert-name', certname])
 
     assert_hook_execution(hook_probe, 'pre-override')
     assert_hook_execution(hook_probe, 'post-override')
@@ -301,7 +299,7 @@ def test_invalid_domain_with_dns_challenge(common, manual_dns_auth_hook, manual_
 def test_reuse_key(common, config_dir):
     certname = 'reusekey.le.wtf'
     common(['--domains', certname, '--reuse-key'])
-    common(['renew', '--cert-name', certname, '--no-random-sleep-on-renew'])
+    common(['renew', '--cert-name', certname])
 
     with open(join(config_dir, 'archive/{0}/privkey1.pem').format(certname), 'r') as file:
         privkey1 = file.read()
@@ -309,8 +307,7 @@ def test_reuse_key(common, config_dir):
         privkey2 = file.read()
     assert privkey1 == privkey2
 
-    common(['--cert-name', certname, '--no-random-sleep-on-renew',
-            '--domains', certname, '--force-renewal'])
+    common(['--cert-name', certname, '--domains', certname, '--force-renewal'])
 
     with open(join(config_dir, 'archive/{0}/privkey3.pem').format(certname), 'r') as file:
         privkey3 = file.read()
