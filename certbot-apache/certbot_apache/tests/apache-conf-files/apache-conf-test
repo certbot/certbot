@@ -56,13 +56,16 @@ if [ "$1" = --debian-modules ] ; then
     done
 fi
 
+CERTBOT_CMD="sudo $(command -v certbot) --server $ACME_SERVER_URI -vvvv"
+CERTBOT_CMD="$CERTBOT_CMD --debug --apache --register-unsafely-without-email"
+CERTBOT_CMD="$CERTBOT_CMD --agree-tos certonly -t"
 
 FAILS=0
 trap CleanupExit INT
 for f in *.conf ; do 
     echo -n  testing "$f"...
     Setup
-    RESULT=`echo c | sudo $(command -v certbot) -vvvv --debug --staging --apache --register-unsafely-without-email --agree-tos certonly -t 2>&1`
+    RESULT=`echo c | "$CERTBOT_CMD" 2>&1`
     if echo $RESULT | grep -Eq \("Which names would you like"\|"mod_macro is not yet"\) ; then
         echo passed
     else
