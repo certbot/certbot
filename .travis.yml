@@ -58,7 +58,6 @@ matrix:
       addons:
     - python: "2.7"
       env:
-        - ACME_SERVER_URI="http://localhost:4000/directory"
         - BOULDER_FOR_TOX=1
         - TOXENV=apacheconftest
       sudo: required

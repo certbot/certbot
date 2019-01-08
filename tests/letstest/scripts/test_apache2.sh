@@ -54,7 +54,7 @@ if [ $? -ne 0 ] ; then
 fi
 
 if [ "$OS_TYPE" = "ubuntu" ] ; then
-    export ACME_SERVER_URI="$BOULDER_URL"
+    export SERVER="$BOULDER_URL"
     venv/bin/tox -e apacheconftest
 else
     echo Not running hackish apache tests on $OS_TYPE
