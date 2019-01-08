@@ -57,9 +57,7 @@ matrix:
       before_install:
       addons:
     - python: "2.7"
-      env:
-        - BOULDER_FOR_TOX=1
-        - TOXENV=apacheconftest
+      env: BOULDER_FOR_TOX=1 TOXENV=apacheconftest
       sudo: required
     - python: "2.7"
       env: TOXENV=nginxroundtrip
