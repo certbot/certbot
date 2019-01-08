@@ -6,7 +6,6 @@ import time
 import six
 import zope.component
 
-import acme  # pylint: disable=unused-import
 from acme import challenges
 from acme import messages
 # pylint: disable=unused-import, no-name-in-module
@@ -127,7 +126,7 @@ class AuthHandler(object):
 
     def _solve_challenges(self, aauthzrs):
         """Get Responses for challenges from authenticators."""
-        resp = []  # type: Collection[acme.challenges.ChallengeResponse]
+        resp = []  # type: Collection[challenges.ChallengeResponse]
         all_achalls = self._get_all_achalls(aauthzrs)
         try:
             if all_achalls:
