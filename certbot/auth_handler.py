@@ -85,19 +85,26 @@ class AuthHandler(object):
         self.verify_authzr_complete(aauthzrs)
 
         # Only return valid authorizations
-        retVal = [aauthzr.authzr for aauthzr in aauthzrs
-                  if aauthzr.authzr.body.status == messages.STATUS_VALID]
+        ret_val = [aauthzr.authzr for aauthzr in aauthzrs
+                   if aauthzr.authzr.body.status == messages.STATUS_VALID]
 
-        if not retVal:
+        if not ret_val:
             raise errors.AuthorizationError(
                 "Challenges failed for all domains")
 
-        return retVal
+        return ret_val
 
     def _choose_challenges(self, aauthzrs):
-        """Retrieve necessary challenges to satisfy server."""
-        logger.info("Following challenges are required:")
-        for aauthzr in aauthzrs:
+        """
+        Retrieve necessary and pending challenges to satisfy server.
+        NB: Necessary and already validated challenges are not retrieved,
+        as they can be reused for a certificate issuance.
+        """
+        pending_authzrs = [aauthzr for aauthzr in aauthzrs
+                           if aauthzr.authzr.body.status != messages.STATUS_VALID]
+        if pending_authzrs:
+            logger.info("Performing the following challenges:")
+        for aauthzr in pending_authzrs:
             aauthzr_challenges = aauthzr.authzr.body.challenges
             if self.acme.acme_version == 1:
                 combinations = aauthzr.authzr.body.combinations
@@ -121,8 +128,7 @@ class AuthHandler(object):
 
     def _has_challenges(self, aauthzrs):
         """Do we have any challenges to perform?"""
-        return any(aauthzr.achalls for aauthzr in aauthzrs
-                   if aauthzr.authzr.body.status != messages.STATUS_VALID)
+        return any(aauthzr.achalls for aauthzr in aauthzrs)
 
     def _solve_challenges(self, aauthzrs):
         """Get Responses for challenges from authenticators."""
@@ -357,27 +363,24 @@ class AuthHandler(object):
         for index in path:
             challb = authzr.body.challenges[index]
             achalls.append(challb_to_achall(
-                challb, self.account.key, authzr.body.identifier.value,
-                status='validated' if authzr.body.status == messages.STATUS_VALID else 'pending'))
+                challb, self.account.key, authzr.body.identifier.value))
 
         return achalls
 
 
-def challb_to_achall(challb, account_key, domain, status=None):
+def challb_to_achall(challb, account_key, domain):
     """Converts a ChallengeBody object to an AnnotatedChallenge.
 
     :param .ChallengeBody challb: ChallengeBody
     :param .JWK account_key: Authorized Account Key
     :param str domain: Domain of the challb
-    :param str status: Optional status to display in the log
 
     :returns: Appropriate AnnotatedChallenge
     :rtype: :class:`certbot.achallenges.AnnotatedChallenge`
 
     """
     chall = challb.chall
-    logger.info("%s challenge for %s%s", chall.typ, domain,
-                '' if not status else ' ({0})'.format(status))
+    logger.info("%s challenge for %s", chall.typ, domain)
 
     if isinstance(chall, challenges.KeyAuthorizationChallenge):
         return achallenges.KeyAuthorizationAnnotatedChallenge(
