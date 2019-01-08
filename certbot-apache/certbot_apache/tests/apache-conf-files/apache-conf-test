@@ -3,6 +3,11 @@
 # A hackish script to see if the client is behaving as expected 
 # with each of the "passing" conf files.
 
+if [ -z "$ACME_SERVER_URI" ]; then
+    echo Please set ACME_SERVER_URI.
+    exit 1
+fi
+
 export EA=/etc/apache2/ 
 TESTDIR="`dirname $0`"
 cd $TESTDIR/passing
