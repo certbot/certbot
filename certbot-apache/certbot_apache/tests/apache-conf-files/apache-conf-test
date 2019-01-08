@@ -3,8 +3,10 @@
 # A hackish script to see if the client is behaving as expected 
 # with each of the "passing" conf files.
 
-if [ -z "$ACME_SERVER_URI" ]; then
-    echo Please set ACME_SERVER_URI.
+SERVER="${SERVER:-http://localhost:4000/directory}"
+if ! curl "$SERVER" >/dev/null 2>&1; then
+    echo "ACME server not found."
+    echo "Please set SERVER to the ACME server's directory URL."
     exit 1
 fi
 
@@ -61,7 +63,7 @@ if [ "$1" = --debian-modules ] ; then
     done
 fi
 
-CERTBOT_CMD="sudo $(command -v certbot) --server $ACME_SERVER_URI -vvvv"
+CERTBOT_CMD="sudo $(command -v certbot) --server $SERVER -vvvv"
 CERTBOT_CMD="$CERTBOT_CMD --debug --apache --register-unsafely-without-email"
 CERTBOT_CMD="$CERTBOT_CMD --agree-tos certonly -t"
 
