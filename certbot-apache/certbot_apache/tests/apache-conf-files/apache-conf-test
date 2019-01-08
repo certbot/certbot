@@ -3,9 +3,7 @@
 # A hackish script to see if the client is behaving as expected 
 # with each of the "passing" conf files.
 
-SERVER="${SERVER:-http://localhost:4000/directory}"
-if ! python -c "import requests; requests.get('$SERVER')"; then
-    echo "ACME server not found."
+if [ -z "$SERVER" ]; then
     echo "Please set SERVER to the ACME server's directory URL."
     exit 1
 fi
