@@ -316,6 +316,24 @@ class HandleAuthorizationsTest(unittest.TestCase):
         self.assertEqual(
             self.mock_auth.cleanup.call_args[0][0][0].typ, "tls-sni-01")
 
+    def test_validated_challenge_not_rerun(self):
+        # With pending challenge, we expect the challenge to be tried, and fail.
+        authzr = acme_util.gen_authzr(
+                messages.STATUS_PENDING, "0",
+                [acme_util.HTTP01],
+                [messages.STATUS_PENDING], False)
+        mock_order = mock.MagicMock(authorizations=[authzr])
+        self.assertRaises(
+            errors.AuthorizationError, self.handler.handle_authorizations, mock_order)
+
+        # With validated challenge; we expect the challenge not be tried again, and succeed.
+        authzr = acme_util.gen_authzr(
+                messages.STATUS_VALID, "0",
+                [acme_util.HTTP01],
+                [messages.STATUS_VALID], False)
+        mock_order = mock.MagicMock(authorizations=[authzr])
+        self.handler.handle_authorizations(mock_order)
+
     def _validate_all(self, aauthzrs, unused_1, unused_2):
         for i, aauthzr in enumerate(aauthzrs):
             azr = aauthzr.authzr
