@@ -71,6 +71,11 @@ def main(args):
     tools_path = find_tools_path()
     working_dir = tempfile.mkdtemp()
 
+    if os.environ.get('TRAVIS'):
+        # When this script is executed on Travis, the following print will make the log
+        # be folded until the end command is printed (see finally section).
+        print('travis_fold:start:install_certbot_deps')
+
     try:
         test_constraints = os.path.join(working_dir, 'test_constraints.txt')
         all_constraints = os.path.join(working_dir, 'all_constraints.txt')
@@ -89,6 +94,8 @@ def main(args):
         call_with_print('"{0}" -m pip install --constraint "{1}" {2}'
                         .format(sys.executable, all_constraints, ' '.join(args)))
     finally:
+        if os.environ.get('TRAVIS'):
+            print('travis_fold:end:install_certbot_deps')
         shutil.rmtree(working_dir)
 
 

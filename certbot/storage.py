@@ -41,7 +41,9 @@ def renewal_conf_files(config):
     :rtype: `list` of `str`
 
     """
-    return glob.glob(os.path.join(config.renewal_configs_dir, "*.conf"))
+    result = glob.glob(os.path.join(config.renewal_configs_dir, "*.conf"))
+    result.sort()
+    return result
 
 def renewal_file_for_certname(config, certname):
     """Return /path/to/certname.conf in the renewal conf directory"""
