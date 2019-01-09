@@ -57,7 +57,7 @@ matrix:
       before_install:
       addons:
     - python: "2.7"
-      env: TOXENV=apacheconftest
+      env: TOXENV=apacheconftest-with-pebble
       sudo: required
     - python: "2.7"
       env: TOXENV=nginxroundtrip
