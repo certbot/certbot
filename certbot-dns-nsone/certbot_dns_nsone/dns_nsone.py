@@ -65,13 +65,12 @@ class _NS1LexiconClient(dns_common_lexicon.LexiconClient):
     def __init__(self, api_key, ttl):
         super(_NS1LexiconClient, self).__init__()
 
-        config = dns_common_lexicon.build_lexicon_config({
+        config = dns_common_lexicon.build_lexicon_config('nsone', {
             'ttl': ttl,
-            'provider': 'nsone',
-            'nsone': {
-                'auth_token': api_key,
-            }
+        }, {
+            'auth_token': api_key,
         })
+
         self.provider = nsone.Provider(config)
 
     def _handle_http_error(self, e, domain_name):

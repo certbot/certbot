@@ -71,14 +71,13 @@ class _DNSMadeEasyLexiconClient(dns_common_lexicon.LexiconClient):
     def __init__(self, api_key, secret_key, ttl):
         super(_DNSMadeEasyLexiconClient, self).__init__()
 
-        config = dns_common_lexicon.build_lexicon_config({
+        config = dns_common_lexicon.build_lexicon_config('dnsmadeeasy', {
             'ttl': ttl,
-            'provider': 'dnsmadeeasy',
-            'dnsmadeeasy': {
-                'auth_username': api_key,
-                'auth_token': secret_key,
-            }
+        }, {
+            'auth_username': api_key,
+            'auth_token': secret_key,
         })
+
         self.provider = dnsmadeeasy.Provider(config)
 
     def _handle_http_error(self, e, domain_name):

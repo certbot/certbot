@@ -1,9 +1,10 @@
 """Common code for DNS Authenticator Plugins built on Lexicon."""
-
 import logging
 
 from requests.exceptions import HTTPError, RequestException
 
+# pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Union
 from certbot import errors
 from certbot.plugins import dns_common
 
@@ -112,12 +113,24 @@ class LexiconClient(object):
                                       .format(domain_name, e))
 
 
-def build_lexicon_config(config_dict):
-    # type: (dict) -> ConfigResolver
+def build_lexicon_config(lexicon_provider_name, lexicon_options, provider_options):
+    # type: (str, dict, dict) -> Union[ConfigResolver, dict]
     """
-    Convenient function to build a Lexicon 3.x config object.
+    Convenient function to build a Lexicon 2.x/3.x config object.
     :param dict config_dict: the configuration specifics to apply
-    :return: an instantiated ConfigResolver object
-    :rtype: ConfigResolver
+    :return: an instantiated ConfigResolver object for Lexicon 3.x or a dict for Lexicon 2.x
+    :rtype: Union[ConfigResolver, dict]
     """
-    return ConfigResolver().with_dict(config_dict).with_env()
+    config = {'provider': lexicon_provider_name}
+    config.update(lexicon_options)
+    if not ConfigResolver:
+        # Lexicon 2.x
+        config.update(provider_options)
+    else:
+        # Lexicon 3.x
+        provider_config = {}
+        provider_config.update(provider_options)
+        config[lexicon_provider_name] = provider_config
+        config = ConfigResolver().with_dict(config).with_env()
+
+    return config

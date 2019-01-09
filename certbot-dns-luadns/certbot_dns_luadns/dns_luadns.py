@@ -68,14 +68,13 @@ class _LuaDNSLexiconClient(dns_common_lexicon.LexiconClient):
     def __init__(self, email, token, ttl):
         super(_LuaDNSLexiconClient, self).__init__()
 
-        config = dns_common_lexicon.build_lexicon_config({
+        config = dns_common_lexicon.build_lexicon_config('luadns', {
             'ttl': ttl,
-            'provider': 'luadns',
-            'luadns': {
-                'auth_username': email,
-                'auth_token': token,
-            }
+        }, {
+            'auth_username': email,
+            'auth_token': token,
         })
+
         self.provider = luadns.Provider(config)
 
     def _handle_http_error(self, e, domain_name):

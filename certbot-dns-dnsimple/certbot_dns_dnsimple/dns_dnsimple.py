@@ -65,13 +65,12 @@ class _DNSimpleLexiconClient(dns_common_lexicon.LexiconClient):
     def __init__(self, token, ttl):
         super(_DNSimpleLexiconClient, self).__init__()
 
-        config = dns_common_lexicon.build_lexicon_config({
+        config = dns_common_lexicon.build_lexicon_config('dnssimple', {
             'ttl': ttl,
-            'provider': 'dnssimple',
-            'dnssimple': {
-                'auth_token': token,
-            }
+        }, {
+            'auth_username': token,
         })
+
         self.provider = dnsimple.Provider(config)
 
     def _handle_http_error(self, e, domain_name):

@@ -75,14 +75,13 @@ class _SakuraCloudLexiconClient(dns_common_lexicon.LexiconClient):
     def __init__(self, api_token, api_secret, ttl):
         super(_SakuraCloudLexiconClient, self).__init__()
 
-        config = dns_common_lexicon.build_lexicon_config({
+        config = dns_common_lexicon.build_lexicon_config('sakuracloud', {
             'ttl': ttl,
-            'provider': 'sakuracloud',
-            'sakuracloud': {
-                'auth_token': api_token,
-                'auth_secret': api_secret,
-            }
+        }, {
+            'auth_token': api_token,
+            'auth_secret': api_secret,
         })
+
         self.provider = sakuracloud.Provider(config)
 
     def _handle_http_error(self, e, domain_name):

@@ -72,14 +72,13 @@ class _GehirnLexiconClient(dns_common_lexicon.LexiconClient):
     def __init__(self, api_token, api_secret, ttl):
         super(_GehirnLexiconClient, self).__init__()
 
-        config = dns_common_lexicon.build_lexicon_config({
+        config = dns_common_lexicon.build_lexicon_config('gehirn', {
             'ttl': ttl,
-            'provider': 'gehirn',
-            'gehirn': {
-                'auth_token': api_token,
-                'auth_secret': api_secret,
-            }
+        }, {
+            'auth_token': api_token,
+            'auth_secret': api_secret,
         })
+
         self.provider = gehirn.Provider(config)
 
     def _handle_http_error(self, e, domain_name):
