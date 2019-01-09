@@ -707,6 +707,7 @@ class ClientTest(ClientTestBase):
             self.certr,
             self.rsn)
 
+
 class ClientV2Test(ClientTestBase):
     """Tests for acme.client.ClientV2."""
 
@@ -950,7 +951,6 @@ class ClientNetworkTest(unittest.TestCase):
         self.assertEqual(jws.signature.combined.kid, u'acct-uri')
         self.assertEqual(jws.signature.combined.url, u'url')
 
-
     def test_check_response_not_ok_jobj_no_error(self):
         self.response.ok = False
         self.response.json.return_value = {}
@@ -1113,8 +1113,8 @@ class ClientNetworkTest(unittest.TestCase):
 
         # Requests Library Exceptions
         except requests.exceptions.ConnectionError as z: #pragma: no cover
-            self.assertTrue("('Connection aborted.', error(111, 'Connection refused'))"
-                              == str(z) or "[WinError 10061]" in str(z))
+            self.assertTrue("'Connection aborted.'" in str(z) or "[WinError 10061]" in str(z))
+
 
 class ClientNetworkWithMockedResponseTest(unittest.TestCase):
     """Tests for acme.client.ClientNetwork which mock out response."""
