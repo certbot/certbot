@@ -12,7 +12,6 @@ before_install:
   - cp .travis.yml /tmp/travis.yml
   - git pull origin master --strategy=recursive --strategy-option=theirs --no-edit
   - if ! git diff .travis.yml /tmp/travis.yml ; then echo "Please merge master into test-everything"; exit 1; fi
-  - '[ "$TRAVIS_OS_NAME" != osx ] || tests/travis-macos-setup.sh'
 
 before_script:
   - 'if [ $TRAVIS_OS_NAME = osx ] ; then ulimit -n 1024 ; fi'
@@ -122,9 +121,19 @@ matrix:
     - language: generic
       env: TOXENV=py27
       os: osx
+      addons:
+        homebrew:
+          packages:
+            - augeas
+            - python2
     - language: generic
       env: TOXENV=py3
       os: osx
+      addons:
+        homebrew:
+          packages:
+            - augeas
+            - python3
 
 
 # Only build pushes to the master branch, PRs, and branches beginning with
