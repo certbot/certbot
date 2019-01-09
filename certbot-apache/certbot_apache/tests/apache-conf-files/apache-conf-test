@@ -63,7 +63,7 @@ fi
 
 CERTBOT_CMD="sudo $(command -v certbot) --server $SERVER -vvvv"
 CERTBOT_CMD="$CERTBOT_CMD --debug --apache --register-unsafely-without-email"
-CERTBOT_CMD="$CERTBOT_CMD --agree-tos certonly -t"
+CERTBOT_CMD="$CERTBOT_CMD --agree-tos certonly -t --no-verify-ssl"
 
 FAILS=0
 trap CleanupExit INT
