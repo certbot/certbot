@@ -10,7 +10,8 @@ Certbot adheres to [Semantic Versioning](http://semver.org/).
 
 ### Changed
 
-*
+* Lexicon-based DNS plugins are now fully compatible with Lexicon 3.x (support
+  on 2.x branch is maintained).
 
 ### Fixed
 
@@ -22,6 +23,15 @@ all Certbot components during releases for the time being, however, the only
 package with changes other than its version number was:
 
 * acme
+* certbot-dns-cloudxns
+* certbot-dns-dnssimple
+* certbot-dns-dnsmadeeasy
+* certbot-dns-gehirn
+* certbot-dns-linode
+* certbot-dns-luadns
+* certbot-dns-nsone
+* certbot-dns-ovh
+* certbot-dns-sakuracloud
 
 More details about these changes can be found on our GitHub repo.
 
