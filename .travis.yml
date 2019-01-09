@@ -57,9 +57,7 @@ matrix:
       before_install:
       addons:
     - python: "2.7"
-      env:
-        - BOULDER_FOR_TOX=1
-        - TOXENV=apacheconftest
+      env: TOXENV=apacheconftest-with-pebble
       sudo: required
     - python: "2.7"
       env: TOXENV=nginxroundtrip
@@ -94,10 +92,8 @@ addons:
 
 install: "travis_retry $(command -v pip || command -v pip3) install codecov tox"
 script:
-    - '[ -z "${BOULDER_FOR_TOX+x}" ] || travis_retry tests/boulder-fetch.sh'
     - travis_retry tox
-    # If BOULDER_INTEGRATION is set, run integration tests. If BOULDER_FOR_TOX isn't set, we still need to start boulder.
-    - '[ -z "${BOULDER_INTEGRATION+x}" ] || ( ( [ -n "${BOULDER_FOR_TOX+x}" ] || travis_retry tests/boulder-fetch.sh ) && tests/tox-boulder-integration.sh)'
+    - '[ -z "${BOULDER_INTEGRATION+x}" ] || (travis_retry tests/boulder-fetch.sh && tests/tox-boulder-integration.sh)'
 
 after_success: '[ "$TOXENV" == "py27-cover" ] && codecov'
 
