@@ -59,6 +59,7 @@ matrix:
     - python: "2.7"
       env: TOXENV=apacheconftest-with-pebble
       sudo: required
+      services: docker
     - python: "2.7"
       env: TOXENV=nginxroundtrip
 
