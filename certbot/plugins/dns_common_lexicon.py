@@ -123,7 +123,7 @@ def build_lexicon_config(lexicon_provider_name, lexicon_options, provider_option
     :return: configuration to apply to the provider
     :rtype: ConfigurationResolver or dict
     """
-    config = {'provider': lexicon_provider_name}  # type: Dict[str, Any]
+    config = {'provider_name': lexicon_provider_name}  # type: Dict[str, Any]
     config.update(lexicon_options)
     if not ConfigResolver:
         # Lexicon 2.x
