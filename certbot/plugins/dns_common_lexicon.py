@@ -10,10 +10,8 @@ from certbot.plugins import dns_common
 # Lexicon is not declared as a dependency in Certbot itself,
 # but in the Certbot plugins backed by Lexicon.
 # So we catch import error here to allow this module to be
-# always importable, even if it does not make sens to use it
+# always importable, even if it does not make sense to use it
 # if Lexicon is not available, obviously.
-# This import is not done at runtime to allow mypy type to
-# be handled correctly in any situation.
 try:
     from lexicon.config import ConfigResolver
 except ImportError:
