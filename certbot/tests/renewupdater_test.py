@@ -53,7 +53,7 @@ class RenewUpdaterTest(test_util.ConfigTestCase):
         self.config.dry_run = True
         updater.run_generic_updaters(self.config, None, None)
         self.assertTrue(mock_log.called)
-        self.assertEquals(mock_log.call_args[0][0],
+        self.assertEqual(mock_log.call_args[0][0],
                           "Skipping updaters in dry-run mode.")
 
     @mock.patch("certbot.updater.logger.debug")
@@ -61,7 +61,7 @@ class RenewUpdaterTest(test_util.ConfigTestCase):
         self.config.dry_run = True
         updater.run_renewal_deployer(self.config, None, None)
         self.assertTrue(mock_log.called)
-        self.assertEquals(mock_log.call_args[0][0],
+        self.assertEqual(mock_log.call_args[0][0],
                           "Skipping renewal deployer in dry-run mode.")
 
     @mock.patch('certbot.plugins.selection.get_unprepared_installer')

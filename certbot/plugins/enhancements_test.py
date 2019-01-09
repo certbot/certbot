@@ -37,11 +37,11 @@ class EnhancementTest(test_util.ConfigTestCase):
         self.assertTrue([i for i in enabled if i["name"] == "somethingelse"])
 
     def test_are_requested(self):
-        self.assertEquals(
+        self.assertEqual(
             len([i for i in enhancements.enabled_enhancements(self.config)]), 0)
         self.assertFalse(enhancements.are_requested(self.config))
         self.config.auto_hsts = True
-        self.assertEquals(
+        self.assertEqual(
             len([i for i in enhancements.enabled_enhancements(self.config)]), 1)
         self.assertTrue(enhancements.are_requested(self.config))
 
@@ -57,7 +57,7 @@ class EnhancementTest(test_util.ConfigTestCase):
         lineage = "lineage"
         enhancements.enable(lineage, domains, self.mockinstaller, self.config)
         self.assertTrue(self.mockinstaller.enable_autohsts.called)
-        self.assertEquals(self.mockinstaller.enable_autohsts.call_args[0],
+        self.assertEqual(self.mockinstaller.enable_autohsts.call_args[0],
                           (lineage, domains))
 
 

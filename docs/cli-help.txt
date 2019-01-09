@@ -29,6 +29,7 @@ manage certificates:
 
 manage your account with Let's Encrypt:
     register        Create a Let's Encrypt ACME account
+    update_account  Update a Let's Encrypt ACME account
   --agree-tos       Agree to the ACME server's Subscriber Agreement
    -m EMAIL         Email address for important account notifications
 
@@ -67,6 +68,10 @@ optional arguments:
                         with the same name. In the case of a name collision it
                         will append a number like 0001 to the file path name.
                         (default: Ask)
+  --eab-kid EAB_KID     Key Identifier for External Account Binding (default:
+                        None)
+  --eab-hmac-key EAB_HMAC_KEY
+                        HMAC key for External Account Binding (default: None)
   --cert-name CERTNAME  Certificate name to apply. This name is used by
                         Certbot for housekeeping and in file paths; it doesn't
                         affect the content of the certificate itself. To see
@@ -108,7 +113,7 @@ optional arguments:
                         case, and to know when to deprecate support for past
                         Python versions and flags. If you wish to hide this
                         information from the Let's Encrypt server, set this to
-                        "". (default: CertbotACMEClient/0.28.0
+                        "". (default: CertbotACMEClient/0.30.0
                         (certbot(-auto); OS_NAME OS_VERSION) Authenticator/XXX
                         Installer/YYY (SUBCOMMAND; flags: FLAGS)
                         Py/major.minor.patchlevel). The flags encoded in the
@@ -355,7 +360,7 @@ revoke:
                         certificates. (default: None)
 
 register:
-  Options for account registration & modification
+  Options for account registration
 
   --register-unsafely-without-email
                         Specifying this flag enables registering an account
@@ -367,11 +372,6 @@ register:
                         to the Subscriber Agreement will still affect you, and
                         will be effective 14 days after posting an update to
                         the web site. (default: False)
-  --update-registration
-                        With the register verb, indicates that details
-                        associated with an existing registration, such as the
-                        e-mail address, should be updated, rather than
-                        registering a new account. (default: False)
   -m EMAIL, --email EMAIL
                         Email used for registration and recovery contact. Use
                         comma to register multiple emails, ex:
@@ -379,6 +379,9 @@ register:
   --eff-email           Share your e-mail address with EFF (default: None)
   --no-eff-email        Don't share your e-mail address with EFF (default:
                         None)
+
+update_account:
+  Options for account modification
 
 unregister:
   Options for account deactivation.
@@ -473,12 +476,13 @@ plugins:
                         using Sakura Cloud for DNS). (default: False)
 
 apache:
-  Apache Web Server plugin - Beta
+  Apache Web Server plugin
 
   --apache-enmod APACHE_ENMOD
-                        Path to the Apache 'a2enmod' binary (default: None)
+                        Path to the Apache 'a2enmod' binary (default: a2enmod)
   --apache-dismod APACHE_DISMOD
-                        Path to the Apache 'a2dismod' binary (default: None)
+                        Path to the Apache 'a2dismod' binary (default:
+                        a2dismod)
   --apache-le-vhost-ext APACHE_LE_VHOST_EXT
                         SSL vhost configuration extension (default: -le-
                         ssl.conf)
@@ -492,25 +496,16 @@ apache:
                         /var/log/apache2)
   --apache-challenge-location APACHE_CHALLENGE_LOCATION
                         Directory path for challenge configuration (default:
-                        /etc/apache2/other)
+                        /etc/apache2)
   --apache-handle-modules APACHE_HANDLE_MODULES
                         Let installer handle enabling required modules for you
-                        (Only Ubuntu/Debian currently) (default: False)
+                        (Only Ubuntu/Debian currently) (default: True)
   --apache-handle-sites APACHE_HANDLE_SITES
                         Let installer handle enabling sites for you (Only
-                        Ubuntu/Debian currently) (default: False)
+                        Ubuntu/Debian currently) (default: True)
   --apache-ctl APACHE_CTL
                         Full path to Apache control script (default:
-                        apachectl)
-
-certbot-route53:auth:
-  Obtain certificates using a DNS TXT record (if you are using AWS Route53
-  for DNS).
-
-  --certbot-route53:auth-propagation-seconds CERTBOT_ROUTE53:AUTH_PROPAGATION_SECONDS
-                        The number of seconds to wait for DNS to propagate
-                        before asking the ACME server to verify the DNS
-                        record. (default: 10)
+                        apache2ctl)
 
 dns-cloudflare:
   Obtain certificates using a DNS TXT record (if you are using Cloudflare

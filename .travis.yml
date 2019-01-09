@@ -16,6 +16,7 @@ before_install:
 
 before_script:
   - 'if [ $TRAVIS_OS_NAME = osx ] ; then ulimit -n 1024 ; fi'
+  - export TOX_TESTENV_PASSENV=TRAVIS
 
 matrix:
   include:
@@ -75,8 +76,9 @@ matrix:
           packages:  # don't install nginx and apache
           - libaugeas0
     - python: "2.7"
-      env: TOXENV=apacheconftest
+      env: TOXENV=apacheconftest-with-pebble
       sudo: required
+      services: docker
     - python: "3.4"
       env: TOXENV=py34 BOULDER_INTEGRATION=v1
       sudo: required

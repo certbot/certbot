@@ -5,6 +5,9 @@ import itertools
 import logging
 import os
 import traceback
+import sys
+import time
+import random
 
 import six
 import zope.component
@@ -276,8 +279,10 @@ def _avoid_invalidating_lineage(config, lineage, original_server):
     "Do not renew a valid cert with one from a staging server!"
     # Some lineages may have begun with --staging, but then had production certs
     # added to them
+    with open(lineage.cert) as the_file:
+        contents = the_file.read()
     latest_cert = OpenSSL.crypto.load_certificate(
-        OpenSSL.crypto.FILETYPE_PEM, open(lineage.cert).read())
+        OpenSSL.crypto.FILETYPE_PEM, contents)
     # all our test certs are from happy hacker fake CA, though maybe one day
     # we should test more methodically
     now_valid = "fake" not in repr(latest_cert.get_issuer()).lower()
@@ -370,7 +375,7 @@ def _renew_describe_results(config, renew_successes, renew_failures,
     disp.notification("\n".join(out), wrap=False)
 
 
-def handle_renewal_request(config):
+def handle_renewal_request(config):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
     """Examine each lineage; renew if due and report results"""
 
     # This is trivially False if config.domains is empty
@@ -394,6 +399,14 @@ def handle_renewal_request(config):
     renew_failures = []
     renew_skipped = []
     parse_failures = []
+
+    # Noninteractive renewals include a random delay in order to spread
+    # out the load on the certificate authority servers, even if many
+    # users all pick the same time for renewals.  This delay precedes
+    # running any hooks, so that side effects of the hooks (such as
+    # shutting down a web service) aren't prolonged unnecessarily.
+    apply_random_sleep = not sys.stdin.isatty() and config.random_sleep_on_renew
+
     for renewal_file in conf_files:
         disp = zope.component.getUtility(interfaces.IDisplay)
         disp.notification("Processing " + renewal_file, pause=False)
@@ -422,6 +435,15 @@ def handle_renewal_request(config):
                 from certbot import main
                 plugins = plugins_disco.PluginsRegistry.find_all()
                 if should_renew(lineage_config, renewal_candidate):
+                    # Apply random sleep upon first renewal if needed
+                    if apply_random_sleep:
+                        sleep_time = random.randint(1, 60 * 8)
+                        logger.info("Non-interactive renewal: random delay of %s seconds",
+                                    sleep_time)
+                        time.sleep(sleep_time)
+                        # We will sleep only once this day, folks.
+                        apply_random_sleep = False
+
                     # domains have been restored into lineage_config by reconstitute
                     # but they're unnecessary anyway because renew_cert here
                     # will just grab them from the certificate

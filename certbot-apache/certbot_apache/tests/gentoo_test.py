@@ -121,15 +121,15 @@ class MultipleVhostsTestGentoo(util.ApacheTest):
             mock_osi.return_value = ("gentoo", "123")
             self.config.parser.update_runtime_variables()
 
-        self.assertEquals(mock_get.call_count, 1)
-        self.assertEquals(len(self.config.parser.modules), 4)
+        self.assertEqual(mock_get.call_count, 1)
+        self.assertEqual(len(self.config.parser.modules), 4)
         self.assertTrue("mod_another.c" in self.config.parser.modules)
 
     @mock.patch("certbot_apache.configurator.util.run_script")
     def test_alt_restart_works(self, mock_run_script):
         mock_run_script.side_effect = [None, errors.SubprocessError, None]
         self.config.restart()
-        self.assertEquals(mock_run_script.call_count, 3)
+        self.assertEqual(mock_run_script.call_count, 3)
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
