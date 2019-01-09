@@ -26,8 +26,7 @@ matrix:
         homebrew:
           packages:
             - augeas
-            - python
-            - python3
+            - python2
     - language: generic
       env: TOXENV=py3
       os: osx
@@ -35,7 +34,6 @@ matrix:
         homebrew:
           packages:
             - augeas
-            - python
             - python3
 
 
