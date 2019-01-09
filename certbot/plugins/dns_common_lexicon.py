@@ -117,9 +117,11 @@ def build_lexicon_config(lexicon_provider_name, lexicon_options, provider_option
     # type: (str, dict, dict) -> Union[ConfigResolver, dict]
     """
     Convenient function to build a Lexicon 2.x/3.x config object.
-    :param dict config_dict: the configuration specifics to apply
-    :return: an instantiated ConfigResolver object for Lexicon 3.x or a dict for Lexicon 2.x
-    :rtype: Union[ConfigResolver, dict]
+    :param str lexicon_provider_name: the name of the lexicon provider to use
+    :param dict lexicon_options: options specific to lexicon
+    :param dict provider_options: options specific to provider
+    :return: configuration to apply to the provider
+    :rtype: ConfigurationResolver or dict
     """
     config = {'provider': lexicon_provider_name}
     config.update(lexicon_options)
