@@ -44,8 +44,7 @@ a combination_ of distinct authenticator and installer plugins.
 =========== ==== ==== =============================================================== =============================
 Plugin      Auth Inst Notes                                                           Challenge types (and port)
 =========== ==== ==== =============================================================== =============================
-apache_     Y    Y    | Automates obtaining and installing a certificate with Apache  http-01_ (80)
-                      | 2.4 on OSes with ``libaugeas0`` 1.0+.
+apache_     Y    Y    | Automates obtaining and installing a certificate with Apache. http-01_ (80)
 nginx_      Y    Y    | Automates obtaining and installing a certificate with Nginx.  http-01_ (80)
 webroot_    Y    N    | Obtains a certificate by writing to the webroot directory of  http-01_ (80)
                       | an already running webserver.
@@ -83,8 +82,7 @@ the circumstances in which each plugin can be used, and how to use it.
 Apache
 ------
 
-The Apache plugin currently requires an OS with augeas version 1.0; currently `it
-supports
+The Apache plugin currently `supports
 <https://github.com/certbot/certbot/blob/master/certbot-apache/certbot_apache/entrypoint.py>`_
 modern OSes based on Debian, Fedora, SUSE, Gentoo and Darwin.
 This automates both obtaining *and* installing certificates on an Apache
@@ -136,9 +134,8 @@ the webserver.
 Nginx
 -----
 
-The Nginx plugin has been distributed with Certbot since version 0.9.0 and should
-work for most configurations. We recommend backing up Nginx
-configurations before using it (though you can also revert changes to
+The Nginx plugin should work for most configurations. We recommend backing up
+Nginx configurations before using it (though you can also revert changes to
 configurations with ``certbot --nginx rollback``). You can use it by providing
 the ``--nginx`` flag on the commandline.
 
