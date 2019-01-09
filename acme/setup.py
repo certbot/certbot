@@ -9,15 +9,15 @@ version = '0.31.0.dev0'
 install_requires = [
     # load_pem_private/public_key (>=0.6)
     # rsa_recover_prime_factors (>=0.8)
-    'cryptography>=0.8',
+    'cryptography>=1.2.3',
     # formerly known as acme.jose:
     'josepy>=1.0.0',
     # Connection.set_tlsext_host_name (>=0.13)
     'mock',
-    'PyOpenSSL>=0.13',
+    'PyOpenSSL>=0.13.1',
     'pyrfc3339',
     'pytz',
-    'requests[security]>=2.4.1',  # security extras added in 2.4.1
+    'requests[security]>=2.6.0',  # security extras added in 2.4.1
     'requests-toolbelt>=0.3.0',
     'setuptools',
     'six>=1.9.0',  # needed for python_2_unicode_compatible
