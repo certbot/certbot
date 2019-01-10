@@ -1,59 +1,94 @@
 #!/usr/bin/env python
-"""Merges multiple Python requirements files into one file.
-
-Requirements files specified later take precedence over earlier ones. Only
-simple SomeProject==1.2.3 format is currently supported.
-
 """
+Merge multiple Python requirements files into one file
 
-from __future__ import print_function
-
+- Version taken for each requirement will be the lowest on found from all files.
+- Comments and local editable packages (eg. -e acme[dev]) are ignored.
+- Standard version comparators are supported (==, <=, ...), but a given package cannot be
+  declared multiple times with different version comparator, or an exception will be raised.
+- Environment markers and version ranges are not supported.
+"""
+import re
+import os
 import sys
+from distutils.version import StrictVersion
 
-def read_file(file_path):
-    """Reads in a Python requirements file.
+REQUIREMENT_REGEX = re.compile('^(.*?)(==|!=|<|>|<=|>=)(.*)$')
 
-    :param str file_path: path to requirements file
 
-    :returns: mapping from a project to its pinned version
-    :rtype: dict
-
+def read_requirement_file(path, data):
     """
-    d = {}
-    with open(file_path) as f:
-        for line in f:
-            line = line.strip()
-            if line and not line.startswith('#'):
-                project, version = line.split('==')
-                if not version:
+    Read a requirement file, and feeds its content into the given data dict.
+    :param str path: the requirement file path to read
+    :param dict data: the data dict to feed with
+    """
+    with open(path) as file:
+        for line in file:
+            if line and not line.startswith('#') and not line.startswith('-e'):
+                match = REQUIREMENT_REGEX.match(line)
+
+                if not match:
                     raise ValueError("Unexpected syntax '{0}'".format(line))
-                d[project] = version
-    return d
+
+                package = match.group(1)
+                comparator = match.group(2)
+                version = StrictVersion(match.group(3))
+
+                if not data.get(package):
+                    data[package] = []
+
+                data[package].append((comparator, version))
 
 
-def output_requirements(requirements):
-    """Prepare print requirements to stdout.
-
-    :param dict requirements: mapping from a project to its pinned version
-
+def merge_one_requirement(package, claims):
     """
-    return '\n'.join('{0}=={1}'.format(k, v)
-          for k, v in sorted(requirements.items()))
+    Merge multiple claims for a package into one, taking the claims of the lowest version.
+    :param str package: the package concerned by the claims
+    :param tuple claims: the claims for the package
+    :return: the claim corresponding to the lowest version
+    :rtype: tuple
+    """
+    comparators = {claim[0] for claim in claims}
+
+    if len(comparators) > 1:
+        raise ValueError("Incompatible requirements for package {0} "
+                         "because of multiple versions comparators:{1}{2}"
+                         .format(package, os.linesep, claims))
+
+    claims.sort(key=lambda claim: claim[1])
+    return claims[0]
+
+
+def merge_requirements(data):
+    """
+    Merge requirements in the dict data, by returning one requirement for each package.
+    Lowest version for each package is retained.
+    :param dict data: dict of all requirements
+    :return: the merged requirements
+    :rtype: list
+    """
+    merged_data = []
+    for key, value in data.items():
+        merged_requirement = merge_one_requirement(key, value)
+        merged_data.append((key, merged_requirement[0], str(merged_requirement[1])))
+    return merged_data
 
 
 def main(*files):
-    """Merges multiple requirements files together and prints the result.
-
-    Requirement files specified later in the list take precedence over earlier
-    files.
-
-    :param tuple files: paths to requirements files
-
     """
-    d = {}
-    for f in files:
-        d.update(read_file(f))
-    return output_requirements(d)
+    Main function of this module.
+    Accept a list of requirements files, return a list of well formatted merged requirements.
+    :param list files: list of the requirement files to merge
+    :return: a well formatted merged requirements
+    :rtype: str
+    """
+    data = {}
+    for file in files:
+        read_requirement_file(file, data)
+
+    requirements = merge_requirements(data)
+    requirements.sort(key=lambda requirement: requirement[0].lower())
+    return os.linesep.join([''.join(requirement) for requirement in requirements])
 
 
 if __name__ == '__main__':
