@@ -24,7 +24,7 @@ package with changes other than its version number was:
 
 * acme
 * certbot-dns-cloudxns
-* certbot-dns-dnssimple
+* certbot-dns-dnsimple
 * certbot-dns-dnsmadeeasy
 * certbot-dns-gehirn
 * certbot-dns-linode
