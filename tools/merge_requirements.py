@@ -21,8 +21,8 @@ def read_requirement_file(path, data):
     :param str path: the requirement file path to read
     :param dict data: the data dict to feed with
     """
-    with open(path) as file:
-        for line in file:
+    with open(path) as fh:
+        for line in fh:
             if line.strip() and not line.startswith('#') and not line.startswith('-e'):
                 match = REQUIREMENT_REGEX.match(line)
 
@@ -53,17 +53,17 @@ def merge_requirements(data):
     return merged_data
 
 
-def main(*files):
+def main(*paths):
     """
     Main function of this module.
     Accept a list of requirements files, return a list of well formatted merged requirements.
-    :param str files: list of the requirement files to merge
+    :param str paths: list of the requirement files to merge
     :return: a well formatted merged requirements
     :rtype: str
     """
     data = {}
-    for file in files:
-        read_requirement_file(file, data)
+    for path in paths:
+        read_requirement_file(path, data)
 
     requirements = merge_requirements(data)
     requirements.sort(key=lambda requirement: requirement[0].lower())
