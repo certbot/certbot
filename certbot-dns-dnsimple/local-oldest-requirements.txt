@@ -1,2 +1,3 @@
-acme[dev]==0.21.1
-certbot[dev]==0.21.1
+-e acme[dev]
+-e .[dev]
+dns-lexicon==2.2.1
