@@ -3,6 +3,11 @@
 # A hackish script to see if the client is behaving as expected 
 # with each of the "passing" conf files.
 
+if [ -z "$SERVER" ]; then
+    echo "Please set SERVER to the ACME server's directory URL."
+    exit 1
+fi
+
 export EA=/etc/apache2/ 
 TESTDIR="`dirname $0`"
 cd $TESTDIR/passing
@@ -56,13 +61,16 @@ if [ "$1" = --debian-modules ] ; then
     done
 fi
 
+CERTBOT_CMD="sudo $(command -v certbot) --server $SERVER -vvvv"
+CERTBOT_CMD="$CERTBOT_CMD --debug --apache --register-unsafely-without-email"
+CERTBOT_CMD="$CERTBOT_CMD --agree-tos certonly -t --no-verify-ssl"
 
 FAILS=0
 trap CleanupExit INT
 for f in *.conf ; do 
     echo -n  testing "$f"...
     Setup
-    RESULT=`echo c | sudo $(command -v certbot) -vvvv --debug --staging --apache --register-unsafely-without-email --agree-tos certonly -t 2>&1`
+    RESULT=`echo c | $CERTBOT_CMD 2>&1`
     if echo $RESULT | grep -Eq \("Which names would you like"\|"mod_macro is not yet"\) ; then
         echo passed
     else

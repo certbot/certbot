@@ -6,7 +6,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* Avoid to process again challenges that are already validated
+  when a certificate is issued.
 
 ### Changed
 
@@ -23,6 +24,7 @@ all Certbot components during releases for the time being, however, the only
 package with changes other than its version number was:
 
 * acme
+* certbot
 * certbot-dns-cloudxns
 * certbot-dns-dnsimple
 * certbot-dns-dnsmadeeasy
