@@ -29,6 +29,7 @@ logger = logging.getLogger(__name__)
 ALL_FOUR = ("cert", "privkey", "chain", "fullchain")
 README = "README"
 CURRENT_VERSION = util.get_strict_version(certbot.__version__)
+BASE_PRIVKEY_MODE = 0o600
 
 
 def renewal_conf_files(config):
@@ -40,7 +41,9 @@ def renewal_conf_files(config):
     :rtype: `list` of `str`
 
     """
-    return glob.glob(os.path.join(config.renewal_configs_dir, "*.conf"))
+    result = glob.glob(os.path.join(config.renewal_configs_dir, "*.conf"))
+    result.sort()
+    return result
 
 def renewal_file_for_certname(config, certname):
     """Return /path/to/certname.conf in the renewal conf directory"""
@@ -792,7 +795,7 @@ class RenewableCert(object):
         May need to recover from rare interrupted / crashed states."""
 
         if self.has_pending_deployment():
-            logger.warn("Found a new cert /archive/ that was not linked to in /live/; "
+            logger.warning("Found a new cert /archive/ that was not linked to in /live/; "
                         "fixing...")
             self.update_all_links_to(self.latest_common_version())
             return False
@@ -1035,9 +1038,11 @@ class RenewableCert(object):
         archive = full_archive_path(None, cli_config, lineagename)
         live_dir = _full_live_path(cli_config, lineagename)
         if os.path.exists(archive):
+            config_file.close()
             raise errors.CertStorageError(
                 "archive directory exists for " + lineagename)
         if os.path.exists(live_dir):
+            config_file.close()
             raise errors.CertStorageError(
                 "live directory exists for " + lineagename)
         os.mkdir(archive)
@@ -1048,13 +1053,14 @@ class RenewableCert(object):
         # Put the data into the appropriate files on disk
         target = dict([(kind, os.path.join(live_dir, kind + ".pem"))
                        for kind in ALL_FOUR])
+        archive_target = dict([(kind, os.path.join(archive, kind + "1.pem"))
+                               for kind in ALL_FOUR])
         for kind in ALL_FOUR:
-            os.symlink(os.path.join(_relpath_from_file(archive, target[kind]), kind + "1.pem"),
-                       target[kind])
+            os.symlink(_relpath_from_file(archive_target[kind], target[kind]), target[kind])
         with open(target["cert"], "wb") as f:
             logger.debug("Writing certificate to %s.", target["cert"])
             f.write(cert)
-        with open(target["privkey"], "wb") as f:
+        with util.safe_open(archive_target["privkey"], "wb", chmod=BASE_PRIVKEY_MODE) as f:
             logger.debug("Writing private key to %s.", target["privkey"])
             f.write(privkey)
             # XXX: Let's make sure to get the file permissions right here
@@ -1118,14 +1124,15 @@ class RenewableCert(object):
               os.path.join(self.archive_dir, "{0}{1}.pem".format(kind, target_version)))
              for kind in ALL_FOUR])
 
+        old_privkey = os.path.join(
+            self.archive_dir, "privkey{0}.pem".format(prior_version))
+
         # Distinguish the cases where the privkey has changed and where it
         # has not changed (in the latter case, making an appropriate symlink
         # to an earlier privkey version)
         if new_privkey is None:
             # The behavior below keeps the prior key by creating a new
             # symlink to the old key or the target of the old key symlink.
-            old_privkey = os.path.join(
-                self.archive_dir, "privkey{0}.pem".format(prior_version))
             if os.path.islink(old_privkey):
                 old_privkey = os.readlink(old_privkey)
             else:
@@ -1133,9 +1140,16 @@ class RenewableCert(object):
             logger.debug("Writing symlink to old private key, %s.", old_privkey)
             os.symlink(old_privkey, target["privkey"])
         else:
-            with open(target["privkey"], "wb") as f:
+            with util.safe_open(target["privkey"], "wb", chmod=BASE_PRIVKEY_MODE) as f:
                 logger.debug("Writing new private key to %s.", target["privkey"])
                 f.write(new_privkey)
+            # Preserve gid and (mode & 074) from previous privkey in this lineage.
+            old_mode = stat.S_IMODE(os.stat(old_privkey).st_mode) & \
+                (stat.S_IRGRP | stat.S_IWGRP | stat.S_IXGRP | \
+                 stat.S_IROTH)
+            mode = BASE_PRIVKEY_MODE | old_mode
+            os.chown(target["privkey"], -1, os.stat(old_privkey).st_gid)
+            os.chmod(target["privkey"], mode)
 
         # Save everything else
         with open(target["cert"], "wb") as f:

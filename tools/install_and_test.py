@@ -19,11 +19,11 @@ SKIP_PROJECTS_ON_WINDOWS = [
 
 def call_with_print(command, cwd=None):
     print(command)
-    return subprocess.call(command, shell=True, cwd=cwd or os.getcwd())
+    subprocess.check_call(command, shell=True, cwd=cwd or os.getcwd())
 
 def main(args):
     if os.environ.get('CERTBOT_NO_PIN') == '1':
-        command = [sys.executable, '-m', 'pip', '-q', '-e']
+        command = [sys.executable, '-m', 'pip', '-e']
     else:
         script_dir = os.path.dirname(os.path.abspath(__file__))
         command = [sys.executable, os.path.join(script_dir, 'pip_install_editable.py')]
@@ -37,26 +37,22 @@ def main(args):
         else:
             new_args.append(arg)
 
-    exit_code = 0
-
     for requirement in new_args:
         current_command = command[:]
         current_command.append(requirement)
-        exit_code = call_with_print(' '.join(current_command)) or exit_code
+        call_with_print(' '.join(current_command))
         pkg = re.sub(r'\[\w+\]', '', requirement)
 
         if pkg == '.':
             pkg = 'certbot'
 
         temp_cwd = tempfile.mkdtemp()
+        shutil.copy2("pytest.ini", temp_cwd)
         try:
-            exit_code = call_with_print(' '.join([
-                sys.executable, '-m', 'pytest', '--numprocesses', 'auto',
-                '--quiet', '--pyargs', pkg.replace('-', '_')]), cwd=temp_cwd) or exit_code
+            call_with_print(' '.join([
+                sys.executable, '-m', 'pytest', pkg.replace('-', '_')]), cwd=temp_cwd)
         finally:
             shutil.rmtree(temp_cwd)
 
-    return exit_code
-
 if __name__ == '__main__':
-    sys.exit(main(sys.argv[1:]))
+    main(sys.argv[1:])

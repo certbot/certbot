@@ -14,7 +14,7 @@ def main(args):
         new_args.append('-e')
         new_args.append(arg)
 
-    return pip_install.main(new_args)
+    pip_install.main(new_args)
 
 if __name__ == '__main__':
-    sys.exit(main(sys.argv[1:]))
+    main(sys.argv[1:])

@@ -20,8 +20,10 @@ import tempfile
 import merge_requirements as merge_module
 import readlink
 
+
 def find_tools_path():
     return os.path.dirname(readlink.main(__file__))
+
 
 def certbot_oldest_processing(tools_path, args, test_constraints):
     if args[0] != '-e' or len(args) != 2:
@@ -37,6 +39,7 @@ def certbot_oldest_processing(tools_path, args, test_constraints):
 
     return requirements
 
+
 def certbot_normal_processing(tools_path, test_constraints):
     repo_path = os.path.dirname(tools_path)
     certbot_requirements = os.path.normpath(os.path.join(
@@ -49,6 +52,7 @@ def certbot_normal_processing(tools_path, test_constraints):
             if search:
                 fd.write('{0}{1}'.format(search.group(1), os.linesep))
 
+
 def merge_requirements(tools_path, test_constraints, all_constraints):
     merged_requirements = merge_module.main(
         os.path.join(tools_path, 'dev_constraints.txt'),
@@ -57,15 +61,20 @@ def merge_requirements(tools_path, test_constraints, all_constraints):
     with open(all_constraints, 'w') as fd:
         fd.write(merged_requirements)
 
+
 def call_with_print(command, cwd=None):
     print(command)
-    return subprocess.call(command, shell=True, cwd=cwd or os.getcwd())
+    subprocess.check_call(command, shell=True, cwd=cwd or os.getcwd())
+
 
 def main(args):
     tools_path = find_tools_path()
     working_dir = tempfile.mkdtemp()
 
-    exit_code = 0
+    if os.environ.get('TRAVIS'):
+        # When this script is executed on Travis, the following print will make the log
+        # be folded until the end command is printed (see finally section).
+        print('travis_fold:start:install_certbot_deps')
 
     try:
         test_constraints = os.path.join(working_dir, 'test_constraints.txt')
@@ -79,17 +88,16 @@ def main(args):
 
         merge_requirements(tools_path, test_constraints, all_constraints)
         if requirements:
-            exit_code = call_with_print(' '.join([
-                sys.executable, '-m', 'pip', 'install', '-q', '--constraint', all_constraints,
-                '--requirement', requirements])) or exit_code
+            call_with_print('"{0}" -m pip install --constraint "{1}" --requirement "{2}"'
+                            .format(sys.executable, all_constraints, requirements))
 
-        command = [sys.executable, '-m', 'pip', 'install', '-q', '--constraint', all_constraints]
-        command.extend(args)
-        exit_code = call_with_print(' '.join(command)) or exit_code
+        call_with_print('"{0}" -m pip install --constraint "{1}" {2}'
+                        .format(sys.executable, all_constraints, ' '.join(args)))
     finally:
+        if os.environ.get('TRAVIS'):
+            print('travis_fold:end:install_certbot_deps')
         shutil.rmtree(working_dir)
 
-    return exit_code
 
 if __name__ == '__main__':
-    sys.exit(main(sys.argv[1:]))
+    main(sys.argv[1:])

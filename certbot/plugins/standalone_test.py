@@ -72,6 +72,8 @@ class ServerManagerTest(unittest.TestCase):
             errors.StandaloneBindError, self.mgr.run, port,
             challenge_type=challenges.HTTP01)
         self.assertEqual(self.mgr.running(), {})
+        some_server.close()
+        maybe_another_server.close()
 
 
 class SupportedChallengesActionTest(unittest.TestCase):

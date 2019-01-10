@@ -114,7 +114,7 @@ def _translate_ocsp_query(cert_path, ocsp_output, ocsp_errors):
             logger.info("OCSP revocation warning: %s", warning)
         return True
     else:
-        logger.warn("Unable to properly parse OCSP output: %s\nstderr:%s",
+        logger.warning("Unable to properly parse OCSP output: %s\nstderr:%s",
                     ocsp_output, ocsp_errors)
         return False
 
