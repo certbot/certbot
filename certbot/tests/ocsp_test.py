@@ -1,9 +1,6 @@
 """Tests for ocsp.py"""
 # pylint: disable=protected-access
-import os
 import unittest
-import tempfile
-import shutil
 
 from cryptography.exceptions import UnsupportedAlgorithm, InvalidSignature
 from cryptography import x509
