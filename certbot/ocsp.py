@@ -52,23 +52,23 @@ class RevocationChecker(object):
 
         :param str cert_path: Path to certificate
         :param str chain_path: Path to intermediate cert
-        :rtype bool or None:
         :returns: True if revoked; False if valid or the check failed
+        :rtype: bool
 
         """
         if self.broken:
             return False
 
-        url, host = RevocationChecker._determine_ocsp_server(cert_path)
+        url, host = _determine_ocsp_server(cert_path)
         if not host or not url:
             return False
 
         if self.use_openssl_binary:
-            return self._ocsp_revoke_openssl_bin(cert_path, chain_path, host, url)
+            return self._check_ocsp_openssl_bin(cert_path, chain_path, host, url)
         else:
-            return RevocationChecker._ocsp_revoke_cryptography(cert_path, chain_path, url)
+            return _check_ocsp_cryptography(cert_path, chain_path, url)
 
-    def _ocsp_revoke_openssl_bin(self, cert_path, chain_path, host, url):
+    def _check_ocsp_openssl_bin(self, cert_path, chain_path, host, url):
         # type: (str, str, str, str) -> bool
         # jdkasten thanks "Bulletproof SSL and TLS - Ivan Ristic" for documenting this!
         cmd = ["openssl", "ocsp",
@@ -84,81 +84,10 @@ class RevocationChecker(object):
         logger.debug(" ".join(cmd))
         try:
             output, err = util.run_script(cmd, log=logger.debug)
-        except errors.SubprocessError:  # pragma: no cover
+        except errors.SubprocessError:
             logger.info("OCSP check failed for %s (are we offline?)", cert_path)
             return False
         return _translate_ocsp_query(cert_path, output, err)
-
-    @staticmethod
-    def _ocsp_revoke_cryptography(cert_path, chain_path, url):
-        # type: (str, str, str) -> bool
-        # Retrieve OCSP response
-        with open(chain_path, 'rb') as file_handler:
-            issuer = x509.load_pem_x509_certificate(file_handler.read(), default_backend())
-        with open(cert_path, 'rb') as file_handler:
-            cert = x509.load_pem_x509_certificate(file_handler.read(), default_backend())
-        builder = x509.ocsp.OCSPRequestBuilder()
-        builder = builder.add_certificate(cert, issuer, hashes.SHA1())
-        request = builder.build()
-        request_binary = request.public_bytes(serialization.Encoding.DER)
-        response = requests.post(url, data=request_binary,
-                                 headers={'Content-Type': 'application/ocsp-request'})
-        if not response.status_code == 200:
-            logger.info("OCSP check failed for %s (are we offline?)", cert_path)
-            return False
-        response_ocsp = ocsp.load_der_ocsp_response(response.content)
-
-        # Check OCSP signature
-        try:
-            _check_ocsp_response_signature(response_ocsp, issuer)
-        except UnsupportedAlgorithm as e:
-            logger.error(str(e))
-            return False
-        except InvalidSignature:
-            logger.error('Invalid signature for OCSP response on %s', cert_path)
-            return False
-
-        # Check OCSP certificate status
-        try:
-            logger.debug("OCSP certificate status for %s is: %s",
-                         cert_path, response_ocsp.certificate_status)
-            return response_ocsp.certificate_status == ocsp.OCSPCertStatus.REVOKED
-        except ValueError:  # pragma: no cover
-            logger.info("Invalid OCSP response status for %s: %s",
-                        cert_path, response_ocsp.response_status)
-            return False
-
-    @staticmethod
-    def _determine_ocsp_server(cert_path):
-        # type: (str) -> Tuple[Optional[str], Optional[str]]
-        """Extract the OCSP server host from a certificate.
-
-        :param str cert_path: Path to the cert we're checking OCSP for
-        :rtype tuple:
-        :returns: (OCSP server URL or None, OCSP server host or None)
-
-        """
-        with open(cert_path, 'rb') as file_handler:
-            cert = x509.load_pem_x509_certificate(file_handler.read(), default_backend())
-        try:
-            extension = cert.extensions.get_extension_for_class(x509.AuthorityInformationAccess)
-            ocsp_oid = x509.AuthorityInformationAccessOID.OCSP
-            descriptions = [description for description in extension.value
-                            if description.access_method == ocsp_oid]
-
-            url = descriptions[0].access_location.value
-        except (x509.ExtensionNotFound, IndexError):
-            logger.info("Cannot extract OCSP URI from %s", cert_path)
-            return None, None
-
-        url = url.rstrip()
-        host = url.partition("://")[2].rstrip("/")
-
-        if host:
-            return url, host
-        else:
-            logger.info("Cannot process OCSP host from URL (%s) in cert at %s", url, cert_path)
-            return None, None
 
 
 def _check_ocsp_response_signature(response_ocsp, issuer_cert):
@@ -180,6 +109,77 @@ def _check_ocsp_response_signature(response_ocsp, issuer_cert):
         ),
         chosen_hash
     )
+
+
+def _determine_ocsp_server(cert_path):
+    # type: (str) -> Tuple[Optional[str], Optional[str]]
+    """Extract the OCSP server host from a certificate.
+
+    :param str cert_path: Path to the cert we're checking OCSP for
+    :rtype tuple:
+    :returns: (OCSP server URL or None, OCSP server host or None)
+
+    """
+    with open(cert_path, 'rb') as file_handler:
+        cert = x509.load_pem_x509_certificate(file_handler.read(), default_backend())
+    try:
+        extension = cert.extensions.get_extension_for_class(x509.AuthorityInformationAccess)
+        ocsp_oid = x509.AuthorityInformationAccessOID.OCSP
+        descriptions = [description for description in extension.value
+                        if description.access_method == ocsp_oid]
+
+        url = descriptions[0].access_location.value
+    except (x509.ExtensionNotFound, IndexError):
+        logger.info("Cannot extract OCSP URI from %s", cert_path)
+        return None, None
+
+    url = url.rstrip()
+    host = url.partition("://")[2].rstrip("/")
+
+    if host:
+        return url, host
+    else:
+        logger.info("Cannot process OCSP host from URL (%s) in cert at %s", url, cert_path)
+        return None, None
+
+
+def _check_ocsp_cryptography(cert_path, chain_path, url):
+    # type: (str, str, str) -> bool
+    # Retrieve OCSP response
+    with open(chain_path, 'rb') as file_handler:
+        issuer = x509.load_pem_x509_certificate(file_handler.read(), default_backend())
+    with open(cert_path, 'rb') as file_handler:
+        cert = x509.load_pem_x509_certificate(file_handler.read(), default_backend())
+    builder = ocsp.OCSPRequestBuilder()
+    builder = builder.add_certificate(cert, issuer, hashes.SHA1())
+    request = builder.build()
+    request_binary = request.public_bytes(serialization.Encoding.DER)
+    response = requests.post(url, data=request_binary,
+                             headers={'Content-Type': 'application/ocsp-request'})
+    if response.status_code != 200:
+        logger.info("OCSP check failed for %s (are we offline?)", cert_path)
+        return False
+    response_ocsp = ocsp.load_der_ocsp_response(response.content)
+
+    # Check OCSP signature
+    try:
+        _check_ocsp_response_signature(response_ocsp, issuer)
+    except UnsupportedAlgorithm as e:
+        logger.error(str(e))
+        return False
+    except InvalidSignature:
+        logger.error('Invalid signature for OCSP response on %s', cert_path)
+        return False
+
+    # Check OCSP certificate status
+    try:
+        logger.debug("OCSP certificate status for %s is: %s",
+                     cert_path, response_ocsp.certificate_status)
+        return response_ocsp.certificate_status == ocsp.OCSPCertStatus.REVOKED
+    except ValueError:  # pragma: no cover
+        logger.info("Invalid OCSP response status for %s: %s",
+                    cert_path, response_ocsp.response_status)
+        return False
 
 
 def _translate_ocsp_query(cert_path, ocsp_output, ocsp_errors):
@@ -206,4 +206,3 @@ def _translate_ocsp_query(cert_path, ocsp_output, ocsp_errors):
         logger.warning("Unable to properly parse OCSP output: %s\nstderr:%s",
                        ocsp_output, ocsp_errors)
         return False
-

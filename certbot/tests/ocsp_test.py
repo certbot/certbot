@@ -64,7 +64,7 @@ class OCSPTestOpenSSL(unittest.TestCase):
         self.assertEqual(mock_log.call_count, 1)
         self.assertEqual(checker.broken, True)
 
-    @mock.patch('certbot.ocsp.RevocationChecker._determine_ocsp_server')
+    @mock.patch('certbot.ocsp._determine_ocsp_server')
     @mock.patch('certbot.util.run_script')
     def test_ocsp_revoked(self, mock_run, mock_determine):
         self.checker.broken = True
@@ -90,7 +90,7 @@ class OCSPTestOpenSSL(unittest.TestCase):
                 file_handler.write(google_certificate)
 
             from certbot import ocsp
-            result = ocsp.RevocationChecker._determine_ocsp_server(cert_path)
+            result = ocsp._determine_ocsp_server(cert_path)
             self.assertEqual(('http://ocsp.digicert.com', 'ocsp.digicert.com'), result)
         finally:
             shutil.rmtree(tmpdir)
@@ -141,8 +141,8 @@ class OSCPTestCryptography(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.tmpdir)
 
-    @mock.patch('certbot.ocsp.RevocationChecker._determine_ocsp_server')
-    @mock.patch('certbot.ocsp.RevocationChecker._ocsp_revoke_cryptography')
+    @mock.patch('certbot.ocsp._determine_ocsp_server')
+    @mock.patch('certbot.ocsp._check_ocsp_cryptography')
     def test_ensure_cryptography_toggled(self, mock_revoke, mock_determine):
         mock_determine.return_value = ('http://example.com', 'example.com')
         self.checker.ocsp_revoked(self.cert_path, self.chain_path)
