@@ -10,9 +10,9 @@ Merge multiple Python requirements files into one file
 import re
 import os
 import sys
-from distutils.version import StrictVersion
+from distutils.version import LooseVersion
 
-REQUIREMENT_REGEX = re.compile('^(.*?)==(.*)$')
+REQUIREMENT_REGEX = re.compile(r'^(\S+)==(\S+)$')
 
 
 def read_requirement_file(path, data):
@@ -23,14 +23,14 @@ def read_requirement_file(path, data):
     """
     with open(path) as file:
         for line in file:
-            if line and not line.startswith('#') and not line.startswith('-e'):
+            if line.strip() and not line.startswith('#') and not line.startswith('-e'):
                 match = REQUIREMENT_REGEX.match(line)
 
                 if not match:
                     raise ValueError("Unexpected syntax '{0}'".format(line))
 
                 package = match.group(1)
-                version = StrictVersion(match.group(2))
+                version = LooseVersion(match.group(2))
 
                 if not data.get(package):
                     data[package] = []

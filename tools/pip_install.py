@@ -32,10 +32,14 @@ def certbot_oldest_processing(tools_path, args, test_constraints):
     # remove any extras such as [dev]
     pkg_dir = re.sub(r'\[\w+\]', '', args[1])
     requirements = os.path.join(pkg_dir, 'local-oldest-requirements.txt')
+    shutil.copy(os.path.join(tools_path, 'oldest_constraints.txt'), test_constraints)
     # packages like acme don't have any local oldest requirements
     if not os.path.isfile(requirements):
-        requirements = None
-    shutil.copy(os.path.join(tools_path, 'oldest_constraints.txt'), test_constraints)
+        return None
+
+    # copy local-oldest-requirements.txt to apply also its constraints to pip
+    with open(test_constraints, 'a') as dst, open(requirements, 'r') as src:
+        dst.write(src.read())
 
     return requirements
 
