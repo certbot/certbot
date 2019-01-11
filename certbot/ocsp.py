@@ -165,6 +165,12 @@ def _check_ocsp_cryptography(cert_path, chain_path, url):
         return False
     response_ocsp = ocsp.load_der_ocsp_response(response.content)
 
+    # Check OCSP response validity
+    if response_ocsp.response_status != ocsp.OCSPResponseStatus.SUCCESSFUL:
+        logger.error("Invalid OCSP response status for %s: %s",
+                     cert_path, response_ocsp.response_status)
+        return False
+
     # Check OCSP signature
     try:
         _check_ocsp_response_signature(response_ocsp, issuer)
@@ -176,14 +182,9 @@ def _check_ocsp_cryptography(cert_path, chain_path, url):
         return False
 
     # Check OCSP certificate status
-    try:
-        logger.debug("OCSP certificate status for %s is: %s",
-                     cert_path, response_ocsp.certificate_status)
-        return response_ocsp.certificate_status == ocsp.OCSPCertStatus.REVOKED
-    except ValueError:  # pragma: no cover
-        logger.info("Invalid OCSP response status for %s: %s",
-                    cert_path, response_ocsp.response_status)
-        return False
+    logger.debug("OCSP certificate status for %s is: %s",
+                 cert_path, response_ocsp.certificate_status)
+    return response_ocsp.certificate_status == ocsp.OCSPCertStatus.REVOKED
 
 
 def _translate_ocsp_query(cert_path, ocsp_output, ocsp_errors):
