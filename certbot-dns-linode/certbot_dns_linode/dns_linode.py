@@ -95,11 +95,11 @@ class _LinodeLexiconClient(dns_common_lexicon.LexiconClient):
             config = dns_common_lexicon.build_lexicon_config('linode4', {}, {
                 'auth_token': api_key,
             })
+
+            self.provider = linode4.Provider(config)
         else:
             raise errors.PluginError('Invalid api version specified: {0}. (Supported: 3, 4)'
                                      .format(api_version))
-
-            self.provider = linode4.Provider(config)
 
     def _handle_general_error(self, e, domain_name):
         if not str(e).startswith('Domain not found'):
