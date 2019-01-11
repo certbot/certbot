@@ -146,7 +146,10 @@ class _WindowsLockMechanism(object):
         fd = os.open(self._path, open_mode, 0o600)
         try:
             msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
-        except (IOError, OSError):
+        except (IOError, OSError) as err:
+            # Anything except EACCES is unexpected. Raise directly the error in that case.
+            if err.errno != errno.EACCES:
+                raise
             os.close(fd)
             _raise_for_certbot_lock(self._path)
 
