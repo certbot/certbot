@@ -1276,7 +1276,7 @@ def renew(config, unused_plugins):
 
 @contextlib.contextmanager
 def set_up_needed_dirs(config):
-    """Create or verify existence of config, work, logs and hook directories
+    """Create or verify existence of config, work and hook directories
 
     :param config: Configuration object
     :type config: interfaces.IConfig
@@ -1288,8 +1288,7 @@ def set_up_needed_dirs(config):
     with (util.set_up_core_dir(config.config_dir, constants.CONFIG_DIRS_MODE,
                                compat.os_geteuid(), config.strict_permissions),
           util.set_up_core_dir(config.work_dir, constants.CONFIG_DIRS_MODE,
-                               compat.os_geteuid(), config.strict_permissions),
-          log.post_arg_parse_setup(config)):
+                               compat.os_geteuid(), config.strict_permissions)):
 
         hook_dirs = (config.renewal_pre_hooks_dir,
                      config.renewal_deploy_hooks_dir,
@@ -1346,31 +1345,24 @@ def main(cli_args=sys.argv[1:]):
     config = configuration.NamespaceConfig(args)
     zope.component.provideUtility(config)
 
+    set_displayer(config)
+
+    # Reporter
+    report = reporter.Reporter(config)
+    zope.component.provideUtility(report)
+    util.atexit_register(report.print_messages)
+
+    # Plugin command is a helper to list plugins. No particular permissions are required.
+    if config.func == plugins_cmd:
+        return config.func(config, plugins)
+
     # On windows, shell without administrative right cannot create symlinks required by certbot.
     # So we check the rights before continuing.
     compat.raise_for_non_administrative_windows_rights(config.verb)
 
-
-    try:
-        try: # We may raise or not raise during __enter__ ...
-            dir_context = set_up_needed_dirs(config)
-            dir_context.__enter__()
-        except:  # pylint: disable=bare-except
-            # Let plugins_cmd be run as un-privileged user.
-            if config.func != plugins_cmd:
-                raise
-
-        set_displayer(config)
-
-        # Reporter
-        report = reporter.Reporter(config)
-        zope.component.provideUtility(report)
-        util.atexit_register(report.print_messages)
-
+    with (set_up_needed_dirs(config), log.post_arg_parse_setup(config)):
         return config.func(config, plugins)
-    finally: # We ensure to respect the context manager contract: always execute __exit__
-        if dir_context:
-            dir_context.__exit__(None, None, None)
+
 
 if __name__ == "__main__":
     err_string = main()
