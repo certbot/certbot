@@ -2,7 +2,6 @@
 import errno
 import logging
 import os
-import atexit
 try:
     import fcntl  # pylint: disable=import-error
     POSIX_MODE = True

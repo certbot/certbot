@@ -1,2 +1,2 @@
-acme[dev]==0.26.0
+-e acme[dev]
 -e .[dev]

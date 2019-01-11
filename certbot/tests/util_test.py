@@ -9,7 +9,6 @@ import six
 
 from certbot import compat
 from certbot import errors
-from certbot import filelock
 import certbot.tests.util as test_util
 
 
