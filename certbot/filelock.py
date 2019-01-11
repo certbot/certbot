@@ -16,35 +16,8 @@ from acme.magic_typing import List, Optional  # pylint: disable=unused-import, n
 logger = logging.getLogger(__name__)
 
 
-# Handling exit
-# ~~~~~~~~~~~~~
-
-
-_INITIAL_PID = os.getpid()
-_LOCKS = []  # type: List[FileLock]
-
-
-def _release_all_locks():
-    """Release all locks acquired by FileLock."""
-    if _INITIAL_PID == os.getpid():
-        for lock in _LOCKS:
-            if lock.is_locked():
-                try:
-                    lock.release()
-                    logger.debug('Lock released: %s', lock)
-                except (OSError, IOError):  # pragma: no cover
-                    logger.error('Exception occurred releasing lock: %s',
-                                 lock, exc_info=True)
-
-
-# Every lock is released at least when Certbot exit.
-atexit.register(_release_all_locks)
-
-
 # Unix locking mechanism
 # ~~~~~~~~~~~~~~~~~~~~~~
-
-
 class _UnixLockMechanism(object):
     """
     A UNIX lock file mechanism.
@@ -154,8 +127,6 @@ class _UnixLockMechanism(object):
 
 # Windows locking mechanism
 # ~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
 class _WindowsLockMechanism(object):
     """
     A Windows lock file mechanism.
@@ -213,8 +184,6 @@ class _WindowsLockMechanism(object):
 
 # Filelock platform independent utility
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
 class FileLock(object):
     """
     Platform independent file lock system.
@@ -243,9 +212,8 @@ class FileLock(object):
         :param str path: the path to the file that will hold a lock
         """
         self._path = path
-        self._lock_mechanism = _UnixLockMechanism(path) if POSIX_MODE\
-            else _WindowsLockMechanism(path)
-        _LOCKS.append(self)
+        mechanism = _UnixLockMechanism if POSIX_MODE else _WindowsLockMechanism
+        self._lock_mechanism = mechanism(path)
 
     def __enter__(self):
         self._lock_mechanism.acquire()
