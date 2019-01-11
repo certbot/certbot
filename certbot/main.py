@@ -1285,10 +1285,10 @@ def set_up_needed_dirs(config):
     :rtype: None
 
     """
-    with (util.set_up_core_dir(config.config_dir, constants.CONFIG_DIRS_MODE,
-                               compat.os_geteuid(), config.strict_permissions),
-          util.set_up_core_dir(config.work_dir, constants.CONFIG_DIRS_MODE,
-                               compat.os_geteuid(), config.strict_permissions)):
+    with util.set_up_core_dir(config.config_dir, constants.CONFIG_DIRS_MODE,
+                              compat.os_geteuid(), config.strict_permissions), \
+         util.set_up_core_dir(config.work_dir, constants.CONFIG_DIRS_MODE,
+                              compat.os_geteuid(), config.strict_permissions):
 
         hook_dirs = (config.renewal_pre_hooks_dir,
                      config.renewal_deploy_hooks_dir,
@@ -1360,7 +1360,7 @@ def main(cli_args=sys.argv[1:]):
     # So we check the rights before continuing.
     compat.raise_for_non_administrative_windows_rights(config.verb)
 
-    with (set_up_needed_dirs(config), log.post_arg_parse_setup(config)):
+    with set_up_needed_dirs(config), log.post_arg_parse_setup(config):
         return config.func(config, plugins)
 
 
