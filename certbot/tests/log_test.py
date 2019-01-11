@@ -63,7 +63,8 @@ class PostArgParseSetupTest(test_util.ConfigTestCase):
     @classmethod
     def _call(cls, *args, **kwargs):
         from certbot.log import post_arg_parse_setup
-        return post_arg_parse_setup(*args, **kwargs)
+        with post_arg_parse_setup(*args, **kwargs):
+            pass
 
     def setUp(self):
         super(PostArgParseSetupTest, self).setUp()
