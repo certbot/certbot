@@ -41,14 +41,13 @@ def read_requirement_file(path, data):
 def merge_requirements(data):
     """
     Merge requirements in the dict data, by returning one requirement for each package.
-    Lowest version for each package is retained.
+    First version found for each package is retained.
     :param dict data: dict of all requirements
     :return: the merged requirements
     :rtype: list
     """
     merged_data = []
     for package, versions in data.items():
-        versions.sort()
         merged_data.append((package, str(versions[0])))
     return merged_data
 
@@ -57,6 +56,8 @@ def main(*paths):
     """
     Main function of this module.
     Accept a list of requirements files, return a list of well formatted merged requirements.
+    Order of paths follows a decreasing priority: version retained for a given package will be
+    the first one found along all requirement files.
     :param str paths: list of the requirement files to merge
     :return: a well formatted merged requirements
     :rtype: str
