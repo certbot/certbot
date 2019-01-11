@@ -106,7 +106,8 @@ class _UnixLockMechanism(object):
             os.remove(self._path)
         finally:
             try:
-                os.close(self._fd)
+                if self._fd:
+                    os.close(self._fd)
             finally:
                 self._fd = None
 
