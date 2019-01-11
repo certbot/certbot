@@ -2,11 +2,11 @@ from setuptools import setup
 from setuptools import find_packages
 
 
-version = '0.26.0.dev0'
+version = '0.31.0.dev0'
 
 install_requires = [
     'acme>=0.25.0',
-    'certbot>=0.23.0',
+    'certbot>=0.31.0.dev0',
     'setuptools',
     'six',
     'zope.component',
