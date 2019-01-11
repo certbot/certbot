@@ -1276,7 +1276,7 @@ def renew(config, unused_plugins):
 
 @contextlib.contextmanager
 def set_up_needed_dirs(config):
-    """Create or verify existence of config, work, and hook directories.
+    """Create or verify existence of config, work, logs and hook directories
 
     :param config: Configuration object
     :type config: interfaces.IConfig
@@ -1285,20 +1285,20 @@ def set_up_needed_dirs(config):
     :rtype: None
 
     """
-    with util.set_up_core_dir(config.config_dir, constants.CONFIG_DIRS_MODE,
-                              compat.os_geteuid(), config.strict_permissions):
-        with util.set_up_core_dir(config.work_dir, constants.CONFIG_DIRS_MODE,
-                                  compat.os_geteuid(), config.strict_permissions):
+    with (util.set_up_core_dir(config.config_dir, constants.CONFIG_DIRS_MODE,
+                               compat.os_geteuid(), config.strict_permissions),
+          util.set_up_core_dir(config.work_dir, constants.CONFIG_DIRS_MODE,
+                               compat.os_geteuid(), config.strict_permissions),
+          log.post_arg_parse_setup(config)):
 
-            hook_dirs = (config.renewal_pre_hooks_dir,
-                         config.renewal_deploy_hooks_dir,
-                         config.renewal_post_hooks_dir,)
-            for hook_dir in hook_dirs:
-                util.make_or_verify_dir(hook_dir,
-                                        uid=compat.os_geteuid(),
-                                        strict=config.strict_permissions)
+        hook_dirs = (config.renewal_pre_hooks_dir,
+                     config.renewal_deploy_hooks_dir,
+                     config.renewal_post_hooks_dir,)
+        for hook_dir in hook_dirs:
+            util.make_or_verify_dir(hook_dir, uid=compat.os_geteuid(),
+                                    strict=config.strict_permissions)
 
-            yield
+        yield
 
 
 def set_displayer(config):
@@ -1350,15 +1350,9 @@ def main(cli_args=sys.argv[1:]):
     # So we check the rights before continuing.
     compat.raise_for_non_administrative_windows_rights(config.verb)
 
-    # We need to explicitly manipulate the context manager API here,
-    # because we need to catch an exception and optionally raise it
-    # only when entering the context, but not on the code executed in the context.
-    # Python3 provides contextlib.ExitStack for that, but not with Python 2.7.
-    # So let's get our hands dirty
-    dir_context = None
+
     try:
         try: # We may raise or not raise during __enter__ ...
-            log.post_arg_parse_setup(config)
             dir_context = set_up_needed_dirs(config)
             dir_context.__enter__()
         except:  # pylint: disable=bare-except

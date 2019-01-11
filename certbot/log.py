@@ -75,6 +75,7 @@ def pre_arg_parse_setup():
         debug='--debug' in sys.argv, log_path=temp_handler.path)
 
 
+@contextlib.contextmanager
 def post_arg_parse_setup(config):
     """Setup logging after command line arguments are parsed.
 
@@ -118,6 +119,8 @@ def post_arg_parse_setup(config):
 
         sys.excepthook = functools.partial(
             post_arg_parse_except_hook, debug=config.debug, log_path=logs_dir)
+
+        yield
 
 
 @contextlib.contextmanager
