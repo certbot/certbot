@@ -104,15 +104,11 @@ class _UnixLockMechanism(object):
         # process C: open and lock a different file at the same path
         try:
             os.remove(self._path)
-        except OSError as e:
-            if e.errno != errno.ENOENT:
-                raise
         finally:
-            if self._fd:
-                try:
-                    os.close(self._fd)
-                finally:
-                    self._fd = None
+            try:
+                os.close(self._fd)
+            finally:
+                self._fd = None
 
     def is_locked(self):
         # type: () -> bool
