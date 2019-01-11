@@ -93,6 +93,9 @@ class RevocationChecker(object):
 def _check_ocsp_response_signature(response_ocsp, issuer_cert):
     """Verify an OCSP response signature against certificate issuer"""
     try:
+        # TODO: (adferrand 2019-11-01) Following line can be replaced with a direct call to
+        #  response_ocsp.signature_hash_algorithm once cryptography 2.5 is released.
+        #  See https://github.com/pyca/cryptography/issues/4680
         chosen_hash = x509._SIG_OIDS_TO_HASH[response_ocsp.signature_algorithm_oid]  # pylint: disable=protected-access
     except KeyError:
         raise UnsupportedAlgorithm(
