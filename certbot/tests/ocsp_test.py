@@ -133,7 +133,7 @@ class OSCPTestCryptography(unittest.TestCase):
 
         mock_revoke.assert_called_once_with(self.cert_path, self.chain_path, 'http://example.com')
 
-    @mock.patch('certbot.ocsp._check_ocsp_response_signature')
+    @mock.patch('certbot.ocsp._check_ocsp_response')
     @mock.patch('certbot.ocsp.requests.post')
     @mock.patch('certbot.ocsp.ocsp.load_der_ocsp_response')
     def test_revoke(self, mock_ocsp_response, mock_post, _):
@@ -145,10 +145,10 @@ class OSCPTestCryptography(unittest.TestCase):
 
         self.assertTrue(revoked)
 
-    @mock.patch('certbot.ocsp._check_ocsp_response_signature')
+    @mock.patch('certbot.ocsp._check_ocsp_response')
     @mock.patch('certbot.ocsp.requests.post')
     @mock.patch('certbot.ocsp.ocsp.load_der_ocsp_response')
-    def test_revoke_resiliency(self, mock_ocsp_response, mock_post, _):
+    def test_revoke_resiliency(self, mock_ocsp_response, mock_post, mock_check):
         # Server return an invalid HTTP response
         mock_ocsp_response.return_value = mock.Mock(
             response_status=ocsp_lib.OCSPResponseStatus.SUCCESSFUL,
@@ -181,14 +181,13 @@ class OSCPTestCryptography(unittest.TestCase):
         self.assertFalse(revoked)
 
         # Valid response, OCSP extension is present,
-        # but OCSP response use an unsupported signature.
+        # but OCSP response uses an unsupported signature.
         mock_ocsp_response.return_value = mock.Mock(
             response_status=ocsp_lib.OCSPResponseStatus.SUCCESSFUL,
             certificate_status=ocsp_lib.OCSPCertStatus.REVOKED)
         mock_post.return_value = mock.Mock(status_code=200)
-        with mock.patch('certbot.ocsp._check_ocsp_response_signature',
-                        side_effect=UnsupportedAlgorithm('foo')):
-            revoked = self.checker.ocsp_revoked(self.cert_path, self.chain_path)
+        mock_check.side_effect = UnsupportedAlgorithm('foo')
+        revoked = self.checker.ocsp_revoked(self.cert_path, self.chain_path)
 
         self.assertFalse(revoked)
 
@@ -197,9 +196,18 @@ class OSCPTestCryptography(unittest.TestCase):
             response_status=ocsp_lib.OCSPResponseStatus.SUCCESSFUL,
             certificate_status=ocsp_lib.OCSPCertStatus.REVOKED)
         mock_post.return_value = mock.Mock(status_code=200)
-        with mock.patch('certbot.ocsp._check_ocsp_response_signature',
-                        side_effect=InvalidSignature('foo')):
-            revoked = self.checker.ocsp_revoked(self.cert_path, self.chain_path)
+        mock_check.side_effect = InvalidSignature('foo')
+        revoked = self.checker.ocsp_revoked(self.cert_path, self.chain_path)
+
+        self.assertFalse(revoked)
+
+        # Finally, assertion error on OCSP response validity
+        mock_ocsp_response.return_value = mock.Mock(
+            response_status=ocsp_lib.OCSPResponseStatus.SUCCESSFUL,
+            certificate_status=ocsp_lib.OCSPCertStatus.REVOKED)
+        mock_post.return_value = mock.Mock(status_code=200)
+        mock_check.side_effect = AssertionError('foo')
+        revoked = self.checker.ocsp_revoked(self.cert_path, self.chain_path)
 
         self.assertFalse(revoked)
 
