@@ -154,10 +154,10 @@ def _check_ocsp_cryptography(cert_path, chain_path, url):
         logger.error(str(e))
         return False
     except InvalidSignature:
-        logger.error('Invalid signature for OCSP response on %s', cert_path)
+        logger.error('Invalid signature on OCSP response for %s', cert_path)
         return False
     except AssertionError as error:
-        logger.error('Invalid OCSP response: {0}.'.format(error))
+        logger.error('Invalid OCSP response for %s: %s.', cert_path, str(error))
         return False
 
     # Check OCSP certificate status
