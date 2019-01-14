@@ -6,8 +6,8 @@ version = '0.31.0.dev0'
 
 # Please update tox.ini when modifying dependency version requirements
 install_requires = [
-    'acme>=0.21.1',
-    'certbot>=0.21.1',
+    'acme>=0.31.0.dev0',
+    'certbot>=0.31.0.dev0',
     'dns-lexicon>=2.1.22',
     'mock',
     'setuptools',
