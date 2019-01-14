@@ -520,6 +520,8 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
                               '--work-dir', self.config.work_dir,
                               '--logs-dir', self.config.logs_dir, '--text']
 
+        self.mock_sleep = mock.patch('time.sleep').start()
+
     def tearDown(self):
         # Reset globals in cli
         reload_module(cli)
@@ -944,8 +946,8 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
     @mock.patch('certbot.crypto_util.notAfter')
     @test_util.patch_get_utility()
     def test_certonly_new_request_success(self, mock_get_utility, mock_notAfter):
-        cert_path = '/etc/letsencrypt/live/foo.bar'
-        key_path = '/etc/letsencrypt/live/baz.qux'
+        cert_path = os.path.normpath(os.path.join(self.config.config_dir, 'live/foo.bar'))
+        key_path = os.path.normpath(os.path.join(self.config.config_dir, 'live/baz.qux'))
         date = '1970-01-01'
         mock_notAfter().date.return_value = date
 
@@ -975,7 +977,8 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
                              reuse_key=False):
         # pylint: disable=too-many-locals,too-many-arguments,too-many-branches
         cert_path = test_util.vector_path('cert_512.pem')
-        chain_path = '/etc/letsencrypt/live/foo.bar/fullchain.pem'
+        chain_path = os.path.normpath(os.path.join(self.config.config_dir,
+                                                   'live/foo.bar/fullchain.pem'))
         mock_lineage = mock.MagicMock(cert=cert_path, fullchain=chain_path,
                                       cert_path=cert_path, fullchain_path=chain_path)
         mock_lineage.should_autorenew.return_value = due_for_renewal
@@ -1091,6 +1094,26 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
         args = ["renew", "--reuse-key"]
         self._test_renewal_common(True, [], args=args, should_renew=True, reuse_key=True)
+
+    @mock.patch('sys.stdin')
+    def test_noninteractive_renewal_delay(self, stdin):
+        stdin.isatty.return_value = False
+        test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
+        args = ["renew", "--dry-run", "-tvv"]
+        self._test_renewal_common(True, [], args=args, should_renew=True)
+        self.assertEqual(self.mock_sleep.call_count, 1)
+        # in main.py:
+        #     sleep_time = random.randint(1, 60*8)
+        sleep_call_arg = self.mock_sleep.call_args[0][0]
+        self.assertTrue(1 <= sleep_call_arg <= 60*8)
+
+    @mock.patch('sys.stdin')
+    def test_interactive_no_renewal_delay(self, stdin):
+        stdin.isatty.return_value = True
+        test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
+        args = ["renew", "--dry-run", "-tvv"]
+        self._test_renewal_common(True, [], args=args, should_renew=True)
+        self.assertEqual(self.mock_sleep.call_count, 0)
 
     @mock.patch('certbot.renewal.should_renew')
     def test_renew_skips_recent_certs(self, should_renew):
@@ -1375,7 +1398,20 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
                 x = self._call_no_clientmock(["register", "--email", "user@example.org"])
                 self.assertTrue("There is an existing account" in x[0])
 
-    def test_update_registration_no_existing_accounts(self):
+    def test_update_account_no_existing_accounts(self):
+        # with mock.patch('certbot.main.client') as mocked_client:
+        with mock.patch('certbot.main.account') as mocked_account:
+            mocked_storage = mock.MagicMock()
+            mocked_account.AccountFileStorage.return_value = mocked_storage
+            mocked_storage.find_all.return_value = []
+            x = self._call_no_clientmock(
+                ["update_account", "--email",
+                 "user@example.org"])
+            self.assertTrue("Could not find an existing account" in x[0])
+
+    # TODO: When `certbot register --update-registration` is fully deprecated,
+    # delete the following test
+    def test_update_registration_no_existing_accounts_deprecated(self):
         # with mock.patch('certbot.main.client') as mocked_client:
         with mock.patch('certbot.main.account') as mocked_account:
             mocked_storage = mock.MagicMock()
@@ -1386,7 +1422,9 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
                  "user@example.org"])
             self.assertTrue("Could not find an existing account" in x[0])
 
-    def test_update_registration_unsafely(self):
+    # TODO: When `certbot register --update-registration` is fully deprecated,
+    # delete the following test
+    def test_update_registration_unsafely_deprecated(self):
         # This test will become obsolete when register --update-registration
         # supports removing an e-mail address from the account
         with mock.patch('certbot.main.account') as mocked_account:
@@ -1400,7 +1438,39 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
 
     @mock.patch('certbot.main.display_ops.get_email')
     @test_util.patch_get_utility()
-    def test_update_registration_with_email(self, mock_utility, mock_email):
+    def test_update_account_with_email(self, mock_utility, mock_email):
+        email = "user@example.com"
+        mock_email.return_value = email
+        with mock.patch('certbot.eff.handle_subscription') as mock_handle:
+            with mock.patch('certbot.main._determine_account') as mocked_det:
+                with mock.patch('certbot.main.account') as mocked_account:
+                    with mock.patch('certbot.main.client') as mocked_client:
+                        mocked_storage = mock.MagicMock()
+                        mocked_account.AccountFileStorage.return_value = mocked_storage
+                        mocked_storage.find_all.return_value = ["an account"]
+                        mocked_det.return_value = (mock.MagicMock(), "foo")
+                        cb_client = mock.MagicMock()
+                        mocked_client.Client.return_value = cb_client
+                        x = self._call_no_clientmock(
+                            ["update_account"])
+                        # When registration change succeeds, the return value
+                        # of register() is None
+                        self.assertTrue(x[0] is None)
+                        # and we got supposedly did update the registration from
+                        # the server
+                        self.assertTrue(
+                            cb_client.acme.update_registration.called)
+                        # and we saved the updated registration on disk
+                        self.assertTrue(mocked_storage.save_regr.called)
+                        self.assertTrue(
+                            email in mock_utility().add_message.call_args[0][0])
+                        self.assertTrue(mock_handle.called)
+
+    # TODO: When `certbot register --update-registration` is fully deprecated,
+    # delete the following test
+    @mock.patch('certbot.main.display_ops.get_email')
+    @test_util.patch_get_utility()
+    def test_update_registration_with_email_deprecated(self, mock_utility, mock_email):
         email = "user@example.com"
         mock_email.return_value = email
         with mock.patch('certbot.eff.handle_subscription') as mock_handle:
@@ -1652,7 +1722,7 @@ class EnhanceTest(test_util.ConfigTestCase):
         mock_lineage.return_value = mock.MagicMock(chain_path="/tmp/nonexistent")
         self._call(['enhance', '--auto-hsts'])
         self.assertTrue(self.mockinstaller.enable_autohsts.called)
-        self.assertEquals(self.mockinstaller.enable_autohsts.call_args[0][1],
+        self.assertEqual(self.mockinstaller.enable_autohsts.call_args[0][1],
                           ["example.com", "another.tld"])
 
     @mock.patch('certbot.cert_manager.lineage_for_certname')

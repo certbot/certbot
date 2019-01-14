@@ -44,14 +44,12 @@ a combination_ of distinct authenticator and installer plugins.
 =========== ==== ==== =============================================================== =============================
 Plugin      Auth Inst Notes                                                           Challenge types (and port)
 =========== ==== ==== =============================================================== =============================
-apache_     Y    Y    | Automates obtaining and installing a certificate with Apache  tls-sni-01_ (443)
-                      | 2.4 on OSes with ``libaugeas0`` 1.0+.
+apache_     Y    Y    | Automates obtaining and installing a certificate with Apache. http-01_ (80)
+nginx_      Y    Y    | Automates obtaining and installing a certificate with Nginx.  http-01_ (80)
 webroot_    Y    N    | Obtains a certificate by writing to the webroot directory of  http-01_ (80)
                       | an already running webserver.
-nginx_      Y    Y    | Automates obtaining and installing a certificate with Nginx.  tls-sni-01_ (443)
-                      | Shipped with Certbot 0.9.0.
-standalone_ Y    N    | Uses a "standalone" webserver to obtain a certificate.        http-01_ (80) or
-                      | Requires port 80 or 443 to be available. This is useful on    tls-sni-01_ (443)
+standalone_ Y    N    | Uses a "standalone" webserver to obtain a certificate.        http-01_ (80)
+                      | Requires port 80 to be available. This is useful on
                       | systems with no webserver, or when direct integration with
                       | the local webserver is not supported or not desired.
 |dns_plugs| Y    N    | This category of plugins automates obtaining a certificate by dns-01_ (53)
@@ -59,17 +57,17 @@ standalone_ Y    N    | Uses a "standalone" webserver to obtain a certificate.  
                       | domain. Doing domain validation in this way is
                       | the only way to obtain wildcard certificates from Let's
                       | Encrypt.
-manual_     Y    N    | Helps you obtain a certificate by giving you instructions to  http-01_ (80),
-                      | perform domain validation yourself. Additionally allows you   dns-01_ (53) or
-                      | to specify scripts to automate the validation task in a       tls-sni-01_ (443)
+manual_     Y    N    | Helps you obtain a certificate by giving you instructions to  http-01_ (80) or
+                      | perform domain validation yourself. Additionally allows you   dns-01_ (53) 
+                      | to specify scripts to automate the validation task in a 
                       | customized way.
 =========== ==== ==== =============================================================== =============================
 
 .. |dns_plugs| replace:: :ref:`DNS plugins <dns_plugins>`
 
 Under the hood, plugins use one of several ACME protocol challenges_ to
-prove you control a domain. The options are http-01_ (which uses port 80),
-tls-sni-01_ (port 443) and dns-01_ (requiring configuration of a DNS server on
+prove you control a domain. The options are http-01_ (which uses port 80)
+and dns-01_ (requiring configuration of a DNS server on
 port 53, though that's often not the same machine as your webserver). A few
 plugins support more than one challenge type, in which case you can choose one
 with ``--preferred-challenges``.
@@ -78,15 +76,13 @@ There are also many third-party-plugins_ available. Below we describe in more de
 the circumstances in which each plugin can be used, and how to use it.
 
 .. _challenges: https://tools.ietf.org/html/draft-ietf-acme-acme-03#section-7
-.. _tls-sni-01: https://tools.ietf.org/html/draft-ietf-acme-acme-03#section-7.3
 .. _http-01: https://tools.ietf.org/html/draft-ietf-acme-acme-03#section-7.2
 .. _dns-01: https://tools.ietf.org/html/draft-ietf-acme-acme-03#section-7.4
 
 Apache
 ------
 
-The Apache plugin currently requires an OS with augeas version 1.0; currently `it
-supports
+The Apache plugin currently `supports
 <https://github.com/certbot/certbot/blob/master/certbot-apache/certbot_apache/entrypoint.py>`_
 modern OSes based on Debian, Fedora, SUSE, Gentoo and Darwin.
 This automates both obtaining *and* installing certificates on an Apache
@@ -138,9 +134,8 @@ the webserver.
 Nginx
 -----
 
-The Nginx plugin has been distributed with Certbot since version 0.9.0 and should
-work for most configurations. We recommend backing up Nginx
-configurations before using it (though you can also revert changes to
+The Nginx plugin should work for most configurations. We recommend backing up
+Nginx configurations before using it (though you can also revert changes to
 configurations with ``certbot --nginx rollback``). You can use it by providing
 the ``--nginx`` flag on the commandline.
 
@@ -159,13 +154,9 @@ software running on the machine where you obtain the certificate.
 
 To obtain a certificate using a "standalone" webserver, you can use the
 standalone plugin by including ``certonly`` and ``--standalone``
-on the command line. This plugin needs to bind to port 80 or 443 in
+on the command line. This plugin needs to bind to port 80 in
 order to perform domain validation, so you may need to stop your
-existing webserver. To control which port the plugin uses, include
-one of the options shown below on the command line.
-
-    * ``--preferred-challenges http`` to use port 80
-    * ``--preferred-challenges tls-sni`` to use port 443
+existing webserver.
 
 It must still be possible for your machine to accept inbound connections from
 the Internet on the specified port using each requested domain name.
@@ -222,8 +213,7 @@ the UI, you can use the plugin to obtain a certificate by specifying
 to copy and paste commands into another terminal session, which may
 be on a different computer.
 
-The manual plugin can use either the ``http``, ``dns`` or the
-``tls-sni`` challenge. You can use the ``--preferred-challenges`` option
+The manual plugin can use either the ``http`` or the ``dns`` challenge. You can use the ``--preferred-challenges`` option
 to choose the challenge of your preference.
 
 The ``http`` challenge will ask you to place a file with a specific name and
@@ -241,11 +231,6 @@ For example, for the domain ``example.com``, a zone file entry would look like:
 
         _acme-challenge.example.com. 300 IN TXT "gfj9Xq...Rg85nM"
 
-When using the ``tls-sni`` challenge, ``certbot`` will prepare a self-signed
-SSL certificate for you with the challenge validation appropriately
-encoded into a subjectAlternatNames entry. You will need to configure
-your SSL server to present this challenge SSL certificate to the ACME
-server using SNI.
 
 Additionally you can specify scripts to prepare for validation and
 perform the authentication procedure and/or clean up after it by using
@@ -262,15 +247,19 @@ installer plugins. To do so, specify the authenticator plugin with
 ``--authenticator`` or ``-a`` and the installer plugin with ``--installer`` or
 ``-i``.
 
-For instance, you may want to create a certificate using the webroot_ plugin
-for authentication and the apache_ plugin for installation, perhaps because you
-use a proxy or CDN for SSL and only want to secure the connection between them
-and your origin server, which cannot use the tls-sni-01_ challenge due to the
-intermediate proxy.
+For instance, you could create a certificate using the webroot_ plugin
+for authentication and the apache_ plugin for installation.
 
 ::
 
     certbot run -a webroot -i apache -w /var/www/html -d example.com
+
+Or you could create a certificate using the manual_ plugin for authentication
+and the nginx_ plugin for installation. (Note that this certificate cannot
+be renewed automatically.)
+
+::
+    certbot run -a manual -i nginx -d example.com
 
 .. _third-party-plugins:
 
@@ -696,7 +685,9 @@ Where are my certificates?
 ==========================
 
 All generated keys and issued certificates can be found in
-``/etc/letsencrypt/live/$domain``. Rather than copying, please point
+``/etc/letsencrypt/live/$domain``. In the case of creating a SAN certificate 
+with multiple alternative names, ``$domain`` is the first domain passed in 
+via -d parameter. Rather than copying, please point
 your (web) server configuration directly to those files (or create
 symlinks). During the renewal_, ``/etc/letsencrypt/live`` is updated
 with the latest necessary files.
@@ -714,6 +705,10 @@ The following files are available:
      it with anyone, including Certbot developers. You cannot
      put it into a safe, however - your server still needs to access
      this file in order for SSL/TLS to work.
+
+  .. note:: As of Certbot version 0.29.0, private keys for new certificate
+     default to ``0600``. Any changes to the group mode or group owner (gid)
+     of this file will be preserved on renewals.
 
   This is what Apache needs for `SSLCertificateKeyFile
   <https://httpd.apache.org/docs/2.4/mod/mod_ssl.html#sslcertificatekeyfile>`_,
@@ -775,9 +770,6 @@ variables to these scripts:
 - ``CERTBOT_DOMAIN``: The domain being authenticated
 - ``CERTBOT_VALIDATION``: The validation string (HTTP-01 and DNS-01 only)
 - ``CERTBOT_TOKEN``: Resource name part of the HTTP-01 challenge (HTTP-01 only)
-- ``CERTBOT_CERT_PATH``: The challenge SSL certificate (TLS-SNI-01 only)
-- ``CERTBOT_KEY_PATH``: The private key associated with the aforementioned SSL certificate (TLS-SNI-01 only)
-- ``CERTBOT_SNI_DOMAIN``: The SNI name for which the ACME server expects to be presented the self-signed certificate located at ``$CERTBOT_CERT_PATH`` (TLS-SNI-01 only)
 
 Additionally for cleanup:
 
