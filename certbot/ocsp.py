@@ -1,6 +1,7 @@
 """Tools for checking certificate revocation."""
 import logging
 import re
+from datetime import datetime
 from subprocess import Popen, PIPE
 
 try:
@@ -90,31 +91,6 @@ class RevocationChecker(object):
         return _translate_ocsp_query(cert_path, output, err)
 
 
-def _check_ocsp_response_signature(response_ocsp, issuer_cert):
-    """Verify an OCSP response signature against certificate issuer"""
-    try:
-        # TODO: (adferrand 2019-11-01) Following line can be improved using a direct call to
-        #  response_ocsp.signature_hash_algorithm once cryptography 2.5 is released
-        #  (watch out for retro-compatibility with 2.4 though).
-        #  See https://github.com/pyca/cryptography/issues/4680
-        chosen_hash = x509._SIG_OIDS_TO_HASH[response_ocsp.signature_algorithm_oid]  # pylint: disable=protected-access
-    except KeyError:
-        raise UnsupportedAlgorithm(
-            "Signature algorithm OID:{0} not recognized"
-            .format(response_ocsp.signature_algorithm_oid)
-        )
-
-    issuer_cert.public_key().verify(
-        response_ocsp.signature,
-        response_ocsp.tbs_response_bytes,
-        padding.PSS(
-            mgf=padding.MGF1(chosen_hash),
-            salt_length=padding.PSS.MAX_LENGTH
-        ),
-        chosen_hash
-    )
-
-
 def _determine_ocsp_server(cert_path):
     # type: (str) -> Tuple[Optional[str], Optional[str]]
     """Extract the OCSP server host from a certificate.
@@ -173,18 +149,66 @@ def _check_ocsp_cryptography(cert_path, chain_path, url):
 
     # Check OCSP signature
     try:
-        _check_ocsp_response_signature(response_ocsp, issuer)
+        _check_ocsp_response(response_ocsp, request, issuer)
     except UnsupportedAlgorithm as e:
         logger.error(str(e))
         return False
     except InvalidSignature:
         logger.error('Invalid signature for OCSP response on %s', cert_path)
         return False
+    except AssertionError as error:
+        logger.error('Invalid OCSP response: {0}.'.format(error))
+        return False
 
     # Check OCSP certificate status
     logger.debug("OCSP certificate status for %s is: %s",
                  cert_path, response_ocsp.certificate_status)
     return response_ocsp.certificate_status == ocsp.OCSPCertStatus.REVOKED
+
+
+def _check_ocsp_response(response_ocsp, request_ocsp, issuer_cert):
+    """Verify that the OCSP is valid for serveral criterias"""
+    # Assert OCSP response corresponds to the certificate we are talking about
+    if response_ocsp.serial_number != request_ocsp.serial_number:
+        raise AssertionError('the response does not correspond '
+                             'to the certificate from OCSP request')
+
+    # Assert signature is valid
+    _check_ocsp_response_signature(response_ocsp, issuer_cert)
+
+    # Assert issuer in response is the expected one
+    if response_ocsp.issuer_name_hash != request_ocsp.issuer_name_hash:
+        raise AssertionError('the issuer does not correspond to issuer of the certificate.')
+
+    # Assert nextUpdate is in the future, and that thisUpdate is not too old
+    if response_ocsp.next_update:
+        if response_ocsp.next_update < datetime.now():
+            raise AssertionError('next update is in the past.')
+        interval = response_ocsp.next_update - response_ocsp.this_update
+        if datetime.now() - response_ocsp.this_update > interval:
+            raise AssertionError('this update is too old.')
+
+
+def _check_ocsp_response_signature(response_ocsp, issuer_cert):
+    """Verify an OCSP response signature against certificate issuer"""
+    try:
+        # TODO: (adferrand 2019-11-01) Following line can be improved using a direct call to
+        #  response_ocsp.signature_hash_algorithm once cryptography 2.5 is released
+        #  (watch out for retro-compatibility with 2.4 though).
+        #  See https://github.com/pyca/cryptography/issues/4680
+        chosen_hash = x509._SIG_OIDS_TO_HASH[response_ocsp.signature_algorithm_oid]  # pylint: disable=protected-access
+    except KeyError:
+        raise UnsupportedAlgorithm(
+            "Signature algorithm OID:{0} not recognized"
+            .format(response_ocsp.signature_algorithm_oid)
+        )
+
+    issuer_cert.public_key().verify(
+        response_ocsp.signature,
+        response_ocsp.tbs_response_bytes,
+        padding.PKCS1v15(),
+        chosen_hash
+    )
 
 
 def _translate_ocsp_query(cert_path, ocsp_output, ocsp_errors):
