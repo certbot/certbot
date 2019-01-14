@@ -99,8 +99,8 @@ ACME working area in github: https://github.com/ietf-wg-acme/acme
 
 |build-status| |coverage| |docs| |container|
 
-.. |build-status| image:: https://travis-ci.org/certbot/certbot.svg?branch=master
-   :target: https://travis-ci.org/certbot/certbot
+.. |build-status| image:: https://travis-ci.com/certbot/certbot.svg?branch=master
+   :target: https://travis-ci.com/certbot/certbot
    :alt: Travis CI status
 
 .. |coverage| image:: https://codecov.io/gh/certbot/certbot/branch/master/graph/badge.svg
