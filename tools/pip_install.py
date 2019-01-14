@@ -57,14 +57,14 @@ def merge_requirements(tools_path, requirements, test_constraints, all_constrain
     # Order of the files in the merge function matters.
     # Indeed version retained for a given package will be the first version
     # found when following all requirements in the given order.
-    # Here is the order by decreasing priority:
-    # 1) The local requirement file, typically local-oldest-requirement in oldest tests
-    # 2) The general development constraints (tools/dev_constraints.txt)
-    # 3) The general tests constraints (oldest_requirements.txt or
+    # Here is the order by increasing priority:
+    # 1) The general development constraints (tools/dev_constraints.txt)
+    # 2) The general tests constraints (oldest_requirements.txt or
     #    certbot-auto's dependency-requirements.txt for the normal processing)
+    # 3) The local requirement file, typically local-oldest-requirement in oldest tests
     files = [os.path.join(tools_path, 'dev_constraints.txt'), test_constraints]
     if requirements:
-        files.insert(0, requirements)
+        files.append(requirements)
     merged_requirements = merge_module.main(*files)
     with open(all_constraints, 'w') as fd:
         fd.write(merged_requirements)

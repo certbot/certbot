@@ -48,7 +48,7 @@ def merge_requirements(data):
     """
     merged_data = []
     for package, versions in data.items():
-        merged_data.append((package, str(versions[0])))
+        merged_data.append((package, str(versions[-1])))
     return merged_data
 
 
@@ -56,8 +56,8 @@ def main(*paths):
     """
     Main function of this module.
     Accept a list of requirements files, return a list of well formatted merged requirements.
-    Order of paths follows a decreasing priority: version retained for a given package will be
-    the first one found along all requirement files.
+    Order of paths follows an increasing priority: version retained for a given package will be
+    the last one found along all requirements files.
     :param str paths: list of the requirement files to merge
     :return: a well formatted merged requirements
     :rtype: str
