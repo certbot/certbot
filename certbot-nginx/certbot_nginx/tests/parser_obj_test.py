@@ -103,37 +103,37 @@ class SentenceTest(unittest.TestCase):
     def test_parse_sentence_words_hides_spaces(self):
         og_sentence = ['\r\n', 'hello', ' ', ' ', '\t\n  ', 'lol', ' ', 'spaces']
         self.sentence.parse(og_sentence)
-        self.assertEquals(self.sentence.words, ['hello', 'lol', 'spaces'])
-        self.assertEquals(self.sentence.dump(), ['hello', 'lol', 'spaces'])
-        self.assertEquals(self.sentence.dump(True), og_sentence)
+        self.assertEqual(self.sentence.words, ['hello', 'lol', 'spaces'])
+        self.assertEqual(self.sentence.dump(), ['hello', 'lol', 'spaces'])
+        self.assertEqual(self.sentence.dump(True), og_sentence)
 
     def test_parse_sentence_with_add_spaces(self):
         self.sentence.parse(['hi', 'there'], add_spaces=True)
-        self.assertEquals(self.sentence.dump(True), ['hi', ' ', 'there'])
+        self.assertEqual(self.sentence.dump(True), ['hi', ' ', 'there'])
         self.sentence.parse(['one', ' ', 'space', 'none'], add_spaces=True)
-        self.assertEquals(self.sentence.dump(True), ['one', ' ', 'space', ' ', 'none'])
+        self.assertEqual(self.sentence.dump(True), ['one', ' ', 'space', ' ', 'none'])
 
     def test_iterate(self):
         expected = [['1', '2', '3']]
         self.sentence.parse(['1', ' ', '2', ' ', '3'])
         for i, sentence in enumerate(self.sentence.iterate()):
-            self.assertEquals(sentence.dump(), expected[i])
+            self.assertEqual(sentence.dump(), expected[i])
 
     def test_set_tabs(self):
         self.sentence.parse(['tabs', 'pls'], add_spaces=True)
         self.sentence.set_tabs()
-        self.assertEquals(self.sentence.dump(True)[0], '\n    ')
+        self.assertEqual(self.sentence.dump(True)[0], '\n    ')
         self.sentence.parse(['tabs', 'pls'], add_spaces=True)
 
     def test_get_tabs(self):
         self.sentence.parse(['no', 'tabs'])
-        self.assertEquals(self.sentence.get_tabs(), '')
+        self.assertEqual(self.sentence.get_tabs(), '')
         self.sentence.parse(['\n \n  ', 'tabs'])
-        self.assertEquals(self.sentence.get_tabs(), '  ')
+        self.assertEqual(self.sentence.get_tabs(), '  ')
         self.sentence.parse(['\n\t  ', 'tabs'])
-        self.assertEquals(self.sentence.get_tabs(), '\t  ')
+        self.assertEqual(self.sentence.get_tabs(), '\t  ')
         self.sentence.parse(['\n\t \n', 'tabs'])
-        self.assertEquals(self.sentence.get_tabs(), '')
+        self.assertEqual(self.sentence.get_tabs(), '')
 
 class BlockTest(unittest.TestCase):
     def setUp(self):
@@ -145,11 +145,11 @@ class BlockTest(unittest.TestCase):
 
     def test_iterate(self):
         # Iterates itself normally
-        self.assertEquals(self.bloc, next(self.bloc.iterate()))
+        self.assertEqual(self.bloc, next(self.bloc.iterate()))
         # Iterates contents while expanded
         expected = [self.bloc.dump()] + self.contents
         for i, elem in enumerate(self.bloc.iterate(expanded=True)):
-            self.assertEquals(expected[i], elem.dump())
+            self.assertEqual(expected[i], elem.dump())
 
     def test_iterate_match(self):
         # can match on contents while expanded
@@ -157,17 +157,17 @@ class BlockTest(unittest.TestCase):
         expected = [['thing', '1'], ['thing', '2']]
         for i, elem in enumerate(self.bloc.iterate(expanded=True,
             match=lambda x: isinstance(x, Sentence) and 'thing' in x.words)):
-            self.assertEquals(expected[i], elem.dump())
+            self.assertEqual(expected[i], elem.dump())
         # can match on self
-        self.assertEquals(self.bloc, next(self.bloc.iterate(
+        self.assertEqual(self.bloc, next(self.bloc.iterate(
             expanded=True,
             match=lambda x: isinstance(x, Block) and 'server' in x.names)))
 
     def test_parse_with_added_spaces(self):
         import copy
         self.bloc.parse([copy.copy(self.name), self.contents], add_spaces=True)
-        self.assertEquals(self.bloc.dump(), [self.name, self.contents])
-        self.assertEquals(self.bloc.dump(True), [
+        self.assertEqual(self.bloc.dump(), [self.name, self.contents])
+        self.assertEqual(self.bloc.dump(True), [
             ['server', ' ', 'name', ' '],
             [['thing', ' ', '1'],
              ['thing', ' ', '2'],
@@ -181,14 +181,14 @@ class BlockTest(unittest.TestCase):
 
     def test_set_tabs(self):
         self.bloc.set_tabs()
-        self.assertEquals(self.bloc.names.dump(True)[0], '\n    ')
+        self.assertEqual(self.bloc.names.dump(True)[0], '\n    ')
         for elem in self.bloc.contents.dump(True)[:-1]:
-            self.assertEquals(elem[0], '\n        ')
-        self.assertEquals(self.bloc.contents.dump(True)[-1][0], '\n')
+            self.assertEqual(elem[0], '\n        ')
+        self.assertEqual(self.bloc.contents.dump(True)[-1][0], '\n')
 
     def test_get_tabs(self):
         self.bloc.parse([[' \n  \t', 'lol'], []])
-        self.assertEquals(self.bloc.get_tabs(), '  \t')
+        self.assertEqual(self.bloc.get_tabs(), '  \t')
 
 class StatementsTest(unittest.TestCase):
     def setUp(self):
@@ -210,7 +210,7 @@ class StatementsTest(unittest.TestCase):
         self.statements.parse(self.raw)
         self.statements.set_tabs()
         for statement in self.statements.iterate():
-            self.assertEquals(statement.dump(True)[0], '\n    ')
+            self.assertEqual(statement.dump(True)[0], '\n    ')
 
     def test_set_tabs_with_parent(self):
         # Trailing whitespace should inherit from parent tabbing.
@@ -219,19 +219,19 @@ class StatementsTest(unittest.TestCase):
         self.statements.parent.get_tabs.return_value = '\t\t'
         self.statements.set_tabs()
         for statement in self.statements.iterate():
-            self.assertEquals(statement.dump(True)[0], '\n    ')
-        self.assertEquals(self.statements.dump(True)[-1], '\n\t\t')
+            self.assertEqual(statement.dump(True)[0], '\n    ')
+        self.assertEqual(self.statements.dump(True)[-1], '\n\t\t')
 
     def test_get_tabs(self):
         self.raw[0].insert(0, '\n \n  \t')
         self.statements.parse(self.raw)
-        self.assertEquals(self.statements.get_tabs(), '  \t')
+        self.assertEqual(self.statements.get_tabs(), '  \t')
         self.statements.parse([])
-        self.assertEquals(self.statements.get_tabs(), '')
+        self.assertEqual(self.statements.get_tabs(), '')
 
     def test_parse_with_added_spaces(self):
         self.statements.parse(self.raw, add_spaces=True)
-        self.assertEquals(self.statements.dump(True)[0], ['sentence', ' ', 'one'])
+        self.assertEqual(self.statements.dump(True)[0], ['sentence', ' ', 'one'])
 
     def test_parse_bad_list_raises_error(self):
         from certbot import errors
@@ -241,13 +241,13 @@ class StatementsTest(unittest.TestCase):
         self.statements.parse(self.raw + ['\n\n  '])
         self.assertTrue(isinstance(self.statements.dump()[-1], list))
         self.assertTrue(self.statements.dump(True)[-1].isspace())
-        self.assertEquals(self.statements.dump(True)[-1], '\n\n  ')
+        self.assertEqual(self.statements.dump(True)[-1], '\n\n  ')
 
     def test_iterate(self):
         self.statements.parse(self.raw)
         expected = [['sentence', 'one'], ['sentence', 'two']]
         for i, elem in enumerate(self.statements.iterate(match=lambda x: 'sentence' in x)):
-            self.assertEquals(expected[i], elem.dump())
+            self.assertEqual(expected[i], elem.dump())
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

@@ -65,10 +65,13 @@ class _NS1LexiconClient(dns_common_lexicon.LexiconClient):
     def __init__(self, api_key, ttl):
         super(_NS1LexiconClient, self).__init__()
 
-        self.provider = nsone.Provider({
-            'auth_token': api_key,
+        config = dns_common_lexicon.build_lexicon_config('nsone', {
             'ttl': ttl,
+        }, {
+            'auth_token': api_key,
         })
+
+        self.provider = nsone.Provider(config)
 
     def _handle_http_error(self, e, domain_name):
         if domain_name in str(e) and (str(e).startswith('404 Client Error: Not Found for url:') or \

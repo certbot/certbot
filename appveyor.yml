@@ -1,8 +1,9 @@
-image:
-  # => Windows Server 2012 R2
-  - Visual Studio 2015
-  # => Windows Server 2016
-  - Visual Studio 2017
+image: Visual Studio 2015
+
+environment:
+  matrix:
+    - TOXENV: py35
+    - TOXENV: py37-cover
 
 branches:
   only:
@@ -23,7 +24,9 @@ install:
 build: off
 
 test_script:
-  - tox -c tox-win.ini -e py34,py35,py36,py37-cover
+  - set TOX_TESTENV_PASSENV=APPVEYOR
+  # Test env is set by TOXENV env variable
+  - tox
 
 on_success:
-  - codecov
+  - if exist .coverage codecov

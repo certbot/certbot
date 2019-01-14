@@ -4,6 +4,9 @@ cache:
     directories:
         - $HOME/.cache/pip
 
+before_script:
+  - export TOX_TESTENV_PASSENV=TRAVIS
+
 matrix:
   include:
     - python: "2.7"
@@ -15,7 +18,7 @@ matrix:
       sudo: required
       services: docker
     - python: "2.7"
-      env: TOXENV=cover FYI="this also tests py27"
+      env: TOXENV=py27-cover FYI="py27 tests + code coverage"
     - sudo: required
       env: TOXENV=nginx_compat
       services: docker
@@ -51,8 +54,9 @@ matrix:
       before_install:
       addons:
     - python: "2.7"
-      env: TOXENV=apacheconftest
+      env: TOXENV=apacheconftest-with-pebble
       sudo: required
+      services: docker
     - python: "2.7"
       env: TOXENV=nginxroundtrip
 
@@ -89,7 +93,7 @@ script:
     - travis_retry tox
     - '[ -z "${BOULDER_INTEGRATION+x}" ] || (travis_retry tests/boulder-fetch.sh && tests/tox-boulder-integration.sh)'
 
-after_success: '[ "$TOXENV" == "cover" ] && codecov'
+after_success: '[ "$TOXENV" == "py27-cover" ] && codecov'
 
 notifications:
   email: false

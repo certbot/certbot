@@ -77,13 +77,16 @@ class _OVHLexiconClient(dns_common_lexicon.LexiconClient):
     def __init__(self, endpoint, application_key, application_secret, consumer_key, ttl):
         super(_OVHLexiconClient, self).__init__()
 
-        self.provider = ovh.Provider({
+        config = dns_common_lexicon.build_lexicon_config('ovh', {
+            'ttl': ttl,
+        }, {
             'auth_entrypoint': endpoint,
             'auth_application_key': application_key,
             'auth_application_secret': application_secret,
             'auth_consumer_key': consumer_key,
-            'ttl': ttl,
         })
+
+        self.provider = ovh.Provider(config)
 
     def _handle_http_error(self, e, domain_name):
         hint = None

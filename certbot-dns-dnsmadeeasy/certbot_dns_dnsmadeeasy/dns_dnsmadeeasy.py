@@ -71,11 +71,14 @@ class _DNSMadeEasyLexiconClient(dns_common_lexicon.LexiconClient):
     def __init__(self, api_key, secret_key, ttl):
         super(_DNSMadeEasyLexiconClient, self).__init__()
 
-        self.provider = dnsmadeeasy.Provider({
+        config = dns_common_lexicon.build_lexicon_config('dnsmadeeasy', {
+            'ttl': ttl,
+        }, {
             'auth_username': api_key,
             'auth_token': secret_key,
-            'ttl': ttl,
         })
+
+        self.provider = dnsmadeeasy.Provider(config)
 
     def _handle_http_error(self, e, domain_name):
         if domain_name in str(e) and str(e).startswith('404 Client Error: Not Found for url:'):

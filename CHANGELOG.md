@@ -1,18 +1,147 @@
 # Certbot change log
 
-Certbot adheres to [Semantic Versioning](http://semver.org/).
+Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 0.28.0 - master
+## 0.31.0 - master
+
+### Added
+
+* Avoid to process again challenges that are already validated
+  when a certificate is issued.
+
+### Changed
+
+* Lexicon-based DNS plugins are now fully compatible with Lexicon 3.x (support
+  on 2.x branch is maintained).
+
+### Fixed
+
+* Fixed accessing josepy contents through acme.jose when the full acme.jose
+  path is used.
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+package with changes other than its version number was:
+
+* acme
+* certbot
+* certbot-dns-cloudxns
+* certbot-dns-dnsimple
+* certbot-dns-dnsmadeeasy
+* certbot-dns-gehirn
+* certbot-dns-linode
+* certbot-dns-luadns
+* certbot-dns-nsone
+* certbot-dns-ovh
+* certbot-dns-sakuracloud
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.30.0 - 2019-01-02
+
+### Added
+
+* Added the `update_account` subcommand for account management commands.
+
+### Changed
+
+* Copied account management functionality from the `register` subcommand
+  to the `update_account` subcommand.
+* Marked usage `register --update-registration` for deprecation and 
+  removal in a future release.
+
+### Fixed
+
+* Older modules in the josepy library can now be accessed through acme.jose
+  like it could in previous versions of acme. This is only done to preserve
+  backwards compatibility and support for doing this with new modules in josepy
+  will not be added. Users of the acme library should switch to using josepy
+  directly if they haven't done so already.
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+package with changes other than its version number was:
+
+* acme
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.29.1 - 2018-12-05
+
+### Added
+
+*
+
+### Changed
+
+*
+
+### Fixed
+
+* The default work and log directories have been changed back to
+  /var/lib/letsencrypt and /var/log/letsencrypt respectively.
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+package with changes other than its version number was:
+
+* certbot
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.29.0 - 2018-12-05
+
+### Added
+
+* Noninteractive renewals with `certbot renew` (those not started from a
+  terminal) now randomly sleep 1-480 seconds before beginning work in
+  order to spread out load spikes on the server side.
+* Added External Account Binding support in cli and acme library.
+  Command line arguments --eab-kid and --eab-hmac-key added.
+
+### Changed
+
+* Private key permissioning changes: Renewal preserves existing group mode
+  & gid of previous private key material. Private keys for new
+  lineages (i.e. new certs, not renewed) default to 0o600.
+
+### Fixed
+
+* Update code and dependencies to clean up Resource and Deprecation Warnings.
+* Only depend on imgconverter extension for Sphinx >= 1.6
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+package with changes other than its version number was:
+
+* acme
+* certbot
+* certbot-apache
+* certbot-dns-cloudflare
+* certbot-dns-digitalocean
+* certbot-dns-google
+* certbot-nginx
+
+More details about these changes can be found on our GitHub repo:
+https://github.com/certbot/certbot/milestone/62?closed=1
+
+## 0.28.0 - 2018-11-7
 
 ### Added
 
 * `revoke` accepts `--cert-name`, and doesn't accept both `--cert-name` and `--cert-path`.
+* Use the ACMEv2 newNonce endpoint when a new nonce is needed, and newNonce is available in the directory.
 
 ### Changed
 
 * Removed documentation mentions of `#letsencrypt` IRC on Freenode.
 * Write README to the base of (config-dir)/live directory
 * `--manual` will explicitly warn users that earlier challenges should remain in place when setting up subsequent challenges.
+* Warn when using deprecated acme.challenges.TLSSNI01
+* Log warning about TLS-SNI deprecation in Certbot
+* Stop preferring TLS-SNI in the Apache, Nginx, and standalone plugins
+* OVH DNS plugin now relies on Lexicon>=2.7.14 to support HTTP proxies
+* Default time the Linode plugin waits for DNS changes to propogate is now 1200 seconds.
 
 ### Fixed
 
@@ -20,6 +149,32 @@ Certbot adheres to [Semantic Versioning](http://semver.org/).
 * Fix ranking of vhosts in Nginx so that all port-matching vhosts come first
 * Correct OVH integration tests on machines without internet access.
 * Stop caching the results of ipv6_info in http01.py
+* Test fix for Route53 plugin to prevent boto3 making outgoing connections.
+* The grammar used by Augeas parser in Apache plugin was updated to fix various parsing errors.
+* The CloudXNS, DNSimple, DNS Made Easy, Gehirn, Linode, LuaDNS, NS1, OVH, and
+  Sakura Cloud DNS plugins are now compatible with Lexicon 3.0+.
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+package with changes other than its version number was:
+
+* acme
+* certbot
+* certbot-apache
+* certbot-dns-cloudxns
+* certbot-dns-dnsimple
+* certbot-dns-dnsmadeeasy
+* certbot-dns-gehirn
+* certbot-dns-linode
+* certbot-dns-luadns
+* certbot-dns-nsone
+* certbot-dns-ovh
+* certbot-dns-route53
+* certbot-dns-sakuracloud
+* certbot-nginx
+
+More details about these changes can be found on our GitHub repo:
+https://github.com/certbot/certbot/milestone/59?closed=1
 
 ## 0.27.1 - 2018-09-06
 
