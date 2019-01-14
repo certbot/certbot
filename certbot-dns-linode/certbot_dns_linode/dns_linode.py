@@ -54,6 +54,7 @@ class Authenticator(dns_common.DNSAuthenticator):
     def _get_linode_client(self):
         return _LinodeLexiconClient(self.credentials.conf('key'))
 
+
 class _LinodeLexiconClient(dns_common_lexicon.LexiconClient):
     """
     Encapsulates all communication with the Linode API.
@@ -61,10 +62,12 @@ class _LinodeLexiconClient(dns_common_lexicon.LexiconClient):
 
     def __init__(self, api_key):
         super(_LinodeLexiconClient, self).__init__()
-        self.provider = linode.Provider({
-            'provider_name': 'linode',
-            'auth_token': api_key
+
+        config = dns_common_lexicon.build_lexicon_config('linode', {}, {
+            'auth_token': api_key,
         })
+
+        self.provider = linode.Provider(config)
 
     def _handle_general_error(self, e, domain_name):
         if not str(e).startswith('Domain not found'):

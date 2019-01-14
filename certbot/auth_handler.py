@@ -31,7 +31,7 @@ class AuthHandler(object):
         :class:`~acme.challenges.Challenge` types
     :type auth: :class:`certbot.interfaces.IAuthenticator`
 
-    :ivar acme.client.BackwardsCompatibleClientV2 acme: ACME client API.
+    :ivar acme.client.BackwardsCompatibleClientV2 acme_client: ACME client API.
 
     :ivar account: Client's Account
     :type account: :class:`certbot.account.Account`
@@ -40,9 +40,9 @@ class AuthHandler(object):
         type strings with the most preferred challenge listed first
 
     """
-    def __init__(self, auth, acme, account, pref_challs):
+    def __init__(self, auth, acme_client, account, pref_challs):
         self.auth = auth
-        self.acme = acme
+        self.acme = acme_client
 
         self.account = account
         self.pref_challs = pref_challs
@@ -85,19 +85,26 @@ class AuthHandler(object):
         self.verify_authzr_complete(aauthzrs)
 
         # Only return valid authorizations
-        retVal = [aauthzr.authzr for aauthzr in aauthzrs
-                  if aauthzr.authzr.body.status == messages.STATUS_VALID]
+        ret_val = [aauthzr.authzr for aauthzr in aauthzrs
+                   if aauthzr.authzr.body.status == messages.STATUS_VALID]
 
-        if not retVal:
+        if not ret_val:
             raise errors.AuthorizationError(
                 "Challenges failed for all domains")
 
-        return retVal
+        return ret_val
 
     def _choose_challenges(self, aauthzrs):
-        """Retrieve necessary challenges to satisfy server."""
-        logger.info("Performing the following challenges:")
-        for aauthzr in aauthzrs:
+        """
+        Retrieve necessary and pending challenges to satisfy server.
+        NB: Necessary and already validated challenges are not retrieved,
+        as they can be reused for a certificate issuance.
+        """
+        pending_authzrs = [aauthzr for aauthzr in aauthzrs
+                           if aauthzr.authzr.body.status != messages.STATUS_VALID]
+        if pending_authzrs:
+            logger.info("Performing the following challenges:")
+        for aauthzr in pending_authzrs:
             aauthzr_challenges = aauthzr.authzr.body.challenges
             if self.acme.acme_version == 1:
                 combinations = aauthzr.authzr.body.combinations
@@ -125,7 +132,7 @@ class AuthHandler(object):
 
     def _solve_challenges(self, aauthzrs):
         """Get Responses for challenges from authenticators."""
-        resp = []  # type: Collection[acme.challenges.ChallengeResponse]
+        resp = []  # type: Collection[challenges.ChallengeResponse]
         all_achalls = self._get_all_achalls(aauthzrs)
         try:
             if all_achalls:
@@ -531,7 +538,7 @@ def _report_failed_challs(failed_achalls):
 
     """
     problems = collections.defaultdict(list)\
-    # type: DefaultDict[str, List[achallenges.KeyAuthorizationAnnotatedChallenge]]
+        # type: DefaultDict[str, List[achallenges.KeyAuthorizationAnnotatedChallenge]]
     for achall in failed_achalls:
         if achall.error:
             problems[achall.error.typ].append(achall)
