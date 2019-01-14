@@ -16,7 +16,7 @@ testdata1 = [
 ]
 
 if 'boulder' in os.environ.get('CERTBOT_ACME_TYPE'):
-    testdata1.insert(2, ('nginx.wtf', ['run', '--preferred-challenges', 'tls-sni']))
+    testdata1.insert(2, ('nginx-tls.wtf', ['run', '--preferred-challenges', 'tls-sni']))
 
 
 @pytest.mark.parametrize('certname, params', testdata1)
