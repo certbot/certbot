@@ -1,76 +1,60 @@
 #!/usr/bin/env python
-"""
-Merge multiple Python requirements files into one file
+"""Merges multiple Python requirements files into one file.
 
-- Version taken for each requirement will be the lowest one found from all files.
-- Comments and local editable packages (eg. -e acme[dev]) are ignored.
-- Only equality version comparator is supported (==).
-- Environment markers and version ranges are not supported.
+Requirements files specified later take precedence over earlier ones. Only
+simple SomeProject==1.2.3 format is currently supported.
+
 """
-import re
-import os
+from __future__ import print_function
+
 import sys
-from distutils.version import LooseVersion
-
-REQUIREMENT_REGEX = re.compile(r'^(\S+)==(\S+)$')
 
 
-def read_requirement_file(path, data):
+def read_file(file_path):
+    """Reads in a Python requirements file.
+
+    :param str file_path: path to requirements file
+
+    :returns: mapping from a project to its pinned version
+    :rtype: dict
+
     """
-    Read a requirement file, and feeds its content into the given data dict.
-    :param str path: the requirement file path to read
-    :param dict data: the data dict to feed with
-    """
-    with open(path) as fh:
-        for line in fh:
-            if line.strip() and not line.startswith('#') and not line.startswith('-e'):
-                match = REQUIREMENT_REGEX.match(line)
-
-                if not match:
+    data = {}
+    with open(file_path) as file_h:
+        for line in file_h:
+            line = line.strip()
+            if line and not line.startswith('#'):
+                project, version = line.split('==')
+                if not version:
                     raise ValueError("Unexpected syntax '{0}'".format(line))
-
-                package = match.group(1)
-                version = LooseVersion(match.group(2))
-
-                if not data.get(package):
-                    data[package] = []
-
-                data[package].append(version)
+                data[project] = version
+    return data
 
 
-def merge_requirements(data):
+def output_requirements(requirements):
+    """Prepare print requirements to stdout.
+
+    :param dict requirements: mapping from a project to its pinned version
+
     """
-    Merge requirements in the dict data, by returning one requirement for each package.
-    First version found for each package is retained.
-    :param dict data: dict of all requirements
-    :return: the merged requirements
-    :rtype: list
-    """
-    merged_data = []
-    for package, versions in data.items():
-        merged_data.append((package, str(versions[-1])))
-    return merged_data
+    return '\n'.join('{0}=={1}'.format(key, value)
+                     for key, value in sorted(requirements.items()))
 
 
 def main(*paths):
-    """
-    Main function of this module.
-    Accept a list of requirements files, return a list of well formatted merged requirements.
-    Order of paths follows an increasing priority: version retained for a given package will be
-    the last one found along all requirements files.
-    :param str paths: list of the requirement files to merge
-    :return: a well formatted merged requirements
-    :rtype: str
+    """Merges multiple requirements files together and prints the result.
+
+    Requirement files specified later in the list take precedence over earlier
+    files.
+
+    :param tuple paths: paths to requirements files
+
     """
     data = {}
     for path in paths:
-        read_requirement_file(path, data)
-
-    requirements = merge_requirements(data)
-    requirements.sort(key=lambda requirement: requirement[0].lower())
-    return os.linesep.join(['=='.join(requirement) for requirement in requirements])
+        data.update(read_file(path))
+    return output_requirements(data)
 
 
 if __name__ == '__main__':
-    merged_requirements = main(*sys.argv[1:])
-    print(merged_requirements)
+    print(main(*sys.argv[1:]))  # pylint: disable=star-args
