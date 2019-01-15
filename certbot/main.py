@@ -548,7 +548,8 @@ def _delete_if_appropriate(config): # pylint: disable=too-many-locals,too-many-b
 
     attempt_deletion = config.delete_after_revoke
     if attempt_deletion is None:
-        msg = ("Would you like to delete the cert(s) you just revoked?")
+        msg = ("Would you like to delete the cert(s) you just revoked, along with all earlier and "
+            "later versions of the cert?")
         attempt_deletion = display.yesno(msg, yes_label="Yes (recommended)", no_label="No",
                 force_interactive=True, default=True)
 
