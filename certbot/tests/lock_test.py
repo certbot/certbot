@@ -3,6 +3,10 @@ import functools
 import multiprocessing
 import os
 import unittest
+try:
+    import fcntl
+except ImportError:
+    fcntl = None
 
 import mock
 
@@ -25,7 +29,6 @@ class LockDirTest(test_util.TempDirTestCase):
         test_util.lock_and_call(assert_raises, lock_path)
 
 
-@test_util.broken_on_windows
 class LockFileTest(test_util.TempDirTestCase):
     """Tests for certbot.lock.LockFile."""
     @classmethod
@@ -71,6 +74,8 @@ class LockFileTest(test_util.TempDirTestCase):
         self.assertTrue(lock_file.__class__.__name__ in lock_repr)
         self.assertTrue(self.lock_path in lock_repr)
 
+    @test_util.skip_on_windows(
+        'Race conditions on lock are specific to the non-blocking file access approach on Linux.')
     def test_race(self):
         should_delete = [True, False]
         stat = os.stat
@@ -91,17 +96,22 @@ class LockFileTest(test_util.TempDirTestCase):
         lock_file.release()
         self.assertFalse(os.path.exists(self.lock_path))
 
-    @mock.patch('certbot.lock.fcntl.lockf')
-    def test_unexpected_lockf_err(self, mock_lockf):
+    def test_unexpected_lockf_or_locking_err(self):
+        if fcntl:
+            mocked_function = 'certbot.lock.fcntl.lockf'
+        else:
+            mocked_function = 'certbot.lock.msvcrt.locking'
         msg = 'hi there'
-        mock_lockf.side_effect = IOError(msg)
-        try:
-            self._call(self.lock_path)
-        except IOError as err:
-            self.assertTrue(msg in str(err))
-        else:  # pragma: no cover
-            self.fail('IOError not raised')
+        with mock.patch(mocked_function) as mock_lock:
+            mock_lock.side_effect = IOError(msg)
+            try:
+                self._call(self.lock_path)
+            except IOError as err:
+                self.assertTrue(msg in str(err))
+            else:  # pragma: no cover
+                self.fail('IOError not raised')
 
+    @test_util.skip_on_windows('Function os.stat is not used in Windows lock mechanism.')
     @mock.patch('certbot.lock.os.stat')
     def test_unexpected_stat_err(self, mock_stat):
         msg = 'hi there'
