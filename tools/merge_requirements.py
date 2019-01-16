@@ -12,6 +12,7 @@ import sys
 
 def read_file(file_path):
     """Reads in a Python requirements file.
+    Ignore empty lines, comments and editable requirements
 
     :param str file_path: path to requirements file
 
@@ -23,7 +24,7 @@ def read_file(file_path):
     with open(file_path) as file_h:
         for line in file_h:
             line = line.strip()
-            if line and not line.startswith('#'):
+            if line and not line.startswith('#') and not line.startswith('-e'):
                 project, version = line.split('==')
                 if not version:
                     raise ValueError("Unexpected syntax '{0}'".format(line))
