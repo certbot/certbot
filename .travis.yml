@@ -129,10 +129,6 @@ matrix:
       services: docker
       if: type = cron
     - sudo: required
-      env: TOXENV=nginx_compat
-      services: docker
-      if: type = cron
-    - sudo: required
       env: TOXENV=le_auto_precise
       services: docker
       if: type = cron
