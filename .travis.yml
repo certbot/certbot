@@ -13,7 +13,7 @@ before_script:
 
 matrix:
   include:
-    # These environments are executed on push and cron events
+    # These environments are always executed
     - python: "2.7"
       env: BOULDER_INTEGRATION=v1 INTEGRATION_TEST=all TOXENV=py27_install
       sudo: required
