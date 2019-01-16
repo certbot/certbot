@@ -126,11 +126,11 @@ matrix:
       services: docker
       if: type = cron
     - sudo: required
-      env: TOXENV=le_auto_precise
+      env: TOXENV=le_auto_xenial
       services: docker
       if: type = cron
     - sudo: required
-      env: TOXENV=le_auto_wheezy
+      env: TOXENV=le_auto_jessie
       services: docker
       if: type = cron
     - sudo: required
