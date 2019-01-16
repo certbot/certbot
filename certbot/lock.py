@@ -36,23 +36,20 @@ def lock_dir(dir_path):
 class LockFile(object):
     """
     Platform independent file lock system.
-    FileLock accepts a parameter, the path to a file, and offers two main methods,
-    acquire and release. Once acquire has been executed, the associated file is 'locked'
-    from the point of view of the OS, meaning that if another instance of Certbot try at
-    the same time to acquire the same lock, it will raise an Exception. Calling release
-    method will release the lock, and make it available to every other instance.
+    LockFile accepts a parameter, the path to a file acting as a lock. Once the LockFile,
+    instance is created, the associated file is 'locked from the point of view of the OS,
+    meaning that if another instance of Certbot try at the same time to acquire the same lock,
+    it will raise an Exception. Calling release method will release the lock, and make it
+    available to every other instance. Upon exit, current Certbot release also all the locks.
     This allows to protect a file or a directory to be concurrently accessed and modified
     by two Certbot instances in parallel.
-    FileLock is platform independent: it will proceed to the appropriate OS lock mechanism
+    LockFile is platform independent: it will proceed to the appropriate OS lock mechanism
     depending on Linux or Windows.
-    Furthermore FileLock is a context manager. It can be used with the python `with` statement.
-    In this case, lock will be automatically acquired when entering the context, and automatically
-    released when exiting the context.
     """
     def __init__(self, path):
         # type: (str) -> None
         """
-        Create a FileLock instance on the given file path, and acquire lock.
+        Create a LockFile instance on the given file path, and acquire lock.
         :param str path: the path to the file that will hold a lock
         """
         self._path = path
