@@ -98,9 +98,6 @@ def main(args):
                 call_with_print('"{0}" -m pip install --constraint "{1}" --requirement "{2}"'
                                 .format(sys.executable, all_constraints, requirements))
 
-            with open(all_constraints, 'r') as file:
-                print(file.read())
-
             call_with_print('"{0}" -m pip install --constraint "{1}" {2}'
                             .format(sys.executable, all_constraints, ' '.join(args)))
     finally:
