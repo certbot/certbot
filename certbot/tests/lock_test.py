@@ -6,7 +6,7 @@ import unittest
 try:
     import fcntl
 except ImportError:
-    fcntl = None
+    fcntl = None  # type: ignore
 
 import mock
 
