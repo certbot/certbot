@@ -3,6 +3,7 @@
 .. warning:: This module is not part of the public API.
 
 """
+import logging
 import multiprocessing
 import os
 import pkg_resources
@@ -328,8 +329,14 @@ class TempDirTestCase(unittest.TestCase):
 
     def tearDown(self):
         """Execute after test"""
+        # Cleanup opened resources after a test. This is usually done through atexit handlers
+        # in Certbot, but in a pytest execution, atexit will kicks in after all tests execution.
+        # It is a problem on Windows, that does not accept to clean resources before closing them.
         # On Windows we have various files which are not correctly closed at the time of tearDown.
-        # For know, we log them until a proper file close handling is written.
+        logging.shutdown()
+        util._release_locks()  # pylint: disable=protected-access
+
+        # Still, some resources are not closed properly. For know, we log them until proper fix.
         # Useful for development only, so no warning when we are on a CI process.
         def onerror_handler(_, path, excinfo):
             """On error handler"""
@@ -340,10 +347,9 @@ class TempDirTestCase(unittest.TestCase):
                 warnings.warn(message)
         shutil.rmtree(self.tempdir, onerror=onerror_handler)
 
-class ConfigTestCase(TempDirTestCase):
-    """Test class which sets up a NamespaceConfig object.
 
-    """
+class ConfigTestCase(TempDirTestCase):
+    """Test class which sets up a NamespaceConfig object."""
     def setUp(self):
         super(ConfigTestCase, self).setUp()
         self.config = configuration.NamespaceConfig(
