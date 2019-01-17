@@ -88,15 +88,8 @@ BootstrapDebCommon() {
 
 
   if dpkg --compare-versions 1.0 gt "$AUGVERSION" ; then
-    if lsb_release -a | grep -q wheezy ; then
-      AddBackportRepo wheezy-backports "deb http://http.debian.net/debian wheezy-backports main"
-    elif lsb_release -a | grep -q precise ; then
-      # XXX add ARM case
-      AddBackportRepo precise-backports "deb http://archive.ubuntu.com/ubuntu precise-backports main restricted universe multiverse"
-    else
-      echo "No libaugeas0 version is available that's new enough to run the"
-      echo "Certbot apache plugin..."
-    fi
+    echo "No libaugeas0 version is available that's new enough to run the"
+    echo "Certbot apache plugin..."
     # XXX add a case for ubuntu PPAs
   fi
 
