@@ -32,10 +32,10 @@ def certbot_oldest_processing(tools_path, args, test_constraints):
     # remove any extras such as [dev]
     pkg_dir = re.sub(r'\[\w+\]', '', args[1])
     requirements = os.path.join(pkg_dir, 'local-oldest-requirements.txt')
+    shutil.copy(os.path.join(tools_path, 'oldest_constraints.txt'), test_constraints)
     # packages like acme don't have any local oldest requirements
     if not os.path.isfile(requirements):
-        requirements = None
-    shutil.copy(os.path.join(tools_path, 'oldest_constraints.txt'), test_constraints)
+        return None
 
     return requirements
 
@@ -53,11 +53,19 @@ def certbot_normal_processing(tools_path, test_constraints):
                 fd.write('{0}{1}'.format(search.group(1), os.linesep))
 
 
-def merge_requirements(tools_path, test_constraints, all_constraints):
-    merged_requirements = merge_module.main(
-        os.path.join(tools_path, 'dev_constraints.txt'),
-        test_constraints
-    )
+def merge_requirements(tools_path, requirements, test_constraints, all_constraints):
+    # Order of the files in the merge function matters.
+    # Indeed version retained for a given package will be the last version
+    # found when following all requirements in the given order.
+    # Here is the order by increasing priority:
+    # 1) The general development constraints (tools/dev_constraints.txt)
+    # 2) The general tests constraints (oldest_requirements.txt or
+    #    certbot-auto's dependency-requirements.txt for the normal processing)
+    # 3) The local requirement file, typically local-oldest-requirement in oldest tests
+    files = [os.path.join(tools_path, 'dev_constraints.txt'), test_constraints]
+    if requirements:
+        files.append(requirements)
+    merged_requirements = merge_module.main(*files)
     with open(all_constraints, 'w') as fd:
         fd.write(merged_requirements)
 
@@ -92,8 +100,7 @@ def main(args):
             else:
                 certbot_normal_processing(tools_path, test_constraints)
 
-            merge_requirements(tools_path, test_constraints, all_constraints)
-
+            merge_requirements(tools_path, requirements, test_constraints, all_constraints)
             if requirements:
                 call_with_print('"{0}" -m pip install --constraint "{1}" --requirement "{2}"'
                                 .format(sys.executable, all_constraints, requirements))
