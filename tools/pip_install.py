@@ -94,16 +94,16 @@ def main(args):
                             .format(sys.executable, ' '.join(args)))
         else:
             # Otherwise, we merge requirements to build the constraints and pin dependencies
-	        requirements = None
-	        if os.environ.get('CERTBOT_OLDEST') == '1':
-	            requirements = certbot_oldest_processing(tools_path, args, test_constraints)
-	        else:
-	            certbot_normal_processing(tools_path, test_constraints)
+            requirements = None
+            if os.environ.get('CERTBOT_OLDEST') == '1':
+                requirements = certbot_oldest_processing(tools_path, args, test_constraints)
+            else:
+                certbot_normal_processing(tools_path, test_constraints)
 
-	        merge_requirements(tools_path, requirements, test_constraints, all_constraints)
-	        if requirements:
-	            call_with_print('"{0}" -m pip install --constraint "{1}" --requirement "{2}"'
-	                            .format(sys.executable, all_constraints, requirements))
+            merge_requirements(tools_path, requirements, test_constraints, all_constraints)
+            if requirements:
+                call_with_print('"{0}" -m pip install --constraint "{1}" --requirement "{2}"'
+                                .format(sys.executable, all_constraints, requirements))
 
             call_with_print('"{0}" -m pip install --constraint "{1}" {2}'
                             .format(sys.executable, all_constraints, ' '.join(args)))
