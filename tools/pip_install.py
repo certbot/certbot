@@ -80,19 +80,26 @@ def main(args):
         test_constraints = os.path.join(working_dir, 'test_constraints.txt')
         all_constraints = os.path.join(working_dir, 'all_constraints.txt')
 
-        requirements = None
-        if os.environ.get('CERTBOT_OLDEST') == '1':
-            requirements = certbot_oldest_processing(tools_path, args, test_constraints)
+        if os.environ.get('CERTBOT_NO_PIN') == '1':
+            # With unpinned dependencies, there is no constraint
+            call_with_print('"{0}" -m pip install --ignore-installed {1}'
+                            .format(sys.executable, ' '.join(args)))
         else:
-            certbot_normal_processing(tools_path, test_constraints)
+            # Otherwise, we merge requirements to build the constraints and pin dependencies
+            requirements = None
+            if os.environ.get('CERTBOT_OLDEST') == '1':
+                requirements = certbot_oldest_processing(tools_path, args, test_constraints)
+            else:
+                certbot_normal_processing(tools_path, test_constraints)
 
-        merge_requirements(tools_path, test_constraints, all_constraints)
-        if requirements:
-            call_with_print('"{0}" -m pip install --constraint "{1}" --requirement "{2}"'
-                            .format(sys.executable, all_constraints, requirements))
+            merge_requirements(tools_path, test_constraints, all_constraints)
 
-        call_with_print('"{0}" -m pip install --constraint "{1}" {2}'
-                        .format(sys.executable, all_constraints, ' '.join(args)))
+            if requirements:
+                call_with_print('"{0}" -m pip install --constraint "{1}" --requirement "{2}"'
+                                .format(sys.executable, all_constraints, requirements))
+
+            call_with_print('"{0}" -m pip install --constraint "{1}" {2}'
+                            .format(sys.executable, all_constraints, ' '.join(args)))
     finally:
         if os.environ.get('TRAVIS'):
             print('travis_fold:end:install_certbot_deps')
