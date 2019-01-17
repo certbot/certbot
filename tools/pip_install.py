@@ -55,7 +55,7 @@ def certbot_normal_processing(tools_path, test_constraints):
 
 def merge_requirements(tools_path, requirements, test_constraints, all_constraints):
     # Order of the files in the merge function matters.
-    # Indeed version version retained for a given package will be the last version
+    # Indeed version retained for a given package will be the last version
     # found when following all requirements in the given order.
     # Here is the order by increasing priority:
     # 1) The general development constraints (tools/dev_constraints.txt)
