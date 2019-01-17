@@ -4,15 +4,13 @@ cache:
     directories:
         - $HOME/.cache/pip
 
-before_install:
-  - '([ $TRAVIS_OS_NAME == linux ] && dpkg -s libaugeas0) || (brew update && brew install augeas python3 && brew upgrade python && brew link python)'
-
 before_script:
   - 'if [ $TRAVIS_OS_NAME = osx ] ; then ulimit -n 1024 ; fi'
   - export TOX_TESTENV_PASSENV=TRAVIS
 
 matrix:
   include:
+    # These environments are always executed
     - python: "2.7"
       env: BOULDER_INTEGRATION=v1 INTEGRATION_TEST=all TOXENV=py27_install
       sudo: required
@@ -63,6 +61,113 @@ matrix:
       services: docker
     - python: "2.7"
       env: TOXENV=nginxroundtrip
+
+    # These environments are executed on cron events only
+    - python: "3.7"
+      dist: xenial
+      env: TOXENV=py37 CERTBOT_NO_PIN=1
+      if: type = cron
+    - python: "2.7"
+      env: BOULDER_INTEGRATION=v1 INTEGRATION_TEST=certbot TOXENV=py27-certbot-oldest
+      sudo: required
+      services: docker
+      if: type = cron
+    - python: "2.7"
+      env: BOULDER_INTEGRATION=v2 INTEGRATION_TEST=certbot TOXENV=py27-certbot-oldest
+      sudo: required
+      services: docker
+      if: type = cron
+    - python: "2.7"
+      env: BOULDER_INTEGRATION=v1 INTEGRATION_TEST=nginx TOXENV=py27-nginx-oldest
+      sudo: required
+      services: docker
+      if: type = cron
+    - python: "2.7"
+      env: BOULDER_INTEGRATION=v2 INTEGRATION_TEST=nginx TOXENV=py27-nginx-oldest
+      sudo: required
+      services: docker
+      if: type = cron
+    - python: "3.4"
+      env: TOXENV=py34 BOULDER_INTEGRATION=v1
+      sudo: required
+      services: docker
+      if: type = cron
+    - python: "3.4"
+      env: TOXENV=py34 BOULDER_INTEGRATION=v2
+      sudo: required
+      services: docker
+      if: type = cron
+    - python: "3.5"
+      env: TOXENV=py35 BOULDER_INTEGRATION=v1
+      sudo: required
+      services: docker
+      if: type = cron
+    - python: "3.5"
+      env: TOXENV=py35 BOULDER_INTEGRATION=v2
+      sudo: required
+      services: docker
+      if: type = cron
+    - python: "3.6"
+      env: TOXENV=py36 BOULDER_INTEGRATION=v1
+      sudo: required
+      services: docker
+      if: type = cron
+    - python: "3.6"
+      env: TOXENV=py36 BOULDER_INTEGRATION=v2
+      sudo: required
+      services: docker
+      if: type = cron
+    - python: "3.7"
+      dist: xenial
+      env: TOXENV=py37 BOULDER_INTEGRATION=v1
+      sudo: required
+      services: docker
+      if: type = cron
+    - python: "3.7"
+      dist: xenial
+      env: TOXENV=py37 BOULDER_INTEGRATION=v2
+      sudo: required
+      services: docker
+      if: type = cron
+    - sudo: required
+      env: TOXENV=le_auto_xenial
+      services: docker
+      if: type = cron
+    - sudo: required
+      env: TOXENV=le_auto_jessie
+      services: docker
+      if: type = cron
+    - sudo: required
+      env: TOXENV=le_auto_centos6
+      services: docker
+      if: type = cron
+    - sudo: required
+      env: TOXENV=docker_dev
+      services: docker
+      addons:
+        apt:
+          packages:  # don't install nginx and apache
+            - libaugeas0
+      if: type = cron
+    - language: generic
+      env: TOXENV=py27
+      os: osx
+      addons:
+        homebrew:
+          packages:
+            - augeas
+            - python2
+      if: type = cron
+    - language: generic
+      env: TOXENV=py3
+      os: osx
+      addons:
+        homebrew:
+          packages:
+            - augeas
+            - python3
+      if: type = cron
+
 
 
 # Only build pushes to the master branch, PRs, and branches beginning with
