@@ -8,6 +8,7 @@ import multiprocessing
 import os
 import pkg_resources
 import shutil
+import stat
 import tempfile
 import unittest
 import sys
@@ -329,23 +330,17 @@ class TempDirTestCase(unittest.TestCase):
 
     def tearDown(self):
         """Execute after test"""
-        # Cleanup opened resources after a test. This is usually done through atexit handlers
-        # in Certbot, but in a pytest execution, atexit will kicks in after all tests execution.
+        # Cleanup opened resources after a test. This is usually done through atexit handlers in
+        # Certbot, but during pytest, atexit will kicks in only after each tearDown execution.
         # It is a problem on Windows, that does not accept to clean resources before closing them.
-        # On Windows we have various files which are not correctly closed at the time of tearDown.
         logging.shutdown()
         util._release_locks()  # pylint: disable=protected-access
 
-        # Still, some resources are not closed properly. For know, we log them until proper fix.
-        # Useful for development only, so no warning when we are on a CI process.
-        def onerror_handler(_, path, excinfo):
-            """On error handler"""
-            if not os.environ.get('APPVEYOR'): # pragma: no cover
-                message = ('Following error occurred when deleting the tempdir {0}'
-                           ' for path {1} during tearDown process: {2}'
-                           .format(self.tempdir, path, str(excinfo)))
-                warnings.warn(message)
-        shutil.rmtree(self.tempdir, onerror=onerror_handler)
+        def handle_rw_files(_, path, __):
+            """Handle read-only files, that will fail to be removed on Windows."""
+            os.chmod(path, stat.S_IWRITE)
+            os.remove(path)
+        shutil.rmtree(self.tempdir, onerror=handle_rw_files)
 
 
 class ConfigTestCase(TempDirTestCase):
