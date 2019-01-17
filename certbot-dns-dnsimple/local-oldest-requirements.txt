@@ -1,3 +1,2 @@
 -e acme[dev]
 -e .[dev]
-dns-lexicon==2.2.1
