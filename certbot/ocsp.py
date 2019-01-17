@@ -1,7 +1,7 @@
 """Tools for checking certificate revocation."""
 import logging
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 from subprocess import Popen, PIPE
 
 try:
@@ -183,7 +183,7 @@ def _check_ocsp_response(response_ocsp, request_ocsp, issuer_cert):
 
     # Assert nextUpdate is in the future, and that thisUpdate is not too old
     if response_ocsp.next_update:
-        if response_ocsp.next_update < datetime.now():
+        if response_ocsp.next_update < datetime.now() - timedelta(minutes=5):
             raise AssertionError('next update is in the past.')
         interval = response_ocsp.next_update - response_ocsp.this_update
         if datetime.now() - response_ocsp.this_update > interval:
