@@ -1,0 +1,8 @@
+google-api-python-client==1.5.0
+httplib2==0.10.3
+oauth2client==2.0.0
+pyasn1==0.1.9
+pyasn1-modules==0.0.10
+rsa==3.4.2
+simplejson==3.16.0
+uritemplate==0.6

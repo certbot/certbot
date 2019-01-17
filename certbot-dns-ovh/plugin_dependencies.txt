@@ -1,0 +1,4 @@
+dns-lexicon==3.0.8
+future==0.16.0
+PyYAML==3.13
+tldextract==2.2.0

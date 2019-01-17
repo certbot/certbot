@@ -1,0 +1,4 @@
+cloudflare==1.5.1
+future==0.16.0
+logger==1.4
+PyYAML==3.13
