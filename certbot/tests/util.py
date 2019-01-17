@@ -12,7 +12,6 @@ import stat
 import tempfile
 import unittest
 import sys
-import warnings
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
