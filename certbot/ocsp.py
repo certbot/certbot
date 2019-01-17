@@ -177,7 +177,8 @@ def _check_ocsp_response(response_ocsp, request_ocsp, issuer_cert):
     _check_ocsp_response_signature(response_ocsp, issuer_cert)
 
     # Assert issuer in response is the expected one
-    if response_ocsp.issuer_name_hash != request_ocsp.issuer_name_hash:
+    if (response_ocsp.issuer_key_hash != request_ocsp.issuer_key_hash
+            or response_ocsp.issuer_name_hash != request_ocsp.issuer_name_hash):
         raise AssertionError('the issuer does not correspond to issuer of the certificate.')
 
     # Assert nextUpdate is in the future, and that thisUpdate is not too old
