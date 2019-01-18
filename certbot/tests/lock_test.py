@@ -4,9 +4,11 @@ import multiprocessing
 import os
 import unittest
 try:
-    import fcntl
+    import fcntl  # pylint: disable=import-error,unused-import
 except ImportError:
-    fcntl = None  # type: ignore
+    POSIX_MODE = False
+else:
+    POSIX_MODE = True
 
 import mock
 
@@ -96,7 +98,7 @@ class LockFileTest(test_util.TempDirTestCase):
         self.assertFalse(os.path.exists(self.lock_path))
 
     def test_unexpected_lockf_or_locking_err(self):
-        if fcntl:
+        if POSIX_MODE:
             mocked_function = 'certbot.lock.fcntl.lockf'
         else:
             mocked_function = 'certbot.lock.msvcrt.locking'

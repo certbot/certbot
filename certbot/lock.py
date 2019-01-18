@@ -1,13 +1,14 @@
-"""Implements file locks for locking files and directories in UNIX."""
+"""Implements file locks compatible with Linux and Windows for locking files and directories."""
 import errno
 import logging
 import os
 try:
     import fcntl  # pylint: disable=import-error
-    POSIX_MODE = True
 except ImportError:
     import msvcrt  # pylint: disable=import-error
     POSIX_MODE = False
+else:
+    POSIX_MODE = True
 
 from certbot import errors
 from acme.magic_typing import Optional  # pylint: disable=unused-import, no-name-in-module
@@ -40,9 +41,10 @@ class LockFile(object):
     instance is created, the associated file is 'locked from the point of view of the OS,
     meaning that if another instance of Certbot try at the same time to acquire the same lock,
     it will raise an Exception. Calling release method will release the lock, and make it
-    available to every other instance. Upon exit, current Certbot release also all the locks.
-    This allows to protect a file or a directory to be concurrently accessed and modified
-    by two Certbot instances in parallel.
+    available to every other instance.
+    Upon exit, Certbot will also release all the locks.
+    This allows us to protect a file or directory from being concurrently accessed
+    or modified by two Certbot instances.
     LockFile is platform independent: it will proceed to the appropriate OS lock mechanism
     depending on Linux or Windows.
     """
@@ -80,8 +82,7 @@ class LockFile(object):
         """
         Release the lock on the file, allowing any other Certbot instance to acquire it.
         """
-        if self.is_locked():
-            self._lock_mechanism.release()  # type: ignore
+        self._lock_mechanism.release()  # type: ignore
 
     def is_locked(self):
         # type: () -> bool
@@ -136,9 +137,8 @@ class _UnixLockMechanism(object):
             fcntl.lockf(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except IOError as err:
             if err.errno in (errno.EACCES, errno.EAGAIN):
-                logger.debug(
-                    "A lock on %s is held by another process.", self._path)
-                _raise_for_certbot_lock(self._path)
+                logger.debug('A lock on %s is held by another process.', self._path)
+                raise errors.LockError('Another instance of Certbot is already running.')
             raise
 
     def _lock_success(self, fd):
@@ -223,7 +223,8 @@ class _WindowsLockMechanism(object):
             if err.errno != errno.EACCES:
                 raise
             os.close(fd)
-            _raise_for_certbot_lock(self._path)
+            logger.debug('A lock on %s is held by another process.', self._path)
+            raise errors.LockError('Another instance of Certbot is already running.')
 
         self._fd = fd
 
@@ -250,15 +251,3 @@ class _WindowsLockMechanism(object):
         :rtype: bool
         """
         return self._fd is not None
-
-
-def _raise_for_certbot_lock(lock_file_path):
-    # type: (str) -> None
-    """
-    Raise a certbot error when lock file cannot be acquired.
-    :param str lock_file_path: the path to the lock file
-    """
-    raise errors.LockError(
-        'Error, the lock file "{0}" could not be acquired. '
-        'It is likely that another Certbot instance is still running.'
-        .format(lock_file_path))
