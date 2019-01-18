@@ -90,7 +90,7 @@ def main(args):
 
         if os.environ.get('CERTBOT_NO_PIN') == '1':
             # With unpinned dependencies, there is no constraint
-            call_with_print('"{0}" -m pip install --ignore-installed {1}'
+            call_with_print('"{0}" -m pip install {1}'
                             .format(sys.executable, ' '.join(args)))
         else:
             # Otherwise, we merge requirements to build the constraints and pin dependencies
