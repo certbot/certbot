@@ -219,10 +219,10 @@ class _WindowsLockMechanism(object):
         try:
             msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
         except (IOError, OSError) as err:
+            os.close(fd)
             # Anything except EACCES is unexpected. Raise directly the error in that case.
             if err.errno != errno.EACCES:
                 raise
-            os.close(fd)
             logger.debug('A lock on %s is held by another process.', self._path)
             raise errors.LockError('Another instance of Certbot is already running.')
 
