@@ -330,7 +330,8 @@ class TempDirTestCase(unittest.TestCase):
     def tearDown(self):
         """Execute after test"""
         # Cleanup opened resources after a test. This is usually done through atexit handlers in
-        # Certbot, but during pytest, atexit will kicks in only after each tearDown execution.
+        # Certbot, but during tests, atexit will not run registered functions before tearDown is
+        # called and instead will run them right before the entire test process exits.
         # It is a problem on Windows, that does not accept to clean resources before closing them.
         logging.shutdown()
         util._release_locks()  # pylint: disable=protected-access

@@ -194,6 +194,8 @@ class CheckPermissionsTest(test_util.TempDirTestCase):
         try:
             self.assertFalse(self._call(0o600))
         finally:
+            # Without proper write permissions, Windows is unable to delete a folder,
+            # even with admin permissions. Write access must be explicitly set first.
             os.chmod(self.tempdir, 0o700)
 
 
