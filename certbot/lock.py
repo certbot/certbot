@@ -11,7 +11,7 @@ else:
     POSIX_MODE = True
 
 from certbot import errors
-from acme.magic_typing import Optional  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Optional, Callable  # pylint: disable=unused-import, no-name-in-module
 
 logger = logging.getLogger(__name__)
 
@@ -75,14 +75,14 @@ class LockFile(object):
         Acquire the lock on the file, forbidding any other Certbot instance to acquire it.
         :raises errors.LockError: if unable to acquire the lock
         """
-        self._lock_mechanism.acquire()  # type: ignore
+        self._lock_mechanism.acquire()
 
     def release(self):
         # type: () -> None
         """
         Release the lock on the file, allowing any other Certbot instance to acquire it.
         """
-        self._lock_mechanism.release()  # type: ignore
+        self._lock_mechanism.release()
 
     def is_locked(self):
         # type: () -> bool
@@ -90,19 +90,22 @@ class LockFile(object):
         Check if the file is currently locked.
         :return: True if the file is locked, False otherwise
         """
-        return self._lock_mechanism.is_locked()  # type: ignore
+        return self._lock_mechanism.is_locked()
 
 
-# Unix locking mechanism
-# ~~~~~~~~~~~~~~~~~~~~~~
-class _UnixLockMechanism(object):
+class _BaseLockMechanism:
+    acquire = None  # type: Callable[[], None]
+    release = None  # type: Callable[[], None]
+    is_locked = None  # type: Callable[[], bool]
+
+
+class _UnixLockMechanism(_BaseLockMechanism):
     """
     A UNIX lock file mechanism.
     This lock file is released when the locked file is closed or the
     process exits. It cannot be used to provide synchronization between
     threads. It is based on the lock_file package by Martin Horcicka.
     """
-
     def __init__(self, path):
         # type: (str) -> None
         """
@@ -194,9 +197,7 @@ class _UnixLockMechanism(object):
         return self._fd is not None
 
 
-# Windows locking mechanism
-# ~~~~~~~~~~~~~~~~~~~~~~~~~
-class _WindowsLockMechanism(object):
+class _WindowsLockMechanism(_BaseLockMechanism):
     """
     A Windows lock file mechanism.
     On Windows in general, access to a file is exclusive, so opening a file
@@ -205,7 +206,6 @@ class _WindowsLockMechanism(object):
     only after it has been released: so the concurrency access that may occur on POSIX
     system is irrelevant here, leading to a quite simple code.
     """
-
     def __init__(self, path):
         # type: (str) -> None
         self._path = path
