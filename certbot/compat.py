@@ -18,15 +18,19 @@ import stat
 from certbot import errors
 
 try:
-    # Linux specific
-    import fcntl # pylint: disable=import-error,unused-import
+    import fcntl  # pylint: disable=import-error,unused-import
 except ImportError:
     # Windows specific
-    fcntl = None  # type: ignore
+    POSIX_MODE = False
+else:
+    # Linux specific
+    POSIX_MODE = True
 
 UNPRIVILEGED_SUBCOMMANDS_ALLOWED = [
     'certificates', 'enhance', 'revoke', 'delete',
     'register', 'unregister', 'config_changes', 'plugins']
+
+
 def raise_for_non_administrative_windows_rights(subcommand):
     """
     On Windows, raise if current shell does not have the administrative rights.
@@ -50,6 +54,7 @@ def raise_for_non_administrative_windows_rights(subcommand):
                 'Error, "{0}" subcommand must be run on a shell with administrative rights.'
                 .format(subcommand))
 
+
 def os_geteuid():
     """
     Get current user uid
@@ -64,6 +69,7 @@ def os_geteuid():
     except AttributeError:
         # Windows specific
         return 0
+
 
 def os_rename(src, dst):
     """
@@ -117,14 +123,16 @@ def readline_with_timeout(timeout, prompt):
         # So no timeout on Windows for now.
         return sys.stdin.readline()
 
+
 def compare_file_modes(mode1, mode2):
     """Return true if the two modes can be considered as equals for this platform"""
-    if fcntl:
+    if POSIX_MODE:
         # Linux specific: standard compare
         return oct(stat.S_IMODE(mode1)) == oct(stat.S_IMODE(mode2))
     # Windows specific: most of mode bits are ignored on Windows. Only check user R/W rights.
     return (stat.S_IMODE(mode1) & stat.S_IREAD == stat.S_IMODE(mode2) & stat.S_IREAD
             and stat.S_IMODE(mode1) & stat.S_IWRITE == stat.S_IMODE(mode2) & stat.S_IWRITE)
+
 
 WINDOWS_DEFAULT_FOLDERS = {
     'config': 'C:\\Certbot',
@@ -137,6 +145,7 @@ LINUX_DEFAULT_FOLDERS = {
     'logs': '/var/log/letsencrypt',
 }
 
+
 def get_default_folder(folder_type):
     """
     Return the relevant default folder for the current OS
@@ -147,7 +156,7 @@ def get_default_folder(folder_type):
     :rtype: str
 
     """
-    if fcntl:
+    if POSIX_MODE:
         # Linux specific
         return LINUX_DEFAULT_FOLDERS[folder_type]
     # Windows specific
