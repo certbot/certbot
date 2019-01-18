@@ -93,10 +93,12 @@ class LockFile(object):
         return self._lock_mechanism.is_locked()
 
 
-class _BaseLockMechanism:
-    acquire = None  # type: Callable[[], None]
-    release = None  # type: Callable[[], None]
-    is_locked = None  # type: Callable[[], bool]
+class _BaseLockMechanism(object):
+    def acquire(self): pass  # pylint: disable=missing-docstring,multiple-statements
+
+    def release(self): pass  # pylint: disable=missing-docstring,multiple-statements
+
+    def is_locked(self): pass  # pylint: disable=missing-docstring,multiple-statements
 
 
 class _UnixLockMechanism(_BaseLockMechanism):
