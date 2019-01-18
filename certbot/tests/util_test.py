@@ -280,21 +280,19 @@ class UniqueLineageNameTest(test_util.TempDirTestCase):
         for f, _ in items:
             f.close()
 
-    @mock.patch("certbot.util.os.open")  # Avoid orphan file descriptor
-    @mock.patch("certbot.util.os.fdopen")
-    def test_failure(self, mock_fdopen, _):
+    @mock.patch("certbot.util.os.open")
+    def test_failure(self, mock_open):
         err = OSError("whoops")
         err.errno = errno.EIO
-        mock_fdopen.side_effect = err
+        mock_open.side_effect = err
         self.assertRaises(OSError, self._call, "wow")
 
-    @mock.patch("certbot.util.os.open")  # Avoid orphan file descriptor
-    @mock.patch("certbot.util.os.fdopen")
-    def test_subsequent_failure(self, mock_fdopen, _):
+    @mock.patch("certbot.util.os.open")
+    def test_subsequent_failure(self, mock_open):
         self._call("wow")
         err = OSError("whoops")
         err.errno = errno.EIO
-        mock_fdopen.side_effect = err
+        mock_open.side_effect = err
         self.assertRaises(OSError, self._call, "wow")
 
 
