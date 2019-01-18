@@ -88,7 +88,6 @@ class LockDirUntilExit(test_util.TempDirTestCase):
         import certbot.util
         reload_module(certbot.util)
 
-    @test_util.broken_on_windows
     @mock.patch('certbot.util.logger')
     @mock.patch('certbot.util.atexit_register')
     def test_it(self, mock_register, mock_logger):
@@ -100,11 +99,15 @@ class LockDirUntilExit(test_util.TempDirTestCase):
 
         self.assertEqual(mock_register.call_count, 1)
         registered_func = mock_register.call_args[0][0]
-        shutil.rmtree(subdir)
-        registered_func()  # exception not raised
-        # logger.debug is only called once because the second call
-        # to lock subdir was ignored because it was already locked
-        self.assertEqual(mock_logger.debug.call_count, 1)
+
+        from certbot import util
+        # Despite lock_dir_until_exit has been called twice to subdir, its lock should have been
+        # added only once. So we expect to have two lock references: for self.tempdir and subdir
+        self.assertTrue(len(util._LOCKS) == 2)
+        registered_func()  # Exception should not be raised
+        # Logically, logger.debug, that would be invoked in case of unlock failure,
+        # should never been called.
+        self.assertEqual(mock_logger.debug.call_count, 0)
 
 
 class SetUpCoreDirTest(test_util.TempDirTestCase):

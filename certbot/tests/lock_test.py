@@ -14,7 +14,6 @@ from certbot import errors
 from certbot.tests import util as test_util
 
 
-@test_util.broken_on_windows
 class LockDirTest(test_util.TempDirTestCase):
     """Tests for certbot.lock.lock_dir."""
     @classmethod
