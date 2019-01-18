@@ -63,6 +63,10 @@ matrix:
       env: TOXENV=nginxroundtrip
 
     # These environments are executed on cron events only
+    - python: "3.7"
+      dist: xenial
+      env: TOXENV=py37 CERTBOT_NO_PIN=1
+      if: type = cron
     - python: "2.7"
       env: BOULDER_INTEGRATION=v1 INTEGRATION_TEST=certbot TOXENV=py27-certbot-oldest
       sudo: required
