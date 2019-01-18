@@ -282,20 +282,13 @@ class UniqueLineageNameTest(test_util.TempDirTestCase):
         for f, _ in items:
             f.close()
 
-    @mock.patch("certbot.util.os.open")
-    def test_failure(self, mock_open):
-        err = OSError("whoops")
-        err.errno = errno.EIO
-        mock_open.side_effect = err
-        self.assertRaises(OSError, self._call, "wow")
+    def test_failure(self):
+        with mock.patch("certbot.util.os.open", side_effect=OSError(errno.EIO)):
+            self.assertRaises(OSError, self._call, "wow")
 
-    @mock.patch("certbot.util.os.open")
-    def test_subsequent_failure(self, mock_open):
-        self._call("wow")
-        err = OSError("whoops")
-        err.errno = errno.EIO
-        mock_open.side_effect = err
-        self.assertRaises(OSError, self._call, "wow")
+    def test_subsequent_failure(self):
+        with mock.patch("certbot.util.os.open", side_effect=OSError(errno.EIO)):
+            self.assertRaises(OSError, self._call, "wow")
 
 
 class SafelyRemoveTest(test_util.TempDirTestCase):
