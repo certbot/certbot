@@ -27,13 +27,26 @@ TRAVIS_GO_VERSION = '1.11.2'
 
 
 def setup_acme_server(acme_config, nodes, repositories_path):
+    """
+    Main purpose of this module. This method will setup an ACME CA server and a HTTP reverse proxy
+    instances, to allow parallel execution of integration tests. Instances are properly closed and
+    cleaned when the Python process exit, using atexit.
+    Typically all pytest integration tests will be executed in this context.
+    This method returns an object describing ports and directory url to use for each pytest node
+    with the relevant pytest xdist node.
+    :param dict acme_config: a dict describing the current acme server characteristics to setup.
+    :param str[] nodes: list of nodes name that will be setup by pytest xdist
+    :param str repositories_path: the persistent repository path to use to retrieve
+                                  acme server source code
+    :return: a dict describing the challenges ports that have been setup for the nodes
+    :rtype: dict
+    """
     acme_type = acme_config['type']
     acme_option = acme_config['option']
     acme_xdist = _construct_acme_xdist(acme_type, acme_option, nodes)
     workspace = _construct_workspace(acme_type)
 
     with _prepare_repository(repositories_path, acme_type) as repo_path:
-        _prepare_gobetween_proxy(workspace, acme_xdist)
         _prepare_traefik_proxy(workspace, acme_xdist)
         _prepare_acme_server(repo_path, workspace, acme_type, acme_option, acme_xdist)
 
@@ -41,6 +54,14 @@ def setup_acme_server(acme_config, nodes, repositories_path):
 
 
 def _construct_acme_xdist(acme_type, acme_option, nodes):
+    """
+    Generate the acme_xdist dict, that describes which ports to use for each pytest node<
+    :param str acme_type: ACME CA server type (boulder or pebble)
+    :param str acme_option: relevant option for the current ACME CA server
+    :param str[] nodes: list of nodes name that will be setup by pytest xdist
+    :return: a dict describing the challenges ports that have been setup for the nodes
+    :rtype: dict
+    """
     acme_xdist = {'challtestsrv_port': 8055}
 
     if acme_type == 'pebble':
@@ -59,14 +80,18 @@ def _construct_acme_xdist(acme_type, acme_option, nodes):
 
 
 def _construct_workspace(acme_type):
+    """
+    Generate a temporary workspace, and setup atexit handlers to clean after pytest execution.
+    :param str acme_type: ACME CA server type (boulder or pebble)
+    :return: the workspace path
+    :rtype: str
+    """
     workspace = tempfile.mkdtemp()
 
     def cleanup():
-        """
-        The cleanup function to call that will teardown relevant dockers and their configuration.
-        """
+        """Cleanup function to call that will teardown relevant dockers and their configuration."""
         try:
-            for instance in [acme_type, 'traefik', 'gobetween']:
+            for instance in [acme_type, 'traefik']:
                 print('=> Tear down the {0} instance...'.format(instance))
                 instance_path = join(workspace, instance)
                 try:
@@ -85,6 +110,15 @@ def _construct_workspace(acme_type):
 
 
 def _prepare_acme_server(repo_path, workspace, acme_type, acme_option, acme_xdist):
+    """
+    Configure the ACME CA server instance. Upon exit, it has been verified that the
+    instance is up and running.
+    :param repo_path: path of the ACME CA server repository
+    :param workspace: current temporary directory
+    :param acme_type: ACME CA server type (boulder or pebble)
+    :param acme_option: relevant option for the current ACME CA server
+    :param acme_xdist: current acme_xdist dict
+    """
     print('=> Starting {0} instance deployment...'.format(acme_type))
     try:
         # Current acme servers sources are copied into the temporary workspace, to allow
@@ -99,6 +133,7 @@ def _prepare_acme_server(repo_path, workspace, acme_type, acme_option, acme_xdis
             os.rename(join(workspace, 'boulder/test/rate-limit-policies-b.yml'),
                       join(workspace, 'boulder/test/rate-limit-policies.yml'))
 
+        # This allow Pebble to be run in non strict mode if required.
         if acme_type == 'pebble' and acme_option == 'nonstrict':
             with open(join(instance_path, 'docker-compose.yml'), 'r') as file_h:
                 data = file_h.read()
@@ -109,6 +144,7 @@ def _prepare_acme_server(repo_path, workspace, acme_type, acme_option, acme_xdis
 
         print('=> Waiting for {0} instance to respond...'.format(acme_type))
 
+        # Wait for the ACME CA server to be up.
         misc.check_until_timeout(acme_xdist['directory_url'])
 
         # Configure challtestsrv to answer any A record request with ip of the docker host.
@@ -118,12 +154,19 @@ def _prepare_acme_server(repo_path, workspace, acme_type, acme_option, acme_xdis
         response.raise_for_status()
 
         print('=> Finished {0} instance deployment.'.format(acme_type))
-    except:
+    except BaseException:
         print('Error while setting up {0} instance.'.format(acme_type))
         raise
 
 
 def _prepare_traefik_proxy(workspace, acme_xdist):
+    """
+    Configure and launch Traefik. This reverse HTTP proxy allows the ACME CA to validate
+    http-01 challenges against multiple parallel instances, by redirecting the HTTP requests
+    to the relevant Certbot instance, based on the hostname concerned by the HTTP challenge.
+    :param str workspace: current temporary workspace
+    :param acme_xdist: current acme_xdist dict
+    """
     print('=> Starting traefik instance deployment...')
     try:
         instance_path = join(workspace, 'traefik')
@@ -170,67 +213,13 @@ networks:
         requests.put('http://localhost:8056/api/providers/rest', data=json.dumps(config)).raise_for_status()
 
         print('=> Finished traefik instance deployment.')
-    except Exception as e:
+    except BaseException:
         print('Error while setting up traefik instance.')
-        raise
-
-
-def _prepare_gobetween_proxy(workspace, acme_xdist):
-    print('=> Starting gobetween instance deployment...')
-    try:
-        instance_path = join(workspace, 'gobetween')
-        os.mkdir(instance_path)
-
-        with open(join(instance_path, 'docker-compose.yml'), 'w') as file_h:
-            file_h.write('''\
-    version: '3'
-    services:
-      gobetween:
-        image: yyyar/gobetween
-        command: /usr/bin/gobetween -c /etc/gobetween/conf/gobetween.json -f json
-        ports:
-          - "5001:5001"
-        volumes:
-          - {0}:/etc/gobetween/conf/gobetween.json:rw
-        networks:
-          gobetweennet:
-            ipv4_address: 10.44.44.2
-    networks:
-      gobetweennet:
-        driver: bridge
-        ipam:
-          config:
-            - subnet: 10.44.44.0/24
-    '''.format(join(instance_path, 'gobetween.json')))
-
-            config = {
-                'servers': {
-                    'default': {
-                        'bind': ':5001',
-                        'sni': {'hostname_matching_strategy': 'regexp'},
-                        'discovery': {
-                            'kind': 'static',
-                            'static_list': [r'10.44.44.1:{0} weight=1 sni=.+\.{1}\.wtf'.format(port, node)
-                                            for node, port in acme_xdist['http_port'].items()]
-                        }
-                    }
-                }
-            }
-
-        with open(join(instance_path, 'gobetween.json'), 'w') as file_h:
-            file_h.write(json.dumps(config))
-
-        _launch_command(['docker-compose', 'up', '--force-recreate', '-d'], cwd=instance_path)
-
-        print('=> Finished gobetween instance deployment.')
-    except Exception as e:
-        print('Error while setting up gobetween instance.')
         raise
 
 
 @contextlib.contextmanager
 def _prepare_repository(repositories_path, acme_type):
-    # type: (str, str) -> str
     """
     This contextmanager will construct a local GIT repository of the relevant ACME server,
     either pebble or boulder. And ensure to clean up correctly when context is destroyed if
@@ -261,7 +250,6 @@ def _prepare_repository(repositories_path, acme_type):
 
 
 def _launch_command(command, cwd=os.getcwd()):
-    # type: (List[str], str) -> None
     """
     Launch a subprocess command, turning off all output, and raising and exception if anything
     goes wrong with a print of the captured output.
