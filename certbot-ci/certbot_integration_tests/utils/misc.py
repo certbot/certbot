@@ -20,7 +20,6 @@ from OpenSSL import crypto
 
 
 def check_until_timeout(url):
-    # type: (str) -> None
     """
     Wait and block until given url responds with status 200, or raise and exception
     after 150 attempts.
@@ -42,7 +41,6 @@ def check_until_timeout(url):
 
 @contextlib.contextmanager
 def execute_in_given_cwd(cwd):
-    # type: (str) -> None
     """
     Context manager that will execute any command in the given cwd after context entering,
     and restore current cwd when context is destroyed.

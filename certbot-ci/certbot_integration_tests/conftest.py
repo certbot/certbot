@@ -12,12 +12,14 @@ import tempfile
 import subprocess
 import errno
 
-from _pytest import config as config_pytest
-
 from certbot_integration_tests.utils import acme
 
 
 def pytest_addoption(parser):
+    """
+    Standard pytest hook to add options to the pytest parser.
+    :param parser: current pytest parser that will be used on the CLI
+    """
     parser.addoption('--acme-server', default='pebble-nonstrict',
                      choices=['boulder-v1', 'boulder-v2',
                               'pebble-nonstrict', 'pebble-strict'],
@@ -27,10 +29,9 @@ def pytest_addoption(parser):
 
 
 def pytest_configure(config):
-    # type: (config_pytest.Config) -> None
     """
     Standard pytest hook used to add a configuration logic for each node of a pytest run.
-    :param pytest_config.Config config: the current pytest configuration
+    :param config: the current pytest configuration
     """
     if not hasattr(config, 'slaveinput'):
         with _print_on_err():
@@ -42,7 +43,6 @@ def pytest_configure(config):
 
 
 def _get_acme_xdist():
-    # type: () -> dict
     """
     Get the acme server config distribution from the environment variable "CERTBOT_ACME_XDIST"
     :return: a dict of the acme server config distribution
@@ -56,7 +56,6 @@ def _get_acme_xdist():
 
 @contextlib.contextmanager
 def _print_on_err():
-    # type: () -> None
     """
     With pytest-xdist, stdout is used for nodes communication, so print is uneffective.
     However, stderr is still available. This context manager transfers stdout to stderr
@@ -72,7 +71,6 @@ def _print_on_err():
 
 @contextlib.contextmanager
 def _certbot_ci_workspace():
-    # type: () -> str
     """
     Generate a temporary workspace for certbot-ci, that will be the base tempdir for any
     call to the Python tempdir functions during the execution of this context.
@@ -93,7 +91,6 @@ def _certbot_ci_workspace():
 
 
 def _setup_integration_tests(config):
-    # type: (config_pytest.Config) -> None
     """
     Setup the environment for integration tests.
     Will:
@@ -101,7 +98,7 @@ def _setup_integration_tests(config):
         - create a temporary workspace and the persistent GIT repositories space
         - configure and start paralleled ACME CA servers using Docker
         - transfer ACME CA servers configurations to pytest nodes using env variables
-    :param config_pytest.Config config: Configuration of the pytest master node
+    :param config: Configuration of the pytest master node
     """
     # Check for runtime compatibility: some tools are required to be available in PATH
     try:
