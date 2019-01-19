@@ -18,6 +18,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 * Fixed accessing josepy contents through acme.jose when the full acme.jose
   path is used.
+* Clarify behavior for deleting certs as part of revocation.
 
 Despite us having broken lockstep, we are continuing to release new versions of
 all Certbot components during releases for the time being, however, the only
@@ -47,7 +48,7 @@ More details about these changes can be found on our GitHub repo.
 
 * Copied account management functionality from the `register` subcommand
   to the `update_account` subcommand.
-* Marked usage `register --update-registration` for deprecation and 
+* Marked usage `register --update-registration` for deprecation and
   removal in a future release.
 
 ### Fixed
