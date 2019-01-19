@@ -18,7 +18,7 @@ import time
 from os.path import join, exists
 
 import requests
-import toml
+import json
 
 from certbot_integration_tests.utils import misc
 
@@ -33,9 +33,9 @@ def setup_acme_server(acme_config, nodes, repositories_path):
     workspace = _construct_workspace(acme_type)
 
     with _prepare_repository(repositories_path, acme_type) as repo_path:
-        _prepare_acme_server(repo_path, workspace, acme_type, acme_xdist)
+        _prepare_gobetween_proxy(workspace, acme_xdist)
         _prepare_traefik_proxy(workspace, acme_xdist)
-        _prepare_gobetween_proxy(workspace)
+        _prepare_acme_server(repo_path, workspace, acme_type, acme_xdist)
 
     time.sleep(800)
 
@@ -76,10 +76,7 @@ def _construct_workspace(acme_type):
                     pass
                 print('=> Finished tear down of {0} instance.'.format(acme_type))
         finally:
-            try:
-                shutil.rmtree(workspace)
-            except IOError:
-                pass
+            shutil.rmtree(workspace)
 
     # Here with atexit we ensure that clean function is called no matter what.
     atexit.register(cleanup)
@@ -126,15 +123,16 @@ def _prepare_traefik_proxy(workspace, acme_xdist):
         instance_path = join(workspace, 'traefik')
         os.mkdir(instance_path)
 
-        data = '''\
+        with open(join(instance_path, 'docker-compose.yml'), 'w') as file_h:
+            file_h.write('''\
 version: '3'
 services:
   traefik:
     image: traefik
+    command: --api --rest
     ports:
-      - "5002:5002"
-    volumes:
-      - {config}:/etc/traefik/traefik.toml
+      - "5002:80"
+      - "8056:8080"
     networks:
       traefiknet:
         ipv4_address: 10.33.33.2
@@ -142,52 +140,28 @@ networks:
   traefiknet:
     driver: bridge
     ipam:
-      driver: default
       config:
         - subnet: 10.33.33.0/24
-'''.format(config=join(instance_path, 'traefik.toml'))
+''')
 
-        with open(join(instance_path, 'docker-compose.yml'), 'w') as file_h:
-            file_h.write(data)
-
-        toml_config = {
-            'defaultEntrypoints': ['http'],
-            'entryPoints': {
-                'http': {
-                    'address': ':5002',
-                },
-                'api': {
-                    'address': ':5003'
-                }
+        config = {
+            'backends': {
+                node: {
+                    'servers': {node: {'url': 'http://10.33.33.1:{0}'.format(port)}}
+                } for node, port in acme_xdist['http_port'].items()
             },
-            'file': {
-                'backends': {
-                    node: {
-                        'servers': {
-                            node: 'http://10.33.33.1:{0}'.format(port)
-                        }
-                    } for node, port in acme_xdist['http_port'].items()
-                },
-                'frontends': {
-                    node: {
-                        'backend': node,
-                        'routes': {
-                            node: {
-                                'rule': '{{subdomain:.+}}.{0}.wtf'.format(node)
-                            }
-                        }
-                    } for node in acme_xdist['http_port'].keys()
-                }
-            },
-            'api': {
-                'entrypoint': 'api'
+            'frontends': {
+                node: {
+                    'backend': node,
+                    'routes': {node: {'rule': '{{subdomain:.+}}.{0}.wtf'.format(node)}}
+                } for node in acme_xdist['http_port'].keys()
             }
         }
 
-        with open(join(instance_path, 'traefik.toml'), 'w') as file_h:
-            file_h.write(toml.dumps(toml_config))
-
         _launch_command(['docker-compose', 'up', '--force-recreate', '-d'], cwd=instance_path)
+        misc.check_until_timeout('http://localhost:8056/api')
+
+        requests.put('http://localhost:8056/api/providers/rest', data=json.dumps(config)).raise_for_status()
 
         print('=> Finished traefik instance deployment.')
     except Exception as e:
@@ -195,8 +169,57 @@ networks:
         raise
 
 
-def _prepare_gobetween_proxy(workspace):
-    pass
+def _prepare_gobetween_proxy(workspace, acme_xdist):
+    print('=> Starting gobetween instance deployment...')
+    try:
+        instance_path = join(workspace, 'gobetween')
+        os.mkdir(instance_path)
+
+        with open(join(instance_path, 'docker-compose.yml'), 'w') as file_h:
+            file_h.write('''\
+    version: '3'
+    services:
+      gobetween:
+        image: yyyar/gobetween
+        command: /usr/bin/gobetween -c /etc/gobetween/conf/gobetween.json -f json
+        ports:
+          - "5001:5001"
+        volumes:
+          - {0}:/etc/gobetween/conf/gobetween.json:rw
+        networks:
+          gobetweennet:
+            ipv4_address: 10.44.44.2
+    networks:
+      gobetweennet:
+        driver: bridge
+        ipam:
+          config:
+            - subnet: 10.44.44.0/24
+    '''.format(join(instance_path, 'gobetween.json')))
+
+            config = {
+                'servers': {
+                    'default': {
+                        'bind': ':5001',
+                        'sni': {'hostname_matching_strategy': 'regexp'},
+                        'discovery': {
+                            'kind': 'static',
+                            'static_list': [r'10.44.44.1:{0} weight=1 sni=.+\.{1}\.wtf'.format(port, node)
+                                            for node, port in acme_xdist['http_port'].items()]
+                        }
+                    }
+                }
+            }
+
+        with open(join(instance_path, 'gobetween.json'), 'w') as file_h:
+            file_h.write(json.dumps(config))
+
+        _launch_command(['docker-compose', 'up', '--force-recreate', '-d'], cwd=instance_path)
+
+        print('=> Finished gobetween instance deployment.')
+    except Exception as e:
+        print('Error while setting up gobetween instance.')
+        raise
 
 
 @contextlib.contextmanager
@@ -240,7 +263,7 @@ def _launch_command(command, cwd=os.getcwd()):
     :param str cwd: workspace path to use for this command
     """
     try:
-        subprocess.check_call(command, stderr=subprocess.STDOUT, cwd=cwd, universal_newlines=True)
+        subprocess.check_output(command, stderr=subprocess.STDOUT, cwd=cwd, universal_newlines=True)
     except subprocess.CalledProcessError as e:
         sys.stderr.write(e.output)
         raise
