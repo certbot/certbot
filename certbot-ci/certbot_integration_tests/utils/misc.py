@@ -34,7 +34,7 @@ def check_until_timeout(url):
         try:
             if urlopen(url, context=context).getcode() == 200:
                 return
-        except IOError:
+        except:
             pass
 
     raise ValueError('Error, url did not respond after 150 attempts: {0}'.format(url))
