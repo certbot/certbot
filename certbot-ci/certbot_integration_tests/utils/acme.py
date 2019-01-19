@@ -49,7 +49,7 @@ def _construct_acme_xdist(acme_type, acme_option, nodes):
         port = 4001 if acme_option == 'v2' else 4000
         acme_xdist['directory_url'] = 'http://localhost:{0}/directory'.format(port)
 
-    acme_xdist['acme_subnet'] = '10.77.77' if acme_type == 'boulder' else '10.30.50.0'
+    acme_xdist['acme_subnet'] = '10.77.77' if acme_type == 'boulder' else '10.30.50'
     acme_xdist['http_port'] = {node: port for (node, port)
                                in zip(nodes, range(5200, 5200 + len(nodes)))}
     acme_xdist['https_port'] = {node: port for (node, port)
