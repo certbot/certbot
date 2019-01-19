@@ -28,15 +28,17 @@ TRAVIS_GO_VERSION = '1.11.2'
 
 def setup_acme_server(acme_config, nodes, repositories_path):
     acme_type = acme_config['type']
-    acme_xdist = _construct_acme_xdist(acme_type, acme_config['option'], nodes)
+    acme_option = acme_config['option']
+    acme_xdist = _construct_acme_xdist(acme_type, acme_option, nodes)
     workspace = _construct_workspace(acme_type)
 
     with _prepare_repository(repositories_path, acme_type) as repo_path:
         _prepare_gobetween_proxy(workspace, acme_xdist)
         _prepare_traefik_proxy(workspace, acme_xdist)
-        _prepare_acme_server(repo_path, workspace, acme_type, acme_xdist)
+        _prepare_acme_server(repo_path, workspace, acme_type, acme_option, acme_xdist)
 
     return acme_xdist
+
 
 def _construct_acme_xdist(acme_type, acme_option, nodes):
     acme_xdist = {'challtestsrv_port': 8055}
@@ -82,7 +84,7 @@ def _construct_workspace(acme_type):
     return workspace
 
 
-def _prepare_acme_server(repo_path, workspace, acme_type, acme_xdist):
+def _prepare_acme_server(repo_path, workspace, acme_type, acme_option, acme_xdist):
     print('=> Starting {0} instance deployment...'.format(acme_type))
     try:
         # Current acme servers sources are copied into the temporary workspace, to allow
@@ -97,6 +99,12 @@ def _prepare_acme_server(repo_path, workspace, acme_type, acme_xdist):
             os.rename(join(workspace, 'boulder/test/rate-limit-policies-b.yml'),
                       join(workspace, 'boulder/test/rate-limit-policies.yml'))
 
+        if acme_type == 'pebble' and acme_option == 'nonstrict':
+            with open(join(instance_path, 'docker-compose.yml'), 'r') as file_h:
+                data = file_h.read()
+            with open(join(instance_path, 'docker-compose.yml'), 'w') as file_h:
+                file_h.write(data.replace('-strict', ''))
+
         _launch_command(['docker-compose', 'up', '--force-recreate', '-d'], cwd=instance_path)
 
         print('=> Waiting for {0} instance to respond...'.format(acme_type))
@@ -110,7 +118,7 @@ def _prepare_acme_server(repo_path, workspace, acme_type, acme_xdist):
         response.raise_for_status()
 
         print('=> Finished {0} instance deployment.'.format(acme_type))
-    except Exception as e:
+    except:
         print('Error while setting up {0} instance.'.format(acme_type))
         raise
 
@@ -151,7 +159,7 @@ networks:
             'frontends': {
                 node: {
                     'backend': node,
-                    'routes': {node: {'rule': '{{subdomain:.+}}.{0}.wtf'.format(node)}}
+                    'routes': {node: {'rule': 'HostRegexp: {{subdomain:.+}}.{0}.wtf'.format(node)}}
                 } for node in acme_xdist['http_port'].keys()
             }
         }
@@ -261,7 +269,7 @@ def _launch_command(command, cwd=os.getcwd()):
     :param str cwd: workspace path to use for this command
     """
     try:
-        subprocess.check_output(command, stderr=subprocess.STDOUT, cwd=cwd, universal_newlines=True)
+        subprocess.check_call(command, stderr=subprocess.STDOUT, cwd=cwd, universal_newlines=True)
     except subprocess.CalledProcessError as e:
         sys.stderr.write(e.output)
         raise
