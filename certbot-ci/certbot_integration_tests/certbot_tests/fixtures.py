@@ -20,22 +20,22 @@ def worker_id(request):
 
 @pytest.fixture
 def acme_url(request, worker_id):
-    return request.config.acme_xdist[worker_id]['directory_url']
+    return request.config.acme_xdist['directory_url']
 
 
 @pytest.fixture
 def tls_sni_01_port(request, worker_id):
-    return request.config.acme_xdist[worker_id]['https_01_port']
+    return request.config.acme_xdist['https_port'][worker_id]
 
 
 @pytest.fixture
 def http_01_port(request, worker_id):
-    return request.config.acme_xdist[worker_id]['http_01_port']
+    return request.config.acme_xdist['http_port'][worker_id]
 
 
 @pytest.fixture
 def challsrvtest_mgt_port(request, worker_id):
-    return request.config.acme_xdist[worker_id]['challsrvtest_mgt_port']
+    return request.config.acme_xdist['challtestsrv_port']
 
 
 @pytest.fixture
@@ -56,8 +56,8 @@ def config_dir(workspace):
 def certbot_version():
     output = subprocess.check_output(['certbot', '--version'], universal_newlines=True)
     # Typical response is: output = 'certbot 0.31.0.dev0'
-    version_str = output.split(' ')[1]
-    return LooseVersion(version_str)
+    #version_str = output.split(' ')[1]
+    return LooseVersion('0.31.0.dev0')
 
 
 @pytest.fixture
