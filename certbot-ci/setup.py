@@ -16,6 +16,7 @@ install_requires = [
     'six',
     'pyopenssl',
     'cryptography',
+    'toml',
 ]
 
 setup(
