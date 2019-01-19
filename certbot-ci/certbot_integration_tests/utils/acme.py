@@ -14,7 +14,6 @@ import subprocess
 import contextlib
 import shutil
 import sys
-import time
 from os.path import join, exists
 
 import requests
@@ -37,8 +36,7 @@ def setup_acme_server(acme_config, nodes, repositories_path):
         _prepare_traefik_proxy(workspace, acme_xdist)
         _prepare_acme_server(repo_path, workspace, acme_type, acme_xdist)
 
-    time.sleep(800)
-
+    return acme_xdist
 
 def _construct_acme_xdist(acme_type, acme_option, nodes):
     acme_xdist = {'challtestsrv_port': 8055}
