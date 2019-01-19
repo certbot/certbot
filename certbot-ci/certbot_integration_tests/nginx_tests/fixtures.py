@@ -46,9 +46,9 @@ def nginx_original_config(nginx_root):
 
 @pytest.fixture
 def nginx_config_gen(nginx_root, nginx_config, nginx_original_config, webroot,
-                     tls_sni_01_port, http_01_port, other_port, worker_id):
+                     tls_alpn_01_port, http_01_port, other_port, worker_id):
     def func(default_server):
-        config = construct_nginx_config(nginx_root, webroot, http_01_port, tls_sni_01_port, other_port,
+        config = construct_nginx_config(nginx_root, webroot, http_01_port, tls_alpn_01_port, other_port,
                                         default_server, worker_id)
 
         with open(nginx_config, 'w') as file:
@@ -98,9 +98,9 @@ def certbot_test_nginx(certbot_test, nginx_root):
 
 @pytest.fixture
 def assert_deployment_and_rollback(workspace, nginx_root, nginx_config, nginx_original_config,
-                                   tls_sni_01_port, certbot_test_no_force_renew):
+                                   tls_alpn_01_port, certbot_test_no_force_renew):
     def func(certname):
-        server_cert = ssl.get_server_certificate(('localhost', tls_sni_01_port))
+        server_cert = ssl.get_server_certificate(('localhost', tls_alpn_01_port))
         with open(os.path.join(workspace, 'conf/live/{0}/cert.pem'.format(certname)), 'r') as file:
             certbot_cert = file.read()
 

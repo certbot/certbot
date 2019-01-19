@@ -58,27 +58,10 @@ def test_prepare_plugins(common, capsys, worker_id):
     assert 'webroot' in output
 
 
-@skip_on_pebble('TLS-SNI-01 challenges are deprecated, and so are not supported by Pebble')
-def test_tls_sni_01(common, config_dir, hook_probe, http_01_server, worker_id):
-    assert http_01_server
-
-    certname = 'le1.{0}.wtf'.format(worker_id)
-    common([
-        '--domains', certname, '--preferred-challenges', 'tls-sni-01', 'run',
-        '--cert-name', certname,
-        '--pre-hook', 'echo wtf.pre >> "{0}"'.format(hook_probe),
-        '--post-hook', 'echo wtf.post >> "{0}"'.format(hook_probe),
-        '--deploy-hook', 'echo deploy >> "{0}"'.format(hook_probe)
-    ])
-
-    assert_hook_execution(hook_probe, 'deploy')
-    assert_save_renew_hook(config_dir, certname)
-
-
 @skip_on_pebble_strict('HTTP-01 challenges use useless keyAuthorization keys,'
                        'and so are not supported by Pebble with strict mode.')
-def test_http_01(common, config_dir, hook_probe, tls_sni_01_server, worker_id):
-    assert tls_sni_01_server
+def test_http_01(common, config_dir, hook_probe, tls_alpn_01_server, worker_id):
+    assert tls_alpn_01_server
 
     certname = 'le2.{0}.wtf'.format(worker_id)
     common([
@@ -115,7 +98,7 @@ def test_manual_dns_auth(common, hook_probe, config_dir,
                          manual_dns_auth_hook, manual_dns_cleanup_hook, worker_id):
     certname = 'dns.{0}.wtf'.format(worker_id)
     common([
-        '-a', 'manual', '-d', certname, '--preferred-challenges', 'dns,tls-sni',
+        '-a', 'manual', '-d', certname, '--preferred-challenges', 'dns',
         'run', '--cert-name', certname,
         '--manual-auth-hook', manual_dns_auth_hook,
         '--manual-cleanup-hook', manual_dns_cleanup_hook,
@@ -286,7 +269,7 @@ def test_invalid_domain_with_dns_challenge(common, manual_dns_auth_hook, manual_
     common([
         '-a', 'manual', '-d', 'dns1.{0}.wtf,fail-dns1.{0}.wtf'.format(worker_id),
         '--allow-subset-of-names',
-        '--preferred-challenges', 'dns,tls-sni',
+        '--preferred-challenges', 'dns',
         '--manual-auth-hook', manual_dns_auth_hook,
         '--manual-cleanup-hook', manual_dns_cleanup_hook
     ])

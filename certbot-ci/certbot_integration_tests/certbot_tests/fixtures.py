@@ -24,7 +24,7 @@ def acme_url(request, worker_id):
 
 
 @pytest.fixture
-def tls_sni_01_port(request, worker_id):
+def tls_alpn_01_port(request, worker_id):
     return request.config.acme_xdist['https_port'][worker_id]
 
 
@@ -62,7 +62,7 @@ def certbot_version():
 
 @pytest.fixture
 def certbot_test_no_force_renew(workspace, config_dir, acme_url,
-                                http_01_port, tls_sni_01_port,
+                                http_01_port, tls_alpn_01_port,
                                 certbot_version, capsys):
     new_environ = os.environ.copy()
     new_environ['TMPDIR'] = workspace
@@ -76,7 +76,7 @@ def certbot_test_no_force_renew(workspace, config_dir, acme_url,
             'certbot',
             '--server', acme_url,
             '--no-verify-ssl',
-            '--tls-sni-01-port', str(tls_sni_01_port),
+            '--tls-sni-01-port', str(tls_alpn_01_port),
             '--http-01-port', str(http_01_port),
             '--manual-public-ip-logging-ok',
             '--config-dir', config_dir,
@@ -137,8 +137,8 @@ def http_01_server(http_01_port):
 
 
 @pytest.fixture
-def tls_sni_01_server(tls_sni_01_port):
-    with misc.create_tcp_server(tls_sni_01_port) as webroot:
+def tls_alpn_01_server(tls_alpn_01_port):
+    with misc.create_tcp_server(tls_alpn_01_port) as webroot:
         yield webroot
 
 

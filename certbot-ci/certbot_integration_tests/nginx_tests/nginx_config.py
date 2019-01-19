@@ -67,7 +67,7 @@ http {{
     listen {http_port} {default_server};
     # IPv6.
     listen [::]:{http_port} {default_server};
-    server_name nginx.{wtf_prefix}.wtf nginx-tls.{wtf_prefix}.wtf nginx2.{wtf_prefix}.wtf;
+    server_name nginx.{wtf_prefix}.wtf nginx2.{wtf_prefix}.wtf;
 
     root {nginx_webroot};
 

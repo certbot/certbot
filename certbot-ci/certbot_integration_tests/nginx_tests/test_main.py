@@ -15,9 +15,6 @@ testdata1 = [
     ('nginx4.{0}.wtf', ['--preferred-challenges', 'http']),
 ]
 
-if 'boulder' in os.environ.get('CERTBOT_ACME_TYPE'):
-    testdata1.insert(2, ('nginx-tls.{0}.wtf', ['run', '--preferred-challenges', 'tls-sni']))
-
 
 @pytest.mark.parametrize('certname_pattern, params', testdata1)
 def test_nginx_with_default_server(certname_pattern, params, certbot_test_nginx, worker_id,
