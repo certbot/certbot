@@ -3,7 +3,7 @@ import getpass
 
 
 def construct_nginx_config(nginx_root, nginx_webroot, http_port, https_port,
-                           other_port, default_server):
+                           other_port, default_server, wtf_prefix='le'):
     """
     This method returns a full nginx configuration suitable for integration tests.
     :param nginx_root: nginx root configuration path
@@ -67,7 +67,7 @@ http {{
     listen {http_port} {default_server};
     # IPv6.
     listen [::]:{http_port} {default_server};
-    server_name nginx.wtf nginx-tls.wtf nginx2.wtf;
+    server_name nginx.{wtf_prefix}.wtf nginx-tls.{wtf_prefix}.wtf nginx2.{wtf_prefix}.wtf;
 
     root {nginx_webroot};
 
@@ -81,7 +81,7 @@ http {{
   server {{
     listen {http_port};
     listen [::]:{http_port};
-    server_name nginx3.wtf;
+    server_name nginx3.{wtf_prefix}.wtf;
 
     root {nginx_webroot};
 
@@ -95,7 +95,7 @@ http {{
   server {{
     listen {other_port};
     listen [::]:{other_port};
-    server_name nginx4.wtf nginx5.wtf;
+    server_name nginx4.{wtf_prefix}.wtf nginx5.{wtf_prefix}.wtf;
   }}
 
   server {{
@@ -106,7 +106,7 @@ http {{
     if ($scheme != "https") {{
       return 301 https://$host$request_uri;
     }}
-    server_name nginx6.wtf nginx7.wtf;
+    server_name nginx6.{wtf_prefix}.wtf nginx7.{wtf_prefix}.wtf;
   }}
 }}
         '''.format(nginx_root=nginx_root,
@@ -115,4 +115,5 @@ http {{
                    http_port=http_port,
                    https_port=https_port,
                    other_port=other_port,
-                   default_server=default_server)
+                   default_server=default_server,
+                   wtf_prefix=wtf_prefix)

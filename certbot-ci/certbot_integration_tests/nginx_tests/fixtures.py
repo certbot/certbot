@@ -46,9 +46,10 @@ def nginx_original_config(nginx_root):
 
 @pytest.fixture
 def nginx_config_gen(nginx_root, nginx_config, nginx_original_config, webroot,
-                     tls_sni_01_port, http_01_port, other_port):
+                     tls_sni_01_port, http_01_port, other_port, worker_id):
     def func(default_server):
-        config = construct_nginx_config(nginx_root, webroot, http_01_port, tls_sni_01_port, other_port, default_server)
+        config = construct_nginx_config(nginx_root, webroot, http_01_port, tls_sni_01_port, other_port,
+                                        default_server, worker_id)
 
         with open(nginx_config, 'w') as file:
             file.write(config)
