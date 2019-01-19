@@ -1311,7 +1311,8 @@ def _create_subparsers(helpful):
     helpful.add("revoke",
                 "--delete-after-revoke", action="store_true",
                 default=flag_default("delete_after_revoke"),
-                help="Delete certificates after revoking them.")
+                help="Delete certificates after revoking them, along with all previous and later "
+                "versions of those certificates.")
     helpful.add("revoke",
                 "--no-delete-after-revoke", action="store_false",
                 dest="delete_after_revoke",
