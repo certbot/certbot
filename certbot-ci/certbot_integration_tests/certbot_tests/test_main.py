@@ -24,7 +24,7 @@ def test_basic_commands(common, workspace, worker_id):
     common(['--help', 'all'])
     common(['--version'])
 
-    with pytest.raises(subprocess.CalledProcessError, worker_id):
+    with pytest.raises(subprocess.CalledProcessError):
         common(['--csr'])
 
     new_count_tmpfiles = len(os.listdir(workspace))
@@ -34,7 +34,7 @@ def test_basic_commands(common, workspace, worker_id):
 def test_hook_dirs_creation(common, config_dir, worker_id):
     common(['register'])
 
-    for hook_dir in misc.list_renewal_hooks_dirs(config_dir, worker_id):
+    for hook_dir in misc.list_renewal_hooks_dirs(config_dir):
         assert os.path.isdir(hook_dir)
 
 
@@ -233,7 +233,7 @@ def test_renew(config_dir, common_no_force_renew, common, hook_probe, worker_id)
 
     # Fifth, we clean every dir hook, and replace their content by empty dir and empty files.
     # Everything should renew correctly.
-    for hook_dir in misc.list_renewal_hooks_dirs(config_dir, worker_id):
+    for hook_dir in misc.list_renewal_hooks_dirs(config_dir):
         shutil.rmtree(hook_dir)
         os.makedirs(join(hook_dir, 'dir'))
         open(join(hook_dir, 'file'), 'w').close()
@@ -340,7 +340,8 @@ def test_ecdsa(common, workspace, worker_id):
 def test_ocsp_must_staple(common, config_dir, worker_id):
     common(['auth', '--must-staple', '--domains', 'must-staple.{0}.wtf'.format(worker_id)])
 
-    certificate = misc.read_certificate(join(config_dir, 'live/must-staple.{0}.wtf/cert.pem'))
+    certificate = misc.read_certificate(join(config_dir,
+                                             'live/must-staple.{0}.wtf/cert.pem').format(worker_id))
     assert 'status_request' in certificate or '1.3.6.1.5.5.7.1.24'
 
 
@@ -401,7 +402,7 @@ def test_revoke_corner_cases(common, config_dir, worker_id):
         ])
         assert 'Exactly one of --cert-path or --cert-name must be specified' in error.out
 
-    assert os.path.isfile(join(config_dir, 'renewal/le1.wtf.conf'))
+    assert os.path.isfile(join(config_dir, 'renewal/le1.{0}.wtf.conf'.format(worker_id)))
 
     common(['-d', 'le2.{0}.wtf'.format(worker_id)])
     with open(join(config_dir, 'renewal/le2.{0}.wtf.conf'.format(worker_id)), 'r') as file:
