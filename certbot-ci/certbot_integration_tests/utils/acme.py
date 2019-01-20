@@ -199,7 +199,7 @@ networks:
 def _launch_command(command, cwd=os.getcwd()):
     """Launch silently an OS command, output will be displayed in case of failure"""
     try:
-        subprocess.check_call(command, stderr=subprocess.STDOUT, cwd=cwd, universal_newlines=True)
+        subprocess.check_output(command, stderr=subprocess.STDOUT, cwd=cwd, universal_newlines=True)
     except subprocess.CalledProcessError as e:
         sys.stderr.write(e.output)
         raise
