@@ -184,9 +184,12 @@ class _UnixLockMechanism(_BaseLockMechanism):
         try:
             os.remove(self._path)
         finally:
+            # Following check is done to make mypy happy: it ensure that self._fd, marked
+            # as Optional[int] is effectively int to make it compatible with os.close signature.
+            if self._fd is None:  # pragma: no cover
+                raise TypeError('Error, self._fd is None.')
             try:
-                if self._fd:
-                    os.close(self._fd)
+                os.close(self._fd)
             finally:
                 self._fd = None
 
@@ -211,7 +214,7 @@ class _WindowsLockMechanism(_BaseLockMechanism):
     def __init__(self, path):
         # type: (str) -> None
         self._path = path
-        self._fd = None
+        self._fd = None  # type: Optional[int]
 
     def acquire(self):
         """Acquire the lock"""
@@ -232,19 +235,18 @@ class _WindowsLockMechanism(_BaseLockMechanism):
 
     def release(self):
         """Release the lock."""
-        if self._fd:
-            try:
-                msvcrt.locking(self._fd, msvcrt.LK_UNLCK, 1)
-                os.close(self._fd)
+        try:
+            msvcrt.locking(self._fd, msvcrt.LK_UNLCK, 1)
+            os.close(self._fd)
 
-                try:
-                    os.remove(self._path)
-                except OSError as e:
-                    # If the lock file cannot be removed, it is not a big deal.
-                    # Likely another instance is acquiring the lock we just released.
-                    logger.debug(str(e))
-            finally:
-                self._fd = None
+            try:
+                os.remove(self._path)
+            except OSError as e:
+                # If the lock file cannot be removed, it is not a big deal.
+                # Likely another instance is acquiring the lock we just released.
+                logger.debug(str(e))
+        finally:
+            self._fd = None
 
     def is_locked(self):
         # type: () -> bool
