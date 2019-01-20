@@ -187,7 +187,7 @@ networks:
             },
             'frontends': {
                 node: {
-                    'backend': node,
+                    'backend': node, 'passHostHeader': True,
                     'routes': {node: {'rule': 'HostRegexp: {{subdomain:.+}}.{0}.wtf'.format(node)}}
                 } for node in acme_xdist['http_port'].keys()
             }
