@@ -286,10 +286,6 @@ class UniqueLineageNameTest(test_util.TempDirTestCase):
         with mock.patch("certbot.util.os.open", side_effect=OSError(errno.EIO)):
             self.assertRaises(OSError, self._call, "wow")
 
-    def test_subsequent_failure(self):
-        with mock.patch("certbot.util.os.open", side_effect=OSError(errno.EIO)):
-            self.assertRaises(OSError, self._call, "wow")
-
 
 class SafelyRemoveTest(test_util.TempDirTestCase):
     """Tests for certbot.util.safely_remove."""
