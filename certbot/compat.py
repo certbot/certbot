@@ -17,15 +17,6 @@ import stat
 
 from certbot import errors
 
-try:
-    import fcntl  # pylint: disable=import-error,unused-import
-except ImportError:
-    # Windows specific
-    POSIX_MODE = False
-else:
-    # Linux specific
-    POSIX_MODE = True
-
 UNPRIVILEGED_SUBCOMMANDS_ALLOWED = [
     'certificates', 'enhance', 'revoke', 'delete',
     'register', 'unregister', 'config_changes', 'plugins']
@@ -126,7 +117,7 @@ def readline_with_timeout(timeout, prompt):
 
 def compare_file_modes(mode1, mode2):
     """Return true if the two modes can be considered as equals for this platform"""
-    if POSIX_MODE:
+    if os.name != 'nt':
         # Linux specific: standard compare
         return oct(stat.S_IMODE(mode1)) == oct(stat.S_IMODE(mode2))
     # Windows specific: most of mode bits are ignored on Windows. Only check user R/W rights.
@@ -156,7 +147,7 @@ def get_default_folder(folder_type):
     :rtype: str
 
     """
-    if POSIX_MODE:
+    if os.name != 'nt':
         # Linux specific
         return LINUX_DEFAULT_FOLDERS[folder_type]
     # Windows specific
