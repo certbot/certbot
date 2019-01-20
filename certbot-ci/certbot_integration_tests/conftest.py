@@ -116,14 +116,6 @@ def _setup_integration_tests(config):
     workers = ['master'] if not config.option.numprocesses\
         else ['gw{0}'.format(i) for i in range(config.option.numprocesses)]
 
-    root_dir = os.path.dirname(os.path.dirname(__file__))
-    repositories_path = os.path.join(root_dir, '.ci_assets', 'integration_tests')
-    try:
-        os.makedirs(repositories_path)
-    except OSError as error:
-        if error.errno != errno.EEXIST:
-            raise
-
     # By calling certbot_ci_workspace, the tempfile.tempdir value of standard tempfile module is
     # modified for the context execution time, to ensure that any temporary assets will be created
     # under the cerbot-ci workspace.
@@ -140,7 +132,7 @@ def _setup_integration_tests(config):
             acme_config['option'] = 'v1' if 'v1' in acme_server else 'v2'
         # By calling setup_acme_server we ensure that all necessary acme servers instances will be
         # fully started. This runtime is reflected by the acme_xdist returned.
-        acme_xdist = acme.setup_acme_server(acme_config, workers, repositories_path)
+        acme_xdist = acme.setup_acme_server(acme_config, workers)
         os.environ['CERTBOT_ACME_TYPE'] = acme_server
         os.environ['CERTBOT_ACME_XDIST'] = json.dumps(acme_xdist)
         print('ACME xdist config:\n{0}'.format(os.environ['CERTBOT_ACME_XDIST']))
