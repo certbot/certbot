@@ -94,20 +94,6 @@ class LockFile(object):
 
 
 class _BaseLockMechanism(object):
-    def acquire(self): pass  # pylint: disable=missing-docstring,multiple-statements
-
-    def release(self): pass  # pylint: disable=missing-docstring,multiple-statements
-
-    def is_locked(self): pass  # pylint: disable=missing-docstring,multiple-statements
-
-
-class _UnixLockMechanism(_BaseLockMechanism):
-    """
-    A UNIX lock file mechanism.
-    This lock file is released when the locked file is closed or the
-    process exits. It cannot be used to provide synchronization between
-    threads. It is based on the lock_file package by Martin Horcicka.
-    """
     def __init__(self, path):
         # type: (str) -> None
         """
@@ -117,6 +103,26 @@ class _UnixLockMechanism(_BaseLockMechanism):
         self._path = path
         self._fd = None  # type: Optional[int]
 
+    def is_locked(self):
+        # type: () -> bool
+        """Check if lock file is currently locked.
+        :return: True if the lock file is locked
+        :rtype: bool
+        """
+        return self._fd is not None
+
+    def acquire(self): pass  # pylint: disable=missing-docstring,multiple-statements
+
+    def release(self): pass  # pylint: disable=missing-docstring,multiple-statements
+
+
+class _UnixLockMechanism(_BaseLockMechanism):
+    """
+    A UNIX lock file mechanism.
+    This lock file is released when the locked file is closed or the
+    process exits. It cannot be used to provide synchronization between
+    threads. It is based on the lock_file package by Martin Horcicka.
+    """
     def acquire(self):
         # type: () -> None
         """Acquire the lock."""
@@ -193,14 +199,6 @@ class _UnixLockMechanism(_BaseLockMechanism):
             finally:
                 self._fd = None
 
-    def is_locked(self):
-        # type: () -> bool
-        """Check if lock file is currently locked.
-        :return: True if the lock file is locked
-        :rtype: bool
-        """
-        return self._fd is not None
-
 
 class _WindowsLockMechanism(_BaseLockMechanism):
     """
@@ -211,11 +209,6 @@ class _WindowsLockMechanism(_BaseLockMechanism):
     only after it has been released: so the concurrency access that may occur on POSIX
     system is irrelevant here, leading to a quite simple code.
     """
-    def __init__(self, path):
-        # type: (str) -> None
-        self._path = path
-        self._fd = None  # type: Optional[int]
-
     def acquire(self):
         """Acquire the lock"""
         open_mode = os.O_RDWR | os.O_CREAT | os.O_TRUNC
@@ -247,11 +240,3 @@ class _WindowsLockMechanism(_BaseLockMechanism):
                 logger.debug(str(e))
         finally:
             self._fd = None
-
-    def is_locked(self):
-        # type: () -> bool
-        """Check if lock file is currently lock.
-        :return: True if the lock file is locked
-        :rtype: bool
-        """
-        return self._fd is not None
