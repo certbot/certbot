@@ -64,4 +64,4 @@ test_deployment_and_rollback nginx6.wtf
 # top
 nginx -c $nginx_root/nginx.conf -s stop
 
-coverage report --fail-under 75 --include 'certbot-nginx/*' --show-missing
+coverage report --fail-under 72 --include 'certbot-nginx/*' --show-missing
