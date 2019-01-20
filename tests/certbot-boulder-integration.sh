@@ -223,6 +223,18 @@ common plugins --init --prepare | grep webroot
 # unrequested challenge to prevent regressions in #3601.
 python ./tests/run_http_server.py $tls_alpn_01_port &
 python_server_pid=$!
+certname="le1.wtf"
+common --domains le1.wtf --preferred-challenges http-01 auth \
+       --cert-name $certname \
+       --pre-hook 'echo wtf.pre >> "$HOOK_TEST"' \
+       --post-hook 'echo wtf.post >> "$HOOK_TEST"'\
+       --deploy-hook 'echo deploy >> "$HOOK_TEST"'
+CheckDeployHook $certname
+
+# Previous test used to be a tls-sni-01 challenge that has now not supported anymore.
+# Now it is a http-01 challenge, that is making it a duplicate of the following test.
+# But removing it would break many tests here, that are strongly coupled.
+# See https://github.com/certbot/certbot/pull/6679
 certname="le2.wtf"
 common --domains le2.wtf --preferred-challenges http-01 run \
        --cert-name $certname \
