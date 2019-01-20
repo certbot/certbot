@@ -1,11 +1,4 @@
-"""
-This module contains all relevant methods to construct in parallel independent acme server
-instances. Independent here means that these instances do not see each other, and that each
-pytest node will access to only one acme server, that is reserved for this node exclusively.
-The mapping between a node and an instance takes the form of a map whose keys are the node names,
-and values are dictionaries that contains the ACME directory URL, and ports to use to validate
-each available challenge.
-"""
+"""Module to setup an ACME CA server environment able to run multiple tests in parallel"""
 from __future__ import print_function
 import tempfile
 import atexit
@@ -21,16 +14,12 @@ import json
 
 from certbot_integration_tests.utils import misc
 
-# Current boulder version to test. Pebble do not have it, so master will always be executed.
-BOULDER_VERSION = '2018-12-13'
-TRAVIS_GO_VERSION = '1.11.2'
-
 
 def setup_acme_server(acme_config, nodes, repositories_path):
     """
-    Main purpose of this module. This method will setup an ACME CA server and a HTTP reverse proxy
-    instances, to allow parallel execution of integration tests. Instances are properly closed and
-    cleaned when the Python process exit, using atexit.
+    This method will setup an ACME CA server and a HTTP reverse proxy instances, to allow parallel
+    execution of integration tests against the unique http-01 port expected by the ACME CA server.
+    Instances are properly closed and cleaned when the Python process exits using atexit.
     Typically all pytest integration tests will be executed in this context.
     This method returns an object describing ports and directory url to use for each pytest node
     with the relevant pytest xdist node.
@@ -54,14 +43,7 @@ def setup_acme_server(acme_config, nodes, repositories_path):
 
 
 def _construct_acme_xdist(acme_type, acme_option, nodes):
-    """
-    Generate the acme_xdist dict, that describes which ports to use for each pytest node<
-    :param str acme_type: ACME CA server type (boulder or pebble)
-    :param str acme_option: relevant option for the current ACME CA server
-    :param str[] nodes: list of nodes name that will be setup by pytest xdist
-    :return: a dict describing the challenges ports that have been setup for the nodes
-    :rtype: dict
-    """
+    """Generate and return the acme_xdist dict"""
     acme_xdist = {'challtestsrv_port': 8055}
 
     if acme_type == 'pebble':
@@ -80,12 +62,7 @@ def _construct_acme_xdist(acme_type, acme_option, nodes):
 
 
 def _construct_workspace(acme_type):
-    """
-    Generate a temporary workspace, and setup atexit handlers to clean after pytest execution.
-    :param str acme_type: ACME CA server type (boulder or pebble)
-    :return: the workspace path
-    :rtype: str
-    """
+    """Create a temporary workspace for integration tests stack"""
     workspace = tempfile.mkdtemp()
 
     def cleanup():
@@ -110,15 +87,7 @@ def _construct_workspace(acme_type):
 
 
 def _prepare_acme_server(repo_path, workspace, acme_type, acme_option, acme_xdist):
-    """
-    Configure the ACME CA server instance. Upon exit, it has been verified that the
-    instance is up and running.
-    :param repo_path: path of the ACME CA server repository
-    :param workspace: current temporary directory
-    :param acme_type: ACME CA server type (boulder or pebble)
-    :param acme_option: relevant option for the current ACME CA server
-    :param acme_xdist: current acme_xdist dict
-    """
+    """Configure and launch the ACME server, Boulder or Pebble"""
     print('=> Starting {0} instance deployment...'.format(acme_type))
     try:
         # Current acme servers sources are copied into the temporary workspace, to allow
@@ -133,12 +102,35 @@ def _prepare_acme_server(repo_path, workspace, acme_type, acme_option, acme_xdis
             os.rename(join(workspace, 'boulder/test/rate-limit-policies-b.yml'),
                       join(workspace, 'boulder/test/rate-limit-policies.yml'))
 
-        # This allow Pebble to be run in non strict mode if required.
-        if acme_type == 'pebble' and acme_option == 'nonstrict':
-            with open(join(instance_path, 'docker-compose.yml'), 'r') as file_h:
-                data = file_h.read()
+        # This configure Pebble using precompiled containers.
+        if acme_type == 'pebble':
             with open(join(instance_path, 'docker-compose.yml'), 'w') as file_h:
-                file_h.write(data.replace('-strict', ''))
+                file_h.write('''\
+version: '3'
+services:
+  pebble:
+    image: letsencrypt/pebble
+    command: pebble -config /test/config/pebble-config.json {strict} -dnsserver 10.30.50.3:8053
+    ports:
+      - 14000:14000
+    networks:
+      acmenet:
+        ipv4_address: 10.30.50.2
+  challtestsrv:
+    image: letsencrypt/pebble-challtestsrv
+    command: pebble-challtestsrv -defaultIPv6 "" -defaultIPv4 10.30.50.3
+    ports:
+      - 8055:8055
+    networks:
+      acmenet:
+        ipv4_address: 10.30.50.3
+networks:
+  acmenet:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.30.50.0/24
+'''.format(strict='-strict' if acme_option == 'strict' else ''))
 
         _launch_command(['docker-compose', 'up', '--force-recreate', '-d'], cwd=instance_path)
 
@@ -160,13 +152,7 @@ def _prepare_acme_server(repo_path, workspace, acme_type, acme_option, acme_xdis
 
 
 def _prepare_traefik_proxy(workspace, acme_xdist):
-    """
-    Configure and launch Traefik. This reverse HTTP proxy allows the ACME CA to validate
-    http-01 challenges against multiple parallel instances, by redirecting the HTTP requests
-    to the relevant Certbot instance, based on the hostname concerned by the HTTP challenge.
-    :param str workspace: current temporary workspace
-    :param acme_xdist: current acme_xdist dict
-    """
+    """Configure and launch Traefik, the HTTP reverse proxy"""
     print('=> Starting traefik instance deployment...')
     try:
         instance_path = join(workspace, 'traefik')
@@ -220,15 +206,7 @@ networks:
 
 @contextlib.contextmanager
 def _prepare_repository(repositories_path, acme_type):
-    """
-    This contextmanager will construct a local GIT repository of the relevant ACME server,
-    either pebble or boulder. And ensure to clean up correctly when context is destroyed if
-    something goes wrong. Otherwise the repository is conserved, to speed up further executions.
-    :param str repositories_path: the repositories path to use to store the GIT repo.
-    :param str acme_type: type of acme server, pebble or boulder
-    :return: the repository path
-    :rtype: str
-    """
+    """Fetch the relevant GIT repository for ACME CA server selected"""
     print('=> Preparing GIT repositories...')
     repo_path = join(repositories_path, acme_type)
 
@@ -250,12 +228,7 @@ def _prepare_repository(repositories_path, acme_type):
 
 
 def _launch_command(command, cwd=os.getcwd()):
-    """
-    Launch a subprocess command, turning off all output, and raising and exception if anything
-    goes wrong with a print of the captured output.
-    :param str[] command: the command to launch
-    :param str cwd: workspace path to use for this command
-    """
+    """Launch silently an OS command, output will be displayed in case of failure"""
     try:
         subprocess.check_call(command, stderr=subprocess.STDOUT, cwd=cwd, universal_newlines=True)
     except subprocess.CalledProcessError as e:
