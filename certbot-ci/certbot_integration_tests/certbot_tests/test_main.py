@@ -419,7 +419,7 @@ def test_wildcard_certificates(context):
     certname = context.wtf('wild')
 
     context.common([
-        '-a', 'manual', '-d', '*.{0}.{0}'.format(certname),
+        '-a', 'manual', '-d', '*.{0},{0}'.format(certname),
         '--preferred-challenge', 'dns',
         '--manual-auth-hook', context.manual_dns_auth_hook,
         '--manual-cleanup-hook', context.manual_dns_cleanup_hook
