@@ -879,45 +879,6 @@ class RenewableCert(object):
         with open(target) as f:
             return crypto_util.get_names_from_cert(f.read())
 
-    def autodeployment_is_enabled(self):
-        """Is automatic deployment enabled for this cert?
-
-        If autodeploy is not specified, defaults to True.
-
-        :returns: True if automatic deployment is enabled
-        :rtype: bool
-
-        """
-        return ("autodeploy" not in self.configuration or
-                self.configuration.as_bool("autodeploy"))
-
-    def should_autodeploy(self, interactive=False):
-        """Should this lineage now automatically deploy a newer version?
-
-        This is a policy question and does not only depend on whether
-        there is a newer version of the cert. (This considers whether
-        autodeployment is enabled, whether a relevant newer version
-        exists, and whether the time interval for autodeployment has
-        been reached.)
-
-        :param bool interactive: set to True to examine the question
-            regardless of whether the renewal configuration allows
-            automated deployment (for interactive use). Default False.
-
-        :returns: whether the lineage now ought to autodeploy an
-            existing newer cert version
-        :rtype: bool
-
-        """
-        if interactive or self.autodeployment_is_enabled():
-            if self.has_pending_deployment():
-                interval = self.configuration.get("deploy_before_expiry",
-                                                  "5 days")
-                now = pytz.UTC.fromutc(datetime.datetime.utcnow())
-                if self.target_expiry < add_time_interval(now, interval):
-                    return True
-        return False
-
     def ocsp_revoked(self, version=None):
         # pylint: disable=no-self-use,unused-argument
         """Is the specified cert version revoked according to OCSP?
