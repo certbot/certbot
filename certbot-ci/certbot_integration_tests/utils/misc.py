@@ -13,6 +13,7 @@ import multiprocessing
 import sys
 import stat
 import errno
+from distutils.version import LooseVersion
 
 from six.moves.urllib.request import urlopen
 from six.moves import socketserver, SimpleHTTPServer
@@ -37,21 +38,6 @@ def check_until_timeout(url):
             pass
 
     raise ValueError('Error, url did not respond after 150 attempts: {0}'.format(url))
-
-
-@contextlib.contextmanager
-def execute_in_given_cwd(cwd):
-    """
-    Context manager that will execute any command in the given cwd after context entering,
-    and restore current cwd when context is destroyed.
-    :param str cwd: the path to use as the temporary current workspace for python execution
-    """
-    current_cwd = os.getcwd()
-    try:
-        os.chdir(cwd)
-        yield
-    finally:
-        os.chdir(current_cwd)
 
 
 def find_certbot_root_directory():
@@ -161,10 +147,8 @@ echo $(basename $(dirname "$0")) >> "{1}"\
         os.chmod(hook_path, os.stat(hook_path).st_mode | stat.S_IEXEC)
 
 
-def node_is_master(config):
-    """
-    Check if current config node represents the master node in pytest-xdist execution.
-    :param config: Node configuration object
-    :return: True if current node is master (or xdist is not used), False otherwise
-    """
-    return hasattr(config, 'slaveinput')
+def get_certbot_version():
+    output = subprocess.check_output(['certbot', '--version'], universal_newlines=True)
+    # Typical response is: output = 'certbot 0.31.0.dev0'
+    # version_str = output.split(' ')[1]
+    return LooseVersion('0.31.0.dev0')
