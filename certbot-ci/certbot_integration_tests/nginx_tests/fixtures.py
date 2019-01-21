@@ -1,116 +1,78 @@
 import os
 import subprocess
 import random
-import shutil
-import filecmp
 import contextlib
 
 import pytest
 import ssl
 
+from certbot_integration_tests.certbot_tests import fixtures as certbot_fixtures
 from certbot_integration_tests.utils import misc
 from certbot_integration_tests.nginx_tests.nginx_config import construct_nginx_config
 
 
-@pytest.fixture
-def nginx_root(workspace):
-    root = os.path.join(workspace, 'nginx')
-    os.mkdir(root)
-    return root
-
-
-@pytest.fixture
-def webroot(nginx_root):
-    path = os.path.join(nginx_root, 'webroot')
-    os.mkdir(path)
-    with open(os.path.join(path, 'index.html'), 'w') as file:
-        file.write('Hello World!')
-
-    return path
-
-
-@pytest.fixture
-def other_port():
-    return random.randint(6000,6999)
-
-
-@pytest.fixture
-def nginx_config(nginx_root):
-    return os.path.join(nginx_root, 'nginx.conf')
-
-
-@pytest.fixture
-def nginx_original_config(nginx_root):
-    return os.path.join(nginx_root, 'nginx-original.conf')
-
-
-@pytest.fixture
-def nginx_config_gen(nginx_root, nginx_config, nginx_original_config, webroot,
-                     tls_alpn_01_port, http_01_port, other_port, worker_id):
-    def func(default_server):
-        config = construct_nginx_config(nginx_root, webroot, http_01_port, tls_alpn_01_port, other_port,
-                                        default_server, worker_id)
-
-        with open(nginx_config, 'w') as file:
-            file.write(config)
-        shutil.copy(nginx_config, nginx_original_config)
-
-        return nginx_config
-
-    return func
-
-
-@pytest.fixture
-def nginx(nginx_config_gen, webroot, http_01_port):
-    with _nginx_setup(nginx_config_gen('default_server'), webroot, http_01_port) as configured:
-        yield configured
-
-
-@pytest.fixture
-def nginx_no_default_srv(nginx_config_gen, webroot, http_01_port):
-    with _nginx_setup(nginx_config_gen(''), webroot, http_01_port) as configured:
-        yield configured
-
-
-@contextlib.contextmanager
-def _nginx_setup(nginx_config, webroot, http_01_port):
-    assert webroot
-    process = subprocess.Popen(['nginx', '-c', nginx_config, '-g', 'daemon off;'])
+@pytest.fixture()
+def context(request):
+    integration_tests_context = IntegrationTestsContext(request)
     try:
-        assert not process.poll()
-        misc.check_until_timeout('http://localhost:{0}'.format(http_01_port))
-        yield True
+        yield integration_tests_context
     finally:
-        process.terminate()
-        process.wait()
+        integration_tests_context.cleanup()
 
 
-@pytest.fixture
-def certbot_test_nginx(certbot_test, nginx_root):
-    def func(args):
+class IntegrationTestsContext(certbot_fixtures.IntegrationTestsContext):
+    def __init__(self, request):
+        super(IntegrationTestsContext, self).__init__(request)
+
+        self.nginx_root = os.path.join(self.workspace, 'nginx')
+        os.mkdir(self.nginx_root)
+
+        self.webroot = os.path.join(self.nginx_root, 'webroot')
+        os.mkdir(self.webroot)
+        with open(os.path.join(self.webroot, 'index.html'), 'w') as file:
+            file.write('Hello World!')
+
+        self.other_port = random.randint(6000, 6999)
+
+        self.nginx_config_path = os.path.join(self.nginx_root, 'nginx.conf')
+        self.nginx_config = None
+
+    @contextlib.contextmanager
+    def nginx_server(self, default_server):
+        self.nginx_config = construct_nginx_config(
+            self.nginx_root, self.webroot, self.http_01_port, self.tls_alpn_01_port,
+            self.other_port, default_server, self.worker_id)
+        with open(self.nginx_config_path, 'w') as file:
+            file.write(self.nginx_config)
+
+        process = subprocess.Popen(['nginx', '-c', self.nginx_config_path, '-g', 'daemon off;'])
+        try:
+            assert not process.poll()
+            misc.check_until_timeout('http://localhost:{0}'.format(self.http_01_port))
+            yield True
+        finally:
+            process.terminate()
+            process.wait()
+
+    def certbot_test_nginx(self, args):
         command = ['--authenticator', 'nginx', '--installer', 'nginx',
-                   '--nginx-server-root', nginx_root]
+                   '--nginx-server-root', self.nginx_root]
         command.extend(args)
-        return certbot_test(command)
+        self.certbot_test(command)
 
-    return func
-
-
-@pytest.fixture
-def assert_deployment_and_rollback(workspace, nginx_root, nginx_config, nginx_original_config,
-                                   tls_alpn_01_port, certbot_test_no_force_renew):
-    def func(certname):
-        server_cert = ssl.get_server_certificate(('localhost', tls_alpn_01_port))
-        with open(os.path.join(workspace, 'conf/live/{0}/cert.pem'.format(certname)), 'r') as file:
+    def assert_deployment_and_rollback(self, certname):
+        server_cert = ssl.get_server_certificate(('localhost', self.tls_alpn_01_port))
+        with open(os.path.join(self.workspace, 'conf/live/{0}/cert.pem'.format(certname)), 'r') as file:
             certbot_cert = file.read()
 
         assert server_cert == certbot_cert
 
         command = ['--authenticator', 'nginx', '--installer', 'nginx',
-                   '--nginx-server-root', nginx_root,
+                   '--nginx-server-root', self.nginx_root,
                    'rollback', '--checkpoints', '1']
-        certbot_test_no_force_renew(command)
+        self.certbot_test_no_force_renew(command)
 
-        assert filecmp.cmp(nginx_config, nginx_original_config)
+        with open(self.nginx_config_path, 'r') as file_h:
+            current_nginx_config = file_h.read()
 
-    return func
+        assert self.nginx_config == current_nginx_config

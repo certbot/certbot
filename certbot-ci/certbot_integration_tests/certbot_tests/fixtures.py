@@ -12,7 +12,7 @@ from certbot_integration_tests.utils import misc
 
 @pytest.fixture()
 def context(request):
-    integration_test_context = _IntegrationTestsContext(request)
+    integration_test_context = IntegrationTestsContext(request)
     try:
         yield integration_test_context
     finally:
@@ -51,7 +51,7 @@ def manual_http_hooks(http_01_server):
     return auth, cleanup
 
 
-class _IntegrationTestsContext(object):
+class IntegrationTestsContext(object):
     def __init__(self, request):
         self.request = request
 

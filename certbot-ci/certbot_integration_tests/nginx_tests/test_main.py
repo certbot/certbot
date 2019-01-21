@@ -1,10 +1,9 @@
 import subprocess
-import os
 
 import pytest
 
 
-def test_nginx_version(workspace):
+def test_nginx_version():
     print(subprocess.check_output(['nginx', '-v']))
 
 
@@ -17,15 +16,14 @@ testdata1 = [
 
 
 @pytest.mark.parametrize('certname_pattern, params', testdata1)
-def test_nginx_with_default_server(certname_pattern, params, certbot_test_nginx, worker_id,
-                                   nginx, assert_deployment_and_rollback):
-    assert nginx
-    certname = certname_pattern.format(worker_id)
-    command = ['--domains', certname]
-    command.extend(params)
-    certbot_test_nginx(command)
+def test_nginx_with_default_server(certname_pattern, params, context):
+    with context.nginx_server('default_server'):
+        certname = certname_pattern.format(context.worker_id)
+        command = ['--domains', certname]
+        command.extend(params)
+        context.certbot_test_nginx(command)
 
-    assert_deployment_and_rollback(certname)
+        context.assert_deployment_and_rollback(certname)
 
 
 testdata2 = [
@@ -35,12 +33,11 @@ testdata2 = [
 
 
 @pytest.mark.parametrize('certname_pattern, params', testdata2)
-def test_nginx_without_default_server(certname_pattern, params, certbot_test_nginx, worker_id,
-                                      nginx_no_default_srv, assert_deployment_and_rollback):
-    assert nginx_no_default_srv
-    certname = certname_pattern.format(worker_id)
-    command = ['--domains', certname]
-    command.extend(params)
-    certbot_test_nginx(command)
+def test_nginx_without_default_server(certname_pattern, params, context):
+    with context.nginx_server('default_server'):
+        certname = certname_pattern.format(context.worker_id)
+        command = ['--domains', certname]
+        command.extend(params)
+        context.certbot_test_nginx(command)
 
-    assert_deployment_and_rollback(certname.split(',')[0])
+        context.assert_deployment_and_rollback(certname.split(',')[0])
