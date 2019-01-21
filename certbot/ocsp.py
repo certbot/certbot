@@ -209,7 +209,7 @@ def _check_ocsp_response_signature(response_ocsp, issuer_cert):
         )
 
     crypto_util.verify_signed_payload(issuer_cert.public_key, response_ocsp.signature,
-                                      response_ocsp.payload, chosen_hash)
+                                      response_ocsp.tbs_response_bytes, chosen_hash)
 
 
 def _translate_ocsp_query(cert_path, ocsp_output, ocsp_errors):
