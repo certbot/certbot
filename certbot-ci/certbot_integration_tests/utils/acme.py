@@ -4,10 +4,9 @@ import tempfile
 import atexit
 import os
 import subprocess
-import contextlib
 import shutil
 import sys
-from os.path import join, exists
+from os.path import join
 
 import requests
 import json
