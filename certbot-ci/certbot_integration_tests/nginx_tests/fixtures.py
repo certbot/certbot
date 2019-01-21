@@ -58,7 +58,7 @@ class IntegrationTestsContext(certbot_fixtures.IntegrationTestsContext):
         command = ['--authenticator', 'nginx', '--installer', 'nginx',
                    '--nginx-server-root', self.nginx_root]
         command.extend(args)
-        self.certbot_test(command)
+        return self.certbot_test(command)
 
     def assert_deployment_and_rollback(self, certname):
         server_cert = ssl.get_server_certificate(('localhost', self.tls_alpn_01_port))

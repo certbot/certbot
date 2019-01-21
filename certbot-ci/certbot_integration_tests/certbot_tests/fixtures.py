@@ -25,7 +25,7 @@ def http_01_server(context):
         yield webroot
 
 
-@pytest.fixture(context)
+@pytest.fixture()
 def tls_alpn_01_server(context):
     with misc.create_tcp_server(context.tls_alpn_01_port) as webroot:
         yield webroot
@@ -123,17 +123,17 @@ class IntegrationTestsContext(object):
     def certbot_test(self, args):
         command = ['--renew-by-default']
         command.extend(args)
-        self.certbot_test_no_force_renew(command)
+        return self.certbot_test_no_force_renew(command)
 
     def common_no_force_renew(self, args):
         command = ['--authenticator', 'standalone', '--installer', 'null']
         command.extend(args)
-        self.certbot_test_no_force_renew(command)
+        return self.certbot_test_no_force_renew(command)
 
     def common(self, args):
         command = ['--renew-by-default']
         command.extend(args)
-        self.common_no_force_renew(command)
+        return self.common_no_force_renew(command)
 
     def wtf(self, prefix='le'):
         return '{0}.{1}.wtf'.format(prefix, self.worker_id)
