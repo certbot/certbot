@@ -12,7 +12,6 @@ from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives import hashes  # type: ignore
-from cryptography.hazmat.primitives.asymmetric import padding  # type: ignore
 from cryptography.exceptions import UnsupportedAlgorithm, InvalidSignature
 import requests
 
@@ -153,21 +152,19 @@ def _check_ocsp_cryptography(cert_path, chain_path, url):
         _check_ocsp_response(response_ocsp, request, issuer)
     except UnsupportedAlgorithm as e:
         logger.error(str(e))
-        return False
     except errors.Error as e:
         logger.error(str(e))
-        return False
     except InvalidSignature:
         logger.error('Invalid signature on OCSP response for %s', cert_path)
-        return False
     except AssertionError as error:
         logger.error('Invalid OCSP response for %s: %s.', cert_path, str(error))
-        return False
+    else:
+        # Check OCSP certificate status
+        logger.debug("OCSP certificate status for %s is: %s",
+                     cert_path, response_ocsp.certificate_status)
+        return response_ocsp.certificate_status == ocsp.OCSPCertStatus.REVOKED
 
-    # Check OCSP certificate status
-    logger.debug("OCSP certificate status for %s is: %s",
-                 cert_path, response_ocsp.certificate_status)
-    return response_ocsp.certificate_status == ocsp.OCSPCertStatus.REVOKED
+    return False
 
 
 def _check_ocsp_response(response_ocsp, request_ocsp, issuer_cert):
