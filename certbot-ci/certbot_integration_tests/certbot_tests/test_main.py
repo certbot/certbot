@@ -115,10 +115,11 @@ def test_certonly(context):
 
 
 def test_auth_and_install_with_csr(context):
+    certname = context.wtf('le3')
     key_path = join(context.workspace, 'key.pem')
     csr_path = join(context.workspace, 'csr.der')
 
-    misc.generate_csr(['le3.{0}.wtf'.format(context.worker_id)], key_path, csr_path)
+    misc.generate_csr([certname], key_path, csr_path)
 
     cert_path = join(context.workspace, 'csr/cert.pem')
     chain_path = join(context.workspace, 'csr/chain.pem')
@@ -133,7 +134,7 @@ def test_auth_and_install_with_csr(context):
     print(misc.read_certificate(chain_path))
 
     context.common([
-        '--domains', 'le3.{0}.wtf'.format(context.worker_id), 'install',
+        '--domains', certname, 'install',
         '--cert-path', cert_path,
         '--key-path', key_path
     ])
@@ -192,8 +193,8 @@ def test_renew(context):
     lines.insert(4, 'renew_before_expiry = 100 years{0}'.format(os.linesep))
     with open(join(context.config_dir, 'renewal/{0}.conf'.format(certname)), 'w') as file:
         file.writelines(lines)
-        context.common_no_force_renew(['renew', '--no-directory-hooks',
-                                       '--rsa-key-size', '2048'])
+    context.common_no_force_renew(['renew', '--no-directory-hooks',
+                                   '--rsa-key-size', '2048'])
 
     assert_certs_count_for_lineage(context.config_dir, certname, 3)
     with pytest.raises(AssertionError):
@@ -279,7 +280,7 @@ def test_invalid_domain_with_dns_challenge(context):
 
 
 def test_reuse_key(context):
-    certname = 'reusekey.{0}.wtf'.format(context.worker_id)
+    certname = context.wtf('reusekey')
     context.common(['--domains', certname, '--reuse-key'])
     context.common(['renew', '--cert-name', certname])
 
@@ -311,8 +312,7 @@ def test_ecdsa(context):
     cert_path = join(context.workspace, 'cert-p384.pem')
     chain_path = join(context.workspace, 'chain-p384.pem')
 
-    misc.generate_csr(['ecdsa.{0}.wtf'.format(context.worker_id)], key_path, csr_path, key_type='ECDSA')
-
+    misc.generate_csr([context.wtf('ecdsa')], key_path, csr_path, key_type='ECDSA')
     context.common(['auth', '--csr', csr_path, '--cert-path', cert_path, '--chain-path', chain_path])
 
     certificate = misc.read_certificate(cert_path)
@@ -401,7 +401,7 @@ def test_revoke_corner_cases(context):
 
     data = re.sub('archive_dir = .*{0}'.format(os.linesep),
                   'archive_dir = {0}{1}'.format(os.path.normpath(
-                      join(context.config_dir, 'archive/{0}.wtf'.format(cert1))), os.linesep),
+                      join(context.config_dir, 'archive/{0}'.format(cert1))), os.linesep),
                   data)
 
     with open(join(context.config_dir, 'renewal/{0}.conf'.format(cert2)), 'w') as file:
