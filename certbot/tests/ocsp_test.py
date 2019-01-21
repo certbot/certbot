@@ -161,8 +161,8 @@ class OSCPTestCryptography(unittest.TestCase):
 
         # OCSP response in invalid
         mock_ocsp_response.return_value = _construct_mock_ocsp_response(
-            ocsp_lib.OCSPCertStatus.UNKNOWN,
-            ocsp_lib.OCSPResponseStatus.UNAUTHORIZED)
+            ocsp_lib.OCSPCertStatus.UNKNOWN)
+        mock_ocsp_response.response_status = ocsp_lib.OCSPResponseStatus.UNAUTHORIZED
         mock_post.return_value = mock.Mock(status_code=200)
         revoked = self.checker.ocsp_revoked(self.cert_path, self.chain_path)
 
@@ -217,8 +217,7 @@ class OSCPTestCryptography(unittest.TestCase):
         self.assertFalse(revoked)
 
 
-def _construct_mock_ocsp_response(certificate_status,
-                                  response_status=ocsp_lib.OCSPResponseStatus.SUCCESSFUL):
+def _construct_mock_ocsp_response(certificate_status):
     cert = x509.load_pem_x509_certificate(
         test_util.load_vector('google_certificate.pem'), default_backend())
     issuer = x509.load_pem_x509_certificate(
@@ -228,7 +227,7 @@ def _construct_mock_ocsp_response(certificate_status,
     request = builder.build()
 
     return mock.Mock(
-        response_status=response_status,
+        response_status=ocsp_lib.OCSPResponseStatus.SUCCESSFUL,
         certificate_status=certificate_status,
         serial_number=request.serial_number,
         issuer_key_hash=request.issuer_key_hash,
