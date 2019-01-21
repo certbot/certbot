@@ -17,6 +17,7 @@ from cryptography.exceptions import UnsupportedAlgorithm, InvalidSignature
 import requests
 
 from acme.magic_typing import Optional, Tuple  # pylint: disable=unused-import, no-name-in-module
+from certbot import crypto_util
 from certbot import errors
 from certbot import util
 
@@ -153,6 +154,9 @@ def _check_ocsp_cryptography(cert_path, chain_path, url):
     except UnsupportedAlgorithm as e:
         logger.error(str(e))
         return False
+    except errors.Error as e:
+        logger.error(str(e))
+        return False
     except InvalidSignature:
         logger.error('Invalid signature on OCSP response for %s', cert_path)
         return False
@@ -204,12 +208,8 @@ def _check_ocsp_response_signature(response_ocsp, issuer_cert):
             .format(response_ocsp.signature_algorithm_oid)
         )
 
-    issuer_cert.public_key().verify(
-        response_ocsp.signature,
-        response_ocsp.tbs_response_bytes,
-        padding.PKCS1v15(),
-        chosen_hash
-    )
+    crypto_util.verify_signed_payload(issuer_cert.public_key, response_ocsp.signature,
+                                      response_ocsp.payload, chosen_hash)
 
 
 def _translate_ocsp_query(cert_path, ocsp_output, ocsp_errors):

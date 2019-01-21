@@ -139,7 +139,7 @@ class OSCPTestCryptography(unittest.TestCase):
     @mock.patch('certbot.ocsp.requests.post')
     @mock.patch('certbot.ocsp.ocsp.load_der_ocsp_response')
     def test_revoke(self, mock_ocsp_response, mock_post):
-        with mock.patch('certbot.ocsp._check_ocsp_response_signature'):
+        with mock.patch('certbot.ocsp.crypto_util.verify_signed_payload'):
             mock_ocsp_response.return_value = _construct_mock_ocsp_response(
                 ocsp_lib.OCSPCertStatus.REVOKED)
             mock_post.return_value = mock.Mock(status_code=200)
@@ -147,7 +147,7 @@ class OSCPTestCryptography(unittest.TestCase):
 
         self.assertTrue(revoked)
 
-    @mock.patch('certbot.ocsp._check_ocsp_response')
+    @mock.patch('certbot.ocsp.crypto_util.verify_signed_payload')
     @mock.patch('certbot.ocsp.requests.post')
     @mock.patch('certbot.ocsp.ocsp.load_der_ocsp_response')
     def test_revoke_resiliency(self, mock_ocsp_response, mock_post, mock_check):

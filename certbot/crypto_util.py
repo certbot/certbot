@@ -226,7 +226,7 @@ def verify_renewable_cert(renewable_cert):
 
 
 def verify_renewable_cert_sig(renewable_cert):
-    """ Verifies the signature of a `.storage.RenewableCert` object.
+    """Verifies the signature of a `.storage.RenewableCert` object.
 
     :param `.storage.RenewableCert` renewable_cert: cert to verify
 
@@ -239,27 +239,43 @@ def verify_renewable_cert_sig(renewable_cert):
             cert = x509.load_pem_x509_certificate(cert_file.read(), default_backend())
         pk = chain.public_key()
         with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            if isinstance(pk, RSAPublicKey):
-                # https://github.com/python/typeshed/blob/master/third_party/2/cryptography/hazmat/primitives/asymmetric/rsa.pyi
-                verifier = pk.verifier(  # type: ignore
-                    cert.signature, PKCS1v15(), cert.signature_hash_algorithm
-                )
-                verifier.update(cert.tbs_certificate_bytes)
-                verifier.verify()
-            elif isinstance(pk, EllipticCurvePublicKey):
-                verifier = pk.verifier(
-                    cert.signature, ECDSA(cert.signature_hash_algorithm)
-                )
-                verifier.update(cert.tbs_certificate_bytes)
-                verifier.verify()
-            else:
-                raise errors.Error("Unsupported public key type")
+            verify_signed_payload(pk, cert.signature, cert.tbs_certificate_bytes,
+                                  cert.signature_hash_algorithm)
     except (IOError, ValueError, InvalidSignature) as e:
         error_str = "verifying the signature of the cert located at {0} has failed. \
                 Details: {1}".format(renewable_cert.cert, e)
         logger.exception(error_str)
         raise errors.Error(error_str)
+
+
+def verify_signed_payload(public_key, signature, payload, signature_hash_algorithm):
+    """Check the signature of a payload.
+
+    :param RSAPublicKey/EllipticCurvePublicKey public_key: the public_key to check signature
+    :param byte signature: the signature bytes
+    :param payload: the payload bytes
+    :param signature_hash_algorithm: algorithm used to hash the payload
+
+    :raises InvalidSignature: If signature verification fails.
+    :raises errors.Error: If public key type is not supported
+    """
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        if isinstance(public_key, RSAPublicKey):
+            # https://github.com/python/typeshed/blob/master/third_party/2/cryptography/hazmat/primitives/asymmetric/rsa.pyi
+            verifier = public_key.verifier(  # type: ignore
+                signature, PKCS1v15(), signature_hash_algorithm
+            )
+            verifier.update(payload)
+            verifier.verify()
+        elif isinstance(public_key, EllipticCurvePublicKey):
+            verifier = public_key.verifier(
+                signature, ECDSA(signature_hash_algorithm)
+            )
+            verifier.update(payload)
+            verifier.verify()
+        else:
+            raise errors.Error("Unsupported public key type")
 
 
 def verify_cert_matches_priv_key(cert_path, key_path):
