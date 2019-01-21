@@ -4,9 +4,7 @@ from __future__ import print_function
 import functools
 import logging.handlers
 import os
-import random
 import sys
-import time
 
 import configobj
 import josepy as jose
@@ -550,7 +548,8 @@ def _delete_if_appropriate(config): # pylint: disable=too-many-locals,too-many-b
 
     attempt_deletion = config.delete_after_revoke
     if attempt_deletion is None:
-        msg = ("Would you like to delete the cert(s) you just revoked?")
+        msg = ("Would you like to delete the cert(s) you just revoked, along with all earlier and "
+            "later versions of the cert?")
         attempt_deletion = display.yesno(msg, yes_label="Yes (recommended)", no_label="No",
                 force_interactive=True, default=True)
 
@@ -1269,16 +1268,6 @@ def renew(config, unused_plugins):
     :rtype: None
 
     """
-    if not sys.stdin.isatty():
-        # Noninteractive renewals include a random delay in order to spread
-        # out the load on the certificate authority servers, even if many
-        # users all pick the same time for renewals.  This delay precedes
-        # running any hooks, so that side effects of the hooks (such as
-        # shutting down a web service) aren't prolonged unnecessarily.
-        sleep_time = random.randint(1, 60*8)
-        logger.info("Non-interactive renewal: random delay of %s seconds", sleep_time)
-        time.sleep(sleep_time)
-
     try:
         renewal.handle_renewal_request(config)
     finally:

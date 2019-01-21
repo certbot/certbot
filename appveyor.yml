@@ -24,6 +24,7 @@ install:
 build: off
 
 test_script:
+  - set TOX_TESTENV_PASSENV=APPVEYOR
   # Test env is set by TOXENV env variable
   - tox
 
