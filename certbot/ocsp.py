@@ -193,17 +193,17 @@ def _check_ocsp_response(response_ocsp, request_ocsp, issuer_cert):
 
 def _check_ocsp_response_signature(response_ocsp, issuer_cert):
     """Verify an OCSP response signature against certificate issuer"""
+    # TODO: (adferrand 2019-11-01) A fallback for cryptography==2.4 is implemented here.
+    #   Once cryptography==2.5 is released, Certbot can require this new version and
+    #   this code can be replaced by a single call to response_ocsp.signature_hash_algorithm
     try:
-        # TODO: (adferrand 2019-11-01) Following line can be improved using a direct call to
-        #  response_ocsp.signature_hash_algorithm once cryptography 2.5 is released
-        #  (watch out for retro-compatibility with 2.4 though).
-        #  See https://github.com/pyca/cryptography/issues/4680
-        chosen_hash = x509._SIG_OIDS_TO_HASH[response_ocsp.signature_algorithm_oid]  # pylint: disable=protected-access
-    except KeyError:
-        raise UnsupportedAlgorithm(
-            "Signature algorithm OID:{0} not recognized"
-            .format(response_ocsp.signature_algorithm_oid)
-        )
+        chosen_hash = response_ocsp.signature_hash_algorithm
+    except AttributeError:  # pragma: no cover
+        try:
+            chosen_hash = x509._SIG_OIDS_TO_HASH[response_ocsp.signature_algorithm_oid]  # pylint: disable=protected-access
+        except KeyError:
+            raise UnsupportedAlgorithm("Signature algorithm OID:{0} not recognized"
+                                       .format(response_ocsp.signature_algorithm_oid))
 
     crypto_util.verify_signed_payload(issuer_cert.public_key, response_ocsp.signature,
                                       response_ocsp.tbs_response_bytes, chosen_hash)
