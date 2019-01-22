@@ -21,8 +21,6 @@ Workflow:
     - Revoke Certificate
     - Deactivate Account
 """
-import logging
-
 from contextlib import contextmanager
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa
@@ -56,9 +54,6 @@ DOMAIN = 'client.example.com'
 # number to execute the challenge, but real CA servers will obviously always
 # use port 80.
 PORT = 80
-
-# ACME API can be quite verbose.
-logging.basicConfig(level=logging.INFO)
 
 
 # Useful methods and classes:
@@ -104,7 +99,8 @@ def verify_registration(client_acme, regr):
     except errors.Error as err:
         if err.typ == messages.OLD_ERROR_PREFIX + 'unauthorized' \
                 or err.typ == messages.ERROR_PREFIX + 'unauthorized':
-            logging.info('Status is deactivated')
+            # Status is deactivated.
+            pass
         raise
 
 
@@ -196,21 +192,17 @@ def example_http():
     - Deactivate Account
 
     """
-    logging.info('Example Challenge HTTP01')
+    # **Example Challenge HTTP01**
 
     client_acme = generate_client_account_key()
 
-    logging.info('Terms of Service URL: %s',
-                 client_acme.directory.meta.terms_of_service)
-
+    # Terms of Service URL is in client_acme.directory.meta.terms_of_service
     # Registration Resource: regr
     # Creates account with contact information.
     email = ('fake@example.com')
     regr = client_acme.new_account(
         messages.NewRegistration.from_data(
             email=email, terms_of_service_agreed=True))
-
-    logging.info('Account registered.')
 
     pkey_pem, csr_pem = new_csr_comp(DOMAIN)
     orderr = client_acme.new_order(csr_pem)
@@ -219,8 +211,6 @@ def example_http():
 
     # The certificate is ready to be used in the variable "fullchain_pem".
     fullchain_pem = perform_http01(client_acme, challb, orderr)
-
-    logging.info('Certificate issued: \n%s', fullchain_pem)
 
     regr = verify_registration(client_acme, regr)
 
@@ -233,9 +223,8 @@ def example_http():
             )
         )
     )
-    logging.info('New contact info: %s', repr(regr.body.contact))
 
-    logging.info('Renew Certificate')
+    # **Renew Certificate**
 
     _, csr_pem = new_csr_comp(DOMAIN, pkey_pem)
 
@@ -243,13 +232,10 @@ def example_http():
 
     challb = select_http01_chall(orderr)
 
-    logging.info('Performing challenge')
-
+    # Performing challenge
     fullchain_pem = perform_http01(client_acme, challb, orderr)
 
-    logging.info('Certificate renewed: \n%s', fullchain_pem)
-
-    logging.info('Revoke and Deactivate')
+    # **Revoke and Deactivate**
 
     fullchain_com = jose.ComparableX509(
         OpenSSL.crypto.load_certificate(
@@ -258,13 +244,11 @@ def example_http():
     try:
         client_acme.revoke(fullchain_com, 0)  # revocation reason = 0
     except errors.ConflictError:
-        logging.info('Certificate already revoked.')
-    else:
-        logging.info('Successfully revoked cert.')
+        # Certificate already revoked.
+        pass
 
     # Deactivate registration
     regr = client_acme.deactivate_registration(regr)
-    logging.info('Successfully deactivated account.')
 
 
 if __name__ == "__main__":
