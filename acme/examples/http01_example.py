@@ -16,8 +16,8 @@ Workflow:
     - Set up standalone web server.
     - Create domain private key and CSR.
     - Issue certificate.
-    - Change contact information
     - Renew Certificate
+    - Change contact information
     - Revoke Certificate
     - Deactivate Account
 """
@@ -58,50 +58,17 @@ PORT = 80
 
 # Useful methods and classes:
 
-def generate_client_account_key():
-    """Generate account key and create new client."""
-    acc_key = jose.JWKRSA(
-        key=rsa.generate_private_key(public_exponent=65537,
-                                     key_size=ACC_KEY_BITS,
-                                     backend=default_backend()))
-    return create_client(acc_key)
-
-
-def create_client(acc_key):
-    """Create client from existing account key."""
-    net = client.ClientNetwork(acc_key, user_agent=USER_AGENT)
-    directory = messages.Directory.from_json(net.get(DIRECTORY_URL).json())
-    return client.ClientV2(directory, net=net)
-
-
-def new_pkey_pem():
-    """Create private key."""
-    pkey = OpenSSL.crypto.PKey()
-    pkey.generate_key(OpenSSL.crypto.TYPE_RSA, CERT_PKEY_BITS)
-    pkey_pem = OpenSSL.crypto.dump_privatekey(OpenSSL.crypto.FILETYPE_PEM,
-                                              pkey)
-    return pkey_pem
-
 
 def new_csr_comp(domain_name, pkey_pem=None):
     """Create certificate signing request."""
     if pkey_pem is None:
-        pkey_pem = new_pkey_pem()
+        # Create private key.
+        pkey = OpenSSL.crypto.PKey()
+        pkey.generate_key(OpenSSL.crypto.TYPE_RSA, CERT_PKEY_BITS)
+        pkey_pem = OpenSSL.crypto.dump_privatekey(OpenSSL.crypto.FILETYPE_PEM,
+                                                pkey)
     csr_pem = crypto_util.make_csr(pkey_pem, [domain_name])
     return pkey_pem, csr_pem
-
-
-def verify_registration(client_acme, regr):
-    """Query registration status."""
-    client_acme.net.account = regr
-    try:
-        return client_acme.query_registration(regr)
-    except errors.Error as err:
-        if err.typ == messages.OLD_ERROR_PREFIX + 'unauthorized' \
-                or err.typ == messages.ERROR_PREFIX + 'unauthorized':
-            # Status is deactivated.
-            pass
-        raise
 
 
 def select_http01_chall(orderr):
@@ -147,20 +114,6 @@ def perform_http01(client_acme, challb, orderr):
         chall=challb.chall, response=response, validation=validation)
 
     with challenge_server({resource}):
-
-        # This is the domain used for the local simple_verify. This example
-        # uses a fake domain name in DOMAIN, so this verification would fail
-        # because the DNS would never resolve it to a real IP address. In order
-        # to bypass it and only verify if the standalone server would
-        # successfully reply the correct resource, we use 'localhost' as domain
-        # instead.
-        domain = 'localhost'
-        if not response.simple_verify(challb.chall,
-                                      domain,
-                                      client_acme.net.key.public_key(),
-                                      PORT):
-            raise Exception('Verification failed')
-
         # Let the CA server know that we are ready for the challenge.
         client_acme.answer_challenge(challb, response)
 
@@ -186,15 +139,24 @@ def example_http():
     - Set up standalone web server.
     - Create domain private key and CSR.
     - Issue certificate.
-    - Change contact information.
     - Renew Certificate
+    - Change contact information.
     - Revoke Certificate
     - Deactivate Account
 
     """
     # **Example Challenge HTTP01**
 
-    client_acme = generate_client_account_key()
+    # Generate account key.
+    acc_key = jose.JWKRSA(
+        key=rsa.generate_private_key(public_exponent=65537,
+                                     key_size=ACC_KEY_BITS,
+                                     backend=default_backend()))
+
+    # Create client from account key.
+    net = client.ClientNetwork(acc_key, user_agent=USER_AGENT)
+    directory = messages.Directory.from_json(net.get(DIRECTORY_URL).json())
+    client_acme = client.ClientV2(directory, net=net)
 
     # Terms of Service URL is in client_acme.directory.meta.terms_of_service
     # Registration Resource: regr
@@ -212,17 +174,16 @@ def example_http():
     # The certificate is ready to be used in the variable "fullchain_pem".
     fullchain_pem = perform_http01(client_acme, challb, orderr)
 
-    regr = verify_registration(client_acme, regr)
-
-    # Change contact information
-    email = 'newfake@example.com'
-    regr = client_acme.update_registration(
-        regr.update(
-            body=regr.body.update(
-                contact=('mailto:' + email,)
-            )
-        )
-    )
+    # Query registration status.
+    client_acme.net.account = regr
+    try:
+        regr = client_acme.query_registration(regr)
+    except errors.Error as err:
+        if err.typ == messages.OLD_ERROR_PREFIX + 'unauthorized' \
+                or err.typ == messages.ERROR_PREFIX + 'unauthorized':
+            # Status is deactivated.
+            pass
+        raise
 
     # **Renew Certificate**
 
@@ -234,6 +195,16 @@ def example_http():
 
     # Performing challenge
     fullchain_pem = perform_http01(client_acme, challb, orderr)
+
+    # Change contact information
+    email = 'newfake@example.com'
+    regr = client_acme.update_registration(
+        regr.update(
+            body=regr.body.update(
+                contact=('mailto:' + email,)
+            )
+        )
+    )
 
     # **Revoke and Deactivate**
 
