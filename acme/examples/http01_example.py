@@ -37,7 +37,7 @@ import josepy as jose
 # Constants:
 
 # This is the staging point for ACME-V2 within Let's Encrypt.
-DIRECTORY_URL = 'https://acme-staging-v02.api.letsencrypt.org'
+DIRECTORY_URL = 'https://acme-staging-v02.api.letsencrypt.org/directory'
 
 USER_AGENT = 'python-acme-example'
 
