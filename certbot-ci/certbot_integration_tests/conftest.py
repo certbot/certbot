@@ -69,27 +69,6 @@ def _print_on_err():
         sys.stdout = old_stdout
 
 
-@contextlib.contextmanager
-def _certbot_ci_workspace():
-    """
-    Generate a temporary workspace for certbot-ci, that will be the base tempdir for any
-    call to the Python tempdir functions during the execution of this context.
-    :return: The new base tempdir
-    :rtype: str
-    """
-    original_tempdir = tempfile.tempdir
-    try:
-        tempfile.tempdir = os.path.join(tempfile.gettempdir(), 'certbot_ci_tmp')
-        try:
-            os.mkdir(tempfile.tempdir)
-        except OSError as error:
-            if error.errno != errno.EEXIST:
-                raise
-        yield tempfile.tempdir
-    finally:
-        tempfile.tempdir = original_tempdir
-
-
 def _setup_integration_tests(config):
     """
     Setup the environment for integration tests.
@@ -116,23 +95,19 @@ def _setup_integration_tests(config):
     workers = ['master'] if not config.option.numprocesses\
         else ['gw{0}'.format(i) for i in range(config.option.numprocesses)]
 
-    # By calling certbot_ci_workspace, the tempfile.tempdir value of standard tempfile module is
-    # modified for the context execution time, to ensure that any temporary assets will be created
-    # under the cerbot-ci workspace.
     acme_server = config.option.acme_server
-    with _certbot_ci_workspace():
-        acme_config = {}
-        # Prepare the acme config server. Data is specific to an acme type. Module
-        # utils.acme_server will handle theses specifics.
-        if 'pebble' in config.option.acme_server:
-            acme_config['type'] = 'pebble'
-            acme_config['option'] = 'nonstrict' if 'nonstrict' in acme_server else 'strict'
-        else:
-            acme_config['type'] = 'boulder'
-            acme_config['option'] = 'v1' if 'v1' in acme_server else 'v2'
-        # By calling setup_acme_server we ensure that all necessary acme servers instances will be
-        # fully started. This runtime is reflected by the acme_xdist returned.
-        acme_xdist = acme.setup_acme_server(acme_config, workers)
-        os.environ['CERTBOT_ACME_TYPE'] = acme_server
-        os.environ['CERTBOT_ACME_XDIST'] = json.dumps(acme_xdist)
-        print('ACME xdist config:\n{0}'.format(os.environ['CERTBOT_ACME_XDIST']))
+    # Prepare the acme config server. Data is specific to an acme type. Module
+    # utils.acme_server will handle theses specifics.
+    acme_config = {}
+    if 'pebble' in config.option.acme_server:
+        acme_config['type'] = 'pebble'
+        acme_config['option'] = 'nonstrict' if 'nonstrict' in acme_server else 'strict'
+    else:
+        acme_config['type'] = 'boulder'
+        acme_config['option'] = 'v1' if 'v1' in acme_server else 'v2'
+    # By calling setup_acme_server we ensure that all necessary acme servers instances will be
+    # fully started. This runtime is reflected by the acme_xdist returned.
+    acme_xdist = acme.setup_acme_server(acme_config, workers)
+    os.environ['CERTBOT_ACME_TYPE'] = acme_server
+    os.environ['CERTBOT_ACME_XDIST'] = json.dumps(acme_xdist)
+    print('ACME xdist config:\n{0}'.format(os.environ['CERTBOT_ACME_XDIST']))
