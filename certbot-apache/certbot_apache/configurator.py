@@ -92,6 +92,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     """
 
     description = "Apache Web Server plugin"
+    if os.environ.get("CERTBOT_DOCS") == "1":
+        description += (
+            "(Please note that the default values of the Apache plugin options"
+            " change depending on the operating system Certbot is run on.)"
+        )
 
     OS_DEFAULTS = dict(
         server_root="/etc/apache2",
@@ -144,8 +149,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         # Respect CERTBOT_DOCS environment variable and use default values from
         # base class regardless of the underlying distribution (overrides).
-        if "CERTBOT_DOCS" in os.environ and os.environ["CERTBOT_DOCS"] == "1":
-            DEFAULTS = ApacheConfigurator.OS_DEFAULTS  # pragma: no cover
+        if os.environ.get("CERTBOT_DOCS") == "1":
+            DEFAULTS = ApacheConfigurator.OS_DEFAULTS
         else:
             # cls.OS_DEFAULTS can be distribution specific, see override classes
             DEFAULTS = cls.OS_DEFAULTS
