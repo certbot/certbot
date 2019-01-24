@@ -7,10 +7,7 @@ set -xe
 export GOPATH=${GOPATH:-$HOME/gopath}
 BOULDERPATH=${BOULDERPATH:-$GOPATH/src/github.com/letsencrypt/boulder}
 if [ ! -d ${BOULDERPATH} ]; then
-  # Use the latest version of boulder that has TLS-SNI-01 enabled by default.
-  git clone https://github.com/letsencrypt/boulder ${BOULDERPATH}
-  cd "$BOULDERPATH"
-  git checkout 93ac7fbe9e77b190c5c6496b4e9d765775588963
+  git clone --depth=1 https://github.com/letsencrypt/boulder ${BOULDERPATH}
 fi
 
 cd ${BOULDERPATH}
