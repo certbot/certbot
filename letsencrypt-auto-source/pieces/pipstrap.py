@@ -149,8 +149,6 @@ def main():
     pip_version = StrictVersion(check_output(['pip', '--version'])
                                 .decode('utf-8').split()[1])
     min_pip_version = StrictVersion(PIP_VERSION)
-    if pip_version >= min_pip_version:
-        return 0
     has_pip_cache = pip_version >= StrictVersion('6.0')
     index_base = get_index_base()
     temp = mkdtemp(prefix='pipstrap-')
