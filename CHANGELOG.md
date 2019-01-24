@@ -19,6 +19,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * Fixed accessing josepy contents through acme.jose when the full acme.jose
   path is used.
 * Clarify behavior for deleting certs as part of revocation.
+* Always download the pinned version of pip in pipstrap to address breakages
+  from venv downloading the latest pip
 
 Despite us having broken lockstep, we are continuing to release new versions of
 all Certbot components during releases for the time being, however, the only
