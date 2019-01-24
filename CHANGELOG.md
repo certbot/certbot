@@ -1,6 +1,24 @@
 # Certbot change log
 
-Certbot adheres to [Semantic Versioning](http://semver.org/).
+Certbot adheres to [Semantic Versioning](https://semver.org/).
+
+## 0.31.1 - master
+
+### Fixed
+
+* Always download the pinned version of pip in pipstrap to address breakages
+* Rename old,default.conf to old-and-default.conf to address commas in filenames
+  breaking recent versions of pip.
+* Add VIRTUALENV_NO_DOWNLOAD=1 to all calls to virtualenv to address breakages
+  from venv downloading the latest pip
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+package with changes other than its version number was:
+
+* certbot-apache
+
+More details about these changes can be found on our GitHub repo.
 
 ## 0.30.0 - 2019-01-02
 
