@@ -946,9 +946,9 @@ if [ "$1" = "--le-auto-phase2" ]; then
     rm -rf "$VENV_PATH"
     if [ "$PYVER" -le 27 ]; then
       if [ "$VERBOSE" = 1 ]; then
-        virtualenv --no-site-packages --python "$LE_PYTHON" "$VENV_PATH"
+        virtualenv --no-site-packages --no-download --python "$LE_PYTHON" "$VENV_PATH"
       else
-        virtualenv --no-site-packages --python "$LE_PYTHON" "$VENV_PATH" > /dev/null
+        virtualenv --no-site-packages --no-download --python "$LE_PYTHON" "$VENV_PATH" > /dev/null
       fi
     else
       if [ "$VERBOSE" = 1 ]; then
