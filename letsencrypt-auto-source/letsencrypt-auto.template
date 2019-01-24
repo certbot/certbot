@@ -537,10 +537,12 @@ if [ "$1" = "--le-auto-phase2" ]; then
     DeterminePythonVersion
     rm -rf "$VENV_PATH"
     if [ "$PYVER" -le 27 ]; then
+      # Use an environment variable instead of a flag for compatibility with old versions
       if [ "$VERBOSE" = 1 ]; then
-        virtualenv --no-site-packages --python "$LE_PYTHON" "$VENV_PATH"
+        VIRTUALENV_NO_DOWNLOAD=1 virtualenv --no-site-packages --python "$LE_PYTHON" "$VENV_PATH"
       else
-        virtualenv --no-site-packages --python "$LE_PYTHON" "$VENV_PATH" > /dev/null
+        VIRTUALENV_NO_DOWNLOAD=1 virtualenv --no-site-packages --python "$LE_PYTHON" "$VENV_PATH" \
+          > /dev/null
       fi
     else
       if [ "$VERBOSE" = 1 ]; then

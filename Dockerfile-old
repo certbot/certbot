@@ -51,7 +51,7 @@ COPY certbot-apache /opt/certbot/src/certbot-apache/
 COPY certbot-nginx /opt/certbot/src/certbot-nginx/
 
 
-RUN virtualenv --no-site-packages -p python2 /opt/certbot/venv
+RUN VIRTUALENV_NO_DOWNLOAD=1 virtualenv --no-site-packages -p python2 /opt/certbot/venv
 
 # PATH is set now so pipstrap upgrades the correct (v)env
 ENV PATH /opt/certbot/venv/bin:$PATH
