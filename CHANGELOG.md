@@ -19,6 +19,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * Fixed accessing josepy contents through acme.jose when the full acme.jose
   path is used.
 * Clarify behavior for deleting certs as part of revocation.
+* Rename old,default.conf to old-and-default.conf to address commas in filenames
+  breaking recent versions of pip.
 * Add VIRTUALENV_NO_DOWNLOAD=1 to all calls to virtualenv to address breakages
   from venv downloading the latest pip
 
@@ -28,6 +30,7 @@ package with changes other than its version number was:
 
 * acme
 * certbot
+* certbot-apache
 * certbot-dns-cloudxns
 * certbot-dns-dnsimple
 * certbot-dns-dnsmadeeasy
