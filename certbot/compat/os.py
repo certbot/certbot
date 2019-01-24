@@ -25,6 +25,8 @@ for attribute in dir(std_os):
 del ourselves
 
 
+# The concept of uid is specific to POSIX system. On Windows, there is nothing like this.
+# So we cannot use python methods that relies on uid, on geteuid() is useless.
 def geteuid():  # pylint: disable=function-redefined
     # type: () -> int
     """
@@ -38,6 +40,9 @@ def geteuid():  # pylint: disable=function-redefined
                        'Use certbot.compat.security.get_current_user() instead.')
 
 
+# Because uid is not a concept on Windows, chown is useless. In fact, it is not even available
+# on Python for Windows. So to be consistent with both platforms for Certbot, this method is
+# always forbidden.
 def chown(file_path, uid, gid):  # pylint: disable=function-redefined, unused-argument
     """
     Change the owner and group id of path to the numeric uid and gid.
@@ -52,6 +57,11 @@ def chown(file_path, uid, gid):  # pylint: disable=function-redefined, unused-ar
                        'certbot.compat.security.copy_ownership() instead.')
 
 
+# Because of the blocking strategy on file handlers on Windows, rename to not behave as expected
+# with POSIX systems: an exception will be raised if dst already exists. Hopefully there is
+# os.replace on Windows for Python 3, that will do the same than on POSIX. Hopefully also, only
+# Python 3 is supported for Certbot. So we can rely on os.rename on Linux, and os.replace
+# on Windows.
 def rename(src, dst):  # pylint: disable=function-redefined
     # type: (Union[str, unicode], Union[str, unicode]) -> None
     """
@@ -77,6 +87,37 @@ def rename(src, dst):  # pylint: disable=function-redefined
         getattr(std_os, 'replace')(src, dst)
 
 
+# Chmod is the root of all evil for our security model on Windows. With the default implementation
+# of os.chmod on Windows, almost all bits on mode will be ignored, and only a general RO or RW will
+# be applied. The DACL, the inner mechanism to control file access on Windows, will stay on its
+# default definition, giving effectively at least read permissions to any one, as the default
+# permissions on root path will be inherit by the file (as NTFS state), and root path can be read
+# by anyone. So the given mode will be translated into a secured and not inherited DACL that will
+# be applied to this file using security.apply_mode, that will call internally the win32security
+# module to construct and apply the DACL. Complete security model to translate a POSIX mode for
+# something usable on Windows for Certbot can be found here:
+# https://github.com/certbot/certbot/issues/6356
+# Basically, it states that appropriate permissions will be set for the owner, nothing for the
+# group, appropriate permissions for the "Everyone" group, and all permissions to the
+# "Administrators" group, as they can do everything anyway.
+def chmod(file_path, mode):  # pylint: disable=function-redefined
+    # type: (Union[str, unicode], int) -> None
+    """
+    Wrapper of original os.chmod function, that will ensure on Windows that given mode
+    is correctly applied.
+
+    :param str file_path: The file path to modify
+    :param int mode: POSIX mode to apply on file
+    """
+    security.apply_mode(file_path, mode)
+
+
+# The os.open function on Windows will have the same effect than a bare os.chown towards the given
+# mode, and will create a file with the same flaws that what have been described for os.chown.
+# So upon file creation, security.take_ownership will be called to ensure current user is the owner
+# of the file, and security.apply_mode will do the same thing than for the modified os.chown.
+# Internally, take_ownership will update the existing metdata of the file, to set the current
+# username (resolved thanks to win32api module) as the owner of the file.
 def open(file_path, flags, mode=0o777):  # pylint: disable=function-redefined,redefined-builtin
     # type: (Union[str, unicode], int, int) -> int
     """
@@ -98,6 +139,11 @@ def open(file_path, flags, mode=0o777):  # pylint: disable=function-redefined,re
     return file_descriptor
 
 
+# Very similarly to os.open, os.mkdir has the same effect on Windows, to create an unsecured
+# folder. Same mitigation is provided using security.take_ownership and security.apply_mode.
+# On top of that, we need to handle the fact that os.mkdir is called recursively by os.makedirs.
+# This is done by protecting the original os.mkdir to have the real logic, call it during the
+# recurrence and apply immediately the security model on every processed folder.
 def mkdir(file_path, mode=0o777, mkdir_fn=None):  # pylint: disable=function-redefined
     # type: (Union[str, unicode], int, Callable[[Union[str, unicode], int], None]) -> None
     """
@@ -116,6 +162,11 @@ def mkdir(file_path, mode=0o777, mkdir_fn=None):  # pylint: disable=function-red
     security.apply_mode(file_path, mode)
 
 
+# As said above, os.makedirs would call the original os.mkdir function recursively, creating the
+# same flaws for every actual folder created. This method is modified to ensure that our
+# modified os.mkdir is called, by monkey patching temporarily the mkdir method on the
+# original os module, executing the modified logic to protect corecrtly newly created folders,
+# then restoring original mkdir method in the os module.
 def makedirs(file_path, mode=0o777):  # pylint: disable=function-redefined
     # type: (Union[str, unicode], int) -> None
     """
@@ -140,15 +191,3 @@ def makedirs(file_path, mode=0o777):  # pylint: disable=function-redefined
         std_os.makedirs(file_path, mode)
     finally:
         std_os.mkdir = orig_mkdir_fn
-
-
-def chmod(file_path, mode):  # pylint: disable=function-redefined
-    # type: (Union[str, unicode], int) -> None
-    """
-    Wrapper of original os.chmod function, that will ensure on Windows that given mode
-    is correctly applied.
-
-    :param str file_path: The file path to modify
-    :param int mode: POSIX mode to apply on file
-    """
-    security.apply_mode(file_path, mode)
