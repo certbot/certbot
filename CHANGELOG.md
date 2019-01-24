@@ -20,6 +20,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   path is used.
 * Clarify behavior for deleting certs as part of revocation.
 * Always download the pinned version of pip in pipstrap to address breakages
+* Add VIRTUALENV_NO_DOWNLOAD=1 to all calls to virtualenv to address breakages
   from venv downloading the latest pip
 
 Despite us having broken lockstep, we are continuing to release new versions of
