@@ -6,6 +6,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+* Always download the pinned version of pip in pipstrap to address breakages
 * Rename old,default.conf to old-and-default.conf to address commas in filenames
   breaking recent versions of pip.
 * Add VIRTUALENV_NO_DOWNLOAD=1 to all calls to virtualenv to address breakages
