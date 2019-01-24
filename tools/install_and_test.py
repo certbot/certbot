@@ -17,16 +17,15 @@ import re
 SKIP_PROJECTS_ON_WINDOWS = [
     'certbot-apache', 'certbot-nginx', 'certbot-postfix', 'letshelp-certbot']
 
+
 def call_with_print(command, cwd=None):
     print(command)
     subprocess.check_call(command, shell=True, cwd=cwd or os.getcwd())
 
+
 def main(args):
-    if os.environ.get('CERTBOT_NO_PIN') == '1':
-        command = [sys.executable, '-m', 'pip', '-e']
-    else:
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        command = [sys.executable, os.path.join(script_dir, 'pip_install_editable.py')]
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    command = [sys.executable, os.path.join(script_dir, 'pip_install_editable.py')]
 
     new_args = []
     for arg in args:

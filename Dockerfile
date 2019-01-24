@@ -6,6 +6,7 @@ VOLUME /etc/letsencrypt /var/lib/letsencrypt
 WORKDIR /opt/certbot
 
 COPY CHANGELOG.md README.rst setup.py src/
+COPY letsencrypt-auto-source/pieces/dependency-requirements.txt .
 COPY acme src/acme
 COPY certbot src/certbot
 
@@ -21,6 +22,7 @@ RUN apk add --no-cache --virtual .build-deps \
         openssl-dev \
         musl-dev \
         libffi-dev \
+    && pip install -r /opt/certbot/dependency-requirements.txt \
     && pip install --no-cache-dir \
         --editable /opt/certbot/src/acme \
         --editable /opt/certbot/src \

@@ -12,11 +12,21 @@ class JoseTest(unittest.TestCase):
         else:
             acme_jose_path = 'acme.jose'
             josepy_path = 'josepy'
-        acme_jose = importlib.import_module(acme_jose_path)
-        josepy = importlib.import_module(josepy_path)
+        acme_jose_mod = importlib.import_module(acme_jose_path)
+        josepy_mod = importlib.import_module(josepy_path)
 
-        self.assertIs(acme_jose, josepy)
-        self.assertIs(getattr(acme_jose, attribute), getattr(josepy, attribute))
+        self.assertIs(acme_jose_mod, josepy_mod)
+        self.assertIs(getattr(acme_jose_mod, attribute), getattr(josepy_mod, attribute))
+
+        # We use the imports below with eval, but pylint doesn't
+        # understand that.
+        # pylint: disable=eval-used,unused-variable
+        import acme
+        import josepy
+        acme_jose_mod = eval(acme_jose_path)
+        josepy_mod = eval(josepy_path)
+        self.assertIs(acme_jose_mod, josepy_mod)
+        self.assertIs(getattr(acme_jose_mod, attribute), getattr(josepy_mod, attribute))
 
     def test_top_level(self):
         self._test_it('', 'RS512')
