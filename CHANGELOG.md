@@ -21,6 +21,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * Clarify behavior for deleting certs as part of revocation.
 * Rename old,default.conf to old-and-default.conf to address breakages
   from venv downloading the latest pip
+* Add VIRTUALENV_NO_DOWNLOAD=1 to all calls to virtualenv to address breakages
+  from venv downloading the latest pip
 
 Despite us having broken lockstep, we are continuing to release new versions of
 all Certbot components during releases for the time being, however, the only
