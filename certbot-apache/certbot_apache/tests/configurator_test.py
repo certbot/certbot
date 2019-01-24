@@ -115,6 +115,20 @@ class MultipleVhostsTest(util.ApacheTest):
         # Weak test..
         ApacheConfigurator.add_parser_arguments(mock.MagicMock())
 
+    def test_docs_parser_arguments(self):
+        os.environ["CERTBOT_DOCS"] = "1"
+        from certbot_apache.configurator import ApacheConfigurator
+        mock_add = mock.MagicMock()
+        ApacheConfigurator.add_parser_arguments(mock_add)
+        expected = {'default': '/etc/apache2',
+                    'help': 'Apache server root directory'}
+        found = False
+        for call in mock_add.call_args_list:
+            if call[0] == ('server-root',):
+                if call[1] == expected:
+                    found = True
+        self.assertTrue(found)
+
     def test_add_parser_arguments_all_configurators(self):  # pylint: disable=no-self-use
         from certbot_apache.entrypoint import OVERRIDE_CLASSES
         for cls in OVERRIDE_CLASSES.values():
