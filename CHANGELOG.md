@@ -2,6 +2,19 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.30.2 - master
+
+### Fixed
+
+* Update the version of setuptools pinned in certbot-auto to 40.6.3 to
+  solve installation problems on newer OSes.
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, this
+release only affects certbot-auto.
+
+More details about these changes can be found on our GitHub repo.
+
 ## 0.30.1 - 2019-01-24
 
 ### Fixed
