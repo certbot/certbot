@@ -11,7 +11,7 @@ targets:
     type: ubuntu
     virt: hvm
     user: ubuntu
-  - ami: ami-70dad51a
+  - ami: ami-09677e0a6b14905b0
     name: ubuntu16.04LTS
     type: ubuntu
     virt: hvm
