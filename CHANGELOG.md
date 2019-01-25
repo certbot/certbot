@@ -8,6 +8,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 * Avoid to process again challenges that are already validated
   when a certificate is issued.
+* Add FreeBSD specific paths to certbot
 
 ### Changed
 
