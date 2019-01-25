@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # Based on
 # https://www.exratione.com/2014/03/running-nginx-as-a-non-root-user/
 # https://github.com/exratione/non-root-nginx/blob/9a77f62e5d5cb9c9026fd62eece76b9514011019/nginx.conf
@@ -52,7 +53,7 @@ http {
     listen 5002 $default_server;
     # IPv6.
     listen [::]:5002 $default_server;
-    server_name nginx.wtf nginx2.wtf;
+    server_name nginx.wtf nginx-tls.wtf nginx2.wtf;
 
     root $root/webroot;
 

@@ -156,7 +156,7 @@ def main(venv_name, venv_args, args):
     new_environ['PATH'] = os.pathsep.join([get_venv_bin_path(venv_name), new_environ['PATH']])
     subprocess_with_print('python {0}'.format('./letsencrypt-auto-source/pieces/pipstrap.py'),
                           env=new_environ, shell=True)
-    subprocess_with_print("python -m pip install --upgrade 'setuptools>=30.3'",
+    subprocess_with_print('python -m pip install --upgrade "setuptools>=30.3"',
                           env=new_environ, shell=True)
     subprocess_with_print('python {0} {1}'.format('./tools/pip_install.py', ' '.join(args)),
                           env=new_environ, shell=True)
