@@ -2,6 +2,44 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.31.0 - master
+
+### Added
+
+* Avoid to process again challenges that are already validated
+  when a certificate is issued.
+
+### Changed
+
+* Lexicon-based DNS plugins are now fully compatible with Lexicon 3.x (support
+  on 2.x branch is maintained).
+
+### Fixed
+
+* Fixed accessing josepy contents through acme.jose when the full acme.jose
+  path is used.
+* Clarify behavior for deleting certs as part of revocation.
+* Update the version of setuptools pinned in certbot-auto to 40.6.3 to
+  solve installation problems on newer OSes.
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+package with changes other than its version number was:
+
+* acme
+* certbot
+* certbot-dns-cloudxns
+* certbot-dns-dnsimple
+* certbot-dns-dnsmadeeasy
+* certbot-dns-gehirn
+* certbot-dns-linode
+* certbot-dns-luadns
+* certbot-dns-nsone
+* certbot-dns-ovh
+* certbot-dns-sakuracloud
+
+More details about these changes can be found on our GitHub repo.
+
 ## 0.30.1 - 2019-01-24
 
 ### Fixed
