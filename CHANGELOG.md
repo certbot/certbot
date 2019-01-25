@@ -19,7 +19,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * Fixed accessing josepy contents through acme.jose when the full acme.jose
   path is used.
 * Clarify behavior for deleting certs as part of revocation.
-* Update the version of setuptools pinned in certbot-auto to the 40.6.3 to
+* Update the version of setuptools pinned in certbot-auto to 40.6.3 to
   solve installation problems on newer OSes.
 
 Despite us having broken lockstep, we are continuing to release new versions of
