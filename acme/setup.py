@@ -3,7 +3,7 @@ from setuptools import find_packages
 from setuptools.command.test import test as TestCommand
 import sys
 
-version = '0.30.1'
+version = '0.30.2'
 
 # Please update tox.ini when modifying dependency version requirements
 install_requires = [
