@@ -113,7 +113,7 @@ optional arguments:
                         case, and to know when to deprecate support for past
                         Python versions and flags. If you wish to hide this
                         information from the Let's Encrypt server, set this to
-                        "". (default: CertbotACMEClient/0.30.2
+                        "". (default: CertbotACMEClient/0.30.1
                         (certbot(-auto); OS_NAME OS_VERSION) Authenticator/XXX
                         Installer/YYY (SUBCOMMAND; flags: FLAGS)
                         Py/major.minor.patchlevel). The flags encoded in the
@@ -479,10 +479,9 @@ apache:
   Apache Web Server plugin
 
   --apache-enmod APACHE_ENMOD
-                        Path to the Apache 'a2enmod' binary (default: a2enmod)
+                        Path to the Apache 'a2enmod' binary (default: None)
   --apache-dismod APACHE_DISMOD
-                        Path to the Apache 'a2dismod' binary (default:
-                        a2dismod)
+                        Path to the Apache 'a2dismod' binary (default: None)
   --apache-le-vhost-ext APACHE_LE_VHOST_EXT
                         SSL vhost configuration extension (default: -le-
                         ssl.conf)
@@ -496,16 +495,16 @@ apache:
                         /var/log/apache2)
   --apache-challenge-location APACHE_CHALLENGE_LOCATION
                         Directory path for challenge configuration (default:
-                        /etc/apache2)
+                        /etc/apache2/other)
   --apache-handle-modules APACHE_HANDLE_MODULES
                         Let installer handle enabling required modules for you
-                        (Only Ubuntu/Debian currently) (default: True)
+                        (Only Ubuntu/Debian currently) (default: False)
   --apache-handle-sites APACHE_HANDLE_SITES
                         Let installer handle enabling sites for you (Only
-                        Ubuntu/Debian currently) (default: True)
+                        Ubuntu/Debian currently) (default: False)
   --apache-ctl APACHE_CTL
                         Full path to Apache control script (default:
-                        apache2ctl)
+                        apachectl)
 
 dns-cloudflare:
   Obtain certificates using a DNS TXT record (if you are using Cloudflare

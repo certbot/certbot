@@ -19,6 +19,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * Fixed accessing josepy contents through acme.jose when the full acme.jose
   path is used.
 * Clarify behavior for deleting certs as part of revocation.
+* Update the version of setuptools pinned in certbot-auto to 40.6.3 to
+  solve installation problems on newer OSes.
 
 Despite us having broken lockstep, we are continuing to release new versions of
 all Certbot components during releases for the time being, however, the only
@@ -35,19 +37,6 @@ package with changes other than its version number was:
 * certbot-dns-nsone
 * certbot-dns-ovh
 * certbot-dns-sakuracloud
-
-More details about these changes can be found on our GitHub repo.
-
-## 0.30.2 - 2019-01-25
-
-### Fixed
-
-* Update the version of setuptools pinned in certbot-auto to 40.6.3 to
-  solve installation problems on newer OSes.
-
-Despite us having broken lockstep, we are continuing to release new versions of
-all Certbot components during releases for the time being, however, this
-release only affects certbot-auto.
 
 More details about these changes can be found on our GitHub repo.
 
