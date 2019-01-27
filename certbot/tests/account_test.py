@@ -12,6 +12,7 @@ import pytz
 
 from acme import messages
 
+from certbot import compat
 from certbot import errors
 
 import certbot.tests.util as test_util
@@ -114,7 +115,7 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
         self.mock_client.directory.new_authz = new_authzr_uri
 
     def test_init_creates_dir(self):
-        self.assertTrue(os.path.isdir(self.config.accounts_dir))
+        self.assertTrue(os.path.isdir(compat.normalize_path(self.config.accounts_dir)))
 
     @test_util.broken_on_windows
     def test_save_and_restore(self):

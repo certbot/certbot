@@ -213,4 +213,5 @@ def normalize_path(path):
         return path
 
     # Windows specific
-    return path.replace(':', '_')
+    drive, tail = os.path.splitdrive(path)
+    return drive + tail.replace(':', '_')
