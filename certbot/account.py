@@ -141,8 +141,9 @@ class AccountFileStorage(interfaces.AccountStorage):
     """
     def __init__(self, config):
         self.config = config
-        util.make_or_verify_dir(config.accounts_dir, 0o700, compat.os_geteuid(),
-                                   self.config.strict_permissions)
+        account_dir = compat.normalize_path(config.accounts_dir)
+        util.make_or_verify_dir(account_dir, 0o700, compat.os_geteuid(),
+                                self.config.strict_permissions)
 
     def _account_dir_path(self, account_id):
         return self._account_dir_path_for_server_path(account_id, self.config.server_path)

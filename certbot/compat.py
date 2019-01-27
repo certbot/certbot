@@ -199,3 +199,18 @@ def get_default_folder(folder_type):
         return LINUX_DEFAULT_FOLDERS[folder_type]
     # Windows specific
     return WINDOWS_DEFAULT_FOLDERS[folder_type]
+
+
+def normalize_path(path):
+    # type: (str) -> str
+    """
+    Replace unsupported characters in path for current OS by underscores.
+    :param path: the path to normalize
+    :return: the normalized path
+    """
+    if 'fcntl' in sys.modules:
+        # Linux specific
+        return path
+
+    # Windows specific
+    return path.replace(':', '_')
