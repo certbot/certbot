@@ -49,7 +49,8 @@ def cover(package):
         return
 
     subprocess.check_call([
-        sys.executable, '-m', 'pytest', '--cov', pkg_dir, '--cov-append', '--cov-report=', package])
+        sys.executable, '-m', 'pytest', '--numprocesses', 'auto',
+        '--cov', pkg_dir, '--cov-append', '--cov-report=', package])
     subprocess.check_call([
         sys.executable, '-m', 'coverage', 'report', '--fail-under', str(threshold), '--include',
         '{0}/*'.format(pkg_dir), '--show-missing'])
