@@ -48,8 +48,9 @@ def main(args):
         temp_cwd = tempfile.mkdtemp()
         shutil.copy2("pytest.ini", temp_cwd)
         try:
-            call_with_print(' '.join([
-                sys.executable, '-m', 'pytest', pkg.replace('-', '_')]), cwd=temp_cwd)
+            call_with_print(' '.join([sys.executable, '-m', 'pytest',
+                                     '--numprocesses', 'auto', pkg.replace('-', '_')]),
+                            cwd=temp_cwd)
         finally:
             shutil.rmtree(temp_cwd)
 
