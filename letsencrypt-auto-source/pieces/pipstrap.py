@@ -74,9 +74,9 @@ PACKAGES = maybe_argparse + [
      'pip-{0}.tar.gz'.format(PIP_VERSION),
      '09f243e1a7b461f654c26a725fa373211bb7ff17a9300058b205c61658ca940d'),
     # This version of setuptools has only optional dependencies:
-    ('59/88/2f3990916931a5de6fa9706d6d75eb32ee8b78627bb2abaab7ed9e6d0622/'
-     'setuptools-29.0.1.tar.gz',
-     'b539118819a4857378398891fa5366e090690e46b3e41421a1e07d6e9fd8feb0'),
+    ('37/1b/b25507861991beeade31473868463dad0e58b1978c209de27384ae541b0b/'
+     'setuptools-40.6.3.zip',
+     '3b474dad69c49f0d2d86696b68105f3a6f195f7ab655af12ef9a9c326d2b08f8'),
     ('c9/1d/bd19e691fd4cfe908c76c429fe6e4436c9e83583c4414b54f6c85471954a/'
      'wheel-0.29.0.tar.gz',
      '1ebb8ad7e26b448e9caa4773d2357849bf80ff9e313964bcaf79cbf0201a1648')
@@ -148,9 +148,6 @@ def get_index_base():
 def main():
     pip_version = StrictVersion(check_output(['pip', '--version'])
                                 .decode('utf-8').split()[1])
-    min_pip_version = StrictVersion(PIP_VERSION)
-    if pip_version >= min_pip_version:
-        return 0
     has_pip_cache = pip_version >= StrictVersion('6.0')
     index_base = get_index_base()
     temp = mkdtemp(prefix='pipstrap-')
