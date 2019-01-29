@@ -259,6 +259,7 @@ and the nginx_ plugin for installation. (Note that this certificate cannot
 be renewed automatically.)
 
 ::
+
     certbot run -a manual -i nginx -d example.com
 
 .. _third-party-plugins:
