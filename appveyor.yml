@@ -25,7 +25,7 @@ build: off
 
 test_script:
   - set TOX_TESTENV_PASSENV=APPVEYOR
-  - set PYTEST_ADDOPTS="--numprocesses 4 --pyargs"
+  - set PYTEST_ADDOPTS=--numprocesses 4 --pyargs
   # Test env is set by TOXENV env variable
   - tox
 
