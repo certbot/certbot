@@ -18,6 +18,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 * Fixed accessing josepy contents through acme.jose when the full acme.jose
   path is used.
+* Clarify behavior for deleting certs as part of revocation.
 
 Despite us having broken lockstep, we are continuing to release new versions of
 all Certbot components during releases for the time being, however, the only
@@ -37,6 +38,37 @@ package with changes other than its version number was:
 
 More details about these changes can be found on our GitHub repo.
 
+## 0.30.2 - 2019-01-25
+
+### Fixed
+
+* Update the version of setuptools pinned in certbot-auto to 40.6.3 to
+  solve installation problems on newer OSes.
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, this
+release only affects certbot-auto.
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.30.1 - 2019-01-24
+
+### Fixed
+
+* Always download the pinned version of pip in pipstrap to address breakages
+* Rename old,default.conf to old-and-default.conf to address commas in filenames
+  breaking recent versions of pip.
+* Add VIRTUALENV_NO_DOWNLOAD=1 to all calls to virtualenv to address breakages
+  from venv downloading the latest pip
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+package with changes other than its version number was:
+
+* certbot-apache
+
+More details about these changes can be found on our GitHub repo.
+
 ## 0.30.0 - 2019-01-02
 
 ### Added
@@ -47,7 +79,7 @@ More details about these changes can be found on our GitHub repo.
 
 * Copied account management functionality from the `register` subcommand
   to the `update_account` subcommand.
-* Marked usage `register --update-registration` for deprecation and 
+* Marked usage `register --update-registration` for deprecation and
   removal in a future release.
 
 ### Fixed

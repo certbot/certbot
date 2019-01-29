@@ -333,61 +333,9 @@ BootstrapDebCommon() {
   fi
 
   augeas_pkg="libaugeas0 augeas-lenses"
-  AUGVERSION=`LC_ALL=C apt-cache show --no-all-versions libaugeas0 | grep ^Version: | cut -d" " -f2`
 
   if [ "$ASSUME_YES" = 1 ]; then
     YES_FLAG="-y"
-  fi
-
-  AddBackportRepo() {
-    # ARGS:
-    BACKPORT_NAME="$1"
-    BACKPORT_SOURCELINE="$2"
-    say "To use the Apache Certbot plugin, augeas needs to be installed from $BACKPORT_NAME."
-    if ! grep -v -e ' *#' /etc/apt/sources.list | grep -q "$BACKPORT_NAME" ; then
-      # This can theoretically error if sources.list.d is empty, but in that case we don't care.
-      if ! grep -v -e ' *#' /etc/apt/sources.list.d/* 2>/dev/null | grep -q "$BACKPORT_NAME"; then
-        if [ "$ASSUME_YES" = 1 ]; then
-          /bin/echo -n "Installing augeas from $BACKPORT_NAME in 3 seconds..."
-          sleep 1s
-          /bin/echo -ne "\e[0K\rInstalling augeas from $BACKPORT_NAME in 2 seconds..."
-          sleep 1s
-          /bin/echo -e "\e[0K\rInstalling augeas from $BACKPORT_NAME in 1 second ..."
-          sleep 1s
-          add_backports=1
-        else
-          read -p "Would you like to enable the $BACKPORT_NAME repository [Y/n]? " response
-          case $response in
-            [yY][eE][sS]|[yY]|"")
-              add_backports=1;;
-            *)
-              add_backports=0;;
-          esac
-        fi
-        if [ "$add_backports" = 1 ]; then
-          sh -c "echo $BACKPORT_SOURCELINE >> /etc/apt/sources.list.d/$BACKPORT_NAME.list"
-          apt-get $QUIET_FLAG update
-        fi
-      fi
-    fi
-    if [ "$add_backports" != 0 ]; then
-      apt-get install $QUIET_FLAG $YES_FLAG --no-install-recommends -t "$BACKPORT_NAME" $augeas_pkg
-      augeas_pkg=
-    fi
-  }
-
-
-  if dpkg --compare-versions 1.0 gt "$AUGVERSION" ; then
-    if lsb_release -a | grep -q wheezy ; then
-      AddBackportRepo wheezy-backports "deb http://http.debian.net/debian wheezy-backports main"
-    elif lsb_release -a | grep -q precise ; then
-      # XXX add ARM case
-      AddBackportRepo precise-backports "deb http://archive.ubuntu.com/ubuntu precise-backports main restricted universe multiverse"
-    else
-      echo "No libaugeas0 version is available that's new enough to run the"
-      echo "Certbot apache plugin..."
-    fi
-    # XXX add a case for ubuntu PPAs
   fi
 
   apt-get install $QUIET_FLAG $YES_FLAG --no-install-recommends \
@@ -997,10 +945,12 @@ if [ "$1" = "--le-auto-phase2" ]; then
     DeterminePythonVersion
     rm -rf "$VENV_PATH"
     if [ "$PYVER" -le 27 ]; then
+      # Use an environment variable instead of a flag for compatibility with old versions
       if [ "$VERBOSE" = 1 ]; then
-        virtualenv --no-site-packages --python "$LE_PYTHON" "$VENV_PATH"
+        VIRTUALENV_NO_DOWNLOAD=1 virtualenv --no-site-packages --python "$LE_PYTHON" "$VENV_PATH"
       else
-        virtualenv --no-site-packages --python "$LE_PYTHON" "$VENV_PATH" > /dev/null
+        VIRTUALENV_NO_DOWNLOAD=1 virtualenv --no-site-packages --python "$LE_PYTHON" "$VENV_PATH" \
+          > /dev/null
       fi
     else
       if [ "$VERBOSE" = 1 ]; then
@@ -1138,9 +1088,9 @@ parsedatetime==2.1 \
 pbr==1.8.1 \
     --hash=sha256:46c8db75ae75a056bd1cc07fa21734fe2e603d11a07833ecc1eeb74c35c72e0c \
     --hash=sha256:e2127626a91e6c885db89668976db31020f0af2da728924b56480fc7ccf09649
-pyOpenSSL==16.2.0 \
-    --hash=sha256:26ca380ddf272f7556e48064bbcd5bd71f83dfc144f3583501c7ddbd9434ee17 \
-    --hash=sha256:7779a3bbb74e79db234af6a08775568c6769b5821faecf6e2f4143edb227516e
+pyOpenSSL==18.0.0 \
+    --hash=sha256:26ff56a6b5ecaf3a2a59f132681e2a80afcc76b4f902f612f518f92c2a1bf854 \
+    --hash=sha256:6488f1423b00f73b7ad5167885312bb0ce410d3312eb212393795b53c8caa580
 pyparsing==2.1.8 \
     --hash=sha256:2f0f5ceb14eccd5aef809d6382e87df22ca1da583c79f6db01675ce7d7f49c18 \
     --hash=sha256:03a4869b9f3493807ee1f1cb405e6d576a1a2ca4d81a982677c0c1ad6177c56b \
@@ -1230,18 +1180,18 @@ letsencrypt==0.7.0 \
     --hash=sha256:105a5fb107e45bcd0722eb89696986dcf5f08a86a321d6aef25a0c7c63375ade \
     --hash=sha256:c36e532c486a7e92155ee09da54b436a3c420813ec1c590b98f635d924720de9
 
-certbot==0.30.0 \
-    --hash=sha256:b3468e128e74d2295598f6d3fbf9d0edfb67fe5abaca3b985a9e858395bd027f \
-    --hash=sha256:d631fe6c75700ce9b2fdae194ff8b53c7518545d87dd451a1704f7572dcd49e8
-acme==0.30.0 \
-    --hash=sha256:eed9389f802ebf4988c9e43c28ad3d5c2734237371d78e97450a1d61189a15aa \
-    --hash=sha256:984b6d00bec73dcfa616636a760e80ca14bd246fb908710a656547f542f09445
-certbot-apache==0.30.0 \
-    --hash=sha256:d38c70fc6930db298ea992a3145362eebdce460d3d2651f86a8f2f43d838c6d0 \
-    --hash=sha256:1d4bc207d53a3e5d37e5d9ebd05f26089aa21d1fbf384113ed9d1829b4d1e9bf
-certbot-nginx==0.30.0 \
-    --hash=sha256:6163c7d0080f59b4ebe510afcc6af2d2eebf15469275c3835866690db4d465d6 \
-    --hash=sha256:e39a3f3d77cd4c653949cf066fb2211039fd2032665697c27b6e8501c7c2dd92
+certbot==0.30.2 \
+    --hash=sha256:e411b72fa86eec1018e6de28e649e8c9c71191a7431dcc77f207b57ca9484c11 \
+    --hash=sha256:534487cb552ced8e47948ba3d2e7ca12c3a439133fc609485012b1a02fc7776e
+acme==0.30.2 \
+    --hash=sha256:68982576492dfa99c7e2be0fce4371adc9344740b05420ce0ab53238d2bb9b3b \
+    --hash=sha256:295a5b7fce9f908e6e5cff8c40be1a3daf3e1ebabd2e139a4c87274e68eeb8f2
+certbot-apache==0.30.2 \
+    --hash=sha256:3b7fa4e59772da7c9975ef2a49ceff157c9d7cb31eb9475928b5986d89701a3a \
+    --hash=sha256:32fa915a8a51810fdfe828ac1361da4425c231d7384891e49e6338e4741464b2
+certbot-nginx==0.30.2 \
+    --hash=sha256:7dc785f6f0c0c57b19cea8d98f9ea8feef53945613967b52c9348c81327010e2 \
+    --hash=sha256:6ba4dd772d0c7cdfb3383ca325b35639e01ac9e142e4baa6445cd85c7fb59552
 
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
@@ -1322,9 +1272,9 @@ PACKAGES = maybe_argparse + [
      'pip-{0}.tar.gz'.format(PIP_VERSION),
      '09f243e1a7b461f654c26a725fa373211bb7ff17a9300058b205c61658ca940d'),
     # This version of setuptools has only optional dependencies:
-    ('59/88/2f3990916931a5de6fa9706d6d75eb32ee8b78627bb2abaab7ed9e6d0622/'
-     'setuptools-29.0.1.tar.gz',
-     'b539118819a4857378398891fa5366e090690e46b3e41421a1e07d6e9fd8feb0'),
+    ('37/1b/b25507861991beeade31473868463dad0e58b1978c209de27384ae541b0b/'
+     'setuptools-40.6.3.zip',
+     '3b474dad69c49f0d2d86696b68105f3a6f195f7ab655af12ef9a9c326d2b08f8'),
     ('c9/1d/bd19e691fd4cfe908c76c429fe6e4436c9e83583c4414b54f6c85471954a/'
      'wheel-0.29.0.tar.gz',
      '1ebb8ad7e26b448e9caa4773d2357849bf80ff9e313964bcaf79cbf0201a1648')
@@ -1396,9 +1346,6 @@ def get_index_base():
 def main():
     pip_version = StrictVersion(check_output(['pip', '--version'])
                                 .decode('utf-8').split()[1])
-    min_pip_version = StrictVersion(PIP_VERSION)
-    if pip_version >= min_pip_version:
-        return 0
     has_pip_cache = pip_version >= StrictVersion('6.0')
     index_base = get_index_base()
     temp = mkdtemp(prefix='pipstrap-')
