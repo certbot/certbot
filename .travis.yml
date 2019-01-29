@@ -7,6 +7,7 @@ cache:
 before_script:
   - 'if [ $TRAVIS_OS_NAME = osx ] ; then ulimit -n 1024 ; fi'
   - export TOX_TESTENV_PASSENV=TRAVIS
+  - export PYTEST_ADDOPTS='--numprocesses 4 --pyargs'
 
 matrix:
   include:
