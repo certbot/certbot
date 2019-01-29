@@ -1,7 +1,7 @@
 # For running tests, build a docker image with a passwordless sudo and a trust
 # store we can manipulate.
 
-FROM debian:wheezy
+FROM debian:jessie
 
 # Add an unprivileged user:
 RUN useradd --create-home --home-dir /home/lea --shell /bin/bash --groups sudo --uid 1000 lea

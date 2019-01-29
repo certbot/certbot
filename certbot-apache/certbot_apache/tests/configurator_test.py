@@ -1523,12 +1523,12 @@ class AugeasVhostsTest(util.ApacheTest):
     def test_choosevhost_with_illegal_name(self):
         self.config.aug = mock.MagicMock()
         self.config.aug.match.side_effect = RuntimeError
-        path = "debian_apache_2_4/augeas_vhosts/apache2/sites-available/old,default.conf"
+        path = "debian_apache_2_4/augeas_vhosts/apache2/sites-available/old-and-default.conf"
         chosen_vhost = self.config._create_vhost(path)
         self.assertEqual(None, chosen_vhost)
 
     def test_choosevhost_works(self):
-        path = "debian_apache_2_4/augeas_vhosts/apache2/sites-available/old,default.conf"
+        path = "debian_apache_2_4/augeas_vhosts/apache2/sites-available/old-and-default.conf"
         chosen_vhost = self.config._create_vhost(path)
         self.assertTrue(chosen_vhost == None or chosen_vhost.path == path)
 

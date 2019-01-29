@@ -50,11 +50,10 @@ ConfigArgParse==0.10.0
 funcsigs==0.4
 zope.hookable==4.0.4
 
-# Ubuntu Bionic constraints
-# Formerly only lexicon==2.2.1 is available on Bionic. But we cannot put that here because some
-# DNS plugins require higher versions. We put to the least minimal Lexicon version to ensure
-# that Lexicon 2.x works with Certbot.
-dns-lexicon==2.7.14
+# Ubuntu Bionic constraints.
+# Lexicon oldest constraint is overridden appropriately on relevant DNS provider plugins
+# using their local-oldest-requirements.txt
+dns-lexicon==2.2.1
 
 # Plugin constraints
 # These aren't necessarily the oldest versions we need to support

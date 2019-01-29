@@ -39,8 +39,6 @@ nginx -v
 reload_nginx
 certbot_test_nginx --domains nginx.wtf run
 test_deployment_and_rollback nginx.wtf
-certbot_test_nginx --domains nginx-tls.wtf run --preferred-challenges tls-sni
-test_deployment_and_rollback nginx-tls.wtf
 certbot_test_nginx --domains nginx2.wtf --preferred-challenges http
 test_deployment_and_rollback nginx2.wtf
 # Overlapping location block and server-block-level return 301
@@ -66,4 +64,4 @@ test_deployment_and_rollback nginx6.wtf
 # top
 nginx -c $nginx_root/nginx.conf -s stop
 
-coverage report --fail-under 75 --include 'certbot-nginx/*' --show-missing
+coverage report --fail-under 72 --include 'certbot-nginx/*' --show-missing

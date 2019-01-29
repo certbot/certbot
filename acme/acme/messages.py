@@ -1,7 +1,10 @@
 """ACME protocol messages."""
-import collections
 import six
 import json
+try:
+    from collections.abc import Hashable  # pylint: disable=no-name-in-module
+except ImportError:
+    from collections import Hashable
 
 import josepy as jose
 
@@ -107,7 +110,7 @@ class Error(jose.JSONObjectWithFields, errors.Error):
             if part is not None).decode()
 
 
-class _Constant(jose.JSONDeSerializable, collections.Hashable):  # type: ignore
+class _Constant(jose.JSONDeSerializable, Hashable):  # type: ignore
     """ACME constant."""
     __slots__ = ('name',)
     POSSIBLE_NAMES = NotImplemented

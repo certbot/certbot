@@ -388,8 +388,7 @@ class RenewableCertTests(BaseRenewableCertTest):
     @mock.patch("certbot.storage.cli")
     @mock.patch("certbot.storage.datetime")
     def test_time_interval_judgments(self, mock_datetime, mock_cli):
-        """Test should_autodeploy() and should_autorenew() on the basis
-        of expiry time windows."""
+        """Test should_autorenew() on the basis of expiry time windows."""
         test_cert = test_util.load_vector("cert_512.pem")
 
         self._write_out_ex_kinds()
@@ -430,30 +429,7 @@ class RenewableCertTests(BaseRenewableCertTest):
             mock_datetime.datetime.utcnow.return_value = sometime
             self.test_rc.configuration["deploy_before_expiry"] = interval
             self.test_rc.configuration["renew_before_expiry"] = interval
-            self.assertEqual(self.test_rc.should_autodeploy(), result)
             self.assertEqual(self.test_rc.should_autorenew(), result)
-
-    def test_autodeployment_is_enabled(self):
-        self.assertTrue(self.test_rc.autodeployment_is_enabled())
-        self.test_rc.configuration["autodeploy"] = "1"
-        self.assertTrue(self.test_rc.autodeployment_is_enabled())
-
-        self.test_rc.configuration["autodeploy"] = "0"
-        self.assertFalse(self.test_rc.autodeployment_is_enabled())
-
-    def test_should_autodeploy(self):
-        """Test should_autodeploy() on the basis of reasons other than
-        expiry time window."""
-        # pylint: disable=too-many-statements
-        # Autodeployment turned off
-        self.test_rc.configuration["autodeploy"] = "0"
-        self.assertFalse(self.test_rc.should_autodeploy())
-        self.test_rc.configuration["autodeploy"] = "1"
-        # No pending deployment
-        for ver in six.moves.range(1, 6):
-            for kind in ALL_FOUR:
-                self._write_out_kind(kind, ver)
-        self.assertFalse(self.test_rc.should_autodeploy())
 
     def test_autorenewal_is_enabled(self):
         self.test_rc.configuration["renewalparams"] = {}
