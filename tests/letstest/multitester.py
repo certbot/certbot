@@ -32,7 +32,7 @@ see:
 from __future__ import print_function
 from __future__ import with_statement
 
-import sys, os, time, argparse, socket
+import sys, os, time, argparse, socket, traceback
 import multiprocessing as mp
 from multiprocessing import Manager
 import urllib2
@@ -363,6 +363,7 @@ def test_client_process(inqueue, outqueue):
         except:
             outqueue.put((ii, target, 'fail'))
             print("%s - %s FAIL"%(target['ami'], target['name']))
+            traceback.print_exc(file=sys.stdout)
             pass
 
         # append server certbot.log to each per-machine output log
@@ -371,6 +372,7 @@ def test_client_process(inqueue, outqueue):
             execute(grab_certbot_log)
         except:
             print("log fail\n")
+            traceback.print_exc(file=sys.stdout)
             pass
 
 
@@ -426,6 +428,7 @@ try:
         execute(local_git_clone, cl_args.repo)
 except FabricException:
     print("FAIL: trouble with git repo")
+    traceback.print_exc()
     exit()
 
 
