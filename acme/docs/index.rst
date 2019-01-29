@@ -16,13 +16,6 @@ Contents:
 .. automodule:: acme
    :members:
 
-
-Example client:
-
-.. include:: ../examples/example_client.py
-   :code: python
-
-
 Indices and tables
 ==================
 
