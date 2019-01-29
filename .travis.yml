@@ -12,15 +12,15 @@ matrix:
   include:
     # These environments are always executed
     - python: "3.6"
-      env: ACME_SERVER=boulder-v1 TEST_CAMPAIGN=all TOXENV=integration
+      env: ACME_SERVER=boulder-v1 PYTEST_ADDOPTS=-n4 TOXENV=integration
       sudo: required
       services: docker
     - python: "3.6"
-      env: ACME_SERVER=boulder-v2 TEST_CAMPAIGN=all TOXENV=integration
+      env: ACME_SERVER=boulder-v2 PYTEST_ADDOPTS=-n4 TOXENV=integration
       sudo: required
       services: docker
     - python: "3.6"
-      env: ACME_SERVER=pebble-nonstrict TEST_CAMPAIGN=all TOXENV=integration
+      env: ACME_SERVER=pebble-nonstrict PYTEST_ADDOPTS=-n4 TOXENV=integration
       sudo: required
       services: docker
     - python: "2.7"
