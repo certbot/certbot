@@ -12,6 +12,12 @@ fi
 
 cd ${BOULDERPATH}
 
+# Since https://github.com/letsencrypt/boulder/commit/92e8e1708a725e9d08a5da2f4a7132320ed2158b,
+# Boulder support for tls-sni-01 challenges is disabled. We still need to support it until this
+# challenge is officially removed from ACME CA server on production, and also removed from Certbot.
+# This sed command reactivate tls-sni-01 challenges inplace temporarily.
+sed -i 's/tls-alpn-01/tls-sni-01/g' test/config/ra.json
+
 docker-compose up -d boulder
 
 set +x  # reduce verbosity while waiting for boulder

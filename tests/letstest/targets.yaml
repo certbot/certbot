@@ -1,6 +1,21 @@
 targets:
   #-----------------------------------------------------------------------------
   #Ubuntu
+  - ami: ami-064bd2d44a1d6c097
+    name: ubuntu18.10
+    type: ubuntu
+    virt: hvm
+    user: ubuntu
+  - ami: ami-012fd5eb46f56731f
+    name: ubuntu18.04LTS
+    type: ubuntu
+    virt: hvm
+    user: ubuntu
+  - ami: ami-09677e0a6b14905b0
+    name: ubuntu16.04LTS
+    type: ubuntu
+    virt: hvm
+    user: ubuntu
   - ami: ami-7b89cc11
     name: ubuntu14.04LTS
     type: ubuntu
@@ -13,6 +28,11 @@ targets:
     user: ubuntu
   #-----------------------------------------------------------------------------
   # Debian
+  - ami: ami-003f19e0e687de1cd
+    name: debian9
+    type: ubuntu
+    virt: hvm
+    user: admin
   - ami: ami-116d857a
     name: debian8.1
     type: ubuntu
