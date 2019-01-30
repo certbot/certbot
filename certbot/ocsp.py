@@ -188,7 +188,7 @@ def _check_ocsp_response(response_ocsp, request_ocsp, issuer_cert):
         if response_ocsp.next_update < datetime.now() - timedelta(minutes=5):
             raise AssertionError('next update is in the past.')
         interval = response_ocsp.next_update - response_ocsp.this_update
-        if datetime.now() - response_ocsp.this_update > interval:
+        if datetime.now() - response_ocsp.this_update > interval + timedelta(minutes=5):
             raise AssertionError('this update is too old.')
 
 
