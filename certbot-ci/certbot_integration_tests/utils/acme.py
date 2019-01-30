@@ -163,7 +163,6 @@ services:
         ipv4_address: 10.33.33.2
 networks:
   traefiknet:
-    driver: bridge
     ipam:
       config:
         - subnet: 10.33.33.0/24
