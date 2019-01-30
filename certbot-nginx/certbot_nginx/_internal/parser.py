@@ -213,7 +213,9 @@ class NginxParser(object):
             except IOError:
                 logger.warning("Could not open file: %s", item)
             except UnicodeDecodeError:
-                logger.warning("Could not read file: %s due to invalid unicode character. Only UTF-8 encoding is supported.", item)
+                logger.warning("Could not read file: %s due to invalid "
+                               "character. Only UTF-8 encoding is "
+                               "supported.", item)
             except pyparsing.ParseException as err:
                 logger.debug("Could not parse file: %s due to %s", item, err)
         return trees
@@ -422,7 +424,8 @@ def _parse_ssl_options(ssl_options):
         except IOError:
             logger.warning("Missing NGINX TLS options file: %s", ssl_options)
         except UnicodeDecodeError:
-            logger.warn("Could not read file: %s due to invalid unicode character. Only UTF-8 encoding is supported.", ssl_options)
+            logger.warn("Could not read file: %s due to invalid character. "
+                        "Only UTF-8 encoding is supported.", ssl_options)
         except pyparsing.ParseBaseException as err:
             logger.debug("Could not parse file: %s due to %s", ssl_options, err)
     return []
