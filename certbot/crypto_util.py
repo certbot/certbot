@@ -19,7 +19,7 @@ from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey
 from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 # https://github.com/python/typeshed/tree/master/third_party/2/cryptography
-from cryptography import x509 # type: ignore
+from cryptography import x509  # type: ignore
 from OpenSSL import crypto
 from OpenSSL import SSL  # type: ignore
 
@@ -252,9 +252,9 @@ def verify_signed_payload(public_key, signature, payload, signature_hash_algorit
     """Check the signature of a payload.
 
     :param RSAPublicKey/EllipticCurvePublicKey public_key: the public_key to check signature
-    :param byte signature: the signature bytes
-    :param payload: the payload bytes
-    :param signature_hash_algorithm: algorithm used to hash the payload
+    :param bytes signature: the signature bytes
+    :param bytes payload: the payload bytes
+    :param cryptography.hazmat.primitives.hashes.HashAlgorithm signature_hash_algorithm: algorithm used to hash the payload
 
     :raises InvalidSignature: If signature verification fails.
     :raises errors.Error: If public key type is not supported
