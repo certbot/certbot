@@ -10,7 +10,6 @@ from certbot import errors
 from certbot.tests import util as test_util
 
 
-@test_util.broken_on_windows
 class LockDirTest(test_util.TempDirTestCase):
     """Tests for certbot.lock.lock_dir."""
     @classmethod
@@ -25,7 +24,6 @@ class LockDirTest(test_util.TempDirTestCase):
         test_util.lock_and_call(assert_raises, lock_path)
 
 
-@test_util.broken_on_windows
 class LockFileTest(test_util.TempDirTestCase):
     """Tests for certbot.lock.LockFile."""
     @classmethod
@@ -37,6 +35,7 @@ class LockFileTest(test_util.TempDirTestCase):
         super(LockFileTest, self).setUp()
         self.lock_path = os.path.join(self.tempdir, 'test.lock')
 
+    @test_util.broken_on_windows
     def test_acquire_without_deletion(self):
         # acquire the lock in another process but don't delete the file
         child = multiprocessing.Process(target=self._call,
@@ -54,6 +53,7 @@ class LockFileTest(test_util.TempDirTestCase):
             self.assertRaises, errors.LockError, self._call, self.lock_path)
         test_util.lock_and_call(assert_raises, self.lock_path)
 
+    @test_util.broken_on_windows
     def test_locked_repr(self):
         lock_file = self._call(self.lock_path)
         locked_repr = repr(lock_file)
@@ -71,6 +71,7 @@ class LockFileTest(test_util.TempDirTestCase):
         self.assertTrue(lock_file.__class__.__name__ in lock_repr)
         self.assertTrue(self.lock_path in lock_repr)
 
+    @test_util.broken_on_windows
     def test_race(self):
         should_delete = [True, False]
         stat = os.stat
@@ -86,11 +87,13 @@ class LockFileTest(test_util.TempDirTestCase):
             self._call(self.lock_path)
         self.assertFalse(should_delete)
 
+    @test_util.broken_on_windows
     def test_removed(self):
         lock_file = self._call(self.lock_path)
         lock_file.release()
         self.assertFalse(os.path.exists(self.lock_path))
 
+    @test_util.broken_on_windows
     @mock.patch('certbot.compat.fcntl.lockf')
     def test_unexpected_lockf_err(self, mock_lockf):
         msg = 'hi there'
