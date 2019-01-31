@@ -206,8 +206,9 @@ def underscores_for_unsupported_characters_in_path(path):
     # type: (str) -> str
     """
     Replace unsupported characters in path for current OS by underscores.
-    :param path: the path to normalize
+    :param str path: the path to normalize
     :return: the normalized path
+    :rtype: str
     """
     if 'fcntl' in sys.modules:
         # Linux specific
