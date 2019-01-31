@@ -1,12 +1,8 @@
 """
 Compatibility layer to run certbot both on Linux and Windows.
 
-The approach used here is similar to Modernizr for Web browsers.
-We do not check the platform type to determine if a particular logic is supported.
-Instead, we apply a logic, and then fallback to another logic if first logic
-is not supported at runtime.
-
-Then logic chains are abstracted into single functions to be exposed to certbot.
+This module contains all required platform specific code,
+allowing the rest of Certbot codebase to be platform agnostic.
 """
 import os
 import select
@@ -152,3 +148,20 @@ def get_default_folder(folder_type):
         return LINUX_DEFAULT_FOLDERS[folder_type]
     # Windows specific
     return WINDOWS_DEFAULT_FOLDERS[folder_type]
+
+
+def underscores_for_unsupported_characters_in_path(path):
+    # type: (str) -> str
+    """
+    Replace unsupported characters in path for current OS by underscores.
+    :param str path: the path to normalize
+    :return: the normalized path
+    :rtype: str
+    """
+    if os.name != 'nt':
+        # Linux specific
+        return path
+
+    # Windows specific
+    drive, tail = os.path.splitdrive(path)
+    return drive + tail.replace(':', '_')
