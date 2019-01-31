@@ -235,6 +235,7 @@ def _construct_mock_ocsp_response(certificate_status, response_status):
         serial_number=request.serial_number,
         issuer_key_hash=request.issuer_key_hash,
         issuer_name_hash=request.issuer_name_hash,
+        hash_algorithm=hashes.SHA1(),
         next_update=datetime.now() + timedelta(days=1),
         this_update=datetime.now() - timedelta(days=1),
         signature_algorithm_oid=x509.oid.SignatureAlgorithmOID.RSA_WITH_SHA1,
