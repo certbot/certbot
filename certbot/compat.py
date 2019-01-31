@@ -184,6 +184,7 @@ LINUX_DEFAULT_FOLDERS = {
     'logs': '/var/log/letsencrypt',
 }
 
+
 def get_default_folder(folder_type):
     """
     Return the relevant default folder for the current OS
@@ -201,7 +202,7 @@ def get_default_folder(folder_type):
     return WINDOWS_DEFAULT_FOLDERS[folder_type]
 
 
-def normalize_path(path):
+def underscores_for_unsupported_characters_in_path(path):
     # type: (str) -> str
     """
     Replace unsupported characters in path for current OS by underscores.

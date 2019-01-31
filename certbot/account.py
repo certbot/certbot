@@ -141,7 +141,7 @@ class AccountFileStorage(interfaces.AccountStorage):
     """
     def __init__(self, config):
         self.config = config
-        account_dir = compat.normalize_path(config.accounts_dir)
+        account_dir = compat.underscores_for_unsupported_characters_in_path(config.accounts_dir)
         util.make_or_verify_dir(account_dir, 0o700, compat.os_geteuid(),
                                 self.config.strict_permissions)
 

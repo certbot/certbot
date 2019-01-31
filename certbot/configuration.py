@@ -70,7 +70,7 @@ class NamespaceConfig(object):
 
     def accounts_dir_for_server_path(self, server_path):
         """Path to accounts directory based on server_path"""
-        server_path = compat.normalize_path(server_path)
+        server_path = compat.underscores_for_unsupported_characters_in_path(server_path)
         return os.path.join(
             self.namespace.config_dir, constants.ACCOUNTS_DIR, server_path)
 
