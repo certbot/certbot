@@ -5,8 +5,12 @@ from datetime import datetime, timedelta
 from subprocess import Popen, PIPE
 
 try:
+    # Only cryptography>=2.5 has ocsp module
+    # and signature_hash_algorithm attribute in OCSPResponse class
     from cryptography.x509 import ocsp  # pylint: disable=import-error
-except ImportError:  # pragma: no cover
+    from cryptography.x509.ocsp import OCSPResponse  # pylint: disable=import-error,unused-import
+    getattr(OCSPResponse, 'signature_hash_algorithm')
+except (ImportError, AttributeError):  # pragma: no cover
     ocsp = None  # type: ignore
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
@@ -194,18 +198,7 @@ def _check_ocsp_response(response_ocsp, request_ocsp, issuer_cert):
 
 def _check_ocsp_response_signature(response_ocsp, issuer_cert):
     """Verify an OCSP response signature against certificate issuer"""
-    # TODO: (adferrand 2019-11-01) A fallback for cryptography==2.4 is implemented here.
-    #   Once cryptography==2.5 is released, Certbot can require this new version and
-    #   this code can be replaced by a single call to response_ocsp.signature_hash_algorithm
-    try:
-        chosen_hash = response_ocsp.signature_hash_algorithm
-    except AttributeError:  # pragma: no cover
-        try:
-            chosen_hash = x509._SIG_OIDS_TO_HASH[response_ocsp.signature_algorithm_oid]  # pylint: disable=protected-access
-        except KeyError:
-            raise UnsupportedAlgorithm("Signature algorithm OID:{0} not recognized"
-                                       .format(response_ocsp.signature_algorithm_oid))
-
+    chosen_hash = response_ocsp.signature_hash_algorithm  # will raise UnsupportedAlgorithm if needed
     crypto_util.verify_signed_payload(issuer_cert.public_key, response_ocsp.signature,
                                       response_ocsp.tbs_response_bytes, chosen_hash)
 

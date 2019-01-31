@@ -8,8 +8,12 @@ from cryptography.hazmat.primitives import hashes  # type: ignore
 from cryptography.exceptions import UnsupportedAlgorithm, InvalidSignature
 from cryptography import x509
 try:
+    # Only cryptography>=2.5 has ocsp module
+    # and signature_hash_algorithm attribute in OCSPResponse class
     from cryptography.x509 import ocsp as ocsp_lib  # pylint: disable=import-error
-except ImportError:  # pragma: no cover
+    from cryptography.x509.ocsp import OCSPResponse  # pylint: disable=import-error,unused-import
+    getattr(OCSPResponse, 'signature_hash_algorithm')
+except (ImportError, AttributeError):  # pragma: no cover
     ocsp_lib = None  # type: ignore
 import mock
 
@@ -116,7 +120,7 @@ class OCSPTestOpenSSL(unittest.TestCase):
 
 
 @unittest.skipIf(not ocsp_lib,
-                 reason='This class tests functionalities available only on cryptography >= 2.4.0')
+                 reason='This class tests functionalities available only on cryptography>=2.5.0')
 class OSCPTestCryptography(unittest.TestCase):
     """
     OCSP revokation tests using Cryptography >= 2.4.0
