@@ -111,9 +111,11 @@ class _BaseLockMechanism(object):
         """
         return self._fd is not None
 
-    def acquire(self): pass  # pylint: disable=missing-docstring,multiple-statements
+    def acquire(self):  # pylint: disable=missing-docstring
+        pass
 
-    def release(self): pass  # pylint: disable=missing-docstring,multiple-statements
+    def release(self):  # pylint: disable=missing-docstring
+        pass
 
 
 class _UnixLockMechanism(_BaseLockMechanism):
