@@ -182,7 +182,7 @@ def _check_ocsp_response(response_ocsp, request_ocsp, issuer_cert):
     _check_ocsp_response_signature(response_ocsp, issuer_cert)
 
     # Assert issuer in response is the expected one
-    if (response_ocsp.hash_algorithm != request_ocsp.hash_algorithm
+    if (not isinstance(response_ocsp.hash_algorithm, type(request_ocsp.hash_algorithm))
             or response_ocsp.issuer_key_hash != request_ocsp.issuer_key_hash
             or response_ocsp.issuer_name_hash != request_ocsp.issuer_name_hash):
         raise AssertionError('the issuer does not correspond to issuer of the certificate.')
