@@ -8,7 +8,7 @@ from certbot import constants
 from certbot import errors
 from certbot import interfaces
 from certbot import util
-from certbot.compat import os
+from certbot.compat import os, misc
 
 
 @zope.interface.implementer(interfaces.IConfig)
@@ -69,6 +69,7 @@ class NamespaceConfig(object):
 
     def accounts_dir_for_server_path(self, server_path):
         """Path to accounts directory based on server_path"""
+        server_path = misc.underscores_for_unsupported_characters_in_path(server_path)
         return os.path.join(
             self.namespace.config_dir, constants.ACCOUNTS_DIR, server_path)
 

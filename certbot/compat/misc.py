@@ -7,6 +7,8 @@ from __future__ import absolute_import
 import select
 import sys
 
+from certbot.compat import os
+
 try:
     from win32com.shell import shell as shellwin32  # pylint: disable=import-error
 except ImportError:  # pragma: no cover
@@ -89,3 +91,20 @@ def get_default_folder(folder_type):
     except ImportError:
         # Windows specific
         return WINDOWS_DEFAULT_FOLDERS[folder_type]
+
+
+def underscores_for_unsupported_characters_in_path(path):
+    # type: (str) -> str
+    """
+    Replace unsupported characters in path for current OS by underscores.
+    :param str path: the path to normalize
+    :return: the normalized path
+    :rtype: str
+    """
+    if os.name != 'nt':
+        # Linux specific
+        return path
+
+    # Windows specific
+    drive, tail = os.path.splitdrive(path)
+    return drive + tail.replace(':', '_')
