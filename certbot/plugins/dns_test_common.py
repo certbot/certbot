@@ -71,8 +71,8 @@ class BaseAuthenticatorTest(TestCase):
         opts.update({"propagation-seconds": 0,
                      # Do not wait during tests
 
-                     "override-challenge": "{acme}",
-                     "override-challenge-map": {}})
+                     "validation-domain": "{acme}",
+                     "validation-domain-map": {}})
 
         for opt, value in opts.items():
             setattr(self.config, self.auth.dest(opt), value)

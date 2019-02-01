@@ -20,15 +20,15 @@ from certbot.plugins import common
 logger = logging.getLogger(__name__)
 
 
-class OverrideChallengeAction(argparse.Action):
-    """Action class for parsing override-challenge."""
+class ValidationDomainAction(argparse.Action):
+    """Action class for parsing validation-domain."""
 
     def __init__(self, *args, **kwargs):
-        super(OverrideChallengeAction, self).__init__(*args, **kwargs)
+        super(ValidationDomainAction, self).__init__(*args, **kwargs)
         self.dest = kwargs['dest']
         self.dest_map = self.dest + "_map"
 
-    def __call__(self, parser, namespace, override_chall, option_string=None):
+    def __call__(self, parser, namespace, validation_domain, option_string=None):
         challenge_map = getattr(namespace, self.dest_map)
 
         # For all domains before this override, set challenge map entry
@@ -41,7 +41,7 @@ class OverrideChallengeAction(argparse.Action):
         # All subsequent domains are getting the specified value as
         # challenge override.
 
-        setattr(namespace, self.dest, override_chall)
+        setattr(namespace, self.dest, validation_domain)
 
 
 @zope.interface.implementer(interfaces.IAuthenticator)
@@ -71,9 +71,9 @@ class DNSAuthenticator(common.Plugin):
         super(DNSAuthenticator, cls).inject_parser_options(parser, name)
 
         # Create an additional entry in the parser namespace for the
-        # override-challenge map. This is an initiallyt empty dict associating
+        # validation-domain map. This is an initially empty dict associating
         # each requested certificate domain with the corresponding challenge
-        # override (see help for --dns-<plugin>-override-challenge).
+        # override (see help for --dns-<plugin>-validation-domain).
 
         # Use set_default to provide this dict as an entry in the namespace
         # object returned by the parser. Note that set_default uses keyword
@@ -81,7 +81,7 @@ class DNSAuthenticator(common.Plugin):
         # here the name is dynamically computed (depending on the plugin
         # name), which is why we need to use ** syntax.
 
-        challenge_map_opt = common.dest_namespace(name) + "override_challenge_map"
+        challenge_map_opt = common.dest_namespace(name) + "validation_domain_map"
         parser.set_defaults(**{challenge_map_opt: {}})  # pylint: disable=star-args
 
 
@@ -92,8 +92,8 @@ class DNSAuthenticator(common.Plugin):
             type=int,
             help='The number of seconds to wait for DNS to propagate before '
                  'asking the ACME server to verify the DNS record.')
-        add('override-challenge',
-            action=OverrideChallengeAction,
+        add('validation-domain',
+            action=ValidationDomainAction,
             default="{acme}",
             help='Override default challenge for following domains on the '
                  'command line. Validation depends on a CNAME having been '
@@ -111,8 +111,8 @@ class DNSAuthenticator(common.Plugin):
         domain = achall.domain
         acme_loc = achall.validation_domain_name(achall.domain)
 
-        challenge_map = self.conf('override-challenge-map')
-        challenge_ovr = self.conf('override-challenge')
+        challenge_map = self.conf('validation-domain-map')
+        challenge_ovr = self.conf('validation-domain')
         challenge_str = challenge_map.get(domain, challenge_ovr)
 
         return challenge_str.format(domain=domain, acme=acme_loc)

@@ -156,33 +156,33 @@ class ChallengeOverrideAuthenticatorTest(util.TempDirTestCase):
 
         # Check that override map is present and empty
 
-        self.assertEqual(self.auth.conf("override-challenge-map"), {})
+        self.assertEqual(self.auth.conf("validation-domain-map"), {})
 
         # Check that challenge override is set to the default name
 
-        self.assertEqual(self.auth.conf("override-challenge"), "{acme}")
+        self.assertEqual(self.auth.conf("validation-domain"), "{acme}")
 
         # Check that the computed validation domain name is the default name
 
         self.assertEqual(self.vdn(dom), "_acme-challenge." + dom)
 
-    def test_override_challenge(self):
+    def test_validation_domain(self):
         self.parse_args(
             "-d", "d0.com",
-            "--fake-override-challenge", "c1.com",
+            "--fake-validation-domain", "c1.com",
             "-d", "d1.com",
-            "--fake-override-challenge", "c2.com",
+            "--fake-validation-domain", "c2.com",
             "-d", "d2.com")
 
         # Check contents of override map
 
-        self.assertEqual(self.auth.conf("override-challenge-map"),
+        self.assertEqual(self.auth.conf("validation-domain-map"),
                          {"d0.com": "{acme}",
                           "d1.com": "c1.com"})
 
         # Check last value of challenge override
 
-        self.assertEqual(self.auth.conf("override-challenge"), "c2.com")
+        self.assertEqual(self.auth.conf("validation-domain"), "c2.com")
 
         # Domain before first override gets default challenge
 
