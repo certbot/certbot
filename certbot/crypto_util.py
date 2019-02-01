@@ -254,7 +254,8 @@ def verify_signed_payload(public_key, signature, payload, signature_hash_algorit
     :param RSAPublicKey/EllipticCurvePublicKey public_key: the public_key to check signature
     :param bytes signature: the signature bytes
     :param bytes payload: the payload bytes
-    :param cryptography.hazmat.primitives.hashes.HashAlgorithm signature_hash_algorithm: algorithm used to hash the payload
+    :param cryptography.hazmat.primitives.hashes.HashAlgorithm
+           signature_hash_algorithm: algorithm used to hash the payload
 
     :raises InvalidSignature: If signature verification fails.
     :raises errors.Error: If public key type is not supported

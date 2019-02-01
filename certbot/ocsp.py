@@ -198,7 +198,8 @@ def _check_ocsp_response(response_ocsp, request_ocsp, issuer_cert):
 
 def _check_ocsp_response_signature(response_ocsp, issuer_cert):
     """Verify an OCSP response signature against certificate issuer"""
-    chosen_hash = response_ocsp.signature_hash_algorithm  # will raise UnsupportedAlgorithm if needed
+    # Following line may raise UnsupportedAlgorithm
+    chosen_hash = response_ocsp.signature_hash_algorithm
     crypto_util.verify_signed_payload(issuer_cert.public_key, response_ocsp.signature,
                                       response_ocsp.tbs_response_bytes, chosen_hash)
 
