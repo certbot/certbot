@@ -2,7 +2,7 @@
 import logging
 import os
 
-from acme.magic_typing import Set  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import List, Set  # pylint: disable=unused-import, no-name-in-module
 from certbot import errors
 from certbot.plugins import common
 from certbot_apache.obj import VirtualHost  # pylint: disable=unused-import
@@ -89,7 +89,7 @@ class ApacheHttp01(common.TLSSNI01):
                     self.configurator.enable_mod(mod, temp=True)
 
     def _mod_config(self):
-        selected_vhosts = []
+        selected_vhosts = []  # type: List[VirtualHost]
         http_port = str(self.configurator.config.http01_port)
         for chall in self.achalls:
             # Search for matching VirtualHosts
@@ -142,8 +142,8 @@ class ApacheHttp01(common.TLSSNI01):
         matching_vhosts = []
         for vhost in self.configurator.vhosts:
             if self.configurator.included_in_wildcard(vhost.get_names(), domain):
-                matching_vhosts.append(vhost)
-            elif domain in vhost.get_names():
+                # included_in_wildcard also matches the exact names, so no need
+                # to check "domain in vhost.get_names()" explicitly here
                 matching_vhosts.append(vhost)
 
         return matching_vhosts
