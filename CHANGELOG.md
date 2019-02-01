@@ -13,6 +13,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 * Lexicon-based DNS plugins are now fully compatible with Lexicon 3.x (support
   on 2.x branch is maintained).
+* Apache plugin now attempts to configure all VirtualHosts matching requested
+  domain name instead of only a single one.
 
 ### Fixed
 
