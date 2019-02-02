@@ -903,7 +903,7 @@ that by default two instances of Certbot will not be able to run in parallel.
 Since the directories used by Certbot are configurable, Certbot
 will write a lock file for all of the directories it uses. This include Certbot's
 ``--work-dir``, ``--logs-dir``, and ``--config-dir``. By default these are
-``/var/lib/letsencrypt``, ``/var/logs/letsencrypt``, and ``/etc/letsencrypt``
+``/var/lib/letsencrypt``, ``/var/log/letsencrypt``, and ``/etc/letsencrypt``
 respectively. Additionally if you are using Certbot with Apache or nginx it will
 lock the configuration folder for that program, which are typically also in the
 ``/etc`` directory.
