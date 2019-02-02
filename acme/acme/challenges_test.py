@@ -429,16 +429,6 @@ class TLSALPN01ResponseTest(unittest.TestCase):
         from acme.challenges import TLSALPN01Response
         hash(TLSALPN01Response.from_json(self.jmsg))
 
-    def test_simple_verify_failure(self):
-        key2 = jose.JWKRSA.load(test_util.load_vector('rsa256_key.pem'))
-        public_key = key2.public_key()
-        verified = self.response.simple_verify(self.chall, "local", public_key)
-        self.assertFalse(verified)
-
-    def test_simple_verify_success(self):
-        public_key = KEY.public_key()
-        verified = self.response.simple_verify(self.chall, "local", public_key)
-        self.assertTrue(verified)
 
 class TLSALPN01Test(unittest.TestCase):
 

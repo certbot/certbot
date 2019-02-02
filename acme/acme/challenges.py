@@ -523,16 +523,6 @@ class TLSALPN01Response(KeyAuthorizationChallengeResponse):
     """
     typ = "tls-alpn-01"
 
-    def simple_verify(self, chall, domain, account_public_key):
-        """simple_verify for TLS-ALPN-01 challenges passes through to the base
-        KeyAuthorizationChallengeResponse verify implementation.
-        """
-        # pylint: disable=unused-argument
-        verified = self.verify(chall, account_public_key)
-        if not verified:
-            logger.debug("Verification of key authorization in response failed")
-        return verified
-
 
 @Challenge.register  # pylint: disable=too-many-ancestors
 class TLSALPN01(KeyAuthorizationChallenge):
