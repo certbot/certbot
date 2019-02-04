@@ -19,6 +19,7 @@ import tempfile
 
 import merge_requirements as merge_module
 import readlink
+import strip_hashes
 
 
 def find_tools_path():
@@ -40,23 +41,14 @@ def certbot_oldest_processing(tools_path, args, test_constraints):
     return requirements
 
 
-def remove_requirements_hashes(filename):
-    out_lines = []
-    with open(filename, 'r') as fd:
-        in_data = fd.readlines()
-    for line in in_data:
-        search = re.search(r'^(\S*==\S*).*$', line)
-        if search:
-            out_lines.append(search.group(1))
-    return os.linesep.join(out_lines)
-
-
 def certbot_normal_processing(tools_path, test_constraints):
     repo_path = os.path.dirname(tools_path)
     certbot_requirements = os.path.normpath(os.path.join(
         repo_path, 'letsencrypt-auto-source/pieces/dependency-requirements.txt'))
+    with open(certbot_requirements, 'r') as fd:
+        data = fd.readlines()
     with open(test_constraints, 'w') as fd:
-        fd.write(remove_requirements_hashes(certbot_requirements))
+        fd.write(strip_hashes.main(data))
 
 
 def merge_requirements(tools_path, requirements, test_constraints, all_constraints):

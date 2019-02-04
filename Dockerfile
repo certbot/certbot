@@ -8,11 +8,10 @@ WORKDIR /opt/certbot
 COPY CHANGELOG.md README.rst setup.py src/
 
 # Generate constraints file to pin dependency versions
-COPY letsencrypt-auto-source/pieces/dependency-requirements.txt hashed_requirements.txt
+COPY letsencrypt-auto-source/pieces/dependency-requirements.txt .
 COPY tools /opt/certbot/tools
-RUN /opt/certbot/tools/docker_constraints.py \
-    hashed_requirements.txt unhashed_requirements.txt \
-    tools/dev_constraints.txt docker_constraints.txt
+RUN sh -c 'cat dependency-requirements.txt | /opt/certbot/tools/strip_hashes.py > unhashed_requirements.txt'
+RUN sh -c 'cat tools/dev_constraints.txt unhashed_requirements.txt | /opt/certbot/tools/merge_requirements.py > docker_constraints.txt'
 
 COPY acme src/acme
 COPY certbot src/certbot
@@ -29,9 +28,8 @@ RUN apk add --no-cache --virtual .build-deps \
         openssl-dev \
         musl-dev \
         libffi-dev \
-    && pip install --no-cache-dir \
-        --requirement /opt/certbot/unhashed_requirements.txt \
-        --constraint /opt/certbot/docker_constraints.txt \
+    && pip install -r /opt/certbot/dependency-requirements.txt \
+    && pip install --no-cache-dir --no-deps \
         --editable /opt/certbot/src/acme \
         --editable /opt/certbot/src \
     && apk del .build-deps
