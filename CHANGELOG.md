@@ -8,6 +8,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 * Avoid to process again challenges that are already validated
   when a certificate is issued.
+* Support for initiating (but not solving end-to-end) TLS-ALPN-01 challenges
+  with the `acme` module.
 
 ### Changed
 
