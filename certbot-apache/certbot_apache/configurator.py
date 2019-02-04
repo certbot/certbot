@@ -94,7 +94,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     description = "Apache Web Server plugin"
     if os.environ.get("CERTBOT_DOCS") == "1":
         description += (  # pragma: no cover
-            "(Please note that the default values of the Apache plugin options"
+            " (Please note that the default values of the Apache plugin options"
             " change depending on the operating system Certbot is run on.)"
         )
 
