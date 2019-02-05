@@ -8,8 +8,7 @@ try:
     # Only cryptography>=2.5 has ocsp module
     # and signature_hash_algorithm attribute in OCSPResponse class
     from cryptography.x509 import ocsp  # pylint: disable=import-error
-    from cryptography.x509.ocsp import OCSPResponse  # pylint: disable=import-error,unused-import
-    getattr(OCSPResponse, 'signature_hash_algorithm')
+    getattr(ocsp.OCSPResponse, 'signature_hash_algorithm')
 except (ImportError, AttributeError):  # pragma: no cover
     ocsp = None  # type: ignore
 from cryptography import x509
