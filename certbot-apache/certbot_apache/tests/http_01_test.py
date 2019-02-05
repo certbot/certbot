@@ -27,9 +27,9 @@ class ApacheHttp01Test(util.ApacheTest):
         self.achalls = []  # type: List[achallenges.KeyAuthorizationAnnotatedChallenge]
         vh_truth = util.get_vh_truth(
             self.temp_dir, "debian_apache_2_4/multiple_vhosts")
-        # Takes the vhosts for encryption-example.demo, certbot.demo,
-        # vhost.in.rootconf and duplicate{http,https}.conf
-        self.vhosts = [vh_truth[0], vh_truth[3], vh_truth[10], vh_truth[11], vh_truth[12]]
+        # Takes the vhosts for encryption-example.demo, certbot.demo
+        # and vhost.in.rootconf
+        self.vhosts = [vh_truth[0], vh_truth[3], vh_truth[10]]
 
         for i in range(NUM_ACHALLS):
             self.achalls.append(
@@ -112,10 +112,6 @@ class ApacheHttp01Test(util.ApacheTest):
         self.common_perform_test(achalls, vhosts)
 
     def test_configure_multiple_vhosts(self):
-        # Enable mod_ssl, because we want to test that also an SSL vhost is
-        # configured correctly.
-        self.config.parser.modules.add("mod_ssl.c")
-        self.config.parser.modules.add("ssl_module")
         vhosts = [v for v in self.config.vhosts if "duplicate.example.com" in v.get_names()]
         self.assertEqual(len(vhosts), 2)
         achalls = [

@@ -94,8 +94,7 @@ class ApacheHttp01(common.TLSSNI01):
         for chall in self.achalls:
             # Search for matching VirtualHosts
             for vh in self._matching_vhosts(chall.domain):
-                if vh not in selected_vhosts:
-                    selected_vhosts.append(vh)
+                selected_vhosts.append(vh)
 
         # Ensure that we have one or more VirtualHosts that we can continue
         # with. (one that listens to port configured with --http-01-port)
@@ -141,8 +140,8 @@ class ApacheHttp01(common.TLSSNI01):
         """
         matching_vhosts = []
         for vhost in self.configurator.vhosts:
-            if self.configurator.included_in_wildcard(vhost.get_names(), domain):
-                # included_in_wildcard also matches the exact names, so no need
+            if self.configurator.domain_in_names(vhost.get_names(), domain):
+                # domain_in_names also matches the exact names, so no need
                 # to check "domain in vhost.get_names()" explicitly here
                 matching_vhosts.append(vhost)
 
