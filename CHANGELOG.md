@@ -11,6 +11,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * If possible, Certbot uses built-in support for OCSP from recent cryptography
   versions instead of OpenSSL binary: as a consequence Certbot does not need
   OpenSSL binary to be installed anymore if cryptography>=2.5 is installed.
+* Support for initiating (but not solving end-to-end) TLS-ALPN-01 challenges
+  with the `acme` module.
 
 ### Changed
 
