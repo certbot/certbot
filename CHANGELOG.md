@@ -8,6 +8,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 * Avoid to process again challenges that are already validated
   when a certificate is issued.
+* If possible, Certbot uses built-in support for OCSP from recent cryptography
+  versions instead of OpenSSL binary: as a consequence Certbot does not need
+  OpenSSL binary to be installed anymore if cryptography>=2.5 is installed.
 
 ### Changed
 
