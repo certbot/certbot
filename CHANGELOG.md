@@ -10,6 +10,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   when a certificate is issued.
 * Support for initiating (but not solving end-to-end) TLS-ALPN-01 challenges
   with the `acme` module.
+* Don't verify the existing certificate in HTTP01Response.simple_verify, for 
+  compatibility with the real-world ACME challenge checks.
 
 ### Changed
 
