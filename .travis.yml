@@ -72,8 +72,9 @@ matrix:
     - python: "2.7"
       env: TOXENV=nginxroundtrip
 
-    # These environments are executed on cron events and pushes to tested
-    # branches other than master.
+    # These environments are executed on cron events and commits to tested
+    # branches other than master. Which branches are tested is controlled by
+    # the "branches" section earlier in this file.
     - python: "3.7"
       dist: xenial
       env: TOXENV=py37 CERTBOT_NO_PIN=1
