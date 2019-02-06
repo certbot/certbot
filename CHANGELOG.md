@@ -6,6 +6,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+* Certbot's official Docker images are now based on Alpine Linux 3.9 rather
+  than 3.7. The new version comes with OpenSSL 1.1.1.
 * Avoid reprocessing challenges that are already validated
   when a certificate is issued.
 * If possible, Certbot uses built-in support for OCSP from recent cryptography
