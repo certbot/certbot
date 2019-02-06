@@ -139,7 +139,8 @@ class MultipleVhostsTest(util.ApacheTest):
         names = self.config.get_all_names()
         self.assertEqual(names, set(
             ["certbot.demo", "ocspvhost.com", "encryption-example.demo",
-             "nonsym.link", "vhost.in.rootconf", "www.certbot.demo"]
+             "nonsym.link", "vhost.in.rootconf", "www.certbot.demo",
+             "duplicate.example.com"]
         ))
 
     @certbot_util.patch_get_utility()
@@ -158,8 +159,7 @@ class MultipleVhostsTest(util.ApacheTest):
         self.config.vhosts.append(vhost)
 
         names = self.config.get_all_names()
-        # Names get filtered, only 5 are returned
-        self.assertEqual(len(names), 8)
+        self.assertEqual(len(names), 9)
         self.assertTrue("zombo.com" in names)
         self.assertTrue("google.com" in names)
         self.assertTrue("certbot.demo" in names)
@@ -200,7 +200,7 @@ class MultipleVhostsTest(util.ApacheTest):
     def test_get_virtual_hosts(self):
         """Make sure all vhosts are being properly found."""
         vhs = self.config.get_virtual_hosts()
-        self.assertEqual(len(vhs), 10)
+        self.assertEqual(len(vhs), 12)
         found = 0
 
         for vhost in vhs:
@@ -211,7 +211,7 @@ class MultipleVhostsTest(util.ApacheTest):
             else:
                 raise Exception("Missed: %s" % vhost)  # pragma: no cover
 
-        self.assertEqual(found, 10)
+        self.assertEqual(found, 12)
 
         # Handle case of non-debian layout get_virtual_hosts
         with mock.patch(
@@ -219,7 +219,7 @@ class MultipleVhostsTest(util.ApacheTest):
         ) as mock_conf:
             mock_conf.return_value = False
             vhs = self.config.get_virtual_hosts()
-            self.assertEqual(len(vhs), 10)
+            self.assertEqual(len(vhs), 12)
 
     @mock.patch("certbot_apache.display_ops.select_vhost")
     def test_choose_vhost_none_avail(self, mock_select):
@@ -322,7 +322,7 @@ class MultipleVhostsTest(util.ApacheTest):
         self.config.vhosts = [
             vh for vh in self.config.vhosts
             if vh.name not in ["certbot.demo", "nonsym.link",
-                "encryption-example.demo",
+                "encryption-example.demo", "duplicate.example.com",
                 "ocspvhost.com", "vhost.in.rootconf"]
             and "*.blue.purple.com" not in vh.aliases
         ]
@@ -333,7 +333,7 @@ class MultipleVhostsTest(util.ApacheTest):
     def test_non_default_vhosts(self):
         # pylint: disable=protected-access
         vhosts = self.config._non_default_vhosts(self.config.vhosts)
-        self.assertEqual(len(vhosts), 8)
+        self.assertEqual(len(vhosts), 10)
 
     def test_deploy_cert_enable_new_vhost(self):
         # Create
@@ -688,7 +688,7 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertEqual(self.config.is_name_vhost(self.vh_truth[0]),
                          self.config.is_name_vhost(ssl_vhost))
 
-        self.assertEqual(len(self.config.vhosts), 11)
+        self.assertEqual(len(self.config.vhosts), 13)
 
     def test_clean_vhost_ssl(self):
         # pylint: disable=protected-access
@@ -1269,7 +1269,7 @@ class MultipleVhostsTest(util.ApacheTest):
 
         # pylint: disable=protected-access
         self.config._enable_redirect(self.vh_truth[1], "")
-        self.assertEqual(len(self.config.vhosts), 11)
+        self.assertEqual(len(self.config.vhosts), 13)
 
     def test_create_own_redirect_for_old_apache_version(self):
         self.config.parser.modules.add("rewrite_module")
@@ -1280,7 +1280,7 @@ class MultipleVhostsTest(util.ApacheTest):
 
         # pylint: disable=protected-access
         self.config._enable_redirect(self.vh_truth[1], "")
-        self.assertEqual(len(self.config.vhosts), 11)
+        self.assertEqual(len(self.config.vhosts), 13)
 
     def test_sift_rewrite_rule(self):
         # pylint: disable=protected-access
