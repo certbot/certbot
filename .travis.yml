@@ -8,6 +8,16 @@ before_script:
   - 'if [ $TRAVIS_OS_NAME = osx ] ; then ulimit -n 1024 ; fi'
   - export TOX_TESTENV_PASSENV=TRAVIS
 
+# Only build pushes to the master branch, PRs, and branches beginning with
+# `test-` or of the form `digit(s).digit(s).x`. This reduces the number of
+# simultaneous Travis runs, which speeds turnaround time on review since there
+# is a cap of on the number of simultaneous runs.
+branches:
+  only:
+    - master
+    - /^\d+\.\d+\.x$/
+    - /^test-.*$/
+
 matrix:
   include:
     # These environments are always executed
@@ -168,18 +178,6 @@ matrix:
             - augeas
             - python3
       if: type = cron OR (type = push AND branch != master)
-
-
-
-# Only build pushes to the master branch, PRs, and branches beginning with
-# `test-` or of the form `digit(s).digit(s).x`. This reduces the number of
-# simultaneous Travis runs, which speeds turnaround time on review since there
-# is a cap of on the number of simultaneous runs.
-branches:
-  only:
-    - master
-    - /^\d+\.\d+\.x$/
-    - /^test-.*$/
 
 # container-based infrastructure
 sudo: false
