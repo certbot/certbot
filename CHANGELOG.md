@@ -33,6 +33,7 @@ package with changes other than its version number was:
 
 * acme
 * certbot
+* certbot-apache
 * certbot-dns-cloudxns
 * certbot-dns-dnsimple
 * certbot-dns-dnsmadeeasy
