@@ -13,6 +13,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+* Certbot's official Docker images are now based on Alpine Linux 3.9 rather
+  than 3.7. The new version comes with OpenSSL 1.1.1.
 * Lexicon-based DNS plugins are now fully compatible with Lexicon 3.x (support
   on 2.x branch is maintained).
 * Apache plugin now attempts to configure all VirtualHosts matching requested
