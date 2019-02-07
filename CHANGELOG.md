@@ -6,11 +6,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-* Avoid reprocessing challenges that are already validated
+* Avoid to process again challenges that are already validated
   when a certificate is issued.
-* If possible, Certbot uses built-in support for OCSP from recent cryptography
-  versions instead of the OpenSSL binary: as a consequence Certbot does not need
-  the OpenSSL binary to be installed anymore if cryptography>=2.5 is installed.
 * Support for initiating (but not solving end-to-end) TLS-ALPN-01 challenges
   with the `acme` module.
 
