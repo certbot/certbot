@@ -186,13 +186,22 @@ def _check_ocsp_response(response_ocsp, request_ocsp, issuer_cert):
             or response_ocsp.issuer_name_hash != request_ocsp.issuer_name_hash):
         raise AssertionError('the issuer does not correspond to issuer of the certificate.')
 
-    # Assert nextUpdate is in the future, and that thisUpdate is not too old
-    if response_ocsp.next_update:
-        if response_ocsp.next_update < datetime.now() - timedelta(minutes=5):
-            raise AssertionError('next update is in the past.')
-        interval = response_ocsp.next_update - response_ocsp.this_update
-        if datetime.now() - response_ocsp.this_update > interval + timedelta(minutes=5):
-            raise AssertionError('this update is too old.')
+    # In following checks, two situations can occur:
+    #   * nextUpdate is set, and requirement is thisUpdate < now < nextUpdate
+    #   * nextUpdate is not set, and requirement is thisUpdate < now
+    # NB1: We add a validity period tolerance to handle clock time inconsistencies,
+    #      value is 5 min like for OpenSSL.
+    # NB2: Another check is to verify that thisUpdate is not too old, it is optional
+    #      for OpenSSL, so we do not do it here.
+    # See OpenSSL implementation as a reference:
+    # https://github.com/openssl/openssl/blob/ef45aa14c5af024fcb8bef1c9007f3d1c115bd85/crypto/ocsp/ocsp_cl.c#L338-L391
+    now = datetime.now()
+    if not response_ocsp.this_update:
+        raise AssertionError('param thisUpdate is not set.')
+    if response_ocsp.this_update > now + timedelta(minutes=5):
+        raise AssertionError('param thisUpdate is in the future.')
+    if response_ocsp.next_update and response_ocsp.next_update < now - timedelta(minutes=5):
+        raise AssertionError('param nextUpdate is in the past.')
 
 
 def _check_ocsp_response_signature(response_ocsp, issuer_cert):
