@@ -329,18 +329,19 @@ class TempDirTestCase(unittest.TestCase):
 
     def tearDown(self):
         """Execute after test"""
-        # Cleanup opened resources after a test. This is usually done through atexit handlers in
-        # Certbot, but during tests, atexit will not run registered functions before tearDown is
-        # called and instead will run them right before the entire test process exits.
-        # It is a problem on Windows, that does not accept to clean resources before closing them.
-        logging.shutdown()
-        util._release_locks()  # pylint: disable=protected-access
+        if os.name == 'nt':
+            # Cleanup opened resources after a test. This is usually done through atexit handlers in
+            # Certbot, but during tests, atexit will not run registered functions before tearDown is
+            # called and instead will run them right before the entire test process exits.
+            # It is a problem on Windows, that does not accept to clean resources before closing them.
+            logging.shutdown()
+            util._release_locks()  # pylint: disable=protected-access
 
-        def handle_rw_files(_, path, __):
-            """Handle read-only files, that will fail to be removed on Windows."""
-            os.chmod(path, stat.S_IWRITE)
-            os.remove(path)
-        shutil.rmtree(self.tempdir, onerror=handle_rw_files)
+            def handle_rw_files(_, path, __):
+                """Handle read-only files, that will fail to be removed on Windows."""
+                os.chmod(path, stat.S_IWRITE)
+                os.remove(path)
+            shutil.rmtree(self.tempdir, onerror=handle_rw_files)
 
 
 class ConfigTestCase(TempDirTestCase):
