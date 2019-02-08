@@ -333,7 +333,7 @@ class TempDirTestCase(unittest.TestCase):
             # Cleanup opened resources after a test. This is usually done through atexit handlers in
             # Certbot, but during tests, atexit will not run registered functions before tearDown is
             # called and instead will run them right before the entire test process exits.
-            # It is a problem on Windows, that does not accept to clean resources before closing them.
+            # It is a problem on Windows, where closing resources must be done before cleaning.
             logging.shutdown()
             util._release_locks()  # pylint: disable=protected-access
 
