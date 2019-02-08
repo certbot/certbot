@@ -2,13 +2,13 @@ from setuptools import setup
 from setuptools import find_packages
 
 
-version = '0.31.0.dev0'
+version = '0.32.0.dev0'
 
 # Remember to update local-oldest-requirements.txt when changing the minimum
 # acme/certbot version.
 install_requires = [
-    'acme>=0.31.0.dev0',
-    'certbot>=0.31.0.dev0',
+    'acme>=0.31.0',
+    'certbot>=0.31.0',
     'dns-lexicon>=2.2.1',  # Support for >1 TXT record per name
     'mock',
     'setuptools',

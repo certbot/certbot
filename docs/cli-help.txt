@@ -113,7 +113,7 @@ optional arguments:
                         case, and to know when to deprecate support for past
                         Python versions and flags. If you wish to hide this
                         information from the Let's Encrypt server, set this to
-                        "". (default: CertbotACMEClient/0.30.1
+                        "". (default: CertbotACMEClient/0.31.0
                         (certbot(-auto); OS_NAME OS_VERSION) Authenticator/XXX
                         Installer/YYY (SUBCOMMAND; flags: FLAGS)
                         Py/major.minor.patchlevel). The flags encoded in the
@@ -351,8 +351,9 @@ revoke:
                         Specify reason for revoking certificate. (default:
                         unspecified)
   --delete-after-revoke
-                        Delete certificates after revoking them. (default:
-                        None)
+                        Delete certificates after revoking them, along with
+                        all previous and later versions of those certificates.
+                        (default: None)
   --no-delete-after-revoke
                         Do not delete certificates after revoking them. This
                         option should be used with caution because the 'renew'

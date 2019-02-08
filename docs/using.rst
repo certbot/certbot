@@ -259,6 +259,7 @@ and the nginx_ plugin for installation. (Note that this certificate cannot
 be renewed automatically.)
 
 ::
+
     certbot run -a manual -i nginx -d example.com
 
 .. _third-party-plugins:
@@ -485,8 +486,9 @@ non-zero exit code. Hooks will only be run if a certificate is due for
 renewal, so you can run the above command frequently without
 unnecessarily stopping your webserver.
 
-``--pre-hook`` and ``--post-hook`` hooks run before and after every renewal
-attempt. If you want your hook to run only after a successful renewal, use
+When Certbot detects that a certificate is due for renewal, ``--pre-hook``
+and ``--post-hook`` hooks run before and after each attempt to renew it.
+If you want your hook to run only after a successful renewal, use
 ``--deploy-hook`` in a command like this.
 
 ``certbot renew --deploy-hook /path/to/deploy-hook-script``
@@ -902,7 +904,7 @@ that by default two instances of Certbot will not be able to run in parallel.
 Since the directories used by Certbot are configurable, Certbot
 will write a lock file for all of the directories it uses. This include Certbot's
 ``--work-dir``, ``--logs-dir``, and ``--config-dir``. By default these are
-``/var/lib/letsencrypt``, ``/var/logs/letsencrypt``, and ``/etc/letsencrypt``
+``/var/lib/letsencrypt``, ``/var/log/letsencrypt``, and ``/etc/letsencrypt``
 respectively. Additionally if you are using Certbot with Apache or nginx it will
 lock the configuration folder for that program, which are typically also in the
 ``/etc`` directory.

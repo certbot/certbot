@@ -31,7 +31,7 @@ if [ -z "$VENV_PATH" ]; then
 fi
 VENV_BIN="$VENV_PATH/bin"
 BOOTSTRAP_VERSION_PATH="$VENV_PATH/certbot-auto-bootstrap-version.txt"
-LE_AUTO_VERSION="0.31.0.dev0"
+LE_AUTO_VERSION="0.32.0.dev0"
 BASENAME=$(basename $0)
 USAGE="Usage: $BASENAME [OPTIONS]
 A self-updating wrapper script for the Certbot ACME client. When run, updates
@@ -1180,18 +1180,18 @@ letsencrypt==0.7.0 \
     --hash=sha256:105a5fb107e45bcd0722eb89696986dcf5f08a86a321d6aef25a0c7c63375ade \
     --hash=sha256:c36e532c486a7e92155ee09da54b436a3c420813ec1c590b98f635d924720de9
 
-certbot==0.30.1 \
-    --hash=sha256:debdf5cfe17d55c124508a5f720e80094b82e87f167fb45cb6fda41482b6bd76 \
-    --hash=sha256:39d1a58d3b59c68e57e26bcb1b73078fc227c8944388e61646dd6bbb203618e7
-acme==0.30.1 \
-    --hash=sha256:b75705eba723a6082c7bc8e41853407cb1520ce64d11359ba09b269db9356aed \
-    --hash=sha256:dc9b99bdbe1582993c96a8145354a61e79470be382d4d875990dd7d41727d3df
-certbot-apache==0.30.1 \
-    --hash=sha256:18dae95e4785e2acdbe0b8d00db9e83b890ca8145f39092911f8ea9e1b0169b3 \
-    --hash=sha256:224cf83aeb85f7ca12ad08ddce020ff04576a692305f12ab1d1e7f21ee527180
-certbot-nginx==0.30.1 \
-    --hash=sha256:2360e1e0e5b61c4078eced7889b90b85dc00dbc280461bf4e8fc4c3280bb3e52 \
-    --hash=sha256:4e15deba3542fcf5b98d021acfdfdea2ed93db0159824271a49694cc357de7f4
+certbot==0.31.0 \
+    --hash=sha256:1a1b4b2675daf5266cc2cf2a44ded44de1d83e9541ffa078913c0e4c3231a1c4 \
+    --hash=sha256:0c3196f80a102c0f9d82d566ba859efe3b70e9ed4670520224c844fafd930473
+acme==0.31.0 \
+    --hash=sha256:a0c851f6b7845a0faa3a47a3e871440eed9ec11b4ab949de0dc4a0fb1201cd24 \
+    --hash=sha256:7e5c2d01986e0f34ca08fee58981892704c82c48435dcd3592b424c312d8b2bf
+certbot-apache==0.31.0 \
+    --hash=sha256:740bb55dd71723a21eebabb16e6ee5d8883f8b8f8cf6956dd1d4873e0cccae21 \
+    --hash=sha256:cc4b840b2a439a63e2dce809272c3c3cd4b1aeefc4053cd188935135be137edd
+certbot-nginx==0.31.0 \
+    --hash=sha256:7a1ffda9d93dc7c2aaf89452ce190250de8932e624d31ebba8e4fa7d950025c5 \
+    --hash=sha256:d450d75650384f74baccb7673c89e2f52468afa478ed354eb6d4b99aa33bf865
 
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
@@ -1272,9 +1272,9 @@ PACKAGES = maybe_argparse + [
      'pip-{0}.tar.gz'.format(PIP_VERSION),
      '09f243e1a7b461f654c26a725fa373211bb7ff17a9300058b205c61658ca940d'),
     # This version of setuptools has only optional dependencies:
-    ('59/88/2f3990916931a5de6fa9706d6d75eb32ee8b78627bb2abaab7ed9e6d0622/'
-     'setuptools-29.0.1.tar.gz',
-     'b539118819a4857378398891fa5366e090690e46b3e41421a1e07d6e9fd8feb0'),
+    ('37/1b/b25507861991beeade31473868463dad0e58b1978c209de27384ae541b0b/'
+     'setuptools-40.6.3.zip',
+     '3b474dad69c49f0d2d86696b68105f3a6f195f7ab655af12ef9a9c326d2b08f8'),
     ('c9/1d/bd19e691fd4cfe908c76c429fe6e4436c9e83583c4414b54f6c85471954a/'
      'wheel-0.29.0.tar.gz',
      '1ebb8ad7e26b448e9caa4773d2357849bf80ff9e313964bcaf79cbf0201a1648')

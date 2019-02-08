@@ -2,18 +2,46 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 0.31.0 - master
+## 0.32.0 - master
 
 ### Added
 
-* Avoid to process again challenges that are already validated
-  when a certificate is issued.
 * Add FreeBSD specific paths to certbot
+*
 
 ### Changed
 
+*
+
+### Fixed
+
+*
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+package with changes other than its version number was:
+
+*
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.31.0 - 2019-02-07
+
+### Added
+
+* Avoid reprocessing challenges that are already validated
+  when a certificate is issued.
+* Support for initiating (but not solving end-to-end) TLS-ALPN-01 challenges
+  with the `acme` module.
+
+### Changed
+
+* Certbot's official Docker images are now based on Alpine Linux 3.9 rather
+  than 3.7. The new version comes with OpenSSL 1.1.1.
 * Lexicon-based DNS plugins are now fully compatible with Lexicon 3.x (support
   on 2.x branch is maintained).
+* Apache plugin now attempts to configure all VirtualHosts matching requested
+  domain name instead of only a single one when answering the HTTP-01 challenge.
 
 ### Fixed
 
@@ -27,6 +55,7 @@ package with changes other than its version number was:
 
 * acme
 * certbot
+* certbot-apache
 * certbot-dns-cloudxns
 * certbot-dns-dnsimple
 * certbot-dns-dnsmadeeasy
@@ -36,6 +65,19 @@ package with changes other than its version number was:
 * certbot-dns-nsone
 * certbot-dns-ovh
 * certbot-dns-sakuracloud
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.30.2 - 2019-01-25
+
+### Fixed
+
+* Update the version of setuptools pinned in certbot-auto to 40.6.3 to
+  solve installation problems on newer OSes.
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, this
+release only affects certbot-auto.
 
 More details about these changes can be found on our GitHub repo.
 

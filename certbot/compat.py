@@ -1,12 +1,8 @@
 """
 Compatibility layer to run certbot both on Linux and Windows.
 
-The approach used here is similar to Modernizr for Web browsers.
-We do not check the platform type to determine if a particular logic is supported.
-Instead, we apply a logic, and then fallback to another logic if first logic
-is not supported at runtime.
-
-Then logic chains are abstracted into single functions to be exposed to certbot.
+This module contains all required platform specific code,
+allowing the rest of Certbot codebase to be platform agnostic.
 """
 import os
 import select
@@ -27,6 +23,8 @@ except ImportError:
 UNPRIVILEGED_SUBCOMMANDS_ALLOWED = [
     'certificates', 'enhance', 'revoke', 'delete',
     'register', 'unregister', 'config_changes', 'plugins']
+
+
 def raise_for_non_administrative_windows_rights(subcommand):
     """
     On Windows, raise if current shell does not have the administrative rights.
@@ -50,6 +48,7 @@ def raise_for_non_administrative_windows_rights(subcommand):
                 'Error, "{0}" subcommand must be run on a shell with administrative rights.'
                 .format(subcommand))
 
+
 def os_geteuid():
     """
     Get current user uid
@@ -64,6 +63,7 @@ def os_geteuid():
     except AttributeError:
         # Windows specific
         return 0
+
 
 def os_rename(src, dst):
     """
@@ -117,6 +117,7 @@ def readline_with_timeout(timeout, prompt):
         # So no timeout on Windows for now.
         return sys.stdin.readline()
 
+
 def lock_file(fd):
     """
     Lock the file linked to the specified file descriptor.
@@ -130,6 +131,7 @@ def lock_file(fd):
     else:
         # Windows specific
         msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
+
 
 def release_locked_file(fd, path):
     """
@@ -164,14 +166,16 @@ def release_locked_file(fd, path):
     finally:
         os.close(fd)
 
+
 def compare_file_modes(mode1, mode2):
     """Return true if the two modes can be considered as equals for this platform"""
-    if 'fcntl' in sys.modules:
+    if os.name != 'nt':
         # Linux specific: standard compare
         return oct(stat.S_IMODE(mode1)) == oct(stat.S_IMODE(mode2))
     # Windows specific: most of mode bits are ignored on Windows. Only check user R/W rights.
     return (stat.S_IMODE(mode1) & stat.S_IREAD == stat.S_IMODE(mode2) & stat.S_IREAD
             and stat.S_IMODE(mode1) & stat.S_IWRITE == stat.S_IMODE(mode2) & stat.S_IWRITE)
+
 
 WINDOWS_DEFAULT_FOLDERS = {
     'config': 'C:\\Certbot',
@@ -183,7 +187,6 @@ LINUX_DEFAULT_FOLDERS = {
     'work': '/var/lib/letsencrypt',
     'logs': '/var/log/letsencrypt',
 }
-
 FREEBSD_DEFAULT_FOLDERS = {
     'config': '/usr/local/etc/letsencrypt',
     'work': '/var/db/letsencrypt',
@@ -200,7 +203,7 @@ def get_default_folder(folder_type):
     :rtype: str
 
     """
-    if 'fcntl' in sys.modules:
+    if os.name != 'nt':
         # Unix-like
         if sys.platform.startswith('freebsd') or sys.platform.startswith('dragonfly'):
             # FreeBSD specific
@@ -208,6 +211,22 @@ def get_default_folder(folder_type):
         else:
             # Linux specific
             return LINUX_DEFAULT_FOLDERS[folder_type]
-    else:
-        # Windows specific
-        return WINDOWS_DEFAULT_FOLDERS[folder_type]
+    # Windows specific
+    return WINDOWS_DEFAULT_FOLDERS[folder_type]
+
+
+def underscores_for_unsupported_characters_in_path(path):
+    # type: (str) -> str
+    """
+    Replace unsupported characters in path for current OS by underscores.
+    :param str path: the path to normalize
+    :return: the normalized path
+    :rtype: str
+    """
+    if os.name != 'nt':
+        # Linux specific
+        return path
+
+    # Windows specific
+    drive, tail = os.path.splitdrive(path)
+    return drive + tail.replace(':', '_')
