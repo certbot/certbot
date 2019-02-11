@@ -120,25 +120,27 @@ class MultipleVhostsTest(util.ApacheTest):
         from certbot_apache.configurator import ApacheConfigurator
         mock_add = mock.MagicMock()
         ApacheConfigurator.add_parser_arguments(mock_add)
-        exp = {'server-root': '/etc/apache2',
-               'enmod': None,
-               'dismod': None,
-               'le-vhost-ext': '-le-ssl.conf',
-               'vhost-root': None,
-               'logs-root': '/var/log/apache2',
-               'challenge-location': '/etc/apache2',
-               'handle-modules': False,
-               'handle-sites': False,
-               'ctl': 'apache2ctl',
-        }
+        parserargs = ["server_root", "enmod", "dismod", "le_vhost_ext",
+                      "vhost_root", "logs_root", "challenge_location",
+                      "handle_modules", "handle_sites", "ctl"]
+        exp = dict()
+
+        for k in ApacheConfigurator.OS_DEFAULTS:
+            if k in parserargs:
+                exp[k.replace("_", "-")] = ApacheConfigurator.OS_DEFAULTS[k]
+        # Special cases
+        exp["vhost-root"] = None
+        exp["init-script"] = None
+
         found = set()
         for call in mock_add.call_args_list:
-            if call[0][0] in exp.keys():
+            # init-script is a special case: deprecated argument
+            if call[0][0] != "init-script":
                 self.assertEqual(exp[call[0][0]], call[1]['default'])
-                found.add(call[0][0])
+            found.add(call[0][0])
 
         # Make sure that all (and only) the expected values exist
-        self.assertEqual(len(exp), len(found))
+        self.assertEqual(len(mock_add.call_args_list), len(found))
         for e in exp:
             self.assertTrue(e in found)
 
