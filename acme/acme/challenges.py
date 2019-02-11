@@ -99,13 +99,27 @@ class _TokenChallenge(Challenge):
         return b'..' not in self.token and b'/' not in self.token
 
 
+class _KeyAuthorizationField(jose.Field):
+    """
+    JSON field 'keyAuthorization', that is not displayed in a JSON serialization,
+    as it is deprecated to have this field in the JWS token of a challenge request.
+    See https://github.com/letsencrypt/pebble/issues/192
+    """
+    def __init__(self):
+        super(_KeyAuthorizationField, self).__init__('keyAuthorization')
+
+    def omit(self, value):
+        """Always ignore this field in a JSON serialization"""
+        return True
+
+
 class KeyAuthorizationChallengeResponse(ChallengeResponse):
     """Response to Challenges based on Key Authorization.
 
     :param unicode key_authorization:
 
     """
-    key_authorization = jose.Field("keyAuthorization")
+    key_authorization = _KeyAuthorizationField()
     thumbprint_hash_function = hashes.SHA256
 
     def verify(self, chall, account_public_key):
