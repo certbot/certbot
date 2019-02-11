@@ -86,7 +86,6 @@ class DNS01ResponseTest(unittest.TestCase):
         self.jmsg = {
             'resource': 'challenge',
             'type': 'dns-01',
-            'keyAuthorization': u'foo',
         }
 
         from acme.challenges import DNS01
@@ -157,7 +156,6 @@ class HTTP01ResponseTest(unittest.TestCase):
         self.jmsg = {
             'resource': 'challenge',
             'type': 'http-01',
-            'keyAuthorization': u'foo',
         }
 
         from acme.challenges import HTTP01
@@ -270,7 +268,6 @@ class TLSSNI01ResponseTest(unittest.TestCase):
         self.jmsg = {
             'resource': 'challenge',
             'type': 'tls-sni-01',
-            'keyAuthorization': self.response.key_authorization,
         }
 
         # pylint: disable=invalid-name
@@ -411,7 +408,6 @@ class TLSALPN01ResponseTest(unittest.TestCase):
         self.jmsg = {
             'resource': 'challenge',
             'type': 'tls-alpn-01',
-            'keyAuthorization': u'foo',
         }
 
         from acme.challenges import TLSALPN01
