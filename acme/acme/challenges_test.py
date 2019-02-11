@@ -86,6 +86,7 @@ class DNS01ResponseTest(unittest.TestCase):
         self.jmsg = {
             'resource': 'challenge',
             'type': 'dns-01',
+            'keyAuthorization': u'foo',
         }
 
         from acme.challenges import DNS01
@@ -93,7 +94,8 @@ class DNS01ResponseTest(unittest.TestCase):
         self.response = self.chall.response(KEY)
 
     def test_to_partial_json(self):
-        self.assertEqual(self.jmsg, self.msg.to_partial_json())
+        self.assertEqual({k: v for k, v in self.jmsg if k != 'keyAuthorization'},
+                         self.msg.to_partial_json())
 
     def test_from_json(self):
         from acme.challenges import DNS01Response
@@ -156,6 +158,7 @@ class HTTP01ResponseTest(unittest.TestCase):
         self.jmsg = {
             'resource': 'challenge',
             'type': 'http-01',
+            'keyAuthorization': u'foo',
         }
 
         from acme.challenges import HTTP01
@@ -163,7 +166,8 @@ class HTTP01ResponseTest(unittest.TestCase):
         self.response = self.chall.response(KEY)
 
     def test_to_partial_json(self):
-        self.assertEqual(self.jmsg, self.msg.to_partial_json())
+        self.assertEqual({k: v for k, v in self.jmsg if k != 'keyAuthorization'},
+                         self.msg.to_partial_json())
 
     def test_from_json(self):
         from acme.challenges import HTTP01Response
@@ -268,6 +272,7 @@ class TLSSNI01ResponseTest(unittest.TestCase):
         self.jmsg = {
             'resource': 'challenge',
             'type': 'tls-sni-01',
+            'keyAuthorization': self.response.key_authorization,
         }
 
         # pylint: disable=invalid-name
@@ -282,7 +287,8 @@ class TLSSNI01ResponseTest(unittest.TestCase):
         self.assertEqual(self.z_domain, self.response.z_domain)
 
     def test_to_partial_json(self):
-        self.assertEqual(self.jmsg, self.response.to_partial_json())
+        self.assertEqual({k: v for k, v in self.jmsg if k != 'keyAuthorization'},
+                         self.response.to_partial_json())
 
     def test_from_json(self):
         from acme.challenges import TLSSNI01Response
@@ -399,6 +405,7 @@ class TLSSNI01Test(unittest.TestCase):
             KEY, cert_key=mock.sentinel.cert_key))
         mock_gen_cert.assert_called_once_with(key=mock.sentinel.cert_key)
 
+
 class TLSALPN01ResponseTest(unittest.TestCase):
     # pylint: disable=too-many-instance-attributes
 
@@ -408,6 +415,7 @@ class TLSALPN01ResponseTest(unittest.TestCase):
         self.jmsg = {
             'resource': 'challenge',
             'type': 'tls-alpn-01',
+            'keyAuthorization': u'foo',
         }
 
         from acme.challenges import TLSALPN01
@@ -415,7 +423,8 @@ class TLSALPN01ResponseTest(unittest.TestCase):
         self.response = self.chall.response(KEY)
 
     def test_to_partial_json(self):
-        self.assertEqual(self.jmsg, self.msg.to_partial_json())
+        self.assertEqual({k: v for k, v in self.jmsg if k != 'keyAuthorization'},
+                         self.msg.to_partial_json())
 
     def test_from_json(self):
         from acme.challenges import TLSALPN01Response
