@@ -58,7 +58,6 @@ class AuthHandler(object):
 
         # Retrieve challenges that need to be performed to validate authorizations.
         achalls = self._choose_challenges(authzrs)
-        logger.error(achalls)
         if not achalls:
             return authzrs
 
