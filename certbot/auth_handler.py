@@ -54,7 +54,7 @@ class AuthHandler(object):
         """
         authzrs = orderr.authorizations[:]
         if not authzrs:
-            return []
+            raise errors.AuthorizationError('No authorization to handle.')
 
         # Retrieve challenges that need to be performed to validate authorizations.
         achalls = self._choose_challenges(authzrs)
@@ -66,6 +66,14 @@ class AuthHandler(object):
             # To begin, let's ask the authenticator plugin to perform all challenges.
             try:
                 resps = self.auth.perform(achalls)
+
+                # If debug is on, wait for user call before starting the verification process.
+                logger.info('Waiting for verification...')
+                config = zope.component.getUtility(interfaces.IConfig)
+                if config.debug_challenges:
+                    notify = zope.component.getUtility(interfaces.IDisplay).notification
+                    notify('Challenges loaded. Press continue to submit to CA. '
+                           'Pass "-v" for more info about challenges.', pause=True)
             except errors.AuthorizationError as error:
                 logger.critical('Failure in setting up challenges.')
                 logger.info('Attempting to clean up outstanding challenges...')
@@ -77,47 +85,11 @@ class AuthHandler(object):
             for achall, resp in zip(achalls, resps):
                 self.acme.answer_challenge(achall.challb, resp)
 
-            # Start to poll the ACME CA server, to wait for confirmation that authentication
-            # are all validated. The poll may occur several times, until all authorizations are
-            # decided (valid or invalid), or after a maximum of retries.
-            authzrs_to_check = {index: (authzr, None)
-                                 for index, authzr in enumerate(authzrs)}
-            for i in range(10):
-                # Poll all updated authorizations.
-                authzrs_to_check = {index: self.acme.poll(authzr) for index, (authzr, _)
-                                     in authzrs_to_check.items()}
-                # Update the original list of authzr with the updated authzrs from server.
-                for index, (authzr, _) in authzrs_to_check.items():
-                    authzrs[index] = authzr
-
-                # Handle failed authorizations: with best effort this is only a warning,
-                # otherwise an exception.
-                authzrs_failed = [authzr for index, (authzr, _) in authzrs_to_check.items()
-                                   if authzr.body.status == messages.STATUS_INVALID]
-                if authzrs_failed and best_effort:
-                    logger.warning('Following authorizations have failed: %s', authzrs_failed)
-                elif authzrs_failed:
-                    raise errors.AuthorizationError('Some challenges have failed: {0}.'
-                                                    .format(authzrs_failed))
-
-                # Extract out the authorization already decided for next poll iteration.
-                # Poll may stop here because there is no pending authorizations anymore.
-                authzrs_to_check = {index: (authzr, resp) for index, (authzr, resp)
-                                     in authzrs_to_check.items()
-                                     if authzr.body.status == messages.STATUS_PENDING}
-                if not authzrs_to_check:
-                    break
-
-                # Be merciful with the ACME server CA, check the Retry-After header returned,
-                # and wait this time before next polling. From all the pending authorizations
-                # pending, we take the greatest one, and avoid this way to poll an authorization
-                # before its relevant Retry-After value.
-                retry_after = max(self.acme.retry_after(resp, 30)
-                                  for index, (_, resp) in authzrs_to_check.items())
-                time.sleep((retry_after - datetime.datetime.now()).total_seconds())
+            # Wait for authorizations to be decided.
+            authzrs_still_pending = self._poll_authorizations(authzrs, best_effort)
 
             # All authorizations should be decided now. If not, we reached the max retries.
-            if authzrs_to_check:
+            if authzrs_still_pending:
                 raise errors.AuthorizationError('All challenges could not be validated on time.')
 
             # Keep validated authorizations only. If there is none, no certificate can be issued.
@@ -127,6 +99,50 @@ class AuthHandler(object):
                 raise errors.AuthorizationError('All challenges have failed.')
 
             return authzrs_validated
+
+    def _poll_authorizations(self, authzrs, best_effort):
+        """
+        Poll the ACME CA server, to wait for confirmation that authorizations have their challenges
+        all verified. The poll may occur several times, until all authorizations are decided
+        (valid or invalid), or after a maximum of retries.
+        """
+        authzrs_to_check = {index: (authzr, None)
+                            for index, authzr in enumerate(authzrs)}
+        for i in range(10):
+            # Poll all updated authorizations.
+            authzrs_to_check = {index: self.acme.poll(authzr) for index, (authzr, _)
+                                in authzrs_to_check.items()}
+            # Update the original list of authzr with the updated authzrs from server.
+            for index, (authzr, _) in authzrs_to_check.items():
+                authzrs[index] = authzr
+
+            # Handle failed authorizations: with best effort this is only a warning,
+            # otherwise an exception.
+            authzrs_failed = [authzr for index, (authzr, _) in authzrs_to_check.items()
+                              if authzr.body.status == messages.STATUS_INVALID]
+            if authzrs_failed and best_effort:
+                logger.warning('Following authorizations have failed: %s', authzrs_failed)
+            elif authzrs_failed:
+                raise errors.AuthorizationError('Some challenges have failed: {0}.'
+                                                .format(authzrs_failed))
+
+            # Extract out the authorization already decided for next poll iteration.
+            # Poll may stop here because there is no pending authorizations anymore.
+            authzrs_to_check = {index: (authzr, resp) for index, (authzr, resp)
+                                in authzrs_to_check.items()
+                                if authzr.body.status == messages.STATUS_PENDING}
+            if not authzrs_to_check:
+                break
+
+            # Be merciful with the ACME server CA, check the Retry-After header returned,
+            # and wait this time before next polling. From all the pending authorizations
+            # pending, we take the greatest one, and avoid this way to poll an authorization
+            # before its relevant Retry-After value.
+            retry_after = max(self.acme.retry_after(resp, 30)
+                              for index, (_, resp) in authzrs_to_check.items())
+            time.sleep((retry_after - datetime.datetime.now()).total_seconds())
+
+        return authzrs_to_check
 
     def _choose_challenges(self, authzrs):
         """
