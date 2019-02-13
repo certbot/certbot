@@ -159,15 +159,11 @@ class IAuthenticator(IPlugin):
             :func:`get_chall_pref` only.
 
         :returns: `collections.Iterable` of ACME
-            :class:`~acme.challenges.ChallengeResponse` instances
-            or if the :class:`~acme.challenges.Challenge` cannot
-            be fulfilled then:
-
-            ``None``
-              Authenticator can perform challenge, but not at this time.
-            ``False``
-              Authenticator will never be able to perform (error).
-
+            :class:`~acme.challenges.ChallengeResponse` instances corresponding to each provided
+            :class:`~acme.challenges.Challenge`. Not returning all expected
+            class:`~acme.challenges.ChallengeResponse`, or returning ``None`` or `False``, will
+            instruct Certbot that some or all :class:`~acme.challenges.Challenge` cannot be
+            fulfilled, and this will fail the authorization process.
         :rtype: :class:`collections.Iterable` of
             :class:`acme.challenges.ChallengeResponse`,
             where responses are required to be returned in
