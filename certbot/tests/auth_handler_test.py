@@ -4,7 +4,6 @@ import logging
 import unittest
 
 import mock
-import six
 import zope.component
 
 from acme import challenges

@@ -108,7 +108,7 @@ class AuthHandler(object):
         """
         authzrs_to_check = {index: (authzr, None)
                             for index, authzr in enumerate(authzrs)}
-        for i in range(10):
+        for _ in range(30):
             # Poll all updated authorizations.
             authzrs_to_check = {index: self.acme.poll(authzr) for index, (authzr, _)
                                 in authzrs_to_check.items()}
@@ -138,7 +138,7 @@ class AuthHandler(object):
             # and wait this time before next polling. From all the pending authorizations
             # pending, we take the greatest one, and avoid this way to poll an authorization
             # before its relevant Retry-After value.
-            retry_after = max(self.acme.retry_after(resp, 30)
+            retry_after = max(self.acme.retry_after(resp, 3)
                               for index, (_, resp) in authzrs_to_check.items())
             time.sleep((retry_after - datetime.datetime.now()).total_seconds())
 
@@ -152,7 +152,7 @@ class AuthHandler(object):
         """
         pending_authzrs = [authzr for authzr in authzrs
                            if authzr.body.status != messages.STATUS_VALID]
-        achalls = []
+        achalls = []  # type: List[achallenges.AnnotatedChallenge]
         if pending_authzrs:
             logger.info("Performing the following challenges:")
         for authzr in pending_authzrs:
