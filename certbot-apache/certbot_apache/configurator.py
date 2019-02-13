@@ -590,8 +590,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.assoc[target_name] = vhost
         return vhost
 
-    def included_in_wildcard(self, names, target_name):
-        """Is target_name covered by a wildcard?
+    def domain_in_names(self, names, target_name):
+        """Checks if target domain is covered by one or more of the provided
+        names. The target name is matched by wildcard as well as exact match.
 
         :param names: server aliases
         :type names: `collections.Iterable` of `str`
@@ -662,7 +663,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             names = vhost.get_names()
             if target_name in names:
                 points = 3
-            elif self.included_in_wildcard(names, target_name):
+            elif self.domain_in_names(names, target_name):
                 points = 2
             elif any(addr.get_addr() == target_name for addr in vhost.addrs):
                 points = 1
@@ -1476,7 +1477,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         matches = self.parser.find_dir(
             "ServerAlias", start=vh_path, exclude=False)
         aliases = (self.aug.get(match) for match in matches)
-        return self.included_in_wildcard(aliases, target_name)
+        return self.domain_in_names(aliases, target_name)
 
     def _add_name_vhost_if_necessary(self, vhost):
         """Add NameVirtualHost Directives if necessary for new vhost.

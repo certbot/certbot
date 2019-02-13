@@ -31,7 +31,7 @@ if [ -z "$VENV_PATH" ]; then
 fi
 VENV_BIN="$VENV_PATH/bin"
 BOOTSTRAP_VERSION_PATH="$VENV_PATH/certbot-auto-bootstrap-version.txt"
-LE_AUTO_VERSION="0.30.2"
+LE_AUTO_VERSION="0.31.0"
 BASENAME=$(basename $0)
 USAGE="Usage: $BASENAME [OPTIONS]
 A self-updating wrapper script for the Certbot ACME client. When run, updates
@@ -333,61 +333,9 @@ BootstrapDebCommon() {
   fi
 
   augeas_pkg="libaugeas0 augeas-lenses"
-  AUGVERSION=`LC_ALL=C apt-cache show --no-all-versions libaugeas0 | grep ^Version: | cut -d" " -f2`
 
   if [ "$ASSUME_YES" = 1 ]; then
     YES_FLAG="-y"
-  fi
-
-  AddBackportRepo() {
-    # ARGS:
-    BACKPORT_NAME="$1"
-    BACKPORT_SOURCELINE="$2"
-    say "To use the Apache Certbot plugin, augeas needs to be installed from $BACKPORT_NAME."
-    if ! grep -v -e ' *#' /etc/apt/sources.list | grep -q "$BACKPORT_NAME" ; then
-      # This can theoretically error if sources.list.d is empty, but in that case we don't care.
-      if ! grep -v -e ' *#' /etc/apt/sources.list.d/* 2>/dev/null | grep -q "$BACKPORT_NAME"; then
-        if [ "$ASSUME_YES" = 1 ]; then
-          /bin/echo -n "Installing augeas from $BACKPORT_NAME in 3 seconds..."
-          sleep 1s
-          /bin/echo -ne "\e[0K\rInstalling augeas from $BACKPORT_NAME in 2 seconds..."
-          sleep 1s
-          /bin/echo -e "\e[0K\rInstalling augeas from $BACKPORT_NAME in 1 second ..."
-          sleep 1s
-          add_backports=1
-        else
-          read -p "Would you like to enable the $BACKPORT_NAME repository [Y/n]? " response
-          case $response in
-            [yY][eE][sS]|[yY]|"")
-              add_backports=1;;
-            *)
-              add_backports=0;;
-          esac
-        fi
-        if [ "$add_backports" = 1 ]; then
-          sh -c "echo $BACKPORT_SOURCELINE >> /etc/apt/sources.list.d/$BACKPORT_NAME.list"
-          apt-get $QUIET_FLAG update
-        fi
-      fi
-    fi
-    if [ "$add_backports" != 0 ]; then
-      apt-get install $QUIET_FLAG $YES_FLAG --no-install-recommends -t "$BACKPORT_NAME" $augeas_pkg
-      augeas_pkg=
-    fi
-  }
-
-
-  if dpkg --compare-versions 1.0 gt "$AUGVERSION" ; then
-    if lsb_release -a | grep -q wheezy ; then
-      AddBackportRepo wheezy-backports "deb http://http.debian.net/debian wheezy-backports main"
-    elif lsb_release -a | grep -q precise ; then
-      # XXX add ARM case
-      AddBackportRepo precise-backports "deb http://archive.ubuntu.com/ubuntu precise-backports main restricted universe multiverse"
-    else
-      echo "No libaugeas0 version is available that's new enough to run the"
-      echo "Certbot apache plugin..."
-    fi
-    # XXX add a case for ubuntu PPAs
   fi
 
   apt-get install $QUIET_FLAG $YES_FLAG --no-install-recommends \
@@ -1140,9 +1088,9 @@ parsedatetime==2.1 \
 pbr==1.8.1 \
     --hash=sha256:46c8db75ae75a056bd1cc07fa21734fe2e603d11a07833ecc1eeb74c35c72e0c \
     --hash=sha256:e2127626a91e6c885db89668976db31020f0af2da728924b56480fc7ccf09649
-pyOpenSSL==16.2.0 \
-    --hash=sha256:26ca380ddf272f7556e48064bbcd5bd71f83dfc144f3583501c7ddbd9434ee17 \
-    --hash=sha256:7779a3bbb74e79db234af6a08775568c6769b5821faecf6e2f4143edb227516e
+pyOpenSSL==18.0.0 \
+    --hash=sha256:26ff56a6b5ecaf3a2a59f132681e2a80afcc76b4f902f612f518f92c2a1bf854 \
+    --hash=sha256:6488f1423b00f73b7ad5167885312bb0ce410d3312eb212393795b53c8caa580
 pyparsing==2.1.8 \
     --hash=sha256:2f0f5ceb14eccd5aef809d6382e87df22ca1da583c79f6db01675ce7d7f49c18 \
     --hash=sha256:03a4869b9f3493807ee1f1cb405e6d576a1a2ca4d81a982677c0c1ad6177c56b \
@@ -1232,18 +1180,18 @@ letsencrypt==0.7.0 \
     --hash=sha256:105a5fb107e45bcd0722eb89696986dcf5f08a86a321d6aef25a0c7c63375ade \
     --hash=sha256:c36e532c486a7e92155ee09da54b436a3c420813ec1c590b98f635d924720de9
 
-certbot==0.30.2 \
-    --hash=sha256:e411b72fa86eec1018e6de28e649e8c9c71191a7431dcc77f207b57ca9484c11 \
-    --hash=sha256:534487cb552ced8e47948ba3d2e7ca12c3a439133fc609485012b1a02fc7776e
-acme==0.30.2 \
-    --hash=sha256:68982576492dfa99c7e2be0fce4371adc9344740b05420ce0ab53238d2bb9b3b \
-    --hash=sha256:295a5b7fce9f908e6e5cff8c40be1a3daf3e1ebabd2e139a4c87274e68eeb8f2
-certbot-apache==0.30.2 \
-    --hash=sha256:3b7fa4e59772da7c9975ef2a49ceff157c9d7cb31eb9475928b5986d89701a3a \
-    --hash=sha256:32fa915a8a51810fdfe828ac1361da4425c231d7384891e49e6338e4741464b2
-certbot-nginx==0.30.2 \
-    --hash=sha256:7dc785f6f0c0c57b19cea8d98f9ea8feef53945613967b52c9348c81327010e2 \
-    --hash=sha256:6ba4dd772d0c7cdfb3383ca325b35639e01ac9e142e4baa6445cd85c7fb59552
+certbot==0.31.0 \
+    --hash=sha256:1a1b4b2675daf5266cc2cf2a44ded44de1d83e9541ffa078913c0e4c3231a1c4 \
+    --hash=sha256:0c3196f80a102c0f9d82d566ba859efe3b70e9ed4670520224c844fafd930473
+acme==0.31.0 \
+    --hash=sha256:a0c851f6b7845a0faa3a47a3e871440eed9ec11b4ab949de0dc4a0fb1201cd24 \
+    --hash=sha256:7e5c2d01986e0f34ca08fee58981892704c82c48435dcd3592b424c312d8b2bf
+certbot-apache==0.31.0 \
+    --hash=sha256:740bb55dd71723a21eebabb16e6ee5d8883f8b8f8cf6956dd1d4873e0cccae21 \
+    --hash=sha256:cc4b840b2a439a63e2dce809272c3c3cd4b1aeefc4053cd188935135be137edd
+certbot-nginx==0.31.0 \
+    --hash=sha256:7a1ffda9d93dc7c2aaf89452ce190250de8932e624d31ebba8e4fa7d950025c5 \
+    --hash=sha256:d450d75650384f74baccb7673c89e2f52468afa478ed354eb6d4b99aa33bf865
 
 UNLIKELY_EOF
     # -------------------------------------------------------------------------

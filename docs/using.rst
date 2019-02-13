@@ -486,8 +486,9 @@ non-zero exit code. Hooks will only be run if a certificate is due for
 renewal, so you can run the above command frequently without
 unnecessarily stopping your webserver.
 
-``--pre-hook`` and ``--post-hook`` hooks run before and after every renewal
-attempt. If you want your hook to run only after a successful renewal, use
+When Certbot detects that a certificate is due for renewal, ``--pre-hook``
+and ``--post-hook`` hooks run before and after each attempt to renew it.
+If you want your hook to run only after a successful renewal, use
 ``--deploy-hook`` in a command like this.
 
 ``certbot renew --deploy-hook /path/to/deploy-hook-script``
