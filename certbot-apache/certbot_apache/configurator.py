@@ -92,6 +92,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     """
 
     description = "Apache Web Server plugin"
+    if os.environ.get("CERTBOT_DOCS") == "1":
+        description += (  # pragma: no cover
+            " (Please note that the default values of the Apache plugin options"
+            " change depending on the operating system Certbot is run on.)"
+        )
 
     OS_DEFAULTS = dict(
         server_root="/etc/apache2",
@@ -141,28 +146,36 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # When adding, modifying or deleting command line arguments, be sure to
         # include the changes in the list used in method _prepare_options() to
         # ensure consistent behavior.
-        add("enmod", default=cls.OS_DEFAULTS["enmod"],
+
+        # Respect CERTBOT_DOCS environment variable and use default values from
+        # base class regardless of the underlying distribution (overrides).
+        if os.environ.get("CERTBOT_DOCS") == "1":
+            DEFAULTS = ApacheConfigurator.OS_DEFAULTS
+        else:
+            # cls.OS_DEFAULTS can be distribution specific, see override classes
+            DEFAULTS = cls.OS_DEFAULTS
+        add("enmod", default=DEFAULTS["enmod"],
             help="Path to the Apache 'a2enmod' binary")
-        add("dismod", default=cls.OS_DEFAULTS["dismod"],
+        add("dismod", default=DEFAULTS["dismod"],
             help="Path to the Apache 'a2dismod' binary")
-        add("le-vhost-ext", default=cls.OS_DEFAULTS["le_vhost_ext"],
+        add("le-vhost-ext", default=DEFAULTS["le_vhost_ext"],
             help="SSL vhost configuration extension")
-        add("server-root", default=cls.OS_DEFAULTS["server_root"],
+        add("server-root", default=DEFAULTS["server_root"],
             help="Apache server root directory")
         add("vhost-root", default=None,
             help="Apache server VirtualHost configuration root")
-        add("logs-root", default=cls.OS_DEFAULTS["logs_root"],
+        add("logs-root", default=DEFAULTS["logs_root"],
             help="Apache server logs directory")
         add("challenge-location",
-            default=cls.OS_DEFAULTS["challenge_location"],
+            default=DEFAULTS["challenge_location"],
             help="Directory path for challenge configuration")
-        add("handle-modules", default=cls.OS_DEFAULTS["handle_modules"],
+        add("handle-modules", default=DEFAULTS["handle_modules"],
             help="Let installer handle enabling required modules for you " +
                  "(Only Ubuntu/Debian currently)")
-        add("handle-sites", default=cls.OS_DEFAULTS["handle_sites"],
+        add("handle-sites", default=DEFAULTS["handle_sites"],
             help="Let installer handle enabling sites for you " +
                  "(Only Ubuntu/Debian currently)")
-        add("ctl", default=cls.OS_DEFAULTS["ctl"],
+        add("ctl", default=DEFAULTS["ctl"],
             help="Full path to Apache control script")
         util.add_deprecated_argument(
             add, argument_name="init-script", nargs=1)
@@ -577,8 +590,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.assoc[target_name] = vhost
         return vhost
 
-    def included_in_wildcard(self, names, target_name):
-        """Is target_name covered by a wildcard?
+    def domain_in_names(self, names, target_name):
+        """Checks if target domain is covered by one or more of the provided
+        names. The target name is matched by wildcard as well as exact match.
 
         :param names: server aliases
         :type names: `collections.Iterable` of `str`
@@ -649,7 +663,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             names = vhost.get_names()
             if target_name in names:
                 points = 3
-            elif self.included_in_wildcard(names, target_name):
+            elif self.domain_in_names(names, target_name):
                 points = 2
             elif any(addr.get_addr() == target_name for addr in vhost.addrs):
                 points = 1
@@ -1463,7 +1477,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         matches = self.parser.find_dir(
             "ServerAlias", start=vh_path, exclude=False)
         aliases = (self.aug.get(match) for match in matches)
-        return self.included_in_wildcard(aliases, target_name)
+        return self.domain_in_names(aliases, target_name)
 
     def _add_name_vhost_if_necessary(self, vhost):
         """Add NameVirtualHost Directives if necessary for new vhost.
