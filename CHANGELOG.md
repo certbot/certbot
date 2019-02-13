@@ -12,6 +12,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 * Certbot and its acme module now depend on josepy>=1.1.0 to avoid printing the
   warnings described at https://github.com/certbot/josepy/issues/13.
+* Apache plugin now respects CERTBOT_DOCS environment variable when adding
+  command line defaults.
 
 ### Fixed
 
@@ -23,6 +25,7 @@ package with changes other than its version number was:
 
 * acme
 * certbot
+* certbot-apache
 
 More details about these changes can be found on our GitHub repo.
 
