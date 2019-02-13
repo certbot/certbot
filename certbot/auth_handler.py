@@ -43,12 +43,13 @@ class AuthHandler(object):
         self.account = account
         self.pref_challs = pref_challs
 
-    def handle_authorizations(self, orderr, best_effort=False):
+    def handle_authorizations(self, orderr, best_effort=False, max_retries=30):
         """
         Retrieve all authorizations, and perform all
         challenges required to validated these authorizations.
-        :param acme.messages.OrderResource orderr: myst have authorizations filled in
+        :param acme.messages.OrderResource orderr: must have authorizations filled in
         :param bool best_effort: if True, not all authorizations need to be validated (eg. renew)
+        :param int max_retries: maximum number of retries to poll decided authorizations
         :returns: list of all validated authorizations
         :rtype: List
         """
@@ -86,7 +87,7 @@ class AuthHandler(object):
                 self.acme.answer_challenge(achall.challb, resp)
 
             # Wait for authorizations to be decided.
-            authzrs_still_pending = self._poll_authorizations(authzrs, best_effort)
+            authzrs_still_pending = self._poll_authorizations(authzrs, max_retries, best_effort)
 
             # All authorizations should be decided now. If not, we reached the max retries.
             if authzrs_still_pending:
@@ -100,7 +101,7 @@ class AuthHandler(object):
 
             return authzrs_validated
 
-    def _poll_authorizations(self, authzrs, best_effort):
+    def _poll_authorizations(self, authzrs, max_retries, best_effort):
         """
         Poll the ACME CA server, to wait for confirmation that authorizations have their challenges
         all verified. The poll may occur several times, until all authorizations are decided
@@ -108,7 +109,7 @@ class AuthHandler(object):
         """
         authzrs_to_check = {index: (authzr, None)
                             for index, authzr in enumerate(authzrs)}
-        for _ in range(30):
+        for _ in range(max_retries):
             # Poll all updated authorizations.
             authzrs_to_check = {index: self.acme.poll(authzr) for index, (authzr, _)
                                 in authzrs_to_check.items()}
