@@ -13,15 +13,31 @@ mkdir -p ${PEBBLEPATH}
 
 cat << UNLIKELY_EOF > "$PEBBLEPATH/docker-compose.yml"
 version: '3'
-
 services:
- pebble:
-  image: letsencrypt/pebble:${PEBBLE_VERSION}
-  command: pebble -strict ${PEBBLE_STRICT:-false} -dnsserver 10.77.77.1
-  ports:
-    - 14000:14000
-  environment:
+  pebble:
+    image: letsencrypt/pebble
+    command: pebble -dnsserver 10.30.50.3:8053
+    environment:
+    - PEBBLE_VA_ALWAYS_VALID=1
     - PEBBLE_VA_NOSLEEP=1
+    ports:
+      - 14000:14000
+    networks:
+      acmenet:
+        ipv4_address: 10.30.50.2
+  challtestsrv:
+    image: letsencrypt/pebble-challtestsrv
+    command: pebble-challtestsrv -defaultIPv6 "" -defaultIPv4 10.30.50.1
+    ports:
+      - 8055:8055
+    networks:
+      acmenet:
+        ipv4_address: 10.30.50.3
+networks:
+  acmenet:
+    ipam:
+      config:
+        - subnet: 10.30.50.0/24
 UNLIKELY_EOF
 
 docker-compose -f "$PEBBLEPATH/docker-compose.yml" up -d pebble
