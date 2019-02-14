@@ -3,7 +3,6 @@ import functools
 import multiprocessing
 import os
 import unittest
-import errno
 try:
     import fcntl  # pylint: disable=import-error,unused-import
 except ImportError:
