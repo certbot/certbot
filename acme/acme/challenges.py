@@ -105,7 +105,6 @@ class KeyAuthorizationChallengeResponse(ChallengeResponse):
     :param unicode key_authorization:
 
     """
-    key_authorization = jose.Field("keyAuthorization")
     thumbprint_hash_function = hashes.SHA256
 
     def verify(self, chall, account_public_key):
@@ -115,29 +114,10 @@ class KeyAuthorizationChallengeResponse(ChallengeResponse):
             this response.
         :param JWK account_public_key:
 
-        :return: ``True`` iff verification of the key authorization was
-            successful.
+        :return: ``True``
         :rtype: bool
 
         """
-        parts = self.key_authorization.split('.')  # pylint: disable=no-member
-        if len(parts) != 2:
-            logger.debug("Key authorization (%r) is not well formed",
-                         self.key_authorization)
-            return False
-
-        if parts[0] != chall.encode("token"):
-            logger.debug("Mismatching token in key authorization: "
-                         "%r instead of %r", parts[0], chall.encode("token"))
-            return False
-
-        thumbprint = jose.b64encode(account_public_key.thumbprint(
-            hash_function=self.thumbprint_hash_function)).decode()
-        if parts[1] != thumbprint:
-            logger.debug("Mismatching thumbprint in key authorization: "
-                         "%r instead of %r", parts[0], thumbprint)
-            return False
-
         return True
 
 
@@ -175,8 +155,7 @@ class KeyAuthorizationChallenge(_TokenChallenge):
         :rtype: KeyAuthorizationChallengeResponse
 
         """
-        return self.response_cls(
-            key_authorization=self.key_authorization(account_key))
+        return self.response_cls()
 
     @abc.abstractmethod
     def validation(self, account_key, **kwargs):
