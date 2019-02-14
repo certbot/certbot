@@ -2,7 +2,7 @@
 # Download and run Pebble instance for integration testing
 set -xe
 
-PEBBLE_VERSION=2018-11-02
+PEBBLE_VERSION=v1.0.1
 
 # We reuse the same GOPATH-style directory than for Boulder.
 # Pebble does not need it, but it will make the installation consistent with Boulder's one.
@@ -15,7 +15,7 @@ cat << UNLIKELY_EOF > "$PEBBLEPATH/docker-compose.yml"
 version: '3'
 services:
   pebble:
-    image: letsencrypt/pebble
+    image: letsencrypt/pebble:${PEBBLE_VERSION}
     command: pebble -dnsserver 10.30.50.3:8053
     environment:
     - PEBBLE_VA_NOSLEEP=1
@@ -25,7 +25,7 @@ services:
       acmenet:
         ipv4_address: 10.30.50.2
   challtestsrv:
-    image: letsencrypt/pebble-challtestsrv
+    image: letsencrypt/pebble-challtestsrv:${PEBBLE_VERSION}
     command: pebble-challtestsrv -defaultIPv6 "" -defaultIPv4 10.30.50.1
     ports:
       - 8055:8055
