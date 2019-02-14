@@ -36,6 +36,7 @@ networks:
   acmenet:
     driver: bridge
     ipam:
+      driver: default
       config:
         - subnet: 10.30.50.0/24
 UNLIKELY_EOF
