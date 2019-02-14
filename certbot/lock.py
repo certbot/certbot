@@ -112,10 +112,10 @@ class _BaseLockMechanism(object):
         return self._fd is not None
 
     def acquire(self):  # pylint: disable=missing-docstring
-        pass
+        pass  # pragma: no cover
 
     def release(self):  # pylint: disable=missing-docstring
-        pass
+        pass  # pragma: no cover
 
 
 class _UnixLockMechanism(_BaseLockMechanism):

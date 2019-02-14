@@ -3,6 +3,7 @@ import functools
 import multiprocessing
 import os
 import unittest
+import errno
 try:
     import fcntl  # pylint: disable=import-error,unused-import
 except ImportError:
@@ -16,7 +17,6 @@ from certbot import errors
 from certbot.tests import util as test_util
 
 
-@test_util.broken_on_windows
 class LockDirTest(test_util.TempDirTestCase):
     """Tests for certbot.lock.lock_dir."""
     @classmethod
@@ -24,6 +24,7 @@ class LockDirTest(test_util.TempDirTestCase):
         from certbot.lock import lock_dir
         return lock_dir(*args, **kwargs)
 
+    @test_util.broken_on_windows
     def test_it(self):
         assert_raises = functools.partial(
             self.assertRaises, errors.LockError, self._call, self.tempdir)
@@ -31,7 +32,6 @@ class LockDirTest(test_util.TempDirTestCase):
         test_util.lock_and_call(assert_raises, lock_path)
 
 
-@test_util.broken_on_windows
 class LockFileTest(test_util.TempDirTestCase):
     """Tests for certbot.lock.LockFile."""
     @classmethod
@@ -55,6 +55,7 @@ class LockFileTest(test_util.TempDirTestCase):
         # Test we're still able to properly acquire and release the lock
         self.test_removed()
 
+    @test_util.broken_on_windows
     def test_contention(self):
         assert_raises = functools.partial(
             self.assertRaises, errors.LockError, self._call, self.lock_path)
@@ -114,17 +115,21 @@ class LockFileTest(test_util.TempDirTestCase):
             else:  # pragma: no cover
                 self.fail('IOError not raised')
 
-    @test_util.skip_on_windows('Function os.stat is not used in Windows lock mechanism.')
-    @mock.patch('certbot.lock.os.stat')
-    def test_unexpected_stat_err(self, mock_stat):
+    def test_unexpected_os_err(self):
+        if POSIX_MODE:
+            mock_function = 'certbot.lock.os.stat'
+        else:
+            mock_function = 'certbot.lock.msvcrt.locking'
+        # Neither errno.ENOENT nor errno.EACCES that are expected and have a specific logic.
         msg = 'hi there'
-        mock_stat.side_effect = OSError(msg)
-        try:
-            self._call(self.lock_path)
-        except OSError as err:
-            self.assertTrue(msg in str(err))
-        else:  # pragma: no cover
-            self.fail('OSError not raised')
+        with mock.patch(mock_function) as mock_os:
+            mock_os.side_effect = OSError(msg)
+            try:
+                self._call(self.lock_path)
+            except OSError as err:
+                self.assertTrue(msg in str(err))
+            else:  # pragma: no cover
+                self.fail('OSError not raised')
 
 
 if __name__ == "__main__":
