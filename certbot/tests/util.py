@@ -3,14 +3,15 @@
 .. warning:: This module is not part of the public API.
 
 """
+import logging
 import multiprocessing
 import os
 import pkg_resources
 import shutil
+import stat
 import tempfile
 import unittest
 import sys
-import warnings
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
@@ -328,22 +329,22 @@ class TempDirTestCase(unittest.TestCase):
 
     def tearDown(self):
         """Execute after test"""
-        # On Windows we have various files which are not correctly closed at the time of tearDown.
-        # For know, we log them until a proper file close handling is written.
-        # Useful for development only, so no warning when we are on a CI process.
-        def onerror_handler(_, path, excinfo):
-            """On error handler"""
-            if not os.environ.get('APPVEYOR'): # pragma: no cover
-                message = ('Following error occurred when deleting the tempdir {0}'
-                           ' for path {1} during tearDown process: {2}'
-                           .format(self.tempdir, path, str(excinfo)))
-                warnings.warn(message)
-        shutil.rmtree(self.tempdir, onerror=onerror_handler)
+        # Cleanup opened resources after a test. This is usually done through atexit handlers in
+        # Certbot, but during tests, atexit will not run registered functions before tearDown is
+        # called and instead will run them right before the entire test process exits.
+        # It is a problem on Windows, that does not accept to clean resources before closing them.
+        logging.shutdown()
+        util._release_locks()  # pylint: disable=protected-access
+
+        def handle_rw_files(_, path, __):
+            """Handle read-only files, that will fail to be removed on Windows."""
+            os.chmod(path, stat.S_IWRITE)
+            os.remove(path)
+        shutil.rmtree(self.tempdir, onerror=handle_rw_files)
+
 
 class ConfigTestCase(TempDirTestCase):
-    """Test class which sets up a NamespaceConfig object.
-
-    """
+    """Test class which sets up a NamespaceConfig object."""
     def setUp(self):
         super(ConfigTestCase, self).setUp()
         self.config = configuration.NamespaceConfig(

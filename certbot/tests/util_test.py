@@ -191,7 +191,12 @@ class CheckPermissionsTest(test_util.TempDirTestCase):
 
     def test_wrong_mode(self):
         os.chmod(self.tempdir, 0o400)
-        self.assertFalse(self._call(0o600))
+        try:
+            self.assertFalse(self._call(0o600))
+        finally:
+            # Without proper write permissions, Windows is unable to delete a folder,
+            # even with admin permissions. Write access must be explicitly set first.
+            os.chmod(self.tempdir, 0o700)
 
 
 class UniqueFileTest(test_util.TempDirTestCase):
@@ -277,20 +282,9 @@ class UniqueLineageNameTest(test_util.TempDirTestCase):
         for f, _ in items:
             f.close()
 
-    @mock.patch("certbot.util.os.fdopen")
-    def test_failure(self, mock_fdopen):
-        err = OSError("whoops")
-        err.errno = errno.EIO
-        mock_fdopen.side_effect = err
-        self.assertRaises(OSError, self._call, "wow")
-
-    @mock.patch("certbot.util.os.fdopen")
-    def test_subsequent_failure(self, mock_fdopen):
-        self._call("wow")
-        err = OSError("whoops")
-        err.errno = errno.EIO
-        mock_fdopen.side_effect = err
-        self.assertRaises(OSError, self._call, "wow")
+    def test_failure(self):
+        with mock.patch("certbot.util.os.open", side_effect=OSError(errno.EIO)):
+            self.assertRaises(OSError, self._call, "wow")
 
 
 class SafelyRemoveTest(test_util.TempDirTestCase):
