@@ -18,7 +18,6 @@ services:
     image: letsencrypt/pebble
     command: pebble -dnsserver 10.30.50.3:8053
     environment:
-    - PEBBLE_VA_ALWAYS_VALID=1
     - PEBBLE_VA_NOSLEEP=1
     ports:
       - 14000:14000
@@ -35,6 +34,7 @@ services:
         ipv4_address: 10.30.50.3
 networks:
   acmenet:
+    driver: bridge
     ipam:
       config:
         - subnet: 10.30.50.0/24
