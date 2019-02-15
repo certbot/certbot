@@ -424,8 +424,8 @@ class GenChallengePathTest(unittest.TestCase):
             errors.AuthorizationError, self._call, challbs, prefs, None)
 
 
-class ReportFailedChallsTest(unittest.TestCase):
-    """Tests for certbot.auth_handler._report_failed_challs."""
+class ReportFailedAuthzrsTest(unittest.TestCase):
+    """Tests for certbot.auth_handler._report_failed_authzrs."""
     # pylint: disable=protected-access
 
     def setUp(self):
@@ -439,31 +439,27 @@ class ReportFailedChallsTest(unittest.TestCase):
         # Prevent future regressions if the error type changes
         self.assertTrue(kwargs["error"].description is not None)
 
-        self.http01 = achallenges.KeyAuthorizationAnnotatedChallenge(
-            # pylint: disable=star-args
-            challb=messages.ChallengeBody(**kwargs),
-            domain="example.com",
-            account_key="key")
+        http_01 = messages.ChallengeBody(**kwargs)
 
         kwargs["chall"] = acme_util.TLSSNI01
-        self.tls_sni_same = achallenges.KeyAuthorizationAnnotatedChallenge(
-            # pylint: disable=star-args
-            challb=messages.ChallengeBody(**kwargs),
-            domain="example.com",
-            account_key="key")
+        tls_sni_01 = messages.ChallengeBody(**kwargs)
+
+        self.authzr1 = mock.MagicMock()
+        self.authzr1.body.identifier.value = 'example.com'
+        self.authzr1.body.challenges = [http_01, tls_sni_01]
 
         kwargs["error"] = messages.Error(typ="dnssec", detail="detail")
-        self.tls_sni_diff = achallenges.KeyAuthorizationAnnotatedChallenge(
-            # pylint: disable=star-args
-            challb=messages.ChallengeBody(**kwargs),
-            domain="foo.bar",
-            account_key="key")
+        tls_sni_01_diff = messages.ChallengeBody(**kwargs)
+
+        self.authzr2 = mock.MagicMock()
+        self.authzr2.body.identifier.value = 'foo.bar'
+        self.authzr2.body.challenges = [tls_sni_01_diff]
 
     @test_util.patch_get_utility()
     def test_same_error_and_domain(self, mock_zope):
         from certbot import auth_handler
 
-        auth_handler._report_failed_challs([self.http01, self.tls_sni_same])
+        auth_handler._report_failed_authzrs([self.authzr1], 'key')
         call_list = mock_zope().add_message.call_args_list
         self.assertTrue(len(call_list) == 1)
         self.assertTrue("Domain: example.com\nType:   tls\nDetail: detail" in call_list[0][0][0])
@@ -472,7 +468,7 @@ class ReportFailedChallsTest(unittest.TestCase):
     def test_different_errors_and_domains(self, mock_zope):
         from certbot import auth_handler
 
-        auth_handler._report_failed_challs([self.http01, self.tls_sni_diff])
+        auth_handler._report_failed_authzrs([self.authzr1, self.authzr2], 'key')
         self.assertTrue(mock_zope().add_message.call_count == 2)
 
 
