@@ -224,7 +224,7 @@ class HandleAuthorizationsTest(unittest.TestCase):  # pylint: disable=too-many-p
         with self.assertRaises(errors.AuthorizationError) as error:
             # We retry only once, so retries will be exhausted before STATUS_VALID is returned.
             self.handler.handle_authorizations(mock_order, False, 1)
-        self.assertTrue('All challenges could not be validated on time' in str(error.exception))
+        self.assertTrue('All challenges could not be checked on time' in str(error.exception))
 
         self.assertRaises(
             errors.AuthorizationError, self.handler.handle_authorizations, mock_order, False, 1)
