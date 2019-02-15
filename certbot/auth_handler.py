@@ -139,7 +139,7 @@ class AuthHandler(object):
 
             # Be merciful with the ACME server CA, check the Retry-After header returned,
             # and wait this time before next polling. From all the pending authorizations
-            # pending, we take the greatest one, and avoid this way to poll an authorization
+            # pending, we take the greatest one to avoid polling an authorization
             # before its relevant Retry-After value.
             retry_after = max(self.acme.retry_after(resp, 3)
                               for index, (_, resp) in authzrs_to_check.items())
