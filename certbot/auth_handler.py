@@ -110,6 +110,8 @@ class AuthHandler(object):
         """
         authzrs_to_check = {index: (authzr, None)
                             for index, authzr in enumerate(authzrs)}
+        # Give an initial second to the ACME CA server to check the authorizations
+        time.sleep(1)
         for _ in range(max_retries):
             # Poll all updated authorizations.
             authzrs_to_check = {index: self.acme.poll(authzr) for index, (authzr, _)
