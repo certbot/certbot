@@ -7,6 +7,7 @@ import datetime
 import six
 import zope.component
 
+from acme import errors as acme_errors
 from acme import challenges
 from acme import messages
 # pylint: disable=unused-import, no-name-in-module
@@ -64,7 +65,7 @@ class AuthHandler(object):
         if not achalls:
             return authzrs
 
-        # Starting to now, challenges will be cleaned at the end no matter what.
+        # Starting now, challenges will be cleaned at the end no matter what.
         with error_handler.ExitHandler(self._cleanup_challenges, achalls):
             # To begin, let's ask the authenticator plugin to perform all challenges.
             try:
@@ -89,11 +90,11 @@ class AuthHandler(object):
                 self.acme.answer_challenge(achall.challb, resp)
 
             # Wait for authorizations to be checked.
-            authzrs_still_pending = self._poll_authorizations(authzrs, max_retries, best_effort)
-
-            # All authorizations should be checked now. If not, we reached the max retries.
-            if authzrs_still_pending:
-                raise errors.AuthorizationError('All challenges could not be validated on time.')
+            try:
+                self._poll_authorizations(authzrs, max_retries, best_effort)
+            except acme_errors.TimeoutError:
+                # Exceeding the max polling attempts, and some authentication are still not checked.
+                raise errors.AuthorizationError('All challenges could not be checked on time.')
 
             # Keep validated authorizations only. If there is none, no certificate can be issued.
             authzrs_validated = [authzr for authzr in authzrs
@@ -126,8 +127,7 @@ class AuthHandler(object):
             if authzrs_failed and best_effort:
                 logger.warning('Following authorizations have failed: %s', authzrs_failed)
             elif authzrs_failed:
-                raise errors.AuthorizationError('Some challenges have failed: {0}.'
-                                                .format(authzrs_failed))
+                raise errors.AuthorizationError('Some challenges have failed.')
 
             # Extract out the authorization already checked for next poll iteration.
             # Poll may stop here because there is no pending authorizations anymore.
@@ -146,7 +146,7 @@ class AuthHandler(object):
             time.sleep((retry_after - datetime.datetime.now()).total_seconds())
 
         if authzrs_to_check:
-            raise Tim
+            raise acme_errors.TimeoutError()
 
     def _choose_challenges(self, authzrs):
         """
@@ -203,9 +203,6 @@ class AuthHandler(object):
     def _cleanup_challenges(self, achalls):
         """Cleanup challenges.
 
-        :param authzrs: authorizations and their selected annotated
-            challenges
-        :type authzrs: `list` of `AnnotatedAuthzr`
         :param achalls: annotated challenges to cleanup
         :type achalls: `list` of :class:`certbot.achallenges.AnnotatedChallenge`
 
