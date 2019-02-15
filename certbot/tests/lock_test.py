@@ -119,7 +119,7 @@ class LockFileTest(test_util.TempDirTestCase):
             mock_function = 'certbot.lock.os.stat'
         else:
             mock_function = 'certbot.lock.msvcrt.locking'
-        # Neither errno.ENOENT nor errno.EACCES that are expected and have a specific logic.
+        # The only expected errno are ENOENT and EACCES in lock module.
         msg = 'hi there'
         with mock.patch(mock_function) as mock_os:
             mock_os.side_effect = OSError(msg)
