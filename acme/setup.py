@@ -11,7 +11,9 @@ install_requires = [
     # rsa_recover_prime_factors (>=0.8)
     'cryptography>=1.2.3',
     # formerly known as acme.jose:
-    'josepy>=1.0.0',
+    # 1.1.0+ is required to avoid the warnings described at
+    # https://github.com/certbot/josepy/issues/13.
+    'josepy>=1.1.0',
     # Connection.set_tlsext_host_name (>=0.13)
     'mock',
     'PyOpenSSL>=0.13.1',
