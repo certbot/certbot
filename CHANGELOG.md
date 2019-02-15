@@ -6,7 +6,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* Test farm tests print failure message if they do not run the correct number of tests.
 
 ### Changed
 
