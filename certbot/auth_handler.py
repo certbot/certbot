@@ -122,7 +122,7 @@ class AuthHandler(object):
 
             # Handle failed authorizations: with best effort this is only a warning,
             # otherwise an exception.
-            authzrs_failed = [authzr for index, (authzr, _) in authzrs_to_check.items()
+            authzrs_failed = [authzr for authzr, _ in authzrs_to_check.values()
                               if authzr.body.status == messages.STATUS_INVALID]
             if authzrs_failed and best_effort:
                 logger.warning('Following authorizations have failed: %s', authzrs_failed)
@@ -138,12 +138,13 @@ class AuthHandler(object):
                 break
 
             # Be merciful with the ACME server CA, check the Retry-After header returned,
-            # and wait this time before next polling. From all the pending authorizations
+            # and wait this time before polling again. From all the pending authorizations
             # pending, we take the greatest one to avoid polling an authorization
             # before its relevant Retry-After value.
             retry_after = max(self.acme.retry_after(resp, 3)
-                              for index, (_, resp) in authzrs_to_check.items())
-            time.sleep((retry_after - datetime.datetime.now()).total_seconds())
+                              for _, resp in authzrs_to_check.values())
+            sleep_seconds = (retry_after - datetime.datetime.now()).total_seconds()
+            time.sleep(sleep_seconds if sleep_seconds > 0 else 3)
 
         if authzrs_to_check:
             raise acme_errors.TimeoutError()
