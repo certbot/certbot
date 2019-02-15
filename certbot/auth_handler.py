@@ -9,7 +9,7 @@ from acme import errors as acme_errors
 from acme import challenges
 from acme import messages
 # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import DefaultDict, List
+from acme.magic_typing import Dict, List
 # pylint: enable=unused-import, no-name-in-module
 from certbot import achallenges
 from certbot import errors
@@ -399,7 +399,7 @@ _ERROR_HELP = {
 
 def _report_failed_authzrs(failed_authzrs, account_key):
     """Notifies the user about failed authorizations."""
-    problems = {}  # type: DefaultDict[str, List[achallenges.AnnotatedChallenge]]
+    problems = {}  # type: Dict[str, List[achallenges.AnnotatedChallenge]]
     failed_achalls = [challb_to_achall(challb, account_key, authzr.body.identifier.value)
                       for authzr in failed_authzrs for challb in authzr.body.challenges
                       if challb.error]

@@ -303,8 +303,9 @@ class HandleAuthorizationsTest(unittest.TestCase):  # pylint: disable=too-many-p
         mock_order = mock.MagicMock(authorizations=authzrs)
         self.mock_net.poll.side_effect = _gen_mock_on_poll(status=messages.STATUS_INVALID)
 
-        with self.assertRaises(errors.AuthorizationError) as error:
-            self.handler.handle_authorizations(mock_order, False)
+        with test_util.patch_get_utility():
+            with self.assertRaises(errors.AuthorizationError) as error:
+                self.handler.handle_authorizations(mock_order, False)
         self.assertTrue('Some challenges have failed' in str(error.exception))
         self.assertEqual(self.mock_auth.cleanup.call_count, 1)
         self.assertEqual(
@@ -439,17 +440,17 @@ class ReportFailedAuthzrsTest(unittest.TestCase):
         # Prevent future regressions if the error type changes
         self.assertTrue(kwargs["error"].description is not None)
 
-        http_01 = messages.ChallengeBody(**kwargs)
+        http_01 = messages.ChallengeBody(**kwargs)  # pylint: disable=star-args
 
         kwargs["chall"] = acme_util.TLSSNI01
-        tls_sni_01 = messages.ChallengeBody(**kwargs)
+        tls_sni_01 = messages.ChallengeBody(**kwargs)  # pylint: disable=star-args
 
         self.authzr1 = mock.MagicMock()
         self.authzr1.body.identifier.value = 'example.com'
         self.authzr1.body.challenges = [http_01, tls_sni_01]
 
         kwargs["error"] = messages.Error(typ="dnssec", detail="detail")
-        tls_sni_01_diff = messages.ChallengeBody(**kwargs)
+        tls_sni_01_diff = messages.ChallengeBody(**kwargs)  # pylint: disable=star-args
 
         self.authzr2 = mock.MagicMock()
         self.authzr2.body.identifier.value = 'foo.bar'
