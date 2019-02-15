@@ -101,10 +101,10 @@ class HandleAuthorizationsTest(unittest.TestCase):  # pylint: disable=too-many-p
             self.assertEqual(self.mock_net.answer_challenge.call_count, 1)
 
             self.assertEqual(self.mock_net.poll.call_count, 2)  # Because there is one retry
-            self.assertEqual(mock_time.sleep.call_count, 1)
+            self.assertEqual(mock_time.sleep.call_count, 2)
             # Retry-After header is 1 second, but at the time sleep is invoked, several
             # instructions are executed, and next pool is in less than a second.
-            self.assertTrue(mock_time.sleep.call_args[0][0] <= 1)
+            self.assertTrue(mock_time.sleep.call_args[1][0] <= 1)
 
             self.assertEqual(self.mock_auth.cleanup.call_count, 1)
             # Test if list first element is TLSSNI01, use typ because it is an achall
