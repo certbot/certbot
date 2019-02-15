@@ -3,6 +3,12 @@ import functools
 import multiprocessing
 import os
 import unittest
+try:
+    import fcntl  # pylint: disable=import-error,unused-import
+except ImportError:
+    POSIX_MODE = False
+else:
+    POSIX_MODE = True
 
 import mock
 
@@ -17,6 +23,7 @@ class LockDirTest(test_util.TempDirTestCase):
         from certbot.lock import lock_dir
         return lock_dir(*args, **kwargs)
 
+    @test_util.broken_on_windows
     def test_it(self):
         assert_raises = functools.partial(
             self.assertRaises, errors.LockError, self._call, self.tempdir)
@@ -48,6 +55,7 @@ class LockFileTest(test_util.TempDirTestCase):
         # Test we're still able to properly acquire and release the lock
         self.test_removed()
 
+    @test_util.broken_on_windows
     def test_contention(self):
         assert_raises = functools.partial(
             self.assertRaises, errors.LockError, self._call, self.lock_path)
@@ -71,7 +79,8 @@ class LockFileTest(test_util.TempDirTestCase):
         self.assertTrue(lock_file.__class__.__name__ in lock_repr)
         self.assertTrue(self.lock_path in lock_repr)
 
-    @test_util.broken_on_windows
+    @test_util.skip_on_windows(
+        'Race conditions on lock are specific to the non-blocking file access approach on Linux.')
     def test_race(self):
         should_delete = [True, False]
         stat = os.stat
@@ -93,28 +102,36 @@ class LockFileTest(test_util.TempDirTestCase):
         lock_file.release()
         self.assertFalse(os.path.exists(self.lock_path))
 
-    @test_util.broken_on_windows
-    @mock.patch('certbot.compat.fcntl.lockf')
-    def test_unexpected_lockf_err(self, mock_lockf):
+    def test_unexpected_lockf_or_locking_err(self):
+        if POSIX_MODE:
+            mocked_function = 'certbot.lock.fcntl.lockf'
+        else:
+            mocked_function = 'certbot.lock.msvcrt.locking'
         msg = 'hi there'
-        mock_lockf.side_effect = IOError(msg)
-        try:
-            self._call(self.lock_path)
-        except IOError as err:
-            self.assertTrue(msg in str(err))
-        else:  # pragma: no cover
-            self.fail('IOError not raised')
+        with mock.patch(mocked_function) as mock_lock:
+            mock_lock.side_effect = IOError(msg)
+            try:
+                self._call(self.lock_path)
+            except IOError as err:
+                self.assertTrue(msg in str(err))
+            else:  # pragma: no cover
+                self.fail('IOError not raised')
 
-    @mock.patch('certbot.lock.os.stat')
-    def test_unexpected_stat_err(self, mock_stat):
+    def test_unexpected_os_err(self):
+        if POSIX_MODE:
+            mock_function = 'certbot.lock.os.stat'
+        else:
+            mock_function = 'certbot.lock.msvcrt.locking'
+        # The only expected errno are ENOENT and EACCES in lock module.
         msg = 'hi there'
-        mock_stat.side_effect = OSError(msg)
-        try:
-            self._call(self.lock_path)
-        except OSError as err:
-            self.assertTrue(msg in str(err))
-        else:  # pragma: no cover
-            self.fail('OSError not raised')
+        with mock.patch(mock_function) as mock_os:
+            mock_os.side_effect = OSError(msg)
+            try:
+                self._call(self.lock_path)
+            except OSError as err:
+                self.assertTrue(msg in str(err))
+            else:  # pragma: no cover
+                self.fail('OSError not raised')
 
 
 if __name__ == "__main__":
