@@ -1,10 +1,8 @@
 """ACME AuthHandler."""
-import collections
 import logging
 import time
 import datetime
 
-import six
 import zope.component
 
 from acme import errors as acme_errors
@@ -127,6 +125,8 @@ class AuthHandler(object):
             if authzrs_failed and best_effort:
                 logger.warning('Following authorizations have failed: %s', authzrs_failed)
             elif authzrs_failed:
+                # Display report to the user
+                _report_failed_authzrs(authzrs_failed, self.account.key)
                 raise errors.AuthorizationError('Some challenges have failed.')
 
             # Extract out the authorization already checked for next poll iteration.
@@ -397,22 +397,20 @@ _ERROR_HELP = {
 }
 
 
-def _report_failed_challs(failed_achalls):
-    """Notifies the user about failed challenges.
+def _report_failed_authzrs(failed_authzrs, account_key):
+    """Notifies the user about failed authorizations."""
+    problems = {}  # type: DefaultDict[str, List[achallenges.AnnotatedChallenge]]
+    failed_achalls = [challb_to_achall(challb, account_key, authzr.body.identifier.value)
+                      for authzr in failed_authzrs for challb in authzr.body.challenges
+                      if challb.error]
 
-    :param set failed_achalls: A set of failed
-        :class:`certbot.achallenges.AnnotatedChallenge`.
-
-    """
-    problems = collections.defaultdict(list)\
-        # type: DefaultDict[str, List[achallenges.KeyAuthorizationAnnotatedChallenge]]
     for achall in failed_achalls:
-        if achall.error:
-            problems[achall.error.typ].append(achall)
+        problems[achall.error.typ] = problems.get(achall.error.typ, [])
+        problems[achall.error.typ].append(achall)
+
     reporter = zope.component.getUtility(interfaces.IReporter)
-    for achalls in six.itervalues(problems):
-        reporter.add_message(
-            _generate_failed_chall_msg(achalls), reporter.MEDIUM_PRIORITY)
+    for achalls in problems.values():
+        reporter.add_message(_generate_failed_chall_msg(achalls), reporter.MEDIUM_PRIORITY)
 
 
 def _generate_failed_chall_msg(failed_achalls):

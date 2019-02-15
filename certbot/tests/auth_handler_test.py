@@ -9,7 +9,6 @@ import zope.component
 from acme import challenges
 from acme import client as acme_client
 from acme import messages
-from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
 
 from certbot import achallenges
 from certbot import errors
