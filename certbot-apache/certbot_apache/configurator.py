@@ -92,6 +92,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     """
 
     description = "Apache Web Server plugin"
+    if os.environ.get("CERTBOT_DOCS") == "1":
+        description += (  # pragma: no cover
+            " (Please note that the default values of the Apache plugin options"
+            " change depending on the operating system Certbot is run on.)"
+        )
 
     OS_DEFAULTS = dict(
         server_root="/etc/apache2",
@@ -141,28 +146,36 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # When adding, modifying or deleting command line arguments, be sure to
         # include the changes in the list used in method _prepare_options() to
         # ensure consistent behavior.
-        add("enmod", default=cls.OS_DEFAULTS["enmod"],
+
+        # Respect CERTBOT_DOCS environment variable and use default values from
+        # base class regardless of the underlying distribution (overrides).
+        if os.environ.get("CERTBOT_DOCS") == "1":
+            DEFAULTS = ApacheConfigurator.OS_DEFAULTS
+        else:
+            # cls.OS_DEFAULTS can be distribution specific, see override classes
+            DEFAULTS = cls.OS_DEFAULTS
+        add("enmod", default=DEFAULTS["enmod"],
             help="Path to the Apache 'a2enmod' binary")
-        add("dismod", default=cls.OS_DEFAULTS["dismod"],
+        add("dismod", default=DEFAULTS["dismod"],
             help="Path to the Apache 'a2dismod' binary")
-        add("le-vhost-ext", default=cls.OS_DEFAULTS["le_vhost_ext"],
+        add("le-vhost-ext", default=DEFAULTS["le_vhost_ext"],
             help="SSL vhost configuration extension")
-        add("server-root", default=cls.OS_DEFAULTS["server_root"],
+        add("server-root", default=DEFAULTS["server_root"],
             help="Apache server root directory")
         add("vhost-root", default=None,
             help="Apache server VirtualHost configuration root")
-        add("logs-root", default=cls.OS_DEFAULTS["logs_root"],
+        add("logs-root", default=DEFAULTS["logs_root"],
             help="Apache server logs directory")
         add("challenge-location",
-            default=cls.OS_DEFAULTS["challenge_location"],
+            default=DEFAULTS["challenge_location"],
             help="Directory path for challenge configuration")
-        add("handle-modules", default=cls.OS_DEFAULTS["handle_modules"],
+        add("handle-modules", default=DEFAULTS["handle_modules"],
             help="Let installer handle enabling required modules for you " +
                  "(Only Ubuntu/Debian currently)")
-        add("handle-sites", default=cls.OS_DEFAULTS["handle_sites"],
+        add("handle-sites", default=DEFAULTS["handle_sites"],
             help="Let installer handle enabling sites for you " +
                  "(Only Ubuntu/Debian currently)")
-        add("ctl", default=cls.OS_DEFAULTS["ctl"],
+        add("ctl", default=DEFAULTS["ctl"],
             help="Full path to Apache control script")
         util.add_deprecated_argument(
             add, argument_name="init-script", nargs=1)
