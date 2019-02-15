@@ -45,13 +45,15 @@ class AuthHandler(object):
 
     def handle_authorizations(self, orderr, best_effort=False, max_retries=30):
         """
-        Retrieve all authorizations, and perform all
-        challenges required to validated these authorizations.
+        Retrieve all authorizations, perform all challenges required to validated
+        these authorizations, then poll and wait for the authorization to be checked.
         :param acme.messages.OrderResource orderr: must have authorizations filled in
         :param bool best_effort: if True, not all authorizations need to be validated (eg. renew)
-        :param int max_retries: maximum number of retries to poll decided authorizations
+        :param int max_retries: maximum number of retries to poll authorizations
         :returns: list of all validated authorizations
         :rtype: List
+
+        :raises .AuthorizationError: If unable to retrieve all authorizations
         """
         authzrs = orderr.authorizations[:]
         if not authzrs:
@@ -68,7 +70,7 @@ class AuthHandler(object):
             try:
                 resps = self.auth.perform(achalls)
 
-                # If debug is on, wait for user call before starting the verification process.
+                # If debug is on, wait for user input before starting the verification process.
                 logger.info('Waiting for verification...')
                 config = zope.component.getUtility(interfaces.IConfig)
                 if config.debug_challenges:
@@ -86,10 +88,10 @@ class AuthHandler(object):
             for achall, resp in zip(achalls, resps):
                 self.acme.answer_challenge(achall.challb, resp)
 
-            # Wait for authorizations to be decided.
+            # Wait for authorizations to be checked.
             authzrs_still_pending = self._poll_authorizations(authzrs, max_retries, best_effort)
 
-            # All authorizations should be decided now. If not, we reached the max retries.
+            # All authorizations should be checked now. If not, we reached the max retries.
             if authzrs_still_pending:
                 raise errors.AuthorizationError('All challenges could not be validated on time.')
 
@@ -104,7 +106,7 @@ class AuthHandler(object):
     def _poll_authorizations(self, authzrs, max_retries, best_effort):
         """
         Poll the ACME CA server, to wait for confirmation that authorizations have their challenges
-        all verified. The poll may occur several times, until all authorizations are decided
+        all verified. The poll may occur several times, until all authorizations are checked
         (valid or invalid), or after a maximum of retries.
         """
         authzrs_to_check = {index: (authzr, None)
@@ -127,7 +129,7 @@ class AuthHandler(object):
                 raise errors.AuthorizationError('Some challenges have failed: {0}.'
                                                 .format(authzrs_failed))
 
-            # Extract out the authorization already decided for next poll iteration.
+            # Extract out the authorization already checked for next poll iteration.
             # Poll may stop here because there is no pending authorizations anymore.
             authzrs_to_check = {index: (authzr, resp) for index, (authzr, resp)
                                 in authzrs_to_check.items()
@@ -143,7 +145,8 @@ class AuthHandler(object):
                               for index, (_, resp) in authzrs_to_check.items())
             time.sleep((retry_after - datetime.datetime.now()).total_seconds())
 
-        return authzrs_to_check
+        if authzrs_to_check:
+            raise Tim
 
     def _choose_challenges(self, authzrs):
         """
