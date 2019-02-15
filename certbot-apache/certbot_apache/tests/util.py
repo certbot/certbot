@@ -196,7 +196,17 @@ def get_vh_truth(temp_dir, config_name):
                 "/files" + os.path.join(temp_dir, config_name,
                                         "apache2/apache2.conf/VirtualHost"),
                 set([obj.Addr.fromstring("*:80")]), False, True,
-                "vhost.in.rootconf")]
+                "vhost.in.rootconf"),
+            obj.VirtualHost(
+                os.path.join(prefix, "duplicatehttp.conf"),
+                os.path.join(aug_pre, "duplicatehttp.conf/VirtualHost"),
+                set([obj.Addr.fromstring("10.2.3.4:80")]), False, True,
+                "duplicate.example.com"),
+            obj.VirtualHost(
+                os.path.join(prefix, "duplicatehttps.conf"),
+                os.path.join(aug_pre, "duplicatehttps.conf/IfModule/VirtualHost"),
+                set([obj.Addr.fromstring("10.2.3.4:443")]), True, True,
+                "duplicate.example.com")]
         return vh_truth
     if config_name == "debian_apache_2_4/multi_vhosts":
         prefix = os.path.join(

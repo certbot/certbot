@@ -402,6 +402,33 @@ class TLSSNI01Test(unittest.TestCase):
             KEY, cert_key=mock.sentinel.cert_key))
         mock_gen_cert.assert_called_once_with(key=mock.sentinel.cert_key)
 
+class TLSALPN01ResponseTest(unittest.TestCase):
+    # pylint: disable=too-many-instance-attributes
+
+    def setUp(self):
+        from acme.challenges import TLSALPN01Response
+        self.msg = TLSALPN01Response(key_authorization=u'foo')
+        self.jmsg = {
+            'resource': 'challenge',
+            'type': 'tls-alpn-01',
+            'keyAuthorization': u'foo',
+        }
+
+        from acme.challenges import TLSALPN01
+        self.chall = TLSALPN01(token=(b'x' * 16))
+        self.response = self.chall.response(KEY)
+
+    def test_to_partial_json(self):
+        self.assertEqual(self.jmsg, self.msg.to_partial_json())
+
+    def test_from_json(self):
+        from acme.challenges import TLSALPN01Response
+        self.assertEqual(self.msg, TLSALPN01Response.from_json(self.jmsg))
+
+    def test_from_json_hashable(self):
+        from acme.challenges import TLSALPN01Response
+        hash(TLSALPN01Response.from_json(self.jmsg))
+
 
 class TLSALPN01Test(unittest.TestCase):
 
