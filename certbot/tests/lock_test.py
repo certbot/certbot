@@ -23,7 +23,6 @@ class LockDirTest(test_util.TempDirTestCase):
         from certbot.lock import lock_dir
         return lock_dir(*args, **kwargs)
 
-    @test_util.broken_on_windows
     def test_it(self):
         assert_raises = functools.partial(
             self.assertRaises, errors.LockError, self._call, self.tempdir)
@@ -54,7 +53,6 @@ class LockFileTest(test_util.TempDirTestCase):
         # Test we're still able to properly acquire and release the lock
         self.test_removed()
 
-    @test_util.broken_on_windows
     def test_contention(self):
         assert_raises = functools.partial(
             self.assertRaises, errors.LockError, self._call, self.lock_path)
