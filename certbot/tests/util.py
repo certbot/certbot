@@ -7,10 +7,12 @@ import logging
 import multiprocessing
 import pkg_resources
 import shutil
-import stat
 import tempfile
 import unittest
 import sys
+import warnings
+import subprocess
+import time
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
@@ -23,8 +25,8 @@ from six.moves import reload_module  # pylint: disable=import-error
 from certbot import constants
 from certbot import interfaces
 from certbot import storage
-from certbot import util
 from certbot import configuration
+from certbot import util
 from certbot.compat import os, security
 from certbot.display import util as display_util
 
@@ -211,7 +213,7 @@ class FreezableMock(object):
 
     """
     def __init__(self, frozen=False, func=None, return_value=mock.sentinel.DEFAULT):
-        self._frozen_set = set() if frozen else set(('freeze',))
+        self._frozen_set = set() if frozen else {'freeze', }
         self._func = func
         self._mock = mock.MagicMock()
         if return_value != mock.sentinel.DEFAULT:
@@ -336,22 +338,23 @@ class TempDirTestCase(unittest.TestCase):
 
     def tearDown(self):
         """Execute after test"""
-        # Cleanup opened resources after a test. This is usually done through atexit handlers in
-        # Certbot, but during tests, atexit will not run registered functions before tearDown is
-        # called and instead will run them right before the entire test process exits.
-        # It is a problem on Windows, that does not accept to clean resources before closing them.
-        logging.shutdown()
-        util._release_locks()  # pylint: disable=protected-access
-
-        def handle_rw_files(_, path, __):
-            """Handle read-only files, that will fail to be removed on Windows."""
-            os.chmod(path, 0o777)
-            os.remove(path)
-        shutil.rmtree(self.tempdir, onerror=handle_rw_files)
+        # On Windows we have various files which are not correctly closed at the time of tearDown.
+        # For know, we log them until a proper file close handling is written.
+        # Useful for development only, so no warning when we are on a CI process.
+        def onerror_handler(_, path, excinfo):
+            """On error handler"""
+            if not os.environ.get('APPVEYOR'): # pragma: no cover
+                message = ('Following error occurred when deleting the tempdir {0}'
+                           ' for path {1} during tearDown process: {2}'
+                           .format(self.tempdir, path, str(excinfo)))
+                warnings.warn(message)
+        shutil.rmtree(self.tempdir, onerror=onerror_handler)
 
 
 class ConfigTestCase(TempDirTestCase):
-    """Test class which sets up a NamespaceConfig object."""
+    """Test class which sets up a NamespaceConfig object.
+
+    """
     def setUp(self):
         super(ConfigTestCase, self).setUp()
         self.config = configuration.NamespaceConfig(
@@ -366,47 +369,58 @@ class ConfigTestCase(TempDirTestCase):
         self.config.chain_path = constants.CLI_DEFAULTS['auth_chain_path']
         self.config.server = "https://example.com"
 
-def lock_and_call(func, lock_path):
-    """Grab a lock for lock_path and call func.
 
-    :param callable func: object to call after acquiring the lock
-    :param str lock_path: path to file or directory to lock
-
+def lock_and_call(callback, path_to_lock):
+    """Grab a lock on path_to_lock from a foreign process and call the callback.
+    :param callable callback: object to call after acquiring the lock
+    :param str path_to_lock: path to file or directory to lock
     """
-    # Reload module to reset internal _LOCKS dictionary
+    script = """\
+import os
+import sys
+import time
+from certbot import lock
+
+path_to_lock = sys.argv[1]
+trigger = sys.argv[2]
+
+if os.path.isdir(path_to_lock):
+    my_lock = lock.lock_dir(path_to_lock)
+else:
+    my_lock = lock.LockFile(path_to_lock)
+try:
+    open(trigger, 'w').close()
+    while os.path.exists(trigger):
+        time.sleep(1)
+finally:
+    my_lock.release()
+"""
+    # Reload certbot.util module to reset internal _LOCKS dictionary.
     reload_module(util)
 
-    # start child and wait for it to grab the lock
-    cv = multiprocessing.Condition()
-    cv.acquire()
-    child_args = (cv, lock_path,)
-    child = multiprocessing.Process(target=hold_lock, args=child_args)
-    child.start()
-    cv.wait()
+    workspace = tempfile.mkdtemp()
+    try:
+        tmp_script = os.path.join(workspace, 'test_script.py')
+        with open(tmp_script, 'w') as file_handle:
+            file_handle.write(script)
 
-    # call func and terminate the child
-    func()
-    cv.notify()
-    cv.release()
-    child.join()
-    assert child.exitcode == 0
+        # Trigger file is used to coordinate current process and its subprocess.
+        trigger = os.path.join(workspace, 'trigger')
+        process = subprocess.Popen([sys.executable, tmp_script, path_to_lock, trigger])
+        try:
+            # Poll and wait for the lock to be acquired, spotted by the trigger file creation.
+            while not os.path.exists(trigger):
+                time.sleep(1)
+            # Then execute the callback.
+            callback()
+        finally:
+            # This will trigger the lock release in subprocess.
+            os.remove(trigger)
+            process.communicate()
+        assert process.returncode == 0
+    finally:
+        shutil.rmtree(workspace)
 
-def hold_lock(cv, lock_path):  # pragma: no cover
-    """Acquire a file lock at lock_path and wait to release it.
-
-    :param multiprocessing.Condition cv: condition for synchronization
-    :param str lock_path: path to the file lock
-
-    """
-    from certbot import lock
-    if os.path.isdir(lock_path):
-        my_lock = lock.lock_dir(lock_path)
-    else:
-        my_lock = lock.LockFile(lock_path)
-    cv.acquire()
-    cv.notify()
-    cv.wait()
-    my_lock.release()
 
 def skip_on_windows(reason):
     """Decorator to skip permanently a test on Windows. A reason is required."""
@@ -414,6 +428,7 @@ def skip_on_windows(reason):
         """Wrapped version"""
         return unittest.skipIf(sys.platform == 'win32', reason)(function)
     return wrapper
+
 
 def broken_on_windows(function):
     """Decorator to skip temporarily a broken test on Windows."""
@@ -423,9 +438,10 @@ def broken_on_windows(function):
         and os.environ.get('SKIP_BROKEN_TESTS_ON_WINDOWS', 'true') == 'true',
         reason)(function)
 
+
 def temp_join(path):
     """
     Return the given path joined to the tempdir path for the current platform
     Eg.: 'cert' => /tmp/cert (Linux) or 'C:\\Users\\currentuser\\AppData\\Temp\\cert' (Windows)
     """
-    return  os.path.join(tempfile.gettempdir(), path)
+    return os.path.join(tempfile.gettempdir(), path)

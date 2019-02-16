@@ -8,6 +8,16 @@ before_script:
   - 'if [ $TRAVIS_OS_NAME = osx ] ; then ulimit -n 1024 ; fi'
   - export TOX_TESTENV_PASSENV=TRAVIS
 
+# Only build pushes to the master branch, PRs, and branches beginning with
+# `test-` or of the form `digit(s).digit(s).x`. This reduces the number of
+# simultaneous Travis runs, which speeds turnaround time on review since there
+# is a cap of on the number of simultaneous runs.
+branches:
+  only:
+    - master
+    - /^\d+\.\d+\.x$/
+    - /^test-.*$/
+
 matrix:
   include:
     # These environments are always executed
@@ -62,85 +72,87 @@ matrix:
     - python: "2.7"
       env: TOXENV=nginxroundtrip
 
-    # These environments are executed on cron events only
+    # These environments are executed on cron events and commits to tested
+    # branches other than master. Which branches are tested is controlled by
+    # the "branches" section earlier in this file.
     - python: "3.7"
       dist: xenial
       env: TOXENV=py37 CERTBOT_NO_PIN=1
-      if: type = cron
+      if: type = cron OR (type = push AND branch != master)
     - python: "2.7"
       env: BOULDER_INTEGRATION=v1 INTEGRATION_TEST=certbot TOXENV=py27-certbot-oldest
       sudo: required
       services: docker
-      if: type = cron
+      if: type = cron OR (type = push AND branch != master)
     - python: "2.7"
       env: BOULDER_INTEGRATION=v2 INTEGRATION_TEST=certbot TOXENV=py27-certbot-oldest
       sudo: required
       services: docker
-      if: type = cron
+      if: type = cron OR (type = push AND branch != master)
     - python: "2.7"
       env: BOULDER_INTEGRATION=v1 INTEGRATION_TEST=nginx TOXENV=py27-nginx-oldest
       sudo: required
       services: docker
-      if: type = cron
+      if: type = cron OR (type = push AND branch != master)
     - python: "2.7"
       env: BOULDER_INTEGRATION=v2 INTEGRATION_TEST=nginx TOXENV=py27-nginx-oldest
       sudo: required
       services: docker
-      if: type = cron
+      if: type = cron OR (type = push AND branch != master)
     - python: "3.4"
       env: TOXENV=py34 BOULDER_INTEGRATION=v1
       sudo: required
       services: docker
-      if: type = cron
+      if: type = cron OR (type = push AND branch != master)
     - python: "3.4"
       env: TOXENV=py34 BOULDER_INTEGRATION=v2
       sudo: required
       services: docker
-      if: type = cron
+      if: type = cron OR (type = push AND branch != master)
     - python: "3.5"
       env: TOXENV=py35 BOULDER_INTEGRATION=v1
       sudo: required
       services: docker
-      if: type = cron
+      if: type = cron OR (type = push AND branch != master)
     - python: "3.5"
       env: TOXENV=py35 BOULDER_INTEGRATION=v2
       sudo: required
       services: docker
-      if: type = cron
+      if: type = cron OR (type = push AND branch != master)
     - python: "3.6"
       env: TOXENV=py36 BOULDER_INTEGRATION=v1
       sudo: required
       services: docker
-      if: type = cron
+      if: type = cron OR (type = push AND branch != master)
     - python: "3.6"
       env: TOXENV=py36 BOULDER_INTEGRATION=v2
       sudo: required
       services: docker
-      if: type = cron
+      if: type = cron OR (type = push AND branch != master)
     - python: "3.7"
       dist: xenial
       env: TOXENV=py37 BOULDER_INTEGRATION=v1
       sudo: required
       services: docker
-      if: type = cron
+      if: type = cron OR (type = push AND branch != master)
     - python: "3.7"
       dist: xenial
       env: TOXENV=py37 BOULDER_INTEGRATION=v2
       sudo: required
       services: docker
-      if: type = cron
+      if: type = cron OR (type = push AND branch != master)
     - sudo: required
       env: TOXENV=le_auto_xenial
       services: docker
-      if: type = cron
+      if: type = cron OR (type = push AND branch != master)
     - sudo: required
       env: TOXENV=le_auto_jessie
       services: docker
-      if: type = cron
+      if: type = cron OR (type = push AND branch != master)
     - sudo: required
       env: TOXENV=le_auto_centos6
       services: docker
-      if: type = cron
+      if: type = cron OR (type = push AND branch != master)
     - sudo: required
       env: TOXENV=docker_dev
       services: docker
@@ -148,7 +160,7 @@ matrix:
         apt:
           packages:  # don't install nginx and apache
             - libaugeas0
-      if: type = cron
+      if: type = cron OR (type = push AND branch != master)
     - language: generic
       env: TOXENV=py27
       os: osx
@@ -157,7 +169,7 @@ matrix:
           packages:
             - augeas
             - python2
-      if: type = cron
+      if: type = cron OR (type = push AND branch != master)
     - language: generic
       env: TOXENV=py3
       os: osx
@@ -166,19 +178,7 @@ matrix:
           packages:
             - augeas
             - python3
-      if: type = cron
-
-
-
-# Only build pushes to the master branch, PRs, and branches beginning with
-# `test-` or of the form `digit(s).digit(s).x`. This reduces the number of
-# simultaneous Travis runs, which speeds turnaround time on review since there
-# is a cap of on the number of simultaneous runs.
-branches:
-  only:
-    - master
-    - /^\d+\.\d+\.x$/
-    - /^test-.*$/
+      if: type = cron OR (type = push AND branch != master)
 
 # container-based infrastructure
 sudo: false

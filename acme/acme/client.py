@@ -739,8 +739,7 @@ class ClientV2(ClientBase):
             if body.error is not None:
                 raise errors.IssuanceError(body.error)
             if body.certificate is not None:
-                certificate_response = self._post_as_get(body.certificate,
-                                                    content_type=DER_CONTENT_TYPE).text
+                certificate_response = self._post_as_get(body.certificate).text
                 return orderr.update(body=body, fullchain_pem=certificate_response)
         raise errors.TimeoutError()
 

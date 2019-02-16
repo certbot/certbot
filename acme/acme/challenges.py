@@ -513,6 +513,17 @@ class TLSSNI01(KeyAuthorizationChallenge):
         return self.response(account_key).gen_cert(key=kwargs.get('cert_key'))
 
 
+@ChallengeResponse.register
+class TLSALPN01Response(KeyAuthorizationChallengeResponse):
+    """ACME TLS-ALPN-01 challenge response.
+
+    This class only allows initiating a TLS-ALPN-01 challenge returned from the
+    CA. Full support for responding to TLS-ALPN-01 challenges by generating and
+    serving the expected response certificate is not currently provided.
+    """
+    typ = "tls-alpn-01"
+
+
 @Challenge.register  # pylint: disable=too-many-ancestors
 class TLSALPN01(KeyAuthorizationChallenge):
     """ACME tls-alpn-01 challenge.
@@ -522,6 +533,7 @@ class TLSALPN01(KeyAuthorizationChallenge):
 
     """
     typ = "tls-alpn-01"
+    response_cls = TLSALPN01Response
 
     def validation(self, account_key, **kwargs):
         """Generate validation for the challenge."""
