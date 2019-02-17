@@ -4,7 +4,6 @@ from __future__ import print_function
 import atexit
 import functools
 import logging
-import os
 import re
 import shutil
 import subprocess
@@ -13,7 +12,7 @@ import tempfile
 
 from certbot import lock
 from certbot import util
-
+from certbot.compat import os
 from certbot.tests import util as test_util
 
 

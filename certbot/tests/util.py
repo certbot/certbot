@@ -3,8 +3,6 @@
 .. warning:: This module is not part of the public API.
 
 """
-import logging
-import multiprocessing
 import pkg_resources
 import shutil
 import tempfile
@@ -376,10 +374,10 @@ def lock_and_call(callback, path_to_lock):
     :param str path_to_lock: path to file or directory to lock
     """
     script = """\
-import os
 import sys
 import time
 from certbot import lock
+from certbot.compat import os
 
 path_to_lock = sys.argv[1]
 trigger = sys.argv[2]

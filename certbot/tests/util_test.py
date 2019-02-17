@@ -1,7 +1,6 @@
 """Tests for certbot.util."""
 import argparse
 import errno
-import shutil
 import unittest
 
 import mock
