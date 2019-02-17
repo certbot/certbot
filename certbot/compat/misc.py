@@ -14,7 +14,6 @@ try:
 except ImportError:  # pragma: no cover
     shellwin32 = None  # type: ignore
 
-from acme.magic_typing import Union  # pylint: disable=unused-import, no-name-in-module
 from certbot import errors
 
 
