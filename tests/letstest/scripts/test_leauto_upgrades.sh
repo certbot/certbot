@@ -23,7 +23,7 @@ fi
 # started failing on newer distros with newer versions of OpenSSL.
 INITIAL_VERSION="0.17.0"
 git checkout -f "v$INITIAL_VERSION" letsencrypt-auto
-if ! ./letsencrypt-auto -v --debug --version --no-self-upgrade 2>&1 | grep "$INITIAL_VERSION" ; then
+if ! ./letsencrypt-auto -v --debug --version --no-self-upgrade 2>&1 | tail -n1 | grep "^certbot $INITIAL_VERSION$" ; then
     echo initial installation appeared to fail
     exit 1
 fi
@@ -85,7 +85,7 @@ if [ $(python -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//') -eq 26 ];
     fi
     # Create a 2nd venv at the new path to ensure we properly handle this case
     export VENV_PATH="/opt/eff.org/certbot/venv"
-    if ! sudo -E ./letsencrypt-auto -v --debug --version --no-self-upgrade 2>&1 | grep "$INITIAL_VERSION" ; then
+    if ! sudo -E ./letsencrypt-auto -v --debug --version --no-self-upgrade 2>&1 | tail -n1 | grep "^certbot $INITIAL_VERSION$" ; then
         echo second installation appeared to fail
         exit 1
     fi
@@ -98,7 +98,7 @@ if ./letsencrypt-auto -v --debug --version | grep "WARNING: couldn't find Python
 fi
 
 EXPECTED_VERSION=$(grep -m1 LE_AUTO_VERSION certbot-auto | cut -d\" -f2)
-if ! /opt/eff.org/certbot/venv/bin/letsencrypt --version 2>&1 | grep "$EXPECTED_VERSION" ; then
+if ! /opt/eff.org/certbot/venv/bin/letsencrypt --version 2>&1 | tail -n1 | grep "^certbot $EXPECTED_VERSION$" ; then
     echo upgrade appeared to fail
     exit 1
 fi
