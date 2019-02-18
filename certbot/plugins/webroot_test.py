@@ -35,8 +35,6 @@ class AuthenticatorTest(unittest.TestCase):
     def setUp(self):
         from certbot.plugins.webroot import Authenticator
         self.path = tempfile.mkdtemp()
-        security.apply_mode(self.path, 0o755)
-        security.check_mode(self.path, 0o755)
         self.partial_root_challenge_path = os.path.join(
             self.path, ".well-known")
         self.root_challenge_path = os.path.join(
@@ -173,7 +171,6 @@ class AuthenticatorTest(unittest.TestCase):
         self.assertTrue(security.check_mode(self.validation_path, 0o644))
 
         # Check permissions of the directories
-
         for dirpath, dirnames, _ in os.walk(self.path):
             for directory in dirnames:
                 full_path = os.path.join(dirpath, directory)
