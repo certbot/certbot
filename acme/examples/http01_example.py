@@ -5,20 +5,24 @@ Brief:
 This a complete usage example of the python-acme API.
 
 Limitations of this example:
-    - Works for only one Domain name.
-    - Performs only HTTP-01 challenge.
+    - Works for only one Domain name
+    - Performs only HTTP-01 challenge
     - Uses ACME-v2
 
 Workflow:
-    - Create account key.
-    - Register account and accept TOS.
-    - Select HTTP-01 within offered challenges by the CA server.
-    - Set up standalone web server.
-    - Create domain private key and CSR.
-    - Issue certificate.
-    - Renew Certificate
+    (Account creation)
+    - Create account key
+    - Register account and accept TOS
+    (Certificate actions)
+    - Select HTTP-01 within offered challenges by the CA server
+    - Set up http challenge resource
+    - Set up standalone web server
+    - Create domain private key and CSR
+    - Issue certificate
+    - Renew certificate
+    - Revoke certificate
+    (Account update actions)
     - Change contact information
-    - Revoke Certificate
     - Deactivate Account
 """
 from contextlib import contextmanager
@@ -51,8 +55,8 @@ CERT_PKEY_BITS = 2048
 DOMAIN = 'client.example.com'
 
 # If you are running Boulder locally, it is possible to configure any port
-# number to execute the challenge, but real CA servers will obviously always
-# use port 80.
+# number to execute the challenge, but real CA servers will always use port
+# 80, as described in the ACME specification.
 PORT = 80
 
 
@@ -66,7 +70,7 @@ def new_csr_comp(domain_name, pkey_pem=None):
         pkey = OpenSSL.crypto.PKey()
         pkey.generate_key(OpenSSL.crypto.TYPE_RSA, CERT_PKEY_BITS)
         pkey_pem = OpenSSL.crypto.dump_privatekey(OpenSSL.crypto.FILETYPE_PEM,
-                                                pkey)
+                                                  pkey)
     csr_pem = crypto_util.make_csr(pkey_pem, [domain_name])
     return pkey_pem, csr_pem
 
@@ -132,28 +136,31 @@ def example_http():
     challenge for one specific domain.
 
     The workflow consists of:
-    - Create account key.
-    - Register account and accept TOS.
-    - Select HTTP-01 within offered challenges by the CA server.
-    - Set up http challenge resource.
-    - Set up standalone web server.
-    - Create domain private key and CSR.
-    - Issue certificate.
-    - Renew Certificate
-    - Change contact information.
-    - Revoke Certificate
+    (Account creation)
+    - Create account key
+    - Register account and accept TOS
+    (Certificate actions)
+    - Select HTTP-01 within offered challenges by the CA server
+    - Set up http challenge resource
+    - Set up standalone web server
+    - Create domain private key and CSR
+    - Issue certificate
+    - Renew certificate
+    - Revoke certificate
+    (Account update actions)
+    - Change contact information
     - Deactivate Account
 
     """
-    # **Example Challenge HTTP01**
+    # Create account key
 
-    # Generate account key.
     acc_key = jose.JWKRSA(
         key=rsa.generate_private_key(public_exponent=65537,
                                      key_size=ACC_KEY_BITS,
                                      backend=default_backend()))
 
-    # Create client from account key.
+    # Register account and accept TOS
+
     net = client.ClientNetwork(acc_key, user_agent=USER_AGENT)
     directory = messages.Directory.from_json(net.get(DIRECTORY_URL).json())
     client_acme = client.ClientV2(directory, net=net)
@@ -166,13 +173,41 @@ def example_http():
         messages.NewRegistration.from_data(
             email=email, terms_of_service_agreed=True))
 
+    # Create domain private key and CSR
     pkey_pem, csr_pem = new_csr_comp(DOMAIN)
+
+    # Issue certificate
+
     orderr = client_acme.new_order(csr_pem)
 
+    # Select HTTP-01 within offered challenges by the CA server
     challb = select_http01_chall(orderr)
 
     # The certificate is ready to be used in the variable "fullchain_pem".
     fullchain_pem = perform_http01(client_acme, challb, orderr)
+
+    # Renew certificate
+
+    _, csr_pem = new_csr_comp(DOMAIN, pkey_pem)
+
+    orderr = client_acme.new_order(csr_pem)
+
+    challb = select_http01_chall(orderr)
+
+    # Performing challenge
+    fullchain_pem = perform_http01(client_acme, challb, orderr)
+
+    # Revoke certificate
+
+    fullchain_com = jose.ComparableX509(
+        OpenSSL.crypto.load_certificate(
+            OpenSSL.crypto.FILETYPE_PEM, fullchain_pem))
+
+    try:
+        client_acme.revoke(fullchain_com, 0)  # revocation reason = 0
+    except errors.ConflictError:
+        # Certificate already revoked.
+        pass
 
     # Query registration status.
     client_acme.net.account = regr
@@ -185,18 +220,8 @@ def example_http():
             pass
         raise
 
-    # **Renew Certificate**
-
-    _, csr_pem = new_csr_comp(DOMAIN, pkey_pem)
-
-    orderr = client_acme.new_order(csr_pem)
-
-    challb = select_http01_chall(orderr)
-
-    # Performing challenge
-    fullchain_pem = perform_http01(client_acme, challb, orderr)
-
     # Change contact information
+
     email = 'newfake@example.com'
     regr = client_acme.update_registration(
         regr.update(
@@ -206,19 +231,8 @@ def example_http():
         )
     )
 
-    # **Revoke and Deactivate**
+    # Deactivate account/registration
 
-    fullchain_com = jose.ComparableX509(
-        OpenSSL.crypto.load_certificate(
-            OpenSSL.crypto.FILETYPE_PEM, fullchain_pem))
-
-    try:
-        client_acme.revoke(fullchain_com, 0)  # revocation reason = 0
-    except errors.ConflictError:
-        # Certificate already revoked.
-        pass
-
-    # Deactivate registration
     regr = client_acme.deactivate_registration(regr)
 
 
