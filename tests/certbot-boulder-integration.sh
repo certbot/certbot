@@ -531,6 +531,62 @@ fi
 coverage report --fail-under 64 --include 'certbot/*' --show-missing
 
 # Test OCSP status
+
+## OCSP 1: Check staled certificate OCSP status
 pushd ./tests/letstest/testdata
+
+OUT=`common certificates --config-dir sample-config`
+TEST_CERTS=`echo "$OUT" | grep TEST_CERT | wc -l`
+EXPIRED=`echo "$OUT" | grep EXPIRED | wc -l`
+REVOKED=`echo "$OUT" | grep REVOKED | wc -l`
+
+if [ "$TEST_CERTS" != 2 ] ; then
+    echo "Did not find two test certs as expected ($TEST_CERTS)"
+    exit 1
+fi
+
+if [ "$EXPIRED" != 2 ] ; then
+    echo "Did not find two test certs as expected ($EXPIRED)"
+    exit 1
+fi
+
+if [ "$REVOKED" != 0 ] ; then
+    echo "Did not find zero revoked certs as expected ($REVOKED)"
+    exit 1
+fi
+
+popd
+
+## OSCP 2: Check live certificate OCSP status (VALID)
+common --domains le-ocsp-check.wtf
+OUT=`common certificates`
+VALID=`echo $OUT | grep 'Domains: le-ocsp-check.wtf' -A 1 | grep VALID | wc -l`
+EXPIRED=`echo $OUT | grep 'Domains: le-ocsp-check.wtf' -A 1 | grep EXPIRED | wc -l`
+
+if [ "$VALID" != 1 ] ; then
+    echo "Expected le-ocsp-check.wtf to be VALID"
+    exit 1
+fi
+
+if [ "$EXPIRED" != 0 ] ; then
+    echo "Did not expect le-ocsp-check.wtf to be EXPIRED"
+    exit 1
+fi
+
+## OSCP 3: Check live certificate OCSP status (REVOKED)
+common revoke --cert-name le-ocsp-check.wtf --no-delete-after-revoke
+OUT=`common certificates`
+INVALID=`echo $OUT | grep 'Domains: le-ocsp-check.wtf' -A 1 | grep INVALID | wc -l`
+REVOKED=`echo $OUT | grep 'Domains: le-ocsp-check.wtf' -A 1 | grep REVOKED | wc -l`
+
+if [ "$INVALID" != 1 ] ; then
+    echo "Expected le-ocsp-check.wtf to be INVALID"
+    exit 1
+fi
+
+if [ "$REVOKED" != 1 ] ; then
+    echo "Expected le-ocsp-check.wtf to be REVOKED"
+    exit 1
+fi
 
 popd
