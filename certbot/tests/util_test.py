@@ -276,14 +276,14 @@ class UniqueLineageNameTest(test_util.TempDirTestCase):
         mock_open.side_effect = err
         self.assertRaises(OSError, self._call, "wow")
 
-    @mock.patch("certbot.util.security.apply_mode")
     @mock.patch("six.moves.builtins.open")
-    def test_subsequent_failure(self, mock_open, mock_apply):
-        self._call("wow")
-        err = OSError("whoops")
-        err.errno = errno.EIO
-        mock_open.side_effect = err
-        self.assertRaises(OSError, self._call, "wow")
+    def test_subsequent_failure(self, mock_open):
+        with mock.patch("certbot.util.security.apply_mode"):
+            self._call("wow")
+            err = OSError("whoops")
+            err.errno = errno.EIO
+            mock_open.side_effect = err
+            self.assertRaises(OSError, self._call, "wow")
 
 
 class SafelyRemoveTest(test_util.TempDirTestCase):

@@ -42,7 +42,8 @@ def get_current_user():
     # Theses two values can be different, in particular in privileged shells, where typically will
     # be the user for win32api.GetUsername() (thread owner), and Administrators group (file owner).
     with tempfile.TemporaryFile() as probe:
-        security = win32security.GetFileSecurity(probe.name, win32security.OWNER_SECURITY_INFORMATION)
+        security = win32security.GetFileSecurity(
+            probe.name, win32security.OWNER_SECURITY_INFORMATION)
         current_user = security.GetSecurityDescriptorOwner()
 
         return win32security.LookupAccountSid(None, current_user)[0]
@@ -142,7 +143,8 @@ def check_owner(file_path):
 
     # Get current owner sid for files
     with tempfile.TemporaryFile() as probe:
-        security = win32security.GetFileSecurity(probe.name, win32security.OWNER_SECURITY_INFORMATION)
+        security = win32security.GetFileSecurity(probe.name,
+                                                 win32security.OWNER_SECURITY_INFORMATION)
         current_user = security.GetSecurityDescriptorOwner()
 
         # Compare sids
