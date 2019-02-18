@@ -397,7 +397,7 @@ def lock_and_call(callback, path_to_lock):
     emit_queue.put(None)
 
     # Wait for process termination
-    process.join()
+    process.join(timeout=10)
     assert process.exitcode == 0
 
 
