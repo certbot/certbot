@@ -15,8 +15,10 @@ command -v python > /dev/null || (echo "Error, python executable is not in the P
 
 . ./tests/integration/_common.sh
 export PATH="$PATH:/usr/sbin"  # /usr/sbin/nginx
+CURRENT_DIR="$(pwd)"
 
 cleanup_and_exit() {
+    cd $CURRENT_DIR
     EXIT_STATUS=$?
     if SERVER_STILL_RUNNING=`ps -p $python_server_pid -o pid=`
     then
@@ -527,3 +529,8 @@ if [ "${BOULDER_INTEGRATION:-v1}" = "v2" ]; then
 fi
 
 coverage report --fail-under 64 --include 'certbot/*' --show-missing
+
+# Test OCSP status
+pushd ./tests/letstest/testdata
+
+popd
