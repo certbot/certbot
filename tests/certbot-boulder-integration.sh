@@ -588,5 +588,3 @@ if [ "$REVOKED" != 1 ] ; then
     echo "Expected le-ocsp-check.wtf to be REVOKED"
     exit 1
 fi
-
-popd
