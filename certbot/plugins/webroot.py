@@ -174,10 +174,10 @@ to serve all files under specified web root ({0})."""
                 # as it does not correspond to a folder path ('/' or 'C:')
                 for prefix in sorted(util.get_prefixes(self.full_roots[name])[:-1], key=len):
                     try:
-                        os.mkdir(prefix, 0o755)
+                        os.mkdir(prefix)
                         self._created_dirs.append(prefix)
                         try:
-                            # Set owner as parent directory if possible
+                            # Set owner as parent directory if possible, apply mode for Linux/Windows
                             security.copy_ownership_and_apply_mode(path, prefix, 0o755, group=True)
                         except (OSError, AttributeError) as exception:
                             logger.info("Unable to change owner and uid of webroot directory")

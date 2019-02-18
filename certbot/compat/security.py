@@ -100,9 +100,11 @@ def copy_ownership_and_apply_mode(src, dst, mode, user=True, group=False):
         user_id = stats.st_uid if user else -1
         group_id = stats.st_gid if group else -1
         os.chown(dst, user_id, group_id)
+        os.chmod(dst, mode)
     elif user:
         # There is no group handling in Windows
         _copy_win_ownership(src, dst)
+        _apply_win_mode(dst, mode)
 
 
 def check_mode(file_path, mode):

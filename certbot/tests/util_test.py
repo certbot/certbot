@@ -269,7 +269,7 @@ class UniqueLineageNameTest(test_util.TempDirTestCase):
         for f, _ in items:
             f.close()
 
-    @mock.patch("builtins.open")
+    @mock.patch("six.moves.builtins.open")
     def test_failure(self, mock_open):
         err = OSError("whoops")
         err.errno = errno.EIO
@@ -277,7 +277,7 @@ class UniqueLineageNameTest(test_util.TempDirTestCase):
         self.assertRaises(OSError, self._call, "wow")
 
     @mock.patch("certbot.util.security.apply_mode")
-    @mock.patch("builtins.open")
+    @mock.patch("six.moves.builtins.open")
     def test_subsequent_failure(self, mock_open, mock_apply):
         self._call("wow")
         err = OSError("whoops")
