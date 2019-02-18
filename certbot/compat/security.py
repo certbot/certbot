@@ -3,6 +3,7 @@ from __future__ import absolute_import
 
 import os
 import stat
+import tempfile
 
 try:
     import pwd  # pylint: disable=import-error
@@ -36,7 +37,15 @@ def get_current_user():
         # so it will be here if we are not on Windows.
         return pwd.getpwuid(os.getuid()).pw_name
 
-    return win32api.GetUserName()
+    # On Windows, for Certbot, what matters is not the user of current thread, but the owner of
+    # files that are created in this thread.
+    # Theses two values can be different, in particular in privileged shells, where typically will
+    # be the user for win32api.GetUsername() (thread owner), and Administrators group (file owner).
+    with tempfile.TemporaryFile() as probe:
+        security = win32security.GetFileSecurity(probe.name, win32security.OWNER_SECURITY_INFORMATION)
+        current_user = security.GetSecurityDescriptorOwner()
+
+        return win32security.LookupAccountSid(None, current_user)[0]
 
 
 def apply_mode(file_path, mode):
@@ -71,14 +80,18 @@ def take_ownership(file_path, group=False):
         _take_win_ownership(file_path)
 
 
-def copy_ownership(src, dst, user=True, group=False):
-    # type: (Union[str, unicode], Union[str, unicode], bool, bool) -> None
+def copy_ownership_and_apply_mode(src, dst, mode, user=True, group=False):
+    # type: (Union[str, unicode], Union[str, unicode], int, bool, bool) -> None
     """
     Copy ownership (user and optionally group) from the source to the destination,
-    in compatible way for Linux and Windows.
+    then apply given mode in compatible way for Linux and Windows.
+
+    NB: The copy_ownership() function does not exist, because on Windows, DACLs need to be
+    recalculated after a change of ownership.
 
     :param str src: Path of the source file
     :param str dst: Path of the destination file
+    :param int mode: Permission mode to apply on the destination file
     :param bool user: Copy user (True by default)
     :param bool group: Copy group (False by default)
     """
@@ -125,12 +138,13 @@ def check_owner(file_path):
     security = win32security.GetFileSecurity(file_path, win32security.OWNER_SECURITY_INFORMATION)
     user = security.GetSecurityDescriptorOwner()
 
-    # Get current user sid
-    current_username = win32api.GetUserName()
-    current_user = win32security.LookupAccountName('', current_username)[0]
+    # Get current owner sid for files
+    with tempfile.TemporaryFile() as probe:
+        security = win32security.GetFileSecurity(probe.name, win32security.OWNER_SECURITY_INFORMATION)
+        current_user = security.GetSecurityDescriptorOwner()
 
-    # Compare sids
-    return str(current_user) == str(user)
+        # Compare sids
+        return str(current_user) == str(user)
 
 
 def check_permissions(file_path, mode):

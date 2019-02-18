@@ -54,7 +54,7 @@ def chown(file_path, uid, gid):  # pylint: disable=function-redefined, unused-ar
     """
     raise RuntimeError('Usage of os.chown() is forbidden.'
                        'Use certbot.compat.security.take_ownership() or '
-                       'certbot.compat.security.copy_ownership() instead.')
+                       'certbot.compat.security.copy_ownership_and_apply_mode() instead.')
 
 
 # Because of the blocking strategy on file handlers on Windows, rename to not behave as expected
@@ -133,7 +133,6 @@ def open(file_path, flags, mode=0o777):  # pylint: disable=function-redefined,re
     :rtype: int
     """
     file_descriptor = std_os.open(file_path, flags, mode)
-    security.take_ownership(file_path)
     security.apply_mode(file_path, mode)
 
     return file_descriptor
@@ -158,7 +157,6 @@ def mkdir(file_path, mode=0o777, mkdir_fn=None):  # pylint: disable=function-red
     mkdir_fn = mkdir_fn or std_os.mkdir
 
     mkdir_fn(file_path, mode)
-    security.take_ownership(file_path)
     security.apply_mode(file_path, mode)
 
 

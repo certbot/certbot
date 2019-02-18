@@ -543,7 +543,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertTrue(self.test_rc.version("privkey", 4), 0o600)
 
     @mock.patch("certbot.storage.relevant_values")
-    @mock.patch("certbot.storage.security.copy_ownership")
+    @mock.patch("certbot.storage.security.copy_ownership_and_apply_mode")
     def test_save_successor_maintains_gid(self, mock_ownership, mock_rv):
         # Mock relevant_values() to claim that all values are relevant here
         # (to avoid instantiating parser)

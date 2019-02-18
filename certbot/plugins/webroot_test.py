@@ -35,7 +35,8 @@ class AuthenticatorTest(unittest.TestCase):
     def setUp(self):
         from certbot.plugins.webroot import Authenticator
         self.path = tempfile.mkdtemp()
-        security.take_ownership(self.path)
+        security.apply_mode(self.path, 0o755)
+        security.check_mode(self.path, 0o755)
         self.partial_root_challenge_path = os.path.join(
             self.path, ".well-known")
         self.root_challenge_path = os.path.join(
@@ -142,11 +143,10 @@ class AuthenticatorTest(unittest.TestCase):
             self.assertRaises(errors.PluginError, self.auth.perform, [])
         os.chmod(self.path, 0o700)
 
-    @mock.patch("certbot.plugins.webroot.security.copy_ownership")
+    @mock.patch("certbot.plugins.webroot.security.copy_ownership_and_apply_mode")
     def test_failed_chown(self, mock_chown):
         mock_chown.side_effect = OSError(errno.EACCES, "msg")
         self.auth.perform([self.achall])  # exception caught and logged
-
 
     @test_util.patch_get_utility()
     def test_perform_new_webroot_not_in_map(self, mock_get_utility):
@@ -170,14 +170,15 @@ class AuthenticatorTest(unittest.TestCase):
         # matches the file
         self.auth.perform([self.achall])
         self.assertTrue(security.check_owner(self.validation_path))
-        self.assertTrue(security.check_permissions(self.validation_path, 0o644))
+        self.assertTrue(security.check_mode(self.validation_path, 0o644))
 
         # Check permissions of the directories
 
         for dirpath, dirnames, _ in os.walk(self.path):
             for directory in dirnames:
                 full_path = os.path.join(dirpath, directory)
-                self.assertTrue(security.check_permissions(full_path, 0o755))
+                self.assertTrue(security.check_owner(full_path))
+                self.assertTrue(security.check_mode(full_path, 0o755))
 
         parent_gid = os.stat(self.path).st_gid
         parent_uid = os.stat(self.path).st_uid

@@ -158,7 +158,7 @@ class MakeOrVerifyDirTest(test_util.TempDirTestCase):
         self.assertTrue(security.check_mode(self.path, 0o600))
 
     def test_existing_wrong_mode_fails(self):
-        self.assertRaises(errors.Error, self._call, self.path, 0o400)
+        self.assertRaises(errors.Error, self._call, self.path, 0o644)
 
     def test_reraises_os_error(self):
         with mock.patch.object(os, "makedirs") as makedirs:
@@ -183,7 +183,7 @@ class CheckPermissionsTest(test_util.TempDirTestCase):
 
     def test_wrong_mode(self):
         os.chmod(self.tempdir, 0o400)
-        self.assertFalse(self._call(0o600))
+        self.assertFalse(self._call(0o644))
 
 
 class UniqueFileTest(test_util.TempDirTestCase):
@@ -269,19 +269,20 @@ class UniqueLineageNameTest(test_util.TempDirTestCase):
         for f, _ in items:
             f.close()
 
-    @mock.patch("certbot.util.os.fdopen")
-    def test_failure(self, mock_fdopen):
+    @mock.patch("builtins.open")
+    def test_failure(self, mock_open):
         err = OSError("whoops")
         err.errno = errno.EIO
-        mock_fdopen.side_effect = err
+        mock_open.side_effect = err
         self.assertRaises(OSError, self._call, "wow")
 
-    @mock.patch("certbot.util.os.fdopen")
-    def test_subsequent_failure(self, mock_fdopen):
+    @mock.patch("certbot.util.security.apply_mode")
+    @mock.patch("builtins.open")
+    def test_subsequent_failure(self, mock_open, mock_apply):
         self._call("wow")
         err = OSError("whoops")
         err.errno = errno.EIO
-        mock_fdopen.side_effect = err
+        mock_open.side_effect = err
         self.assertRaises(OSError, self._call, "wow")
 
 

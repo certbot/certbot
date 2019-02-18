@@ -174,14 +174,12 @@ to serve all files under specified web root ({0})."""
                 # as it does not correspond to a folder path ('/' or 'C:')
                 for prefix in sorted(util.get_prefixes(self.full_roots[name])[:-1], key=len):
                     try:
-                        # This is coupled with the "umask" call above because
-                        # os.mkdir's "mode" parameter may not always work:
-                        # https://docs.python.org/3/library/os.html#os.mkdir
-                        os.mkdir(prefix, 0o0755)
+                        os.mkdir(prefix)
                         self._created_dirs.append(prefix)
                         # Set owner as parent directory if possible
                         try:
-                            security.copy_ownership(path, prefix, group=True)
+                            # This method always applies the correct mode for Unix and Windows.
+                            security.copy_ownership_and_apply_mode(path, prefix, 0o755, group=True)
                         except (OSError, AttributeError) as exception:
                             logger.info("Unable to change owner and uid of webroot directory")
                             logger.debug("Error was: %s", exception)

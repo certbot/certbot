@@ -1107,8 +1107,8 @@ class RenewableCert(object):
                 (stat.S_IRGRP | stat.S_IWGRP | stat.S_IXGRP | \
                  stat.S_IROTH)
             mode = BASE_PRIVKEY_MODE | old_mode
-            security.copy_ownership(old_privkey, target["privkey"], user=False, group=True)
-            os.chmod(target["privkey"], mode)
+            security.copy_ownership_and_apply_mode(old_privkey, target["privkey"],
+                                                   mode, user=False, group=True)
 
         # Save everything else
         with open(target["cert"], "wb") as f:
