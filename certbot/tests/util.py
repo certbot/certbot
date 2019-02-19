@@ -362,6 +362,13 @@ class ConfigTestCase(TempDirTestCase):
 
 
 def _handle_lock(event_in, event_out, path):
+    """
+    Acquire a file lock on given path, then wait for release it. This worker is coordinated
+    using events to signal the caller about the locking, and know when to release it.
+    :param multiprocessing.Event event_in: event object to signal when to release the lock
+    :param multiprocessing.Event event_out: event object to signal when the lock is acquired
+    :param path: the path to lock
+    """
     if os.path.isdir(path):
         my_lock = lock.lock_dir(path)
     else:
@@ -374,7 +381,8 @@ def _handle_lock(event_in, event_out, path):
 
 
 def lock_and_call(callback, path_to_lock):
-    """Grab a lock on path_to_lock from a foreign process then execute the callback.
+    """
+    Grab a lock on path_to_lock from a foreign process then execute the callback.
     :param callable callback: object to call after acquiring the lock
     :param str path_to_lock: path to file or directory to lock
     """
