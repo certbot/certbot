@@ -297,18 +297,28 @@ class ApacheParser(object):
             for i, arg in enumerate(args):
                 self.aug.set("%s/arg[%d]" % (nvh_path, i + 1), arg)
 
-    def _get_ifmod(self, aug_conf_path, mod):
+    def _get_ifmod(self, aug_conf_path, mod, beginning=False):
         """Returns the path to <IfMod mod> and creates one if it doesn't exist.
 
         :param str aug_conf_path: Augeas configuration path
         :param str mod: module ie. mod_ssl.c
+        :param bool beginning: If the IfModule should be created to the beginning
+            of augeas path DOM tree.
 
         """
         if_mods = self.aug.match(("%s/IfModule/*[self::arg='%s']" %
                                   (aug_conf_path, mod)))
         if len(if_mods) == 0:
-            self.aug.set("%s/IfModule[last() + 1]" % aug_conf_path, "")
-            self.aug.set("%s/IfModule[last()]/arg" % aug_conf_path, mod)
+            if beginning:
+                c_path_arg = "{}/IfModule[1]/arg".format(aug_conf_path)
+                # Insert IfModule before the first directive
+                self.aug.insert("{}/directive[1]".format(aug_conf_path),
+                                "IfModule", True)
+            else:
+                c_path = "{}/IfModule[last() + 1]".format(aug_conf_path)
+                c_path_arg = "{}/IfModule[last()]/arg".format(aug_conf_path)
+                self.aug.set(c_path, "")
+            self.aug.set(c_path_arg, mod)
             if_mods = self.aug.match(("%s/IfModule/*[self::arg='%s']" %
                                       (aug_conf_path, mod)))
         # Strip off "arg" at end of first ifmod path
@@ -457,6 +467,24 @@ class ApacheParser(object):
                 ordered_matches.extend(self.aug.match(match + arg_suffix))
 
         return ordered_matches
+
+    def get_all_args(self, match):
+        """Tries to fetch all arguments for a directive. See get_arg."""
+
+        if match[-1] != "/":
+            match = match+"/"
+        results = []
+        found_ind = True
+        # Augeas indices start at 1
+        counter = 1
+        while found_ind:
+            arg = self.get_arg("{}arg[{}]".format(match, counter))
+            if not arg:
+                found_ind = False
+            else:
+                results.append(arg)
+            counter += 1
+        return results
 
     def get_arg(self, match):
         """Uses augeas.get to get argument value and interprets result.

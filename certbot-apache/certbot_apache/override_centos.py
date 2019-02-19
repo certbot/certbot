@@ -47,6 +47,60 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
             self.aug, self.option("server_root"), self.option("vhost_root"),
             self.version, configurator=self)
 
+    def _deploy_cert(self, *args, **kwargs):
+        """
+        Override _deploy_cert in order to ensure that the Apache configuration
+        has "LoadModule ssl_module..." before parsing the VirtualHost configuration
+        that was created by Certbot
+        """
+        super(CentOSConfigurator, self)._deploy_cert(*args, **kwargs)
+        if self.version < (2, 4, 0):
+            self._deploy_loadmodule_ssl_if_needed()
+
+
+    def _deploy_loadmodule_ssl_if_needed(self):
+        """
+        Add "LoadModule ssl_module <pre-existing path>" to main httpd.conf if
+        it doesn't exist there already.
+        """
+
+        loadmods = self.parser.find_dir("LoadModule", "ssl_module", exclude=False)
+
+        # We should have one in ssl.conf
+        sslconf_loadmod_path = None
+        loadmod_args = ["ssl_module", "modules/mod_ssl.so"]
+
+        for m in loadmods:
+            if "/conf.d/ssl.conf/" in m:
+                # Strip "arg[1]" off from the end
+                sslconf_loadmod_path = m[:-7]
+                # Use the preconfigured LoadModule values from ssl.conf
+                loadmod_args = self.parser.get_all_args(sslconf_loadmod_path)
+            elif self.parser.loc["default"] in m:
+                return
+
+        rootconf_ifmod = self.parser._get_ifmod(  # pylint: disable=protected-access
+            parser.get_aug_path(self.parser.loc["default"]),
+            "!mod_ssl.c", beginning=True)
+        # parser._get_ifmod returns a path postfixed with "/", remove that
+        self.parser.add_dir(rootconf_ifmod[:-1], "LoadModule", loadmod_args)
+        self.save_notes += "Added LoadModule ssl_module to main configuration.\n"
+
+        # Wrap LoadModule mod_ssl inside of <IfModule !mod_ssl.c> if it's not
+        # configured like this already.
+        if sslconf_loadmod_path and "ifmodule" not in sslconf_loadmod_path.lower():
+            sslconf_path = sslconf_loadmod_path.split("/directive")[0]
+            # Remove the old LoadModule directive from ssl.conf
+            self.aug.remove(sslconf_loadmod_path)
+
+            # Create a new IfModule !mod_ssl.c
+            ssl_ifmod = self.parser._get_ifmod(  # pylint: disable=protected-access
+                sslconf_path, "!mod_ssl.c", beginning=True)
+
+            self.parser.add_dir(ssl_ifmod[:-1], "LoadModule", loadmod_args)
+            self.save_notes += ("Wrapped ssl.conf LoadModule ssl_module inside "
+                                "of <IfModule !mod_ssl> block.\n")
+
 
 class CentOSParser(parser.ApacheParser):
     """CentOS specific ApacheParser override class"""
