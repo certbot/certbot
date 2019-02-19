@@ -1,7 +1,6 @@
 # pylint: disable=too-many-public-methods
 """Test for certbot_nginx.configurator."""
 import os
-import shutil
 import unittest
 
 import mock
@@ -33,12 +32,6 @@ class NginxConfiguratorTest(util.NginxTest):
         self.config = util.get_nginx_configurator(
             self.config_path, self.config_dir, self.work_dir, self.logs_dir)
 
-    def tearDown(self):
-        shutil.rmtree(self.temp_dir)
-        shutil.rmtree(self.config_dir)
-        shutil.rmtree(self.work_dir)
-        shutil.rmtree(self.logs_dir)
-
     @mock.patch("certbot_nginx.configurator.util.exe_exists")
     def test_prepare_no_install(self, mock_exe_exists):
         mock_exe_exists.return_value = False
@@ -69,8 +62,11 @@ class NginxConfiguratorTest(util.NginxTest):
 
     def test_prepare_locked(self):
         server_root = self.config.conf("server-root")
+
+        from certbot import util as certbot_util
+        certbot_util._LOCKS[server_root].release()
+
         self.config.config_test = mock.Mock()
-        os.remove(os.path.join(server_root, ".certbot.lock"))
         certbot_test_util.lock_and_call(self._test_prepare_locked, server_root)
 
     @mock.patch("certbot_nginx.configurator.util.exe_exists")
@@ -88,11 +84,11 @@ class NginxConfiguratorTest(util.NginxTest):
     def test_get_all_names(self, mock_gethostbyaddr):
         mock_gethostbyaddr.return_value = ('155.225.50.69.nephoscale.net', [], [])
         names = self.config.get_all_names()
-        self.assertEqual(names, set(
-            ["155.225.50.69.nephoscale.net", "www.example.org", "another.alias",
+        self.assertEqual(names, {
+            "155.225.50.69.nephoscale.net", "www.example.org", "another.alias",
              "migration.com", "summer.com", "geese.com", "sslon.com",
              "globalssl.com", "globalsslsetssl.com", "ipv6.com", "ipv6ssl.com",
-             "headers.com"]))
+             "headers.com"})
 
     def test_supported_enhancements(self):
         self.assertEqual(['redirect', 'ensure-http-header', 'staple-ocsp'],
@@ -171,6 +167,7 @@ class NginxConfiguratorTest(util.NginxTest):
                    'abc.www.foo.com': "etc_nginx/foo.conf",
                    'www.bar.co.uk': "etc_nginx/nginx.conf",
                    'ipv6.com': "etc_nginx/sites-enabled/ipv6.com"}
+        conf_path = {key: os.path.normpath(value) for key, value in conf_path.items()}
 
         vhost = self.config.choose_vhosts(name)[0]
         path = os.path.relpath(vhost.filep, self.temp_dir)

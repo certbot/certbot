@@ -55,11 +55,6 @@ class TlsSniPerformTest(util.NginxTest):
         from certbot_nginx import tls_sni_01
         self.sni = tls_sni_01.NginxTlsSni01(config)
 
-    def tearDown(self):
-        shutil.rmtree(self.temp_dir)
-        shutil.rmtree(self.config_dir)
-        shutil.rmtree(self.work_dir)
-
     @mock.patch("certbot_nginx.configurator"
                 ".NginxConfigurator.choose_vhosts")
     def test_perform(self, mock_choose):
