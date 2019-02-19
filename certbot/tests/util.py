@@ -3,6 +3,7 @@
 .. warning:: This module is not part of the public API.
 
 """
+import multiprocessing
 import os
 import pkg_resources
 import shutil
@@ -10,8 +11,6 @@ import tempfile
 import unittest
 import sys
 import warnings
-import subprocess
-import time
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
@@ -24,8 +23,8 @@ from six.moves import reload_module  # pylint: disable=import-error
 from certbot import constants
 from certbot import interfaces
 from certbot import storage
-from certbot import configuration
 from certbot import util
+from certbot import configuration
 
 from certbot.display import util as display_util
 
@@ -212,7 +211,7 @@ class FreezableMock(object):
 
     """
     def __init__(self, frozen=False, func=None, return_value=mock.sentinel.DEFAULT):
-        self._frozen_set = set() if frozen else {'freeze', }
+        self._frozen_set = set() if frozen else set(('freeze',))
         self._func = func
         self._mock = mock.MagicMock()
         if return_value != mock.sentinel.DEFAULT:
@@ -341,7 +340,6 @@ class TempDirTestCase(unittest.TestCase):
                 warnings.warn(message)
         shutil.rmtree(self.tempdir, onerror=onerror_handler)
 
-
 class ConfigTestCase(TempDirTestCase):
     """Test class which sets up a NamespaceConfig object.
 
@@ -360,58 +358,47 @@ class ConfigTestCase(TempDirTestCase):
         self.config.chain_path = constants.CLI_DEFAULTS['auth_chain_path']
         self.config.server = "https://example.com"
 
+def lock_and_call(func, lock_path):
+    """Grab a lock for lock_path and call func.
 
-def lock_and_call(callback, path_to_lock):
-    """Grab a lock on path_to_lock from a foreign process and call the callback.
-    :param callable callback: object to call after acquiring the lock
-    :param str path_to_lock: path to file or directory to lock
+    :param callable func: object to call after acquiring the lock
+    :param str lock_path: path to file or directory to lock
+
     """
-    script = """\
-import os
-import sys
-import time
-from certbot import lock
-
-path_to_lock = sys.argv[1]
-trigger = sys.argv[2]
-
-if os.path.isdir(path_to_lock):
-    my_lock = lock.lock_dir(path_to_lock)
-else:
-    my_lock = lock.LockFile(path_to_lock)
-try:
-    open(trigger, 'w').close()
-    while os.path.exists(trigger):
-        time.sleep(1)
-finally:
-    my_lock.release()
-"""
-    # Reload certbot.util module to reset internal _LOCKS dictionary.
+    # Reload module to reset internal _LOCKS dictionary
     reload_module(util)
 
-    workspace = tempfile.mkdtemp()
-    try:
-        tmp_script = os.path.join(workspace, 'test_script.py')
-        with open(tmp_script, 'w') as file_handle:
-            file_handle.write(script)
+    # start child and wait for it to grab the lock
+    cv = multiprocessing.Condition()
+    cv.acquire()
+    child_args = (cv, lock_path,)
+    child = multiprocessing.Process(target=hold_lock, args=child_args)
+    child.start()
+    cv.wait()
 
-        # Trigger file is used to coordinate current process and its subprocess.
-        trigger = os.path.join(workspace, 'trigger')
-        process = subprocess.Popen([sys.executable, tmp_script, path_to_lock, trigger])
-        try:
-            # Poll and wait for the lock to be acquired, spotted by the trigger file creation.
-            while not os.path.exists(trigger):
-                time.sleep(1)
-            # Then execute the callback.
-            callback()
-        finally:
-            # This will trigger the lock release in subprocess.
-            os.remove(trigger)
-            process.communicate()
-        assert process.returncode == 0
-    finally:
-        shutil.rmtree(workspace)
+    # call func and terminate the child
+    func()
+    cv.notify()
+    cv.release()
+    child.join()
+    assert child.exitcode == 0
 
+def hold_lock(cv, lock_path):  # pragma: no cover
+    """Acquire a file lock at lock_path and wait to release it.
+
+    :param multiprocessing.Condition cv: condition for synchronization
+    :param str lock_path: path to the file lock
+
+    """
+    from certbot import lock
+    if os.path.isdir(lock_path):
+        my_lock = lock.lock_dir(lock_path)
+    else:
+        my_lock = lock.LockFile(lock_path)
+    cv.acquire()
+    cv.notify()
+    cv.wait()
+    my_lock.release()
 
 def skip_on_windows(reason):
     """Decorator to skip permanently a test on Windows. A reason is required."""
@@ -419,7 +406,6 @@ def skip_on_windows(reason):
         """Wrapped version"""
         return unittest.skipIf(sys.platform == 'win32', reason)(function)
     return wrapper
-
 
 def broken_on_windows(function):
     """Decorator to skip temporarily a broken test on Windows."""
@@ -429,10 +415,9 @@ def broken_on_windows(function):
         and os.environ.get('SKIP_BROKEN_TESTS_ON_WINDOWS', 'true') == 'true',
         reason)(function)
 
-
 def temp_join(path):
     """
     Return the given path joined to the tempdir path for the current platform
     Eg.: 'cert' => /tmp/cert (Linux) or 'C:\\Users\\currentuser\\AppData\\Temp\\cert' (Windows)
     """
-    return os.path.join(tempfile.gettempdir(), path)
+    return  os.path.join(tempfile.gettempdir(), path)
