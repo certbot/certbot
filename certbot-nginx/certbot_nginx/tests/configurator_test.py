@@ -64,7 +64,7 @@ class NginxConfiguratorTest(util.NginxTest):
         server_root = self.config.conf("server-root")
 
         from certbot import util as certbot_util
-        certbot_util._LOCKS[server_root].release()
+        certbot_util._LOCKS[server_root].release()  # pylint: disable=protected-access
 
         self.config.config_test = mock.Mock()
         certbot_test_util.lock_and_call(self._test_prepare_locked, server_root)

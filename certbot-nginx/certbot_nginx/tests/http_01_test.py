@@ -1,6 +1,5 @@
 """Tests for certbot_nginx.http_01"""
 import unittest
-import shutil
 
 import mock
 import six
