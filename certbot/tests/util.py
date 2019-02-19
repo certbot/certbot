@@ -364,7 +364,7 @@ class ConfigTestCase(TempDirTestCase):
 def _handle_lock(event_in, event_out, path):
     """
     Acquire a file lock on given path, then wait to release it. This worker is coordinated
-    using events to signal the caller about the locking, and know when to release it.
+    using events to signal when the lock should be acquired and released.
     :param multiprocessing.Event event_in: event object to signal when to release the lock
     :param multiprocessing.Event event_out: event object to signal when the lock is acquired
     :param path: the path to lock
