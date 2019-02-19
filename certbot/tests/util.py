@@ -375,7 +375,7 @@ def _handle_lock(event_in, event_out, path):
         my_lock = lock.LockFile(path)
     try:
         event_out.set()
-        event_in.wait(timeout=20)
+        assert event_in.wait(timeout=20), 'Timeout while waiting to release the lock.'
     finally:
         my_lock.release()
 
@@ -395,7 +395,7 @@ def lock_and_call(callback, path_to_lock):
     process.start()
 
     # Wait confirmation that lock is acquired
-    receive_event.wait(timeout=10)
+    assert receive_event.wait(timeout=10), 'Timeout while waiting to acquire the lock.'
     # Execute the callback
     callback()
     # Trigger unlock from foreign process
