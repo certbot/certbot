@@ -15,7 +15,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-*
+* Issue causing the default CentOS 6 TLS configuration to ignore some of the HTTPS VirtualHosts created by Certbot. mod_ssl loading is now moved to main http.conf for this environment.
 
 Despite us having broken lockstep, we are continuing to release new versions of
 all Certbot components during releases for the time being, however, the only
@@ -23,6 +23,7 @@ package with changes other than its version number was:
 
 * acme
 * certbot
+* certbot-apache
 
 More details about these changes can be found on our GitHub repo.
 
