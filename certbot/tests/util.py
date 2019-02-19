@@ -10,7 +10,7 @@ import tempfile
 import unittest
 import sys
 import warnings
-from multiprocessing import Process, Queue
+from multiprocessing import Process, Event
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
@@ -361,15 +361,14 @@ class ConfigTestCase(TempDirTestCase):
         self.config.server = "https://example.com"
 
 
-def _handle_lock(queue_in, queue_out, path):
-    queue_in.get(timeout=10)
+def _handle_lock(event_in, event_out, path):
     if os.path.isdir(path):
         my_lock = lock.lock_dir(path)
     else:
         my_lock = lock.LockFile(path)
     try:
-        queue_out.put(None)
-        queue_in.get(timeout=20)
+        event_out.set()
+        event_in.wait(timeout=20)
     finally:
         my_lock.release()
 
@@ -382,19 +381,17 @@ def lock_and_call(callback, path_to_lock):
     # Reload certbot.util module to reset internal _LOCKS dictionary.
     reload_module(util)
 
-    emit_queue = Queue()  # type: ignore
-    receive_queue = Queue()  # type: ignore
-    process = Process(target=_handle_lock, args=(emit_queue, receive_queue, path_to_lock))
+    emit_event = Event()
+    receive_event = Event()
+    process = Process(target=_handle_lock, args=(emit_event, receive_event, path_to_lock))
     process.start()
 
-    # Trigger lock from foreign process
-    emit_queue.put(None)
     # Wait confirmation that lock is acquired
-    receive_queue.get(timeout=10)
+    receive_event.wait(timeout=10)
     # Execute the callback
     callback()
     # Trigger unlock from foreign process
-    emit_queue.put(None)
+    emit_event.set()
 
     # Wait for process termination
     process.join(timeout=10)
