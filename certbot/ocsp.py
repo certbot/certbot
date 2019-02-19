@@ -67,6 +67,7 @@ class RevocationChecker(object):
         if not host or not url:
             return False
 
+        logger.error(url)
         if self.use_openssl_binary:
             return self._check_ocsp_openssl_bin(cert_path, chain_path, host, url)
         else:
@@ -137,11 +138,16 @@ def _check_ocsp_cryptography(cert_path, chain_path, url):
     builder = builder.add_certificate(cert, issuer, hashes.SHA1())
     request = builder.build()
     request_binary = request.public_bytes(serialization.Encoding.DER)
-    response = requests.post(url, data=request_binary,
-                             headers={'Content-Type': 'application/ocsp-request'})
-    if response.status_code != 200:
+    try:
+        response = requests.post(url, data=request_binary,
+                                 headers={'Content-Type': 'application/ocsp-request'})
+    except requests.exceptions.RequestException:
         logger.info("OCSP check failed for %s (are we offline?)", cert_path)
         return False
+    if response.status_code != 200:
+        logger.info("OCSP check failed for %s (HTTP status: %d)", cert_path, response.status_code)
+        return False
+
     response_ocsp = ocsp.load_der_ocsp_response(response.content)
 
     # Check OCSP response validity
