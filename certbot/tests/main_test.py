@@ -971,7 +971,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         self.assertRaises(errors.Error,
                           self._certonly_new_request_common, mock_client)
 
-    # Should be moved to renewal_test.py 
+    # Should be moved to renewal_test.py
     # Test commit
     def _test_renewal_common(self, due_for_renewal, extra_args, log_out=None,
                              args=None, should_renew=True, error_expected=False,
