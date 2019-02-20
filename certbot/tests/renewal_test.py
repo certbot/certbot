@@ -1,13 +1,20 @@
 """Tests for certbot.renewal"""
+from __future__ import print_function
+
 import mock
 import unittest
 import datetime
+import os
+import six
+import traceback
 
 from acme import challenges
 
 from certbot import configuration
 from certbot import errors
 from certbot import storage
+from certbot import main
+
 
 import certbot.tests.util as test_util
 
@@ -15,6 +22,52 @@ import certbot.tests.util as test_util
 class RenewalTest(test_util.ConfigTestCase):
     def setUp(self):
         super(RenewalTest, self).setUp()
+        self.standard_args = ['--config-dir', self.config.config_dir,
+                              '--work-dir', self.config.work_dir,
+                              '--logs-dir', self.config.logs_dir, '--text']
+
+    def _dump_log(self):
+        print("Logs:")
+        log_path = os.path.join(self.config.logs_dir, "letsencrypt.log")
+        if os.path.exists(log_path):
+            with open(log_path) as lf:
+                print(lf.read())
+
+    def _call(self, args, stdout=None, mockisfile=False):
+        """Run the cli with output streams, actual client and optionally
+        os.path.isfile() mocked out"""
+
+        if mockisfile:
+            orig_open = os.path.isfile
+            def mock_isfile(fn, *args, **kwargs):  # pylint: disable=unused-argument
+                """Mock os.path.isfile()"""
+                if (fn.endswith("cert") or
+                    fn.endswith("chain") or
+                    fn.endswith("privkey")):
+                    return True
+                else:
+                    return orig_open(fn)
+
+            with mock.patch("os.path.isfile") as mock_if:
+                mock_if.side_effect = mock_isfile
+                with mock.patch('certbot.main.client') as client:
+                    ret, stdout, stderr = self._call_no_clientmock(args, stdout)
+                    return ret, stdout, stderr, client
+        else:
+            with mock.patch('certbot.main.client') as client:
+                ret, stdout, stderr = self._call_no_clientmock(args, stdout)
+                return ret, stdout, stderr, client
+
+    def _call_no_clientmock(self, args, stdout=None):
+        "Run the client with output streams mocked out"
+        args = self.standard_args + args
+
+        toy_stdout = stdout if stdout else six.StringIO()
+        with mock.patch('certbot.main.sys.stdout', new=toy_stdout):
+            with mock.patch('certbot.main.sys.stderr') as stderr:
+                with mock.patch("certbot.util.atexit"):
+                    ret = main.main(args[:])  # NOTE: parser can alter its args!
+        return ret, toy_stdout, stderr
 
     @mock.patch('certbot.cli.set_by_cli')
     def test_ancient_webroot_renewal_conf(self, mock_set_by_cli):
@@ -32,67 +85,7 @@ class RenewalTest(test_util.ConfigTestCase):
         renewal._restore_webroot_config(config, renewalparams)
         self.assertEqual(config.webroot_path, ['/var/www/'])
 
-
-class RestoreRequiredConfigElementsTest(test_util.ConfigTestCase):
-    """Tests for certbot.renewal.restore_required_config_elements."""
-    def setUp(self):
-        super(RestoreRequiredConfigElementsTest, self).setUp()
-
-    @classmethod
-    def _call(cls, *args, **kwargs):
-        from certbot.renewal import restore_required_config_elements
-        return restore_required_config_elements(*args, **kwargs)
-
-    @mock.patch('certbot.renewal.cli.set_by_cli')
-    def test_allow_subset_of_names_success(self, mock_set_by_cli):
-        mock_set_by_cli.return_value = False
-        self._call(self.config, {'allow_subset_of_names': 'True'})
-        self.assertTrue(self.config.allow_subset_of_names is True)
-
-    @mock.patch('certbot.renewal.cli.set_by_cli')
-    def test_allow_subset_of_names_failure(self, mock_set_by_cli):
-        mock_set_by_cli.return_value = False
-        renewalparams = {'allow_subset_of_names': 'maybe'}
-        self.assertRaises(
-            errors.Error, self._call, self.config, renewalparams)
-
-    @mock.patch('certbot.renewal.cli.set_by_cli')
-    def test_pref_challs_list(self, mock_set_by_cli):
-        mock_set_by_cli.return_value = False
-        renewalparams = {'pref_challs': 'tls-sni, http-01, dns'.split(',')}
-        self._call(self.config, renewalparams)
-        expected = [challenges.TLSSNI01.typ,
-                    challenges.HTTP01.typ, challenges.DNS01.typ]
-        self.assertEqual(self.config.pref_challs, expected)
-
-    @mock.patch('certbot.renewal.cli.set_by_cli')
-    def test_pref_challs_str(self, mock_set_by_cli):
-        mock_set_by_cli.return_value = False
-        renewalparams = {'pref_challs': 'dns'}
-        self._call(self.config, renewalparams)
-        expected = [challenges.DNS01.typ]
-        self.assertEqual(self.config.pref_challs, expected)
-
-    @mock.patch('certbot.renewal.cli.set_by_cli')
-    def test_pref_challs_failure(self, mock_set_by_cli):
-        mock_set_by_cli.return_value = False
-        renewalparams = {'pref_challs': 'finding-a-shrubbery'}
-        self.assertRaises(errors.Error, self._call, self.config, renewalparams)
-
-    @mock.patch('certbot.renewal.cli.set_by_cli')
-    def test_must_staple_success(self, mock_set_by_cli):
-        mock_set_by_cli.return_value = False
-        self._call(self.config, {'must_staple': 'True'})
-        self.assertTrue(self.config.must_staple is True)
-
-    @mock.patch('certbot.renewal.cli.set_by_cli')
-    def test_must_staple_failure(self, mock_set_by_cli):
-        mock_set_by_cli.return_value = False
-        renewalparams = {'must_staple': 'maybe'}
-        self.assertRaises(
-            errors.Error, self._call, self.config, renewalparams)
-
-    # Refactoring
+    # Refactoring renewal common
     def _test_renewal_common(self, due_for_renewal, extra_args, log_out=None,
                              args=None, should_renew=True, error_expected=False,
                              quiet_mode=False, expiry_date=datetime.datetime.now(),
@@ -167,6 +160,66 @@ class RestoreRequiredConfigElementsTest(test_util.ConfigTestCase):
                     self.assertTrue(log_out in lf.read())
 
         return mock_lineage, mock_get_utility, stdout
+
+
+class RestoreRequiredConfigElementsTest(test_util.ConfigTestCase):
+    """Tests for certbot.renewal.restore_required_config_elements."""
+    def setUp(self):
+        super(RestoreRequiredConfigElementsTest, self).setUp()
+
+    @classmethod
+    def _call(cls, *args, **kwargs):
+        from certbot.renewal import restore_required_config_elements
+        return restore_required_config_elements(*args, **kwargs)
+
+    @mock.patch('certbot.renewal.cli.set_by_cli')
+    def test_allow_subset_of_names_success(self, mock_set_by_cli):
+        mock_set_by_cli.return_value = False
+        self._call(self.config, {'allow_subset_of_names': 'True'})
+        self.assertTrue(self.config.allow_subset_of_names is True)
+
+    @mock.patch('certbot.renewal.cli.set_by_cli')
+    def test_allow_subset_of_names_failure(self, mock_set_by_cli):
+        mock_set_by_cli.return_value = False
+        renewalparams = {'allow_subset_of_names': 'maybe'}
+        self.assertRaises(
+            errors.Error, self._call, self.config, renewalparams)
+
+    @mock.patch('certbot.renewal.cli.set_by_cli')
+    def test_pref_challs_list(self, mock_set_by_cli):
+        mock_set_by_cli.return_value = False
+        renewalparams = {'pref_challs': 'tls-sni, http-01, dns'.split(',')}
+        self._call(self.config, renewalparams)
+        expected = [challenges.TLSSNI01.typ,
+                    challenges.HTTP01.typ, challenges.DNS01.typ]
+        self.assertEqual(self.config.pref_challs, expected)
+
+    @mock.patch('certbot.renewal.cli.set_by_cli')
+    def test_pref_challs_str(self, mock_set_by_cli):
+        mock_set_by_cli.return_value = False
+        renewalparams = {'pref_challs': 'dns'}
+        self._call(self.config, renewalparams)
+        expected = [challenges.DNS01.typ]
+        self.assertEqual(self.config.pref_challs, expected)
+
+    @mock.patch('certbot.renewal.cli.set_by_cli')
+    def test_pref_challs_failure(self, mock_set_by_cli):
+        mock_set_by_cli.return_value = False
+        renewalparams = {'pref_challs': 'finding-a-shrubbery'}
+        self.assertRaises(errors.Error, self._call, self.config, renewalparams)
+
+    @mock.patch('certbot.renewal.cli.set_by_cli')
+    def test_must_staple_success(self, mock_set_by_cli):
+        mock_set_by_cli.return_value = False
+        self._call(self.config, {'must_staple': 'True'})
+        self.assertTrue(self.config.must_staple is True)
+
+    @mock.patch('certbot.renewal.cli.set_by_cli')
+    def test_must_staple_failure(self, mock_set_by_cli):
+        mock_set_by_cli.return_value = False
+        renewalparams = {'must_staple': 'maybe'}
+        self.assertRaises(
+            errors.Error, self._call, self.config, renewalparams)
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
