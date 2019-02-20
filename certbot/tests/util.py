@@ -10,8 +10,7 @@ import tempfile
 import unittest
 import sys
 import warnings
-import subprocess
-import time
+from multiprocessing import Process, Event
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
@@ -25,6 +24,7 @@ from certbot import constants
 from certbot import interfaces
 from certbot import storage
 from certbot import configuration
+from certbot import lock
 from certbot import util
 
 from certbot.display import util as display_util
@@ -361,56 +361,49 @@ class ConfigTestCase(TempDirTestCase):
         self.config.server = "https://example.com"
 
 
+def _handle_lock(event_in, event_out, path):
+    """
+    Acquire a file lock on given path, then wait to release it. This worker is coordinated
+    using events to signal when the lock should be acquired and released.
+    :param multiprocessing.Event event_in: event object to signal when to release the lock
+    :param multiprocessing.Event event_out: event object to signal when the lock is acquired
+    :param path: the path to lock
+    """
+    if os.path.isdir(path):
+        my_lock = lock.lock_dir(path)
+    else:
+        my_lock = lock.LockFile(path)
+    try:
+        event_out.set()
+        assert event_in.wait(timeout=20), 'Timeout while waiting to release the lock.'
+    finally:
+        my_lock.release()
+
+
 def lock_and_call(callback, path_to_lock):
-    """Grab a lock on path_to_lock from a foreign process and call the callback.
+    """
+    Grab a lock on path_to_lock from a foreign process then execute the callback.
     :param callable callback: object to call after acquiring the lock
     :param str path_to_lock: path to file or directory to lock
     """
-    script = """\
-import os
-import sys
-import time
-from certbot import lock
-
-path_to_lock = sys.argv[1]
-trigger = sys.argv[2]
-
-if os.path.isdir(path_to_lock):
-    my_lock = lock.lock_dir(path_to_lock)
-else:
-    my_lock = lock.LockFile(path_to_lock)
-try:
-    open(trigger, 'w').close()
-    while os.path.exists(trigger):
-        time.sleep(1)
-finally:
-    my_lock.release()
-"""
     # Reload certbot.util module to reset internal _LOCKS dictionary.
     reload_module(util)
 
-    workspace = tempfile.mkdtemp()
-    try:
-        tmp_script = os.path.join(workspace, 'test_script.py')
-        with open(tmp_script, 'w') as file_handle:
-            file_handle.write(script)
+    emit_event = Event()
+    receive_event = Event()
+    process = Process(target=_handle_lock, args=(emit_event, receive_event, path_to_lock))
+    process.start()
 
-        # Trigger file is used to coordinate current process and its subprocess.
-        trigger = os.path.join(workspace, 'trigger')
-        process = subprocess.Popen([sys.executable, tmp_script, path_to_lock, trigger])
-        try:
-            # Poll and wait for the lock to be acquired, spotted by the trigger file creation.
-            while not os.path.exists(trigger):
-                time.sleep(1)
-            # Then execute the callback.
-            callback()
-        finally:
-            # This will trigger the lock release in subprocess.
-            os.remove(trigger)
-            process.communicate()
-        assert process.returncode == 0
-    finally:
-        shutil.rmtree(workspace)
+    # Wait confirmation that lock is acquired
+    assert receive_event.wait(timeout=10), 'Timeout while waiting to acquire the lock.'
+    # Execute the callback
+    callback()
+    # Trigger unlock from foreign process
+    emit_event.set()
+
+    # Wait for process termination
+    process.join(timeout=10)
+    assert process.exitcode == 0
 
 
 def skip_on_windows(reason):
