@@ -108,7 +108,7 @@ manage your account with Let's Encrypt:
 
 # This is the short help for certbot --help, where we disable argparse
 # altogether
-HELP_USAGE = """
+HELP_AND_VERSION_USAGE = """
 More detailed help:
 
   -h, --help [TOPIC]    print this message, or detailed help on a topic;
@@ -117,6 +117,8 @@ More detailed help:
    all, automation, commands, paths, security, testing, or any of the
    subcommands or plugins (certonly, renew, install, register, nginx,
    apache, standalone, webroot, etc.)
+
+  --version             print the version number
 """
 
 
@@ -566,7 +568,7 @@ class HelpfulArgumentParser(object):
 
         usage = SHORT_USAGE
         if help_arg == True:
-            self.notify(usage + COMMAND_OVERVIEW % (apache_doc, nginx_doc) + HELP_USAGE)
+            self.notify(usage + COMMAND_OVERVIEW % (apache_doc, nginx_doc) + HELP_AND_VERSION_USAGE)
             sys.exit(0)
         elif help_arg in self.COMMANDS_TOPICS:
             self.notify(usage + self._list_subcommands())
