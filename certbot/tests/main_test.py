@@ -971,6 +971,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         self.assertRaises(errors.Error,
                           self._certonly_new_request_common, mock_client)
 
+    # Should be moved to renewal_test.py
     def _test_renewal_common(self, due_for_renewal, extra_args, log_out=None,
                              args=None, should_renew=True, error_expected=False,
                              quiet_mode=False, expiry_date=datetime.datetime.now(),
@@ -1046,6 +1047,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
 
         return mock_lineage, mock_get_utility, stdout
 
+    # Should be moved to renewal_test.py
     @mock.patch('certbot.crypto_util.notAfter')
     def test_certonly_renewal(self, unused_notafter):
         lineage, get_utility, _ = self._test_renewal_common(True, [])
@@ -1056,6 +1058,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         self.assertTrue('fullchain.pem' in cert_msg)
         self.assertTrue('donate' in get_utility().add_message.call_args[0][0])
 
+    # Should be moved to renewal_test.py
     @test_util.broken_on_windows
     @mock.patch('certbot.crypto_util.notAfter')
     def test_certonly_renewal_triggers(self, unused_notafter):
@@ -1079,22 +1082,26 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
             with open(log_path) as lf:
                 print(lf.read())
 
+    # Should be moved to renewal_test.py
     def test_renew_verb(self):
         test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
         args = ["renew", "--dry-run", "-tvv"]
         self._test_renewal_common(True, [], args=args, should_renew=True)
 
+    # Should be moved to renewal_test.py
     def test_reuse_key(self):
         test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
         args = ["renew", "--dry-run", "--reuse-key"]
         self._test_renewal_common(True, [], args=args, should_renew=True, reuse_key=True)
 
+    # Should be moved to renewal_test.py
     @mock.patch('certbot.storage.RenewableCert.save_successor')
     def test_reuse_key_no_dry_run(self, unused_save_successor):
         test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
         args = ["renew", "--reuse-key"]
         self._test_renewal_common(True, [], args=args, should_renew=True, reuse_key=True)
 
+    # Should be moved to renewal_test.py
     @mock.patch('sys.stdin')
     def test_noninteractive_renewal_delay(self, stdin):
         stdin.isatty.return_value = False
@@ -1107,6 +1114,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         sleep_call_arg = self.mock_sleep.call_args[0][0]
         self.assertTrue(1 <= sleep_call_arg <= 60*8)
 
+    # Should be moved to renewal_test.py
     @mock.patch('sys.stdin')
     def test_interactive_no_renewal_delay(self, stdin):
         stdin.isatty.return_value = True
@@ -1115,6 +1123,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         self._test_renewal_common(True, [], args=args, should_renew=True)
         self.assertEqual(self.mock_sleep.call_count, 0)
 
+    # Should be moved to renewal_test.py
     @mock.patch('certbot.renewal.should_renew')
     def test_renew_skips_recent_certs(self, should_renew):
         should_renew.return_value = False
@@ -1125,6 +1134,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         self.assertTrue('No renewals were attempted.' in stdout.getvalue())
         self.assertTrue('The following certs are not due for renewal yet:' in stdout.getvalue())
 
+    # Should be moved to renewal_test.py
     @test_util.broken_on_windows
     def test_quiet_renew(self):
         test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
@@ -1139,12 +1149,14 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         out = stdout.getvalue()
         self.assertEqual("", out)
 
+    # Should be moved to renewal_test.py
     def test_renew_hook_validation(self):
         test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
         args = ["renew", "--dry-run", "--post-hook=no-such-command"]
         self._test_renewal_common(True, [], args=args, should_renew=False,
                                   error_expected=True)
 
+    # Should be moved to renewal_test.py
     def test_renew_no_hook_validation(self):
         test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
         args = ["renew", "--dry-run", "--post-hook=no-such-command",
@@ -1153,6 +1165,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
             self._test_renewal_common(True, [], args=args, should_renew=True,
                                       error_expected=False)
 
+    # Should be moved to renewal_test.py
     def test_renew_verb_empty_config(self):
         rd = os.path.join(self.config.config_dir, 'renewal')
         if not os.path.exists(rd):
@@ -1162,11 +1175,13 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         args = ["renew", "--dry-run", "-tvv"]
         self._test_renewal_common(False, [], args=args, should_renew=False, error_expected=True)
 
+    # Should be moved to renewal_test.py
     def test_renew_with_certname(self):
         test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
         self._test_renewal_common(True, [], should_renew=True,
             args=['renew', '--dry-run', '--cert-name', 'sample-renewal'])
 
+    # Should be moved to renewal_test.py
     def test_renew_with_bad_certname(self):
         self._test_renewal_common(True, [], should_renew=False,
             args=['renew', '--dry-run', '--cert-name', 'sample-renewal'],
@@ -1251,6 +1266,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
             mock_reconstitute.side_effect = Exception
             self._test_renew_common(assert_oc_called=False, error_expected=True)
 
+    # Should be moved to renewal_test.py
     def test_renew_obtain_cert_error(self):
         self._make_dummy_renewal_config()
         with mock.patch('certbot.storage.RenewableCert') as mock_rc:
@@ -1264,12 +1280,14 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
                 self._test_renewal_common(True, None, error_expected=True,
                                           args=['renew'], should_renew=False)
 
+    # Should be moved to renewal_test.py
     def test_renew_with_bad_cli_args(self):
         self._test_renewal_common(True, None, args='renew -d example.com'.split(),
                                   should_renew=False, error_expected=True)
         self._test_renewal_common(True, None, args='renew --csr {0}'.format(CSR).split(),
                                   should_renew=False, error_expected=True)
 
+    # Should be moved to renewal_test.py
     def test_no_renewal_with_hooks(self):
         _, _, stdout = self._test_renewal_common(
             due_for_renewal=False, extra_args=None, should_renew=False,
