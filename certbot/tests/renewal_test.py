@@ -1,6 +1,7 @@
 """Tests for certbot.renewal"""
 import mock
 import unittest
+import datetime
 
 from acme import challenges
 
@@ -90,6 +91,82 @@ class RestoreRequiredConfigElementsTest(test_util.ConfigTestCase):
         renewalparams = {'must_staple': 'maybe'}
         self.assertRaises(
             errors.Error, self._call, self.config, renewalparams)
+
+    # Refactoring
+    def _test_renewal_common(self, due_for_renewal, extra_args, log_out=None,
+                             args=None, should_renew=True, error_expected=False,
+                             quiet_mode=False, expiry_date=datetime.datetime.now(),
+                             reuse_key=False):
+        # pylint: disable=too-many-locals,too-many-arguments,too-many-branches
+        cert_path = test_util.vector_path('cert_512.pem')
+        chain_path = os.path.normpath(os.path.join(self.config.config_dir,
+                                                   'live/foo.bar/fullchain.pem'))
+        mock_lineage = mock.MagicMock(cert=cert_path, fullchain=chain_path,
+                                      cert_path=cert_path, fullchain_path=chain_path)
+        mock_lineage.should_autorenew.return_value = due_for_renewal
+        mock_lineage.has_pending_deployment.return_value = False
+        mock_lineage.names.return_value = ['isnot.org']
+        mock_certr = mock.MagicMock()
+        mock_key = mock.MagicMock(pem='pem_key')
+        mock_client = mock.MagicMock()
+        stdout = six.StringIO()
+        mock_client.obtain_certificate.return_value = (mock_certr, 'chain',
+                                                       mock_key, 'csr')
+
+        def write_msg(message, *args, **kwargs):  # pylint: disable=unused-argument
+            """Write message to stdout."""
+            stdout.write(message)
+
+        try:
+            with mock.patch('certbot.cert_manager.find_duplicative_certs') as mock_fdc:
+                mock_fdc.return_value = (mock_lineage, None)
+                with mock.patch('certbot.main._init_le_client') as mock_init:
+                    mock_init.return_value = mock_client
+                    with test_util.patch_get_utility() as mock_get_utility:
+                        if not quiet_mode:
+                            mock_get_utility().notification.side_effect = write_msg
+                        with mock.patch('certbot.main.renewal.OpenSSL') as mock_ssl:
+                            mock_latest = mock.MagicMock()
+                            mock_latest.get_issuer.return_value = "Fake fake"
+                            mock_ssl.crypto.load_certificate.return_value = mock_latest
+                            with mock.patch('certbot.main.renewal.crypto_util') as mock_crypto_util:
+                                mock_crypto_util.notAfter.return_value = expiry_date
+                                if not args:
+                                    args = ['-d', 'isnot.org', '-a', 'standalone', 'certonly']
+                                if extra_args:
+                                    args += extra_args
+                                try:
+                                    ret, stdout, _, _ = self._call(args, stdout)
+                                    if ret:
+                                        print("Returned", ret)
+                                        raise AssertionError(ret)
+                                    assert not error_expected, "renewal should have errored"
+                                except: # pylint: disable=bare-except
+                                    if not error_expected:
+                                        raise AssertionError(
+                                            "Unexpected renewal error:\n" +
+                                            traceback.format_exc())
+
+            if should_renew:
+                if reuse_key:
+                    # The location of the previous live privkey.pem is passed
+                    # to obtain_certificate
+                    mock_client.obtain_certificate.assert_called_once_with(['isnot.org'],
+                        os.path.normpath(os.path.join(
+                            self.config.config_dir, "live/sample-renewal/privkey.pem")))
+                else:
+                    mock_client.obtain_certificate.assert_called_once_with(['isnot.org'], None)
+            else:
+                self.assertEqual(mock_client.obtain_certificate.call_count, 0)
+        except:
+            self._dump_log()
+            raise
+        finally:
+            if log_out:
+                with open(os.path.join(self.config.logs_dir, "letsencrypt.log")) as lf:
+                    self.assertTrue(log_out in lf.read())
+
+        return mock_lineage, mock_get_utility, stdout
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
