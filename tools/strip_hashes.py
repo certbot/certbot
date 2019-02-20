@@ -1,16 +1,45 @@
 #!/usr/bin/env python
+"""Removes hash information from requirement files passed to it as file path
+arguments or simply piped to stdin."""
 
 import os
 import re
 import sys
 
-def main(args):
+
+def process_entries(entries):
+    """Strips off hash strings from dependencies.
+
+    :param list entries: List of entries
+
+    :returns: list of dependencies without hashes
+    :rtype: list
+    """
     out_lines = []
-    for line in args:
-        search = re.search(r'^(\S*==\S*).*$', line)
+    for e in entries:
+        e = e.strip()
+        search = re.search(r'^(\S*==\S*).*$', e)
         if search:
             out_lines.append(search.group(1))
-    return os.linesep.join(out_lines)
+    return out_lines
+
+def main(*paths):
+    """Reads dependency definitions from a (list of) file(s) or stdin and
+    removes hashes from returned entries"""
+
+    deps = []
+    for path in paths:
+        with open(path) as file_h:
+            deps += process_entries(file_h.readlines())
+
+    # Need to check if interactive to avoid blocking if nothing is piped
+    if not sys.stdin.isatty():
+        stdin_data = []
+        for line in sys.stdin:
+            stdin_data.append(line)
+        deps += process_entries(stdin_data)
+
+    return os.linesep.join(deps)
 
 if __name__ == '__main__':
-    print(main(sys.argv[1:]))
+    print(main(*sys.argv[1:]))  # pylint: disable=star-args
