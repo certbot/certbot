@@ -17,6 +17,7 @@ branches:
     - master
     - /^\d+\.\d+\.x$/
     - /^test-.*$/
+    - refactor
 
 matrix:
   include:
