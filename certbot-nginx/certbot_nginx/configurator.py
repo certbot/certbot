@@ -11,7 +11,7 @@ import zope.interface
 
 from acme import challenges
 from acme import crypto_util as acme_crypto_util
-from acme.magic_typing import List, Dict, Set  # pylint: disable=unused-import, no-name-in-module
+
 from certbot import constants as core_constants
 from certbot import crypto_util
 from certbot import errors
@@ -161,9 +161,7 @@ class NginxConfigurator(common.Installer):
             util.lock_dir_until_exit(self.conf('server-root'))
         except (OSError, errors.LockError):
             logger.debug('Encountered error:', exc_info=True)
-            raise errors.PluginError(
-                'Unable to lock %s', self.conf('server-root'))
-
+            raise errors.PluginError('Unable to lock {0}'.format(self.conf('server-root')))
 
     # Entry point in main.py for installing cert
     def deploy_cert(self, domain, cert_path, key_path,

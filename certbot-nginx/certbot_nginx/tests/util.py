@@ -3,6 +3,8 @@ import copy
 import pkg_resources
 import tempfile
 import unittest
+import shutil
+import warnings
 
 import josepy as jose
 import mock
@@ -29,6 +31,22 @@ class NginxTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
 
         self.rsa512jwk = jose.JWKRSA.load(test_util.load_vector(
             "rsa512_key.pem"))
+
+    def tearDown(self):
+        # On Windows we have various files which are not correctly closed at the time of tearDown.
+        # For know, we log them until a proper file close handling is written.
+        # Useful for development only, so no warning when we are on a CI process.
+        def onerror_handler(_, path, excinfo):
+            """On error handler"""
+            if not os.environ.get('APPVEYOR'):  # pragma: no cover
+                message = ('Following error occurred when deleting path {0}'
+                           'during tearDown process: {1}'.format(path, str(excinfo)))
+                warnings.warn(message)
+
+        shutil.rmtree(self.temp_dir, onerror=onerror_handler)
+        shutil.rmtree(self.config_dir, onerror=onerror_handler)
+        shutil.rmtree(self.work_dir, onerror=onerror_handler)
+        shutil.rmtree(self.logs_dir, onerror=onerror_handler)
 
 
 def get_data_filename(filename):
