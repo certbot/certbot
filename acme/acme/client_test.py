@@ -467,7 +467,7 @@ class ClientTest(ClientTestBase):
         self.response.links['up'] = {'url': self.challr.authzr_uri}
         self.response.json.return_value = self.challr.body.to_json()
 
-        def _wrapper_post(url, obj, *args, **kwargs):
+        def _wrapper_post(url, obj, *args, **kwargs):  # pylint: disable=unused-argument
             """
             Simulate an old ACME CA server, that would respond a 'malformed'
             error if keyAuthorization is missing.
