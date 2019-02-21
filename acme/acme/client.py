@@ -17,6 +17,7 @@ import requests
 from requests.adapters import HTTPAdapter
 import sys
 
+from acme import challenges
 from acme import crypto_util
 from acme import errors
 from acme import jws
@@ -155,7 +156,23 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
         :raises .UnexpectedUpdate:
 
         """
-        response = self._post(challb.uri, response)
+        # Because sending keyAuthorization in a response challenge is deprecated,
+        # we let KeyAuthorizationResponseChallenge not dumping it (default behavior).
+        # However as a migration path, we temporarily expect a malformed error from the server,
+        # and fallback by resending the challenge response with the keyAuthorization field.
+        # TODO: Remove this fallback for Certbot 0.34.0
+        try:
+            response = self._post(challb.uri, response)
+        except messages.Error as error:
+            if (error.code == 'malformed'
+                    and isinstance(response, challenges.KeyAuthorizationChallengeResponse)):
+                logger.debug('Error while responding to a challenge without keyAuthorization '
+                             'in the JWS, your ACME CA server may not support it:\n%s', error)
+                logger.debug('Retrying request with keyAuthorization set.')
+                response.dump_authorization_key(True)
+                response = self._post(challb.uri, response)
+            else:  # pragma: no cover
+                raise
         try:
             authzr_uri = response.links['up']['url']
         except KeyError:
@@ -781,7 +798,7 @@ class ClientV2(ClientBase):
             except messages.Error as error:
                 if error.code == 'malformed':
                     logger.debug('Error during a POST-as-GET request, '
-                                 'your ACME CA may not support it:\n%s', error)
+                                 'your ACME CA server may not support it:\n%s', error)
                     logger.debug('Retrying request with GET.')
                 else:  # pragma: no cover
                     raise
@@ -1191,10 +1208,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
 
     def _post_once(self, url, obj, content_type=JOSE_CONTENT_TYPE,
             acme_version=1, **kwargs):
-        try:
-            new_nonce_url = kwargs.pop('new_nonce_url')
-        except KeyError:
-            new_nonce_url = None
+        new_nonce_url = kwargs.pop('new_nonce_url', None)
         data = self._wrap_in_jws(obj, self._get_nonce(url, new_nonce_url), url, acme_version)
         kwargs.setdefault('headers', {'Content-Type': content_type})
         response = self._send_request('POST', url, data=data, **kwargs)

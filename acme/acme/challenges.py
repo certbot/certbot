@@ -107,6 +107,7 @@ class KeyAuthorizationChallengeResponse(ChallengeResponse):
     """
     key_authorization = jose.Field("keyAuthorization")
     thumbprint_hash_function = hashes.SHA256
+    authorization_key_config = {'dump': False}
 
     def verify(self, chall, account_public_key):
         """Verify the key authorization.
@@ -139,6 +140,21 @@ class KeyAuthorizationChallengeResponse(ChallengeResponse):
             return False
 
         return True
+
+    def dump_authorization_key(self, dump):
+        # type: (bool) -> None
+        """
+        Set if keyAuthorization is dumped in the JSON representation of this ChallengeResponse.
+        :param bool dump: True to dump the keyAuthorization, False otherwise
+        """
+        self.authorization_key_config['dump'] = dump
+
+    def to_partial_json(self):
+        jobj = super(KeyAuthorizationChallengeResponse, self).to_partial_json()
+        if not self.authorization_key_config.get('dump', False):
+            jobj.pop('keyAuthorization', None)
+
+        return jobj
 
 
 @six.add_metaclass(abc.ABCMeta)
