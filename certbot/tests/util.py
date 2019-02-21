@@ -335,6 +335,8 @@ class TempDirTestCase(unittest.TestCase):
         # called and instead will run them right before the entire test process exits.
         # It is a problem on Windows, that does not accept to clean resources before closing them.
         logging.shutdown()
+        # Remove logging handlers that have been closed so they won't be
+        # accidentally used in future tests.
         logging.getLogger().handlers = []
         util._release_locks()  # pylint: disable=protected-access
 
