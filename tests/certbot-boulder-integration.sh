@@ -532,7 +532,7 @@ coverage report --fail-under 64 --include 'certbot/*' --show-missing
 
 # Test OCSP status
 
-## OCSP 1: Check staled certificate OCSP status
+## OCSP 1: Check stale OCSP status
 pushd ./tests/letstest/testdata
 
 OUT=`common certificates --config-dir sample-config`
