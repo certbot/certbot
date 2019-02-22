@@ -94,7 +94,7 @@ class HandleAuthorizationsTest(unittest.TestCase):  # pylint: disable=too-many-p
         authzr = gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES, combos=combos)
         mock_order = mock.MagicMock(authorizations=[authzr])
 
-        self.mock_net.poll.side_effect = _gen_mock_on_poll(retry=1)
+        self.mock_net.poll.side_effect = _gen_mock_on_poll(retry=1, wait_value=30)
         with mock.patch('certbot.auth_handler.time') as mock_time:
             authzr = self.handler.handle_authorizations(mock_order)
 
@@ -102,9 +102,11 @@ class HandleAuthorizationsTest(unittest.TestCase):  # pylint: disable=too-many-p
 
             self.assertEqual(self.mock_net.poll.call_count, 2)  # Because there is one retry
             self.assertEqual(mock_time.sleep.call_count, 2)
-            # Retry-After header is 1 second, but at the time sleep is invoked, several
-            # instructions are executed, and next pool is in less than a second.
-            self.assertTrue(mock_time.sleep.call_args_list[0][0][0] <= 1)
+            # Retry-After header is 30 seconds, but at the time sleep is invoked, several
+            # instructions are executed, and next pool is in less than 30 seconds.
+            self.assertTrue(mock_time.sleep.call_args_list[1][0][0] <= 30)
+            # However, assert that we did not took the default value of 3 seconds.
+            self.assertTrue(mock_time.sleep.call_args_list[1][0][0] > 3)
 
             self.assertEqual(self.mock_auth.cleanup.call_count, 1)
             # Test if list first element is TLSSNI01, use typ because it is an achall
@@ -344,7 +346,7 @@ class HandleAuthorizationsTest(unittest.TestCase):  # pylint: disable=too-many-p
         self.assertTrue("deprecated" in logger.warning.call_args[0][0])
 
 
-def _gen_mock_on_poll(status=messages.STATUS_VALID, retry=0):
+def _gen_mock_on_poll(status=messages.STATUS_VALID, retry=0, wait_value=1):
     state = {'count': retry}
 
     def _mock(authzr):
@@ -356,7 +358,7 @@ def _gen_mock_on_poll(status=messages.STATUS_VALID, retry=0):
             [challb.chall for challb in authzr.body.challenges],
             [effective_status] * len(authzr.body.challenges),
             authzr.body.combinations)
-        return updated_azr, mock.MagicMock(headers={'Retry-After': '1'})
+        return updated_azr, mock.MagicMock(headers={'Retry-After': str(wait_value)})
     return _mock
 
 
