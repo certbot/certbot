@@ -146,7 +146,7 @@ class AuthHandler(object):
 
         if authzrs_to_check:
             # Exceeding the max polling attempts, and some authentication are still not checked.
-            raise errors.AuthorizationError('All challenges could not be checked on time.')
+            raise errors.AuthorizationError('All authorizations were not finalized by the CA.')
 
     def _choose_challenges(self, authzrs):
         """
