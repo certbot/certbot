@@ -171,7 +171,7 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
                 logger.debug('Retrying request with keyAuthorization set.')
                 response.dump_authorization_key(True)
                 response = self._post(challb.uri, response)
-            else:  # pragma: no cover
+            else:
                 raise
         try:
             authzr_uri = response.links['up']['url']

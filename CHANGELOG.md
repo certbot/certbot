@@ -14,11 +14,13 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   warnings described at https://github.com/certbot/josepy/issues/13.
 * Apache plugin now respects CERTBOT_DOCS environment variable when adding
   command line defaults.
-* `acme` module avoids to send the `keyAuthorization` in the JWS token while
-  POSTing to a challenge, as it is deprecated on the current ACME specification
-  draft. To ease the migration path for ACME CA servers, Certbot will use a
-  temporary fallback consisting in sending `keyAuthorization` if a `malformed`
-  error is received: this fallback will be removed on Certbot 0.34.0.
+* The `acme` module avoids sending the `keyAuthorization` field in the JWS
+  payload when responding to a challenge as the field is not included in the
+  current ACME protocol. To ease the migration path for ACME CA servers,
+  Certbot and its `acme` module will first try the request without the
+  `keyAuthorization` field but will temporarily retry the request with the
+  field included if a `malformed` error is received. This fallback will be
+  removed in version 0.34.0.
 
 ### Fixed
 
