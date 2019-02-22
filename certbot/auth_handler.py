@@ -44,7 +44,7 @@ class AuthHandler(object):
 
     def handle_authorizations(self, orderr, best_effort=False, max_retries=30):
         """
-        Retrieve all authorizations, perform all challenges required to validated
+        Retrieve all authorizations, perform all challenges required to validate
         these authorizations, then poll and wait for the authorization to be checked.
         :param acme.messages.OrderResource orderr: must have authorizations filled in
         :param bool best_effort: if True, not all authorizations need to be validated (eg. renew)
