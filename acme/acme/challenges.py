@@ -107,7 +107,10 @@ class KeyAuthorizationChallengeResponse(ChallengeResponse):
     """
     key_authorization = jose.Field("keyAuthorization")
     thumbprint_hash_function = hashes.SHA256
-    authorization_key_config = {'dump': False}
+
+    def __init__(self, *args, **kwargs):
+        super(KeyAuthorizationChallengeResponse, self).__init__(*args, **kwargs)
+        object.__setattr__(self, "authorization_key_config", {"dump": False})
 
     def verify(self, chall, account_public_key):
         """Verify the key authorization.
