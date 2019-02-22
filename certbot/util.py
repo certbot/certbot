@@ -142,6 +142,7 @@ def _release_locks():
         except:  # pylint: disable=bare-except
             msg = 'Exception occurred releasing lock: {0!r}'.format(dir_lock)
             logger.debug(msg, exc_info=True)
+    _LOCKS.clear()
 
 
 def set_up_core_dir(directory, mode, uid, strict):
@@ -225,9 +226,8 @@ def safe_open(path, mode="w", chmod=None, buffering=None):
     fdopen_args = ()  # type: Union[Tuple[()], Tuple[int]]
     if buffering is not None:
         fdopen_args = (buffering,)
-    return os.fdopen(
-        os.open(path, os.O_CREAT | os.O_EXCL | os.O_RDWR, *open_args),
-        mode, *fdopen_args)
+    fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_RDWR, *open_args)
+    return os.fdopen(fd, mode, *fdopen_args)
 
 
 def _unique_file(path, filename_pat, count, chmod, mode):
