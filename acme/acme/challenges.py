@@ -110,7 +110,7 @@ class KeyAuthorizationChallengeResponse(ChallengeResponse):
 
     def __init__(self, *args, **kwargs):
         super(KeyAuthorizationChallengeResponse, self).__init__(*args, **kwargs)
-        object.__setattr__(self, "authorization_key_config", {"dump": False})
+        object.__setattr__(self, "_authorization_key_config", {"dump": False})
 
     def verify(self, chall, account_public_key):
         """Verify the key authorization.
@@ -150,11 +150,11 @@ class KeyAuthorizationChallengeResponse(ChallengeResponse):
         Set if keyAuthorization is dumped in the JSON representation of this ChallengeResponse.
         :param bool dump: True to dump the keyAuthorization, False otherwise
         """
-        self.authorization_key_config['dump'] = dump
+        self._authorization_key_config['dump'] = dump  # pylint: disable=no-member
 
     def to_partial_json(self):
         jobj = super(KeyAuthorizationChallengeResponse, self).to_partial_json()
-        if not self.authorization_key_config.get('dump', False):
+        if not self._authorization_key_config.get('dump', False):  # pylint: disable=no-member
             jobj.pop('keyAuthorization', None)
 
         return jobj
