@@ -3,6 +3,8 @@ General conftest for pytest execution of all integration tests lying
 in the certbot_integration tests package.
 As stated by pytest documentation, conftest module is used to set on
 for a directory a specific configuration using built-in pytest hooks.
+
+See https://docs.pytest.org/en/latest/reference.html#hook-reference
 """
 import os
 import json
