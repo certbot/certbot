@@ -550,11 +550,6 @@ if [ "$EXPIRED" != 2 ] ; then
     exit 1
 fi
 
-if [ "$REVOKED" != 0 ] ; then
-    echo "Did not find zero revoked certs as expected ($REVOKED)"
-    exit 1
-fi
-
 popd
 
 ## OSCP 2: Check live certificate OCSP status (VALID)
