@@ -156,8 +156,8 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
         :raises .UnexpectedUpdate:
 
         """
-        # Because sending keyAuthorization in a response challenge is deprecated,
-        # it is not included in the KeyAuthorizationResponseChallenge JSON by default.
+        # Because sending keyAuthorization in a response challenge has been removed from the ACME
+        # specs, it is not included in the KeyAuthorizationResponseChallenge JSON by default.
         # However as a migration path, we temporarily expect a malformed error from the server,
         # and fallback by resending the challenge response with the keyAuthorization field.
         # TODO: Remove this fallback for Certbot 0.34.0
