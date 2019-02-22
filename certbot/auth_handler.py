@@ -404,8 +404,7 @@ def _report_failed_authzrs(failed_authzrs, account_key):
                       if challb.error]
 
     for achall in failed_achalls:
-        problems[achall.error.typ] = problems.get(achall.error.typ, [])
-        problems[achall.error.typ].append(achall)
+        problems.setdefault(achall.error.typ, []).append(achall)
 
     reporter = zope.component.getUtility(interfaces.IReporter)
     for achalls in problems.values():
