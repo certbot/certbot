@@ -5,7 +5,6 @@ import datetime
 
 import zope.component
 
-from acme import errors as acme_errors
 from acme import challenges
 from acme import messages
 # pylint: disable=unused-import, no-name-in-module
@@ -88,11 +87,7 @@ class AuthHandler(object):
                 self.acme.answer_challenge(achall.challb, resp)
 
             # Wait for authorizations to be checked.
-            try:
-                self._poll_authorizations(authzrs, max_retries, best_effort)
-            except acme_errors.TimeoutError:
-                # Exceeding the max polling attempts, and some authentication are still not checked.
-                raise errors.AuthorizationError('All challenges could not be checked on time.')
+            self._poll_authorizations(authzrs, max_retries, best_effort)
 
             # Keep validated authorizations only. If there is none, no certificate can be issued.
             authzrs_validated = [authzr for authzr in authzrs
@@ -149,7 +144,8 @@ class AuthHandler(object):
             time.sleep(sleep_seconds if sleep_seconds > 0 else 3)
 
         if authzrs_to_check:
-            raise acme_errors.TimeoutError()
+            # Exceeding the max polling attempts, and some authentication are still not checked.
+            raise errors.AuthorizationError('All challenges could not be checked on time.')
 
     def _choose_challenges(self, authzrs):
         """
