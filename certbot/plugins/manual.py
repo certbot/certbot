@@ -202,7 +202,7 @@ permitted by DNS standards.)
             os.environ.pop('CERTBOT_KEY_PATH', None)
             os.environ.pop('CERTBOT_SNI_DOMAIN', None)
         os.environ.update(env)
-        _, out = hooks.execute(self.conf('auth-hook'))
+        _, out = self._execute_hook('auth-hook')
         env['CERTBOT_AUTH_OUTPUT'] = out.strip()
         self.env[achall] = env
 
@@ -243,5 +243,8 @@ permitted by DNS standards.)
                 if 'CERTBOT_TOKEN' not in env:
                     os.environ.pop('CERTBOT_TOKEN', None)
                 os.environ.update(env)
-                hooks.execute(self.conf('cleanup-hook'))
+                self._execute_hook('cleanup-hook')
         self.reverter.recovery_routine()
+
+    def _execute_hook(self, hook_name):
+        return hooks.execute(self.option_name(hook_name), self.conf(hook_name))

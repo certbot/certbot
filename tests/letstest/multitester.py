@@ -564,6 +564,11 @@ try:
         ii, target, status = outq
         print('%d %s %s'%(ii, target['name'], status))
         results_file.write('%d %s %s\n'%(ii, target['name'], status))
+    if len(outputs) != num_processes:
+        failure_message = 'FAILURE: Some target machines failed to run and were not tested. ' +\
+            'Tests should be rerun.'
+        print(failure_message)
+        results_file.write(failure_message + '\n')
     results_file.close()
 
 finally:
