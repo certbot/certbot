@@ -538,7 +538,6 @@ pushd ./tests/letstest/testdata
 OUT=`common certificates --config-dir sample-config`
 TEST_CERTS=`echo "$OUT" | grep TEST_CERT | wc -l`
 EXPIRED=`echo "$OUT" | grep EXPIRED | wc -l`
-REVOKED=`echo "$OUT" | grep REVOKED | wc -l`
 
 if [ "$TEST_CERTS" != 2 ] ; then
     echo "Did not find two test certs as expected ($TEST_CERTS)"
