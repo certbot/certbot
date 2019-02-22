@@ -225,9 +225,6 @@ class HandleAuthorizationsTest(unittest.TestCase):  # pylint: disable=too-many-p
             self.handler.handle_authorizations(mock_order, False, 1)
         self.assertTrue('All challenges could not be checked on time' in str(error.exception))
 
-        self.assertRaises(
-            errors.AuthorizationError, self.handler.handle_authorizations, mock_order, False, 1)
-
     def test_no_domains(self):
         mock_order = mock.MagicMock(authorizations=[])
         self.assertRaises(errors.AuthorizationError, self.handler.handle_authorizations, mock_order)
