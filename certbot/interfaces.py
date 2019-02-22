@@ -160,16 +160,13 @@ class IAuthenticator(IPlugin):
 
         :returns: `collections.Iterable` of ACME
             :class:`~acme.challenges.ChallengeResponse` instances corresponding to each provided
-            :class:`~acme.challenges.Challenge`. Not returning all expected
-            class:`~acme.challenges.ChallengeResponse`, will instruct Certbot that some or all
-            :class:`~acme.challenges.Challenge` cannot be fulfilled, and this will fail
-            the authorization process.
+            :class:`~acme.challenges.Challenge`.
         :rtype: :class:`collections.Iterable` of
             :class:`acme.challenges.ChallengeResponse`,
             where responses are required to be returned in
             the same order as corresponding input challenges
 
-        :raises .PluginError: If challenges cannot be performed
+        :raises .PluginError: If some or all challenges cannot be performed
 
         """
 
