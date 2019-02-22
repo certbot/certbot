@@ -14,6 +14,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   warnings described at https://github.com/certbot/josepy/issues/13.
 * Apache plugin now respects CERTBOT_DOCS environment variable when adding
   command line defaults.
+* The running of manual plugin hooks is now always included in Certbot's log
+  output.
+* Tests execution for certbot, certbot-apache and certbot-nginx packages now relies on pytest.
 
 ### Fixed
 
@@ -26,6 +29,7 @@ package with changes other than its version number was:
 * acme
 * certbot
 * certbot-apache
+* certbot-nginx
 
 More details about these changes can be found on our GitHub repo.
 
