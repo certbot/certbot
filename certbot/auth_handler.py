@@ -106,8 +106,11 @@ class AuthHandler(object):
         authzrs_to_check = {index: (authzr, None)
                             for index, authzr in enumerate(authzrs)}
         # Give an initial second to the ACME CA server to check the authorizations
-        time.sleep(1)
+        sleep_seconds = 1
         for _ in range(max_retries):
+            # Wait during appropriate time (from Retry-After, initial wait, or no wait)
+            if sleep_seconds > 0:
+                time.sleep(sleep_seconds)
             # Poll all updated authorizations.
             authzrs_to_check = {index: self.acme.poll(authzr) for index, (authzr, _)
                                 in authzrs_to_check.items()}
@@ -135,13 +138,12 @@ class AuthHandler(object):
                 break
 
             # Be merciful with the ACME server CA, check the Retry-After header returned,
-            # and wait this time before polling again. From all the pending authorizations
-            # pending, we take the greatest one to avoid polling an authorization
-            # before its relevant Retry-After value.
+            # and wait this time before polling again in next loop iteration.
+            # From all the pending authorizations, we take the greatest Retry-After value
+            # to avoid polling an authorization before its relevant Retry-After value.
             retry_after = max(self.acme.retry_after(resp, 3)
                               for _, resp in authzrs_to_check.values())
             sleep_seconds = (retry_after - datetime.datetime.now()).total_seconds()
-            time.sleep(sleep_seconds if sleep_seconds > 0 else 3)
 
         if authzrs_to_check:
             # Exceeding the max polling attempts, and some authentication are still not checked.
