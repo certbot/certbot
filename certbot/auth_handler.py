@@ -134,7 +134,8 @@ class AuthHandler(object):
                                 in authzrs_to_check.items()
                                 if authzr.body.status == messages.STATUS_PENDING}
             if not authzrs_to_check:
-                break
+                # Polling process is finished, we can leave the method
+                return
 
             # Be merciful with the ACME server CA, check the Retry-After header returned,
             # and wait this time before polling again in next loop iteration.
@@ -144,9 +145,8 @@ class AuthHandler(object):
                               for _, resp in authzrs_to_check.values())
             sleep_seconds = (retry_after - datetime.datetime.now()).total_seconds()
 
-        if authzrs_to_check:
-            # Exceeding the max polling attempts, and some authentication are still not checked.
-            raise errors.AuthorizationError('All authorizations were not finalized by the CA.')
+        # Here authzrs_to_check is still not empty: it means we exceeded the max polling attempt.
+        raise errors.AuthorizationError('All authorizations were not finalized by the CA.')
 
     def _choose_challenges(self, authzrs):
         """
