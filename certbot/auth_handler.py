@@ -122,12 +122,11 @@ class AuthHandler(object):
             # otherwise an exception.
             authzrs_failed = [authzr for authzr, _ in authzrs_to_check.values()
                               if authzr.body.status == messages.STATUS_INVALID]
-            if authzrs_failed and best_effort:
-                logger.warning('Following authorizations have failed: %s', authzrs_failed)
-            elif authzrs_failed:
+            if authzrs_failed:
                 # Display report to the user
                 _report_failed_authzrs(authzrs_failed, self.account.key)
-                raise errors.AuthorizationError('Some challenges have failed.')
+                if not best_effort:
+                    raise errors.AuthorizationError('Some challenges have failed.')
 
             # Extract out the authorization already checked for next poll iteration.
             # Poll may stop here because there is no pending authorizations anymore.
