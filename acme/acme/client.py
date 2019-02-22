@@ -157,7 +157,7 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
 
         """
         # Because sending keyAuthorization in a response challenge is deprecated,
-        # we let KeyAuthorizationResponseChallenge not dumping it (default behavior).
+        # it is not included in the KeyAuthorizationResponseChallenge JSON by default.
         # However as a migration path, we temporarily expect a malformed error from the server,
         # and fallback by resending the challenge response with the keyAuthorization field.
         # TODO: Remove this fallback for Certbot 0.34.0
