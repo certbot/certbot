@@ -13,6 +13,12 @@ import json
 
 from certbot_integration_tests.utils import misc
 
+ACME_V1_PORT = 4000   # Implicitly configured in boulder, not used in pebble
+ACME_V2_PORT = 4001  # Implicitly configured in boulder, explicitly in pebble
+ACME_SUBNET = '10.77.77'  # Implicitly configured in boulder, explicitly in pebble
+CHALLTESTSRV_PORT = 8055  # Implicitly configured in boulder, explicitly in pebble
+HTTP_01_PORT = 5002  # Implicitly configured both in boulder and pebble
+
 
 def setup_acme_server(acme_config, nodes):
     """
@@ -39,15 +45,14 @@ def setup_acme_server(acme_config, nodes):
 
 def _construct_acme_xdist(acme_type, acme_option, nodes):
     """Generate and return the acme_xdist dict"""
-    acme_xdist = {'challtestsrv_port': 8055}
+    acme_xdist = {'challtestsrv_port': CHALLTESTSRV_PORT}
 
     if acme_type == 'pebble':
-        acme_xdist['directory_url'] = 'https://localhost:14000/dir'
+        acme_xdist['directory_url'] = 'https://localhost:{0}/dir'.format(ACME_V2_PORT)
     else:  # boulder
-        port = 4001 if acme_option == 'v2' else 4000
+        port = ACME_V2_PORT if acme_option == 'v2' else ACME_V1_PORT
         acme_xdist['directory_url'] = 'http://localhost:{0}/directory'.format(port)
 
-    acme_xdist['acme_subnet'] = '10.77.77' if acme_type == 'boulder' else '10.30.50'
     acme_xdist['http_port'] = {node: port for (node, port)
                                in zip(nodes, range(5200, 5200 + len(nodes)))}
     acme_xdist['https_port'] = {node: port for (node, port)
@@ -102,26 +107,29 @@ version: '3'
 services:
   pebble:
     image: letsencrypt/pebble
-    command: pebble -config /test/config/pebble-config.json {strict} -dnsserver 10.30.50.3:8053
+    command: pebble -config /test/config/pebble-config.json {strict} -dnsserver {acme_subnet}.3:8053
     ports:
-      - 14000:14000
+      - {acme_v2_port}:14000
     networks:
       acmenet:
-        ipv4_address: 10.30.50.2
+        ipv4_address: {acme_subnet}.2
   challtestsrv:
     image: letsencrypt/pebble-challtestsrv
-    command: pebble-challtestsrv -defaultIPv6 "" -defaultIPv4 10.30.50.3
+    command: pebble-challtestsrv -defaultIPv6 "" -defaultIPv4 {acme_subnet}.3
     ports:
-      - 8055:8055
+      - {challtestsrv_port}:8055
     networks:
       acmenet:
-        ipv4_address: 10.30.50.3
+        ipv4_address: {acme_subnet}.3
 networks:
   acmenet:
     ipam:
       config:
-        - subnet: 10.30.50.0/24
-'''.format(strict='-strict' if acme_option == 'strict' else ''))
+        - subnet: {acme_subnet}.0/24
+'''.format(strict=('-strict' if acme_option == 'strict' else ''),
+           acme_subnet=ACME_SUBNET,
+           acme_v2_port=ACME_V2_PORT,
+           challtestsrv_port=CHALLTESTSRV_PORT))
 
         _launch_command(['docker-compose', 'up', '--force-recreate', '-d'], cwd=instance_path)
 
@@ -132,7 +140,7 @@ networks:
         # Configure challtestsrv to answer any A record request with ip of the docker host.
         response = requests.post('http://localhost:{0}/set-default-ipv4'
                                  .format(acme_xdist['challtestsrv_port']),
-                                 '{{"ip":"{0}.1"}}'.format(acme_xdist['acme_subnet']))
+                                 json={'ip': '{0}.1'.format(ACME_SUBNET)})
         response.raise_for_status()
 
         print('=> Finished {0} instance deployment.'.format(acme_type))
@@ -145,6 +153,8 @@ def _prepare_traefik_proxy(workspace, acme_xdist):
     """Configure and launch Traefik, the HTTP reverse proxy"""
     print('=> Starting traefik instance deployment...')
     instance_path = join(workspace, 'traefik')
+    traefik_subnet = '10.33.33'
+    traefik_api_port = 8056
     try:
         os.mkdir(instance_path)
 
@@ -156,25 +166,27 @@ services:
     image: traefik
     command: --api --rest
     ports:
-      - "5002:80"
-      - "8056:8080"
+      - {http_01_port}:80
+      - {traefik_api_port}:8080
     networks:
       traefiknet:
-        ipv4_address: 10.33.33.2
+        ipv4_address: {traefik_subnet}.2
 networks:
   traefiknet:
     ipam:
       config:
-        - subnet: 10.33.33.0/24
-''')
+        - subnet: {traefik_subnet}.0/24
+'''.format(traefik_subnet=traefik_subnet,
+           traefik_api_port=traefik_api_port,
+           http_01_port=HTTP_01_PORT))
 
         _launch_command(['docker-compose', 'up', '--force-recreate', '-d'], cwd=instance_path)
 
-        misc.check_until_timeout('http://localhost:8056/api')
+        misc.check_until_timeout('http://localhost:{0}/api'.format(traefik_api_port))
         config = {
             'backends': {
                 node: {
-                    'servers': {node: {'url': 'http://10.33.33.1:{0}'.format(port)}}
+                    'servers': {node: {'url': 'http://{0}.1:{1}'.format(traefik_subnet, port)}}
                 } for node, port in acme_xdist['http_port'].items()
             },
             'frontends': {
@@ -184,7 +196,8 @@ networks:
                 } for node in acme_xdist['http_port'].keys()
             }
         }
-        response = requests.put('http://localhost:8056/api/providers/rest', data=json.dumps(config))
+        response = requests.put('http://localhost:{0}/api/providers/rest'.format(traefik_api_port),
+                                data=json.dumps(config))
         response.raise_for_status()
 
         print('=> Finished traefik instance deployment.')
