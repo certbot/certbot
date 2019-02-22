@@ -223,7 +223,7 @@ class HandleAuthorizationsTest(unittest.TestCase):  # pylint: disable=too-many-p
         with self.assertRaises(errors.AuthorizationError) as error:
             # We retry only once, so retries will be exhausted before STATUS_VALID is returned.
             self.handler.handle_authorizations(mock_order, False, 1)
-        self.assertTrue('All challenges could not be checked on time' in str(error.exception))
+        self.assertTrue('All authorizations were not finalized by the CA.' in str(error.exception))
 
     def test_no_domains(self):
         mock_order = mock.MagicMock(authorizations=[])
@@ -303,7 +303,7 @@ class HandleAuthorizationsTest(unittest.TestCase):  # pylint: disable=too-many-p
         with test_util.patch_get_utility():
             with self.assertRaises(errors.AuthorizationError) as error:
                 self.handler.handle_authorizations(mock_order, False)
-        self.assertTrue('Some challenges have failed' in str(error.exception))
+        self.assertTrue('Some challenges have failed.' in str(error.exception))
         self.assertEqual(self.mock_auth.cleanup.call_count, 1)
         self.assertEqual(
             self.mock_auth.cleanup.call_args[0][0][0].typ, "tls-sni-01")
@@ -314,14 +314,11 @@ class HandleAuthorizationsTest(unittest.TestCase):  # pylint: disable=too-many-p
         self.mock_net.poll.side_effect = _gen_mock_on_poll(status=messages.STATUS_INVALID)
 
         # Expect to fail with best_effort, because all authorizations will fail,
-        # but not on a individual poll, instead logger.warning have been called.
-        with mock.patch('certbot.auth_handler.logger') as mock_logger:
+        # but not on a individual poll, so the error message will be specific.
+        with test_util.patch_get_utility():
             with self.assertRaises(errors.AuthorizationError) as error:
                 self.handler.handle_authorizations(mock_order, True)
-        self.assertTrue(mock_logger.warning.call_count > 1)
-        self.assertTrue('Following authorizations have failed'
-                        in mock_logger.warning.call_args[0][0])
-        self.assertTrue('All challenges have failed' in str(error.exception))
+        self.assertTrue('All challenges have failed.' in str(error.exception))
 
     def test_validated_challenge_not_rerun(self):
         # With pending challenge, we expect the challenge to be tried, and fail.
