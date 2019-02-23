@@ -107,7 +107,7 @@ def _setup_integration_tests(config):
     else:
         acme_config['type'] = 'boulder'
         acme_config['option'] = 'v1' if 'v1' in acme_server else 'v2'
-    # By calling setup_acme_server we ensure that all necessary acme servers instances will be
+    # By calling setup_acme_server we ensure that all necessary acme server instances will be
     # fully started. This runtime is reflected by the acme_xdist returned.
     acme_xdist = acme.setup_acme_server(acme_config, workers)
     os.environ['CERTBOT_ACME_TYPE'] = acme_server
