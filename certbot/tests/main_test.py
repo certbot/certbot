@@ -1277,13 +1277,6 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
                                           args=['renew'], should_renew=False)
 
     # Should be moved to renewal_test.py
-    def test_renew_with_bad_cli_args(self):
-        self._test_renewal_common(True, None, args='renew -d example.com'.split(),
-                                  should_renew=False, error_expected=True)
-        self._test_renewal_common(True, None, args='renew --csr {0}'.format(CSR).split(),
-                                  should_renew=False, error_expected=True)
-
-    # Should be moved to renewal_test.py
     def test_no_renewal_with_hooks(self):
         _, _, stdout = self._test_renewal_common(
             due_for_renewal=False, extra_args=None, should_renew=False,
