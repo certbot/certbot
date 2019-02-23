@@ -167,6 +167,13 @@ class RenewalTest(test_util.ConfigTestCase):
 
         return mock_lineage, mock_get_utility, stdout
 
+
+    def test_renew_hook_validation(self):
+        test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
+        args = ["renew", "--dry-run", "--post-hook=no-such-command"]
+        self._test_renewal_common(True, [], args=args, should_renew=False,
+                                  error_expected=True)
+
     def test_renew_bad_cli_args_with_split(self):
         self._test_renewal_common(True, None, args='renew -d example.com'.split(),
                                   should_renew=False, error_expected=True)
@@ -174,6 +181,7 @@ class RenewalTest(test_util.ConfigTestCase):
     def test_renew_bad_cli_args_with_format(self):
         self._test_renewal_common(True, None, args='renew --csr {0}'.format(CSR).split(),
                                   should_renew=False, error_expected=True)
+
 
 
 class RestoreRequiredConfigElementsTest(test_util.ConfigTestCase):

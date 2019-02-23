@@ -1146,13 +1146,6 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         self.assertEqual("", out)
 
     # Should be moved to renewal_test.py
-    def test_renew_hook_validation(self):
-        test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
-        args = ["renew", "--dry-run", "--post-hook=no-such-command"]
-        self._test_renewal_common(True, [], args=args, should_renew=False,
-                                  error_expected=True)
-
-    # Should be moved to renewal_test.py
     def test_renew_no_hook_validation(self):
         test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
         args = ["renew", "--dry-run", "--post-hook=no-such-command",
