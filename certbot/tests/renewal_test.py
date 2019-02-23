@@ -167,6 +167,12 @@ class RenewalTest(test_util.ConfigTestCase):
 
         return mock_lineage, mock_get_utility, stdout
 
+    @mock.patch('certbot.storage.RenewableCert.save_successor')
+    def test_reuse_key_no_dry_run(self, unused_save_successor):
+        test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
+        args = ["renew", "--reuse-key"]
+        self._test_renewal_common(True, [], args=args, should_renew=True, reuse_key=True)
+
 
     def test_renew_hook_validation(self):
         test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
