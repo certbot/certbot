@@ -12,7 +12,7 @@ from six.moves.urllib.request import urlopen
 
 def check_until_timeout(url):
     """
-    Wait and block until given url responds with status 200, or raise and exception
+    Wait and block until given url responds with status 200, or raise an exception
     after 150 attempts.
     :param str url: the URL to test
     :raise ValueError: exception raised after 150 unsuccessful attempts to reach the URL
