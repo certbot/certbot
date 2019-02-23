@@ -1089,11 +1089,6 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         args = ["renew", "--dry-run", "-tvv"]
         self._test_renewal_common(True, [], args=args, should_renew=True)
 
-    # Should be moved to renewal_test.py
-    def test_reuse_key(self):
-        test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
-        args = ["renew", "--dry-run", "--reuse-key"]
-        self._test_renewal_common(True, [], args=args, should_renew=True, reuse_key=True)
 
     # Should be moved to renewal_test.py
     @mock.patch('certbot.storage.RenewableCert.save_successor')

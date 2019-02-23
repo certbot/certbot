@@ -33,6 +33,11 @@ class RenewalTest(test_util.ConfigTestCase):
             with open(log_path) as lf:
                 print(lf.read())
 
+    def test_reuse_key(self):
+        test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
+        args = ["renew", "--dry-run", "--reuse-key"]
+        self._test_renewal_common(True, [], args=args, should_renew=True, reuse_key=True)
+
     def _call(self, args, stdout=None, mockisfile=False):
         """Run the cli with output streams, actual client and optionally
         os.path.isfile() mocked out"""
