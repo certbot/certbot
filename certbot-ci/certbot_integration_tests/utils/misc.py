@@ -33,7 +33,7 @@ def check_until_timeout(url):
 @contextlib.contextmanager
 def execute_in_given_cwd(cwd):
     """
-    Context manager that will execute any command in the given cwd after context entering,
+    Context manager that will execute any command in the given cwd after entering context,
     and restore current cwd when context is destroyed.
     :param str cwd: the path to use as the temporary current workspace for python execution
     """
