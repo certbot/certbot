@@ -30,7 +30,7 @@ def setup_acme_server(acme_config, nodes):
     with the relevant pytest xdist node.
     :param dict acme_config: a dict describing the current acme server characteristics to setup.
     :param str[] nodes: list of nodes name that will be setup by pytest xdist
-    :return: a dict describing the challenges ports that have been setup for the nodes
+    :return: a dict describing the challenge ports that have been setup for the nodes
     :rtype: dict
     """
     acme_type, acme_option = acme_config['type'], acme_config['option']
