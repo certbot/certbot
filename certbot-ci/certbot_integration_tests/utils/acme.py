@@ -29,7 +29,7 @@ def setup_acme_server(acme_config, nodes):
     This method returns an object describing ports and directory url to use for each pytest node
     with the relevant pytest xdist node.
     :param dict acme_config: a dict describing the current acme server characteristics to setup.
-    :param str[] nodes: list of nodes name that will be setup by pytest xdist
+    :param str[] nodes: list of node names that will be setup by pytest xdist
     :return: a dict describing the challenge ports that have been setup for the nodes
     :rtype: dict
     """
