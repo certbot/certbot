@@ -99,7 +99,7 @@ def _setup_integration_tests(config):
 
     acme_server = config.option.acme_server
     # Prepare the acme config server. Data is specific to an acme type. Module
-    # utils.acme_server will handle theses specifics.
+    # utils.acme_server will handle these specifics.
     acme_config = {}
     if 'pebble' in config.option.acme_server:
         acme_config['type'] = 'pebble'
