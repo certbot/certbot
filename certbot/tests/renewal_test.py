@@ -167,6 +167,11 @@ class RenewalTest(test_util.ConfigTestCase):
 
         return mock_lineage, mock_get_utility, stdout
 
+    def test_renew_with_certname(self):
+        test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
+        self._test_renewal_common(True, [], should_renew=True,
+                                  args=['renew', '--dry-run', '--cert-name', 'sample-renewal'])
+
     def test_renew_verb(self):
         test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
         args = ["renew", "--dry-run", "-tvv"]
@@ -179,6 +184,7 @@ class RenewalTest(test_util.ConfigTestCase):
                 "--disable-hook-validation"]
         self._test_renewal_common(True, [], args=args, should_renew=True,
                                       error_expected=False)
+
     @mock.patch('certbot.storage.RenewableCert.save_successor')
     def test_reuse_key_no_dry_run(self, unused_save_successor):
         test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
