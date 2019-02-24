@@ -1139,15 +1139,6 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         self.assertEqual("", out)
 
     # Should be moved to renewal_test.py
-    def test_renew_no_hook_validation(self):
-        test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
-        args = ["renew", "--dry-run", "--post-hook=no-such-command",
-                "--disable-hook-validation"]
-        with mock.patch("certbot.hooks.post_hook"):
-            self._test_renewal_common(True, [], args=args, should_renew=True,
-                                      error_expected=False)
-
-    # Should be moved to renewal_test.py
     def test_renew_verb_empty_config(self):
         rd = os.path.join(self.config.config_dir, 'renewal')
         if not os.path.exists(rd):
