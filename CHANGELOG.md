@@ -14,6 +14,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   warnings described at https://github.com/certbot/josepy/issues/13.
 * Apache plugin now respects CERTBOT_DOCS environment variable when adding
   command line defaults.
+* Tests for renewal are refactored according to:
+  https://github.com/certbot/certbot/issues/4069. The tests are moved to correct
+  test file and refactored into smaller test cases when possible.
 
 ### Fixed
 
