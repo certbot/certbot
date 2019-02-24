@@ -200,6 +200,14 @@ class RenewalTest(test_util.ConfigTestCase):
         self._test_renewal_common(True, None, args='renew --csr {0}'.format(CSR).split(),
                                   should_renew=False, error_expected=True)
 
+    def test_renew_verb_empty_config(self):
+        rd = os.path.join(self.config.config_dir, 'renewal')
+        if not os.path.exists(rd):
+            os.makedirs(rd)
+        with open(os.path.join(rd, 'empty.conf'), 'w'):
+            pass  # leave the file empty
+        args = ["renew", "--dry-run", "-tvv"]
+        self._test_renewal_common(False, [], args=args, should_renew=False, error_expected=True)
 
 class RestoreRequiredConfigElementsTest(test_util.ConfigTestCase):
     """Tests for certbot.renewal.restore_required_config_elements."""

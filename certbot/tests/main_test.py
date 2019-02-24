@@ -1131,15 +1131,6 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         out = stdout.getvalue()
         self.assertEqual("", out)
 
-    # Should be moved to renewal_test.py
-    def test_renew_verb_empty_config(self):
-        rd = os.path.join(self.config.config_dir, 'renewal')
-        if not os.path.exists(rd):
-            os.makedirs(rd)
-        with open(os.path.join(rd, 'empty.conf'), 'w'):
-            pass  # leave the file empty
-        args = ["renew", "--dry-run", "-tvv"]
-        self._test_renewal_common(False, [], args=args, should_renew=False, error_expected=True)
 
     # Should be moved to renewal_test.py
     def test_renew_with_certname(self):
