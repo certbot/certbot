@@ -27,6 +27,8 @@ class RenewalTest(test_util.ConfigTestCase):
                               '--work-dir', self.config.work_dir,
                               '--logs-dir', self.config.logs_dir, '--text']
 
+        self.mock_sleep = mock.patch('time.sleep').start()
+
     def _dump_log(self):
         print("Logs:")
         log_path = os.path.join(self.config.logs_dir, "letsencrypt.log")
@@ -211,14 +213,14 @@ class RenewalTest(test_util.ConfigTestCase):
         self._test_renewal_common(True, None, args='renew --csr {0}'.format(CSR).split(),
                                   should_renew=False, error_expected=True)
 
-    def test_renew_verb_empty_config(self):
-        rd = os.path.join(self.config.config_dir, 'renewal')
-        if not os.path.exists(rd):
-            os.makedirs(rd)
-        with open(os.path.join(rd, 'empty.conf'), 'w'):
-            pass  # leave the file empty
+    @mock.patch('sys.stdin')
+    def test_interactive_no_renewal_delay(self, stdin):
+        stdin.isatty.return_value = True
+        test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
         args = ["renew", "--dry-run", "-tvv"]
-        self._test_renewal_common(False, [], args=args, should_renew=False, error_expected=True)
+        self._test_renewal_common(True, [], args=args, should_renew=True)
+        self.assertEqual(self.mock_sleep.call_count, 0)
+
 
 class RestoreRequiredConfigElementsTest(test_util.ConfigTestCase):
     """Tests for certbot.renewal.restore_required_config_elements."""
