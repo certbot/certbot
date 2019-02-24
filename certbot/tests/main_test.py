@@ -1094,22 +1094,6 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         self.assertTrue('No renewals were attempted.' in stdout.getvalue())
         self.assertTrue('The following certs are not due for renewal yet:' in stdout.getvalue())
 
-    # Should be moved to renewal_test.py
-    @test_util.broken_on_windows
-    def test_quiet_renew(self):
-        test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
-        args = ["renew", "--dry-run"]
-        _, _, stdout = self._test_renewal_common(True, [], args=args, should_renew=True)
-        out = stdout.getvalue()
-        self.assertTrue("renew" in out)
-
-        args = ["renew", "--dry-run", "-q"]
-        _, _, stdout = self._test_renewal_common(True, [], args=args,
-                                                 should_renew=True, quiet_mode=True)
-        out = stdout.getvalue()
-        self.assertEqual("", out)
-
-
     def _make_dummy_renewal_config(self):
         renewer_configs_dir = os.path.join(self.config.config_dir, 'renewal')
         os.makedirs(renewer_configs_dir)
