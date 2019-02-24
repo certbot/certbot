@@ -10,11 +10,9 @@ import os
 import json
 import contextlib
 import sys
-import tempfile
 import subprocess
-import errno
 
-from certbot_integration_tests.utils import acme
+from certbot_integration_tests.utils import acme_server as acme_lib
 
 
 def pytest_addoption(parser):
@@ -109,7 +107,7 @@ def _setup_integration_tests(config):
         acme_config['option'] = 'v1' if 'v1' in acme_server else 'v2'
     # By calling setup_acme_server we ensure that all necessary acme server instances will be
     # fully started. This runtime is reflected by the acme_xdist returned.
-    acme_xdist = acme.setup_acme_server(acme_config, workers)
+    acme_xdist = acme_lib.setup_acme_server(acme_config, workers)
     os.environ['CERTBOT_ACME_TYPE'] = acme_server
     os.environ['CERTBOT_ACME_XDIST'] = json.dumps(acme_xdist)
     print('ACME xdist config:\n{0}'.format(os.environ['CERTBOT_ACME_XDIST']))
