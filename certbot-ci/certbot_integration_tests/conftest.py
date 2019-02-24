@@ -77,7 +77,7 @@ def _setup_integration_tests(config):
         - create a temporary workspace and the persistent GIT repositories space
         - configure and start paralleled ACME CA servers using Docker
         - transfer ACME CA servers configurations to pytest nodes using env variables
-    :param config: Configuration of the pytest master node
+    :param config: Configuration of the pytest primary node
     """
     # Check for runtime compatibility: some tools are required to be available in PATH
     try:
@@ -92,6 +92,7 @@ def _setup_integration_tests(config):
         raise ValueError('Error: docker-compose is required in PATH to launch the integration tests, '
                          'but is not installed or not available for current user.')
 
+    # Parameter numprocesses is added to option by pytest-xdist
     workers = ['master'] if not config.option.numprocesses\
         else ['gw{0}'.format(i) for i in range(config.option.numprocesses)]
 
