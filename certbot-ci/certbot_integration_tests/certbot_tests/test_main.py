@@ -1,12 +1,26 @@
 import requests
 import urllib3
 
+import pytest
 
-def test_hello_1(request, worker_id):
-    assert request.config.acme_xdist['http_port'][worker_id]
-    assert request.config.acme_xdist['https_port'][worker_id]
+from certbot_integration_tests.certbot_tests import context as certbot_context
+
+
+@pytest.fixture()
+def context(request):
+    # Fixture request is a built-in pytest fixture describing current test request.
+    integration_test_context = certbot_context.IntegrationTestsContext(request)
     try:
-        response = requests.get(request.config.acme_xdist['directory_url'], verify=False)
+        yield integration_test_context
+    finally:
+        integration_test_context.cleanup()
+
+
+def test_hello_1(context):
+    assert context.http_01_port
+    assert context.tls_alpn_01_port
+    try:
+        response = requests.get(context.directory_url, verify=False)
         response.raise_for_status()
         assert response.json()
         response.close()
@@ -14,14 +28,13 @@ def test_hello_1(request, worker_id):
         pass
 
 
-def test_hello_2(request, worker_id):
-    assert request.config.acme_xdist['http_port'][worker_id]
-    assert request.config.acme_xdist['https_port'][worker_id]
+def test_hello_2(context):
+    assert context.http_01_port
+    assert context.tls_alpn_01_port
     try:
-        response = requests.get(request.config.acme_xdist['directory_url'], verify=False)
+        response = requests.get(context.directory_url, verify=False)
         response.raise_for_status()
         assert response.json()
         response.close()
     except urllib3.exceptions.InsecureRequestWarning:
         pass
-

@@ -93,7 +93,7 @@ def _setup_integration_tests(config):
                          'but is not installed or not available for current user.')
 
     # Parameter numprocesses is added to option by pytest-xdist
-    workers = ['master'] if not config.option.numprocesses\
+    workers = ['primary'] if not config.option.numprocesses\
         else ['gw{0}'.format(i) for i in range(config.option.numprocesses)]
 
     acme_server = config.option.acme_server
