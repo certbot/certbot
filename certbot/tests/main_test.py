@@ -1084,19 +1084,6 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
                 print(lf.read())
 
     # Should be moved to renewal_test.py
-    @mock.patch('sys.stdin')
-    def test_noninteractive_renewal_delay(self, stdin):
-        stdin.isatty.return_value = False
-        test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
-        args = ["renew", "--dry-run", "-tvv"]
-        self._test_renewal_common(True, [], args=args, should_renew=True)
-        self.assertEqual(self.mock_sleep.call_count, 1)
-        # in main.py:
-        #     sleep_time = random.randint(1, 60*8)
-        sleep_call_arg = self.mock_sleep.call_args[0][0]
-        self.assertTrue(1 <= sleep_call_arg <= 60*8)
-
-    # Should be moved to renewal_test.py
     @mock.patch('certbot.renewal.should_renew')
     def test_renew_skips_recent_certs(self, should_renew):
         should_renew.return_value = False
