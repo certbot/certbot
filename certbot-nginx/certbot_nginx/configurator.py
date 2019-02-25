@@ -11,6 +11,7 @@ import zope.interface
 
 from acme import challenges
 from acme import crypto_util as acme_crypto_util
+from acme.magic_typing import Dict, Set, List  # pylint: disable=unused-import, no-name-in-module
 
 from certbot import constants as core_constants
 from certbot import crypto_util
@@ -104,8 +105,8 @@ class NginxConfigurator(common.Installer):
 
         # List of vhosts configured per wildcard domain on this run.
         # used by deploy_cert() and enhance()
-        self._wildcard_vhosts = {} # type: Dict[str, List[obj.VirtualHost]]
-        self._wildcard_redirect_vhosts = {} # type: Dict[str, List[obj.VirtualHost]]
+        self._wildcard_vhosts = {}  # type: Dict[str, List[obj.VirtualHost]]
+        self._wildcard_redirect_vhosts = {}  # type: Dict[str, List[obj.VirtualHost]]
 
         # Add number of outstanding challenges
         self._chall_out = 0
