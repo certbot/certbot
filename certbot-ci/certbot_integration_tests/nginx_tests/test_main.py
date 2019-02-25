@@ -29,13 +29,13 @@ testdata1 = [
 
 @pytest.mark.parametrize('certname_pattern, params', testdata1)
 def test_nginx_with_default_server(certname_pattern, params, context):
-    with context_nginx.nginx_server('default_server'):
-        certname = certname_pattern.format(context_nginx.worker_id)
+    with context.nginx_server('default_server'):
+        certname = certname_pattern.format(context.worker_id)
         command = ['--domains', certname]
         command.extend(params)
-        context_nginx.certbot_test_nginx(command)
+        context.certbot_test_nginx(command)
 
-        context_nginx.assert_deployment_and_rollback(certname)
+        context.assert_deployment_and_rollback(certname)
 
 
 testdata2 = [
@@ -46,10 +46,10 @@ testdata2 = [
 
 @pytest.mark.parametrize('certname_pattern, params', testdata2)
 def test_nginx_without_default_server(certname_pattern, params, context):
-    with context_nginx.nginx_server('default_server'):
+    with context.nginx_server('default_server'):
         certname = certname_pattern.format(context_nginx.worker_id)
         command = ['--domains', certname]
         command.extend(params)
-        context_nginx.certbot_test_nginx(command)
+        context.certbot_test_nginx(command)
 
-        context_nginx.assert_deployment_and_rollback(certname.split(',')[0])
+        context.assert_deployment_and_rollback(certname.split(',')[0])
