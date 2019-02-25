@@ -2,27 +2,17 @@ import os
 import subprocess
 import random
 import contextlib
-
-import pytest
 import ssl
 
-from certbot_integration_tests.certbot_tests.fixtures import IntegrationTestsContext
+from certbot_integration_tests.certbot_tests import context as certbot_context
 from certbot_integration_tests.utils import misc
 from certbot_integration_tests.nginx_tests.nginx_config import construct_nginx_config
 
 
-@pytest.fixture()
-def context_nginx(request):
-    integration_tests_context = NginxIntegrationTestsContext(request)
-    try:
-        yield integration_tests_context
-    finally:
-        integration_tests_context.cleanup()
-
-
-class NginxIntegrationTestsContext(IntegrationTestsContext):
+class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
+    """General fixture describing a certbot-nginx integration tests context"""
     def __init__(self, request):
-        super(NginxIntegrationTestsContext, self).__init__(request)
+        super(IntegrationTestsContext, self).__init__(request)
 
         self.nginx_root = os.path.join(self.workspace, 'nginx')
         os.mkdir(self.nginx_root)

@@ -5,61 +5,26 @@ import shutil
 import sys
 from distutils.version import LooseVersion
 
-import pytest
-
 from certbot_integration_tests.utils import misc
 
 
-@pytest.fixture()
-def context(request):
-    integration_test_context = IntegrationTestsContext(request)
-    try:
-        yield integration_test_context
-    finally:
-        integration_test_context.cleanup()
-
-
-@pytest.fixture()
-def http_01_server(context):
-    with misc.create_tcp_server(context.http_01_port) as webroot:
-        yield webroot
-
-
-@pytest.fixture()
-def tls_alpn_01_server(context):
-    with misc.create_tcp_server(context.tls_alpn_01_port) as webroot:
-        yield webroot
-
-
-@pytest.fixture()
-def manual_http_hooks(http_01_server):
-    auth = (
-        '{0} -c "import os; '
-        "challenge_dir = os.path.join('{1}', '.well-known/acme-challenge'); "
-        'os.makedirs(challenge_dir); '
-        "challenge_file = os.path.join(challenge_dir, os.environ.get('CERTBOT_TOKEN')); "
-        "open(challenge_file, 'w').write(os.environ.get('CERTBOT_VALIDATION')); "
-        '"'
-    ).format(sys.executable, http_01_server)
-    cleanup = (
-        '{0} -c "import os; import shutil; '
-        "well_known = os.path.join('{1}', '.well-known'); "
-        'shutil.rmtree(well_known); '
-        '"'
-    ).format(sys.executable, http_01_server)
-
-    return auth, cleanup
-
-
-class IntegrationTestsContext(object):
+class IntegrationTestsContext:
+    """General fixture describing a certbot integration tests context"""
     def __init__(self, request):
         self.request = request
 
         self.worker_id = request.config.slaveinput['slaveid'] if hasattr(request.config, 'slaveinput') else 'master'
-        self.acme_url = request.config.acme_xdist['directory_url']
-        self.tls_alpn_01_port = request.config.acme_xdist['https_port'][self.worker_id]
-        self.http_01_port = request.config.acme_xdist['http_port'][self.worker_id]
-        self.challtestsrv_mgt_port = request.config.acme_xdist['challtestsrv_port']
+        if hasattr(request.config, 'slaveinput'):  # Worker node
+            self.worker_id = request.config.slaveinput['slaveid']
+            self.acme_xdist = request.config.slaveinput['acme_xdist']
+        else:  # Primary node
+            self.worker_id = 'primary'
+            self.acme_xdist = request.config.acme_xdist
+
+        self.directory_url = self.acme_xdist['directory_url']
+        self.tls_alpn_01_port = self.acme_xdist['https_port'][self.worker_id]
+        self.http_01_port = self.acme_xdist['http_port'][self.worker_id]
+        self.challtestsrv_mgt_port = self.acme_xdist['challtestsrv_port']
 
         self.certbot_version = misc.get_certbot_version()
 
@@ -97,7 +62,7 @@ class IntegrationTestsContext(object):
 
         command = [
             'certbot',
-            '--server', self.acme_url,
+            '--server', self.directory_url,
             '--no-verify-ssl',
             '--tls-sni-01-port', str(self.tls_alpn_01_port),
             '--http-01-port', str(self.http_01_port),

@@ -7,14 +7,11 @@ for a directory a specific configuration using built-in pytest hooks.
 See https://docs.pytest.org/en/latest/reference.html#hook-reference
 """
 import os
-import json
 import contextlib
 import sys
-import tempfile
 import subprocess
-import errno
 
-from certbot_integration_tests.utils import acme
+from certbot_integration_tests.utils import acme_server as acme_lib
 
 
 def pytest_addoption(parser):
@@ -35,25 +32,17 @@ def pytest_configure(config):
     Standard pytest hook used to add a configuration logic for each node of a pytest run.
     :param config: the current pytest configuration
     """
-    if not hasattr(config, 'slaveinput'):
+    if not hasattr(config, 'slaveinput'):  # If true, this is the primary node
         with _print_on_err():
-            _setup_integration_tests(config)
-
-    if not os.environ.get('CERTBOT_ACME_TYPE'):
-        raise ValueError('Error, CERTBOT_ACME_TYPE environment variable is not set !')
-    config.acme_xdist = _get_acme_xdist()
+            config.acme_xdist = _setup_integration_tests(config)
 
 
-def _get_acme_xdist():
+def pytest_configure_node(node):
     """
-    Get the acme server config distribution from the environment variable "CERTBOT_ACME_XDIST"
-    :return: a dict of the acme server config distribution
+    Standard pytest-xdist hook used to configure a worker node.
+    :param node: current worker node
     """
-    acme_xdist = os.environ.get('CERTBOT_ACME_XDIST')
-    if not acme_xdist:
-        raise ValueError('Error, CERTBOT_ACME_XDIST environment variable is not set !')
-
-    return json.loads(acme_xdist)
+    node.slaveinput['acme_xdist'] = node.config.acme_xdist
 
 
 @contextlib.contextmanager
@@ -79,7 +68,7 @@ def _setup_integration_tests(config):
         - create a temporary workspace and the persistent GIT repositories space
         - configure and start paralleled ACME CA servers using Docker
         - transfer ACME CA servers configurations to pytest nodes using env variables
-    :param config: Configuration of the pytest master node
+    :param config: Configuration of the pytest primary node
     """
     # Check for runtime compatibility: some tools are required to be available in PATH
     try:
@@ -94,12 +83,13 @@ def _setup_integration_tests(config):
         raise ValueError('Error: docker-compose is required in PATH to launch the integration tests, '
                          'but is not installed or not available for current user.')
 
-    workers = ['master'] if not config.option.numprocesses\
+    # Parameter numprocesses is added to option by pytest-xdist
+    workers = ['primary'] if not config.option.numprocesses\
         else ['gw{0}'.format(i) for i in range(config.option.numprocesses)]
 
     acme_server = config.option.acme_server
     # Prepare the acme config server. Data is specific to an acme type. Module
-    # utils.acme_server will handle theses specifics.
+    # utils.acme_server will handle these specifics.
     acme_config = {}
     if 'pebble' in config.option.acme_server:
         acme_config['type'] = 'pebble'
@@ -107,9 +97,10 @@ def _setup_integration_tests(config):
     else:
         acme_config['type'] = 'boulder'
         acme_config['option'] = 'v1' if 'v1' in acme_server else 'v2'
-    # By calling setup_acme_server we ensure that all necessary acme servers instances will be
+    # By calling setup_acme_server we ensure that all necessary acme server instances will be
     # fully started. This runtime is reflected by the acme_xdist returned.
-    acme_xdist = acme.setup_acme_server(acme_config, workers)
+    acme_xdist = acme_lib.setup_acme_server(acme_config, workers)
     os.environ['CERTBOT_ACME_TYPE'] = acme_server
-    os.environ['CERTBOT_ACME_XDIST'] = json.dumps(acme_xdist)
-    print('ACME xdist config:\n{0}'.format(os.environ['CERTBOT_ACME_XDIST']))
+    print('ACME xdist config:\n{0}'.format(acme_xdist))
+
+    return acme_xdist

@@ -8,10 +8,18 @@ from os.path import join, exists
 import pytest
 
 from certbot_integration_tests.certbot_tests.assertions import *
+from certbot_integration_tests.certbot_tests import context as certbot_context
 from certbot_integration_tests.utils import misc
-from certbot_integration_tests.utils.markers import (
-    skip_on_pebble_strict, skip_on_boulder_v1
-)
+
+
+@pytest.fixture()
+def context(request):
+    # Fixture request is a built-in pytest fixture describing current test request.
+    integration_test_context = certbot_context.IntegrationTestsContext(request)
+    try:
+        yield integration_test_context
+    finally:
+        integration_test_context.cleanup()
 
 
 def test_basic_commands(context):
@@ -60,33 +68,35 @@ def test_prepare_plugins(context):
 
 @skip_on_pebble_strict('HTTP-01 challenges send deprecated keyAuthorization keys,'
                        'and so are not supported by Pebble with strict mode.')
-def test_http_01(context, tls_alpn_01_server):
-    assert tls_alpn_01_server
-
-    certname = context.wtf('le2')
-    context.common([
-        '--domains', certname, '--preferred-challenges', 'http-01', 'run',
-        '--cert-name', certname,
-        '--pre-hook', 'echo wtf.pre >> "{0}"'.format(context.hook_probe),
-        '--post-hook', 'echo wtf.post >> "{0}"'.format(context.hook_probe),
-        '--deploy-hook', 'echo deploy >> "{0}"'.format(context.hook_probe)
-    ])
+def test_http_01(context):
+    with misc.create_tcp_server(context.tls_alpn_01_port):
+        certname = context.wtf('le2')
+        context.common([
+            '--domains', certname, '--preferred-challenges', 'http-01', 'run',
+            '--cert-name', certname,
+            '--pre-hook', 'echo wtf.pre >> "{0}"'.format(context.hook_probe),
+            '--post-hook', 'echo wtf.post >> "{0}"'.format(context.hook_probe),
+            '--deploy-hook', 'echo deploy >> "{0}"'.format(context.hook_probe)
+        ])
 
     assert_hook_execution(context.hook_probe, 'deploy')
     assert_save_renew_hook(context.config_dir, certname)
 
 
-def test_manual_http_auth(context, manual_http_hooks):
-    certname = context.wtf()
-    context.common([
-        'certonly', '-a', 'manual', '-d', certname,
-        '--cert-name', certname,
-        '--manual-auth-hook', manual_http_hooks[0],
-        '--manual-cleanup-hook', manual_http_hooks[1],
-        '--pre-hook', 'echo wtf.pre >> "{0}"'.format(context.hook_probe),
-        '--post-hook', 'echo wtf.post >> "{0}"'.format(context.hook_probe),
-        '--renew-hook', 'echo renew >> "{0}"'.format(context.hook_probe)
-    ])
+def test_manual_http_auth(context):
+    with misc.create_tcp_server(context.http_01_port) as webroot:
+        manual_http_hooks = misc.manual_http_hooks(webroot)
+
+        certname = context.wtf()
+        context.common([
+            'certonly', '-a', 'manual', '-d', certname,
+            '--cert-name', certname,
+            '--manual-auth-hook', manual_http_hooks[0],
+            '--manual-cleanup-hook', manual_http_hooks[1],
+            '--pre-hook', 'echo wtf.pre >> "{0}"'.format(context.hook_probe),
+            '--post-hook', 'echo wtf.post >> "{0}"'.format(context.hook_probe),
+            '--renew-hook', 'echo renew >> "{0}"'.format(context.hook_probe)
+        ])
 
     with pytest.raises(AssertionError):
         assert_hook_execution(context.hook_probe, 'renew')

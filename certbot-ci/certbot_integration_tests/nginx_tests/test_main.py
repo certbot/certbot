@@ -2,6 +2,18 @@ import subprocess
 
 import pytest
 
+from certbot_integration_tests.nginx_tests import context as nginx_context
+
+
+@pytest.fixture()
+def context(request):
+    # Fixture request is a built-in pytest fixture describing current test request.
+    integration_test_context = nginx_context.IntegrationTestsContext(request)
+    try:
+        yield integration_test_context
+    finally:
+        integration_test_context.cleanup()
+
 
 def test_nginx_version():
     print(subprocess.check_output(['nginx', '-v']))
@@ -16,7 +28,7 @@ testdata1 = [
 
 
 @pytest.mark.parametrize('certname_pattern, params', testdata1)
-def test_nginx_with_default_server(certname_pattern, params, context_nginx):
+def test_nginx_with_default_server(certname_pattern, params, context):
     with context_nginx.nginx_server('default_server'):
         certname = certname_pattern.format(context_nginx.worker_id)
         command = ['--domains', certname]
@@ -33,7 +45,7 @@ testdata2 = [
 
 
 @pytest.mark.parametrize('certname_pattern, params', testdata2)
-def test_nginx_without_default_server(certname_pattern, params, context_nginx):
+def test_nginx_without_default_server(certname_pattern, params, context):
     with context_nginx.nginx_server('default_server'):
         certname = certname_pattern.format(context_nginx.worker_id)
         command = ['--domains', certname]

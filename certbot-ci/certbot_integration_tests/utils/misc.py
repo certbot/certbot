@@ -22,7 +22,7 @@ from OpenSSL import crypto
 
 def check_until_timeout(url):
     """
-    Wait and block until given url responds with status 200, or raise and exception
+    Wait and block until given url responds with status 200, or raise an exception
     after 150 attempts.
     :param str url: the URL to test
     :raise ValueError: exception raised after 150 unsuccessful attempts to reach the URL
@@ -76,6 +76,21 @@ def read_certificate(cert_path):
 
 class GraceFullTCPServer(socketserver.TCPServer):
     allow_reuse_address = True
+
+
+@contextlib.contextmanager
+def execute_in_given_cwd(cwd):
+    """
+    Context manager that will execute any command in the given cwd after entering context,
+    and restore current cwd when context is destroyed.
+    :param str cwd: the path to use as the temporary current workspace for python execution
+    """
+    current_cwd = os.getcwd()
+    try:
+        os.chdir(cwd)
+        yield
+    finally:
+        os.chdir(current_cwd)
 
 
 @contextlib.contextmanager
@@ -145,6 +160,25 @@ echo $(basename $(dirname "$0")) >> "{1}"\
         with open(hook_path, 'w') as file:
             file.write(data)
         os.chmod(hook_path, os.stat(hook_path).st_mode | stat.S_IEXEC)
+
+
+def manual_http_hooks(http_server_root):
+    auth = (
+        '{0} -c "import os; '
+        "challenge_dir = os.path.join('{1}', '.well-known/acme-challenge'); "
+        'os.makedirs(challenge_dir); '
+        "challenge_file = os.path.join(challenge_dir, os.environ.get('CERTBOT_TOKEN')); "
+        "open(challenge_file, 'w').write(os.environ.get('CERTBOT_VALIDATION')); "
+        '"'
+    ).format(sys.executable, http_server_root)
+    cleanup = (
+        '{0} -c "import os; import shutil; '
+        "well_known = os.path.join('{1}', '.well-known'); "
+        'shutil.rmtree(well_known); '
+        '"'
+    ).format(sys.executable, http_server_root)
+
+    return auth, cleanup
 
 
 def get_certbot_version():

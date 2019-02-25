@@ -22,15 +22,15 @@ HTTP_01_PORT = 5002  # Implicitly configured both in boulder and pebble
 
 def setup_acme_server(acme_config, nodes):
     """
-    This method will setup an ACME CA server and a HTTP reverse proxy instances, to allow parallel
+    This method will setup an ACME CA server and an HTTP reverse proxy instance, to allow parallel
     execution of integration tests against the unique http-01 port expected by the ACME CA server.
     Instances are properly closed and cleaned when the Python process exits using atexit.
     Typically all pytest integration tests will be executed in this context.
     This method returns an object describing ports and directory url to use for each pytest node
     with the relevant pytest xdist node.
     :param dict acme_config: a dict describing the current acme server characteristics to setup.
-    :param str[] nodes: list of nodes name that will be setup by pytest xdist
-    :return: a dict describing the challenges ports that have been setup for the nodes
+    :param str[] nodes: list of node names that will be setup by pytest xdist
+    :return: a dict describing the challenge ports that have been setup for the nodes
     :rtype: dict
     """
     acme_type, acme_option = acme_config['type'], acme_config['option']
