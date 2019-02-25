@@ -47,7 +47,7 @@ testdata2 = [
 @pytest.mark.parametrize('certname_pattern, params', testdata2)
 def test_nginx_without_default_server(certname_pattern, params, context):
     with context.nginx_server('default_server'):
-        certname = certname_pattern.format(context_nginx.worker_id)
+        certname = certname_pattern.format(context.worker_id)
         command = ['--domains', certname]
         command.extend(params)
         context.certbot_test_nginx(command)
