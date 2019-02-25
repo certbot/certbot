@@ -66,8 +66,6 @@ def test_prepare_plugins(context):
     assert 'webroot' in output
 
 
-@skip_on_pebble_strict('HTTP-01 challenges send deprecated keyAuthorization keys,'
-                       'and so are not supported by Pebble with strict mode.')
 def test_http_01(context):
     with misc.create_tcp_server(context.tls_alpn_01_port):
         certname = context.wtf('le2')
@@ -424,8 +422,10 @@ def test_revoke_corner_cases(context):
     assert 'Not deleting revoked certs due to overlapping archive dirs' in output
 
 
-@skip_on_boulder_v1('Wildcard certificates are not supported on ACME v1')
 def test_wildcard_certificates(context):
+    if context.acme_server == 'boulder-v1':
+        pytest.skip('Wildcard certificates are not supported on ACME v1')
+
     certname = context.wtf('wild')
 
     context.common([

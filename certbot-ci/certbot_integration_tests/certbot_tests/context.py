@@ -21,6 +21,7 @@ class IntegrationTestsContext:
             self.worker_id = 'primary'
             self.acme_xdist = request.config.acme_xdist
 
+        self.acme_server =self.acme_xdist['acme_server']
         self.directory_url = self.acme_xdist['directory_url']
         self.tls_alpn_01_port = self.acme_xdist['https_port'][self.worker_id]
         self.http_01_port = self.acme_xdist['http_port'][self.worker_id]
