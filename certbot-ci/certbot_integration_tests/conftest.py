@@ -19,9 +19,8 @@ def pytest_addoption(parser):
     Standard pytest hook to add options to the pytest parser.
     :param parser: current pytest parser that will be used on the CLI
     """
-    parser.addoption('--acme-server', default='pebble-nonstrict',
-                     choices=['boulder-v1', 'boulder-v2',
-                              'pebble-nonstrict', 'pebble-strict'],
+    parser.addoption('--acme-server', default='pebble',
+                     choices=['boulder-v1', 'boulder-v2', 'pebble'],
                      help='select the ACME server to use (boulder-v1, boulder-v2, '
                           'pebble-nonstrict or pebble-strict), '
                           'defaulting to pebble-nonstrict')
@@ -87,20 +86,9 @@ def _setup_integration_tests(config):
     workers = ['primary'] if not config.option.numprocesses\
         else ['gw{0}'.format(i) for i in range(config.option.numprocesses)]
 
-    acme_server = config.option.acme_server
-    # Prepare the acme config server. Data is specific to an acme type. Module
-    # utils.acme_server will handle these specifics.
-    acme_config = {}
-    if 'pebble' in config.option.acme_server:
-        acme_config['type'] = 'pebble'
-        acme_config['option'] = 'nonstrict' if 'nonstrict' in acme_server else 'strict'
-    else:
-        acme_config['type'] = 'boulder'
-        acme_config['option'] = 'v1' if 'v1' in acme_server else 'v2'
     # By calling setup_acme_server we ensure that all necessary acme server instances will be
     # fully started. This runtime is reflected by the acme_xdist returned.
-    acme_xdist = acme_lib.setup_acme_server(acme_config, workers)
-    os.environ['CERTBOT_ACME_TYPE'] = acme_server
+    acme_xdist = acme_lib.setup_acme_server(config.option.acme_server, workers)
     print('ACME xdist config:\n{0}'.format(acme_xdist))
 
     return acme_xdist

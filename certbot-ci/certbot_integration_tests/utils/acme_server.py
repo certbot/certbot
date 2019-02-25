@@ -20,7 +20,7 @@ CHALLTESTSRV_PORT = 8055  # Implicitly configured in boulder, explicitly in pebb
 HTTP_01_PORT = 5002  # Implicitly configured both in boulder and pebble
 
 
-def setup_acme_server(acme_config, nodes):
+def setup_acme_server(acme_server, nodes):
     """
     This method will setup an ACME CA server and an HTTP reverse proxy instance, to allow parallel
     execution of integration tests against the unique http-01 port expected by the ACME CA server.
@@ -28,29 +28,29 @@ def setup_acme_server(acme_config, nodes):
     Typically all pytest integration tests will be executed in this context.
     This method returns an object describing ports and directory url to use for each pytest node
     with the relevant pytest xdist node.
-    :param dict acme_config: a dict describing the current acme server characteristics to setup.
+    :param str acme_server: the type of acme server used (boulder-v1, boulder-v2 or pebble)
     :param str[] nodes: list of node names that will be setup by pytest xdist
     :return: a dict describing the challenge ports that have been setup for the nodes
     :rtype: dict
     """
-    acme_type, acme_option = acme_config['type'], acme_config['option']
-    acme_xdist = _construct_acme_xdist(acme_type, acme_option, nodes)
+    acme_type = 'pebble' if acme_server == 'pebble' else 'boulder'
+    acme_xdist = _construct_acme_xdist(acme_server, nodes)
     workspace = _construct_workspace(acme_type)
 
     _prepare_traefik_proxy(workspace, acme_xdist)
-    _prepare_acme_server(workspace, acme_type, acme_option, acme_xdist)
+    _prepare_acme_server(workspace, acme_type, acme_xdist)
 
     return acme_xdist
 
 
-def _construct_acme_xdist(acme_type, acme_option, nodes):
+def _construct_acme_xdist(acme_server, nodes):
     """Generate and return the acme_xdist dict"""
-    acme_xdist = {'challtestsrv_port': CHALLTESTSRV_PORT}
+    acme_xdist = {'acme_server': acme_server, 'challtestsrv_port': CHALLTESTSRV_PORT}
 
-    if acme_type == 'pebble':
+    if acme_server == 'pebble':
         acme_xdist['directory_url'] = 'https://localhost:{0}/dir'.format(ACME_V2_PORT)
     else:  # boulder
-        port = ACME_V2_PORT if acme_option == 'v2' else ACME_V1_PORT
+        port = ACME_V2_PORT if acme_server == 'boulder-v2' else ACME_V1_PORT
         acme_xdist['directory_url'] = 'http://localhost:{0}/directory'.format(port)
 
     acme_xdist['http_port'] = {node: port for (node, port)
@@ -85,7 +85,7 @@ def _construct_workspace(acme_type):
     return workspace
 
 
-def _prepare_acme_server(workspace, acme_type, acme_option, acme_xdist):
+def _prepare_acme_server(workspace, acme_type, acme_xdist):
     """Configure and launch the ACME server, Boulder or Pebble"""
     print('=> Starting {0} instance deployment...'.format(acme_type))
     instance_path = join(workspace, acme_type)
@@ -107,7 +107,7 @@ version: '3'
 services:
   pebble:
     image: letsencrypt/pebble
-    command: pebble -config /test/config/pebble-config.json {strict} -dnsserver {acme_subnet}.3:8053
+    command: pebble -config /test/config/pebble-config.json -dnsserver {acme_subnet}.3:8053
     ports:
       - {acme_v2_port}:14000
     networks:
@@ -126,8 +126,7 @@ networks:
     ipam:
       config:
         - subnet: {acme_subnet}.0/24
-'''.format(strict=('-strict' if acme_option == 'strict' else ''),
-           acme_subnet=ACME_SUBNET,
+'''.format(acme_subnet=ACME_SUBNET,
            acme_v2_port=ACME_V2_PORT,
            challtestsrv_port=CHALLTESTSRV_PORT))
 
