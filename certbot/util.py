@@ -140,6 +140,7 @@ def _release_locks():
         except:  # pylint: disable=bare-except
             msg = 'Exception occurred releasing lock: {0!r}'.format(dir_lock)
             logger.debug(msg, exc_info=True)
+    _LOCKS.clear()
 
 
 def set_up_core_dir(directory, mode, strict):

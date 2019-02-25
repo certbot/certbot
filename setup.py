@@ -1,8 +1,10 @@
 import codecs
 import os
 import re
+import sys
 
 from setuptools import find_packages, setup
+from setuptools.command.test import test as TestCommand
 
 # Workaround for http://bugs.python.org/issue8876, see
 # http://bugs.python.org/issue8876#msg208792
@@ -87,6 +89,22 @@ docs_extras = [
     'sphinx_rtd_theme',
 ]
 
+
+class PyTest(TestCommand):
+    user_options = []
+
+    def initialize_options(self):
+        TestCommand.initialize_options(self)
+        self.pytest_args = ''
+
+    def run_tests(self):
+        import shlex
+        # import here, cause outside the eggs aren't loaded
+        import pytest
+        errno = pytest.main(shlex.split(self.pytest_args))
+        sys.exit(errno)
+
+
 setup(
     name='certbot',
     version=version,
@@ -133,6 +151,8 @@ setup(
     # to test all packages run "python setup.py test -s
     # {acme,certbot_apache,certbot_nginx}"
     test_suite='certbot',
+    tests_require=["pytest"],
+    cmdclass={"test": PyTest},
 
     entry_points={
         'console_scripts': [
