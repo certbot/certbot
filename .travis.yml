@@ -30,7 +30,7 @@ matrix:
       sudo: required
       services: docker
     - python: "3.6"
-      env: ACME_SERVER=pebble-nonstrict PYTEST_ADDOPTS=-n4 TOXENV=integration
+      env: ACME_SERVER=pebble PYTEST_ADDOPTS=-n4 TOXENV=integration
       sudo: required
       services: docker
     - python: "2.7"
