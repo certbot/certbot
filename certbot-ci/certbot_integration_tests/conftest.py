@@ -32,7 +32,7 @@ def pytest_configure(config):
     """
     if not hasattr(config, 'slaveinput'):  # If true, this is the primary node
         with _print_on_err():
-            config.acme_xdist = _setup_integration_tests(config)
+            config.acme_xdist = _setup_primary_node(config)
 
 
 def pytest_configure_node(node):
@@ -58,7 +58,7 @@ def _print_on_err():
         sys.stdout = old_stdout
 
 
-def _setup_integration_tests(config):
+def _setup_primary_node(config):
     """
     Setup the environment for integration tests.
     Will:
