@@ -4,7 +4,6 @@
 from __future__ import print_function
 
 import itertools
-import json
 import mock
 import os
 import shutil
@@ -12,7 +11,6 @@ import traceback
 import unittest
 import datetime
 import pytz
-import tempfile
 
 import josepy as jose
 import six
@@ -1076,79 +1074,6 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         os.makedirs(renewer_configs_dir)
         with open(os.path.join(renewer_configs_dir, 'test.conf'), 'w') as f:
             f.write("My contents don't matter")
-
-    def _test_renew_common(self, renewalparams=None, names=None,
-                           assert_oc_called=None, **kwargs):
-        self._make_dummy_renewal_config()
-        with mock.patch('certbot.storage.RenewableCert') as mock_rc:
-            mock_lineage = mock.MagicMock()
-            mock_lineage.fullchain = "somepath/fullchain.pem"
-            if renewalparams is not None:
-                mock_lineage.configuration = {'renewalparams': renewalparams}
-            if names is not None:
-                mock_lineage.names.return_value = names
-            mock_rc.return_value = mock_lineage
-            with mock.patch('certbot.main.renew_cert') as mock_renew_cert:
-                kwargs.setdefault('args', ['renew'])
-                self._test_renewal_common(True, None, should_renew=False, **kwargs)
-
-            if assert_oc_called is not None:
-                if assert_oc_called:
-                    self.assertTrue(mock_renew_cert.called)
-                else:
-                    self.assertFalse(mock_renew_cert.called)
-
-    def test_renew_no_renewalparams(self):
-        self._test_renew_common(assert_oc_called=False, error_expected=True)
-
-    def test_renew_no_authenticator(self):
-        self._test_renew_common(renewalparams={}, assert_oc_called=False,
-            error_expected=True)
-
-    def test_renew_with_bad_int(self):
-        renewalparams = {'authenticator': 'webroot',
-                         'rsa_key_size': 'over 9000'}
-        self._test_renew_common(renewalparams=renewalparams, error_expected=True,
-                                assert_oc_called=False)
-
-    def test_renew_with_nonetype_http01(self):
-        renewalparams = {'authenticator': 'webroot',
-                         'http01_port': 'None'}
-        self._test_renew_common(renewalparams=renewalparams,
-                                assert_oc_called=True)
-
-    def test_renew_with_bad_domain(self):
-        renewalparams = {'authenticator': 'webroot'}
-        names = ['uniçodé.com']
-        self._test_renew_common(renewalparams=renewalparams, error_expected=True,
-                                names=names, assert_oc_called=False)
-
-    @mock.patch('certbot.plugins.selection.choose_configurator_plugins')
-    def test_renew_with_configurator(self, mock_sel):
-        mock_sel.return_value = (mock.MagicMock(), mock.MagicMock())
-        renewalparams = {'authenticator': 'webroot'}
-        self._test_renew_common(
-            renewalparams=renewalparams, assert_oc_called=True,
-            args='renew --configurator apache'.split())
-
-    def test_renew_plugin_config_restoration(self):
-        renewalparams = {'authenticator': 'webroot',
-                         'webroot_path': 'None',
-                         'webroot_imaginary_flag': '42'}
-        self._test_renew_common(renewalparams=renewalparams,
-                                assert_oc_called=True)
-
-    def test_renew_with_webroot_map(self):
-        renewalparams = {'authenticator': 'webroot'}
-        self._test_renew_common(
-            renewalparams=renewalparams, assert_oc_called=True,
-            args=['renew', '--webroot-map', json.dumps({'example.com': tempfile.gettempdir()})])
-
-    def test_renew_reconstitute_error(self):
-        # pylint: disable=protected-access
-        with mock.patch('certbot.main.renewal._reconstitute') as mock_reconstitute:
-            mock_reconstitute.side_effect = Exception
-            self._test_renew_common(assert_oc_called=False, error_expected=True)
 
     # Should be moved to renewal_test.py
     def test_renew_obtain_cert_error(self):
