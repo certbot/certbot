@@ -1219,7 +1219,7 @@ anything goes wrong, it will exit with a non-zero status code.
 from __future__ import print_function
 from distutils.version import StrictVersion
 from hashlib import sha256
-from os import environ
+from os import environ, name
 from os.path import join
 from pipes import quote
 from shutil import rmtree
@@ -1354,12 +1354,13 @@ def main():
                                      temp,
                                      digest)
                      for path, digest in PACKAGES]
-        check_output('pip install --no-index --no-deps -U ' +
-                     # Disable cache since we're not using it and it otherwise
-                     # sometimes throws permission warnings:
-                     ('--no-cache-dir ' if has_pip_cache else '') +
-                     ' '.join(quote(d) for d in downloads),
-                     shell=True)
+        # On Windows, pip self-upgrade is not possible, it must be done through python interpreter.
+        command = ['pip'] if name != 'nt' else ['python', '-m', 'pip']
+        command.extend(['install', '--no-index', '--no-deps', '-U'])
+        # Disable cache since it is not used and it otherwise sometimes throws permission warnings:
+        command.extend(['--no-cache-dir'] if has_pip_cache else [])
+        command.extend(downloads)
+        check_output(command)
     except HashError as exc:
         print(exc)
     except Exception:
