@@ -1,6 +1,5 @@
 import requests
 import urllib3
-import sys
 
 import pytest
 

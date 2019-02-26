@@ -5,18 +5,12 @@ from setuptools import find_packages
 version = '0.29.0.dev0'
 
 install_requires = [
-    'acme',
-    'certbot',
     'pytest',
     'pytest-cov',
     'pytest-xdist',
     'pytest-sugar',
-    'pytest-rerunfailures==4.2',
     'coverage',
-    'six',
-    'pyopenssl',
-    'cryptography',
-    'toml',
+    'requests',
 ]
 
 setup(

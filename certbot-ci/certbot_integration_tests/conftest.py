@@ -6,7 +6,6 @@ for a directory a specific configuration using built-in pytest hooks.
 
 See https://docs.pytest.org/en/latest/reference.html#hook-reference
 """
-import os
 import contextlib
 import sys
 import subprocess
