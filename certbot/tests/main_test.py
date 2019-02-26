@@ -1072,17 +1072,6 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
             with open(log_path) as lf:
                 print(lf.read())
 
-    # Should be moved to renewal_test.py
-    @mock.patch('certbot.renewal.should_renew')
-    def test_renew_skips_recent_certs(self, should_renew):
-        should_renew.return_value = False
-        test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
-        expiry = datetime.datetime.now() + datetime.timedelta(days=90)
-        _, _, stdout = self._test_renewal_common(False, extra_args=None, should_renew=False,
-                                                 args=['renew'], expiry_date=expiry)
-        self.assertTrue('No renewals were attempted.' in stdout.getvalue())
-        self.assertTrue('The following certs are not due for renewal yet:' in stdout.getvalue())
-
     def _make_dummy_renewal_config(self):
         renewer_configs_dir = os.path.join(self.config.config_dir, 'renewal')
         os.makedirs(renewer_configs_dir)
