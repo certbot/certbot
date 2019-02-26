@@ -81,9 +81,9 @@ class NginxParser(object):
 
         """
         if not os.path.isabs(path):
-            return os.path.join(self.root, path)
+            return os.path.normpath(os.path.join(self.root, path))
         else:
-            return path
+            return os.path.normpath(path)
 
     def _build_addr_to_ssl(self):
         """Builds a map from address to whether it listens on ssl in any server block

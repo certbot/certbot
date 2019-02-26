@@ -15,7 +15,7 @@ import subprocess
 import re
 
 SKIP_PROJECTS_ON_WINDOWS = [
-    'certbot-apache', 'certbot-nginx', 'certbot-postfix', 'letshelp-certbot']
+    'certbot-apache', 'certbot-postfix', 'letshelp-certbot']
 
 
 def call_with_print(command, cwd=None):
