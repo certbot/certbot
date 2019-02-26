@@ -46,7 +46,7 @@ def pytest_configure_node(node):
 @contextlib.contextmanager
 def _print_on_err():
     """
-    With pytest-xdist, stdout is used for nodes communication, so print is uneffective.
+    During pytest-xdist setup, stdout is used for nodes communication, so print is useless.
     However, stderr is still available. This context manager transfers stdout to stderr
     for the duration of the context, allowing to display prints to the user.
     """
