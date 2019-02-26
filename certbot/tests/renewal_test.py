@@ -1,6 +1,8 @@
 """Tests for certbot.renewal"""
 from __future__ import print_function
 
+import sys
+
 import mock
 import unittest
 import datetime
@@ -282,6 +284,14 @@ class RenewalTest(test_util.ConfigTestCase):
         cert_msg = get_utility().add_message.call_args_list[0][0][0]
         self.assertTrue('fullchain.pem' in cert_msg)
         self.assertTrue('donate' in get_utility().add_message.call_args[0][0])
+
+    def test_no_renewal_with_hooks(self):
+        _, _, stdout = self._test_renewal_common(
+            due_for_renewal=False, extra_args=None, should_renew=False,
+            args=['renew', '--post-hook',
+                  '{0} -c "from __future__ import print_function; print(\'hello world\');"'
+                  .format(sys.executable)])
+        self.assertTrue('No hooks were run.' in stdout.getvalue())
 
 
 class RestoreRequiredConfigElementsTest(test_util.ConfigTestCase):

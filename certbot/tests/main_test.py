@@ -13,7 +13,6 @@ import unittest
 import datetime
 import pytz
 import tempfile
-import sys
 
 import josepy as jose
 import six
@@ -1164,15 +1163,6 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
                 mock_renew_cert.side_effect = Exception
                 self._test_renewal_common(True, None, error_expected=True,
                                           args=['renew'], should_renew=False)
-
-    # Should be moved to renewal_test.py
-    def test_no_renewal_with_hooks(self):
-        _, _, stdout = self._test_renewal_common(
-            due_for_renewal=False, extra_args=None, should_renew=False,
-            args=['renew', '--post-hook',
-                  '{0} -c "from __future__ import print_function; print(\'hello world\');"'
-                  .format(sys.executable)])
-        self.assertTrue('No hooks were run.' in stdout.getvalue())
 
     @test_util.patch_get_utility()
     @mock.patch('certbot.main._find_lineage_for_domains_and_certname')
