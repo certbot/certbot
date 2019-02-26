@@ -4,7 +4,6 @@ or outside during setup/teardown of the integration tests environment.
 """
 import subprocess
 import os
-import ssl
 import time
 import contextlib
 import tempfile
@@ -15,9 +14,8 @@ import stat
 import errno
 from distutils.version import LooseVersion
 
-from six.moves.urllib.request import urlopen
 from six.moves import socketserver, SimpleHTTPServer
-from OpenSSL import crypto
+import requests
 
 
 def check_until_timeout(url):
@@ -27,14 +25,15 @@ def check_until_timeout(url):
     :param str url: the URL to test
     :raise ValueError: exception raised after 150 unsuccessful attempts to reach the URL
     """
-    context = ssl.SSLContext(protocol=ssl.PROTOCOL_TLS)
+    import urllib3
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
     for _ in range(0, 150):
         time.sleep(1)
         try:
-            if urlopen(url, context=context).getcode() == 200:
+            if requests.get(url, verify=False).status_code == 200:
                 return
-        except:
+        except requests.exceptions.ConnectionError:
             pass
 
     raise ValueError('Error, url did not respond after 150 attempts: {0}'.format(url))

@@ -6,7 +6,6 @@ for a directory a specific configuration using built-in pytest hooks.
 
 See https://docs.pytest.org/en/latest/reference.html#hook-reference
 """
-import os
 import contextlib
 import sys
 import subprocess
@@ -33,7 +32,7 @@ def pytest_configure(config):
     """
     if not hasattr(config, 'slaveinput'):  # If true, this is the primary node
         with _print_on_err():
-            config.acme_xdist = _setup_integration_tests(config)
+            config.acme_xdist = _setup_primary_node(config)
 
 
 def pytest_configure_node(node):
@@ -47,7 +46,7 @@ def pytest_configure_node(node):
 @contextlib.contextmanager
 def _print_on_err():
     """
-    With pytest-xdist, stdout is used for nodes communication, so print is uneffective.
+    During pytest-xdist setup, stdout is used for nodes communication, so print is useless.
     However, stderr is still available. This context manager transfers stdout to stderr
     for the duration of the context, allowing to display prints to the user.
     """
@@ -59,7 +58,7 @@ def _print_on_err():
         sys.stdout = old_stdout
 
 
-def _setup_integration_tests(config):
+def _setup_primary_node(config):
     """
     Setup the environment for integration tests.
     Will:
