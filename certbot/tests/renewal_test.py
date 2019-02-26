@@ -254,6 +254,19 @@ class RenewalTest(test_util.ConfigTestCase): # pylint: disable=too-many-public-m
         args = ["renew", "--dry-run", "-tvv"]
         self._test_renewal_common(False, [], args=args, should_renew=False, error_expected=True)
 
+    def test_renew_obtain_cert_error(self):
+        self._make_dummy_renewal_config()
+        with mock.patch('certbot.storage.RenewableCert') as mock_rc:
+            mock_lineage = mock.MagicMock()
+            mock_lineage.fullchain = "somewhere/fullchain.pem"
+            mock_rc.return_value = mock_lineage
+            mock_lineage.configuration = {
+                'renewalparams': {'authenticator': 'webroot'}}
+            with mock.patch('certbot.main.renew_cert') as mock_renew_cert:
+                mock_renew_cert.side_effect = Exception
+                self._test_renewal_common(True, None, error_expected=True,
+                                          args=['renew'], should_renew=False)
+
     @mock.patch('sys.stdin')
     def test_noninteractive_renewal_delay(self, stdin):
         stdin.isatty.return_value = False

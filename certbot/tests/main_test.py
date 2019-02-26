@@ -1075,20 +1075,6 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         with open(os.path.join(renewer_configs_dir, 'test.conf'), 'w') as f:
             f.write("My contents don't matter")
 
-    # Should be moved to renewal_test.py
-    def test_renew_obtain_cert_error(self):
-        self._make_dummy_renewal_config()
-        with mock.patch('certbot.storage.RenewableCert') as mock_rc:
-            mock_lineage = mock.MagicMock()
-            mock_lineage.fullchain = "somewhere/fullchain.pem"
-            mock_rc.return_value = mock_lineage
-            mock_lineage.configuration = {
-                'renewalparams': {'authenticator': 'webroot'}}
-            with mock.patch('certbot.main.renew_cert') as mock_renew_cert:
-                mock_renew_cert.side_effect = Exception
-                self._test_renewal_common(True, None, error_expected=True,
-                                          args=['renew'], should_renew=False)
-
     @test_util.patch_get_utility()
     @mock.patch('certbot.main._find_lineage_for_domains_and_certname')
     @mock.patch('certbot.main._init_le_client')
