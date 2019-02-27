@@ -18,8 +18,8 @@ export PATH="$PATH:/usr/sbin"  # /usr/sbin/nginx
 CURRENT_DIR="$(pwd)"
 
 cleanup_and_exit() {
-    cd $CURRENT_DIR
     EXIT_STATUS=$?
+    cd $CURRENT_DIR
     if SERVER_STILL_RUNNING=`ps -p $python_server_pid -o pid=`
     then
         echo Kill server subprocess, left running by abnormal exit
