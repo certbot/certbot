@@ -13,11 +13,9 @@ import json
 
 from certbot_integration_tests.utils import misc
 
-ACME_V1_PORT = 4000   # Implicitly configured in boulder, not used in pebble
-ACME_V2_PORT = 4001  # Implicitly configured in boulder, explicitly in pebble
-ACME_SUBNET = '10.77.77'  # Implicitly configured in boulder, explicitly in pebble
-CHALLTESTSRV_PORT = 8055  # Implicitly configured in boulder, explicitly in pebble
-HTTP_01_PORT = 5002  # Implicitly configured both in boulder and pebble
+# These ports are set implicitly in the docker-compose.yml files of Boulder/Pebble.
+CHALLTESTSRV_PORT = 8055
+HTTP_01_PORT = 5002
 
 
 def setup_acme_server(acme_server, nodes):
@@ -47,10 +45,11 @@ def _construct_acme_xdist(acme_server, nodes):
     """Generate and return the acme_xdist dict"""
     acme_xdist = {'acme_server': acme_server, 'challtestsrv_port': CHALLTESTSRV_PORT}
 
+    # Directory and ACME port are set implicitly in the docker-compose.yml files of Boulder/Pebble.
     if acme_server == 'pebble':
-        acme_xdist['directory_url'] = 'https://localhost:{0}/dir'.format(ACME_V2_PORT)
+        acme_xdist['directory_url'] = 'https://localhost:14000/dir'
     else:  # boulder
-        port = ACME_V2_PORT if acme_server == 'boulder-v2' else ACME_V1_PORT
+        port = 4001 if acme_server == 'boulder-v2' else 4000
         acme_xdist['directory_url'] = 'http://localhost:{0}/directory'.format(port)
 
     acme_xdist['http_port'] = {node: port for (node, port)
@@ -90,46 +89,15 @@ def _prepare_acme_server(workspace, acme_type, acme_xdist):
     print('=> Starting {0} instance deployment...'.format(acme_type))
     instance_path = join(workspace, acme_type)
     try:
-        # This loads Boulder from git, that includes a docker-compose.yml ready for production.
+        # This loads Boulder/Pebble from git, that includes a docker-compose.yml ready for production.
+        _launch_command(['git', 'clone', 'https://github.com/letsencrypt/{0}'.format(acme_type),
+                         '--single-branch', '--depth=1', instance_path])
         if acme_type == 'boulder':
-            _launch_command(['git', 'clone', 'https://github.com/letsencrypt/boulder',
-                             '--single-branch', '--depth=1', instance_path])
             # Allow Boulder to ignore usual limit rate policies, useful for tests.
             os.rename(join(instance_path, 'test/rate-limit-policies-b.yml'),
                       join(instance_path, 'test/rate-limit-policies.yml'))
 
-        # This configure Pebble using precompiled containers.
-        if acme_type == 'pebble':
-            os.mkdir(instance_path)
-            with open(join(instance_path, 'docker-compose.yml'), 'w') as file_h:
-                file_h.write('''\
-version: '3'
-services:
-  pebble:
-    image: letsencrypt/pebble
-    command: pebble -config /test/config/pebble-config.json -dnsserver {acme_subnet}.3:8053
-    ports:
-      - {acme_v2_port}:14000
-    networks:
-      acmenet:
-        ipv4_address: {acme_subnet}.2
-  challtestsrv:
-    image: letsencrypt/pebble-challtestsrv
-    command: pebble-challtestsrv -defaultIPv6 "" -defaultIPv4 {acme_subnet}.3
-    ports:
-      - {challtestsrv_port}:8055
-    networks:
-      acmenet:
-        ipv4_address: {acme_subnet}.3
-networks:
-  acmenet:
-    ipam:
-      config:
-        - subnet: {acme_subnet}.0/24
-'''.format(acme_subnet=ACME_SUBNET,
-           acme_v2_port=ACME_V2_PORT,
-           challtestsrv_port=CHALLTESTSRV_PORT))
-
+        # Launch the ACME CA server.
         _launch_command(['docker-compose', 'up', '--force-recreate', '-d'], cwd=instance_path)
 
         # Wait for the ACME CA server to be up.
@@ -137,9 +105,10 @@ networks:
         misc.check_until_timeout(acme_xdist['directory_url'])
 
         # Configure challtestsrv to answer any A record request with ip of the docker host.
+        acme_subnet = '10.77.77' if acme_type == 'boulder' else '10.30.50'
         response = requests.post('http://localhost:{0}/set-default-ipv4'
                                  .format(acme_xdist['challtestsrv_port']),
-                                 json={'ip': '{0}.1'.format(ACME_SUBNET)})
+                                 json={'ip': '{0}.1'.format(acme_subnet)})
         response.raise_for_status()
 
         print('=> Finished {0} instance deployment.'.format(acme_type))
