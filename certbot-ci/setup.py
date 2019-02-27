@@ -11,6 +11,7 @@ install_requires = [
     'pytest-sugar',
     'coverage',
     'requests',
+    'pyyaml',
 ]
 
 setup(
