@@ -105,6 +105,7 @@ class AuthHandler(object):
         """
         authzrs_to_check = {index: (authzr, None)
                             for index, authzr in enumerate(authzrs)}
+        authzrs_failed_to_report = []
         # Give an initial second to the ACME CA server to check the authorizations
         sleep_seconds = 1
         for _ in range(max_retries):
@@ -123,8 +124,9 @@ class AuthHandler(object):
             authzrs_failed = [authzr for authzr, _ in authzrs_to_check.values()
                               if authzr.body.status == messages.STATUS_INVALID]
             if authzrs_failed:
-                # Display report to the user
-                _report_failed_authzrs(authzrs_failed, self.account.key)
+                # Gather failed authzrs to be reported to the user (we accumulate all of them first
+                # and avoid displaying multiple reports that would be generated throughout the loop.
+                authzrs_failed_to_report.extend(authzrs_failed)
                 if not best_effort:
                     raise errors.AuthorizationError('Some challenges have failed.')
 
@@ -134,8 +136,8 @@ class AuthHandler(object):
                                 in authzrs_to_check.items()
                                 if authzr.body.status == messages.STATUS_PENDING}
             if not authzrs_to_check:
-                # Polling process is finished, we can leave the method
-                return
+                # Polling process is finished, we can leave the loop
+                break
 
             # Be merciful with the ACME server CA, check the Retry-After header returned,
             # and wait this time before polling again in next loop iteration.
@@ -145,8 +147,13 @@ class AuthHandler(object):
                               for _, resp in authzrs_to_check.values())
             sleep_seconds = (retry_after - datetime.datetime.now()).total_seconds()
 
-        # Here authzrs_to_check is still not empty: it means we exceeded the max polling attempt.
-        raise errors.AuthorizationError('All authorizations were not finalized by the CA.')
+        # In case of best_effort and failed authzrs, report them to the user.
+        if authzrs_failed_to_report:
+            _report_failed_authzrs(authzrs_failed_to_report, self.account.key)
+
+        if authzrs_to_check:
+            # Here authzrs_to_check is still not empty, meaning we exceeded the max polling attempt.
+            raise errors.AuthorizationError('All authorizations were not finalized by the CA.')
 
     def _choose_challenges(self, authzrs):
         """
