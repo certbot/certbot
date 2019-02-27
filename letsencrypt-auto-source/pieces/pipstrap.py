@@ -43,7 +43,7 @@ except ImportError:
                 cmd = popenargs[0]
             raise CalledProcessError(retcode, cmd)
         return output
-from sys import exit, version_info
+from sys import exit, version_info, executable as python_executable
 from tempfile import mkdtemp
 try:
     from urllib2 import build_opener, HTTPHandler, HTTPSHandler
@@ -146,7 +146,8 @@ def get_index_base():
 
 
 def main():
-    pip_version = StrictVersion(check_output(['pip', '--version'])
+    executable = python_executable or 'python'
+    pip_version = StrictVersion(check_output([executable, '-m', 'pip', '--version'])
                                 .decode('utf-8').split()[1])
     has_pip_cache = pip_version >= StrictVersion('6.0')
     index_base = get_index_base()
@@ -157,8 +158,7 @@ def main():
                                      digest)
                      for path, digest in PACKAGES]
         # On Windows, pip self-upgrade is not possible, it must be done through python interpreter.
-        command = ['pip'] if name != 'nt' else ['python', '-m', 'pip']
-        command.extend(['install', '--no-index', '--no-deps', '-U'])
+        command = [executable, '-m', 'pip', 'install', '--no-index', '--no-deps', '-U']
         # Disable cache since it is not used and it otherwise sometimes throws permission warnings:
         command.extend(['--no-cache-dir'] if has_pip_cache else [])
         command.extend(downloads)

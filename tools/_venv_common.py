@@ -107,13 +107,13 @@ def subprocess_with_print(cmd, env=os.environ, shell=False):
     subprocess.check_call(cmd, env=env, shell=shell)
 
 
-def get_venv_bin_path(venv_path):
+def get_venv_python_path(venv_path):
     python_linux = os.path.join(venv_path, 'bin/python')
     if os.path.isfile(python_linux):
-        return os.path.abspath(os.path.dirname(python_linux))
+        return os.path.abspath(python_linux)
     python_windows = os.path.join(venv_path, 'Scripts\\python.exe')
     if os.path.isfile(python_windows):
-        return os.path.abspath(os.path.dirname(python_windows))
+        return os.path.abspath(python_windows)
 
     raise ValueError((
         'Error, could not find python executable in venv path {0}: is it a valid venv ?'
@@ -149,15 +149,12 @@ def main(venv_name, venv_args, args):
     command.extend(shlex.split(venv_args))
     subprocess_with_print(command)
 
-    # We execute the following commands in the context of the virtual environment, to install
-    # the packages in it. To do so, we append the venv binary to the PATH that will be used for
-    # these commands. With this trick, correct python executable will be selected.
-    new_environ = os.environ.copy()
-    new_environ['PATH'] = os.pathsep.join([get_venv_bin_path(venv_name), new_environ['PATH']])
-    subprocess_with_print('python {0}'.format('./letsencrypt-auto-source/pieces/pipstrap.py'),
-                          env=new_environ, shell=True)
-    subprocess_with_print('python {0} {1}'.format('./tools/pip_install.py', ' '.join(args)),
-                          env=new_environ, shell=True)
+    # Using the python executable from venv, we ensure to execute following commands in this venv.
+    py_venv = get_venv_python_path(venv_name)
+    subprocess_with_print([py_venv, os.path.abspath('letsencrypt-auto-source/pieces/pipstrap.py')])
+    command = [py_venv, os.path.abspath('tools/pip_install.py')]
+    command.extend(args)
+    subprocess_with_print(command)
 
     if os.path.isdir(os.path.join(venv_name, 'bin')):
         # Linux/OSX specific
@@ -177,6 +174,4 @@ def main(venv_name, venv_args, args):
 
 
 if __name__ == '__main__':
-    main('venv',
-         '',
-         sys.argv[1:])
+    main('venv', '', sys.argv[1:])
