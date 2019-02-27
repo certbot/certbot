@@ -67,9 +67,15 @@ class NginxParserTest(util.NginxTest): #pylint: disable=too-many-public-methods
 
     def test_abs_path(self):
         nparser = parser.NginxParser(self.config_path)
-        self.assertEqual('/etc/nginx/*', nparser.abs_path('/etc/nginx/*'))
-        self.assertEqual(os.path.join(self.config_path, 'foo/bar/'),
-                         nparser.abs_path('foo/bar/'))
+        if os.name != 'nt':
+            self.assertEqual('/etc/nginx/*', nparser.abs_path('/etc/nginx/*'))
+            self.assertEqual(os.path.join(self.config_path, 'foo/bar'),
+                             nparser.abs_path('foo/bar'))
+        else:
+            self.assertEqual('C:\\etc\\nginx\\*', nparser.abs_path('C:\\etc\\nginx\\*'))
+            self.assertEqual(os.path.join(self.config_path, 'foo\\bar'),
+                             nparser.abs_path('foo\\bar'))
+
 
     def test_filedump(self):
         nparser = parser.NginxParser(self.config_path)

@@ -463,6 +463,34 @@ class ClientTest(ClientTestBase):
             errors.ClientError, self.client.answer_challenge,
             self.challr.body, challenges.DNSResponse(validation=None))
 
+    def test_answer_challenge_key_authorization_fallback(self):
+        self.response.links['up'] = {'url': self.challr.authzr_uri}
+        self.response.json.return_value = self.challr.body.to_json()
+
+        def _wrapper_post(url, obj, *args, **kwargs):  # pylint: disable=unused-argument
+            """
+            Simulate an old ACME CA server, that would respond a 'malformed'
+            error if keyAuthorization is missing.
+            """
+            jobj = obj.to_partial_json()
+            if 'keyAuthorization' not in jobj:
+                raise messages.Error.with_code('malformed')
+            return self.response
+        self.net.post.side_effect = _wrapper_post
+
+        # This challenge response is of type KeyAuthorizationChallengeResponse, so the fallback
+        # should be triggered, and avoid an exception.
+        http_chall_response = challenges.HTTP01Response(key_authorization='test',
+                                                        resource=mock.MagicMock())
+        self.client.answer_challenge(self.challr.body, http_chall_response)
+
+        # This challenge response is not of type KeyAuthorizationChallengeResponse, so the fallback
+        # should not be triggered, leading to an exception.
+        dns_chall_response = challenges.DNSResponse(validation=None)
+        self.assertRaises(
+            errors.Error, self.client.answer_challenge,
+            self.challr.body, dns_chall_response)
+
     def test_retry_after_date(self):
         self.response.headers['Retry-After'] = 'Fri, 31 Dec 1999 23:59:59 GMT'
         self.assertEqual(
