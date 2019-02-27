@@ -169,7 +169,7 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
                 logger.debug('Error while responding to a challenge without keyAuthorization '
                              'in the JWS, your ACME CA server may not support it:\n%s', error)
                 logger.debug('Retrying request with keyAuthorization set.')
-                response.dump_authorization_key(True)
+                response._dump_authorization_key(True)  # pylint: disable=protected-access
                 response = self._post(challb.uri, response)
             else:
                 raise
