@@ -21,8 +21,7 @@ def pytest_addoption(parser):
     parser.addoption('--acme-server', default='pebble',
                      choices=['boulder-v1', 'boulder-v2', 'pebble'],
                      help='select the ACME server to use (boulder-v1, boulder-v2, '
-                          'pebble-nonstrict or pebble-strict), '
-                          'defaulting to pebble-nonstrict')
+                          'pebble), defaulting to pebble')
 
 
 def pytest_configure(config):
