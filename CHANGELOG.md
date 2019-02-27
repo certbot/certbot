@@ -17,6 +17,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * The running of manual plugin hooks is now always included in Certbot's log
   output.
 * Tests execution for certbot, certbot-apache and certbot-nginx packages now relies on pytest.
+* An ACME CA server may return a "Retry-After" HTTP header on authorization polling, as
+  specified in the ACME protocol, to indicate when the next polling should occur. Certbot now
+  reads this header if set and respect its value.
 
 ### Fixed
 
