@@ -108,7 +108,7 @@ class AuthHandler(object):
         # Give an initial second to the ACME CA server to check the authorizations
         sleep_seconds = 1
         for _ in range(max_retries):
-            # Wait during appropriate time (from Retry-After, initial wait, or no wait)
+            # Wait for appropriate time (from Retry-After, initial wait, or no wait)
             if sleep_seconds > 0:
                 time.sleep(sleep_seconds)
             # Poll all updated authorizations.
