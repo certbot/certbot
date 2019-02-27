@@ -15,6 +15,7 @@ import errno
 from distutils.version import LooseVersion
 
 from six.moves import socketserver, SimpleHTTPServer
+from OpenSSL import crypto
 import requests
 
 
