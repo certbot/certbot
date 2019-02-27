@@ -17,6 +17,13 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * The running of manual plugin hooks is now always included in Certbot's log
   output.
 * Tests execution for certbot, certbot-apache and certbot-nginx packages now relies on pytest.
+* The `acme` module avoids sending the `keyAuthorization` field in the JWS
+  payload when responding to a challenge as the field is not included in the
+  current ACME protocol. To ease the migration path for ACME CA servers,
+  Certbot and its `acme` module will first try the request without the
+  `keyAuthorization` field but will temporarily retry the request with the
+  field included if a `malformed` error is received. This fallback will be
+  removed in version 0.34.0.
 
 ### Fixed
 
