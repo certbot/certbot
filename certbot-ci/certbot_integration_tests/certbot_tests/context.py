@@ -8,7 +8,7 @@ from distutils.version import LooseVersion
 from certbot_integration_tests.utils import misc
 
 
-class IntegrationTestsContext:
+class IntegrationTestsContext(object):
     """General fixture describing a certbot integration tests context"""
     def __init__(self, request):
         self.request = request
