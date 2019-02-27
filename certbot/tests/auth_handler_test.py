@@ -311,15 +311,36 @@ class HandleAuthorizationsTest(unittest.TestCase):  # pylint: disable=too-many-p
             self.mock_auth.cleanup.call_args[0][0][0].typ, "tls-sni-01")
 
     def test_best_effort(self):
-        authzrs = [gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES)]
+        def _conditional_mock_on_poll(authzr):
+            """This mock will invalidate one authzr, and invalidate the other one"""
+            valid_mock = _gen_mock_on_poll(messages.STATUS_VALID)
+            invalid_mock = _gen_mock_on_poll(messages.STATUS_INVALID)
+
+            if authzr.body.identifier.value == 'will-be-invalid':
+                return invalid_mock(authzr)
+            return valid_mock(authzr)
+
+        # Two authzrs. Only one will be valid.
+        authzrs = [gen_dom_authzr(domain="will-be-valid", challs=acme_util.CHALLENGES),
+                   gen_dom_authzr(domain="will-be-invalid", challs=acme_util.CHALLENGES)]
+        self.mock_net.poll.side_effect = _conditional_mock_on_poll
+
         mock_order = mock.MagicMock(authorizations=authzrs)
+
+        with mock.patch('certbot.auth_handler._report_failed_authzrs') as mock_report:
+            valid_authzr = self.handler.handle_authorizations(mock_order, True)
+
+        # Because best_effort=True, we did not blow up. Instead ...
+        self.assertEqual(len(valid_authzr), 1)  # ... the valid authzr has been processed
+        self.assertEqual(mock_report.call_count, 1)  # ... the invalid authzr has been reported
+
         self.mock_net.poll.side_effect = _gen_mock_on_poll(status=messages.STATUS_INVALID)
 
-        # Expect to fail with best_effort, because all authorizations will fail,
-        # but not on a individual poll, so the error message will be specific.
         with test_util.patch_get_utility():
             with self.assertRaises(errors.AuthorizationError) as error:
                 self.handler.handle_authorizations(mock_order, True)
+
+        # Despite best_effort=True, process will fail because no authzr is valid.
         self.assertTrue('All challenges have failed.' in str(error.exception))
 
     def test_validated_challenge_not_rerun(self):
