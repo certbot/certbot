@@ -563,7 +563,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.test_rc.save_successor(2, b"newcert", b"new_privkey", b"new chain", self.config)
         self.assertTrue(mock_chown.called)
 
-    def _test_relevant_values_common(self, values):
+    def _test_relevant_values_common(self, values, set_by_cli=False):
         defaults = dict((option, cli.flag_default(option))
                         for option in ("authenticator", "installer",
                                        "rsa_key_size", "server",))
@@ -576,8 +576,9 @@ class RenewableCertTests(BaseRenewableCertTest):
         expected_server = values["server"]
 
         from certbot.storage import relevant_values
-        with mock.patch("certbot.cli.helpful_parser", mock_parser):
-            rv = relevant_values(values)
+        with mock.patch("certbot.cli.set_by_cli", return_value=set_by_cli):
+            with mock.patch("certbot.cli.helpful_parser", mock_parser):
+                rv = relevant_values(values)
         self.assertIn("server", rv)
         self.assertEqual(rv.pop("server"), expected_server)
         return rv
@@ -614,14 +615,12 @@ class RenewableCertTests(BaseRenewableCertTest):
             self._test_relevant_values_common(
                 {"authenticator": None, "installer": None}), {})
 
-    @mock.patch("certbot.cli.set_by_cli")
     @mock.patch("certbot.plugins.disco.PluginsRegistry.find_all")
-    def test_relevant_values_namespace(self, mock_find_all, mock_set_by_cli):
-        mock_set_by_cli.return_value = True
+    def test_relevant_values_namespace(self, mock_find_all):
         mock_find_all.return_value = ["certbot-foo:bar"]
         values = {"certbot_foo:bar_baz": 42}
         self.assertEqual(
-            self._test_relevant_values_common(values), values)
+            self._test_relevant_values_common(values, set_by_cli=True), values)
 
     def test_relevant_values_server(self):
         self.assertEqual(
