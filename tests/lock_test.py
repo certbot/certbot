@@ -146,7 +146,7 @@ def setup_certificate(workspace):
     :rtype: `tuple`
     """
     # Generate key
-    private_key = rsa.generate_private_key(
+    private_key = rsa.generate_private_key(  # type: ignore
         public_exponent=65537,
         key_size=2048,
         backend=default_backend()
