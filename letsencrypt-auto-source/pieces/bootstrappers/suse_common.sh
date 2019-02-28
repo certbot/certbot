@@ -15,15 +15,17 @@ BootstrapSuseCommon() {
   fi
 
   if zypper search -x python-virtualenv >/dev/null 2>&1; then
-    PYTHON_OPENSUSE_PACKAGES="python python-devel python-virtualenv"
+    OPENSUSE_VIRTUALENV_PACKAGES="python-virtualenv"
   else
     # Since Leap 15.0 (and associated Tumbleweed version), python-virtualenv
     # is a source package, and python2-virtualenv must be used instead.
-    PYTHON_OPENSUSE_PACKAGES="python2 python2-devel python2-virtualenv"
+    OPENSUSE_VIRTUALENV_PACKAGES="python2-virtualenv python2-setuptools"
   fi
 
   zypper $QUIET_FLAG $zypper_flags in $install_flags \
-    $PYTHON_OPENSUSE_PACKAGES \
+    python \
+    python-devel \
+    $OPENSUSE_VIRTUALENV_PACKAGES \
     gcc \
     augeas-lenses \
     libopenssl-devel \
