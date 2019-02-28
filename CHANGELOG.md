@@ -24,6 +24,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   `keyAuthorization` field but will temporarily retry the request with the
   field included if a `malformed` error is received. This fallback will be
   removed in version 0.34.0.
+* cli is now a package split in submodules instead of a whole module.
 
 ### Fixed
 
