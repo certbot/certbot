@@ -8,6 +8,7 @@ from certbot import constants
 from certbot import interfaces
 from certbot import util
 from certbot import errors
+import zope.interface
 
 # pylint: disable=unused-import, no-name-in-module
 from acme.magic_typing import Any, Dict, Optional
