@@ -99,20 +99,21 @@ class TestAddGroup(unittest.TestCase):
         # The user request help on run. A topic that given somewhere in the
         # args won't be added to the groups in the parser.
         arg_parser = HelpfulArgumentParser(['--help', 'run'], {})
-        new_group = arg_parser.add_group("auth",
-                                         description="description of auth")
-        self.assertIs(new_group._topic, "auth")
+        #new_group = arg_parser.add_group("auth",
+        #                                 description="description of auth")
+        #self.assertIs(new_group._topic, "auth")
         self.assertEqual(arg_parser.groups, {})
 
     def test_add_group_topic_requested_help(self):
         arg_parser = HelpfulArgumentParser(['--help', 'run'], {})
-        new_group = arg_parser.add_group("run",
-                                         description="description of run")
-        self.assertIs(new_group._topic, "run")
+        #new_group = arg_parser.add_group("run",
+        #                                 description="description of run")
+        #self.assertIs(new_group._topic, "run")
         self.assertTrue(arg_parser.groups["run"])
         arg_parser.add_group("certonly", description="description of certonly")
         with self.assertRaises(KeyError):
-            arg_parser.groups["certonly"]
+            self.assertFalse(arg_parser.groups["certonly"])
+
 
 class TestParseArgsErrors(unittest.TestCase):
     '''Tests for errors that should be met for some cases in parse_args method
