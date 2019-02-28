@@ -16,7 +16,6 @@ import sys
 import re
 import shutil
 import tempfile
-import time
 
 import merge_requirements as merge_module
 import readlink
@@ -71,18 +70,9 @@ def merge_requirements(tools_path, requirements, test_constraints, all_constrain
         fd.write(merged_requirements)
 
 
-def call_with_print(command, cwd=None, retries=2):
-    raise_error = None
-    for i in range(retries + 1):
-        print('(retry {0}/{1}): '.format(i, retries) if i else '' + command)
-        try:
-            subprocess.check_call(command, shell=True, cwd=cwd or os.getcwd())
-            return
-        except subprocess.CalledProcessError as error:
-            raise_error = error
-            time.sleep(1)
-
-    raise raise_error
+def call_with_print(command, cwd=None):
+    print(command)
+    subprocess.check_call(command, shell=True, cwd=cwd or os.getcwd())
 
 
 def main(args):
