@@ -17,6 +17,7 @@ import certbot
 from certbot import cli
 from certbot import compat
 from certbot import errors
+from certbot.plugins import common as plugins_common
 from certbot.plugins import disco as plugins_disco
 from certbot.storage import ALL_FOUR
 
@@ -625,7 +626,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         # values are handled properly.
         plugin_name = "certboot-foo:bar"
         plugin_arg = "baz"
-        plugin_dest = "{0}_{1}".format(plugin_name.replace("-", "_"), plugin_arg)
+        plugin_dest = plugins_common.dest_namespace(plugin_name) + plugin_arg
 
         def inject_parser_options(parser, name):
             """Add a simple argument to the parser for the plugin."""
