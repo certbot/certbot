@@ -17,6 +17,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * The running of manual plugin hooks is now always included in Certbot's log
   output.
 * Tests execution for certbot, certbot-apache and certbot-nginx packages now relies on pytest.
+* cli os now a package split in submodules instead of a whole module.
 
 ### Fixed
 
