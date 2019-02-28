@@ -161,7 +161,7 @@ def setup_certificate(workspace):
     ).public_key(
         private_key.public_key()
     ).serial_number(
-        x509.random_serial_number()
+        1
     ).not_valid_before(
         datetime.datetime.utcnow()
     ).not_valid_after(
