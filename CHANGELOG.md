@@ -20,6 +20,13 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * An ACME CA server may return a "Retry-After" HTTP header on authorization polling, as
   specified in the ACME protocol, to indicate when the next polling should occur. Certbot now
   reads this header if set and respect its value.
+* The `acme` module avoids sending the `keyAuthorization` field in the JWS
+  payload when responding to a challenge as the field is not included in the
+  current ACME protocol. To ease the migration path for ACME CA servers,
+  Certbot and its `acme` module will first try the request without the
+  `keyAuthorization` field but will temporarily retry the request with the
+  field included if a `malformed` error is received. This fallback will be
+  removed in version 0.34.0.
 
 ### Fixed
 
@@ -42,6 +49,9 @@ More details about these changes can be found on our GitHub repo.
 
 * Avoid reprocessing challenges that are already validated
   when a certificate is issued.
+* If possible, Certbot uses built-in support for OCSP from recent cryptography
+  versions instead of the OpenSSL binary: as a consequence Certbot does not need
+  the OpenSSL binary to be installed anymore if cryptography>=2.5 is installed.
 * Support for initiating (but not solving end-to-end) TLS-ALPN-01 challenges
   with the `acme` module.
 
