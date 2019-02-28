@@ -119,16 +119,15 @@ class AuthHandler(object):
             for index, (authzr, _) in authzrs_to_check.items():
                 authzrs[index] = authzr
 
-            # Handle failed authorizations: with best effort this is only a warning,
-            # otherwise an exception.
+            # Gather failed authorizations
             authzrs_failed = [authzr for authzr, _ in authzrs_to_check.values()
                               if authzr.body.status == messages.STATUS_INVALID]
-            if authzrs_failed:
-                # Gather failed authzrs to be reported to the user (we accumulate all of them first
-                # and avoid displaying multiple reports that would be generated throughout the loop.
-                authzrs_failed_to_report.extend(authzrs_failed)
-                if not best_effort:
-                    raise errors.AuthorizationError('Some challenges have failed.')
+            for authzr_failed in authzrs_failed:
+                logger.warning('Challenge failed for domain %s',
+                               authzr_failed.body.identifier.value)
+            # Accumulating all failed authzrs to build a consolidated report
+            # on them at the end of the polling.
+            authzrs_failed_to_report.extend(authzrs_failed)
 
             # Extract out the authorization already checked for next poll iteration.
             # Poll may stop here because there is no pending authorizations anymore.
@@ -147,9 +146,12 @@ class AuthHandler(object):
                               for _, resp in authzrs_to_check.values())
             sleep_seconds = (retry_after - datetime.datetime.now()).total_seconds()
 
-        # In case of best_effort and failed authzrs, report them to the user.
+        # In case of failed authzrs, create a report to the user.
         if authzrs_failed_to_report:
             _report_failed_authzrs(authzrs_failed_to_report, self.account.key)
+            if not best_effort:
+                # Without best effort, having failed authzrs is critical and fail the process.
+                raise errors.AuthorizationError('Some challenges have failed.')
 
         if authzrs_to_check:
             # Here authzrs_to_check is still not empty, meaning we exceeded the max polling attempt.
