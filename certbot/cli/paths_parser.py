@@ -1,3 +1,5 @@
+"""This is a module that adds configuration to the argument parser regarding
+paths for certificates"""
 import os
 
 from certbot.cli import (

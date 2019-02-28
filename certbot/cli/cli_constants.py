@@ -1,3 +1,4 @@
+"""Certbot command line constants"""
 import sys
 import os
 

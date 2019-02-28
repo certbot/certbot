@@ -1,3 +1,4 @@
+"""This module warns for usage of deprecated letsencrypt-auto"""
 import os
 import sys
 import logging

@@ -1,3 +1,5 @@
+"""This is a module that reports config option interaction that should be
+checled by set_by_cli"""
 import six
 from certbot.cli import VAR_MODIFIERS
 

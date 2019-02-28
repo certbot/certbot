@@ -1,3 +1,4 @@
+"""This is a module that handles parsing of plugins for the argument parser"""
 from certbot.cli import flag_default
 
 

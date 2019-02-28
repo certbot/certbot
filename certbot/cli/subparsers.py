@@ -1,3 +1,4 @@
+"""This module creates subparsers for the argument parser"""
 from certbot import constants
 from certbot import interfaces
 

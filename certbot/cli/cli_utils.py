@@ -1,3 +1,4 @@
+"""Certbot command line util function"""
 import argparse
 import copy
 import os

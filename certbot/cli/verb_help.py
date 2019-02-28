@@ -1,3 +1,4 @@
+"""This module contain help information for verbs supported by certbot"""
 import os
 
 from certbot.cli import (
