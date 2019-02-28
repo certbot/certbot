@@ -200,7 +200,7 @@ addons:
 install: "travis_retry $(command -v pip || command -v pip3) install codecov tox"
 script:
     - tox
-    - '[ -z "${BOULDER_INTEGRATION+x}" ] || (tests/boulder-fetch.sh && tests/tox-boulder-integration.sh)'
+    - '[ -z "${BOULDER_INTEGRATION+x}" ] || (travis_retry tests/boulder-fetch.sh && tests/tox-boulder-integration.sh)'
 
 after_success: '[ "$TOXENV" == "py27-cover" ] && codecov'
 
