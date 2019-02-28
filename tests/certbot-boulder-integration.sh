@@ -15,9 +15,11 @@ command -v python > /dev/null || (echo "Error, python executable is not in the P
 
 . ./tests/integration/_common.sh
 export PATH="$PATH:/usr/sbin"  # /usr/sbin/nginx
+CURRENT_DIR="$(pwd)"
 
 cleanup_and_exit() {
     EXIT_STATUS=$?
+    cd $CURRENT_DIR
     if SERVER_STILL_RUNNING=`ps -p $python_server_pid -o pid=`
     then
         echo Kill server subprocess, left running by abnormal exit
@@ -527,3 +529,56 @@ if [ "${BOULDER_INTEGRATION:-v1}" = "v2" ]; then
 fi
 
 coverage report --fail-under 64 --include 'certbot/*' --show-missing
+
+# Test OCSP status
+
+## OCSP 1: Check stale OCSP status
+pushd ./tests/integration
+
+OUT=`common certificates --config-dir sample-config`
+TEST_CERTS=`echo "$OUT" | grep TEST_CERT | wc -l`
+EXPIRED=`echo "$OUT" | grep EXPIRED | wc -l`
+
+if [ "$TEST_CERTS" != 2 ] ; then
+    echo "Did not find two test certs as expected ($TEST_CERTS)"
+    exit 1
+fi
+
+if [ "$EXPIRED" != 2 ] ; then
+    echo "Did not find two test certs as expected ($EXPIRED)"
+    exit 1
+fi
+
+popd
+
+## OSCP 2: Check live certificate OCSP status (VALID)
+common --domains le-ocsp-check.wtf
+OUT=`common certificates`
+VALID=`echo $OUT | grep 'Domains: le-ocsp-check.wtf' -A 1 | grep VALID | wc -l`
+EXPIRED=`echo $OUT | grep 'Domains: le-ocsp-check.wtf' -A 1 | grep EXPIRED | wc -l`
+
+if [ "$VALID" != 1 ] ; then
+    echo "Expected le-ocsp-check.wtf to be VALID"
+    exit 1
+fi
+
+if [ "$EXPIRED" != 0 ] ; then
+    echo "Did not expect le-ocsp-check.wtf to be EXPIRED"
+    exit 1
+fi
+
+## OSCP 3: Check live certificate OCSP status (REVOKED)
+common revoke --cert-name le-ocsp-check.wtf --no-delete-after-revoke
+OUT=`common certificates`
+INVALID=`echo $OUT | grep 'Domains: le-ocsp-check.wtf' -A 1 | grep INVALID | wc -l`
+REVOKED=`echo $OUT | grep 'Domains: le-ocsp-check.wtf' -A 1 | grep REVOKED | wc -l`
+
+if [ "$INVALID" != 1 ] ; then
+    echo "Expected le-ocsp-check.wtf to be INVALID"
+    exit 1
+fi
+
+if [ "$REVOKED" != 1 ] ; then
+    echo "Expected le-ocsp-check.wtf to be REVOKED"
+    exit 1
+fi
