@@ -14,6 +14,8 @@ import tempfile
 
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
+# TODO: once mypy has cryptography types bundled, type: ignore can be removed.
+# See https://github.com/python/typeshed/tree/master/third_party/2/cryptography
 from cryptography.hazmat.primitives import serialization, hashes  # type: ignore
 from cryptography.hazmat.primitives.asymmetric import rsa
 
@@ -146,6 +148,7 @@ def setup_certificate(workspace):
     :rtype: `tuple`
     """
     # Generate key
+    # See comment on cryptography import about type: ignore
     private_key = rsa.generate_private_key(  # type: ignore
         public_exponent=65537,
         key_size=2048,
