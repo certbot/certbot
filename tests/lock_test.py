@@ -14,7 +14,7 @@ import tempfile
 
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import serialization, hashes
+from cryptography.hazmat.primitives import serialization, hashes  # type: ignore
 from cryptography.hazmat.primitives.asymmetric import rsa
 
 from certbot import lock
@@ -113,7 +113,6 @@ def set_up_nginx_dir(root_path):
     # Generate Nginx configuration
     with open(os.path.join(root_path, 'nginx.conf'), 'w') as f:
         f.write(check_call(['/bin/sh', conf_script, root_path, key_path, cert_path]))
-    del os.environ['root']
 
 
 def set_up_command(config_dir, logs_dir, work_dir, nginx_dir):
@@ -141,6 +140,11 @@ def set_up_command(config_dir, logs_dir, work_dir, nginx_dir):
 
 
 def setup_certificate(workspace):
+    """Generate a self-signed certificate for nginx.
+    :param workspace: path of folder where to put the certificate
+    :return: tuple containing the key path and certificate path
+    :rtype: `tuple`
+    """
     # Generate key
     private_key = rsa.generate_private_key(
         public_exponent=65537,
