@@ -1042,26 +1042,26 @@ ConfigArgParse==0.12.0 \
 configobj==5.0.6 \
     --hash=sha256:a2f5650770e1c87fb335af19a9b7eb73fc05ccf22144eb68db7d00cd2bcb0902 \
     --no-binary configobj
-cryptography==2.2.2 \
-    --hash=sha256:3f3b65d5a16e6b52fba63dc860b62ca9832f51f1a2ae5083c78b6840275f12dd \
-    --hash=sha256:5251e7de0de66810833606439ca65c9b9e45da62196b0c88bfadf27740aac09f \
-    --hash=sha256:551a3abfe0c8c6833df4192a63371aa2ff43afd8f570ed345d31f251d78e7e04 \
-    --hash=sha256:5cb990056b7cadcca26813311187ad751ea644712022a3976443691168781b6f \
-    --hash=sha256:60bda7f12ecb828358be53095fc9c6edda7de8f1ef571f96c00b2363643fa3cd \
-    --hash=sha256:64b5c67acc9a7c83fbb4b69166f3105a0ab722d27934fac2cb26456718eec2ba \
-    --hash=sha256:6fef51ec447fe9f8351894024e94736862900d3a9aa2961528e602eb65c92bdb \
-    --hash=sha256:77d0ad229d47a6e0272d00f6bf8ac06ce14715a9fd02c9a97f5a2869aab3ccb2 \
-    --hash=sha256:808fe471b1a6b777f026f7dc7bd9a4959da4bfab64972f2bbe91e22527c1c037 \
-    --hash=sha256:9b62fb4d18529c84b961efd9187fecbb48e89aa1a0f9f4161c61b7fc42a101bd \
-    --hash=sha256:9e5bed45ec6b4f828866ac6a6bedf08388ffcfa68abe9e94b34bb40977aba531 \
-    --hash=sha256:9fc295bf69130a342e7a19a39d7bbeb15c0bcaabc7382ec33ef3b2b7d18d2f63 \
-    --hash=sha256:abd070b5849ed64e6d349199bef955ee0ad99aefbad792f0c587f8effa681a5e \
-    --hash=sha256:ba6a774749b6e510cffc2fb98535f717e0e5fd91c7c99a61d223293df79ab351 \
-    --hash=sha256:c332118647f084c983c6a3e1dba0f3bcb051f69d12baccac68db8d62d177eb8a \
-    --hash=sha256:d6f46e862ee36df81e6342c2177ba84e70f722d9dc9c6c394f9f1f434c4a5563 \
-    --hash=sha256:db6013746f73bf8edd9c3d1d3f94db635b9422f503db3fc5ef105233d4c011ab \
-    --hash=sha256:f57008eaff597c69cf692c3518f6d4800f0309253bb138b526a37fe9ef0c7471 \
-    --hash=sha256:f6c821ac253c19f2ad4c8691633ae1d1a17f120d5b01ea1d256d7b602bc59887
+cryptography==2.5 \
+    --hash=sha256:9e29af877c29338f0cab5f049ccc8bd3ead289a557f144376c4fbc7d1b98914f \
+    --hash=sha256:b13c80b877e73bcb6f012813c6f4a9334fcf4b0e96681c5a15dac578f2eedfa0 \
+    --hash=sha256:8504661ffe324837f5c4607347eeee4cf0fcad689163c6e9c8d3b18cf1f4a4ad \
+    --hash=sha256:e091bd424567efa4b9d94287a952597c05d22155a13716bf5f9f746b9dc906d3 \
+    --hash=sha256:42fad67d7072216a49e34f923d8cbda9edacbf6633b19a79655e88a1b4857063 \
+    --hash=sha256:9a30384cc402eac099210ab9b8801b2ae21e591831253883decdb4513b77a3cd \
+    --hash=sha256:08b753df3672b7066e74376f42ce8fc4683e4fd1358d34c80f502e939ee944d2 \
+    --hash=sha256:6f841c7272645dd7c65b07b7108adfa8af0aaea57f27b7f59e01d41f75444c85 \
+    --hash=sha256:bfe66b577a7118e05b04141f0f1ed0959552d45672aa7ecb3d91e319d846001e \
+    --hash=sha256:522fdb2809603ee97a4d0ef2f8d617bc791eb483313ba307cb9c0a773e5e5695 \
+    --hash=sha256:05b3ded5e88747d28ee3ef493f2b92cbb947c1e45cf98cfef22e6d38bb67d4af \
+    --hash=sha256:fa2b38c8519c5a3aa6e2b4e1cf1a549b54acda6adb25397ff542068e73d1ed00 \
+    --hash=sha256:ab50da871bc109b2d9389259aac269dd1b7c7413ee02d06fe4e486ed26882159 \
+    --hash=sha256:9260b201ce584d7825d900c88700aa0bd6b40d4ebac7b213857bd2babee9dbca \
+    --hash=sha256:06826e7f72d1770e186e9c90e76b4f84d90cdb917b47ff88d8dc59a7b10e2b1e \
+    --hash=sha256:2cd29bd1911782baaee890544c653bb03ec7d95ebeb144d714b0f5c33deb55c7 \
+    --hash=sha256:7d335e35306af5b9bc0560ca39f740dfc8def72749645e193dd35be11fb323b3 \
+    --hash=sha256:31e5637e9036d966824edaa91bf0aa39dc6f525a1c599f39fd5c50340264e079 \
+    --hash=sha256:4946b67235b9d2ea7d31307be9d5ad5959d6c4a8f98f900157b47abddf698401
 enum34==1.1.2 ; python_version < '3.4' \
     --hash=sha256:2475d7fcddf5951e92ff546972758802de5260bf409319a9f1934e6bbc8b1dc7 \
     --hash=sha256:35907defb0f992b75ab7788f65fedc1cf20ffa22688e0e6f6f12afc06b3ea501
@@ -1229,7 +1229,6 @@ from distutils.version import StrictVersion
 from hashlib import sha256
 from os import environ
 from os.path import join
-from pipes import quote
 from shutil import rmtree
 try:
     from subprocess import check_output
@@ -1249,7 +1248,7 @@ except ImportError:
                 cmd = popenargs[0]
             raise CalledProcessError(retcode, cmd)
         return output
-from sys import exit, version_info
+import sys
 from tempfile import mkdtemp
 try:
     from urllib2 import build_opener, HTTPHandler, HTTPSHandler
@@ -1271,7 +1270,7 @@ maybe_argparse = (
     [('18/dd/e617cfc3f6210ae183374cd9f6a26b20514bbb5a792af97949c5aacddf0f/'
       'argparse-1.4.0.tar.gz',
       '62b089a55be1d8949cd2bc7e0df0bddb9e028faefc8c32038cc84862aefdd6e4')]
-    if version_info < (2, 7, 0) else [])
+    if sys.version_info < (2, 7, 0) else [])
 
 
 PACKAGES = maybe_argparse + [
@@ -1352,7 +1351,8 @@ def get_index_base():
 
 
 def main():
-    pip_version = StrictVersion(check_output(['pip', '--version'])
+    python = sys.executable or 'python'
+    pip_version = StrictVersion(check_output([python, '-m', 'pip', '--version'])
                                 .decode('utf-8').split()[1])
     has_pip_cache = pip_version >= StrictVersion('6.0')
     index_base = get_index_base()
@@ -1362,12 +1362,12 @@ def main():
                                      temp,
                                      digest)
                      for path, digest in PACKAGES]
-        check_output('pip install --no-index --no-deps -U ' +
-                     # Disable cache since we're not using it and it otherwise
-                     # sometimes throws permission warnings:
-                     ('--no-cache-dir ' if has_pip_cache else '') +
-                     ' '.join(quote(d) for d in downloads),
-                     shell=True)
+        # On Windows, pip self-upgrade is not possible, it must be done through python interpreter.
+        command = [python, '-m', 'pip', 'install', '--no-index', '--no-deps', '-U']
+        # Disable cache since it is not used and it otherwise sometimes throws permission warnings:
+        command.extend(['--no-cache-dir'] if has_pip_cache else [])
+        command.extend(downloads)
+        check_output(command)
     except HashError as exc:
         print(exc)
     except Exception:
@@ -1380,7 +1380,7 @@ def main():
 
 
 if __name__ == '__main__':
-    exit(main())
+    sys.exit(main())
 
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
