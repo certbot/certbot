@@ -19,6 +19,8 @@ BootstrapSuseCommon() {
   else
     # Since Leap 15.0 (and associated Tumbleweed version), python-virtualenv
     # is a source package, and python2-virtualenv must be used instead.
+    # Also currently python2-setuptools is not a dependency of python2-virtuqlenv,
+    # while it should be. Installing it explicitly until upstreqm fix.
     OPENSUSE_VIRTUALENV_PACKAGES="python2-virtualenv python2-setuptools"
   fi
 
