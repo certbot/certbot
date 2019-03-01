@@ -11,14 +11,10 @@ import mock
 import pytz
 import six
 
-from six.moves import reload_module  # pylint: disable=import-error
-
 import certbot
 from certbot import cli
 from certbot import compat
 from certbot import errors
-from certbot.plugins import common as plugins_common
-from certbot.plugins import disco as plugins_disco
 from certbot.storage import ALL_FOUR
 
 import certbot.tests.util as test_util
@@ -568,9 +564,6 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertTrue(mock_chown.called)
 
     def _test_relevant_values_common(self, values):
-        # Reload certbot.cli to clean global state
-        reload_module(cli)
-
         defaults = dict((option, cli.flag_default(option))
                         for option in ("authenticator", "installer",
                                        "rsa_key_size", "server",))
@@ -621,29 +614,14 @@ class RenewableCertTests(BaseRenewableCertTest):
             self._test_relevant_values_common(
                 {"authenticator": None, "installer": None}), {})
 
-    def test_relevant_values_namespace(self):
-        # Create a dummy plugin object to test that third party plugins
-        # values are handled properly.
-        plugin_name = "certboot-foo:bar"
-        plugin_arg = "baz"
-        plugin_dest = plugins_common.dest_namespace(plugin_name) + plugin_arg
-
-        def inject_parser_options(parser, name):
-            """Add a simple argument to the parser for the plugin."""
-            parser.add_argument('--{0}-{1}'.format(name, plugin_arg))
-
-        foo_plugin_ep = mock.MagicMock()
-        foo_plugin_ep.plugin_cls.inject_parser_options.side_effect = inject_parser_options
-
-        plugins = dict(plugins_disco.PluginsRegistry.find_all())
-        plugins[plugin_name] = foo_plugin_ep
-        find_all_rv = plugins_disco.PluginsRegistry(plugins)
-
-        values = {plugin_dest: 42}
-
-        with mock.patch("certbot.plugins.disco.PluginsRegistry.find_all", return_value=find_all_rv):
-            self.assertEqual(
-                self._test_relevant_values_common(values), values)
+    @mock.patch("certbot.cli.set_by_cli")
+    @mock.patch("certbot.plugins.disco.PluginsRegistry.find_all")
+    def test_relevant_values_namespace(self, mock_find_all, mock_set_by_cli):
+        mock_set_by_cli.return_value = True
+        mock_find_all.return_value = ["certbot-foo:bar"]
+        values = {"certbot_foo:bar_baz": 42}
+        self.assertEqual(
+            self._test_relevant_values_common(values), values)
 
     def test_relevant_values_server(self):
         self.assertEqual(
