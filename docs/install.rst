@@ -11,6 +11,8 @@ About Certbot
 
 *Certbot is meant to be run directly on a web server*, normally by a system administrator. In most cases, running Certbot on your personal computer is not a useful option. The instructions below relate to installing and running Certbot on a server.
 
+System administrators can use Certbot directly to request certificates; they should *not* allow unprivileged users to run arbitrary Certbot commands as ``root``, because Certbot allows its user to specify arbitrary file locations and run arbitrary scripts.
+
 Certbot is packaged for many common operating systems and web servers. Check whether
 ``certbot`` (or ``letsencrypt``) is packaged for your web server's OS by visiting
 certbot.eff.org_, where you will also find the correct installation instructions for
