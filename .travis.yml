@@ -18,6 +18,11 @@ branches:
     - /^\d+\.\d+\.x$/
     - /^test-.*$/
 
+# Since master can receive only commits from PR that have already been tested, we avoid with the
+# the following condition to launch again a pipeline when the merge commit is pushed to master.
+# However master still needs to be set in branches section to allow PR for master to be built.
+if: NOT (type = push AND branch = master)
+
 matrix:
   include:
     # These environments are always executed
