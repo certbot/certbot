@@ -94,6 +94,9 @@ class DNS01ResponseTest(unittest.TestCase):
         self.response = self.chall.response(KEY)
 
     def test_to_partial_json(self):
+        self.assertEqual({k: v for k, v in self.jmsg.items() if k != 'keyAuthorization'},
+                         self.msg.to_partial_json())
+        self.msg._dump_authorization_key(True)  # pylint: disable=protected-access
         self.assertEqual(self.jmsg, self.msg.to_partial_json())
 
     def test_from_json(self):
@@ -165,6 +168,9 @@ class HTTP01ResponseTest(unittest.TestCase):
         self.response = self.chall.response(KEY)
 
     def test_to_partial_json(self):
+        self.assertEqual({k: v for k, v in self.jmsg.items() if k != 'keyAuthorization'},
+                         self.msg.to_partial_json())
+        self.msg._dump_authorization_key(True)  # pylint: disable=protected-access
         self.assertEqual(self.jmsg, self.msg.to_partial_json())
 
     def test_from_json(self):
@@ -285,6 +291,9 @@ class TLSSNI01ResponseTest(unittest.TestCase):
         self.assertEqual(self.z_domain, self.response.z_domain)
 
     def test_to_partial_json(self):
+        self.assertEqual({k: v for k, v in self.jmsg.items() if k != 'keyAuthorization'},
+                         self.response.to_partial_json())
+        self.response._dump_authorization_key(True)  # pylint: disable=protected-access
         self.assertEqual(self.jmsg, self.response.to_partial_json())
 
     def test_from_json(self):
@@ -419,6 +428,9 @@ class TLSALPN01ResponseTest(unittest.TestCase):
         self.response = self.chall.response(KEY)
 
     def test_to_partial_json(self):
+        self.assertEqual({k: v for k, v in self.jmsg.items() if k != 'keyAuthorization'},
+                         self.msg.to_partial_json())
+        self.msg._dump_authorization_key(True)  # pylint: disable=protected-access
         self.assertEqual(self.jmsg, self.msg.to_partial_json())
 
     def test_from_json(self):
