@@ -436,3 +436,29 @@ def test_wildcard_certificates(context):
     ])
 
     assert exists(join(context.config_dir, 'live/{0}/fullchain.pem'.format(certname)))
+
+
+def test_ocsp_status(context):
+    if context.acme_server == 'pebble':
+        pytest.skip('Pebble does not support OCSP status requests.')
+
+    # OCSP 1: Check stale OCSP status
+    sample_data_path = misc.load_sample_data_path(context.workspace)
+    output = context.common(['certificates', '--config-dir', sample_data_path])
+
+    assert output.count('TEST_CERT') == 2, ('Did not find two test certs as expected ({0})'
+                                            .format(output.count('TEST_CERT')))
+    assert output.count('EXPIRED') == 2, ('Did not find two expired certs as expected ({0})'
+                                          .format(output.count('EXPIRED')))
+
+    # OSCP 2: Check live certificate OCSP status (VALID)
+    output = context.common(['--domains', 'le-ocsp-check.wtf'])
+
+    assert output.count('VALID') == 1, 'Expected le-ocsp-check.wtf to be VALID'
+    assert output.count('EXPIRED') == 0, 'Did not expect le-ocsp-check.wtf to be EXPIRED'
+
+    # OSCP 3: Check live certificate OCSP status (REVOKED)
+    output = context.common(['certificates'])
+
+    assert output.count('INVALID') == 1, 'Expected le-ocsp-check.wtf to be INVALID'
+    assert output.count('REVOKED') == 1, 'Expected le-ocsp-check.wtf to be REVOKED'

@@ -56,7 +56,7 @@ def find_certbot_root_directory():
 
 def generate_csr(domains, key_path, csr_path, key_type='RSA'):
     certbot_root_directory = find_certbot_root_directory()
-    script_path = os.path.normpath(os.path.join(certbot_root_directory, 'examples/generate-csr.py'))
+    script_path = os.path.join(certbot_root_directory, 'examples', 'generate-csr.py')
 
     command = [
         sys.executable, script_path, '--key-path', key_path, '--csr-path', csr_path,
@@ -64,6 +64,14 @@ def generate_csr(domains, key_path, csr_path, key_type='RSA'):
     ]
     command.extend(domains)
     subprocess.check_call(command)
+
+
+def load_sample_data_path(workspace):
+    certbot_root_directory = find_certbot_root_directory()
+    original = os.path.join(certbot_root_directory, 'tests', 'integration', 'sample-config')
+    copied = os.path.join(workspace, 'sample-config')
+    shutil.copytree(original, copied, symlinks=True)
+    return copied
 
 
 def read_certificate(cert_path):
