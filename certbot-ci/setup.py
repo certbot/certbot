@@ -15,6 +15,7 @@ install_requires = [
     'pyopenssl',
     'cryptography',
     'requests',
+    'pyyaml',
 ]
 
 setup(

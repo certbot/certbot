@@ -10,6 +10,7 @@ from os.path import join
 
 import requests
 import json
+import yaml
 
 from certbot_integration_tests.utils import misc
 
@@ -89,13 +90,23 @@ def _prepare_acme_server(workspace, acme_type, acme_xdist):
     print('=> Starting {0} instance deployment...'.format(acme_type))
     instance_path = join(workspace, acme_type)
     try:
-        # This loads Boulder/Pebble from git, that includes a docker-compose.yml ready for production.
+        # Load Boulder/Pebble from git, that includes a docker-compose.yml ready for production.
         _launch_command(['git', 'clone', 'https://github.com/letsencrypt/{0}'.format(acme_type),
                          '--single-branch', '--depth=1', instance_path])
         if acme_type == 'boulder':
             # Allow Boulder to ignore usual limit rate policies, useful for tests.
             os.rename(join(instance_path, 'test/rate-limit-policies-b.yml'),
                       join(instance_path, 'test/rate-limit-policies.yml'))
+        if acme_type == 'pebble':
+            # Configure Pebble at full speed (PEBBLE_VA_NOSLEEP=1) and not randomly refusing valid
+            # nonce (PEBBLE_WFE_NONCEREJECT=0) to have a stable test environment.
+            with open(os.path.join(instance_path, 'docker-compose.yml'), 'r') as file_handler:
+                config = yaml.load(file_handler.read())
+
+            config['services']['pebble'].setdefault('environment', [])\
+                .extend(['PEBBLE_VA_NOSLEEP=1', 'PEBBLE_WFE_NONCEREJECT=0'])
+            with open(os.path.join(instance_path, 'docker-compose.yml'), 'w') as file_handler:
+                file_handler.write(yaml.dump(config))
 
         # Launch the ACME CA server.
         _launch_command(['docker-compose', 'up', '--force-recreate', '-d'], cwd=instance_path)

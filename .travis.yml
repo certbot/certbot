@@ -201,9 +201,8 @@ addons:
     - nginx-light
     - openssl
 
-install: "travis_retry $(command -v pip || command -v pip3) install codecov tox"
-script:
-    - 'if [ -z "${TEST_CAMPAIGN+x}" ] ; then travis_retry tox ; else tox ; fi'
+install: "$(command -v pip || command -v pip3) install codecov tox"
+script: tox
 
 after_success: '[ "$TOXENV" == "py27-cover" ] && codecov'
 
