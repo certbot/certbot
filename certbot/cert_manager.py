@@ -261,6 +261,8 @@ def human_readable_cert_info(config, cert, skip_filter_checks=False):
     reasons = []
     if cert.is_test_cert:
         reasons.append('TEST_CERT')
+    import timeit
+    print(timeit.timeit('cert.target_expiry', globals=locals()))
     if cert.target_expiry <= now:
         reasons.append('EXPIRED')
     if checker.ocsp_revoked(cert.cert, cert.chain):
