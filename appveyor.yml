@@ -11,6 +11,14 @@ branches:
     - /^\d+\.\d+\.x$/ # Version branches like X.X.X
     - /^test-.*$/
 
+init:
+  # Since master can receive only commits from PR that have already been tested, we avoid with the
+  # the following condition to launch again a pipeline when the merge commit is pushed to master.
+  # However master still needs to be set in branches section to allow PR for master to be built.
+  - ps: |
+      if (-Not $Env:APPVEYOR_PULL_REQUEST_NUMBER -And $Env:APPVEYOR_REPO_BRANCH -Eq 'master')
+      { $Env:APPVEYOR_SKIP_FINALIZE_ON_EXIT = 'true'; Exit-AppVeyorBuild }
+
 install:
   # Use Python 3.7 by default
   - "SET PATH=C:\\Python37;C:\\Python37\\Scripts;%PATH%"
