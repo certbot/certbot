@@ -351,7 +351,7 @@ class ChallengePerformer(object):
     def perform(self):
         """Perform all added challenges.
 
-        :returns: challenge respones
+        :returns: challenge responses
         :rtype: `list` of `acme.challenges.KeyAuthorizationChallengeResponse`
 
 
