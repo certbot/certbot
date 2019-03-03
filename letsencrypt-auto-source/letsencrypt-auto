@@ -488,11 +488,17 @@ BOOTSTRAP_RPM_PYTHON3_VERSION=1
 BootstrapRpmPython3() {
   # Tested with:
   #   - CentOS 6
+  #   - Fedora 29
 
   InitializeRPMCommonBase
 
+  # Fedora 29 must use python3-virtualenv
+  if $TOOL list python3-virtualenv >/dev/null 2>&1; then
+    python_pkgs="python3
+      python3-virtualenv
+    "
   # EPEL uses python34
-  if $TOOL list python34 >/dev/null 2>&1; then
+  elif $TOOL list python34 >/dev/null 2>&1; then
     python_pkgs="python34
       python34-devel
       python34-tools
@@ -741,7 +747,10 @@ elif [ -f /etc/redhat-release ]; then
   prev_le_python="$LE_PYTHON"
   unset LE_PYTHON
   DeterminePythonVersion "NOCRASH"
-  if [ "$PYVER" -eq 26 ]; then
+  # Starting to Fedora 29, python2 is on a deprecation path. Let's move to python3 then.
+  RPM_DIST_NAME=`(source /etc/os-release && echo $ID) || echo "unknown"`
+  RPM_DIST_VERSION=`(source /etc/os-release && echo $VERSION_ID) || echo "0"`
+  if [ "$RPM_DIST_NAME" = "fedora" -a "$RPM_DIST_VERSION" -ge 29 -o "$PYVER" -eq 26 ]; then
     Bootstrap() {
       BootstrapMessage "RedHat-based OSes that will use Python3"
       BootstrapRpmPython3
