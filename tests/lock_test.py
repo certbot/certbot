@@ -2,6 +2,7 @@
 from __future__ import print_function
 
 import atexit
+import datetime
 import functools
 import logging
 import os
@@ -10,6 +11,13 @@ import shutil
 import subprocess
 import sys
 import tempfile
+
+from cryptography import x509
+from cryptography.hazmat.backends import default_backend
+# TODO: once mypy has cryptography types bundled, type: ignore can be removed.
+# See https://github.com/python/typeshed/tree/master/third_party/2/cryptography
+from cryptography.hazmat.primitives import serialization, hashes  # type: ignore
+from cryptography.hazmat.primitives.asymmetric import rsa
 
 from certbot import lock
 from certbot import util
@@ -131,6 +139,51 @@ def set_up_command(config_dir, logs_dir, work_dir, nginx_dir):
             test_util.vector_path('cert.pem'),
             test_util.vector_path('rsa512_key.pem'),
             config_dir, logs_dir, work_dir, nginx_dir).split())
+
+
+def setup_certificate(workspace):
+    """Generate a self-signed certificate for nginx.
+    :param workspace: path of folder where to put the certificate
+    :return: tuple containing the key path and certificate path
+    :rtype: `tuple`
+    """
+    # Generate key
+    # See comment on cryptography import about type: ignore
+    private_key = rsa.generate_private_key(  # type: ignore
+        public_exponent=65537,
+        key_size=2048,
+        backend=default_backend()
+    )
+    subject = issuer = x509.Name([
+        x509.NameAttribute(x509.NameOID.COMMON_NAME, u'nginx.wtf')
+    ])
+    certificate = x509.CertificateBuilder().subject_name(
+        subject
+    ).issuer_name(
+        issuer
+    ).public_key(
+        private_key.public_key()
+    ).serial_number(
+        1
+    ).not_valid_before(
+        datetime.datetime.utcnow()
+    ).not_valid_after(
+        datetime.datetime.utcnow() + datetime.timedelta(days=1)
+    ).sign(private_key, hashes.SHA256(), default_backend())
+
+    key_path = os.path.join(workspace, 'cert.key')
+    with open(key_path, 'wb') as file_handle:
+        file_handle.write(private_key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.TraditionalOpenSSL,
+            encryption_algorithm=serialization.NoEncryption()
+        ))
+
+    cert_path = os.path.join(workspace, 'cert.pem')
+    with open(cert_path, 'wb') as file_handle:
+        file_handle.write(certificate.public_bytes(serialization.Encoding.PEM))
+
+    return key_path, cert_path
 
 
 def test_command(command, directories):
