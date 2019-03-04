@@ -6,7 +6,7 @@ import ssl
 
 from certbot_integration_tests.certbot_tests import context as certbot_context
 from certbot_integration_tests.utils import misc
-from certbot_integration_tests.nginx_tests.nginx_config import construct_nginx_config
+from certbot_integration_tests.nginx_tests import nginx_config as config
 
 
 class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
@@ -19,19 +19,21 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
 
         self.webroot = os.path.join(self.nginx_root, 'webroot')
         os.mkdir(self.webroot)
-        with open(os.path.join(self.webroot, 'index.html'), 'w') as file:
-            file.write('Hello World!')
+        with open(os.path.join(self.webroot, 'index.html'), 'w') as file_handler:
+            file_handler.write('Hello World!')
 
         self.other_port = random.randint(6000, 6999)
+
+        self.key_path, self.cert_path = config.create_self_signed_certificate(self.nginx_root)
 
         self.nginx_config_path = os.path.join(self.nginx_root, 'nginx.conf')
         self.nginx_config = None
 
     @contextlib.contextmanager
     def nginx_server(self, default_server):
-        self.nginx_config = construct_nginx_config(
-            self.nginx_root, self.webroot, self.http_01_port, self.tls_alpn_01_port,
-            self.other_port, default_server, self.worker_id)
+        self.nginx_config = config.construct_nginx_config(
+            self.nginx_root, self.webroot, self.key_path, self.cert_path, self.http_01_port,
+            self.tls_alpn_01_port, self.other_port, default_server, self.worker_id)
         with open(self.nginx_config_path, 'w') as file:
             file.write(self.nginx_config)
 

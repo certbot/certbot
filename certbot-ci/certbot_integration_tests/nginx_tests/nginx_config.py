@@ -1,13 +1,24 @@
 """General test purpose nginx configuration generator."""
+import datetime
 import getpass
+import os
+
+from cryptography import x509
+from cryptography.hazmat.backends import default_backend
+# TODO: once mypy has cryptography types bundled, type: ignore can be removed.
+# See https://github.com/python/typeshed/tree/master/third_party/2/cryptography
+from cryptography.hazmat.primitives import serialization, hashes  # type: ignore
+from cryptography.hazmat.primitives.asymmetric import rsa
 
 
-def construct_nginx_config(nginx_root, nginx_webroot, http_port, https_port,
+def construct_nginx_config(nginx_root, nginx_webroot, key_path, cert_path, http_port, https_port,
                            other_port, default_server, wtf_prefix='le'):
     """
     This method returns a full nginx configuration suitable for integration tests.
     :param nginx_root: nginx root configuration path
     :param nginx_webroot: nginx webroot path
+    :param key_path: the path to the SSL key
+    :param cert_path: the path to the SSL certificate
     :param http_port: HTTP port to listen on
     :param https_port: HTTPS port to listen on
     :param other_port: other HTTP port to listen on
@@ -107,13 +118,57 @@ http {{
       return 301 https://$host$request_uri;
     }}
     server_name nginx6.{wtf_prefix}.wtf nginx7.{wtf_prefix}.wtf;
+    
+    ssl_certificate {cert_path};
+    ssl_certificate_key {key_path};
   }}
 }}
-        '''.format(nginx_root=nginx_root,
-                   nginx_webroot=nginx_webroot,
-                   user=getpass.getuser(),
-                   http_port=http_port,
-                   https_port=https_port,
-                   other_port=other_port,
-                   default_server=default_server,
-                   wtf_prefix=wtf_prefix)
+'''.format(nginx_root=nginx_root, nginx_webroot=nginx_webroot, user=getpass.getuser(),
+           http_port=http_port, https_port=https_port, other_port=other_port,
+           default_server=default_server, wtf_prefix=wtf_prefix,
+           cert_path=cert_path, key_path=key_path)
+
+
+def create_self_signed_certificate(nginx_root):
+    """Generate a self-signed certificate for nginx.
+    :param nginx_root: path of folder where to put the certificate
+    :return: tuple containing the key path and certificate path
+    :rtype: `tuple`
+    """
+    # Generate key
+    # See comment on cryptography import about type: ignore
+    private_key = rsa.generate_private_key(  # type: ignore
+        public_exponent=65537,
+        key_size=2048,
+        backend=default_backend()
+    )
+    subject = issuer = x509.Name([
+        x509.NameAttribute(x509.NameOID.COMMON_NAME, u'nginx.wtf')
+    ])
+    certificate = x509.CertificateBuilder().subject_name(
+        subject
+    ).issuer_name(
+        issuer
+    ).public_key(
+        private_key.public_key()
+    ).serial_number(
+        1
+    ).not_valid_before(
+        datetime.datetime.utcnow()
+    ).not_valid_after(
+        datetime.datetime.utcnow() + datetime.timedelta(days=1)
+    ).sign(private_key, hashes.SHA256(), default_backend())
+
+    key_path = os.path.join(nginx_root, 'cert.key')
+    with open(key_path, 'wb') as file_handle:
+        file_handle.write(private_key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.TraditionalOpenSSL,
+            encryption_algorithm=serialization.NoEncryption()
+        ))
+
+    cert_path = os.path.join(nginx_root, 'cert.pem')
+    with open(cert_path, 'wb') as file_handle:
+        file_handle.write(certificate.public_bytes(serialization.Encoding.PEM))
+
+    return key_path, cert_path
