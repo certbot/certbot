@@ -2,7 +2,6 @@
 """Removes hash information from requirement files passed to it as file path
 arguments or simply piped to stdin."""
 
-import os
 import re
 import sys
 
@@ -24,22 +23,28 @@ def process_entries(entries):
     return out_lines
 
 def main(*paths):
-    """Reads dependency definitions from a (list of) file(s) or stdin and
-    removes hashes from returned entries"""
+    """
+    Reads dependency definitions from a (list of) file(s) provided on the
+    command line. If no command line arguments are present, data is read from
+    stdin instead.
+
+    Hashes are removed from returned entries.
+    """
 
     deps = []
-    for path in paths:
-        with open(path) as file_h:
-            deps += process_entries(file_h.readlines())
+    if paths:
+        for path in paths:
+            with open(path) as file_h:
+                deps += process_entries(file_h.readlines())
+    else:
+        # Need to check if interactive to avoid blocking if nothing is piped
+        if not sys.stdin.isatty():
+            stdin_data = []
+            for line in sys.stdin:
+                stdin_data.append(line)
+            deps += process_entries(stdin_data)
 
-    # Need to check if interactive to avoid blocking if nothing is piped
-    if not sys.stdin.isatty():
-        stdin_data = []
-        for line in sys.stdin:
-            stdin_data.append(line)
-        deps += process_entries(stdin_data)
-
-    return os.linesep.join(deps)
+    return "\n".join(deps)
 
 if __name__ == '__main__':
     print(main(*sys.argv[1:]))  # pylint: disable=star-args

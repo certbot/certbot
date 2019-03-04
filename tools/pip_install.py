@@ -48,7 +48,7 @@ def certbot_normal_processing(tools_path, test_constraints):
     with open(certbot_requirements, 'r') as fd:
         data = fd.readlines()
     with open(test_constraints, 'w') as fd:
-        data = os.linesep.join(strip_hashes.process_entries(data))
+        data = "\n".join(strip_hashes.process_entries(data))
         fd.write(data)
 
 

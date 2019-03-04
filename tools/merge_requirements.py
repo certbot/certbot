@@ -55,21 +55,24 @@ def main(*paths):
     """Merges multiple requirements files together and prints the result.
 
     Requirement files specified later in the list take precedence over earlier
-    files.
+    files. Files are read from file paths passed from the command line arguments.
 
-    :param tuple paths: paths to requirements files
+    If no command line arguments are defined, data is read from stdin instead.
+
+    :param tuple paths: paths to requirements files provided on command line
 
     """
     data = {}
-    for path in paths:
-        data.update(process_entries(read_file(path)))
-
-    # Need to check if interactive to avoid blocking if nothing is piped
-    if not sys.stdin.isatty():
-        stdin_data = []
-        for line in sys.stdin:
-            stdin_data.append(line)
-        data.update(process_entries(stdin_data))
+    if paths:
+        for path in paths:
+            data.update(process_entries(read_file(path)))
+    else:
+        # Need to check if interactive to avoid blocking if nothing is piped
+        if not sys.stdin.isatty():
+            stdin_data = []
+            for line in sys.stdin:
+                stdin_data.append(line)
+            data.update(process_entries(stdin_data))
 
     return output_requirements(data)
 
