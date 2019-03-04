@@ -8,12 +8,12 @@ def create_venv(venv_path, pyver, verbose):
     if os.path.exists(venv_path):
         shutil.rmtree(venv_path)
 
-    stdout = sys.stdout if int(verbose) == 1 else open(os.devnull, 'w')
+    stdout = sys.stdout if verbose == '1' else open(os.devnull, 'w')
 
     if int(pyver) <= 27:
         # Use virtualenv binary
         environ = os.environ.copy()
-        environ['VIRTUALENV_NO_DOWNLOAD'] = 1
+        environ['VIRTUALENV_NO_DOWNLOAD'] = '1'
         command = ['virtualenv', '--no-site-packages', '--python', sys.executable, venv_path]
         subprocess.check_call(command, stdout=stdout, env=environ)
     else:
