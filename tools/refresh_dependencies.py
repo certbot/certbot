@@ -23,10 +23,11 @@ python2 letsencrypt-auto-source/pieces/create_venv.py /tmp/venv "27" "1"
 /tmp/venv/bin/pip install -e acme -e . -e certbot-nginx -e certbot-apache
 /tmp/venv/bin/pip freeze >> /tmp/workspace/results_2
 
-python3 letsencrypt-auto-source/pieces/create_venv.py /tmp/venv "37" "1"
-/tmp/venv3/bin/python letsencrypt-auto-source/pieces/pipstrap.py
-/tmp/venv3/bin/pip install -e acme -e . -e certbot-nginx -e certbot-apache
-/tmp/venv3/bin/pip freeze >> /tmp/workspace/results_3
+#python3 letsencrypt-auto-source/pieces/create_venv.py /tmp/venv "37" "1"
+#/tmp/venv3/bin/python letsencrypt-auto-source/pieces/pipstrap.py
+#/tmp/venv3/bin/pip install certbot-nginx certbot-apache
+#/tmp/venv3/bin/pip freeze >> /tmp/workspace/results_3
+touch /tmp/workspace/results_3
 """
 
 
@@ -43,7 +44,7 @@ def process_one_distribution(distribution):
                    '-v', '{0}:/tmp/workspace'.format(workspace), distribution, '/tmp/workspace/script.sh']
         subprocess.check_call(command)
         with open(os.path.join(workspace, 'results_2'), 'r') as file_handler_2:
-            with open(os.path.join(workspace, 'results_3', 'r')) as file_handler_3:
+            with open(os.path.join(workspace, 'results_3'), 'r') as file_handler_3:
                 return file_handler_2.read(), file_handler_3.read()
     finally:
         shutil.rmtree(workspace)
