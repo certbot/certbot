@@ -286,7 +286,7 @@ class ApacheParser(object):
         """
         # TODO: Add error checking code... does the path given even exist?
         #       Does it throw exceptions?
-        if_mod_path = self._get_ifmod(aug_conf_path, "mod_ssl.c")
+        if_mod_path = self.get_ifmod(aug_conf_path, "mod_ssl.c")
         # IfModule can have only one valid argument, so append after
         self.aug.insert(if_mod_path + "arg", "directive", False)
         nvh_path = if_mod_path + "directive[1]"
@@ -297,7 +297,7 @@ class ApacheParser(object):
             for i, arg in enumerate(args):
                 self.aug.set("%s/arg[%d]" % (nvh_path, i + 1), arg)
 
-    def _get_ifmod(self, aug_conf_path, mod, beginning=False):
+    def get_ifmod(self, aug_conf_path, mod, beginning=False):
         """Returns the path to <IfMod mod> and creates one if it doesn't exist.
 
         :param str aug_conf_path: Augeas configuration path

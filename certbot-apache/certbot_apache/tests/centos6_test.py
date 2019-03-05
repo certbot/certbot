@@ -96,7 +96,7 @@ class CentOS6Tests(util.ApacheTest):
 
     def test_loadmod_rootconf_exists(self):
         sslmod_args = ["ssl_module", "modules/uniquename.so"]
-        rootconf_ifmod = self.config.parser._get_ifmod(  # pylint: disable=protected-access
+        rootconf_ifmod = self.config.parser.get_ifmod(
             parser.get_aug_path(self.config.parser.loc["default"]),
             "!mod_ssl.c", beginning=True)
         self.config.parser.add_dir(rootconf_ifmod[:-1], "LoadModule", sslmod_args)

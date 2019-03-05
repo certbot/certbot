@@ -73,16 +73,16 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
         for m in loadmods:
             if "/conf.d/ssl.conf/" in m:
                 # Strip "arg[1]" off from the end
-                sslconf_loadmod_path = m[:-7]
+                sslconf_loadmod_path = m.rpartition("/")[0]
                 # Use the preconfigured LoadModule values from ssl.conf
                 loadmod_args = self.parser.get_all_args(sslconf_loadmod_path)
             elif self.parser.loc["default"] in m:
                 return
 
-        rootconf_ifmod = self.parser._get_ifmod(  # pylint: disable=protected-access
+        rootconf_ifmod = self.parser.get_ifmod(
             parser.get_aug_path(self.parser.loc["default"]),
             "!mod_ssl.c", beginning=True)
-        # parser._get_ifmod returns a path postfixed with "/", remove that
+        # parser.get_ifmod returns a path postfixed with "/", remove that
         self.parser.add_dir(rootconf_ifmod[:-1], "LoadModule", loadmod_args)
         self.save_notes += "Added LoadModule ssl_module to main configuration.\n"
 
@@ -94,8 +94,7 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
             self.aug.remove(sslconf_loadmod_path)
 
             # Create a new IfModule !mod_ssl.c
-            ssl_ifmod = self.parser._get_ifmod(  # pylint: disable=protected-access
-                sslconf_path, "!mod_ssl.c", beginning=True)
+            ssl_ifmod = self.parser.get_ifmod(sslconf_path, "!mod_ssl.c", beginning=True)
 
             self.parser.add_dir(ssl_ifmod[:-1], "LoadModule", loadmod_args)
             self.save_notes += ("Wrapped ssl.conf LoadModule ssl_module inside "
