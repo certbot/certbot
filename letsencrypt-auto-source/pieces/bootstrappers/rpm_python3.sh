@@ -13,6 +13,7 @@ BootstrapRpmPython3() {
   if $TOOL list python3-virtualenv >/dev/null 2>&1; then
     python_pkgs="python3
       python3-virtualenv
+      python3-devel
     "
   # EPEL uses python34
   elif $TOOL list python34 >/dev/null 2>&1; then
