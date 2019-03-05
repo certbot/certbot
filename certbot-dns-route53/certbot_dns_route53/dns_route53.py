@@ -38,6 +38,17 @@ class Authenticator(dns_common.DNSAuthenticator):
         self.r53 = boto3.client("route53")
         self._resource_records = collections.defaultdict(list) # type: DefaultDict[str, List[Dict[str, str]]]
 
+    @classmethod
+    def add_parser_arguments(cls, add):  # pylint: disable=arguments-differ
+        super(Authenticator, cls).add_parser_arguments(add)
+        add('throwawaydomain',
+            help="DNS name your CNAME for the certificate request points to.",
+            default=None)
+        add('throwawayzoneid',
+            help="Route53 ZoneID to update removing `ListHostedZones` "
+                 "Action requirement.",
+            default=None)
+
     def more_info(self):  # pylint: disable=missing-docstring,no-self-use
         return "Solve a DNS01 challenge using AWS Route53"
 
@@ -102,7 +113,10 @@ class Authenticator(dns_common.DNSAuthenticator):
         return zones[0][1]
 
     def _change_txt_record(self, action, validation_domain_name, validation):
-        zone_id = self._find_zone_id_for_domain(validation_domain_name)
+        if self.conf('throwawayzoneid'):
+            zone_id = self.conf('throwawayzoneid')
+        else:
+            zone_id = self._find_zone_id_for_domain(validation_domain_name)
 
         rrecords = self._resource_records[validation_domain_name]
         challenge = {"Value": '"{0}"'.format(validation)}
@@ -126,7 +140,7 @@ class Authenticator(dns_common.DNSAuthenticator):
                     {
                         "Action": action,
                         "ResourceRecordSet": {
-                            "Name": validation_domain_name,
+                            "Name": self.conf('throwawaydomain') or validation_domain_name,
                             "Type": "TXT",
                             "TTL": self.ttl,
                             "ResourceRecords": rrecords,
