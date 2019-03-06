@@ -1,4 +1,4 @@
-# Specifies Python package versions for development.
+# Specifies Python package versions for development and building Docker images.
 # It includes in particular packages not specified in letsencrypt-auto's requirements file.
 # Some dev package versions specified here may be overridden by higher level constraints
 # files during tests (eg. letsencrypt-auto-source/pieces/dependency-requirements.txt).
@@ -53,6 +53,7 @@ pytest-forked==0.2
 pytest-xdist==1.22.5
 pytest-rerunfailures==4.2
 pytest-sugar==0.9.2
+pytest-rerunfailures==4.2
 python-dateutil==2.6.1
 python-digitalocean==1.11
 PyYAML==3.13

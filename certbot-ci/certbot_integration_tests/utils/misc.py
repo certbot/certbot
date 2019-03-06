@@ -87,21 +87,6 @@ class GraceFullTCPServer(socketserver.TCPServer):
 
 
 @contextlib.contextmanager
-def execute_in_given_cwd(cwd):
-    """
-    Context manager that will execute any command in the given cwd after entering context,
-    and restore current cwd when context is destroyed.
-    :param str cwd: the path to use as the temporary current workspace for python execution
-    """
-    current_cwd = os.getcwd()
-    try:
-        os.chdir(cwd)
-        yield
-    finally:
-        os.chdir(current_cwd)
-
-
-@contextlib.contextmanager
 def create_tcp_server(port):
     current_cwd = os.getcwd()
     webroot = tempfile.mkdtemp()

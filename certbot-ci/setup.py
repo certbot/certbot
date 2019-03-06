@@ -8,6 +8,7 @@ install_requires = [
     'pytest',
     'pytest-cov',
     'pytest-xdist',
+    'pytest-rerunfailures==4.2',
     'pytest-sugar',
     'pytest-rerunfailures==4.2',
     'coverage',
