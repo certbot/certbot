@@ -18,7 +18,7 @@ branches:
     - /^\d+\.\d+\.x$/
     - /^test-.*$/
 
-# Job for main test suite, always executed (including PR) except for pushes on master.
+# Jobs for the main test suite are always executed (including on PRs) except for pushes on master.
 not-on-master: &not-on-master
   if: NOT (type = push AND branch = master)
 
