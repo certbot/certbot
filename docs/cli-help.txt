@@ -113,7 +113,7 @@ optional arguments:
                         case, and to know when to deprecate support for past
                         Python versions and flags. If you wish to hide this
                         information from the Let's Encrypt server, set this to
-                        "". (default: CertbotACMEClient/0.31.0
+                        "". (default: CertbotACMEClient/0.32.0
                         (certbot(-auto); OS_NAME OS_VERSION) Authenticator/XXX
                         Installer/YYY (SUBCOMMAND; flags: FLAGS)
                         Py/major.minor.patchlevel). The flags encoded in the
@@ -477,7 +477,9 @@ plugins:
                         using Sakura Cloud for DNS). (default: False)
 
 apache:
-  Apache Web Server plugin
+  Apache Web Server plugin (Please note that the default values of the
+  Apache plugin options change depending on the operating system Certbot is
+  run on.)
 
   --apache-enmod APACHE_ENMOD
                         Path to the Apache 'a2enmod' binary (default: None)
@@ -496,7 +498,7 @@ apache:
                         /var/log/apache2)
   --apache-challenge-location APACHE_CHALLENGE_LOCATION
                         Directory path for challenge configuration (default:
-                        /etc/apache2/other)
+                        /etc/apache2)
   --apache-handle-modules APACHE_HANDLE_MODULES
                         Let installer handle enabling required modules for you
                         (Only Ubuntu/Debian currently) (default: False)
@@ -505,7 +507,7 @@ apache:
                         Ubuntu/Debian currently) (default: False)
   --apache-ctl APACHE_CTL
                         Full path to Apache control script (default:
-                        apachectl)
+                        apache2ctl)
 
 dns-cloudflare:
   Obtain certificates using a DNS TXT record (if you are using Cloudflare

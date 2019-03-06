@@ -2,7 +2,29 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 0.32.0 - master
+## 0.33.0 - master
+
+### Added
+
+*
+
+### Changed
+
+*
+
+### Fixed
+
+*
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+package with changes other than its version number was:
+
+*
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.32.0 - 2019-03-06
 
 ### Added
 
@@ -29,10 +51,6 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   `keyAuthorization` field but will temporarily retry the request with the
   field included if a `malformed` error is received. This fallback will be
   removed in version 0.34.0.
-
-### Fixed
-
-*
 
 Despite us having broken lockstep, we are continuing to release new versions of
 all Certbot components during releases for the time being, however, the only
