@@ -1,12 +1,21 @@
+"""This module contains advanced assertions for the certbot integration tests."""
+
 import os
 import grp
 
 
+# Defining __all__ allows to make a static import "from assertions import *" without importing
+# also the modules that are part of this module.
 __all__ = ['assert_hook_execution', 'assert_save_renew_hook', 'assert_certs_count_for_lineage',
            'assert_equals_permissions', 'assert_equals_group_owner', 'assert_world_permissions']
 
 
 def assert_hook_execution(probe_path, probe_content):
+    """
+    Assert that a certbot hook has been executed
+    :param probe_path: path to the file that received the hook output
+    :param probe_content: content expected when the hook is executed
+    """
     with open(probe_path, 'r') as file:
         lines = file.readlines()
 
@@ -15,10 +24,21 @@ def assert_hook_execution(probe_path, probe_content):
 
 
 def assert_save_renew_hook(config_dir, lineage):
+    """
+    Assert that the renew hook configuration of a lineage has been saved.
+    :param config_dir: location of the certbot configuration
+    :param lineage: lineage domain name
+    """
     assert os.path.isfile(os.path.join(config_dir, 'renewal/{0}.conf'.format(lineage)))
 
 
 def assert_certs_count_for_lineage(config_dir, lineage, count):
+    """
+    Assert the number of certificates generated for a lineage.
+    :param config_dir: location of the certbot configuration
+    :param lineage: lineage domain name
+    :param count: number of expected certificates
+    """
     archive_dir = os.path.join(config_dir, 'archive')
     lineage_dir = os.path.join(archive_dir, lineage)
     certs = [file for file in os.listdir(lineage_dir) if file.startswith('cert')]
@@ -26,6 +46,12 @@ def assert_certs_count_for_lineage(config_dir, lineage, count):
 
 
 def assert_equals_permissions(file1, file2, mask):
+    """
+    Assert that permissions on two files are identical in respect to a given umask.
+    :param file1: first file path to compare
+    :param file2: second file path to compare
+    :param mask: umask to apply before comparing file modes
+    """
     mode_file1 = os.stat(file1).st_mode & mask
     mode_file2 = os.stat(file2).st_mode & mask
 
@@ -33,6 +59,12 @@ def assert_equals_permissions(file1, file2, mask):
 
 
 def assert_equals_group_owner(file1, file2):
+    """
+    Assert that two files have the same group owner.
+    :param file1: first file path to compare
+    :param file2: second file path to compare
+    :return:
+    """
     group_owner_file1 = grp.getgrgid(os.stat(file1).st_gid)[0]
     group_owner_file2 = grp.getgrgid(os.stat(file2).st_gid)[0]
 
@@ -40,6 +72,11 @@ def assert_equals_group_owner(file1, file2):
 
 
 def assert_world_permissions(file, mode):
+    """
+    Assert that a file has the expected world permission.
+    :param file: file path to check
+    :param mode: world permissions mode expected
+    """
     mode_file_all = os.stat(file).st_mode & 0o007
 
     assert mode_file_all == mode
