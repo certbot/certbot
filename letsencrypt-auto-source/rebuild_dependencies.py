@@ -134,7 +134,7 @@ def write_requirements(dest_file, requirements, conflicts):
 
 def main(dest_file):
     dependencies_map = {}
-    pool = multiprocessing.Pool(processes=multiprocessing.cpu_count())
+    pool = multiprocessing.Pool(processes=2)
     promises = [pool.apply_async(process_one_distribution, [distribution])
                 for distribution in DISTRIBUTION_LIST]
 
