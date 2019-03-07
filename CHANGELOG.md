@@ -2,11 +2,36 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 0.32.0 - master
+## 0.33.0 - master
 
 ### Added
 
+* Fedora 29+ is now supported by certbot-auto. Since Python 2.x is on a deprecation
+  path in Fedora, certbot-auto will install and use Python 3.x on Fedora 29+.
+
+### Changed
+
 *
+
+### Fixed
+
+*
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+package with changes other than its version number was:
+
+*
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.32.0 - 2019-03-06
+
+### Added
+
+* If possible, Certbot uses built-in support for OCSP from recent cryptography
+  versions instead of the OpenSSL binary: as a consequence Certbot does not need
+  the OpenSSL binary to be installed anymore if cryptography>=2.5 is installed.
 
 ### Changed
 
@@ -28,10 +53,6 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   field included if a `malformed` error is received. This fallback will be
   removed in version 0.34.0.
 
-### Fixed
-
-*
-
 Despite us having broken lockstep, we are continuing to release new versions of
 all Certbot components during releases for the time being, however, the only
 package with changes other than its version number was:
@@ -49,9 +70,6 @@ More details about these changes can be found on our GitHub repo.
 
 * Avoid reprocessing challenges that are already validated
   when a certificate is issued.
-* If possible, Certbot uses built-in support for OCSP from recent cryptography
-  versions instead of the OpenSSL binary: as a consequence Certbot does not need
-  the OpenSSL binary to be installed anymore if cryptography>=2.5 is installed.
 * Support for initiating (but not solving end-to-end) TLS-ALPN-01 challenges
   with the `acme` module.
 
