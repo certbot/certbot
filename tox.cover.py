@@ -14,6 +14,9 @@ DEFAULT_PACKAGES = [
 COVER_THRESHOLDS = {
     'certbot': {'linux': 98, 'windows': 93},
     'acme': {'linux': 100, 'windows': 99},
+    # certbot_apache coverage not being at 100% is a workaround for
+    # https://github.com/certbot/certbot/issues/6813. We should increase
+    # the minimum coverage back to 100% when this issue is resolved.
     'certbot_apache': {'linux': 99, 'windows': 99},
     'certbot_dns_cloudflare': {'linux': 98, 'windows': 98},
     'certbot_dns_cloudxns': {'linux': 99, 'windows': 99},
