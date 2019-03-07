@@ -30,7 +30,7 @@ import hashin
 
 DISTRIBUTION_LIST = [
     'ubuntu:18.04', 'ubuntu:14.04',
-    'debian:stretch', 'debian:wheezy',
+    'debian:stretch', 'debian:jessie',
     'centos:7', 'centos:6',
     'opensuse/leap:15',
     'archlinux/base',
