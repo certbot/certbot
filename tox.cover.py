@@ -14,7 +14,7 @@ DEFAULT_PACKAGES = [
 COVER_THRESHOLDS = {
     'certbot': {'linux': 98, 'windows': 93},
     'acme': {'linux': 100, 'windows': 99},
-    'certbot_apache': {'linux': 100, 'windows': 100},
+    'certbot_apache': {'linux': 99, 'windows': 99},
     'certbot_dns_cloudflare': {'linux': 98, 'windows': 98},
     'certbot_dns_cloudxns': {'linux': 99, 'windows': 99},
     'certbot_dns_digitalocean': {'linux': 98, 'windows': 98},
