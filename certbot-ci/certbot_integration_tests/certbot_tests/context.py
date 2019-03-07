@@ -1,3 +1,4 @@
+"""Module do handle the context of integration tests."""
 import os
 import tempfile
 import subprocess
@@ -51,9 +52,14 @@ class IntegrationTestsContext(object):
         ).format(sys.executable, self.challtestsrv_mgt_port)
 
     def cleanup(self):
+        """Cleanup the integration test context."""
         shutil.rmtree(self.workspace)
 
-    def certbot_test_no_force_renew(self, args):
+    def _common_test_no_force_renew(self, args):
+        """
+        Base command to execute certbot in a distributed integration test context,
+        not renewing certificates by default.
+        """
         new_environ = os.environ.copy()
         new_environ['TMPDIR'] = self.workspace
 
@@ -86,20 +92,34 @@ class IntegrationTestsContext(object):
         return subprocess.check_output(command, universal_newlines=True,
                                        cwd=self.workspace, env=new_environ)
 
-    def certbot_test(self, args):
+    def _common_test(self, args):
+        """
+        Base command to execute certbot in a distributed integration test context,
+        renewing certificates by default.
+        """
         command = ['--renew-by-default']
         command.extend(args)
-        return self.certbot_test_no_force_renew(command)
+        return self._common_test_no_force_renew(command)
 
-    def common_no_force_renew(self, args):
+    def certbot_no_force_renew(self, args):
+        """
+        Execute certbot with given args, not renewing certificates by default.
+        :param args: args to pass to certbot
+        :return: output of certbot execution
+        """
         command = ['--authenticator', 'standalone', '--installer', 'null']
         command.extend(args)
-        return self.certbot_test_no_force_renew(command)
+        return self._common_test_no_force_renew(command)
 
-    def common(self, args):
+    def certbot(self, args):
+        """
+        Execute certbot with given args, renewing certificates by default.
+        :param args: args to pass to certbot
+        :return: output of certbot execution
+        """
         command = ['--renew-by-default']
         command.extend(args)
-        return self.common_no_force_renew(command)
+        return self.certbot_no_force_renew(command)
 
     def wtf(self, subdomain='le'):
         """

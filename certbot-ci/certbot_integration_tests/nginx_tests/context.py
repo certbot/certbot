@@ -50,7 +50,7 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
         command = ['--authenticator', 'nginx', '--installer', 'nginx',
                    '--nginx-server-root', self.nginx_root]
         command.extend(args)
-        return self.certbot_test(command)
+        return self._common_test(command)
 
     def assert_deployment_and_rollback(self, certname):
         server_cert = ssl.get_server_certificate(('localhost', self.tls_alpn_01_port))
@@ -62,7 +62,7 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
         command = ['--authenticator', 'nginx', '--installer', 'nginx',
                    '--nginx-server-root', self.nginx_root,
                    'rollback', '--checkpoints', '1']
-        self.certbot_test_no_force_renew(command)
+        self._common_test_no_force_renew(command)
 
         with open(self.nginx_config_path, 'r') as file_h:
             current_nginx_config = file_h.read()
