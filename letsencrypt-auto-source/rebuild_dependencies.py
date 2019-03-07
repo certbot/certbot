@@ -33,7 +33,7 @@ DISTRIBUTION_LIST = [
     'debian:stretch', 'debian:wheezy',
     'centos:7', 'centos:6',
     'opensuse/leap:15',
-    'archlinux:base',
+    'archlinux/base',
     'fedora:29',
 ]
 
