@@ -14,6 +14,7 @@ Usage: letsencrypt-auto-source/rebuild_dependencies new_requirements.txt
 
 NB1: This script must be run from certbot GIT root path.
 NB2: Docker must be installed on the machine running this script.
+NB3: Python library 'hashin' must be installed on the machine running this script.
 """
 import re
 import shutil
@@ -22,6 +23,10 @@ import tempfile
 import os
 import sys
 import multiprocessing
+
+# Library hashin is not used as a module in this script, but this import is
+# useful to fail fast the script if it is not installed.
+import hashin
 
 DISTRIBUTION_LIST = [
     'ubuntu:18.04', 'ubuntu:14.04',
