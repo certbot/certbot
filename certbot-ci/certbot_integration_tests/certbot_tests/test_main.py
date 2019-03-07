@@ -23,6 +23,7 @@ def context(request):
 
 
 def test_basic_commands(context):
+    """Test simple commands on Certbot CLI."""
     # TMPDIR env variable is set to workspace for the certbot subprocess.
     # So tempdir module will create any temporary files/dirs in workspace,
     # and its content can be tested to check correct certbot cleanup.
@@ -40,6 +41,7 @@ def test_basic_commands(context):
 
 
 def test_hook_dirs_creation(context):
+    """Test all hooks directory are created during Certbot startup."""
     context.common(['register'])
 
     for hook_dir in misc.list_renewal_hooks_dirs(context.config_dir):
@@ -47,6 +49,7 @@ def test_hook_dirs_creation(context):
 
 
 def test_registration_override(context):
+    """Test correct register/unregister, and registration override."""
     context.common(['register'])
     context.common(['unregister'])
     context.common(['register', '--email', 'ex1@domain.org,ex2@domain.org'])
@@ -61,12 +64,16 @@ def test_registration_override(context):
 
 
 def test_prepare_plugins(context):
+    """Test that plugins are correctly instantiated and displayed."""
     output = context.common(['plugins', '--init', '--prepare'])
 
     assert 'webroot' in output
 
 
 def test_http_01(context):
+    """Test the HTTP-01 challenge using standalone plugin."""
+    # We start a server listening on the port for the
+    # TLS-SNI challenge to prevent regressions in #3601.
     with misc.create_tcp_server(context.tls_alpn_01_port):
         certname = context.wtf('le2')
         context.common([
@@ -82,6 +89,7 @@ def test_http_01(context):
 
 
 def test_manual_http_auth(context):
+    """Test the HTTP-01 challenge using manual plugin."""
     with misc.create_tcp_server(context.http_01_port) as webroot:
         manual_http_hooks = misc.manual_http_hooks(webroot)
 
@@ -102,6 +110,7 @@ def test_manual_http_auth(context):
 
 
 def test_manual_dns_auth(context):
+    """Test the DNS-01 challenge using manual plugin."""
     certname = context.wtf('dns')
     context.common([
         '-a', 'manual', '-d', certname, '--preferred-challenges', 'dns',
@@ -119,10 +128,12 @@ def test_manual_dns_auth(context):
 
 
 def test_certonly(context):
+    """Test the certonly verb on certbot."""
     context.common(['certonly', '--cert-name', 'newname', '-d', context.wtf('newname')])
 
 
 def test_auth_and_install_with_csr(context):
+    """Test certificate issuance and install using an existing CSR."""
     certname = context.wtf('le3')
     key_path = join(context.workspace, 'key.pem')
     csr_path = join(context.workspace, 'csr.der')
@@ -149,6 +160,7 @@ def test_auth_and_install_with_csr(context):
 
 
 def test_renew(context):
+    """Test various certificate renew scenarios."""
     # First, we create a target certificate, with all hook dirs instantiated.
     # We should have a new certificate, with hooks executed.
     # Check also file permissions.
@@ -233,6 +245,7 @@ def test_renew(context):
 
 
 def test_hook_override(context):
+    """Test correct hook override on renew."""
     certname = context.wtf('override')
     context.common([
         'certonly', '-d', certname,
@@ -246,6 +259,7 @@ def test_hook_override(context):
     assert_hook_execution(context.hook_probe, 'post')
     assert_hook_execution(context.hook_probe, 'deploy')
 
+    # Now we override all previous hooks during next renew.
     open(context.hook_probe, 'w').close()
     context.common([
         'renew', '--cert-name', certname,
@@ -264,6 +278,7 @@ def test_hook_override(context):
     with pytest.raises(AssertionError):
         assert_hook_execution(context.hook_probe, 'deploy')
 
+    # Expect that this renew will reuse new hooks registered in the previous renew.
     open(context.hook_probe, 'w').close()
     context.common(['renew', '--cert-name', certname])
 
@@ -273,6 +288,8 @@ def test_hook_override(context):
 
 
 def test_invalid_domain_with_dns_challenge(context):
+    """Test certificate issuance failure with DNS-01 challenge."""
+    # Manual dns auth hooks from misc are designed to fail if the domain contains 'fail-*'.
     certs = ','.join([context.wtf('dns1'), context.wtf('fail-dns1')])
     context.common([
         '-a', 'manual', '-d', certs,
@@ -288,6 +305,7 @@ def test_invalid_domain_with_dns_challenge(context):
 
 
 def test_reuse_key(context):
+    """Test various scenarios where a key is reused."""
     certname = context.wtf('reusekey')
     context.common(['--domains', certname, '--reuse-key'])
     context.common(['renew', '--cert-name', certname])
@@ -315,6 +333,7 @@ def test_reuse_key(context):
 
 
 def test_ecdsa(context):
+    """Test certificate issuance with ECDSA key."""
     key_path = join(context.workspace, 'privkey-p384.pem')
     csr_path = join(context.workspace, 'csr-p384.der')
     cert_path = join(context.workspace, 'cert-p384.pem')
@@ -328,6 +347,7 @@ def test_ecdsa(context):
 
 
 def test_ocsp_must_staple(context):
+    """Test that OCSP Must-Staple is correctly set in the generated certificate."""
     certname = context.wtf('must-staple')
     context.common(['auth', '--must-staple', '--domains', certname])
 
@@ -337,6 +357,8 @@ def test_ocsp_must_staple(context):
 
 
 def test_revoke_simple(context):
+    """Test various scenarios that revokes a certificate."""
+    # Default action after revoke is to delete the certificate.
     certname = context.wtf()
     cert_path = join(context.config_dir, 'live/{0}/cert.pem'.format(certname))
     context.common(['-d', certname])
@@ -344,12 +366,14 @@ def test_revoke_simple(context):
 
     assert not exists(cert_path)
 
+    # Check default deletion is overridden.
     certname = context.wtf('le1')
     cert_path = join(context.config_dir, 'live/{0}/cert.pem'.format(certname))
     context.common(['-d', certname])
     context.common(['revoke', '--cert-path', cert_path, '--no-delete-after-revoke'])
 
     assert exists(cert_path)
+
     context.common(['delete', '--cert-name', certname])
 
     assert not exists(join(context.config_dir, 'archive/{0}'.format(certname)))
@@ -364,6 +388,7 @@ def test_revoke_simple(context):
 
 
 def test_revoke_and_unregister(context):
+    """Test revoke with a reason then unregister."""
     cert1 = context.wtf('le1')
     cert2 = context.wtf('le2')
     cert3 = context.wtf('le3')
@@ -391,6 +416,8 @@ def test_revoke_and_unregister(context):
 
 
 def test_revoke_corner_cases(context):
+    """Test specific revoke corner case."""
+    # Cannot use --cert-path and --cert-name during a revoke.
     cert1 = context.wtf('le1')
     context.common(['-d', cert1])
     with pytest.raises(subprocess.CalledProcessError) as error:
@@ -402,6 +429,7 @@ def test_revoke_corner_cases(context):
 
     assert os.path.isfile(join(context.config_dir, 'renewal/{0}.conf'.format(cert1)))
 
+    # Revocation should not delete if multiple lineages share an archive dir
     cert2 = context.wtf('le2')
     context.common(['-d', cert2])
     with open(join(context.config_dir, 'renewal/{0}.conf'.format(cert2)), 'r') as file:
@@ -423,6 +451,7 @@ def test_revoke_corner_cases(context):
 
 
 def test_wildcard_certificates(context):
+    """Test wildcard certificate issuance."""
     if context.acme_server == 'boulder-v1':
         pytest.skip('Wildcard certificates are not supported on ACME v1')
 
@@ -439,6 +468,7 @@ def test_wildcard_certificates(context):
 
 
 def test_ocsp_status(context):
+    """Test retrieval of OCSP statuses."""
     if context.acme_server == 'pebble':
         pytest.skip('Pebble does not support OCSP status requests.')
 

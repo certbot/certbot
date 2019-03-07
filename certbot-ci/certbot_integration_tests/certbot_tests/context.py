@@ -101,5 +101,14 @@ class IntegrationTestsContext(object):
         command.extend(args)
         return self.common_no_force_renew(command)
 
-    def wtf(self, prefix='le'):
-        return '{0}.{1}.wtf'.format(prefix, self.worker_id)
+    def wtf(self, subdomain='le'):
+        """
+        Generate a certificate name suitable for distributed certbot integration tests.
+        This is a requirement to let the distribution knows how to redirect the challenge check
+        from the ACME server to the relevant pytest-xdist worker. This resolution is done by
+        appending the pytest worker id to the domain, using this pattern:
+        {subdomain}.{worker_id}.wtf
+        :param subdomain: the subdomain to use in the generated domain (default 'le')
+        :return: the well-formed domain suitable for redirection on 
+        """
+        return '{0}.{1}.wtf'.format(subdomain, self.worker_id)
