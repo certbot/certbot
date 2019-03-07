@@ -19,11 +19,12 @@ IGNORE_PACKAGES = ['acme', 'certbot', 'cerbot-apache', 'certbot-nginx', 'pkg-res
 CERTBOT_REPO_PATH = os.getcwd()
 
 DISTRIBUTION_LIST = [
-    'ubuntu:cosmic', 'centos:7'
+    'ubuntu:18.04', 'centos:7', 'fedora:29'
 ]
 
 SCRIPT = """\
 #!/bin/sh
+set -e
 
 cd /tmp/certbot
 letsencrypt-auto-source/letsencrypt-auto --install-only -n
@@ -117,8 +118,8 @@ def write_requirements(dest_file, requirements, conflicts):
 def main(dest_file):
     dependencies_map = {}
     for index, distribution in enumerate(DISTRIBUTION_LIST):
-        #results = process_one_distribution(distribution)
-        results = TEST[index]
+        results = process_one_distribution(distribution)
+        #results = TEST[index]
         insert_results(dependencies_map, results, distribution)
 
     requirements, conflicts = process_dependency_map(dependencies_map)
