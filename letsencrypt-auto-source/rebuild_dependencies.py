@@ -1,4 +1,20 @@
 #!/usr/bin/env python
+"""
+Gather and consolidate the up-to-date dependencies available and required to install certbot
+on various Linux distributions. It generates a requirements file contained the pinned and hashed
+versions, ready to be used by pip to install the certbot dependencies.
+
+This script is typically used to update the certbot-requirements.txt file of certbot-auto.
+
+To achieve its purpose, this script will start a certbot installation with unpinned dependencies,
+then gather them, on various distributions started as Docker containers. The process is done in
+parallel up to the number of CPU available to speed up its execution.
+
+Usage: letsencrypt-auto-source/rebuild_dependencies new_requirements.txt
+
+NB1: This script must be run from certbot GIT root path.
+NB2: Docker must be installed on the machine running this script.
+"""
 import re
 import shutil
 import subprocess
@@ -7,19 +23,18 @@ import os
 import sys
 import multiprocessing
 
-TEST = [
-    'asn1crypto==0.23.0\ncertifi==2018.11.29\ncffi==1.12.2\nchardet==3.0.4\nConfigArgParse==0.14.0\nconfigobj==5.0.6\ncryptography==2.6.1\nenum34==1.1.6\nfuncsigs==1.0.2\nfuture==0.17.1\nidna==2.8\nipaddress==1.0.22\njosepy==1.1.0\nmock==2.0.0\nparsedatetime==2.4\npbr==5.1.3\npycparser==2.19\npyOpenSSL==19.0.0\npyparsing==2.3.1\npyRFC3339==1.1\npython-augeas==1.0.3\npytz==2018.9\nrequests==2.21.0\nrequests-toolbelt==0.9.1\nsix==1.12.0\nurllib3==1.24.1\nzope.component==4.5\nzope.deferredimport==4.3\nzope.deprecation==4.4.0\nzope.event==4.4\nzope.hookable==4.2.0\nzope.interface==4.6.0\nzope.proxy==4.3.1\n',
-    'asn1crypto==0.24.0\ncertifi==2018.11.29\ncffi==1.12.2\nchardet==3.0.4\nConfigArgParse==0.14.0\nconfigobj==5.0.6\ncryptography==2.6.1\nenum34==1.1.6\nfuncsigs==1.0.2\nfuture==0.17.1\nidna==2.8\nipaddress==1.0.22\njosepy==1.1.0\nmock==2.0.0\nparsedatetime==2.4\npbr==5.1.3\npycparser==2.19\npyOpenSSL==19.0.0\npyparsing==2.3.1\npyRFC3339==1.1\npython-augeas==1.0.3\npytz==2018.9\nrequests==2.21.0\nrequests-toolbelt==0.9.1\nsix==1.12.0\nurllib3==1.24.1\nzope.component==4.5\nzope.deferredimport==4.3\nzope.deprecation==4.4.0\nzope.event==4.4\nzope.hookable==4.2.0\nzope.interface==4.6.0\nzope.proxy==4.3.1\n'
+DISTRIBUTION_LIST = [
+    'ubuntu:18.04', 'ubuntu:14.04',
+    'debian:stretch', 'debian:wheezy',
+    'centos:7', 'centos:6',
+    'opensuse/leap:15',
+    'archlinux:base',
+    'fedora:29',
 ]
 
-IGNORE_PACKAGES = ['acme', 'certbot', 'cerbot-apache', 'certbot-nginx', 'pkg-resources']
-
-# This script must be run from certbot root path
 CERTBOT_REPO_PATH = os.getcwd()
 
-DISTRIBUTION_LIST = [
-    'ubuntu:18.04', 'centos:7', 'fedora:29'
-]
+IGNORE_PACKAGES = ['acme', 'certbot', 'cerbot-apache', 'certbot-nginx', 'pkg-resources']
 
 SCRIPT = """\
 #!/bin/sh
