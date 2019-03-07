@@ -1,12 +1,11 @@
 #!/usr/bin/env python
-
-import logging
 import re
 import shutil
 import subprocess
 import tempfile
 import os
 import sys
+import multiprocessing
 
 TEST = [
     'asn1crypto==0.23.0\ncertifi==2018.11.29\ncffi==1.12.2\nchardet==3.0.4\nConfigArgParse==0.14.0\nconfigobj==5.0.6\ncryptography==2.6.1\nenum34==1.1.6\nfuncsigs==1.0.2\nfuture==0.17.1\nidna==2.8\nipaddress==1.0.22\njosepy==1.1.0\nmock==2.0.0\nparsedatetime==2.4\npbr==5.1.3\npycparser==2.19\npyOpenSSL==19.0.0\npyparsing==2.3.1\npyRFC3339==1.1\npython-augeas==1.0.3\npytz==2018.9\nrequests==2.21.0\nrequests-toolbelt==0.9.1\nsix==1.12.0\nurllib3==1.24.1\nzope.component==4.5\nzope.deferredimport==4.3\nzope.deprecation==4.4.0\nzope.event==4.4\nzope.hookable==4.2.0\nzope.interface==4.6.0\nzope.proxy==4.3.1\n',
@@ -30,7 +29,7 @@ cd /tmp/certbot
 letsencrypt-auto-source/letsencrypt-auto --install-only -n
 PYVER=`/opt/eff.org/certbot/venv/bin/python --version 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//'`
 
-letsencrypt-auto-source/pieces/create_venv.py /tmp/venv "$PYVER" "1"
+/opt/eff.org/certbot/venv/bin/python letsencrypt-auto-source/pieces/create_venv.py /tmp/venv "$PYVER" "1"
 
 /tmp/venv/bin/python letsencrypt-auto-source/pieces/pipstrap.py
 /tmp/venv/bin/pip install certbot-nginx certbot-apache
@@ -48,14 +47,12 @@ def process_one_distribution(distribution):
     try:
         with open(script, 'w') as file_handler:
             file_handler.write(SCRIPT)
-        with open(script, 'r') as file_handler:
-            print(file_handler.read())
         os.chmod(script, 0o755)
         command = ['docker', 'run', '--rm', '-v', '{0}:/tmp/certbot'.format(CERTBOT_REPO_PATH),
                    '-v', '{0}:/tmp/workspace'.format(workspace), distribution, '/tmp/workspace/script.sh']
         subprocess.check_call(command)
         with open(os.path.join(workspace, 'results'), 'r') as file_handler:
-            return file_handler.read()
+            return file_handler.read(), distribution
     finally:
         shutil.rmtree(workspace)
 
@@ -117,10 +114,13 @@ def write_requirements(dest_file, requirements, conflicts):
 
 def main(dest_file):
     dependencies_map = {}
-    for index, distribution in enumerate(DISTRIBUTION_LIST):
-        results = process_one_distribution(distribution)
-        #results = TEST[index]
-        insert_results(dependencies_map, results, distribution)
+    pool = multiprocessing.Pool(processes=multiprocessing.cpu_count())
+    promises = [pool.apply_async(process_one_distribution, distribution)
+                for distribution in DISTRIBUTION_LIST]
+
+    for promise in promises:
+        data, distribution = promise.get()
+        insert_results(dependencies_map, data, distribution)
 
     requirements, conflicts = process_dependency_map(dependencies_map)
 
