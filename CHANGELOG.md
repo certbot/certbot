@@ -6,7 +6,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* Fedora 29+ is know supported by certbot-auto. Since Python 2.x starts to be
+  deprecated with Fedora 29, certbot-auto will install and use Python 3.x instead.
 
 ### Changed
 
