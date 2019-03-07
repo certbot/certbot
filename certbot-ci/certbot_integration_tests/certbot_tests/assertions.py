@@ -1,5 +1,4 @@
 """This module contains advanced assertions for the certbot integration tests."""
-
 import os
 import grp
 
