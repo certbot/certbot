@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Gather and consolidate the up-to-date dependencies available and required to install certbot
 on various Linux distributions. It generates a requirements file contained the pinned and hashed
@@ -7,8 +7,7 @@ versions, ready to be used by pip to install the certbot dependencies.
 This script is typically used to update the certbot-requirements.txt file of certbot-auto.
 
 To achieve its purpose, this script will start a certbot installation with unpinned dependencies,
-then gather them, on various distributions started as Docker containers. The process is done in
-parallel up to the number of CPU available to speed up its execution.
+then gather them, on various distributions started as Docker containers.
 
 Usage: letsencrypt-auto-source/rebuild_dependencies new_requirements.txt
 
@@ -22,7 +21,6 @@ import subprocess
 import tempfile
 import os
 import sys
-import multiprocessing
 
 # Library hashin is not used as a module in this script, but this import is
 # useful to fail fast the script if it is not installed.
@@ -33,7 +31,6 @@ DISTRIBUTION_LIST = [
     'debian:stretch', 'debian:jessie',
     'centos:7', 'centos:6',
     'opensuse/leap:15',
-    'archlinux/base',
     'fedora:29',
 ]
 
@@ -46,13 +43,13 @@ SCRIPT = """\
 set -e
 
 cd /tmp/certbot
-letsencrypt-auto-source/letsencrypt-auto --install-only -n
+letsencrypt-auto-source/letsencrypt-auto --install-only -n -q
 PYVER=`/opt/eff.org/certbot/venv/bin/python --version 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//'`
 
 /opt/eff.org/certbot/venv/bin/python letsencrypt-auto-source/pieces/create_venv.py /tmp/venv "$PYVER" "1"
 
 /tmp/venv/bin/python letsencrypt-auto-source/pieces/pipstrap.py
-/tmp/venv/bin/pip install certbot-nginx certbot-apache
+/tmp/venv/bin/pip -q install certbot-nginx certbot-apache
 /tmp/venv/bin/certbot --version
 /tmp/venv/bin/pip freeze >> /tmp/workspace/results
 """
@@ -72,7 +69,7 @@ def process_one_distribution(distribution):
                    '-v', '{0}:/tmp/workspace'.format(workspace), distribution, '/tmp/workspace/script.sh']
         subprocess.check_call(command)
         with open(os.path.join(workspace, 'results'), 'r') as file_handler:
-            return file_handler.read(), distribution
+            return file_handler.read()
     finally:
         shutil.rmtree(workspace)
 
@@ -134,13 +131,10 @@ def write_requirements(dest_file, requirements, conflicts):
 
 def main(dest_file):
     dependencies_map = {}
-    pool = multiprocessing.Pool(processes=2)
-    promises = [pool.apply_async(process_one_distribution, [distribution])
-                for distribution in DISTRIBUTION_LIST]
 
-    for promise in promises:
-        data, distribution = promise.get(timeout=120)
-        insert_results(dependencies_map, data, distribution)
+    for distribution in DISTRIBUTION_LIST:
+        results = process_one_distribution(distribution)
+        insert_results(dependencies_map, results, distribution)
 
     requirements, conflicts = process_dependency_map(dependencies_map)
 
@@ -148,6 +142,7 @@ def main(dest_file):
 
     dest_file_abs = dest_file if os.path.isabs(dest_file) else os.path.abspath(dest_file)
     print('===> Rebuilt requirement file is available on path {0}'.format(dest_file_abs))
+
 
 
 if __name__ == '__main__':
