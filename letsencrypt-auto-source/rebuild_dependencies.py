@@ -139,7 +139,7 @@ def main(dest_file):
                 for distribution in DISTRIBUTION_LIST]
 
     for promise in promises:
-        data, distribution = promise.get()
+        data, distribution = promise.get(timeout=120)
         insert_results(dependencies_map, data, distribution)
 
     requirements, conflicts = process_dependency_map(dependencies_map)
