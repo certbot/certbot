@@ -79,17 +79,6 @@ if [ $(python -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//') -eq 26 ];
         echo "Certbot shouldn't have updated to a new version!"
         exit 1
     fi
-    if [ -d "/opt/eff.org" ]; then
-        echo "New directory shouldn't have been created!"
-        exit 1
-    fi
-    # Create a 2nd venv at the new path to ensure we properly handle this case
-    export VENV_PATH="/opt/eff.org/certbot/venv"
-    if ! sudo -E ./letsencrypt-auto -v --debug --version --no-self-upgrade 2>&1 | tail -n1 | grep "^certbot $INITIAL_VERSION$" ; then
-        echo second installation appeared to fail
-        exit 1
-    fi
-    unset VENV_PATH
 fi
 
 if ./letsencrypt-auto -v --debug --version | grep "WARNING: couldn't find Python" ; then
@@ -119,9 +108,3 @@ if [ "$RUN_PYTHON3_TESTS" = 1 ]; then
     fi
 fi
 echo upgrade appeared to be successful
-
-if [ "$(tools/readlink.py ${XDG_DATA_HOME:-~/.local/share}/letsencrypt)" != "/opt/eff.org/certbot/venv" ]; then
-    echo symlink from old venv path not properly created!
-    exit 1
-fi
-echo symlink properly created
