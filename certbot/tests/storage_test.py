@@ -12,6 +12,7 @@ import six
 
 import certbot
 from certbot import cli
+from certbot import compat
 from certbot import errors
 from certbot.compat import os, security
 from certbot.storage import ALL_FOUR
@@ -34,6 +35,48 @@ def fill_with_sample_data(rc_object):
     for kind in ALL_FOUR:
         with open(getattr(rc_object, kind), "w") as f:
             f.write(kind)
+
+
+class RelevantValuesTest(unittest.TestCase):
+    """Tests for certbot.storage.relevant_values."""
+
+    def setUp(self):
+        self.values = {"server": "example.org"}
+
+    def _call(self, *args, **kwargs):
+        from certbot.storage import relevant_values
+        return relevant_values(*args, **kwargs)
+
+    @mock.patch("certbot.cli.option_was_set")
+    @mock.patch("certbot.plugins.disco.PluginsRegistry.find_all")
+    def test_namespace(self, mock_find_all, mock_option_was_set):
+        mock_find_all.return_value = ["certbot-foo:bar"]
+        mock_option_was_set.return_value = True
+
+        self.values["certbot_foo:bar_baz"] = 42
+        self.assertEqual(
+            self._call(self.values.copy()), self.values)
+
+    @mock.patch("certbot.cli.option_was_set")
+    def test_option_set(self, mock_option_was_set):
+        mock_option_was_set.return_value = True
+
+        self.values["allow_subset_of_names"] = True
+        self.values["authenticator"] = "apache"
+        self.values["rsa_key_size"] = 1337
+        expected_relevant_values = self.values.copy()
+        self.values["hello"] = "there"
+
+        self.assertEqual(self._call(self.values), expected_relevant_values)
+
+    @mock.patch("certbot.cli.option_was_set")
+    def test_option_unset(self, mock_option_was_set):
+        mock_option_was_set.return_value = False
+
+        expected_relevant_values = self.values.copy()
+        self.values["rsa_key_size"] = 2048
+
+        self.assertEqual(self._call(self.values), expected_relevant_values)
 
 
 class BaseRenewableCertTest(test_util.ConfigTestCase):
@@ -555,72 +598,6 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertFalse(mock_ownership.called)
         self.test_rc.save_successor(2, b"newcert", b"new_privkey", b"new chain", self.config)
         self.assertTrue(mock_ownership.called)
-
-    def _test_relevant_values_common(self, values):
-        defaults = dict((option, cli.flag_default(option))
-                        for option in ("authenticator", "installer",
-                                       "rsa_key_size", "server",))
-        mock_parser = mock.Mock(args=[], verb="plugins",
-                                defaults=defaults)
-
-        # make a copy to ensure values isn't modified
-        values = values.copy()
-        values.setdefault("server", defaults["server"])
-        expected_server = values["server"]
-
-        from certbot.storage import relevant_values
-        with mock.patch("certbot.cli.helpful_parser", mock_parser):
-            rv = relevant_values(values)
-        self.assertIn("server", rv)
-        self.assertEqual(rv.pop("server"), expected_server)
-        return rv
-
-    def test_relevant_values(self):
-        """Test that relevant_values() can reject an irrelevant value."""
-        self.assertEqual(
-            self._test_relevant_values_common({"hello": "there"}), {})
-
-    def test_relevant_values_default(self):
-        """Test that relevant_values() can reject a default value."""
-        option = "rsa_key_size"
-        values = {option: cli.flag_default(option)}
-        self.assertEqual(self._test_relevant_values_common(values), {})
-
-    def test_relevant_values_nondefault(self):
-        """Test that relevant_values() can retain a non-default value."""
-        values = {"rsa_key_size": 12}
-        self.assertEqual(
-            self._test_relevant_values_common(values), values)
-
-    def test_relevant_values_bool(self):
-        values = {"allow_subset_of_names": True}
-        self.assertEqual(
-            self._test_relevant_values_common(values), values)
-
-    def test_relevant_values_str(self):
-        values = {"authenticator": "apache"}
-        self.assertEqual(
-            self._test_relevant_values_common(values), values)
-
-    def test_relevant_values_plugins_none(self):
-        self.assertEqual(
-            self._test_relevant_values_common(
-                {"authenticator": None, "installer": None}), {})
-
-    @mock.patch("certbot.cli.set_by_cli")
-    @mock.patch("certbot.plugins.disco.PluginsRegistry.find_all")
-    def test_relevant_values_namespace(self, mock_find_all, mock_set_by_cli):
-        mock_set_by_cli.return_value = True
-        mock_find_all.return_value = ["certbot-foo:bar"]
-        values = {"certbot_foo:bar_baz": 42}
-        self.assertEqual(
-            self._test_relevant_values_common(values), values)
-
-    def test_relevant_values_server(self):
-        self.assertEqual(
-            # _test_relevant_values_common handles testing the server
-            # value and removes it
-            self._test_relevant_values_common({"server": "example.org"}), {})
 
     @mock.patch("certbot.storage.relevant_values")
     def test_new_lineage(self, mock_rv):

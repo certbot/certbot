@@ -7,8 +7,12 @@ export PATH="/usr/sbin:$PATH"  # /usr/sbin/nginx
 nginx_root="$root/nginx"
 mkdir $nginx_root
 
+# Generate self-signed certificate for Nginx
+openssl req -new -newkey rsa:2048 -days 1 -nodes -x509 \
+    -keyout $nginx_root/cert.key -out $nginx_root/cert.pem -subj "/CN=nginx.wtf"
+
 reload_nginx () {
-    original=$(root="$nginx_root" ./certbot-nginx/tests/boulder-integration.conf.sh)
+    original=$(./certbot-nginx/tests/boulder-integration.conf.sh $nginx_root $nginx_root/cert.key $nginx_root/cert.pem)
     nginx_conf="$nginx_root/nginx.conf"
     echo "$original" > $nginx_conf
 

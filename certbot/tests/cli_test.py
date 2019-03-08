@@ -340,6 +340,8 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         config_dir_option = 'config_dir'
         self.assertFalse(cli.option_was_set(
             config_dir_option, cli.flag_default(config_dir_option)))
+        self.assertFalse(cli.option_was_set(
+            'authenticator', cli.flag_default('authenticator')))
 
     def test_encode_revocation_reason(self):
         for reason, code in constants.REVOCATION_REASONS.items():
