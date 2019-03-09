@@ -41,13 +41,13 @@ SCRIPT = """\
 set -e
 
 cd /tmp/certbot
-letsencrypt-auto-source/letsencrypt-auto --install-only -n -q
+letsencrypt-auto-source/letsencrypt-auto --install-only -n
 PYVER=`/opt/eff.org/certbot/venv/bin/python --version 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//'`
 
 /opt/eff.org/certbot/venv/bin/python letsencrypt-auto-source/pieces/create_venv.py /tmp/venv "$PYVER" "1"
 
 /tmp/venv/bin/python letsencrypt-auto-source/pieces/pipstrap.py
-/tmp/venv/bin/pip -q install -e acme -e . -e certbot-apache -e certbot-nginx
+/tmp/venv/bin/pip install -e acme -e . -e certbot-apache -e certbot-nginx
 /tmp/venv/bin/certbot --version
 /tmp/venv/bin/pip freeze >> /tmp/workspace/results
 """
@@ -74,9 +74,13 @@ def process_one_distribution(distribution):
         os.chmod(script, 0o755)
         command = ['docker', 'run', '--rm', '-v', '{0}:/tmp/certbot'.format(CERTBOT_REPO_PATH),
                    '-v', '{0}:/tmp/workspace'.format(workspace), distribution, '/tmp/workspace/script.sh']
-        subprocess.check_call(command)
+        subprocess.check_output(command, stderr=subprocess.STDOUT)
         with open(os.path.join(workspace, 'results'), 'r') as file_handler:
             return file_handler.read()
+    except subprocess.CalledProcessError as error:
+        sys.stderr.write('Error while gathering dependencies for {0}.\n'.format(distribution))
+        sys.stderr.write('Output was:\n')
+        sys.stderr.write(error.output)
     finally:
         shutil.rmtree(workspace)
 
@@ -104,7 +108,7 @@ def process_dependency_map(dependency_map):
             conflicts.append(conflict)
             sys.stderr.write('ERROR: {0}\n'.format(conflict))
         else:
-            requirements.append((package, reduced_versions.keys()[0]))
+            requirements.append((package, list(reduced_versions)[0]))
 
     requirements.sort(key=lambda x: x[0])
     return requirements, conflicts
