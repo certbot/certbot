@@ -89,10 +89,11 @@ def insert_results(dependencies_map, results, distribution):
     refined_results = []
     for result in results.split(os.linesep):
         match = re.match(DEPENDENCY_PATTERN, result)
-        package = match.group(1)
-        version = match.group(2)
-        if match and not ('acme' in package or 'certbot' in package):
-            dependencies_map.setdefault(package, []).append((version, distribution))
+        if match:
+            package = match.group(1)
+            version = match.group(2)
+            if not ('acme' in package or 'certbot' in package):
+                dependencies_map.setdefault(package, []).append((version, distribution))
 
     return refined_results
 
