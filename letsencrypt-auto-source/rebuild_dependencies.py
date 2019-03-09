@@ -36,8 +36,6 @@ DISTRIBUTION_LIST = [
 
 CERTBOT_REPO_PATH = os.getcwd()
 
-IGNORE_PACKAGES = ['acme', 'certbot', 'cerbot-apache', 'certbot-nginx', 'pkg-resources']
-
 SCRIPT = """\
 #!/bin/sh
 set -e
@@ -49,9 +47,18 @@ PYVER=`/opt/eff.org/certbot/venv/bin/python --version 2>&1 | cut -d" " -f 2 | cu
 /opt/eff.org/certbot/venv/bin/python letsencrypt-auto-source/pieces/create_venv.py /tmp/venv "$PYVER" "1"
 
 /tmp/venv/bin/python letsencrypt-auto-source/pieces/pipstrap.py
-/tmp/venv/bin/pip -q install certbot-nginx certbot-apache
+/tmp/venv/bin/pip -q install -e acme -e certbot -e certbot-apache -e certbot-nginx
 /tmp/venv/bin/certbot --version
 /tmp/venv/bin/pip freeze >> /tmp/workspace/results
+"""
+
+OUTPUT_HEADER = """\
+# This is the flattened list of packages certbot-auto installs.
+# To generate this, do (with docker and package hashin installed):
+# ```
+# letsencrypt-auto-source/rebuild_dependencies.py \
+#   letsencrypt-auto-sources/pieces/dependency-requirements.txt
+# ```
 """
 
 DEPENDENCY_PATTERN = r'(.*)==(.*)'
@@ -78,7 +85,7 @@ def insert_results(dependencies_map, results, distribution):
     refined_results = []
     for result in results.split(os.linesep):
         match = re.match(DEPENDENCY_PATTERN, result)
-        if match and match.group(1) not in IGNORE_PACKAGES:
+        if match and not match.group(1).startswith('-e'):
             dependencies_map.setdefault(match.group(1), []).append((match.group(2), distribution))
 
     return refined_results
@@ -115,7 +122,9 @@ def write_requirements(dest_file, requirements, conflicts):
     print('===> Calculating hashes for the requirement file.')
     if os.path.exists(dest_file):
         os.remove(dest_file)
-    open(dest_file, 'w').close()
+
+    with open(dest_file, 'w') as file_handler:
+        file_handler.write(OUTPUT_HEADER)
     for req in requirements:
         subprocess.check_call(['hashin', '{0}=={1}'.format(req[0], req[1]), '--requirements-file', dest_file])
 
