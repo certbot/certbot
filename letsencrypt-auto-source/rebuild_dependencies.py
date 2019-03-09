@@ -47,7 +47,7 @@ PYVER=`/opt/eff.org/certbot/venv/bin/python --version 2>&1 | cut -d" " -f 2 | cu
 /opt/eff.org/certbot/venv/bin/python letsencrypt-auto-source/pieces/create_venv.py /tmp/venv "$PYVER" "1"
 
 /tmp/venv/bin/python letsencrypt-auto-source/pieces/pipstrap.py
-/tmp/venv/bin/pip -q install -e acme -e certbot -e certbot-apache -e certbot-nginx
+/tmp/venv/bin/pip -q install -e acme -e . -e certbot-apache -e certbot-nginx
 /tmp/venv/bin/certbot --version
 /tmp/venv/bin/pip freeze >> /tmp/workspace/results
 """
