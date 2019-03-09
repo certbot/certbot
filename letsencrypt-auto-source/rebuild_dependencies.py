@@ -92,7 +92,7 @@ def insert_results(dependencies_map, results, distribution):
         if match:
             package = match.group(1)
             version = match.group(2)
-            if not ('acme' in package or 'certbot' in package):
+            if not any(dep in package for dep in ['acme', 'certbot', 'pkg-resources']):
                 dependencies_map.setdefault(package, []).append((version, distribution))
 
     return refined_results
