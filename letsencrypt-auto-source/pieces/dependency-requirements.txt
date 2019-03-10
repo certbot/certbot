@@ -1,7 +1,8 @@
 # This is the flattened list of packages certbot-auto installs.
 # To generate this, do (with docker and package hashin installed):
 # ```
-# letsencrypt-auto-source/rebuild_dependencies.py #   letsencrypt-auto-sources/pieces/dependency-requirements.txt
+# letsencrypt-auto-source/rebuild_dependencies.py 
+#   letsencrypt-auto-sources/pieces/dependency-requirements.txt
 # ```
 ConfigArgParse==0.14.0 \
     --hash=sha256:2e2efe2be3f90577aca9415e32cb629aa2ecd92078adbe27b53a03e53ff12e91

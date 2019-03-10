@@ -153,7 +153,7 @@ def _write_requirements(dest_file, requirements, conflicts):
 # This is the flattened list of packages certbot-auto installs.
 # To generate this, do (with docker and package hashin installed):
 # ```
-# letsencrypt-auto-source/rebuild_dependencies.py \
+# letsencrypt-auto-source/rebuild_dependencies.py \\
 #   letsencrypt-auto-sources/pieces/dependency-requirements.txt
 # ```
 ''')
