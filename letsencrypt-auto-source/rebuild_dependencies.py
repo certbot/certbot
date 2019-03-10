@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """
 Gather and consolidate the up-to-date dependencies available and required to install certbot
 on various Linux distributions. It generates a requirements file contained the pinned and hashed
@@ -15,6 +15,7 @@ NB1: This script must be run from certbot GIT root path.
 NB2: Docker must be installed on the machine running this script.
 NB3: Python library 'hashin' must be installed on the machine running this script.
 """
+from __future__ import print_function
 import re
 import shutil
 import subprocess
@@ -158,7 +159,6 @@ def main(dest_file):
 
     dest_file_abs = dest_file if os.path.isabs(dest_file) else os.path.abspath(dest_file)
     print('===> Rebuilt requirement file is available on path {0}'.format(dest_file_abs))
-
 
 
 if __name__ == '__main__':
