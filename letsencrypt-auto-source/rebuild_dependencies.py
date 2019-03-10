@@ -31,9 +31,10 @@ DISTRIBUTION_LIST = [
     'fedora:29',
 ]
 
-# Theses dependencies will be added unconditionally on the output requirement files,
-# and are also used as constraints while gathering dependencies on each distribution.
-AUTHORITATIVE_REQUIREMENTS = {
+# Theses constraints will be added while gathering dependencies on each distribution.
+# It can be used because a particular version for a package is required for any reason,
+# or to solve a version conflict between two distributions requirements.
+AUTHORITATIVE_CONSTRAINTS = {
     # Using an older version of mock here prevents regressions of #5276.
     'mock': '1.3.0'
 }
@@ -171,8 +172,7 @@ def _write_requirements(dest_file, requirements, conflicts):
 
 
 def _gather_dependencies(dest_file):
-    dependencies_map = {package: (version, 'authoritative_requirement')
-                        for package, version in AUTHORITATIVE_REQUIREMENTS.items()}
+    dependencies_map = {}
 
     for distribution in DISTRIBUTION_LIST:
         results = _process_one_distribution(distribution)
