@@ -49,7 +49,7 @@ print(CERTBOT_REPO_PATH)
 #   - then this venv is used to consistently construct an empty new venv
 #   - once pipstraped, this new venv pip install certbot runtime (including apache/nginx),
 #     without pinned dependencies, and in respect with input authoritative requirements
-#   - certbot --version is called to check we have an healthy environment
+#   - `certbot plugins` is called to check we have an healthy environment
 #   - finally current set of dependencies is extracted out of the docker using pip freeze
 SCRIPT = """\
 #!/bin/sh
@@ -63,7 +63,7 @@ PYVER=`/opt/eff.org/certbot/venv/bin/python --version 2>&1 | cut -d" " -f 2 | cu
 
 /tmp/venv/bin/python letsencrypt-auto-source/pieces/pipstrap.py
 /tmp/venv/bin/pip install -e acme -e . -e certbot-apache -e certbot-nginx -c /tmp/requirements.txt
-/tmp/venv/bin/certbot --version
+/tmp/venv/bin/certbot plugins
 /tmp/venv/bin/pip freeze >> /tmp/workspace/results
 """
 
