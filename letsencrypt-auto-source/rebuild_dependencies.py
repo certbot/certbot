@@ -11,9 +11,8 @@ then gather them, on various distributions started as Docker containers.
 
 Usage: letsencrypt-auto-source/rebuild_dependencies new_requirements.txt
 
-NB1: This script must be run from certbot GIT root path.
-NB2: Docker must be installed on the machine running this script.
-NB3: Python library 'hashin' must be installed on the machine running this script.
+NB1: Docker must be installed on the machine running this script.
+NB2: Python library 'hashin' must be installed on the machine running this script.
 """
 from __future__ import print_function
 import re
@@ -25,7 +24,7 @@ import sys
 
 # Library hashin is not used as a module in this script, but this import is
 # useful to fail fast the script if it is not installed.
-import hashin
+#import hashin
 
 DISTRIBUTION_LIST = [
     'ubuntu:18.04', 'ubuntu:14.04',
@@ -35,7 +34,10 @@ DISTRIBUTION_LIST = [
     'fedora:29',
 ]
 
-CERTBOT_REPO_PATH = os.getcwd()
+
+# ./certbot/letsencrypt-auto-source/rebuild_dependencies.py (2 levels from certbot root path)
+CERTBOT_REPO_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+print(CERTBOT_REPO_PATH)
 
 SCRIPT = """\
 #!/bin/sh
