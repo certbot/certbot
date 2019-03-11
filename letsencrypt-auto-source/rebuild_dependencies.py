@@ -214,7 +214,7 @@ if __name__ == '__main__':
         raise RuntimeError('Python library hashin is not installed in the current environment.')
 
     try:
-        subprocess.check_output(['docker', '--version'])
+        subprocess.check_output(['docker', '--version'], stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError:
         raise RuntimeError('Docker is not installed or accessible to current user.')
 
