@@ -1,5 +1,8 @@
 """ Distribution specific override class for CentOS family (RHEL, Fedora) """
+import logging
 import pkg_resources
+
+from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
 
 import zope.interface
 
@@ -8,6 +11,9 @@ from certbot import interfaces
 from certbot_apache import apache_util
 from certbot_apache import configurator
 from certbot_apache import parser
+
+logger = logging.getLogger(__name__)
+
 
 @zope.interface.provider(interfaces.IPluginFactory)
 class CentOSConfigurator(configurator.ApacheConfigurator):
@@ -66,18 +72,29 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
 
         loadmods = self.parser.find_dir("LoadModule", "ssl_module", exclude=False)
 
-        # We should have one in ssl.conf
-        sslconf_loadmod_path = None
-        loadmod_args = ["ssl_module", "modules/mod_ssl.so"]
-
+        # We should have at least one LoadModule ssl_module in the config
+        loadmod_args = []  # type: List[str]
+        loadmod_path = None
         for m in loadmods:
-            if "/conf.d/ssl.conf/" in m:
-                # Strip "arg[1]" off from the end
-                sslconf_loadmod_path = m.rpartition("/")[0]
-                # Use the preconfigured LoadModule values from ssl.conf
-                loadmod_args = self.parser.get_all_args(sslconf_loadmod_path)
-            elif self.parser.loc["default"] in m:
+            noarg_path = m.rpartition("/")[0]
+            path_args = self.parser.get_all_args(noarg_path)
+            if loadmod_args:
+                if loadmod_args != path_args:
+                    logger.info("Multiple different LoadModule directives for mod_ssl "
+                                "were found. If you encounter issues with resulting "
+                                "configuration, it's suggested to move the LoadModule "
+                                "ssl_module directive to the beginning of main httpd.conf.")
+                    return
+            else:
+                loadmod_args = path_args
+                loadmod_path = noarg_path
+            if self.parser.loc["default"] in noarg_path:
+                # LoadModule already in the main configuration file, NOOP
                 return
+
+        if not loadmod_args:
+            # Do not try to enable mod_ssl
+            return
 
         rootconf_ifmod = self.parser.get_ifmod(
             parser.get_aug_path(self.parser.loc["default"]),
@@ -88,17 +105,17 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
 
         # Wrap LoadModule mod_ssl inside of <IfModule !mod_ssl.c> if it's not
         # configured like this already.
-        if sslconf_loadmod_path and "ifmodule" not in sslconf_loadmod_path.lower():
-            sslconf_path = sslconf_loadmod_path.split("/directive")[0]
-            # Remove the old LoadModule directive from ssl.conf
-            self.aug.remove(sslconf_loadmod_path)
+        if loadmod_path and "ifmodule" not in loadmod_path.lower():
+            sslconf_path = loadmod_path.split("/directive")[0]
+            # Remove the old LoadModule directive
+            self.aug.remove(loadmod_path)
 
             # Create a new IfModule !mod_ssl.c
             ssl_ifmod = self.parser.get_ifmod(sslconf_path, "!mod_ssl.c", beginning=True)
 
             self.parser.add_dir(ssl_ifmod[:-1], "LoadModule", loadmod_args)
-            self.save_notes += ("Wrapped ssl.conf LoadModule ssl_module inside "
-                                "of <IfModule !mod_ssl> block.\n")
+            self.save_notes += ("Wrapped pre-existing LoadModule ssl_module "
+                                "inside of <IfModule !mod_ssl> block.\n")
 
 
 class CentOSParser(parser.ApacheParser):

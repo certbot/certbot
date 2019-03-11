@@ -2,6 +2,8 @@
 import os
 import unittest
 
+import mock
+
 from certbot_apache import obj
 from certbot_apache import override_centos
 from certbot_apache import parser
@@ -95,7 +97,7 @@ class CentOS6Tests(util.ApacheTest):
             self.assertEqual(ifmod_args, ["!mod_ssl.c"])
 
     def test_loadmod_rootconf_exists(self):
-        sslmod_args = ["ssl_module", "modules/uniquename.so"]
+        sslmod_args = ["ssl_module", "modules/mod_ssl.so"]
         rootconf_ifmod = self.config.parser.get_ifmod(
             parser.get_aug_path(self.config.parser.loc["default"]),
             "!mod_ssl.c", beginning=True)
@@ -119,6 +121,46 @@ class CentOS6Tests(util.ApacheTest):
         self.assertEqual(
             self.config.parser.get_all_args(mods[0][:-7]),
             sslmod_args)
+
+    def test_loadmod_non_duplicate(self):
+        # the modules/mod_ssl.so exists in ssl.conf
+        sslmod_args = ["ssl_module", "modules/mod_somethingelse.so"]
+        rootconf_ifmod = self.config.parser.get_ifmod(
+            parser.get_aug_path(self.config.parser.loc["default"]),
+            "!mod_ssl.c", beginning=True)
+        self.config.parser.add_dir(rootconf_ifmod[:-1], "LoadModule", sslmod_args)
+        self.config.save()
+        self.config.assoc["test.example.com"] = self.vh_truth[0]
+        pre_matches = self.config.parser.find_dir("LoadModule",
+                                                  "ssl_module", exclude=False)
+        with mock.patch("certbot_apache.override_centos.logger.info") as mock_log:
+            self.config.deploy_cert(
+                "random.demo", "example/cert.pem", "example/key.pem",
+                "example/cert_chain.pem", "example/fullchain.pem")
+            self.assertTrue(mock_log.called)
+            self.assertTrue("Multiple different LoadModule" in mock_log.call_args[0][0])
+
+        post_matches = self.config.parser.find_dir("LoadModule",
+                                                   "ssl_module", exclude=False)
+        # Make sure that none was changed
+        self.assertEqual(pre_matches, post_matches)
+
+    def test_loadmod_not_found(self):
+        # Remove all existing LoadModule ssl_module... directives
+        orig_loadmods = self.config.parser.find_dir("LoadModule",
+                                                    "ssl_module",
+                                                    exclude=False)
+        for mod in orig_loadmods:
+            noarg_path = mod.rpartition("/")[0]
+            self.config.aug.remove(noarg_path)
+        self.config.save()
+        # get_all_args() is called for each LoadModule that was found
+        getall = "certbot_apache.override_centos.CentOSParser.get_all_args"
+        with mock.patch(getall) as mock_getall:
+            self.config.deploy_cert(
+                "random.demo", "example/cert.pem", "example/key.pem",
+                "example/cert_chain.pem", "example/fullchain.pem")
+            self.assertFalse(mock_getall.called)
 
 
 if __name__ == "__main__":
