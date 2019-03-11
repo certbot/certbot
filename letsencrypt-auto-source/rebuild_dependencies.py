@@ -21,6 +21,7 @@ import subprocess
 import tempfile
 import os
 import sys
+import argparse
 
 # The list of docker distributions to test dependencies against with.
 DISTRIBUTION_LIST = [
@@ -68,11 +69,12 @@ PYVER=`/opt/eff.org/certbot/venv/bin/python --version 2>&1 | cut -d" " -f 2 | cu
 """
 
 
-def _process_one_distribution(distribution):
+def _process_one_distribution(distribution, verbose):
     print('===> Gathering dependencies for {0}.'.format(distribution))
     workspace = tempfile.mkdtemp()
     script = os.path.join(workspace, 'script.sh')
     authoritative_requirements = os.path.join(workspace, 'requirements.txt')
+
     try:
         with open(script, 'w') as file_h:
             file_h.write(SCRIPT)
@@ -80,23 +82,25 @@ def _process_one_distribution(distribution):
 
         with open(authoritative_requirements, 'w') as file_h:
             file_h.write('\n'.join(['{0}=={1}'.format(package, version)
-                                    for package, version in AUTHORITATIVE_REQUIREMENTS.items()]))
+                                    for package, version in AUTHORITATIVE_CONSTRAINTS.items()]))
 
         command = ['docker', 'run', '--rm',
                    '-v', '{0}:/tmp/certbot'.format(CERTBOT_REPO_PATH),
                    '-v', '{0}:/tmp/workspace'.format(workspace),
                    '-v', '{0}:/tmp/requirements.txt'.format(authoritative_requirements),
                    distribution, '/tmp/workspace/script.sh']
-        subprocess.check_output(command, stderr=subprocess.STDOUT)
+        sub_stdout = sys.stdout if verbose else subprocess.PIPE
+        sub_stderr = sys.stderr if verbose else subprocess.STDOUT
+        process = subprocess.Popen(command, stdout=sub_stdout, stderr=sub_stderr, universal_newlines=True)
+        stdoutdata, _ = process.communicate()
+
+        if process.returncode:
+            if stdoutdata:
+                sys.stderr.write('Output was:\n{0}'.format(stdoutdata))
+            raise RuntimeError('Error while gathering dependencies for {0}.'.format(distribution))
 
         with open(os.path.join(workspace, 'results'), 'r') as file_h:
             return file_h.read()
-    except subprocess.CalledProcessError as error:
-        sys.stderr.write('''\
-Error while gathering dependencies for {0}.
-Output was:
-{1}
-'''.format(distribution, error.output))
     finally:
         shutil.rmtree(workspace)
 
@@ -171,11 +175,11 @@ def _write_requirements(dest_file, requirements, conflicts):
         print(file_h.read())
 
 
-def _gather_dependencies(dest_file):
+def _gather_dependencies(dest_file, verbose):
     dependencies_map = {}
 
     for distribution in DISTRIBUTION_LIST:
-        results = _process_one_distribution(distribution)
+        results = _process_one_distribution(distribution, verbose)
         _insert_results(dependencies_map, results, distribution)
 
     requirements, conflicts = _process_dependency_map(dependencies_map)
@@ -187,12 +191,24 @@ def _gather_dependencies(dest_file):
 
 
 if __name__ == '__main__':
-    try:
-        destination_file = sys.argv[1]
-    except IndexError:
-        raise AttributeError('No destination requirement file provided to the command line.')
+    parser = argparse.ArgumentParser(
+        description=('Build a sanitized, pinned and hashed requirements file for certbot-auto, '
+                     'validated against several OS distributions using Docker.'))
+    parser.add_argument('requirements_path',
+                        help='path for the generated requirements file')
+    parser.add_argument('--verbose', '-v', action='store_true',
+                        help='verbose will display all output during docker execution')
+
+    namespace = parser.parse_args()
+
     try:
         subprocess.check_call(['hashin', '--version'])
     except subprocess.CalledProcessError:
-        raise RuntimeError('Hashin is not installed, please `pip install hashin`.')
-    _gather_dependencies(destination_file)
+        raise RuntimeError('Python library hashin is not installed in the current environment.')
+
+    try:
+        subprocess.check_call(['docker', '--version'])
+    except subprocess.CalledProcessError:
+        raise RuntimeError('Docker is not installed or accessible to current user.')
+
+    _gather_dependencies(namespace.requirements_file, namespace.verbose)
