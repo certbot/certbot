@@ -37,7 +37,10 @@ DISTRIBUTION_LIST = [
 # or to solve a version conflict between two distributions requirements.
 AUTHORITATIVE_CONSTRAINTS = {
     # Using an older version of mock here prevents regressions of #5276.
-    'mock': '1.3.0'
+    'mock': '1.3.0',
+    # Too touchy to move to a new version. And will be removed soon
+    # in favor of pure python parser for Apache.
+    'python-augeas': '0.5.0',
 }
 
 
