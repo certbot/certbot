@@ -43,7 +43,6 @@ AUTHORITATIVE_CONSTRAINTS = {
 
 # ./certbot/letsencrypt-auto-source/rebuild_dependencies.py (2 levels from certbot root path)
 CERTBOT_REPO_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-print(CERTBOT_REPO_PATH)
 
 # The script will be used to gathering dependencies for a given distribution.
 #   - certbot-auto is used to install relevant OS packages, and setup an initial venv
@@ -202,12 +201,12 @@ if __name__ == '__main__':
     namespace = parser.parse_args()
 
     try:
-        subprocess.check_call(['hashin', '--version'])
+        subprocess.check_output(['hashin', '--version'])
     except subprocess.CalledProcessError:
         raise RuntimeError('Python library hashin is not installed in the current environment.')
 
     try:
-        subprocess.check_call(['docker', '--version'])
+        subprocess.check_output(['docker', '--version'])
     except subprocess.CalledProcessError:
         raise RuntimeError('Docker is not installed or accessible to current user.')
 
