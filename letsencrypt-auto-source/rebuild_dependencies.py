@@ -22,6 +22,7 @@ import tempfile
 import os
 import sys
 import argparse
+import atexit
 
 # The list of docker distributions to test dependencies against with.
 DISTRIBUTION_LIST = [
@@ -91,6 +92,7 @@ def _process_one_distribution(distribution, verbose):
         sub_stdout = sys.stdout if verbose else subprocess.PIPE
         sub_stderr = sys.stderr if verbose else subprocess.STDOUT
         process = subprocess.Popen(command, stdout=sub_stdout, stderr=sub_stderr, universal_newlines=True)
+        atexit.register(lambda: process.terminate())
         stdoutdata, _ = process.communicate()
 
         if process.returncode:
