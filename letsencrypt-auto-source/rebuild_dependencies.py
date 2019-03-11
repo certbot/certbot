@@ -211,4 +211,4 @@ if __name__ == '__main__':
     except subprocess.CalledProcessError:
         raise RuntimeError('Docker is not installed or accessible to current user.')
 
-    _gather_dependencies(namespace.requirements_file, namespace.verbose)
+    _gather_dependencies(namespace.requirements_path, namespace.verbose)
