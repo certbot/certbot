@@ -1,2 +1,2 @@
 [report]
-omit = */setup.py,certbot/new_compat/**
+omit = */setup.py
