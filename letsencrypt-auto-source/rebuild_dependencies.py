@@ -105,7 +105,7 @@ def _process_one_distribution(distribution, verbose):
         if os.path.isfile(cid_file):
             with open(cid_file, 'r') as file_h:
                 cid = file_h.read()
-            subprocess.call(['docker', 'kill', cid])
+            subprocess.call(['docker', 'kill', cid], stdout=None, stderr=None)
         shutil.rmtree(workspace)
 
 
