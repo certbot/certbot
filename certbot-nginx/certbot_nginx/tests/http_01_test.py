@@ -8,7 +8,7 @@ from acme import challenges
 
 from certbot import achallenges
 
-from certbot.plugins import common_test
+from certbot.tests.plugins import common_test
 from certbot.tests import acme_util
 
 from certbot_nginx.obj import Addr

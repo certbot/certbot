@@ -11,8 +11,8 @@ from httplib2 import ServerNotFoundError
 
 from certbot import errors
 from certbot.errors import PluginError
-from certbot.plugins import dns_test_common
-from certbot.plugins.dns_test_common import DOMAIN
+from certbot.tests.plugins import dns_test_common
+from certbot.tests.plugins.dns_test_common import DOMAIN
 from certbot.tests import util as test_util
 
 ACCOUNT_JSON_PATH = '/not/a/real/path.json'

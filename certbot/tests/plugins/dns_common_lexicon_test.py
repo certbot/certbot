@@ -5,7 +5,7 @@ import unittest
 import mock
 
 from certbot.plugins import dns_common_lexicon
-from certbot.plugins import dns_test_common_lexicon
+from certbot.tests.plugins import dns_test_common_lexicon
 
 
 class LexiconClientTest(unittest.TestCase, dns_test_common_lexicon.BaseLexiconClientTest):

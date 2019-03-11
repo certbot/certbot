@@ -7,8 +7,8 @@ import CloudFlare
 import mock
 
 from certbot import errors
-from certbot.plugins import dns_test_common
-from certbot.plugins.dns_test_common import DOMAIN
+from certbot.tests.plugins import dns_test_common
+from certbot.tests.plugins.dns_test_common import DOMAIN
 from certbot.tests import util as test_util
 
 API_ERROR = CloudFlare.exceptions.CloudFlareAPIError(1000, '', '')

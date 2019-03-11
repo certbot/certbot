@@ -5,7 +5,7 @@ import mock
 from requests.exceptions import HTTPError, RequestException
 
 from certbot import errors
-from certbot.plugins import dns_test_common
+from certbot.tests.plugins import dns_test_common
 from certbot.tests import util as test_util
 
 DOMAIN = 'example.com'

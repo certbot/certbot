@@ -5,7 +5,7 @@ import unittest
 import mock
 
 from certbot import errors
-from certbot.plugins import common_test
+from certbot.tests.plugins import common_test
 
 from certbot_apache import obj
 from certbot_apache.tests import util

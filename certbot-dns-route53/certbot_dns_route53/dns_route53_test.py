@@ -7,8 +7,8 @@ import mock
 from botocore.exceptions import NoCredentialsError, ClientError
 
 from certbot import errors
-from certbot.plugins import dns_test_common
-from certbot.plugins.dns_test_common import DOMAIN
+from certbot.tests.plugins import dns_test_common
+from certbot.tests.plugins.dns_test_common import DOMAIN
 
 
 class AuthenticatorTest(unittest.TestCase, dns_test_common.BaseAuthenticatorTest):

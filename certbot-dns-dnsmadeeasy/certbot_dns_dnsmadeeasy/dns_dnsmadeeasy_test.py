@@ -6,9 +6,8 @@ import unittest
 import mock
 from requests.exceptions import HTTPError
 
-from certbot.plugins import dns_test_common
-from certbot.plugins import dns_test_common_lexicon
-from certbot.plugins.dns_test_common import DOMAIN
+from certbot.tests.plugins import dns_test_common, dns_test_common_lexicon
+from certbot.tests.plugins.dns_test_common import DOMAIN
 from certbot.tests import util as test_util
 
 API_KEY = 'foo'

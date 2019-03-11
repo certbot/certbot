@@ -10,7 +10,7 @@ import mock
 from certbot import errors
 from certbot.display import util as display_util
 from certbot.plugins import dns_common
-from certbot.plugins import dns_test_common
+from certbot.tests.plugins import dns_test_common
 from certbot.tests import util
 
 
