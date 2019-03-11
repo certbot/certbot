@@ -22,7 +22,6 @@ import tempfile
 import os
 import sys
 import argparse
-import atexit
 
 # The list of docker distributions to test dependencies against with.
 DISTRIBUTION_LIST = [
@@ -74,6 +73,7 @@ def _process_one_distribution(distribution, verbose):
     workspace = tempfile.mkdtemp()
     script = os.path.join(workspace, 'script.sh')
     authoritative_requirements = os.path.join(workspace, 'requirements.txt')
+    cid_file = os.path.join(workspace, 'cid')
 
     try:
         with open(script, 'w') as file_h:
@@ -84,7 +84,7 @@ def _process_one_distribution(distribution, verbose):
             file_h.write('\n'.join(['{0}=={1}'.format(package, version)
                                     for package, version in AUTHORITATIVE_CONSTRAINTS.items()]))
 
-        command = ['docker', 'run', '--rm',
+        command = ['docker', 'run', '--rm', '--cidfile', cid_file,
                    '-v', '{0}:/tmp/certbot'.format(CERTBOT_REPO_PATH),
                    '-v', '{0}:/tmp/workspace'.format(workspace),
                    '-v', '{0}:/tmp/requirements.txt'.format(authoritative_requirements),
@@ -92,7 +92,6 @@ def _process_one_distribution(distribution, verbose):
         sub_stdout = sys.stdout if verbose else subprocess.PIPE
         sub_stderr = sys.stderr if verbose else subprocess.STDOUT
         process = subprocess.Popen(command, stdout=sub_stdout, stderr=sub_stderr, universal_newlines=True)
-        atexit.register(lambda: process.terminate())
         stdoutdata, _ = process.communicate()
 
         if process.returncode:
@@ -103,6 +102,10 @@ def _process_one_distribution(distribution, verbose):
         with open(os.path.join(workspace, 'results'), 'r') as file_h:
             return file_h.read()
     finally:
+        if os.path.isfile(cid_file):
+            with open(cid_file, 'r') as file_h:
+                cid = file_h.read()
+            subprocess.call(['docker', 'kill', cid])
         shutil.rmtree(workspace)
 
 
