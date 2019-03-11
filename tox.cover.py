@@ -12,7 +12,7 @@ DEFAULT_PACKAGES = [
     'certbot_dns_sakuracloud', 'certbot_nginx', 'certbot_postfix', 'letshelp_certbot']
 
 COVER_THRESHOLDS = {
-    'certbot': {'linux': 98, 'windows': 93},
+    'certbot': {'linux': 97, 'windows': 93},
     'acme': {'linux': 100, 'windows': 99},
     # certbot_apache coverage not being at 100% is a workaround for
     # https://github.com/certbot/certbot/issues/6813. We should increase
