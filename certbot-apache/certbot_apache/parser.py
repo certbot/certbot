@@ -469,22 +469,18 @@ class ApacheParser(object):
         return ordered_matches
 
     def get_all_args(self, match):
-        """Tries to fetch all arguments for a directive. See get_arg."""
+        """
+        Tries to fetch all arguments for a directive. See get_arg.
+
+        Note that if match is an ancestor node, it returns all names of
+        child directives as well as the list of arguments.
+
+        """
 
         if match[-1] != "/":
             match = match+"/"
-        results = []
-        found_ind = True
-        # Augeas indices start at 1
-        counter = 1
-        while found_ind:
-            arg = self.get_arg("{}arg[{}]".format(match, counter))
-            if not arg:
-                found_ind = False
-            else:
-                results.append(arg)
-            counter += 1
-        return results
+        allargs = self.aug.match(match + '*')
+        return [self.get_arg(arg) for arg in allargs]
 
     def get_arg(self, match):
         """Uses augeas.get to get argument value and interprets result.

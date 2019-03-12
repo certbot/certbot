@@ -32,8 +32,6 @@ def get_vh_truth(temp_dir, config_name):
 class CentOS6Tests(util.ApacheTest):
     """Tests for CentOS 6"""
 
-    _multiprocess_can_split_ = True
-
     def setUp(self):  # pylint: disable=arguments-differ
         test_dir = "centos6_apache/apache"
         config_root = "centos6_apache/apache/httpd"
@@ -89,12 +87,13 @@ class CentOS6Tests(util.ApacheTest):
         # We should now have LoadModule ssl_module in root conf and ssl.conf
         self.assertEqual(len(post_loadmods), 2)
         for lm in post_loadmods:
+            # lm[:-7] removes "/arg[#]" from the path
             arguments = self.config.parser.get_all_args(lm[:-7])
             self.assertEqual(arguments, ["ssl_module", "modules/mod_ssl.so"])
             # ...and both of them should be wrapped in <IfModule !mod_ssl.c>
             # lm[:-17] strips off /directive/arg[1] from the path.
             ifmod_args = self.config.parser.get_all_args(lm[:-17])
-            self.assertEqual(ifmod_args, ["!mod_ssl.c"])
+            self.assertTrue("!mod_ssl.c" in ifmod_args)
 
     def test_loadmod_rootconf_exists(self):
         sslmod_args = ["ssl_module", "modules/mod_ssl.so"]
@@ -118,7 +117,7 @@ class CentOS6Tests(util.ApacheTest):
         mods = [lm for lm in root_loadmods if self.config.parser.loc["default"] in lm]
 
         self.assertEqual(len(mods), 1)
-        # [:-7] removes "args[#]" from the path
+        # [:-7] removes "/arg[#]" from the path
         self.assertEqual(
             self.config.parser.get_all_args(mods[0][:-7]),
             sslmod_args)
