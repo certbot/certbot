@@ -11,8 +11,6 @@ import pytz
 import six
 
 import certbot
-from certbot import cli
-from certbot import compat
 from certbot import errors
 from certbot.compat import os, security
 from certbot.storage import ALL_FOUR
