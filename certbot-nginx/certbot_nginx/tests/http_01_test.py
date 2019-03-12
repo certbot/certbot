@@ -1,6 +1,5 @@
 """Tests for certbot_nginx.http_01"""
 import unittest
-import shutil
 
 import mock
 import six
@@ -53,11 +52,6 @@ class HttpPerformTest(util.NginxTest):
 
         from certbot_nginx import http_01
         self.http01 = http_01.NginxHttp01(config)
-
-    def tearDown(self):
-        shutil.rmtree(self.temp_dir)
-        shutil.rmtree(self.config_dir)
-        shutil.rmtree(self.work_dir)
 
     def test_perform0(self):
         responses = self.http01.perform()

@@ -3,7 +3,7 @@ from setuptools import find_packages
 from setuptools.command.test import test as TestCommand
 import sys
 
-version = '0.32.0.dev0'
+version = '0.33.0.dev0'
 
 # Please update tox.ini when modifying dependency version requirements
 install_requires = [
@@ -36,6 +36,7 @@ docs_extras = [
     'sphinx_rtd_theme',
 ]
 
+
 class PyTest(TestCommand):
     user_options = []
 
@@ -49,6 +50,7 @@ class PyTest(TestCommand):
         import pytest
         errno = pytest.main(shlex.split(self.pytest_args))
         sys.exit(errno)
+
 
 setup(
     name='acme',
@@ -82,7 +84,7 @@ setup(
         'dev': dev_extras,
         'docs': docs_extras,
     },
-    tests_require=["pytest"],
     test_suite='acme',
+    tests_require=["pytest"],
     cmdclass={"test": PyTest},
 )

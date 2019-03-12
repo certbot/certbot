@@ -115,6 +115,37 @@ class MultipleVhostsTest(util.ApacheTest):
         # Weak test..
         ApacheConfigurator.add_parser_arguments(mock.MagicMock())
 
+    def test_docs_parser_arguments(self):
+        os.environ["CERTBOT_DOCS"] = "1"
+        from certbot_apache.configurator import ApacheConfigurator
+        mock_add = mock.MagicMock()
+        ApacheConfigurator.add_parser_arguments(mock_add)
+        parserargs = ["server_root", "enmod", "dismod", "le_vhost_ext",
+                      "vhost_root", "logs_root", "challenge_location",
+                      "handle_modules", "handle_sites", "ctl"]
+        exp = dict()
+
+        for k in ApacheConfigurator.OS_DEFAULTS:
+            if k in parserargs:
+                exp[k.replace("_", "-")] = ApacheConfigurator.OS_DEFAULTS[k]
+        # Special cases
+        exp["vhost-root"] = None
+        exp["init-script"] = None
+
+        found = set()
+        for call in mock_add.call_args_list:
+            # init-script is a special case: deprecated argument
+            if call[0][0] != "init-script":
+                self.assertEqual(exp[call[0][0]], call[1]['default'])
+            found.add(call[0][0])
+
+        # Make sure that all (and only) the expected values exist
+        self.assertEqual(len(mock_add.call_args_list), len(found))
+        for e in exp:
+            self.assertTrue(e in found)
+
+        del os.environ["CERTBOT_DOCS"]
+
     def test_add_parser_arguments_all_configurators(self):  # pylint: disable=no-self-use
         from certbot_apache.entrypoint import OVERRIDE_CLASSES
         for cls in OVERRIDE_CLASSES.values():
