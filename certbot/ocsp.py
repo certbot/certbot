@@ -200,7 +200,7 @@ def _check_ocsp_response(response_ocsp, request_ocsp, issuer_cert):
     #      for OpenSSL, so we do not do it here.
     # See OpenSSL implementation as a reference:
     # https://github.com/openssl/openssl/blob/ef45aa14c5af024fcb8bef1c9007f3d1c115bd85/crypto/ocsp/ocsp_cl.c#L338-L391
-    now = datetime.now()
+    now = datetime.utcnow()  # thisUpdate/nextUpdate are expressed in UTC/GMT time zone
     if not response_ocsp.this_update:
         raise AssertionError('param thisUpdate is not set.')
     if response_ocsp.this_update > now + timedelta(minutes=5):
