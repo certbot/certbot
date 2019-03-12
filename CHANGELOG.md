@@ -2,7 +2,32 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 0.32.0 - master
+## 0.33.0 - master
+
+### Added
+
+* Fedora 29+ is now supported by certbot-auto. Since Python 2.x is on a deprecation
+  path in Fedora, certbot-auto will install and use Python 3.x on Fedora 29+.
+
+### Changed
+
+*
+
+### Fixed
+
+* Certbot uses the Python library cryptography for OCSP when cryptography>=2.5
+  is installed. We fixed a bug in Certbot causing it to interpret timestamps in
+  the OCSP response as being in the local timezone rather than UTC.
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+package with changes other than its version number was:
+
+* certbot
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.32.0 - 2019-03-06
 
 ### Added
 
@@ -29,10 +54,6 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   `keyAuthorization` field but will temporarily retry the request with the
   field included if a `malformed` error is received. This fallback will be
   removed in version 0.34.0.
-
-### Fixed
-
-*
 
 Despite us having broken lockstep, we are continuing to release new versions of
 all Certbot components during releases for the time being, however, the only
