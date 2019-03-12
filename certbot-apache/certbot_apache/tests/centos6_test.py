@@ -118,6 +118,7 @@ class CentOS6Tests(util.ApacheTest):
         mods = [lm for lm in root_loadmods if self.config.parser.loc["default"] in lm]
 
         self.assertEqual(len(mods), 1)
+        # [:-7] removes "args[#]" from the path
         self.assertEqual(
             self.config.parser.get_all_args(mods[0][:-7]),
             sslmod_args)
