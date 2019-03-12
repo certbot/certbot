@@ -1,7 +1,7 @@
 """Unit test for security module."""
 import os
 
-from certbot.new_compat import security
+from certbot.compat import security
 from certbot.tests.util import TempDirTestCase
 
 
