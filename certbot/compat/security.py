@@ -215,7 +215,7 @@ def _generate_dacl(user_sid, mode):
 
 
 def _take_win_ownership(file_path):
-    username = win32api.GetUserName()
+    username = get_current_user()
     user = win32security.LookupAccountName('', username)[0]
 
     security = win32security.GetFileSecurity(file_path, win32security.OWNER_SECURITY_INFORMATION)

@@ -528,8 +528,6 @@ if [ "${BOULDER_INTEGRATION:-v1}" = "v2" ]; then
         --manual-cleanup-hook ./tests/manual-dns-cleanup.sh
 fi
 
-coverage report --fail-under 64 --include 'certbot/*' --show-missing
-
 # Test OCSP status
 
 ## OCSP 1: Check stale OCSP status
@@ -582,3 +580,5 @@ if [ "$REVOKED" != 1 ] ; then
     echo "Expected le-ocsp-check.wtf to be REVOKED"
     exit 1
 fi
+
+coverage report --fail-under 63 --include 'certbot/*' --show-missing
