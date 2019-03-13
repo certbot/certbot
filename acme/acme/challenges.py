@@ -330,7 +330,9 @@ class HTTP01Response(KeyAuthorizationChallengeResponse):
             logger.info('Domain {0} is forcibly resolved to IP {1}'.format(domain, resolved_ip))
             domain = resolved_ip
 
+        logger.info(domain)
         uri = chall.uri(domain)
+        logger.info(uri)
         logger.debug("Verifying %s at %s...", chall.typ, uri)
         try:
             http_response = requests.get(uri)
