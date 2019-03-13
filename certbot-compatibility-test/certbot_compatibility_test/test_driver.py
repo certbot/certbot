@@ -378,7 +378,7 @@ def _fake_dns_resolution(resolved_ip):
     _original_create_connection = connection.create_connection
 
     def _patched_create_connection(address, *args, **kwargs):
-        host, port = address
+        _, port = address
         return _original_create_connection((resolved_ip, port), *args, **kwargs)
 
     try:
