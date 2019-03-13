@@ -5,6 +5,8 @@ import hashlib
 import logging
 import socket
 import warnings
+import contextlib
+from urllib3.util import connection
 
 from cryptography.hazmat.primitives import hashes  # type: ignore
 import josepy as jose
@@ -326,16 +328,15 @@ class HTTP01Response(KeyAuthorizationChallengeResponse):
                 "Using non-standard port for http-01 verification: %s", port)
             domain += ":{0}".format(port)
 
-        if resolved_ip:
-            logger.info('Domain {0} is forcibly resolved to IP {1}'.format(domain, resolved_ip))
-            domain = resolved_ip
-
-        logger.info(domain)
         uri = chall.uri(domain)
-        logger.info(uri)
         logger.debug("Verifying %s at %s...", chall.typ, uri)
         try:
-            http_response = requests.get(uri)
+            if resolved_ip:
+                logger.info('Domain {0} is forcibly resolved to IP {1}'.format(domain, resolved_ip))
+                with fake_dns_resolution(resolved_ip):
+                    http_response = requests.get(uri)
+            else:
+                http_response = requests.get(uri)
         except requests.exceptions.RequestException as error:
             logger.error("Unable to reach %s: %s", uri, error)
             return False
@@ -648,3 +649,22 @@ class DNSResponse(ChallengeResponse):
 
         """
         return chall.check_validation(self.validation, account_public_key)
+
+
+@contextlib.contextmanager
+def fake_dns_resolution(resolved_ip):
+    """
+    Monkey patch urllib3 to make any hostname be resolved to the provided IP.
+    :param str resolved_ip: the IP to use when resolving any hostname
+    """
+    original_create_connection = connection.create_connection
+
+    def patched_create_connection(address, *args, **kwargs):
+        host, port = address
+        return original_create_connection((resolved_ip, port), *args, **kwargs)
+
+    try:
+        connection.create_connection = patched_create_connection
+        yield
+    finally:
+        connection.create_connection = original_create_connection
