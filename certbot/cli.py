@@ -1118,14 +1118,6 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         help=config_help("no_verify_ssl"),
         default=flag_default("no_verify_ssl"))
     helpful.add(
-        ["testing", "standalone", "apache", "nginx"], "--tls-sni-01-port", type=int,
-        default=flag_default("tls_sni_01_port"),
-        help=config_help("tls_sni_01_port"))
-    helpful.add(
-        ["testing", "standalone"], "--tls-sni-01-address",
-        default=flag_default("tls_sni_01_address"),
-        help=config_help("tls_sni_01_address"))
-    helpful.add(
         ["testing", "standalone", "manual"], "--http-01-port", type=int,
         dest="http01_port",
         default=flag_default("http01_port"), help=config_help("http01_port"))
@@ -1193,7 +1185,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         action=_PrefChallAction, default=flag_default("pref_challs"),
         help='A sorted, comma delimited list of the preferred challenge to '
              'use during authorization with the most preferred challenge '
-             'listed first (Eg, "dns" or "tls-sni-01,http,dns"). '
+             'listed first (Eg, "dns" or "http,dns"). '
              'Not all plugins support all challenges. See '
              'https://certbot.eff.org/docs/using.html#plugins for details. '
              'ACME Challenges are versioned, but if you pick "http" rather '
@@ -1263,6 +1255,11 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
 
     helpful.add_deprecated_argument("--agree-dev-preview", 0)
     helpful.add_deprecated_argument("--dialog", 0)
+
+    # Deprecation of tls-related cli flags
+    # TODO: remove theses flags completely in few releases
+    helpful.add_deprecated_argument("--tls-sni-01-port", 1)
+    helpful.add_deprecated_argument("--tls-sni-01-address", 1)
 
     # Populate the command line parameters for new style enhancements
     enhancements.populate_cli(helpful.add)
@@ -1556,6 +1553,14 @@ def parse_preferred_challenges(pref_challs):
     aliases = {"dns": "dns-01", "http": "http-01", "tls-sni": "tls-sni-01"}
     challs = [c.strip() for c in pref_challs]
     challs = [aliases.get(c, c) for c in challs]
+
+    # Ignore tls-sni-01 from the list, and generates a deprecation warning
+    # TODO: remove this option completely in few releases
+    if "tls-sni-01" in challs:
+        sys.stderr.write('Use of tls-sni-01 in preferred-challenges is '
+                         'deprecated, and will be removed soon.\n')
+        challs.remove("tls-sni-01")
+
     unrecognized = ", ".join(name for name in challs
                              if name not in challenges.Challenge.TYPES)
     if unrecognized:
