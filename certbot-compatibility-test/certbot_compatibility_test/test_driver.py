@@ -1,5 +1,6 @@
 """Tests Certbot plugins against different server configurations."""
 import argparse
+import contextlib
 import filecmp
 import logging
 import os
@@ -7,6 +8,7 @@ import shutil
 import tempfile
 import time
 import sys
+from urllib3.util import connection
 
 import OpenSSL
 
@@ -65,11 +67,12 @@ def test_authenticator(plugin, config, temp_dir):
                 type(achalls[i]), achalls[i].domain, config)
             success = False
         elif isinstance(responses[i], challenges.HTTP01Response):
-            verified = responses[i].simple_verify(achalls[i].chall,
-                                                  achalls[i].domain,
-                                                  util.JWK.public_key(),
-                                                  port=plugin.http_port,
-                                                  resolved_ip='127.0.0.1')
+            # We fake the DNS resolution to ensure that any domain is resolved
+            # to the local HTTP server setup for the compatibility tests
+            with _fake_dns_resolution("127.0.0.1"):
+                verified = responses[i].simple_verify(
+                    achalls[i].chall, achalls[i].domain,
+                    util.JWK.public_key(), port=plugin.http_port)
             if verified:
                 logger.info(
                     "http-01 verification for %s succeeded", achalls[i].domain)
@@ -367,6 +370,22 @@ def main():
     else:
         logger.warning("One or more compatibility tests failed")
         sys.exit(1)
+
+
+@contextlib.contextmanager
+def _fake_dns_resolution(resolved_ip):
+    """Monkey patch urllib3 to make any hostname be resolved to the provided IP"""
+    _original_create_connection = connection.create_connection
+
+    def _patched_create_connection(address, *args, **kwargs):
+        host, port = address
+        return _original_create_connection((resolved_ip, port), *args, **kwargs)
+
+    try:
+        connection.create_connection = _patched_create_connection
+        yield
+    finally:
+        connection.create_connection = _original_create_connection
 
 
 if __name__ == "__main__":

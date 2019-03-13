@@ -5,8 +5,6 @@ import hashlib
 import logging
 import socket
 import warnings
-import contextlib
-from urllib3.util import connection
 
 from cryptography.hazmat.primitives import hashes  # type: ignore
 import josepy as jose
@@ -301,7 +299,7 @@ class HTTP01Response(KeyAuthorizationChallengeResponse):
     WHITESPACE_CUTSET = "\n\r\t "
     """Whitespace characters which should be ignored at the end of the body."""
 
-    def simple_verify(self, chall, domain, account_public_key, port=None, resolved_ip=None):
+    def simple_verify(self, chall, domain, account_public_key, port=None):
         """Simple verify.
 
         :param challenges.SimpleHTTP chall: Corresponding challenge.
@@ -309,7 +307,6 @@ class HTTP01Response(KeyAuthorizationChallengeResponse):
         :param JWK account_public_key: Public key for the key pair
             being authorized.
         :param int port: Port used in the validation.
-        :param string resolved_ip: If set, domain will be forcibly resolved to this IP.
 
         :returns: ``True`` iff validation with the files currently served by the
             HTTP server is successful.
@@ -331,12 +328,7 @@ class HTTP01Response(KeyAuthorizationChallengeResponse):
         uri = chall.uri(domain)
         logger.debug("Verifying %s at %s...", chall.typ, uri)
         try:
-            if resolved_ip:
-                logger.debug('Domain {0} is forcibly resolved to IP {1}'.format(domain, resolved_ip))
-                with _fake_dns_resolution(resolved_ip):
-                    http_response = requests.get(uri)
-            else:
-                http_response = requests.get(uri)
+            http_response = requests.get(uri)
         except requests.exceptions.RequestException as error:
             logger.error("Unable to reach %s: %s", uri, error)
             return False
@@ -649,19 +641,3 @@ class DNSResponse(ChallengeResponse):
 
         """
         return chall.check_validation(self.validation, account_public_key)
-
-
-@contextlib.contextmanager
-def _fake_dns_resolution(resolved_ip):
-    """Monkey patch urllib3 to make any hostname be resolved to the provided IP"""
-    _original_create_connection = connection.create_connection
-
-    def _patched_create_connection(address, *args, **kwargs):
-        host, port = address
-        return _original_create_connection((resolved_ip, port), *args, **kwargs)
-
-    try:
-        connection.create_connection = _patched_create_connection
-        yield
-    finally:
-        connection.create_connection = _original_create_connection
