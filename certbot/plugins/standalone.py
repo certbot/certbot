@@ -6,7 +6,7 @@ import socket
 # https://github.com/python/typeshed/blob/master/stdlib/2and3/socket.pyi
 from socket import errno as socket_errors  # type: ignore
 
-import OpenSSL
+import OpenSSL  # pylint: disable=unused-import
 import six
 import zope.interface
 
