@@ -299,7 +299,7 @@ class HTTP01Response(KeyAuthorizationChallengeResponse):
     WHITESPACE_CUTSET = "\n\r\t "
     """Whitespace characters which should be ignored at the end of the body."""
 
-    def simple_verify(self, chall, domain, account_public_key, port=None):
+    def simple_verify(self, chall, domain, account_public_key, port=None, resolved_ip=None):
         """Simple verify.
 
         :param challenges.SimpleHTTP chall: Corresponding challenge.
@@ -307,6 +307,7 @@ class HTTP01Response(KeyAuthorizationChallengeResponse):
         :param JWK account_public_key: Public key for the key pair
             being authorized.
         :param int port: Port used in the validation.
+        :param string resolved_ip: If set, domain will be forcibly resolved to this IP.
 
         :returns: ``True`` iff validation with the files currently served by the
             HTTP server is successful.
@@ -324,6 +325,10 @@ class HTTP01Response(KeyAuthorizationChallengeResponse):
             logger.warning(
                 "Using non-standard port for http-01 verification: %s", port)
             domain += ":{0}".format(port)
+
+        if resolved_ip:
+            logger.info('Domain {0} is forcibly resolved to IP {1}'.format(domain, resolved_ip))
+            domain = resolved_ip
 
         uri = chall.uri(domain)
         logger.debug("Verifying %s at %s...", chall.typ, uri)

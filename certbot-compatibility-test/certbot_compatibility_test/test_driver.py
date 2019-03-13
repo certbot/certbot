@@ -68,7 +68,8 @@ def test_authenticator(plugin, config, temp_dir):
             verified = responses[i].simple_verify(achalls[i].chall,
                                                   achalls[i].domain,
                                                   util.JWK.public_key(),
-                                                  port=plugin.http_port)
+                                                  port=plugin.http_port,
+                                                  resolved_ip='127.0.0.1')
             if verified:
                 logger.info(
                     "http-01 verification for %s succeeded", achalls[i].domain)
