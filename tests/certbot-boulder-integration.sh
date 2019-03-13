@@ -236,6 +236,7 @@ CheckDeployHook $certname
 # Previous test used to be a tls-sni-01 challenge that is not supported anymore.
 # Now it is a http-01 challenge and this makes it a duplicate of the following test.
 # But removing it would break many tests here, as they are strongly coupled.
+# See https://github.com/certbot/certbot/pull/6852
 certname="le2.wtf"
 common --domains le2.wtf --preferred-challenges http-01 run \
        --cert-name $certname \
