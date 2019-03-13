@@ -332,8 +332,8 @@ class HTTP01Response(KeyAuthorizationChallengeResponse):
         logger.debug("Verifying %s at %s...", chall.typ, uri)
         try:
             if resolved_ip:
-                logger.info('Domain {0} is forcibly resolved to IP {1}'.format(domain, resolved_ip))
-                with fake_dns_resolution(resolved_ip):
+                logger.debug('Domain {0} is forcibly resolved to IP {1}'.format(domain, resolved_ip))
+                with _fake_dns_resolution(resolved_ip):
                     http_response = requests.get(uri)
             else:
                 http_response = requests.get(uri)
@@ -652,19 +652,16 @@ class DNSResponse(ChallengeResponse):
 
 
 @contextlib.contextmanager
-def fake_dns_resolution(resolved_ip):
-    """
-    Monkey patch urllib3 to make any hostname be resolved to the provided IP.
-    :param str resolved_ip: the IP to use when resolving any hostname
-    """
-    original_create_connection = connection.create_connection
+def _fake_dns_resolution(resolved_ip):
+    """Monkey patch urllib3 to make any hostname be resolved to the provided IP"""
+    _original_create_connection = connection.create_connection
 
-    def patched_create_connection(address, *args, **kwargs):
+    def _patched_create_connection(address, *args, **kwargs):
         host, port = address
-        return original_create_connection((resolved_ip, port), *args, **kwargs)
+        return _original_create_connection((resolved_ip, port), *args, **kwargs)
 
     try:
-        connection.create_connection = patched_create_connection
+        connection.create_connection = _patched_create_connection
         yield
     finally:
-        connection.create_connection = original_create_connection
+        connection.create_connection = _original_create_connection
