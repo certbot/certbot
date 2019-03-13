@@ -83,7 +83,8 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
                     logger.info("Multiple different LoadModule directives for mod_ssl "
                                 "were found. If you encounter issues with resulting "
                                 "configuration, it's suggested to move the LoadModule "
-                                "ssl_module directive to the beginning of main httpd.conf.")
+                                "ssl_module directive to the beginning of main Apache "
+                                "configuration file at /etc/httpd/conf/httpd.conf")
                     return
             else:
                 loadmod_args = path_args

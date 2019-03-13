@@ -18,7 +18,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * Certbot uses the Python library cryptography for OCSP when cryptography>=2.5
   is installed. We fixed a bug in Certbot causing it to interpret timestamps in
   the OCSP response as being in the local timezone rather than UTC.
-* Issue causing the default CentOS 6 TLS configuration to ignore some of the HTTPS VirtualHosts created by Certbot. mod_ssl loading is now moved to main http.conf for this environment where possible.
+* Issue causing the default CentOS 6 TLS configuration to ignore some of the 
+  HTTPS VirtualHosts created by Certbot. mod_ssl loading is now moved to main 
+  http.conf for this environment where possible.
 
 Despite us having broken lockstep, we are continuing to release new versions of
 all Certbot components during releases for the time being, however, the only

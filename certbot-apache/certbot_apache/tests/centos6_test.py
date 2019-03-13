@@ -154,13 +154,14 @@ class CentOS6Tests(util.ApacheTest):
             noarg_path = mod.rpartition("/")[0]
             self.config.aug.remove(noarg_path)
         self.config.save()
-        # get_all_args() is called for each LoadModule that was found
-        getall = "certbot_apache.override_centos.CentOSParser.get_all_args"
-        with mock.patch(getall) as mock_getall:
-            self.config.deploy_cert(
-                "random.demo", "example/cert.pem", "example/key.pem",
-                "example/cert_chain.pem", "example/fullchain.pem")
-            self.assertFalse(mock_getall.called)
+        self.config.deploy_cert(
+            "random.demo", "example/cert.pem", "example/key.pem",
+            "example/cert_chain.pem", "example/fullchain.pem")
+
+        post_loadmods = self.config.parser.find_dir("LoadModule",
+                                                    "ssl_module",
+                                                    exclude=False)
+        self.assertFalse(post_loadmods)
 
 
 if __name__ == "__main__":
