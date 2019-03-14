@@ -235,6 +235,11 @@ class IConfig(zope.interface.Interface):
     http01_address = zope.interface.Attribute(
         "The address the server listens to during http-01 challenge.")
 
+    https_port = zope.interface.Attribute(
+        "Port used to serve HTTPS. "
+        "This affects which port will Nginx or Apache will listen on "
+        "after a LE certificate is installed.")
+
     pref_challs = zope.interface.Attribute(
         "Sorted user specified preferred challenges"
         "type strings with the most preferred challenge listed first")
