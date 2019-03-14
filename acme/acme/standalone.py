@@ -37,7 +37,7 @@ class TLSServer(socketserver.TCPServer):
         self.certs = kwargs.pop("certs", {})
         self.method = kwargs.pop(
             # pylint: disable=protected-access
-            "method", crypto_util._DEFAULT_TLSSNI01_SSL_METHOD)
+            "method", crypto_util._DEFAULT_SSL_METHOD)
         self.allow_reuse_address = kwargs.pop("allow_reuse_address", True)
         socketserver.TCPServer.__init__(self, *args, **kwargs)
 
@@ -294,6 +294,21 @@ def simple_tls_sni_01_server(cli_args, forever=True):
         server.serve_forever()
     else:
         server.handle_request()
+
+
+# Patching ourselves to warn about TLS-SNI challenge deprecation and removal.
+class _StandaloneClass:
+    def __init__(self, standalone_module):
+        self.module = standalone_module
+
+    def __getattr__(self, item):
+        if item in ['TLSSNI01DualNetworkedServers', 'TLSSNI01Server']:
+            sys.stderr.write('TLS-SNI-01 challenges are deprecated, and will '
+                             'be removed on April 2019 with acme 0.34.0.\n')
+        return getattr(self.module, item)
+
+
+sys.modules[__name__] = _StandaloneClass(sys.modules[__name__])
 
 
 if __name__ == "__main__":
