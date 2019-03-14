@@ -143,9 +143,6 @@ permitted by DNS standards.)
             env['CERTBOT_TOKEN'] = achall.chall.encode('token')
         else:
             os.environ.pop('CERTBOT_TOKEN', None)
-        os.environ.pop('CERTBOT_CERT_PATH', None)
-        os.environ.pop('CERTBOT_KEY_PATH', None)
-        os.environ.pop('CERTBOT_SNI_DOMAIN', None)
         os.environ.update(env)
         _, out = self._execute_hook('auth-hook')
         env['CERTBOT_AUTH_OUTPUT'] = out.strip()
@@ -158,7 +155,8 @@ permitted by DNS standards.)
                 achall=achall, encoded_token=achall.chall.encode('token'),
                 port=self.config.http01_port,
                 uri=achall.chall.uri(achall.domain), validation=validation)
-        else:  # Can be only DNS-01
+        else:
+            assert isinstance(achall.chall, challenges.DNS01)
             msg = self._DNS_INSTRUCTIONS.format(
                 domain=achall.validation_domain_name(achall.domain),
                 validation=validation)
