@@ -26,7 +26,6 @@ from certbot_nginx import constants
 from certbot_nginx import display_ops
 from certbot_nginx import nginxparser
 from certbot_nginx import parser
-from certbot_nginx import tls_sni_01
 from certbot_nginx import http_01
 from certbot_nginx import obj # pylint: disable=unused-import
 from acme.magic_typing import List, Dict, Set # pylint: disable=unused-import, no-name-in-module
@@ -149,7 +148,6 @@ class NginxConfigurator(common.Installer):
         # Make sure configuration is valid
         self.config_test()
 
-
         self.parser = parser.NginxParser(self.conf('server-root'))
 
         install_ssl_options_conf(self.mod_ssl_conf, self.updated_mod_ssl_conf_digest)
@@ -187,7 +185,7 @@ class NginxConfigurator(common.Installer):
                 "The nginx plugin currently requires --fullchain-path to "
                 "install a cert.")
 
-        vhosts = self.choose_vhosts(domain, create_if_no_match=True)
+        vhosts = self.choose_vhosts(domain)
         for vhost in vhosts:
             self._deploy_cert(vhost, cert_path, key_path, chain_path, fullchain_path)
 
@@ -297,7 +295,7 @@ class NginxConfigurator(common.Installer):
             if create_if_no_match:
                 # result will not be [None] because it errors on failure
                 vhosts = [self._vhost_from_duplicated_default(target_name, True,
-                    str(self.config.tls_sni_01_port))]
+                    str(self.config.https_port))]
             else:
                 # No matches. Raise a misconfiguration error.
                 raise errors.MisconfigurationError(
@@ -309,7 +307,7 @@ class NginxConfigurator(common.Installer):
         # Note: if we are enhancing with ocsp, vhost should already be ssl.
         for vhost in vhosts:
             if not vhost.ssl:
-                self._make_server_ssl(vhost)
+                self._make_server_ssl(vhost, self.config.https_port)
 
         return vhosts
 
@@ -561,7 +559,7 @@ class NginxConfigurator(common.Installer):
         :rtype: set
 
         """
-        all_names = set() # type: Set[str]
+        all_names = set()  # type: Set[str]
 
         for vhost in self.parser.get_vhosts():
             all_names.update(vhost.names)
@@ -602,16 +600,18 @@ class NginxConfigurator(common.Installer):
             cert_file.write(cert_pem)
         return cert_path, le_key.file
 
-    def _make_server_ssl(self, vhost):
+    def _make_server_ssl(self, vhost, https_port):
         """Make a server SSL.
 
         Make a server SSL by adding new listen and SSL directives.
 
         :param vhost: The vhost to add SSL to.
         :type vhost: :class:`~certbot_nginx.obj.VirtualHost`
+        :param https_port: The HTTPS port to use
+        :type vhost: int
 
         """
-        ipv6info = self.ipv6_info(self.config.tls_sni_01_port)
+        ipv6info = self.ipv6_info(https_port)
         ipv6_block = ['']
         ipv4_block = ['']
 
@@ -625,7 +625,7 @@ class NginxConfigurator(common.Installer):
             ipv6_block = ['\n    ',
                           'listen',
                           ' ',
-                          '[::]:{0}'.format(self.config.tls_sni_01_port),
+                          '[::]:{0}'.format(https_port),
                           ' ',
                           'ssl']
             if not ipv6info[1]:
@@ -637,7 +637,7 @@ class NginxConfigurator(common.Installer):
             ipv4_block = ['\n    ',
                           'listen',
                           ' ',
-                          '{0}'.format(self.config.tls_sni_01_port),
+                          '{0}'.format(https_port),
                           ' ',
                           'ssl']
 
@@ -799,8 +799,6 @@ class NginxConfigurator(common.Installer):
         :param str domain: domain to enable redirect for
         :param `~obj.Vhost` vhost: vhost to enable redirect for
         """
-
-        http_vhost = None
         if vhost.ssl:
             http_vhost, _ = self._split_block(vhost, ['listen', 'server_name'])
 
@@ -933,9 +931,6 @@ class NginxConfigurator(common.Installer):
         version_regex = re.compile(r"nginx version: ([^/]+)/([0-9\.]*)", re.IGNORECASE)
         version_matches = version_regex.findall(text)
 
-        sni_regex = re.compile(r"TLS SNI support enabled", re.IGNORECASE)
-        sni_matches = sni_regex.findall(text)
-
         ssl_regex = re.compile(r" --with-http_ssl_module")
         ssl_matches = ssl_regex.findall(text)
 
@@ -944,8 +939,6 @@ class NginxConfigurator(common.Installer):
         if not ssl_matches:
             raise errors.PluginError(
                 "Nginx build is missing SSL module (--with-http_ssl_module).")
-        if not sni_matches:
-            raise errors.PluginError("Nginx build doesn't support SNI")
 
         product_name, product_version = version_matches[0]
         if product_name != 'nginx':
@@ -1051,19 +1044,14 @@ class NginxConfigurator(common.Installer):
         """
         self._chall_out += len(achalls)
         responses = [None] * len(achalls)
-        sni_doer = tls_sni_01.NginxTlsSni01(self)
         http_doer = http_01.NginxHttp01(self)
 
         for i, achall in enumerate(achalls):
             # Currently also have chall_doer hold associated index of the
             # challenge. This helps to put all of the responses back together
             # when they are all complete.
-            if isinstance(achall.chall, challenges.HTTP01):
-                http_doer.add_chall(achall, i)
-            else:  # tls-sni-01
-                sni_doer.add_chall(achall, i)
+            http_doer.add_chall(achall, i)
 
-        sni_response = sni_doer.perform()
         http_response = http_doer.perform()
         # Must restart in order to activate the challenges.
         # Handled here because we may be able to load up other challenge types
@@ -1072,9 +1060,8 @@ class NginxConfigurator(common.Installer):
         # Go through all of the challenges and assign them to the proper place
         # in the responses return value. All responses must be in the same order
         # as the original challenges.
-        for chall_response, chall_doer in ((sni_response, sni_doer), (http_response, http_doer)):
-            for i, resp in enumerate(chall_response):
-                responses[chall_doer.indices[i]] = resp
+        for i, resp in enumerate(http_response):
+            responses[http_doer.indices[i]] = resp
 
         return responses
 
@@ -1151,6 +1138,7 @@ def install_ssl_options_conf(options_ssl, options_ssl_digest):
     """Copy Certbot's SSL options file into the system's config dir if required."""
     return common.install_version_controlled_file(options_ssl, options_ssl_digest,
         constants.MOD_SSL_CONF_SRC, constants.ALL_SSL_OPTIONS_HASHES)
+
 
 def _determine_default_server_root():
     if os.environ.get("CERTBOT_DOCS") == "1":
