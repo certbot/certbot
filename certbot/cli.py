@@ -1134,7 +1134,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         dest="http01_address",
         default=flag_default("http01_address"), help=config_help("http01_address"))
     helpful.add(
-        ["testing", "apache", "nginx"], "--https-port", type=int,
+        ["testing", "nginx"], "--https-port", type=int,
         default=flag_default("https_port"),
         help=config_help("https_port"))
     helpful.add(

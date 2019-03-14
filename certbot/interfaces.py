@@ -237,8 +237,8 @@ class IConfig(zope.interface.Interface):
 
     https_port = zope.interface.Attribute(
         "Port used to serve HTTPS. "
-        "This affects which port will Nginx or Apache will listen on "
-        "after a LE certificate is installed.")
+        "This affects which port Nginx will listen on after a LE certificate "
+        "is installed.")
 
     pref_challs = zope.interface.Attribute(
         "Sorted user specified preferred challenges"
