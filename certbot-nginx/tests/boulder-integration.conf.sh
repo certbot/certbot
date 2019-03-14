@@ -59,7 +59,7 @@ http {
     listen 5002 $default_server;
     # IPv6.
     listen [::]:5002 $default_server;
-    server_name nginx.wtf nginx-tls.wtf nginx2.wtf;
+    server_name nginx.wtf nginx2.wtf;
 
     root $ROOT/webroot;
 
