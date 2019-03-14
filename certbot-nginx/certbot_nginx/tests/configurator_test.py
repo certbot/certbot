@@ -324,13 +324,7 @@ class NginxConfiguratorTest(util.NginxTest):
     def test_perform_and_cleanup(self, mock_revert, mock_restart, mock_http_perform):
         # Only tests functionality specific to configurator.perform
         # Note: As more challenges are offered this will have to be expanded
-        achall1 = achallenges.KeyAuthorizationAnnotatedChallenge(
-            challb=messages.ChallengeBody(
-                chall=challenges.TLSSNI01(token=b"kNdwjwOeX0I_A8DXt9Msmg"),
-                uri="https://ca.org/chall0_uri",
-                status=messages.Status("pending"),
-            ), domain="localhost", account_key=self.rsa512jwk)
-        achall2 = achallenges.KeyAuthorizationAnnotatedChallenge(
+        achall = achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=messages.ChallengeBody(
                 chall=challenges.HTTP01(token=b"m8TdO1qik4JVFtgPPurJmg"),
                 uri="https://ca.org/chall1_uri",
@@ -338,17 +332,16 @@ class NginxConfiguratorTest(util.NginxTest):
             ), domain="example.com", account_key=self.rsa512jwk)
 
         expected = [
-            achall1.response(self.rsa512jwk),
-            achall2.response(self.rsa512jwk),
+            achall.response(self.rsa512jwk),
         ]
 
-        mock_http_perform.return_value = expected[1:]
-        responses = self.config.perform([achall1, achall2])
+        mock_http_perform.return_value = expected[:]
+        responses = self.config.perform([achall])
 
         self.assertEqual(mock_http_perform.call_count, 1)
         self.assertEqual(responses, expected)
 
-        self.config.cleanup([achall1, achall2])
+        self.config.cleanup([achall])
         self.assertEqual(0, self.config._chall_out) # pylint: disable=protected-access
         self.assertEqual(mock_revert.call_count, 1)
         self.assertEqual(mock_restart.call_count, 2)
@@ -359,7 +352,6 @@ class NginxConfiguratorTest(util.NginxTest):
             "", "\n".join(["nginx version: nginx/1.4.2",
                            "built by clang 6.0 (clang-600.0.56)"
                            " (based on LLVM 3.5svn)",
-                           "TLS SNI support enabled",
                            "configure arguments: --prefix=/usr/local/Cellar/"
                            "nginx/1.6.2 --with-http_ssl_module"]))
         self.assertEqual(self.config.get_version(), (1, 4, 2))
@@ -368,7 +360,6 @@ class NginxConfiguratorTest(util.NginxTest):
             "", "\n".join(["nginx version: nginx/0.9",
                            "built by clang 6.0 (clang-600.0.56)"
                            " (based on LLVM 3.5svn)",
-                           "TLS SNI support enabled",
                            "configure arguments: --with-http_ssl_module"]))
         self.assertEqual(self.config.get_version(), (0, 9))
 
@@ -376,27 +367,17 @@ class NginxConfiguratorTest(util.NginxTest):
             "", "\n".join(["blah 0.0.1",
                            "built by clang 6.0 (clang-600.0.56)"
                            " (based on LLVM 3.5svn)",
-                           "TLS SNI support enabled",
                            "configure arguments: --with-http_ssl_module"]))
         self.assertRaises(errors.PluginError, self.config.get_version)
 
         mock_popen().communicate.return_value = (
-            "", "\n".join(["nginx version: nginx/1.4.2",
-                           "TLS SNI support enabled"]))
-        self.assertRaises(errors.PluginError, self.config.get_version)
-
-        mock_popen().communicate.return_value = (
-            "", "\n".join(["nginx version: nginx/1.4.2",
-                           "built by clang 6.0 (clang-600.0.56)"
-                           " (based on LLVM 3.5svn)",
-                           "configure arguments: --with-http_ssl_module"]))
+            "", "\n".join(["nginx version: nginx/1.4.2"]))
         self.assertRaises(errors.PluginError, self.config.get_version)
 
         mock_popen().communicate.return_value = (
             "", "\n".join(["nginx version: nginx/0.8.1",
                            "built by clang 6.0 (clang-600.0.56)"
                            " (based on LLVM 3.5svn)",
-                           "TLS SNI support enabled",
                            "configure arguments: --with-http_ssl_module"]))
         self.assertRaises(errors.NotSupportedError, self.config.get_version)
 
