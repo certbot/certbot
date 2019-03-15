@@ -818,19 +818,13 @@ class MultipleVhostsTest(util.ApacheTest):
         # Note: As more challenges are offered this will have to be expanded
         account_key, achalls = self.get_key_and_achalls()
 
-        all_expected = []
-        http_expected = []
-        for achall in achalls:
-            response = achall.response(account_key)
-            http_expected.append(response)
-            all_expected.append(response)
-
-        mock_http_perform.return_value = http_expected
+        expected = [achall.response(account_key) for achall in achalls]
+        mock_http_perform.return_value = expected
 
         responses = self.config.perform(achalls)
 
         self.assertEqual(mock_http_perform.call_count, 1)
-        self.assertEqual(responses, all_expected)
+        self.assertEqual(responses, expected)
 
         self.assertEqual(mock_restart.call_count, 1)
 
