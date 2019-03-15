@@ -642,7 +642,7 @@ class DNSResponse(ChallengeResponse):
 
 
 # Patching ourselves to warn about TLS-SNI challenge deprecation and removal.
-class _AcmeClass:
+class _AcmeClass(object):
     def __init__(self, acme_module):
         self.module = acme_module
 

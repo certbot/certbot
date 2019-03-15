@@ -297,7 +297,7 @@ def simple_tls_sni_01_server(cli_args, forever=True):
 
 
 # Patching ourselves to warn about TLS-SNI challenge deprecation and removal.
-class _StandaloneClass:
+class _StandaloneClass(object):
     def __init__(self, standalone_module):
         self.module = standalone_module
 
