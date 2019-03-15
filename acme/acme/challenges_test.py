@@ -374,25 +374,16 @@ class TLSSNI01Test(unittest.TestCase):
             'type': 'tls-sni-01',
             'token': 'a82d5ff8ef740d12881f6d3c2277ab2e',
         }
-
-    def _msg(self):
         from acme.challenges import TLSSNI01
-        with warnings.catch_warnings(record=True) as warn:
-            warnings.simplefilter("always")
-            msg = TLSSNI01(
-                token=jose.b64decode('a82d5ff8ef740d12881f6d3c2277ab2e'))
-            assert warn is not None # using a raw assert for mypy
-            self.assertTrue(len(warn) == 1)
-            self.assertTrue(issubclass(warn[-1].category, DeprecationWarning))
-            self.assertTrue('deprecated' in str(warn[-1].message))
-        return msg
+        self.msg = TLSSNI01(
+            token=jose.b64decode('a82d5ff8ef740d12881f6d3c2277ab2e'))
 
     def test_to_partial_json(self):
-        self.assertEqual(self.jmsg, self._msg().to_partial_json())
+        self.assertEqual(self.jmsg, self.msg.to_partial_json())
 
     def test_from_json(self):
         from acme.challenges import TLSSNI01
-        self.assertEqual(self._msg(), TLSSNI01.from_json(self.jmsg))
+        self.assertEqual(self.msg, TLSSNI01.from_json(self.jmsg))
 
     def test_from_json_hashable(self):
         from acme.challenges import TLSSNI01
@@ -407,9 +398,17 @@ class TLSSNI01Test(unittest.TestCase):
     @mock.patch('acme.challenges.TLSSNI01Response.gen_cert')
     def test_validation(self, mock_gen_cert):
         mock_gen_cert.return_value = ('cert', 'key')
-        self.assertEqual(('cert', 'key'), self._msg().validation(
+        self.assertEqual(('cert', 'key'), self.msg.validation(
             KEY, cert_key=mock.sentinel.cert_key))
         mock_gen_cert.assert_called_once_with(key=mock.sentinel.cert_key)
+
+    def test_deprecation_message(self):
+        with mock.patch('sys.stderr') as mock_stderr:
+            from acme.challenges import TLSSNI01
+            assert TLSSNI01
+        self.assertEquals(mock_stderr.write.call_count, 1)
+        self.assertTrue('deprecated' in mock_stderr.write.call_args[0][0])
+
 
 class TLSALPN01ResponseTest(unittest.TestCase):
     # pylint: disable=too-many-instance-attributes
