@@ -100,7 +100,7 @@ class PostArgParseSetupTest(test_util.ConfigTestCase):
                 with mock.patch('certbot.log.sys') as mock_sys:
                     mock_sys.version_info = sys.version_info
                     with self._call(self.config):
-                    
+
                         self.root_logger.removeHandler.assert_called_once_with(
                             self.memory_handler)
                         self.assertTrue(self.root_logger.addHandler.called)
