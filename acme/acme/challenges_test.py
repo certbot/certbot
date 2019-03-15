@@ -406,7 +406,7 @@ class TLSSNI01Test(unittest.TestCase):
         with mock.patch('sys.stderr') as mock_stderr:
             from acme.challenges import TLSSNI01
             assert TLSSNI01
-        self.assertEquals(mock_stderr.write.call_count, 1)
+        self.assertEqual(mock_stderr.write.call_count, 1)
         self.assertTrue('deprecated' in mock_stderr.write.call_args[0][0])
 
 
