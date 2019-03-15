@@ -5,6 +5,7 @@ import os
 import sys
 import time
 import unittest
+import contextlib
 
 import mock
 import six
@@ -23,47 +24,49 @@ class PreArgParseSetupTest(unittest.TestCase):
     """Tests for certbot.log.pre_arg_parse_setup."""
 
     @classmethod
+    @contextlib.contextmanager
     def _call(cls, *args, **kwargs):  # pylint: disable=unused-argument
         from certbot.log import pre_arg_parse_setup
-        return pre_arg_parse_setup()
+        with pre_arg_parse_setup():
+            yield
 
     @mock.patch('certbot.log.sys')
     @mock.patch('certbot.log.pre_arg_parse_except_hook')
     @mock.patch('certbot.log.logging.getLogger')
-    @mock.patch('certbot.log.util.atexit_register')
-    def test_it(self, mock_register, mock_get, mock_except_hook, mock_sys):
+    def test_it(self, mock_get, mock_except_hook, mock_sys):
         mock_sys.argv = ['--debug']
         mock_sys.version_info = sys.version_info
-        self._call()
+        with self._call():
 
-        mock_root_logger = mock_get()
-        mock_root_logger.setLevel.assert_called_once_with(logging.DEBUG)
-        self.assertEqual(mock_root_logger.addHandler.call_count, 2)
+            mock_root_logger = mock_get()
+            mock_root_logger.setLevel.assert_called_once_with(logging.DEBUG)
+            self.assertEqual(mock_root_logger.addHandler.call_count, 2)
 
-        memory_handler = None  # type: Optional[logging.handlers.MemoryHandler]
-        for call in mock_root_logger.addHandler.call_args_list:
-            handler = call[0][0]
-            if memory_handler is None and isinstance(handler, logging.handlers.MemoryHandler):
-                memory_handler = handler
-                target = memory_handler.target  # type: ignore
-            else:
-                self.assertTrue(isinstance(handler, logging.StreamHandler))
-        self.assertTrue(
-            isinstance(target, logging.StreamHandler))
+            memory_handler = None  # type: Optional[logging.handlers.MemoryHandler]
+            for call in mock_root_logger.addHandler.call_args_list:
+                handler = call[0][0]
+                if memory_handler is None and isinstance(handler, logging.handlers.MemoryHandler):
+                    memory_handler = handler
+                    target = memory_handler.target  # type: ignore
+                else:
+                    self.assertTrue(isinstance(handler, logging.StreamHandler))
+            self.assertTrue(
+                isinstance(target, logging.StreamHandler))
 
-        mock_register.assert_called_once_with(logging.shutdown)
-        mock_sys.excepthook(1, 2, 3)
-        mock_except_hook.assert_called_once_with(
-            memory_handler, 1, 2, 3, debug=True, log_path=mock.ANY)
+            mock_sys.excepthook(1, 2, 3)
+            mock_except_hook.assert_called_once_with(
+                memory_handler, 1, 2, 3, debug=True, log_path=mock.ANY)
 
 
 class PostArgParseSetupTest(test_util.ConfigTestCase):
     """Tests for certbot.log.post_arg_parse_setup."""
 
     @classmethod
+    @contextlib.contextmanager
     def _call(cls, *args, **kwargs):
         from certbot.log import post_arg_parse_setup
-        return post_arg_parse_setup(*args, **kwargs)
+        with post_arg_parse_setup(*args, **kwargs) as log_error:
+            yield log_error
 
     def setUp(self):
         super(PostArgParseSetupTest, self).setUp()
@@ -96,23 +99,23 @@ class PostArgParseSetupTest(test_util.ConfigTestCase):
             with mock.patch(except_hook_path) as mock_except_hook:
                 with mock.patch('certbot.log.sys') as mock_sys:
                     mock_sys.version_info = sys.version_info
-                    self._call(self.config)
+                    with self._call(self.config):
+                    
+                        self.root_logger.removeHandler.assert_called_once_with(
+                            self.memory_handler)
+                        self.assertTrue(self.root_logger.addHandler.called)
+                        self.assertTrue(os.path.exists(os.path.join(
+                            self.config.logs_dir, 'letsencrypt.log')))
+                        self.assertFalse(os.path.exists(self.temp_path))
+                        mock_sys.excepthook(1, 2, 3)
+                        mock_except_hook.assert_called_once_with(
+                            1, 2, 3, debug=self.config.debug, log_path=self.config.logs_dir)
 
-        self.root_logger.removeHandler.assert_called_once_with(
-            self.memory_handler)
-        self.assertTrue(self.root_logger.addHandler.called)
-        self.assertTrue(os.path.exists(os.path.join(
-            self.config.logs_dir, 'letsencrypt.log')))
-        self.assertFalse(os.path.exists(self.temp_path))
-        mock_sys.excepthook(1, 2, 3)
-        mock_except_hook.assert_called_once_with(
-            1, 2, 3, debug=self.config.debug, log_path=self.config.logs_dir)
-
-        level = self.stream_handler.level
-        if self.config.quiet:
-            self.assertEqual(level, constants.QUIET_LOGGING_LEVEL)
-        else:
-            self.assertEqual(level, -self.config.verbose_count * 10)
+                        level = self.stream_handler.level
+                        if self.config.quiet:
+                            self.assertEqual(level, constants.QUIET_LOGGING_LEVEL)
+                        else:
+                            self.assertEqual(level, -self.config.verbose_count * 10)
 
     def test_debug(self):
         self.config.debug = True

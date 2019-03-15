@@ -1330,43 +1330,50 @@ def main(cli_args=sys.argv[1:]):
 
     """
 
-    log.pre_arg_parse_setup()
+    with log.pre_arg_parse_setup():
 
-    plugins = plugins_disco.PluginsRegistry.find_all()
-    logger.debug("certbot version: %s", certbot.__version__)
-    # do not log `config`, as it contains sensitive data (e.g. revoke --key)!
-    logger.debug("Arguments: %r", cli_args)
-    logger.debug("Discovered plugins: %r", plugins)
+        plugins = plugins_disco.PluginsRegistry.find_all()
+        logger.debug("certbot version: %s", certbot.__version__)
+        # do not log `config`, as it contains sensitive data (e.g. revoke --key)!
+        logger.debug("Arguments: %r", cli_args)
+        logger.debug("Discovered plugins: %r", plugins)
 
-    # note: arg parser internally handles --help (and exits afterwards)
-    args = cli.prepare_and_parse_args(plugins, cli_args)
-    config = configuration.NamespaceConfig(args)
-    zope.component.provideUtility(config)
+        # note: arg parser internally handles --help (and exits afterwards)
+        args = cli.prepare_and_parse_args(plugins, cli_args)
+        config = configuration.NamespaceConfig(args)
+        zope.component.provideUtility(config)
 
-    # On windows, shell without administrative right cannot create symlinks required by certbot.
-    # So we check the rights before continuing.
-    compat.raise_for_non_administrative_windows_rights(config.verb)
+        # On windows, shell without administrative right cannot create symlinks required by certbot.
+        # So we check the rights before continuing.
+        compat.raise_for_non_administrative_windows_rights(config.verb)
 
-    try:
-        log.post_arg_parse_setup(config)
-        make_or_verify_needed_dirs(config)
-    except errors.Error:
-        # Let plugins_cmd be run as un-privileged user.
-        if config.func != plugins_cmd:
-            raise
+        with log.post_arg_parse_setup(config) as log_error:
 
-    set_displayer(config)
+            if (log_error
+                    and (not isinstance(log_error, errors.Error) or config.func != plugins_cmd)):
+                # Let plugins_cmd be run as un-privileged user.
+                raise log_error
 
-    # Reporter
-    report = reporter.Reporter(config)
-    zope.component.provideUtility(report)
-    util.atexit_register(report.print_messages)
+            try:
+                make_or_verify_needed_dirs(config)
+            except errors.Error:
+                # Let plugins_cmd be run as un-privileged user.
+                if config.func != plugins_cmd:
+                    raise
 
-    return config.func(config, plugins)
+            set_displayer(config)
+
+            # Reporter
+            report = reporter.Reporter(config)
+            zope.component.provideUtility(report)
+            util.atexit_register(report.print_messages)
+
+            error = config.func(config, plugins)
+            if error:
+                logger.warning("Exiting with message %s", error)
+
+            return error
 
 
 if __name__ == "__main__":
-    err_string = main()
-    if err_string:
-        logger.warning("Exiting with message %s", err_string)
-    sys.exit(err_string)  # pragma: no cover
+    sys.exit(main())  # pragma: no cover

@@ -20,6 +20,7 @@ import os
 import sys
 import tempfile
 import traceback
+import contextlib
 
 from acme import messages
 
@@ -36,6 +37,7 @@ FILE_FMT = "%(asctime)s:%(levelname)s:%(name)s:%(message)s"
 logger = logging.getLogger(__name__)
 
 
+@contextlib.contextmanager
 def pre_arg_parse_setup():
     """Setup logging before command line arguments are parsed.
 
@@ -66,14 +68,25 @@ def pre_arg_parse_setup():
     root_logger.addHandler(memory_handler)
     root_logger.addHandler(stream_handler)
 
-    # logging.shutdown will flush the memory handler because flush() and
-    # close() are explicitly called
-    util.atexit_register(logging.shutdown)
+    original_except_hook = sys.excepthook
     sys.excepthook = functools.partial(
         pre_arg_parse_except_hook, memory_handler,
         debug='--debug' in sys.argv, log_path=temp_handler.path)
 
+    try:
+        yield
+    finally:
+        for handler in (temp_handler, memory_handler):
+            try:
+                handler.flush()
+            except ValueError:
+                pass
+            handler.close()
+            root_logger.removeHandler(handler)
+        sys.excepthook = original_except_hook
 
+
+@contextlib.contextmanager
 def post_arg_parse_setup(config):
     """Setup logging after command line arguments are parsed.
 
@@ -86,38 +99,59 @@ def post_arg_parse_setup(config):
     :param certbot.interface.IConfig config: Configuration object
 
     """
-    file_handler, file_path = setup_log_file_handler(
-        config, 'letsencrypt.log', FILE_FMT)
-    logs_dir = os.path.dirname(file_path)
-
+    file_handler = None
+    log_error = None
     root_logger = logging.getLogger()
-    memory_handler = stderr_handler = None
-    for handler in root_logger.handlers:
-        if isinstance(handler, ColoredStreamHandler):
-            stderr_handler = handler
-        elif isinstance(handler, MemoryHandler):
-            memory_handler = handler
-    msg = 'Previously configured logging handlers have been removed!'
-    assert memory_handler is not None and stderr_handler is not None, msg
+    original_except_hook = sys.excepthook
 
-    root_logger.addHandler(file_handler)
-    root_logger.removeHandler(memory_handler)
-    temp_handler = memory_handler.target
-    memory_handler.setTarget(file_handler)
-    memory_handler.flush(force=True)
-    memory_handler.close()
-    temp_handler.close()
+    try:
+        file_handler, file_path = setup_log_file_handler(
+            config, 'letsencrypt.log', FILE_FMT)
+        logs_dir = os.path.dirname(file_path)
 
-    if config.quiet:
-        level = constants.QUIET_LOGGING_LEVEL
-    else:
-        level = -config.verbose_count * 10
-    stderr_handler.setLevel(level)
-    logger.debug('Root logging level set at %d', level)
-    logger.info('Saving debug log to %s', file_path)
+        memory_handler = stderr_handler = None
+        for handler in root_logger.handlers:
+            if isinstance(handler, ColoredStreamHandler):
+                stderr_handler = handler
+            elif isinstance(handler, MemoryHandler):
+                memory_handler = handler
+        msg = 'Previously configured logging handlers have been removed!'
+        assert memory_handler is not None and stderr_handler is not None, msg
 
-    sys.excepthook = functools.partial(
-        post_arg_parse_except_hook, debug=config.debug, log_path=logs_dir)
+        root_logger.addHandler(file_handler)
+        root_logger.removeHandler(memory_handler)
+        temp_handler = memory_handler.target
+        memory_handler.setTarget(file_handler)
+        memory_handler.flush(force=True)
+        memory_handler.close()
+        temp_handler.close()
+
+        if config.quiet:
+            level = constants.QUIET_LOGGING_LEVEL
+        else:
+            level = -config.verbose_count * 10
+        stderr_handler.setLevel(level)
+        logger.debug('Root logging level set at %d', level)
+        logger.info('Saving debug log to %s', file_path)
+
+        sys.excepthook = functools.partial(
+            post_arg_parse_except_hook, debug=config.debug, log_path=logs_dir)
+
+    except BaseException as error:
+        # Do not raise the exception now, caller will handle it
+        log_error = error
+
+    try:
+        yield log_error
+    finally:
+        if file_handler:
+            try:
+                file_handler.flush()
+            except ValueError:
+                pass
+            file_handler.close()
+            root_logger.removeHandler(file_handler)
+        sys.excepthook = original_except_hook
 
 
 def setup_log_file_handler(config, logfile, fmt):
