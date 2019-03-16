@@ -1,6 +1,5 @@
 """Tests for acme.challenges."""
 import unittest
-import warnings
 
 import josepy as jose
 import mock
