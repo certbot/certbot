@@ -607,7 +607,6 @@ class NginxConfigurator(common.Installer):
 
         :param vhost: The vhost to add SSL to.
         :type vhost: :class:`~certbot_nginx.obj.VirtualHost`
-        :type vhost: int
 
         """
         https_port = self.config.tls_sni_01_port
