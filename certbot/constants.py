@@ -54,7 +54,6 @@ CLI_DEFAULTS = dict(
     tls_sni_01_address="",
     http01_port=challenges.HTTP01Response.PORT,
     http01_address="",
-    https_port=443,
     break_my_certs=False,
     rsa_key_size=2048,
     must_staple=False,

@@ -295,7 +295,7 @@ class NginxConfigurator(common.Installer):
             if create_if_no_match:
                 # result will not be [None] because it errors on failure
                 vhosts = [self._vhost_from_duplicated_default(target_name, True,
-                    str(self.config.https_port))]
+                    str(self.config.tls_sni_01_port))]
             else:
                 # No matches. Raise a misconfiguration error.
                 raise errors.MisconfigurationError(
@@ -307,7 +307,7 @@ class NginxConfigurator(common.Installer):
         # Note: if we are enhancing with ocsp, vhost should already be ssl.
         for vhost in vhosts:
             if not vhost.ssl:
-                self._make_server_ssl(vhost, self.config.https_port)
+                self._make_server_ssl(vhost)
 
         return vhosts
 
@@ -600,17 +600,17 @@ class NginxConfigurator(common.Installer):
             cert_file.write(cert_pem)
         return cert_path, le_key.file
 
-    def _make_server_ssl(self, vhost, https_port):
+    def _make_server_ssl(self, vhost):
         """Make a server SSL.
 
         Make a server SSL by adding new listen and SSL directives.
 
         :param vhost: The vhost to add SSL to.
         :type vhost: :class:`~certbot_nginx.obj.VirtualHost`
-        :param https_port: The HTTPS port to use
         :type vhost: int
 
         """
+        https_port = self.config.tls_sni_01_port
         ipv6info = self.ipv6_info(https_port)
         ipv6_block = ['']
         ipv4_block = ['']
@@ -931,6 +931,9 @@ class NginxConfigurator(common.Installer):
         version_regex = re.compile(r"nginx version: ([^/]+)/([0-9\.]*)", re.IGNORECASE)
         version_matches = version_regex.findall(text)
 
+        sni_regex = re.compile(r"TLS SNI support enabled", re.IGNORECASE)
+        sni_matches = sni_regex.findall(text)
+
         ssl_regex = re.compile(r" --with-http_ssl_module")
         ssl_matches = ssl_regex.findall(text)
 
@@ -939,6 +942,8 @@ class NginxConfigurator(common.Installer):
         if not ssl_matches:
             raise errors.PluginError(
                 "Nginx build is missing SSL module (--with-http_ssl_module).")
+        if not sni_matches:
+            raise errors.PluginError("Nginx build doesn't support SNI")
 
         product_name, product_version = version_matches[0]
         if product_name != 'nginx':

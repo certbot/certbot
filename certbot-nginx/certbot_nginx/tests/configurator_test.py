@@ -352,6 +352,7 @@ class NginxConfiguratorTest(util.NginxTest):
             "", "\n".join(["nginx version: nginx/1.4.2",
                            "built by clang 6.0 (clang-600.0.56)"
                            " (based on LLVM 3.5svn)",
+                           "TLS SNI support enabled",
                            "configure arguments: --prefix=/usr/local/Cellar/"
                            "nginx/1.6.2 --with-http_ssl_module"]))
         self.assertEqual(self.config.get_version(), (1, 4, 2))
@@ -360,6 +361,7 @@ class NginxConfiguratorTest(util.NginxTest):
             "", "\n".join(["nginx version: nginx/0.9",
                            "built by clang 6.0 (clang-600.0.56)"
                            " (based on LLVM 3.5svn)",
+                           "TLS SNI support enabled",
                            "configure arguments: --with-http_ssl_module"]))
         self.assertEqual(self.config.get_version(), (0, 9))
 
@@ -367,17 +369,27 @@ class NginxConfiguratorTest(util.NginxTest):
             "", "\n".join(["blah 0.0.1",
                            "built by clang 6.0 (clang-600.0.56)"
                            " (based on LLVM 3.5svn)",
+                           "TLS SNI support enabled",
                            "configure arguments: --with-http_ssl_module"]))
         self.assertRaises(errors.PluginError, self.config.get_version)
 
         mock_popen().communicate.return_value = (
-            "", "\n".join(["nginx version: nginx/1.4.2"]))
+            "", "\n".join(["nginx version: nginx/1.4.2",
+                           "TLS SNI support enabled"]))
+        self.assertRaises(errors.PluginError, self.config.get_version)
+
+        mock_popen().communicate.return_value = (
+            "", "\n".join(["nginx version: nginx/1.4.2",
+                           "built by clang 6.0 (clang-600.0.56)"
+                           " (based on LLVM 3.5svn)",
+                           "configure arguments: --with-http_ssl_module"]))
         self.assertRaises(errors.PluginError, self.config.get_version)
 
         mock_popen().communicate.return_value = (
             "", "\n".join(["nginx version: nginx/0.8.1",
                            "built by clang 6.0 (clang-600.0.56)"
                            " (based on LLVM 3.5svn)",
+                           "TLS SNI support enabled",
                            "configure arguments: --with-http_ssl_module"]))
         self.assertRaises(errors.NotSupportedError, self.config.get_version)
 
