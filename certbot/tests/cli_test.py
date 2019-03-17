@@ -102,7 +102,6 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             self.assertEqual(namespace.domains, [])
             with open(tmp_config.name, 'w') as file_h:
                 file_h.write("domains = example.com")
-                file_h.flush()
             namespace = self.parse(["certonly"])
             self.assertEqual(namespace.domains, ["example.com"])
             namespace = self.parse(["renew"])
