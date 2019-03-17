@@ -1330,7 +1330,7 @@ def main(cli_args=sys.argv[1:]):
 
     """
 
-    with log.pre_arg_parse_setup():
+    with log.pre_arg_parse_setup() as post_arg_parse_setup:
 
         plugins = plugins_disco.PluginsRegistry.find_all()
         logger.debug("certbot version: %s", certbot.__version__)
@@ -1347,31 +1347,26 @@ def main(cli_args=sys.argv[1:]):
         # So we check the rights before continuing.
         compat.raise_for_non_administrative_windows_rights(config.verb)
 
-        with log.post_arg_parse_setup(config) as log_error:
-            # Let plugins_cmd be run as un-privileged user (log part)
-            if (log_error and (not isinstance(log_error, errors.Error)
-                               or config.func != plugins_cmd)):
-                raise log_error
+        try:
+            post_arg_parse_setup(config)
+            make_or_verify_needed_dirs(config)
+        except errors.Error:
+            # Let plugins_cmd be run as un-privileged user (config part)
+            if config.func != plugins_cmd:
+                raise
 
-            try:
-                make_or_verify_needed_dirs(config)
-            except errors.Error:
-                # Let plugins_cmd be run as un-privileged user (config part)
-                if config.func != plugins_cmd:
-                    raise
+        set_displayer(config)
 
-            set_displayer(config)
+        # Reporter
+        report = reporter.Reporter(config)
+        zope.component.provideUtility(report)
+        util.atexit_register(report.print_messages)
 
-            # Reporter
-            report = reporter.Reporter(config)
-            zope.component.provideUtility(report)
-            util.atexit_register(report.print_messages)
+        error = config.func(config, plugins)
+        if error:
+            logger.warning("Exiting with message %s", error)
 
-            error = config.func(config, plugins)
-            if error:
-                logger.warning("Exiting with message %s", error)
-
-            return error
+        return error
 
 
 if __name__ == "__main__":

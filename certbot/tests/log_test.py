@@ -64,9 +64,10 @@ class PostArgParseSetupTest(test_util.ConfigTestCase):
     @classmethod
     @contextlib.contextmanager
     def _call(cls, *args, **kwargs):
-        from certbot.log import post_arg_parse_setup
-        with post_arg_parse_setup(*args, **kwargs) as log_error:
-            yield log_error
+        from certbot.log import pre_arg_parse_setup
+        with pre_arg_parse_setup() as post_arg_parse_setup:
+            post_arg_parse_setup(*args, **kwargs)
+            yield
 
     def setUp(self):
         super(PostArgParseSetupTest, self).setUp()

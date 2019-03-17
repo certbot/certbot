@@ -54,6 +54,9 @@ def pre_arg_parse_setup():
     `sys.excepthook` to properly log/display fatal exceptions.
 
     """
+    original_handlers = set(logging.getLogger().handlers)
+    original_except_hook = sys.excepthook
+
     temp_handler = TempHandler()
     temp_handler.setFormatter(logging.Formatter(FILE_FMT))
     temp_handler.setLevel(logging.DEBUG)
@@ -68,26 +71,22 @@ def pre_arg_parse_setup():
     root_logger.addHandler(memory_handler)
     root_logger.addHandler(stream_handler)
 
-    original_except_hook = sys.excepthook
     sys.excepthook = functools.partial(
         pre_arg_parse_except_hook, memory_handler,
         debug='--debug' in sys.argv, log_path=temp_handler.path)
 
     try:
-        yield
+        yield _post_arg_parse_setup
     finally:
-        for handler in (temp_handler, memory_handler):
-            try:
+        for handler in reversed(logging.getLogger().handlers):
+            if handler not in original_handlers:
                 handler.flush()
-            except ValueError:
-                pass
-            handler.close()
-            root_logger.removeHandler(handler)
+                handler.close()
+                root_logger.removeHandler(handler)
         sys.excepthook = original_except_hook
 
 
-@contextlib.contextmanager
-def post_arg_parse_setup(config):
+def _post_arg_parse_setup(config):
     """Setup logging after command line arguments are parsed.
 
     This function assumes `pre_arg_parse_setup` was called earlier and
@@ -99,59 +98,38 @@ def post_arg_parse_setup(config):
     :param certbot.interface.IConfig config: Configuration object
 
     """
-    file_handler = None
-    log_error = None
+    file_handler, file_path = setup_log_file_handler(
+        config, 'letsencrypt.log', FILE_FMT)
+    logs_dir = os.path.dirname(file_path)
+
     root_logger = logging.getLogger()
-    original_except_hook = sys.excepthook
+    memory_handler = stderr_handler = None
+    for handler in root_logger.handlers:
+        if isinstance(handler, ColoredStreamHandler):
+            stderr_handler = handler
+        elif isinstance(handler, MemoryHandler):
+            memory_handler = handler
+    msg = 'Previously configured logging handlers have been removed!'
+    assert memory_handler is not None and stderr_handler is not None, msg
 
-    try:
-        file_handler, file_path = setup_log_file_handler(
-            config, 'letsencrypt.log', FILE_FMT)
-        logs_dir = os.path.dirname(file_path)
+    root_logger.addHandler(file_handler)
+    root_logger.removeHandler(memory_handler)
+    temp_handler = memory_handler.target
+    memory_handler.setTarget(file_handler)
+    memory_handler.flush(force=True)
+    memory_handler.close()
+    temp_handler.close()
 
-        memory_handler = stderr_handler = None
-        for handler in root_logger.handlers:
-            if isinstance(handler, ColoredStreamHandler):
-                stderr_handler = handler
-            elif isinstance(handler, MemoryHandler):
-                memory_handler = handler
-        msg = 'Previously configured logging handlers have been removed!'
-        assert memory_handler is not None and stderr_handler is not None, msg
+    if config.quiet:
+        level = constants.QUIET_LOGGING_LEVEL
+    else:
+        level = -config.verbose_count * 10
+    stderr_handler.setLevel(level)
+    logger.debug('Root logging level set at %d', level)
+    logger.info('Saving debug log to %s', file_path)
 
-        root_logger.addHandler(file_handler)
-        root_logger.removeHandler(memory_handler)
-        temp_handler = memory_handler.target
-        memory_handler.setTarget(file_handler)
-        memory_handler.flush(force=True)
-        memory_handler.close()
-        temp_handler.close()
-
-        if config.quiet:
-            level = constants.QUIET_LOGGING_LEVEL
-        else:
-            level = -config.verbose_count * 10
-        stderr_handler.setLevel(level)
-        logger.debug('Root logging level set at %d', level)
-        logger.info('Saving debug log to %s', file_path)
-
-        sys.excepthook = functools.partial(
-            post_arg_parse_except_hook, debug=config.debug, log_path=logs_dir)
-
-    except BaseException as error:
-        # Do not raise the exception now, caller will handle it
-        log_error = error
-
-    try:
-        yield log_error
-    finally:
-        if file_handler:
-            try:
-                file_handler.flush()
-            except ValueError:
-                pass
-            file_handler.close()
-            root_logger.removeHandler(file_handler)
-        sys.excepthook = original_except_hook
+    sys.excepthook = functools.partial(
+        post_arg_parse_except_hook, debug=config.debug, log_path=logs_dir)
 
 
 def setup_log_file_handler(config, logfile, fmt):
