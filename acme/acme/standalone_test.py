@@ -273,10 +273,17 @@ class TestSimpleTLSSNI01Server(unittest.TestCase):
 
     def tearDown(self):
         os.chdir(self.old_cwd)
-        self.process.terminate()
+        if self.process.is_alive():
+            self.process.terminate()
         shutil.rmtree(self.test_cwd)
 
-    def test_it(self):
+    @mock.patch('acme.standalone.TLSSNI01Server.handle_request')
+    def test_mock(self, handle):
+        from acme.standalone import simple_tls_sni_01_server
+        simple_tls_sni_01_server(cli_args=['path', '-p', str(self.port)], forever=False)
+        self.assertEqual(handle.call_count, 1)
+
+    def test_live(self):
         self.process.start()
         cert = None
         for _ in range(50):
@@ -284,7 +291,7 @@ class TestSimpleTLSSNI01Server(unittest.TestCase):
             try:
                 cert = crypto_util.probe_sni(b'localhost', b'127.0.0.1', self.port)
                 break
-            except errors.Error:
+            except errors.Error:  # pragma: no cover
                 pass
         self.assertEqual(jose.ComparableX509(cert),
                          test_util.load_comparable_cert('rsa2048_cert.pem'))
