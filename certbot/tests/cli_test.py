@@ -88,28 +88,25 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
     @mock.patch("certbot.cli.flag_default")
     def test_cli_ini_domains(self, mock_flag_default):
-        tmp_config = tempfile.mkstemp()
-        try:
+        with tempfile.NamedTemporaryFile() as tmp_config:
+            tmp_config.close()  # close now because of compatibility issues on Windows
             # use a shim to get ConfigArgParse to pick up tmp_config
             shim = (
                     lambda v: copy.deepcopy(constants.CLI_DEFAULTS[v])
                     if v != "config_files"
-                    else [tmp_config[1]]
+                    else [tmp_config.name]
                     )
             mock_flag_default.side_effect = shim
 
             namespace = self.parse(["certonly"])
             self.assertEqual(namespace.domains, [])
-            with open(tmp_config[1], 'w') as file_h:
+            with open(tmp_config.name, 'w') as file_h:
                 file_h.write("domains = example.com")
                 file_h.flush()
             namespace = self.parse(["certonly"])
             self.assertEqual(namespace.domains, ["example.com"])
             namespace = self.parse(["renew"])
             self.assertEqual(namespace.domains, [])
-        finally:
-            os.close(tmp_config[0])
-            os.remove(tmp_config[1])
 
     def test_no_args(self):
         namespace = self.parse([])
