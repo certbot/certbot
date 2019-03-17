@@ -1,12 +1,10 @@
 #!/usr/bin/env python
 """A small script that can act as a trust root for installing pip >=8
-
 Embed this in your project, and your VCS checkout is all you have to trust. In
 a post-peep era, this lets you claw your way to a hash-checking version of pip,
 with which you can install the rest of your dependencies safely. All it assumes
 is Python 2.6 or better and *some* version of pip already installed. If
 anything goes wrong, it will exit with a non-zero status code.
-
 """
 # This is here so embedded copies are MIT-compliant:
 # Copyright (c) 2016 Erik Rose
@@ -25,7 +23,6 @@ from distutils.version import StrictVersion
 from hashlib import sha256
 from os import environ
 from os.path import join
-from pipes import quote
 from shutil import rmtree
 try:
     from subprocess import check_output
@@ -45,7 +42,7 @@ except ImportError:
                 cmd = popenargs[0]
             raise CalledProcessError(retcode, cmd)
         return output
-from sys import exit, version_info
+import sys
 from tempfile import mkdtemp
 try:
     from urllib2 import build_opener, HTTPHandler, HTTPSHandler
@@ -67,7 +64,7 @@ maybe_argparse = (
     [('18/dd/e617cfc3f6210ae183374cd9f6a26b20514bbb5a792af97949c5aacddf0f/'
       'argparse-1.4.0.tar.gz',
       '62b089a55be1d8949cd2bc7e0df0bddb9e028faefc8c32038cc84862aefdd6e4')]
-    if version_info < (2, 7, 0) else [])
+    if sys.version_info < (2, 7, 0) else [])
 
 
 PACKAGES = maybe_argparse + [
@@ -76,9 +73,9 @@ PACKAGES = maybe_argparse + [
      'pip-{0}.tar.gz'.format(PIP_VERSION),
      '09f243e1a7b461f654c26a725fa373211bb7ff17a9300058b205c61658ca940d'),
     # This version of setuptools has only optional dependencies:
-    ('59/88/2f3990916931a5de6fa9706d6d75eb32ee8b78627bb2abaab7ed9e6d0622/'
-     'setuptools-29.0.1.tar.gz',
-     'b539118819a4857378398891fa5366e090690e46b3e41421a1e07d6e9fd8feb0'),
+    ('37/1b/b25507861991beeade31473868463dad0e58b1978c209de27384ae541b0b/'
+     'setuptools-40.6.3.zip',
+     '3b474dad69c49f0d2d86696b68105f3a6f195f7ab655af12ef9a9c326d2b08f8'),
     ('c9/1d/bd19e691fd4cfe908c76c429fe6e4436c9e83583c4414b54f6c85471954a/'
      'wheel-0.29.0.tar.gz',
      '1ebb8ad7e26b448e9caa4773d2357849bf80ff9e313964bcaf79cbf0201a1648')
@@ -133,10 +130,8 @@ def hashed_download(url, temp, digest):
 
 def get_index_base():
     """Return the URL to the dir containing the "packages" folder.
-
     Try to wring something out of PIP_INDEX_URL, if set. Hack "/simple" off the
     end if it's there; that is likely to give us the right dir.
-
     """
     env_var = environ.get('PIP_INDEX_URL', '').rstrip('/')
     if env_var:
@@ -150,11 +145,9 @@ def get_index_base():
 
 
 def main():
-    pip_version = StrictVersion(check_output(['pip', '--version'])
+    python = sys.executable or 'python'
+    pip_version = StrictVersion(check_output([python, '-m', 'pip', '--version'])
                                 .decode('utf-8').split()[1])
-    min_pip_version = StrictVersion(PIP_VERSION)
-    if pip_version >= min_pip_version:
-        return 0
     has_pip_cache = pip_version >= StrictVersion('6.0')
     index_base = get_index_base()
     temp = mkdtemp(prefix='pipstrap-')
@@ -163,12 +156,12 @@ def main():
                                      temp,
                                      digest)
                      for path, digest in PACKAGES]
-        check_output('pip install --no-index --no-deps -U ' +
-                     # Disable cache since we're not using it and it otherwise
-                     # sometimes throws permission warnings:
-                     ('--no-cache-dir ' if has_pip_cache else '') +
-                     ' '.join(quote(d) for d in downloads),
-                     shell=True)
+        # On Windows, pip self-upgrade is not possible, it must be done through python interpreter.
+        command = [python, '-m', 'pip', 'install', '--no-index', '--no-deps', '-U']
+        # Disable cache since it is not used and it otherwise sometimes throws permission warnings:
+        command.extend(['--no-cache-dir'] if has_pip_cache else [])
+        command.extend(downloads)
+        check_output(command)
     except HashError as exc:
         print(exc)
     except Exception:
@@ -181,4 +174,4 @@ def main():
 
 
 if __name__ == '__main__':
-    exit(main())
+    sys.exit(main())

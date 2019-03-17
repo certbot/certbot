@@ -17,6 +17,8 @@ import os
 import re
 import sys
 
+import sphinx
+
 
 here = os.path.abspath(os.path.dirname(__file__))
 
@@ -33,7 +35,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(here, '..')))
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
-needs_sphinx = '1.0'
+needs_sphinx = '1.2'
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
@@ -46,6 +48,9 @@ extensions = [
     'sphinx.ext.viewcode',
     'repoze.sphinx.autointerface',
 ]
+
+if sphinx.version_info >= (1, 6):
+    extensions.append('sphinx.ext.imgconverter')
 
 autodoc_member_order = 'bysource'
 autodoc_default_flags = ['show-inheritance', 'private-members']

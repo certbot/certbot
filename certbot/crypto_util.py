@@ -7,7 +7,7 @@
 import hashlib
 import logging
 import os
-
+import warnings
 
 import pyrfc3339
 import six
@@ -19,12 +19,13 @@ from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey
 from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 # https://github.com/python/typeshed/tree/master/third_party/2/cryptography
-from cryptography import x509 # type: ignore
+from cryptography import x509  # type: ignore
 from OpenSSL import crypto
 from OpenSSL import SSL  # type: ignore
 
 from acme import crypto_util as acme_crypto_util
 from acme.magic_typing import IO  # pylint: disable=unused-import, no-name-in-module
+from certbot import compat
 from certbot import errors
 from certbot import interfaces
 from certbot import util
@@ -60,7 +61,7 @@ def init_save_key(key_size, key_dir, keyname="key-certbot.pem"):
 
     config = zope.component.getUtility(interfaces.IConfig)
     # Save file
-    util.make_or_verify_dir(key_dir, 0o700, os.geteuid(),
+    util.make_or_verify_dir(key_dir, 0o700, compat.os_geteuid(),
                             config.strict_permissions)
     key_f, key_path = util.unique_file(
         os.path.join(key_dir, keyname), 0o600, "wb")
@@ -91,7 +92,7 @@ def init_save_csr(privkey, names, path):
         privkey.pem, names, must_staple=config.must_staple)
 
     # Save CSR
-    util.make_or_verify_dir(path, 0o755, os.geteuid(),
+    util.make_or_verify_dir(path, 0o755, compat.os_geteuid(),
                                config.strict_permissions)
     csr_f, csr_filename = util.unique_file(
         os.path.join(path, "csr-certbot.pem"), 0o644, "wb")
@@ -225,7 +226,7 @@ def verify_renewable_cert(renewable_cert):
 
 
 def verify_renewable_cert_sig(renewable_cert):
-    """ Verifies the signature of a `.storage.RenewableCert` object.
+    """Verifies the signature of a `.storage.RenewableCert` object.
 
     :param `.storage.RenewableCert` renewable_cert: cert to verify
 
@@ -237,26 +238,45 @@ def verify_renewable_cert_sig(renewable_cert):
         with open(renewable_cert.cert, 'rb') as cert_file:  # type: IO[bytes]
             cert = x509.load_pem_x509_certificate(cert_file.read(), default_backend())
         pk = chain.public_key()
-        if isinstance(pk, RSAPublicKey):
-            # https://github.com/python/typeshed/blob/master/third_party/2/cryptography/hazmat/primitives/asymmetric/rsa.pyi
-            verifier = pk.verifier(  # type: ignore
-                cert.signature, PKCS1v15(), cert.signature_hash_algorithm
-            )
-            verifier.update(cert.tbs_certificate_bytes)
-            verifier.verify()
-        elif isinstance(pk, EllipticCurvePublicKey):
-            verifier = pk.verifier(
-                cert.signature, ECDSA(cert.signature_hash_algorithm)
-            )
-            verifier.update(cert.tbs_certificate_bytes)
-            verifier.verify()
-        else:
-            raise errors.Error("Unsupported public key type")
+        with warnings.catch_warnings():
+            verify_signed_payload(pk, cert.signature, cert.tbs_certificate_bytes,
+                                  cert.signature_hash_algorithm)
     except (IOError, ValueError, InvalidSignature) as e:
         error_str = "verifying the signature of the cert located at {0} has failed. \
                 Details: {1}".format(renewable_cert.cert, e)
         logger.exception(error_str)
         raise errors.Error(error_str)
+
+
+def verify_signed_payload(public_key, signature, payload, signature_hash_algorithm):
+    """Check the signature of a payload.
+
+    :param RSAPublicKey/EllipticCurvePublicKey public_key: the public_key to check signature
+    :param bytes signature: the signature bytes
+    :param bytes payload: the payload bytes
+    :param cryptography.hazmat.primitives.hashes.HashAlgorithm
+           signature_hash_algorithm: algorithm used to hash the payload
+
+    :raises InvalidSignature: If signature verification fails.
+    :raises errors.Error: If public key type is not supported
+    """
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        if isinstance(public_key, RSAPublicKey):
+            # https://github.com/python/typeshed/blob/master/third_party/2/cryptography/hazmat/primitives/asymmetric/rsa.pyi
+            verifier = public_key.verifier(  # type: ignore
+                signature, PKCS1v15(), signature_hash_algorithm
+            )
+            verifier.update(payload)
+            verifier.verify()
+        elif isinstance(public_key, EllipticCurvePublicKey):
+            verifier = public_key.verifier(
+                signature, ECDSA(signature_hash_algorithm)
+            )
+            verifier.update(payload)
+            verifier.verify()
+        else:
+            raise errors.Error("Unsupported public key type")
 
 
 def verify_cert_matches_priv_key(cert_path, key_path):
@@ -446,14 +466,17 @@ def _notAfterBefore(cert_path, method):
 def sha256sum(filename):
     """Compute a sha256sum of a file.
 
+    NB: In given file, platform specific newlines characters will be converted
+    into their equivalent unicode counterparts before calculating the hash.
+
     :param str filename: path to the file whose hash will be computed
 
     :returns: sha256 digest of the file in hexadecimal
     :rtype: str
     """
     sha256 = hashlib.sha256()
-    with open(filename, 'rb') as f:
-        sha256.update(f.read())
+    with open(filename, 'r') as file_d:
+        sha256.update(file_d.read().encode('UTF-8'))
     return sha256.hexdigest()
 
 def cert_and_chain_from_fullchain(fullchain_pem):

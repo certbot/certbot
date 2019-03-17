@@ -38,13 +38,13 @@ Certbot.
 
    cd certbot
    ./certbot-auto --debug --os-packages-only
-   tools/venv.sh
+   python tools/venv.py
 
-If you have Python3 available and want to use it, run the ``venv3.sh`` script.
+If you have Python3 available and want to use it, run the ``venv3.py`` script.
 
 .. code-block:: shell
 
-   tools/venv3.sh
+   python tools/venv3.py
 
 .. note:: You may need to repeat this when
   Certbot's dependencies change or when a new plugin is introduced.
@@ -186,8 +186,8 @@ Authenticators
 --------------
 
 Authenticators are plugins that prove control of a domain name by solving a
-challenge provided by the ACME server. ACME currently defines three types of
-challenges: HTTP, TLS-SNI, and DNS, represented by classes in `acme.challenges`.
+challenge provided by the ACME server. ACME currently defines several types of
+challenges: HTTP, TLS-SNI (deprecated), TLS-ALPR, and DNS, represented by classes in `acme.challenges`.
 An authenticator plugin should implement support for at least one challenge type.
 
 An Authenticator indicates which challenges it supports by implementing
@@ -215,7 +215,7 @@ support for IIS, Icecast and Plesk.
 Installers and Authenticators will oftentimes be the same class/object
 (because for instance both tasks can be performed by a webserver like nginx)
 though this is not always the case (the standalone plugin is an authenticator
-that listens on port 443, but it cannot install certs; a postfix plugin would
+that listens on port 80, but it cannot install certs; a postfix plugin would
 be an installer but not an authenticator).
 
 Installers and Authenticators are kept separate because
@@ -353,13 +353,16 @@ Steps:
 
 1. Write your code!
 2. Make sure your environment is set up properly and that you're in your
-   virtualenv. You can do this by running ``./tools/venv.sh``.
+   virtualenv. You can do this by running ``pip tools/venv.py``.
    (this is a **very important** step)
 3. Run ``tox -e lint`` to check for pylint errors. Fix any errors.
 4. Run ``tox --skip-missing-interpreters`` to run the entire test suite
    including coverage. The ``--skip-missing-interpreters`` argument ignores
    missing versions of Python needed for running the tests. Fix any errors.
-5. Submit the PR.
+5. Submit the PR. Once your PR is open, please do not force push to the branch
+   containing your pull request to squash or amend commits. We use `squash
+   merges <https://github.com/blog/2141-squash-your-commits>`_ on PRs and
+   rewriting commits makes changes harder to track between reviews.
 6. Did your tests pass on Travis? If they didn't, fix any errors.
 
 Asking for help

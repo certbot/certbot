@@ -2,10 +2,11 @@
 import logging
 import os
 
-from acme.magic_typing import Set  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import List, Set  # pylint: disable=unused-import, no-name-in-module
 from certbot import errors
 from certbot.plugins import common
 from certbot_apache.obj import VirtualHost  # pylint: disable=unused-import
+from certbot_apache.parser import get_aug_path
 
 logger = logging.getLogger(__name__)
 
@@ -88,15 +89,27 @@ class ApacheHttp01(common.TLSSNI01):
                     self.configurator.enable_mod(mod, temp=True)
 
     def _mod_config(self):
+        selected_vhosts = []  # type: List[VirtualHost]
+        http_port = str(self.configurator.config.http01_port)
         for chall in self.achalls:
-            vh = self.configurator.find_best_http_vhost(
-                chall.domain, filter_defaults=False,
-                port=str(self.configurator.config.http01_port))
-            if vh:
-                self._set_up_include_directives(vh)
-            else:
-                for vh in self._relevant_vhosts():
-                    self._set_up_include_directives(vh)
+            # Search for matching VirtualHosts
+            for vh in self._matching_vhosts(chall.domain):
+                selected_vhosts.append(vh)
+
+        # Ensure that we have one or more VirtualHosts that we can continue
+        # with. (one that listens to port configured with --http-01-port)
+        found = False
+        for vhost in selected_vhosts:
+            if any(a.is_wildcard() or a.get_port() == http_port for a in vhost.addrs):
+                found = True
+
+        if not found:
+            for vh in self._relevant_vhosts():
+                selected_vhosts.append(vh)
+
+        # Add the challenge configuration
+        for vh in selected_vhosts:
+            self._set_up_include_directives(vh)
 
         self.configurator.reverter.register_file_creation(
             True, self.challenge_conf_pre)
@@ -119,6 +132,20 @@ class ApacheHttp01(common.TLSSNI01):
         logger.debug("writing a post config file with text:\n %s", config_text_post)
         with open(self.challenge_conf_post, "w") as new_conf:
             new_conf.write(config_text_post)
+
+    def _matching_vhosts(self, domain):
+        """Return all VirtualHost objects that have the requested domain name or
+        a wildcard name that would match the domain in ServerName or ServerAlias
+        directive.
+        """
+        matching_vhosts = []
+        for vhost in self.configurator.vhosts:
+            if self.configurator.domain_in_names(vhost.get_names(), domain):
+                # domain_in_names also matches the exact names, so no need
+                # to check "domain in vhost.get_names()" explicitly here
+                matching_vhosts.append(vhost)
+
+        return matching_vhosts
 
     def _relevant_vhosts(self):
         http01_port = str(self.configurator.config.http01_port)
@@ -171,5 +198,10 @@ class ApacheHttp01(common.TLSSNI01):
                 vhost.path, "Include", self.challenge_conf_pre)
             self.configurator.parser.add_dir(
                 vhost.path, "Include", self.challenge_conf_post)
+
+            if not vhost.enabled:
+                self.configurator.parser.add_dir(
+                    get_aug_path(self.configurator.parser.loc["default"]),
+                    "Include", vhost.filep)
 
             self.moded_vhosts.add(vhost)

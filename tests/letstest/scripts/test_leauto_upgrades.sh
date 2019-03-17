@@ -15,11 +15,15 @@ if ! command -v git ; then
         exit 1
     fi
 fi
-# 0.5.0 is the oldest version of letsencrypt-auto that can be used because it's
-# the first version that pins package versions, properly supports
-# --no-self-upgrade, and works with newer versions of pip.
-git checkout -f v0.5.0 letsencrypt-auto
-if ! ./letsencrypt-auto -v --debug --version --no-self-upgrade 2>&1 | grep 0.5.0 ; then
+# 0.17.0 is the oldest version of letsencrypt-auto that has precompiled
+# cryptography and the tagged commit is in master. 0.16.0 was the first version
+# to use precompiled cryptography, but the release PR was squashed losing the
+# commit. We want to use a precompiled version of cryptography for stability.
+# Previous versions that have to compile against OpenSSL on installation
+# started failing on newer distros with newer versions of OpenSSL.
+INITIAL_VERSION="0.17.0"
+git checkout -f "v$INITIAL_VERSION" letsencrypt-auto
+if ! ./letsencrypt-auto -v --debug --version --no-self-upgrade 2>&1 | tail -n1 | grep "^certbot $INITIAL_VERSION$" ; then
     echo initial installation appeared to fail
     exit 1
 fi
@@ -71,7 +75,7 @@ if [ $(python -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//') -eq 26 ];
         exit 1
     fi
     cp letsencrypt-auto cb-auto
-    if ! ./cb-auto -v --debug --version 2>&1 | grep 0.5.0 ; then
+    if ! ./cb-auto -v --debug --version 2>&1 | grep "$INITIAL_VERSION" ; then
         echo "Certbot shouldn't have updated to a new version!"
         exit 1
     fi
@@ -81,7 +85,7 @@ if [ $(python -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//') -eq 26 ];
     fi
     # Create a 2nd venv at the new path to ensure we properly handle this case
     export VENV_PATH="/opt/eff.org/certbot/venv"
-    if ! sudo -E ./letsencrypt-auto -v --debug --version --no-self-upgrade 2>&1 | grep 0.5.0 ; then
+    if ! sudo -E ./letsencrypt-auto -v --debug --version --no-self-upgrade 2>&1 | tail -n1 | grep "^certbot $INITIAL_VERSION$" ; then
         echo second installation appeared to fail
         exit 1
     fi
@@ -94,7 +98,7 @@ if ./letsencrypt-auto -v --debug --version | grep "WARNING: couldn't find Python
 fi
 
 EXPECTED_VERSION=$(grep -m1 LE_AUTO_VERSION certbot-auto | cut -d\" -f2)
-if ! /opt/eff.org/certbot/venv/bin/letsencrypt --version 2>&1 | grep "$EXPECTED_VERSION" ; then
+if ! /opt/eff.org/certbot/venv/bin/letsencrypt --version 2>&1 | tail -n1 | grep "^certbot $EXPECTED_VERSION$" ; then
     echo upgrade appeared to fail
     exit 1
 fi

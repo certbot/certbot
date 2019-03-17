@@ -3,12 +3,15 @@
 .. warning:: This module is not part of the public API.
 
 """
-import multiprocessing
+import logging
 import os
 import pkg_resources
 import shutil
+import stat
 import tempfile
 import unittest
+import sys
+from multiprocessing import Process, Event
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
@@ -21,8 +24,9 @@ from six.moves import reload_module  # pylint: disable=import-error
 from certbot import constants
 from certbot import interfaces
 from certbot import storage
-from certbot import util
 from certbot import configuration
+from certbot import lock
+from certbot import util
 
 from certbot.display import util as display_util
 
@@ -36,8 +40,15 @@ def vector_path(*names):
 def load_vector(*names):
     """Load contents of a test vector."""
     # luckily, resource_string opens file in binary mode
-    return pkg_resources.resource_string(
+    data = pkg_resources.resource_string(
         __name__, os.path.join('testdata', *names))
+    # Try at most to convert CRLF to LF when data is text
+    try:
+        return data.decode().replace('\r\n', '\n').encode()
+    except ValueError:
+        # Failed to process the file with standard encoding.
+        # Most likely not a text file, return its bytes untouched.
+        return data
 
 
 def _guess_loader(filename, loader_pem, loader_der):
@@ -202,7 +213,7 @@ class FreezableMock(object):
 
     """
     def __init__(self, frozen=False, func=None, return_value=mock.sentinel.DEFAULT):
-        self._frozen_set = set() if frozen else set(('freeze',))
+        self._frozen_set = set() if frozen else {'freeze', }
         self._func = func
         self._mock = mock.MagicMock()
         if return_value != mock.sentinel.DEFAULT:
@@ -314,15 +325,30 @@ class TempDirTestCase(unittest.TestCase):
     """Base test class which sets up and tears down a temporary directory"""
 
     def setUp(self):
+        """Execute before test"""
         self.tempdir = tempfile.mkdtemp()
 
     def tearDown(self):
-        shutil.rmtree(self.tempdir)
+        """Execute after test"""
+        # Cleanup opened resources after a test. This is usually done through atexit handlers in
+        # Certbot, but during tests, atexit will not run registered functions before tearDown is
+        # called and instead will run them right before the entire test process exits.
+        # It is a problem on Windows, that does not accept to clean resources before closing them.
+        logging.shutdown()
+        # Remove logging handlers that have been closed so they won't be
+        # accidentally used in future tests.
+        logging.getLogger().handlers = []
+        util._release_locks()  # pylint: disable=protected-access
+
+        def handle_rw_files(_, path, __):
+            """Handle read-only files, that will fail to be removed on Windows."""
+            os.chmod(path, stat.S_IWRITE)
+            os.remove(path)
+        shutil.rmtree(self.tempdir, onerror=handle_rw_files)
+
 
 class ConfigTestCase(TempDirTestCase):
-    """Test class which sets up a NamespaceConfig object.
-
-    """
+    """Test class which sets up a NamespaceConfig object."""
     def setUp(self):
         super(ConfigTestCase, self).setUp()
         self.config = configuration.NamespaceConfig(
@@ -337,45 +363,72 @@ class ConfigTestCase(TempDirTestCase):
         self.config.chain_path = constants.CLI_DEFAULTS['auth_chain_path']
         self.config.server = "https://example.com"
 
-def lock_and_call(func, lock_path):
-    """Grab a lock for lock_path and call func.
 
-    :param callable func: object to call after acquiring the lock
-    :param str lock_path: path to file or directory to lock
-
+def _handle_lock(event_in, event_out, path):
     """
-    # Reload module to reset internal _LOCKS dictionary
+    Acquire a file lock on given path, then wait to release it. This worker is coordinated
+    using events to signal when the lock should be acquired and released.
+    :param multiprocessing.Event event_in: event object to signal when to release the lock
+    :param multiprocessing.Event event_out: event object to signal when the lock is acquired
+    :param path: the path to lock
+    """
+    if os.path.isdir(path):
+        my_lock = lock.lock_dir(path)
+    else:
+        my_lock = lock.LockFile(path)
+    try:
+        event_out.set()
+        assert event_in.wait(timeout=20), 'Timeout while waiting to release the lock.'
+    finally:
+        my_lock.release()
+
+
+def lock_and_call(callback, path_to_lock):
+    """
+    Grab a lock on path_to_lock from a foreign process then execute the callback.
+    :param callable callback: object to call after acquiring the lock
+    :param str path_to_lock: path to file or directory to lock
+    """
+    # Reload certbot.util module to reset internal _LOCKS dictionary.
     reload_module(util)
 
-    # start child and wait for it to grab the lock
-    cv = multiprocessing.Condition()
-    cv.acquire()
-    child_args = (cv, lock_path,)
-    child = multiprocessing.Process(target=hold_lock, args=child_args)
-    child.start()
-    cv.wait()
+    emit_event = Event()
+    receive_event = Event()
+    process = Process(target=_handle_lock, args=(emit_event, receive_event, path_to_lock))
+    process.start()
 
-    # call func and terminate the child
-    func()
-    cv.notify()
-    cv.release()
-    child.join()
-    assert child.exitcode == 0
+    # Wait confirmation that lock is acquired
+    assert receive_event.wait(timeout=10), 'Timeout while waiting to acquire the lock.'
+    # Execute the callback
+    callback()
+    # Trigger unlock from foreign process
+    emit_event.set()
+
+    # Wait for process termination
+    process.join(timeout=10)
+    assert process.exitcode == 0
 
 
-def hold_lock(cv, lock_path):  # pragma: no cover
-    """Acquire a file lock at lock_path and wait to release it.
+def skip_on_windows(reason):
+    """Decorator to skip permanently a test on Windows. A reason is required."""
+    def wrapper(function):
+        """Wrapped version"""
+        return unittest.skipIf(sys.platform == 'win32', reason)(function)
+    return wrapper
 
-    :param multiprocessing.Condition cv: condition for synchronization
-    :param str lock_path: path to the file lock
 
+def broken_on_windows(function):
+    """Decorator to skip temporarily a broken test on Windows."""
+    reason = 'Test is broken and ignored on windows but should be fixed.'
+    return unittest.skipIf(
+        sys.platform == 'win32'
+        and os.environ.get('SKIP_BROKEN_TESTS_ON_WINDOWS', 'true') == 'true',
+        reason)(function)
+
+
+def temp_join(path):
     """
-    from certbot import lock
-    if os.path.isdir(lock_path):
-        my_lock = lock.lock_dir(lock_path)
-    else:
-        my_lock = lock.LockFile(lock_path)
-    cv.acquire()
-    cv.notify()
-    cv.wait()
-    my_lock.release()
+    Return the given path joined to the tempdir path for the current platform
+    Eg.: 'cert' => /tmp/cert (Linux) or 'C:\\Users\\currentuser\\AppData\\Temp\\cert' (Windows)
+    """
+    return os.path.join(tempfile.gettempdir(), path)

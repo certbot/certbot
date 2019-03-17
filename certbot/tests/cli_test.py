@@ -4,6 +4,7 @@ import unittest
 import os
 import tempfile
 import copy
+import sys
 
 import mock
 import six
@@ -41,6 +42,15 @@ class TestReadFile(TempDirTestCase):
         self.assertEqual(contents, test_contents)
 
 
+class FlagDefaultTest(unittest.TestCase):
+    """Tests cli.flag_default"""
+
+    def test_linux_directories(self):
+        if 'fcntl' in sys.modules:
+            self.assertEqual(cli.flag_default('config_dir'), '/etc/letsencrypt')
+            self.assertEqual(cli.flag_default('work_dir'), '/var/lib/letsencrypt')
+            self.assertEqual(cli.flag_default('logs_dir'), '/var/log/letsencrypt')
+
 
 class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     '''Test the cli args entrypoint'''
@@ -76,6 +86,7 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
         return output.getvalue()
 
+    @test_util.broken_on_windows
     @mock.patch("certbot.cli.flag_default")
     def test_cli_ini_domains(self, mock_flag_default):
         tmp_config = tempfile.NamedTemporaryFile()
@@ -329,6 +340,8 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         config_dir_option = 'config_dir'
         self.assertFalse(cli.option_was_set(
             config_dir_option, cli.flag_default(config_dir_option)))
+        self.assertFalse(cli.option_was_set(
+            'authenticator', cli.flag_default('authenticator')))
 
     def test_encode_revocation_reason(self):
         for reason, code in constants.REVOCATION_REASONS.items():
@@ -429,6 +442,11 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     def test_allow_subset_with_wildcard(self):
         self.assertRaises(errors.Error, self.parse,
                           "--allow-subset-of-names -d *.example.org".split())
+
+    def test_route53_no_revert(self):
+        for help_flag in ['-h', '--help']:
+            for topic in ['all', 'plugins', 'dns-route53']:
+                self.assertFalse('certbot-route53:auth' in self._help_output([help_flag, topic]))
 
 
 class DefaultTest(unittest.TestCase):

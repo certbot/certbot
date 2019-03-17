@@ -195,7 +195,7 @@ if [ "$1" = "--cb-auto-has-root" ]; then
 else
   SetRootAuthMechanism
   if [ -n "$SUDO" ]; then
-    echo "Requesting to rerun $0 with root privileges..."
+    say "Requesting to rerun $0 with root privileges..."
     $SUDO "$0" --cb-auto-has-root "$@"
     exit 0
   fi
@@ -323,7 +323,10 @@ elif [ -f /etc/redhat-release ]; then
   prev_le_python="$LE_PYTHON"
   unset LE_PYTHON
   DeterminePythonVersion "NOCRASH"
-  if [ "$PYVER" -eq 26 ]; then
+  # Starting to Fedora 29, python2 is on a deprecation path. Let's move to python3 then.
+  RPM_DIST_NAME=`(. /etc/os-release 2> /dev/null && echo $ID) || echo "unknown"`
+  RPM_DIST_VERSION=`(. /etc/os-release 2> /dev/null && echo $VERSION_ID) || echo "0"`
+  if [ "$RPM_DIST_NAME" = "fedora" -a "$RPM_DIST_VERSION" -ge 29 -o "$PYVER" -eq 26 ]; then
     Bootstrap() {
       BootstrapMessage "RedHat-based OSes that will use Python3"
       BootstrapRpmPython3
@@ -451,6 +454,35 @@ OldVenvExists() {
     [ -n "$OLD_VENV_PATH" -a -f "$OLD_VENV_PATH/bin/letsencrypt" ]
 }
 
+# Given python path, version 1 and version 2, check if version 1 is outdated compared to version 2.
+# An unofficial version provided as version 1 (eg. 0.28.0.dev0) will be treated
+# specifically by printing "UNOFFICIAL". Otherwise, print "OUTDATED" if version 1
+# is outdated, and "UP_TO_DATE" if not.
+# This function relies only on installed python environment (2.x or 3.x) by certbot-auto.
+CompareVersions() {
+    "$1" - "$2" "$3" << "UNLIKELY_EOF"
+import sys
+from distutils.version import StrictVersion
+
+try:
+    current = StrictVersion(sys.argv[1])
+except ValueError:
+    sys.stdout.write('UNOFFICIAL')
+    sys.exit()
+
+try:
+    remote = StrictVersion(sys.argv[2])
+except ValueError:
+    sys.stdout.write('UP_TO_DATE')
+    sys.exit()
+
+if current < remote:
+    sys.stdout.write('OUTDATED')
+else:
+    sys.stdout.write('UP_TO_DATE')
+UNLIKELY_EOF
+}
+
 if [ "$1" = "--le-auto-phase2" ]; then
   # Phase 2: Create venv, install LE, and run.
 
@@ -508,10 +540,12 @@ if [ "$1" = "--le-auto-phase2" ]; then
     DeterminePythonVersion
     rm -rf "$VENV_PATH"
     if [ "$PYVER" -le 27 ]; then
+      # Use an environment variable instead of a flag for compatibility with old versions
       if [ "$VERBOSE" = 1 ]; then
-        virtualenv --no-site-packages --python "$LE_PYTHON" "$VENV_PATH"
+        VIRTUALENV_NO_DOWNLOAD=1 virtualenv --no-site-packages --python "$LE_PYTHON" "$VENV_PATH"
       else
-        virtualenv --no-site-packages --python "$LE_PYTHON" "$VENV_PATH" > /dev/null
+        VIRTUALENV_NO_DOWNLOAD=1 virtualenv --no-site-packages --python "$LE_PYTHON" "$VENV_PATH" \
+          > /dev/null
       fi
     else
       if [ "$VERBOSE" = 1 ]; then
@@ -635,7 +669,12 @@ UNLIKELY_EOF
       error "WARNING: couldn't find Python $MIN_PYTHON_VERSION+ to check for updates."
     elif ! REMOTE_VERSION=`"$LE_PYTHON" "$TEMP_DIR/fetch.py" --latest-version` ; then
       error "WARNING: unable to check for updates."
-    elif [ "$LE_AUTO_VERSION" != "$REMOTE_VERSION" ]; then
+    fi
+
+    LE_VERSION_STATE=`CompareVersions "$LE_PYTHON" "$LE_AUTO_VERSION" "$REMOTE_VERSION"`
+    if [ "$LE_VERSION_STATE" = "UNOFFICIAL" ]; then
+      say "Unofficial certbot-auto version detected, self-upgrade is disabled: $LE_AUTO_VERSION"
+    elif [ "$LE_VERSION_STATE" = "OUTDATED" ]; then
       say "Upgrading certbot-auto $LE_AUTO_VERSION to $REMOTE_VERSION..."
 
       # Now we drop into Python so we don't have to install even more

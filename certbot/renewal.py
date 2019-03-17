@@ -5,6 +5,9 @@ import itertools
 import logging
 import os
 import traceback
+import sys
+import time
+import random
 
 import six
 import zope.component
@@ -36,7 +39,8 @@ STR_CONFIG_ITEMS = ["config_dir", "logs_dir", "work_dir", "user_agent",
                     "pre_hook", "post_hook", "tls_sni_01_address",
                     "http01_address"]
 INT_CONFIG_ITEMS = ["rsa_key_size", "tls_sni_01_port", "http01_port"]
-BOOL_CONFIG_ITEMS = ["must_staple", "allow_subset_of_names"]
+BOOL_CONFIG_ITEMS = ["must_staple", "allow_subset_of_names", "reuse_key",
+                     "autorenew"]
 
 CONFIG_ITEMS = set(itertools.chain(
     BOOL_CONFIG_ITEMS, INT_CONFIG_ITEMS, STR_CONFIG_ITEMS, ('pref_challs',)))
@@ -261,7 +265,7 @@ def should_renew(config, lineage):
     if config.renew_by_default:
         logger.debug("Auto-renewal forced with --force-renewal...")
         return True
-    if lineage.should_autorenew(interactive=True):
+    if lineage.should_autorenew():
         logger.info("Cert is due for renewal, auto-renewing...")
         return True
     if config.dry_run:
@@ -275,8 +279,10 @@ def _avoid_invalidating_lineage(config, lineage, original_server):
     "Do not renew a valid cert with one from a staging server!"
     # Some lineages may have begun with --staging, but then had production certs
     # added to them
+    with open(lineage.cert) as the_file:
+        contents = the_file.read()
     latest_cert = OpenSSL.crypto.load_certificate(
-        OpenSSL.crypto.FILETYPE_PEM, open(lineage.cert).read())
+        OpenSSL.crypto.FILETYPE_PEM, contents)
     # all our test certs are from happy hacker fake CA, though maybe one day
     # we should test more methodically
     now_valid = "fake" not in repr(latest_cert.get_issuer()).lower()
@@ -298,7 +304,10 @@ def renew_cert(config, domains, le_client, lineage):
     _avoid_invalidating_lineage(config, lineage, original_server)
     if not domains:
         domains = lineage.names()
-    new_cert, new_chain, new_key, _ = le_client.obtain_certificate(domains)
+    # The private key is the existing lineage private key if reuse_key is set.
+    # Otherwise, generate a fresh private key by passing None.
+    new_key = os.path.normpath(lineage.privkey) if config.reuse_key else None
+    new_cert, new_chain, new_key, _ = le_client.obtain_certificate(domains, new_key)
     if config.dry_run:
         logger.debug("Dry run: skipping updating lineage at %s",
                     os.path.dirname(lineage.cert))
@@ -355,7 +364,7 @@ def _renew_describe_results(config, renew_successes, renew_failures,
         notify_error(report(renew_failures, "failure"))
 
     if parse_failures:
-        notify("\nAdditionally, the following renewal configuration files "
+        notify("\nAdditionally, the following renewal configurations "
                "were invalid: ")
         notify(report(parse_failures, "parsefail"))
 
@@ -366,7 +375,7 @@ def _renew_describe_results(config, renew_successes, renew_failures,
     disp.notification("\n".join(out), wrap=False)
 
 
-def handle_renewal_request(config):
+def handle_renewal_request(config):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
     """Examine each lineage; renew if due and report results"""
 
     # This is trivially False if config.domains is empty
@@ -390,6 +399,14 @@ def handle_renewal_request(config):
     renew_failures = []
     renew_skipped = []
     parse_failures = []
+
+    # Noninteractive renewals include a random delay in order to spread
+    # out the load on the certificate authority servers, even if many
+    # users all pick the same time for renewals.  This delay precedes
+    # running any hooks, so that side effects of the hooks (such as
+    # shutting down a web service) aren't prolonged unnecessarily.
+    apply_random_sleep = not sys.stdin.isatty() and config.random_sleep_on_renew
+
     for renewal_file in conf_files:
         disp = zope.component.getUtility(interfaces.IDisplay)
         disp.notification("Processing " + renewal_file, pause=False)
@@ -418,6 +435,15 @@ def handle_renewal_request(config):
                 from certbot import main
                 plugins = plugins_disco.PluginsRegistry.find_all()
                 if should_renew(lineage_config, renewal_candidate):
+                    # Apply random sleep upon first renewal if needed
+                    if apply_random_sleep:
+                        sleep_time = random.randint(1, 60 * 8)
+                        logger.info("Non-interactive renewal: random delay of %s seconds",
+                                    sleep_time)
+                        time.sleep(sleep_time)
+                        # We will sleep only once this day, folks.
+                        apply_random_sleep = False
+
                     # domains have been restored into lineage_config by reconstitute
                     # but they're unnecessary anyway because renew_cert here
                     # will just grab them from the certificate

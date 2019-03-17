@@ -6,7 +6,7 @@ import socket
 # https://github.com/python/typeshed/blob/master/stdlib/2and3/socket.pyi
 from socket import errno as socket_errors  # type: ignore
 
-import OpenSSL
+import OpenSSL  # pylint: disable=unused-import
 import six
 import zope.interface
 
@@ -55,25 +55,21 @@ class ServerManager(object):
 
         :param int port: Port to run the server on.
         :param challenge_type: Subclass of `acme.challenges.Challenge`,
-            either `acme.challenge.HTTP01` or `acme.challenges.TLSSNI01`.
+            currently only `acme.challenge.HTTP01`.
         :param str listenaddr: (optional) The address to listen on. Defaults to all addrs.
 
         :returns: DualNetworkedServers instance.
         :rtype: ACMEServerMixin
 
         """
-        assert challenge_type in (challenges.TLSSNI01, challenges.HTTP01)
+        assert challenge_type == challenges.HTTP01
         if port in self._instances:
             return self._instances[port]
 
         address = (listenaddr, port)
         try:
-            if challenge_type is challenges.TLSSNI01:
-                servers = acme_standalone.TLSSNI01DualNetworkedServers(
-                    address, self.certs)  # type: acme_standalone.BaseDualNetworkedServers
-            else:  # challenges.HTTP01
-                servers = acme_standalone.HTTP01DualNetworkedServers(
-                    address, self.http_01_resources)
+            servers = acme_standalone.HTTP01DualNetworkedServers(
+                address, self.http_01_resources)
         except socket.error as error:
             raise errors.StandaloneBindError(error, port)
 
@@ -96,8 +92,6 @@ class ServerManager(object):
         for sockname in instance.getsocknames():
             logger.debug("Stopping server at %s:%d...",
                          *sockname[:2])
-        # Not calling server_close causes problems when renewing multiple
-        # certs with `certbot renew` using TLSSNI01 and PyOpenSSL 0.13
         instance.shutdown_and_server_close()
         del self._instances[port]
 
@@ -114,7 +108,7 @@ class ServerManager(object):
         return self._instances.copy()
 
 
-SUPPORTED_CHALLENGES = [challenges.TLSSNI01, challenges.HTTP01] \
+SUPPORTED_CHALLENGES = [challenges.HTTP01] \
 # type: List[Type[challenges.KeyAuthorizationChallenge]]
 
 
@@ -132,8 +126,6 @@ class SupportedChallengesAction(argparse.Action):
     def _convert_and_validate(self, data):
         """Validate the value of supported challenges provided by the user.
 
-        References to "dvsni" are automatically converted to "tls-sni-01".
-
         :param str data: comma delimited list of challenge types
 
         :returns: validated and converted list of challenge types
@@ -141,15 +133,6 @@ class SupportedChallengesAction(argparse.Action):
 
         """
         challs = data.split(",")
-
-        # tls-sni-01 was dvsni during private beta
-        if "dvsni" in challs:
-            logger.info(
-                "Updating legacy standalone_supported_challenges value")
-            challs = [challenges.TLSSNI01.typ if chall == "dvsni" else chall
-                      for chall in challs]
-            data = ",".join(challs)
-
         unrecognized = [name for name in challs
                         if name not in challenges.Challenge.TYPES]
 
@@ -177,7 +160,7 @@ class Authenticator(common.Plugin):
     """Standalone Authenticator.
 
     This authenticator creates its own ephemeral TCP listener on the
-    necessary port in order to respond to incoming tls-sni-01 and http-01
+    necessary port in order to respond to incoming http-01
     challenges from the certificate authority. Therefore, it does not
     rely on any existing server program.
     """
@@ -186,10 +169,6 @@ class Authenticator(common.Plugin):
 
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
-
-        # one self-signed key for all tls-sni-01 certificates
-        self.key = OpenSSL.crypto.PKey()
-        self.key.generate_key(OpenSSL.crypto.TYPE_RSA, 2048)
 
         self.served = collections.defaultdict(set)  # type: ServedType
 
@@ -219,9 +198,8 @@ class Authenticator(common.Plugin):
     def more_info(self):  # pylint: disable=missing-docstring
         return("This authenticator creates its own ephemeral TCP listener "
                "on the necessary port in order to respond to incoming "
-               "tls-sni-01 and http-01 challenges from the certificate "
-               "authority. Therefore, it does not rely on any existing "
-               "server program.")
+               "http-01 challenges from the certificate authority. Therefore, "
+               "it does not rely on any existing server program.")
 
     def prepare(self):  # pylint: disable=missing-docstring
         pass
@@ -241,10 +219,7 @@ class Authenticator(common.Plugin):
                 _handle_perform_error(error)
 
     def _perform_single(self, achall):
-        if isinstance(achall.chall, challenges.HTTP01):
-            servers, response = self._perform_http_01(achall)
-        else:  # tls-sni-01
-            servers, response = self._perform_tls_sni_01(achall)
+        servers, response = self._perform_http_01(achall)
         self.served[servers].add(achall)
         return response
 
@@ -256,14 +231,6 @@ class Authenticator(common.Plugin):
         resource = acme_standalone.HTTP01RequestHandler.HTTP01Resource(
             chall=achall.chall, response=response, validation=validation)
         self.http_01_resources.add(resource)
-        return servers, response
-
-    def _perform_tls_sni_01(self, achall):
-        port = self.config.tls_sni_01_port
-        addr = self.config.tls_sni_01_address
-        servers = self.servers.run(port, challenges.TLSSNI01, listenaddr=addr)
-        response, (cert, _) = achall.response_and_validation(cert_key=self.key)
-        self.certs[response.z_domain] = (self.key, cert)
         return servers, response
 
     def cleanup(self, achalls):  # pylint: disable=missing-docstring

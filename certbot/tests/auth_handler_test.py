@@ -4,13 +4,11 @@ import logging
 import unittest
 
 import mock
-import six
 import zope.component
 
 from acme import challenges
 from acme import client as acme_client
 from acme import messages
-from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
 
 from certbot import achallenges
 from certbot import errors
@@ -57,7 +55,7 @@ class ChallengeFactoryTest(unittest.TestCase):
              errors.Error, self.handler._challenge_factory, authzr, [0])
 
 
-class HandleAuthorizationsTest(unittest.TestCase):
+class HandleAuthorizationsTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     """handle_authorizations test.
 
     This tests everything except for all functions under _poll_challenges.
@@ -82,6 +80,7 @@ class HandleAuthorizationsTest(unittest.TestCase):
         self.mock_account = mock.Mock(key=util.Key("file_path", "PEM"))
         self.mock_net = mock.MagicMock(spec=acme_client.Client)
         self.mock_net.acme_version = 1
+        self.mock_net.retry_after.side_effect = acme_client.Client.retry_after
 
         self.handler = AuthHandler(
             self.mock_auth, self.mock_net, self.mock_account, [])
@@ -95,23 +94,26 @@ class HandleAuthorizationsTest(unittest.TestCase):
         authzr = gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES, combos=combos)
         mock_order = mock.MagicMock(authorizations=[authzr])
 
-        with mock.patch("certbot.auth_handler.AuthHandler._poll_challenges") as mock_poll:
-            mock_poll.side_effect = self._validate_all
+        self.mock_net.poll.side_effect = _gen_mock_on_poll(retry=1, wait_value=30)
+        with mock.patch('certbot.auth_handler.time') as mock_time:
             authzr = self.handler.handle_authorizations(mock_order)
 
-        self.assertEqual(self.mock_net.answer_challenge.call_count, 1)
+            self.assertEqual(self.mock_net.answer_challenge.call_count, 1)
 
-        self.assertEqual(mock_poll.call_count, 1)
-        chall_update = mock_poll.call_args[0][1]
-        self.assertEqual(list(six.iterkeys(chall_update)), [0])
-        self.assertEqual(len(chall_update.values()), 1)
+            self.assertEqual(self.mock_net.poll.call_count, 2)  # Because there is one retry
+            self.assertEqual(mock_time.sleep.call_count, 2)
+            # Retry-After header is 30 seconds, but at the time sleep is invoked, several
+            # instructions are executed, and next pool is in less than 30 seconds.
+            self.assertTrue(mock_time.sleep.call_args_list[1][0][0] <= 30)
+            # However, assert that we did not took the default value of 3 seconds.
+            self.assertTrue(mock_time.sleep.call_args_list[1][0][0] > 3)
 
-        self.assertEqual(self.mock_auth.cleanup.call_count, 1)
-        # Test if list first element is TLSSNI01, use typ because it is an achall
-        self.assertEqual(
-            self.mock_auth.cleanup.call_args[0][0][0].typ, "tls-sni-01")
+            self.assertEqual(self.mock_auth.cleanup.call_count, 1)
+            # Test if list first element is TLSSNI01, use typ because it is an achall
+            self.assertEqual(
+                self.mock_auth.cleanup.call_args[0][0][0].typ, "tls-sni-01")
 
-        self.assertEqual(len(authzr), 1)
+            self.assertEqual(len(authzr), 1)
 
     def test_name1_tls_sni_01_1_acme_1(self):
         self._test_name1_tls_sni_01_1_common(combos=True)
@@ -120,9 +122,8 @@ class HandleAuthorizationsTest(unittest.TestCase):
         self.mock_net.acme_version = 2
         self._test_name1_tls_sni_01_1_common(combos=False)
 
-    @mock.patch("certbot.auth_handler.AuthHandler._poll_challenges")
-    def test_name1_tls_sni_01_1_http_01_1_dns_1_acme_1(self, mock_poll):
-        mock_poll.side_effect = self._validate_all
+    def test_name1_tls_sni_01_1_http_01_1_dns_1_acme_1(self):
+        self.mock_net.poll.side_effect = _gen_mock_on_poll()
         self.mock_auth.get_chall_pref.return_value.append(challenges.HTTP01)
         self.mock_auth.get_chall_pref.return_value.append(challenges.DNS01)
 
@@ -132,10 +133,7 @@ class HandleAuthorizationsTest(unittest.TestCase):
 
         self.assertEqual(self.mock_net.answer_challenge.call_count, 3)
 
-        self.assertEqual(mock_poll.call_count, 1)
-        chall_update = mock_poll.call_args[0][1]
-        self.assertEqual(list(six.iterkeys(chall_update)), [0])
-        self.assertEqual(len(chall_update.values()), 1)
+        self.assertEqual(self.mock_net.poll.call_count, 1)
 
         self.assertEqual(self.mock_auth.cleanup.call_count, 1)
         # Test if list first element is TLSSNI01, use typ because it is an achall
@@ -145,10 +143,9 @@ class HandleAuthorizationsTest(unittest.TestCase):
         # Length of authorizations list
         self.assertEqual(len(authzr), 1)
 
-    @mock.patch("certbot.auth_handler.AuthHandler._poll_challenges")
-    def test_name1_tls_sni_01_1_http_01_1_dns_1_acme_2(self, mock_poll):
+    def test_name1_tls_sni_01_1_http_01_1_dns_1_acme_2(self):
         self.mock_net.acme_version = 2
-        mock_poll.side_effect = self._validate_all
+        self.mock_net.poll.side_effect = _gen_mock_on_poll()
         self.mock_auth.get_chall_pref.return_value.append(challenges.HTTP01)
         self.mock_auth.get_chall_pref.return_value.append(challenges.DNS01)
 
@@ -158,10 +155,7 @@ class HandleAuthorizationsTest(unittest.TestCase):
 
         self.assertEqual(self.mock_net.answer_challenge.call_count, 1)
 
-        self.assertEqual(mock_poll.call_count, 1)
-        chall_update = mock_poll.call_args[0][1]
-        self.assertEqual(list(six.iterkeys(chall_update)), [0])
-        self.assertEqual(len(chall_update.values()), 1)
+        self.assertEqual(self.mock_net.poll.call_count, 1)
 
         self.assertEqual(self.mock_auth.cleanup.call_count, 1)
         cleaned_up_achalls = self.mock_auth.cleanup.call_args[0][0]
@@ -175,27 +169,18 @@ class HandleAuthorizationsTest(unittest.TestCase):
         self.mock_net.request_domain_challenges.side_effect = functools.partial(
             gen_dom_authzr, challs=acme_util.CHALLENGES, combos=combos)
 
-
         authzrs = [gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES),
                    gen_dom_authzr(domain="1", challs=acme_util.CHALLENGES),
                    gen_dom_authzr(domain="2", challs=acme_util.CHALLENGES)]
         mock_order = mock.MagicMock(authorizations=authzrs)
-        with mock.patch("certbot.auth_handler.AuthHandler._poll_challenges") as mock_poll:
-            mock_poll.side_effect = self._validate_all
-            authzr = self.handler.handle_authorizations(mock_order)
+
+        self.mock_net.poll.side_effect = _gen_mock_on_poll()
+        authzr = self.handler.handle_authorizations(mock_order)
 
         self.assertEqual(self.mock_net.answer_challenge.call_count, 3)
 
         # Check poll call
-        self.assertEqual(mock_poll.call_count, 1)
-        chall_update = mock_poll.call_args[0][1]
-        self.assertEqual(len(list(six.iterkeys(chall_update))), 3)
-        self.assertTrue(0 in list(six.iterkeys(chall_update)))
-        self.assertEqual(len(chall_update[0]), 1)
-        self.assertTrue(1 in list(six.iterkeys(chall_update)))
-        self.assertEqual(len(chall_update[1]), 1)
-        self.assertTrue(2 in list(six.iterkeys(chall_update)))
-        self.assertEqual(len(chall_update[2]), 1)
+        self.assertEqual(self.mock_net.poll.call_count, 3)
 
         self.assertEqual(self.mock_auth.cleanup.call_count, 1)
 
@@ -208,14 +193,13 @@ class HandleAuthorizationsTest(unittest.TestCase):
         self.mock_net.acme_version = 2
         self._test_name3_tls_sni_01_3_common(combos=False)
 
-    @mock.patch("certbot.auth_handler.AuthHandler._poll_challenges")
-    def test_debug_challenges(self, mock_poll):
+    def test_debug_challenges(self):
         zope.component.provideUtility(
             mock.Mock(debug_challenges=True), interfaces.IConfig)
         authzrs = [gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES)]
         mock_order = mock.MagicMock(authorizations=authzrs)
 
-        mock_poll.side_effect = self._validate_all
+        self.mock_net.poll.side_effect = _gen_mock_on_poll()
 
         self.handler.handle_authorizations(mock_order)
 
@@ -231,6 +215,18 @@ class HandleAuthorizationsTest(unittest.TestCase):
         self.assertRaises(
             errors.AuthorizationError, self.handler.handle_authorizations, mock_order)
 
+    def test_max_retries_exceeded(self):
+        authzrs = [gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES)]
+        mock_order = mock.MagicMock(authorizations=authzrs)
+
+        # We will return STATUS_PENDING twice before returning STATUS_VALID.
+        self.mock_net.poll.side_effect = _gen_mock_on_poll(retry=2)
+
+        with self.assertRaises(errors.AuthorizationError) as error:
+            # We retry only once, so retries will be exhausted before STATUS_VALID is returned.
+            self.handler.handle_authorizations(mock_order, False, 1)
+        self.assertTrue('All authorizations were not finalized by the CA.' in str(error.exception))
+
     def test_no_domains(self):
         mock_order = mock.MagicMock(authorizations=[])
         self.assertRaises(errors.AuthorizationError, self.handler.handle_authorizations, mock_order)
@@ -244,9 +240,8 @@ class HandleAuthorizationsTest(unittest.TestCase):
         self.handler.pref_challs.extend((challenges.HTTP01.typ,
                                          challenges.DNS01.typ,))
 
-        with mock.patch("certbot.auth_handler.AuthHandler._poll_challenges") as mock_poll:
-            mock_poll.side_effect = self._validate_all
-            self.handler.handle_authorizations(mock_order)
+        self.mock_net.poll.side_effect = _gen_mock_on_poll()
+        self.handler.handle_authorizations(mock_order)
 
         self.assertEqual(self.mock_auth.cleanup.call_count, 1)
         self.assertEqual(
@@ -290,11 +285,11 @@ class HandleAuthorizationsTest(unittest.TestCase):
         self.assertEqual(
             self.mock_auth.cleanup.call_args[0][0][0].typ, "tls-sni-01")
 
-    @mock.patch("certbot.auth_handler.AuthHandler._respond")
-    def test_respond_error(self, mock_respond):
+    def test_answer_error(self):
+        self.mock_net.answer_challenge.side_effect = errors.AuthorizationError
+
         authzrs = [gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES)]
         mock_order = mock.MagicMock(authorizations=authzrs)
-        mock_respond.side_effect = errors.AuthorizationError
 
         self.assertRaises(
             errors.AuthorizationError, self.handler.handle_authorizations, mock_order)
@@ -302,147 +297,90 @@ class HandleAuthorizationsTest(unittest.TestCase):
         self.assertEqual(
             self.mock_auth.cleanup.call_args[0][0][0].typ, "tls-sni-01")
 
-    @mock.patch("certbot.auth_handler.AuthHandler._poll_challenges")
-    @mock.patch("certbot.auth_handler.AuthHandler.verify_authzr_complete")
-    def test_incomplete_authzr_error(self, mock_verify, mock_poll):
+    def test_incomplete_authzr_error(self):
         authzrs = [gen_dom_authzr(domain="0", challs=acme_util.CHALLENGES)]
         mock_order = mock.MagicMock(authorizations=authzrs)
-        mock_verify.side_effect = errors.AuthorizationError
-        mock_poll.side_effect = self._validate_all
+        self.mock_net.poll.side_effect = _gen_mock_on_poll(status=messages.STATUS_INVALID)
 
-        self.assertRaises(
-            errors.AuthorizationError, self.handler.handle_authorizations, mock_order)
+        with test_util.patch_get_utility():
+            with self.assertRaises(errors.AuthorizationError) as error:
+                self.handler.handle_authorizations(mock_order, False)
+        self.assertTrue('Some challenges have failed.' in str(error.exception))
         self.assertEqual(self.mock_auth.cleanup.call_count, 1)
         self.assertEqual(
             self.mock_auth.cleanup.call_args[0][0][0].typ, "tls-sni-01")
 
-    def _validate_all(self, aauthzrs, unused_1, unused_2):
-        for i, aauthzr in enumerate(aauthzrs):
-            azr = aauthzr.authzr
-            updated_azr = acme_util.gen_authzr(
-                messages.STATUS_VALID,
-                azr.body.identifier.value,
-                [challb.chall for challb in azr.body.challenges],
-                [messages.STATUS_VALID] * len(azr.body.challenges),
-                azr.body.combinations)
-            aauthzrs[i] = type(aauthzr)(updated_azr, aauthzr.achalls)
+    def test_best_effort(self):
+        def _conditional_mock_on_poll(authzr):
+            """This mock will invalidate one authzr, and invalidate the other one"""
+            valid_mock = _gen_mock_on_poll(messages.STATUS_VALID)
+            invalid_mock = _gen_mock_on_poll(messages.STATUS_INVALID)
 
+            if authzr.body.identifier.value == 'will-be-invalid':
+                return invalid_mock(authzr)
+            return valid_mock(authzr)
 
-class PollChallengesTest(unittest.TestCase):
-    # pylint: disable=protected-access
-    """Test poll challenges."""
+        # Two authzrs. Only one will be valid.
+        authzrs = [gen_dom_authzr(domain="will-be-valid", challs=acme_util.CHALLENGES),
+                   gen_dom_authzr(domain="will-be-invalid", challs=acme_util.CHALLENGES)]
+        self.mock_net.poll.side_effect = _conditional_mock_on_poll
 
-    def setUp(self):
-        from certbot.auth_handler import challb_to_achall
-        from certbot.auth_handler import AuthHandler, AnnotatedAuthzr
+        mock_order = mock.MagicMock(authorizations=authzrs)
 
-        # Account and network are mocked...
-        self.mock_net = mock.MagicMock()
-        self.handler = AuthHandler(
-            None, self.mock_net, mock.Mock(key="mock_key"), [])
+        with mock.patch('certbot.auth_handler._report_failed_authzrs') as mock_report:
+            valid_authzr = self.handler.handle_authorizations(mock_order, True)
 
-        self.doms = ["0", "1", "2"]
-        self.aauthzrs = [
-            AnnotatedAuthzr(acme_util.gen_authzr(
-                messages.STATUS_PENDING, self.doms[0],
-                [acme_util.HTTP01, acme_util.TLSSNI01],
-                [messages.STATUS_PENDING] * 2, False), []),
-            AnnotatedAuthzr(acme_util.gen_authzr(
-                messages.STATUS_PENDING, self.doms[1],
-                acme_util.CHALLENGES, [messages.STATUS_PENDING] * 3, False), []),
-            AnnotatedAuthzr(acme_util.gen_authzr(
-                messages.STATUS_PENDING, self.doms[2],
-                acme_util.CHALLENGES, [messages.STATUS_PENDING] * 3, False), [])
-        ]
+        # Because best_effort=True, we did not blow up. Instead ...
+        self.assertEqual(len(valid_authzr), 1)  # ... the valid authzr has been processed
+        self.assertEqual(mock_report.call_count, 1)  # ... the invalid authzr has been reported
 
-        self.chall_update = {}  # type: Dict[int, achallenges.KeyAuthorizationAnnotatedChallenge]
-        for i, aauthzr in enumerate(self.aauthzrs):
-            self.chall_update[i] = [
-                challb_to_achall(challb, mock.Mock(key="dummy_key"), self.doms[i])
-                for challb in aauthzr.authzr.body.challenges]
+        self.mock_net.poll.side_effect = _gen_mock_on_poll(status=messages.STATUS_INVALID)
 
+        with test_util.patch_get_utility():
+            with self.assertRaises(errors.AuthorizationError) as error:
+                self.handler.handle_authorizations(mock_order, True)
 
-    @mock.patch("certbot.auth_handler.time")
-    def test_poll_challenges(self, unused_mock_time):
-        self.mock_net.poll.side_effect = self._mock_poll_solve_one_valid
-        self.handler._poll_challenges(self.aauthzrs, self.chall_update, False)
+        # Despite best_effort=True, process will fail because no authzr is valid.
+        self.assertTrue('All challenges have failed.' in str(error.exception))
 
-        for aauthzr in self.aauthzrs:
-            self.assertEqual(aauthzr.authzr.body.status, messages.STATUS_VALID)
-
-    @mock.patch("certbot.auth_handler.time")
-    def test_poll_challenges_failure_best_effort(self, unused_mock_time):
-        self.mock_net.poll.side_effect = self._mock_poll_solve_one_invalid
-        self.handler._poll_challenges(self.aauthzrs, self.chall_update, True)
-
-        for aauthzr in self.aauthzrs:
-            self.assertEqual(aauthzr.authzr.body.status, messages.STATUS_PENDING)
-
-    @mock.patch("certbot.auth_handler.time")
-    @test_util.patch_get_utility()
-    def test_poll_challenges_failure(self, unused_mock_time, unused_mock_zope):
-        self.mock_net.poll.side_effect = self._mock_poll_solve_one_invalid
+    def test_validated_challenge_not_rerun(self):
+        # With pending challenge, we expect the challenge to be tried, and fail.
+        authzr = acme_util.gen_authzr(
+                messages.STATUS_PENDING, "0",
+                [acme_util.HTTP01],
+                [messages.STATUS_PENDING], False)
+        mock_order = mock.MagicMock(authorizations=[authzr])
         self.assertRaises(
-            errors.AuthorizationError, self.handler._poll_challenges,
-            self.aauthzrs, self.chall_update, False)
+            errors.AuthorizationError, self.handler.handle_authorizations, mock_order)
 
-    @mock.patch("certbot.auth_handler.time")
-    def test_unable_to_find_challenge_status(self, unused_mock_time):
-        from certbot.auth_handler import challb_to_achall
-        self.mock_net.poll.side_effect = self._mock_poll_solve_one_valid
-        self.chall_update[0].append(
-            challb_to_achall(acme_util.DNS01_P, "key", self.doms[0]))
-        self.assertRaises(
-            errors.AuthorizationError, self.handler._poll_challenges,
-            self.aauthzrs, self.chall_update, False)
+        # With validated challenge; we expect the challenge not be tried again, and succeed.
+        authzr = acme_util.gen_authzr(
+                messages.STATUS_VALID, "0",
+                [acme_util.HTTP01],
+                [messages.STATUS_VALID], False)
+        mock_order = mock.MagicMock(authorizations=[authzr])
+        self.handler.handle_authorizations(mock_order)
 
-    def test_verify_authzr_failure(self):
-        self.assertRaises(errors.AuthorizationError,
-                          self.handler.verify_authzr_complete, self.aauthzrs)
+    @mock.patch("certbot.auth_handler.logger")
+    def test_tls_sni_logs(self, logger):
+        self._test_name1_tls_sni_01_1_common(combos=True)
+        self.assertTrue("deprecated" in logger.warning.call_args[0][0])
 
-    def _mock_poll_solve_one_valid(self, authzr):
-        # Pending here because my dummy script won't change the full status.
-        # Basically it didn't raise an error and it stopped earlier than
-        # Making all challenges invalid which would make mock_poll_solve_one
-        # change authzr to invalid
-        return self._mock_poll_solve_one_chall(authzr, messages.STATUS_VALID)
 
-    def _mock_poll_solve_one_invalid(self, authzr):
-        return self._mock_poll_solve_one_chall(authzr, messages.STATUS_INVALID)
+def _gen_mock_on_poll(status=messages.STATUS_VALID, retry=0, wait_value=1):
+    state = {'count': retry}
 
-    def _mock_poll_solve_one_chall(self, authzr, desired_status):
-        # pylint: disable=no-self-use
-        """Dummy method that solves one chall at a time to desired_status.
-
-        When all are solved.. it changes authzr.status to desired_status
-
-        """
-        new_challbs = authzr.body.challenges
-        for challb in authzr.body.challenges:
-            if challb.status != desired_status:
-                new_challbs = tuple(
-                    challb_temp if challb_temp != challb
-                    else acme_util.chall_to_challb(challb.chall, desired_status)
-                    for challb_temp in authzr.body.challenges
-                )
-                break
-
-        if all(test_challb.status == desired_status
-               for test_challb in new_challbs):
-            status_ = desired_status
-        else:
-            status_ = authzr.body.status
-
-        new_authzr = messages.AuthorizationResource(
-            uri=authzr.uri,
-            body=messages.Authorization(
-                identifier=authzr.body.identifier,
-                challenges=new_challbs,
-                combinations=authzr.body.combinations,
-                status=status_,
-            ),
-        )
-        return (new_authzr, "response")
+    def _mock(authzr):
+        state['count'] = state['count'] - 1
+        effective_status = status if state['count'] < 0 else messages.STATUS_PENDING
+        updated_azr = acme_util.gen_authzr(
+            effective_status,
+            authzr.body.identifier.value,
+            [challb.chall for challb in authzr.body.challenges],
+            [effective_status] * len(authzr.body.challenges),
+            authzr.body.combinations)
+        return updated_azr, mock.MagicMock(headers={'Retry-After': str(wait_value)})
+    return _mock
 
 
 class ChallbToAchallTest(unittest.TestCase):
@@ -504,8 +442,8 @@ class GenChallengePathTest(unittest.TestCase):
             errors.AuthorizationError, self._call, challbs, prefs, None)
 
 
-class ReportFailedChallsTest(unittest.TestCase):
-    """Tests for certbot.auth_handler._report_failed_challs."""
+class ReportFailedAuthzrsTest(unittest.TestCase):
+    """Tests for certbot.auth_handler._report_failed_authzrs."""
     # pylint: disable=protected-access
 
     def setUp(self):
@@ -519,31 +457,27 @@ class ReportFailedChallsTest(unittest.TestCase):
         # Prevent future regressions if the error type changes
         self.assertTrue(kwargs["error"].description is not None)
 
-        self.http01 = achallenges.KeyAuthorizationAnnotatedChallenge(
-            # pylint: disable=star-args
-            challb=messages.ChallengeBody(**kwargs),
-            domain="example.com",
-            account_key="key")
+        http_01 = messages.ChallengeBody(**kwargs)  # pylint: disable=star-args
 
         kwargs["chall"] = acme_util.TLSSNI01
-        self.tls_sni_same = achallenges.KeyAuthorizationAnnotatedChallenge(
-            # pylint: disable=star-args
-            challb=messages.ChallengeBody(**kwargs),
-            domain="example.com",
-            account_key="key")
+        tls_sni_01 = messages.ChallengeBody(**kwargs)  # pylint: disable=star-args
+
+        self.authzr1 = mock.MagicMock()
+        self.authzr1.body.identifier.value = 'example.com'
+        self.authzr1.body.challenges = [http_01, tls_sni_01]
 
         kwargs["error"] = messages.Error(typ="dnssec", detail="detail")
-        self.tls_sni_diff = achallenges.KeyAuthorizationAnnotatedChallenge(
-            # pylint: disable=star-args
-            challb=messages.ChallengeBody(**kwargs),
-            domain="foo.bar",
-            account_key="key")
+        tls_sni_01_diff = messages.ChallengeBody(**kwargs)  # pylint: disable=star-args
+
+        self.authzr2 = mock.MagicMock()
+        self.authzr2.body.identifier.value = 'foo.bar'
+        self.authzr2.body.challenges = [tls_sni_01_diff]
 
     @test_util.patch_get_utility()
     def test_same_error_and_domain(self, mock_zope):
         from certbot import auth_handler
 
-        auth_handler._report_failed_challs([self.http01, self.tls_sni_same])
+        auth_handler._report_failed_authzrs([self.authzr1], 'key')
         call_list = mock_zope().add_message.call_args_list
         self.assertTrue(len(call_list) == 1)
         self.assertTrue("Domain: example.com\nType:   tls\nDetail: detail" in call_list[0][0][0])
@@ -552,7 +486,7 @@ class ReportFailedChallsTest(unittest.TestCase):
     def test_different_errors_and_domains(self, mock_zope):
         from certbot import auth_handler
 
-        auth_handler._report_failed_challs([self.http01, self.tls_sni_diff])
+        auth_handler._report_failed_authzrs([self.authzr1, self.authzr2], 'key')
         self.assertTrue(mock_zope().add_message.call_count == 2)
 
 

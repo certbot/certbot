@@ -1,0 +1,8 @@
+[run]
+# Avoid false warnings because certbot packages are not installed in the thread that executes
+# the coverage: indeed, certbot is launched as a CLI from a subprocess.
+disable_warnings = module-not-imported,no-data-collected
+
+[report]
+# Exclude unit tests in coverage during integration tests.
+omit = **/*_test.py,**/tests/*,**/certbot_nginx/parser_obj.py

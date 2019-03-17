@@ -5,6 +5,7 @@ import os
 from six.moves.urllib import parse  # pylint: disable=import-error
 import zope.interface
 
+from certbot import compat
 from certbot import constants
 from certbot import errors
 from certbot import interfaces
@@ -65,8 +66,13 @@ class NamespaceConfig(object):
 
     @property
     def accounts_dir(self):  # pylint: disable=missing-docstring
+        return self.accounts_dir_for_server_path(self.server_path)
+
+    def accounts_dir_for_server_path(self, server_path):
+        """Path to accounts directory based on server_path"""
+        server_path = compat.underscores_for_unsupported_characters_in_path(server_path)
         return os.path.join(
-            self.namespace.config_dir, constants.ACCOUNTS_DIR, self.server_path)
+            self.namespace.config_dir, constants.ACCOUNTS_DIR, server_path)
 
     @property
     def backup_dir(self):  # pylint: disable=missing-docstring

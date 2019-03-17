@@ -159,21 +159,14 @@ class IAuthenticator(IPlugin):
             :func:`get_chall_pref` only.
 
         :returns: `collections.Iterable` of ACME
-            :class:`~acme.challenges.ChallengeResponse` instances
-            or if the :class:`~acme.challenges.Challenge` cannot
-            be fulfilled then:
-
-            ``None``
-              Authenticator can perform challenge, but not at this time.
-            ``False``
-              Authenticator will never be able to perform (error).
-
+            :class:`~acme.challenges.ChallengeResponse` instances corresponding to each provided
+            :class:`~acme.challenges.Challenge`.
         :rtype: :class:`collections.Iterable` of
             :class:`acme.challenges.ChallengeResponse`,
             where responses are required to be returned in
             the same order as corresponding input challenges
 
-        :raises .PluginError: If challenges cannot be performed
+        :raises .PluginError: If some or all challenges cannot be performed
 
         """
 
@@ -522,56 +515,6 @@ class IDisplay(zope.interface.Interface):
         """
 
 
-class IValidator(zope.interface.Interface):
-    """Configuration validator."""
-
-    def certificate(cert, name, alt_host=None, port=443):
-        """Verifies the certificate presented at name is cert
-
-        :param OpenSSL.crypto.X509 cert: Expected certificate
-        :param str name: Server's domain name
-        :param bytes alt_host: Host to connect to instead of the IP
-            address of host
-        :param int port: Port to connect to
-
-        :returns: True if the certificate was verified successfully
-        :rtype: bool
-
-        """
-
-    def redirect(name, port=80, headers=None):
-        """Verify redirect to HTTPS
-
-        :param str name: Server's domain name
-        :param int port: Port to connect to
-        :param dict headers: HTTP headers to include in request
-
-        :returns: True if redirect is successfully enabled
-        :rtype: bool
-
-        """
-
-    def hsts(name):
-        """Verify HSTS header is enabled
-
-        :param str name: Server's domain name
-
-        :returns: True if HSTS header is successfully enabled
-        :rtype: bool
-
-        """
-
-    def ocsp_stapling(name):
-        """Verify ocsp stapling for domain
-
-        :param str name: Server's domain name
-
-        :returns: True if ocsp stapling is successfully enabled
-        :rtype: bool
-
-        """
-
-
 class IReporter(zope.interface.Interface):
     """Interface to collect and display information to the user."""
 
@@ -620,6 +563,9 @@ class GenericUpdater(object):
     methods, and interfaces.GenericUpdater.register(InstallerClass) should
     be called from the installer code.
 
+    The plugins implementing this enhancement are responsible of handling
+    the saving of configuration checkpoints as well as other calls to
+    interface methods of `interfaces.IInstaller` such as prepare() and restart()
     """
 
     @abc.abstractmethod

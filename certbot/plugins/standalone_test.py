@@ -44,9 +44,6 @@ class ServerManagerTest(unittest.TestCase):
         self.mgr.stop(port=port)
         self.assertEqual(self.mgr.running(), {})
 
-    def test_run_stop_tls_sni_01(self):
-        self._test_run_stop(challenges.TLSSNI01)
-
     def test_run_stop_http_01(self):
         self._test_run_stop(challenges.HTTP01)
 
@@ -72,6 +69,8 @@ class ServerManagerTest(unittest.TestCase):
             errors.StandaloneBindError, self.mgr.run, port,
             challenge_type=challenges.HTTP01)
         self.assertEqual(self.mgr.running(), {})
+        some_server.close()
+        maybe_another_server.close()
 
 
 class SupportedChallengesActionTest(unittest.TestCase):
@@ -96,10 +95,7 @@ class SupportedChallengesActionTest(unittest.TestCase):
         self.parser.add_argument(self.flag, action=SupportedChallengesAction)
 
     def test_correct(self):
-        self.assertEqual("tls-sni-01", self._call("tls-sni-01"))
         self.assertEqual("http-01", self._call("http-01"))
-        self.assertEqual("tls-sni-01,http-01", self._call("tls-sni-01,http-01"))
-        self.assertEqual("http-01,tls-sni-01", self._call("http-01,tls-sni-01"))
 
     def test_unrecognized(self):
         assert "foo" not in challenges.Challenge.TYPES
@@ -107,11 +103,6 @@ class SupportedChallengesActionTest(unittest.TestCase):
 
     def test_not_subset(self):
         self.assertRaises(SystemExit, self._call, "dns")
-
-    def test_dvsni(self):
-        self.assertEqual("tls-sni-01", self._call("dvsni"))
-        self.assertEqual("http-01,tls-sni-01", self._call("http-01,dvsni"))
-        self.assertEqual("tls-sni-01,http-01", self._call("dvsni,http-01"))
 
 
 def get_open_port():
@@ -130,31 +121,31 @@ class AuthenticatorTest(unittest.TestCase):
         from certbot.plugins.standalone import Authenticator
 
         self.config = mock.MagicMock(
-            tls_sni_01_port=get_open_port(), http01_port=get_open_port(),
-            standalone_supported_challenges="tls-sni-01,http-01")
+            http01_port=get_open_port(),
+            standalone_supported_challenges="http-01")
         self.auth = Authenticator(self.config, name="standalone")
         self.auth.servers = mock.MagicMock()
 
     def test_supported_challenges(self):
         self.assertEqual(self.auth.supported_challenges,
-                         [challenges.TLSSNI01, challenges.HTTP01])
+                         [challenges.HTTP01])
 
     def test_supported_challenges_configured(self):
-        self.config.standalone_supported_challenges = "tls-sni-01"
+        self.config.standalone_supported_challenges = "http-01"
         self.assertEqual(self.auth.supported_challenges,
-                         [challenges.TLSSNI01])
+                         [challenges.HTTP01])
 
     def test_more_info(self):
         self.assertTrue(isinstance(self.auth.more_info(), six.string_types))
 
     def test_get_chall_pref(self):
         self.assertEqual(self.auth.get_chall_pref(domain=None),
-                         [challenges.TLSSNI01, challenges.HTTP01])
+                         [challenges.HTTP01])
 
     def test_get_chall_pref_configured(self):
-        self.config.standalone_supported_challenges = "tls-sni-01"
+        self.config.standalone_supported_challenges = "http-01"
         self.assertEqual(self.auth.get_chall_pref(domain=None),
-                         [challenges.TLSSNI01])
+                         [challenges.HTTP01])
 
     def test_perform(self):
         achalls = self._get_achalls()
@@ -210,10 +201,8 @@ class AuthenticatorTest(unittest.TestCase):
         key = jose.JWK.load(test_util.load_vector('rsa512_key.pem'))
         http_01 = achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=acme_util.HTTP01_P, domain=domain, account_key=key)
-        tls_sni_01 = achallenges.KeyAuthorizationAnnotatedChallenge(
-            challb=acme_util.TLSSNI01_P, domain=domain, account_key=key)
 
-        return [http_01, tls_sni_01]
+        return [http_01]
 
     def test_cleanup(self):
         self.auth.servers.running.return_value = {
@@ -240,6 +229,7 @@ class AuthenticatorTest(unittest.TestCase):
         self.assertEqual(self.auth.served, {
             "server1": set(), "server2": set([])})
         self.auth.servers.stop.assert_called_with(2)
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

@@ -12,7 +12,7 @@ import pytz
 import six
 
 import certbot
-from certbot import cli
+from certbot import compat
 from certbot import errors
 from certbot.storage import ALL_FOUR
 
@@ -34,6 +34,48 @@ def fill_with_sample_data(rc_object):
     for kind in ALL_FOUR:
         with open(getattr(rc_object, kind), "w") as f:
             f.write(kind)
+
+
+class RelevantValuesTest(unittest.TestCase):
+    """Tests for certbot.storage.relevant_values."""
+
+    def setUp(self):
+        self.values = {"server": "example.org"}
+
+    def _call(self, *args, **kwargs):
+        from certbot.storage import relevant_values
+        return relevant_values(*args, **kwargs)
+
+    @mock.patch("certbot.cli.option_was_set")
+    @mock.patch("certbot.plugins.disco.PluginsRegistry.find_all")
+    def test_namespace(self, mock_find_all, mock_option_was_set):
+        mock_find_all.return_value = ["certbot-foo:bar"]
+        mock_option_was_set.return_value = True
+
+        self.values["certbot_foo:bar_baz"] = 42
+        self.assertEqual(
+            self._call(self.values.copy()), self.values)
+
+    @mock.patch("certbot.cli.option_was_set")
+    def test_option_set(self, mock_option_was_set):
+        mock_option_was_set.return_value = True
+
+        self.values["allow_subset_of_names"] = True
+        self.values["authenticator"] = "apache"
+        self.values["rsa_key_size"] = 1337
+        expected_relevant_values = self.values.copy()
+        self.values["hello"] = "there"
+
+        self.assertEqual(self._call(self.values), expected_relevant_values)
+
+    @mock.patch("certbot.cli.option_was_set")
+    def test_option_unset(self, mock_option_was_set):
+        mock_option_was_set.return_value = False
+
+        expected_relevant_values = self.values.copy()
+        self.values["rsa_key_size"] = 2048
+
+        self.assertEqual(self._call(self.values), expected_relevant_values)
 
 
 class BaseRenewableCertTest(test_util.ConfigTestCase):
@@ -73,9 +115,8 @@ class BaseRenewableCertTest(test_util.ConfigTestCase):
         # We also create a file that isn't a renewal config in the same
         # location to test that logic that reads in all-and-only renewal
         # configs will ignore it and NOT attempt to parse it.
-        junk = open(os.path.join(self.config.config_dir, "renewal", "IGNORE.THIS"), "w")
-        junk.write("This file should be ignored!")
-        junk.close()
+        with open(os.path.join(self.config.config_dir, "renewal", "IGNORE.THIS"), "w") as junk:
+            junk.write("This file should be ignored!")
 
         self.defaults = configobj.ConfigObj()
 
@@ -92,6 +133,8 @@ class BaseRenewableCertTest(test_util.ConfigTestCase):
                    link)
         with open(link, "wb") as f:
             f.write(kind.encode('ascii') if value is None else value)
+        if kind == "privkey":
+            os.chmod(link, 0o600)
 
     def _write_out_ex_kinds(self):
         for kind in ALL_FOUR:
@@ -264,12 +307,12 @@ class RenewableCertTests(BaseRenewableCertTest):
         mock_has_pending.return_value = False
         self.assertEqual(self.test_rc.ensure_deployed(), True)
         self.assertEqual(mock_update.call_count, 0)
-        self.assertEqual(mock_logger.warn.call_count, 0)
+        self.assertEqual(mock_logger.warning.call_count, 0)
 
         mock_has_pending.return_value = True
         self.assertEqual(self.test_rc.ensure_deployed(), False)
         self.assertEqual(mock_update.call_count, 1)
-        self.assertEqual(mock_logger.warn.call_count, 1)
+        self.assertEqual(mock_logger.warning.call_count, 1)
 
 
     def test_update_link_to(self):
@@ -383,10 +426,10 @@ class RenewableCertTests(BaseRenewableCertTest):
         os.unlink(self.test_rc.cert)
         self.assertRaises(errors.CertStorageError, self.test_rc.names)
 
+    @mock.patch("certbot.storage.cli")
     @mock.patch("certbot.storage.datetime")
-    def test_time_interval_judgments(self, mock_datetime):
-        """Test should_autodeploy() and should_autorenew() on the basis
-        of expiry time windows."""
+    def test_time_interval_judgments(self, mock_datetime, mock_cli):
+        """Test should_autorenew() on the basis of expiry time windows."""
         test_cert = test_util.load_vector("cert_512.pem")
 
         self._write_out_ex_kinds()
@@ -399,6 +442,8 @@ class RenewableCertTests(BaseRenewableCertTest):
             f.write(test_cert)
 
         mock_datetime.timedelta = datetime.timedelta
+        mock_cli.set_by_cli.return_value = False
+        self.test_rc.configuration["renewalparams"] = {}
 
         for (current_time, interval, result) in [
                 # 2014-12-13 12:00:00+00:00 (about 5 days prior to expiry)
@@ -425,48 +470,28 @@ class RenewableCertTests(BaseRenewableCertTest):
             mock_datetime.datetime.utcnow.return_value = sometime
             self.test_rc.configuration["deploy_before_expiry"] = interval
             self.test_rc.configuration["renew_before_expiry"] = interval
-            self.assertEqual(self.test_rc.should_autodeploy(), result)
             self.assertEqual(self.test_rc.should_autorenew(), result)
 
-    def test_autodeployment_is_enabled(self):
-        self.assertTrue(self.test_rc.autodeployment_is_enabled())
-        self.test_rc.configuration["autodeploy"] = "1"
-        self.assertTrue(self.test_rc.autodeployment_is_enabled())
-
-        self.test_rc.configuration["autodeploy"] = "0"
-        self.assertFalse(self.test_rc.autodeployment_is_enabled())
-
-    def test_should_autodeploy(self):
-        """Test should_autodeploy() on the basis of reasons other than
-        expiry time window."""
-        # pylint: disable=too-many-statements
-        # Autodeployment turned off
-        self.test_rc.configuration["autodeploy"] = "0"
-        self.assertFalse(self.test_rc.should_autodeploy())
-        self.test_rc.configuration["autodeploy"] = "1"
-        # No pending deployment
-        for ver in six.moves.range(1, 6):
-            for kind in ALL_FOUR:
-                self._write_out_kind(kind, ver)
-        self.assertFalse(self.test_rc.should_autodeploy())
-
     def test_autorenewal_is_enabled(self):
+        self.test_rc.configuration["renewalparams"] = {}
         self.assertTrue(self.test_rc.autorenewal_is_enabled())
-        self.test_rc.configuration["autorenew"] = "1"
+        self.test_rc.configuration["renewalparams"]["autorenew"] = "True"
         self.assertTrue(self.test_rc.autorenewal_is_enabled())
 
-        self.test_rc.configuration["autorenew"] = "0"
+        self.test_rc.configuration["renewalparams"]["autorenew"] = "False"
         self.assertFalse(self.test_rc.autorenewal_is_enabled())
 
+    @mock.patch("certbot.storage.cli")
     @mock.patch("certbot.storage.RenewableCert.ocsp_revoked")
-    def test_should_autorenew(self, mock_ocsp):
+    def test_should_autorenew(self, mock_ocsp, mock_cli):
         """Test should_autorenew on the basis of reasons other than
         expiry time window."""
         # pylint: disable=too-many-statements
+        mock_cli.set_by_cli.return_value = False
         # Autorenewal turned off
-        self.test_rc.configuration["autorenew"] = "0"
+        self.test_rc.configuration["renewalparams"] = {"autorenew": "False"}
         self.assertFalse(self.test_rc.should_autorenew())
-        self.test_rc.configuration["autorenew"] = "1"
+        self.test_rc.configuration["renewalparams"]["autorenew"] = "True"
         for kind in ALL_FOUR:
             self._write_out_kind(kind, 12)
         # Mandatory renewal on the basis of OCSP revocation
@@ -474,6 +499,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertTrue(self.test_rc.should_autorenew())
         mock_ocsp.return_value = False
 
+    @test_util.broken_on_windows
     @mock.patch("certbot.storage.relevant_values")
     def test_save_successor(self, mock_rv):
         # Mock relevant_values() to claim that all values are relevant here
@@ -537,51 +563,46 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertFalse(os.path.islink(self.test_rc.version("privkey", 10)))
         self.assertFalse(os.path.exists(temp_config_file))
 
-    def _test_relevant_values_common(self, values):
-        option = "rsa_key_size"
-        mock_parser = mock.Mock(args=["--standalone"], verb="certonly",
-                                defaults={option: cli.flag_default(option)})
+    @test_util.broken_on_windows
+    @mock.patch("certbot.storage.relevant_values")
+    def test_save_successor_maintains_group_mode(self, mock_rv):
+        # Mock relevant_values() to claim that all values are relevant here
+        # (to avoid instantiating parser)
+        mock_rv.side_effect = lambda x: x
+        for kind in ALL_FOUR:
+            self._write_out_kind(kind, 1)
+        self.test_rc.update_all_links_to(1)
+        self.assertTrue(compat.compare_file_modes(
+            os.stat(self.test_rc.version("privkey", 1)).st_mode, 0o600))
+        os.chmod(self.test_rc.version("privkey", 1), 0o444)
+        # If no new key, permissions should be the same (we didn't write any keys)
+        self.test_rc.save_successor(1, b"newcert", None, b"new chain", self.config)
+        self.assertTrue(compat.compare_file_modes(
+            os.stat(self.test_rc.version("privkey", 2)).st_mode, 0o444))
+        # If new key, permissions should be kept as 644
+        self.test_rc.save_successor(2, b"newcert", b"new_privkey", b"new chain", self.config)
+        self.assertTrue(compat.compare_file_modes(
+            os.stat(self.test_rc.version("privkey", 3)).st_mode, 0o644))
+        # If permissions reverted, next renewal will also revert permissions of new key
+        os.chmod(self.test_rc.version("privkey", 3), 0o400)
+        self.test_rc.save_successor(3, b"newcert", b"new_privkey", b"new chain", self.config)
+        self.assertTrue(compat.compare_file_modes(
+            os.stat(self.test_rc.version("privkey", 4)).st_mode, 0o600))
 
-        from certbot.storage import relevant_values
-        with mock.patch("certbot.cli.helpful_parser", mock_parser):
-            # make a copy to ensure values isn't modified
-            return relevant_values(values.copy())
-
-    def test_relevant_values(self):
-        """Test that relevant_values() can reject an irrelevant value."""
-        self.assertEqual(
-            self._test_relevant_values_common({"hello": "there"}), {})
-
-    def test_relevant_values_default(self):
-        """Test that relevant_values() can reject a default value."""
-        option = "rsa_key_size"
-        values = {option: cli.flag_default(option)}
-        self.assertEqual(self._test_relevant_values_common(values), {})
-
-    def test_relevant_values_nondefault(self):
-        """Test that relevant_values() can retain a non-default value."""
-        values = {"rsa_key_size": 12}
-        self.assertEqual(
-            self._test_relevant_values_common(values), values)
-
-    def test_relevant_values_bool(self):
-        values = {"allow_subset_of_names": True}
-        self.assertEqual(
-            self._test_relevant_values_common(values), values)
-
-    def test_relevant_values_str(self):
-        values = {"authenticator": "apache"}
-        self.assertEqual(
-            self._test_relevant_values_common(values), values)
-
-    @mock.patch("certbot.cli.set_by_cli")
-    @mock.patch("certbot.plugins.disco.PluginsRegistry.find_all")
-    def test_relevant_values_namespace(self, mock_find_all, mock_set_by_cli):
-        mock_set_by_cli.return_value = True
-        mock_find_all.return_value = ["certbot-foo:bar"]
-        values = {"certbot_foo:bar_baz": 42}
-        self.assertEqual(
-            self._test_relevant_values_common(values), values)
+    @test_util.broken_on_windows
+    @mock.patch("certbot.storage.relevant_values")
+    @mock.patch("certbot.storage.os.chown")
+    def test_save_successor_maintains_gid(self, mock_chown, mock_rv):
+        # Mock relevant_values() to claim that all values are relevant here
+        # (to avoid instantiating parser)
+        mock_rv.side_effect = lambda x: x
+        for kind in ALL_FOUR:
+            self._write_out_kind(kind, 1)
+        self.test_rc.update_all_links_to(1)
+        self.test_rc.save_successor(1, b"newcert", None, b"new chain", self.config)
+        self.assertFalse(mock_chown.called)
+        self.test_rc.save_successor(2, b"newcert", b"new_privkey", b"new chain", self.config)
+        self.assertTrue(mock_chown.called)
 
     @mock.patch("certbot.storage.relevant_values")
     def test_new_lineage(self, mock_rv):
@@ -600,7 +621,10 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertTrue(os.path.exists(os.path.join(
             self.config.renewal_configs_dir, "the-lineage.com.conf")))
         self.assertTrue(os.path.exists(os.path.join(
+            self.config.live_dir, "README")))
+        self.assertTrue(os.path.exists(os.path.join(
             self.config.live_dir, "the-lineage.com", "README")))
+        self.assertTrue(compat.compare_file_modes(os.stat(result.key_path).st_mode, 0o600))
         with open(result.fullchain, "rb") as f:
             self.assertEqual(f.read(), b"cert" + b"chain")
         # Let's do it again and make sure it makes a different lineage

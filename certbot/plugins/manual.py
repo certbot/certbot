@@ -15,34 +15,6 @@ from certbot import reverter
 from certbot.plugins import common
 
 
-class ManualTlsSni01(common.TLSSNI01):
-    """TLS-SNI-01 authenticator for the Manual plugin
-
-    :ivar configurator: Authenticator object
-    :type configurator: :class:`~certbot.plugins.manual.Authenticator`
-
-    :ivar list achalls: Annotated
-        class:`~certbot.achallenges.KeyAuthorizationAnnotatedChallenge`
-        challenges
-
-    :param list indices: Meant to hold indices of challenges in a
-        larger array. NginxTlsSni01 is capable of solving many challenges
-        at once which causes an indexing issue within NginxConfigurator
-        who must return all responses in order.  Imagine NginxConfigurator
-        maintaining state about where all of the http-01 Challenges,
-        TLS-SNI-01 Challenges belong in the response array.  This is an
-        optional utility.
-
-    :param str challenge_conf: location of the challenge config file
-    """
-
-    def perform(self):
-        """Create the SSL certificates and private keys"""
-
-        for achall in self.achalls:
-            self._setup_challenge_cert(achall)
-
-
 @zope.interface.implementer(interfaces.IAuthenticator)
 @zope.interface.provider(interfaces.IPluginFactory)
 class Authenticator(common.Plugin):
@@ -63,14 +35,9 @@ class Authenticator(common.Plugin):
         'type of challenge. $CERTBOT_DOMAIN will always contain the domain '
         'being authenticated. For HTTP-01 and DNS-01, $CERTBOT_VALIDATION '
         'is the validation string, and $CERTBOT_TOKEN is the filename of the '
-        'resource requested when performing an HTTP-01 challenge. When '
-        'performing a TLS-SNI-01 challenge, $CERTBOT_SNI_DOMAIN will contain '
-        'the SNI name for which the ACME server expects to be presented with '
-        'the self-signed certificate located at $CERTBOT_CERT_PATH. The '
-        'secret key needed to complete the TLS handshake is located at '
-        '$CERTBOT_KEY_PATH. An additional cleanup script can also be '
-        'provided and can use the additional variable $CERTBOT_AUTH_OUTPUT '
-        'which contains the stdout output from the auth script.')
+        'resource requested when performing an HTTP-01 challenge. An additional '
+        'cleanup script can also be provided and can use the additional variable '
+        '$CERTBOT_AUTH_OUTPUT which contains the stdout output from the auth script.')
     _DNS_INSTRUCTIONS = """\
 Please deploy a DNS TXT record under the name
 {domain} with the following value:
@@ -87,13 +54,15 @@ And make it available on your web server at this URL:
 
 {uri}
 """
-    _TLSSNI_INSTRUCTIONS = """\
-Configure the service listening on port {port} to present the certificate
-{cert}
-using the secret key
-{key}
-when it receives a TLS ClientHello with the SNI extension set to
-{sni_domain}
+    _SUBSEQUENT_CHALLENGE_INSTRUCTIONS = """
+(This must be set up in addition to the previous challenges; do not remove,
+replace, or undo the previous challenge tasks yet.)
+"""
+    _SUBSEQUENT_DNS_CHALLENGE_INSTRUCTIONS = """
+(This must be set up in addition to the previous challenges; do not remove,
+replace, or undo the previous challenge tasks yet. Note that you might be
+asked to create multiple distinct TXT records with the same name. This is
+permitted by DNS standards.)
 """
 
     def __init__(self, *args, **kwargs):
@@ -102,7 +71,8 @@ when it receives a TLS ClientHello with the SNI extension set to
         self.reverter.recovery_routine()
         self.env = dict() \
         # type: Dict[achallenges.KeyAuthorizationAnnotatedChallenge, Dict[str, str]]
-        self.tls_sni_01 = None
+        self.subsequent_dns_challenge = False
+        self.subsequent_any_challenge = False
 
     @classmethod
     def add_parser_arguments(cls, add):
@@ -137,7 +107,7 @@ when it receives a TLS ClientHello with the SNI extension set to
 
     def get_chall_pref(self, domain):
         # pylint: disable=missing-docstring,no-self-use,unused-argument
-        return [challenges.HTTP01, challenges.DNS01, challenges.TLSSNI01]
+        return [challenges.HTTP01, challenges.DNS01]
 
     def perform(self, achalls):  # pylint: disable=missing-docstring
         self._verify_ip_logging_ok()
@@ -148,12 +118,6 @@ when it receives a TLS ClientHello with the SNI extension set to
 
         responses = []
         for achall in achalls:
-            if isinstance(achall.chall, challenges.TLSSNI01):
-                # Make a new ManualTlsSni01 instance for each challenge
-                # because the manual plugin deals with one challenge at a time.
-                self.tls_sni_01 = ManualTlsSni01(self)
-                self.tls_sni_01.add_chall(achall)
-                self.tls_sni_01.perform()
             perform_achall(achall)
             responses.append(achall.response(achall.account_key))
         return responses
@@ -179,18 +143,8 @@ when it receives a TLS ClientHello with the SNI extension set to
             env['CERTBOT_TOKEN'] = achall.chall.encode('token')
         else:
             os.environ.pop('CERTBOT_TOKEN', None)
-        if isinstance(achall.chall, challenges.TLSSNI01):
-            env['CERTBOT_CERT_PATH'] = self.tls_sni_01.get_cert_path(achall)
-            env['CERTBOT_KEY_PATH'] = self.tls_sni_01.get_key_path(achall)
-            env['CERTBOT_SNI_DOMAIN'] = self.tls_sni_01.get_z_domain(achall)
-            os.environ.pop('CERTBOT_VALIDATION', None)
-            env.pop('CERTBOT_VALIDATION')
-        else:
-            os.environ.pop('CERTBOT_CERT_PATH', None)
-            os.environ.pop('CERTBOT_KEY_PATH', None)
-            os.environ.pop('CERTBOT_SNI_DOMAIN', None)
         os.environ.update(env)
-        _, out = hooks.execute(self.conf('auth-hook'))
+        _, out = self._execute_hook('auth-hook')
         env['CERTBOT_AUTH_OUTPUT'] = out.strip()
         self.env[achall] = env
 
@@ -201,19 +155,22 @@ when it receives a TLS ClientHello with the SNI extension set to
                 achall=achall, encoded_token=achall.chall.encode('token'),
                 port=self.config.http01_port,
                 uri=achall.chall.uri(achall.domain), validation=validation)
-        elif isinstance(achall.chall, challenges.DNS01):
+        else:
+            assert isinstance(achall.chall, challenges.DNS01)
             msg = self._DNS_INSTRUCTIONS.format(
                 domain=achall.validation_domain_name(achall.domain),
                 validation=validation)
-        else:
-            assert isinstance(achall.chall, challenges.TLSSNI01)
-            msg = self._TLSSNI_INSTRUCTIONS.format(
-                cert=self.tls_sni_01.get_cert_path(achall),
-                key=self.tls_sni_01.get_key_path(achall),
-                port=self.config.tls_sni_01_port,
-                sni_domain=self.tls_sni_01.get_z_domain(achall))
+        if isinstance(achall.chall, challenges.DNS01):
+            if self.subsequent_dns_challenge:
+                # 2nd or later dns-01 challenge
+                msg += self._SUBSEQUENT_DNS_CHALLENGE_INSTRUCTIONS
+            self.subsequent_dns_challenge = True
+        elif self.subsequent_any_challenge:
+            # 2nd or later challenge of another type
+            msg += self._SUBSEQUENT_CHALLENGE_INSTRUCTIONS
         display = zope.component.getUtility(interfaces.IDisplay)
         display.notification(msg, wrap=False, force_interactive=True)
+        self.subsequent_any_challenge = True
 
     def cleanup(self, achalls):  # pylint: disable=missing-docstring
         if self.conf('cleanup-hook'):
@@ -222,5 +179,8 @@ when it receives a TLS ClientHello with the SNI extension set to
                 if 'CERTBOT_TOKEN' not in env:
                     os.environ.pop('CERTBOT_TOKEN', None)
                 os.environ.update(env)
-                hooks.execute(self.conf('cleanup-hook'))
+                self._execute_hook('cleanup-hook')
         self.reverter.recovery_routine()
+
+    def _execute_hook(self, hook_name):
+        return hooks.execute(self.option_name(hook_name), self.conf(hook_name))

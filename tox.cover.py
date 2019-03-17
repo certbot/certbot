@@ -1,0 +1,87 @@
+#!/usr/bin/env python
+import argparse
+import subprocess
+import os
+import sys
+
+DEFAULT_PACKAGES = [
+    'certbot', 'acme', 'certbot_apache', 'certbot_dns_cloudflare', 'certbot_dns_cloudxns',
+    'certbot_dns_digitalocean', 'certbot_dns_dnsimple', 'certbot_dns_dnsmadeeasy',
+    'certbot_dns_gehirn', 'certbot_dns_google', 'certbot_dns_linode', 'certbot_dns_luadns',
+    'certbot_dns_nsone', 'certbot_dns_ovh', 'certbot_dns_rfc2136', 'certbot_dns_route53',
+    'certbot_dns_sakuracloud', 'certbot_nginx', 'certbot_postfix', 'letshelp_certbot']
+
+COVER_THRESHOLDS = {
+    'certbot': {'linux': 98, 'windows': 93},
+    'acme': {'linux': 100, 'windows': 99},
+    # certbot_apache coverage not being at 100% is a workaround for
+    # https://github.com/certbot/certbot/issues/6813. We should increase
+    # the minimum coverage back to 100% when this issue is resolved.
+    'certbot_apache': {'linux': 99, 'windows': 99},
+    'certbot_dns_cloudflare': {'linux': 98, 'windows': 98},
+    'certbot_dns_cloudxns': {'linux': 99, 'windows': 99},
+    'certbot_dns_digitalocean': {'linux': 98, 'windows': 98},
+    'certbot_dns_dnsimple': {'linux': 98, 'windows': 98},
+    'certbot_dns_dnsmadeeasy': {'linux': 99, 'windows': 99},
+    'certbot_dns_gehirn': {'linux': 97, 'windows': 97},
+    'certbot_dns_google': {'linux': 99, 'windows': 99},
+    'certbot_dns_linode': {'linux': 98, 'windows': 98},
+    'certbot_dns_luadns': {'linux': 98, 'windows': 98},
+    'certbot_dns_nsone': {'linux': 99, 'windows': 99},
+    'certbot_dns_ovh': {'linux': 97, 'windows': 97},
+    'certbot_dns_rfc2136': {'linux': 99, 'windows': 99},
+    'certbot_dns_route53': {'linux': 92, 'windows': 92},
+    'certbot_dns_sakuracloud': {'linux': 97, 'windows': 97},
+    'certbot_nginx': {'linux': 97, 'windows': 97},
+    'certbot_postfix': {'linux': 100, 'windows': 100},
+    'letshelp_certbot': {'linux': 100, 'windows': 100}
+}
+
+SKIP_PROJECTS_ON_WINDOWS = [
+    'certbot-apache', 'certbot-postfix', 'letshelp-certbot']
+
+
+def cover(package):
+    threshold = COVER_THRESHOLDS.get(package)['windows' if os.name == 'nt' else 'linux']
+
+    pkg_dir = package.replace('_', '-')
+
+    if os.name == 'nt' and pkg_dir in SKIP_PROJECTS_ON_WINDOWS:
+        print((
+            'Info: currently {0} is not supported on Windows and will not be tested/covered.'
+            .format(pkg_dir)))
+        return
+
+    subprocess.check_call([sys.executable, '-m', 'pytest', '--pyargs',
+                           '--cov', pkg_dir, '--cov-append', '--cov-report=', package])
+    subprocess.check_call([
+        sys.executable, '-m', 'coverage', 'report', '--fail-under', str(threshold), '--include',
+        '{0}/*'.format(pkg_dir), '--show-missing'])
+
+
+def main():
+    description = """
+This script is used by tox.ini (and thus by Travis CI and AppVeyor) in order
+to generate separate stats for each package. It should be removed once those
+packages are moved to a separate repo.
+
+Option -e makes sure we fail fast and don't submit to codecov."""
+    parser = argparse.ArgumentParser(description=description)
+    parser.add_argument('--packages', nargs='+')
+
+    args = parser.parse_args()
+
+    packages = args.packages or DEFAULT_PACKAGES
+
+    # --cov-append is on, make sure stats are correct
+    try:
+        os.remove('.coverage')
+    except OSError:
+        pass
+
+    for package in packages:
+        cover(package)
+
+
+if __name__ == '__main__':
+    main()

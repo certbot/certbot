@@ -4,6 +4,7 @@ import logging
 import os
 import platform
 
+
 from cryptography.hazmat.backends import default_backend
 # https://github.com/python/typeshed/blob/master/third_party/
 # 2/cryptography/hazmat/primitives/asymmetric/rsa.pyi
@@ -16,12 +17,14 @@ from acme import client as acme_client
 from acme import crypto_util as acme_crypto_util
 from acme import errors as acme_errors
 from acme import messages
+from acme.magic_typing import Optional  # pylint: disable=unused-import,no-name-in-module
 
 import certbot
 
 from certbot import account
 from certbot import auth_handler
 from certbot import cli
+from certbot import compat
 from certbot import constants
 from certbot import crypto_util
 from certbot import eff
@@ -63,9 +66,17 @@ def determine_user_agent(config):
     if config.user_agent is None:
         ua = ("CertbotACMEClient/{0} ({1}; {2}{8}) Authenticator/{3} Installer/{4} "
               "({5}; flags: {6}) Py/{7}")
-        ua = ua.format(certbot.__version__, cli.cli_command, util.get_os_info_ua(),
+        if os.environ.get("CERTBOT_DOCS") == "1":
+            cli_command = "certbot(-auto)"
+            os_info = "OS_NAME OS_VERSION"
+            python_version = "major.minor.patchlevel"
+        else:
+            cli_command = cli.cli_command
+            os_info = util.get_os_info_ua()
+            python_version = platform.python_version()
+        ua = ua.format(certbot.__version__, cli_command, os_info,
                        config.authenticator, config.installer, config.verb,
-                       ua_flags(config), platform.python_version(),
+                       ua_flags(config), python_version,
                        "; " + config.user_agent_comment if config.user_agent_comment else "")
     else:
         ua = config.user_agent
@@ -192,9 +203,27 @@ def perform_registration(acme, config, tos_cb):
     :returns: Registration Resource.
     :rtype: `acme.messages.RegistrationResource`
     """
+
+    eab_credentials_supplied = config.eab_kid and config.eab_hmac_key
+    if eab_credentials_supplied:
+        account_public_key = acme.client.net.key.public_key()
+        eab = messages.ExternalAccountBinding.from_data(account_public_key=account_public_key,
+                                                        kid=config.eab_kid,
+                                                        hmac_key=config.eab_hmac_key,
+                                                        directory=acme.client.directory)
+    else:
+        eab = None
+
+    if acme.external_account_required():
+        if not eab_credentials_supplied:
+            msg = ("Server requires external account binding."
+                   " Please use --eab-kid and --eab-hmac-key.")
+            raise errors.Error(msg)
+
     try:
-        return acme.new_account_and_tos(messages.NewRegistration.from_data(email=config.email),
-            tos_cb)
+        newreg = messages.NewRegistration.from_data(email=config.email,
+                                                    external_account_binding=eab)
+        return acme.new_account_and_tos(newreg, tos_cb)
     except messages.Error as e:
         if e.code == "invalidEmail" or e.code == "invalidContact":
             if config.noninteractive_mode:
@@ -273,7 +302,7 @@ class Client(object):
         cert, chain = crypto_util.cert_and_chain_from_fullchain(orderr.fullchain_pem)
         return cert.encode(), chain.encode()
 
-    def obtain_certificate(self, domains):
+    def obtain_certificate(self, domains, old_keypath=None):
         """Obtains a certificate from the ACME server.
 
         `.register` must be called before `.obtain_certificate`
@@ -286,16 +315,39 @@ class Client(object):
         :rtype: tuple
 
         """
+
+        # We need to determine the key path, key PEM data, CSR path,
+        # and CSR PEM data.  For a dry run, the paths are None because
+        # they aren't permanently saved to disk.  For a lineage with
+        # --reuse-key, the key path and PEM data are derived from an
+        # existing file.
+
+        if old_keypath is not None:
+            # We've been asked to reuse a specific existing private key.
+            # Therefore, we'll read it now and not generate a new one in
+            # either case below.
+            #
+            # We read in bytes here because the type of `key.pem`
+            # created below is also bytes.
+            with open(old_keypath, "rb") as f:
+                keypath = old_keypath
+                keypem = f.read()
+            key = util.Key(file=keypath, pem=keypem) # type: Optional[util.Key]
+            logger.info("Reusing existing private key from %s.", old_keypath)
+        else:
+            # The key is set to None here but will be created below.
+            key = None
+
         # Create CSR from names
         if self.config.dry_run:
-            key = util.Key(file=None,
-                           pem=crypto_util.make_key(self.config.rsa_key_size))
+            key = key or util.Key(file=None,
+                                  pem=crypto_util.make_key(self.config.rsa_key_size))
             csr = util.CSR(file=None, form="pem",
                            data=acme_crypto_util.make_csr(
                                key.pem, domains, self.config.must_staple))
         else:
-            key = crypto_util.init_save_key(
-                self.config.rsa_key_size, self.config.key_dir)
+            key = key or crypto_util.init_save_key(self.config.rsa_key_size,
+                                                   self.config.key_dir)
             csr = crypto_util.init_save_csr(key, domains, self.config.csr_dir)
 
         orderr = self._get_order_and_authorizations(csr.data, self.config.allow_subset_of_names)
@@ -414,7 +466,7 @@ class Client(object):
         """
         for path in cert_path, chain_path, fullchain_path:
             util.make_or_verify_dir(
-                os.path.dirname(path), 0o755, os.geteuid(),
+                os.path.dirname(path), 0o755, compat.os_geteuid(),
                 self.config.strict_permissions)
 
 

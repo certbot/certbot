@@ -110,6 +110,8 @@ class ConflictError(ClientError):
 
     In the version of ACME implemented by Boulder, this is used to find an
     account if you only have the private key, but don't know the account URL.
+
+    Also used in V2 of the ACME client for the same purpose.
     """
     def __init__(self, location):
         self.location = location

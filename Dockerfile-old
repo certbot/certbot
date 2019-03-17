@@ -34,7 +34,7 @@ RUN /opt/certbot/src/letsencrypt-auto-source/letsencrypt-auto --os-packages-only
 # Dockerfile we make sure we cache as much as possible
 
 
-COPY setup.py README.rst CHANGES.rst MANIFEST.in letsencrypt-auto-source/pieces/pipstrap.py /opt/certbot/src/
+COPY setup.py README.rst CHANGELOG.md MANIFEST.in letsencrypt-auto-source/pieces/pipstrap.py /opt/certbot/src/
 
 # all above files are necessary for setup.py and venv setup, however,
 # package source code directory has to be copied separately to a
@@ -51,7 +51,7 @@ COPY certbot-apache /opt/certbot/src/certbot-apache/
 COPY certbot-nginx /opt/certbot/src/certbot-nginx/
 
 
-RUN virtualenv --no-site-packages -p python2 /opt/certbot/venv
+RUN VIRTUALENV_NO_DOWNLOAD=1 virtualenv --no-site-packages -p python2 /opt/certbot/venv
 
 # PATH is set now so pipstrap upgrades the correct (v)env
 ENV PATH /opt/certbot/venv/bin:$PATH

@@ -12,7 +12,6 @@ import platform
 import re
 import six
 import socket
-import stat
 import subprocess
 import sys
 
@@ -21,6 +20,7 @@ from collections import OrderedDict
 import configargparse
 
 from acme.magic_typing import Tuple, Union  # pylint: disable=unused-import, no-name-in-module
+from certbot import compat
 from certbot import constants
 from certbot import errors
 from certbot import lock
@@ -62,7 +62,7 @@ def run_script(params, log=logger.error):
     """Run the script with the given params.
 
     :param list params: List of parameters to pass to Popen
-    :param logging.Logger log: Logger to use for errors
+    :param callable log: Logger method to use for errors
 
     """
     try:
@@ -142,6 +142,7 @@ def _release_locks():
         except:  # pylint: disable=bare-except
             msg = 'Exception occurred releasing lock: {0!r}'.format(dir_lock)
             logger.debug(msg, exc_info=True)
+    _LOCKS.clear()
 
 
 def set_up_core_dir(directory, mode, uid, strict):
@@ -204,7 +205,7 @@ def check_permissions(filepath, mode, uid=0):
 
     """
     file_stat = os.stat(filepath)
-    return stat.S_IMODE(file_stat.st_mode) == mode and file_stat.st_uid == uid
+    return compat.compare_file_modes(file_stat.st_mode, mode) and file_stat.st_uid == uid
 
 
 def safe_open(path, mode="w", chmod=None, buffering=None):
@@ -225,9 +226,8 @@ def safe_open(path, mode="w", chmod=None, buffering=None):
     fdopen_args = ()  # type: Union[Tuple[()], Tuple[int]]
     if buffering is not None:
         fdopen_args = (buffering,)
-    return os.fdopen(
-        os.open(path, os.O_CREAT | os.O_EXCL | os.O_RDWR, *open_args),
-        mode, *fdopen_args)
+    fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_RDWR, *open_args)
+    return os.fdopen(fd, mode, *fdopen_args)
 
 
 def _unique_file(path, filename_pat, count, chmod, mode):
