@@ -1,12 +1,11 @@
 """Tests for acme.standalone."""
+import multiprocessing
 import os
 import shutil
 import socket
-import subprocess
 import threading
 import tempfile
 import unittest
-import sys
 import time
 
 from six.moves import http_client  # pylint: disable=import-error
@@ -265,17 +264,20 @@ class TestSimpleTLSSNI01Server(unittest.TestCase):
         shutil.copy(test_util.vector_path('rsa2048_key.pem'),
                     os.path.join(localhost_dir, 'key.pem'))
 
-        from acme import standalone
-
+        from acme.standalone import simple_tls_sni_01_server
         self.port = 40000
-        self.process = subprocess.Popen(
-            [sys.executable, standalone.__file__, '-p', str(self.port)], cwd=self.test_cwd)
+        self.process = multiprocessing.Process(target=simple_tls_sni_01_server,
+                                               args=(['path', '-p', str(self.port)],))
+        self.old_cwd = os.getcwd()
+        os.chdir(self.test_cwd)
 
     def tearDown(self):
+        os.chdir(self.old_cwd)
         self.process.terminate()
         shutil.rmtree(self.test_cwd)
 
     def test_it(self):
+        self.process.start()
         cert = None
         for _ in range(50):
             time.sleep(0.1)
