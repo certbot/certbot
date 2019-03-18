@@ -19,6 +19,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   is installed. We fixed a bug in Certbot causing it to interpret timestamps in
   the OCSP response as being in the local timezone rather than UTC.
 
+* Fixes a bug where lexicon plugin doesn't iterate over guessed domains for zone
+  authentication checking
+
 Despite us having broken lockstep, we are continuing to release new versions of
 all Certbot components during releases for the time being, however, the only
 package with changes other than its version number was:
