@@ -184,6 +184,8 @@ class CentOS6Tests(util.ApacheTest):
         self.assertFalse(post_loadmods)
 
     def test_no_ifmod_search_false(self):
+        #pylint: disable=no-member
+
         self.assertFalse(self.config.parser.not_modssl_ifmodule(
             "/path/does/not/include/ifmod"
         ))
