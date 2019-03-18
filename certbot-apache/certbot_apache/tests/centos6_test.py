@@ -95,6 +95,26 @@ class CentOS6Tests(util.ApacheTest):
             ifmod_args = self.config.parser.get_all_args(lm[:-17])
             self.assertTrue("!mod_ssl.c" in ifmod_args)
 
+    def test_loadmod_multiple(self):
+        sslmod_args = ["ssl_module", "modules/mod_ssl.so"]
+        # Adds another LoadModule to main httpd.conf in addtition to ssl.conf
+        self.config.parser.add_dir(self.config.parser.loc["default"], "LoadModule",
+                                   sslmod_args)
+        self.config.save()
+        pre_loadmods = self.config.parser.find_dir(
+            "LoadModule", "ssl_module", exclude=False)
+        # LoadModules are not within IfModule blocks
+        self.assertFalse(any(["ifmodule" in m.lower() for m in pre_loadmods]))
+        self.config.assoc["test.example.com"] = self.vh_truth[0]
+        self.config.deploy_cert(
+            "random.demo", "example/cert.pem", "example/key.pem",
+            "example/cert_chain.pem", "example/fullchain.pem")
+        post_loadmods = self.config.parser.find_dir(
+            "LoadModule", "ssl_module", exclude=False)
+
+        for mod in post_loadmods:
+            self.assertTrue(self.config.parser.not_modssl_ifmodule(mod))  #pylint: disable=no-member
+
     def test_loadmod_rootconf_exists(self):
         sslmod_args = ["ssl_module", "modules/mod_ssl.so"]
         rootconf_ifmod = self.config.parser.get_ifmod(

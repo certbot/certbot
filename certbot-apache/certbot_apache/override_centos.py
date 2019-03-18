@@ -74,23 +74,29 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
 
         # We should have at least one LoadModule ssl_module in the config
         loadmod_args = []  # type: List[str]
-        loadmod_path = None
+        loadmod_paths = []  # type: List[str]
         for m in loadmods:
             noarg_path = m.rpartition("/")[0]
             path_args = self.parser.get_all_args(noarg_path)
             if loadmod_args:
                 if loadmod_args != path_args:
-                    logger.info("Multiple different LoadModule directives for mod_ssl "
-                                "were found. If you encounter issues with resulting "
-                                "configuration, it's suggested to move the LoadModule "
-                                "ssl_module directive to the beginning of main Apache "
-                                "configuration file at /etc/httpd/conf/httpd.conf")
+                    msg = ("Multiple different LoadModule directives for mod_ssl were "
+                           "found. If you encounter issues with resulting configuration, "
+                           "it's suggested to move the LoadModule ssl_module directive "
+                           "to the beginning of main Apache configuration file at "
+                           "{}").format(self.parser.loc["default"])
+                    logger.info(msg)
                     return
             else:
                 loadmod_args = path_args
-                loadmod_path = noarg_path
+
+            loadmod_paths.append(noarg_path)
             if self.parser.loc["default"] in noarg_path:
-                # LoadModule already in the main configuration file, NOOP
+                if self.parser.not_modssl_ifmodule(noarg_path):  #pylint: disable=no-member
+                    # LoadModule already in the main configuration file
+                    if "ifmodule/" in noarg_path or "ifmodule[1]" in noarg_path.lower():
+                        # It's the first or only IfModule in the file
+                        return
                 return
 
         if not loadmod_args:
@@ -106,17 +112,19 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
 
         # Wrap LoadModule mod_ssl inside of <IfModule !mod_ssl.c> if it's not
         # configured like this already.
-        if loadmod_path and "ifmodule" not in loadmod_path.lower():
-            sslconf_path = loadmod_path.split("/directive")[0]
-            # Remove the old LoadModule directive
-            self.aug.remove(loadmod_path)
+        for loadmod_path in loadmod_paths:
+            if loadmod_path and "ifmodule" not in loadmod_path.lower():
+                sslconf_path = loadmod_path.split("/directive")[0]
+                # Remove the old LoadModule directive
+                self.aug.remove(loadmod_path)
 
-            # Create a new IfModule !mod_ssl.c
-            ssl_ifmod = self.parser.get_ifmod(sslconf_path, "!mod_ssl.c", beginning=True)
+                # Create a new IfModule !mod_ssl.c
+                ssl_ifmod = self.parser.get_ifmod(sslconf_path, "!mod_ssl.c",
+                                                  beginning=True)
 
-            self.parser.add_dir(ssl_ifmod[:-1], "LoadModule", loadmod_args)
-            self.save_notes += ("Wrapped pre-existing LoadModule ssl_module "
-                                "inside of <IfModule !mod_ssl> block.\n")
+                self.parser.add_dir(ssl_ifmod[:-1], "LoadModule", loadmod_args)
+                self.save_notes += ("Wrapped pre-existing LoadModule ssl_module "
+                                    "inside of <IfModule !mod_ssl> block.\n")
 
 
 class CentOSParser(parser.ApacheParser):
@@ -137,3 +145,33 @@ class CentOSParser(parser.ApacheParser):
         defines = apache_util.parse_define_file(self.sysconfig_filep, "OPTIONS")
         for k in defines.keys():
             self.variables[k] = defines[k]
+
+    def not_modssl_ifmodule(self, path):
+        """Checks if the provided Augeas path has argument !mod_ssl"""
+
+        if "ifmodule" not in path.lower():
+            return False
+
+        # Trim the path to the last ifmodule
+        workpath = path.lower()
+        while workpath:
+            # Get path to the last IfModule (ignore the tail)
+            parts = workpath.rpartition("ifmodule")
+
+            if not parts[0]:
+                # IfModule not found
+                break
+            ifmod_path = parts[0] + parts[1]
+            # Check if ifmodule had an index
+            if parts[2].startswith("["):
+                # Append the index from tail
+                ifmod_path += parts[2].partition("/")[0]
+            # Get the origianl path trimmed to correct length
+            # This is required to preserve cases
+            ifmod_real_path = path[0:len(ifmod_path)]
+            if "!mod_ssl.c" in self.get_all_args(ifmod_real_path):
+                return True
+            # Set the workpath to the heading part
+            workpath = parts[0]
+
+        return False
