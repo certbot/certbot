@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Developer virtualenv setup for Certbot client
 import _venv_common
 
