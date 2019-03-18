@@ -92,6 +92,7 @@ class LexiconClient(object):
                 result = self._handle_http_error(e, domain_name)
 
                 if result:
+                    logger.debug(result)
                     pass # if we get an error, we move on to try the next domain_name
             except Exception as e:  # pylint: disable=broad-except
                 result = self._handle_general_error(e, domain_name)
