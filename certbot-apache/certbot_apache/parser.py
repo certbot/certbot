@@ -297,7 +297,7 @@ class ApacheParser(object):
             for i, arg in enumerate(args):
                 self.aug.set("%s/arg[%d]" % (nvh_path, i + 1), arg)
 
-    def get_ifmod(self, aug_conf_path, mod, beginning=False):
+    def get_ifmod(self, aug_conf_path, mod, beginning=False, force_create=False):
         """Returns the path to <IfMod mod> and creates one if it doesn't exist.
 
         :param str aug_conf_path: Augeas configuration path
@@ -308,7 +308,7 @@ class ApacheParser(object):
         """
         if_mods = self.aug.match(("%s/IfModule/*[self::arg='%s']" %
                                   (aug_conf_path, mod)))
-        if len(if_mods) == 0:
+        if len(if_mods) == 0 or force_create:
             if beginning:
                 c_path_arg = "{}/IfModule[1]/arg".format(aug_conf_path)
                 # Insert IfModule before the first directive

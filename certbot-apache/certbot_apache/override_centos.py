@@ -74,7 +74,7 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
 
         loadmods = self.parser.find_dir("LoadModule", "ssl_module", exclude=False)
 
-        # We should have at least one LoadModule ssl_module in the config
+        correct_ifmods = []  # type: List[str]
         loadmod_args = []  # type: List[str]
         loadmod_paths = []  # type: List[str]
         for m in loadmods:
@@ -90,6 +90,12 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
                 loadmod_args = path_args
 
             loadmod_paths.append(noarg_path)
+
+            if self.parser.not_modssl_ifmodule(noarg_path):  # pylint: disable=no-member
+                # Populate the list of known !mod_ssl.c IfModules
+                nodir_path = noarg_path.rpartition("/directive")[0]
+                correct_ifmods.append(nodir_path)
+
             if self.parser.loc["default"] in noarg_path:
                 if self.parser.not_modssl_ifmodule(noarg_path):  #pylint: disable=no-member
                     # LoadModule already in the main configuration file
@@ -101,28 +107,33 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
             # Do not try to enable mod_ssl
             return
 
+        # Force creation as the directive wasn't found from the beginning of
+        # httpd.conf
         rootconf_ifmod = self.parser.get_ifmod(
             parser.get_aug_path(self.parser.loc["default"]),
-            "!mod_ssl.c", beginning=True)
+            "!mod_ssl.c", beginning=True, force_create=True)
         # parser.get_ifmod returns a path postfixed with "/", remove that
         self.parser.add_dir(rootconf_ifmod[:-1], "LoadModule", loadmod_args)
+        correct_ifmods.append(rootconf_ifmod[:-1])
         self.save_notes += "Added LoadModule ssl_module to main configuration.\n"
 
         # Wrap LoadModule mod_ssl inside of <IfModule !mod_ssl.c> if it's not
         # configured like this already.
         for loadmod_path in loadmod_paths:
-            if loadmod_path and "ifmodule" not in loadmod_path.lower():
-                sslconf_path = loadmod_path.split("/directive")[0]
+            nodir_path = loadmod_path.split("/directive")[0]
+            # Only create if !mod_ssl.c ifmodule not in path
+            if not self.parser.not_modssl_ifmodule(loadmod_path):  # pylint: disable=no-member
                 # Remove the old LoadModule directive
                 self.aug.remove(loadmod_path)
 
-                # Create a new IfModule !mod_ssl.c
-                ssl_ifmod = self.parser.get_ifmod(sslconf_path, "!mod_ssl.c",
-                                                  beginning=True)
-
-                self.parser.add_dir(ssl_ifmod[:-1], "LoadModule", loadmod_args)
-                self.save_notes += ("Wrapped pre-existing LoadModule ssl_module "
-                                    "inside of <IfModule !mod_ssl> block.\n")
+                # Create a new IfModule !mod_ssl.c if not already found on path
+                ssl_ifmod = self.parser.get_ifmod(nodir_path, "!mod_ssl.c",
+                                                  beginning=True)[:-1]
+                if ssl_ifmod not in correct_ifmods:
+                    self.parser.add_dir(ssl_ifmod, "LoadModule", loadmod_args)
+                    correct_ifmods.append(ssl_ifmod)
+                    self.save_notes += ("Wrapped pre-existing LoadModule ssl_module "
+                                        "inside of <IfModule !mod_ssl> block.\n")
 
 
 class CentOSParser(parser.ApacheParser):

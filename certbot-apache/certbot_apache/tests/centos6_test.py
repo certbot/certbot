@@ -141,6 +141,32 @@ class CentOS6Tests(util.ApacheTest):
             self.config.parser.get_all_args(mods[0][:-7]),
             sslmod_args)
 
+    def test_neg_loadmod_already_on_path(self):
+        loadmod_args = ["ssl_module", "modules/mod_ssl.so"]
+        ifmod = self.config.parser.get_ifmod(
+            self.vh_truth[1].path, "!mod_ssl.c", beginning=True)
+        self.config.parser.add_dir(ifmod[:-1], "LoadModule", loadmod_args)
+        self.config.parser.add_dir(self.vh_truth[1].path, "LoadModule", loadmod_args)
+        self.config.save()
+        pre_loadmods = self.config.parser.find_dir(
+            "LoadModule", "ssl_module", start=self.vh_truth[1].path, exclude=False)
+        self.assertEquals(len(pre_loadmods), 2)
+        # The ssl.conf now has two LoadModule directives, one inside of
+        # !mod_ssl.c IfModule
+        self.config.assoc["test.example.com"] = self.vh_truth[0]
+        self.config.deploy_cert(
+            "random.demo", "example/cert.pem", "example/key.pem",
+            "example/cert_chain.pem", "example/fullchain.pem")
+        self.config.save()
+        # Ensure that the additional LoadModule wasn't written into the IfModule
+        post_loadmods = self.config.parser.find_dir(
+            "LoadModule", "ssl_module", start=self.vh_truth[1].path, exclude=False)
+        self.assertEquals(len(post_loadmods), 1)
+
+
+
+
+
     def test_loadmod_non_duplicate(self):
         # the modules/mod_ssl.so exists in ssl.conf
         sslmod_args = ["ssl_module", "modules/mod_somethingelse.so"]
