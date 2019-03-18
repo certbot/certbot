@@ -183,6 +183,17 @@ class CentOS6Tests(util.ApacheTest):
                                                     exclude=False)
         self.assertFalse(post_loadmods)
 
+    def test_no_ifmod_search_false(self):
+        self.assertFalse(self.config.parser.not_modssl_ifmodule(
+            "/path/does/not/include/ifmod"
+        ))
+        self.assertFalse(self.config.parser.not_modssl_ifmodule(
+            ""
+        ))
+        self.assertFalse(self.config.parser.not_modssl_ifmodule(
+            "/path/includes/IfModule/but/no/arguments"
+        ))
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

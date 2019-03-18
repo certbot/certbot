@@ -97,7 +97,6 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
                     if "ifmodule/" in noarg_path or "ifmodule[1]" in noarg_path.lower():
                         # It's the first or only IfModule in the file
                         return
-                return
 
         if not loadmod_args:
             # Do not try to enable mod_ssl
