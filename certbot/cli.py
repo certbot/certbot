@@ -1262,14 +1262,13 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
 
     # Deprecation of tls-related cli flags
     # TODO: remove theses flags completely in few releases
-    class _DeprecatedTLSSNIAction(util._ShowWarning):
+    class _DeprecatedTLSSNIAction(util._ShowWarning):  # pylint: disable=protected-access
         def __call__(self, parser, namespace, values, option_string=None):
             super(_DeprecatedTLSSNIAction, self).__call__(parser, namespace, values, option_string)
             namespace.https_port = values
     helpful.add(
-        ["testing", "standalone", "apache", "nginx"], "--tls-sni-01-port", type=int,
-        action=_DeprecatedTLSSNIAction,
-        help=argparse.SUPPRESS)
+        ["testing", "standalone", "apache", "nginx"], "--tls-sni-01-port",
+        type=int, action=_DeprecatedTLSSNIAction, help=argparse.SUPPRESS)
     helpful.add_deprecated_argument("--tls-sni-01-address", 1)
 
     # Populate the command line parameters for new style enhancements
