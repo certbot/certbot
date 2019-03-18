@@ -1126,6 +1126,10 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         dest="http01_address",
         default=flag_default("http01_address"), help=config_help("http01_address"))
     helpful.add(
+        ["testing", "nginx"], "--https-port", type=int,
+        default=flag_default("https_port"),
+        help=config_help("https_port"))
+    helpful.add(
         "testing", "--break-my-certs", action="store_true",
         default=flag_default("break_my_certs"),
         help="Be willing to replace or renew valid certificates with invalid "
@@ -1258,7 +1262,14 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
 
     # Deprecation of tls-related cli flags
     # TODO: remove theses flags completely in few releases
-    helpful.add_deprecated_argument("--tls-sni-01-port", 1)
+    class _DeprecatedTLSSNIAction(util._ShowWarning):
+        def __call__(self, parser, namespace, values, option_string=None):
+            super(_DeprecatedTLSSNIAction, self).__call__(parser, namespace, values, option_string)
+            namespace.https_port = values
+    helpful.add(
+        ["testing", "standalone", "apache", "nginx"], "--tls-sni-01-port", type=int,
+        action=_DeprecatedTLSSNIAction,
+        help=argparse.SUPPRESS)
     helpful.add_deprecated_argument("--tls-sni-01-address", 1)
 
     # Populate the command line parameters for new style enhancements
