@@ -2,12 +2,11 @@
 import os
 import unittest
 
-import mock
-
 from certbot_apache import obj
 from certbot_apache import override_centos
 from certbot_apache import parser
 from certbot_apache.tests import util
+from certbot.errors import ConfigurationError
 
 def get_vh_truth(temp_dir, config_name):
     """Return the ground truth for the specified directory."""
@@ -153,12 +152,10 @@ class CentOS6Tests(util.ApacheTest):
         self.config.assoc["test.example.com"] = self.vh_truth[0]
         pre_matches = self.config.parser.find_dir("LoadModule",
                                                   "ssl_module", exclude=False)
-        with mock.patch("certbot_apache.override_centos.logger.info") as mock_log:
-            self.config.deploy_cert(
+
+        self.assertRaises(ConfigurationError, self.config.deploy_cert,
                 "random.demo", "example/cert.pem", "example/key.pem",
                 "example/cert_chain.pem", "example/fullchain.pem")
-            self.assertTrue(mock_log.called)
-            self.assertTrue("Multiple different LoadModule" in mock_log.call_args[0][0])
 
         post_matches = self.config.parser.find_dir("LoadModule",
                                                    "ssl_module", exclude=False)

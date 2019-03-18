@@ -8,9 +8,11 @@ import zope.interface
 
 from certbot import interfaces
 
+
 from certbot_apache import apache_util
 from certbot_apache import configurator
 from certbot_apache import parser
+from certbot.errors import ConfigurationError
 
 logger = logging.getLogger(__name__)
 
@@ -80,13 +82,10 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
             path_args = self.parser.get_all_args(noarg_path)
             if loadmod_args:
                 if loadmod_args != path_args:
-                    msg = ("Multiple different LoadModule directives for mod_ssl were "
-                           "found. If you encounter issues with resulting configuration, "
-                           "it's suggested to move the LoadModule ssl_module directive "
-                           "to the beginning of main Apache configuration file at "
-                           "{}").format(self.parser.loc["default"])
-                    logger.info(msg)
-                    return
+                    msg = ("Certbot encountered multiple different LoadModule directives "
+                           "for LoadModule ssl_module. Please remove or comment out the "
+                           "one(s) that are not in use.")
+                    raise ConfigurationError(msg)
             else:
                 loadmod_args = path_args
 
