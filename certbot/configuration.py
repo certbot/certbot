@@ -148,10 +148,10 @@ def check_config_sanity(config):
 
     """
     # Port check
-    if config.http01_port == config.tls_sni_01_port:
+    if config.http01_port == config.https_port:
         raise errors.ConfigurationError(
-            "Trying to run http-01 and tls-sni-01 "
-            "on the same port ({0})".format(config.tls_sni_01_port))
+            "Trying to run http-01 and https-port "
+            "on the same port ({0})".format(config.https_port))
 
     # Domain checks
     if config.namespace.domains is not None:
