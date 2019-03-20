@@ -17,6 +17,7 @@ import OpenSSL
 from acme import challenges
 from acme import crypto_util
 from acme.magic_typing import List # pylint: disable=unused-import, no-name-in-module
+from acme import _TLSSNI01DeprecationModule
 
 
 logger = logging.getLogger(__name__)
@@ -297,18 +298,7 @@ def simple_tls_sni_01_server(cli_args, forever=True):
 
 
 # Patching ourselves to warn about TLS-SNI challenge deprecation and removal.
-class _StandaloneClass(object):
-    def __init__(self, standalone_module):
-        self.module = standalone_module
-
-    def __getattr__(self, item):
-        if item in ['TLSSNI01DualNetworkedServers', 'TLSSNI01Server']:
-            sys.stderr.write('TLS-SNI-01 challenges are deprecated, and will '
-                             'be removed on April 2019 with acme 0.34.0.\n')
-        return getattr(self.module, item)
-
-
-sys.modules[__name__] = _StandaloneClass(sys.modules[__name__])
+sys.modules[__name__] = _TLSSNI01DeprecationModule(sys.modules[__name__])
 
 
 if __name__ == "__main__":

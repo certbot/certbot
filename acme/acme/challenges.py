@@ -15,6 +15,7 @@ import six
 from acme import errors
 from acme import crypto_util
 from acme import fields
+from acme import _TLSSNI01DeprecationModule
 
 logger = logging.getLogger(__name__)
 
@@ -642,15 +643,4 @@ class DNSResponse(ChallengeResponse):
 
 
 # Patching ourselves to warn about TLS-SNI challenge deprecation and removal.
-class _AcmeClass(object):
-    def __init__(self, acme_module):
-        self.module = acme_module
-
-    def __getattr__(self, item):
-        if item in ['TLSSNI01Response', 'TLSSNI01']:
-            sys.stderr.write('TLS-SNI-01 challenges are deprecated, and will '
-                             'be removed on April 2019 with acme 0.34.0.\n')
-        return getattr(self.module, item)
-
-
-sys.modules[__name__] = _AcmeClass(sys.modules[__name__])
+sys.modules[__name__] = _TLSSNI01DeprecationModule(sys.modules[__name__])
