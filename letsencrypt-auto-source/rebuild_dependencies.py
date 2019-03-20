@@ -148,7 +148,7 @@ def _parse_and_merge_requirements(dependencies_map, requirements_file_lines, dis
     # }
     """
     for line in requirements_file_lines:
-        match = re.match(r'([^=]+)==([^=]+)', line)
+        match = re.match(r'([^=]+)==([^=]+)', line.strip())
         if match:
             package, version = match.groups()
             if not any(dep in package for dep in ['acme', 'certbot', 'pkg-resources']):
