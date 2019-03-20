@@ -1260,7 +1260,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
     helpful.add_deprecated_argument("--agree-dev-preview", 0)
     helpful.add_deprecated_argument("--dialog", 0)
 
-    # Deprecation of tls-related cli flags
+    # Deprecation of tls-sni-01 related cli flags
     # TODO: remove theses flags completely in few releases
     class _DeprecatedTLSSNIAction(util._ShowWarning):  # pylint: disable=protected-access
         def __call__(self, parser, namespace, values, option_string=None):
