@@ -122,7 +122,10 @@ def _requirements_from_one_distribution(distribution, verbose):
     finally:
         if os.path.isfile(cid_file):
             cid = _read_from(cid_file)
-            subprocess.call(['docker', 'kill', cid], stdout=None, stderr=None)
+            try:
+                subprocess.check_output(['docker', 'kill', cid], stderr=subprocess.PIPE)
+            except subprocess.CalledProcessError:
+                pass
         shutil.rmtree(workspace)
 
 
