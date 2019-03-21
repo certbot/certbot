@@ -36,11 +36,11 @@ class _TLSSNI01DeprecationModule(object):
                              'be removed on April 2019 with acme 0.34.0.\n')
         return getattr(self._module, attr)
 
-    def __setattr__(self, attr, value):
+    def __setattr__(self, attr, value):  # pragma: no cover
         setattr(self._module, attr, value)
 
-    def __delattr__(self, attr):
+    def __delattr__(self, attr):  # pragma: no cover
         delattr(self._module, attr)
 
-    def __dir__(self):
+    def __dir__(self):  # pragma: no cover
         return ['_module'] + dir(self._module)
