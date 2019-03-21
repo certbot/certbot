@@ -3,10 +3,10 @@
 root=${root:-$(mktemp -d -t leitXXXX)}
 echo "Root integration tests directory: $root"
 config_dir="$root/conf"
-tls_alpn_01_port=5001
+https_port=5001
 http_01_port=5002
 sources="acme/,$(ls -dm certbot*/ | tr -d ' \n')"
-export root config_dir tls_alpn_01_port http_01_port sources
+export root config_dir https_port http_01_port sources
 certbot_path="$(command -v certbot)"
 # Flags that are added here will be added to Certbot calls within
 # certbot_test_no_force_renew.
@@ -60,8 +60,8 @@ certbot_test_no_force_renew () {
         "$certbot_path" \
             --server "${SERVER:-http://localhost:4000/directory}" \
             --no-verify-ssl \
-            --tls-sni-01-port $tls_alpn_01_port \
             --http-01-port $http_01_port \
+            --tls-sni-01-port $https_port \
             --manual-public-ip-logging-ok \
             $other_flags \
             --non-interactive \
