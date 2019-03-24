@@ -152,9 +152,9 @@ def _parse_and_merge_requirements(dependencies_map, requirements_file_lines, dis
     """
     for line in requirements_file_lines:
         match = re.match(r'([^=]+)==([^=]+)', line.strip())
-        if match:
+        if not line.startswith('-e') and match:
             package, version = match.groups()
-            if not any(dep in package for dep in ['acme', 'certbot', 'pkg-resources']):
+            if package not in ['acme', 'certbot', 'certbot-apache', 'certbot-nginx', 'pkg-resources']:
                 dependencies_map.setdefault(package, []).append((version, distribution))
 
 
