@@ -22,10 +22,13 @@ for mod in list(sys.modules):
         sys.modules['acme.' + mod.replace('josepy', 'jose', 1)] = sys.modules[mod]
 
 
+# This class takes a similar approach than cryptography project to deprecate attributes
+# in public modules. See the _ModuleWithDeprecation class here:
+# https://github.com/pyca/cryptography/blob/91105952739442a74582d3e62b3d2111365b0dc7/src/cryptography/utils.py#L129
 class _TLSSNI01DeprecationModule(object):
     """
     Internal class delegating to a module, and displaying warnings when
-    attributes related to TLS-SNI-01 are accessed
+    attributes related to TLS-SNI-01 are accessed.
     """
     def __init__(self, module):
         self.__dict__['_module'] = module
