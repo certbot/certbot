@@ -11,7 +11,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* Support for TLS-SNI-01 has been removed from Certbot's Apache, nginx, and
+  standalone plugins.
 
 ### Fixed
 
@@ -24,6 +25,8 @@ all Certbot components during releases for the time being, however, the only
 package with changes other than its version number was:
 
 * certbot
+* certbot-apache
+* certbot-nginx
 
 More details about these changes can be found on our GitHub repo.
 
