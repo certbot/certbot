@@ -81,8 +81,8 @@ def get_nginx_configurator(
                     temp_checkpoint_dir=os.path.join(work_dir, "temp_checkpoints"),
                     in_progress_dir=os.path.join(backups, "IN_PROGRESS"),
                     server="https://acme-server.org:443/new",
+                    http01_port=80,
                     tls_sni_01_port=5001,
-                    http01_port=80
                 ),
                 name="nginx",
                 version=version)

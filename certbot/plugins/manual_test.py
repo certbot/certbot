@@ -106,10 +106,10 @@ class AuthenticatorTest(test_util.TempDirTestCase):
                 achall.validation(achall.account_key) in args[0])
             self.assertFalse(kwargs['wrap'])
 
-    @test_util.broken_on_windows
     def test_cleanup(self):
         self.config.manual_public_ip_logging_ok = True
-        self.config.manual_auth_hook = 'echo foo;'
+        self.config.manual_auth_hook = ('{0} -c "import sys; sys.stdout.write(\'foo\')"'
+                                        .format(sys.executable))
         self.config.manual_cleanup_hook = '# cleanup'
         self.auth.perform(self.achalls)
 
