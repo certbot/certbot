@@ -11,8 +11,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-* Support for TLS-SNI-01 has been removed from Certbot's Apache, nginx, and
-  standalone plugins.
+* Support for TLS-SNI-01 has been removed from Certbot's Apache, nginx, manual,
+  and standalone plugins.
 
 ### Fixed
 
