@@ -1,4 +1,4 @@
-usage: 
+usage:
   certbot [SUBCOMMAND] [options] [-d DOMAIN] [-d DOMAIN] ...
 
 Certbot can obtain and install HTTPS/TLS/SSL certificates.  By default,
@@ -99,8 +99,8 @@ optional arguments:
   --preferred-challenges PREF_CHALLS
                         A sorted, comma delimited list of the preferred
                         challenge to use during authorization with the most
-                        preferred challenge listed first (Eg, "dns" or "http,
-                        dns"). Not all plugins support all
+                        preferred challenge listed first (Eg, "dns" or "tls-
+                        sni-01,http,dns"). Not all plugins support all
                         challenges. See
                         https://certbot.eff.org/docs/using.html#plugins for
                         details. ACME Challenges are versioned, but if you
@@ -217,6 +217,14 @@ testing:
                         False)
   --no-verify-ssl       Disable verification of the ACME server's certificate.
                         (default: False)
+  --tls-sni-01-port TLS_SNI_01_PORT
+                        Port used during tls-sni-01 challenge. This only
+                        affects the port Certbot listens on. A conforming ACME
+                        server will still attempt to connect on port 443.
+                        (default: 443)
+  --tls-sni-01-address TLS_SNI_01_ADDRESS
+                        The address the server listens to during tls-sni-01
+                        challenge. (default: )
   --http-01-port HTTP01_PORT
                         Port used in the http-01 challenge. This only affects
                         the port Certbot listens on. A conforming ACME server
