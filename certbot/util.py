@@ -13,7 +13,6 @@ import re
 import six
 import socket
 import subprocess
-import sys
 
 from collections import OrderedDict
 

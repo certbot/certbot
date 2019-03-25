@@ -1,5 +1,4 @@
 """Standalone Authenticator."""
-import argparse
 import collections
 import logging
 import socket

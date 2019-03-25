@@ -1,5 +1,4 @@
 """Tests for certbot.plugins.standalone."""
-import argparse
 import socket
 import unittest
 # https://github.com/python/typeshed/blob/master/stdlib/2and3/socket.pyi
