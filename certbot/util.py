@@ -477,8 +477,7 @@ def safe_email(email):
 class _ShowWarning(argparse.Action):
     """Action to log a warning when an argument is used."""
     def __call__(self, unused1, unused2, unused3, option_string=None):
-        sys.stderr.write(
-            "Use of {0} is deprecated.\n".format(option_string))
+        logger.warning("Use of %s is deprecated.\n", option_string)
 
 
 def add_deprecated_argument(add_argument, argument_name, nargs):

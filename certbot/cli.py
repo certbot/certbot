@@ -1567,8 +1567,8 @@ def parse_preferred_challenges(pref_challs):
     # Ignore tls-sni-01 from the list, and generates a deprecation warning
     # TODO: remove this option completely in few releases
     if "tls-sni-01" in challs:
-        sys.stderr.write('Use of tls-sni-01 in preferred-challenges is '
-                         'deprecated, and will be removed soon.\n')
+        logger.warning('Use of tls-sni-01 in preferred-challenges is '
+                       'deprecated, and will be removed soon.\n')
         challs.remove("tls-sni-01")
 
     unrecognized = ", ".join(name for name in challs
