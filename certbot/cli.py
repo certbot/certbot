@@ -1561,8 +1561,8 @@ def parse_preferred_challenges(pref_challs):
 
     """
     aliases = {"dns": "dns-01", "http": "http-01", "tls-sni": "tls-sni-01"}
-    challs = [c.strip() for c in pref_challs]
-    challs = [aliases.get(c, c) for c in challs]
+    challs = {c.strip() for c in pref_challs}
+    challs = {aliases.get(c, c) for c in challs}
 
     # Ignore tls-sni-01 from the list, and generates a deprecation warning
     # TODO: remove this option completely in few releases
@@ -1576,7 +1576,7 @@ def parse_preferred_challenges(pref_challs):
     if unrecognized:
         raise errors.Error(
             "Unrecognized challenges: {0}".format(unrecognized))
-    return challs
+    return list(challs)
 
 def _user_agent_comment_type(value):
     if "(" in value or ")" in value:
