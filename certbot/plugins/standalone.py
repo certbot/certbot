@@ -207,4 +207,4 @@ def _handle_perform_error(error):
         if not should_retry:
             raise errors.PluginError(msg)
     else:
-        raise
+        raise error
