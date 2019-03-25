@@ -6,6 +6,7 @@ This module is an implementation of the `ACME protocol`_.
 
 """
 import sys
+import warnings
 
 # This code exists to keep backwards compatibility with people using acme.jose
 # before it became the standalone josepy package.
@@ -35,8 +36,8 @@ class _TLSSNI01DeprecationModule(object):
 
     def __getattr__(self, attr):
         if 'TLSSNI01' in attr:
-            sys.stderr.write('TLS-SNI-01 challenges are deprecated, and will '
-                             'be removed on April 2019 with acme 0.34.0.\n')
+            warnings.warn('{0} attribute is deprecated, and will be removed soon.',
+                          DeprecationWarning, stacklevel=2)
         return getattr(self._module, attr)
 
     def __setattr__(self, attr, value):  # pragma: no cover

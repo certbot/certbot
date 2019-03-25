@@ -402,11 +402,11 @@ class TLSSNI01Test(unittest.TestCase):
         mock_gen_cert.assert_called_once_with(key=mock.sentinel.cert_key)
 
     def test_deprecation_message(self):
-        with mock.patch('sys.stderr') as mock_stderr:
+        with mock.patch('acme.warnings.warn') as mock_warn:
             from acme.challenges import TLSSNI01
             assert TLSSNI01
-        self.assertEqual(mock_stderr.write.call_count, 1)
-        self.assertTrue('deprecated' in mock_stderr.write.call_args[0][0])
+        self.assertEqual(mock_warn.call_count, 1)
+        self.assertTrue('deprecated' in mock_warn.call_args[0][0])
 
 
 class TLSALPN01ResponseTest(unittest.TestCase):
