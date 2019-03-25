@@ -12,6 +12,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 
 * Support for TLS-SNI-01 has been removed from all official Certbot plugins.
+* Attributes related to TLS-SNI-01 challenge in `acme.challenges` and `acme.standalone`
+  modules are deprecated and will be removed soon.
 
 ### Fixed
 
