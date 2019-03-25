@@ -242,11 +242,11 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(namespace.pref_challs, expected)
 
         # TODO: to be removed once tls-sni deprecation logic is removed
-        with mock.patch('sys.stderr') as mock_stderr:
+        with mock.patch('certbot.cli.logger.warning') as mock_warn:
             self.assertEqual(self.parse(['--preferred-challenges', 'http, tls-sni']).pref_challs,
                              [challenges.HTTP01.typ])
-        self.assertEqual(mock_stderr.write.call_count, 1)
-        self.assertTrue('deprecated' in mock_stderr.write.call_args[0][0])
+        self.assertEqual(mock_warn.call_count, 1)
+        self.assertTrue('deprecated' in mock_warn.call_args[0][0])
 
         short_args = ['--preferred-challenges', 'jumping-over-the-moon']
         # argparse.ArgumentError makes argparse print more information
