@@ -43,7 +43,14 @@ class TLSServer(socketserver.TCPServer):
 
     def _wrap_sock(self):
         self.socket = crypto_util.SSLSocket(
-            self.socket, certs=self.certs, method=self.method)
+            self.socket, cert_selection=self._cert_selection,
+            alpn_selection=getattr(self, '_alpn_selection', None),
+            method=self.method)
+
+    def _cert_selection(self, connection):
+        """Callback selecting certificate for connection."""
+        server_name = connection.get_servername()
+        return self.certs.get(server_name, None)
 
     def server_bind(self):  # pylint: disable=missing-docstring
         self._wrap_sock()
@@ -145,6 +152,45 @@ class TLSSNI01DualNetworkedServers(BaseDualNetworkedServers):
 
     def __init__(self, *args, **kwargs):
         BaseDualNetworkedServers.__init__(self, TLSSNI01Server, *args, **kwargs)
+
+
+class BadALPNProtos(Exception):
+    """Error raised when cannot negotiate ALPN protocol."""
+    pass
+
+
+class TLSALPN01Server(TLSServer, ACMEServerMixin):
+    """TLSALPN01 Server."""
+
+    ACME_TLS_1_PROTOCOL = b"acme-tls/1"
+
+    def __init__(self, server_address, certs, challenge_certs, ipv6=False):
+        TLSServer.__init__(
+            self, server_address, BaseRequestHandlerWithLogging, certs=certs,
+            ipv6=ipv6)
+        self.challenge_certs = challenge_certs
+
+    def _cert_selection(self, connection):
+        # TODO: We would like to serve challenge cert only if asked for it via
+        # ALPN. To do this, we need to retrieve the list of protos from client
+        # hello, but this is currently impossible with openssl [0], and ALPN
+        # negotiation is done after cert selection.
+        # Therefore, currently we always return challenge cert, and terminate
+        # handshake in alpn_selection() if ALPN protos are not what we expect.
+        # [0] https://github.com/openssl/openssl/issues/4952
+        server_name = connection.get_servername()
+        logger.debug("Serving challenge cert for server name %s", server_name)
+        return self.challenge_certs.get(server_name, None)
+
+    def _alpn_selection(self, _connection, alpn_protos):
+        """Callback to select alpn protocol."""
+        if len(alpn_protos) == 1 and alpn_protos[0] == self.ACME_TLS_1_PROTOCOL:
+            logger.debug("Agreed on %s ALPN", self.ACME_TLS_1_PROTOCOL)
+            return self.ACME_TLS_1_PROTOCOL
+        # Raising an exception causes openssl to terminate handshake and
+        # send fatal tls alert.
+        logger.debug("Cannot agree on ALPN proto. Got: %s", str(alpn_protos))
+        raise BadALPNProtos("Got: %s" % str(alpn_protos))
 
 
 class BaseRequestHandlerWithLogging(socketserver.BaseRequestHandler):
