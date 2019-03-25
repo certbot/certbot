@@ -108,10 +108,6 @@ class ServerManager(object):
         return self._instances.copy()
 
 
-SUPPORTED_CHALLENGES = [challenges.HTTP01] \
-# type: List[Type[challenges.KeyAuthorizationChallenge]]
-
-
 @zope.interface.implementer(interfaces.IAuthenticator)
 @zope.interface.provider(interfaces.IPluginFactory)
 class Authenticator(common.Plugin):
@@ -144,12 +140,6 @@ class Authenticator(common.Plugin):
     def add_parser_arguments(cls, add):
         pass  # No additional argument for the standalone plugin parser
 
-    @property
-    def supported_challenges(self):
-        """Challenges supported by this plugin."""
-        return [challenges.Challenge.TYPES[name] for name in
-                self.conf("supported-challenges").split(",")]
-
     def more_info(self):  # pylint: disable=missing-docstring
         return("This authenticator creates its own ephemeral TCP listener "
                "on the necessary port in order to respond to incoming "
@@ -161,7 +151,7 @@ class Authenticator(common.Plugin):
 
     def get_chall_pref(self, domain):
         # pylint: disable=unused-argument,missing-docstring
-        return self.supported_challenges
+        return [challenges.HTTP01]
 
     def perform(self, achalls):  # pylint: disable=missing-docstring
         return [self._try_perform_single(achall) for achall in achalls]

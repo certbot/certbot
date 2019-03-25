@@ -92,10 +92,6 @@ class AuthenticatorTest(unittest.TestCase):
         self.auth = Authenticator(self.config, name="standalone")
         self.auth.servers = mock.MagicMock()
 
-    def test_supported_challenges(self):
-        self.assertEqual(self.auth.supported_challenges,
-                         [challenges.HTTP01])
-
     def test_more_info(self):
         self.assertTrue(isinstance(self.auth.more_info(), six.string_types))
 
