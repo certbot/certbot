@@ -1561,8 +1561,8 @@ def parse_preferred_challenges(pref_challs):
 
     """
     aliases = {"dns": "dns-01", "http": "http-01", "tls-sni": "tls-sni-01"}
-    challs = {c.strip() for c in pref_challs}
-    challs = {aliases.get(c, c) for c in challs}
+    challs = [c.strip() for c in pref_challs]
+    challs = [aliases.get(c, c) for c in challs]
 
     # Ignore tls-sni-01 from the list, and generates a deprecation warning
     # TODO: remove this option completely in few releases
@@ -1570,7 +1570,7 @@ def parse_preferred_challenges(pref_challs):
         logger.warning('TLS-SNI-01 support is deprecated. This value is being dropped from the '
                        'setting of --preferred-challenges and future versions of Certbot will '
                        'error if it is included.\n')
-        challs.remove("tls-sni-01")
+        challs = [chall for chall in challs if chall != "tls-sni-01"]
 
     unrecognized = ", ".join(name for name in challs
                              if name not in challenges.Challenge.TYPES)
