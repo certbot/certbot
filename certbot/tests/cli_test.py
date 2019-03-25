@@ -266,12 +266,13 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
     def test_no_gui(self):
         args = ['renew', '--dialog']
-        stderr = six.StringIO()
-        with mock.patch('certbot.main.sys.stderr', new=stderr):
+        with mock.patch("certbot.util.logger.warning") as mock_warn:
             namespace = self.parse(args)
 
         self.assertTrue(namespace.noninteractive_mode)
-        self.assertTrue("--dialog is deprecated" in stderr.getvalue())
+        self.assertEqual(mock_warn.call_count, 1)
+        self.assertTrue("is deprecated" in mock_warn.call_args[0][0])
+        self.assertEqual("--dialog", mock_warn.call_args[0][1])
 
     def _check_server_conflict_message(self, parser_args, conflicting_args):
         try:
