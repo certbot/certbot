@@ -7,6 +7,7 @@ import logging
 import socket
 import warnings
 
+from OpenSSL import SSL  # type: ignore # https://github.com/python/typeshed/issues/2052
 from cryptography.hazmat.primitives import hashes  # type: ignore
 import josepy as jose
 from OpenSSL import crypto
@@ -640,7 +641,7 @@ class TLSALPN01Response(KeyAuthorizationChallengeResponse):
         :param int port: Port used to probe the certificate.
 
 
-        :returns: ``True`` iff client's control of the domain has been
+        :returns: ``True`` if client's control of the domain has been
             verified.
         :rtype: bool
 
@@ -677,6 +678,20 @@ class TLSALPN01(KeyAuthorizationChallenge):
 
         """
         return self.response(account_key).gen_cert(key=kwargs.get('cert_key'))
+
+    @staticmethod
+    def is_supported():
+        """
+        Check if TLS-ALPN-01 challenge is supported on this machine.
+        This implies that a recent version of OpenSSL is installed (>= 1.0.2),
+        or a recent pre-compiled PyOpenSSL version with embedded OpenSSL library is installed.
+
+        :returns: ``True`` if TLS-ALPN-01 is supported on this machine, ``False`` otherwise.
+        :rtype: bool
+
+        """
+        return (hasattr(SSL.Connection, "set_alpn_protos")
+                and hasattr(SSL.Context, "set_alpn_select_callback"))
 
 
 @Challenge.register  # pylint: disable=too-many-ancestors
