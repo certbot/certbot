@@ -24,7 +24,7 @@ not-on-master: &not-on-master
 
 # Jobs for the extended test suite are executed for cron jobs and pushes on non-master branches.
 extended-test-suite: &extended-test-suite
-  if: type = cron OR (type = push AND branch != master)
+  if: type != false
 
 matrix:
   include:
