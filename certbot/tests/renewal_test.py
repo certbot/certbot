@@ -58,7 +58,7 @@ class RestoreRequiredConfigElementsTest(test_util.ConfigTestCase):
     @mock.patch('certbot.renewal.cli.set_by_cli')
     def test_pref_challs_list(self, mock_set_by_cli):
         mock_set_by_cli.return_value = False
-        # TODO: remove tls-sni and related assertions to stderr call once
+        # TODO: remove tls-sni and related assertions to logger.warning call once
         #  the deprecation logic has been removed
         renewalparams = {'pref_challs': 'tls-sni, http-01, dns'.split(',')}
         with mock.patch('certbot.renewal.cli.logger.warning') as mock_warn:
