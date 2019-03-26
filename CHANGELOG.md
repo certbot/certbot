@@ -8,6 +8,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 * Fedora 29+ is now supported by certbot-auto. Since Python 2.x is on a deprecation
   path in Fedora, certbot-auto will install and use Python 3.x on Fedora 29+.
+* CLI flag `--http-port` has been added for Nginx plugin exclusively, and replaces
+  `--tls-sni-01-port`. It defines the HTTPS port the Nginx plugin will use while
+  setting up a new SSL vhost. By default the HTTPS port is 443.
 
 ### Changed
 
