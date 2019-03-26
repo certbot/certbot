@@ -7,6 +7,7 @@ import threading
 import tempfile
 import unittest
 import time
+from contextlib import closing
 
 from six.moves import http_client  # pylint: disable=import-error
 from six.moves import socketserver  # type: ignore  # pylint: disable=import-error
@@ -264,8 +265,12 @@ class TestSimpleTLSSNI01Server(unittest.TestCase):
         shutil.copy(test_util.vector_path('rsa2048_key.pem'),
                     os.path.join(localhost_dir, 'key.pem'))
 
+        with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as sock:
+            sock.bind(('', 0))
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            self.port = sock.getsockname()[1]
+
         from acme.standalone import simple_tls_sni_01_server
-        self.port = 40000
         self.process = multiprocessing.Process(target=simple_tls_sni_01_server,
                                                args=(['path', '-p', str(self.port)],))
         self.old_cwd = os.getcwd()
