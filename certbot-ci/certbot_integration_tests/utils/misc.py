@@ -92,7 +92,7 @@ def create_tcp_server(port):
     webroot = tempfile.mkdtemp()
 
     def run():
-        GraceFullTCPServer(('', port), SimpleHTTPServer.SimpleHTTPRequestHandler).serve_forever()
+        GracefulTCPServer(('', port), SimpleHTTPServer.SimpleHTTPRequestHandler).serve_forever()
 
     process = multiprocessing.Process(target=run)
 
