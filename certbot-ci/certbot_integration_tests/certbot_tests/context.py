@@ -124,7 +124,7 @@ class IntegrationTestsContext(object):
     def wtf(self, subdomain='le'):
         """
         Generate a certificate name suitable for distributed certbot integration tests.
-        This is a requirement to let the distribution knows how to redirect the challenge check
+        This is a requirement to let the distribution know how to redirect the challenge check
         from the ACME server to the relevant pytest-xdist worker. This resolution is done by
         appending the pytest worker id to the domain, using this pattern:
         {subdomain}.{worker_id}.wtf
