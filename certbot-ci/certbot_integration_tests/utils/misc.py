@@ -82,7 +82,7 @@ def read_certificate(cert_path):
     return crypto.dump_certificate(crypto.FILETYPE_TEXT, cert).decode('utf-8')
 
 
-class GraceFullTCPServer(socketserver.TCPServer):
+class GracefulTCPServer(socketserver.TCPServer):
     allow_reuse_address = True
 
 
