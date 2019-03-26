@@ -1577,12 +1577,14 @@ def parse_preferred_challenges(pref_challs):
     if unrecognized:
         raise errors.Error(
             "Unrecognized challenges: {0}".format(unrecognized))
-    return list(challs)
+    return challs
+
 
 def _user_agent_comment_type(value):
     if "(" in value or ")" in value:
         raise argparse.ArgumentTypeError("may not contain parentheses")
     return value
+
 
 class _DeployHookAction(argparse.Action):
     """Action class for parsing deploy hooks."""
