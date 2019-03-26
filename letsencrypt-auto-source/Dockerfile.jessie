@@ -7,9 +7,7 @@ FROM debian:jessie
 RUN useradd --create-home --home-dir /home/lea --shell /bin/bash --groups sudo --uid 1000 lea
 
 # Install pip, sudo, and openssl:
-RUN echo "deb http://deb.debian.org/debian/ jessie main" > /etc/apt/sources.list && \
-    echo "deb http://security.debian.org/ jessie/updates main" >> /etc/apt/sources.list && \
-    apt-get update && \
+RUN apt-get update && \
     apt-get -q -y install python-pip sudo openssl && \
     apt-get clean
 # Use pipstrap to update to a stable and tested version of pip
