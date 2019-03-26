@@ -16,6 +16,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   generate a deprecation warning if used, and will be removed soon.
 * Options `tls-sni` and `tls-sni-01` in `--preferred-challenges` flag are now no-op,
   will generate a deprecation warning if used, and will be removed soon.
+* CLI flag `--standalone-supported-challenges` has been removed.
 
 ### Fixed
 
