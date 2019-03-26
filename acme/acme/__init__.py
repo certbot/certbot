@@ -36,7 +36,7 @@ class _TLSSNI01DeprecationModule(object):
 
     def __getattr__(self, attr):
         if 'TLSSNI01' in attr:
-            warnings.warn('{0} attribute is deprecated, and will be removed soon.',
+            warnings.warn('{0} attribute is deprecated, and will be removed soon.'.format(attr),
                           DeprecationWarning, stacklevel=2)
         return getattr(self._module, attr)
 
