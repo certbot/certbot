@@ -1,4 +1,4 @@
-"""Module do handle the context of integration tests."""
+"""Module to handle the context of integration tests."""
 import os
 import tempfile
 import subprocess
