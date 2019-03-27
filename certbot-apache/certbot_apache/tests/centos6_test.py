@@ -6,7 +6,7 @@ from certbot_apache import obj
 from certbot_apache import override_centos
 from certbot_apache import parser
 from certbot_apache.tests import util
-from certbot.errors import ConfigurationError
+from certbot.errors import MisconfigurationError
 
 def get_vh_truth(temp_dir, config_name):
     """Return the ground truth for the specified directory."""
@@ -179,7 +179,7 @@ class CentOS6Tests(util.ApacheTest):
         pre_matches = self.config.parser.find_dir("LoadModule",
                                                   "ssl_module", exclude=False)
 
-        self.assertRaises(ConfigurationError, self.config.deploy_cert,
+        self.assertRaises(MisconfigurationError, self.config.deploy_cert,
                 "random.demo", "example/cert.pem", "example/key.pem",
                 "example/cert_chain.pem", "example/fullchain.pem")
 
