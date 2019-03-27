@@ -4,7 +4,7 @@ import functools
 import hashlib
 import logging
 import socket
-import warnings
+import sys
 
 from cryptography.hazmat.primitives import hashes  # type: ignore
 import josepy as jose
@@ -15,6 +15,7 @@ import six
 from acme import errors
 from acme import crypto_util
 from acme import fields
+from acme import _TLSSNI01DeprecationModule
 
 logger = logging.getLogger(__name__)
 
@@ -515,8 +516,6 @@ class TLSSNI01(KeyAuthorizationChallenge):
     #n = jose.Field("n", encoder=int, decoder=int)
 
     def __init__(self, *args, **kwargs):
-        warnings.warn("TLS-SNI-01 is deprecated, and will stop working soon.",
-            DeprecationWarning, stacklevel=2)
         super(TLSSNI01, self).__init__(*args, **kwargs)
 
     def validation(self, account_key, **kwargs):
@@ -641,3 +640,7 @@ class DNSResponse(ChallengeResponse):
 
         """
         return chall.check_validation(self.validation, account_public_key)
+
+
+# Patching ourselves to warn about TLS-SNI challenge deprecation and removal.
+sys.modules[__name__] = _TLSSNI01DeprecationModule(sys.modules[__name__])

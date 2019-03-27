@@ -351,29 +351,28 @@ class AddDeprecatedArgumentTest(unittest.TestCase):
 
     def _call(self, argument_name, nargs):
         from certbot.util import add_deprecated_argument
-
         add_deprecated_argument(self.parser.add_argument, argument_name, nargs)
 
     def test_warning_no_arg(self):
         self._call("--old-option", 0)
-        stderr = self._get_argparse_warnings(["--old-option"])
-        self.assertTrue("--old-option is deprecated" in stderr)
+        with mock.patch("certbot.util.logger.warning") as mock_warn:
+            self.parser.parse_args(["--old-option"])
+        self.assertEqual(mock_warn.call_count, 1)
+        self.assertTrue("is deprecated" in mock_warn.call_args[0][0])
+        self.assertEqual("--old-option", mock_warn.call_args[0][1])
 
     def test_warning_with_arg(self):
         self._call("--old-option", 1)
-        stderr = self._get_argparse_warnings(["--old-option", "42"])
-        self.assertTrue("--old-option is deprecated" in stderr)
-
-    def _get_argparse_warnings(self, args):
-        stderr = six.StringIO()
-        with mock.patch("certbot.util.sys.stderr", new=stderr):
-            self.parser.parse_args(args)
-        return stderr.getvalue()
+        with mock.patch("certbot.util.logger.warning") as mock_warn:
+            self.parser.parse_args(["--old-option", "42"])
+        self.assertEqual(mock_warn.call_count, 1)
+        self.assertTrue("is deprecated" in mock_warn.call_args[0][0])
+        self.assertEqual("--old-option", mock_warn.call_args[0][1])
 
     def test_help(self):
         self._call("--old-option", 2)
         stdout = six.StringIO()
-        with mock.patch("certbot.util.sys.stdout", new=stdout):
+        with mock.patch("sys.stdout", new=stdout):
             try:
                 self.parser.parse_args(["-h"])
             except SystemExit:

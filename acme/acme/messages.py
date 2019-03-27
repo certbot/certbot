@@ -3,7 +3,7 @@ import six
 import json
 try:
     from collections.abc import Hashable  # pylint: disable=no-name-in-module
-except ImportError:
+except ImportError:  # pragma: no cover
     from collections import Hashable
 
 import josepy as jose

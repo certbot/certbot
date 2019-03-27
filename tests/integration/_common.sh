@@ -61,7 +61,7 @@ certbot_test_no_force_renew () {
             --server "${SERVER:-http://localhost:4000/directory}" \
             --no-verify-ssl \
             --http-01-port $http_01_port \
-            --tls-sni-01-port $https_port \
+            --https-port $https_port \
             --manual-public-ip-logging-ok \
             $other_flags \
             --non-interactive \

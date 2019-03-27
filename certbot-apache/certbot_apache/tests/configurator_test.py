@@ -1337,15 +1337,6 @@ class MultipleVhostsTest(util.ApacheTest):
 
         return account_key, (achall1, achall2, achall3)
 
-    def test_make_addrs_sni_ready(self):
-        self.config.version = (2, 2)
-        self.config.make_addrs_sni_ready(
-            set([obj.Addr.fromstring("*:443"), obj.Addr.fromstring("*:80")]))
-        self.assertTrue(self.config.parser.find_dir(
-            "NameVirtualHost", "*:80", exclude=False))
-        self.assertTrue(self.config.parser.find_dir(
-            "NameVirtualHost", "*:443", exclude=False))
-
     def test_aug_version(self):
         mock_match = mock.Mock(return_value=["something"])
         self.config.aug.match = mock_match
