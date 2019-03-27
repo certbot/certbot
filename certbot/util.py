@@ -9,15 +9,15 @@ import errno
 import logging
 import platform
 import re
-import six
 import socket
 import subprocess
-
 from collections import OrderedDict
 
 import configargparse
+import six
 
 from acme.magic_typing import Tuple, Union  # pylint: disable=unused-import, no-name-in-module
+
 from certbot import constants
 from certbot import errors
 from certbot import lock

@@ -3,26 +3,28 @@
 # pylint: disable=too-many-lines
 from __future__ import print_function
 
+import datetime
 import itertools
 import json
-import mock
 import shutil
+import sys
+import tempfile
 import traceback
 import unittest
-import datetime
-import pytz
-import tempfile
-import sys
 
 import josepy as jose
+import mock
+import pytz
 import six
 from six.moves import reload_module  # pylint: disable=import-error
 
 from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
+
+import certbot.tests.util as test_util
 from certbot import account
 from certbot import cli
-from certbot import constants
 from certbot import configuration
+from certbot import constants
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces  # pylint: disable=unused-import
@@ -34,7 +36,6 @@ from certbot.plugins import disco
 from certbot.plugins import enhancements
 from certbot.plugins import manual
 from certbot.plugins import null
-import certbot.tests.util as test_util
 
 CERT_PATH = test_util.vector_path('cert_512.pem')
 CERT = test_util.vector_path('cert_512.pem')

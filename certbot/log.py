@@ -13,6 +13,7 @@ and properly flushed before program exit.
 
 """
 from __future__ import print_function
+
 import functools
 import logging
 import logging.handlers
@@ -21,6 +22,7 @@ import tempfile
 import traceback
 
 from acme import messages
+
 from certbot import constants
 from certbot import errors
 from certbot import util

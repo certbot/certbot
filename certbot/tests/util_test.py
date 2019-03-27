@@ -7,9 +7,9 @@ import mock
 import six
 from six.moves import reload_module  # pylint: disable=import-error
 
+import certbot.tests.util as test_util
 from certbot import errors
 from certbot.compat import os, security
-import certbot.tests.util as test_util
 
 
 class RunScriptTest(unittest.TestCase):

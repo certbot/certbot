@@ -1,6 +1,7 @@
 """Certbot main entry point."""
 # pylint: disable=too-many-lines
 from __future__ import print_function
+
 import functools
 import logging.handlers
 import sys
@@ -32,8 +33,8 @@ from certbot import util
 from certbot.compat import os, misc
 from certbot.display import util as display_util, ops as display_ops
 from certbot.plugins import disco as plugins_disco
-from certbot.plugins import selection as plug_sel
 from certbot.plugins import enhancements
+from certbot.plugins import selection as plug_sel
 
 USER_CANCELLED = ("User chose to cancel the operation and may "
                   "reinvoke the client.")

@@ -1,8 +1,8 @@
 """Certbot user-supplied configuration."""
 import copy
 
-from six.moves.urllib import parse  # pylint: disable=import-error
 import zope.interface
+from six.moves.urllib import parse  # pylint: disable=import-error
 
 from certbot import constants
 from certbot import errors

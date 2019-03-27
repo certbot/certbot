@@ -4,13 +4,12 @@ import socket
 import tempfile
 import unittest
 
-import six
 import mock
+import six
 
 from certbot import errors
 from certbot import interfaces
 from certbot.display import util as display_util
-
 
 CHOICES = [("First", "Description1"), ("Second", "Description2")]
 TAGS = ["tag1", "tag2", "tag3"]

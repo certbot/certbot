@@ -11,7 +11,7 @@ import zope.interface
 
 from acme import challenges
 from acme import crypto_util as acme_crypto_util
-from acme.magic_typing import Dict, Set, List  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import List, Dict, Set  # pylint: disable=unused-import, no-name-in-module
 
 from certbot import constants as core_constants
 from certbot import crypto_util
@@ -22,11 +22,10 @@ from certbot.compat import os
 from certbot.plugins import common
 from certbot_nginx import constants
 from certbot_nginx import display_ops
-from certbot_nginx import nginxparser
-from certbot_nginx import parser
 from certbot_nginx import http_01
+from certbot_nginx import nginxparser
 from certbot_nginx import obj  # pylint: disable=unused-import
-
+from certbot_nginx import parser
 
 NAME_RANK = 0
 START_WILDCARD_RANK = 1

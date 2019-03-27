@@ -7,7 +7,6 @@ import unittest
 
 import mock
 import six
-
 from acme import messages
 from acme.magic_typing import Optional  # pylint: disable=unused-import, no-name-in-module
 

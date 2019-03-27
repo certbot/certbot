@@ -6,8 +6,8 @@ import textwrap
 import zope.interface
 
 from certbot import constants
-from certbot import interfaces
 from certbot import errors
+from certbot import interfaces
 from certbot.compat import os, misc
 from certbot.display import completer
 

@@ -3,20 +3,20 @@ import datetime
 import glob
 import logging
 import re
+import shutil
 import stat
 
 import configobj
 import parsedatetime
 import pytz
-import shutil
 import six
 
 import certbot
 from certbot import cli
 from certbot import constants
 from certbot import crypto_util
-from certbot import errors
 from certbot import error_handler
+from certbot import errors
 from certbot import util
 from certbot.compat import os, security
 from certbot.plugins import common as plugins_common

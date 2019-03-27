@@ -1,7 +1,7 @@
 """Tests for certbot.compat."""
-
-from certbot.compat import os
 import certbot.tests.util as test_util
+from certbot.compat import os
+
 
 class OsReplaceTest(test_util.TempDirTestCase):
     """Test to ensure consistent behavior of os.rename method"""

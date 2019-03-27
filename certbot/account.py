@@ -6,15 +6,16 @@ import logging
 import shutil
 import socket
 
-from cryptography.hazmat.primitives import serialization
 import josepy as jose
 import pyrfc3339
 import pytz
 import six
 import zope.component
+from cryptography.hazmat.primitives import serialization
 
 from acme import fields as acme_fields
 from acme import messages
+
 from certbot import constants
 from certbot import errors
 from certbot import interfaces
