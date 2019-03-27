@@ -1524,7 +1524,7 @@ class MultipleVhostsTest(util.ApacheTest):
 
     def test_realpath_replaces_symlink(self):
         orig_match = self.config.aug.match
-        mock_vhost = copy.copy(self.vh_truth[0])
+        mock_vhost = copy.deepcopy(self.vh_truth[0])
         mock_vhost.filep = mock_vhost.filep.replace('sites-enabled', u'sites-available')
         mock_vhost.path = mock_vhost.path.replace('sites-enabled', 'sites-available')
         mock_vhost.enabled = False
