@@ -8,10 +8,20 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 * Fedora 29+ is now supported by certbot-auto. Since Python 2.x is on a deprecation
   path in Fedora, certbot-auto will install and use Python 3.x on Fedora 29+.
+* CLI flag `--http-port` has been added for Nginx plugin exclusively, and replaces
+  `--tls-sni-01-port`. It defines the HTTPS port the Nginx plugin will use while
+  setting up a new SSL vhost. By default the HTTPS port is 443.
 
 ### Changed
 
-*
+* Support for TLS-SNI-01 has been removed from all official Certbot plugins.
+* Attributes related to the TLS-SNI-01 challenge in `acme.challenges` and `acme.standalone`
+  modules are deprecated and will be removed soon.
+* CLI flags `--tls-sni-01-port` and `--tls-sni-01-address` are now no-op, will
+  generate a deprecation warning if used, and will be removed soon.
+* Options `tls-sni` and `tls-sni-01` in `--preferred-challenges` flag are now no-op,
+  will generate a deprecation warning if used, and will be removed soon.
+* CLI flag `--standalone-supported-challenges` has been removed.
 
 ### Fixed
 
@@ -28,6 +38,7 @@ package with changes other than its version number was:
 
 * certbot
 * certbot-apache
+* certbot-nginx
 
 More details about these changes can be found on our GitHub repo.
 

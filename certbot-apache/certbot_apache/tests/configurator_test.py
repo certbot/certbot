@@ -812,32 +812,19 @@ class MultipleVhostsTest(util.ApacheTest):
         self.assertEqual(self.config.add_name_vhost.call_count, 2)
 
     @mock.patch("certbot_apache.configurator.http_01.ApacheHttp01.perform")
-    @mock.patch("certbot_apache.configurator.tls_sni_01.ApacheTlsSni01.perform")
     @mock.patch("certbot_apache.configurator.ApacheConfigurator.restart")
-    def test_perform(self, mock_restart, mock_tls_perform, mock_http_perform):
+    def test_perform(self, mock_restart, mock_http_perform):
         # Only tests functionality specific to configurator.perform
         # Note: As more challenges are offered this will have to be expanded
         account_key, achalls = self.get_key_and_achalls()
 
-        all_expected = []
-        http_expected = []
-        tls_expected = []
-        for achall in achalls:
-            response = achall.response(account_key)
-            if isinstance(achall.chall, challenges.HTTP01):
-                http_expected.append(response)
-            else:
-                tls_expected.append(response)
-            all_expected.append(response)
-
-        mock_http_perform.return_value = http_expected
-        mock_tls_perform.return_value = tls_expected
+        expected = [achall.response(account_key) for achall in achalls]
+        mock_http_perform.return_value = expected
 
         responses = self.config.perform(achalls)
 
         self.assertEqual(mock_http_perform.call_count, 1)
-        self.assertEqual(mock_tls_perform.call_count, 1)
-        self.assertEqual(responses, all_expected)
+        self.assertEqual(responses, expected)
 
         self.assertEqual(mock_restart.call_count, 1)
 
@@ -1348,15 +1335,6 @@ class MultipleVhostsTest(util.ApacheTest):
             domain="example.org", account_key=account_key)
 
         return account_key, (achall1, achall2, achall3)
-
-    def test_make_addrs_sni_ready(self):
-        self.config.version = (2, 2)
-        self.config.make_addrs_sni_ready(
-            set([obj.Addr.fromstring("*:443"), obj.Addr.fromstring("*:80")]))
-        self.assertTrue(self.config.parser.find_dir(
-            "NameVirtualHost", "*:80", exclude=False))
-        self.assertTrue(self.config.parser.find_dir(
-            "NameVirtualHost", "*:443", exclude=False))
 
     def test_aug_version(self):
         mock_match = mock.Mock(return_value=["something"])

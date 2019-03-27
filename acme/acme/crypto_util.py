@@ -18,17 +18,14 @@ from acme.magic_typing import Callable, Union, Tuple, Optional
 
 logger = logging.getLogger(__name__)
 
-# TLSSNI01 certificate serving and probing is not affected by SSL
-# vulnerabilities: prober needs to check certificate for expected
-# contents anyway. Working SNI is the only thing that's necessary for
-# the challenge and thus scoping down SSL/TLS method (version) would
-# cause interoperability issues: TLSv1_METHOD is only compatible with
+# Default SSL method selected here is the most compatible, while secure
+# SSL method: TLSv1_METHOD is only compatible with
 # TLSv1_METHOD, while SSLv23_METHOD is compatible with all other
 # methods, including TLSv2_METHOD (read more at
 # https://www.openssl.org/docs/ssl/SSLv23_method.html). _serve_sni
 # should be changed to use "set_options" to disable SSLv2 and SSLv3,
 # in case it's used for things other than probing/serving!
-_DEFAULT_TLSSNI01_SSL_METHOD = SSL.SSLv23_METHOD  # type: ignore
+_DEFAULT_SSL_METHOD = SSL.SSLv23_METHOD  # type: ignore
 
 
 class SSLSocket(object):  # pylint: disable=too-few-public-methods
@@ -40,7 +37,7 @@ class SSLSocket(object):  # pylint: disable=too-few-public-methods
     :ivar method: See `OpenSSL.SSL.Context` for allowed values.
 
     """
-    def __init__(self, sock, certs, method=_DEFAULT_TLSSNI01_SSL_METHOD):
+    def __init__(self, sock, certs, method=_DEFAULT_SSL_METHOD):
         self.sock = sock
         self.certs = certs
         self.method = method
@@ -112,7 +109,7 @@ class SSLSocket(object):  # pylint: disable=too-few-public-methods
 
 
 def probe_sni(name, host, port=443, timeout=300,
-              method=_DEFAULT_TLSSNI01_SSL_METHOD, source_address=('', 0)):
+              method=_DEFAULT_SSL_METHOD, source_address=('', 0)):
     """Probe SNI server for SSL certificate.
 
     :param bytes name: Byte string to send as the server name in the

@@ -86,26 +86,26 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
         return output.getvalue()
 
-    @test_util.broken_on_windows
     @mock.patch("certbot.cli.flag_default")
     def test_cli_ini_domains(self, mock_flag_default):
-        tmp_config = tempfile.NamedTemporaryFile()
-        # use a shim to get ConfigArgParse to pick up tmp_config
-        shim = (
-                lambda v: copy.deepcopy(constants.CLI_DEFAULTS[v])
-                if v != "config_files"
-                else [tmp_config.name]
-                )
-        mock_flag_default.side_effect = shim
+        with tempfile.NamedTemporaryFile() as tmp_config:
+            tmp_config.close()  # close now because of compatibility issues on Windows
+            # use a shim to get ConfigArgParse to pick up tmp_config
+            shim = (
+                    lambda v: copy.deepcopy(constants.CLI_DEFAULTS[v])
+                    if v != "config_files"
+                    else [tmp_config.name]
+                    )
+            mock_flag_default.side_effect = shim
 
-        namespace = self.parse(["certonly"])
-        self.assertEqual(namespace.domains, [])
-        tmp_config.write(b"domains = example.com")
-        tmp_config.flush()
-        namespace = self.parse(["certonly"])
-        self.assertEqual(namespace.domains, ["example.com"])
-        namespace = self.parse(["renew"])
-        self.assertEqual(namespace.domains, [])
+            namespace = self.parse(["certonly"])
+            self.assertEqual(namespace.domains, [])
+            with open(tmp_config.name, 'w') as file_h:
+                file_h.write("domains = example.com")
+            namespace = self.parse(["certonly"])
+            self.assertEqual(namespace.domains, ["example.com"])
+            namespace = self.parse(["renew"])
+            self.assertEqual(namespace.domains, [])
 
     def test_no_args(self):
         namespace = self.parse([])
@@ -235,12 +235,18 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(namespace.domains, ['example.com', 'another.net'])
 
     def test_preferred_challenges(self):
-        short_args = ['--preferred-challenges', 'http, tls-sni-01, dns']
+        short_args = ['--preferred-challenges', 'http, dns']
         namespace = self.parse(short_args)
 
-        expected = [challenges.HTTP01.typ,
-                    challenges.TLSSNI01.typ, challenges.DNS01.typ]
+        expected = [challenges.HTTP01.typ, challenges.DNS01.typ]
         self.assertEqual(namespace.pref_challs, expected)
+
+        # TODO: to be removed once tls-sni deprecation logic is removed
+        with mock.patch('certbot.cli.logger.warning') as mock_warn:
+            self.assertEqual(self.parse(['--preferred-challenges', 'http, tls-sni']).pref_challs,
+                             [challenges.HTTP01.typ])
+        self.assertEqual(mock_warn.call_count, 1)
+        self.assertTrue('deprecated' in mock_warn.call_args[0][0])
 
         short_args = ['--preferred-challenges', 'jumping-over-the-moon']
         # argparse.ArgumentError makes argparse print more information
@@ -260,12 +266,13 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
     def test_no_gui(self):
         args = ['renew', '--dialog']
-        stderr = six.StringIO()
-        with mock.patch('certbot.main.sys.stderr', new=stderr):
+        with mock.patch("certbot.util.logger.warning") as mock_warn:
             namespace = self.parse(args)
 
         self.assertTrue(namespace.noninteractive_mode)
-        self.assertTrue("--dialog is deprecated" in stderr.getvalue())
+        self.assertEqual(mock_warn.call_count, 1)
+        self.assertTrue("is deprecated" in mock_warn.call_args[0][0])
+        self.assertEqual("--dialog", mock_warn.call_args[0][1])
 
     def _check_server_conflict_message(self, parser_args, conflicting_args):
         try:

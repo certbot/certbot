@@ -23,6 +23,9 @@ class Proxy(object):
     def __init__(self, args):
         """Initializes the plugin with the given command line args"""
         self._temp_dir = tempfile.mkdtemp()
+        # tempfile.mkdtemp() creates folders with too restrictive permissions to be accessible
+        # to an Apache worker, leading to HTTP challenge failures. Let's fix that.
+        os.chmod(self._temp_dir, 0o755)
         self.le_config = util.create_le_config(self._temp_dir)
         config_dir = util.extract_configs(args.configs, self._temp_dir)
         self._configs = [
