@@ -295,7 +295,7 @@ class NginxConfigurator(common.Installer):
             if create_if_no_match:
                 # result will not be [None] because it errors on failure
                 vhosts = [self._vhost_from_duplicated_default(target_name, True,
-                    str(self.config.tls_sni_01_port))]
+                    str(self.config.https_port))]
             else:
                 # No matches. Raise a misconfiguration error.
                 raise errors.MisconfigurationError(
@@ -609,7 +609,7 @@ class NginxConfigurator(common.Installer):
         :type vhost: :class:`~certbot_nginx.obj.VirtualHost`
 
         """
-        https_port = self.config.tls_sni_01_port
+        https_port = self.config.https_port
         ipv6info = self.ipv6_info(https_port)
         ipv6_block = ['']
         ipv4_block = ['']
