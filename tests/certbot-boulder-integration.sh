@@ -223,7 +223,7 @@ common plugins --init --prepare | grep webroot
 
 # We start a server listening on the port for the
 # unrequested challenge to prevent regressions in #3601.
-python ./tests/run_http_server.py $tls_alpn_01_port &
+python ./tests/run_http_server.py $https_port &
 python_server_pid=$!
 certname="le1.wtf"
 common --domains le1.wtf --preferred-challenges http-01 auth \

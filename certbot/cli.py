@@ -1113,14 +1113,6 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         help=config_help("no_verify_ssl"),
         default=flag_default("no_verify_ssl"))
     helpful.add(
-        ["testing", "standalone", "apache", "nginx"], "--tls-sni-01-port", type=int,
-        default=flag_default("tls_sni_01_port"),
-        help=config_help("tls_sni_01_port"))
-    helpful.add(
-        ["testing", "standalone"], "--tls-sni-01-address",
-        default=flag_default("tls_sni_01_address"),
-        help=config_help("tls_sni_01_address"))
-    helpful.add(
         ["testing", "standalone", "manual"], "--http-01-port", type=int,
         dest="http01_port",
         default=flag_default("http01_port"), help=config_help("http01_port"))
@@ -1128,6 +1120,10 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         ["testing", "standalone"], "--http-01-address",
         dest="http01_address",
         default=flag_default("http01_address"), help=config_help("http01_address"))
+    helpful.add(
+        ["testing", "nginx"], "--https-port", type=int,
+        default=flag_default("https_port"),
+        help=config_help("https_port"))
     helpful.add(
         "testing", "--break-my-certs", action="store_true",
         default=flag_default("break_my_certs"),
@@ -1188,7 +1184,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         action=_PrefChallAction, default=flag_default("pref_challs"),
         help='A sorted, comma delimited list of the preferred challenge to '
              'use during authorization with the most preferred challenge '
-             'listed first (Eg, "dns" or "tls-sni-01,http,dns"). '
+             'listed first (Eg, "dns" or "http,dns"). '
              'Not all plugins support all challenges. See '
              'https://certbot.eff.org/docs/using.html#plugins for details. '
              'ACME Challenges are versioned, but if you pick "http" rather '
@@ -1258,6 +1254,17 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
 
     helpful.add_deprecated_argument("--agree-dev-preview", 0)
     helpful.add_deprecated_argument("--dialog", 0)
+
+    # Deprecation of tls-sni-01 related cli flags
+    # TODO: remove theses flags completely in few releases
+    class _DeprecatedTLSSNIAction(util._ShowWarning):  # pylint: disable=protected-access
+        def __call__(self, parser, namespace, values, option_string=None):
+            super(_DeprecatedTLSSNIAction, self).__call__(parser, namespace, values, option_string)
+            namespace.https_port = values
+    helpful.add(
+        ["testing", "standalone", "apache", "nginx"], "--tls-sni-01-port",
+        type=int, action=_DeprecatedTLSSNIAction, help=argparse.SUPPRESS)
+    helpful.add_deprecated_argument("--tls-sni-01-address", 1)
 
     # Populate the command line parameters for new style enhancements
     enhancements.populate_cli(helpful.add)
@@ -1551,6 +1558,15 @@ def parse_preferred_challenges(pref_challs):
     aliases = {"dns": "dns-01", "http": "http-01", "tls-sni": "tls-sni-01"}
     challs = [c.strip() for c in pref_challs]
     challs = [aliases.get(c, c) for c in challs]
+
+    # Ignore tls-sni-01 from the list, and generates a deprecation warning
+    # TODO: remove this option completely in few releases
+    if "tls-sni-01" in challs:
+        logger.warning('TLS-SNI-01 support is deprecated. This value is being dropped from the '
+                       'setting of --preferred-challenges and future versions of Certbot will '
+                       'error if it is included.')
+        challs = [chall for chall in challs if chall != "tls-sni-01"]
+
     unrecognized = ", ".join(name for name in challs
                              if name not in challenges.Challenge.TYPES)
     if unrecognized:
@@ -1558,10 +1574,12 @@ def parse_preferred_challenges(pref_challs):
             "Unrecognized challenges: {0}".format(unrecognized))
     return challs
 
+
 def _user_agent_comment_type(value):
     if "(" in value or ")" in value:
         raise argparse.ArgumentTypeError("may not contain parentheses")
     return value
+
 
 class _DeployHookAction(argparse.Action):
     """Action class for parsing deploy hooks."""

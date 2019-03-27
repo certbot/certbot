@@ -169,9 +169,6 @@ the bound IPv6 port and the failure during the second bind is expected.
 Use ``--<challenge-type>-address`` to explicitly tell Certbot which interface
 (and protocol) to bind.
 
-.. note:: The ``--standalone-supported-challenges`` option has been
-   deprecated since ``certbot`` version 0.9.0.
-
 .. _dns_plugins:
 
 DNS Plugins

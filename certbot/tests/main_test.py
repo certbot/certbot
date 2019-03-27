@@ -590,20 +590,20 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
             self.assertTrue(message in str(exc))
         self.assertTrue(exc is not None)
 
-    @test_util.broken_on_windows
-    def test_noninteractive(self):
+    @mock.patch('certbot.log.post_arg_parse_setup')
+    def test_noninteractive(self, _):
         args = ['-n', 'certonly']
         self._cli_missing_flag(args, "specify a plugin")
         args.extend(['--standalone', '-d', 'eg.is'])
         self._cli_missing_flag(args, "register before running")
 
-    @test_util.broken_on_windows
+    @mock.patch('certbot.log.post_arg_parse_setup')
     @mock.patch('certbot.main._report_new_cert')
     @mock.patch('certbot.main.client.acme_client.Client')
     @mock.patch('certbot.main._determine_account')
     @mock.patch('certbot.main.client.Client.obtain_and_enroll_certificate')
     @mock.patch('certbot.main._get_and_save_cert')
-    def test_user_agent(self, gsc, _obt, det, _client, unused_report):
+    def test_user_agent(self, gsc, _obt, det, _client, _, __):
         # Normally the client is totally mocked out, but here we need more
         # arguments to automate it...
         args = ["--standalone", "certonly", "-m", "none@none.com",
@@ -652,11 +652,11 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
             self.assertEqual(call_config.fullchain_path, test_util.temp_join('chain'))
             self.assertEqual(call_config.key_path, test_util.temp_join('privkey'))
 
-    @test_util.broken_on_windows
+    @mock.patch('certbot.log.post_arg_parse_setup')
     @mock.patch('certbot.main._install_cert')
     @mock.patch('certbot.main.plug_sel.record_chosen_plugins')
     @mock.patch('certbot.main.plug_sel.pick_installer')
-    def test_installer_param_override(self, _inst, _rec, mock_install):
+    def test_installer_param_override(self, _inst, _rec, mock_install, _):
         mock_lineage = mock.MagicMock(cert_path=test_util.temp_join('cert'),
                                       chain_path=test_util.temp_join('chain'),
                                       fullchain_path=test_util.temp_join('chain'),
@@ -703,10 +703,10 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         self.assertTrue(mock_getcert.called)
         self.assertTrue(mock_inst.called)
 
-    @test_util.broken_on_windows
+    @mock.patch('certbot.log.post_arg_parse_setup')
     @mock.patch('certbot.main._report_new_cert')
     @mock.patch('certbot.util.exe_exists')
-    def test_configurator_selection(self, mock_exe_exists, unused_report):
+    def test_configurator_selection(self, mock_exe_exists, _, __):
         mock_exe_exists.return_value = True
         real_plugins = disco.PluginsRegistry.find_all()
         args = ['--apache', '--authenticator', 'standalone']
@@ -743,8 +743,8 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
             self._call(["auth", "--standalone"])
             self.assertEqual(1, mock_certonly.call_count)
 
-    @test_util.broken_on_windows
-    def test_rollback(self):
+    @mock.patch('certbot.log.post_arg_parse_setup')
+    def test_rollback(self, _):
         _, _, _, client = self._call(['rollback'])
         self.assertEqual(1, client.rollback.call_count)
 
@@ -771,8 +771,8 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         self._call_no_clientmock(['delete'])
         self.assertEqual(1, mock_cert_manager.call_count)
 
-    @test_util.broken_on_windows
-    def test_plugins(self):
+    @mock.patch('certbot.log.post_arg_parse_setup')
+    def test_plugins(self, _):
         flags = ['--init', '--prepare', '--authenticators', '--installers']
         for args in itertools.chain(
                 *(itertools.combinations(flags, r)
@@ -1044,7 +1044,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         return mock_lineage, mock_get_utility, stdout
 
     @mock.patch('certbot.crypto_util.notAfter')
-    def test_certonly_renewal(self, unused_notafter):
+    def test_certonly_renewal(self, _):
         lineage, get_utility, _ = self._test_renewal_common(True, [])
         self.assertEqual(lineage.save_successor.call_count, 1)
         lineage.update_all_links_to.assert_called_once_with(
@@ -1053,9 +1053,9 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         self.assertTrue('fullchain.pem' in cert_msg)
         self.assertTrue('donate' in get_utility().add_message.call_args[0][0])
 
-    @test_util.broken_on_windows
+    @mock.patch('certbot.log.logging.handlers.RotatingFileHandler.doRollover')
     @mock.patch('certbot.crypto_util.notAfter')
-    def test_certonly_renewal_triggers(self, unused_notafter):
+    def test_certonly_renewal_triggers(self, _, __):
         # --dry-run should force renewal
         _, get_utility, _ = self._test_renewal_common(False, ['--dry-run', '--keep'],
                                                       log_out="simulating renewal")
@@ -1122,8 +1122,8 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         self.assertTrue('No renewals were attempted.' in stdout.getvalue())
         self.assertTrue('The following certs are not due for renewal yet:' in stdout.getvalue())
 
-    @test_util.broken_on_windows
-    def test_quiet_renew(self):
+    @mock.patch('certbot.log.post_arg_parse_setup')
+    def test_quiet_renew(self, _):
         test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
         args = ["renew", "--dry-run"]
         _, _, stdout = self._test_renewal_common(True, [], args=args, should_renew=True)
@@ -1378,8 +1378,8 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
             self._call(['-c', test_util.vector_path('cli.ini')])
         self.assertTrue(mocked_run.called)
 
-    @test_util.broken_on_windows
-    def test_register(self):
+    @mock.patch('certbot.log.post_arg_parse_setup')
+    def test_register(self, _):
         with mock.patch('certbot.main.client') as mocked_client:
             acc = mock.MagicMock()
             acc.id = "imaginary_account"

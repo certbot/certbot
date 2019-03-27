@@ -1072,23 +1072,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             if "ssl_module" not in self.parser.modules:
                 self.enable_mod("ssl", temp=temp)
 
-    def make_addrs_sni_ready(self, addrs):
-        """Checks to see if the server is ready for SNI challenges.
-
-        :param addrs: Addresses to check SNI compatibility
-        :type addrs: :class:`~certbot_apache.obj.Addr`
-
-        """
-        # Version 2.4 and later are automatically SNI ready.
-        if self.version >= (2, 4):
-            return
-
-        for addr in addrs:
-            if not self.is_name_vhost(addr):
-                logger.debug("Setting VirtualHost at %s to be a name "
-                             "based virtual host", addr)
-                self.add_name_vhost(addr)
-
     def make_vhost_ssl(self, nonssl_vhost):  # pylint: disable=too-many-locals
         """Makes an ssl_vhost version of a nonssl_vhost.
 

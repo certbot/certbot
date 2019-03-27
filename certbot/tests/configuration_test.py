@@ -16,11 +16,11 @@ class NamespaceConfigTest(test_util.ConfigTestCase):
         super(NamespaceConfigTest, self).setUp()
         self.config.foo = 'bar'
         self.config.server = 'https://acme-server.org:443/new'
-        self.config.tls_sni_01_port = 1234
+        self.config.https_port = 1234
         self.config.http01_port = 4321
 
     def test_init_same_ports(self):
-        self.config.namespace.tls_sni_01_port = 4321
+        self.config.namespace.https_port = 4321
         from certbot.configuration import NamespaceConfig
         self.assertRaises(errors.Error, NamespaceConfig, self.config.namespace)
 
@@ -78,7 +78,7 @@ class NamespaceConfigTest(test_util.ConfigTestCase):
 
         mock_namespace = mock.MagicMock(spec=['config_dir', 'work_dir',
                                               'logs_dir', 'http01_port',
-                                              'tls_sni_01_port',
+                                              'https_port',
                                               'domains', 'server'])
         mock_namespace.config_dir = config_base
         mock_namespace.work_dir = work_base
@@ -125,7 +125,7 @@ class NamespaceConfigTest(test_util.ConfigTestCase):
 
         mock_namespace = mock.MagicMock(spec=['config_dir', 'work_dir',
                                               'logs_dir', 'http01_port',
-                                              'tls_sni_01_port',
+                                              'https_port',
                                               'domains', 'server'])
         mock_namespace.config_dir = config_base
         mock_namespace.work_dir = work_base

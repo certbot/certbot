@@ -93,12 +93,7 @@ class ApacheParser(object):
             # Add new path to parser paths
             new_dir = os.path.dirname(inc_path)
             new_file = os.path.basename(inc_path)
-            if new_dir in self.existing_paths.keys():
-                # Add to existing path
-                self.existing_paths[new_dir].append(new_file)
-            else:
-                # Create a new path
-                self.existing_paths[new_dir] = [new_file]
+            self.existing_paths.setdefault(new_dir, []).append(new_file)
 
     def add_mod(self, mod_name):
         """Shortcut for updating parser modules."""

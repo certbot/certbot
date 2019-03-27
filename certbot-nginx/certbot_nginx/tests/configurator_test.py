@@ -316,21 +316,13 @@ class NginxConfiguratorTest(util.NginxTest):
                            ]],
                          parsed_migration_conf[0])
 
-    @mock.patch("certbot_nginx.configurator.tls_sni_01.NginxTlsSni01.perform")
     @mock.patch("certbot_nginx.configurator.http_01.NginxHttp01.perform")
     @mock.patch("certbot_nginx.configurator.NginxConfigurator.restart")
     @mock.patch("certbot_nginx.configurator.NginxConfigurator.revert_challenge_config")
-    def test_perform_and_cleanup(self, mock_revert, mock_restart, mock_http_perform,
-        mock_tls_perform):
+    def test_perform_and_cleanup(self, mock_revert, mock_restart, mock_http_perform):
         # Only tests functionality specific to configurator.perform
         # Note: As more challenges are offered this will have to be expanded
-        achall1 = achallenges.KeyAuthorizationAnnotatedChallenge(
-            challb=messages.ChallengeBody(
-                chall=challenges.TLSSNI01(token=b"kNdwjwOeX0I_A8DXt9Msmg"),
-                uri="https://ca.org/chall0_uri",
-                status=messages.Status("pending"),
-            ), domain="localhost", account_key=self.rsa512jwk)
-        achall2 = achallenges.KeyAuthorizationAnnotatedChallenge(
+        achall = achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=messages.ChallengeBody(
                 chall=challenges.HTTP01(token=b"m8TdO1qik4JVFtgPPurJmg"),
                 uri="https://ca.org/chall1_uri",
@@ -338,19 +330,16 @@ class NginxConfiguratorTest(util.NginxTest):
             ), domain="example.com", account_key=self.rsa512jwk)
 
         expected = [
-            achall1.response(self.rsa512jwk),
-            achall2.response(self.rsa512jwk),
+            achall.response(self.rsa512jwk),
         ]
 
-        mock_tls_perform.return_value = expected[:1]
-        mock_http_perform.return_value = expected[1:]
-        responses = self.config.perform([achall1, achall2])
+        mock_http_perform.return_value = expected[:]
+        responses = self.config.perform([achall])
 
-        self.assertEqual(mock_tls_perform.call_count, 1)
         self.assertEqual(mock_http_perform.call_count, 1)
         self.assertEqual(responses, expected)
 
-        self.config.cleanup([achall1, achall2])
+        self.config.cleanup([achall])
         self.assertEqual(0, self.config._chall_out) # pylint: disable=protected-access
         self.assertEqual(mock_revert.call_count, 1)
         self.assertEqual(mock_restart.call_count, 2)
