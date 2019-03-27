@@ -1,5 +1,6 @@
 # pylint: disable=too-many-public-methods,too-many-lines
 """Test for certbot_apache.configurator."""
+import copy
 import os
 import shutil
 import socket
@@ -1511,6 +1512,29 @@ class MultipleVhostsTest(util.ApacheTest):
         first_id = self.config.add_vhost_id(self.vh_truth[0])
         second_id = self.config.add_vhost_id(self.vh_truth[0])
         self.assertEqual(first_id, second_id)
+
+    def test_realpath_replaces_symlink(self):
+        orig_match = self.config.aug.match
+        mock_vhost = copy.deepcopy(self.vh_truth[0])
+        mock_vhost.filep = mock_vhost.filep.replace('sites-enabled', u'sites-available')
+        mock_vhost.path = mock_vhost.path.replace('sites-enabled', 'sites-available')
+        mock_vhost.enabled = False
+        self.config.parser.parse_file(mock_vhost.filep)
+
+        def mock_match(aug_expr):
+            """Return a mocked match list of VirtualHosts"""
+            if "/mocked/path" in aug_expr:
+                return [self.vh_truth[1].path, self.vh_truth[0].path, mock_vhost.path]
+            return orig_match(aug_expr)
+
+        self.config.parser.parser_paths = ["/mocked/path"]
+        self.config.aug.match = mock_match
+        vhs = self.config.get_virtual_hosts()
+        self.assertEqual(len(vhs), 2)
+        self.assertTrue(vhs[0] == self.vh_truth[1])
+        # mock_vhost should have replaced the vh_truth[0], because its filepath
+        # isn't a symlink
+        self.assertTrue(vhs[1] == mock_vhost)
 
 
 class AugeasVhostsTest(util.ApacheTest):
