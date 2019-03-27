@@ -280,6 +280,7 @@ class TestSimpleTLSSNI01Server(unittest.TestCase):
         os.chdir(self.old_cwd)
         if self.process.is_alive():
             self.process.terminate()
+            self.process.join(timeout=5)
         shutil.rmtree(self.test_cwd)
 
     @mock.patch('acme.standalone.TLSSNI01Server.handle_request')
