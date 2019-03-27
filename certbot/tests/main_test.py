@@ -3,41 +3,40 @@
 # pylint: disable=too-many-lines
 from __future__ import print_function
 
+import datetime
 import itertools
 import json
-import mock
 import os
 import shutil
+import sys
+import tempfile
 import traceback
 import unittest
-import datetime
-import pytz
-import tempfile
-import sys
 
 import josepy as jose
+import mock
+import pytz
 import six
 from six.moves import reload_module  # pylint: disable=import-error
 
 from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
+
+import certbot.tests.util as test_util
 from certbot import account
 from certbot import cli
-from certbot import compat
-from certbot import constants
 from certbot import configuration
+from certbot import constants
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces  # pylint: disable=unused-import
 from certbot import main
 from certbot import updater
 from certbot import util
-
+from certbot.compat import misc
 from certbot.plugins import disco
 from certbot.plugins import enhancements
 from certbot.plugins import manual
 from certbot.plugins import null
-
-import certbot.tests.util as test_util
 
 CERT_PATH = test_util.vector_path('cert_512.pem')
 CERT = test_util.vector_path('cert_512.pem')
@@ -1587,7 +1586,7 @@ class MakeOrVerifyNeededDirs(test_util.ConfigTestCase):
         for core_dir in (self.config.config_dir, self.config.work_dir,):
             mock_util.set_up_core_dir.assert_any_call(
                 core_dir, constants.CONFIG_DIRS_MODE,
-                compat.os_geteuid(), self.config.strict_permissions
+                misc.os_geteuid(), self.config.strict_permissions
             )
 
         hook_dirs = (self.config.renewal_pre_hooks_dir,
@@ -1596,7 +1595,7 @@ class MakeOrVerifyNeededDirs(test_util.ConfigTestCase):
         for hook_dir in hook_dirs:
             # default mode of 755 is used
             mock_util.make_or_verify_dir.assert_any_call(
-                hook_dir, uid=compat.os_geteuid(),
+                hook_dir, uid=misc.os_geteuid(),
                 strict=self.config.strict_permissions)
 
 

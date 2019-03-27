@@ -4,13 +4,12 @@ import socket
 import tempfile
 import unittest
 
-import six
 import mock
+import six
 
 from certbot import errors
 from certbot import interfaces
 from certbot.display import util as display_util
-
 
 CHOICES = [("First", "Description1"), ("Second", "Description2")]
 TAGS = ["tag1", "tag2", "tag3"]
@@ -32,7 +31,7 @@ class InputWithTimeoutTest(unittest.TestCase):
     def test_input(self, prompt=None):
         expected = "foo bar"
         stdin = six.StringIO(expected + "\n")
-        with mock.patch("certbot.compat.select.select") as mock_select:
+        with mock.patch("certbot.compat.misc.select.select") as mock_select:
             mock_select.return_value = ([stdin], [], [],)
             self.assertEqual(self._call(prompt), expected)
 

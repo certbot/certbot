@@ -1,6 +1,7 @@
 """Certbot main entry point."""
 # pylint: disable=too-many-lines
 from __future__ import print_function
+
 import functools
 import logging.handlers
 import os
@@ -14,12 +15,10 @@ from acme import errors as acme_errors
 from acme.magic_typing import Union  # pylint: disable=unused-import, no-name-in-module
 
 import certbot
-
 from certbot import account
 from certbot import cert_manager
 from certbot import cli
 from certbot import client
-from certbot import compat
 from certbot import configuration
 from certbot import constants
 from certbot import crypto_util
@@ -33,11 +32,11 @@ from certbot import reporter
 from certbot import storage
 from certbot import updater
 from certbot import util
-
+from certbot.compat import misc
 from certbot.display import util as display_util, ops as display_ops
 from certbot.plugins import disco as plugins_disco
-from certbot.plugins import selection as plug_sel
 from certbot.plugins import enhancements
+from certbot.plugins import selection as plug_sel
 
 USER_CANCELLED = ("User chose to cancel the operation and may "
                   "reinvoke the client.")
@@ -1285,16 +1284,16 @@ def make_or_verify_needed_dirs(config):
 
     """
     util.set_up_core_dir(config.config_dir, constants.CONFIG_DIRS_MODE,
-                         compat.os_geteuid(), config.strict_permissions)
+                         misc.os_geteuid(), config.strict_permissions)
     util.set_up_core_dir(config.work_dir, constants.CONFIG_DIRS_MODE,
-                         compat.os_geteuid(), config.strict_permissions)
+                         misc.os_geteuid(), config.strict_permissions)
 
     hook_dirs = (config.renewal_pre_hooks_dir,
                  config.renewal_deploy_hooks_dir,
                  config.renewal_post_hooks_dir,)
     for hook_dir in hook_dirs:
         util.make_or_verify_dir(hook_dir,
-                                uid=compat.os_geteuid(),
+                                uid=misc.os_geteuid(),
                                 strict=config.strict_permissions)
 
 
@@ -1345,7 +1344,7 @@ def main(cli_args=sys.argv[1:]):
 
     # On windows, shell without administrative right cannot create symlinks required by certbot.
     # So we check the rights before continuing.
-    compat.raise_for_non_administrative_windows_rights(config.verb)
+    misc.raise_for_non_administrative_windows_rights(config.verb)
 
     try:
         log.post_arg_parse_setup(config)

@@ -4,27 +4,24 @@ import logging
 import os
 import platform
 
-
+import OpenSSL
+import josepy as jose
+import zope.component
 from cryptography.hazmat.backends import default_backend
 # https://github.com/python/typeshed/blob/master/third_party/
 # 2/cryptography/hazmat/primitives/asymmetric/rsa.pyi
-from cryptography.hazmat.primitives.asymmetric.rsa import generate_private_key  # type: ignore
-import josepy as jose
-import OpenSSL
-import zope.component
+from cryptography.hazmat.primitives.asymmetric.rsa import generate_private_key
 
 from acme import client as acme_client
 from acme import crypto_util as acme_crypto_util
 from acme import errors as acme_errors
 from acme import messages
-from acme.magic_typing import Optional  # pylint: disable=unused-import,no-name-in-module
+from acme.magic_typing import Optional  # pylint: disable=unused-import,no-name-in-module  # type: ignore
 
 import certbot
-
 from certbot import account
 from certbot import auth_handler
 from certbot import cli
-from certbot import compat
 from certbot import constants
 from certbot import crypto_util
 from certbot import eff
@@ -34,11 +31,10 @@ from certbot import interfaces
 from certbot import reverter
 from certbot import storage
 from certbot import util
-
-from certbot.display import ops as display_ops
+from certbot.compat import misc
 from certbot.display import enhancements
+from certbot.display import ops as display_ops
 from certbot.plugins import selection as plugin_selection
-
 
 logger = logging.getLogger(__name__)
 
@@ -466,7 +462,7 @@ class Client(object):
         """
         for path in cert_path, chain_path, fullchain_path:
             util.make_or_verify_dir(
-                os.path.dirname(path), 0o755, compat.os_geteuid(),
+                os.path.dirname(path), 0o755, misc.os_geteuid(),
                 self.config.strict_permissions)
 
 

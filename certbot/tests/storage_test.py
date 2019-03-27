@@ -12,12 +12,10 @@ import pytz
 import six
 
 import certbot
-from certbot import compat
-from certbot import errors
-from certbot.storage import ALL_FOUR
-
 import certbot.tests.util as test_util
-
+from certbot import errors
+from certbot.compat import misc
+from certbot.storage import ALL_FOUR
 
 CERT = test_util.load_cert('cert_512.pem')
 
@@ -572,21 +570,21 @@ class RenewableCertTests(BaseRenewableCertTest):
         for kind in ALL_FOUR:
             self._write_out_kind(kind, 1)
         self.test_rc.update_all_links_to(1)
-        self.assertTrue(compat.compare_file_modes(
+        self.assertTrue(misc.compare_file_modes(
             os.stat(self.test_rc.version("privkey", 1)).st_mode, 0o600))
         os.chmod(self.test_rc.version("privkey", 1), 0o444)
         # If no new key, permissions should be the same (we didn't write any keys)
         self.test_rc.save_successor(1, b"newcert", None, b"new chain", self.config)
-        self.assertTrue(compat.compare_file_modes(
+        self.assertTrue(misc.compare_file_modes(
             os.stat(self.test_rc.version("privkey", 2)).st_mode, 0o444))
         # If new key, permissions should be kept as 644
         self.test_rc.save_successor(2, b"newcert", b"new_privkey", b"new chain", self.config)
-        self.assertTrue(compat.compare_file_modes(
+        self.assertTrue(misc.compare_file_modes(
             os.stat(self.test_rc.version("privkey", 3)).st_mode, 0o644))
         # If permissions reverted, next renewal will also revert permissions of new key
         os.chmod(self.test_rc.version("privkey", 3), 0o400)
         self.test_rc.save_successor(3, b"newcert", b"new_privkey", b"new chain", self.config)
-        self.assertTrue(compat.compare_file_modes(
+        self.assertTrue(misc.compare_file_modes(
             os.stat(self.test_rc.version("privkey", 4)).st_mode, 0o600))
 
     @test_util.broken_on_windows
@@ -624,7 +622,7 @@ class RenewableCertTests(BaseRenewableCertTest):
             self.config.live_dir, "README")))
         self.assertTrue(os.path.exists(os.path.join(
             self.config.live_dir, "the-lineage.com", "README")))
-        self.assertTrue(compat.compare_file_modes(os.stat(result.key_path).st_mode, 0o600))
+        self.assertTrue(misc.compare_file_modes(os.stat(result.key_path).st_mode, 0o600))
         with open(result.fullchain, "rb") as f:
             self.assertEqual(f.read(), b"cert" + b"chain")
         # Let's do it again and make sure it makes a different lineage

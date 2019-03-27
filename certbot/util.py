@@ -10,20 +10,19 @@ import logging
 import os
 import platform
 import re
-import six
 import socket
 import subprocess
-
 from collections import OrderedDict
 
 import configargparse
+import six
 
 from acme.magic_typing import Tuple, Union  # pylint: disable=unused-import, no-name-in-module
-from certbot import compat
+
 from certbot import constants
 from certbot import errors
 from certbot import lock
-
+from certbot.compat import misc
 
 logger = logging.getLogger(__name__)
 
@@ -204,7 +203,7 @@ def check_permissions(filepath, mode, uid=0):
 
     """
     file_stat = os.stat(filepath)
-    return compat.compare_file_modes(file_stat.st_mode, mode) and file_stat.st_uid == uid
+    return misc.compare_file_modes(file_stat.st_mode, mode) and file_stat.st_uid == uid
 
 
 def safe_open(path, mode="w", chmod=None, buffering=None):
