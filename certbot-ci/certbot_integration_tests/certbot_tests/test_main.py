@@ -9,7 +9,8 @@ from os.path import join, exists
 import pytest
 from certbot_integration_tests.certbot_tests import context as certbot_context
 from certbot_integration_tests.certbot_tests.assertions import (
-    assert_hook_execution, assert_save_renew_hook
+    assert_hook_execution, assert_save_renew_hook, assert_certs_count_for_lineage,
+    assert_world_permissions, assert_equals_group_owner, assert_equals_permissions,
 )
 from certbot_integration_tests.utils import misc
 
@@ -76,7 +77,7 @@ def test_http_01(context):
     """Test the HTTP-01 challenge using standalone plugin."""
     # We start a server listening on the port for the
     # TLS-SNI challenge to prevent regressions in #3601.
-    with misc.create_tcp_server(context.tls_alpn_01_port):
+    with misc.create_http_server(context.tls_alpn_01_port):
         certname = context.domain('le2')
         context.certbot([
             '--domains', certname, '--preferred-challenges', 'http-01', 'run',
@@ -92,7 +93,7 @@ def test_http_01(context):
 
 def test_manual_http_auth(context):
     """Test the HTTP-01 challenge using manual plugin."""
-    with misc.create_tcp_server(context.http_01_port) as webroot:
+    with misc.create_http_server(context.http_01_port) as webroot:
         manual_http_hooks = misc.manual_http_hooks(webroot)
 
         certname = context.domain()
