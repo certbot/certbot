@@ -15,6 +15,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 
 * Support for TLS-SNI-01 has been removed from all official Certbot plugins.
+* Attributes related to the TLS-SNI-01 challenge in `acme.challenges` and `acme.standalone`
+  modules are deprecated and will be removed soon.
 * CLI flags `--tls-sni-01-port` and `--tls-sni-01-address` are now no-op, will
   generate a deprecation warning if used, and will be removed soon.
 * Options `tls-sni` and `tls-sni-01` in `--preferred-challenges` flag are now no-op,
