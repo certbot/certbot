@@ -280,6 +280,10 @@ class TestSimpleTLSSNI01Server(unittest.TestCase):
         os.chdir(self.old_cwd)
         if self.process.is_alive():
             self.process.terminate()
+            self.process.join(timeout=5)
+            # Check that we didn't timeout waiting for the process to
+            # terminate.
+            self.assertNotEqual(self.process.exitcode, None)
         shutil.rmtree(self.test_cwd)
 
     @mock.patch('acme.standalone.TLSSNI01Server.handle_request')
