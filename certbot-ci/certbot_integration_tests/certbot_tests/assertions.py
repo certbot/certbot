@@ -3,12 +3,6 @@ import os
 import grp
 
 
-# Defining __all__ allows to make a static import "from assertions import *" without importing
-# also the modules that are part of this module.
-__all__ = ['assert_hook_execution', 'assert_save_renew_hook', 'assert_certs_count_for_lineage',
-           'assert_equals_permissions', 'assert_equals_group_owner', 'assert_world_permissions']
-
-
 def assert_hook_execution(probe_path, probe_content):
     """
     Assert that a certbot hook has been executed

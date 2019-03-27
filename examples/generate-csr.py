@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# This script generates a simple SAN CSR to be used with Let's Encrypt
-# CA. Mostly intended for "auth --csr" testing, but, since it's easily
-# auditable, feel free to adjust it and use it on your production web
-# server.
+# This script generates a simple SAN CSR to be used with Let's Encrypt CA.
 import os
 import argparse
 from OpenSSL import crypto
@@ -12,9 +9,9 @@ try:
     from cryptography.hazmat.backends import default_backend
     from cryptography.hazmat.primitives.asymmetric import rsa, ec
     from cryptography.hazmat.primitives.serialization import Encoding, PrivateFormat, NoEncryption
-    cryptography=True
+    cryptography = True
 except ImportError:
-    cryptography=False
+    cryptography = False
 
 CWD = os.getcwd()
 
@@ -32,12 +29,11 @@ def generate_parser():
                             choices=['RSA', 'ECDSA'],
                             help='Key type to use, ECDSA is supported only '
                                  'if cryptography module is available')
-
     return one_parser
 
 
 def main(domains, key_path, csr_path, key_type):
-    san = ', '.join(['DNS: {0}'.format(item) for item in domains])
+    san = ','.join(['DNS:{0}'.format(item) for item in domains])
 
     if key_type == 'RSA':
         key = crypto.PKey()

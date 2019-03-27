@@ -2,21 +2,21 @@
 Misc module contains stateless functions that could be used during pytest execution,
 or outside during setup/teardown of the integration tests environment.
 """
-import subprocess
-import os
-import time
 import contextlib
-import tempfile
-import shutil
-import multiprocessing
-import sys
-import stat
 import errno
+import multiprocessing
+import os
+import shutil
+import stat
+import subprocess
+import sys
+import tempfile
+import time
 from distutils.version import LooseVersion
 
-from six.moves import socketserver, SimpleHTTPServer
-from OpenSSL import crypto
 import requests
+from OpenSSL import crypto
+from six.moves import socketserver, SimpleHTTPServer
 
 
 def check_until_timeout(url):
@@ -41,6 +41,11 @@ def check_until_timeout(url):
 
 
 def find_certbot_root_directory():
+    """
+    Find the certbot root directory. To do so, this method will recursively move up in the directory
+    hierarchy, until finding the git root file, that corresponds to the certbot root directory.
+    :return str: the path to the certbot root directory
+    """
     script_path = os.path.realpath(__file__)
     current_dir = os.path.dirname(script_path)
 
@@ -55,6 +60,14 @@ def find_certbot_root_directory():
 
 
 def generate_csr(domains, key_path, csr_path, key_type='RSA'):
+    """
+    Generate a CSR for the given domains, using the provided private key path.
+    This method uses the script demo to generate CSR that is available in `examples/generate-csr.py`.
+    :param str[] domains: the domain names to include in the CSR
+    :param str key_path: path to the private key
+    :param str csr_path: path to the CSR that will be generated
+    :param str key_type: type of the key (RSA or ECDSA)
+    """
     certbot_root_directory = find_certbot_root_directory()
     script_path = os.path.join(certbot_root_directory, 'examples', 'generate-csr.py')
 
@@ -67,6 +80,11 @@ def generate_csr(domains, key_path, csr_path, key_type='RSA'):
 
 
 def load_sample_data_path(workspace):
+    """
+    Load the certbot configuration example designed to make OCSP tests, and return its path
+    :param str workspace: current test workspace directory path
+    :return str: the path to the loaded sample data directory
+    """
     certbot_root_directory = find_certbot_root_directory()
     original = os.path.join(certbot_root_directory, 'tests', 'integration', 'sample-config')
     copied = os.path.join(workspace, 'sample-config')
@@ -75,6 +93,11 @@ def load_sample_data_path(workspace):
 
 
 def read_certificate(cert_path):
+    """
+    Load the certificate from the provided path, and return a human readable version of it (TEXT mode).
+    :param str cert_path: the path to the certificate
+    :return: the TEXT version of the certificate, as it would be displayed by openssl binary
+    """
     with open(cert_path, 'r') as file:
         data = file.read()
 
@@ -82,17 +105,28 @@ def read_certificate(cert_path):
     return crypto.dump_certificate(crypto.FILETYPE_TEXT, cert).decode('utf-8')
 
 
-class GraceFullTCPServer(socketserver.TCPServer):
+class GracefulTCPServer(socketserver.TCPServer):
+    """
+    This subclass of TCPServer allows to gracefully reuse an address that has
+    just been released by another instance of TCPServer.
+    """
     allow_reuse_address = True
 
 
 @contextlib.contextmanager
-def create_tcp_server(port):
+def create_http_server(port):
+    """
+    Setup and start an HTTP server for the given TCP port.
+    This server stay active for the lifetime of the context, and is automatically
+    stopped with context exit, while its temporary webroot is deleted.
+    :param int port: the TCP port to use
+    :return str: the temporary webroot attached to this server
+    """
     current_cwd = os.getcwd()
     webroot = tempfile.mkdtemp()
 
     def run():
-        GraceFullTCPServer(('', port), SimpleHTTPServer.SimpleHTTPRequestHandler).serve_forever()
+        GracefulTCPServer(('', port), SimpleHTTPServer.SimpleHTTPRequestHandler).serve_forever()
 
     process = multiprocessing.Process(target=run)
 
@@ -116,11 +150,24 @@ def create_tcp_server(port):
 
 
 def list_renewal_hooks_dirs(config_dir):
+    """
+    Find and return path of all hooks directory for the given certbot config directory
+    :param str config_dir: path to the certbot config directory
+    :return str[]: list of path to the standard hooks directory for this certbot instance
+    """
     renewal_hooks_root = os.path.join(config_dir, 'renewal-hooks')
     return [os.path.join(renewal_hooks_root, item) for item in ['pre', 'deploy', 'post']]
 
 
 def generate_test_file_hooks(config_dir, hook_probe):
+    """
+    Create a suite of certbot hooks scripts and put them in the relevant hooks directory
+    for the given certbot configuration directory. These scripts, when executed, will write
+    specific verbs in the given hook_probe file to allow asserting they have effectively
+    been executed.
+    :param str config_dir: current certbot config directory
+    :param hook_probe: path to the hook probe to test hook scripts execution
+    """
     if sys.platform == 'win32':
         extension = 'bat'
     else:
@@ -147,6 +194,7 @@ fi
 echo $(basename $(dirname "$0")) >> "{1}"\
 '''.format(hook_path, hook_probe)
         else:
+            # TODO: Write the equivalent bat file for Windows
             data = '''\
 
 '''
@@ -156,9 +204,15 @@ echo $(basename $(dirname "$0")) >> "{1}"\
 
 
 def manual_http_hooks(http_server_root):
+    """
+    Generate suitable http-01 hooks command for test purpose in the given HTTP
+    server webroot directory.
+    :param str http_server_root: path to the HTTP server configured to serve http-01 challenges
+    :return (str, str): a tuple containing the authentication hook and the cleanup hook
+    """
     auth = (
         '{0} -c "import os; '
-        "challenge_dir = os.path.join('{1}', '.well-known/acme-challenge'); "
+        "challenge_dir = os.path.join('{1}', '.well-known', 'acme-challenge'); "
         'os.makedirs(challenge_dir); '
         "challenge_file = os.path.join(challenge_dir, os.environ.get('CERTBOT_TOKEN')); "
         "open(challenge_file, 'w').write(os.environ.get('CERTBOT_VALIDATION')); "
@@ -175,7 +229,11 @@ def manual_http_hooks(http_server_root):
 
 
 def get_certbot_version():
+    """
+    Find the version of the certbot available in PATH.
+    :return str: the certbot version
+    """
     output = subprocess.check_output(['certbot', '--version'], universal_newlines=True)
     # Typical response is: output = 'certbot 0.31.0.dev0'
-    # version_str = output.split(' ')[1]
-    return LooseVersion('0.31.0.dev0')
+    version_str = output.split(' ')[1].strip()
+    return LooseVersion(version_str)

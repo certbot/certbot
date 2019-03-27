@@ -7,9 +7,10 @@ import os
 from os.path import join, exists
 
 import pytest
-
-from certbot_integration_tests.certbot_tests.assertions import *
 from certbot_integration_tests.certbot_tests import context as certbot_context
+from certbot_integration_tests.certbot_tests.assertions import (
+    assert_hook_execution, assert_save_renew_hook
+)
 from certbot_integration_tests.utils import misc
 
 
@@ -94,7 +95,7 @@ def test_manual_http_auth(context):
     with misc.create_tcp_server(context.http_01_port) as webroot:
         manual_http_hooks = misc.manual_http_hooks(webroot)
 
-        certname = context.wtf()
+        certname = context.domain()
         context.certbot([
             'certonly', '-a', 'manual', '-d', certname,
             '--cert-name', certname,

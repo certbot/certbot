@@ -1,9 +1,9 @@
-"""Module do handle the context of integration tests."""
+"""Module to handle the context of integration tests."""
 import os
-import tempfile
-import subprocess
 import shutil
+import subprocess
 import sys
+import tempfile
 from distutils.version import LooseVersion
 
 from certbot_integration_tests.utils import misc
@@ -14,7 +14,6 @@ class IntegrationTestsContext(object):
     def __init__(self, request):
         self.request = request
 
-        self.worker_id = request.config.slaveinput['slaveid'] if hasattr(request.config, 'slaveinput') else 'master'
         if hasattr(request.config, 'slaveinput'):  # Worker node
             self.worker_id = request.config.slaveinput['slaveid']
             self.acme_xdist = request.config.slaveinput['acme_xdist']
@@ -121,10 +120,10 @@ class IntegrationTestsContext(object):
         command.extend(args)
         return self.certbot_no_force_renew(command)
 
-    def wtf(self, subdomain='le'):
+    def domain(self, subdomain='le'):
         """
-        Generate a certificate name suitable for distributed certbot integration tests.
-        This is a requirement to let the distribution knows how to redirect the challenge check
+        Generate a certificate domain name suitable for distributed certbot integration tests.
+        This is a requirement to let the distribution know how to redirect the challenge check
         from the ACME server to the relevant pytest-xdist worker. This resolution is done by
         appending the pytest worker id to the domain, using this pattern:
         {subdomain}.{worker_id}.wtf
