@@ -77,7 +77,7 @@ def test_http_01(context):
     # We start a server listening on the port for the
     # TLS-SNI challenge to prevent regressions in #3601.
     with misc.create_tcp_server(context.tls_alpn_01_port):
-        certname = context.wtf('le2')
+        certname = context.domain('le2')
         context.certbot([
             '--domains', certname, '--preferred-challenges', 'http-01', 'run',
             '--cert-name', certname,
@@ -113,7 +113,7 @@ def test_manual_http_auth(context):
 
 def test_manual_dns_auth(context):
     """Test the DNS-01 challenge using manual plugin."""
-    certname = context.wtf('dns')
+    certname = context.domain('dns')
     context.certbot([
         '-a', 'manual', '-d', certname, '--preferred-challenges', 'dns',
         'run', '--cert-name', certname,
@@ -131,12 +131,12 @@ def test_manual_dns_auth(context):
 
 def test_certonly(context):
     """Test the certonly verb on certbot."""
-    context.certbot(['certonly', '--cert-name', 'newname', '-d', context.wtf('newname')])
+    context.certbot(['certonly', '--cert-name', 'newname', '-d', context.domain('newname')])
 
 
 def test_auth_and_install_with_csr(context):
     """Test certificate issuance and install using an existing CSR."""
-    certname = context.wtf('le3')
+    certname = context.domain('le3')
     key_path = join(context.workspace, 'key.pem')
     csr_path = join(context.workspace, 'csr.der')
 
@@ -166,7 +166,7 @@ def test_renew(context):
     # First, we create a target certificate, with all hook dirs instantiated.
     # We should have a new certificate, with hooks executed.
     # Check also file permissions.
-    certname = context.wtf('renew')
+    certname = context.domain('renew')
     context.certbot([
         'certonly', '-d', certname, '--rsa-key-size', '4096',
         '--preferred-challenges', 'http-01'
@@ -248,7 +248,7 @@ def test_renew(context):
 
 def test_hook_override(context):
     """Test correct hook override on renew."""
-    certname = context.wtf('override')
+    certname = context.domain('override')
     context.certbot([
         'certonly', '-d', certname,
         '--preferred-challenges', 'http-01',
@@ -292,7 +292,7 @@ def test_hook_override(context):
 def test_invalid_domain_with_dns_challenge(context):
     """Test certificate issuance failure with DNS-01 challenge."""
     # Manual dns auth hooks from misc are designed to fail if the domain contains 'fail-*'.
-    certs = ','.join([context.wtf('dns1'), context.wtf('fail-dns1')])
+    certs = ','.join([context.domain('dns1'), context.domain('fail-dns1')])
     context.certbot([
         '-a', 'manual', '-d', certs,
         '--allow-subset-of-names',
@@ -303,12 +303,12 @@ def test_invalid_domain_with_dns_challenge(context):
 
     output = context.certbot(['certificates'])
 
-    assert context.wtf('fail-dns1') not in output
+    assert context.domain('fail-dns1') not in output
 
 
 def test_reuse_key(context):
     """Test various scenarios where a key is reused."""
-    certname = context.wtf('reusekey')
+    certname = context.domain('reusekey')
     context.certbot(['--domains', certname, '--reuse-key'])
     context.certbot(['renew', '--cert-name', certname])
 
@@ -341,7 +341,7 @@ def test_ecdsa(context):
     cert_path = join(context.workspace, 'cert-p384.pem')
     chain_path = join(context.workspace, 'chain-p384.pem')
 
-    misc.generate_csr([context.wtf('ecdsa')], key_path, csr_path, key_type='ECDSA')
+    misc.generate_csr([context.domain('ecdsa')], key_path, csr_path, key_type='ECDSA')
     context.certbot(['auth', '--csr', csr_path, '--cert-path', cert_path, '--chain-path', chain_path])
 
     certificate = misc.read_certificate(cert_path)
@@ -350,7 +350,7 @@ def test_ecdsa(context):
 
 def test_ocsp_must_staple(context):
     """Test that OCSP Must-Staple is correctly set in the generated certificate."""
-    certname = context.wtf('must-staple')
+    certname = context.domain('must-staple')
     context.certbot(['auth', '--must-staple', '--domains', certname])
 
     certificate = misc.read_certificate(join(context.config_dir,
@@ -361,7 +361,7 @@ def test_ocsp_must_staple(context):
 def test_revoke_simple(context):
     """Test various scenarios that revokes a certificate."""
     # Default action after revoke is to delete the certificate.
-    certname = context.wtf()
+    certname = context.domain()
     cert_path = join(context.config_dir, 'live/{0}/cert.pem'.format(certname))
     context.certbot(['-d', certname])
     context.certbot(['revoke', '--cert-path', cert_path, '--delete-after-revoke'])
@@ -369,7 +369,7 @@ def test_revoke_simple(context):
     assert not exists(cert_path)
 
     # Check default deletion is overridden.
-    certname = context.wtf('le1')
+    certname = context.domain('le1')
     cert_path = join(context.config_dir, 'live/{0}/cert.pem'.format(certname))
     context.certbot(['-d', certname])
     context.certbot(['revoke', '--cert-path', cert_path, '--no-delete-after-revoke'])
@@ -382,7 +382,7 @@ def test_revoke_simple(context):
     assert not exists(join(context.config_dir, 'live/{0}'.format(certname)))
     assert not exists(join(context.config_dir, 'renewal/{0}.conf').format(certname))
 
-    certname = context.wtf('le2')
+    certname = context.domain('le2')
     key_path = join(context.config_dir, 'live/{0}/privkey.pem'.format(certname))
     cert_path = join(context.config_dir, 'live/{0}/cert.pem'.format(certname))
     context.certbot(['-d', certname])
@@ -391,9 +391,9 @@ def test_revoke_simple(context):
 
 def test_revoke_and_unregister(context):
     """Test revoke with a reason then unregister."""
-    cert1 = context.wtf('le1')
-    cert2 = context.wtf('le2')
-    cert3 = context.wtf('le3')
+    cert1 = context.domain('le1')
+    cert2 = context.domain('le2')
+    cert3 = context.domain('le3')
 
     cert_path1 = join(context.config_dir, 'live/{0}/cert.pem'.format(cert1))
     key_path2 = join(context.config_dir, 'live/{0}/privkey.pem'.format(cert2))
@@ -420,7 +420,7 @@ def test_revoke_and_unregister(context):
 def test_revoke_corner_cases(context):
     """Test specific revoke corner case."""
     # Cannot use --cert-path and --cert-name during a revoke.
-    cert1 = context.wtf('le1')
+    cert1 = context.domain('le1')
     context.certbot(['-d', cert1])
     with pytest.raises(subprocess.CalledProcessError) as error:
         context.certbot([
@@ -432,7 +432,7 @@ def test_revoke_corner_cases(context):
     assert os.path.isfile(join(context.config_dir, 'renewal/{0}.conf'.format(cert1)))
 
     # Revocation should not delete if multiple lineages share an archive dir
-    cert2 = context.wtf('le2')
+    cert2 = context.domain('le2')
     context.certbot(['-d', cert2])
     with open(join(context.config_dir, 'renewal/{0}.conf'.format(cert2)), 'r') as file:
         data = file.read()
@@ -457,7 +457,7 @@ def test_wildcard_certificates(context):
     if context.acme_server == 'boulder-v1':
         pytest.skip('Wildcard certificates are not supported on ACME v1')
 
-    certname = context.wtf('wild')
+    certname = context.domain('wild')
 
     context.certbot([
         '-a', 'manual', '-d', '*.{0},{0}'.format(certname),
