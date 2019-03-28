@@ -10,7 +10,7 @@ import zope.component
 from cryptography.hazmat.backends import default_backend
 # https://github.com/python/typeshed/blob/master/third_party/
 # 2/cryptography/hazmat/primitives/asymmetric/rsa.pyi
-from cryptography.hazmat.primitives.asymmetric.rsa import generate_private_key
+from cryptography.hazmat.primitives.asymmetric.rsa import generate_private_key  # type: ignore
 
 from acme import client as acme_client
 from acme import crypto_util as acme_crypto_util
