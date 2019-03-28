@@ -16,17 +16,20 @@ class IntegrationTestsContext(object):
 
         if hasattr(request.config, 'slaveinput'):  # Worker node
             self.worker_id = request.config.slaveinput['slaveid']
-            self.acme_xdist = request.config.slaveinput['acme_xdist']
+            acme_xdist = request.config.slaveinput['acme_xdist']
         else:  # Primary node
             self.worker_id = 'primary'
-            self.acme_xdist = request.config.acme_xdist
+            acme_xdist = request.config.acme_xdist
 
-        self.acme_server =self.acme_xdist['acme_server']
-        self.directory_url = self.acme_xdist['directory_url']
-        self.tls_alpn_01_port = self.acme_xdist['https_port'][self.worker_id]
-        self.http_01_port = self.acme_xdist['http_port'][self.worker_id]
-        self.challtestsrv_mgt_port = self.acme_xdist['challtestsrv_port']
+        self.acme_server =acme_xdist['acme_server']
+        self.directory_url = acme_xdist['directory_url']
+        self.tls_alpn_01_port = acme_xdist['https_port'][self.worker_id]
+        self.http_01_port = acme_xdist['http_port'][self.worker_id]
+        self.challtestsrv_mgt_port = acme_xdist['challtestsrv_port']
 
+        # Formally certbot version does not depend on the test context. But get its value requires
+        # to call certbot from a subprocess. Since it will be called a lot of time through
+        # _common_test_no_force_renew, we cache its value as a member of the fixture context.
         self.certbot_version = misc.get_certbot_version()
 
         self.workspace = tempfile.mkdtemp()
@@ -120,7 +123,7 @@ class IntegrationTestsContext(object):
         command.extend(args)
         return self.certbot_no_force_renew(command)
 
-    def domain(self, subdomain='le'):
+    def get_domain(self, subdomain='le'):
         """
         Generate a certificate domain name suitable for distributed certbot integration tests.
         This is a requirement to let the distribution know how to redirect the challenge check

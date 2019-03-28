@@ -107,7 +107,7 @@ def read_certificate(cert_path):
 
 class GracefulTCPServer(socketserver.TCPServer):
     """
-    This subclass of TCPServer allows to gracefully reuse an address that has
+    This subclass of TCPServer allows graceful reuse of an address that has
     just been released by another instance of TCPServer.
     """
     allow_reuse_address = True
@@ -117,7 +117,7 @@ class GracefulTCPServer(socketserver.TCPServer):
 def create_http_server(port):
     """
     Setup and start an HTTP server for the given TCP port.
-    This server stay active for the lifetime of the context, and is automatically
+    This server stays active for the lifetime of the context, and is automatically
     stopped with context exit, while its temporary webroot is deleted.
     :param int port: the TCP port to use
     :return str: the temporary webroot attached to this server
@@ -131,6 +131,8 @@ def create_http_server(port):
     process = multiprocessing.Process(target=run)
 
     try:
+        # SimpleHTTPServer is designed to serve files from the current working directory at the
+        # time it starts. So we temporarily change the cwd to our crafted webroot before launch.
         try:
             os.chdir(webroot)
             process.start()
@@ -151,7 +153,7 @@ def create_http_server(port):
 
 def list_renewal_hooks_dirs(config_dir):
     """
-    Find and return path of all hooks directory for the given certbot config directory
+    Find and return paths of all hook directories for the given certbot config directory
     :param str config_dir: path to the certbot config directory
     :return str[]: list of path to the standard hooks directory for this certbot instance
     """
@@ -161,10 +163,10 @@ def list_renewal_hooks_dirs(config_dir):
 
 def generate_test_file_hooks(config_dir, hook_probe):
     """
-    Create a suite of certbot hooks scripts and put them in the relevant hooks directory
+    Create a suite of certbot hook scripts and put them in the relevant hook directory
     for the given certbot configuration directory. These scripts, when executed, will write
     specific verbs in the given hook_probe file to allow asserting they have effectively
-    been executed.
+    been executed. The deploy hook also checks that the renewal environment variables are set.
     :param str config_dir: current certbot config directory
     :param hook_probe: path to the hook probe to test hook scripts execution
     """
@@ -174,8 +176,13 @@ def generate_test_file_hooks(config_dir, hook_probe):
         extension = 'sh'
 
     renewal_hooks_dirs = list_renewal_hooks_dirs(config_dir)
+    renewal_deploy_hook_path = os.path.join(renewal_hooks_dirs[1], 'hook.sh')
 
     for hook_dir in renewal_hooks_dirs:
+        # We want a equivalent of bash `chmod -p $HOOK_DIR, that does not fail if one folder of
+        # the hierarchy already exists. It is not the case of os.makedirs. Python 3 has an
+        # optional parameter `exists_ok` to not fail on existing dir, but Python 2.7 does not.
+        # So we pass through a try except pass for it. To be removed with dropped support on py27.
         try:
             os.makedirs(hook_dir)
         except OSError as error:
@@ -185,14 +192,14 @@ def generate_test_file_hooks(config_dir, hook_probe):
         if extension == 'sh':
             data = '''\
 #!/bin/bash -xe
-if [ "$0" == "{0}" ]; then
+if [ "$0" = "{0}" ]; then
     if [ -z "$RENEWED_DOMAINS" -o -z "$RENEWED_LINEAGE" ]; then
         echo "Environment variables not properly set!" >&2
         exit 1
     fi
 fi
 echo $(basename $(dirname "$0")) >> "{1}"\
-'''.format(hook_path, hook_probe)
+'''.format(renewal_deploy_hook_path, hook_probe)
         else:
             # TODO: Write the equivalent bat file for Windows
             data = '''\
