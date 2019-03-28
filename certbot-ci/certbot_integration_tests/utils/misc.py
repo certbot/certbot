@@ -96,7 +96,7 @@ def list_renewal_hooks_dirs(config_dir):
 
 def generate_test_file_hooks(config_dir, hook_probe):
     """
-    Create a suite of certbot hooks scripts and put them in the relevant hooks directory
+    Create a suite of certbot hook scripts and put them in the relevant hook directory
     for the given certbot configuration directory. These scripts, when executed, will write
     specific verbs in the given hook_probe file to allow asserting they have effectively
     been executed.
