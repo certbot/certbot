@@ -300,6 +300,11 @@ class ApacheParser(object):
         :param bool beginning: If the IfModule should be created to the beginning
             of augeas path DOM tree.
 
+        :returns: Augeas path of the requested IfModule directive that pre-existed
+            or was created during the process. The path may be dynamic,
+            i.e. .../IfModule[last()]
+        :rtype: str
+
         """
         if_mods = self.aug.match(("%s/IfModule/*[self::arg='%s']" %
                                   (aug_conf_path, mod)))
@@ -310,7 +315,7 @@ class ApacheParser(object):
         return if_mods[0].rpartition("arg")[0]
 
     def create_ifmod(self, aug_conf_path, mod, beginning=False):
-        """Creates a new <IfMod mod> and returs it path.
+        """Creates a new <IfMod mod> and returns its path.
 
         :param str aug_conf_path: Augeas configuration path
         :param str mod: module ie. mod_ssl.c

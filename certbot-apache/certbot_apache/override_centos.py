@@ -93,7 +93,8 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
             if self.parser.not_modssl_ifmodule(noarg_path):  # pylint: disable=no-member
                 if self.parser.loc["default"] in noarg_path:
                     # LoadModule already in the main configuration file
-                    if "ifmodule/" in noarg_path or "ifmodule[1]" in noarg_path.lower():
+                    if ("ifmodule/" in noarg_path.lower() or
+                        "ifmodule[1]" in noarg_path.lower()):
                         # It's the first or only IfModule in the file
                         return
                 # Populate the list of known !mod_ssl.c IfModules
