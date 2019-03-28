@@ -42,7 +42,7 @@ def check_until_timeout(url):
 
 class GracefulTCPServer(socketserver.TCPServer):
     """
-    This subclass of TCPServer allows to gracefully reuse an address that has
+    This subclass of TCPServer allows graceful reuse of an address that has
     just been released by another instance of TCPServer.
     """
     allow_reuse_address = True
