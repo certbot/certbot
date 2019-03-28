@@ -66,6 +66,8 @@ def create_http_server(port):
     process = multiprocessing.Process(target=run)
 
     try:
+        # SimpleHTTPServer is designed to serve files from the current working directory at the
+        # time it starts. So we temporarily change the cwd to our crafted webroot before launch.
         try:
             os.chdir(webroot)
             process.start()
@@ -111,6 +113,10 @@ def generate_test_file_hooks(config_dir, hook_probe):
     renewal_hooks_dirs = list_renewal_hooks_dirs(config_dir)
 
     for hook_dir in renewal_hooks_dirs:
+        # We want a equivalent of bash `chmod -p $HOOK_DIR, that does not fail if one folder of
+        # the hierarchy already exists. It is not the case of os.makedirs. Python 3 has an
+        # optional parameter `exists_ok` to not fail on existing dir, but Python 2.7 does not.
+        # So we pass through a try except pass for it. To be removed with dropped support on py27.
         try:
             os.makedirs(hook_dir)
         except OSError as error:

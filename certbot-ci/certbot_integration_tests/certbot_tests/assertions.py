@@ -42,7 +42,8 @@ def assert_equals_permissions(file1, file2, mask):
     Assert that permissions on two files are identical in respect to a given umask.
     :param file1: first file path to compare
     :param file2: second file path to compare
-    :param mask: umask to apply before comparing file modes
+    :param mask: 3-octal representation of a POSIX umask under which the two files mode
+                 should match (eg. 0o074 will test RWX on group and R on world)
     """
     mode_file1 = os.stat(file1).st_mode & mask
     mode_file2 = os.stat(file2).st_mode & mask

@@ -25,7 +25,7 @@ def context(request):
 
 def test_manual_dns_auth(context):
     """Test the DNS-01 challenge using manual plugin."""
-    certname = context.domain('dns')
+    certname = context.get_domain('dns')
     context.certbot([
         '-a', 'manual', '-d', certname, '--preferred-challenges', 'dns',
         'run', '--cert-name', certname,
@@ -46,7 +46,7 @@ def test_renew(context):
     # First, we create a target certificate, with all hook dirs instantiated.
     # We should have a new certificate, with hooks executed.
     # Check also file permissions.
-    certname = context.domain('renew')
+    certname = context.get_domain('renew')
     context.certbot([
         'certonly', '-d', certname, '--rsa-key-size', '4096',
         '--preferred-challenges', 'http-01'
