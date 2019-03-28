@@ -86,7 +86,7 @@ def create_http_server(port):
 
 def list_renewal_hooks_dirs(config_dir):
     """
-    Find and return path of all hooks directory for the given certbot config directory
+    Find and return paths of all hook directories for the given certbot config directory
     :param str config_dir: path to the certbot config directory
     :return str[]: list of path to the standard hooks directory for this certbot instance
     """
