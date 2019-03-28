@@ -4,11 +4,11 @@ import unittest
 
 import mock
 
-from certbot import compat
 from certbot import constants
 from certbot import errors
-
+from certbot.compat import misc
 from certbot.tests import util as test_util
+
 
 class NamespaceConfigTest(test_util.ConfigTestCase):
     """Tests for certbot.configuration.NamespaceConfig."""
@@ -48,7 +48,7 @@ class NamespaceConfigTest(test_util.ConfigTestCase):
         mock_constants.KEY_DIR = 'keys'
         mock_constants.TEMP_CHECKPOINT_DIR = 't'
 
-        ref_path = compat.underscores_for_unsupported_characters_in_path(
+        ref_path = misc.underscores_for_unsupported_characters_in_path(
             'acc/acme-server.org:443/new')
         self.assertEqual(
             os.path.normpath(self.config.accounts_dir),

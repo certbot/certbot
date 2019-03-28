@@ -12,11 +12,9 @@ import pytz
 
 from acme import messages
 
-from certbot import compat
-from certbot import errors
-
 import certbot.tests.util as test_util
-
+from certbot import errors
+from certbot.compat import misc
 
 KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 
@@ -116,7 +114,7 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
 
     def test_init_creates_dir(self):
         self.assertTrue(os.path.isdir(
-            compat.underscores_for_unsupported_characters_in_path(self.config.accounts_dir)))
+            misc.underscores_for_unsupported_characters_in_path(self.config.accounts_dir)))
 
     @test_util.broken_on_windows
     def test_save_and_restore(self):

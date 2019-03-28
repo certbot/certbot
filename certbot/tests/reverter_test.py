@@ -10,7 +10,6 @@ import mock
 import six
 
 from certbot import errors
-
 from certbot.tests import util as test_util
 
 
@@ -356,7 +355,7 @@ class TestFullCheckpointsReverter(test_util.ConfigTestCase):
         self.assertRaises(
             errors.ReverterError, self.reverter.finalize_checkpoint, "Title")
 
-    @mock.patch("certbot.reverter.compat.os_rename")
+    @mock.patch("certbot.reverter.misc.os_rename")
     def test_finalize_checkpoint_no_rename_directory(self, mock_rename):
 
         self.reverter.add_to_checkpoint(self.sets[0], "perm save")

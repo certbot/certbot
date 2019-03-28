@@ -1,8 +1,9 @@
 """Tests for certbot.compat."""
 import os
 
-from certbot import compat
 import certbot.tests.util as test_util
+from certbot.compat import misc
+
 
 class OsReplaceTest(test_util.TempDirTestCase):
     """Test to ensure consistent behavior of os_rename method"""
@@ -15,7 +16,7 @@ class OsReplaceTest(test_util.TempDirTestCase):
         open(dst, 'w').close()
 
         # On Windows, a direct call to os.rename will fail because dst already exists.
-        compat.os_rename(src, dst)
+        misc.os_rename(src, dst)
 
         self.assertFalse(os.path.exists(src))
         self.assertTrue(os.path.exists(dst))
