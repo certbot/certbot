@@ -33,8 +33,8 @@ else:
     # SIGTERM: for instance, os.kill(pid, signal.SIGTERM) will call TerminateProcess, that stops
     # immediately the process without calling the attached handler. Besides, non-POSIX signals
     # (CTRL_C_EVENT and CTRL_BREAK_EVENT) are implemented in a console context to handle the
-    # CTRL+C event to a process launched from the console. Only CTRL_BREAK_EVENT has a reliable
-    # behavior in fact, and maps to the handler to SIGBREAK. However in this case, a
+    # CTRL+C event to a process launched from the console. Only CTRL_C_EVENT has a reliable
+    # behavior in fact, and maps to the handler to SIGINT. However in this case, a
     # KeyboardInterrupt is raised, that will be handled by ErrorHandler through the context manager
     # protocol. Finally, no signal on Windows is electable to be handled using ErrorHandler.
     #

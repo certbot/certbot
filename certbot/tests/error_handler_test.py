@@ -67,7 +67,7 @@ class ErrorHandlerTest(unittest.TestCase):
 
     def test_context_manager_with_signal(self):
         if not self.signals:
-            self.skipTest(reason='No signals can be handled by ErrorHandler.')
+            self.skipTest(reason='Signals cannot be handled on Windows.')
         init_signals = get_signals(self.signals)
         with signal_receiver(self.signals) as signals_received:
             with self.handler:
@@ -99,7 +99,7 @@ class ErrorHandlerTest(unittest.TestCase):
 
     def test_bad_recovery_with_signal(self):
         if not self.signals:
-            self.skipTest(reason='No signals can be handled by ErrorHandler.')
+            self.skipTest(reason='Signals cannot be handled on Windows.')
         sig1 = self.signals[0]
         sig2 = self.signals[-1]
         bad_func = mock.MagicMock(side_effect=lambda: send_signal(sig1))
