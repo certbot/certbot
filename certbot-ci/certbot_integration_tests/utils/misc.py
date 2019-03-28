@@ -52,7 +52,7 @@ class GracefulTCPServer(socketserver.TCPServer):
 def create_http_server(port):
     """
     Setup and start an HTTP server for the given TCP port.
-    This server stay active for the lifetime of the context, and is automatically
+    This server stays active for the lifetime of the context, and is automatically
     stopped with context exit, while its temporary webroot is deleted.
     :param int port: the TCP port to use
     :return str: the temporary webroot attached to this server
