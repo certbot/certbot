@@ -1,6 +1,5 @@
 """Certbot constants."""
 import logging
-import os
 
 import pkg_resources
 
