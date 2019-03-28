@@ -23,6 +23,26 @@ def context(request):
         integration_test_context.cleanup()
 
 
+def test_manual_http_auth(context):
+    """Test the HTTP-01 challenge using manual plugin."""
+    with misc.create_http_server(context.http_01_port) as webroot:
+        manual_http_hooks = misc.manual_http_hooks(webroot)
+
+        certname = context.domain()
+        context.certbot([
+            'certonly', '-a', 'manual', '-d', certname,
+            '--cert-name', certname,
+            '--manual-auth-hook', manual_http_hooks[0],
+            '--manual-cleanup-hook', manual_http_hooks[1],
+            '--pre-hook', 'echo wtf.pre >> "{0}"'.format(context.hook_probe),
+            '--post-hook', 'echo wtf.post >> "{0}"'.format(context.hook_probe),
+            '--deploy-hook', 'echo deploy >> "{0}"'.format(context.hook_probe)
+        ])
+
+    assert_hook_execution(context.hook_probe, 'deploy')
+    assert_save_renew_hook(context.config_dir, certname)
+
+
 def test_manual_dns_auth(context):
     """Test the DNS-01 challenge using manual plugin."""
     certname = context.get_domain('dns')

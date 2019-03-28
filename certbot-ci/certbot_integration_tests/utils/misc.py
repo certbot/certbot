@@ -101,7 +101,7 @@ def generate_test_file_hooks(config_dir, hook_probe):
     Create a suite of certbot hook scripts and put them in the relevant hook directory
     for the given certbot configuration directory. These scripts, when executed, will write
     specific verbs in the given hook_probe file to allow asserting they have effectively
-    been executed.
+    been executed. The deploy hook also checks that the renewal environment variables are set.
     :param str config_dir: current certbot config directory
     :param hook_probe: path to the hook probe to test hook scripts execution
     """
@@ -111,6 +111,7 @@ def generate_test_file_hooks(config_dir, hook_probe):
         extension = 'sh'
 
     renewal_hooks_dirs = list_renewal_hooks_dirs(config_dir)
+    renewal_deploy_hook_path = os.path.join(renewal_hooks_dirs[1], 'hook.sh')
 
     for hook_dir in renewal_hooks_dirs:
         # We want a equivalent of bash `chmod -p $HOOK_DIR, that does not fail if one folder of
@@ -126,14 +127,14 @@ def generate_test_file_hooks(config_dir, hook_probe):
         if extension == 'sh':
             data = '''\
 #!/bin/bash -xe
-if [ "$0" == "{0}" ]; then
+if [ "$0" = "{0}" ]; then
     if [ -z "$RENEWED_DOMAINS" -o -z "$RENEWED_LINEAGE" ]; then
         echo "Environment variables not properly set!" >&2
         exit 1
     fi
 fi
 echo $(basename $(dirname "$0")) >> "{1}"\
-'''.format(hook_path, hook_probe)
+'''.format(renewal_deploy_hook_path, hook_probe)
         else:
             # TODO: Write the equivalent bat file for Windows
             data = '''\
