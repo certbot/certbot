@@ -19,14 +19,30 @@ logger = logging.getLogger(__name__)
 # potentially occur from inside Python. Signals such as SIGILL were not
 # included as they could be a sign of something devious and we should terminate
 # immediately.
-_SIGNALS = [signal.SIGTERM]
 if os.name != "nt":
+    _SIGNALS = [signal.SIGTERM]
     for signal_code in [signal.SIGHUP, signal.SIGQUIT,
                         signal.SIGXCPU, signal.SIGXFSZ]:
         # Adding only those signals that their default action is not Ignore.
         # This is platform-dependent, so we check it dynamically.
         if signal.getsignal(signal_code) != signal.SIG_IGN:
             _SIGNALS.append(signal_code)
+else:
+    # POSIX signals are not implemented natively in Windows, but emulated from the C runtime.
+    # As consumed by CPython, most of handlers on theses signals are useless, in particular
+    # SIGTERM: for instance, os.kill(pid, signal.SIGTERM) will call TerminateProcess, that stops
+    # immediately the process without calling the attached handler. Besides, non-POSIX signals
+    # (CTRL_C_EVENT and CTRL_BREAK_EVENT) are implemented in a console context to handle the
+    # CTRL+C event to a process launched from the console. Only CTRL_C_EVENT has a reliable
+    # behavior in fact, and maps to the handler to SIGINT. However in this case, a
+    # KeyboardInterrupt is raised, that will be handled by ErrorHandler through the context manager
+    # protocol. Finally, no signal on Windows is electable to be handled using ErrorHandler.
+    #
+    # Refs: https://stackoverflow.com/a/35792192, https://maruel.ca/post/python_windows_signal,
+    # https://docs.python.org/2/library/os.html#os.kill,
+    # https://www.reddit.com/r/Python/comments/1dsblt/windows_command_line_automation_ctrlc_question
+    _SIGNALS = []
+
 
 class ErrorHandler(object):
     """Context manager for running code that must be cleaned up on failure.
