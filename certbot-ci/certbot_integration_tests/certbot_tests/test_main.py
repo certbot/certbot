@@ -470,23 +470,29 @@ def test_revoke_and_unregister(context):
     assert cert3 in output
 
 
-def test_revoke_corner_cases(context):
-    """Test specific revoke corner case."""
-    # Cannot use --cert-path and --cert-name during a revoke.
-    cert1 = context.get_domain('le1')
-    context.certbot(['-d', cert1])
+def test_revoke_mutual_exclusive_flags(context):
+    """Test --cert-path and --cert-name cannot be used during revoke."""
+    cert = context.get_domain('le1')
+    context.certbot(['-d', cert])
     with pytest.raises(subprocess.CalledProcessError) as error:
         context.certbot([
-            'revoke', '--cert-name', cert1,
-            '--cert-path', join(context.config_dir, 'live/{0}/fullchain.pem'.format(cert1))
+            'revoke', '--cert-name', cert,
+            '--cert-path', join(context.config_dir, 'live/{0}/fullchain.pem'.format(cert))
         ])
         assert 'Exactly one of --cert-path or --cert-name must be specified' in error.out
 
+
+def test_revoke_multiple_lineages(context):
+    """Test revoke does not delete certs if multiple lineages share the same dir."""
+    cert1 = context.get_domain('le1')
+    context.certbot(['-d', cert1])
+
     assert os.path.isfile(join(context.config_dir, 'renewal/{0}.conf'.format(cert1)))
 
-    # Revocation should not delete if multiple lineages share an archive dir
     cert2 = context.get_domain('le2')
     context.certbot(['-d', cert2])
+
+    # Copy over renewal configuration of cert1 into renewal configuration of cert2.
     with open(join(context.config_dir, 'renewal/{0}.conf'.format(cert2)), 'r') as file:
         data = file.read()
 
