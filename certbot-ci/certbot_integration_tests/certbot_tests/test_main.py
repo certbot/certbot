@@ -161,6 +161,45 @@ def test_auth_and_install_with_csr(context):
     ])
 
 
+def test_renew_files_permissions(context):
+    """Test certificate file permissions upon renewal"""
+    certname = context.get_domain('renew')
+    context.certbot(['-d', certname])
+
+    assert_certs_count_for_lineage(context.config_dir, certname, 1)
+    assert_world_permissions(
+        join(context.config_dir, 'archive/{0}/privkey1.pem'.format(certname)), 0)
+
+    # Force renew. Assert certificate renewal and proper permissions.
+    # We assert hook scripts execution, certificate renewal and proper permissions.
+    context.certbot(['renew'])
+
+    assert_certs_count_for_lineage(context.config_dir, certname, 2)
+    assert_world_permissions(
+        join(context.config_dir, 'archive/{0}/privkey2.pem'.format(certname)), 0)
+    assert_equals_group_owner(
+        join(context.config_dir, 'archive/{0}/privkey1.pem'.format(certname)),
+        join(context.config_dir, 'archive/{0}/privkey2.pem'.format(certname)))
+    assert_equals_permissions(
+        join(context.config_dir, 'archive/{0}/privkey1.pem'.format(certname)),
+        join(context.config_dir, 'archive/{0}/privkey2.pem'.format(certname)), 0o074)
+
+
+def test_renew_with_hook_scripts(context):
+    """Test certificate renewal with script hooks."""
+    certname = context.get_domain('renew')
+    context.certbot(['-d', certname])
+
+    assert_certs_count_for_lineage(context.config_dir, certname, 1)
+
+    # Force renew. Assert certificate renewal and hook scripts execution.
+    misc.generate_test_file_hooks(context.config_dir, context.hook_probe)
+    context.certbot(['renew'])
+
+    assert_certs_count_for_lineage(context.config_dir, certname, 2)
+    assert_hook_execution(context.hook_probe, 'deploy')
+
+
 def test_renew(context):
     """Test various certificate renew scenarios."""
     # First, we create a target certificate, with all hook dirs instantiated.

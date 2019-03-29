@@ -25,7 +25,9 @@ class IntegrationTestsContext(object):
         self.directory_url = acme_xdist['directory_url']
         self.tls_alpn_01_port = acme_xdist['https_port'][self.worker_id]
         self.http_01_port = acme_xdist['http_port'][self.worker_id]
-        self.challtestsrv_mgt_port = acme_xdist['challtestsrv_port']
+        # Challtestsrv REST API, that exposes entrypoints to register new DNS entries,
+        # is listening on challtestsrv_port.
+        self.challtestsrv_port = acme_xdist['challtestsrv_port']
 
         # Formally certbot version does not depend on the test context. But get its value requires
         # to call certbot from a subprocess. Since it will be called a lot of time through
@@ -44,14 +46,14 @@ class IntegrationTestsContext(object):
             "request = requests.post('http://localhost:{1}/set-txt', data=json.dumps(data)); "
             "request.raise_for_status(); "
             '"'
-        ).format(sys.executable, self.challtestsrv_mgt_port)
+        ).format(sys.executable, self.challtestsrv_port)
         self.manual_dns_cleanup_hook = (
             '{0} -c "import os; import requests; import json; '
             "data = {{'host':'_acme-challenge.{{0}}.'.format(os.environ.get('CERTBOT_DOMAIN'))}}; "
             "request = requests.post('http://localhost:{1}/clear-txt', data=json.dumps(data)); "
             "request.raise_for_status(); "
             '"'
-        ).format(sys.executable, self.challtestsrv_mgt_port)
+        ).format(sys.executable, self.challtestsrv_port)
 
     def cleanup(self):
         """Cleanup the integration test context."""
