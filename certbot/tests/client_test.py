@@ -323,7 +323,7 @@ class ClientTest(ClientTestCommon):
             self.eg_order.fullchain_pem)
 
     @mock.patch("certbot.client.crypto_util")
-    @mock.patch("os.remove")
+    @mock.patch("certbot.compat.os.remove")
     def test_obtain_certificate_partial_success(self, mock_remove, mock_crypto_util):
         csr = util.CSR(form="pem", file=mock.sentinel.csr_file, data=CSR_SAN)
         key = util.CSR(form="pem", file=mock.sentinel.key_file, data=CSR_SAN)

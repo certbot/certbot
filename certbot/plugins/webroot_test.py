@@ -242,7 +242,7 @@ class AuthenticatorTest(unittest.TestCase):
 
         os.rmdir(leftover_path)
 
-    @mock.patch('os.rmdir')
+    @mock.patch('certbot.compat.os.rmdir')
     def test_cleanup_failure(self, mock_rmdir):
         self.auth.prepare()
         self.auth.perform([self.achall])
