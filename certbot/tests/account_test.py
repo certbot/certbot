@@ -233,7 +233,7 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
         self._set_server('https://acme-v02.api.letsencrypt.org/directory')
         self.assertEqual([self.acc], self.storage.find_all())
 
-    @mock.patch('os.rmdir')
+    @mock.patch('certbot.compat.os.rmdir')
     def test_corrupted_account(self, mock_rmdir):
         # pylint: disable=protected-access
         self._set_server('https://acme-staging.api.letsencrypt.org/directory')
