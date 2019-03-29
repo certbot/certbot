@@ -53,7 +53,7 @@ class ParsingHooksTest(unittest.TestCase):
         self.assertFalse(Block.should_parse([['block_name'], 'lol']))
         self.assertTrue(Block.should_parse([['block_name'], ['hi', []]]))
         self.assertTrue(Block.should_parse([['hello'], []]))
-        self.assertTrue(Block.should_parse([['block_name'], [['many'], ['statements'], 'here']]))
+        self.assertTrue(Block.should_parse([['block_name'], [['many'], ['directives'], 'here']]))
         self.assertTrue(Block.should_parse([['if', ' ', '(whatever)'], ['hi']]))
 
     def test_parse_raw(self):
@@ -71,7 +71,7 @@ class ParsingHooksTest(unittest.TestCase):
         fake_parser1.not_called()
         fake_parser2.called_once()
 
-    @mock.patch("certbot_nginx.parser_obj.Parsable.parsing_hooks")
+    @mock.patch("certbot_nginx.parser_obj.ParseContext.parsing_hooks")
     def test_parse_raw_no_match(self, parsing_hooks):
         from certbot import errors
         fake_parser1 = mock.Mock()
@@ -119,22 +119,6 @@ class SentenceTest(unittest.TestCase):
         for i, sentence in enumerate(self.sentence.iterate()):
             self.assertEqual(sentence.dump(), expected[i])
 
-    def test_set_tabs(self):
-        self.sentence.parse(['tabs', 'pls'], add_spaces=True)
-        self.sentence.set_tabs()
-        self.assertEqual(self.sentence.dump(True)[0], '\n    ')
-        self.sentence.parse(['tabs', 'pls'], add_spaces=True)
-
-    def test_get_tabs(self):
-        self.sentence.parse(['no', 'tabs'])
-        self.assertEqual(self.sentence.get_tabs(), '')
-        self.sentence.parse(['\n \n  ', 'tabs'])
-        self.assertEqual(self.sentence.get_tabs(), '  ')
-        self.sentence.parse(['\n\t  ', 'tabs'])
-        self.assertEqual(self.sentence.get_tabs(), '\t  ')
-        self.sentence.parse(['\n\t \n', 'tabs'])
-        self.assertEqual(self.sentence.get_tabs(), '')
-
 class BlockTest(unittest.TestCase):
     def setUp(self):
         from certbot_nginx.parser_obj import Block
@@ -179,21 +163,10 @@ class BlockTest(unittest.TestCase):
         self.assertRaises(errors.MisconfigurationError, self.bloc.parse, ['lol'])
         self.assertRaises(errors.MisconfigurationError, self.bloc.parse, ['fake', 'news'])
 
-    def test_set_tabs(self):
-        self.bloc.set_tabs()
-        self.assertEqual(self.bloc.names.dump(True)[0], '\n    ')
-        for elem in self.bloc.contents.dump(True)[:-1]:
-            self.assertEqual(elem[0], '\n        ')
-        self.assertEqual(self.bloc.contents.dump(True)[-1][0], '\n')
-
-    def test_get_tabs(self):
-        self.bloc.parse([[' \n  \t', 'lol'], []])
-        self.assertEqual(self.bloc.get_tabs(), '  \t')
-
-class StatementsTest(unittest.TestCase):
+class DirectivesTest(unittest.TestCase):
     def setUp(self):
-        from certbot_nginx.parser_obj import Statements
-        self.statements = Statements(None)
+        from certbot_nginx.parser_obj import Directives
+        self.directives = Directives(None)
         self.raw = [
             ['sentence', 'one'],
             ['sentence', 'two'],
@@ -206,47 +179,24 @@ class StatementsTest(unittest.TestCase):
             '\n\n'
         ]
 
-    def test_set_tabs(self):
-        self.statements.parse(self.raw)
-        self.statements.set_tabs()
-        for statement in self.statements.iterate():
-            self.assertEqual(statement.dump(True)[0], '\n    ')
-
-    def test_set_tabs_with_parent(self):
-        # Trailing whitespace should inherit from parent tabbing.
-        self.statements.parse(self.raw)
-        self.statements.parent = mock.Mock()
-        self.statements.parent.get_tabs.return_value = '\t\t'
-        self.statements.set_tabs()
-        for statement in self.statements.iterate():
-            self.assertEqual(statement.dump(True)[0], '\n    ')
-        self.assertEqual(self.statements.dump(True)[-1], '\n\t\t')
-
-    def test_get_tabs(self):
-        self.raw[0].insert(0, '\n \n  \t')
-        self.statements.parse(self.raw)
-        self.assertEqual(self.statements.get_tabs(), '  \t')
-        self.statements.parse([])
-        self.assertEqual(self.statements.get_tabs(), '')
-
     def test_parse_with_added_spaces(self):
-        self.statements.parse(self.raw, add_spaces=True)
-        self.assertEqual(self.statements.dump(True)[0], ['sentence', ' ', 'one'])
+        self.directives.parse(self.raw, add_spaces=True)
+        self.assertEqual(self.directives.dump(True)[0], ['sentence', ' ', 'one'])
 
     def test_parse_bad_list_raises_error(self):
         from certbot import errors
-        self.assertRaises(errors.MisconfigurationError, self.statements.parse, 'lol not a list')
+        self.assertRaises(errors.MisconfigurationError, self.directives.parse, 'lol not a list')
 
     def test_parse_hides_trailing_whitespace(self):
-        self.statements.parse(self.raw + ['\n\n  '])
-        self.assertTrue(isinstance(self.statements.dump()[-1], list))
-        self.assertTrue(self.statements.dump(True)[-1].isspace())
-        self.assertEqual(self.statements.dump(True)[-1], '\n\n  ')
+        self.directives.parse(self.raw + ['\n\n  '])
+        self.assertTrue(isinstance(self.directives.dump()[-1], list))
+        self.assertTrue(self.directives.dump(True)[-1].isspace())
+        self.assertEqual(self.directives.dump(True)[-1], '\n\n  ')
 
     def test_iterate(self):
-        self.statements.parse(self.raw)
+        self.directives.parse(self.raw)
         expected = [['sentence', 'one'], ['sentence', 'two']]
-        for i, elem in enumerate(self.statements.iterate(match=lambda x: 'sentence' in x)):
+        for i, elem in enumerate(self.directives.iterate(match=lambda x: 'sentence' in x)):
             self.assertEqual(expected[i], elem.dump())
 
 if __name__ == "__main__":

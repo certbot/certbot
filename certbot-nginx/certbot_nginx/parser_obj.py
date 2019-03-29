@@ -18,25 +18,19 @@ class Parsable(object):
     """ Abstract base class for "Parsable" objects whose underlying representation
     is a tree of lists.
 
-    :param .Parsable parent: This object's parsed parent in the tree
+    :param .ParseContext context: This object's context
     """
 
     __metaclass__ = abc.ABCMeta
 
-    def __init__(self, parent=None):
+    def __init__(self, context=None):
         self._data = [] # type: List[object]
-        self._tabs = None
-        self.parent = parent
+        self.context = context
 
-    @classmethod
-    def parsing_hooks(cls):
-        """Returns object types that this class should be able to `parse` recusrively.
-        The order of the objects indicates the order in which the parser should
-        try to parse each subitem.
-        :returns: A list of Parsable classes.
-        :rtype list:
-        """
-        return (Block, Sentence, Statements)
+    def get_parent(self):
+        if self.context == None:
+            return None
+        return self.context.parent
 
     @staticmethod
     @abc.abstractmethod
@@ -76,29 +70,6 @@ class Parsable(object):
         """
         raise NotImplementedError()
 
-    @abc.abstractmethod
-    def get_tabs(self):
-        """ Guess at the tabbing style of this parsed object, based on whitespace.
-
-        If this object is a leaf, it deducts the tabbing based on its own contents.
-        Other objects may guess by calling `get_tabs` recursively on child objects.
-
-        :returns: Guess at tabbing for this object. Should only return whitespace strings
-            that does not contain newlines.
-        :rtype str:
-        """
-        raise NotImplementedError()
-
-    @abc.abstractmethod
-    def set_tabs(self, tabs="    "):
-        """This tries to set and alter the tabbing of the current object to a desired
-        whitespace string. Primarily meant for objects that were constructed, so they
-        can conform to surrounding whitespace.
-
-        :param str tabs: A whitespace string (not containing newlines).
-        """
-        raise NotImplementedError()
-
     def dump(self, include_spaces=False):
         """ Dumps back to pyparsing-like list tree. The opposite of `parse`.
 
@@ -113,16 +84,24 @@ class Parsable(object):
         """
         return [elem.dump(include_spaces) for elem in self._data]
 
+    def child_context(self, filename=None):
+        """ Spawn a child context. """
+        cwd = None
+        if self.context:
+            cwd = self.context.cwd
+            if not filename: 
+                filename = self.context.filename
+        return ParseContext(parent=self, filename=filename, cwd=cwd)
 
-class Statements(Parsable):
-    """ A group or list of "Statements". A Statement is either a Block or a Sentence.
+class Directives(Parsable):
+    """ A group or list of Directives.
 
-    The underlying representation is simply a list of these Statement objects, with
+    The underlying representation is simply a list of other parsed objects, with
     an extra `_trailing_whitespace` string to keep track of the whitespace that does not
     precede any more statements.
     """
-    def __init__(self, parent=None):
-        super(Statements, self).__init__(parent)
+    def __init__(self, context=None):
+        super(Directives, self).__init__(context)
         self._trailing_whitespace = None
 
     # ======== Begin overridden functions
@@ -131,43 +110,23 @@ class Statements(Parsable):
     def should_parse(lists):
         return isinstance(lists, list)
 
-    def set_tabs(self, tabs="    "):
-        """ Sets the tabbing for this set of statements. Does this by calling `set_tabs`
-        on each of the child statements.
-
-        Then, if a parent is present, sets trailing whitespace to parent tabbing. This
-        is so that the trailing } of any Block that contains Statements lines up
-        with parent tabbing.
-        """
-        for statement in self._data:
-            statement.set_tabs(tabs)
-        if self.parent is not None:
-            self._trailing_whitespace = "\n" + self.parent.get_tabs()
-
     def parse(self, raw_list, add_spaces=False):
         """ Parses a list of statements.
         Expects all elements in `raw_list` to be parseable by `type(self).parsing_hooks`,
         with an optional whitespace string at the last index of `raw_list`.
         """
         if not isinstance(raw_list, list):
-            raise errors.MisconfigurationError("Statements parsing expects a list!")
+            raise errors.MisconfigurationError("Directives parsing expects a list!")
         # If there's a trailing whitespace in the list of statements, keep track of it.
         if raw_list and isinstance(raw_list[-1], six.string_types) and raw_list[-1].isspace():
             self._trailing_whitespace = raw_list[-1]
             raw_list = raw_list[:-1]
-        self._data = [parse_raw(elem, self, add_spaces) for elem in raw_list]
-
-    def get_tabs(self):
-        """ Takes a guess at the tabbing of all contained Statements by retrieving the
-        tabbing of the first Statement."""
-        if self._data:
-            return self._data[0].get_tabs()
-        return ""
+        self._data = [parse_raw(elem, self.child_context(), add_spaces) for elem in raw_list]
 
     def dump(self, include_spaces=False):
         """ Dumps this object by first dumping each statement, then appending its
         trailing whitespace (if `include_spaces` is set) """
-        data = super(Statements, self).dump(include_spaces)
+        data = super(Directives, self).dump(include_spaces)
         if include_spaces and self._trailing_whitespace is not None:
             return data + [self._trailing_whitespace]
         return data
@@ -223,27 +182,11 @@ class Sentence(Parsable):
         if match is None or match(self):
             yield self
 
-    def set_tabs(self, tabs="    "):
-        """ Sets the tabbing on this sentence. Inserts a newline and `tabs` at the
-        beginning of `self._data`. """
-        if self._data[0].isspace():
-            return
-        self._data.insert(0, "\n" + tabs)
-
     def dump(self, include_spaces=False):
         """ Dumps this sentence. If include_spaces is set, includes whitespace tokens."""
         if not include_spaces:
             return self.words
         return self._data
-
-    def get_tabs(self):
-        """ Guesses at the tabbing of this sentence. If the first element is whitespace,
-        returns the whitespace after the rightmost newline in the string. """
-        first = self._data[0]
-        if not first.isspace():
-            return ""
-        rindex = first.rfind("\n")
-        return first[rindex+1:]
 
     # ======== End overridden functions
 
@@ -270,8 +213,8 @@ class Block(Parsable):
         names = ["block", " ", "name", " "]
         contents = [["\n    ", "content", " ", "1"], ["\n    ", "content", " ", "2"], "\n"]
     """
-    def __init__(self, parent=None):
-        super(Block, self).__init__(parent)
+    def __init__(self, context=None):
+        super(Block, self).__init__(context)
         self.names = None # type: Sentence
         self.contents = None # type: Block
 
@@ -279,19 +222,13 @@ class Block(Parsable):
     def should_parse(lists):
         """ Returns True if `lists` can be parseable as a `Block`-- that is,
         it's got a length of 2, the first element is a `Sentence` and the second can be
-        a `Statements`.
+        a `Directives`.
 
         :param list lists: The raw unparsed list to check.
 
         :returns: whether this lists is parseable by `Block`. """
         return isinstance(lists, list) and len(lists) == 2 and \
             Sentence.should_parse(lists[0]) and isinstance(lists[1], list)
-
-    def set_tabs(self, tabs="    "):
-        """ Sets tabs by setting equivalent tabbing on names, then adding tabbing
-        to contents."""
-        self.names.set_tabs(tabs)
-        self.contents.set_tabs(tabs + "    ")
 
     def iterate(self, expanded=False, match=None):
         """ Iterator over self, and if expanded is set, over its contents. """
@@ -315,17 +252,13 @@ class Block(Parsable):
             raise errors.MisconfigurationError("Block parsing expects a list of length 2. "
                 "First element should be a list of string types (the bloc names), "
                 "and second should be another list of statements (the bloc content).")
-        self.names = Sentence(self)
+        self.names = Sentence(self.child_context())
         if add_spaces:
             raw_list[0].append(" ")
         self.names.parse(raw_list[0], add_spaces)
-        self.contents = Statements(self)
+        self.contents = Directives(self.child_context())
         self.contents.parse(raw_list[1], add_spaces)
         self._data = [self.names, self.contents]
-
-    def get_tabs(self):
-        """ Guesses tabbing by retrieving tabbing guess of self.names. """
-        return self.names.get_tabs()
 
 def _is_comment(parsed_obj):
     """ Checks whether parsed_obj is a comment.
@@ -356,34 +289,34 @@ def _is_certbot_comment(parsed_obj):
             return False
     return True
 
-def _certbot_comment(parent, preceding_spaces=4):
+def _certbot_comment(context, preceding_spaces=4):
     """ A "Managed by Certbot" comment.
     :param int preceding_spaces: Number of spaces between the end of the previous
         statement and the comment.
     :returns: Sentence containing the comment.
     :rtype: .Sentence
     """
-    result = Sentence(parent)
+    result = Sentence(context)
     result.parse([" " * preceding_spaces] + COMMENT_BLOCK)
     return result
 
-def _choose_parser(parent, list_):
-    """ Choose a parser from type(parent).parsing_hooks, depending on whichever hook
+def _choose_parser(context, list_):
+    """ Choose a parser from type(context).parsing_hooks, depending on whichever hook
     returns True first. """
-    hooks = Parsable.parsing_hooks()
-    if parent:
-        hooks = type(parent).parsing_hooks()
+    hooks = ParseContext.parsing_hooks()
+    if context:
+        hooks = type(context).parsing_hooks()
     for type_ in hooks:
         if type_.should_parse(list_):
-            return type_(parent)
+            return type_(context)
     raise errors.MisconfigurationError(
         "None of the parsing hooks succeeded, so we don't know how to parse this set of lists.")
 
-def parse_raw(lists_, parent=None, add_spaces=False):
+def parse_raw(lists_, context=None, add_spaces=False):
     """ Primary parsing factory function.
 
     :param list lists_: raw lists from pyparsing to parse.
-    :param .Parent parent: The parent containing this object.
+    :param .ParseContext context: The context of this object.
     :param bool add_spaces: Whether to pass add_spaces to the parser.
 
     :returns .Parsable: The parsed object.
@@ -391,6 +324,34 @@ def parse_raw(lists_, parent=None, add_spaces=False):
     :raises errors.MisconfigurationError: If no parsing hook passes, and we can't
         determine which type to parse the raw lists into.
     """
-    parser = _choose_parser(parent, lists_)
+    if context is None:
+        context = ParseContext()
+    parser = _choose_parser(context, lists_)
     parser.parse(lists_, add_spaces)
     return parser
+
+class ParseContext(object):
+    """ Context information held by parsed objects.
+
+    :param .Parsable parent: The parent object containing the associated object.
+    :param str filename: relative file path that the associated object was parsed from
+    :param str cwd: current working directory/root of the parsing files
+    """
+
+    __metaclass__ = abc.ABCMeta
+
+    def __init__(self, parent=None, filename=None, cwd=None):
+        self.parent = parent
+        self.filename = filename
+        self.cwd = cwd
+
+    @staticmethod
+    @abc.abstractmethod
+    def parsing_hooks():
+        """Returns object types that this class should be able to `parse` recusrively.
+        The order of the objects indicates the order in which the parser should
+        try to parse each subitem.
+        :returns: A list of Parsable classes.
+        :rtype list:
+        """
+        return (Block, Sentence, Directives)

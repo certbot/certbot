@@ -101,36 +101,42 @@ class RawNginxDumper(object):
 # Shortcut functions to respect Python's serialization interface
 # (like pyyaml, picker or json)
 
-def loads(source):
+def loads(source, raw=False):
     """Parses from a string.
 
     :param str source: The string to parse
+    :param bool raw: If true, doesn't return an UnspacedList.
     :returns: The parsed tree
     :rtype: list
 
     """
+    if raw:
+        return RawNginxParser(source).as_list()
     return UnspacedList(RawNginxParser(source).as_list())
 
 
-def load(_file):
+def load(_file, raw=False):
     """Parses from a file.
 
     :param file _file: The file to parse
+    :param bool raw: If true, doesn't return an UnspacedList.
     :returns: The parsed tree
     :rtype: list
 
     """
-    return loads(_file.read())
+    return loads(_file.read(), raw)
 
 
-def dumps(blocks):
+def dumps(blocks, raw=False):
     """Dump to a string.
 
-    :param UnspacedList block: The parsed tree
-    :param int indentation: The number of spaces to indent
+    :param UnspacedList or list block: The parsed tree
+    :param bool raw: If true, expects a regular list, not UnspacedList.
     :rtype: str
 
     """
+    if raw:
+        return str(RawNginxDumper(blocks))
     return str(RawNginxDumper(blocks.spaced))
 
 
