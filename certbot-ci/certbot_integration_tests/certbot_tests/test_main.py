@@ -162,7 +162,7 @@ def test_auth_and_install_with_csr(context):
 
 
 def test_renew_files_permissions(context):
-    """Test certificate file permissions upon renewal"""
+    """Test proper certificate file permissions upon renewal"""
     certname = context.get_domain('renew')
     context.certbot(['-d', certname])
 
@@ -170,8 +170,6 @@ def test_renew_files_permissions(context):
     assert_world_permissions(
         join(context.config_dir, 'archive/{0}/privkey1.pem'.format(certname)), 0)
 
-    # Force renew. Assert certificate renewal and proper permissions.
-    # We assert hook scripts execution, certificate renewal and proper permissions.
     context.certbot(['renew'])
 
     assert_certs_count_for_lineage(context.config_dir, certname, 2)
@@ -186,13 +184,12 @@ def test_renew_files_permissions(context):
 
 
 def test_renew_with_hook_scripts(context):
-    """Test certificate renewal with script hooks."""
+    """Test proper certificate renewal with script hooks."""
     certname = context.get_domain('renew')
     context.certbot(['-d', certname])
 
     assert_certs_count_for_lineage(context.config_dir, certname, 1)
 
-    # Force renew. Assert certificate renewal and hook scripts execution.
     misc.generate_test_file_hooks(context.config_dir, context.hook_probe)
     context.certbot(['renew'])
 
@@ -200,89 +197,106 @@ def test_renew_with_hook_scripts(context):
     assert_hook_execution(context.hook_probe, 'deploy')
 
 
-def test_renew(context):
-    """Test various certificate renew scenarios."""
-    # First, we create a target certificate, with all hook dirs instantiated.
-    # We should have a new certificate, with hooks executed.
-    # Check also file permissions.
+def test_renew_files_propagate_permissions(context):
+    """Test proper certificate renewal with custom permissions propagated on private key."""
     certname = context.get_domain('renew')
-    context.certbot([
-        'certonly', '-d', certname, '--rsa-key-size', '4096',
-        '--preferred-challenges', 'http-01'
-    ])
+    context.certbot(['-d', certname])
 
     assert_certs_count_for_lineage(context.config_dir, certname, 1)
-    assert_world_permissions(
-        join(context.config_dir, 'archive/{0}/privkey1.pem'.format(certname)), 0)
 
-    # Second, we force renew, and ensure that renewal hooks files are executed.
-    # Also check that file permissions are correct.
-    misc.generate_test_file_hooks(context.config_dir, context.hook_probe)
+    os.chmod(join(context.config_dir, 'archive/{0}/privkey1.pem'.format(certname)), 0o444)
     context.certbot(['renew'])
 
     assert_certs_count_for_lineage(context.config_dir, certname, 2)
-    assert_hook_execution(context.hook_probe, 'deploy')
-    assert_world_permissions(
-        join(context.config_dir, 'archive/{0}/privkey2.pem'.format(certname)), 0)
-    assert_equals_group_owner(
-        join(context.config_dir, 'archive/{0}/privkey1.pem'.format(certname)),
-        join(context.config_dir, 'archive/{0}/privkey2.pem'.format(certname)))
     assert_equals_permissions(
         join(context.config_dir, 'archive/{0}/privkey1.pem'.format(certname)),
         join(context.config_dir, 'archive/{0}/privkey2.pem'.format(certname)), 0o074)
 
-    os.chmod(join(context.config_dir, 'archive/{0}/privkey2.pem'.format(certname)), 0o444)
 
-    # Third, we try to renew without force.
-    # It is not time, so no renew should occur, and no hooks should be executed.
-    open(context.hook_probe, 'w').close()
-    misc.generate_test_file_hooks(context.config_dir, context.hook_probe)
-    context.certbot_no_force_renew(['renew'])
+def test_graceful_renew_it_is_not_time(context):
+    """Test graceful renew is not done when it is not due time."""
+    certname = context.get_domain('renew')
+    context.certbot(['-d', certname])
 
-    assert_certs_count_for_lineage(context.config_dir, certname, 2)
+    assert_certs_count_for_lineage(context.config_dir, certname, 1)
+
+    context.certbot_no_force_renew([
+        'renew', '--deploy-hook', 'echo deploy >> "{0}"'.format(context.hook_probe)])
+
+    assert_certs_count_for_lineage(context.config_dir, certname, 1)
     with pytest.raises(AssertionError):
         assert_hook_execution(context.hook_probe, 'deploy')
 
-    # Fourth, we modify the time when renew occur to 4 years before expiration.
-    # When trying renew without force, then renew should occur for this large time.
-    # Also we specify to not use hooks dir, so no hook should be run during this renew.
-    # Also this renew should use explicitly a 2048 key size.
-    # And finally we check the file permissions.
-    open(context.hook_probe, 'w').close()
+
+def test_graceful_renew_it_is_time(context):
+    """Test graceful renew is done when it is due time."""
+    certname = context.get_domain('renew')
+    context.certbot(['-d', certname])
+
+    assert_certs_count_for_lineage(context.config_dir, certname, 1)
+
     with open(join(context.config_dir, 'renewal/{0}.conf'.format(certname)), 'r') as file:
         lines = file.readlines()
     lines.insert(4, 'renew_before_expiry = 100 years{0}'.format(os.linesep))
     with open(join(context.config_dir, 'renewal/{0}.conf'.format(certname)), 'w') as file:
         file.writelines(lines)
-    context.certbot_no_force_renew(['renew', '--no-directory-hooks',
-                                   '--rsa-key-size', '2048'])
+
+    context.certbot_no_force_renew([
+        'renew', '--deploy-hook', 'echo deploy >> "{0}"'.format(context.hook_probe)])
+
+    assert_certs_count_for_lineage(context.config_dir, certname, 2)
+    assert_hook_execution(context.hook_probe, 'deploy')
+
+
+def test_renew_with_changed_private_key_complexity(context):
+    """Test proper renew with updated private key complexity."""
+    certname = context.get_domain('renew')
+    context.certbot(['-d', certname, '--rsa-key-size', '4096'])
+
+    assert_certs_count_for_lineage(context.config_dir, certname, 1)
+
+    context.certbot(['renew'])
+    assert_certs_count_for_lineage(context.config_dir, certname, 2)
+    key2 = join(context.config_dir, 'archive/{0}/privkey2.pem'.format(certname))
+    assert os.stat(key2).st_size > 3000  # 4096 bits keys takes more than 3000 bytes
+
+    context.certbot(['renew', '--rsa-key-size', '2048'])
 
     assert_certs_count_for_lineage(context.config_dir, certname, 3)
-    with pytest.raises(AssertionError):
-        assert_hook_execution(context.hook_probe, 'deploy')
-    key2 = join(context.config_dir, 'archive/{0}/privkey2.pem'.format(certname))
     key3 = join(context.config_dir, 'archive/{0}/privkey3.pem'.format(certname))
-    assert os.stat(key2).st_size > 3000  # 4096 bits keys takes more than 3000 bytes
     assert os.stat(key3).st_size < 1800  # 2048 bits keys takes less than 1800 bytes
 
-    assert_world_permissions(
-        join(context.config_dir, 'archive/{0}/privkey3.pem'.format(certname)), 4)
-    assert_equals_group_owner(
-        join(context.config_dir, 'archive/{0}/privkey2.pem'.format(certname)),
-        join(context.config_dir, 'archive/{0}/privkey3.pem'.format(certname)))
-    assert_equals_permissions(
-        join(context.config_dir, 'archive/{0}/privkey2.pem'.format(certname)),
-        join(context.config_dir, 'archive/{0}/privkey3.pem'.format(certname)), 0o074)
 
-    # Fifth, we clean every dir hook, and replace their content by empty dir and empty files.
-    # Everything should renew correctly.
+def test_renew_ignoring_directory_hooks(context):
+    """Test hooks are ignored during renewal with relevant CLI flag."""
+    certname = context.get_domain('renew')
+    context.certbot(['-d', certname])
+
+    assert_certs_count_for_lineage(context.config_dir, certname, 1)
+
+    misc.generate_test_file_hooks(context.config_dir, context.hook_probe)
+    context.certbot(['renew', '--no-directory-hooks'])
+
+    assert_certs_count_for_lineage(context.config_dir, certname, 2)
+    with pytest.raises(AssertionError):
+        assert_hook_execution(context.hook_probe, 'deploy')
+
+
+def test_renew_empty_hook_scripts(context):
+    """Test proper renew with empty hook scripts."""
+    certname = context.get_domain('renew')
+    context.certbot(['-d', certname])
+
+    assert_certs_count_for_lineage(context.config_dir, certname, 1)
+
+    misc.generate_test_file_hooks(context.config_dir, context.hook_probe)
     for hook_dir in misc.list_renewal_hooks_dirs(context.config_dir):
         shutil.rmtree(hook_dir)
         os.makedirs(join(hook_dir, 'dir'))
         open(join(hook_dir, 'file'), 'w').close()
     context.certbot(['renew'])
 
-    assert_certs_count_for_lineage(context.config_dir, certname, 4)
+    assert_certs_count_for_lineage(context.config_dir, certname, 2)
 
 
 def test_hook_override(context):
