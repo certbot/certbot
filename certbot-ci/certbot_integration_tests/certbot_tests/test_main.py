@@ -28,7 +28,7 @@ def test_manual_http_auth(context):
     with misc.create_http_server(context.http_01_port) as webroot:
         manual_http_hooks = misc.manual_http_hooks(webroot)
 
-        certname = context.domain()
+        certname = context.get_domain()
         context.certbot([
             'certonly', '-a', 'manual', '-d', certname,
             '--cert-name', certname,
@@ -61,28 +61,20 @@ def test_manual_dns_auth(context):
     assert_save_renew_hook(context.config_dir, certname)
 
 
-def test_renew(context):
-    """Test various certificate renew scenarios."""
-    # First, we create a target certificate, with all hook dirs instantiated.
-    # We should have a new certificate, with hooks executed.
-    # Check also file permissions.
+def test_renew_files_permissions(context):
+    """Test certificate file permissions upon renewal"""
     certname = context.get_domain('renew')
-    context.certbot([
-        'certonly', '-d', certname, '--rsa-key-size', '4096',
-        '--preferred-challenges', 'http-01'
-    ])
+    context.certbot(['-d', certname])
 
     assert_certs_count_for_lineage(context.config_dir, certname, 1)
     assert_world_permissions(
         join(context.config_dir, 'archive/{0}/privkey1.pem'.format(certname)), 0)
 
-    # Second, we force renew, and ensure that renewal hooks files are executed.
-    # Also check that file permissions are correct.
-    misc.generate_test_file_hooks(context.config_dir, context.hook_probe)
+    # Force renew. Assert certificate renewal and proper permissions.
+    # We assert hook scripts execution, certificate renewal and proper permissions.
     context.certbot(['renew'])
 
     assert_certs_count_for_lineage(context.config_dir, certname, 2)
-    assert_hook_execution(context.hook_probe, 'deploy')
     assert_world_permissions(
         join(context.config_dir, 'archive/{0}/privkey2.pem'.format(certname)), 0)
     assert_equals_group_owner(
@@ -92,14 +84,17 @@ def test_renew(context):
         join(context.config_dir, 'archive/{0}/privkey1.pem'.format(certname)),
         join(context.config_dir, 'archive/{0}/privkey2.pem'.format(certname)), 0o074)
 
-    os.chmod(join(context.config_dir, 'archive/{0}/privkey2.pem'.format(certname)), 0o444)
 
-    # Third, we try to renew without force.
-    # It is not time, so no renew should occur, and no hooks should be executed.
-    open(context.hook_probe, 'w').close()
+def test_renew_with_hook_scripts(context):
+    """Test certificate renewal with script hooks."""
+    certname = context.get_domain('renew')
+    context.certbot(['-d', certname])
+
+    assert_certs_count_for_lineage(context.config_dir, certname, 1)
+
+    # Force renew. Assert certificate renewal and hook scripts execution.
     misc.generate_test_file_hooks(context.config_dir, context.hook_probe)
-    context.certbot_no_force_renew(['renew'])
+    context.certbot(['renew'])
 
     assert_certs_count_for_lineage(context.config_dir, certname, 2)
-    with pytest.raises(AssertionError):
-        assert_hook_execution(context.hook_probe, 'deploy')
+    assert_hook_execution(context.hook_probe, 'deploy')
