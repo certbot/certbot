@@ -1,17 +1,16 @@
 """A class that performs HTTP-01 challenges for Nginx"""
 
 import logging
-import os
 
 from acme import challenges
+from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
 
 from certbot import errors
+from certbot.compat import os
 from certbot.plugins import common
 
-from certbot_nginx import obj
 from certbot_nginx import nginxparser
-from acme.magic_typing import List # pylint: disable=unused-import, no-name-in-module
-
+from certbot_nginx import obj
 
 logger = logging.getLogger(__name__)
 

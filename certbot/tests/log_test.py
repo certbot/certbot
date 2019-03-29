@@ -1,13 +1,13 @@
 """Tests for certbot.log."""
 import logging
 import logging.handlers
-import os
 import sys
 import time
 import unittest
 
 import mock
 import six
+
 from acme import messages
 from acme.magic_typing import Optional  # pylint: disable=unused-import, no-name-in-module
 
@@ -15,6 +15,7 @@ from certbot import constants
 from certbot import errors
 from certbot import util
 from certbot.compat import misc
+from certbot.compat import os
 from certbot.tests import util as test_util
 
 

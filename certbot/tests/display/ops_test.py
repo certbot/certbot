@@ -1,6 +1,5 @@
 # coding=utf-8
 """Test certbot.display.ops."""
-import os
 import sys
 import unittest
 
@@ -10,14 +9,12 @@ import zope.component
 
 from acme import messages
 
+import certbot.tests.util as test_util
 from certbot import account
 from certbot import errors
-
-from certbot.display import util as display_util
+from certbot.compat import os
 from certbot.display import ops
-
-import certbot.tests.util as test_util
-
+from certbot.display import util as display_util
 
 KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 

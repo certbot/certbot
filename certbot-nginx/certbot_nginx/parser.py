@@ -3,17 +3,18 @@ import copy
 import functools
 import glob
 import logging
-import os
-import pyparsing
 import re
 
+import pyparsing
 import six
 
-from certbot import errors
+from acme.magic_typing import Union, Dict, Set, List, Tuple  # pylint: disable=unused-import, no-name-in-module
 
-from certbot_nginx import obj
+from certbot import errors
+from certbot.compat import os
+
 from certbot_nginx import nginxparser
-from acme.magic_typing import Union, Dict, Set, Any, List, Tuple # pylint: disable=unused-import, no-name-in-module
+from certbot_nginx import obj
 
 logger = logging.getLogger(__name__)
 

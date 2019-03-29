@@ -1,11 +1,11 @@
 """Tests for certbot_dns_nsone.dns_nsone."""
 
-import os
 import unittest
 
 import mock
 from requests.exceptions import HTTPError
 
+from certbot.compat import os
 from certbot.plugins import dns_test_common
 from certbot.plugins import dns_test_common_lexicon
 from certbot.plugins.dns_test_common import DOMAIN

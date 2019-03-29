@@ -7,7 +7,6 @@ import collections
 import distutils.version  # pylint: disable=import-error,no-name-in-module
 import errno
 import logging
-import os
 import platform
 import re
 import socket
@@ -23,6 +22,7 @@ from certbot import constants
 from certbot import errors
 from certbot import lock
 from certbot.compat import misc
+from certbot.compat import os
 
 logger = logging.getLogger(__name__)
 

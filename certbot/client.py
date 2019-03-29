@@ -1,7 +1,6 @@
 """Certbot client API."""
 import datetime
 import logging
-import os
 import platform
 
 import OpenSSL
@@ -32,6 +31,7 @@ from certbot import reverter
 from certbot import storage
 from certbot import util
 from certbot.compat import misc
+from certbot.compat import os
 from certbot.display import enhancements
 from certbot.display import ops as display_ops
 from certbot.plugins import selection as plugin_selection

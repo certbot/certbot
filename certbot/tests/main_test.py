@@ -6,7 +6,6 @@ from __future__ import print_function
 import datetime
 import itertools
 import json
-import os
 import shutil
 import sys
 import tempfile
@@ -33,6 +32,7 @@ from certbot import main
 from certbot import updater
 from certbot import util
 from certbot.compat import misc
+from certbot.compat import os
 from certbot.plugins import disco
 from certbot.plugins import enhancements
 from certbot.plugins import manual

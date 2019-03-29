@@ -1,7 +1,6 @@
 """Tools for managing certificates."""
 import datetime
 import logging
-import os
 import re
 import traceback
 
@@ -17,6 +16,7 @@ from certbot import ocsp
 from certbot import storage
 from certbot import util
 from certbot.compat import misc
+from certbot.compat import os
 from certbot.display import util as display_util
 
 logger = logging.getLogger(__name__)

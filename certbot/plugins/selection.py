@@ -1,7 +1,6 @@
 """Decide which plugins to use for authentication & installation"""
 from __future__ import print_function
 
-import os
 import logging
 
 import six
@@ -9,7 +8,7 @@ import zope.component
 
 from certbot import errors
 from certbot import interfaces
-
+from certbot.compat import os
 from certbot.display import util as display_util
 
 logger = logging.getLogger(__name__)

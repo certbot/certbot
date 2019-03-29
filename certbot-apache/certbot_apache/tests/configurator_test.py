@@ -1,7 +1,6 @@
 # pylint: disable=too-many-public-methods,too-many-lines
 """Test for certbot_apache.configurator."""
 import copy
-import os
 import shutil
 import socket
 import tempfile
@@ -16,15 +15,14 @@ from acme import challenges
 from certbot import achallenges
 from certbot import crypto_util
 from certbot import errors
-
+from certbot.compat import os
 from certbot.tests import acme_util
 from certbot.tests import util as certbot_util
 
 from certbot_apache import apache_util
 from certbot_apache import constants
-from certbot_apache import parser
 from certbot_apache import obj
-
+from certbot_apache import parser
 from certbot_apache.tests import util
 
 

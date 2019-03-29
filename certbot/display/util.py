@@ -1,6 +1,5 @@
 """Certbot display."""
 import logging
-import os
 import sys
 import textwrap
 
@@ -10,6 +9,7 @@ from certbot import constants
 from certbot import errors
 from certbot import interfaces
 from certbot.compat import misc
+from certbot.compat import os
 from certbot.display import completer
 
 logger = logging.getLogger(__name__)

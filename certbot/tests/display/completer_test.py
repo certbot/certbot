@@ -1,9 +1,8 @@
 """Test certbot.display.completer."""
-import os
 try:
-    import readline # pylint: disable=import-error
+    import readline  # pylint: disable=import-error
 except ImportError:
-    import certbot.display.dummy_readline as readline # type: ignore
+    import certbot.display.dummy_readline as readline  # type: ignore
 import string
 import sys
 import unittest
@@ -12,7 +11,10 @@ import mock
 from six.moves import reload_module  # pylint: disable=import-error
 
 from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
+
 import certbot.tests.util as test_util
+from certbot.compat import os
+
 
 class CompleterTest(test_util.TempDirTestCase):
     """Test certbot.display.completer.Completer."""

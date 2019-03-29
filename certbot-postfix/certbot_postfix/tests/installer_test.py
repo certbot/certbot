@@ -1,20 +1,20 @@
 """Tests for certbot_postfix.installer."""
-from contextlib import contextmanager
 import copy
 import functools
-import os
-import pkg_resources
-import six
 import unittest
+from contextlib import contextmanager
 
 import mock
-
-from certbot import errors
-from certbot.tests import util as certbot_test_util
+import pkg_resources
+import six
 
 # pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Dict, Tuple, Union
+from acme.magic_typing import Dict, Tuple
 # pylint: enable=unused-import, no-name-in-module
+
+from certbot import errors
+from certbot.compat import os
+from certbot.tests import util as certbot_test_util
 
 DEFAULT_MAIN_CF = {
     "smtpd_tls_cert_file": "",

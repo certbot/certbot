@@ -4,7 +4,6 @@ import collections
 import errno
 import json
 import logging
-import os
 
 import six
 import zope.component
@@ -19,11 +18,11 @@ from certbot import achallenges  # pylint: disable=unused-import
 from certbot import cli
 from certbot import errors
 from certbot import interfaces
-from certbot.display import util as display_util
+from certbot.compat import os
 from certbot.display import ops
+from certbot.display import util as display_util
 from certbot.plugins import common
 from certbot.plugins import util
-
 
 logger = logging.getLogger(__name__)
 
