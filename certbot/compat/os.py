@@ -3,12 +3,10 @@ This compat modules extends native capabilities of core os module to handle corr
 specific operations (eg. chown, chmod, geuid).
 This module is intended to replace standard os module throughout certbot projects (except acme).
 """
-from __future__ import absolute_import as std_absolute_import
+from __future__ import absolute_import
 
 # Expose everything from standard os package to make current package a complete replacement of os.
-# pylint: disable=wildcard-import,unused-wildcard-import,redefined-builtin
-from os import *  # type: ignore
-# pylint: enable=wildcard-import,unused-wildcard-import,redefined-builtin
+from os import *  # type: ignore  # pylint: disable=wildcard-import,unused-wildcard-import,redefined-builtin
 
 # Monkey patch ourselves to get os attributes that are not in __all__ (so not from os import *).
 import os as std_os
@@ -19,4 +17,4 @@ for attribute in dir(std_os):
         setattr(ourselves, attribute, getattr(std_os, attribute))
 
 # Clean all remaining importables that are not from the core os module.
-del ourselves, std_os, std_sys, std_absolute_import
+del ourselves, std_os, std_sys
