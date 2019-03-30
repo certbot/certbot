@@ -4,11 +4,10 @@ import os
 
 import zope.component
 
-from certbot import compat
 from certbot import errors
 from certbot import interfaces
 from certbot import util
-
+from certbot.compat import misc
 from certbot.display import util as display_util
 
 logger = logging.getLogger(__name__)
@@ -36,7 +35,7 @@ def get_email(invalid=False, optional=True):
                          "the client with --register-unsafely-without-email "
                          "but make sure you then backup your account key from "
                          "{0}\n\n".format(os.path.join(
-                             compat.get_default_folder('config'), 'accounts')))
+                             misc.get_default_folder('config'), 'accounts')))
     if optional:
         if invalid:
             msg += unsafe_suggestion

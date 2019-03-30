@@ -4,23 +4,22 @@ import glob
 import logging
 import os
 import re
+import shutil
 import stat
 
 import configobj
 import parsedatetime
 import pytz
-import shutil
 import six
 
 import certbot
 from certbot import cli
-from certbot import compat
 from certbot import constants
 from certbot import crypto_util
-from certbot import errors
 from certbot import error_handler
+from certbot import errors
 from certbot import util
-
+from certbot.compat import misc
 from certbot.plugins import common as plugins_common
 from certbot.plugins import disco as plugins_disco
 
@@ -192,7 +191,7 @@ def update_configuration(lineagename, archive_dir, target, cli_config):
     # Save only the config items that are relevant to renewal
     values = relevant_values(vars(cli_config.namespace))
     write_renewal_config(config_filename, temp_filename, archive_dir, target, values)
-    compat.os_rename(temp_filename, config_filename)
+    misc.os_rename(temp_filename, config_filename)
 
     return configobj.ConfigObj(config_filename)
 
