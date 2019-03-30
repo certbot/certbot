@@ -240,7 +240,8 @@ def get_certbot_version():
     Find the version of the certbot available in PATH.
     :return str: the certbot version
     """
-    output = subprocess.check_output(['certbot', '--version'], universal_newlines=True)
+    output = subprocess.check_output(['certbot', '--version'],
+                                     universal_newlines=True, stderr=subprocess.STDOUT)
     # Typical response is: output = 'certbot 0.31.0.dev0'
     version_str = output.split(' ')[1].strip()
     return LooseVersion(version_str)
