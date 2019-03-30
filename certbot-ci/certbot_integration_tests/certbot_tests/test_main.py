@@ -68,21 +68,21 @@ def test_renew_files_permissions(context):
 
     assert_certs_count_for_lineage(context.config_dir, certname, 1)
     assert_world_permissions(
-        join(context.config_dir, 'archive/{0}/privkey1.pem'.format(certname)), 0)
+        join(context.config_dir, 'archive', certname, 'privkey1.pem'), 0)
 
     # Force renew. Assert certificate renewal and proper permissions.
-    # We assert hook scripts execution, certificate renewal and proper permissions.
+    # We assert certificate renewal and proper permissions.
     context.certbot(['renew'])
 
     assert_certs_count_for_lineage(context.config_dir, certname, 2)
     assert_world_permissions(
-        join(context.config_dir, 'archive/{0}/privkey2.pem'.format(certname)), 0)
+        join(context.config_dir, 'archive', certname, '/privkey2.pem'), 0)
     assert_equals_group_owner(
-        join(context.config_dir, 'archive/{0}/privkey1.pem'.format(certname)),
-        join(context.config_dir, 'archive/{0}/privkey2.pem'.format(certname)))
+        join(context.config_dir, 'archive', certname, 'privkey1.pem'),
+        join(context.config_dir, 'archive', certname, 'privkey2.pem'))
     assert_equals_permissions(
-        join(context.config_dir, 'archive/{0}/privkey1.pem'.format(certname)),
-        join(context.config_dir, 'archive/{0}/privkey2.pem'.format(certname)), 0o074)
+        join(context.config_dir, 'archive', certname, 'privkey1.pem'),
+        join(context.config_dir, 'archive', certname, 'privkey2.pem'), 0o074)
 
 
 def test_renew_with_hook_scripts(context):
