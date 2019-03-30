@@ -114,7 +114,7 @@ def generate_test_file_hooks(config_dir, hook_probe):
     renewal_deploy_hook_path = os.path.join(renewal_hooks_dirs[1], 'hook.sh')
 
     for hook_dir in renewal_hooks_dirs:
-        # We want a equivalent of bash `chmod -p $HOOK_DIR, that does not fail if one folder of
+        # We want an equivalent of bash `chmod -p $HOOK_DIR, that does not fail if one folder of
         # the hierarchy already exists. It is not the case of os.makedirs. Python 3 has an
         # optional parameter `exists_ok` to not fail on existing dir, but Python 2.7 does not.
         # So we pass through a try except pass for it. To be removed with dropped support on py27.
@@ -145,29 +145,45 @@ echo $(basename $(dirname "$0")) >> "{1}"\
         os.chmod(hook_path, os.stat(hook_path).st_mode | stat.S_IEXEC)
 
 
-def manual_http_hooks(http_server_root):
+@contextlib.contextmanager
+def manual_http_hooks(http_server_root, http_port):
     """
     Generate suitable http-01 hooks command for test purpose in the given HTTP
     server webroot directory.
     :param str http_server_root: path to the HTTP server configured to serve http-01 challenges
     :return (str, str): a tuple containing the authentication hook and the cleanup hook
     """
-    auth = (
-        '{0} -c "import os; '
-        "challenge_dir = os.path.join('{1}', '.well-known', 'acme-challenge'); "
-        'os.makedirs(challenge_dir); '
-        "challenge_file = os.path.join(challenge_dir, os.environ.get('CERTBOT_TOKEN')); "
-        "open(challenge_file, 'w').write(os.environ.get('CERTBOT_VALIDATION')); "
-        '"'
-    ).format(sys.executable, http_server_root)
-    cleanup = (
-        '{0} -c "import os; import shutil; '
-        "well_known = os.path.join('{1}', '.well-known'); "
-        'shutil.rmtree(well_known); '
-        '"'
-    ).format(sys.executable, http_server_root)
+    tempdir = tempfile.mkdtemp()
+    try:
+        auth_script_path = os.path.join(tempdir, 'auth.py')
+        with open(auth_script_path, 'w') as file_h:
+            file_h.write('''\
+import os
+import requests
+import time
+challenge_dir = os.path.join('{1}', '.well-known', 'acme-challenge')
+os.makedirs(challenge_dir)
+challenge_file = os.path.join(challenge_dir, os.environ.get('CERTBOT_TOKEN'))
+with open(challenge_file, 'w') as file_h:
+    file_h.write(os.environ.get('CERTBOT_VALIDATION'))
+url = 'http://localhost:{2}/.well-known/acme-challenge/' + os.environ.get('CERTBOT_TOKEN')
+while requests.get(url).status != 200:
+    time.sleep(1)
+'''.format(sys.executable, http_server_root, http_port))
 
-    return auth, cleanup
+        cleanup_script_path = os.path.join(tempdir, 'cleanup.py')
+        with open(cleanup_script_path, 'w') as file_h:
+            file_h.write('''\
+import os
+import shutil
+well_known = os.path.join('{1}', '.well-known')
+shutil.rmtree(well_known)
+'''.format(sys.executable, http_server_root))
+
+        yield ('{0} {1}'.format(sys.executable, auth_script_path),
+               '{0} {1}'.format(sys.executable, cleanup_script_path))
+    finally:
+        shutil.rmtree(tempdir)
 
 
 def get_certbot_version():

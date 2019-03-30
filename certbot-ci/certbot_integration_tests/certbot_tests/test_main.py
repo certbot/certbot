@@ -25,15 +25,15 @@ def context(request):
 
 def test_manual_http_auth(context):
     """Test the HTTP-01 challenge using manual plugin."""
-    with misc.create_http_server(context.http_01_port) as webroot:
-        manual_http_hooks = misc.manual_http_hooks(webroot)
+    with misc.create_http_server(context.http_01_port) as webroot,\
+            misc.manual_http_hooks(webroot, context.http_01_port) as scripts:
 
         certname = context.get_domain()
         context.certbot([
             'certonly', '-a', 'manual', '-d', certname,
             '--cert-name', certname,
-            '--manual-auth-hook', manual_http_hooks[0],
-            '--manual-cleanup-hook', manual_http_hooks[1],
+            '--manual-auth-hook', scripts[0],
+            '--manual-cleanup-hook', scripts[1],
             '--pre-hook', 'echo wtf.pre >> "{0}"'.format(context.hook_probe),
             '--post-hook', 'echo wtf.post >> "{0}"'.format(context.hook_probe),
             '--deploy-hook', 'echo deploy >> "{0}"'.format(context.hook_probe)
