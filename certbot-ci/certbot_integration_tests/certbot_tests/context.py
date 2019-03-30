@@ -30,7 +30,7 @@ class IntegrationTestsContext(object):
         self.challtestsrv_port = acme_xdist['challtestsrv_port']
 
         # Formally certbot version does not depend on the test context. But get its value requires
-        # to call certbot from a subprocess. Since it will be called a lot of time through
+        # calling certbot from a subprocess. Since it will be called a lot of times through
         # _common_test_no_force_renew, we cache its value as a member of the fixture context.
         self.certbot_version = misc.get_certbot_version()
 
