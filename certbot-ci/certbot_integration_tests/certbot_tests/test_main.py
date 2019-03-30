@@ -7,7 +7,7 @@ from os.path import join
 import pytest
 from certbot_integration_tests.certbot_tests import context as certbot_context
 from certbot_integration_tests.certbot_tests.assertions import (
-    assert_hook_execution, assert_save_renew_hook, assert_certs_count_for_lineage,
+    assert_hook_execution, assert_save_renew_hook, assert_cert_count_for_lineage,
     assert_world_permissions, assert_equals_group_owner, assert_equals_permissions,
 )
 from certbot_integration_tests.utils import misc
@@ -66,7 +66,7 @@ def test_renew_files_permissions(context):
     certname = context.get_domain('renew')
     context.certbot(['-d', certname])
 
-    assert_certs_count_for_lineage(context.config_dir, certname, 1)
+    assert_cert_count_for_lineage(context.config_dir, certname, 1)
     assert_world_permissions(
         join(context.config_dir, 'archive', certname, 'privkey1.pem'), 0)
 
@@ -74,7 +74,7 @@ def test_renew_files_permissions(context):
     # We assert certificate renewal and proper permissions.
     context.certbot(['renew'])
 
-    assert_certs_count_for_lineage(context.config_dir, certname, 2)
+    assert_cert_count_for_lineage(context.config_dir, certname, 2)
     assert_world_permissions(
         join(context.config_dir, 'archive', certname, '/privkey2.pem'), 0)
     assert_equals_group_owner(
@@ -90,11 +90,11 @@ def test_renew_with_hook_scripts(context):
     certname = context.get_domain('renew')
     context.certbot(['-d', certname])
 
-    assert_certs_count_for_lineage(context.config_dir, certname, 1)
+    assert_cert_count_for_lineage(context.config_dir, certname, 1)
 
     # Force renew. Assert certificate renewal and hook scripts execution.
     misc.generate_test_file_hooks(context.config_dir, context.hook_probe)
     context.certbot(['renew'])
 
-    assert_certs_count_for_lineage(context.config_dir, certname, 2)
+    assert_cert_count_for_lineage(context.config_dir, certname, 2)
     assert_hook_execution(context.hook_probe, 'deploy')

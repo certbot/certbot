@@ -24,7 +24,7 @@ def assert_save_renew_hook(config_dir, lineage):
     assert os.path.isfile(os.path.join(config_dir, 'renewal/{0}.conf'.format(lineage)))
 
 
-def assert_certs_count_for_lineage(config_dir, lineage, count):
+def assert_cert_count_for_lineage(config_dir, lineage, count):
     """
     Assert the number of certificates generated for a lineage.
     :param config_dir: location of the certbot configuration
