@@ -130,7 +130,7 @@ class IntegrationTestsContext(object):
         Generate a certificate domain name suitable for distributed certbot integration tests.
         This is a requirement to let the distribution know how to redirect the challenge check
         from the ACME server to the relevant pytest-xdist worker. This resolution is done by
-        appending the pytest worker id to the domain, using this pattern:
+        appending the pytest worker id to the subdomain, using this pattern:
         {subdomain}.{worker_id}.wtf
         :param subdomain: the subdomain to use in the generated domain (default 'le')
         :return: the well-formed domain suitable for redirection on 
