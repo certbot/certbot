@@ -83,7 +83,7 @@ class LexiconClient(object):
                     self.provider.options['domain'] = domain_name
                 else:
                     # For Lexicon 3.x
-                    self.provider.get_domain = domain_name
+                    self.provider.domain = domain_name
 
                 self.provider.authenticate()
 

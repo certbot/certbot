@@ -483,6 +483,14 @@ else:
 UNLIKELY_EOF
 }
 
+# Create a new virtual environment for Certbot. It will overwrite any existing one.
+# Parameters: LE_PYTHON, VENV_PATH, PYVER, VERBOSE
+CreateVenv() {
+    "$1" - "$2" "$3" "$4" << "UNLIKELY_EOF"
+{{ create_venv.py }}
+UNLIKELY_EOF
+}
+
 if [ "$1" = "--le-auto-phase2" ]; then
   # Phase 2: Create venv, install LE, and run.
 
@@ -538,22 +546,7 @@ if [ "$1" = "--le-auto-phase2" ]; then
   if [ "$LE_AUTO_VERSION" != "$INSTALLED_VERSION" ]; then
     say "Creating virtual environment..."
     DeterminePythonVersion
-    rm -rf "$VENV_PATH"
-    if [ "$PYVER" -le 27 ]; then
-      # Use an environment variable instead of a flag for compatibility with old versions
-      if [ "$VERBOSE" = 1 ]; then
-        VIRTUALENV_NO_DOWNLOAD=1 virtualenv --no-site-packages --python "$LE_PYTHON" "$VENV_PATH"
-      else
-        VIRTUALENV_NO_DOWNLOAD=1 virtualenv --no-site-packages --python "$LE_PYTHON" "$VENV_PATH" \
-          > /dev/null
-      fi
-    else
-      if [ "$VERBOSE" = 1 ]; then
-        "$LE_PYTHON" -m venv "$VENV_PATH"
-      else
-        "$LE_PYTHON" -m venv "$VENV_PATH" > /dev/null
-      fi
-    fi
+    CreateVenv "$LE_PYTHON" "$VENV_PATH" "$PYVER" "$VERBOSE"
 
     if [ -n "$BOOTSTRAP_VERSION" ]; then
       echo "$BOOTSTRAP_VERSION" > "$BOOTSTRAP_VERSION_PATH"

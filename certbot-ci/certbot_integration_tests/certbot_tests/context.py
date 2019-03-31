@@ -29,8 +29,8 @@ class IntegrationTestsContext(object):
         # is listening on challtestsrv_port.
         self.challtestsrv_port = acme_xdist['challtestsrv_port']
 
-        # Formally certbot version does not depend on the test context. But get its value requires
-        # to call certbot from a subprocess. Since it will be called a lot of time through
+        # Certbot version does not depend on the test context. But getting its value requires
+        # calling certbot from a subprocess. Since it will be called a lot of times through
         # _common_test_no_force_renew, we cache its value as a member of the fixture context.
         self.certbot_version = misc.get_certbot_version()
 
@@ -75,8 +75,8 @@ class IntegrationTestsContext(object):
             'certbot',
             '--server', self.directory_url,
             '--no-verify-ssl',
-            '--tls-sni-01-port', str(self.tls_alpn_01_port),
             '--http-01-port', str(self.http_01_port),
+            '--https-port', str(self.tls_alpn_01_port),
             '--manual-public-ip-logging-ok',
             '--config-dir', self.config_dir,
             '--work-dir', os.path.join(self.workspace, 'work'),
@@ -130,7 +130,7 @@ class IntegrationTestsContext(object):
         Generate a certificate domain name suitable for distributed certbot integration tests.
         This is a requirement to let the distribution know how to redirect the challenge check
         from the ACME server to the relevant pytest-xdist worker. This resolution is done by
-        appending the pytest worker id to the domain, using this pattern:
+        appending the pytest worker id to the subdomain, using this pattern:
         {subdomain}.{worker_id}.wtf
         :param subdomain: the subdomain to use in the generated domain (default 'le')
         :return: the well-formed domain suitable for redirection on 

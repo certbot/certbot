@@ -220,12 +220,6 @@ class IConfig(zope.interface.Interface):
 
     no_verify_ssl = zope.interface.Attribute(
         "Disable verification of the ACME server's certificate.")
-    tls_sni_01_port = zope.interface.Attribute(
-        "Port used during tls-sni-01 challenge. "
-        "This only affects the port Certbot listens on. "
-        "A conforming ACME server will still attempt to connect on port 443.")
-    tls_sni_01_address = zope.interface.Attribute(
-        "The address the server listens to during tls-sni-01 challenge.")
 
     http01_port = zope.interface.Attribute(
         "Port used in the http-01 challenge. "
@@ -234,6 +228,11 @@ class IConfig(zope.interface.Interface):
 
     http01_address = zope.interface.Attribute(
         "The address the server listens to during http-01 challenge.")
+
+    https_port = zope.interface.Attribute(
+        "Port used to serve HTTPS. "
+        "This affects which port Nginx will listen on after a LE certificate "
+        "is installed.")
 
     pref_challs = zope.interface.Attribute(
         "Sorted user specified preferred challenges"

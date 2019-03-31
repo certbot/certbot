@@ -9,7 +9,7 @@ from os.path import join, exists
 import pytest
 from certbot_integration_tests.certbot_tests import context as certbot_context
 from certbot_integration_tests.certbot_tests.assertions import (
-    assert_hook_execution, assert_save_renew_hook, assert_certs_count_for_lineage,
+    assert_hook_execution, assert_save_renew_hook, assert_cert_count_for_lineage,
     assert_world_permissions, assert_equals_group_owner, assert_equals_permissions,
 )
 from certbot_integration_tests.utils import misc
@@ -93,15 +93,15 @@ def test_http_01(context):
 
 def test_manual_http_auth(context):
     """Test the HTTP-01 challenge using manual plugin."""
-    with misc.create_http_server(context.http_01_port) as webroot:
-        manual_http_hooks = misc.manual_http_hooks(webroot)
+    with misc.create_http_server(context.http_01_port) as webroot,\
+            misc.manual_http_hooks(webroot, context.http_01_port) as scripts:
 
         certname = context.get_domain()
         context.certbot([
             'certonly', '-a', 'manual', '-d', certname,
             '--cert-name', certname,
-            '--manual-auth-hook', manual_http_hooks[0],
-            '--manual-cleanup-hook', manual_http_hooks[1],
+            '--manual-auth-hook', scripts[0],
+            '--manual-cleanup-hook', scripts[1],
             '--pre-hook', 'echo wtf.pre >> "{0}"'.format(context.hook_probe),
             '--post-hook', 'echo wtf.post >> "{0}"'.format(context.hook_probe),
             '--deploy-hook', 'echo deploy >> "{0}"'.format(context.hook_probe)
@@ -168,19 +168,19 @@ def test_renew_files_permissions(context):
 
     assert_certs_count_for_lineage(context.config_dir, certname, 1)
     assert_world_permissions(
-        join(context.config_dir, 'archive/{0}/privkey1.pem'.format(certname)), 0)
+        join(context.config_dir, 'archive', certname, 'privkey1.pem'), 0)
 
     context.certbot(['renew'])
 
-    assert_certs_count_for_lineage(context.config_dir, certname, 2)
+    assert_cert_count_for_lineage(context.config_dir, certname, 2)
     assert_world_permissions(
-        join(context.config_dir, 'archive/{0}/privkey2.pem'.format(certname)), 0)
+        join(context.config_dir, 'archive', certname, 'privkey2.pem'), 0)
     assert_equals_group_owner(
-        join(context.config_dir, 'archive/{0}/privkey1.pem'.format(certname)),
-        join(context.config_dir, 'archive/{0}/privkey2.pem'.format(certname)))
+        join(context.config_dir, 'archive', certname, 'privkey1.pem'),
+        join(context.config_dir, 'archive', certname, 'privkey2.pem'))
     assert_equals_permissions(
-        join(context.config_dir, 'archive/{0}/privkey1.pem'.format(certname)),
-        join(context.config_dir, 'archive/{0}/privkey2.pem'.format(certname)), 0o074)
+        join(context.config_dir, 'archive', certname, 'privkey1.pem'),
+        join(context.config_dir, 'archive', certname, 'privkey2.pem'), 0o074)
 
 
 def test_renew_with_hook_scripts(context):
@@ -287,7 +287,7 @@ def test_renew_empty_hook_scripts(context):
     certname = context.get_domain('renew')
     context.certbot(['-d', certname])
 
-    assert_certs_count_for_lineage(context.config_dir, certname, 1)
+    assert_cert_count_for_lineage(context.config_dir, certname, 1)
 
     misc.generate_test_file_hooks(context.config_dir, context.hook_probe)
     for hook_dir in misc.list_renewal_hooks_dirs(context.config_dir):

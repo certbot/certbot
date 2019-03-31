@@ -156,7 +156,7 @@ def main():
                                      temp,
                                      digest)
                      for path, digest in PACKAGES]
-        # On Windows, pip self-upgrade is not possible, it must be done through python interpreter.
+        # Calling pip as a module is the preferred way to avoid problems about pip self-upgrade.
         command = [python, '-m', 'pip', 'install', '--no-index', '--no-deps', '-U']
         # Disable cache since it is not used and it otherwise sometimes throws permission warnings:
         command.extend(['--no-cache-dir'] if has_pip_cache else [])
