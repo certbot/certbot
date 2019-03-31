@@ -167,7 +167,7 @@ challenge_file = os.path.join(challenge_dir, os.environ.get('CERTBOT_TOKEN'))
 with open(challenge_file, 'w') as file_h:
     file_h.write(os.environ.get('CERTBOT_VALIDATION'))
 url = 'http://localhost:{2}/.well-known/acme-challenge/' + os.environ.get('CERTBOT_TOKEN')
-while requests.get(url).status != 200:
+while requests.get(url).status_code != 200:
     time.sleep(1)
 '''.format(sys.executable, http_server_root, http_port))
 
@@ -183,7 +183,8 @@ shutil.rmtree(well_known)
         yield ('{0} {1}'.format(sys.executable, auth_script_path),
                '{0} {1}'.format(sys.executable, cleanup_script_path))
     finally:
-        shutil.rmtree(tempdir)
+        print(tempdir)
+        #shutil.rmtree(tempdir)
 
 
 def get_certbot_version():
