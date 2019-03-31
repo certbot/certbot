@@ -158,6 +158,7 @@ def manual_http_hooks(http_server_root, http_port):
         auth_script_path = os.path.join(tempdir, 'auth.py')
         with open(auth_script_path, 'w') as file_h:
             file_h.write('''\
+#!/usr/bin/env python
 import os
 import requests
 import time
@@ -170,6 +171,7 @@ url = 'http://localhost:{2}/.well-known/acme-challenge/' + os.environ.get('CERTB
 while requests.get(url).status_code != 200:
     time.sleep(1)
 '''.format(sys.executable, http_server_root, http_port))
+        os.chmod(auth_script_path, 0o755)
 
         cleanup_script_path = os.path.join(tempdir, 'cleanup.py')
         with open(cleanup_script_path, 'w') as file_h:
@@ -179,12 +181,11 @@ import shutil
 well_known = os.path.join('{1}', '.well-known')
 shutil.rmtree(well_known)
 '''.format(sys.executable, http_server_root))
+        os.chmod(cleanup_script_path, 0o755)
 
-        yield ('{0} {1}'.format(sys.executable, auth_script_path),
-               '{0} {1}'.format(sys.executable, cleanup_script_path))
+        yield (auth_script_path, cleanup_script_path)
     finally:
-        print(tempdir)
-        #shutil.rmtree(tempdir)
+        shutil.rmtree(tempdir)
 
 
 def get_certbot_version():
