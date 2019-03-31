@@ -176,6 +176,7 @@ while requests.get(url).status_code != 200:
         cleanup_script_path = os.path.join(tempdir, 'cleanup.py')
         with open(cleanup_script_path, 'w') as file_h:
             file_h.write('''\
+#!/usr/bin/env python
 import os
 import shutil
 well_known = os.path.join('{1}', '.well-known')
