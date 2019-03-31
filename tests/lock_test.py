@@ -111,7 +111,7 @@ def set_up_nginx_dir(root_path):
     conf_path = os.path.join(repo_root, 'certbot-ci', 'certbot_integration_tests', 'nginx_tests')
     sys.path.append(conf_path)
     import nginx_config  # pylint: disable=import-error
-    key_path, cert_path = nginx_config.create_self_signed_certificates(root_path)
+    key_path, cert_path = nginx_config.create_self_signed_certificate(root_path)
     config = nginx_config.construct_nginx_config(root_path, os.path.join(root_path, 'webroot'),
                                                  key_path, cert_path, 5002, 5001, 8082, '')
     with open(os.path.join(root_path, 'nginx.conf'), 'w') as f:
