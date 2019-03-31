@@ -184,7 +184,8 @@ shutil.rmtree(well_known)
 '''.format(sys.executable, http_server_root))
         os.chmod(cleanup_script_path, 0o755)
 
-        yield (auth_script_path, cleanup_script_path)
+        yield ('{0} {1}'.format(sys.executable, auth_script_path),
+               '{0} {1}'.format(sys.executable, cleanup_script_path))
     finally:
         shutil.rmtree(tempdir)
 
