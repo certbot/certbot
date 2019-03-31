@@ -544,12 +544,14 @@ def test_ocsp_status(context):
 
     # OSCP 2: Check live certificate OCSP status (VALID)
     cert = context.get_domain('ocsp-check')
-    output = context.certbot(['--domains', cert])
+    context.certbot(['--domains', cert])
+    output = context.certbot(['certificates'])
 
     assert output.count('VALID') == 1, 'Expected {0} to be VALID'.format(cert)
     assert output.count('EXPIRED') == 0, 'Did not expect {0} to be EXPIRED'.format(cert)
 
     # OSCP 3: Check live certificate OCSP status (REVOKED)
+    context.certbot(['revoke', '--cert-name', cert, '--no-delete-after-revoke'])
     output = context.certbot(['certificates'])
 
     assert output.count('INVALID') == 1, 'Expected {0} to be INVALID'.format(cert)
