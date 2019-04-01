@@ -1,4 +1,3 @@
-
 #!/bin/bash
 # Download and run Pebble instance for integration testing
 set -xe
