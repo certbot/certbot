@@ -171,7 +171,7 @@ challenge_file = os.path.join(challenge_dir, os.environ.get('CERTBOT_TOKEN'))
 with open(challenge_file, 'w') as file_h:
     file_h.write(os.environ.get('CERTBOT_VALIDATION'))
 url = 'http://localhost:{1}/.well-known/acme-challenge/' + os.environ.get('CERTBOT_TOKEN')
-for _ in range(0, 10)
+for _ in range(0, 10):
     time.sleep(1)
     try:
         if request.get(url).status_code == 200:
