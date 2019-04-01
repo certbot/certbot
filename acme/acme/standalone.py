@@ -17,6 +17,7 @@ import OpenSSL
 from acme import challenges
 from acme import crypto_util
 from acme.magic_typing import List # pylint: disable=unused-import, no-name-in-module
+from acme import _TLSSNI01DeprecationModule
 
 
 logger = logging.getLogger(__name__)
@@ -37,7 +38,7 @@ class TLSServer(socketserver.TCPServer):
         self.certs = kwargs.pop("certs", {})
         self.method = kwargs.pop(
             # pylint: disable=protected-access
-            "method", crypto_util._DEFAULT_TLSSNI01_SSL_METHOD)
+            "method", crypto_util._DEFAULT_SSL_METHOD)
         self.allow_reuse_address = kwargs.pop("allow_reuse_address", True)
         socketserver.TCPServer.__init__(self, *args, **kwargs)
 
@@ -340,6 +341,10 @@ def simple_tls_sni_01_server(cli_args, forever=True):
         server.serve_forever()
     else:
         server.handle_request()
+
+
+# Patching ourselves to warn about TLS-SNI challenge deprecation and removal.
+sys.modules[__name__] = _TLSSNI01DeprecationModule(sys.modules[__name__])
 
 
 if __name__ == "__main__":

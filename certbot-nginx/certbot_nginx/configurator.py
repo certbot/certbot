@@ -12,24 +12,22 @@ import zope.interface
 
 from acme import challenges
 from acme import crypto_util as acme_crypto_util
+from acme.magic_typing import List, Dict, Set  # pylint: disable=unused-import, no-name-in-module
 
-from certbot import compat
 from certbot import constants as core_constants
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
 from certbot import util
-
+from certbot.compat import misc
 from certbot.plugins import common
 
 from certbot_nginx import constants
 from certbot_nginx import display_ops
-from certbot_nginx import nginxparser
-from certbot_nginx import parser
 from certbot_nginx import http_01
-from certbot_nginx import obj # pylint: disable=unused-import
-from acme.magic_typing import List, Dict, Set # pylint: disable=unused-import, no-name-in-module
-
+from certbot_nginx import nginxparser
+from certbot_nginx import obj  # pylint: disable=unused-import
+from certbot_nginx import parser
 
 NAME_RANK = 0
 START_WILDCARD_RANK = 1
@@ -295,7 +293,7 @@ class NginxConfigurator(common.Installer):
             if create_if_no_match:
                 # result will not be [None] because it errors on failure
                 vhosts = [self._vhost_from_duplicated_default(target_name, True,
-                    str(self.config.tls_sni_01_port))]
+                    str(self.config.https_port))]
             else:
                 # No matches. Raise a misconfiguration error.
                 raise errors.MisconfigurationError(
@@ -609,7 +607,7 @@ class NginxConfigurator(common.Installer):
         :type vhost: :class:`~certbot_nginx.obj.VirtualHost`
 
         """
-        https_port = self.config.tls_sni_01_port
+        https_port = self.config.https_port
         ipv6info = self.ipv6_info(https_port)
         ipv6_block = ['']
         ipv4_block = ['']
@@ -895,7 +893,7 @@ class NginxConfigurator(common.Installer):
         have permissions of root.
 
         """
-        uid = compat.os_geteuid()
+        uid = misc.os_geteuid()
         util.make_or_verify_dir(
             self.config.work_dir, core_constants.CONFIG_DIRS_MODE, uid)
         util.make_or_verify_dir(
