@@ -141,7 +141,7 @@ class ErrorHandler(object):
             signal.signal(signum, self.prev_handlers[signum])
         self.prev_handlers.clear()
 
-    def _signal_handler(self, signum, unused_frame):
+    def _signal_handler(self, signum, unused_frame):  # pylint: disable=unused-argument
         """Replacement function for handling received signals.
 
         Store the received signal. If we are executing the code block in

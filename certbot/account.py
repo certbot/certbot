@@ -244,8 +244,8 @@ class AccountFileStorage(interfaces.AccountStorage):
     def load(self, account_id):
         return self._load_for_server_path(account_id, self.config.server_path)
 
-    def save(self, account, acme):
-        self._save(account, acme, regr_only=False)
+    def save(self, account, client):
+        self._save(account, client, regr_only=False)
 
     def save_regr(self, account, acme):
         """Save the registration resource.

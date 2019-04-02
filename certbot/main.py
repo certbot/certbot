@@ -612,7 +612,7 @@ def _init_le_client(config, authenticator, installer):
     return client.Client(config, acc, authenticator, installer, acme=acme)
 
 
-def unregister(config, unused_plugins):
+def unregister(config, unused_plugins):  # pylint: disable=unused-argument
     """Deactivate account on server
 
     :param config: Configuration object
@@ -679,7 +679,7 @@ def register(config, unused_plugins):
     account_storage = account.AccountFileStorage(config)
     accounts = account_storage.find_all()
 
-    if len(accounts) > 0:
+    if accounts:
         # TODO: add a flag to register a duplicate account (this will
         #       also require extending _determine_account's behavior
         #       or else extracting the registration code from there)
@@ -691,7 +691,7 @@ def register(config, unused_plugins):
     return
 
 
-def update_account(config, unused_plugins):
+def update_account(config, unused_plugins):  # pylint: disable=unused-argument
     """Modify accounts on the server.
 
     :param config: Configuration object
@@ -711,7 +711,7 @@ def update_account(config, unused_plugins):
     reporter_util = zope.component.getUtility(interfaces.IReporter)
     add_msg = lambda m: reporter_util.add_message(m, reporter_util.MEDIUM_PRIORITY)
 
-    if len(accounts) == 0:
+    if accounts:
         return "Could not find an existing account to update."
     if config.email is None:
         if config.register_unsafely_without_email:
@@ -814,11 +814,6 @@ def install(config, plugins):
             "If your certificate is managed by Certbot, please use --cert-name "
             "to define which certificate you would like to install.")
     return None
-
-    if enhancements.are_requested(config):
-        # In the case where we don't have certname, we have errored out already
-        lineage = cert_manager.lineage_for_certname(config, config.certname)
-        enhancements.enable(lineage, domains, installer, config)
 
 def _populate_from_certname(config):
     """Helper function for install to populate missing config values from lineage
@@ -955,7 +950,7 @@ def rollback(config, plugins):
     client.rollback(config.installer, config.checkpoints, config, plugins)
 
 
-def config_changes(config, unused_plugins):
+def config_changes(config, unused_plugins):  # pylint: disable=unused-argument
     """Show changes made to server config during installation
 
     View checkpoints and associated configuration changes.
@@ -972,7 +967,7 @@ def config_changes(config, unused_plugins):
     """
     client.view_config_changes(config, num=config.num)
 
-def update_symlinks(config, unused_plugins):
+def update_symlinks(config, unused_plugins):  # pylint: disable=unused-argument
     """Update the certificate file family symlinks
 
     Use the information in the config file to make symlinks point to
@@ -990,7 +985,7 @@ def update_symlinks(config, unused_plugins):
     """
     cert_manager.update_live_symlinks(config)
 
-def rename(config, unused_plugins):
+def rename(config, unused_plugins):  # pylint: disable=unused-argument
     """Rename a certificate
 
     Use the information in the config file to rename an existing
@@ -1008,7 +1003,7 @@ def rename(config, unused_plugins):
     """
     cert_manager.rename_lineage(config)
 
-def delete(config, unused_plugins):
+def delete(config, unused_plugins):  # pylint: disable=unused-argument
     """Delete a certificate
 
     Use the information in the config file to delete an existing
@@ -1026,7 +1021,7 @@ def delete(config, unused_plugins):
     """
     cert_manager.delete(config)
 
-def certificates(config, unused_plugins):
+def certificates(config, unused_plugins):  # pylint: disable=unused-argument
     """Display information about certs configured with Certbot
 
     :param config: Configuration object
@@ -1041,7 +1036,8 @@ def certificates(config, unused_plugins):
     """
     cert_manager.certificates(config)
 
-def revoke(config, unused_plugins):  # TODO: coop with renewal config
+# TODO: coop with renewal config
+def revoke(config, unused_plugins):  # pylint: disable=unused-argument
     """Revoke a previously obtained certificate.
 
     :param config: Configuration object
@@ -1260,7 +1256,7 @@ def certonly(config, plugins):
     _report_new_cert(config, cert_path, fullchain_path, key_path)
     _suggest_donation_if_appropriate(config)
 
-def renew(config, unused_plugins):
+def renew(config, unused_plugins):  # pylint: disable=unused-argument
     """Renew previously-obtained certificates.
 
     :param config: Configuration object

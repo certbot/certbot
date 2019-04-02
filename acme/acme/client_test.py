@@ -138,7 +138,7 @@ class BackwardsCompatibleClientV2Test(ClientTestBase):
     def test_query_registration_client_v2(self):
         self.response.json.return_value = DIRECTORY_V2.to_json()
         client = self._init()
-        self.response.json.return_value = self.regr.body.to_json()
+        self.response.json.return_value = self.regr.body.to_json()  # pylint: disable=no-member
         self.assertEqual(self.regr, client.query_registration(self.regr))
 
     def test_forwarding(self):
@@ -199,7 +199,7 @@ class BackwardsCompatibleClientV2Test(ClientTestBase):
     @mock.patch('OpenSSL.crypto.load_certificate_request')
     @mock.patch('acme.crypto_util._pyopenssl_cert_or_req_all_names')
     def test_new_order_v1(self, mock__pyopenssl_cert_or_req_all_names,
-        unused_mock_load_certificate_request):
+        unused_mock_load_certificate_request):  # pylint: disable=unused-argument
         self.response.json.return_value = DIRECTORY_V1.to_json()
         mock__pyopenssl_cert_or_req_all_names.return_value = ['example.com', 'www.example.com']
         mock_csr_pem = mock.MagicMock()
@@ -465,7 +465,7 @@ class ClientTest(ClientTestBase):
 
     def test_answer_challenge_key_authorization_fallback(self):
         self.response.links['up'] = {'url': self.challr.authzr_uri}
-        self.response.json.return_value = self.challr.body.to_json()
+        self.response.json.return_value = self.challr.body.to_json()  # pylint: disable=no-member
 
         def _wrapper_post(url, obj, *args, **kwargs):  # pylint: disable=unused-argument
             """

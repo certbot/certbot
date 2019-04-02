@@ -13,7 +13,6 @@ import platform
 import re
 import socket
 import subprocess
-from collections import OrderedDict
 
 import configargparse
 import six
@@ -218,7 +217,6 @@ def safe_open(path, mode="w", chmod=None, buffering=None):
         defaults if ``None``.
 
     """
-    # pylint: disable=star-args
     open_args = ()  # type: Union[Tuple[()], Tuple[int]]
     if chmod is not None:
         open_args = (chmod,)

@@ -6,7 +6,6 @@ import os
 import re
 import shutil
 import stat
-import shutil
 
 import configobj
 import parsedatetime
