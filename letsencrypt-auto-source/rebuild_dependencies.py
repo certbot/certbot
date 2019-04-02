@@ -43,7 +43,7 @@ AUTHORITATIVE_CONSTRAINTS = {
     # in favor of pure python parser for Apache.
     'python-augeas': '0.5.0',
     # Package enum34 needs to be explicitly limited to Python2.x, in order to avoid
-    # certbot-auto to fail on Centos 6 + Python 3.6, see #5456.
+    # certbot-auto failures on Python 3.6+ which enum34 doesn't support. See #5456.
     # TODO: hashin seems to overwrite environment markers in dependencies. This needs to be fixed.
     'enum34': '1.1.6 ; python_version < \'3.4\''
 }
