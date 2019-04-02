@@ -1,5 +1,6 @@
 """Tests Certbot plugins against different server configurations."""
 import argparse
+import contextlib
 import filecmp
 import logging
 import os
@@ -7,6 +8,7 @@ import shutil
 import tempfile
 import time
 import sys
+from urllib3.util import connection
 
 import OpenSSL
 
@@ -15,6 +17,7 @@ from six.moves import xrange  # pylint: disable=import-error,redefined-builtin
 from acme import challenges
 from acme import crypto_util
 from acme import messages
+from acme.magic_typing import List, Tuple  # pylint: disable=unused-import, no-name-in-module
 from certbot import achallenges
 from certbot import errors as le_errors
 from certbot.tests import acme_util
@@ -52,9 +55,8 @@ def test_authenticator(plugin, config, temp_dir):
 
     try:
         responses = plugin.perform(achalls)
-    except le_errors.Error as error:
-        logger.error("Performing challenges on %s caused an error:", config)
-        logger.exception(error)
+    except le_errors.Error:
+        logger.error("Performing challenges on %s caused an error:", config, exc_info=True)
         return False
 
     success = True
@@ -64,27 +66,27 @@ def test_authenticator(plugin, config, temp_dir):
                 "Plugin failed to complete %s for %s in %s",
                 type(achalls[i]), achalls[i].domain, config)
             success = False
-        elif isinstance(responses[i], challenges.TLSSNI01Response):
-            verified = responses[i].simple_verify(achalls[i].chall,
-                                                  achalls[i].domain,
-                                                  util.JWK.public_key(),
-                                                  host="127.0.0.1",
-                                                  port=plugin.https_port)
+        elif isinstance(responses[i], challenges.HTTP01Response):
+            # We fake the DNS resolution to ensure that any domain is resolved
+            # to the local HTTP server setup for the compatibility tests
+            with _fake_dns_resolution("127.0.0.1"):
+                verified = responses[i].simple_verify(
+                    achalls[i].chall, achalls[i].domain,
+                    util.JWK.public_key(), port=plugin.http_port)
             if verified:
                 logger.info(
-                    "tls-sni-01 verification for %s succeeded", achalls[i].domain)
+                    "http-01 verification for %s succeeded", achalls[i].domain)
             else:
                 logger.error(
-                    "**** tls-sni-01 verification for %s in %s failed",
+                    "**** http-01 verification for %s in %s failed",
                     achalls[i].domain, config)
                 success = False
 
     if success:
         try:
             plugin.cleanup(achalls)
-        except le_errors.Error as error:
-            logger.error("Challenge cleanup for %s caused an error:", config)
-            logger.exception(error)
+        except le_errors.Error:
+            logger.error("Challenge cleanup for %s caused an error:", config, exc_info=True)
             success = False
 
         if _dirs_are_unequal(config, backup):
@@ -103,9 +105,9 @@ def _create_achalls(plugin):
     for domain in names:
         prefs = plugin.get_chall_pref(domain)
         for chall_type in prefs:
-            if chall_type == challenges.TLSSNI01:
-                chall = challenges.TLSSNI01(
-                    token=os.urandom(challenges.TLSSNI01.TOKEN_SIZE))
+            if chall_type == challenges.HTTP01:
+                chall = challenges.HTTP01(
+                    token=os.urandom(challenges.HTTP01.TOKEN_SIZE))
                 challb = acme_util.chall_to_challb(
                     chall, messages.STATUS_PENDING)
                 achall = achallenges.KeyAuthorizationAnnotatedChallenge(
@@ -147,9 +149,8 @@ def test_deploy_cert(plugin, temp_dir, domains):
         try:
             plugin.deploy_cert(domain, cert_path, util.KEY_PATH, cert_path, cert_path)
             plugin.save()  # Needed by the Apache plugin
-        except le_errors.Error as error:
-            logger.error("**** Plugin failed to deploy certificate for %s:", domain)
-            logger.exception(error)
+        except le_errors.Error:
+            logger.error("**** Plugin failed to deploy certificate for %s:", domain, exc_info=True)
             return False
 
     if not _save_and_restart(plugin, "deployed"):
@@ -179,7 +180,7 @@ def test_enhancements(plugin, domains):
                      "enhancements")
         return False
 
-    domains_and_info = [(domain, []) for domain in domains]
+    domains_and_info = [(domain, []) for domain in domains]  # type: List[Tuple[str, List[bool]]]
 
     for domain, info in domains_and_info:
         try:
@@ -192,10 +193,9 @@ def test_enhancements(plugin, domains):
             # Don't immediately fail because a redirect may already be enabled
             logger.warning("*** Plugin failed to enable redirect for %s:", domain)
             logger.warning("%s", error)
-        except le_errors.Error as error:
+        except le_errors.Error:
             logger.error("*** An error occurred while enabling redirect for %s:",
-                         domain)
-            logger.exception(error)
+                         domain, exc_info=True)
 
     if not _save_and_restart(plugin, "enhanced"):
         return False
@@ -222,9 +222,8 @@ def _save_and_restart(plugin, title=None):
         plugin.save(title)
         plugin.restart()
         return True
-    except le_errors.Error as error:
-        logger.error("*** Plugin failed to save and restart server:")
-        logger.exception(error)
+    except le_errors.Error:
+        logger.error("*** Plugin failed to save and restart server:", exc_info=True)
         return False
 
 
@@ -232,9 +231,8 @@ def test_rollback(plugin, config, backup):
     """Tests the rollback checkpoints function"""
     try:
         plugin.rollback_checkpoints(1337)
-    except le_errors.Error as error:
-        logger.error("*** Plugin raised an exception during rollback:")
-        logger.exception(error)
+    except le_errors.Error:
+        logger.error("*** Plugin raised an exception during rollback:", exc_info=True)
         return False
 
     if _dirs_are_unequal(config, backup):
@@ -262,21 +260,21 @@ def _dirs_are_unequal(dir1, dir2):
             logger.error("The following files and directories are only "
                          "present in one directory")
             if dircmp.left_only:
-                logger.error(dircmp.left_only)
+                logger.error(str(dircmp.left_only))
             else:
-                logger.error(dircmp.right_only)
+                logger.error(str(dircmp.right_only))
             return True
         elif dircmp.common_funny or dircmp.funny_files:
             logger.error("The following files and directories could not be "
                          "compared:")
             if dircmp.common_funny:
-                logger.error(dircmp.common_funny)
+                logger.error(str(dircmp.common_funny))
             else:
-                logger.error(dircmp.funny_files)
+                logger.error(str(dircmp.funny_files))
             return True
         elif dircmp.diff_files:
             logger.error("The following files differ:")
-            logger.error(dircmp.diff_files)
+            logger.error(str(dircmp.diff_files))
             return True
 
         for subdir in dircmp.subdirs.itervalues():
@@ -353,9 +351,8 @@ def main():
                     success = test_authenticator(plugin, config, temp_dir)
                 if success and args.install:
                     success = test_installer(args, plugin, config, temp_dir)
-            except errors.Error as error:
-                logger.error("Tests on %s raised:", config)
-                logger.exception(error)
+            except errors.Error:
+                logger.error("Tests on %s raised:", config, exc_info=True)
                 success = False
 
             if success:
@@ -372,6 +369,22 @@ def main():
     else:
         logger.warning("One or more compatibility tests failed")
         sys.exit(1)
+
+
+@contextlib.contextmanager
+def _fake_dns_resolution(resolved_ip):
+    """Monkey patch urllib3 to make any hostname be resolved to the provided IP"""
+    _original_create_connection = connection.create_connection
+
+    def _patched_create_connection(address, *args, **kwargs):
+        _, port = address
+        return _original_create_connection((resolved_ip, port), *args, **kwargs)
+
+    try:
+        connection.create_connection = _patched_create_connection
+        yield
+    finally:
+        connection.create_connection = _original_create_connection
 
 
 if __name__ == "__main__":

@@ -82,8 +82,9 @@ class NginxParser(object):
 
         """
         if not os.path.isabs(path):
-            return os.path.join(self.root, path)
-        return path
+            return os.path.normpath(os.path.join(self.root, path))
+        else:
+            return os.path.normpath(path)
 
     def _build_addr_to_ssl(self):
         """Builds a map from address to whether it listens on ssl in any server block
@@ -222,7 +223,7 @@ class NginxParser(object):
                 return os.path.join(self.root, name)
 
         raise errors.NoInstallationError(
-            "Could not find configuration root")
+            "Could not find Nginx root configuration file (nginx.conf)")
 
     def filedump(self, ext='tmp', lazy=True):
         """Dumps parsed configurations into files.
@@ -394,13 +395,18 @@ class NginxParser(object):
                 addr.default = False
                 addr.ipv6only = False
             for directive in enclosing_block[new_vhost.path[-1]][1]:
-                if directive and directive[0] == 'listen':
-                    if 'default_server' in directive:
-                        del directive[directive.index('default_server')]
-                    if 'default' in directive:
-                        del directive[directive.index('default')]
-                    if 'ipv6only=on' in directive:
-                        del directive[directive.index('ipv6only=on')]
+                if len(directive) > 0 and directive[0] == 'listen':
+                    # Exclude one-time use parameters which will cause an error if repeated.
+                    # https://nginx.org/en/docs/http/ngx_http_core_module.html#listen
+                    exclude = set(('default_server', 'default', 'setfib', 'fastopen', 'backlog',
+                                   'rcvbuf', 'sndbuf', 'accept_filter', 'deferred', 'bind',
+                                   'ipv6only', 'reuseport', 'so_keepalive'))
+
+                    for param in exclude:
+                        # See: github.com/certbot/certbot/pull/6223#pullrequestreview-143019225
+                        keys = [x.split('=')[0] for x in directive]
+                        if param in keys:
+                            del directive[keys.index(param)]
         return new_vhost
 
 
@@ -410,7 +416,7 @@ def _parse_ssl_options(ssl_options):
             with open(ssl_options) as _file:
                 return nginxparser.load(_file)
         except IOError:
-            logger.warn("Missing NGINX TLS options file: %s", ssl_options)
+            logger.warning("Missing NGINX TLS options file: %s", ssl_options)
         except pyparsing.ParseBaseException as err:
             logger.debug("Could not parse file: %s due to %s", ssl_options, err)
     return []
@@ -563,7 +569,7 @@ def _update_or_add_directives(directives, insert_at_top, block):
 
 
 INCLUDE = 'include'
-REPEATABLE_DIRECTIVES = set(['server_name', 'listen', INCLUDE, 'rewrite'])
+REPEATABLE_DIRECTIVES = set(['server_name', 'listen', INCLUDE, 'rewrite', 'add_header'])
 COMMENT = ' managed by Certbot'
 COMMENT_BLOCK = [' ', '#', COMMENT]
 

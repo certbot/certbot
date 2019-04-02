@@ -10,8 +10,12 @@ import six
 import zope.component
 import zope.interface
 
-from acme import challenges
+from acme import challenges  # pylint: disable=unused-import
+# pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Dict, Set, DefaultDict, List
+# pylint: enable=unused-import, no-name-in-module
 
+from certbot import achallenges  # pylint: disable=unused-import
 from certbot import cli
 from certbot import errors
 from certbot import interfaces
@@ -64,10 +68,11 @@ to serve all files under specified web root ({0})."""
 
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
-        self.full_roots = {}
-        self.performed = collections.defaultdict(set)
+        self.full_roots = {}  # type: Dict[str, str]
+        self.performed = collections.defaultdict(set) \
+        # type: DefaultDict[str, Set[achallenges.KeyAuthorizationAnnotatedChallenge]]
         # stack of dirs successfully created by this authenticator
-        self._created_dirs = []
+        self._created_dirs = []  # type: List[str]
 
     def prepare(self):  # pylint: disable=missing-docstring
         pass
@@ -156,7 +161,6 @@ to serve all files under specified web root ({0})."""
                 " --help webroot for examples.")
         for name, path in path_map.items():
             self.full_roots[name] = os.path.join(path, challenges.HTTP01.URI_ROOT_PATH)
-
             logger.debug("Creating root challenges validation dir at %s",
                          self.full_roots[name])
 
@@ -166,7 +170,9 @@ to serve all files under specified web root ({0})."""
             old_umask = os.umask(0o022)
             try:
                 stat_path = os.stat(path)
-                for prefix in sorted(util.get_prefixes(self.full_roots[name]), key=len):
+                # We ignore the last prefix in the next iteration,
+                # as it does not correspond to a folder path ('/' or 'C:')
+                for prefix in sorted(util.get_prefixes(self.full_roots[name])[:-1], key=len):
                     try:
                         # This is coupled with the "umask" call above because
                         # os.mkdir's "mode" parameter may not always work:
@@ -176,7 +182,7 @@ to serve all files under specified web root ({0})."""
                         # Set owner as parent directory if possible
                         try:
                             os.chown(prefix, stat_path.st_uid, stat_path.st_gid)
-                        except OSError as exception:
+                        except (OSError, AttributeError) as exception:
                             logger.info("Unable to change owner and uid of webroot directory")
                             logger.debug("Error was: %s", exception)
                     except OSError as exception:
@@ -207,7 +213,6 @@ to serve all files under specified web root ({0})."""
             os.umask(old_umask)
 
         self.performed[root_path].add(achall)
-
         return response
 
     def cleanup(self, achalls):  # pylint: disable=missing-docstring
@@ -219,8 +224,8 @@ to serve all files under specified web root ({0})."""
                 os.remove(validation_path)
                 self.performed[root_path].remove(achall)
 
-        not_removed = []
-        while self._created_dirs:
+        not_removed = []  # type: List[str]
+        while len(self._created_dirs) > 0:
             path = self._created_dirs.pop()
             try:
                 os.rmdir(path)

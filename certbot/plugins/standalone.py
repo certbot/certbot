@@ -1,16 +1,20 @@
 """Standalone Authenticator."""
-import argparse
 import collections
 import logging
 import socket
+# https://github.com/python/typeshed/blob/master/stdlib/2and3/socket.pyi
+from socket import errno as socket_errors  # type: ignore
 
-import OpenSSL
+import OpenSSL  # pylint: disable=unused-import
 import six
 import zope.interface
 
 from acme import challenges
 from acme import standalone as acme_standalone
+# pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import DefaultDict, Dict, Set, Tuple, List, Type, TYPE_CHECKING
 
+from certbot import achallenges  # pylint: disable=unused-import
 from certbot import errors
 from certbot import interfaces
 
@@ -18,6 +22,11 @@ from certbot.plugins import common
 
 logger = logging.getLogger(__name__)
 
+if TYPE_CHECKING:
+    ServedType = DefaultDict[
+        acme_standalone.BaseDualNetworkedServers,
+        Set[achallenges.KeyAuthorizationAnnotatedChallenge]
+    ]
 
 class ServerManager(object):
     """Standalone servers manager.
@@ -33,7 +42,7 @@ class ServerManager(object):
 
     """
     def __init__(self, certs, http_01_resources):
-        self._instances = {}
+        self._instances = {}  # type: Dict[int, acme_standalone.BaseDualNetworkedServers]
         self.certs = certs
         self.http_01_resources = http_01_resources
 
@@ -45,24 +54,21 @@ class ServerManager(object):
 
         :param int port: Port to run the server on.
         :param challenge_type: Subclass of `acme.challenges.Challenge`,
-            either `acme.challenge.HTTP01` or `acme.challenges.TLSSNI01`.
+            currently only `acme.challenge.HTTP01`.
         :param str listenaddr: (optional) The address to listen on. Defaults to all addrs.
 
         :returns: DualNetworkedServers instance.
         :rtype: ACMEServerMixin
 
         """
-        assert challenge_type in (challenges.TLSSNI01, challenges.HTTP01)
+        assert challenge_type == challenges.HTTP01
         if port in self._instances:
             return self._instances[port]
 
         address = (listenaddr, port)
         try:
-            if challenge_type is challenges.TLSSNI01:
-                servers = acme_standalone.TLSSNI01DualNetworkedServers(address, self.certs)
-            else:  # challenges.HTTP01
-                servers = acme_standalone.HTTP01DualNetworkedServers(
-                    address, self.http_01_resources)
+            servers = acme_standalone.HTTP01DualNetworkedServers(
+                address, self.http_01_resources)
         except socket.error as error:
             raise errors.StandaloneBindError(error, port)
 
@@ -85,8 +91,6 @@ class ServerManager(object):
         for sockname in instance.getsocknames():
             logger.debug("Stopping server at %s:%d...",
                          *sockname[:2])
-        # Not calling server_close causes problems when renewing multiple
-        # certs with `certbot renew` using TLSSNI01 and PyOpenSSL 0.13
         instance.shutdown_and_server_close()
         del self._instances[port]
 
@@ -103,69 +107,13 @@ class ServerManager(object):
         return self._instances.copy()
 
 
-SUPPORTED_CHALLENGES = [challenges.TLSSNI01, challenges.HTTP01]
-
-
-class SupportedChallengesAction(argparse.Action):
-    """Action class for parsing standalone_supported_challenges."""
-
-    def __call__(self, parser, namespace, values, option_string=None):
-        logger.warning(
-            "The standalone specific supported challenges flag is "
-            "deprecated. Please use the --preferred-challenges flag "
-            "instead.")
-        converted_values = self._convert_and_validate(values)
-        namespace.standalone_supported_challenges = converted_values
-
-    def _convert_and_validate(self, data):
-        """Validate the value of supported challenges provided by the user.
-
-        References to "dvsni" are automatically converted to "tls-sni-01".
-
-        :param str data: comma delimited list of challenge types
-
-        :returns: validated and converted list of challenge types
-        :rtype: str
-
-        """
-        challs = data.split(",")
-
-        # tls-sni-01 was dvsni during private beta
-        if "dvsni" in challs:
-            logger.info(
-                "Updating legacy standalone_supported_challenges value")
-            challs = [challenges.TLSSNI01.typ if chall == "dvsni" else chall
-                      for chall in challs]
-            data = ",".join(challs)
-
-        unrecognized = [name for name in challs
-                        if name not in challenges.Challenge.TYPES]
-
-        # argparse.ArgumentErrors raised out of argparse.Action objects
-        # are caught by argparse which prints usage information and the
-        # error that occurred before calling sys.exit.
-        if unrecognized:
-            raise argparse.ArgumentError(
-                self,
-                "Unrecognized challenges: {0}".format(", ".join(unrecognized)))
-
-        choices = set(chall.typ for chall in SUPPORTED_CHALLENGES)
-        if not set(challs).issubset(choices):
-            raise argparse.ArgumentError(
-                self,
-                "Plugin does not support the following (valid) "
-                "challenges: {0}".format(", ".join(set(challs) - choices)))
-
-        return data
-
-
 @zope.interface.implementer(interfaces.IAuthenticator)
 @zope.interface.provider(interfaces.IPluginFactory)
 class Authenticator(common.Plugin):
     """Standalone Authenticator.
 
     This authenticator creates its own ephemeral TCP listener on the
-    necessary port in order to respond to incoming tls-sni-01 and http-01
+    necessary port in order to respond to incoming http-01
     challenges from the certificate authority. Therefore, it does not
     rely on any existing server program.
     """
@@ -175,47 +123,34 @@ class Authenticator(common.Plugin):
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
 
-        # one self-signed key for all tls-sni-01 certificates
-        self.key = OpenSSL.crypto.PKey()
-        self.key.generate_key(OpenSSL.crypto.TYPE_RSA, 2048)
-
-        self.served = collections.defaultdict(set)
+        self.served = collections.defaultdict(set)  # type: ServedType
 
         # Stuff below is shared across threads (i.e. servers read
         # values, main thread writes). Due to the nature of CPython's
         # GIL, the operations are safe, c.f.
         # https://docs.python.org/2/faq/library.html#what-kinds-of-global-value-mutation-are-thread-safe
-        self.certs = {}
-        self.http_01_resources = set()
+        self.certs = {}  # type: Dict[bytes, Tuple[OpenSSL.crypto.PKey, OpenSSL.crypto.X509]]
+        self.http_01_resources = set() \
+        # type: Set[acme_standalone.HTTP01RequestHandler.HTTP01Resource]
 
         self.servers = ServerManager(self.certs, self.http_01_resources)
 
     @classmethod
     def add_parser_arguments(cls, add):
-        add("supported-challenges",
-            help=argparse.SUPPRESS,
-            action=SupportedChallengesAction,
-            default=",".join(chall.typ for chall in SUPPORTED_CHALLENGES))
-
-    @property
-    def supported_challenges(self):
-        """Challenges supported by this plugin."""
-        return [challenges.Challenge.TYPES[name] for name in
-                self.conf("supported-challenges").split(",")]
+        pass  # No additional argument for the standalone plugin parser
 
     def more_info(self):  # pylint: disable=missing-docstring
         return("This authenticator creates its own ephemeral TCP listener "
                "on the necessary port in order to respond to incoming "
-               "tls-sni-01 and http-01 challenges from the certificate "
-               "authority. Therefore, it does not rely on any existing "
-               "server program.")
+               "http-01 challenges from the certificate authority. Therefore, "
+               "it does not rely on any existing server program.")
 
     def prepare(self):  # pylint: disable=missing-docstring
         pass
 
     def get_chall_pref(self, domain):
         # pylint: disable=unused-argument,missing-docstring
-        return self.supported_challenges
+        return [challenges.HTTP01]
 
     def perform(self, achalls):  # pylint: disable=missing-docstring
         return [self._try_perform_single(achall) for achall in achalls]
@@ -225,14 +160,10 @@ class Authenticator(common.Plugin):
             try:
                 return self._perform_single(achall)
             except errors.StandaloneBindError as error:
-                if not _handle_perform_error(error):
-                    raise
+                _handle_perform_error(error)
 
     def _perform_single(self, achall):
-        if isinstance(achall.chall, challenges.HTTP01):
-            servers, response = self._perform_http_01(achall)
-        else:  # tls-sni-01
-            servers, response = self._perform_tls_sni_01(achall)
+        servers, response = self._perform_http_01(achall)
         self.served[servers].add(achall)
         return response
 
@@ -244,14 +175,6 @@ class Authenticator(common.Plugin):
         resource = acme_standalone.HTTP01RequestHandler.HTTP01Resource(
             chall=achall.chall, response=response, validation=validation)
         self.http_01_resources.add(resource)
-        return servers, response
-
-    def _perform_tls_sni_01(self, achall):
-        port = self.config.tls_sni_01_port
-        addr = self.config.tls_sni_01_address
-        servers = self.servers.run(port, challenges.TLSSNI01, listenaddr=addr)
-        response, (cert, _) = achall.response_and_validation(cert_key=self.key)
-        self.certs[response.z_domain] = (self.key, cert)
         return servers, response
 
     def cleanup(self, achalls):  # pylint: disable=missing-docstring
@@ -266,13 +189,13 @@ class Authenticator(common.Plugin):
 
 
 def _handle_perform_error(error):
-    if error.socket_error.errno == socket.errno.EACCES:
+    if error.socket_error.errno == socket_errors.EACCES:
         raise errors.PluginError(
             "Could not bind TCP port {0} because you don't have "
             "the appropriate permissions (for example, you "
             "aren't running this program as "
             "root).".format(error.port))
-    elif error.socket_error.errno == socket.errno.EADDRINUSE:
+    elif error.socket_error.errno == socket_errors.EADDRINUSE:
         display = zope.component.getUtility(interfaces.IDisplay)
         msg = (
             "Could not bind TCP port {0} because it is already in "
@@ -283,5 +206,5 @@ def _handle_perform_error(error):
                                      "Cancel", default=False)
         if not should_retry:
             raise errors.PluginError(msg)
-        return True
-    return False
+    else:
+        raise error

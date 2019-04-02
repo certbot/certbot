@@ -93,6 +93,9 @@ class DNS01ResponseTest(unittest.TestCase):
         self.response = self.chall.response(KEY)
 
     def test_to_partial_json(self):
+        self.assertEqual({k: v for k, v in self.jmsg.items() if k != 'keyAuthorization'},
+                         self.msg.to_partial_json())
+        self.msg._dump_authorization_key(True)  # pylint: disable=protected-access
         self.assertEqual(self.jmsg, self.msg.to_partial_json())
 
     def test_from_json(self):
@@ -164,6 +167,9 @@ class HTTP01ResponseTest(unittest.TestCase):
         self.response = self.chall.response(KEY)
 
     def test_to_partial_json(self):
+        self.assertEqual({k: v for k, v in self.jmsg.items() if k != 'keyAuthorization'},
+                         self.msg.to_partial_json())
+        self.msg._dump_authorization_key(True)  # pylint: disable=protected-access
         self.assertEqual(self.jmsg, self.msg.to_partial_json())
 
     def test_from_json(self):
@@ -284,6 +290,9 @@ class TLSSNI01ResponseTest(unittest.TestCase):
         self.assertEqual(self.z_domain, self.response.z_domain)
 
     def test_to_partial_json(self):
+        self.assertEqual({k: v for k, v in self.jmsg.items() if k != 'keyAuthorization'},
+                         self.response.to_partial_json())
+        self.response._dump_authorization_key(True)  # pylint: disable=protected-access
         self.assertEqual(self.jmsg, self.response.to_partial_json())
 
     def test_from_json(self):
@@ -360,13 +369,13 @@ class TLSSNI01ResponseTest(unittest.TestCase):
 class TLSSNI01Test(unittest.TestCase):
 
     def setUp(self):
-        from acme.challenges import TLSSNI01
-        self.msg = TLSSNI01(
-            token=jose.b64decode('a82d5ff8ef740d12881f6d3c2277ab2e'))
         self.jmsg = {
             'type': 'tls-sni-01',
             'token': 'a82d5ff8ef740d12881f6d3c2277ab2e',
         }
+        from acme.challenges import TLSSNI01
+        self.msg = TLSSNI01(
+            token=jose.b64decode('a82d5ff8ef740d12881f6d3c2277ab2e'))
 
     def test_to_partial_json(self):
         self.assertEqual(self.jmsg, self.msg.to_partial_json())
@@ -391,6 +400,76 @@ class TLSSNI01Test(unittest.TestCase):
         self.assertEqual(('cert', 'key'), self.msg.validation(
             KEY, cert_key=mock.sentinel.cert_key))
         mock_gen_cert.assert_called_once_with(key=mock.sentinel.cert_key)
+
+    def test_deprecation_message(self):
+        with mock.patch('acme.warnings.warn') as mock_warn:
+            from acme.challenges import TLSSNI01
+            assert TLSSNI01
+        self.assertEqual(mock_warn.call_count, 1)
+        self.assertTrue('deprecated' in mock_warn.call_args[0][0])
+
+
+class TLSALPN01ResponseTest(unittest.TestCase):
+    # pylint: disable=too-many-instance-attributes
+
+    def setUp(self):
+        from acme.challenges import TLSALPN01Response
+        self.msg = TLSALPN01Response(key_authorization=u'foo')
+        self.jmsg = {
+            'resource': 'challenge',
+            'type': 'tls-alpn-01',
+            'keyAuthorization': u'foo',
+        }
+
+        from acme.challenges import TLSALPN01
+        self.chall = TLSALPN01(token=(b'x' * 16))
+        self.response = self.chall.response(KEY)
+
+    def test_to_partial_json(self):
+        self.assertEqual({k: v for k, v in self.jmsg.items() if k != 'keyAuthorization'},
+                         self.msg.to_partial_json())
+        self.msg._dump_authorization_key(True)  # pylint: disable=protected-access
+        self.assertEqual(self.jmsg, self.msg.to_partial_json())
+
+    def test_from_json(self):
+        from acme.challenges import TLSALPN01Response
+        self.assertEqual(self.msg, TLSALPN01Response.from_json(self.jmsg))
+
+    def test_from_json_hashable(self):
+        from acme.challenges import TLSALPN01Response
+        hash(TLSALPN01Response.from_json(self.jmsg))
+
+
+class TLSALPN01Test(unittest.TestCase):
+
+    def setUp(self):
+        from acme.challenges import TLSALPN01
+        self.msg = TLSALPN01(
+            token=jose.b64decode('a82d5ff8ef740d12881f6d3c2277ab2e'))
+        self.jmsg = {
+            'type': 'tls-alpn-01',
+            'token': 'a82d5ff8ef740d12881f6d3c2277ab2e',
+        }
+
+    def test_to_partial_json(self):
+        self.assertEqual(self.jmsg, self.msg.to_partial_json())
+
+    def test_from_json(self):
+        from acme.challenges import TLSALPN01
+        self.assertEqual(self.msg, TLSALPN01.from_json(self.jmsg))
+
+    def test_from_json_hashable(self):
+        from acme.challenges import TLSALPN01
+        hash(TLSALPN01.from_json(self.jmsg))
+
+    def test_from_json_invalid_token_length(self):
+        from acme.challenges import TLSALPN01
+        self.jmsg['token'] = jose.encode_b64jose(b'abcd')
+        self.assertRaises(
+            jose.DeserializationError, TLSALPN01.from_json, self.jmsg)
+
+    def test_validation(self):
+        self.assertRaises(NotImplementedError, self.msg.validation, KEY)
 
 
 class DNSTest(unittest.TestCase):

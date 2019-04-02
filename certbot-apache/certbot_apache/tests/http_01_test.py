@@ -10,6 +10,7 @@ from certbot import achallenges
 from certbot import errors
 
 from certbot.tests import acme_util
+from certbot_apache.parser import get_aug_path
 from certbot_apache.tests import util
 
 
@@ -26,8 +27,8 @@ class ApacheHttp01Test(util.ApacheTest):
         self.achalls = []  # type: List[achallenges.KeyAuthorizationAnnotatedChallenge]
         vh_truth = util.get_vh_truth(
             self.temp_dir, "debian_apache_2_4/multiple_vhosts")
-        # Takes the vhosts for encryption-example.demo, certbot.demo, and
-        # vhost.in.rootconf
+        # Takes the vhosts for encryption-example.demo, certbot.demo
+        # and vhost.in.rootconf
         self.vhosts = [vh_truth[0], vh_truth[3], vh_truth[10]]
 
         for i in range(NUM_ACHALLS):
@@ -38,7 +39,7 @@ class ApacheHttp01Test(util.ApacheTest):
                         "pending"),
                     domain=self.vhosts[i].name, account_key=self.account_key))
 
-        modules = ["rewrite", "authz_core", "authz_host"]
+        modules = ["ssl", "rewrite", "authz_core", "authz_host"]
         for mod in modules:
             self.config.parser.modules.add("mod_{0}.c".format(mod))
             self.config.parser.modules.add(mod + "_module")
@@ -110,6 +111,17 @@ class ApacheHttp01Test(util.ApacheTest):
                 domain="something.nonexistent", account_key=self.account_key)]
         self.common_perform_test(achalls, vhosts)
 
+    def test_configure_multiple_vhosts(self):
+        vhosts = [v for v in self.config.vhosts if "duplicate.example.com" in v.get_names()]
+        self.assertEqual(len(vhosts), 2)
+        achalls = [
+            achallenges.KeyAuthorizationAnnotatedChallenge(
+                challb=acme_util.chall_to_challb(
+                    challenges.HTTP01(token=((b'a' * 16))),
+                    "pending"),
+                domain="duplicate.example.com", account_key=self.account_key)]
+        self.common_perform_test(achalls, vhosts)
+
     def test_no_vhost(self):
         for achall in self.achalls:
             self.http.add_chall(achall)
@@ -133,6 +145,21 @@ class ApacheHttp01Test(util.ApacheTest):
 
     def test_perform_3_achall_apache_2_4(self):
         self.combinations_perform_test(num_achalls=3, minor_version=4)
+
+    def test_activate_disabled_vhost(self):
+        vhosts = [v for v in self.config.vhosts if v.name == "certbot.demo"]
+        achalls = [
+            achallenges.KeyAuthorizationAnnotatedChallenge(
+                challb=acme_util.chall_to_challb(
+                    challenges.HTTP01(token=((b'a' * 16))),
+                    "pending"),
+                domain="certbot.demo", account_key=self.account_key)]
+        vhosts[0].enabled = False
+        self.common_perform_test(achalls, vhosts)
+        matches = self.config.parser.find_dir(
+            "Include", vhosts[0].filep,
+            get_aug_path(self.config.parser.loc["default"]))
+        self.assertEqual(len(matches), 1)
 
     def combinations_perform_test(self, num_achalls, minor_version):
         """Test perform with the given achall count and Apache version."""
@@ -160,15 +187,14 @@ class ApacheHttp01Test(util.ApacheTest):
             self._test_challenge_file(achall)
 
         for vhost in vhosts:
-            if not vhost.ssl:
-                matches = self.config.parser.find_dir("Include",
-                                                      self.http.challenge_conf_pre,
-                                                      vhost.path)
-                self.assertEqual(len(matches), 1)
-                matches = self.config.parser.find_dir("Include",
-                                                      self.http.challenge_conf_post,
-                                                      vhost.path)
-                self.assertEqual(len(matches), 1)
+            matches = self.config.parser.find_dir("Include",
+                                                self.http.challenge_conf_pre,
+                                                vhost.path)
+            self.assertEqual(len(matches), 1)
+            matches = self.config.parser.find_dir("Include",
+                                                self.http.challenge_conf_post,
+                                                vhost.path)
+            self.assertEqual(len(matches), 1)
 
         self.assertTrue(os.path.exists(challenge_dir))
 

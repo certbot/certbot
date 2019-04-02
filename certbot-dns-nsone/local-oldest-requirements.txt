@@ -1,2 +1,2 @@
-acme[dev]==0.21.1
-certbot[dev]==0.21.1
+acme[dev]==0.31.0
+certbot[dev]==0.31.0

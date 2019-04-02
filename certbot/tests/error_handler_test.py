@@ -6,6 +6,9 @@ import sys
 import unittest
 
 import mock
+# pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Callable, Dict, Union
+# pylint: enable=unused-import, no-name-in-module
 
 
 def get_signals(signums):
@@ -23,8 +26,7 @@ def set_signals(sig_handler_dict):
 def signal_receiver(signums):
     """Context manager to catch signals"""
     signals = []
-    prev_handlers = {}
-    prev_handlers = get_signals(signums)
+    prev_handlers = get_signals(signums)  # type: Dict[int, Union[int, None, Callable]]
     set_signals(dict((s, lambda s, _: signals.append(s)) for s in signums))
     yield signals
     set_signals(prev_handlers)
@@ -64,6 +66,8 @@ class ErrorHandlerTest(unittest.TestCase):
                                                **self.init_kwargs)
 
     def test_context_manager_with_signal(self):
+        if not self.signals:
+            self.skipTest(reason='Signals cannot be handled on Windows.')
         init_signals = get_signals(self.signals)
         with signal_receiver(self.signals) as signals_received:
             with self.handler:
@@ -94,6 +98,8 @@ class ErrorHandlerTest(unittest.TestCase):
         bad_func.assert_called_once_with()
 
     def test_bad_recovery_with_signal(self):
+        if not self.signals:
+            self.skipTest(reason='Signals cannot be handled on Windows.')
         sig1 = self.signals[0]
         sig2 = self.signals[-1]
         bad_func = mock.MagicMock(side_effect=lambda: send_signal(sig1))
@@ -141,6 +147,10 @@ class ExitHandlerTest(ErrorHandlerTest):
         self.init_func.assert_called_once_with(*self.init_args,
                                                **self.init_kwargs)
         func.assert_called_once_with()
+
+    def test_bad_recovery_with_signal(self):
+        super(ExitHandlerTest, self).test_bad_recovery_with_signal()
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

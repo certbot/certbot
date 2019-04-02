@@ -10,8 +10,10 @@ VERSION=$(letsencrypt-auto-source/version.py)
 export VENV_ARGS="-p $PYTHON"
 
 # setup venv
-tools/_venv_common.sh --requirement letsencrypt-auto-source/pieces/dependency-requirements.txt
+tools/_venv_common.py --requirement letsencrypt-auto-source/pieces/dependency-requirements.txt
 . ./venv/bin/activate
+# pytest is needed to run tests on some of our packages so we install a pinned version here.
+tools/pip_install.py pytest
 
 # build sdists
 for pkg_dir in acme . $PLUGINS; do

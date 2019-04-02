@@ -1,10 +1,12 @@
 """Certbot constants."""
 import logging
 import os
+
 import pkg_resources
 
 from acme import challenges
 
+from certbot.compat import misc
 
 SETUPTOOLS_PLUGINS_ENTRY_POINT = "certbot.plugins"
 """Setuptools entry point group name for plugins."""
@@ -14,7 +16,7 @@ OLD_SETUPTOOLS_PLUGINS_ENTRY_POINT = "letsencrypt.plugins"
 
 CLI_DEFAULTS = dict(
     config_files=[
-        "/etc/letsencrypt/cli.ini",
+        os.path.join(misc.get_default_folder('config'), 'cli.ini'),
         # http://freedesktop.org/wiki/Software/xdg-user-dirs/
         os.path.join(os.environ.get("XDG_CONFIG_HOME", "~/.config"),
                      "letsencrypt", "cli.ini"),
@@ -37,6 +39,7 @@ CLI_DEFAULTS = dict(
     expand=False,
     renew_by_default=False,
     renew_with_new_domains=False,
+    autorenew=True,
     allow_subset_of_names=False,
     tos=False,
     account=None,
@@ -49,14 +52,14 @@ CLI_DEFAULTS = dict(
     debug=False,
     debug_challenges=False,
     no_verify_ssl=False,
-    tls_sni_01_port=challenges.TLSSNI01Response.PORT,
-    tls_sni_01_address="",
     http01_port=challenges.HTTP01Response.PORT,
     http01_address="",
+    https_port=443,
     break_my_certs=False,
     rsa_key_size=2048,
     must_staple=False,
     redirect=None,
+    auto_hsts=False,
     hsts=None,
     uir=None,
     staple=None,
@@ -64,7 +67,11 @@ CLI_DEFAULTS = dict(
     pref_challs=[],
     validate_hooks=True,
     directory_hooks=True,
+    reuse_key=False,
     disable_renew_updates=False,
+    random_sleep_on_renew=True,
+    eab_hmac_key=None,
+    eab_kid=None,
 
     # Subparsers
     num=None,
@@ -82,10 +89,10 @@ CLI_DEFAULTS = dict(
     auth_cert_path="./cert.pem",
     auth_chain_path="./chain.pem",
     key_path=None,
-    config_dir="/etc/letsencrypt",
-    work_dir="/var/lib/letsencrypt",
-    logs_dir="/var/log/letsencrypt",
-    server="https://acme-v01.api.letsencrypt.org/directory",
+    config_dir=misc.get_default_folder('config'),
+    work_dir=misc.get_default_folder('work'),
+    logs_dir=misc.get_default_folder('logs'),
+    server="https://acme-v02.api.letsencrypt.org/directory",
 
     # Plugins parsers
     configurator=None,
@@ -101,11 +108,15 @@ CLI_DEFAULTS = dict(
     dns_digitalocean=False,
     dns_dnsimple=False,
     dns_dnsmadeeasy=False,
+    dns_gehirn=False,
     dns_google=False,
+    dns_linode=False,
     dns_luadns=False,
     dns_nsone=False,
+    dns_ovh=False,
     dns_rfc2136=False,
-    dns_route53=False
+    dns_route53=False,
+    dns_sakuracloud=False
 
 )
 STAGING_URI = "https://acme-staging-v02.api.letsencrypt.org/directory"
@@ -136,7 +147,7 @@ RENEWER_DEFAULTS = dict(
 """Defaults for renewer script."""
 
 
-ENHANCEMENTS = ["redirect", "ensure-http-header", "ocsp-stapling", "spdy"]
+ENHANCEMENTS = ["redirect", "ensure-http-header", "ocsp-stapling"]
 """List of possible :class:`certbot.interfaces.IInstaller`
 enhancements.
 
@@ -144,7 +155,6 @@ List of expected options parameters:
 - redirect: None
 - ensure-http-header: name of header (i.e. Strict-Transport-Security)
 - ocsp-stapling: certificate chain file path
-- spdy: TODO
 
 """
 
@@ -156,6 +166,13 @@ CONFIG_DIRS_MODE = 0o755
 
 ACCOUNTS_DIR = "accounts"
 """Directory where all accounts are saved."""
+
+LE_REUSE_SERVERS = {
+    'acme-v02.api.letsencrypt.org/directory': 'acme-v01.api.letsencrypt.org/directory',
+    'acme-staging-v02.api.letsencrypt.org/directory':
+        'acme-staging.api.letsencrypt.org/directory'
+}
+"""Servers that can reuse accounts from other servers."""
 
 BACKUP_DIR = "backups"
 """Directory (relative to `IConfig.work_dir`) where backups are kept."""

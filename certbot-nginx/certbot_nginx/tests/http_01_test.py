@@ -1,6 +1,5 @@
 """Tests for certbot_nginx.http_01"""
 import unittest
-import shutil
 
 import mock
 import six
@@ -12,6 +11,7 @@ from certbot import achallenges
 from certbot.plugins import common_test
 from certbot.tests import acme_util
 
+from certbot_nginx.obj import Addr
 from certbot_nginx.tests import util
 
 
@@ -52,11 +52,6 @@ class HttpPerformTest(util.NginxTest):
 
         from certbot_nginx import http_01
         self.http01 = http_01.NginxHttp01(config)
-
-    def tearDown(self):
-        shutil.rmtree(self.temp_dir)
-        shutil.rmtree(self.config_dir)
-        shutil.rmtree(self.work_dir)
 
     def test_perform0(self):
         responses = self.http01.perform()
@@ -108,6 +103,41 @@ class HttpPerformTest(util.NginxTest):
             #     self.assertEqual(vhost.addrs, set(v_addr2_print))
             # self.assertEqual(vhost.names, set([response.z_domain.decode('ascii')]))
 
+    @mock.patch("certbot_nginx.configurator.NginxConfigurator.ipv6_info")
+    def test_default_listen_addresses_no_memoization(self, ipv6_info):
+        # pylint: disable=protected-access
+        ipv6_info.return_value = (True, True)
+        self.http01._default_listen_addresses()
+        self.assertEqual(ipv6_info.call_count, 1)
+        ipv6_info.return_value = (False, False)
+        self.http01._default_listen_addresses()
+        self.assertEqual(ipv6_info.call_count, 2)
+
+    @mock.patch("certbot_nginx.configurator.NginxConfigurator.ipv6_info")
+    def test_default_listen_addresses_t_t(self, ipv6_info):
+        # pylint: disable=protected-access
+        ipv6_info.return_value = (True, True)
+        addrs = self.http01._default_listen_addresses()
+        http_addr = Addr.fromstring("80")
+        http_ipv6_addr = Addr.fromstring("[::]:80")
+        self.assertEqual(addrs, [http_addr, http_ipv6_addr])
+
+    @mock.patch("certbot_nginx.configurator.NginxConfigurator.ipv6_info")
+    def test_default_listen_addresses_t_f(self, ipv6_info):
+        # pylint: disable=protected-access
+        ipv6_info.return_value = (True, False)
+        addrs = self.http01._default_listen_addresses()
+        http_addr = Addr.fromstring("80")
+        http_ipv6_addr = Addr.fromstring("[::]:80 ipv6only=on")
+        self.assertEqual(addrs, [http_addr, http_ipv6_addr])
+
+    @mock.patch("certbot_nginx.configurator.NginxConfigurator.ipv6_info")
+    def test_default_listen_addresses_f_f(self, ipv6_info):
+        # pylint: disable=protected-access
+        ipv6_info.return_value = (False, False)
+        addrs = self.http01._default_listen_addresses()
+        http_addr = Addr.fromstring("80")
+        self.assertEqual(addrs, [http_addr])
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

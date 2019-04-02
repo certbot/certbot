@@ -7,8 +7,12 @@ export PATH="/usr/sbin:$PATH"  # /usr/sbin/nginx
 nginx_root="$root/nginx"
 mkdir $nginx_root
 
+# Generate self-signed certificate for Nginx
+openssl req -new -newkey rsa:2048 -days 1 -nodes -x509 \
+    -keyout $nginx_root/cert.key -out $nginx_root/cert.pem -subj "/CN=nginx.wtf"
+
 reload_nginx () {
-    original=$(root="$nginx_root" ./certbot-nginx/tests/boulder-integration.conf.sh)
+    original=$(./certbot-nginx/tests/boulder-integration.conf.sh $nginx_root $nginx_root/cert.key $nginx_root/cert.pem)
     nginx_conf="$nginx_root/nginx.conf"
     echo "$original" > $nginx_conf
 
@@ -35,6 +39,7 @@ test_deployment_and_rollback() {
 }
 
 export default_server="default_server"
+nginx -v
 reload_nginx
 certbot_test_nginx --domains nginx.wtf run
 test_deployment_and_rollback nginx.wtf
@@ -62,3 +67,5 @@ test_deployment_and_rollback nginx6.wtf
 # note: not reached if anything above fails, hence "killall" at the
 # top
 nginx -c $nginx_root/nginx.conf -s stop
+
+coverage report --fail-under 72 --include 'certbot-nginx/*' --show-missing

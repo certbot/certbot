@@ -3,10 +3,9 @@ Challenges
 
 To receive a certificate from Let's Encrypt certificate authority (CA), you must pass a *challenge* to 
 prove you control each of the domain names that will be listed in the certificate. A challenge is one of 
-three tasks that only someone who controls the domain should be able to accomplish:
+a list of specified tasks that only someone who controls the domain should be able to accomplish, such as:
 
 * Posting a specified file in a specified location on a web site (the HTTP-01 challenge)
-* Offering a specified temporary certificate on a web site (the TLS-SNI-01 challenge) 
 * Posting a specified DNS record in the domain name system (the DNS-01 challenge)
 
 It’s possible to complete each type of challenge *automatically* (Certbot directly makes the necessary 
@@ -16,21 +15,21 @@ design favors performing challenges automatically, and this is the normal case f
 
 Some plugins offer an *authenticator*, meaning that they can satisfy challenges:
 
-* Apache plugin: (TLS-SNI-01) Tries to edit your Apache configuration files to temporarily serve 
-  a Certbot-generated certificate for a specified name. Use the Apache plugin when you're running 
-  Certbot on a web server with Apache listening on port 443.
-* NGINX plugin: (TLS-SNI-01) Tries to edit your NGINX configuration files to temporarily serve a 
-  Certbot-generated certificate for a specified name. Use the NGINX plugin when you're running 
-  Certbot on a web server with NGINX listening on port 443.
+* Apache plugin: (HTTP-01) Tries to edit your Apache configuration files to temporarily serve files to
+  satisfy challenges from the certificate authority. Use the Apache plugin when you're running Certbot on a
+  web server with Apache listening on port 80.
+* Nginx plugin: (HTTP-01) Tries to edit your nginx configuration files to temporarily serve files to
+  satisfy challenges from the certificate authority. Use the nginx plugin when you're running Certbot on a
+  web server with nginx listening on port 80.
 * Webroot plugin: (HTTP-01) Tries to place a file where it can be served over HTTP on port 80 by a
   web server running on your system. Use the Webroot plugin when you're running Certbot on 
   a web server with any server application listening on port 80 serving files from a folder on disk in response.
-* Standalone plugin: (TLS-SNI-01 or HTTP-01) Tries to run a temporary web server listening on either HTTP on 
-  port 80 (for HTTP-01) or HTTPS on port 443 (for TLS-SNI-01). Use the Standalone plugin if no existing program 
-  is listening to these ports. Choose TLS-SNI-01 or HTTP-01 using the `--preferred-challenges` option.
+* Standalone plugin: (HTTP-01) Tries to run a temporary web server listening on HTTP on port 80. Use the
+  Standalone plugin if no existing program is listening to this port.
 * Manual plugin: (DNS-01 or HTTP-01) Either tells you what changes to make to your configuration or updates 
   your DNS records using an external script (for DNS-01) or your webroot (for HTTP-01). Use the Manual 
-  plugin if you have the technical knowledge to make configuration changes yourself when asked to do so. 
+  plugin if you have the technical knowledge to make configuration changes yourself when asked to do so,
+  and are prepared to repeat these steps every time the certificate needs to be renewed. 
 
 Tips for Challenges
 -------------------
@@ -62,20 +61,6 @@ HTTP-01 Challenge
   website without adding a header or footer.
 * When using the Standalone plugin, make sure another program is not already listening to port 80 on the server.
 * When using the Webroot plugin, make sure there is a web server listening on port 80.
-
-TLS-SNI-01 Challenge
-~~~~~~~~~~~~~~~~~~~~
-
-* The TLS-SNI-01 challenge doesn’t work with content delivery networks (CDNs) 
-  like CloudFlare and Akamai because the domain name is pointed at the CDN, not directly at your server.
-* Make sure port 443 is open, publicly reachable from the Internet, and not blocked by a router or firewall.
-* When using the Apache plugin, make sure you are running Apache and no other web server on port 443.
-* When using the NGINX plugin, make sure you are running NGINX and no other web server on port 443.
-* With either the Apache or NGINX plugin, certbot modifies your web server configuration. If you get
-  an error after successfully completing the challenge, then you have received a certificate but the
-  plugin was unable to modify your web server configuration, meaning that you'll have to install the certificate manually.
-  In that case, please file a bug to help us improve certbot!
-* When using the Standalone plugin, make sure another program is not already listening to port 443 on the server.
 
 DNS-01 Challenge
 ~~~~~~~~~~~~~~~~

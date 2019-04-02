@@ -38,13 +38,13 @@ Certbot.
 
    cd certbot
    ./certbot-auto --debug --os-packages-only
-   tools/venv.sh
+   python tools/venv.py
 
-If you have Python3 available and want to use it, run the ``venv3.sh`` script.
+If you have Python3 available and want to use it, run the ``venv3.py`` script.
 
 .. code-block:: shell
 
-   tools/venv3.sh
+   python tools/venv3.py
 
 .. note:: You may need to repeat this when
   Certbot's dependencies change or when a new plugin is introduced.
@@ -71,10 +71,6 @@ found in the `virtualenv docs`_.
 
 Find issues to work on
 ----------------------
-
-.. note:: If you're sprinting on Certbot at PyCon, you can find especially good
-  issues to work on during the event `here
-  <https://github.com/certbot/certbot/issues?q=is%3Aopen+is%3Aissue+project%3Acertbot%2Fcertbot%2F3>`_.
 
 You can find the open issues in the `github issue tracker`_.  Comparatively
 easy ones are marked `good first issue`_.  If you're starting work on
@@ -190,8 +186,8 @@ Authenticators
 --------------
 
 Authenticators are plugins that prove control of a domain name by solving a
-challenge provided by the ACME server. ACME currently defines three types of
-challenges: HTTP, TLS-SNI, and DNS, represented by classes in `acme.challenges`.
+challenge provided by the ACME server. ACME currently defines several types of
+challenges: HTTP, TLS-SNI (deprecated), TLS-ALPR, and DNS, represented by classes in `acme.challenges`.
 An authenticator plugin should implement support for at least one challenge type.
 
 An Authenticator indicates which challenges it supports by implementing
@@ -219,7 +215,7 @@ support for IIS, Icecast and Plesk.
 Installers and Authenticators will oftentimes be the same class/object
 (because for instance both tasks can be performed by a webserver like nginx)
 though this is not always the case (the standalone plugin is an authenticator
-that listens on port 443, but it cannot install certs; a postfix plugin would
+that listens on port 80, but it cannot install certs; a postfix plugin would
 be an installer but not an authenticator).
 
 Installers and Authenticators are kept separate because
@@ -316,6 +312,40 @@ Please:
 .. _PEP 8 - Style Guide for Python Code:
   https://www.python.org/dev/peps/pep-0008
 
+Mypy type annotations
+=====================
+
+Certbot uses the `mypy`_ static type checker. Python 3 natively supports official type annotations,
+which can then be tested for consistency using mypy. Python 2 doesn’t, but type annotations can
+be `added in comments`_. Mypy does some type checks even without type annotations; we can find
+bugs in Certbot even without a fully annotated codebase.
+
+Certbot supports both Python 2 and 3, so we’re using Python 2-style annotations.
+
+Zulip wrote a `great guide`_ to using mypy. It’s useful, but you don’t have to read the whole thing
+to start contributing to Certbot.
+
+To run mypy on Certbot, use ``tox -e mypy`` on a machine that has Python 3 installed.
+
+Note that instead of just importing ``typing``, due to packaging issues, in Certbot we import from
+``acme.magic_typing`` and have to add some comments for pylint like this:
+
+.. code-block:: python
+
+  from acme.magic_typing import Dict # pylint: disable=unused-import, no-name-in-module
+
+Also note that OpenSSL, which we rely on, has type definitions for crypto but not SSL. We use both.
+Those imports should look like this:
+
+.. code-block:: python
+
+  from OpenSSL import crypto
+  from OpenSSL import SSL # type: ignore # https://github.com/python/typeshed/issues/2052
+
+.. _mypy: https://mypy.readthedocs.io
+.. _added in comments: https://mypy.readthedocs.io/en/latest/cheat_sheet.html
+.. _great guide: https://blog.zulip.org/2016/10/13/static-types-in-python-oh-mypy/
+
 Submitting a pull request
 =========================
 
@@ -323,13 +353,16 @@ Steps:
 
 1. Write your code!
 2. Make sure your environment is set up properly and that you're in your
-   virtualenv. You can do this by running ``./tools/venv.sh``.
+   virtualenv. You can do this by running ``pip tools/venv.py``.
    (this is a **very important** step)
 3. Run ``tox -e lint`` to check for pylint errors. Fix any errors.
 4. Run ``tox --skip-missing-interpreters`` to run the entire test suite
    including coverage. The ``--skip-missing-interpreters`` argument ignores
    missing versions of Python needed for running the tests. Fix any errors.
-5. Submit the PR.
+5. Submit the PR. Once your PR is open, please do not force push to the branch
+   containing your pull request to squash or amend commits. We use `squash
+   merges <https://github.com/blog/2141-squash-your-commits>`_ on PRs and
+   rewriting commits makes changes harder to track between reviews.
 6. Did your tests pass on Travis? If they didn't, fix any errors.
 
 Asking for help

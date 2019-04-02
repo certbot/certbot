@@ -21,6 +21,7 @@ HTTP01 = challenges.HTTP01(
 TLSSNI01 = challenges.TLSSNI01(
     token=jose.b64decode(b"evaGxfADs6pSRb2LAv9IZf17Dt3juxGJyPCt92wrDoA"))
 DNS01 = challenges.DNS01(token=b"17817c66b60ce2e4012dfad92657527a")
+DNS01_2 = challenges.DNS01(token=b"cafecafecafecafecafecafe0feedbac")
 
 CHALLENGES = [HTTP01, TLSSNI01, DNS01]
 
@@ -49,6 +50,7 @@ def chall_to_challb(chall, status):  # pylint: disable=redefined-outer-name
 TLSSNI01_P = chall_to_challb(TLSSNI01, messages.STATUS_PENDING)
 HTTP01_P = chall_to_challb(HTTP01, messages.STATUS_PENDING)
 DNS01_P = chall_to_challb(DNS01, messages.STATUS_PENDING)
+DNS01_P_2 = chall_to_challb(DNS01_2, messages.STATUS_PENDING)
 
 CHALLENGES_P = [HTTP01_P, TLSSNI01_P, DNS01_P]
 
@@ -57,6 +59,7 @@ CHALLENGES_P = [HTTP01_P, TLSSNI01_P, DNS01_P]
 HTTP01_A = auth_handler.challb_to_achall(HTTP01_P, JWK, "example.com")
 TLSSNI01_A = auth_handler.challb_to_achall(TLSSNI01_P, JWK, "example.net")
 DNS01_A = auth_handler.challb_to_achall(DNS01_P, JWK, "example.org")
+DNS01_A_2 = auth_handler.challb_to_achall(DNS01_P_2, JWK, "esimerkki.example.org")
 
 ACHALLENGES = [HTTP01_A, TLSSNI01_A, DNS01_A]
 

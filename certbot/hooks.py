@@ -6,6 +6,7 @@ import os
 
 from subprocess import Popen, PIPE
 
+from acme.magic_typing import Set, List # pylint: disable=unused-import, no-name-in-module
 from certbot import errors
 from certbot import util
 
@@ -76,7 +77,8 @@ def pre_hook(config):
     if cmd:
         _run_pre_hook_if_necessary(cmd)
 
-pre_hook.already = set()  # type: ignore
+
+executed_pre_hooks = set()  # type: Set[str]
 
 
 def _run_pre_hook_if_necessary(command):
@@ -88,12 +90,11 @@ def _run_pre_hook_if_necessary(command):
     :param str command: pre-hook to be run
 
     """
-    if command in pre_hook.already:
+    if command in executed_pre_hooks:
         logger.info("Pre-hook command already run, skipping: %s", command)
     else:
-        logger.info("Running pre-hook command: %s", command)
-        _run_hook(command)
-        pre_hook.already.add(command)
+        _run_hook("pre-hook", command)
+        executed_pre_hooks.add(command)
 
 
 def post_hook(config):
@@ -124,10 +125,10 @@ def post_hook(config):
             _run_eventually(cmd)
     # certonly / run
     elif cmd:
-        logger.info("Running post-hook command: %s", cmd)
-        _run_hook(cmd)
+        _run_hook("post-hook", cmd)
 
-post_hook.eventually = []  # type: ignore
+
+post_hooks = []  # type: List[str]
 
 
 def _run_eventually(command):
@@ -139,15 +140,14 @@ def _run_eventually(command):
     :param str command: post-hook to register to be run
 
     """
-    if command not in post_hook.eventually:
-        post_hook.eventually.append(command)
+    if command not in post_hooks:
+        post_hooks.append(command)
 
 
 def run_saved_post_hooks():
     """Run any post hooks that were saved up in the course of the 'renew' verb"""
-    for cmd in post_hook.eventually:
-        logger.info("Running post-hook command: %s", cmd)
-        _run_hook(cmd)
+    for cmd in post_hooks:
+        _run_hook("post-hook", cmd)
 
 
 def deploy_hook(config, domains, lineage_path):
@@ -217,23 +217,30 @@ def _run_deploy_hook(command, domains, lineage_path, dry_run):
 
     os.environ["RENEWED_DOMAINS"] = " ".join(domains)
     os.environ["RENEWED_LINEAGE"] = lineage_path
-    logger.info("Running deploy-hook command: %s", command)
-    _run_hook(command)
+    _run_hook("deploy-hook", command)
 
 
-def _run_hook(shell_cmd):
+def _run_hook(cmd_name, shell_cmd):
     """Run a hook command.
 
-    :returns: stderr if there was any"""
+    :param str cmd_name: the user facing name of the hook being run
+    :param shell_cmd: shell command to execute
+    :type shell_cmd: `list` of `str` or `str`
 
-    err, _ = execute(shell_cmd)
+    :returns: stderr if there was any"""
+    err, _ = execute(cmd_name, shell_cmd)
     return err
 
 
-def execute(shell_cmd):
+def execute(cmd_name, shell_cmd):
     """Run a command.
 
+    :param str cmd_name: the user facing name of the hook being run
+    :param shell_cmd: shell command to execute
+    :type shell_cmd: `list` of `str` or `str`
+
     :returns: `tuple` (`str` stderr, `str` stdout)"""
+    logger.info("Running %s command: %s", cmd_name, shell_cmd)
 
     # universal_newlines causes Popen.communicate()
     # to return str objects instead of bytes in Python 3
@@ -242,12 +249,12 @@ def execute(shell_cmd):
     out, err = cmd.communicate()
     base_cmd = os.path.basename(shell_cmd.split(None, 1)[0])
     if out:
-        logger.info('Output from %s:\n%s', base_cmd, out)
+        logger.info('Output from %s command %s:\n%s', cmd_name, base_cmd, out)
     if cmd.returncode != 0:
-        logger.error('Hook command "%s" returned error code %d',
-                     shell_cmd, cmd.returncode)
+        logger.error('%s command "%s" returned error code %d',
+                     cmd_name, shell_cmd, cmd.returncode)
     if err:
-        logger.error('Error output from %s:\n%s', base_cmd, err)
+        logger.error('Error output from %s command %s:\n%s', cmd_name, base_cmd, err)
     return (err, out)
 
 

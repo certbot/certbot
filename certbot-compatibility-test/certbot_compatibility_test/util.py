@@ -26,12 +26,12 @@ def create_le_config(parent_dir):
     config = copy.deepcopy(constants.CLI_DEFAULTS)
 
     le_dir = os.path.join(parent_dir, "certbot")
-    config["config_dir"] = os.path.join(le_dir, "config")
-    config["work_dir"] = os.path.join(le_dir, "work")
-    config["logs_dir"] = os.path.join(le_dir, "logs_dir")
-    os.makedirs(config["config_dir"])
-    os.mkdir(config["work_dir"])
-    os.mkdir(config["logs_dir"])
+    os.mkdir(le_dir)
+    for dir_name in ("config", "logs", "work"):
+        full_path = os.path.join(le_dir, dir_name)
+        os.mkdir(full_path)
+        full_name = dir_name + "_dir"
+        config[full_name] = full_path
 
     config["domains"] = None
 

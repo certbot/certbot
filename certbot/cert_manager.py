@@ -4,8 +4,11 @@ import logging
 import os
 import re
 import traceback
+
 import pytz
 import zope.component
+
+from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
 
 from certbot import crypto_util
 from certbot import errors
@@ -13,7 +16,7 @@ from certbot import interfaces
 from certbot import ocsp
 from certbot import storage
 from certbot import util
-
+from certbot.compat import misc
 from certbot.display import util as display_util
 
 logger = logging.getLogger(__name__)
@@ -103,7 +106,7 @@ def lineage_for_certname(cli_config, certname):
     """Find a lineage object with name certname."""
     configs_dir = cli_config.renewal_configs_dir
     # Verify the directory is there
-    util.make_or_verify_dir(configs_dir, mode=0o755, uid=os.geteuid())
+    util.make_or_verify_dir(configs_dir, mode=0o755, uid=misc.os_geteuid())
     try:
         renewal_file = storage.renewal_file_for_certname(cli_config, certname)
     except errors.CertStorageError:
@@ -225,7 +228,7 @@ def match_and_check_overlaps(cli_config, acceptable_matches, match_func, rv_func
     def find_matches(candidate_lineage, return_value, acceptable_matches):
         """Returns a list of matches using _search_lineages."""
         acceptable_matches = [func(candidate_lineage) for func in acceptable_matches]
-        acceptable_matches_rv = []
+        acceptable_matches_rv = []  # type: List[str]
         for item in acceptable_matches:
             if isinstance(item, list):
                 acceptable_matches_rv += item
@@ -339,7 +342,7 @@ def _report_human_readable(config, parsed_certs):
 
 def _describe_certs(config, parsed_certs, parse_failures):
     """Print information about the certs we know about"""
-    out = []
+    out = []  # type: List[str]
 
     notify = out.append
 
@@ -351,7 +354,7 @@ def _describe_certs(config, parsed_certs, parse_failures):
             notify("Found the following {0}certs:".format(match))
             notify(_report_human_readable(config, parsed_certs))
         if parse_failures:
-            notify("\nThe following renewal configuration files "
+            notify("\nThe following renewal configurations "
                "were invalid:")
             notify(_report_lines(parse_failures))
 
@@ -372,7 +375,7 @@ def _search_lineages(cli_config, func, initial_rv, *args):
     """
     configs_dir = cli_config.renewal_configs_dir
     # Verify the directory is there
-    util.make_or_verify_dir(configs_dir, mode=0o755, uid=os.geteuid())
+    util.make_or_verify_dir(configs_dir, mode=0o755, uid=misc.os_geteuid())
 
     rv = initial_rv
     for renewal_file in storage.renewal_conf_files(cli_config):

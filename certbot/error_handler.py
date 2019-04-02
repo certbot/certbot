@@ -5,6 +5,10 @@ import os
 import signal
 import traceback
 
+# pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Any, Callable, Dict, List, Union
+# pylint: enable=unused-import, no-name-in-module
+
 from certbot import errors
 
 logger = logging.getLogger(__name__)
@@ -15,14 +19,30 @@ logger = logging.getLogger(__name__)
 # potentially occur from inside Python. Signals such as SIGILL were not
 # included as they could be a sign of something devious and we should terminate
 # immediately.
-_SIGNALS = [signal.SIGTERM]
 if os.name != "nt":
+    _SIGNALS = [signal.SIGTERM]
     for signal_code in [signal.SIGHUP, signal.SIGQUIT,
                         signal.SIGXCPU, signal.SIGXFSZ]:
         # Adding only those signals that their default action is not Ignore.
         # This is platform-dependent, so we check it dynamically.
         if signal.getsignal(signal_code) != signal.SIG_IGN:
             _SIGNALS.append(signal_code)
+else:
+    # POSIX signals are not implemented natively in Windows, but emulated from the C runtime.
+    # As consumed by CPython, most of handlers on theses signals are useless, in particular
+    # SIGTERM: for instance, os.kill(pid, signal.SIGTERM) will call TerminateProcess, that stops
+    # immediately the process without calling the attached handler. Besides, non-POSIX signals
+    # (CTRL_C_EVENT and CTRL_BREAK_EVENT) are implemented in a console context to handle the
+    # CTRL+C event to a process launched from the console. Only CTRL_C_EVENT has a reliable
+    # behavior in fact, and maps to the handler to SIGINT. However in this case, a
+    # KeyboardInterrupt is raised, that will be handled by ErrorHandler through the context manager
+    # protocol. Finally, no signal on Windows is electable to be handled using ErrorHandler.
+    #
+    # Refs: https://stackoverflow.com/a/35792192, https://maruel.ca/post/python_windows_signal,
+    # https://docs.python.org/2/library/os.html#os.kill,
+    # https://www.reddit.com/r/Python/comments/1dsblt/windows_command_line_automation_ctrlc_question
+    _SIGNALS = []
+
 
 class ErrorHandler(object):
     """Context manager for running code that must be cleaned up on failure.
@@ -56,9 +76,9 @@ class ErrorHandler(object):
     def __init__(self, func, *args, **kwargs):
         self.call_on_regular_exit = False
         self.body_executed = False
-        self.funcs = []
-        self.prev_handlers = {}
-        self.received_signals = []
+        self.funcs = []  # type: List[Callable[[], Any]]
+        self.prev_handlers = {}  # type: Dict[int, Union[int, None, Callable]]
+        self.received_signals = []  # type: List[int]
         if func is not None:
             self.register(func, *args, **kwargs)
 
@@ -88,6 +108,7 @@ class ErrorHandler(object):
         return retval
 
     def register(self, func, *args, **kwargs):
+        # type: (Callable, *Any, **Any) -> None
         """Sets func to be run with the given arguments during cleanup.
 
         :param function func: function to be called in case of an error
@@ -101,9 +122,8 @@ class ErrorHandler(object):
         while self.funcs:
             try:
                 self.funcs[-1]()
-            except Exception as error:  # pylint: disable=broad-except
-                logger.error("Encountered exception during recovery")
-                logger.exception(error)
+            except Exception:  # pylint: disable=broad-except
+                logger.error("Encountered exception during recovery: ", exc_info=True)
             self.funcs.pop()
 
     def _set_signal_handlers(self):

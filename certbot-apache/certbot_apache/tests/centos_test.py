@@ -81,9 +81,9 @@ class MultipleVhostsTestCentOS(util.ApacheTest):
             mock_osi.return_value = ("centos", "7")
             self.config.parser.update_runtime_variables()
 
-        self.assertEquals(mock_get.call_count, 3)
-        self.assertEquals(len(self.config.parser.modules), 4)
-        self.assertEquals(len(self.config.parser.variables), 2)
+        self.assertEqual(mock_get.call_count, 3)
+        self.assertEqual(len(self.config.parser.modules), 4)
+        self.assertEqual(len(self.config.parser.variables), 2)
         self.assertTrue("TEST2" in self.config.parser.variables.keys())
         self.assertTrue("mod_another.c" in self.config.parser.modules)
 
@@ -127,7 +127,7 @@ class MultipleVhostsTestCentOS(util.ApacheTest):
     def test_alt_restart_works(self, mock_run_script):
         mock_run_script.side_effect = [None, errors.SubprocessError, None]
         self.config.restart()
-        self.assertEquals(mock_run_script.call_count, 3)
+        self.assertEqual(mock_run_script.call_count, 3)
 
     @mock.patch("certbot_apache.configurator.util.run_script")
     def test_alt_restart_errors(self, mock_run_script):
@@ -135,5 +135,7 @@ class MultipleVhostsTestCentOS(util.ApacheTest):
                                        errors.SubprocessError,
                                        errors.SubprocessError]
         self.assertRaises(errors.MisconfigurationError, self.config.restart)
+
+
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

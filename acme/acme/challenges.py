@@ -4,6 +4,7 @@ import functools
 import hashlib
 import logging
 import socket
+import sys
 
 from cryptography.hazmat.primitives import hashes  # type: ignore
 import josepy as jose
@@ -14,6 +15,7 @@ import six
 from acme import errors
 from acme import crypto_util
 from acme import fields
+from acme import _TLSSNI01DeprecationModule
 
 logger = logging.getLogger(__name__)
 
@@ -108,6 +110,10 @@ class KeyAuthorizationChallengeResponse(ChallengeResponse):
     key_authorization = jose.Field("keyAuthorization")
     thumbprint_hash_function = hashes.SHA256
 
+    def __init__(self, *args, **kwargs):
+        super(KeyAuthorizationChallengeResponse, self).__init__(*args, **kwargs)
+        self._dump_authorization_key(False)
+
     def verify(self, chall, account_public_key):
         """Verify the key authorization.
 
@@ -140,6 +146,22 @@ class KeyAuthorizationChallengeResponse(ChallengeResponse):
 
         return True
 
+    def _dump_authorization_key(self, dump):
+        # type: (bool) -> None
+        """
+        Set if keyAuthorization is dumped in the JSON representation of this ChallengeResponse.
+        NB: This method is declared as private because it will eventually be removed.
+        :param bool dump: True to dump the keyAuthorization, False otherwise
+        """
+        object.__setattr__(self, '_dump_auth_key', dump)
+
+    def to_partial_json(self):
+        jobj = super(KeyAuthorizationChallengeResponse, self).to_partial_json()
+        if not self._dump_auth_key:  # pylint: disable=no-member
+            jobj.pop('keyAuthorization', None)
+
+        return jobj
+
 
 @six.add_metaclass(abc.ABCMeta)
 class KeyAuthorizationChallenge(_TokenChallenge):
@@ -148,9 +170,9 @@ class KeyAuthorizationChallenge(_TokenChallenge):
 
     :param response_cls: Subclass of `KeyAuthorizationChallengeResponse`
         that will be used to generate `response`.
-
+    :param str typ: type of the challenge
     """
-
+    typ = NotImplemented
     response_cls = NotImplemented
     thumbprint_hash_function = (
         KeyAuthorizationChallengeResponse.thumbprint_hash_function)
@@ -494,6 +516,9 @@ class TLSSNI01(KeyAuthorizationChallenge):
     # boulder#962, ietf-wg-acme#22
     #n = jose.Field("n", encoder=int, decoder=int)
 
+    def __init__(self, *args, **kwargs):
+        super(TLSSNI01, self).__init__(*args, **kwargs)
+
     def validation(self, account_key, **kwargs):
         """Generate validation.
 
@@ -506,6 +531,33 @@ class TLSSNI01(KeyAuthorizationChallenge):
 
         """
         return self.response(account_key).gen_cert(key=kwargs.get('cert_key'))
+
+
+@ChallengeResponse.register
+class TLSALPN01Response(KeyAuthorizationChallengeResponse):
+    """ACME TLS-ALPN-01 challenge response.
+
+    This class only allows initiating a TLS-ALPN-01 challenge returned from the
+    CA. Full support for responding to TLS-ALPN-01 challenges by generating and
+    serving the expected response certificate is not currently provided.
+    """
+    typ = "tls-alpn-01"
+
+
+@Challenge.register  # pylint: disable=too-many-ancestors
+class TLSALPN01(KeyAuthorizationChallenge):
+    """ACME tls-alpn-01 challenge.
+
+    This class simply allows parsing the TLS-ALPN-01 challenge returned from
+    the CA. Full TLS-ALPN-01 support is not currently provided.
+
+    """
+    typ = "tls-alpn-01"
+    response_cls = TLSALPN01Response
+
+    def validation(self, account_key, **kwargs):
+        """Generate validation for the challenge."""
+        raise NotImplementedError()
 
 
 @Challenge.register  # pylint: disable=too-many-ancestors
@@ -589,3 +641,7 @@ class DNSResponse(ChallengeResponse):
 
         """
         return chall.check_validation(self.validation, account_public_key)
+
+
+# Patching ourselves to warn about TLS-SNI challenge deprecation and removal.
+sys.modules[__name__] = _TLSSNI01DeprecationModule(sys.modules[__name__])

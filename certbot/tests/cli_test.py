@@ -4,6 +4,7 @@ import unittest
 import os
 import tempfile
 import copy
+import sys
 
 import mock
 import six
@@ -40,6 +41,15 @@ class TestReadFile(TempDirTestCase):
         self.assertEqual(path, os.path.abspath(path))
         self.assertEqual(contents, test_contents)
 
+
+class FlagDefaultTest(unittest.TestCase):
+    """Tests cli.flag_default"""
+
+    def test_linux_directories(self):
+        if 'fcntl' in sys.modules:
+            self.assertEqual(cli.flag_default('config_dir'), '/etc/letsencrypt')
+            self.assertEqual(cli.flag_default('work_dir'), '/var/lib/letsencrypt')
+            self.assertEqual(cli.flag_default('logs_dir'), '/var/log/letsencrypt')
 
 
 class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
@@ -78,23 +88,24 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
     @mock.patch("certbot.cli.flag_default")
     def test_cli_ini_domains(self, mock_flag_default):
-        tmp_config = tempfile.NamedTemporaryFile()
-        # use a shim to get ConfigArgParse to pick up tmp_config
-        shim = (
-                lambda v: copy.deepcopy(constants.CLI_DEFAULTS[v])
-                if v != "config_files"
-                else [tmp_config.name]
-                )
-        mock_flag_default.side_effect = shim
+        with tempfile.NamedTemporaryFile() as tmp_config:
+            tmp_config.close()  # close now because of compatibility issues on Windows
+            # use a shim to get ConfigArgParse to pick up tmp_config
+            shim = (
+                    lambda v: copy.deepcopy(constants.CLI_DEFAULTS[v])
+                    if v != "config_files"
+                    else [tmp_config.name]
+                    )
+            mock_flag_default.side_effect = shim
 
-        namespace = self.parse(["certonly"])
-        self.assertEqual(namespace.domains, [])
-        tmp_config.write(b"domains = example.com")
-        tmp_config.flush()
-        namespace = self.parse(["certonly"])
-        self.assertEqual(namespace.domains, ["example.com"])
-        namespace = self.parse(["renew"])
-        self.assertEqual(namespace.domains, [])
+            namespace = self.parse(["certonly"])
+            self.assertEqual(namespace.domains, [])
+            with open(tmp_config.name, 'w') as file_h:
+                file_h.write("domains = example.com")
+            namespace = self.parse(["certonly"])
+            self.assertEqual(namespace.domains, ["example.com"])
+            namespace = self.parse(["renew"])
+            self.assertEqual(namespace.domains, [])
 
     def test_no_args(self):
         namespace = self.parse([])
@@ -224,12 +235,18 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(namespace.domains, ['example.com', 'another.net'])
 
     def test_preferred_challenges(self):
-        short_args = ['--preferred-challenges', 'http, tls-sni-01, dns']
+        short_args = ['--preferred-challenges', 'http, dns']
         namespace = self.parse(short_args)
 
-        expected = [challenges.HTTP01.typ,
-                    challenges.TLSSNI01.typ, challenges.DNS01.typ]
+        expected = [challenges.HTTP01.typ, challenges.DNS01.typ]
         self.assertEqual(namespace.pref_challs, expected)
+
+        # TODO: to be removed once tls-sni deprecation logic is removed
+        with mock.patch('certbot.cli.logger.warning') as mock_warn:
+            self.assertEqual(self.parse(['--preferred-challenges', 'http, tls-sni']).pref_challs,
+                             [challenges.HTTP01.typ])
+        self.assertEqual(mock_warn.call_count, 1)
+        self.assertTrue('deprecated' in mock_warn.call_args[0][0])
 
         short_args = ['--preferred-challenges', 'jumping-over-the-moon']
         # argparse.ArgumentError makes argparse print more information
@@ -249,12 +266,13 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
     def test_no_gui(self):
         args = ['renew', '--dialog']
-        stderr = six.StringIO()
-        with mock.patch('certbot.main.sys.stderr', new=stderr):
+        with mock.patch("certbot.util.logger.warning") as mock_warn:
             namespace = self.parse(args)
 
         self.assertTrue(namespace.noninteractive_mode)
-        self.assertTrue("--dialog is deprecated" in stderr.getvalue())
+        self.assertEqual(mock_warn.call_count, 1)
+        self.assertTrue("is deprecated" in mock_warn.call_args[0][0])
+        self.assertEqual("--dialog", mock_warn.call_args[0][1])
 
     def _check_server_conflict_message(self, parser_args, conflicting_args):
         try:
@@ -329,6 +347,8 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         config_dir_option = 'config_dir'
         self.assertFalse(cli.option_was_set(
             config_dir_option, cli.flag_default(config_dir_option)))
+        self.assertFalse(cli.option_was_set(
+            'authenticator', cli.flag_default('authenticator')))
 
     def test_encode_revocation_reason(self):
         for reason, code in constants.REVOCATION_REASONS.items():
@@ -430,6 +450,11 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertRaises(errors.Error, self.parse,
                           "--allow-subset-of-names -d *.example.org".split())
 
+    def test_route53_no_revert(self):
+        for help_flag in ['-h', '--help']:
+            for topic in ['all', 'plugins', 'dns-route53']:
+                self.assertFalse('certbot-route53:auth' in self._help_output([help_flag, topic]))
+
 
 class DefaultTest(unittest.TestCase):
     """Tests for certbot.cli._Default."""
@@ -495,7 +520,8 @@ class SetByCliTest(unittest.TestCase):
         for v in ('manual', 'manual_auth_hook', 'manual_public_ip_logging_ok'):
             self.assertTrue(_call_set_by_cli(v, args, verb))
 
-        cli.set_by_cli.detector = None
+        # https://github.com/python/mypy/issues/2087
+        cli.set_by_cli.detector = None  # type: ignore
 
         args = ['--manual-auth-hook', 'command']
         for v in ('manual_auth_hook', 'manual_public_ip_logging_ok'):

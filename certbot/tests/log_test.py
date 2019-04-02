@@ -8,12 +8,13 @@ import unittest
 
 import mock
 import six
-
 from acme import messages
+from acme.magic_typing import Optional  # pylint: disable=unused-import, no-name-in-module
 
 from certbot import constants
 from certbot import errors
 from certbot import util
+from certbot.compat import misc
 from certbot.tests import util as test_util
 
 
@@ -21,9 +22,9 @@ class PreArgParseSetupTest(unittest.TestCase):
     """Tests for certbot.log.pre_arg_parse_setup."""
 
     @classmethod
-    def _call(cls, *args, **kwargs):
+    def _call(cls, *args, **kwargs):  # pylint: disable=unused-argument
         from certbot.log import pre_arg_parse_setup
-        return pre_arg_parse_setup(*args, **kwargs)
+        return pre_arg_parse_setup()
 
     @mock.patch('certbot.log.sys')
     @mock.patch('certbot.log.pre_arg_parse_except_hook')
@@ -38,16 +39,16 @@ class PreArgParseSetupTest(unittest.TestCase):
         mock_root_logger.setLevel.assert_called_once_with(logging.DEBUG)
         self.assertEqual(mock_root_logger.addHandler.call_count, 2)
 
-        MemoryHandler = logging.handlers.MemoryHandler
-        memory_handler = None
+        memory_handler = None  # type: Optional[logging.handlers.MemoryHandler]
         for call in mock_root_logger.addHandler.call_args_list:
             handler = call[0][0]
-            if memory_handler is None and isinstance(handler, MemoryHandler):
+            if memory_handler is None and isinstance(handler, logging.handlers.MemoryHandler):
                 memory_handler = handler
+                target = memory_handler.target  # type: ignore
             else:
                 self.assertTrue(isinstance(handler, logging.StreamHandler))
         self.assertTrue(
-            isinstance(memory_handler.target, logging.StreamHandler))
+            isinstance(target, logging.StreamHandler))
 
         mock_register.assert_called_once_with(logging.shutdown)
         mock_sys.excepthook(1, 2, 3)
@@ -84,6 +85,7 @@ class PostArgParseSetupTest(test_util.ConfigTestCase):
         self.memory_handler.close()
         self.stream_handler.close()
         self.temp_handler.close()
+        self.devnull.close()
         super(PostArgParseSetupTest, self).tearDown()
 
     def test_common(self):
@@ -258,7 +260,7 @@ class TempHandlerTest(unittest.TestCase):
 
     def test_permissions(self):
         self.assertTrue(
-            util.check_permissions(self.handler.path, 0o600, os.getuid()))
+            util.check_permissions(self.handler.path, 0o600, misc.os_geteuid()))
 
     def test_delete(self):
         self.handler.close()

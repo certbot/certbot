@@ -122,7 +122,7 @@ class _CloudflareClient(object):
                     self.cf.zones.dns_records.delete(zone_id, record_id)
                     logger.debug('Successfully deleted TXT record.')
                 except CloudFlare.exceptions.CloudFlareAPIError as e:
-                    logger.warn('Encountered CloudFlareAPIError deleting TXT record: %s', e)
+                    logger.warning('Encountered CloudFlareAPIError deleting TXT record: %s', e)
             else:
                 logger.debug('TXT record not found; no cleanup needed.')
         else:
