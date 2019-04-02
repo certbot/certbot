@@ -137,7 +137,7 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
         authzr = messages.AuthorizationResource(
             body=messages.Authorization.from_json(response.json()),
             uri=response.headers.get('Location', uri))
-        if identifier is not None and authzr.body.identifier != identifier:  # pylint: disable=no-member
+        if identifier is not None and authzr.body.identifier != identifier:
             raise errors.UnexpectedUpdate(authzr)
         return authzr
 
@@ -669,7 +669,7 @@ class ClientV2(ClientBase):
         response = self._post(self.directory['newOrder'], order)
         body = messages.Order.from_json(response.json())
         authorizations = []
-        for url in body.authorizations:
+        for url in body.authorizations:  # pylint: disable=not-an-iterable
             authorizations.append(self._authzr_from_response(self._post_as_get(url), uri=url))
         return messages.OrderResource(
             body=body,
@@ -775,10 +775,7 @@ class ClientV2(ClientBase):
 
     def external_account_required(self):
         """Checks if ACME server requires External Account Binding authentication."""
-        if hasattr(self.directory, 'meta') and self.directory.meta.external_account_required:
-            return True
-        else:
-            return False
+        return hasattr(self.directory, 'meta') and self.directory.meta.external_account_required
 
     def _post_as_get(self, *args, **kwargs):
         """
@@ -794,7 +791,7 @@ class ClientV2(ClientBase):
             # We add an empty payload for POST-as-GET requests
             new_args = args[:1] + (None,) + args[1:]
             try:
-                return self._post(*new_args, **kwargs)  # pylint: disable=star-args
+                return self._post(*new_args, **kwargs)
             except messages.Error as error:
                 if error.code == 'malformed':
                     logger.debug('Error during a POST-as-GET request, '
@@ -915,7 +912,7 @@ class BackwardsCompatibleClientV2(object):
                     'certificate, please rerun the command for a new one.')
 
             cert = OpenSSL.crypto.dump_certificate(
-                    OpenSSL.crypto.FILETYPE_PEM, certr.body.wrapped).decode()  # pylint: disable=no-member
+                    OpenSSL.crypto.FILETYPE_PEM, certr.body.wrapped).decode()
             chain = crypto_util.dump_pyopenssl_chain(chain).decode()
 
             return orderr.update(fullchain_pem=(cert + chain))
@@ -945,8 +942,7 @@ class BackwardsCompatibleClientV2(object):
         Always return False for ACMEv1 servers, as it doesn't use External Account Binding."""
         if self.acme_version == 1:
             return False
-        else:
-            return self.client.external_account_required()
+        return self.client.external_account_required()
 
 
 class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
@@ -1167,7 +1163,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         if self.REPLAY_NONCE_HEADER in response.headers:
             nonce = response.headers[self.REPLAY_NONCE_HEADER]
             try:
-                decoded_nonce = jws.Header._fields['nonce'].decode(nonce)  # pylint: disable=no-member
+                decoded_nonce = jws.Header._fields['nonce'].decode(nonce)
             except jose.DeserializationError as error:
                 raise errors.BadNonce(nonce, error)
             logger.debug('Storing nonce: %s', nonce)

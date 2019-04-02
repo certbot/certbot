@@ -225,7 +225,7 @@ to serve all files under specified web root ({0})."""
                 self.performed[root_path].remove(achall)
 
         not_removed = []  # type: List[str]
-        while len(self._created_dirs) > 0:
+        while self._created_dirs:
             path = self._created_dirs.pop()
             try:
                 os.rmdir(path)

@@ -52,13 +52,13 @@ install_requires = [
 ]
 
 dev_extras = [
-    'astroid',
+    'astroid==1.6.5',
     'coverage',
     'ipdb',
     'pytest',
     'pytest-cov',
     'pytest-xdist',
-    'pylint>=1.8.4',
+    'pylint==1.9.4',
     'tox',
     'twine',
     'wheel',

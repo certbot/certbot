@@ -1,6 +1,6 @@
 """ACME protocol messages."""
-import six
 import json
+import six
 try:
     from collections.abc import Hashable  # pylint: disable=no-name-in-module
 except ImportError:  # pragma: no cover

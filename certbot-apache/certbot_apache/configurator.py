@@ -276,8 +276,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             util.lock_dir_until_exit(self.option("server_root"))
         except (OSError, errors.LockError):
             logger.debug("Encountered error:", exc_info=True)
-            raise errors.PluginError(
-                "Unable to lock %s", self.option("server_root"))
+            raise errors.PluginError("Unable to lock {0}".format(self.option("server_root")))
         self._prepared = True
 
     def _verify_exe_availability(self, exe):
@@ -1191,8 +1190,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         if fp.endswith(".conf"):
             return fp[:-(len(".conf"))] + self.option("le_vhost_ext")
-        else:
-            return fp + self.option("le_vhost_ext")
+        return fp + self.option("le_vhost_ext")
 
     def _sift_rewrite_rule(self, line):
         """Decides whether a line should be copied to a SSL vhost.
@@ -2133,7 +2131,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             vhost.enabled = True
         return
 
-    def enable_mod(self, mod_name, temp=False): # pylint: disable=unused-argument
+    def enable_mod(self, mod_name, temp=False):  # pylint: disable=unused-argument
         """Enables module in Apache.
 
         Both enables and reloads Apache so module is active.

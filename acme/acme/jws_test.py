@@ -24,7 +24,7 @@ class HeaderTest(unittest.TestCase):
 
     def test_nonce_decoder(self):
         from acme.jws import Header
-        nonce_field = Header._fields['nonce']  # pylint: disable=no-member
+        nonce_field = Header._fields['nonce']
 
         self.assertRaises(
             jose.DeserializationError, nonce_field.decode, self.wrong_nonce)

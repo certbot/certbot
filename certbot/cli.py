@@ -312,9 +312,8 @@ def config_help(name, hidden=False):
     # pylint: disable=no-member
     if hidden:
         return argparse.SUPPRESS
-    else:
-        field = interfaces.IConfig.__getitem__(name) # type: zope.interface.interface.Attribute
-        return field.__doc__
+    field = interfaces.IConfig.__getitem__(name)  # type: zope.interface.interface.Attribute  # pylint: disable=no-value-for-parameter
+    return field.__doc__
 
 
 class HelpfulArgumentGroup(object):
@@ -568,7 +567,7 @@ class HelpfulArgumentParser(object):
             apache_doc = "(the certbot apache plugin is not installed)"
 
         usage = SHORT_USAGE
-        if help_arg == True:
+        if help_arg is True:
             self.notify(usage + COMMAND_OVERVIEW % (apache_doc, nginx_doc) + HELP_AND_VERSION_USAGE)
             sys.exit(0)
         elif help_arg in self.COMMANDS_TOPICS:

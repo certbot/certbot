@@ -312,7 +312,7 @@ class FileOutputDisplayTest(unittest.TestCase):
     def test_methods_take_force_interactive(self):
         # Every IDisplay method implemented by FileDisplay must take
         # force_interactive to prevent workflow regressions.
-        for name in interfaces.IDisplay.names():  # pylint: disable=no-member
+        for name in interfaces.IDisplay.names():  # pylint: disable=no-member,no-value-for-parameter
             if six.PY2:
                 getargspec = inspect.getargspec # pylint: disable=no-member
             else:

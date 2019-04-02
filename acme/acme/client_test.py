@@ -358,7 +358,6 @@ class ClientTest(ClientTestBase):
 
     def test_register(self):
         # "Instance of 'Field' has no to_json/update member" bug:
-        # pylint: disable=no-member
         self.response.status_code = http_client.CREATED
         self.response.json.return_value = self.regr.body.to_json()
         self.response.headers['Location'] = self.regr.uri
@@ -371,7 +370,6 @@ class ClientTest(ClientTestBase):
 
     def test_update_registration(self):
         # "Instance of 'Field' has no to_json/update member" bug:
-        # pylint: disable=no-member
         self.response.headers['Location'] = self.regr.uri
         self.response.json.return_value = self.regr.body.to_json()
         self.assertEqual(self.regr, self.client.update_registration(self.regr))
@@ -448,7 +446,7 @@ class ClientTest(ClientTestBase):
 
     def test_answer_challenge(self):
         self.response.links['up'] = {'url': self.challr.authzr_uri}
-        self.response.json.return_value = self.challr.body.to_json()  # pylint: disable=no-member
+        self.response.json.return_value = self.challr.body.to_json()
 
         chall_response = challenges.DNSResponse(validation=None)
 
@@ -456,7 +454,7 @@ class ClientTest(ClientTestBase):
 
         # TODO: split here and separate test
         self.assertRaises(errors.UnexpectedUpdate, self.client.answer_challenge,
-                          self.challr.body.update(uri='foo'), chall_response)  # pylint: disable=no-member
+                          self.challr.body.update(uri='foo'), chall_response)
 
     def test_answer_challenge_missing_next(self):
         self.assertRaises(
@@ -538,7 +536,7 @@ class ClientTest(ClientTestBase):
             self.client.retry_after(response=self.response, default=10))
 
     def test_poll(self):
-        self.response.json.return_value = self.authzr.body.to_json()  # pylint: disable=no-member
+        self.response.json.return_value = self.authzr.body.to_json()
         self.assertEqual((self.authzr, self.response),
                          self.client.poll(self.authzr))
 
@@ -768,7 +766,7 @@ class ClientV2Test(ClientTestBase):
 
     def test_new_account(self):
         self.response.status_code = http_client.CREATED
-        self.response.json.return_value = self.regr.body.to_json()  # pylint: disable=no-member
+        self.response.json.return_value = self.regr.body.to_json()
         self.response.headers['Location'] = self.regr.uri
 
         self.assertEqual(self.regr, self.client.new_account(self.new_reg))
@@ -823,7 +821,7 @@ class ClientV2Test(ClientTestBase):
 
     def test_poll_authorizations_failure(self):
         deadline = datetime.datetime(9999, 9, 9)
-        challb = self.challr.body.update(status=messages.STATUS_INVALID,  # pylint: disable=no-member
+        challb = self.challr.body.update(status=messages.STATUS_INVALID,
                                          error=messages.Error.with_code('unauthorized'))
         authz = self.authz.update(status=messages.STATUS_INVALID, challenges=(challb,))
         self.response.json.return_value = authz.to_json()
@@ -872,7 +870,6 @@ class ClientV2Test(ClientTestBase):
 
     def test_update_registration(self):
         # "Instance of 'Field' has no to_json/update member" bug:
-        # pylint: disable=no-member
         self.response.headers['Location'] = self.regr.uri
         self.response.json.return_value = self.regr.body.to_json()
         self.assertEqual(self.regr, self.client.update_registration(self.regr))
@@ -964,7 +961,7 @@ class ClientNetworkTest(unittest.TestCase):
             MockJSONDeSerializable('foo'), nonce=b'Tg', url="url",
             acme_version=1)
         jws = acme_jws.JWS.json_loads(jws_dump)
-        self.assertEqual(json.loads(jws.payload.decode()), {'foo': 'foo'})  # pylint: disable=no-member
+        self.assertEqual(json.loads(jws.payload.decode()), {'foo': 'foo'})
         self.assertEqual(jws.signature.combined.nonce, b'Tg')
 
     def test_wrap_in_jws_v2(self):
@@ -974,7 +971,7 @@ class ClientNetworkTest(unittest.TestCase):
             MockJSONDeSerializable('foo'), nonce=b'Tg', url="url",
             acme_version=2)
         jws = acme_jws.JWS.json_loads(jws_dump)
-        self.assertEqual(json.loads(jws.payload.decode()), {'foo': 'foo'})  # pylint: disable=no-member
+        self.assertEqual(json.loads(jws.payload.decode()), {'foo': 'foo'})
         self.assertEqual(jws.signature.combined.nonce, b'Tg')
         self.assertEqual(jws.signature.combined.kid, u'acct-uri')
         self.assertEqual(jws.signature.combined.url, u'url')

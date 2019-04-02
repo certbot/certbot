@@ -166,7 +166,6 @@ class NginxConfigurator(common.Installer):
     # Entry point in main.py for installing cert
     def deploy_cert(self, domain, cert_path, key_path,
                     chain_path=None, fullchain_path=None):
-        # pylint: disable=unused-argument
         """Deploys certificate to specified virtual host.
 
         .. note:: Aborts if the vhost is missing ssl_certificate or
@@ -187,8 +186,7 @@ class NginxConfigurator(common.Installer):
         for vhost in vhosts:
             self._deploy_cert(vhost, cert_path, key_path, chain_path, fullchain_path)
 
-    def _deploy_cert(self, vhost, cert_path, key_path, chain_path, fullchain_path):
-        # pylint: disable=unused-argument
+    def _deploy_cert(self, vhost, cert_path, key_path, chain_path, fullchain_path):  # pylint: disable=unused-argument
         """
         Helper function for deploy_cert() that handles the actual deployment
         this exists because we might want to do multiple deployments per

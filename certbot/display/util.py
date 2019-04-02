@@ -122,10 +122,9 @@ class FileDisplay(object):
             else:
                 logger.debug("Not pausing for user confirmation")
 
-    def menu(self, message, choices, ok_label=None, cancel_label=None,
-             help_label=None, default=None,
+    def menu(self, message, choices, ok_label=None, cancel_label=None,  # pylint: disable=unused-argument
+             help_label=None, default=None,  # pylint: disable=unused-argument
              cli_flag=None, force_interactive=False, **unused_kwargs):
-        # pylint: disable=unused-argument
         """Display a menu.
 
         .. todo:: This doesn't enable the help label/button (I wasn't sold on
@@ -227,7 +226,6 @@ class FileDisplay(object):
 
     def checklist(self, message, tags, default=None,
                   cli_flag=None, force_interactive=False, **unused_kwargs):
-        # pylint: disable=unused-argument
         """Display a checklist.
 
         :param str message: Message to display to user
@@ -467,8 +465,7 @@ class NoninteractiveDisplay(object):
             msg += "\n\n(You can set this with the {0} flag)".format(cli_flag)
         raise errors.MissingCommandlineFlag(msg)
 
-    def notification(self, message, pause=False, wrap=True, **unused_kwargs):
-        # pylint: disable=unused-argument
+    def notification(self, message, pause=False, wrap=True, **unused_kwargs):  # pylint: disable=unused-argument
         """Displays a notification without waiting for user acceptance.
 
         :param str message: Message to display to stdout
@@ -523,9 +520,8 @@ class NoninteractiveDisplay(object):
             self._interaction_fail(message, cli_flag)
         return OK, default
 
-    def yesno(self, message, yes_label=None, no_label=None,
+    def yesno(self, message, yes_label=None, no_label=None,  # pylint: disable=unused-argument
               default=None, cli_flag=None, **unused_kwargs):
-        # pylint: disable=unused-argument
         """Decide Yes or No, without asking anybody
 
         :param str message: question for the user

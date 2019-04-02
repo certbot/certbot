@@ -1,10 +1,10 @@
 """Tests for certbot.plugins.manual"""
 import os
 import unittest
+import sys
 
 import six
 import mock
-import sys
 
 from acme import challenges
 
