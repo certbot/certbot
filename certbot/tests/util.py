@@ -5,6 +5,7 @@
 """
 import logging
 import os
+import pkg_resources
 import shutil
 import stat
 import tempfile

@@ -182,7 +182,7 @@ def restore_required_config_elements(config, renewalparams):
             setattr(config, item_name, value)
 
 
-def _restore_pref_challs(unused_name, value):
+def _restore_pref_challs(unused_name, value):  # pylint: disable=unused-argument
     """Restores preferred challenges from a renewal config file.
 
     If value is a `str`, it should be a single challenge type.
@@ -245,7 +245,7 @@ def _restore_int(name, value):
         raise errors.Error("Expected a numeric value for {0}".format(name))
 
 
-def _restore_str(unused_name, value):
+def _restore_str(unused_name, value):  # pylint: disable=unused-argument
     """Restores an string key-value pair from a renewal config file.
 
     :param str unused_name: option name

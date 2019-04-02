@@ -98,7 +98,7 @@ class GoogleClientTest(unittest.TestCase):
     @mock.patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_name')
     @mock.patch('certbot_dns_google.dns_google._GoogleClient.get_project_id')
     def test_client_without_credentials(self, get_project_id_mock, credential_mock,
-                                        unused_discovery_mock):
+                                        unused_discovery_mock):  # pylint: disable=unused-argument
         from certbot_dns_google.dns_google import _GoogleClient
         _GoogleClient(None)
         self.assertFalse(credential_mock.called)
@@ -135,7 +135,7 @@ class GoogleClientTest(unittest.TestCase):
     @mock.patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_name')
     @mock.patch('certbot_dns_google.dns_google.open',
                 mock.mock_open(read_data='{"project_id": "' + PROJECT_ID + '"}'), create=True)
-    def test_add_txt_record_and_poll(self, unused_credential_mock):
+    def test_add_txt_record_and_poll(self, unused_credential_mock):  # pylint: disable=unused-argument
         client, changes = self._setUp_client_with_mock([{'managedZones': [{'id': self.zone}]}])
         changes.create.return_value.execute.return_value = {'status': 'pending', 'id': self.change}
         changes.get.return_value.execute.return_value = {'status': 'done'}
@@ -153,7 +153,7 @@ class GoogleClientTest(unittest.TestCase):
     @mock.patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_name')
     @mock.patch('certbot_dns_google.dns_google.open',
                 mock.mock_open(read_data='{"project_id": "' + PROJECT_ID + '"}'), create=True)
-    def test_add_txt_record_delete_old(self, unused_credential_mock):
+    def test_add_txt_record_delete_old(self, unused_credential_mock):  # pylint: disable=unused-argument
         client, changes = self._setUp_client_with_mock(
             [{'managedZones': [{'id': self.zone}]}])
         mock_get_rrs = "certbot_dns_google.dns_google._GoogleClient.get_existing_txt_rrset"
@@ -167,7 +167,7 @@ class GoogleClientTest(unittest.TestCase):
     @mock.patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_name')
     @mock.patch('certbot_dns_google.dns_google.open',
                 mock.mock_open(read_data='{"project_id": "' + PROJECT_ID + '"}'), create=True)
-    def test_add_txt_record_noop(self, unused_credential_mock):
+    def test_add_txt_record_noop(self, unused_credential_mock):  # pylint: disable=unused-argument
         client, changes = self._setUp_client_with_mock(
             [{'managedZones': [{'id': self.zone}]}])
         client.add_txt_record(DOMAIN, "_acme-challenge.example.org",
@@ -177,7 +177,7 @@ class GoogleClientTest(unittest.TestCase):
     @mock.patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_name')
     @mock.patch('certbot_dns_google.dns_google.open',
                 mock.mock_open(read_data='{"project_id": "' + PROJECT_ID + '"}'), create=True)
-    def test_add_txt_record_error_during_zone_lookup(self, unused_credential_mock):
+    def test_add_txt_record_error_during_zone_lookup(self, unused_credential_mock):  # pylint: disable=unused-argument
         client, unused_changes = self._setUp_client_with_mock(API_ERROR)
 
         self.assertRaises(errors.PluginError, client.add_txt_record,
@@ -186,7 +186,7 @@ class GoogleClientTest(unittest.TestCase):
     @mock.patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_name')
     @mock.patch('certbot_dns_google.dns_google.open',
                 mock.mock_open(read_data='{"project_id": "' + PROJECT_ID + '"}'), create=True)
-    def test_add_txt_record_zone_not_found(self, unused_credential_mock):
+    def test_add_txt_record_zone_not_found(self, unused_credential_mock):  # pylint: disable=unused-argument
         client, unused_changes = self._setUp_client_with_mock([{'managedZones': []},
                                                                {'managedZones': []}])
 
@@ -196,7 +196,7 @@ class GoogleClientTest(unittest.TestCase):
     @mock.patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_name')
     @mock.patch('certbot_dns_google.dns_google.open',
                 mock.mock_open(read_data='{"project_id": "' + PROJECT_ID + '"}'), create=True)
-    def test_add_txt_record_error_during_add(self, unused_credential_mock):
+    def test_add_txt_record_error_during_add(self, unused_credential_mock):  # pylint: disable=unused-argument
         client, changes = self._setUp_client_with_mock([{'managedZones': [{'id': self.zone}]}])
         changes.create.side_effect = API_ERROR
 
@@ -206,7 +206,7 @@ class GoogleClientTest(unittest.TestCase):
     @mock.patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_name')
     @mock.patch('certbot_dns_google.dns_google.open',
                 mock.mock_open(read_data='{"project_id": "' + PROJECT_ID + '"}'), create=True)
-    def test_del_txt_record(self, unused_credential_mock):
+    def test_del_txt_record(self, unused_credential_mock):  # pylint: disable=unused-argument
         client, changes = self._setUp_client_with_mock([{'managedZones': [{'id': self.zone}]}])
 
         mock_get_rrs = "certbot_dns_google.dns_google._GoogleClient.get_existing_txt_rrset"
@@ -245,7 +245,7 @@ class GoogleClientTest(unittest.TestCase):
     @mock.patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_name')
     @mock.patch('certbot_dns_google.dns_google.open',
                 mock.mock_open(read_data='{"project_id": "' + PROJECT_ID + '"}'), create=True)
-    def test_del_txt_record_error_during_zone_lookup(self, unused_credential_mock):
+    def test_del_txt_record_error_during_zone_lookup(self, unused_credential_mock):  # pylint: disable=unused-argument
         client, unused_changes = self._setUp_client_with_mock(API_ERROR)
 
         client.del_txt_record(DOMAIN, self.record_name, self.record_content, self.record_ttl)
@@ -253,7 +253,7 @@ class GoogleClientTest(unittest.TestCase):
     @mock.patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_name')
     @mock.patch('certbot_dns_google.dns_google.open',
                 mock.mock_open(read_data='{"project_id": "' + PROJECT_ID + '"}'), create=True)
-    def test_del_txt_record_zone_not_found(self, unused_credential_mock):
+    def test_del_txt_record_zone_not_found(self, unused_credential_mock):  # pylint: disable=unused-argument
         client, unused_changes = self._setUp_client_with_mock([{'managedZones': []},
                                                                {'managedZones': []}])
 
@@ -262,7 +262,7 @@ class GoogleClientTest(unittest.TestCase):
     @mock.patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_name')
     @mock.patch('certbot_dns_google.dns_google.open',
                 mock.mock_open(read_data='{"project_id": "' + PROJECT_ID + '"}'), create=True)
-    def test_del_txt_record_error_during_delete(self, unused_credential_mock):
+    def test_del_txt_record_error_during_delete(self, unused_credential_mock):  # pylint: disable=unused-argument
         client, changes = self._setUp_client_with_mock([{'managedZones': [{'id': self.zone}]}])
         changes.create.side_effect = API_ERROR
 
@@ -271,7 +271,7 @@ class GoogleClientTest(unittest.TestCase):
     @mock.patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_name')
     @mock.patch('certbot_dns_google.dns_google.open',
                 mock.mock_open(read_data='{"project_id": "' + PROJECT_ID + '"}'), create=True)
-    def test_get_existing(self, unused_credential_mock):
+    def test_get_existing(self, unused_credential_mock):  # pylint: disable=unused-argument
         client, unused_changes = self._setUp_client_with_mock(
             [{'managedZones': [{'id': self.zone}]}])
         # Record name mocked in setUp
@@ -283,7 +283,7 @@ class GoogleClientTest(unittest.TestCase):
     @mock.patch('oauth2client.service_account.ServiceAccountCredentials.from_json_keyfile_name')
     @mock.patch('certbot_dns_google.dns_google.open',
                 mock.mock_open(read_data='{"project_id": "' + PROJECT_ID + '"}'), create=True)
-    def test_get_existing_fallback(self, unused_credential_mock):
+    def test_get_existing_fallback(self, unused_credential_mock):  # pylint: disable=unused-argument
         client, unused_changes = self._setUp_client_with_mock(
             [{'managedZones': [{'id': self.zone}]}])
         # pylint: disable=no-member
