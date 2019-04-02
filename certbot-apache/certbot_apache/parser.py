@@ -322,6 +322,10 @@ class ApacheParser(object):
         :param bool beginning: If the IfModule should be created to the beginning
             of augeas path DOM tree.
 
+        :returns: Augeas path of the newly created IfModule directive.
+            The path may be dynamic, i.e. .../IfModule[last()]
+        :rtype: str
+
         """
         if beginning:
             c_path_arg = "{}/IfModule[1]/arg".format(aug_conf_path)
