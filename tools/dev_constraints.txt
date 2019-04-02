@@ -8,12 +8,12 @@ asn1crypto==0.22.0
 astroid==1.6.5
 attrs==17.3.0
 Babel==2.5.1
-backports.functools-lru-cache==1.5; python_version == "2.7"
+backports.functools-lru-cache==1.5
 backports.shutil-get-terminal-size==1.0.0
 boto3==1.9.36
 botocore==1.12.36
 cloudflare==1.5.1
-configparser==3.7.4; python_version == "2.7"
+configparser==3.7.4
 coverage==4.4.2
 decorator==4.1.2
 dns-lexicon==3.0.8
@@ -67,7 +67,7 @@ rsa==3.4.2
 s3transfer==0.1.11
 scandir==1.6
 simplegeneric==0.8.1
-singledispatch==3.4.0.3; python_version < "3.4"
+singledispatch==3.4.0.3
 snowballstemmer==1.2.1
 Sphinx==1.7.5
 sphinx-rtd-theme==0.2.4
