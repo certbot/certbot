@@ -516,9 +516,6 @@ class TLSSNI01(KeyAuthorizationChallenge):
     # boulder#962, ietf-wg-acme#22
     #n = jose.Field("n", encoder=int, decoder=int)
 
-    def __init__(self, *args, **kwargs):
-        super(TLSSNI01, self).__init__(*args, **kwargs)
-
     def validation(self, account_key, **kwargs):
         """Generate validation.
 

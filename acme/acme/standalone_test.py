@@ -266,9 +266,9 @@ class TestSimpleTLSSNI01Server(unittest.TestCase):
                     os.path.join(localhost_dir, 'key.pem'))
 
         with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as sock:
-            sock.bind(('', 0))
-            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            self.port = sock.getsockname()[1]
+            sock.bind(('', 0))  # pylint: disable=no-member
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)  # pylint: disable=no-member
+            self.port = sock.getsockname()[1]  # pylint: disable=no-member
 
         from acme.standalone import simple_tls_sni_01_server
         self.process = multiprocessing.Process(target=simple_tls_sni_01_server,

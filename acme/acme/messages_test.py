@@ -236,7 +236,7 @@ class RegistrationTest(unittest.TestCase):
         self.assertEqual(reg.contact, (
             'mailto:admin@foo.com',
         ))
-        self.assertEqual(sorted(reg.external_account_binding.keys()),
+        self.assertEqual(sorted(reg.external_account_binding.keys()),  # pylint: disable=no-member
                          sorted(['protected', 'payload', 'signature']))
 
     def test_phones(self):
