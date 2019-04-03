@@ -276,8 +276,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             util.lock_dir_until_exit(self.option("server_root"))
         except (OSError, errors.LockError):
             logger.debug("Encountered error:", exc_info=True)
-            raise errors.PluginError(
-                "Unable to lock %s", self.option("server_root"))
+            raise errors.PluginError("Unable to lock {0}".format(self.option("server_root")))
         self._prepared = True
 
     def _verify_exe_availability(self, exe):
@@ -1191,8 +1190,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         if fp.endswith(".conf"):
             return fp[:-(len(".conf"))] + self.option("le_vhost_ext")
-        else:
-            return fp + self.option("le_vhost_ext")
+        return fp + self.option("le_vhost_ext")
 
     def _sift_rewrite_rule(self, line):
         """Decides whether a line should be copied to a SSL vhost.
@@ -1684,7 +1682,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             self.parser.find_dir("SSLCertificateKeyFile",
                                  lineage.key_path, vhost.path))
 
-    def _enable_ocsp_stapling(self, ssl_vhost, unused_options):
+    def _enable_ocsp_stapling(self, ssl_vhost, unused_options):  # pylint: disable=unused-argument
         """Enables OCSP Stapling
 
         In OCSP, each client (e.g. browser) would have to query the
@@ -1814,7 +1812,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                     raise errors.PluginEnhancementAlreadyPresent(
                         "Existing %s header" % (header_substring))
 
-    def _enable_redirect(self, ssl_vhost, unused_options):
+    def _enable_redirect(self, ssl_vhost, unused_options):  # pylint: disable=unused-argument
         """Redirect all equivalent HTTP traffic to ssl_vhost.
 
         .. todo:: This enhancement should be rewritten and will
@@ -2241,7 +2239,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     ###########################################################################
     # Challenges Section
     ###########################################################################
-    def get_chall_pref(self, unused_domain):  # pylint: disable=no-self-use
+    def get_chall_pref(self, unused_domain):  # pylint: disable=no-self-use,unused-argument
         """Return list of challenge preferences."""
         return [challenges.HTTP01]
 

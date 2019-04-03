@@ -55,7 +55,7 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
         self.assertEqual(expected, self.mock_client.mock_calls)
 
     @mock.patch('httplib2.Http.request', side_effect=ServerNotFoundError)
-    def test_without_auth(self, unused_mock):
+    def test_without_auth(self, unused_mock):  # pylint: disable=unused-argument
         self.config.google_credentials = None
         self.assertRaises(PluginError, self.auth.perform, [self.achall])
 

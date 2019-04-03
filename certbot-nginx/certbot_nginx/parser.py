@@ -83,8 +83,7 @@ class NginxParser(object):
         """
         if not os.path.isabs(path):
             return os.path.normpath(os.path.join(self.root, path))
-        else:
-            return os.path.normpath(path)
+        return os.path.normpath(path)
 
     def _build_addr_to_ssl(self):
         """Builds a map from address to whether it listens on ssl in any server block
@@ -395,7 +394,7 @@ class NginxParser(object):
                 addr.default = False
                 addr.ipv6only = False
             for directive in enclosing_block[new_vhost.path[-1]][1]:
-                if len(directive) > 0 and directive[0] == 'listen':
+                if directive and directive[0] == 'listen':
                     # Exclude one-time use parameters which will cause an error if repeated.
                     # https://nginx.org/en/docs/http/ngx_http_core_module.html#listen
                     exclude = set(('default_server', 'default', 'setfib', 'fastopen', 'backlog',

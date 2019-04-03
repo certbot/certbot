@@ -145,7 +145,7 @@ class CertonlyTest(unittest.TestCase):
     @mock.patch('certbot.main._find_cert')
     @mock.patch('certbot.main._get_and_save_cert')
     @mock.patch('certbot.main._report_new_cert')
-    def test_no_reinstall_text_pause(self, unused_report, mock_auth,
+    def test_no_reinstall_text_pause(self, unused_report, mock_auth,  # pylint: disable=unused-argument
         mock_find_cert):
         mock_notification = self.mock_get_utility().notification
         mock_notification.side_effect = self._assert_no_pause
@@ -533,14 +533,14 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
 
         if mockisfile:
             orig_open = os.path.isfile
+
             def mock_isfile(fn, *args, **kwargs):  # pylint: disable=unused-argument
                 """Mock os.path.isfile()"""
                 if (fn.endswith("cert") or
-                    fn.endswith("chain") or
-                    fn.endswith("privkey")):
+                        fn.endswith("chain") or
+                        fn.endswith("privkey")):
                     return True
-                else:
-                    return orig_open(fn)
+                return orig_open(fn)
 
             with mock.patch("os.path.isfile") as mock_if:
                 mock_if.side_effect = mock_isfile
@@ -1089,7 +1089,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         self._test_renewal_common(True, [], args=args, should_renew=True, reuse_key=True)
 
     @mock.patch('certbot.storage.RenewableCert.save_successor')
-    def test_reuse_key_no_dry_run(self, unused_save_successor):
+    def test_reuse_key_no_dry_run(self, unused_save_successor):  # pylint: disable=unused-argument
         test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
         args = ["renew", "--reuse-key"]
         self._test_renewal_common(True, [], args=args, should_renew=True, reuse_key=True)

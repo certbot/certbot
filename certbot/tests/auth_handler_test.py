@@ -457,17 +457,17 @@ class ReportFailedAuthzrsTest(unittest.TestCase):
         # Prevent future regressions if the error type changes
         self.assertTrue(kwargs["error"].description is not None)
 
-        http_01 = messages.ChallengeBody(**kwargs)  # pylint: disable=star-args
+        http_01 = messages.ChallengeBody(**kwargs)
 
         kwargs["chall"] = acme_util.TLSSNI01
-        tls_sni_01 = messages.ChallengeBody(**kwargs)  # pylint: disable=star-args
+        tls_sni_01 = messages.ChallengeBody(**kwargs)
 
         self.authzr1 = mock.MagicMock()
         self.authzr1.body.identifier.value = 'example.com'
         self.authzr1.body.challenges = [http_01, tls_sni_01]
 
         kwargs["error"] = messages.Error(typ="dnssec", detail="detail")
-        tls_sni_01_diff = messages.ChallengeBody(**kwargs)  # pylint: disable=star-args
+        tls_sni_01_diff = messages.ChallengeBody(**kwargs)
 
         self.authzr2 = mock.MagicMock()
         self.authzr2.body.identifier.value = 'foo.bar'

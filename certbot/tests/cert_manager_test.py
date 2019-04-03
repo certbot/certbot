@@ -116,7 +116,7 @@ class DeleteTest(storage_test.BaseRenewableCertTest):
     @mock.patch('certbot.cert_manager.lineage_for_certname')
     @mock.patch('certbot.storage.delete_files')
     def test_delete_from_config(self, mock_delete_files, mock_lineage_for_certname,
-        unused_get_utility):
+        unused_get_utility):  # pylint: disable=unused-argument
         """Test delete"""
         mock_lineage_for_certname.return_value = self.test_rc
         self.config.certname = "example.org"
@@ -229,7 +229,7 @@ class CertificatesTest(BaseCertManagerTest):
         # pylint: disable=protected-access
         out = get_report()
         self.assertTrue('1 hour(s)' in out or '2 hour(s)' in out)
-        self.assertTrue('VALID' in out and not 'INVALID' in out)
+        self.assertTrue('VALID' in out and 'INVALID' not in out)
 
         cert.target_expiry += datetime.timedelta(days=1)
         # pylint: disable=protected-access
@@ -398,7 +398,7 @@ class RenameLineageTest(BaseCertManagerTest):
 
     @test_util.patch_get_utility()
     @mock.patch('certbot.cert_manager.lineage_for_certname')
-    def test_no_existing_certname(self, mock_lineage_for_certname, unused_get_utility):
+    def test_no_existing_certname(self, mock_lineage_for_certname, unused_get_utility):  # pylint: disable=unused-argument
         self.config.certname = "one"
         self.config.new_certname = "two"
         mock_lineage_for_certname.return_value = None
@@ -407,7 +407,7 @@ class RenameLineageTest(BaseCertManagerTest):
 
     @test_util.patch_get_utility()
     @mock.patch("certbot.storage.RenewableCert._check_symlinks")
-    def test_rename_cert(self, mock_check, unused_get_utility):
+    def test_rename_cert(self, mock_check, unused_get_utility):  # pylint: disable=unused-argument
         mock_check.return_value = True
         self._call(self.config)
         from certbot import cert_manager
@@ -430,7 +430,7 @@ class RenameLineageTest(BaseCertManagerTest):
 
     @test_util.patch_get_utility()
     @mock.patch("certbot.storage.RenewableCert._check_symlinks")
-    def test_rename_cert_bad_new_certname(self, mock_check, unused_get_utility):
+    def test_rename_cert_bad_new_certname(self, mock_check, unused_get_utility):  # pylint: disable=unused-argument
         mock_check.return_value = True
 
         # for example, don't rename to existing certname
@@ -450,7 +450,7 @@ class DuplicativeCertsTest(storage_test.BaseRenewableCertTest):
         self._write_out_ex_kinds()
 
     @mock.patch('certbot.util.make_or_verify_dir')
-    def test_find_duplicative_names(self, unused_makedir):
+    def test_find_duplicative_names(self, unused_makedir):  # pylint: disable=unused-argument
         from certbot.cert_manager import find_duplicative_certs
         test_cert = test_util.load_vector('cert-san_512.pem')
         with open(self.test_rc.cert, 'wb') as f:

@@ -7,13 +7,12 @@ import unittest
 
 import mock
 
+from josepy import interfaces
+
+import certbot.tests.util as test_util
 from certbot import account
 from certbot import errors
 from certbot import util
-
-import certbot.tests.util as test_util
-
-from josepy import interfaces
 
 KEY = test_util.load_vector("rsa512_key.pem")
 CSR_SAN = test_util.load_vector("csr-san_512.pem")
@@ -274,7 +273,7 @@ class ClientTest(ClientTestCommon):
     @mock.patch("certbot.client.crypto_util")
     @mock.patch("certbot.client.logger")
     @test_util.patch_get_utility()
-    def test_obtain_certificate_from_csr(self, unused_mock_get_utility,
+    def test_obtain_certificate_from_csr(self, unused_mock_get_utility,  # pylint: disable=unused-argument
                                          mock_logger, mock_crypto_util):
         self._mock_obtain_certificate()
         test_csr = util.CSR(form="pem", file=None, data=CSR_SAN)

@@ -312,10 +312,10 @@ class SafelyRemoveTest(test_util.TempDirTestCase):
         # no error, yay!
         self.assertFalse(os.path.exists(self.path))
 
-    @mock.patch("certbot.util.os.remove")
-    def test_other_error_passthrough(self, mock_remove):
-        mock_remove.side_effect = OSError
-        self.assertRaises(OSError, self._call)
+    def test_other_error_passthrough(self):
+        with mock.patch("certbot.util.os.remove") as mock_remove:
+            mock_remove.side_effect = OSError
+            self.assertRaises(OSError, self._call)
 
 
 class SafeEmailTest(unittest.TestCase):

@@ -312,8 +312,7 @@ def config_help(name, hidden=False):
     # pylint: disable=no-member
     if hidden:
         return argparse.SUPPRESS
-    field = interfaces.IConfig.__getitem__(
-        name)  # type: zope.interface.interface.Attribute  # pylint: disable=no-value-for-parameter
+    field = interfaces.IConfig.__getitem__(name)  # type: zope.interface.interface.Attribute  # pylint: disable=no-value-for-parameter
     return field.__doc__
 
 
