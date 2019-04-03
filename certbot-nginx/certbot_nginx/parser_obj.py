@@ -146,8 +146,8 @@ class Statements(Parsable):
 
     def parse(self, raw_list, add_spaces=False):
         """ Parses a list of statements.
-        Expects all elements in `parse_this` to be parseable by `type(self).parsing_hooks`,
-        with an optional whitespace string at the last index of `parse_this`.
+        Expects all elements in `raw_list` to be parseable by `type(self).parsing_hooks`,
+        with an optional whitespace string at the last index of `raw_list`.
         """
         if not isinstance(raw_list, list):
             raise errors.MisconfigurationError("Statements parsing expects a list!")
@@ -301,26 +301,26 @@ class Block(Parsable):
             for elem in self.contents.iterate(expanded, match):
                 yield elem
 
-    def parse(self, parse_this, add_spaces=False):
+    def parse(self, raw_list, add_spaces=False):
         """ Parses a list that resembles a block.
 
         The assumptions that this routine makes are:
-            1. the first element of `parse_this` is a valid Sentence.
-            2. the second element of `parse_this` is a valid Statement.
+            1. the first element of `raw_list` is a valid Sentence.
+            2. the second element of `raw_list` is a valid Statement.
         If add_spaces is set, we call it recursively on `names` and `contents`, and
         add an extra trailing space to `names` (to separate the block's opening bracket
         and the block name).
         """
-        if not Block.should_parse(parse_this):
+        if not Block.should_parse(raw_list):
             raise errors.MisconfigurationError("Block parsing expects a list of length 2. "
                 "First element should be a list of string types (the bloc names), "
                 "and second should be another list of statements (the bloc content).")
         self.names = Sentence(self)
         if add_spaces:
-            parse_this[0].append(" ")
-        self.names.parse(parse_this[0], add_spaces)
+            raw_list[0].append(" ")
+        self.names.parse(raw_list[0], add_spaces)
         self.contents = Statements(self)
-        self.contents.parse(parse_this[1], add_spaces)
+        self.contents.parse(raw_list[1], add_spaces)
         self._data = [self.names, self.contents]
 
     def get_tabs(self):

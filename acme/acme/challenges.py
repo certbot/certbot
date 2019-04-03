@@ -20,11 +20,8 @@ from acme import _TLSSNI01DeprecationModule
 logger = logging.getLogger(__name__)
 
 
-# pylint: disable=too-few-public-methods
-
-
 class Challenge(jose.TypedJSONObjectWithFields):
-    # _fields_to_partial_json | pylint: disable=abstract-method
+    # _fields_to_partial_json
     """ACME challenge."""
     TYPES = {}  # type: dict
 
@@ -38,7 +35,7 @@ class Challenge(jose.TypedJSONObjectWithFields):
 
 
 class ChallengeResponse(jose.TypedJSONObjectWithFields):
-    # _fields_to_partial_json | pylint: disable=abstract-method
+    # _fields_to_partial_json
     """ACME challenge response."""
     TYPES = {}  # type: dict
     resource_type = 'challenge'
@@ -165,7 +162,6 @@ class KeyAuthorizationChallengeResponse(ChallengeResponse):
 
 @six.add_metaclass(abc.ABCMeta)
 class KeyAuthorizationChallenge(_TokenChallenge):
-    # pylint: disable=too-many-ancestors
     """Challenge based on Key Authorization.
 
     :param response_cls: Subclass of `KeyAuthorizationChallengeResponse`
@@ -455,7 +451,6 @@ class TLSSNI01Response(KeyAuthorizationChallengeResponse):
         kwargs.setdefault("port", self.PORT)
         kwargs["name"] = self.z_domain
         # TODO: try different methods?
-        # pylint: disable=protected-access
         return crypto_util.probe_sni(**kwargs)
 
     def verify_cert(self, cert):
@@ -557,7 +552,7 @@ class TLSALPN01(KeyAuthorizationChallenge):
         raise NotImplementedError()
 
 
-@Challenge.register  # pylint: disable=too-many-ancestors
+@Challenge.register
 class DNS(_TokenChallenge):
     """ACME "dns" challenge."""
     typ = "dns"

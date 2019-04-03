@@ -312,7 +312,7 @@ class SafelyRemoveTest(test_util.TempDirTestCase):
         # no error, yay!
         self.assertFalse(os.path.exists(self.path))
 
-    def test_other_error_passthrough(self):  # pylint: disable=no-value-for-parameter
+    def test_other_error_passthrough(self):
         with mock.patch("certbot.util.os.remove") as mock_remove:
             mock_remove.side_effect = OSError
             self.assertRaises(OSError, self._call)
