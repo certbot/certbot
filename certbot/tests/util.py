@@ -17,9 +17,9 @@ import josepy as jose
 import mock
 import pkg_resources
 import six
+from six.moves import reload_module  # pylint: disable=import-error
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
-from six.moves import reload_module  # pylint: disable=import-error
 
 from certbot import configuration
 from certbot import constants

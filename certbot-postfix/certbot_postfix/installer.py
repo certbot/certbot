@@ -285,4 +285,3 @@ class Installer(plugins_common.Installer):
         :raises .PluginError: when server cannot be restarted
         """
         self.postfix.restart()
-
