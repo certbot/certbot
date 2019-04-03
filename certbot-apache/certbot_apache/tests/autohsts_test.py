@@ -37,7 +37,7 @@ class AutoHSTSTest(util.ApacheTest):
                 if re.search(pat, self.config.parser.aug.get(head).lower()):
                     return self.config.parser.aug.get(
                         head.replace("arg[3]", "arg[4]"))
-        return None
+        return None  # pragma: no cover
 
     @mock.patch("certbot_apache.configurator.ApacheConfigurator.restart")
     @mock.patch("certbot_apache.configurator.ApacheConfigurator.enable_mod")

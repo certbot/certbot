@@ -5,6 +5,8 @@ import subprocess
 
 import zope.interface
 
+from acme.magic_typing import Set  # pylint: disable=unused-import, no-name-in-module
+
 from certbot import configuration
 from certbot_nginx import configurator
 from certbot_nginx import constants
@@ -68,13 +70,14 @@ def _get_server_root(config):
 
 def _get_names(config):
     """Returns all and testable domain names in config"""
-    all_names = set()
+    all_names = set()  # type: Set[str]
     for root, _dirs, files in os.walk(config):
         for this_file in files:
             update_names = _get_server_names(root, this_file)
             all_names.update(update_names)
     non_ip_names = set(n for n in all_names if not util.IP_REGEX.match(n))
     return all_names, non_ip_names
+
 
 def _get_server_names(root, filename):
     """Returns all names in a config file path"""

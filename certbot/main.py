@@ -711,7 +711,7 @@ def update_account(config, unused_plugins):  # pylint: disable=unused-argument
     reporter_util = zope.component.getUtility(interfaces.IReporter)
     add_msg = lambda m: reporter_util.add_message(m, reporter_util.MEDIUM_PRIORITY)
 
-    if accounts:
+    if not accounts:
         return "Could not find an existing account to update."
     if config.email is None:
         if config.register_unsafely_without_email:
@@ -809,11 +809,11 @@ def install(config, plugins):
         domains, _ = _find_domains_or_certname(config, installer)
         le_client = _init_le_client(config, authenticator=None, installer=installer)
         _install_cert(config, le_client, domains)
+        return None
     else:
         raise errors.ConfigurationError("Path to certificate or key was not defined. "
             "If your certificate is managed by Certbot, please use --cert-name "
             "to define which certificate you would like to install.")
-    return None
 
 def _populate_from_certname(config):
     """Helper function for install to populate missing config values from lineage
@@ -1330,6 +1330,8 @@ def main(cli_args=None):
     :raises errors.Error: error if plugin command is not supported
 
     """
+    if not cli_args:
+        cli_args = sys.argv[1:]
 
     log.pre_arg_parse_setup()
 
