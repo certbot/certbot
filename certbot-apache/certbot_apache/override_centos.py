@@ -1,17 +1,16 @@
 """ Distribution specific override class for CentOS family (RHEL, Fedora) """
 import logging
+
 import pkg_resources
-
-from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
-
 import zope.interface
 
-from certbot import interfaces
-
+from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
 
 from certbot_apache import apache_util
 from certbot_apache import configurator
 from certbot_apache import parser
+
+from certbot import interfaces
 from certbot.errors import MisconfigurationError
 
 logger = logging.getLogger(__name__)

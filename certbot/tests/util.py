@@ -13,14 +13,13 @@ import unittest
 from multiprocessing import Process, Event
 
 import OpenSSL
+import josepy as jose
 import mock
 import pkg_resources
 import six
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from six.moves import reload_module  # pylint: disable=import-error
-
-import josepy as jose
 
 from certbot import configuration
 from certbot import constants

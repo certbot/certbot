@@ -755,7 +755,7 @@ class NginxConfigurator(common.Installer):
         self.parser.remove_server_directives(vhost, 'listen', match_func=_no_ssl_match_func)
         return http_vhost, vhost
 
-    def _enable_redirect(self, domain, unused_options):
+    def _enable_redirect(self, domain, unused_options):  # pylint: disable=unused-argument
         """Redirect all equivalent HTTP traffic to ssl_vhost.
 
         If the vhost is listening plaintextishly, separate out the
@@ -1028,7 +1028,7 @@ class NginxConfigurator(common.Installer):
     ###########################################################################
     # Challenges Section for IAuthenticator
     ###########################################################################
-    def get_chall_pref(self, unused_domain):  # pylint: disable=no-self-use
+    def get_chall_pref(self, unused_domain):  # pylint: disable=no-self-use,unused-argument
         """Return list of challenge preferences."""
         return [challenges.HTTP01, challenges.TLSSNI01]
 
