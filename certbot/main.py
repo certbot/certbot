@@ -809,11 +809,15 @@ def install(config, plugins):
         domains, _ = _find_domains_or_certname(config, installer)
         le_client = _init_le_client(config, authenticator=None, installer=installer)
         _install_cert(config, le_client, domains)
-        return None
     else:
         raise errors.ConfigurationError("Path to certificate or key was not defined. "
             "If your certificate is managed by Certbot, please use --cert-name "
             "to define which certificate you would like to install.")
+
+    if enhancements.are_requested(config):
+        # In the case where we don't have certname, we have errored out already
+        lineage = cert_manager.lineage_for_certname(config, config.certname)
+        enhancements.enable(lineage, domains, installer, config)
 
 def _populate_from_certname(config):
     """Helper function for install to populate missing config values from lineage
