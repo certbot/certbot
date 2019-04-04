@@ -369,9 +369,11 @@ Asking for help
 ===============
 
 If you have any questions while working on a Certbot issue, don't hesitate to
-ask for help! You can do this in the #letsencrypt-dev IRC channel on Freenode.
-If you don't already have an IRC client set up, we recommend you join using
-`Riot <https://riot.im/app/#/room/#freenode_#letsencrypt-dev:matrix.org>`_.
+ask for help! You can do this in the Certbot channel in EFF's Mattermost
+instance for its open source projects. To join, `create an account
+<https://opensource.eff.org/signup_user_complete/?id=6iqur37ucfrctfswrs14iscobw>`_
+and then visit the `Certbot channel
+<https://opensource.eff.org/eff-open-source/channels/certbot>`_.
 
 Updating certbot-auto and letsencrypt-auto
 ==========================================
