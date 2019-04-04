@@ -2,6 +2,29 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
+## 0.33.1 - master
+
+### Added
+
+*
+
+### Changed
+
+*
+
+### Fixed
+
+* A bug causing certbot-auto to print warnings or crash on some RHEL based
+  systems has been resolved.
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+package with changes other than its version number was:
+
+*
+
+More details about these changes can be found on our GitHub repo.
+
 ## 0.33.0 - 2019-04-03
 
 ### Added
