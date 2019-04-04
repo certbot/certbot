@@ -145,7 +145,7 @@ class CertonlyTest(unittest.TestCase):
     @mock.patch('certbot.main._find_cert')
     @mock.patch('certbot.main._get_and_save_cert')
     @mock.patch('certbot.main._report_new_cert')
-    def test_no_reinstall_text_pause(self, unused_report, mock_auth,  # pylint: disable=unused-argument
+    def test_no_reinstall_text_pause(self, unused_report, mock_auth,
         mock_find_cert):
         mock_notification = self.mock_get_utility().notification
         mock_notification.side_effect = self._assert_no_pause
@@ -153,8 +153,7 @@ class CertonlyTest(unittest.TestCase):
         mock_find_cert.return_value = False, None
         self._call('certonly --webroot -d example.com'.split())
 
-    def _assert_no_pause(self, message, pause=True):
-        # pylint: disable=unused-argument
+    def _assert_no_pause(self, message, pause=True):  # pylint: disable=unused-argument
         self.assertFalse(pause)
 
     @mock.patch('certbot.cert_manager.lineage_for_certname')
@@ -1089,7 +1088,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         self._test_renewal_common(True, [], args=args, should_renew=True, reuse_key=True)
 
     @mock.patch('certbot.storage.RenewableCert.save_successor')
-    def test_reuse_key_no_dry_run(self, unused_save_successor):  # pylint: disable=unused-argument
+    def test_reuse_key_no_dry_run(self, unused_save_successor):
         test_util.make_lineage(self.config.config_dir, 'sample-renewal.conf')
         args = ["renew", "--reuse-key"]
         self._test_renewal_common(True, [], args=args, should_renew=True, reuse_key=True)

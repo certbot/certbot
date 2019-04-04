@@ -612,7 +612,7 @@ def _init_le_client(config, authenticator, installer):
     return client.Client(config, acc, authenticator, installer, acme=acme)
 
 
-def unregister(config, unused_plugins):  # pylint: disable=unused-argument
+def unregister(config, unused_plugins):
     """Deactivate account on server
 
     :param config: Configuration object
@@ -691,7 +691,7 @@ def register(config, unused_plugins):
     return
 
 
-def update_account(config, unused_plugins):  # pylint: disable=unused-argument
+def update_account(config, unused_plugins):
     """Modify accounts on the server.
 
     :param config: Configuration object
@@ -950,7 +950,7 @@ def rollback(config, plugins):
     client.rollback(config.installer, config.checkpoints, config, plugins)
 
 
-def config_changes(config, unused_plugins):  # pylint: disable=unused-argument
+def config_changes(config, unused_plugins):
     """Show changes made to server config during installation
 
     View checkpoints and associated configuration changes.
@@ -967,7 +967,7 @@ def config_changes(config, unused_plugins):  # pylint: disable=unused-argument
     """
     client.view_config_changes(config, num=config.num)
 
-def update_symlinks(config, unused_plugins):  # pylint: disable=unused-argument
+def update_symlinks(config, unused_plugins):
     """Update the certificate file family symlinks
 
     Use the information in the config file to make symlinks point to
@@ -985,7 +985,7 @@ def update_symlinks(config, unused_plugins):  # pylint: disable=unused-argument
     """
     cert_manager.update_live_symlinks(config)
 
-def rename(config, unused_plugins):  # pylint: disable=unused-argument
+def rename(config, unused_plugins):
     """Rename a certificate
 
     Use the information in the config file to rename an existing
@@ -1003,7 +1003,7 @@ def rename(config, unused_plugins):  # pylint: disable=unused-argument
     """
     cert_manager.rename_lineage(config)
 
-def delete(config, unused_plugins):  # pylint: disable=unused-argument
+def delete(config, unused_plugins):
     """Delete a certificate
 
     Use the information in the config file to delete an existing
@@ -1021,7 +1021,7 @@ def delete(config, unused_plugins):  # pylint: disable=unused-argument
     """
     cert_manager.delete(config)
 
-def certificates(config, unused_plugins):  # pylint: disable=unused-argument
+def certificates(config, unused_plugins):
     """Display information about certs configured with Certbot
 
     :param config: Configuration object
@@ -1037,7 +1037,7 @@ def certificates(config, unused_plugins):  # pylint: disable=unused-argument
     cert_manager.certificates(config)
 
 # TODO: coop with renewal config
-def revoke(config, unused_plugins):  # pylint: disable=unused-argument
+def revoke(config, unused_plugins):
     """Revoke a previously obtained certificate.
 
     :param config: Configuration object
@@ -1256,7 +1256,7 @@ def certonly(config, plugins):
     _report_new_cert(config, cert_path, fullchain_path, key_path)
     _suggest_donation_if_appropriate(config)
 
-def renew(config, unused_plugins):  # pylint: disable=unused-argument
+def renew(config, unused_plugins):
     """Renew previously-obtained certificates.
 
     :param config: Configuration object

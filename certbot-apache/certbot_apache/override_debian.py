@@ -84,7 +84,6 @@ class DebianConfigurator(configurator.ApacheConfigurator):
         return None
 
     def enable_mod(self, mod_name, temp=False):
-        # pylint: disable=unused-argument
         """Enables module in Apache.
 
         Both enables and reloads Apache so module is active.

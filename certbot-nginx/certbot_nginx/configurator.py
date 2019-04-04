@@ -166,7 +166,6 @@ class NginxConfigurator(common.Installer):
     # Entry point in main.py for installing cert
     def deploy_cert(self, domain, cert_path, key_path,
                     chain_path=None, fullchain_path=None):
-        # pylint: disable=unused-argument
         """Deploys certificate to specified virtual host.
 
         .. note:: Aborts if the vhost is missing ssl_certificate or
@@ -187,8 +186,7 @@ class NginxConfigurator(common.Installer):
         for vhost in vhosts:
             self._deploy_cert(vhost, cert_path, key_path, chain_path, fullchain_path)
 
-    def _deploy_cert(self, vhost, cert_path, key_path, chain_path, fullchain_path):
-        # pylint: disable=unused-argument
+    def _deploy_cert(self, vhost, cert_path, key_path, chain_path, fullchain_path):  # pylint: disable=unused-argument
         """
         Helper function for deploy_cert() that handles the actual deployment
         this exists because we might want to do multiple deployments per
@@ -755,7 +753,7 @@ class NginxConfigurator(common.Installer):
         self.parser.remove_server_directives(vhost, 'listen', match_func=_no_ssl_match_func)
         return http_vhost, vhost
 
-    def _enable_redirect(self, domain, unused_options):  # pylint: disable=unused-argument
+    def _enable_redirect(self, domain, unused_options):
         """Redirect all equivalent HTTP traffic to ssl_vhost.
 
         If the vhost is listening plaintextishly, separate out the
@@ -1028,7 +1026,7 @@ class NginxConfigurator(common.Installer):
     ###########################################################################
     # Challenges Section for IAuthenticator
     ###########################################################################
-    def get_chall_pref(self, unused_domain):  # pylint: disable=no-self-use,unused-argument
+    def get_chall_pref(self, unused_domain):  # pylint: disable=no-self-use
         """Return list of challenge preferences."""
         return [challenges.HTTP01, challenges.TLSSNI01]
 

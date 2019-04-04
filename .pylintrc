@@ -189,9 +189,6 @@ init-import=no
 # not used).
 dummy-variables-rgx=(unused)?_.*|dummy
 
-# A regular expression matching ignored argument variable names
-ignored-argument-names=(unused)?_.*|dummy
-
 # List of additional names supposed to be defined in builtins. Remember that
 # you should avoid to define new builtins when possible.
 additional-builtins=
@@ -307,7 +304,7 @@ max-args=6
 
 # Argument names that match this expression will be ignored. Default to name
 # with leading underscore
-ignored-argument-names=_.*
+ignored-argument-names=(unused)?_.*|dummy
 
 # Maximum number of locals for function / method body
 max-locals=15

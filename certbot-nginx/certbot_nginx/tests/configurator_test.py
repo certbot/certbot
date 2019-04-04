@@ -70,7 +70,7 @@ class NginxConfiguratorTest(util.NginxTest):
         certbot_test_util.lock_and_call(self._test_prepare_locked, server_root)
 
     @mock.patch("certbot_nginx.configurator.util.exe_exists")
-    def _test_prepare_locked(self, unused_exe_exists):  # pylint: disable=unused-argument
+    def _test_prepare_locked(self, unused_exe_exists):
         try:
             self.config.prepare()
         except errors.PluginError as err:
@@ -774,7 +774,7 @@ class NginxConfiguratorTest(util.NginxTest):
 
     @mock.patch('certbot.reverter.logger')
     @mock.patch('certbot_nginx.parser.NginxParser.load')
-    def test_parser_reload_after_config_changes(self, mock_parser_load, unused_mock_logger):  # pylint: disable=unused-argument
+    def test_parser_reload_after_config_changes(self, mock_parser_load, unused_mock_logger):
         self.config.recovery_routine()
         self.config.revert_challenge_config()
         self.config.rollback_checkpoints()

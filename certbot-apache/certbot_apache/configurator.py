@@ -1682,7 +1682,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             self.parser.find_dir("SSLCertificateKeyFile",
                                  lineage.key_path, vhost.path))
 
-    def _enable_ocsp_stapling(self, ssl_vhost, unused_options):  # pylint: disable=unused-argument
+    def _enable_ocsp_stapling(self, ssl_vhost, unused_options):
         """Enables OCSP Stapling
 
         In OCSP, each client (e.g. browser) would have to query the
@@ -1812,7 +1812,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                     raise errors.PluginEnhancementAlreadyPresent(
                         "Existing %s header" % (header_substring))
 
-    def _enable_redirect(self, ssl_vhost, unused_options):  # pylint: disable=unused-argument
+    def _enable_redirect(self, ssl_vhost, unused_options):
         """Redirect all equivalent HTTP traffic to ssl_vhost.
 
         .. todo:: This enhancement should be rewritten and will
@@ -2131,7 +2131,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             vhost.enabled = True
         return
 
-    def enable_mod(self, mod_name, temp=False): # pylint: disable=unused-argument
+    def enable_mod(self, mod_name, temp=False):  # pylint: disable=unused-argument
         """Enables module in Apache.
 
         Both enables and reloads Apache so module is active.
@@ -2239,7 +2239,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     ###########################################################################
     # Challenges Section
     ###########################################################################
-    def get_chall_pref(self, unused_domain):  # pylint: disable=no-self-use,unused-argument
+    def get_chall_pref(self, unused_domain):  # pylint: disable=no-self-use
         """Return list of challenge preferences."""
         return [challenges.HTTP01]
 

@@ -69,7 +69,7 @@ class InitSaveCSRTest(test_util.TempDirTestCase):
 
     @mock.patch('acme.crypto_util.make_csr')
     @mock.patch('certbot.crypto_util.util.make_or_verify_dir')
-    def test_it(self, unused_mock_verify, mock_csr):  # pylint: disable=unused-argument
+    def test_it(self, unused_mock_verify, mock_csr):
         from certbot.crypto_util import init_save_csr
 
         mock_csr.return_value = b'csr_pem'
@@ -200,7 +200,7 @@ class VerifyRenewableCertTest(VerifyCertSetup):
         self.assertEqual(None, self._call(self.renewable_cert))
 
     @mock.patch('certbot.crypto_util.verify_renewable_cert_sig', side_effect=errors.Error(""))
-    def test_verify_renewable_cert_failure(self, unused_verify_renewable_cert_sign):  # pylint: disable=unused-argument
+    def test_verify_renewable_cert_failure(self, unused_verify_renewable_cert_sign):
         self.assertRaises(errors.Error, self._call, self.bad_renewable_cert)
 
 

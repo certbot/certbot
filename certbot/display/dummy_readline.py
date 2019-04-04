@@ -9,13 +9,13 @@ def get_completer_delims():
     """An empty implementation of readline.get_completer_delims."""
 
 
-def parse_and_bind(unused_command):  # pylint: disable=unused-argument
+def parse_and_bind(unused_command):
     """An empty implementation of readline.parse_and_bind."""
 
 
-def set_completer(unused_function=None):  # pylint: disable=unused-argument
+def set_completer(unused_function=None):
     """An empty implementation of readline.set_completer."""
 
 
-def set_completer_delims(unused_delims):  # pylint: disable=unused-argument
+def set_completer_delims(unused_delims):
     """An empty implementation of readline.set_completer_delims."""

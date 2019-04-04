@@ -273,7 +273,7 @@ class ClientTest(ClientTestCommon):
     @mock.patch("certbot.client.crypto_util")
     @mock.patch("certbot.client.logger")
     @test_util.patch_get_utility()
-    def test_obtain_certificate_from_csr(self, unused_mock_get_utility,  # pylint: disable=unused-argument
+    def test_obtain_certificate_from_csr(self, unused_mock_get_utility,
                                          mock_logger, mock_crypto_util):
         self._mock_obtain_certificate()
         test_csr = util.CSR(form="pem", file=None, data=CSR_SAN)

@@ -110,7 +110,6 @@ class AccountMemoryStorage(interfaces.AccountStorage):
         return list(six.itervalues(self.accounts))
 
     def save(self, account, client):
-        # pylint: disable=unused-argument
         if account.id in self.accounts:
             logger.debug("Overwriting account: %s", account.id)
         self.accounts[account.id] = account

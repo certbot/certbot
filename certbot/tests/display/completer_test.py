@@ -95,7 +95,7 @@ class CompleterTest(test_util.TempDirTestCase):
         self.assertTrue(mock_readline.parse_and_bind.called)
 
 
-def enable_tab_completion(unused_command):  # pylint: disable=unused-argument
+def enable_tab_completion(unused_command):
     """Enables readline tab completion using the system specific syntax."""
     libedit = readline.__doc__ is not None and 'libedit' in readline.__doc__
     command = 'bind ^I rl_complete' if libedit else 'tab: complete'
