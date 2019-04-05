@@ -19,7 +19,30 @@ import time
 import subprocess
 import sys
 import re
-import shlex
+
+REQUIREMENTS = [
+    '-e acme[dev]',
+    '-e .[dev,docs]',
+    '-e certbot-apache',
+    '-e certbot-dns-cloudflare',
+    '-e certbot-dns-cloudxns',
+    '-e certbot-dns-digitalocean',
+    '-e certbot-dns-dnsimple',
+    '-e certbot-dns-dnsmadeeasy',
+    '-e certbot-dns-gehirn',
+    '-e certbot-dns-google',
+    '-e certbot-dns-linode',
+    '-e certbot-dns-luadns',
+    '-e certbot-dns-nsone',
+    '-e certbot-dns-ovh',
+    '-e certbot-dns-rfc2136',
+    '-e certbot-dns-route53',
+    '-e certbot-dns-sakuracloud',
+    '-e certbot-nginx',
+    '-e certbot-postfix',
+    '-e letshelp-certbot',
+    '-e certbot-compatibility-test',
+]
 
 VERSION_PATTERN = re.compile(r'^(\d+)\.(\d+).*$')
 
@@ -120,16 +143,16 @@ def get_venv_python_path(venv_path):
         .format(venv_path)))
 
 
-def main(venv_name, venv_args, args):
-    """Creates a virtual environment and installs packages.
+def get_venv_path(venv_name):
+    """Determines the venv path and prepares it for use.
 
     :param str venv_name: The name or path at where the virtual
         environment should be created.
-    :param str venv_args: Command line arguments for virtualenv
-    :param str args: Command line arguments that should be given to pip
-        to install packages
-    """
 
+    :returns: path where the virtual environment should be created
+    :rtype: str
+
+    """
     for path in glob.glob('*.egg-info'):
         if os.path.isdir(path):
             shutil.rmtree(path)
@@ -145,15 +168,30 @@ def main(venv_name, venv_args, args):
     if os.path.isdir(venv_name):
         os.rename(venv_name, '{0}.{1}.bak'.format(venv_name, int(time.time())))
 
-    command = [sys.executable, '-m', 'virtualenv', '--no-site-packages', '--setuptools', venv_name]
-    command.extend(shlex.split(venv_args))
-    subprocess_with_print(command)
+    return venv_name
+
+
+def install(venv_name, pip_args=None):
+    """Installs packages in the given venv.
+
+    If pip_args is given, they are the arguments given to pip,
+    otherwise, REQUIREMENTS is used.
+
+    :param str venv_name: The name or path at where the virtual
+        environment should be created.
+    :param pip_args: Command line arguments that should be given to
+        pip to install packages
+    :type pip_args: `list` of `str`
+
+    """
+    if not pip_args:
+        pip_args = REQUIREMENTS
 
     # Using the python executable from venv, we ensure to execute following commands in this venv.
     py_venv = get_venv_python_path(venv_name)
     subprocess_with_print([py_venv, os.path.abspath('letsencrypt-auto-source/pieces/pipstrap.py')])
     command = [py_venv, os.path.abspath('tools/pip_install.py')]
-    command.extend(args)
+    command.extend(pip_args)
     subprocess_with_print(command)
 
     if os.path.isdir(os.path.join(venv_name, 'bin')):
@@ -171,7 +209,3 @@ def main(venv_name, venv_args, args):
         print('---------------------------------------------------------------------------')
     else:
         raise ValueError('Error, directory {0} is not a valid venv.'.format(venv_name))
-
-
-if __name__ == '__main__':
-    main('venv', '', sys.argv[1:])
