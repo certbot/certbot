@@ -143,11 +143,17 @@ def get_venv_python_path(venv_path):
         .format(venv_path)))
 
 
-def get_venv_path(venv_name):
+def prepare_venv_path(venv_name):
     """Determines the venv path and prepares it for use.
 
+    This function cleans up any Python eggs in the current working directory
+    and ensures the venv path is available for use. The path used is the
+    VENV_NAME environment variable if it is set and venv_name otherwise. If
+    there is already a directory at the desired path, the existing directory is
+    renamed by appending a timestamp to the directory name.
+
     :param str venv_name: The name or path at where the virtual
-        environment should be created.
+        environment should be created if VENV_NAME isn't set.
 
     :returns: path where the virtual environment should be created
     :rtype: str
@@ -171,7 +177,7 @@ def get_venv_path(venv_name):
     return venv_name
 
 
-def install(venv_name, pip_args=None):
+def install_packages(venv_name, pip_args=None):
     """Installs packages in the given venv.
 
     If pip_args is given, they are the arguments given to pip,

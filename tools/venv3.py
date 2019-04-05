@@ -17,9 +17,9 @@ def create_venv(venv_path):
 
 
 def main(pip_args=None):
-    venv_path = _venv_common.get_venv_path('venv3')
+    venv_path = _venv_common.prepare_venv_path('venv3')
     create_venv(venv_path)
-    _venv_common.install(venv_path, pip_args)
+    _venv_common.install_packages(venv_path, pip_args)
 
 
 if __name__ == '__main__':
