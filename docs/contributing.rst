@@ -353,8 +353,8 @@ Steps:
 
 1. Write your code!
 2. Make sure your environment is set up properly and that you're in your
-   virtualenv. You can do this by running ``pip tools/venv.py``.
-   (this is a **very important** step)
+   virtualenv. You can do this by following the instructions in the
+   :ref:`Getting Started <getting_started>` section.
 3. Run ``tox -e lint`` to check for pylint errors. Fix any errors.
 4. Run ``tox --skip-missing-interpreters`` to run the entire test suite
    including coverage. The ``--skip-missing-interpreters`` argument ignores
