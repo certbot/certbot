@@ -325,7 +325,10 @@ elif [ -f /etc/redhat-release ]; then
   DeterminePythonVersion "NOCRASH"
   # Starting to Fedora 29, python2 is on a deprecation path. Let's move to python3 then.
   RPM_DIST_NAME=`(. /etc/os-release 2> /dev/null && echo $ID) || echo "unknown"`
-  RPM_DIST_VERSION=`(. /etc/os-release 2> /dev/null && echo $VERSION_ID) || echo "0"`
+  RPM_DIST_VERSION=0
+  if [ "$RPM_DIST_NAME" = "fedora" ]; then
+    RPM_DIST_VERSION=`(. /etc/os-release 2> /dev/null && echo $VERSION_ID) || echo "0"`
+  fi
   if [ "$RPM_DIST_NAME" = "fedora" -a "$RPM_DIST_VERSION" -ge 29 -o "$PYVER" -eq 26 ]; then
     Bootstrap() {
       BootstrapMessage "RedHat-based OSes that will use Python3"

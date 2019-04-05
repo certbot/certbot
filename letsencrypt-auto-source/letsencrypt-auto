@@ -31,7 +31,7 @@ if [ -z "$VENV_PATH" ]; then
 fi
 VENV_BIN="$VENV_PATH/bin"
 BOOTSTRAP_VERSION_PATH="$VENV_PATH/certbot-auto-bootstrap-version.txt"
-LE_AUTO_VERSION="0.33.0.dev0"
+LE_AUTO_VERSION="0.34.0.dev0"
 BASENAME=$(basename $0)
 USAGE="Usage: $BASENAME [OPTIONS]
 A self-updating wrapper script for the Certbot ACME client. When run, updates
@@ -750,7 +750,10 @@ elif [ -f /etc/redhat-release ]; then
   DeterminePythonVersion "NOCRASH"
   # Starting to Fedora 29, python2 is on a deprecation path. Let's move to python3 then.
   RPM_DIST_NAME=`(. /etc/os-release 2> /dev/null && echo $ID) || echo "unknown"`
-  RPM_DIST_VERSION=`(. /etc/os-release 2> /dev/null && echo $VERSION_ID) || echo "0"`
+  RPM_DIST_VERSION=0
+  if [ "$RPM_DIST_NAME" = "fedora" ]; then
+    RPM_DIST_VERSION=`(. /etc/os-release 2> /dev/null && echo $VERSION_ID) || echo "0"`
+  fi
   if [ "$RPM_DIST_NAME" = "fedora" -a "$RPM_DIST_VERSION" -ge 29 -o "$PYVER" -eq 26 ]; then
     Bootstrap() {
       BootstrapMessage "RedHat-based OSes that will use Python3"
@@ -1080,7 +1083,9 @@ cryptography==2.6.1 \
     --hash=sha256:d4afbb0840f489b60f5a580a41a1b9c3622e08ecb5eec8614d4fb4cd914c4460 \
     --hash=sha256:d9ed28030797c00f4bc43c86bf819266c76a5ea61d006cd4078a93ebf7da6bfd \
     --hash=sha256:e603aa7bb52e4e8ed4119a58a03b60323918467ef209e6ff9db3ac382e5cf2c6
-enum34==1.1.6 \
+# Package enum34 needs to be explicitly limited to Python2.x, in order to avoid
+# certbot-auto failures on Python 3.6+ which enum34 doesn't support. See #5456.
+enum34==1.1.6 ; python_version < '3.4' \
     --hash=sha256:2d81cbbe0e73112bdfe6ef8576f2238f2ba27dd0d55752a776c41d38b7da2850 \
     --hash=sha256:644837f692e5f550741432dd3f223bbb9852018674981b1664e5dc339387588a \
     --hash=sha256:6bd0f6ad48ec2aa117d3d141940d484deccda84d4fcd884f5c3d93c23ecd8c79 \
@@ -1213,18 +1218,18 @@ letsencrypt==0.7.0 \
     --hash=sha256:105a5fb107e45bcd0722eb89696986dcf5f08a86a321d6aef25a0c7c63375ade \
     --hash=sha256:c36e532c486a7e92155ee09da54b436a3c420813ec1c590b98f635d924720de9
 
-certbot==0.32.0 \
-    --hash=sha256:75fd986ae42cd90bde6400c5f5a0dd936a7f4a42a416146b1e8bb0f92028b443 \
-    --hash=sha256:c0b94e25a07d83809d98029f09e9b501f86ec97624f45ce86800a7002488c3c8
-acme==0.32.0 \
-    --hash=sha256:88b2d2741e5ea028c590a33b16fb647cb74af6b2db6c7909c738a48f879efdec \
-    --hash=sha256:0eefce8b7880eb7eccc049a6b8ba262fc624bc34b3a8581d05b82f2bb39f1aec
-certbot-apache==0.32.0 \
-    --hash=sha256:b2c82b7a1c44799ba3a150970513ed4fa9afeee40e326440800b1243f917ddb6 \
-    --hash=sha256:68072775f1bb4bc9fc64cabe051a761f6dbf296012512eff7819144ac8b9ec97
-certbot-nginx==0.32.0 \
-    --hash=sha256:3fc3664231586565d886ddcb679c95a2fb2494a2ce3e028149f1496dca5b47cf \
-    --hash=sha256:82c43cd26aacc2eb0ae890be6a2f74d726b6dcb4ee7b63c0e55ec33e576f3e84
+certbot==0.33.0 \
+    --hash=sha256:37a7e833e2179c7aa0c34a11fbf661cf569d09e6f37eed6ffb805822d6068f3c \
+    --hash=sha256:25da67cb7f14db5fb5867d8aa3efbf0405fd63e07feb7e39f2a6f86fc0c83846
+acme==0.33.0 \
+    --hash=sha256:070a7a464b20316dc1fc84eb200357a2c9589b868e63307b04a7f76696c75667 \
+    --hash=sha256:9d5e6a2f200d42bbf2cafd7767724e9c58ac230763095b0640b4a16d955cb63e
+certbot-apache==0.33.0 \
+    --hash=sha256:cf94a1d2bafbcd434f209c04802b1da43397e7cdce80c5e253e90ed77f7d4d95 \
+    --hash=sha256:406764e0b31f7c764ac721a3e308902aefe169fc2ed229c06141fafc2173059d
+certbot-nginx==0.33.0 \
+    --hash=sha256:96a621cf0a3124ac03c8153c4b31cded06bf45775a0084a5f9ee5226c3b799fd \
+    --hash=sha256:1469539412dfc06b8009ca3f509256cada5793694f3146b2e634a520361d42d5
 
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
