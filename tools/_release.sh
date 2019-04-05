@@ -75,8 +75,15 @@ for pkg_dir in $SUBPKGS_NO_CERTBOT certbot-compatibility-test .
 do
   sed -i 's/\.dev0//' "$pkg_dir/setup.py"
   git add "$pkg_dir/setup.py"
-done
 
+  if [ -f "$pkg_dir/local-oldest-requirements.txt" ]; then
+    sed -i "s/-e acme\[dev\]/acme[dev]==$version/" "$pkg_dir/local-oldest-requirements.txt"
+    sed -i "s/-e acme/acme[dev]==$version/" "$pkg_dir/local-oldest-requirements.txt"
+    sed -i "s/-e \.\[dev\]/certbot[dev]==$version/" "$pkg_dir/local-oldest-requirements.txt"
+    sed -i "s/-e \./certbot[dev]==$version/" "$pkg_dir/local-oldest-requirements.txt"
+    git add "$pkg_dir/local-oldest-requirements.txt"
+  fi
+done
 
 SetVersion() {
     ver="$1"
@@ -265,16 +272,6 @@ if [ "$RELEASE_BRANCH" = candidate-"$version" ] ; then
     SetVersion "$nextversion".dev0
     letsencrypt-auto-source/build.py
     git add letsencrypt-auto-source/letsencrypt-auto
-    for pkg_dir in $SUBPKGS_NO_CERTBOT .
-    do
-      if [ -f "$pkg_dir/local-oldest-requirements.txt" ]; then
-        sed -i "s/-e acme\[dev\]/acme[dev]==$version/" "$pkg_dir/local-oldest-requirements.txt"
-        sed -i "s/-e acme/acme[dev]==$version/" "$pkg_dir/local-oldest-requirements.txt"
-        sed -i "s/-e \.\[dev\]/certbot[dev]==$version/" "$pkg_dir/local-oldest-requirements.txt"
-        sed -i "s/-e \./certbot[dev]==$version/" "$pkg_dir/local-oldest-requirements.txt"
-        git add "$pkg_dir/local-oldest-requirements.txt"
-      fi
-    done
     git diff
     git commit -m "Bump version to $nextversion"
 fi
