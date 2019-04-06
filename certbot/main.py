@@ -176,7 +176,6 @@ def _handle_subset_cert_request(config, domains, cert):
         raise errors.Error(USER_CANCELLED)
 
 
-# pylint: disable=inconsistent-return-statements
 def _handle_identical_cert_request(config, lineage):
     """Figure out what to do if a lineage has the same names as a previously obtained one
 
@@ -224,7 +223,8 @@ def _handle_identical_cert_request(config, lineage):
         return "reinstall", lineage
     elif response[1] == 1:
         return "renew", lineage
-    assert False, "This is imporssible"
+    raise AssertionError('This is impossible')
+
 
 def _find_lineage_for_domains(config, domains):
     """Determine whether there are duplicated names and how to handle
@@ -501,6 +501,7 @@ def _determine_account(config):
             raise errors.Error(
                 "Registration cannot proceed without accepting "
                 "Terms of Service.")
+        return None
 
     account_storage = account.AccountFileStorage(config)
     acme = None
@@ -688,7 +689,7 @@ def register(config, unused_plugins):
                 "unsupported.")
     # _determine_account will register an account
     _determine_account(config)
-    return
+    return None
 
 
 def update_account(config, unused_plugins):
@@ -762,6 +763,7 @@ def _install_cert(config, le_client, domains, lineage=None):
         path_provider.cert_path, path_provider.chain_path, path_provider.fullchain_path)
     le_client.enhance_config(domains, path_provider.chain_path)
 
+
 def install(config, plugins):
     """Install a previously obtained cert in a server.
 
@@ -818,6 +820,8 @@ def install(config, plugins):
         # In the case where we don't have certname, we have errored out already
         lineage = cert_manager.lineage_for_certname(config, config.certname)
         enhancements.enable(lineage, domains, installer, config)
+
+    return None
 
 def _populate_from_certname(config):
     """Helper function for install to populate missing config values from lineage
@@ -881,6 +885,7 @@ def plugins_cmd(config, plugins):
     logger.debug("Prepared plugins: %s", available)
     notify(str(available))
 
+
 def enhance(config, plugins):
     """Add security enhancements to existing configuration
 
@@ -936,6 +941,8 @@ def enhance(config, plugins):
         le_client.enhance_config(domains, config.chain_path, ask_redirect=False)
     if enhancements.are_requested(config):
         enhancements.enable(lineage, domains, installer, config)
+
+    return None
 
 
 def rollback(config, plugins):

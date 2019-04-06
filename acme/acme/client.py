@@ -137,7 +137,7 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
         authzr = messages.AuthorizationResource(
             body=messages.Authorization.from_json(response.json()),
             uri=response.headers.get('Location', uri))
-        if identifier is not None and authzr.body.identifier != identifier:  # pylint: disable=no-member
+        if identifier is not None and authzr.body.identifier != identifier:
             raise errors.UnexpectedUpdate(authzr)
         return authzr
 
@@ -717,7 +717,7 @@ class ClientV2(ClientBase):
         for url in orderr.body.authorizations:
             while datetime.datetime.now() < deadline:
                 authzr = self._authzr_from_response(self._post_as_get(url), uri=url)
-                if authzr.body.status != messages.STATUS_PENDING:  # pylint: disable=no-member
+                if authzr.body.status != messages.STATUS_PENDING:
                     responses.append(authzr)
                     break
                 time.sleep(1)
@@ -912,7 +912,7 @@ class BackwardsCompatibleClientV2(object):
                     'certificate, please rerun the command for a new one.')
 
             cert = OpenSSL.crypto.dump_certificate(
-                    OpenSSL.crypto.FILETYPE_PEM, certr.body.wrapped).decode()  # pylint: disable=no-member
+                    OpenSSL.crypto.FILETYPE_PEM, certr.body.wrapped).decode()
             chain = crypto_util.dump_pyopenssl_chain(chain).decode()
 
             return orderr.update(fullchain_pem=(cert + chain))

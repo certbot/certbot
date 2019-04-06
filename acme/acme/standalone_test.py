@@ -31,14 +31,14 @@ class TLSServerTest(unittest.TestCase):
         from acme.standalone import TLSServer
         server = TLSServer(
             ('', 0), socketserver.BaseRequestHandler, bind_and_activate=True)
-        server.server_close()  # pylint: disable=no-member
+        server.server_close()
 
     def test_ipv6(self):
         if socket.has_ipv6:
             from acme.standalone import TLSServer
             server = TLSServer(
                 ('', 0), socketserver.BaseRequestHandler, bind_and_activate=True, ipv6=True)
-            server.server_close()  # pylint: disable=no-member
+            server.server_close()
 
 
 class TLSSNI01ServerTest(unittest.TestCase):
@@ -57,7 +57,7 @@ class TLSSNI01ServerTest(unittest.TestCase):
         self.thread.start()
 
     def tearDown(self):
-        self.server.shutdown()  # pylint: disable=no-member
+        self.server.shutdown()
         self.thread.join()
 
     def test_it(self):

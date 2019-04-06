@@ -284,12 +284,15 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
 
 
 @contextmanager
-def create_installer(config, main_cf=DEFAULT_MAIN_CF):  # pylint: disable=dangerous-default-value
+def create_installer(config, main_cf=None):
     """Creates a Postfix installer with calls to `postconf` and `postfix` mocked out.
 
     In particular, creates a ConfigMain object that does regular things, but seeds it
     with values from `main_cf` and `master_cf` dicts.
     """
+    if main_cf is None:
+        main_cf = DEFAULT_MAIN_CF
+
     from certbot_postfix.postconf import ConfigMain
     from certbot_postfix import installer
 
