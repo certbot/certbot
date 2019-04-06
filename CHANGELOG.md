@@ -2,13 +2,48 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 0.33.0 - master
+## 0.34.0 - master
+
+### Added
+
+*
+
+### Changed
+
+*
+
+### Fixed
+
+*
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+package with changes other than its version number was:
+
+*
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.33.1 - 2019-04-04
+
+### Fixed
+
+* A bug causing certbot-auto to print warnings or crash on some RHEL based
+  systems has been resolved.
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+changes in this release were to certbot-auto.
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.33.0 - 2019-04-03
 
 ### Added
 
 * Fedora 29+ is now supported by certbot-auto. Since Python 2.x is on a deprecation
   path in Fedora, certbot-auto will install and use Python 3.x on Fedora 29+.
-* CLI flag `--http-port` has been added for Nginx plugin exclusively, and replaces
+* CLI flag `--https-port` has been added for Nginx plugin exclusively, and replaces
   `--tls-sni-01-port`. It defines the HTTPS port the Nginx plugin will use while
   setting up a new SSL vhost. By default the HTTPS port is 443.
 
@@ -36,6 +71,7 @@ Despite us having broken lockstep, we are continuing to release new versions of
 all Certbot components during releases for the time being, however, the only
 package with changes other than its version number was:
 
+* acme
 * certbot
 * certbot-apache
 * certbot-nginx

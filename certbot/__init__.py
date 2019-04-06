@@ -1,4 +1,4 @@
 """Certbot client."""
 
 # version number like 1.2.3a0, must have at least 2 parts, like 1.2
-__version__ = '0.33.0.dev0'
+__version__ = '0.34.0.dev0'
