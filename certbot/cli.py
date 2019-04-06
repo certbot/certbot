@@ -101,6 +101,7 @@ manage certificates:
 
 manage your account with Let's Encrypt:
     register        Create a Let's Encrypt ACME account
+    unregister      Deactivate a Let's Encrypt ACME account
     update_account  Update a Let's Encrypt ACME account
   --agree-tos       Agree to the ACME server's Subscriber Agreement
    -m EMAIL         Email address for important account notifications
@@ -117,7 +118,7 @@ More detailed help:
    all, automation, commands, paths, security, testing, or any of the
    subcommands or plugins (certonly, renew, install, register, nginx,
    apache, standalone, webroot, etc.)
-
+  -h all                print a detailed help page including all topics 
   --version             print the version number
 """
 

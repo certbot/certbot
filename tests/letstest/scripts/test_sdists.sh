@@ -4,13 +4,11 @@ cd letsencrypt
 ./certbot-auto --os-packages-only -n --debug
 
 PLUGINS="certbot-apache certbot-nginx"
-PYTHON=$(command -v python2.7 || command -v python27 || command -v python2 || command -v python)
 TEMP_DIR=$(mktemp -d)
 VERSION=$(letsencrypt-auto-source/version.py)
-export VENV_ARGS="-p $PYTHON"
 
 # setup venv
-tools/_venv_common.py --requirement letsencrypt-auto-source/pieces/dependency-requirements.txt
+tools/venv.py --requirement letsencrypt-auto-source/pieces/dependency-requirements.txt
 . ./venv/bin/activate
 # pytest is needed to run tests on some of our packages so we install a pinned version here.
 tools/pip_install.py pytest
