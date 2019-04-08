@@ -6,7 +6,7 @@ cache:
 
 before_script:
   - 'if [ $TRAVIS_OS_NAME = osx ] ; then ulimit -n 1024 ; fi'
-  - export TOX_TESTENV_PASSENV=TRAVIS
+  - export TOX_TESTENV_PASSENV="CI TRAVIS TRAVIS_*"
 
 # Only build pushes to the master branch, PRs, and branches beginning with
 # `test-` or of the form `digit(s).digit(s).x`. This reduces the number of
