@@ -251,7 +251,7 @@ ignored-modules=pkg_resources,confargparse,argparse,six.moves,six.moves.urllib
 
 # List of classes names for which member attributes should not be checked
 # (useful for classes with attributes dynamically set).
-ignored-classes=Field,Header,JWS
+ignored-classes=Field,Header,JWS,closing
 
 # When zope mode is activated, add a predefined set of Zope acquired attributes
 # to generated-members.
