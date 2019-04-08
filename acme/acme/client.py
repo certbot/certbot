@@ -1163,7 +1163,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         if self.REPLAY_NONCE_HEADER in response.headers:
             nonce = response.headers[self.REPLAY_NONCE_HEADER]
             try:
-                decoded_nonce = jws.Header._fields['nonce'].decode(nonce)  # pylint: disable=no-member
+                decoded_nonce = jws.Header._fields['nonce'].decode(nonce)
             except jose.DeserializationError as error:
                 raise errors.BadNonce(nonce, error)
             logger.debug('Storing nonce: %s', nonce)
