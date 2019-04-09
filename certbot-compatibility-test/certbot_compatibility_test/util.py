@@ -35,7 +35,7 @@ def create_le_config(parent_dir):
 
     config["domains"] = None
 
-    return argparse.Namespace(**config)  # pylint: disable=star-args
+    return argparse.Namespace(**config)
 
 
 def extract_configs(configs, parent_dir):

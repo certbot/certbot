@@ -4,8 +4,8 @@ import functools
 import glob
 import logging
 import os
-import pyparsing
 import re
+import pyparsing
 
 import six
 
@@ -52,6 +52,7 @@ class NginxParser(object):
         :param str filepath: The path to the files to parse, as a glob
 
         """
+        # pylint: disable=too-many-nested-blocks
         filepath = self.abs_path(filepath)
         trees = self._parse_files(filepath)
         for tree in trees:
@@ -82,8 +83,7 @@ class NginxParser(object):
         """
         if not os.path.isabs(path):
             return os.path.normpath(os.path.join(self.root, path))
-        else:
-            return os.path.normpath(path)
+        return os.path.normpath(path)
 
     def _build_addr_to_ssl(self):
         """Builds a map from address to whether it listens on ssl in any server block
@@ -381,7 +381,7 @@ class NginxParser(object):
         if only_directives is not None:
             new_directives = nginxparser.UnspacedList([])
             for directive in raw_in_parsed[1]:
-                if len(directive) > 0 and directive[0] in only_directives:
+                if directive and directive[0] in only_directives:
                     new_directives.append(directive)
             raw_in_parsed[1] = new_directives
 
@@ -394,7 +394,7 @@ class NginxParser(object):
                 addr.default = False
                 addr.ipv6only = False
             for directive in enclosing_block[new_vhost.path[-1]][1]:
-                if len(directive) > 0 and directive[0] == 'listen':
+                if directive and directive[0] == 'listen':
                     # Exclude one-time use parameters which will cause an error if repeated.
                     # https://nginx.org/en/docs/http/ngx_http_core_module.html#listen
                     exclude = set(('default_server', 'default', 'setfib', 'fastopen', 'backlog',
@@ -465,19 +465,19 @@ def get_best_match(target_name, names):
         elif _regex_match(target_name, name):
             regex.append(name)
 
-    if len(exact) > 0:
+    if exact:
         # There can be more than one exact match; e.g. eff.org, .eff.org
         match = min(exact, key=len)
         return ('exact', match)
-    if len(wildcard_start) > 0:
+    if wildcard_start:
         # Return the longest wildcard
         match = max(wildcard_start, key=len)
         return ('wildcard_start', match)
-    if len(wildcard_end) > 0:
+    if wildcard_end:
         # Return the longest wildcard
         match = max(wildcard_end, key=len)
         return ('wildcard_end', match)
-    if len(regex) > 0:
+    if regex:
         # Just return the first one for now
         match = regex[0]
         return ('regex', match)
@@ -522,10 +522,7 @@ def _regex_match(target_name, name):
     # After tilde is a perl-compatible regex
     try:
         regex = re.compile(name[1:])
-        if re.match(regex, target_name):
-            return True
-        else:
-            return False
+        return re.match(regex, target_name)
     except re.error:  # pragma: no cover
         # perl-compatible regexes are sometimes not recognized by python
         return False

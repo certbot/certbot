@@ -91,8 +91,7 @@ class Proxy(object):
         """Returns the set of domain names that can be tested against"""
         if self._test_names:
             return self._test_names
-        else:
-            return {"example.com"}
+        return {"example.com"}
 
     def deploy_cert(self, domain, cert_path, key_path, chain_path=None,
                     fullchain_path=None):

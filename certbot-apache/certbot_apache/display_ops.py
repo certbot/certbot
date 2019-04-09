@@ -26,7 +26,7 @@ def select_vhost_multiple(vhosts):
         return list()
     tags_list = [vhost.display_repr()+"\n" for vhost in vhosts]
     # Remove the extra newline from the last entry
-    if len(tags_list):
+    if tags_list:
         tags_list[-1] = tags_list[-1][:-1]
     code, names = zope.component.getUtility(interfaces.IDisplay).checklist(
         "Which VirtualHosts would you like to install the wildcard certificate for?",
@@ -62,8 +62,7 @@ def select_vhost(domain, vhosts):
     code, tag = _vhost_menu(domain, vhosts)
     if code == display_util.OK:
         return vhosts[tag]
-    else:
-        return None
+    return None
 
 def _vhost_menu(domain, vhosts):
     """Select an appropriate Apache Vhost.
@@ -93,7 +92,7 @@ def _vhost_menu(domain, vhosts):
     for vhost in vhosts:
         if len(vhost.get_names()) == 1:
             disp_name = next(iter(vhost.get_names()))
-        elif len(vhost.get_names()) == 0:
+        elif not vhost.get_names():
             disp_name = ""
         else:
             disp_name = "Multiple Names"
