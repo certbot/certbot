@@ -1,13 +1,14 @@
 coverage:
   status:
     project:
+      default: off
       linux:
         flags: linux
-        target: 98.48
+        target: auto
         threshold: 0.1
         base: auto
       windows:
         flags: windows
-        target: 96.84
+        target: auto
         threshold: 0.1
         base: auto
