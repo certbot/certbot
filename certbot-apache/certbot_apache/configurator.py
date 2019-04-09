@@ -4,11 +4,14 @@ import copy
 import fnmatch
 import logging
 import os
-import pkg_resources
 import re
-import six
 import socket
 import time
+
+from collections import defaultdict
+
+import pkg_resources
+import six
 
 import zope.component
 import zope.interface
@@ -32,8 +35,6 @@ from certbot_apache import display_ops
 from certbot_apache import http_01
 from certbot_apache import obj
 from certbot_apache import parser
-
-from collections import defaultdict
 
 logger = logging.getLogger(__name__)
 
@@ -251,7 +252,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                          '.'.join(str(i) for i in self.version))
         if self.version < (2, 2):
             raise errors.NotSupportedError(
-                "Apache Version %s not supported.", str(self.version))
+                "Apache Version {0} not supported.".format(str(self.version)))
 
         if not self._check_aug_version():
             raise errors.NotSupportedError(
@@ -275,8 +276,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             util.lock_dir_until_exit(self.option("server_root"))
         except (OSError, errors.LockError):
             logger.debug("Encountered error:", exc_info=True)
-            raise errors.PluginError(
-                "Unable to lock %s", self.option("server_root"))
+            raise errors.PluginError("Unable to lock {0}".format(self.option("server_root")))
         self._prepared = True
 
     def _verify_exe_availability(self, exe):
@@ -392,6 +392,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         if len(name.split(".")) == len(domain.split(".")):
             return fnmatch.fnmatch(name, domain)
+        return None
 
     def _choose_vhosts_wildcard(self, domain, create_ssl=True):
         """Prompts user to choose vhosts to install a wildcard certificate for"""
@@ -715,7 +716,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                     if name:
                         all_names.add(name)
 
-        if len(vhost_macro) > 0:
+        if vhost_macro:
             zope.component.getUtility(interfaces.IDisplay).notification(
                 "Apache mod_macro seems to be in use in file(s):\n{0}"
                 "\n\nUnfortunately mod_macro is not yet supported".format(
@@ -1061,6 +1062,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 # Ugly but takes care of protocol def, eg: 1.1.1.1:443 https
                 if listen.split(":")[-1].split(" ")[0] == port:
                     return True
+        return None
 
     def prepare_https_modules(self, temp):
         """Helper method for prepare_server_https, taking care of enabling
@@ -1188,8 +1190,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         if fp.endswith(".conf"):
             return fp[:-(len(".conf"))] + self.option("le_vhost_ext")
-        else:
-            return fp + self.option("le_vhost_ext")
+        return fp + self.option("le_vhost_ext")
 
     def _sift_rewrite_rule(self, line):
         """Decides whether a line should be copied to a SSL vhost.
@@ -1409,8 +1410,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
     def _remove_directives(self, vh_path, directives):
         for directive in directives:
-            while len(self.parser.find_dir(directive, None,
-                                           vh_path, False)) > 0:
+            while self.parser.find_dir(directive, None, vh_path, False):
                 directive_path = self.parser.find_dir(directive, None,
                                                       vh_path, False)
                 self.aug.remove(re.sub(r"/\w*$", "", directive_path[0]))
@@ -2131,7 +2131,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             vhost.enabled = True
         return
 
-    def enable_mod(self, mod_name, temp=False): # pylint: disable=unused-argument
+    def enable_mod(self, mod_name, temp=False):  # pylint: disable=unused-argument
         """Enables module in Apache.
 
         Both enables and reloads Apache so module is active.

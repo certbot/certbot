@@ -31,7 +31,6 @@ from certbot_apache.tests import util
 class MultipleVhostsTest(util.ApacheTest):
     """Test two standard well-configured HTTP vhosts."""
 
-
     def setUp(self):  # pylint: disable=arguments-differ
         super(MultipleVhostsTest, self).setUp()
 
@@ -385,6 +384,7 @@ class MultipleVhostsTest(util.ApacheTest):
             """Mock method for parser.find_dir"""
             if directive == "Include" and argument.endswith("options-ssl-apache.conf"):
                 return ["/path/to/whatever"]
+            return None  # pragma: no cover
 
         mock_add = mock.MagicMock()
         self.config.parser.add_dir = mock_add
@@ -496,8 +496,7 @@ class MultipleVhostsTest(util.ApacheTest):
             but an SSLCertificateKeyFile directive is missing."""
             if "SSLCertificateFile" in args:
                 return ["example/cert.pem"]
-            else:
-                return []
+            return []
 
         mock_find_dir = mock.MagicMock(return_value=[])
         mock_find_dir.side_effect = side_effect
@@ -1045,7 +1044,7 @@ class MultipleVhostsTest(util.ApacheTest):
 
         # pylint: disable=protected-access
         http_vh = self.config._get_http_vhost(ssl_vh)
-        self.assertTrue(http_vh.ssl == False)
+        self.assertFalse(http_vh.ssl)
 
     @mock.patch("certbot.util.run_script")
     @mock.patch("certbot.util.exe_exists")
@@ -1401,7 +1400,7 @@ class MultipleVhostsTest(util.ApacheTest):
         # pylint: disable=protected-access
         cases = {u"*.example.org": True, b"*.x.example.org": True,
                  u"a.example.org": False, b"a.x.example.org": False}
-        for key in cases.keys():
+        for key in cases:
             self.assertEqual(self.config._wildcard_domain(key), cases[key])
 
     def test_choose_vhosts_wildcard(self):
@@ -1563,7 +1562,7 @@ class AugeasVhostsTest(util.ApacheTest):
     def test_choosevhost_works(self):
         path = "debian_apache_2_4/augeas_vhosts/apache2/sites-available/old-and-default.conf"
         chosen_vhost = self.config._create_vhost(path)
-        self.assertTrue(chosen_vhost == None or chosen_vhost.path == path)
+        self.assertTrue(chosen_vhost is None or chosen_vhost.path == path)
 
     @mock.patch("certbot_apache.configurator.ApacheConfigurator._create_vhost")
     def test_get_vhost_continue(self, mock_vhost):

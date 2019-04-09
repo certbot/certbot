@@ -238,9 +238,8 @@ def test_rollback(plugin, config, backup):
     if _dirs_are_unequal(config, backup):
         logger.error("*** Rollback failed for config `%s`", config)
         return False
-    else:
-        logger.info("Rollback succeeded")
-        return True
+    logger.info("Rollback succeeded")
+    return True
 
 
 def _create_backup(config, temp_dir):
@@ -255,7 +254,7 @@ def _create_backup(config, temp_dir):
 def _dirs_are_unequal(dir1, dir2):
     """Returns True if dir1 and dir2 are unequal"""
     dircmps = [filecmp.dircmp(dir1, dir2)]
-    while len(dircmps):
+    while dircmps:
         dircmp = dircmps.pop()
         if dircmp.left_only or dircmp.right_only:
             logger.error("The following files and directories are only "

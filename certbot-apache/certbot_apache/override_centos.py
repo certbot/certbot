@@ -1,17 +1,16 @@
 """ Distribution specific override class for CentOS family (RHEL, Fedora) """
 import logging
+
 import pkg_resources
-
-from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
-
 import zope.interface
 
-from certbot import interfaces
-
+from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
 
 from certbot_apache import apache_util
 from certbot_apache import configurator
 from certbot_apache import parser
+
+from certbot import interfaces
 from certbot.errors import MisconfigurationError
 
 logger = logging.getLogger(__name__)
@@ -55,7 +54,7 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
             self.aug, self.option("server_root"), self.option("vhost_root"),
             self.version, configurator=self)
 
-    def _deploy_cert(self, *args, **kwargs):
+    def _deploy_cert(self, *args, **kwargs):  # pylint: disable=arguments-differ
         """
         Override _deploy_cert in order to ensure that the Apache configuration
         has "LoadModule ssl_module..." before parsing the VirtualHost configuration
@@ -64,7 +63,6 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
         super(CentOSConfigurator, self)._deploy_cert(*args, **kwargs)
         if self.version < (2, 4, 0):
             self._deploy_loadmodule_ssl_if_needed()
-
 
     def _deploy_loadmodule_ssl_if_needed(self):
         """
@@ -150,7 +148,7 @@ class CentOSParser(parser.ApacheParser):
     def parse_sysconfig_var(self):
         """ Parses Apache CLI options from CentOS configuration file """
         defines = apache_util.parse_define_file(self.sysconfig_filep, "OPTIONS")
-        for k in defines.keys():
+        for k in defines:
             self.variables[k] = defines[k]
 
     def not_modssl_ifmodule(self, path):

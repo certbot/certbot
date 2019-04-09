@@ -64,7 +64,7 @@ class ClientTestBase(unittest.TestCase):
         reg = messages.Registration(
             contact=self.contact, key=KEY.public_key())
         the_arg = dict(reg) # type: Dict
-        self.new_reg = messages.NewRegistration(**the_arg) # pylint: disable=star-args
+        self.new_reg = messages.NewRegistration(**the_arg)
         self.regr = messages.RegistrationResource(
             body=reg, uri='https://www.letsencrypt-demo.org/acme/reg/1')
 
@@ -358,7 +358,6 @@ class ClientTest(ClientTestBase):
 
     def test_register(self):
         # "Instance of 'Field' has no to_json/update member" bug:
-        # pylint: disable=no-member
         self.response.status_code = http_client.CREATED
         self.response.json.return_value = self.regr.body.to_json()
         self.response.headers['Location'] = self.regr.uri
@@ -371,7 +370,6 @@ class ClientTest(ClientTestBase):
 
     def test_update_registration(self):
         # "Instance of 'Field' has no to_json/update member" bug:
-        # pylint: disable=no-member
         self.response.headers['Location'] = self.regr.uri
         self.response.json.return_value = self.regr.body.to_json()
         self.assertEqual(self.regr, self.client.update_registration(self.regr))
@@ -872,7 +870,6 @@ class ClientV2Test(ClientTestBase):
 
     def test_update_registration(self):
         # "Instance of 'Field' has no to_json/update member" bug:
-        # pylint: disable=no-member
         self.response.headers['Location'] = self.regr.uri
         self.response.json.return_value = self.regr.body.to_json()
         self.assertEqual(self.regr, self.client.update_registration(self.regr))
@@ -934,7 +931,7 @@ class MockJSONDeSerializable(jose.JSONDeSerializable):
         return {'foo': self.value}
 
     @classmethod
-    def from_json(cls, value):
+    def from_json(cls, jobj):
         pass  # pragma: no cover
 
 

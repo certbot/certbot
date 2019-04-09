@@ -6,7 +6,7 @@ import mock
 import OpenSSL
 import requests
 
-from six.moves.urllib import parse as urllib_parse  # pylint: disable=import-error
+from six.moves.urllib import parse as urllib_parse  # pylint: disable=relative-import
 
 from acme import errors
 from acme import test_util
