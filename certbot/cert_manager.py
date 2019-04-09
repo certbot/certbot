@@ -184,10 +184,9 @@ def _archive_files(candidate_lineage, filetype):
     archive_dir = candidate_lineage.archive_dir
     pattern = [os.path.join(archive_dir, f) for f in os.listdir(archive_dir)
                     if re.match("{0}[0-9]*.pem".format(filetype), f)]
-    if len(pattern) > 0:
+    if pattern:
         return pattern
-    else:
-        return None
+    return None
 
 def _acceptable_matches():
     """ Generates the list that's passed to match_and_check_overlaps. Is its own function to

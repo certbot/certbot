@@ -1,10 +1,10 @@
 """Tests for certbot.plugins.manual"""
 import os
 import unittest
+import sys
 
 import six
 import mock
-import sys
 
 from acme import challenges
 
@@ -117,8 +117,7 @@ class AuthenticatorTest(test_util.TempDirTestCase):
             self.auth.cleanup([achall])
             self.assertEqual(os.environ['CERTBOT_AUTH_OUTPUT'], 'foo')
             self.assertEqual(os.environ['CERTBOT_DOMAIN'], achall.domain)
-            if (isinstance(achall.chall, challenges.HTTP01) or
-                isinstance(achall.chall, challenges.DNS01)):
+            if isinstance(achall.chall, (challenges.HTTP01, challenges.DNS01)):
                 self.assertEqual(
                     os.environ['CERTBOT_VALIDATION'],
                     achall.validation(achall.account_key))

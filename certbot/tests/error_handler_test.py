@@ -148,9 +148,6 @@ class ExitHandlerTest(ErrorHandlerTest):
                                                **self.init_kwargs)
         func.assert_called_once_with()
 
-    def test_bad_recovery_with_signal(self):
-        super(ExitHandlerTest, self).test_bad_recovery_with_signal()
-
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

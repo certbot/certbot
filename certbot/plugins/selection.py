@@ -111,8 +111,7 @@ def pick_plugin(config, default, plugins, question, ifaces):
         plugin_ep = choose_plugin(list(six.itervalues(prepared)), question)
         if plugin_ep is None:
             return None
-        else:
-            return plugin_ep.init()
+        return plugin_ep.init()
     elif len(prepared) == 1:
         plugin_ep = list(prepared.values())[0]
         logger.debug("Single candidate plugin: %s", plugin_ep)

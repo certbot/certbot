@@ -312,9 +312,8 @@ def config_help(name, hidden=False):
     # pylint: disable=no-member
     if hidden:
         return argparse.SUPPRESS
-    else:
-        field = interfaces.IConfig.__getitem__(name) # type: zope.interface.interface.Attribute
-        return field.__doc__
+    field = interfaces.IConfig.__getitem__(name)  # type: zope.interface.interface.Attribute  # pylint: disable=no-value-for-parameter
+    return field.__doc__
 
 
 class HelpfulArgumentGroup(object):
@@ -540,7 +539,7 @@ class HelpfulArgumentParser(object):
     # Help that are synonyms for --help subcommands
     COMMANDS_TOPICS = ["command", "commands", "subcommand", "subcommands", "verbs"]
     def _list_subcommands(self):
-        longest = max(len(v) for v in VERB_HELP_MAP.keys())
+        longest = max(len(v) for v in VERB_HELP_MAP)
 
         text = "The full list of available SUBCOMMANDS is:\n\n"
         for verb, props in sorted(VERB_HELP):
@@ -568,7 +567,7 @@ class HelpfulArgumentParser(object):
             apache_doc = "(the certbot apache plugin is not installed)"
 
         usage = SHORT_USAGE
-        if help_arg == True:
+        if help_arg is True:
             self.notify(usage + COMMAND_OVERVIEW % (apache_doc, nginx_doc) + HELP_AND_VERSION_USAGE)
             sys.exit(0)
         elif help_arg in self.COMMANDS_TOPICS:
@@ -874,8 +873,7 @@ class HelpfulArgumentParser(object):
                          for t in self.help_topics])
         elif not chosen_topic:
             return dict([(t, False) for t in self.help_topics])
-        else:
-            return dict([(t, t == chosen_topic) for t in self.help_topics])
+        return dict([(t, t == chosen_topic) for t in self.help_topics])
 
 def _add_all_groups(helpful):
     helpful.add_group("automation", description="Flags for automating execution & other tweaks")

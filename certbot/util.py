@@ -2,6 +2,7 @@
 import argparse
 import atexit
 import collections
+from collections import OrderedDict
 # distutils.version under virtualenv confuses pylint
 # For more info, see: https://github.com/PyCQA/pylint/issues/73
 import distutils.version  # pylint: disable=import-error,no-name-in-module
@@ -12,7 +13,6 @@ import platform
 import re
 import socket
 import subprocess
-from collections import OrderedDict
 
 import configargparse
 import six
@@ -217,7 +217,6 @@ def safe_open(path, mode="w", chmod=None, buffering=None):
         defaults if ``None``.
 
     """
-    # pylint: disable=star-args
     open_args = ()  # type: Union[Tuple[()], Tuple[int]]
     if chmod is not None:
         open_args = (chmod,)
@@ -467,9 +466,8 @@ def safe_email(email):
     """Scrub email address before using it."""
     if EMAIL_REGEX.match(email) is not None:
         return not email.startswith(".") and ".." not in email
-    else:
-        logger.warning("Invalid email address: %s.", email)
-        return False
+    logger.warning("Invalid email address: %s.", email)
+    return False
 
 
 class _ShowWarning(argparse.Action):

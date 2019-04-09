@@ -149,7 +149,7 @@ class Reverter(object):
         if not backups:
             logger.info("Certbot has not saved backups of your configuration")
 
-            return
+            return None
         # Make sure there isn't anything unexpected in the backup folder
         # There should only be timestamped (float) directories
         try:
@@ -185,6 +185,7 @@ class Reverter(object):
             return os.linesep.join(output)
         zope.component.getUtility(interfaces.IDisplay).notification(
             os.linesep.join(output), force_interactive=True, pause=False)
+        return None
 
     def add_to_temp_checkpoint(self, save_files, save_notes):
         """Add files to temporary checkpoint.
@@ -316,7 +317,7 @@ class Reverter(object):
         # It is strongly advised to set newline = '' on Python 3 with CSV,
         # and it fixes problems on Windows.
         kwargs = {'newline': ''} if sys.version_info[0] > 2 else {}
-        with open(filepath, 'r', **kwargs) as csvfile:  # type: ignore  # pylint: disable=star-args
+        with open(filepath, 'r', **kwargs) as csvfile:  # type: ignore
             csvreader = csv.reader(csvfile)
             for command in reversed(list(csvreader)):
                 try:
@@ -417,9 +418,9 @@ class Reverter(object):
         kwargs = {'newline': ''} if sys.version_info[0] > 2 else {}
         try:
             if os.path.isfile(commands_fp):
-                command_file = open(commands_fp, "a", **kwargs)  # type: ignore  # pylint: disable=star-args
+                command_file = open(commands_fp, "a", **kwargs)  # type: ignore
             else:
-                command_file = open(commands_fp, "w", **kwargs)  # type: ignore  # pylint: disable=star-args
+                command_file = open(commands_fp, "w", **kwargs)  # type: ignore
 
             csvwriter = csv.writer(command_file)
             csvwriter.writerow(command)

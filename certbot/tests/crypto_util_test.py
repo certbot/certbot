@@ -192,9 +192,6 @@ class VerifyCertSetup(unittest.TestCase):
 class VerifyRenewableCertTest(VerifyCertSetup):
     """Tests for certbot.crypto_util.verify_renewable_cert."""
 
-    def setUp(self):
-        super(VerifyRenewableCertTest, self).setUp()
-
     def _call(self, renewable_cert):
         from certbot.crypto_util import verify_renewable_cert
         return verify_renewable_cert(renewable_cert)
@@ -209,9 +206,6 @@ class VerifyRenewableCertTest(VerifyCertSetup):
 
 class VerifyRenewableCertSigTest(VerifyCertSetup):
     """Tests for certbot.crypto_util.verify_renewable_cert."""
-
-    def setUp(self):
-        super(VerifyRenewableCertSigTest, self).setUp()
 
     def _call(self, renewable_cert):
         from certbot.crypto_util import verify_renewable_cert_sig
@@ -235,9 +229,6 @@ class VerifyRenewableCertSigTest(VerifyCertSetup):
 class VerifyFullchainTest(VerifyCertSetup):
     """Tests for certbot.crypto_util.verify_fullchain."""
 
-    def setUp(self):
-        super(VerifyFullchainTest, self).setUp()
-
     def _call(self, renewable_cert):
         from certbot.crypto_util import verify_fullchain
         return verify_fullchain(renewable_cert)
@@ -255,9 +246,6 @@ class VerifyFullchainTest(VerifyCertSetup):
 
 class VerifyCertMatchesPrivKeyTest(VerifyCertSetup):
     """Tests for certbot.crypto_util.verify_cert_matches_priv_key."""
-
-    def setUp(self):
-        super(VerifyCertMatchesPrivKeyTest, self).setUp()
 
     def _call(self, renewable_cert):
         from certbot.crypto_util import verify_cert_matches_priv_key
