@@ -1,0 +1,13 @@
+coverage:
+  status:
+    project:
+      linux:
+        flags: linux
+        target: 98.48
+        threshold: 0.1
+        base: auto
+      windows:
+        flags: windows
+        target: 96.84
+        threshold: 0.1
+        base: auto
