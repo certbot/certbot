@@ -37,7 +37,7 @@ class DNSAuthenticator(common.Plugin):
             help='The number of seconds to wait for DNS to propagate before asking the ACME server '
                  'to verify the DNS record.')
 
-    def get_chall_pref(self, unused_domain): # pylint: disable=missing-docstring,no-self-use
+    def get_chall_pref(self, unused_domain):  # pylint: disable=missing-docstring,no-self-use
         return [challenges.DNS01]
 
     def prepare(self): # pylint: disable=missing-docstring
@@ -83,7 +83,7 @@ class DNSAuthenticator(common.Plugin):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def _perform(self, domain, validation_domain_name, validation):  # pragma: no cover
+    def _perform(self, domain, validation_name, validation):  # pragma: no cover
         """
         Performs a dns-01 challenge by creating a DNS TXT record.
 
@@ -95,7 +95,7 @@ class DNSAuthenticator(common.Plugin):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def _cleanup(self, domain, validation_domain_name, validation):  # pragma: no cover
+    def _cleanup(self, domain, validation_name, validation):  # pragma: no cover
         """
         Deletes the DNS TXT record which would have been created by `_perform_achall`.
 

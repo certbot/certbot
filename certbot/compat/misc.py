@@ -1,8 +1,6 @@
 """
-Compatibility layer to run certbot both on Linux and Windows.
-
-This module contains all required platform specific code,
-allowing the rest of Certbot codebase to be platform agnostic.
+This compat module handles various platform specific calls that do not fall into one
+particular category.
 """
 import os
 import select

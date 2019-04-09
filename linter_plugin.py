@@ -9,6 +9,8 @@ from astroid import nodes
 
 def register(unused_linter):
     """Register this module as PyLint plugin."""
+    pass
+
 
 def _transform(cls):
     # fix the "no-member" error on instances of
@@ -17,9 +19,9 @@ def _transform(cls):
 
     # TODO: this is too broad and applies to any tested class...
 
-    if cls.slots() is not None:
-        for slot in cls.slots():
-            cls.locals[slot.value] = [nodes.EmptyNode()]
+    #if cls.slots() is not None:
+    #    for slot in cls.slots():
+    #        cls.locals[slot.value] = [nodes.EmptyNode()]
 
     if cls.name == 'JSONObjectWithFields':
         # _fields is magically introduced by JSONObjectWithFieldsMeta

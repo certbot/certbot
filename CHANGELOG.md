@@ -2,12 +2,11 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 0.33.0 - master
+## 0.34.0 - master
 
 ### Added
 
-* Fedora 29+ is now supported by certbot-auto. Since Python 2.x is on a deprecation
-  path in Fedora, certbot-auto will install and use Python 3.x on Fedora 29+.
+*
 
 ### Changed
 
@@ -22,6 +21,60 @@ all Certbot components during releases for the time being, however, the only
 package with changes other than its version number was:
 
 *
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.33.1 - 2019-04-04
+
+### Fixed
+
+* A bug causing certbot-auto to print warnings or crash on some RHEL based
+  systems has been resolved.
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+changes in this release were to certbot-auto.
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.33.0 - 2019-04-03
+
+### Added
+
+* Fedora 29+ is now supported by certbot-auto. Since Python 2.x is on a deprecation
+  path in Fedora, certbot-auto will install and use Python 3.x on Fedora 29+.
+* CLI flag `--https-port` has been added for Nginx plugin exclusively, and replaces
+  `--tls-sni-01-port`. It defines the HTTPS port the Nginx plugin will use while
+  setting up a new SSL vhost. By default the HTTPS port is 443.
+
+### Changed
+
+* Support for TLS-SNI-01 has been removed from all official Certbot plugins.
+* Attributes related to the TLS-SNI-01 challenge in `acme.challenges` and `acme.standalone`
+  modules are deprecated and will be removed soon.
+* CLI flags `--tls-sni-01-port` and `--tls-sni-01-address` are now no-op, will
+  generate a deprecation warning if used, and will be removed soon.
+* Options `tls-sni` and `tls-sni-01` in `--preferred-challenges` flag are now no-op,
+  will generate a deprecation warning if used, and will be removed soon.
+* CLI flag `--standalone-supported-challenges` has been removed.
+
+### Fixed
+
+* Certbot uses the Python library cryptography for OCSP when cryptography>=2.5
+  is installed. We fixed a bug in Certbot causing it to interpret timestamps in
+  the OCSP response as being in the local timezone rather than UTC.
+* Issue causing the default CentOS 6 TLS configuration to ignore some of the 
+  HTTPS VirtualHosts created by Certbot. mod_ssl loading is now moved to main 
+  http.conf for this environment where possible.
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+package with changes other than its version number was:
+
+* acme
+* certbot
+* certbot-apache
+* certbot-nginx
 
 More details about these changes can be found on our GitHub repo.
 

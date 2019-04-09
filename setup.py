@@ -1,7 +1,6 @@
 import codecs
 import os
 import re
-import sys
 
 from setuptools import find_packages, setup
 from setuptools.command.test import test as TestCommand
@@ -53,14 +52,13 @@ install_requires = [
 ]
 
 dev_extras = [
-    # Pin astroid==1.3.5, pylint==1.4.2 as a workaround for #289
-    'astroid==1.3.5',
+    'astroid==1.6.5',
     'coverage',
     'ipdb',
     'pytest',
     'pytest-cov',
     'pytest-xdist',
-    'pylint==1.4.2',  # upstream #248
+    'pylint==1.9.4',
     'tox',
     'twine',
     'wheel',

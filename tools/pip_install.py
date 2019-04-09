@@ -74,6 +74,12 @@ def call_with_print(command, cwd=None):
     subprocess.check_call(command, shell=True, cwd=cwd or os.getcwd())
 
 
+def pip_install_with_print(args_str):
+    command = '"{0}" -m pip install --disable-pip-version-check {1}'.format(sys.executable,
+                                                                            args_str)
+    call_with_print(command)
+
+
 def main(args):
     tools_path = find_tools_path()
     working_dir = tempfile.mkdtemp()
@@ -89,8 +95,7 @@ def main(args):
 
         if os.environ.get('CERTBOT_NO_PIN') == '1':
             # With unpinned dependencies, there is no constraint
-            call_with_print('"{0}" -m pip install {1}'
-                            .format(sys.executable, ' '.join(args)))
+            pip_install_with_print(' '.join(args))
         else:
             # Otherwise, we merge requirements to build the constraints and pin dependencies
             requirements = None
@@ -101,11 +106,11 @@ def main(args):
 
             merge_requirements(tools_path, requirements, test_constraints, all_constraints)
             if requirements:
-                call_with_print('"{0}" -m pip install --constraint "{1}" --requirement "{2}"'
-                                .format(sys.executable, all_constraints, requirements))
+                pip_install_with_print('--constraint "{0}" --requirement "{1}"'
+                                       .format(all_constraints, requirements))
 
-            call_with_print('"{0}" -m pip install --constraint "{1}" {2}'
-                            .format(sys.executable, all_constraints, ' '.join(args)))
+            pip_install_with_print('--constraint "{0}" {1}'
+                                   .format(all_constraints, ' '.join(args)))
     finally:
         if os.environ.get('TRAVIS'):
             print('travis_fold:end:install_certbot_deps')

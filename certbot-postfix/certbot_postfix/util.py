@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 COMMAND = "postfix"
 
+
 class PostfixUtilBase(object):
     """A base class for wrapping Postfix command line utilities."""
 
@@ -289,4 +290,3 @@ def _has_acceptable_tls_versions(parameter_string):
             if "!" + bad_version not in supported_version_list:
                 return False
     return True
-

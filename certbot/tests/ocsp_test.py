@@ -96,7 +96,7 @@ class OCSPTestOpenSSL(unittest.TestCase):
     @mock.patch('certbot.ocsp.logger')
     @mock.patch('certbot.util.run_script')
     def test_translate_ocsp(self, mock_run, mock_log):
-        # pylint: disable=protected-access,star-args
+        # pylint: disable=protected-access
         mock_run.return_value = openssl_confused
         from certbot import ocsp
         self.assertEqual(ocsp._translate_ocsp_query(*openssl_happy), False)

@@ -4,11 +4,14 @@ import copy
 import fnmatch
 import logging
 import os
-import pkg_resources
 import re
-import six
 import socket
 import time
+
+from collections import defaultdict
+
+import pkg_resources
+import six
 
 import zope.component
 import zope.interface
@@ -32,9 +35,6 @@ from certbot_apache import display_ops
 from certbot_apache import http_01
 from certbot_apache import obj
 from certbot_apache import parser
-from certbot_apache import tls_sni_01
-
-from collections import defaultdict
 
 logger = logging.getLogger(__name__)
 
@@ -215,14 +215,12 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     @property
     def mod_ssl_conf(self):
         """Full absolute path to SSL configuration file."""
-        return os.path.join(self.config.config_dir,
-                            constants.MOD_SSL_CONF_DEST)
+        return os.path.join(self.config.config_dir, constants.MOD_SSL_CONF_DEST)
 
     @property
     def updated_mod_ssl_conf_digest(self):
         """Full absolute path to digest of updated SSL configuration file."""
         return os.path.join(self.config.config_dir, constants.UPDATED_MOD_SSL_CONF_DIGEST)
-
 
     def prepare(self):
         """Prepare the authenticator/installer.
@@ -254,7 +252,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                          '.'.join(str(i) for i in self.version))
         if self.version < (2, 2):
             raise errors.NotSupportedError(
-                "Apache Version %s not supported.", str(self.version))
+                "Apache Version {0} not supported.".format(str(self.version)))
 
         if not self._check_aug_version():
             raise errors.NotSupportedError(
@@ -278,8 +276,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             util.lock_dir_until_exit(self.option("server_root"))
         except (OSError, errors.LockError):
             logger.debug("Encountered error:", exc_info=True)
-            raise errors.PluginError(
-                "Unable to lock %s", self.option("server_root"))
+            raise errors.PluginError("Unable to lock {0}".format(self.option("server_root")))
         self._prepared = True
 
     def _verify_exe_availability(self, exe):
@@ -395,7 +392,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         if len(name.split(".")) == len(domain.split(".")):
             return fnmatch.fnmatch(name, domain)
-
+        return None
 
     def _choose_vhosts_wildcard(self, domain, create_ssl=True):
         """Prompts user to choose vhosts to install a wildcard certificate for"""
@@ -441,7 +438,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self._wildcard_vhosts[domain] = return_vhosts
         return return_vhosts
 
-
     def _deploy_cert(self, vhost, cert_path, key_path, chain_path, fullchain_path):
         """
         Helper function for deploy_cert() that handles the actual deployment
@@ -449,8 +445,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         domain originally passed for deploy_cert(). This is especially true
         with wildcard certificates
         """
-
-
         # This is done first so that ssl module is enabled and cert_path,
         # cert_key... can all be parsed appropriately
         self.prepare_server_https("443")
@@ -722,7 +716,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                     if name:
                         all_names.add(name)
 
-        if len(vhost_macro) > 0:
+        if vhost_macro:
             zope.component.getUtility(interfaces.IDisplay).notification(
                 "Apache mod_macro seems to be in use in file(s):\n{0}"
                 "\n\nUnfortunately mod_macro is not yet supported".format(
@@ -1068,6 +1062,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 # Ugly but takes care of protocol def, eg: 1.1.1.1:443 https
                 if listen.split(":")[-1].split(" ")[0] == port:
                     return True
+        return None
 
     def prepare_https_modules(self, temp):
         """Helper method for prepare_server_https, taking care of enabling
@@ -1082,23 +1077,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 self.enable_mod("socache_shmcb", temp=temp)
             if "ssl_module" not in self.parser.modules:
                 self.enable_mod("ssl", temp=temp)
-
-    def make_addrs_sni_ready(self, addrs):
-        """Checks to see if the server is ready for SNI challenges.
-
-        :param addrs: Addresses to check SNI compatibility
-        :type addrs: :class:`~certbot_apache.obj.Addr`
-
-        """
-        # Version 2.4 and later are automatically SNI ready.
-        if self.version >= (2, 4):
-            return
-
-        for addr in addrs:
-            if not self.is_name_vhost(addr):
-                logger.debug("Setting VirtualHost at %s to be a name "
-                             "based virtual host", addr)
-                self.add_name_vhost(addr)
 
     def make_vhost_ssl(self, nonssl_vhost):  # pylint: disable=too-many-locals
         """Makes an ssl_vhost version of a nonssl_vhost.
@@ -1212,8 +1190,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         if fp.endswith(".conf"):
             return fp[:-(len(".conf"))] + self.option("le_vhost_ext")
-        else:
-            return fp + self.option("le_vhost_ext")
+        return fp + self.option("le_vhost_ext")
 
     def _sift_rewrite_rule(self, line):
         """Decides whether a line should be copied to a SSL vhost.
@@ -1433,8 +1410,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
     def _remove_directives(self, vh_path, directives):
         for directive in directives:
-            while len(self.parser.find_dir(directive, None,
-                                           vh_path, False)) > 0:
+            while self.parser.find_dir(directive, None, vh_path, False):
                 directive_path = self.parser.find_dir(directive, None,
                                                       vh_path, False)
                 self.aug.remove(re.sub(r"/\w*$", "", directive_path[0]))
@@ -1925,7 +1901,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             self.parser.add_dir(vhost.path, "RewriteRule",
                     constants.REWRITE_HTTPS_ARGS)
 
-
     def _verify_no_certbot_redirect(self, vhost):
         """Checks to see if a redirect was already installed by certbot.
 
@@ -2156,7 +2131,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             vhost.enabled = True
         return
 
-    def enable_mod(self, mod_name, temp=False): # pylint: disable=unused-argument
+    def enable_mod(self, mod_name, temp=False):  # pylint: disable=unused-argument
         """Enables module in Apache.
 
         Both enables and reloads Apache so module is active.
@@ -2193,7 +2168,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :raises .errors.MisconfigurationError: If reload fails
 
         """
-        error = ""
         try:
             util.run_script(self.option("restart_cmd"))
         except errors.SubprocessError as err:
@@ -2267,7 +2241,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     ###########################################################################
     def get_chall_pref(self, unused_domain):  # pylint: disable=no-self-use
         """Return list of challenge preferences."""
-        return [challenges.HTTP01, challenges.TLSSNI01]
+        return [challenges.HTTP01]
 
     def perform(self, achalls):
         """Perform the configuration related challenge.
@@ -2280,20 +2254,15 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self._chall_out.update(achalls)
         responses = [None] * len(achalls)
         http_doer = http_01.ApacheHttp01(self)
-        sni_doer = tls_sni_01.ApacheTlsSni01(self)
 
         for i, achall in enumerate(achalls):
             # Currently also have chall_doer hold associated index of the
             # challenge. This helps to put all of the responses back together
             # when they are all complete.
-            if isinstance(achall.chall, challenges.HTTP01):
-                http_doer.add_chall(achall, i)
-            else:  # tls-sni-01
-                sni_doer.add_chall(achall, i)
+            http_doer.add_chall(achall, i)
 
         http_response = http_doer.perform()
-        sni_response = sni_doer.perform()
-        if http_response or sni_response:
+        if http_response:
             # Must reload in order to activate the challenges.
             # Handled here because we may be able to load up other challenge
             # types
@@ -2304,7 +2273,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             time.sleep(3)
 
             self._update_responses(responses, http_response, http_doer)
-            self._update_responses(responses, sni_response, sni_doer)
 
         return responses
 

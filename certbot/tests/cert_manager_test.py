@@ -206,7 +206,8 @@ class CertificatesTest(BaseCertManagerTest):
     def test_report_human_readable(self, mock_revoked): #pylint: disable=too-many-statements
         mock_revoked.return_value = None
         from certbot import cert_manager
-        import datetime, pytz
+        import datetime
+        import pytz
         expiry = pytz.UTC.fromutc(datetime.datetime.utcnow())
 
         cert = mock.MagicMock(lineagename="nameone")
@@ -228,20 +229,20 @@ class CertificatesTest(BaseCertManagerTest):
         # pylint: disable=protected-access
         out = get_report()
         self.assertTrue('1 hour(s)' in out or '2 hour(s)' in out)
-        self.assertTrue('VALID' in out and not 'INVALID' in out)
+        self.assertTrue('VALID' in out and 'INVALID' not in out)
 
         cert.target_expiry += datetime.timedelta(days=1)
         # pylint: disable=protected-access
         out = get_report()
         self.assertTrue('1 day' in out)
         self.assertFalse('under' in out)
-        self.assertTrue('VALID' in out and not 'INVALID' in out)
+        self.assertTrue('VALID' in out and 'INVALID' not in out)
 
         cert.target_expiry += datetime.timedelta(days=2)
         # pylint: disable=protected-access
         out = get_report()
         self.assertTrue('3 days' in out)
-        self.assertTrue('VALID' in out and not 'INVALID' in out)
+        self.assertTrue('VALID' in out and 'INVALID'  not in out)
 
         cert.is_test_cert = True
         mock_revoked.return_value = True

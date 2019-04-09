@@ -227,7 +227,7 @@ BetterCrypto.org
 
 BetterCrypto.org, a collaboration of mostly European IT security experts, has published a draft paper, "Applied Crypto Hardening"
 
-https://bettercrypto.org/static/applied-crypto-hardening.pdf
+https://bettercrypto.org/
 
 FF-DHE Internet-Draft
 ~~~~~~~~~~~~~~~~~~~~~

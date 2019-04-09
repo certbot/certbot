@@ -2,6 +2,7 @@
 import argparse
 import atexit
 import collections
+from collections import OrderedDict
 # distutils.version under virtualenv confuses pylint
 # For more info, see: https://github.com/PyCQA/pylint/issues/73
 import distutils.version  # pylint: disable=import-error,no-name-in-module
@@ -10,21 +11,18 @@ import logging
 import os
 import platform
 import re
-import six
 import socket
 import subprocess
-import sys
-
-from collections import OrderedDict
 
 import configargparse
+import six
 
 from acme.magic_typing import Tuple, Union  # pylint: disable=unused-import, no-name-in-module
-from certbot import compat
+
 from certbot import constants
 from certbot import errors
 from certbot import lock
-
+from certbot.compat import misc
 
 logger = logging.getLogger(__name__)
 
@@ -205,7 +203,7 @@ def check_permissions(filepath, mode, uid=0):
 
     """
     file_stat = os.stat(filepath)
-    return compat.compare_file_modes(file_stat.st_mode, mode) and file_stat.st_uid == uid
+    return misc.compare_file_modes(file_stat.st_mode, mode) and file_stat.st_uid == uid
 
 
 def safe_open(path, mode="w", chmod=None, buffering=None):
@@ -219,7 +217,6 @@ def safe_open(path, mode="w", chmod=None, buffering=None):
         defaults if ``None``.
 
     """
-    # pylint: disable=star-args
     open_args = ()  # type: Union[Tuple[()], Tuple[int]]
     if chmod is not None:
         open_args = (chmod,)
@@ -469,16 +466,14 @@ def safe_email(email):
     """Scrub email address before using it."""
     if EMAIL_REGEX.match(email) is not None:
         return not email.startswith(".") and ".." not in email
-    else:
-        logger.warning("Invalid email address: %s.", email)
-        return False
+    logger.warning("Invalid email address: %s.", email)
+    return False
 
 
 class _ShowWarning(argparse.Action):
     """Action to log a warning when an argument is used."""
     def __call__(self, unused1, unused2, unused3, option_string=None):
-        sys.stderr.write(
-            "Use of {0} is deprecated.\n".format(option_string))
+        logger.warning("Use of %s is deprecated.", option_string)
 
 
 def add_deprecated_argument(add_argument, argument_name, nargs):

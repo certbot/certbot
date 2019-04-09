@@ -110,6 +110,7 @@ class LexiconClient(object):
         if not str(e).startswith('No domain found'):
             return errors.PluginError('Unexpected error determining zone identifier for {0}: {1}'
                                       .format(domain_name, e))
+        return None
 
 
 def build_lexicon_config(lexicon_provider_name, lexicon_options, provider_options):

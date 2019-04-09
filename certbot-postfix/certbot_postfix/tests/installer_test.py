@@ -1,20 +1,18 @@
 """Tests for certbot_postfix.installer."""
-from contextlib import contextmanager
 import copy
 import functools
 import os
-import pkg_resources
-import six
 import unittest
+from contextlib import contextmanager
 
 import mock
+import pkg_resources
+import six
+from acme.magic_typing import Dict, Tuple  # pylint: disable=unused-import, no-name-in-module
 
 from certbot import errors
 from certbot.tests import util as certbot_test_util
 
-# pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Dict, Tuple, Union
-# pylint: enable=unused-import, no-name-in-module
 
 DEFAULT_MAIN_CF = {
     "smtpd_tls_cert_file": "",
@@ -127,7 +125,7 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
         with create_installer(self.config) as installer:
             installer.prepare()
             installer.restart()
-            self.assertEqual(installer.postfix.restart.call_count, 1)
+            self.assertEqual(installer.postfix.restart.call_count, 1)  # pylint: disable=no-member
 
     def test_add_parser_arguments(self):
         options = set(("ctl", "config-dir", "config-utility",
@@ -269,7 +267,7 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
             installer.prepare()
             installer.deploy_cert("example.com", "cert_path", "key_path",
                                   "chain_path", "fullchain_path")
-            for param in more_secure.keys():
+            for param in more_secure:
                 self.assertFalse(param in installer.postconf.get_changes())
 
     def test_enhance(self):
@@ -284,16 +282,20 @@ class InstallerTest(certbot_test_util.ConfigTestCase):
             installer.prepare()
             self.assertEqual(installer.supported_enhancements(), [])
 
+
 @contextmanager
-def create_installer(config, main_cf=DEFAULT_MAIN_CF):
-# pylint: disable=dangerous-default-value
+def create_installer(config, main_cf=None):
     """Creates a Postfix installer with calls to `postconf` and `postfix` mocked out.
 
     In particular, creates a ConfigMain object that does regular things, but seeds it
     with values from `main_cf` and `master_cf` dicts.
     """
+    if main_cf is None:
+        main_cf = DEFAULT_MAIN_CF
+
     from certbot_postfix.postconf import ConfigMain
     from certbot_postfix import installer
+
     def _mock_init_postconf(postconf, executable, ignore_master_overrides=False, config_dir=None):
         # pylint: disable=protected-access,unused-argument
         postconf._ignore_master_overrides = ignore_master_overrides
@@ -309,6 +311,6 @@ def create_installer(config, main_cf=DEFAULT_MAIN_CF):
                              return_value=mock.Mock()):
                 yield installer.Installer(config, "postfix")
 
+
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
-

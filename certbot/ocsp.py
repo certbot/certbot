@@ -69,8 +69,7 @@ class RevocationChecker(object):
 
         if self.use_openssl_binary:
             return self._check_ocsp_openssl_bin(cert_path, chain_path, host, url)
-        else:
-            return _check_ocsp_cryptography(cert_path, chain_path, url)
+        return _check_ocsp_cryptography(cert_path, chain_path, url)
 
     def _check_ocsp_openssl_bin(self, cert_path, chain_path, host, url):
         # type: (str, str, str, str) -> bool
@@ -121,9 +120,8 @@ def _determine_ocsp_server(cert_path):
 
     if host:
         return url, host
-    else:
-        logger.info("Cannot process OCSP host from URL (%s) in cert at %s", url, cert_path)
-        return None, None
+    logger.info("Cannot process OCSP host from URL (%s) in cert at %s", url, cert_path)
+    return None, None
 
 
 def _check_ocsp_cryptography(cert_path, chain_path, url):
@@ -200,7 +198,7 @@ def _check_ocsp_response(response_ocsp, request_ocsp, issuer_cert):
     #      for OpenSSL, so we do not do it here.
     # See OpenSSL implementation as a reference:
     # https://github.com/openssl/openssl/blob/ef45aa14c5af024fcb8bef1c9007f3d1c115bd85/crypto/ocsp/ocsp_cl.c#L338-L391
-    now = datetime.now()
+    now = datetime.utcnow()  # thisUpdate/nextUpdate are expressed in UTC/GMT time zone
     if not response_ocsp.this_update:
         raise AssertionError('param thisUpdate is not set.')
     if response_ocsp.this_update > now + timedelta(minutes=5):
