@@ -1,12 +1,14 @@
 """Test for certbot_apache.configurator for CentOS 6 overrides"""
-import os
 import unittest
+
+from certbot.compat import os
+from certbot.errors import MisconfigurationError
 
 from certbot_apache import obj
 from certbot_apache import override_centos
 from certbot_apache import parser
 from certbot_apache.tests import util
-from certbot.errors import MisconfigurationError
+
 
 def get_vh_truth(temp_dir, config_name):
     """Return the ground truth for the specified directory."""

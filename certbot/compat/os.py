@@ -6,10 +6,10 @@ This module is intended to replace standard os module throughout certbot project
 from __future__ import absolute_import
 
 # Expose everything from standard os package to make current package a complete replacement of os.
-from os import *  # type: ignore  # pylint: disable=wildcard-import,unused-wildcard-import,redefined-builtin
+from os import *  # type: ignore  # pylint: disable=wildcard-import,unused-wildcard-import,redefined-builtin,os-module-forbidden
 
 # Monkey patch ourselves to get os attributes that are not in __all__ (so not from os import *).
-import os as std_os
+import os as std_os  # pylint: disable=os-module-forbidden
 import sys as std_sys
 ourselves = std_sys.modules[__name__]
 for attribute in dir(std_os):

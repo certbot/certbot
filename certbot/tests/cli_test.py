@@ -7,8 +7,9 @@ import unittest
 
 import mock
 import six
-from acme import challenges
 from six.moves import reload_module  # pylint: disable=import-error
+
+from acme import challenges
 
 import certbot.tests.util as test_util
 from certbot import cli
