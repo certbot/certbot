@@ -238,16 +238,17 @@ def _write_live_readme_to(readme_path, is_base_dir=False):
                                     "certificates.\n".format(prefix=prefix))
 
 
-def _relevant(option):
+def _relevant(namespaces, option):
     """
     Is this option one that could be restored for future renewal purposes?
+
+    :param namespaces: plugin namespaces for configuration options
+    :type namespaces: `list` of `str`
     :param str option: the name of the option
 
     :rtype: bool
     """
     from certbot import renewal
-    plugins = plugins_disco.PluginsRegistry.find_all()
-    namespaces = [plugins_common.dest_namespace(plugin) for plugin in plugins]
 
     return (option in renewal.CONFIG_ITEMS or
             any(option.startswith(namespace) for namespace in namespaces))
@@ -262,10 +263,13 @@ def relevant_values(all_values):
     :rtype dict:
 
     """
+    plugins = plugins_disco.PluginsRegistry.find_all()
+    namespaces = [plugins_common.dest_namespace(plugin) for plugin in plugins]
+
     rv = dict(
         (option, value)
         for option, value in six.iteritems(all_values)
-        if _relevant(option) and cli.option_was_set(option, value))
+        if _relevant(namespaces, option) and cli.option_was_set(option, value))
     # We always save the server value to help with forward compatibility
     # and behavioral consistency when versions of Certbot with different
     # server defaults are used.

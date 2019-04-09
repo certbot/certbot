@@ -31,7 +31,7 @@ if [ -z "$VENV_PATH" ]; then
 fi
 VENV_BIN="$VENV_PATH/bin"
 BOOTSTRAP_VERSION_PATH="$VENV_PATH/certbot-auto-bootstrap-version.txt"
-LE_AUTO_VERSION="0.33.0.dev0"
+LE_AUTO_VERSION="0.34.0.dev0"
 BASENAME=$(basename $0)
 USAGE="Usage: $BASENAME [OPTIONS]
 A self-updating wrapper script for the Certbot ACME client. When run, updates
@@ -534,7 +534,7 @@ BootstrapSuseCommon() {
     # Since Leap 15.0 (and associated Tumbleweed version), python-virtualenv
     # is a source package, and python2-virtualenv must be used instead.
     # Also currently python2-setuptools is not a dependency of python2-virtualenv,
-    # while it should be. Installing it explicitly until upstreqm fix.
+    # while it should be. Installing it explicitly until upstream fix.
     OPENSUSE_VIRTUALENV_PACKAGES="python2-virtualenv python2-setuptools"
   fi
 
@@ -750,7 +750,10 @@ elif [ -f /etc/redhat-release ]; then
   DeterminePythonVersion "NOCRASH"
   # Starting to Fedora 29, python2 is on a deprecation path. Let's move to python3 then.
   RPM_DIST_NAME=`(. /etc/os-release 2> /dev/null && echo $ID) || echo "unknown"`
-  RPM_DIST_VERSION=`(. /etc/os-release 2> /dev/null && echo $VERSION_ID) || echo "0"`
+  RPM_DIST_VERSION=0
+  if [ "$RPM_DIST_NAME" = "fedora" ]; then
+    RPM_DIST_VERSION=`(. /etc/os-release 2> /dev/null && echo $VERSION_ID) || echo "0"`
+  fi
   if [ "$RPM_DIST_NAME" = "fedora" -a "$RPM_DIST_VERSION" -ge 29 -o "$PYVER" -eq 26 ]; then
     Bootstrap() {
       BootstrapMessage "RedHat-based OSes that will use Python3"
@@ -1080,7 +1083,9 @@ cryptography==2.6.1 \
     --hash=sha256:d4afbb0840f489b60f5a580a41a1b9c3622e08ecb5eec8614d4fb4cd914c4460 \
     --hash=sha256:d9ed28030797c00f4bc43c86bf819266c76a5ea61d006cd4078a93ebf7da6bfd \
     --hash=sha256:e603aa7bb52e4e8ed4119a58a03b60323918467ef209e6ff9db3ac382e5cf2c6
-enum34==1.1.6 \
+# Package enum34 needs to be explicitly limited to Python2.x, in order to avoid
+# certbot-auto failures on Python 3.6+ which enum34 doesn't support. See #5456.
+enum34==1.1.6 ; python_version < '3.4' \
     --hash=sha256:2d81cbbe0e73112bdfe6ef8576f2238f2ba27dd0d55752a776c41d38b7da2850 \
     --hash=sha256:644837f692e5f550741432dd3f223bbb9852018674981b1664e5dc339387588a \
     --hash=sha256:6bd0f6ad48ec2aa117d3d141940d484deccda84d4fcd884f5c3d93c23ecd8c79 \
@@ -1213,18 +1218,18 @@ letsencrypt==0.7.0 \
     --hash=sha256:105a5fb107e45bcd0722eb89696986dcf5f08a86a321d6aef25a0c7c63375ade \
     --hash=sha256:c36e532c486a7e92155ee09da54b436a3c420813ec1c590b98f635d924720de9
 
-certbot==0.32.0 \
-    --hash=sha256:75fd986ae42cd90bde6400c5f5a0dd936a7f4a42a416146b1e8bb0f92028b443 \
-    --hash=sha256:c0b94e25a07d83809d98029f09e9b501f86ec97624f45ce86800a7002488c3c8
-acme==0.32.0 \
-    --hash=sha256:88b2d2741e5ea028c590a33b16fb647cb74af6b2db6c7909c738a48f879efdec \
-    --hash=sha256:0eefce8b7880eb7eccc049a6b8ba262fc624bc34b3a8581d05b82f2bb39f1aec
-certbot-apache==0.32.0 \
-    --hash=sha256:b2c82b7a1c44799ba3a150970513ed4fa9afeee40e326440800b1243f917ddb6 \
-    --hash=sha256:68072775f1bb4bc9fc64cabe051a761f6dbf296012512eff7819144ac8b9ec97
-certbot-nginx==0.32.0 \
-    --hash=sha256:3fc3664231586565d886ddcb679c95a2fb2494a2ce3e028149f1496dca5b47cf \
-    --hash=sha256:82c43cd26aacc2eb0ae890be6a2f74d726b6dcb4ee7b63c0e55ec33e576f3e84
+certbot==0.33.1 \
+    --hash=sha256:e2a08467146b7a7ed2c8ca6625b1705d93b51e89866f6ede8a8a262594c18f3f \
+    --hash=sha256:d5203f32c50f3ec5a32df97e4affddbcd288a569678ecb5669adda21cd5ac3d9
+acme==0.33.1 \
+    --hash=sha256:02467d4b1d246105d6d1ea01822dd9e2eea5bf3a50607523969d8e400d53c07b \
+    --hash=sha256:b38cdb71d0071efe1f1190a744f8f95f3c698b76ac0f5d919bbfe3522e277a82
+certbot-apache==0.33.1 \
+    --hash=sha256:0d2a463539e6396de2d374de62faba34e1fe40dd8059e3c64dcd5dabaa66887b \
+    --hash=sha256:659db7335d919fee52ae707567994e13c31ed25109c94b246c60c97d21c46f3a
+certbot-nginx==0.33.1 \
+    --hash=sha256:df9fb86e735eb2668e070f20317e85c37952f3f612fa7f6bbc2c63784b213f28 \
+    --hash=sha256:b3201eee03be74fc743c21c721d3b5586c3323db63e78b68583a6250ad680cff
 
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
