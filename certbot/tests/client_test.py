@@ -5,13 +5,14 @@ import tempfile
 import unittest
 
 import mock
+
 from josepy import interfaces
 
 import certbot.tests.util as test_util
 from certbot import account
 from certbot import errors
-from certbot import util
 from certbot.compat import os
+from certbot import util
 
 KEY = test_util.load_vector("rsa512_key.pem")
 CSR_SAN = test_util.load_vector("csr-san_512.pem")
@@ -223,7 +224,6 @@ class ClientTestCommon(test_util.ConfigTestCase):
         self.config.no_verify_ssl = False
         self.config.allow_subset_of_names = False
 
-        # pylint: disable=star-args
         self.account = mock.MagicMock(**{"key.pem": KEY})
 
         from certbot.client import Client

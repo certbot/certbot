@@ -134,7 +134,6 @@ def probe_sni(name, host, port=443, timeout=300,
     socket_kwargs = {'source_address': source_address}
 
     try:
-        # pylint: disable=star-args
         logger.debug(
             "Attempting to connect to %s:%d%s.", host, port,
             " from {0}:{1}".format(
@@ -195,8 +194,7 @@ def _pyopenssl_cert_or_req_all_names(loaded_cert_or_req):
 
     if common_name is None:
         return sans
-    else:
-        return [common_name] + [d for d in sans if d != common_name]
+    return [common_name] + [d for d in sans if d != common_name]
 
 def _pyopenssl_cert_or_req_san(cert_or_req):
     """Get Subject Alternative Names from certificate or CSR using pyOpenSSL.

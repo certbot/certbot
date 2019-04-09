@@ -13,7 +13,10 @@ def create_venv(venv_path):
     """
     python2 = _venv_common.find_python_executable(2)
     command = [sys.executable, '-m', 'virtualenv', '--python', python2, venv_path]
-    _venv_common.subprocess_with_print(command)
+
+    environ = os.environ.copy()
+    environ['VIRTUALENV_NO_DOWNLOAD'] = '1'
+    _venv_common.subprocess_with_print(command, environ)
 
 
 def main(pip_args=None):

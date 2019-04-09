@@ -1,7 +1,7 @@
 """Test for certbot_apache.http_01."""
 import unittest
-
 import mock
+
 from acme import challenges
 from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
 
@@ -13,13 +13,14 @@ from certbot.tests import acme_util
 from certbot_apache.parser import get_aug_path
 from certbot_apache.tests import util
 
+
 NUM_ACHALLS = 3
 
 
 class ApacheHttp01Test(util.ApacheTest):
     """Test for certbot_apache.http_01.ApacheHttp01."""
 
-    def setUp(self, *args, **kwargs):
+    def setUp(self, *args, **kwargs):  # pylint: disable=arguments-differ
         super(ApacheHttp01Test, self).setUp(*args, **kwargs)
 
         self.account_key = self.rsa512jwk
@@ -77,7 +78,7 @@ class ApacheHttp01Test(util.ApacheTest):
         calls = mock_enmod.call_args_list
         other_calls = []
         for call in calls:
-            if "rewrite" != call[0][0]:
+            if call[0][0] != "rewrite":
                 other_calls.append(call)
 
         # If these lists are equal, we never enabled mod_rewrite

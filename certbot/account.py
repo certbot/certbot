@@ -109,8 +109,7 @@ class AccountMemoryStorage(interfaces.AccountStorage):
     def find_all(self):
         return list(six.itervalues(self.accounts))
 
-    def save(self, account, acme):
-        # pylint: disable=unused-argument
+    def save(self, account, client):
         if account.id in self.accounts:
             logger.debug("Overwriting account: %s", account.id)
         self.accounts[account.id] = account
@@ -244,8 +243,8 @@ class AccountFileStorage(interfaces.AccountStorage):
     def load(self, account_id):
         return self._load_for_server_path(account_id, self.config.server_path)
 
-    def save(self, account, acme):
-        self._save(account, acme, regr_only=False)
+    def save(self, account, client):
+        self._save(account, client, regr_only=False)
 
     def save_regr(self, account, acme):
         """Save the registration resource.

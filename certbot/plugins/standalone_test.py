@@ -1,8 +1,8 @@
 """Tests for certbot.plugins.standalone."""
 import socket
-import unittest
 # https://github.com/python/typeshed/blob/master/stdlib/2and3/socket.pyi
 from socket import errno as socket_errors  # type: ignore
+import unittest
 
 import josepy as jose
 import mock

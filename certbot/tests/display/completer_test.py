@@ -12,8 +12,8 @@ from six.moves import reload_module  # pylint: disable=import-error
 
 from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
 
-import certbot.tests.util as test_util
 from certbot.compat import os
+import certbot.tests.util as test_util  # pylint: disable=ungrouped-imports
 
 
 class CompleterTest(test_util.TempDirTestCase):
@@ -101,6 +101,7 @@ def enable_tab_completion(unused_command):
     libedit = readline.__doc__ is not None and 'libedit' in readline.__doc__
     command = 'bind ^I rl_complete' if libedit else 'tab: complete'
     readline.parse_and_bind(command)
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
