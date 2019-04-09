@@ -224,7 +224,7 @@ script:
     - tox
     - '[ -z "${BOULDER_INTEGRATION+x}" ] || (tests/boulder-fetch.sh && tests/tox-boulder-integration.sh)'
 
-after_success: '[ "$TOXENV" == "py27-cover" ] && codecov'
+after_success: '[ "$TOXENV" == "py27-cover" ] && codecov -F linux'
 
 notifications:
   email: false

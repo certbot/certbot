@@ -37,4 +37,4 @@ test_script:
   - tox
 
 on_success:
-  - if exist .coverage codecov
+  - if exist .coverage codecov -F windows
