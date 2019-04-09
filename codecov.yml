@@ -1,4 +1,4 @@
-codecov:
+coverage:
   status:
     project:
       default: off
