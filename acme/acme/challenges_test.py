@@ -529,8 +529,9 @@ class TLSALPN01Test(unittest.TestCase):
     def test_validation(self, mock_gen_cert):
         mock_gen_cert.return_value = ('cert', 'key')
         self.assertEqual(('cert', 'key'), self.msg.validation(
-            KEY, cert_key=mock.sentinel.cert_key))
-        mock_gen_cert.assert_called_once_with(key=mock.sentinel.cert_key)
+            KEY, cert_key=mock.sentinel.cert_key, domain=mock.sentinel.domain))
+        mock_gen_cert.assert_called_once_with(key=mock.sentinel.cert_key,
+                                              domain=mock.sentinel.domain)
 
 
 class DNSTest(unittest.TestCase):
