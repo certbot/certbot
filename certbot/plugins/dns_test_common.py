@@ -1,12 +1,12 @@
 """Base test class for DNS authenticators."""
 
 import os
+from unittest import TestCase
 
 import configobj
 import josepy as jose
 import mock
 import six
-from unittest import TestCase
 from acme import challenges
 
 from certbot import achallenges
@@ -22,6 +22,7 @@ def dns_challenge(domain):
 
     return achallenges.KeyAuthorizationAnnotatedChallenge(
         challb=acme_util.DNS01, domain=domain, account_key=KEY)
+
 
 class BaseAuthenticatorTest(TestCase):
     """

@@ -82,7 +82,7 @@ class DNSAuthenticator(common.Plugin):
         # name), which is why we need to use ** syntax.
 
         challenge_map_opt = common.dest_namespace(name) + "validation_domain_map"
-        parser.set_defaults(**{challenge_map_opt: {}})  # pylint: disable=star-args
+        parser.set_defaults(**{challenge_map_opt: {}})
 
 
     @classmethod

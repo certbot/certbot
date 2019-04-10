@@ -20,10 +20,6 @@ class _FakeDNSAuthenticator(dns_common.DNSAuthenticator):
     _perform = mock.MagicMock()
     _cleanup = mock.MagicMock()
 
-    def __init__(self, *args, **kwargs):
-        # pylint: disable=protected-access
-        super(_FakeDNSAuthenticator, self).__init__(*args, **kwargs)
-
     def more_info(self):  # pylint: disable=missing-docstring,no-self-use
         return 'A fake authenticator for testing.'
 
