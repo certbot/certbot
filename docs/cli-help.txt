@@ -1,4 +1,4 @@
-usage:
+usage: 
   certbot [SUBCOMMAND] [options] [-d DOMAIN] [-d DOMAIN] ...
 
 Certbot can obtain and install HTTPS/TLS/SSL certificates.  By default,
@@ -29,6 +29,7 @@ manage certificates:
 
 manage your account with Let's Encrypt:
     register        Create a Let's Encrypt ACME account
+    unregister      Deactivate a Let's Encrypt ACME account
     update_account  Update a Let's Encrypt ACME account
   --agree-tos       Agree to the ACME server's Subscriber Agreement
    -m EMAIL         Email address for important account notifications
@@ -99,11 +100,10 @@ optional arguments:
   --preferred-challenges PREF_CHALLS
                         A sorted, comma delimited list of the preferred
                         challenge to use during authorization with the most
-                        preferred challenge listed first (Eg, "dns" or "tls-
-                        sni-01,http,dns"). Not all plugins support all
-                        challenges. See
-                        https://certbot.eff.org/docs/using.html#plugins for
-                        details. ACME Challenges are versioned, but if you
+                        preferred challenge listed first (Eg, "dns" or
+                        "http,dns"). Not all plugins support all challenges.
+                        See https://certbot.eff.org/docs/using.html#plugins
+                        for details. ACME Challenges are versioned, but if you
                         pick "http" rather than "http-01", Certbot will select
                         the latest version automatically. (default: [])
   --user-agent USER_AGENT
@@ -113,7 +113,7 @@ optional arguments:
                         case, and to know when to deprecate support for past
                         Python versions and flags. If you wish to hide this
                         information from the Let's Encrypt server, set this to
-                        "". (default: CertbotACMEClient/0.32.0
+                        "". (default: CertbotACMEClient/0.33.1
                         (certbot(-auto); OS_NAME OS_VERSION) Authenticator/XXX
                         Installer/YYY (SUBCOMMAND; flags: FLAGS)
                         Py/major.minor.patchlevel). The flags encoded in the
@@ -217,14 +217,6 @@ testing:
                         False)
   --no-verify-ssl       Disable verification of the ACME server's certificate.
                         (default: False)
-  --tls-sni-01-port TLS_SNI_01_PORT
-                        Port used during tls-sni-01 challenge. This only
-                        affects the port Certbot listens on. A conforming ACME
-                        server will still attempt to connect on port 443.
-                        (default: 443)
-  --tls-sni-01-address TLS_SNI_01_ADDRESS
-                        The address the server listens to during tls-sni-01
-                        challenge. (default: )
   --http-01-port HTTP01_PORT
                         Port used in the http-01 challenge. This only affects
                         the port Certbot listens on. A conforming ACME server
@@ -233,6 +225,10 @@ testing:
   --http-01-address HTTP01_ADDRESS
                         The address the server listens to during http-01
                         challenge. (default: )
+  --https-port HTTPS_PORT
+                        Port used to serve HTTPS. This affects which port
+                        Nginx will listen on after a LE certificate is
+                        installed. (default: 443)
   --break-my-certs      Be willing to replace or renew valid certificates with
                         invalid (testing/staging) certificates (default:
                         False)
@@ -672,12 +668,8 @@ manual:
   challenge. $CERTBOT_DOMAIN will always contain the domain being
   authenticated. For HTTP-01 and DNS-01, $CERTBOT_VALIDATION is the
   validation string, and $CERTBOT_TOKEN is the filename of the resource
-  requested when performing an HTTP-01 challenge. When performing a TLS-
-  SNI-01 challenge, $CERTBOT_SNI_DOMAIN will contain the SNI name for which
-  the ACME server expects to be presented with the self-signed certificate
-  located at $CERTBOT_CERT_PATH. The secret key needed to complete the TLS
-  handshake is located at $CERTBOT_KEY_PATH. An additional cleanup script
-  can also be provided and can use the additional variable
+  requested when performing an HTTP-01 challenge. An additional cleanup
+  script can also be provided and can use the additional variable
   $CERTBOT_AUTH_OUTPUT which contains the stdout output from the auth
   script.
 

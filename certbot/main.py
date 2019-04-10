@@ -30,7 +30,8 @@ from certbot import reporter
 from certbot import storage
 from certbot import updater
 from certbot import util
-from certbot.compat import os, misc
+from certbot.compat import misc
+from certbot.compat import os
 from certbot.display import util as display_util, ops as display_ops
 from certbot.plugins import disco as plugins_disco
 from certbot.plugins import enhancements
@@ -221,8 +222,8 @@ def _handle_identical_cert_request(config, lineage):
         return "reinstall", lineage
     elif response[1] == 1:
         return "renew", lineage
-    else:
-        assert False, "This is impossible"
+    raise AssertionError('This is impossible')
+
 
 def _find_lineage_for_domains(config, domains):
     """Determine whether there are duplicated names and how to handle
@@ -261,6 +262,7 @@ def _find_lineage_for_domains(config, domains):
         return _handle_identical_cert_request(config, ident_names_cert)
     elif subset_names_cert is not None:
         return _handle_subset_cert_request(config, domains, subset_names_cert)
+    return None, None
 
 def _find_cert(config, domains, certname):
     """Finds an existing certificate object given domains and/or a certificate name.
@@ -339,7 +341,7 @@ def _get_added_removed(after, before):
 def _format_list(character, strings):
     """Format list with given character
     """
-    if len(strings) == 0:
+    if not strings:
         formatted = "{br}(None)"
     else:
         formatted = "{br}{ch} " + "{br}{ch} ".join(strings)
@@ -498,6 +500,7 @@ def _determine_account(config):
             raise errors.Error(
                 "Registration cannot proceed without accepting "
                 "Terms of Service.")
+        return None
 
     account_storage = account.AccountFileStorage(config)
     acme = None
@@ -647,6 +650,7 @@ def unregister(config, unused_plugins):
     account_files.delete(config.account)
 
     reporter_util.add_message("Account deactivated.", reporter_util.MEDIUM_PRIORITY)
+    return None
 
 
 def register(config, unused_plugins):
@@ -675,7 +679,7 @@ def register(config, unused_plugins):
     account_storage = account.AccountFileStorage(config)
     accounts = account_storage.find_all()
 
-    if len(accounts) > 0:
+    if accounts:
         # TODO: add a flag to register a duplicate account (this will
         #       also require extending _determine_account's behavior
         #       or else extracting the registration code from there)
@@ -684,7 +688,7 @@ def register(config, unused_plugins):
                 "unsupported.")
     # _determine_account will register an account
     _determine_account(config)
-    return
+    return None
 
 
 def update_account(config, unused_plugins):
@@ -707,7 +711,7 @@ def update_account(config, unused_plugins):
     reporter_util = zope.component.getUtility(interfaces.IReporter)
     add_msg = lambda m: reporter_util.add_message(m, reporter_util.MEDIUM_PRIORITY)
 
-    if len(accounts) == 0:
+    if not accounts:
         return "Could not find an existing account to update."
     if config.email is None:
         if config.register_unsafely_without_email:
@@ -730,6 +734,7 @@ def update_account(config, unused_plugins):
     account_storage.save_regr(acc, cb_client.acme)
     eff.handle_subscription(config)
     add_msg("Your e-mail address was updated to {0}.".format(config.email))
+    return None
 
 def _install_cert(config, le_client, domains, lineage=None):
     """Install a cert
@@ -756,6 +761,7 @@ def _install_cert(config, le_client, domains, lineage=None):
     le_client.deploy_certificate(domains, path_provider.key_path,
         path_provider.cert_path, path_provider.chain_path, path_provider.fullchain_path)
     le_client.enhance_config(domains, path_provider.chain_path)
+
 
 def install(config, plugins):
     """Install a previously obtained cert in a server.
@@ -813,6 +819,8 @@ def install(config, plugins):
         # In the case where we don't have certname, we have errored out already
         lineage = cert_manager.lineage_for_certname(config, config.certname)
         enhancements.enable(lineage, domains, installer, config)
+
+    return None
 
 def _populate_from_certname(config):
     """Helper function for install to populate missing config values from lineage
@@ -876,6 +884,7 @@ def plugins_cmd(config, plugins):
     logger.debug("Prepared plugins: %s", available)
     notify(str(available))
 
+
 def enhance(config, plugins):
     """Add security enhancements to existing configuration
 
@@ -931,6 +940,8 @@ def enhance(config, plugins):
         le_client.enhance_config(domains, config.chain_path, ask_redirect=False)
     if enhancements.are_requested(config):
         enhancements.enable(lineage, domains, installer, config)
+
+    return None
 
 
 def rollback(config, plugins):
@@ -1035,7 +1046,8 @@ def certificates(config, unused_plugins):
     """
     cert_manager.certificates(config)
 
-def revoke(config, unused_plugins):  # TODO: coop with renewal config
+# TODO: coop with renewal config
+def revoke(config, unused_plugins):
     """Revoke a previously obtained certificate.
 
     :param config: Configuration object
@@ -1077,6 +1089,7 @@ def revoke(config, unused_plugins):  # TODO: coop with renewal config
         return str(e)
 
     display_ops.success_revocation(config.cert_path[0])
+    return None
 
 
 def run(config, plugins):  # pylint: disable=too-many-branches,too-many-locals
@@ -1131,6 +1144,7 @@ def run(config, plugins):  # pylint: disable=too-many-branches,too-many-locals
         display_ops.success_renewal(domains)
 
     _suggest_donation_if_appropriate(config)
+    return None
 
 
 def _csr_get_and_save_cert(config, le_client):
@@ -1316,7 +1330,7 @@ def set_displayer(config):
     zope.component.provideUtility(displayer)
 
 
-def main(cli_args=sys.argv[1:]):
+def main(cli_args=None):
     """Command line argument parsing and main script execution.
 
     :returns: result of requested command
@@ -1325,6 +1339,8 @@ def main(cli_args=sys.argv[1:]):
     :raises errors.Error: error if plugin command is not supported
 
     """
+    if not cli_args:
+        cli_args = sys.argv[1:]
 
     log.pre_arg_parse_setup()
 

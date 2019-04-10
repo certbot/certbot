@@ -3,6 +3,7 @@ import json
 import logging
 
 from acme.magic_typing import Any, Dict  # pylint: disable=unused-import, no-name-in-module
+
 from certbot import errors
 from certbot.compat import os
 

@@ -1,9 +1,9 @@
 """Tests for certbot.cli."""
 import argparse
-import unittest
-import tempfile
 import copy
 import sys
+import tempfile
+import unittest
 
 import mock
 import six

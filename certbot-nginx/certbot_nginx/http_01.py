@@ -3,10 +3,12 @@
 import logging
 
 from acme import challenges
-from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import List # pylint: disable=unused-import, no-name-in-module
+
 from certbot import errors
 from certbot.compat import os
 from certbot.plugins import common
+
 from certbot_nginx import obj
 from certbot_nginx import nginxparser
 
@@ -202,3 +204,4 @@ class NginxHttp01(common.ChallengePerformer):
                                 ' ', '$1', ' ', 'break']]
         self.configurator.parser.add_server_directives(vhost,
             rewrite_directive, insert_at_top=True)
+        return None

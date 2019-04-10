@@ -7,6 +7,7 @@ import mock
 
 from certbot import errors
 from certbot.compat import os
+
 from certbot_apache.tests import util
 
 
@@ -233,6 +234,7 @@ class BasicParserTest(util.ParserTest):
                 return inc_val
             elif cmd[-1] == "DUMP_MODULES":
                 return mod_val
+            return None  # pragma: no cover
 
         mock_cfg.side_effect = mock_get_vars
 

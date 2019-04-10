@@ -5,6 +5,7 @@ import mock
 
 from certbot.compat import os
 
+
 class GetPrefixTest(unittest.TestCase):
     """Tests for certbot.plugins.get_prefixes."""
     def test_get_prefix(self):

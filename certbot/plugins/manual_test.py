@@ -1,9 +1,9 @@
 """Tests for certbot.plugins.manual"""
 import unittest
-
-import six
-import mock
 import sys
+
+import mock
+import six
 
 from acme import challenges
 
@@ -72,7 +72,7 @@ class AuthenticatorTest(test_util.TempDirTestCase):
         self.config.manual_public_ip_logging_ok = True
         self.config.manual_auth_hook = (
             '{0} -c "from __future__ import print_function;'
-            'import os;  print(os.environ.get(\'CERTBOT_DOMAIN\'));'
+            'from certbot.compat import os;  print(os.environ.get(\'CERTBOT_DOMAIN\'));'
             'print(os.environ.get(\'CERTBOT_TOKEN\', \'notoken\'));'
             'print(os.environ.get(\'CERTBOT_VALIDATION\', \'novalidation\'));"'
             .format(sys.executable))
@@ -116,8 +116,7 @@ class AuthenticatorTest(test_util.TempDirTestCase):
             self.auth.cleanup([achall])
             self.assertEqual(os.environ['CERTBOT_AUTH_OUTPUT'], 'foo')
             self.assertEqual(os.environ['CERTBOT_DOMAIN'], achall.domain)
-            if (isinstance(achall.chall, challenges.HTTP01) or
-                isinstance(achall.chall, challenges.DNS01)):
+            if isinstance(achall.chall, (challenges.HTTP01, challenges.DNS01)):
                 self.assertEqual(
                     os.environ['CERTBOT_VALIDATION'],
                     achall.validation(achall.account_key))

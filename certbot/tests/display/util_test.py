@@ -224,7 +224,6 @@ class FileOutputDisplayTest(unittest.TestCase):
 
     @mock.patch("certbot.display.util.input_with_timeout")
     def test_directory_select(self, mock_input):
-        # pylint: disable=star-args
         args = ["msg", "/var/www/html", "--flag", True]
         user_input = "/var/www/html"
         mock_input.return_value = user_input
@@ -313,7 +312,7 @@ class FileOutputDisplayTest(unittest.TestCase):
     def test_methods_take_force_interactive(self):
         # Every IDisplay method implemented by FileDisplay must take
         # force_interactive to prevent workflow regressions.
-        for name in interfaces.IDisplay.names():  # pylint: disable=no-member
+        for name in interfaces.IDisplay.names():  # pylint: disable=no-member,no-value-for-parameter
             if six.PY2:
                 getargspec = inspect.getargspec # pylint: disable=no-member
             else:
@@ -372,7 +371,9 @@ class NoninteractiveDisplayTest(unittest.TestCase):
         # should take **kwargs because every method of FileDisplay must
         # take force_interactive which doesn't apply to
         # NoninteractiveDisplay.
-        for name in interfaces.IDisplay.names():  # pylint: disable=no-member
+
+        # Use pylint code for disable to keep on single line under line length limit
+        for name in interfaces.IDisplay.names():  # pylint: disable=no-member,E1120
             method = getattr(self.displayer, name)
             # asserts method accepts arbitrary keyword arguments
             if six.PY2:

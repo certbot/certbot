@@ -5,7 +5,8 @@ import mock
 
 from certbot import constants
 from certbot import errors
-from certbot.compat import os, misc
+from certbot.compat import misc
+from certbot.compat import os
 from certbot.tests import util as test_util
 
 

@@ -4,9 +4,9 @@ import shutil
 import tempfile
 import unittest
 
+import OpenSSL
 import josepy as jose
 import mock
-import OpenSSL
 
 from acme import challenges
 

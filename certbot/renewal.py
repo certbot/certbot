@@ -1,28 +1,28 @@
 """Functionality for autorenewal and associated juggling of configurations"""
 from __future__ import print_function
+
 import copy
 import itertools
 import logging
-import traceback
+import random
 import sys
 import time
-import random
-
-import six
-import zope.component
+import traceback
 
 import OpenSSL
+import six
+import zope.component
 
 from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
 
 from certbot import cli
 from certbot import crypto_util
 from certbot import errors
-from certbot import interfaces
-from certbot import util
 from certbot import hooks
+from certbot import interfaces
 from certbot import storage
 from certbot import updater
+from certbot import util
 from certbot.compat import os
 from certbot.plugins import disco as plugins_disco
 

@@ -6,6 +6,7 @@ import mock
 
 from certbot import errors
 from certbot.compat import os
+
 from certbot_apache import apache_util
 from certbot_apache import obj
 from certbot_apache.tests import util

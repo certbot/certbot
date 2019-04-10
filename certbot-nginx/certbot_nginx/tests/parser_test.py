@@ -5,8 +5,10 @@ import shutil
 import unittest
 
 from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
+
 from certbot import errors
 from certbot.compat import os
+
 from certbot_nginx import nginxparser
 from certbot_nginx import obj
 from certbot_nginx import parser
@@ -15,9 +17,6 @@ from certbot_nginx.tests import util
 
 class NginxParserTest(util.NginxTest): #pylint: disable=too-many-public-methods
     """Nginx Parser Test."""
-
-    def setUp(self):
-        super(NginxParserTest, self).setUp()
 
     def tearDown(self):
         shutil.rmtree(self.temp_dir)

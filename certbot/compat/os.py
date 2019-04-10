@@ -1,20 +1,19 @@
 """
 This compat modules extends native capabilities of core os module to handle correctly platform
 specific operations (eg. chown, chmod, geuid).
-This module is intended to replace standard os module throughout certbot projects (except acme)
+This module is intended to replace standard os module throughout certbot projects (except acme).
 """
 from __future__ import absolute_import
 
 # Expose everything from standard os package to make current package a complete replacement of os.
-# pylint: disable=wildcard-import,unused-wildcard-import,redefined-builtin
-from os import *  # type: ignore
-# pylint: enable=wildcard-import,unused-wildcard-import,redefined-builtin
+from os import *  # type: ignore  # pylint: disable=wildcard-import,unused-wildcard-import,redefined-builtin,os-module-forbidden
 
 import errno
-import os as std_os
+import os as std_os  # pylint: disable=os-module-forbidden
 import sys
 
 from acme.magic_typing import Callable, Union  # pylint: disable=unused-import, no-name-in-module
+
 from certbot.compat import security
 
 # Monkey patch ourselves to get os attributes that are not in __all__ (so not from os import *).

@@ -5,9 +5,11 @@ import mock
 
 from certbot import errors
 from certbot.compat import os
+
 from certbot_apache import obj
 from certbot_apache import override_centos
 from certbot_apache.tests import util
+
 
 def get_vh_truth(temp_dir, config_name):
     """Return the ground truth for the specified directory."""

@@ -11,6 +11,7 @@ import zope.interface
 from josepy import util as jose_util
 
 from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
+
 from certbot import achallenges  # pylint: disable=unused-import
 from certbot import constants
 from certbot import crypto_util
@@ -300,9 +301,8 @@ class Addr(object):
             # too long, truncate
             addr_list = addr_list[0:len(result)]
         append_to_end = False
-        for i in range(0, len(addr_list)):
-            block = addr_list[i]
-            if len(block) == 0:
+        for i, block in enumerate(addr_list):
+            if not block:
                 # encountered ::, so rest of the blocks should be
                 # appended to the end
                 append_to_end = True

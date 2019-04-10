@@ -1,9 +1,13 @@
 """certbot installer plugin for postfix."""
 import logging
 
-import zope.interface
-import zope.component
 import six
+import zope.component
+import zope.interface
+
+# pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Callable, Dict, List
+# pylint: enable=unused-import, no-name-in-module
 
 from certbot import errors
 from certbot import interfaces
@@ -13,10 +17,6 @@ from certbot.plugins import common as plugins_common
 from certbot_postfix import constants
 from certbot_postfix import postconf
 from certbot_postfix import util
-
-# pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Callable, Dict, List
-# pylint: enable=unused-import, no-name-in-module
 
 logger = logging.getLogger(__name__)
 
@@ -190,7 +190,7 @@ class Installer(plugins_common.Installer):
                 "subset of configuration parameters.")
 
     def deploy_cert(self, domain, cert_path,
-                    key_path, chain_path, fullchain_path):
+                    key_path, chain_path, fullchain_path):  # pylint: disable=unused-argument
         """Configure the Postfix SMTP server to use the given TLS cert.
 
         :param str domain: domain to deploy certificate file
@@ -203,7 +203,6 @@ class Installer(plugins_common.Installer):
         :raises .PluginError: when cert cannot be deployed
 
         """
-        # pylint: disable=unused-argument
         if self._tls_enabled:
             return
         self._tls_enabled = True
@@ -222,10 +221,9 @@ class Installer(plugins_common.Installer):
             self.postconf.set("smtpd_tls_dh1024_param_file", self.ssl_dhparams)
         self._confirm_changes()
 
-    def enhance(self, domain, enhancement, options=None):
+    def enhance(self, domain, enhancement, options=None):  # pylint: disable=unused-argument
         """Raises an exception since this installer doesn't support any enhancements.
         """
-        # pylint: disable=unused-argument
         raise errors.PluginError(
             "Unsupported enhancement: {0}".format(enhancement))
 
@@ -284,4 +282,3 @@ class Installer(plugins_common.Installer):
         :raises .PluginError: when server cannot be restarted
         """
         self.postfix.restart()
-

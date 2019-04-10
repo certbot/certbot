@@ -73,7 +73,7 @@ class IPluginFactory(zope.interface.Interface):
 
     description = zope.interface.Attribute("Short plugin description")
 
-    def __call__(config, name):
+    def __call__(config, name):  # pylint: disable=signature-differs
         """Create new `IPlugin`.
 
         :param IConfig config: Configuration.

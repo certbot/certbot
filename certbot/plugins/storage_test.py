@@ -1,12 +1,14 @@
 """Tests for certbot.plugins.storage.PluginStorage"""
 import json
-import mock
 import unittest
+import mock
 
 from certbot import errors
+
 from certbot.compat import os
 from certbot.plugins import common
 from certbot.tests import util as test_util
+
 
 class PluginStorageTest(test_util.ConfigTestCase):
     """Test for certbot.plugins.storage.PluginStorage"""

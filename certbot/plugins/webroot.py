@@ -20,11 +20,10 @@ from certbot import errors
 from certbot import interfaces
 from certbot import util as certbot_util
 from certbot.compat import os, security
-from certbot.display import util as display_util
 from certbot.display import ops
+from certbot.display import util as display_util
 from certbot.plugins import common
 from certbot.plugins import util
-
 
 logger = logging.getLogger(__name__)
 
@@ -218,7 +217,7 @@ to serve all files under specified web root ({0})."""
                 self.performed[root_path].remove(achall)
 
         not_removed = []  # type: List[str]
-        while len(self._created_dirs) > 0:
+        while self._created_dirs:
             path = self._created_dirs.pop()
             try:
                 os.rmdir(path)

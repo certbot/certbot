@@ -2,9 +2,8 @@
 """Test for certbot_nginx.configurator."""
 import unittest
 
-import mock
 import OpenSSL
-
+import mock
 from acme import challenges
 from acme import messages
 from certbot import achallenges

@@ -2,6 +2,7 @@
 import argparse
 import atexit
 import collections
+from collections import OrderedDict
 # distutils.version under virtualenv confuses pylint
 # For more info, see: https://github.com/PyCQA/pylint/issues/73
 import distutils.version  # pylint: disable=import-error,no-name-in-module
@@ -11,7 +12,6 @@ import platform
 import re
 import socket
 import subprocess
-from collections import OrderedDict
 
 import configargparse
 import six
@@ -21,7 +21,8 @@ from acme.magic_typing import Tuple, Union  # pylint: disable=unused-import, no-
 from certbot import constants
 from certbot import errors
 from certbot import lock
-from certbot.compat import os, security
+from certbot.compat import os
+from certbot.compat import security
 
 logger = logging.getLogger(__name__)
 
@@ -444,9 +445,8 @@ def safe_email(email):
     """Scrub email address before using it."""
     if EMAIL_REGEX.match(email) is not None:
         return not email.startswith(".") and ".." not in email
-    else:
-        logger.warning("Invalid email address: %s.", email)
-        return False
+    logger.warning("Invalid email address: %s.", email)
+    return False
 
 
 class _ShowWarning(argparse.Action):

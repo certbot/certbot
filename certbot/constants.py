@@ -5,7 +5,8 @@ import pkg_resources
 
 from acme import challenges
 
-from certbot.compat import os, misc
+from certbot.compat import misc
+from certbot.compat import os
 
 SETUPTOOLS_PLUGINS_ENTRY_POINT = "certbot.plugins"
 """Setuptools entry point group name for plugins."""
