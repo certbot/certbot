@@ -7,17 +7,17 @@ import logging
 import socket
 import sys
 
-from OpenSSL import SSL  # type: ignore # https://github.com/python/typeshed/issues/2052
 from cryptography.hazmat.primitives import hashes  # type: ignore
 import josepy as jose
-from OpenSSL import crypto
 import requests
 import six
+from OpenSSL import SSL  # type: ignore # https://github.com/python/typeshed/issues/2052
+from OpenSSL import crypto
 
-from acme import errors
-from acme import crypto_util
-from acme import fields
 from acme import _TLSSNI01DeprecationModule
+from acme import crypto_util
+from acme import errors
+from acme import fields
 
 logger = logging.getLogger(__name__)
 
@@ -661,6 +661,7 @@ class TLSALPN01(KeyAuthorizationChallenge):
         """Generate validation.
 
         :param JWK account_key:
+        :param unicode domain: Domain verified by the challenge.
         :param OpenSSL.crypto.PKey cert_key: Optional private key used
             in certificate generation. If not provided (``None``), then
             fresh key will be generated.
@@ -668,7 +669,9 @@ class TLSALPN01(KeyAuthorizationChallenge):
         :rtype: `tuple` of `OpenSSL.crypto.X509` and `OpenSSL.crypto.PKey`
 
         """
-        return self.response(account_key).gen_cert(key=kwargs.get('cert_key'))
+        return self.response(account_key).gen_cert(
+            key=kwargs.get('cert_key'),
+            domain=kwargs.get('domain'))
 
     @staticmethod
     def is_supported():
