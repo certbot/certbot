@@ -76,11 +76,10 @@ class _NS1LexiconClient(dns_common_lexicon.LexiconClient):
     def _handle_http_error(self, e, domain_name):
         if domain_name in str(e) and (str(e).startswith('404 Client Error: Not Found for url:') or \
                                       str(e).startswith("400 Client Error: Bad Request for url:")):
-            return  # Expected errors when zone name guess is wrong
-        else:
-            hint = None
-            if str(e).startswith('401 Client Error: Unauthorized for url:'):
-                hint = 'Is your API key correct?'
+            return None  # Expected errors when zone name guess is wrong
+        hint = None
+        if str(e).startswith('401 Client Error: Unauthorized for url:'):
+            hint = 'Is your API key correct?'
 
-            return errors.PluginError('Error determining zone identifier: {0}.{1}'
-                                      .format(e, ' ({0})'.format(hint) if hint else ''))
+        return errors.PluginError('Error determining zone identifier: {0}.{1}'
+                                  .format(e, ' ({0})'.format(hint) if hint else ''))

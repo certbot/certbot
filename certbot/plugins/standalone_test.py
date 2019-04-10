@@ -1,9 +1,8 @@
 """Tests for certbot.plugins.standalone."""
-import argparse
 import socket
-import unittest
 # https://github.com/python/typeshed/blob/master/stdlib/2and3/socket.pyi
 from socket import errno as socket_errors  # type: ignore
+import unittest
 
 import josepy as jose
 import mock
@@ -73,38 +72,6 @@ class ServerManagerTest(unittest.TestCase):
         maybe_another_server.close()
 
 
-class SupportedChallengesActionTest(unittest.TestCase):
-    """Tests for plugins.standalone.SupportedChallengesAction."""
-
-    def _call(self, value):
-        with mock.patch("certbot.plugins.standalone.logger") as mock_logger:
-            # stderr is mocked to prevent potential argparse error
-            # output from cluttering test output
-            with mock.patch("sys.stderr"):
-                config = self.parser.parse_args([self.flag, value])
-
-        self.assertTrue(mock_logger.warning.called)
-        return getattr(config, self.dest)
-
-    def setUp(self):
-        self.flag = "--standalone-supported-challenges"
-        self.dest = self.flag[2:].replace("-", "_")
-        self.parser = argparse.ArgumentParser()
-
-        from certbot.plugins.standalone import SupportedChallengesAction
-        self.parser.add_argument(self.flag, action=SupportedChallengesAction)
-
-    def test_correct(self):
-        self.assertEqual("http-01", self._call("http-01"))
-
-    def test_unrecognized(self):
-        assert "foo" not in challenges.Challenge.TYPES
-        self.assertRaises(SystemExit, self._call, "foo")
-
-    def test_not_subset(self):
-        self.assertRaises(SystemExit, self._call, "dns")
-
-
 def get_open_port():
     """Gets an open port number from the OS."""
     open_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
@@ -120,30 +87,14 @@ class AuthenticatorTest(unittest.TestCase):
     def setUp(self):
         from certbot.plugins.standalone import Authenticator
 
-        self.config = mock.MagicMock(
-            http01_port=get_open_port(),
-            standalone_supported_challenges="http-01")
+        self.config = mock.MagicMock(http01_port=get_open_port())
         self.auth = Authenticator(self.config, name="standalone")
         self.auth.servers = mock.MagicMock()
-
-    def test_supported_challenges(self):
-        self.assertEqual(self.auth.supported_challenges,
-                         [challenges.HTTP01])
-
-    def test_supported_challenges_configured(self):
-        self.config.standalone_supported_challenges = "http-01"
-        self.assertEqual(self.auth.supported_challenges,
-                         [challenges.HTTP01])
 
     def test_more_info(self):
         self.assertTrue(isinstance(self.auth.more_info(), six.string_types))
 
     def test_get_chall_pref(self):
-        self.assertEqual(self.auth.get_chall_pref(domain=None),
-                         [challenges.HTTP01])
-
-    def test_get_chall_pref_configured(self):
-        self.config.standalone_supported_challenges = "http-01"
         self.assertEqual(self.auth.get_chall_pref(domain=None),
                          [challenges.HTTP01])
 

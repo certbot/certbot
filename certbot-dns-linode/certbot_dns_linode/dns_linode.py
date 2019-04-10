@@ -73,4 +73,4 @@ class _LinodeLexiconClient(dns_common_lexicon.LexiconClient):
         if not str(e).startswith('Domain not found'):
             return errors.PluginError('Unexpected error determining zone identifier for {0}: {1}'
                                       .format(domain_name, e))
-
+        return None

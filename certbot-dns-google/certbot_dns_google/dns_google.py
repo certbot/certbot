@@ -272,7 +272,7 @@ class _GoogleClient(object):
                 raise errors.PluginError('Encountered error finding managed zone: {0}'
                                          .format(e))
 
-            if len(zones) > 0:
+            if zones:
                 zone_id = zones[0]['id']
                 logger.debug('Found id of %s for %s using name %s', zone_id, domain, zone_name)
                 return zone_id
@@ -301,5 +301,4 @@ class _GoogleClient(object):
 
         if isinstance(content, bytes):
             return content.decode()
-        else:
-            return content
+        return content

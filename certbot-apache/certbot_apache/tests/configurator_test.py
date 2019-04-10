@@ -1,5 +1,6 @@
 # pylint: disable=too-many-public-methods,too-many-lines
 """Test for certbot_apache.configurator."""
+import copy
 import os
 import shutil
 import socket
@@ -29,7 +30,6 @@ from certbot_apache.tests import util
 
 class MultipleVhostsTest(util.ApacheTest):
     """Test two standard well-configured HTTP vhosts."""
-
 
     def setUp(self):  # pylint: disable=arguments-differ
         super(MultipleVhostsTest, self).setUp()
@@ -384,6 +384,7 @@ class MultipleVhostsTest(util.ApacheTest):
             """Mock method for parser.find_dir"""
             if directive == "Include" and argument.endswith("options-ssl-apache.conf"):
                 return ["/path/to/whatever"]
+            return None  # pragma: no cover
 
         mock_add = mock.MagicMock()
         self.config.parser.add_dir = mock_add
@@ -495,8 +496,7 @@ class MultipleVhostsTest(util.ApacheTest):
             but an SSLCertificateKeyFile directive is missing."""
             if "SSLCertificateFile" in args:
                 return ["example/cert.pem"]
-            else:
-                return []
+            return []
 
         mock_find_dir = mock.MagicMock(return_value=[])
         mock_find_dir.side_effect = side_effect
@@ -1044,7 +1044,7 @@ class MultipleVhostsTest(util.ApacheTest):
 
         # pylint: disable=protected-access
         http_vh = self.config._get_http_vhost(ssl_vh)
-        self.assertTrue(http_vh.ssl == False)
+        self.assertFalse(http_vh.ssl)
 
     @mock.patch("certbot.util.run_script")
     @mock.patch("certbot.util.exe_exists")
@@ -1336,15 +1336,6 @@ class MultipleVhostsTest(util.ApacheTest):
 
         return account_key, (achall1, achall2, achall3)
 
-    def test_make_addrs_sni_ready(self):
-        self.config.version = (2, 2)
-        self.config.make_addrs_sni_ready(
-            set([obj.Addr.fromstring("*:443"), obj.Addr.fromstring("*:80")]))
-        self.assertTrue(self.config.parser.find_dir(
-            "NameVirtualHost", "*:80", exclude=False))
-        self.assertTrue(self.config.parser.find_dir(
-            "NameVirtualHost", "*:443", exclude=False))
-
     def test_aug_version(self):
         mock_match = mock.Mock(return_value=["something"])
         self.config.aug.match = mock_match
@@ -1409,7 +1400,7 @@ class MultipleVhostsTest(util.ApacheTest):
         # pylint: disable=protected-access
         cases = {u"*.example.org": True, b"*.x.example.org": True,
                  u"a.example.org": False, b"a.x.example.org": False}
-        for key in cases.keys():
+        for key in cases:
             self.assertEqual(self.config._wildcard_domain(key), cases[key])
 
     def test_choose_vhosts_wildcard(self):
@@ -1521,6 +1512,29 @@ class MultipleVhostsTest(util.ApacheTest):
         second_id = self.config.add_vhost_id(self.vh_truth[0])
         self.assertEqual(first_id, second_id)
 
+    def test_realpath_replaces_symlink(self):
+        orig_match = self.config.aug.match
+        mock_vhost = copy.deepcopy(self.vh_truth[0])
+        mock_vhost.filep = mock_vhost.filep.replace('sites-enabled', u'sites-available')
+        mock_vhost.path = mock_vhost.path.replace('sites-enabled', 'sites-available')
+        mock_vhost.enabled = False
+        self.config.parser.parse_file(mock_vhost.filep)
+
+        def mock_match(aug_expr):
+            """Return a mocked match list of VirtualHosts"""
+            if "/mocked/path" in aug_expr:
+                return [self.vh_truth[1].path, self.vh_truth[0].path, mock_vhost.path]
+            return orig_match(aug_expr)
+
+        self.config.parser.parser_paths = ["/mocked/path"]
+        self.config.aug.match = mock_match
+        vhs = self.config.get_virtual_hosts()
+        self.assertEqual(len(vhs), 2)
+        self.assertTrue(vhs[0] == self.vh_truth[1])
+        # mock_vhost should have replaced the vh_truth[0], because its filepath
+        # isn't a symlink
+        self.assertTrue(vhs[1] == mock_vhost)
+
 
 class AugeasVhostsTest(util.ApacheTest):
     """Test vhosts with illegal names dependent on augeas version."""
@@ -1548,7 +1562,7 @@ class AugeasVhostsTest(util.ApacheTest):
     def test_choosevhost_works(self):
         path = "debian_apache_2_4/augeas_vhosts/apache2/sites-available/old-and-default.conf"
         chosen_vhost = self.config._create_vhost(path)
-        self.assertTrue(chosen_vhost == None or chosen_vhost.path == path)
+        self.assertTrue(chosen_vhost is None or chosen_vhost.path == path)
 
     @mock.patch("certbot_apache.configurator.ApacheConfigurator._create_vhost")
     def test_get_vhost_continue(self, mock_vhost):

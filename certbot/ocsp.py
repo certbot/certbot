@@ -69,8 +69,7 @@ class RevocationChecker(object):
 
         if self.use_openssl_binary:
             return self._check_ocsp_openssl_bin(cert_path, chain_path, host, url)
-        else:
-            return _check_ocsp_cryptography(cert_path, chain_path, url)
+        return _check_ocsp_cryptography(cert_path, chain_path, url)
 
     def _check_ocsp_openssl_bin(self, cert_path, chain_path, host, url):
         # type: (str, str, str, str) -> bool
@@ -121,9 +120,8 @@ def _determine_ocsp_server(cert_path):
 
     if host:
         return url, host
-    else:
-        logger.info("Cannot process OCSP host from URL (%s) in cert at %s", url, cert_path)
-        return None, None
+    logger.info("Cannot process OCSP host from URL (%s) in cert at %s", url, cert_path)
+    return None, None
 
 
 def _check_ocsp_cryptography(cert_path, chain_path, url):

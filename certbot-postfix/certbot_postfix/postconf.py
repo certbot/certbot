@@ -8,6 +8,7 @@ from certbot_postfix import util
 from acme.magic_typing import Dict, List, Tuple
 # pylint: enable=unused-import, no-name-in-module
 
+
 class ConfigMain(util.PostfixUtilBase):
     """A parser for Postfix's main.cf file."""
 
@@ -91,18 +92,18 @@ class ConfigMain(util.PostfixUtilBase):
             with a value in acceptable_overrides.
         """
         if name not in self._db:
-            raise KeyError("Parameter name %s is not a valid Postfix parameter name.", name)
+            raise KeyError("Parameter name {0} is not a valid Postfix parameter name.".format(name))
         # Check to see if this parameter is overridden by master.
         overrides = self.get_master_overrides(name)
         if not self._ignore_master_overrides and overrides is not None:
             util.report_master_overrides(name, overrides, acceptable_overrides)
         if value != self._db[name]:
-        # _db contains the "original" state of parameters. We only care about
-        # writes if they cause a delta from the original state.
+            # _db contains the "original" state of parameters. We only care about
+            # writes if they cause a delta from the original state.
             self._updated[name] = value
         elif name in self._updated:
-        # If this write reverts a previously updated parameter back to the
-        # original DB's state, we don't have to keep track of it in _updated.
+            # If this write reverts a previously updated parameter back to the
+            # original DB's state, we don't have to keep track of it in _updated.
             del self._updated[name]
 
     def flush(self):
@@ -110,7 +111,7 @@ class ConfigMain(util.PostfixUtilBase):
 
         :raises error.PluginError: When flush to main.cf fails for some reason.
         """
-        if len(self._updated) == 0:
+        if not self._updated:
             return
         args = ['-e']
         for name, value in six.iteritems(self._updated):
@@ -118,7 +119,7 @@ class ConfigMain(util.PostfixUtilBase):
         try:
             self._get_output(args)
         except IOError as e:
-            raise errors.PluginError("Unable to save to Postfix config: %v", e)
+            raise errors.PluginError("Unable to save to Postfix config: {0}".format(e))
         for name, value in six.iteritems(self._updated):
             self._db[name] = value
         self._updated = {}
@@ -129,6 +130,7 @@ class ConfigMain(util.PostfixUtilBase):
         :rtype: dict[str, str]
         """
         return self._updated
+
 
 def _parse_main_output(output):
     """Parses the raw output from Postconf about main.cf.
@@ -148,5 +150,3 @@ def _parse_main_output(output):
     for line in output.splitlines():
         name, _, value = line.partition(" =")
         yield name, value.strip()
-
-

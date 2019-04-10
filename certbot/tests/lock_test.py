@@ -41,7 +41,6 @@ class LockFileTest(test_util.TempDirTestCase):
         super(LockFileTest, self).setUp()
         self.lock_path = os.path.join(self.tempdir, 'test.lock')
 
-    @test_util.broken_on_windows
     def test_acquire_without_deletion(self):
         # acquire the lock in another process but don't delete the file
         child = multiprocessing.Process(target=self._call,
@@ -59,12 +58,14 @@ class LockFileTest(test_util.TempDirTestCase):
             self.assertRaises, errors.LockError, self._call, self.lock_path)
         test_util.lock_and_call(assert_raises, self.lock_path)
 
-    @test_util.broken_on_windows
     def test_locked_repr(self):
         lock_file = self._call(self.lock_path)
-        locked_repr = repr(lock_file)
-        self._test_repr_common(lock_file, locked_repr)
-        self.assertTrue('acquired' in locked_repr)
+        try:
+            locked_repr = repr(lock_file)
+            self._test_repr_common(lock_file, locked_repr)
+            self.assertTrue('acquired' in locked_repr)
+        finally:
+            lock_file.release()
 
     def test_released_repr(self):
         lock_file = self._call(self.lock_path)
@@ -94,7 +95,6 @@ class LockFileTest(test_util.TempDirTestCase):
             self._call(self.lock_path)
         self.assertFalse(should_delete)
 
-    @test_util.broken_on_windows
     def test_removed(self):
         lock_file = self._call(self.lock_path)
         lock_file.release()

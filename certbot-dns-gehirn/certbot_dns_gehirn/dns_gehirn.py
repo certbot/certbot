@@ -83,5 +83,5 @@ class _GehirnLexiconClient(dns_common_lexicon.LexiconClient):
 
     def _handle_http_error(self, e, domain_name):
         if domain_name in str(e) and (str(e).startswith('404 Client Error: Not Found for url:')):
-            return  # Expected errors when zone name guess is wrong
+            return None  # Expected errors when zone name guess is wrong
         return super(_GehirnLexiconClient, self)._handle_http_error(e, domain_name)

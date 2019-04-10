@@ -1,10 +1,10 @@
 """Tests for certbot.plugins.manual"""
 import os
 import unittest
+import sys
 
 import six
 import mock
-import sys
 
 from acme import challenges
 
@@ -106,10 +106,10 @@ class AuthenticatorTest(test_util.TempDirTestCase):
                 achall.validation(achall.account_key) in args[0])
             self.assertFalse(kwargs['wrap'])
 
-    @test_util.broken_on_windows
     def test_cleanup(self):
         self.config.manual_public_ip_logging_ok = True
-        self.config.manual_auth_hook = 'echo foo;'
+        self.config.manual_auth_hook = ('{0} -c "import sys; sys.stdout.write(\'foo\')"'
+                                        .format(sys.executable))
         self.config.manual_cleanup_hook = '# cleanup'
         self.auth.perform(self.achalls)
 
@@ -117,8 +117,7 @@ class AuthenticatorTest(test_util.TempDirTestCase):
             self.auth.cleanup([achall])
             self.assertEqual(os.environ['CERTBOT_AUTH_OUTPUT'], 'foo')
             self.assertEqual(os.environ['CERTBOT_DOMAIN'], achall.domain)
-            if (isinstance(achall.chall, challenges.HTTP01) or
-                isinstance(achall.chall, challenges.DNS01)):
+            if isinstance(achall.chall, (challenges.HTTP01, challenges.DNS01)):
                 self.assertEqual(
                     os.environ['CERTBOT_VALIDATION'],
                     achall.validation(achall.account_key))

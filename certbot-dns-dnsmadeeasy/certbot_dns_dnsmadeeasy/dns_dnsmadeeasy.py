@@ -82,7 +82,7 @@ class _DNSMadeEasyLexiconClient(dns_common_lexicon.LexiconClient):
 
     def _handle_http_error(self, e, domain_name):
         if domain_name in str(e) and str(e).startswith('404 Client Error: Not Found for url:'):
-            return
+            return None
 
         hint = None
         if str(e).startswith('403 Client Error: Forbidden for url:'):

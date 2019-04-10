@@ -1,5 +1,4 @@
 """Standalone Authenticator."""
-import argparse
 import collections
 import logging
 import socket
@@ -108,52 +107,6 @@ class ServerManager(object):
         return self._instances.copy()
 
 
-SUPPORTED_CHALLENGES = [challenges.HTTP01] \
-# type: List[Type[challenges.KeyAuthorizationChallenge]]
-
-
-class SupportedChallengesAction(argparse.Action):
-    """Action class for parsing standalone_supported_challenges."""
-
-    def __call__(self, parser, namespace, values, option_string=None):
-        logger.warning(
-            "The standalone specific supported challenges flag is "
-            "deprecated. Please use the --preferred-challenges flag "
-            "instead.")
-        converted_values = self._convert_and_validate(values)
-        namespace.standalone_supported_challenges = converted_values
-
-    def _convert_and_validate(self, data):
-        """Validate the value of supported challenges provided by the user.
-
-        :param str data: comma delimited list of challenge types
-
-        :returns: validated and converted list of challenge types
-        :rtype: str
-
-        """
-        challs = data.split(",")
-        unrecognized = [name for name in challs
-                        if name not in challenges.Challenge.TYPES]
-
-        # argparse.ArgumentErrors raised out of argparse.Action objects
-        # are caught by argparse which prints usage information and the
-        # error that occurred before calling sys.exit.
-        if unrecognized:
-            raise argparse.ArgumentError(
-                self,
-                "Unrecognized challenges: {0}".format(", ".join(unrecognized)))
-
-        choices = set(chall.typ for chall in SUPPORTED_CHALLENGES)
-        if not set(challs).issubset(choices):
-            raise argparse.ArgumentError(
-                self,
-                "Plugin does not support the following (valid) "
-                "challenges: {0}".format(", ".join(set(challs) - choices)))
-
-        return data
-
-
 @zope.interface.implementer(interfaces.IAuthenticator)
 @zope.interface.provider(interfaces.IPluginFactory)
 class Authenticator(common.Plugin):
@@ -184,16 +137,7 @@ class Authenticator(common.Plugin):
 
     @classmethod
     def add_parser_arguments(cls, add):
-        add("supported-challenges",
-            help=argparse.SUPPRESS,
-            action=SupportedChallengesAction,
-            default=",".join(chall.typ for chall in SUPPORTED_CHALLENGES))
-
-    @property
-    def supported_challenges(self):
-        """Challenges supported by this plugin."""
-        return [challenges.Challenge.TYPES[name] for name in
-                self.conf("supported-challenges").split(",")]
+        pass  # No additional argument for the standalone plugin parser
 
     def more_info(self):  # pylint: disable=missing-docstring
         return("This authenticator creates its own ephemeral TCP listener "
@@ -206,7 +150,7 @@ class Authenticator(common.Plugin):
 
     def get_chall_pref(self, domain):
         # pylint: disable=unused-argument,missing-docstring
-        return self.supported_challenges
+        return [challenges.HTTP01]
 
     def perform(self, achalls):  # pylint: disable=missing-docstring
         return [self._try_perform_single(achall) for achall in achalls]
@@ -263,4 +207,4 @@ def _handle_perform_error(error):
         if not should_retry:
             raise errors.PluginError(msg)
     else:
-        raise
+        raise error

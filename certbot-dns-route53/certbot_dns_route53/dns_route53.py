@@ -44,7 +44,7 @@ class Authenticator(dns_common.DNSAuthenticator):
     def _setup_credentials(self):
         pass
 
-    def _perform(self, domain, validation_domain_name, validation): # pylint: disable=missing-docstring
+    def _perform(self, domain, validation_name, validation): # pylint: disable=missing-docstring
         pass
 
     def perform(self, achalls):
@@ -65,9 +65,9 @@ class Authenticator(dns_common.DNSAuthenticator):
             raise errors.PluginError("\n".join([str(e), INSTRUCTIONS]))
         return [achall.response(achall.account_key) for achall in achalls]
 
-    def _cleanup(self, domain, validation_domain_name, validation):
+    def _cleanup(self, domain, validation_name, validation):
         try:
-            self._change_txt_record("DELETE", validation_domain_name, validation)
+            self._change_txt_record("DELETE", validation_name, validation)
         except (NoCredentialsError, ClientError) as e:
             logger.debug('Encountered error during cleanup: %s', e, exc_info=True)
 
