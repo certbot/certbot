@@ -534,7 +534,7 @@ BootstrapSuseCommon() {
     # Since Leap 15.0 (and associated Tumbleweed version), python-virtualenv
     # is a source package, and python2-virtualenv must be used instead.
     # Also currently python2-setuptools is not a dependency of python2-virtualenv,
-    # while it should be. Installing it explicitly until upstreqm fix.
+    # while it should be. Installing it explicitly until upstream fix.
     OPENSUSE_VIRTUALENV_PACKAGES="python2-virtualenv python2-setuptools"
   fi
 
@@ -1218,18 +1218,18 @@ letsencrypt==0.7.0 \
     --hash=sha256:105a5fb107e45bcd0722eb89696986dcf5f08a86a321d6aef25a0c7c63375ade \
     --hash=sha256:c36e532c486a7e92155ee09da54b436a3c420813ec1c590b98f635d924720de9
 
-certbot==0.33.0 \
-    --hash=sha256:37a7e833e2179c7aa0c34a11fbf661cf569d09e6f37eed6ffb805822d6068f3c \
-    --hash=sha256:25da67cb7f14db5fb5867d8aa3efbf0405fd63e07feb7e39f2a6f86fc0c83846
-acme==0.33.0 \
-    --hash=sha256:070a7a464b20316dc1fc84eb200357a2c9589b868e63307b04a7f76696c75667 \
-    --hash=sha256:9d5e6a2f200d42bbf2cafd7767724e9c58ac230763095b0640b4a16d955cb63e
-certbot-apache==0.33.0 \
-    --hash=sha256:cf94a1d2bafbcd434f209c04802b1da43397e7cdce80c5e253e90ed77f7d4d95 \
-    --hash=sha256:406764e0b31f7c764ac721a3e308902aefe169fc2ed229c06141fafc2173059d
-certbot-nginx==0.33.0 \
-    --hash=sha256:96a621cf0a3124ac03c8153c4b31cded06bf45775a0084a5f9ee5226c3b799fd \
-    --hash=sha256:1469539412dfc06b8009ca3f509256cada5793694f3146b2e634a520361d42d5
+certbot==0.33.1 \
+    --hash=sha256:e2a08467146b7a7ed2c8ca6625b1705d93b51e89866f6ede8a8a262594c18f3f \
+    --hash=sha256:d5203f32c50f3ec5a32df97e4affddbcd288a569678ecb5669adda21cd5ac3d9
+acme==0.33.1 \
+    --hash=sha256:02467d4b1d246105d6d1ea01822dd9e2eea5bf3a50607523969d8e400d53c07b \
+    --hash=sha256:b38cdb71d0071efe1f1190a744f8f95f3c698b76ac0f5d919bbfe3522e277a82
+certbot-apache==0.33.1 \
+    --hash=sha256:0d2a463539e6396de2d374de62faba34e1fe40dd8059e3c64dcd5dabaa66887b \
+    --hash=sha256:659db7335d919fee52ae707567994e13c31ed25109c94b246c60c97d21c46f3a
+certbot-nginx==0.33.1 \
+    --hash=sha256:df9fb86e735eb2668e070f20317e85c37952f3f612fa7f6bbc2c63784b213f28 \
+    --hash=sha256:b3201eee03be74fc743c21c721d3b5586c3323db63e78b68583a6250ad680cff
 
 UNLIKELY_EOF
     # -------------------------------------------------------------------------

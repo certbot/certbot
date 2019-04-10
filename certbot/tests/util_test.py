@@ -312,10 +312,10 @@ class SafelyRemoveTest(test_util.TempDirTestCase):
         # no error, yay!
         self.assertFalse(os.path.exists(self.path))
 
-    @mock.patch("certbot.util.os.remove")
-    def test_other_error_passthrough(self, mock_remove):
-        mock_remove.side_effect = OSError
-        self.assertRaises(OSError, self._call)
+    def test_other_error_passthrough(self):
+        with mock.patch("certbot.util.os.remove") as mock_remove:
+            mock_remove.side_effect = OSError
+            self.assertRaises(OSError, self._call)
 
 
 class SafeEmailTest(unittest.TestCase):
@@ -561,7 +561,7 @@ class OsInfoTest(unittest.TestCase):
                 comm_mock = mock.Mock()
                 comm_attrs = {'communicate.return_value':
                               ('42.42.42', 'error')}
-                comm_mock.configure_mock(**comm_attrs)  # pylint: disable=star-args
+                comm_mock.configure_mock(**comm_attrs)
                 popen_mock.return_value = comm_mock
                 self.assertEqual(get_os_info()[0], 'darwin')
                 self.assertEqual(get_os_info()[1], '42.42.42')
@@ -617,7 +617,7 @@ class AtexitRegisterTest(unittest.TestCase):
             self.assertTrue(mock_atexit.register.called)
             args, kwargs = mock_atexit.register.call_args
             atexit_func = args[0]
-            atexit_func(*args[1:], **kwargs)  # pylint: disable=star-args
+            atexit_func(*args[1:], **kwargs)
 
 
 if __name__ == "__main__":

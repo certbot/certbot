@@ -44,16 +44,6 @@ targets:
     #     - [ apt-get, install, -y, curl ]
   #-----------------------------------------------------------------------------
   # Other Redhat Distros
-  - ami: ami-60b6c60a
-    name: amazonlinux-2015.09.1
-    type: centos
-    virt: hvm
-    user: ec2-user
-  - ami: ami-0d4cfd66
-    name: amazonlinux-2015.03.1
-    type: centos
-    virt: hvm
-    user: ec2-user
   - ami: ami-a8d369c0
     name: RHEL7
     type: centos

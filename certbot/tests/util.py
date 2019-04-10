@@ -5,29 +5,28 @@
 """
 import logging
 import os
-import pkg_resources
 import shutil
 import stat
+import sys
 import tempfile
 import unittest
-import sys
 from multiprocessing import Process, Event
 
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import serialization
-import mock
 import OpenSSL
 import josepy as jose
+import mock
+import pkg_resources
 import six
 from six.moves import reload_module  # pylint: disable=import-error
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
 
+from certbot import configuration
 from certbot import constants
 from certbot import interfaces
-from certbot import storage
-from certbot import configuration
 from certbot import lock
+from certbot import storage
 from certbot import util
-
 from certbot.display import util as display_util
 
 
@@ -112,8 +111,7 @@ def skip_unless(condition, reason):  # pragma: no cover
         return unittest.skipUnless(condition, reason)
     elif condition:
         return lambda cls: cls
-    else:
-        return lambda cls: None
+    return lambda cls: None
 
 
 def make_lineage(config_dir, testfile):
@@ -265,13 +263,13 @@ class FreezableMock(object):
         if name in ('return_value', 'side_effect'):
             return setattr(self._mock, name, value)
 
-        else:
-            return object.__setattr__(self, name, value)
+        return object.__setattr__(self, name, value)
 
 
 def _create_get_utility_mock():
     display = FreezableMock()
-    for name in interfaces.IDisplay.names():  # pylint: disable=no-member
+    # Use pylint code for disable to keep on single line under line length limit
+    for name in interfaces.IDisplay.names():  # pylint: disable=no-member,E1120
         if name != 'notification':
             frozen_mock = FreezableMock(frozen=True, func=_assert_valid_call)
             setattr(display, name, frozen_mock)
@@ -295,7 +293,8 @@ def _create_get_utility_mock_with_stdout(stdout):
 
 
     display = FreezableMock()
-    for name in interfaces.IDisplay.names():  # pylint: disable=no-member
+    # Use pylint code for disable to keep on single line under line length limit
+    for name in interfaces.IDisplay.names():  # pylint: disable=no-member,E1120
         if name == 'notification':
             frozen_mock = FreezableMock(frozen=True,
                                         func=_write_msg)
@@ -317,7 +316,6 @@ def _assert_valid_call(*args, **kwargs):
     assert_kwargs['cli_flag'] = kwargs.get('cli_flag', None)
     assert_kwargs['force_interactive'] = kwargs.get('force_interactive', False)
 
-    # pylint: disable=star-args
     display_util.assert_valid_call(*assert_args, **assert_kwargs)
 
 

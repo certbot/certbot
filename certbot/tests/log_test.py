@@ -282,7 +282,6 @@ class PreArgParseExceptHookTest(unittest.TestCase):
 
     @mock.patch('certbot.log.post_arg_parse_except_hook')
     def test_it(self, mock_post_arg_parse_except_hook):
-        # pylint: disable=star-args
         memory_handler = mock.MagicMock()
         args = ('some', 'args',)
         kwargs = {'some': 'kwargs'}
@@ -358,7 +357,6 @@ class PostArgParseExceptHookTest(unittest.TestCase):
                 mock_logger.error.side_effect = write_err
                 with mock.patch('certbot.log.sys.stderr', mock_err):
                     try:
-                        # pylint: disable=star-args
                         self._call(
                             *exc_info, debug=debug, log_path=self.log_path)
                     except SystemExit as exit_err:
@@ -408,13 +406,13 @@ class ExitWithLogPathTest(test_util.TempDirTestCase):
         self.assertTrue('logfiles' in err_str)
         self.assertTrue(self.tempdir in err_str)
 
+    # pylint: disable=inconsistent-return-statements
     def _test_common(self, *args, **kwargs):
         try:
             self._call(*args, **kwargs)
         except SystemExit as err:
             return str(err)
-        else:  # pragma: no cover
-            self.fail('SystemExit was not raised.')
+        self.fail('SystemExit was not raised.')  # pragma: no cover
 
 
 if __name__ == "__main__":

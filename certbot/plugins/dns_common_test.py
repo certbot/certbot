@@ -22,10 +22,6 @@ class DNSAuthenticatorTest(util.TempDirTestCase, dns_test_common.BaseAuthenticat
         _perform = mock.MagicMock()
         _cleanup = mock.MagicMock()
 
-        def __init__(self, *args, **kwargs):
-            # pylint: disable=protected-access
-            super(DNSAuthenticatorTest._FakeDNSAuthenticator, self).__init__(*args, **kwargs)
-
         def more_info(self):  # pylint: disable=missing-docstring,no-self-use
             return 'A fake authenticator for testing.'
 

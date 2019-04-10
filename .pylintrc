@@ -22,7 +22,7 @@ persistent=yes
 
 # List of plugins (as comma separated values of python modules names) to load,
 # usually to register additional checkers.
-load-plugins=linter_plugin
+load-plugins=
 
 
 [MESSAGES CONTROL]
@@ -251,7 +251,7 @@ ignored-modules=pkg_resources,confargparse,argparse,six.moves,six.moves.urllib
 
 # List of classes names for which member attributes should not be checked
 # (useful for classes with attributes dynamically set).
-ignored-classes=SQLObject
+ignored-classes=Field,Header,JWS,closing
 
 # When zope mode is activated, add a predefined set of Zope acquired attributes
 # to generated-members.
@@ -304,7 +304,7 @@ max-args=6
 
 # Argument names that match this expression will be ignored. Default to name
 # with leading underscore
-ignored-argument-names=_.*
+ignored-argument-names=(unused)?_.*|dummy
 
 # Maximum number of locals for function / method body
 max-locals=15

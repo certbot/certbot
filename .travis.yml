@@ -227,7 +227,7 @@ addons:
 install: "$(command -v pip || command -v pip3) install codecov tox"
 script: tox
 
-after_success: '[ "$TOXENV" == "py27-cover" ] && codecov'
+after_success: '[ "$TOXENV" == "py27-cover" ] && codecov -F linux'
 
 notifications:
   email: false

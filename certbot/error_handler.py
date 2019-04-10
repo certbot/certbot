@@ -73,7 +73,7 @@ class ErrorHandler(object):
     deferred until they finish.
 
     """
-    def __init__(self, func=None, *args, **kwargs):
+    def __init__(self, func, *args, **kwargs):
         self.call_on_regular_exit = False
         self.body_executed = False
         self.funcs = []  # type: List[Callable[[], Any]]
@@ -167,7 +167,6 @@ class ExitHandler(ErrorHandler):
     In addition to cleaning up on all signals, also cleans up on
     regular exit.
     """
-    def __init__(self, func=None, *args, **kwargs):
+    def __init__(self, func, *args, **kwargs):
         ErrorHandler.__init__(self, func, *args, **kwargs)
         self.call_on_regular_exit = True
-

@@ -1,0 +1,14 @@
+coverage:
+  status:
+    project:
+      default: off
+      linux:
+        flags: linux
+        target: auto
+        threshold: 0.1
+        base: auto
+      windows:
+        flags: windows
+        target: auto
+        threshold: 0.1
+        base: auto
