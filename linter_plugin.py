@@ -22,7 +22,7 @@ class ForbidStandardOsModule(BaseChecker):
         'E5001': (
             'Forbidden use of os module, certbot.compat.os must be used instead',
             'os-module-forbidden',
-            'Some methods from standard os modules cannot be used for security reasons on Windows: '
+            'Some methods from the standard os module cannot be used for security reasons on Windows: '
             'the safe wrapper certbot.compat.os must be used instead in Certbot.'
         )
     }
