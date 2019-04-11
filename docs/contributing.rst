@@ -320,7 +320,7 @@ security features about file permissions (eg. DACLs). However several sensible
 files handled by Certbot (eg. private keys) need strongly restricted access
 on both Linux and Windows.
 
-This problem is asserted by the ``certbot.compat.os`` module: it wraps the standard
+To help with this, the ``certbot.compat.os`` module wraps the standard
 ``os`` module, and forbid usage of methods that lacks support for these Windows
 security features.
 
