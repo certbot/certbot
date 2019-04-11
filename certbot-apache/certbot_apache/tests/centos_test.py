@@ -63,6 +63,7 @@ class FedoraRestartTest(util.ApacheTest):
     def test_fedora_restart_error(self):
         c_test = "certbot_apache.configurator.ApacheConfigurator.config_test"
         with mock.patch(c_test) as mock_test:
+            # First call raises error, second doesn't
             mock_test.side_effect = [errors.MisconfigurationError, '']
             with mock.patch("certbot.util.run_script") as mock_run:
                 mock_run.side_effect = errors.SubprocessError
@@ -73,13 +74,12 @@ class FedoraRestartTest(util.ApacheTest):
         c_test = "certbot_apache.configurator.ApacheConfigurator.config_test"
         with mock.patch(c_test) as mock_test:
             with mock.patch("certbot.util.run_script") as mock_run:
-                with mock.patch(c_test) as mock_test:
-                    # First call raises error, second doesn't
-                    mock_test.side_effect = [errors.MisconfigurationError, '']
-                    self._run_fedora_test()
-                    self.assertEqual(mock_test.call_count, 2)
-                    self.assertEqual(mock_run.call_args[0][0],
-                                     ['systemctl', 'restart', 'httpd'])
+                # First call raises error, second doesn't
+                mock_test.side_effect = [errors.MisconfigurationError, '']
+                self._run_fedora_test()
+                self.assertEqual(mock_test.call_count, 2)
+                self.assertEqual(mock_run.call_args[0][0],
+                                ['systemctl', 'restart', 'httpd'])
 
 
 class MultipleVhostsTestCentOS(util.ApacheTest):
