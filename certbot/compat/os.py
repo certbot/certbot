@@ -12,7 +12,7 @@ from os import *  # type: ignore  # pylint: disable=wildcard-import,unused-wildc
 
 # Second round of wrapping: we import dynamically all attributes from the os module that have not
 # yet been imported by the first round (static import). This covers in particular the case of
-# specific python 3.x versions where not all public attributes are in the special  _all__ of os,
+# specific python 3.x versions where not all public attributes are in the special __all__ of os,
 # and so not in `from os import *`.
 import os as std_os  # pylint: disable=os-module-forbidden
 import sys as std_sys
