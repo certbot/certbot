@@ -40,11 +40,11 @@ class ForbidStandardOsModule(BaseChecker):
 
 
 def register(linter):
-    """Register this module as a Pylint plugin."""
+    """Pylint hook to auto-register this linter"""
     linter.register_checker(ForbidStandardOsModule(linter))
 
 
 def _check_disabled(node):
     module = node.root()
-    return any([package for package in WHITELIST_PACKAGES
-                if module.name.startswith(package + '.') or module.name == package])
+    return any(package for package in WHITELIST_PACKAGES
+               if module.name.startswith(package + '.') or module.name == package)
