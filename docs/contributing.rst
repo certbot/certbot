@@ -321,7 +321,7 @@ files handled by Certbot (eg. private keys) need strongly restricted access
 on both Linux and Windows.
 
 To help with this, the ``certbot.compat.os`` module wraps the standard
-``os`` module, and forbid usage of methods that lacks support for these Windows
+``os`` module, and forbid usage of methods that lack support for these Windows
 security features.
 
 As a developper, you must use ``certbot.compat.os`` in every place you would need
