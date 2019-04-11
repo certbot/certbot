@@ -312,6 +312,25 @@ Please:
 .. _PEP 8 - Style Guide for Python Code:
   https://www.python.org/dev/peps/pep-0008
 
+Use ``certbot.compat.os`` instead of standard ``os``
+====================================================
+
+Python standard ``os`` module lacks of a full support for several Windows
+security features about file permissions (eg. DACLs). However several sensible
+files handled by Certbot (eg. private keys) need a strongly restricted access
+on both Linux and Windows.
+
+This problem is asserted by the ``certbot.compat.os`` module: it wraps the standard
+``os`` module, and forbid usage of methods that lacks support for these Windows
+security features.
+
+As a developper, you must use ``certbot.compat.os`` in every place you would need
+``os`` (eg. ``from certbot.compat import os`` instead of ``import os``). Otherwise the
+code quality process will fail when your PR is submitted.
+
+All forbidden methods in ``certbot.compat.os`` have a Windows-safe equivalent
+in ``certbot.compat.security``.
+
 Mypy type annotations
 =====================
 
