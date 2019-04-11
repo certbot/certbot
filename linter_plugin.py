@@ -6,7 +6,7 @@ from pylint.interfaces import IAstroidChecker
 from pylint.checkers.utils import check_messages
 
 
-# Module in theses packages can import os module.
+# Module in theses packages can import the os module.
 WHITELIST_PACKAGES = ['acme', 'certbot_compatibility_test', 'letshelp_certbot', 'lock_test']
 
 
