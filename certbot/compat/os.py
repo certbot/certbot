@@ -10,7 +10,7 @@ from __future__ import absolute_import
 # available in certbot.compat.os.
 from os import *  # type: ignore  # pylint: disable=wildcard-import,unused-wildcard-import,redefined-builtin,os-module-forbidden
 
-# Second round of wrapping: we import dynamically all attributes from the os modules that have not
+# Second round of wrapping: we import dynamically all attributes from the os module that have not
 # yet been imported by the first round (static import). This covers in particular the case of
 # specific python 3.x versions where not all public attributes are in the special  _all__ of os,
 # and so not in `from os import *`.
