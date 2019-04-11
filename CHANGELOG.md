@@ -10,7 +10,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* Updated Certbot and its plugins to improve the handling of file system permissions
+  on Windows as a step towards adding proper Windows support to Certbot.
 
 ### Fixed
 
@@ -20,7 +21,24 @@ Despite us having broken lockstep, we are continuing to release new versions of
 all Certbot components during releases for the time being, however, the only
 package with changes other than its version number was:
 
-*
+* certbot
+* certbot-apache
+* certbot-dns-cloudflare
+* certbot-dns-cloudxns
+* certbot-dns-digitalocean
+* certbot-dns-dnsimple
+* certbot-dns-dnsmadeeasy
+* certbot-dns-gehirn
+* certbot-dns-google
+* certbot-dns-linode
+* certbot-dns-luadns
+* certbot-dns-nsone
+* certbot-dns-ovh
+* certbot-dns-rfc2136
+* certbot-dns-route53
+* certbot-dns-sakuracloud
+* certbot-nginx
+* certbot-postfix
 
 More details about these changes can be found on our GitHub repo.
 
