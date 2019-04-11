@@ -26,3 +26,6 @@ for attribute in dir(std_os):
 
 # Clean all remaining importables that are not from the core os module.
 del ourselves, std_os, std_sys
+
+# Similarly to os.path, allow certbot.compat.os.path to behave as a module
+sys.modules[__name__ + '.path'] = path

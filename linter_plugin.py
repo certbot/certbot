@@ -3,7 +3,6 @@ http://docs.pylint.org/plugins.html
 """
 from pylint.checkers import BaseChecker
 from pylint.interfaces import IAstroidChecker
-from pylint.checkers.utils import check_messages
 
 
 # Modules in theses packages can import the os module.
@@ -12,8 +11,8 @@ WHITELIST_PACKAGES = ['acme', 'certbot_compatibility_test', 'letshelp_certbot', 
 
 class ForbidStandardOsModule(BaseChecker):
     """
-    This checker ensures that standard os module is not imported by certbot modules.
-    Otherwise a 'os-module-forbidden' error will be registered for the faulty lines.
+    This checker ensures that standard os module (and submodules) is not imported by certbot
+    modules. Otherwise a 'os-module-forbidden' error will be registered for the faulty lines.
     """
     __implements__ = IAstroidChecker
 
@@ -28,14 +27,13 @@ class ForbidStandardOsModule(BaseChecker):
     }
     priority = -1
 
-    @check_messages('os-module-forbidden')
     def visit_import(self, node):
-        if 'os' in [name[0] for name in node.names] and not _check_disabled(node):
+        os_used = any(name for name in node.names if name[0] == 'os' or name[0].startswith('os.'))
+        if os_used and not _check_disabled(node):
             self.add_message('os-module-forbidden', node=node)
 
-    @check_messages('os-module-forbidden')
     def visit_importfrom(self, node):
-        if node.modname == 'os' and not _check_disabled(node):
+        if node.modname == 'os' or node.modname.startswith('os.') and not _check_disabled(node):
             self.add_message('os-module-forbidden', node=node)
 
 
