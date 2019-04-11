@@ -12,7 +12,7 @@ WHITELIST_PACKAGES = ['acme', 'certbot_compatibility_test', 'letshelp_certbot', 
 
 class ForbidStandardOsModule(BaseChecker):
     """
-    This checker ensures that standard os module is not imported by certbot classes.
+    This checker ensures that standard os module is not imported by certbot modules.
     Otherwise a 'os-module-forbidden' error will be registered for the faulty lines.
     """
     __implements__ = IAstroidChecker
@@ -28,13 +28,11 @@ class ForbidStandardOsModule(BaseChecker):
     }
     priority = -1
 
-    # TODO: exclude acme module from the check
     @check_messages('os-module-forbidden')
     def visit_import(self, node):
         if 'os' in [name[0] for name in node.names] and not _check_disabled(node):
             self.add_message('os-module-forbidden', node=node)
 
-    # TODO: exclude acme module from the check
     @check_messages('os-module-forbidden')
     def visit_importfrom(self, node):
         if node.modname == 'os' and not _check_disabled(node):
