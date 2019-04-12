@@ -14,6 +14,16 @@ from certbot_integration_tests.certbot_tests.assertions import (
 from certbot_integration_tests.utils import misc
 
 
+@pytest.fixture()
+def context(request):
+    # Fixture request is a built-in pytest fixture describing current test request.
+    integration_test_context = certbot_context.IntegrationTestsContext(request)
+    try:
+        yield integration_test_context
+    finally:
+        integration_test_context.cleanup()
+
+
 def test_basic_commands(context):
     """Test simple commands on Certbot CLI."""
     # TMPDIR env variable is set to workspace for the certbot subprocess.
@@ -80,16 +90,6 @@ def test_http_01(context):
     assert_save_renew_hook(context.config_dir, certname)
 
 
-@pytest.fixture()
-def context(request):
-    # Fixture request is a built-in pytest fixture describing current test request.
-    integration_test_context = certbot_context.IntegrationTestsContext(request)
-    try:
-        yield integration_test_context
-    finally:
-        integration_test_context.cleanup()
-
-
 def test_manual_http_auth(context):
     """Test the HTTP-01 challenge using manual plugin."""
     with misc.create_http_server(context.http_01_port) as webroot,\
@@ -129,7 +129,7 @@ def test_manual_dns_auth(context):
 
 
 def test_renew_files_permissions(context):
-    """Test certificate file permissions upon renewal"""
+    """Test proper certificate file permissions upon renewal"""
     certname = context.get_domain('renew')
     context.certbot(['-d', certname])
 
@@ -137,13 +137,11 @@ def test_renew_files_permissions(context):
     assert_world_permissions(
         join(context.config_dir, 'archive', certname, 'privkey1.pem'), 0)
 
-    # Force renew. Assert certificate renewal and proper permissions.
-    # We assert certificate renewal and proper permissions.
     context.certbot(['renew'])
 
     assert_cert_count_for_lineage(context.config_dir, certname, 2)
     assert_world_permissions(
-        join(context.config_dir, 'archive', certname, '/privkey2.pem'), 0)
+        join(context.config_dir, 'archive', certname, 'privkey2.pem'), 0)
     assert_equals_group_owner(
         join(context.config_dir, 'archive', certname, 'privkey1.pem'),
         join(context.config_dir, 'archive', certname, 'privkey2.pem'))
@@ -159,7 +157,6 @@ def test_renew_with_hook_scripts(context):
 
     assert_cert_count_for_lineage(context.config_dir, certname, 1)
 
-    # Force renew. Assert certificate renewal and hook scripts execution.
     misc.generate_test_file_hooks(context.config_dir, context.hook_probe)
     context.certbot(['renew'])
 
