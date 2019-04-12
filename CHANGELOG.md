@@ -38,7 +38,6 @@ package with changes other than its version number was:
 * certbot-dns-route53
 * certbot-dns-sakuracloud
 * certbot-nginx
-* certbot-postfix
 
 More details about these changes can be found on our GitHub repo.
 
