@@ -318,7 +318,7 @@ Use ``certbot.compat.os`` instead of ``os``
 
 Python's standard library ``os`` lacks of a full support for several Windows
 security features about file permissions (eg. DACLs). However several files
-handled by Certbot (eg. private keys) need a strongly restricted access
+handled by Certbot (eg. private keys) need strongly restricted access
 on both Linux and Windows.
 
 To help with this, the ``certbot.compat.os`` module wraps the standard
