@@ -10,6 +10,10 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+* Apache plugin now tries to restart httpd on Fedora using systemctl if a
+  configuration test error is detected. This has to be done due to the way
+  Fedora now generates the self signed certificate files upon first 
+  restart.
 * Updated Certbot and its plugins to improve the handling of file system permissions
   on Windows as a step towards adding proper Windows support to Certbot.
 
