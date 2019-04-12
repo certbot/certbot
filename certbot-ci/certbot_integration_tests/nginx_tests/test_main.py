@@ -20,36 +20,19 @@ def test_nginx_version():
     print(subprocess.check_output(['nginx', '-v']))
 
 
-@pytest.mark.parametrize('certname_pattern, params', [
-    ('nginx.{0}.wtf', ['run']),
-    ('nginx2.{0}.wtf', ['--preferred-challenges', 'http']),
-    ('nginx3.{0}.wtf', ['--preferred-challenges', 'http']),
-    ('nginx4.{0}.wtf', ['--preferred-challenges', 'http']),
+@pytest.mark.parametrize('certname_pattern, params, set_default_server', [
+    ('nginx.{0}.wtf', ['run'], True),
+    ('nginx2.{0}.wtf', ['--preferred-challenges', 'http'], True),
+    ('nginx3.{0}.wtf', ['--preferred-challenges', 'http'], True),
+    ('nginx4.{0}.wtf', ['--preferred-challenges', 'http'], True),
+    ('nginx5.{0}.wtf', ['--preferred-challenges', 'http'], False),
+    ('nginx6.{0}.wtf,nginx7.{0}.wtf', ['--preferred-challenges', 'http'], False),
 ])
-def test_nginx_with_default_server(certname_pattern, params, context):
+def test_certificate_deployment(certname_pattern, params, set_default_server, context):
     """
     Test various scenarios to deploy a certificate to nginx using certbot.
-    In these tests, one nginx vhost is set as default to fallback on all non matching requests.
     """
-    with context.nginx_server('default_server'):
-        certname = certname_pattern.format(context.worker_id)
-        command = ['--domains', certname]
-        command.extend(params)
-        context.certbot_test_nginx(command)
-
-        context.assert_deployment_and_rollback(certname)
-
-
-@pytest.mark.parametrize('certname_pattern, params', [
-    ('nginx5.{0}.wtf', ['--preferred-challenges', 'http']),
-    ('nginx6.{0}.wtf,nginx7.{0}.wtf', ['--preferred-challenges', 'http']),
-])
-def test_nginx_without_default_server(certname_pattern, params, context):
-    """
-    Test various scenarios to deploy a certificate to nginx using certbot.
-    In these tests, nginx has no default vhost.
-    """
-    with context.nginx_server('default_server'):
+    with context.nginx_server('default_server' if set_default_server else ''):
         certname = certname_pattern.format(context.worker_id)
         command = ['--domains', certname]
         command.extend(params)
