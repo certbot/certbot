@@ -1,8 +1,10 @@
 """Module executing integration tests against certbot core."""
 from __future__ import print_function
 import os
+import re
 import shutil
-from os.path import join
+import subprocess
+from os.path import join, exists
 
 import pytest
 from certbot_integration_tests.certbot_tests import context as certbot_context
@@ -98,3 +100,120 @@ def test_renew_with_hook_scripts(context):
 
     assert_cert_count_for_lineage(context.config_dir, certname, 2)
     assert_hook_execution(context.hook_probe, 'deploy')
+
+
+def test_revoke_simple(context):
+    """Test various scenarios that revokes a certificate."""
+    # Default action after revoke is to delete the certificate.
+    certname = context.get_domain()
+    cert_path = join(context.config_dir, 'live/{0}/cert.pem'.format(certname))
+    context.certbot(['-d', certname])
+    context.certbot(['revoke', '--cert-path', cert_path, '--delete-after-revoke'])
+
+    assert not exists(cert_path)
+
+    # Check default deletion is overridden.
+    certname = context.get_domain('le1')
+    cert_path = join(context.config_dir, 'live/{0}/cert.pem'.format(certname))
+    context.certbot(['-d', certname])
+    context.certbot(['revoke', '--cert-path', cert_path, '--no-delete-after-revoke'])
+
+    assert exists(cert_path)
+
+    context.certbot(['delete', '--cert-name', certname])
+
+    assert not exists(join(context.config_dir, 'archive/{0}'.format(certname)))
+    assert not exists(join(context.config_dir, 'live/{0}'.format(certname)))
+    assert not exists(join(context.config_dir, 'renewal/{0}.conf').format(certname))
+
+    certname = context.get_domain('le2')
+    key_path = join(context.config_dir, 'live/{0}/privkey.pem'.format(certname))
+    cert_path = join(context.config_dir, 'live/{0}/cert.pem'.format(certname))
+    context.certbot(['-d', certname])
+    context.certbot(['revoke', '--cert-path', cert_path, '--key-path', key_path])
+
+
+def test_revoke_and_unregister(context):
+    """Test revoke with a reason then unregister."""
+    cert1 = context.get_domain('le1')
+    cert2 = context.get_domain('le2')
+    cert3 = context.get_domain('le3')
+
+    cert_path1 = join(context.config_dir, 'live/{0}/cert.pem'.format(cert1))
+    key_path2 = join(context.config_dir, 'live/{0}/privkey.pem'.format(cert2))
+    cert_path2 = join(context.config_dir, 'live/{0}/cert.pem'.format(cert2))
+
+    context.certbot(['-d', cert1])
+    context.certbot(['-d', cert2])
+    context.certbot(['-d', cert3])
+
+    context.certbot(['revoke', '--cert-path', cert_path1,
+                    '--reason', 'cessationOfOperation'])
+    context.certbot(['revoke', '--cert-path', cert_path2, '--key-path', key_path2,
+                    '--reason', 'keyCompromise'])
+
+    context.certbot(['unregister'])
+
+    output = context.certbot(['certificates'])
+
+    assert cert1 not in output
+    assert cert2 not in output
+    assert cert3 in output
+
+
+def test_revoke_mutual_exclusive_flags(context):
+    """Test --cert-path and --cert-name cannot be used during revoke."""
+    cert = context.get_domain('le1')
+    context.certbot(['-d', cert])
+    with pytest.raises(subprocess.CalledProcessError) as error:
+        context.certbot([
+            'revoke', '--cert-name', cert,
+            '--cert-path', join(context.config_dir, 'live/{0}/fullchain.pem'.format(cert))
+        ])
+        assert 'Exactly one of --cert-path or --cert-name must be specified' in error.out
+
+
+def test_revoke_multiple_lineages(context):
+    """Test revoke does not delete certs if multiple lineages share the same dir."""
+    cert1 = context.get_domain('le1')
+    context.certbot(['-d', cert1])
+
+    assert os.path.isfile(join(context.config_dir, 'renewal/{0}.conf'.format(cert1)))
+
+    cert2 = context.get_domain('le2')
+    context.certbot(['-d', cert2])
+
+    # Copy over renewal configuration of cert1 into renewal configuration of cert2.
+    with open(join(context.config_dir, 'renewal/{0}.conf'.format(cert2)), 'r') as file:
+        data = file.read()
+
+    data = re.sub('archive_dir = .*{0}'.format(os.linesep),
+                  'archive_dir = {0}{1}'.format(os.path.normpath(
+                      join(context.config_dir, 'archive/{0}'.format(cert1))), os.linesep),
+                  data)
+
+    with open(join(context.config_dir, 'renewal/{0}.conf'.format(cert2)), 'w') as file:
+        file.write(data)
+
+    output = context.certbot([
+        'revoke', '--cert-path', join(context.config_dir, 'live/{0}/cert.pem'.format(cert1))
+    ])
+
+    assert 'Not deleting revoked certs due to overlapping archive dirs' in output
+
+
+def test_wildcard_certificates(context):
+    """Test wildcard certificate issuance."""
+    if context.acme_server == 'boulder-v1':
+        pytest.skip('Wildcard certificates are not supported on ACME v1')
+
+    certname = context.get_domain('wild')
+
+    context.certbot([
+        '-a', 'manual', '-d', '*.{0},{0}'.format(certname),
+        '--preferred-challenge', 'dns',
+        '--manual-auth-hook', context.manual_dns_auth_hook,
+        '--manual-cleanup-hook', context.manual_dns_cleanup_hook
+    ])
+
+    assert exists(join(context.config_dir, 'live/{0}/fullchain.pem'.format(certname)))
