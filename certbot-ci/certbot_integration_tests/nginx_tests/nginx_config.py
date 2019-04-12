@@ -142,22 +142,11 @@ def create_self_signed_certificate(nginx_root):
         key_size=2048,
         backend=default_backend()
     )
-    subject = issuer = x509.Name([
-        x509.NameAttribute(x509.NameOID.COMMON_NAME, u'nginx.wtf')
-    ])
-    certificate = x509.CertificateBuilder().subject_name(
-        subject
-    ).issuer_name(
-        issuer
-    ).public_key(
-        private_key.public_key()
-    ).serial_number(
-        1
-    ).not_valid_before(
-        datetime.datetime.utcnow()
-    ).not_valid_after(
-        datetime.datetime.utcnow() + datetime.timedelta(days=1)
-    ).sign(private_key, hashes.SHA256(), default_backend())
+    subject = issuer = x509.Name([x509.NameAttribute(x509.NameOID.COMMON_NAME, u'nginx.wtf')])
+    builder = x509.CertificateBuilder(issuer, subject, private_key.public_key(), 1)
+    builder = builder.not_valid_before(datetime.datetime.utcnow())
+    builder = builder.not_valid_after(datetime.datetime.utcnow() + datetime.timedelta(days=1))
+    certificate = builder.sign(private_key, hashes.SHA256(), default_backend())
 
     key_path = os.path.join(nginx_root, 'cert.key')
     with open(key_path, 'wb') as file_handle:
