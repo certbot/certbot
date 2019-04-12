@@ -98,3 +98,33 @@ def test_renew_with_hook_scripts(context):
 
     assert_cert_count_for_lineage(context.config_dir, certname, 2)
     assert_hook_execution(context.hook_probe, 'deploy')
+
+
+def test_ocsp_status(context):
+    """Test retrieval of OCSP statuses."""
+    if context.acme_server == 'pebble':
+        pytest.skip('Pebble does not support OCSP status requests.')
+
+    # OCSP 1: Check stale OCSP status
+    sample_data_path = misc.load_sample_data_path(context.workspace)
+    output = context.certbot(['certificates', '--config-dir', sample_data_path])
+
+    assert output.count('TEST_CERT') == 2, ('Did not find two test certs as expected ({0})'
+                                            .format(output.count('TEST_CERT')))
+    assert output.count('EXPIRED') == 2, ('Did not find two expired certs as expected ({0})'
+                                          .format(output.count('EXPIRED')))
+
+    # OSCP 2: Check live certificate OCSP status (VALID)
+    cert = context.get_domain('ocsp-check')
+    context.certbot(['--domains', cert])
+    output = context.certbot(['certificates'])
+
+    assert output.count('VALID') == 1, 'Expected {0} to be VALID'.format(cert)
+    assert output.count('EXPIRED') == 0, 'Did not expect {0} to be EXPIRED'.format(cert)
+
+    # OSCP 3: Check live certificate OCSP status (REVOKED)
+    context.certbot(['revoke', '--cert-name', cert, '--no-delete-after-revoke'])
+    output = context.certbot(['certificates'])
+
+    assert output.count('INVALID') == 1, 'Expected {0} to be INVALID'.format(cert)
+    assert output.count('REVOKED') == 1, 'Expected {0} to be REVOKED'.format(cert)

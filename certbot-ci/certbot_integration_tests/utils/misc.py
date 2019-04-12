@@ -209,3 +209,16 @@ def get_certbot_version():
     # Typical response is: output = 'certbot 0.31.0.dev0'
     version_str = output.split(' ')[1].strip()
     return LooseVersion(version_str)
+
+
+def load_sample_data_path(workspace):
+    """
+    Load the certbot configuration example designed to make OCSP tests, and return its path
+    :param str workspace: current test workspace directory path
+    :return str: the path to the loaded sample data directory
+    """
+    certbot_root_directory = find_certbot_root_directory()
+    original = os.path.join(certbot_root_directory, 'tests', 'integration', 'sample-config')
+    copied = os.path.join(workspace, 'sample-config')
+    shutil.copytree(original, copied, symlinks=True)
+    return copied
