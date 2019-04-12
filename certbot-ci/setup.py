@@ -5,13 +5,17 @@ from setuptools import find_packages
 version = '0.32.0.dev0'
 
 install_requires = [
+    'coverage',
+    'cryptography',
+    'pyopenssl',
     'pytest',
     'pytest-cov',
-    'pytest-xdist',
+    'pytest-rerunfailures==4.2',
     'pytest-sugar',
-    'coverage',
-    'requests',
+    'pytest-xdist',
     'pyyaml',
+    'requests',
+    'six',
 ]
 
 setup(
