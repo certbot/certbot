@@ -211,6 +211,25 @@ def get_certbot_version():
     return LooseVersion(version_str)
 
 
+def find_certbot_root_directory():
+    """
+    Find the certbot root directory. To do so, this method will recursively move up in the directory
+    hierarchy, until finding the git root file, that corresponds to the certbot root directory.
+    :return str: the path to the certbot root directory
+    """
+    script_path = os.path.realpath(__file__)
+    current_dir = os.path.dirname(script_path)
+
+    while '.git' not in os.listdir(current_dir) and current_dir != os.path.dirname(current_dir):
+        current_dir = os.path.dirname(current_dir)
+
+    dirs = os.listdir(current_dir)
+    if '.git' not in dirs:
+        raise ValueError('Error, could not find certbot sources root directory')
+
+    return current_dir
+
+
 def load_sample_data_path(workspace):
     """
     Load the certbot configuration example designed to make OCSP tests, and return its path
