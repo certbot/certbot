@@ -61,8 +61,30 @@ def test_manual_dns_auth(context):
     assert_save_renew_hook(context.config_dir, certname)
 
 
+def test_renew_files_permissions(context):
+    """Test proper certificate file permissions upon renewal"""
+    certname = context.get_domain('renew')
+    context.certbot(['-d', certname])
+
+    assert_cert_count_for_lineage(context.config_dir, certname, 1)
+    assert_world_permissions(
+        join(context.config_dir, 'archive', certname, 'privkey1.pem'), 0)
+
+    context.certbot(['renew'])
+
+    assert_cert_count_for_lineage(context.config_dir, certname, 2)
+    assert_world_permissions(
+        join(context.config_dir, 'archive', certname, 'privkey2.pem'), 0)
+    assert_equals_group_owner(
+        join(context.config_dir, 'archive', certname, 'privkey1.pem'),
+        join(context.config_dir, 'archive', certname, 'privkey2.pem'))
+    assert_equals_permissions(
+        join(context.config_dir, 'archive', certname, 'privkey1.pem'),
+        join(context.config_dir, 'archive', certname, 'privkey2.pem'), 0o074)
+
+
 def test_renew_with_hook_scripts(context):
-    """Test proper certificate renewal with script hooks."""
+    """Test certificate renewal with script hooks."""
     certname = context.get_domain('renew')
     context.certbot(['-d', certname])
 
