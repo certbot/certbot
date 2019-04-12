@@ -31,6 +31,10 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
 
     @contextlib.contextmanager
     def nginx_server(self, default_server):
+        """
+        Start an nginx server configured to execute integration tests.
+        :param str default_server: set to 'default_server' to enable a default vhost in this nginx instance
+        """
         self.nginx_config = config.construct_nginx_config(
             self.nginx_root, self.webroot, self.key_path, self.cert_path, self.http_01_port,
             self.tls_alpn_01_port, self.other_port, default_server, self.worker_id)
@@ -47,12 +51,21 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
             process.wait()
 
     def certbot_test_nginx(self, args):
+        """
+        Main command to execute certbot using the nginx plugin.
+        :param str[] args: list of arguments to pass to nginx
+        """
         command = ['--authenticator', 'nginx', '--installer', 'nginx',
                    '--nginx-server-root', self.nginx_root]
         command.extend(args)
         return self._common_test(command)
 
     def assert_deployment_and_rollback(self, certname):
+        """
+        Assert that the given certificate has been deployed to the nginx instance, and assert that
+        rollback correctly remove all configuration added by certbot to nginx.
+        :param certname: name of the certificate generated through certbot
+        """
         server_cert = ssl.get_server_certificate(('localhost', self.tls_alpn_01_port))
         with open(os.path.join(self.workspace, 'conf/live/{0}/cert.pem'.format(certname)), 'r') as file:
             certbot_cert = file.read()

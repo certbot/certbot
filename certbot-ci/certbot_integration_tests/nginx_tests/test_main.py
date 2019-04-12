@@ -1,3 +1,4 @@
+"""Module executing integration tests against certbot with nginx plugin."""
 import subprocess
 
 import pytest
@@ -26,6 +27,10 @@ def test_nginx_version():
     ('nginx4.{0}.wtf', ['--preferred-challenges', 'http']),
 ])
 def test_nginx_with_default_server(certname_pattern, params, context):
+    """
+    Test various scenarios to deploy a certificate to nginx using certbot.
+    In these tests, one nginx vhost is set as default to fallback on all non matching requests.
+    """
     with context.nginx_server('default_server'):
         certname = certname_pattern.format(context.worker_id)
         command = ['--domains', certname]
@@ -40,6 +45,10 @@ def test_nginx_with_default_server(certname_pattern, params, context):
     ('nginx6.{0}.wtf,nginx7.{0}.wtf', ['--preferred-challenges', 'http']),
 ])
 def test_nginx_without_default_server(certname_pattern, params, context):
+    """
+    Test various scenarios to deploy a certificate to nginx using certbot.
+    In these tests, nginx has no default vhost.
+    """
     with context.nginx_server('default_server'):
         certname = certname_pattern.format(context.worker_id)
         command = ['--domains', certname]
