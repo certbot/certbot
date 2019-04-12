@@ -1,6 +1,5 @@
 """Nginx Configuration"""
 import logging
-import os
 import re
 import socket
 import subprocess
@@ -20,6 +19,7 @@ from certbot import errors
 from certbot import interfaces
 from certbot import util
 from certbot.compat import misc
+from certbot.compat import os
 from certbot.plugins import common
 
 from certbot_nginx import constants

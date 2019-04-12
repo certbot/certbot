@@ -1,7 +1,6 @@
 
 """Tests for certbot.cert_manager."""
 # pylint: disable=protected-access
-import os
 import re
 import shutil
 import tempfile
@@ -12,10 +11,9 @@ import mock
 
 from certbot import configuration
 from certbot import errors
-
+from certbot.compat import os
 from certbot.display import util as display_util
 from certbot.storage import ALL_FOUR
-
 from certbot.tests import storage_test
 from certbot.tests import util as test_util
 

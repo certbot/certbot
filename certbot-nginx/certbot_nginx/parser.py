@@ -3,13 +3,13 @@ import copy
 import functools
 import glob
 import logging
-import os
 import re
 import pyparsing
 
 import six
 
 from certbot import errors
+from certbot.compat import os
 
 from certbot_nginx import obj
 from certbot_nginx import nginxparser

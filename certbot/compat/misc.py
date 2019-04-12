@@ -2,14 +2,14 @@
 This compat module handles various platform specific calls that do not fall into one
 particular category.
 """
-import os
-import select
-import sys
-import errno
 import ctypes
+import errno
+import select
 import stat
+import sys
 
 from certbot import errors
+from certbot.compat import os
 
 UNPRIVILEGED_SUBCOMMANDS_ALLOWED = [
     'certificates', 'enhance', 'revoke', 'delete',
