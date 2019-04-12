@@ -24,7 +24,7 @@ for attribute in dir(std_os):
     if not hasattr(ourselves, attribute):
         setattr(ourselves, attribute, getattr(std_os, attribute))
 
-# Similarly to os.path, allow certbot.compat.os.path to behave as a module
+# Similar to os.path, allow certbot.compat.os.path to behave as a module
 std_sys.modules[__name__ + '.path'] = path
 
 # Clean all remaining importables that are not from the core os module.
