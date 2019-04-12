@@ -128,23 +128,6 @@ def test_manual_dns_auth(context):
     assert_save_renew_hook(context.config_dir, certname)
 
 
-def test_invalid_domain_with_dns_challenge(context):
-    """Test certificate issuance failure with DNS-01 challenge."""
-    # Manual dns auth hooks from misc are designed to fail if the domain contains 'fail-*'.
-    certs = ','.join([context.get_domain('dns1'), context.get_domain('fail-dns1')])
-    context.certbot([
-        '-a', 'manual', '-d', certs,
-        '--allow-subset-of-names',
-        '--preferred-challenges', 'dns',
-        '--manual-auth-hook', context.manual_dns_auth_hook,
-        '--manual-cleanup-hook', context.manual_dns_cleanup_hook
-    ])
-
-    output = context.certbot(['certificates'])
-
-    assert context.get_domain('fail-dns1') not in output
-
-
 def test_renew_files_permissions(context):
     """Test proper certificate file permissions upon renewal"""
     certname = context.get_domain('renew')
