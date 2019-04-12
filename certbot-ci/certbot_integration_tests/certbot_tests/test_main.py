@@ -176,3 +176,46 @@ def test_renew_empty_hook_scripts(context):
     context.certbot(['renew'])
 
     assert_cert_count_for_lineage(context.config_dir, certname, 2)
+
+
+def test_renew_hook_override(context):
+    """Test correct hook override on renew."""
+    certname = context.get_domain('override')
+    context.certbot([
+        'certonly', '-d', certname,
+        '--preferred-challenges', 'http-01',
+        '--pre-hook', 'echo pre >> "{0}"'.format(context.hook_probe),
+        '--post-hook', 'echo post >> "{0}"'.format(context.hook_probe),
+        '--deploy-hook', 'echo deploy >> "{0}"'.format(context.hook_probe)
+    ])
+
+    assert_hook_execution(context.hook_probe, 'pre')
+    assert_hook_execution(context.hook_probe, 'post')
+    assert_hook_execution(context.hook_probe, 'deploy')
+
+    # Now we override all previous hooks during next renew.
+    open(context.hook_probe, 'w').close()
+    context.certbot([
+        'renew', '--cert-name', certname,
+        '--pre-hook', 'echo pre-override >> "{0}"'.format(context.hook_probe),
+        '--post-hook', 'echo post-override >> "{0}"'.format(context.hook_probe),
+        '--deploy-hook', 'echo deploy-override >> "{0}"'.format(context.hook_probe)
+    ])
+
+    assert_hook_execution(context.hook_probe, 'pre-override')
+    assert_hook_execution(context.hook_probe, 'post-override')
+    assert_hook_execution(context.hook_probe, 'deploy-override')
+    with pytest.raises(AssertionError):
+        assert_hook_execution(context.hook_probe, 'pre')
+    with pytest.raises(AssertionError):
+        assert_hook_execution(context.hook_probe, 'post')
+    with pytest.raises(AssertionError):
+        assert_hook_execution(context.hook_probe, 'deploy')
+
+    # Expect that this renew will reuse new hooks registered in the previous renew.
+    open(context.hook_probe, 'w').close()
+    context.certbot(['renew', '--cert-name', certname])
+
+    assert_hook_execution(context.hook_probe, 'pre-override')
+    assert_hook_execution(context.hook_probe, 'post-override')
+    assert_hook_execution(context.hook_probe, 'deploy-override')
