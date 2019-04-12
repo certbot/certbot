@@ -261,3 +261,35 @@ def read_certificate(cert_path):
 
     cert = crypto.load_certificate(crypto.FILETYPE_PEM, data.encode('utf-8'))
     return crypto.dump_certificate(crypto.FILETYPE_TEXT, cert).decode('utf-8')
+
+
+def find_certbot_root_directory():
+    """
+    Find the certbot root directory. To do so, this method will recursively move up in the directory
+    hierarchy, until finding the git root file, that corresponds to the certbot root directory.
+    :return str: the path to the certbot root directory
+    """
+    script_path = os.path.realpath(__file__)
+    current_dir = os.path.dirname(script_path)
+
+    while '.git' not in os.listdir(current_dir) and current_dir != os.path.dirname(current_dir):
+        current_dir = os.path.dirname(current_dir)
+
+    dirs = os.listdir(current_dir)
+    if '.git' not in dirs:
+        raise ValueError('Error, could not find certbot sources root directory')
+
+    return current_dir
+
+
+def load_sample_data_path(workspace):
+    """
+    Load the certbot configuration example designed to make OCSP tests, and return its path
+    :param str workspace: current test workspace directory path
+    :return str: the path to the loaded sample data directory
+    """
+    certbot_root_directory = find_certbot_root_directory()
+    original = os.path.join(certbot_root_directory, 'tests', 'integration', 'sample-config')
+    copied = os.path.join(workspace, 'sample-config')
+    shutil.copytree(original, copied, symlinks=True)
+    return copied
