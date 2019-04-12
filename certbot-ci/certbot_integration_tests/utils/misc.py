@@ -16,6 +16,9 @@ from distutils.version import LooseVersion
 
 import requests
 from OpenSSL import crypto
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives.serialization import Encoding, PrivateFormat, NoEncryption
 from six.moves import socketserver, SimpleHTTPServer
 
 
@@ -274,3 +277,52 @@ def get_certbot_version():
     # Typical response is: output = 'certbot 0.31.0.dev0'
     version_str = output.split(' ')[1].strip()
     return LooseVersion(version_str)
+
+
+def generate_csr(domains, key_path, csr_path, key_type='RSA'):
+    """
+    Generate a CSR for the given domains, using the provided private key path.
+    This method uses the script demo to generate CSR that is available in `examples/generate-csr.py`.
+    :param str[] domains: the domain names to include in the CSR
+    :param str key_path: path to the private key
+    :param str csr_path: path to the CSR that will be generated
+    :param str key_type: type of the key (RSA or ECDSA)
+    """
+    san = ','.join(['DNS:{0}'.format(item) for item in domains])
+
+    if key_type == 'RSA':
+        key = crypto.PKey()
+        key.generate_key(crypto.TYPE_RSA, 2048)
+    elif key_type == 'ECDSA':
+        key = ec.generate_private_key(ec.SECP384R1(), default_backend())
+        key = key.private_bytes(encoding=Encoding.PEM, format=PrivateFormat.TraditionalOpenSSL,
+                                encryption_algorithm=NoEncryption())
+        key = crypto.load_privatekey(crypto.FILETYPE_PEM, key)
+    else:
+        raise ValueError('Invalid key type: {0}'.format(key_type))
+
+    with open(key_path, 'wb') as file:
+        file.write(crypto.dump_privatekey(crypto.FILETYPE_PEM, key))
+
+    req = crypto.X509Req()
+    san_constraint = crypto.X509Extension(b'subjectAltName', False, san.encode('utf-8'))
+    req.add_extensions([san_constraint])
+
+    req.set_pubkey(key)
+    req.sign(key, b'sha256')
+
+    with open(csr_path, 'wb') as file:
+        file.write(crypto.dump_certificate_request(crypto.FILETYPE_ASN1, req))
+
+
+def read_certificate(cert_path):
+    """
+    Load the certificate from the provided path, and return a human readable version of it (TEXT mode).
+    :param str cert_path: the path to the certificate
+    :return: the TEXT version of the certificate, as it would be displayed by openssl binary
+    """
+    with open(cert_path, 'r') as file:
+        data = file.read()
+
+    cert = crypto.load_certificate(crypto.FILETYPE_PEM, data.encode('utf-8'))
+    return crypto.dump_certificate(crypto.FILETYPE_TEXT, cert).decode('utf-8')
