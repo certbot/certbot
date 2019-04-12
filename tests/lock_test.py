@@ -24,6 +24,7 @@ from certbot import util
 
 from certbot.tests import util as test_util
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -107,15 +108,13 @@ def set_up_nginx_dir(root_path):
     """
     # Get the root of the git repository
     repo_root = check_call('git rev-parse --show-toplevel'.split()).strip()
-    # We add manually nginx_config module, because certbot_integration_tests may not be installed.
-    conf_path = os.path.join(repo_root, 'certbot-ci', 'certbot_integration_tests', 'nginx_tests')
-    sys.path.append(conf_path)
-    import nginx_config  # pylint: disable=import-error
-    key_path, cert_path = nginx_config.create_self_signed_certificate(root_path)
-    config = nginx_config.construct_nginx_config(root_path, os.path.join(root_path, 'webroot'),
-                                                 key_path, cert_path, 5002, 5001, 8082, '')
+    conf_script = os.path.join(
+        repo_root, 'certbot-nginx', 'tests', 'boulder-integration.conf.sh')
+    # Prepare self-signed certificates for Nginx
+    key_path, cert_path = setup_certificate(root_path)
+    # Generate Nginx configuration
     with open(os.path.join(root_path, 'nginx.conf'), 'w') as f:
-        f.write(config)
+        f.write(check_call(['/bin/sh', conf_script, root_path, key_path, cert_path]))
 
 
 def set_up_command(config_dir, logs_dir, work_dir, nginx_dir):
