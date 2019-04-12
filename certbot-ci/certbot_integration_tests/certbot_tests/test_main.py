@@ -98,3 +98,27 @@ def test_renew_with_hook_scripts(context):
 
     assert_cert_count_for_lineage(context.config_dir, certname, 2)
     assert_hook_execution(context.hook_probe, 'deploy')
+
+
+def test_ecdsa(context):
+    """Test certificate issuance with ECDSA key."""
+    key_path = join(context.workspace, 'privkey-p384.pem')
+    csr_path = join(context.workspace, 'csr-p384.der')
+    cert_path = join(context.workspace, 'cert-p384.pem')
+    chain_path = join(context.workspace, 'chain-p384.pem')
+
+    misc.generate_csr([context.get_domain('ecdsa')], key_path, csr_path, key_type='ECDSA')
+    context.certbot(['auth', '--csr', csr_path, '--cert-path', cert_path, '--chain-path', chain_path])
+
+    certificate = misc.read_certificate(cert_path)
+    assert 'ASN1 OID: secp384r1' in certificate
+
+
+def test_ocsp_must_staple(context):
+    """Test that OCSP Must-Staple is correctly set in the generated certificate."""
+    certname = context.get_domain('must-staple')
+    context.certbot(['auth', '--must-staple', '--domains', certname])
+
+    certificate = misc.read_certificate(join(context.config_dir,
+                                             'live/{0}/cert.pem').format(certname))
+    assert 'status_request' in certificate or '1.3.6.1.5.5.7.1.24'
