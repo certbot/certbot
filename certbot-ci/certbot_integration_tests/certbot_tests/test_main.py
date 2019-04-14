@@ -108,13 +108,15 @@ def test_renew_files_propagate_permissions(context):
 
     assert_cert_count_for_lineage(context.config_dir, certname, 1)
 
-    os.chmod(join(context.config_dir, 'archive/{0}/privkey1.pem'.format(certname)), 0o444)
+    os.chmod(join(context.config_dir, 'archive', certname, 'privkey1.pem'), 0o444)
     context.certbot(['renew'])
 
     assert_cert_count_for_lineage(context.config_dir, certname, 2)
+    assert_world_permissions(
+        join(context.config_dir, 'archive', certname, 'privkey2.pem'), 0)
     assert_equals_permissions(
-        join(context.config_dir, 'archive/{0}/privkey1.pem'.format(certname)),
-        join(context.config_dir, 'archive/{0}/privkey2.pem'.format(certname)), 0o074)
+        join(context.config_dir, 'archive', certname, 'privkey1.pem'),
+        join(context.config_dir, 'archive', certname, 'privkey2.pem'), 0o074)
 
 
 def test_graceful_renew_it_is_not_time(context):
@@ -139,10 +141,10 @@ def test_graceful_renew_it_is_time(context):
 
     assert_cert_count_for_lineage(context.config_dir, certname, 1)
 
-    with open(join(context.config_dir, 'renewal/{0}.conf'.format(certname)), 'r') as file:
+    with open(join(context.config_dir, 'renewal', '{0}.conf'.format(certname)), 'r') as file:
         lines = file.readlines()
     lines.insert(4, 'renew_before_expiry = 100 years{0}'.format(os.linesep))
-    with open(join(context.config_dir, 'renewal/{0}.conf'.format(certname)), 'w') as file:
+    with open(join(context.config_dir, 'renewal', '{0}.conf'.format(certname)), 'w') as file:
         file.writelines(lines)
 
     context.certbot_no_force_renew([
@@ -157,17 +159,20 @@ def test_renew_with_changed_private_key_complexity(context):
     certname = context.get_domain('renew')
     context.certbot(['-d', certname, '--rsa-key-size', '4096'])
 
+    key1 = join(context.config_dir, 'archive', certname, 'privkey1.pem')
+    assert os.stat(key1).st_size > 3000  # 4096 bits keys takes more than 3000 bytes
     assert_cert_count_for_lineage(context.config_dir, certname, 1)
 
     context.certbot(['renew'])
+    
     assert_cert_count_for_lineage(context.config_dir, certname, 2)
-    key2 = join(context.config_dir, 'archive/{0}/privkey2.pem'.format(certname))
-    assert os.stat(key2).st_size > 3000  # 4096 bits keys takes more than 3000 bytes
+    key2 = join(context.config_dir, 'archive', certname, 'privkey2.pem')
+    assert os.stat(key2).st_size > 3000
 
     context.certbot(['renew', '--rsa-key-size', '2048'])
 
     assert_cert_count_for_lineage(context.config_dir, certname, 3)
-    key3 = join(context.config_dir, 'archive/{0}/privkey3.pem'.format(certname))
+    key3 = join(context.config_dir, 'archive', certname, 'privkey3.pem')
     assert os.stat(key3).st_size < 1800  # 2048 bits keys takes less than 1800 bytes
 
 
