@@ -1,9 +1,9 @@
 """Module executing integration tests against certbot core."""
 from __future__ import print_function
-import subprocess
-import shutil
-import re
 import os
+import re
+import shutil
+import subprocess
 from os.path import join, exists
 
 import pytest
@@ -425,7 +425,7 @@ def test_revoke_simple(context):
     """Test various scenarios that revokes a certificate."""
     # Default action after revoke is to delete the certificate.
     certname = context.get_domain()
-    cert_path = join(context.config_dir, 'live/{0}/cert.pem'.format(certname))
+    cert_path = join(context.config_dir, 'live', certname, 'cert.pem')
     context.certbot(['-d', certname])
     context.certbot(['revoke', '--cert-path', cert_path, '--delete-after-revoke'])
 
@@ -433,7 +433,7 @@ def test_revoke_simple(context):
 
     # Check default deletion is overridden.
     certname = context.get_domain('le1')
-    cert_path = join(context.config_dir, 'live/{0}/cert.pem'.format(certname))
+    cert_path = join(context.config_dir, 'live', certname, 'cert.pem')
     context.certbot(['-d', certname])
     context.certbot(['revoke', '--cert-path', cert_path, '--no-delete-after-revoke'])
 
@@ -441,13 +441,13 @@ def test_revoke_simple(context):
 
     context.certbot(['delete', '--cert-name', certname])
 
-    assert not exists(join(context.config_dir, 'archive/{0}'.format(certname)))
-    assert not exists(join(context.config_dir, 'live/{0}'.format(certname)))
-    assert not exists(join(context.config_dir, 'renewal/{0}.conf').format(certname))
+    assert not exists(join(context.config_dir, 'archive', certname))
+    assert not exists(join(context.config_dir, 'live', certname))
+    assert not exists(join(context.config_dir, 'renewal', '{0}.conf'.format(certname)))
 
     certname = context.get_domain('le2')
-    key_path = join(context.config_dir, 'live/{0}/privkey.pem'.format(certname))
-    cert_path = join(context.config_dir, 'live/{0}/cert.pem'.format(certname))
+    key_path = join(context.config_dir, 'live', certname, 'privkey.pem')
+    cert_path = join(context.config_dir, 'live', certname, 'cert.pem')
     context.certbot(['-d', certname])
     context.certbot(['revoke', '--cert-path', cert_path, '--key-path', key_path])
 
@@ -458,9 +458,9 @@ def test_revoke_and_unregister(context):
     cert2 = context.get_domain('le2')
     cert3 = context.get_domain('le3')
 
-    cert_path1 = join(context.config_dir, 'live/{0}/cert.pem'.format(cert1))
-    key_path2 = join(context.config_dir, 'live/{0}/privkey.pem'.format(cert2))
-    cert_path2 = join(context.config_dir, 'live/{0}/cert.pem'.format(cert2))
+    cert_path1 = join(context.config_dir, 'live', cert1, 'cert.pem')
+    key_path2 = join(context.config_dir, 'live', cert2, 'privkey.pem')
+    cert_path2 = join(context.config_dir, 'live', cert2, 'cert.pem')
 
     context.certbot(['-d', cert1])
     context.certbot(['-d', cert2])
@@ -487,7 +487,7 @@ def test_revoke_mutual_exclusive_flags(context):
     with pytest.raises(subprocess.CalledProcessError) as error:
         context.certbot([
             'revoke', '--cert-name', cert,
-            '--cert-path', join(context.config_dir, 'live/{0}/fullchain.pem'.format(cert))
+            '--cert-path', join(context.config_dir, 'live', cert, 'fullchain.pem')
         ])
         assert 'Exactly one of --cert-path or --cert-name must be specified' in error.out
 
@@ -497,25 +497,24 @@ def test_revoke_multiple_lineages(context):
     cert1 = context.get_domain('le1')
     context.certbot(['-d', cert1])
 
-    assert os.path.isfile(join(context.config_dir, 'renewal/{0}.conf'.format(cert1)))
+    assert os.path.isfile(join(context.config_dir, 'renewal', '{0}.conf'.format(cert1)))
 
     cert2 = context.get_domain('le2')
     context.certbot(['-d', cert2])
 
     # Copy over renewal configuration of cert1 into renewal configuration of cert2.
-    with open(join(context.config_dir, 'renewal/{0}.conf'.format(cert2)), 'r') as file:
+    with open(join(context.config_dir, 'renewal', '{0}.conf'.format(cert2)), 'r') as file:
         data = file.read()
 
-    data = re.sub('archive_dir = .*{0}'.format(os.linesep),
-                  'archive_dir = {0}{1}'.format(os.path.normpath(
-                      join(context.config_dir, 'archive/{0}'.format(cert1))), os.linesep),
+    data = re.sub('archive_dir = .*\n',
+                  'archive_dir = {0}\n'.format(join(context.config_dir, 'archive', cert1)),
                   data)
 
-    with open(join(context.config_dir, 'renewal/{0}.conf'.format(cert2)), 'w') as file:
+    with open(join(context.config_dir, 'renewal', '{0}.conf'.format(cert2)), 'w') as file:
         file.write(data)
 
     output = context.certbot([
-        'revoke', '--cert-path', join(context.config_dir, 'live/{0}/cert.pem'.format(cert1))
+        'revoke', '--cert-path', join(context.config_dir, 'live', cert1, 'cert.pem')
     ])
 
     assert 'Not deleting revoked certs due to overlapping archive dirs' in output
@@ -535,7 +534,7 @@ def test_wildcard_certificates(context):
         '--manual-cleanup-hook', context.manual_dns_cleanup_hook
     ])
 
-    assert exists(join(context.config_dir, 'live/{0}/fullchain.pem'.format(certname)))
+    assert exists(join(context.config_dir, 'live', certname, 'fullchain.pem'))
 
 
 def test_ocsp_status(context):
