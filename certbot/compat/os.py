@@ -16,7 +16,7 @@ from os import *  # type: ignore  # pylint: disable=wildcard-import,unused-wildc
 # and so not in `from os import *`.
 import os as std_os  # pylint: disable=os-module-forbidden
 import sys
-ourselves = std_sys.modules[__name__]
+ourselves = sys.modules[__name__]
 for attribute in dir(std_os):
     # Check if the attribute does not already exist in our module. It could be internal attributes
     # of the module (__name__, __doc__), or attributes from standard os already imported with
@@ -28,7 +28,7 @@ for attribute in dir(std_os):
 sys.modules[__name__ + '.path'] = path
 
 # Clean all remaining importables that are not from the core os module.
-del ourselves, std_os, std_sys
+del ourselves
 
 from acme.magic_typing import Callable, Union  # pylint: disable=unused-import, no-name-in-module
 
