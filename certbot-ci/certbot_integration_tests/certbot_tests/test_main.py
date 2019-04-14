@@ -183,7 +183,6 @@ def test_renew_ignoring_directory_hooks(context):
 
     assert_cert_count_for_lineage(context.config_dir, certname, 1)
 
-    # Force renew. Assert certificate renewal and hook scripts execution.
     misc.generate_test_file_hooks(context.config_dir, context.hook_probe)
     context.certbot(['renew', '--no-directory-hooks'])
 
