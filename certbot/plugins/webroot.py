@@ -19,7 +19,8 @@ from certbot import cli
 from certbot import errors
 from certbot import interfaces
 from certbot import util as certbot_util
-from certbot.compat import os, security
+from certbot.compat import os
+from certbot.compat import security
 from certbot.display import ops
 from certbot.display import util as display_util
 from certbot.plugins import common

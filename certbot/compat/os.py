@@ -16,13 +16,7 @@ from os import *  # type: ignore  # pylint: disable=wildcard-import,unused-wildc
 # and so not in `from os import *`.
 import os as std_os  # pylint: disable=os-module-forbidden
 import sys
-
-from acme.magic_typing import Callable, Union  # pylint: disable=unused-import, no-name-in-module
-
-from certbot.compat import security
-
-# Monkey patch ourselves to get os attributes that are not in __all__ (so not from os import *).
-ourselves = sys.modules[__name__]
+ourselves = std_sys.modules[__name__]
 for attribute in dir(std_os):
     # Check if the attribute does not already exist in our module. It could be internal attributes
     # of the module (__name__, __doc__), or attributes from standard os already imported with
@@ -35,6 +29,10 @@ sys.modules[__name__ + '.path'] = path
 
 # Clean all remaining importables that are not from the core os module.
 del ourselves, std_os, std_sys
+
+from acme.magic_typing import Callable, Union  # pylint: disable=unused-import, no-name-in-module
+
+from certbot.compat import security
 
 
 # The concept of uid is specific to POSIX system. On Windows, there is nothing like this.
