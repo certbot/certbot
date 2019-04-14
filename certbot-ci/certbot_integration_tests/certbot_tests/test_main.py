@@ -107,7 +107,7 @@ def test_ecdsa(context):
     cert_path = join(context.workspace, 'cert-p384.pem')
     chain_path = join(context.workspace, 'chain-p384.pem')
 
-    misc.generate_csr([context.get_domain('ecdsa')], key_path, csr_path, key_type='ECDSA')
+    misc.generate_csr([context.get_domain('ecdsa')], key_path, csr_path, key_type=misc.ECDSA_KEY_TYPE)
     context.certbot(['auth', '--csr', csr_path, '--cert-path', cert_path, '--chain-path', chain_path])
 
     certificate = misc.read_certificate(cert_path)
