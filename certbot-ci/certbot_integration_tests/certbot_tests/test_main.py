@@ -60,6 +60,10 @@ def test_manual_dns_auth(context):
         assert_hook_execution(context.hook_probe, 'renew')
     assert_save_renew_hook(context.config_dir, certname)
 
+    context.certbot(['renew', '--cert-name', certname, '--authenticator', 'manual'])
+
+    assert_cert_count_for_lineage(context.config_dir, certname, 2)
+
 
 def test_renew_files_permissions(context):
     """Test proper certificate file permissions upon renewal"""
