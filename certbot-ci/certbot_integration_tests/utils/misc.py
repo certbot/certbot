@@ -21,6 +21,12 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.serialization import Encoding, PrivateFormat, NoEncryption
 from six.moves import socketserver, SimpleHTTPServer
 
+from acme import crypto_util
+
+
+RSA_KEY_TYPE = 'rsa'
+ECDSA_KEY_TYPE = 'ecdsa'
+
 
 def check_until_timeout(url):
     """
@@ -214,21 +220,19 @@ def get_certbot_version():
     return LooseVersion(version_str)
 
 
-def generate_csr(domains, key_path, csr_path, key_type='RSA'):
+def generate_csr(domains, key_path, csr_path, key_type=RSA_KEY_TYPE):
     """
-    Generate a CSR for the given domains, using the provided private key path.
-    This method uses the script demo to generate CSR that is available in `examples/generate-csr.py`.
-    :param str[] domains: the domain names to include in the CSR
-    :param str key_path: path to the private key
+    Generate a private key, and a CSR for the given domains using this key.
+    :param domains: the domain names to include in the CSR
+    :type domains: `list` of `str`
+    :param str key_path: path to the private key that will be generated
     :param str csr_path: path to the CSR that will be generated
-    :param str key_type: type of the key (RSA or ECDSA)
+    :param str key_type: type of the key (misc.RSA_KEY_TYPE or misc.ECDSA_KEY_TYPE)
     """
-    san = ','.join(['DNS:{0}'.format(item) for item in domains])
-
-    if key_type == 'RSA':
+    if key_type == RSA_KEY_TYPE:
         key = crypto.PKey()
         key.generate_key(crypto.TYPE_RSA, 2048)
-    elif key_type == 'ECDSA':
+    elif key_type == ECDSA_KEY_TYPE:
         key = ec.generate_private_key(ec.SECP384R1(), default_backend())
         key = key.private_bytes(encoding=Encoding.PEM, format=PrivateFormat.TraditionalOpenSSL,
                                 encryption_algorithm=NoEncryption())
@@ -236,28 +240,23 @@ def generate_csr(domains, key_path, csr_path, key_type='RSA'):
     else:
         raise ValueError('Invalid key type: {0}'.format(key_type))
 
+    key_bytes = crypto.dump_privatekey(crypto.FILETYPE_PEM, key)
     with open(key_path, 'wb') as file:
-        file.write(crypto.dump_privatekey(crypto.FILETYPE_PEM, key))
+        file.write(key_bytes)
 
-    req = crypto.X509Req()
-    san_constraint = crypto.X509Extension(b'subjectAltName', False, san.encode('utf-8'))
-    req.add_extensions([san_constraint])
-
-    req.set_pubkey(key)
-    req.sign(key, 'sha256')
-
+    csr_bytes = crypto_util.make_csr(key_bytes, domains)
     with open(csr_path, 'wb') as file:
-        file.write(crypto.dump_certificate_request(crypto.FILETYPE_ASN1, req))
+        file.write(csr_bytes)
 
 
 def read_certificate(cert_path):
     """
     Load the certificate from the provided path, and return a human readable version of it (TEXT mode).
     :param str cert_path: the path to the certificate
-    :return: the TEXT version of the certificate, as it would be displayed by openssl binary
+    :returns: the TEXT version of the certificate, as it would be displayed by openssl binary
     """
-    with open(cert_path, 'r') as file:
+    with open(cert_path, 'rb') as file:
         data = file.read()
 
-    cert = crypto.load_certificate(crypto.FILETYPE_PEM, data.encode('utf-8'))
+    cert = crypto.load_certificate(crypto.FILETYPE_PEM, data)
     return crypto.dump_certificate(crypto.FILETYPE_TEXT, cert).decode('utf-8')

@@ -74,8 +74,8 @@ def test_auth_and_install_with_csr(context):
 
     misc.generate_csr([certname], key_path, csr_path)
 
-    cert_path = join(context.workspace, 'csr/cert.pem')
-    chain_path = join(context.workspace, 'csr/chain.pem')
+    cert_path = join(context.workspace, 'csr', 'cert.pem')
+    chain_path = join(context.workspace, 'csr', 'chain.pem')
 
     context.certbot([
         'auth', '--csr', csr_path,
@@ -108,7 +108,7 @@ def test_renew_files_permissions(context):
 
     assert_cert_count_for_lineage(context.config_dir, certname, 2)
     assert_world_permissions(
-        join(context.config_dir, 'archive', certname, '/privkey2.pem'), 0)
+        join(context.config_dir, 'archive', certname, 'privkey2.pem'), 0)
     assert_equals_group_owner(
         join(context.config_dir, 'archive', certname, 'privkey1.pem'),
         join(context.config_dir, 'archive', certname, 'privkey2.pem'))
