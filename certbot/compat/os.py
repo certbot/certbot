@@ -30,8 +30,8 @@ sys.modules[__name__ + '.path'] = path
 # Clean all remaining importables that are not from the core os module.
 del ourselves
 
+import errno
 from acme.magic_typing import Callable, Union  # pylint: disable=unused-import, no-name-in-module
-
 from certbot.compat import security
 
 
