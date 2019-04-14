@@ -113,7 +113,7 @@ def test_renew_files_propagate_permissions(context):
 
     assert_cert_count_for_lineage(context.config_dir, certname, 2)
     assert_world_permissions(
-        join(context.config_dir, 'archive', certname, 'privkey2.pem'), 0)
+        join(context.config_dir, 'archive', certname, 'privkey2.pem'), 4)
     assert_equals_permissions(
         join(context.config_dir, 'archive', certname, 'privkey1.pem'),
         join(context.config_dir, 'archive', certname, 'privkey2.pem'), 0o074)
