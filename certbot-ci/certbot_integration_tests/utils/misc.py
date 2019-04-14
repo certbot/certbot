@@ -223,3 +223,4 @@ def load_sample_data_path(workspace):
     copied = os.path.join(workspace, 'sample-config')
     shutil.copytree(original, copied, symlinks=True)
     return copied
+
