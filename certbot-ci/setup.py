@@ -5,7 +5,7 @@ from setuptools import find_packages
 version = '0.32.0.dev0'
 
 install_requires = [
-    'acme'
+    'acme',
     'coverage',
     'cryptography',
     'pyopenssl',
