@@ -234,7 +234,8 @@ def load_sample_data_path(workspace):
     """
     Load the certbot configuration example designed to make OCSP tests, and return its path
     :param str workspace: current test workspace directory path
-    :return str: the path to the loaded sample data directory
+    :returns: the path to the loaded sample data directory
+    :rtype: str
     """
     certbot_root_directory = find_certbot_root_directory()
     original = os.path.join(certbot_root_directory, 'tests', 'integration', 'sample-config')
