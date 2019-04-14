@@ -8,7 +8,7 @@ from os.path import join
 import pytest
 from certbot_integration_tests.certbot_tests import context as certbot_context
 from certbot_integration_tests.certbot_tests.assertions import (
-    assert_hook_execution, assert_save_renew_hook, assert_cert_count_for_lineage,
+    assert_hook_execution, assert_saved_renew_hook, assert_cert_count_for_lineage,
     assert_world_permissions, assert_equals_group_owner, assert_equals_permissions,
 )
 from certbot_integration_tests.utils import misc
@@ -87,7 +87,7 @@ def test_http_01(context):
         ])
 
     assert_hook_execution(context.hook_probe, 'deploy')
-    assert_save_renew_hook(context.config_dir, certname)
+    assert_saved_renew_hook(context.config_dir, certname)
 
 
 def test_manual_http_auth(context):
@@ -103,11 +103,12 @@ def test_manual_http_auth(context):
             '--manual-cleanup-hook', scripts[1],
             '--pre-hook', 'echo wtf.pre >> "{0}"'.format(context.hook_probe),
             '--post-hook', 'echo wtf.post >> "{0}"'.format(context.hook_probe),
-            '--deploy-hook', 'echo deploy >> "{0}"'.format(context.hook_probe)
+            '--renew-hook', 'echo renew >> "{0}"'.format(context.hook_probe)
         ])
 
-    assert_hook_execution(context.hook_probe, 'deploy')
-    assert_save_renew_hook(context.config_dir, certname)
+    with pytest.raises(AssertionError):
+        assert_hook_execution(context.hook_probe, 'renew')
+    assert_saved_renew_hook(context.config_dir, certname)
 
 
 def test_manual_dns_auth(context):
@@ -120,12 +121,12 @@ def test_manual_dns_auth(context):
         '--manual-cleanup-hook', context.manual_dns_cleanup_hook,
         '--pre-hook', 'echo wtf.pre >> "{0}"'.format(context.hook_probe),
         '--post-hook', 'echo wtf.post >> "{0}"'.format(context.hook_probe),
-        '--renew-hook', 'echo renew >> "{0}"'.format(context.hook_probe)
+        '--renew-hook', 'echo deploy >> "{0}"'.format(context.hook_probe)
     ])
 
     with pytest.raises(AssertionError):
         assert_hook_execution(context.hook_probe, 'renew')
-    assert_save_renew_hook(context.config_dir, certname)
+    assert_saved_renew_hook(context.config_dir, certname)
 
 
 def test_renew_files_permissions(context):
