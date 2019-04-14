@@ -103,9 +103,9 @@ def test_renew_with_hook_scripts(context):
 def test_invalid_domain_with_dns_challenge(context):
     """Test certificate issuance failure with DNS-01 challenge."""
     # Manual dns auth hooks from misc are designed to fail if the domain contains 'fail-*'.
-    certs = ','.join([context.get_domain('dns1'), context.get_domain('fail-dns1')])
+    domains = ','.join([context.get_domain('dns1'), context.get_domain('fail-dns1')])
     context.certbot([
-        '-a', 'manual', '-d', certs,
+        '-a', 'manual', '-d', domains,
         '--allow-subset-of-names',
         '--preferred-challenges', 'dns',
         '--manual-auth-hook', context.manual_dns_auth_hook,
