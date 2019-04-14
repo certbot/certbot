@@ -76,7 +76,7 @@ def test_renew_files_permissions(context):
 
     assert_cert_count_for_lineage(context.config_dir, certname, 2)
     assert_world_permissions(
-        join(context.config_dir, 'archive', certname, '/privkey2.pem'), 0)
+        join(context.config_dir, 'archive', certname, 'privkey2.pem'), 0)
     assert_equals_group_owner(
         join(context.config_dir, 'archive', certname, 'privkey1.pem'),
         join(context.config_dir, 'archive', certname, 'privkey2.pem'))
@@ -100,12 +100,8 @@ def test_renew_with_hook_scripts(context):
     assert_hook_execution(context.hook_probe, 'deploy')
 
 
-def test_ocsp_status(context):
-    """Test retrieval of OCSP statuses."""
-    if context.acme_server == 'pebble':
-        pytest.skip('Pebble does not support OCSP status requests.')
-
-    # OCSP 1: Check stale OCSP status
+def test_ocsp_status_stale(context):
+    """Test retrieval of OCSP statuses for staled config"""
     sample_data_path = misc.load_sample_data_path(context.workspace)
     output = context.certbot(['certificates', '--config-dir', sample_data_path])
 
@@ -114,7 +110,13 @@ def test_ocsp_status(context):
     assert output.count('EXPIRED') == 2, ('Did not find two expired certs as expected ({0})'
                                           .format(output.count('EXPIRED')))
 
-    # OSCP 2: Check live certificate OCSP status (VALID)
+
+def test_ocsp_status_live(context):
+    """Test retrieval of OCSP statuses for live config"""
+    if context.acme_server == 'pebble':
+        pytest.skip('Pebble does not support OCSP status requests.')
+
+    # OSCP 1: Check live certificate OCSP status (VALID)
     cert = context.get_domain('ocsp-check')
     context.certbot(['--domains', cert])
     output = context.certbot(['certificates'])
@@ -122,7 +124,7 @@ def test_ocsp_status(context):
     assert output.count('VALID') == 1, 'Expected {0} to be VALID'.format(cert)
     assert output.count('EXPIRED') == 0, 'Did not expect {0} to be EXPIRED'.format(cert)
 
-    # OSCP 3: Check live certificate OCSP status (REVOKED)
+    # OSCP 2: Check live certificate OCSP status (REVOKED)
     context.certbot(['revoke', '--cert-name', cert, '--no-delete-after-revoke'])
     output = context.certbot(['certificates'])
 
