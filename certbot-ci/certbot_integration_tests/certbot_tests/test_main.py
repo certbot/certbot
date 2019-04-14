@@ -143,8 +143,8 @@ def test_auth_and_install_with_csr(context):
 
     misc.generate_csr([certname], key_path, csr_path)
 
-    cert_path = join(context.workspace, 'csr/cert.pem')
-    chain_path = join(context.workspace, 'csr/chain.pem')
+    cert_path = join(context.workspace, 'csr', 'cert.pem')
+    chain_path = join(context.workspace, 'csr', 'chain.pem')
 
     context.certbot([
         'auth', '--csr', csr_path,
