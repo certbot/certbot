@@ -121,7 +121,7 @@ def test_manual_dns_auth(context):
         '--manual-cleanup-hook', context.manual_dns_cleanup_hook,
         '--pre-hook', 'echo wtf.pre >> "{0}"'.format(context.hook_probe),
         '--post-hook', 'echo wtf.post >> "{0}"'.format(context.hook_probe),
-        '--renew-hook', 'echo deploy >> "{0}"'.format(context.hook_probe)
+        '--renew-hook', 'echo renew >> "{0}"'.format(context.hook_probe)
     ])
 
     with pytest.raises(AssertionError):
