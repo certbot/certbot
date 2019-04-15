@@ -18,6 +18,7 @@ from certbot import crypto_util
 from certbot import error_handler
 from certbot import errors
 from certbot import util
+from certbot.compat import misc
 from certbot.compat import os
 from certbot.compat import security
 from certbot.plugins import common as plugins_common
@@ -143,7 +144,7 @@ def write_renewal_config(o_filename, n_filename, archive_dir, target, relevant_d
     # Copy permissions from the old version of the file, if it exists.
     if os.path.exists(o_filename):
         current_permissions = stat.S_IMODE(os.lstat(o_filename).st_mode)
-        os.chmod(n_filename, current_permissions)
+        security.chmod(n_filename, current_permissions)
 
     with open(n_filename, "wb") as f:
         config.write(outfile=f)
@@ -162,7 +163,7 @@ def rename_renewal_config(prev_name, new_name, cli_config):
         raise errors.ConfigurationError("The new certificate name "
             "is already in use.")
     try:
-        os.rename(prev_filename, new_filename)
+        misc.rename(prev_filename, new_filename)
     except OSError:
         raise errors.ConfigurationError("Please specify a valid filename "
             "for the new certificate name.")
@@ -191,7 +192,7 @@ def update_configuration(lineagename, archive_dir, target, cli_config):
     # Save only the config items that are relevant to renewal
     values = relevant_values(vars(cli_config.namespace))
     write_renewal_config(config_filename, temp_filename, archive_dir, target, values)
-    os.rename(temp_filename, config_filename)
+    misc.rename(temp_filename, config_filename)
 
     return configobj.ConfigObj(config_filename)
 
@@ -984,7 +985,7 @@ class RenewableCert(object):
         for i in (cli_config.renewal_configs_dir, cli_config.default_archive_dir,
                   cli_config.live_dir):
             if not os.path.exists(i):
-                os.makedirs(i, 0o700)
+                security.makedirs(i, 0o700)
                 logger.debug("Creating directory %s.", i)
         config_file, config_filename = util.unique_lineage_name(
             cli_config.renewal_configs_dir, lineagename)
@@ -1006,8 +1007,8 @@ class RenewableCert(object):
             config_file.close()
             raise errors.CertStorageError(
                 "live directory exists for " + lineagename)
-        os.mkdir(archive)
-        os.mkdir(live_dir)
+        security.mkdir(archive)
+        security.mkdir(live_dir)
         logger.debug("Archive directory %s and live "
                      "directory %s created.", archive, live_dir)
 

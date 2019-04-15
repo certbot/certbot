@@ -10,9 +10,7 @@ import zope.component
 import zope.interface
 
 from acme import challenges  # pylint: disable=unused-import
-# pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Dict, Set, DefaultDict, List
-# pylint: enable=unused-import, no-name-in-module
+from acme.magic_typing import Dict, Set, DefaultDict, List  # pylint: disable=unused-import,no-name-in-module
 
 from certbot import achallenges  # pylint: disable=unused-import
 from certbot import cli
@@ -174,7 +172,7 @@ to serve all files under specified web root ({0})."""
                 # as it does not correspond to a folder path ('/' or 'C:')
                 for prefix in sorted(util.get_prefixes(self.full_roots[name])[:-1], key=len):
                     try:
-                        os.mkdir(prefix)
+                        security.mkdir(prefix)
                         self._created_dirs.append(prefix)
                         try:
                             # Set owner like parent directory if possible,

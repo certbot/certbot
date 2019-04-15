@@ -15,6 +15,7 @@ from certbot import cli
 from certbot import constants
 from certbot import errors
 from certbot.compat import os
+from certbot.compat import security
 from certbot.plugins import disco
 import certbot.tests.util as test_util
 from certbot.tests.util import TempDirTestCase
@@ -320,8 +321,8 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             self.parse(short_args + ['renew']), False)
 
         account_dir = os.path.join(config_dir, constants.ACCOUNTS_DIR)
-        os.mkdir(account_dir)
-        os.mkdir(os.path.join(account_dir, 'fake_account_dir'))
+        security.mkdir(account_dir)
+        security.mkdir(os.path.join(account_dir, 'fake_account_dir'))
 
         self._assert_dry_run_flag_worked(self.parse(short_args + ['auth']), True)
         self._assert_dry_run_flag_worked(self.parse(short_args + ['renew']), True)

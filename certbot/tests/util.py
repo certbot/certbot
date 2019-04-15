@@ -139,7 +139,7 @@ def make_lineage(config_dir, testfile):
 
     for directory in (archive_dir, conf_dir, live_dir,):
         if not os.path.exists(directory):
-            os.makedirs(directory)
+            security.makedirs(directory)
 
     sample_archive = vector_path('sample-archive')
     for kind in os.listdir(sample_archive):
@@ -345,7 +345,7 @@ class TempDirTestCase(unittest.TestCase):
 
         def handle_rw_files(_, path, __):
             """Handle read-only files, that will fail to be removed on Windows."""
-            os.chmod(path, stat.S_IWRITE)
+            security.chmod(path, stat.S_IWRITE)
             os.remove(path)
         shutil.rmtree(self.tempdir, onerror=handle_rw_files)
 

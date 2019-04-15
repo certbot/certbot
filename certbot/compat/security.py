@@ -22,7 +22,7 @@ try:
 except ImportError:  # pragma: no cover
     win32api = None  # type: ignore
 
-from acme.magic_typing import Union  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Callable  # pylint: disable=unused-import,no-name-in-module
 
 
 def get_current_user():
@@ -50,7 +50,7 @@ def get_current_user():
 
 
 def apply_mode(file_path, mode):
-    # type: (Union[str, unicode], int) -> None
+    # type: (str, int) -> None
     """
     Apply a POSIX mode on given file_path:
         * for Linux, the POSIX mode will be directly applied using chmod,
@@ -67,7 +67,7 @@ def apply_mode(file_path, mode):
 
 
 def take_ownership(file_path, group=False):
-    # type: (Union[str, unicode], bool) -> None
+    # type: (str, bool) -> None
     """
     Take ownership on the given file path, in compatible way for Linux and Windows.
 
@@ -82,7 +82,7 @@ def take_ownership(file_path, group=False):
 
 
 def copy_ownership_and_apply_mode(src, dst, mode, user=True, group=False):
-    # type: (Union[str, unicode], Union[str, unicode], int, bool, bool) -> None
+    # type: (str, str, int, bool, bool) -> None
     """
     Copy ownership (user and optionally group) from the source to the destination,
     then apply given mode in compatible way for Linux and Windows.
@@ -109,7 +109,7 @@ def copy_ownership_and_apply_mode(src, dst, mode, user=True, group=False):
 
 
 def check_mode(file_path, mode):
-    # type: (Union[str, unicode], int) -> bool
+    # type: (str, int) -> bool
     """
     Check if the given mode matches the permissions of the given file.
     On Linux, will make a direct comparison, on Windows, mode will be compared against
@@ -127,7 +127,7 @@ def check_mode(file_path, mode):
 
 
 def check_owner(file_path):
-    # type: (Union[str, unicode]) -> bool
+    # type: (str) -> bool
     """
     Check if given file is owner by current user.
     :param str file_path: File path to check
@@ -152,7 +152,7 @@ def check_owner(file_path):
 
 
 def check_permissions(file_path, mode):
-    # type: (Union[str, unicode], int) -> bool
+    # type: (str, int) -> bool
     """
     Check if given file has the given mode and is owned by current user.
     :param str file_path: File path to check
@@ -323,3 +323,78 @@ def _analyze_mode(mode):
             'execute': mode & stat.S_IXOTH,
         },
     }
+
+
+def open(file_path, flags, mode=0o777):  # pylint: disable=function-redefined,redefined-builtin
+    # type: (str, int, int) -> int
+    """
+    Wrapper of original os.open function, that will ensure on Windows that given mode
+    is correctly applied.
+
+    :param str file_path: The file path to open
+    :param int flags: Flags to apply on file while opened
+    :param int mode: POSIX mode to apply on file when opened,
+        Python defaults will be applied if ``None``
+
+    :returns: the file descriptor to the opened file
+    :rtype: int
+    """
+    file_descriptor = os.open(file_path, flags, mode)
+    apply_mode(file_path, mode)
+
+    return file_descriptor
+
+
+def makedirs(file_path, mode=0o777):  # pylint: disable=function-redefined
+    # type: (str, int) -> None
+    """
+    Wrapper of original os.makedirs function, that will ensure on Windows that given mode
+    is correctly applied.
+
+    :param str file_path: The file path to open
+    :param int mode: POSIX mode to apply on file when opened,
+        Python defaults will be applied if ``None``
+    """
+    # As we know that os.mkdir is called internally by os.makedirs, we will swap the function in
+    # os module for the time of makedirs execution.
+    orig_mkdir_fn = os.mkdir
+    try:
+        def wrapper(one_path, one_mode=0o777):  # pylint: disable=missing-docstring
+            # Note, we need to provide the origin os.mkdir to our mkdir function,
+            # or we will have a nice infinite loop ...
+            mkdir(one_path, mode=one_mode, mkdir_fn=orig_mkdir_fn)
+
+        os.mkdir = wrapper
+
+        os.makedirs(file_path, mode)
+    finally:
+        os.mkdir = orig_mkdir_fn
+
+
+def mkdir(file_path, mode=0o777, mkdir_fn=None):  # pylint: disable=function-redefined
+    # type: (str, int, Callable[[str, int], None]) -> None
+    """
+    Wrapper of original os.mkdir function, that will ensure on Windows that given mode
+    is correctly applied.
+
+    :param str file_path: The file path to open
+    :param int mode: POSIX mode to apply on file when opened,
+        Python defaults will be applied if ``None``
+    :param callable mkdir_fn: The underlying mkdir function to use
+    """
+    mkdir_fn = mkdir_fn or os.mkdir
+
+    mkdir_fn(file_path, mode)
+    apply_mode(file_path, mode)
+
+
+def chmod(file_path, mode):  # pylint: disable=function-redefined
+    # type: (str, int) -> None
+    """
+    Wrapper of original os.chmod function, that will ensure on Windows that given mode
+    is correctly applied.
+
+    :param str file_path: The file path to modify
+    :param int mode: POSIX mode to apply on file
+    """
+    apply_mode(file_path, mode)

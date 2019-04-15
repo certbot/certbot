@@ -1,6 +1,7 @@
 """Implements file locks compatible with Linux and Windows for locking files and directories."""
 import errno
 import logging
+
 try:
     import fcntl  # pylint: disable=import-error
 except ImportError:
@@ -12,6 +13,7 @@ else:
 from acme.magic_typing import Optional  # pylint: disable=unused-import, no-name-in-module
 
 from certbot import errors
+from certbot.compat import security
 from certbot.compat import os
 
 logger = logging.getLogger(__name__)
@@ -131,7 +133,7 @@ class _UnixLockMechanism(_BaseLockMechanism):
         """Acquire the lock."""
         while self._fd is None:
             # Open the file
-            fd = os.open(self._path, os.O_CREAT | os.O_WRONLY, 0o600)
+            fd = security.open(self._path, os.O_CREAT | os.O_WRONLY, 0o600)
             try:
                 self._try_lock(fd)
                 if self._lock_success(fd):
@@ -223,7 +225,7 @@ class _WindowsLockMechanism(_BaseLockMechanism):
         """Acquire the lock"""
         open_mode = os.O_RDWR | os.O_CREAT | os.O_TRUNC
 
-        fd = os.open(self._path, open_mode, 0o600)
+        fd = security.open(self._path, open_mode, 0o600)
         try:
             msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
         except (IOError, OSError) as err:

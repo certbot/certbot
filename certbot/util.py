@@ -178,7 +178,7 @@ def make_or_verify_dir(directory, mode=0o755, strict=False):
 
     """
     try:
-        os.makedirs(directory, mode)
+        security.makedirs(directory, mode)
     except OSError as exception:
         if exception.errno == errno.EEXIST:
             if strict and not security.check_permissions(directory, mode):

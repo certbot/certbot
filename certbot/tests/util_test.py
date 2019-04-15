@@ -91,7 +91,7 @@ class LockDirUntilExit(test_util.TempDirTestCase):
     @mock.patch('certbot.util.atexit_register')
     def test_it(self, mock_register, mock_logger):
         subdir = os.path.join(self.tempdir, 'subdir')
-        os.mkdir(subdir)
+        security.mkdir(subdir)
         self._call(self.tempdir)
         self._call(subdir)
         self._call(subdir)
@@ -142,7 +142,7 @@ class MakeOrVerifyDirTest(test_util.TempDirTestCase):
         super(MakeOrVerifyDirTest, self).setUp()
 
         self.path = os.path.join(self.tempdir, "foo")
-        os.mkdir(self.path, 0o600)
+        security.mkdir(self.path, 0o600)
 
     def _call(self, directory, mode):
         from certbot.util import make_or_verify_dir
@@ -162,7 +162,7 @@ class MakeOrVerifyDirTest(test_util.TempDirTestCase):
         self.assertRaises(errors.Error, self._call, self.path, 0o644)
 
     def test_reraises_os_error(self):
-        with mock.patch.object(os, "makedirs") as makedirs:
+        with mock.patch.object(security, "makedirs") as makedirs:
             makedirs.side_effect = OSError()
             self.assertRaises(OSError, self._call, "bar", 12312312)
 
@@ -179,11 +179,11 @@ class CheckPermissionsTest(test_util.TempDirTestCase):
         return security.check_permissions(self.tempdir, mode)
 
     def test_ok_mode(self):
-        os.chmod(self.tempdir, 0o600)
+        security.chmod(self.tempdir, 0o600)
         self.assertTrue(self._call(0o600))
 
     def test_wrong_mode(self):
-        os.chmod(self.tempdir, 0o400)
+        security.chmod(self.tempdir, 0o400)
         self.assertFalse(self._call(0o644))
 
 
