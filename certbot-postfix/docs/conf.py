@@ -12,7 +12,7 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-import os
+from certbot.compat import os
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
 

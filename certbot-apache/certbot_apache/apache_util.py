@@ -1,8 +1,9 @@
 """ Utility functions for certbot-apache plugin """
 import binascii
-import os
 
 from certbot import util
+from certbot.compat import os
+
 
 def get_mod_deps(mod_name):
     """Get known module dependencies.

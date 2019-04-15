@@ -16,7 +16,16 @@ from distutils.version import LooseVersion
 
 import requests
 from OpenSSL import crypto
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives.serialization import Encoding, PrivateFormat, NoEncryption
 from six.moves import socketserver, SimpleHTTPServer
+
+from acme import crypto_util
+
+
+RSA_KEY_TYPE = 'rsa'
+ECDSA_KEY_TYPE = 'ecdsa'
 
 
 def check_until_timeout(url):
@@ -209,3 +218,45 @@ def get_certbot_version():
     # Typical response is: output = 'certbot 0.31.0.dev0'
     version_str = output.split(' ')[1].strip()
     return LooseVersion(version_str)
+
+
+def generate_csr(domains, key_path, csr_path, key_type=RSA_KEY_TYPE):
+    """
+    Generate a private key, and a CSR for the given domains using this key.
+    :param domains: the domain names to include in the CSR
+    :type domains: `list` of `str`
+    :param str key_path: path to the private key that will be generated
+    :param str csr_path: path to the CSR that will be generated
+    :param str key_type: type of the key (misc.RSA_KEY_TYPE or misc.ECDSA_KEY_TYPE)
+    """
+    if key_type == RSA_KEY_TYPE:
+        key = crypto.PKey()
+        key.generate_key(crypto.TYPE_RSA, 2048)
+    elif key_type == ECDSA_KEY_TYPE:
+        key = ec.generate_private_key(ec.SECP384R1(), default_backend())
+        key = key.private_bytes(encoding=Encoding.PEM, format=PrivateFormat.TraditionalOpenSSL,
+                                encryption_algorithm=NoEncryption())
+        key = crypto.load_privatekey(crypto.FILETYPE_PEM, key)
+    else:
+        raise ValueError('Invalid key type: {0}'.format(key_type))
+
+    key_bytes = crypto.dump_privatekey(crypto.FILETYPE_PEM, key)
+    with open(key_path, 'wb') as file:
+        file.write(key_bytes)
+
+    csr_bytes = crypto_util.make_csr(key_bytes, domains)
+    with open(csr_path, 'wb') as file:
+        file.write(csr_bytes)
+
+
+def read_certificate(cert_path):
+    """
+    Load the certificate from the provided path, and return a human readable version of it (TEXT mode).
+    :param str cert_path: the path to the certificate
+    :returns: the TEXT version of the certificate, as it would be displayed by openssl binary
+    """
+    with open(cert_path, 'rb') as file:
+        data = file.read()
+
+    cert = crypto.load_certificate(crypto.FILETYPE_PEM, data)
+    return crypto.dump_certificate(crypto.FILETYPE_TEXT, cert).decode('utf-8')

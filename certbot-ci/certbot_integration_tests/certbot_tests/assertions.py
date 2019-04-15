@@ -15,13 +15,14 @@ def assert_hook_execution(probe_path, probe_content):
     assert '{0}{1}'.format(probe_content, os.linesep) in lines
 
 
-def assert_save_renew_hook(config_dir, lineage):
+def assert_saved_renew_hook(config_dir, lineage):
     """
     Assert that the renew hook configuration of a lineage has been saved.
     :param config_dir: location of the certbot configuration
     :param lineage: lineage domain name
     """
-    assert os.path.isfile(os.path.join(config_dir, 'renewal/{0}.conf'.format(lineage)))
+    with open(os.path.join(config_dir, 'renewal', '{0}.conf'.format(lineage))) as file_h:
+        assert 'renew_hook' in file_h.read()
 
 
 def assert_cert_count_for_lineage(config_dir, lineage, count):
