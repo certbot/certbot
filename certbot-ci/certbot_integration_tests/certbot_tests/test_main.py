@@ -128,6 +128,10 @@ def test_manual_dns_auth(context):
         assert_hook_execution(context.hook_probe, 'renew')
     assert_saved_renew_hook(context.config_dir, certname)
 
+    context.certbot(['renew', '--cert-name', certname, '--authenticator', 'manual'])
+
+    assert_cert_count_for_lineage(context.config_dir, certname, 2)
+
 
 def test_certonly(context):
     """Test the certonly verb on certbot."""
@@ -159,10 +163,6 @@ def test_auth_and_install_with_csr(context):
         '--cert-path', cert_path,
         '--key-path', key_path
     ])
-
-    context.certbot(['renew', '--cert-name', certname, '--authenticator', 'manual'])
-
-    assert_cert_count_for_lineage(context.config_dir, certname, 2)
 
 
 def test_renew_files_permissions(context):
