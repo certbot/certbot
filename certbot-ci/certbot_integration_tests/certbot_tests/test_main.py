@@ -129,6 +129,38 @@ def test_manual_dns_auth(context):
     assert_saved_renew_hook(context.config_dir, certname)
 
 
+def test_certonly(context):
+    """Test the certonly verb on certbot."""
+    context.certbot(['certonly', '--cert-name', 'newname', '-d', context.get_domain('newname')])
+
+
+def test_auth_and_install_with_csr(context):
+    """Test certificate issuance and install using an existing CSR."""
+    certname = context.get_domain('le3')
+    key_path = join(context.workspace, 'key.pem')
+    csr_path = join(context.workspace, 'csr.der')
+
+    misc.generate_csr([certname], key_path, csr_path)
+
+    cert_path = join(context.workspace, 'csr', 'cert.pem')
+    chain_path = join(context.workspace, 'csr', 'chain.pem')
+
+    context.certbot([
+        'auth', '--csr', csr_path,
+        '--cert-path', cert_path,
+        '--chain-path', chain_path
+    ])
+
+    print(misc.read_certificate(cert_path))
+    print(misc.read_certificate(chain_path))
+
+    context.certbot([
+        '--domains', certname, 'install',
+        '--cert-path', cert_path,
+        '--key-path', key_path
+    ])
+
+
 def test_renew_files_permissions(context):
     """Test proper certificate file permissions upon renewal"""
     certname = context.get_domain('renew')
