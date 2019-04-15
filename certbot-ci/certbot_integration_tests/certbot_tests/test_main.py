@@ -128,6 +128,10 @@ def test_manual_dns_auth(context):
         assert_hook_execution(context.hook_probe, 'renew')
     assert_saved_renew_hook(context.config_dir, certname)
 
+    context.certbot(['renew', '--cert-name', certname, '--authenticator', 'manual'])
+
+    assert_cert_count_for_lineage(context.config_dir, certname, 2)
+
 
 def test_certonly(context):
     """Test the certonly verb on certbot."""
@@ -159,10 +163,6 @@ def test_auth_and_install_with_csr(context):
         '--cert-path', cert_path,
         '--key-path', key_path
     ])
-
-    context.certbot(['renew', '--cert-name', certname, '--authenticator', 'manual'])
-
-    assert_cert_count_for_lineage(context.config_dir, certname, 2)
 
 
 def test_renew_files_permissions(context):
@@ -349,3 +349,48 @@ def test_renew_hook_override(context):
     assert_hook_execution(context.hook_probe, 'pre-override')
     assert_hook_execution(context.hook_probe, 'post-override')
     assert_hook_execution(context.hook_probe, 'deploy-override')
+
+
+def test_invalid_domain_with_dns_challenge(context):
+    """Test certificate issuance failure with DNS-01 challenge."""
+    # Manual dns auth hooks from misc are designed to fail if the domain contains 'fail-*'.
+    domains = ','.join([context.get_domain('dns1'), context.get_domain('fail-dns1')])
+    context.certbot([
+        '-a', 'manual', '-d', domains,
+        '--allow-subset-of-names',
+        '--preferred-challenges', 'dns',
+        '--manual-auth-hook', context.manual_dns_auth_hook,
+        '--manual-cleanup-hook', context.manual_dns_cleanup_hook
+    ])
+
+    output = context.certbot(['certificates'])
+
+    assert context.get_domain('fail-dns1') not in output
+
+
+def test_reuse_key(context):
+    """Test various scenarios where a key is reused."""
+    certname = context.get_domain('reusekey')
+    context.certbot(['--domains', certname, '--reuse-key'])
+    context.certbot(['renew', '--cert-name', certname])
+
+    with open(join(context.config_dir, 'archive/{0}/privkey1.pem').format(certname), 'r') as file:
+        privkey1 = file.read()
+    with open(join(context.config_dir, 'archive/{0}/privkey2.pem').format(certname), 'r') as file:
+        privkey2 = file.read()
+    assert privkey1 == privkey2
+
+    context.certbot(['--cert-name', certname, '--domains', certname, '--force-renewal'])
+
+    with open(join(context.config_dir, 'archive/{0}/privkey3.pem').format(certname), 'r') as file:
+        privkey3 = file.read()
+    assert privkey2 != privkey3
+
+    with open(join(context.config_dir, 'archive/{0}/cert1.pem').format(certname), 'r') as file:
+        cert1 = file.read()
+    with open(join(context.config_dir, 'archive/{0}/cert2.pem').format(certname), 'r') as file:
+        cert2 = file.read()
+    with open(join(context.config_dir, 'archive/{0}/cert3.pem').format(certname), 'r') as file:
+        cert3 = file.read()
+
+    assert len({cert1, cert2, cert3}) == 3
