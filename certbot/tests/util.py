@@ -4,7 +4,6 @@
 
 """
 import logging
-import os
 import shutil
 import stat
 import sys
@@ -27,6 +26,7 @@ from certbot import interfaces
 from certbot import lock
 from certbot import storage
 from certbot import util
+from certbot.compat import os
 from certbot.display import util as display_util
 
 

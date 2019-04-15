@@ -5,7 +5,6 @@ from __future__ import print_function
 import argparse
 import errno
 import json
-import os
 import shutil
 import tempfile
 import unittest
@@ -19,6 +18,7 @@ from acme import challenges
 from certbot import achallenges
 from certbot import errors
 from certbot.compat import misc
+from certbot.compat import os
 from certbot.display import util as display_util
 from certbot.tests import acme_util
 from certbot.tests import util as test_util
@@ -242,7 +242,7 @@ class AuthenticatorTest(unittest.TestCase):
 
         os.rmdir(leftover_path)
 
-    @mock.patch('os.rmdir')
+    @mock.patch('certbot.compat.os.rmdir')
     def test_cleanup_failure(self, mock_rmdir):
         self.auth.prepare()
         self.auth.perform([self.achall])

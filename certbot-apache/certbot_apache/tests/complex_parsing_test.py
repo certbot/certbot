@@ -1,9 +1,9 @@
 """Tests for certbot_apache.parser."""
-import os
 import shutil
 import unittest
 
 from certbot import errors
+from certbot.compat import os
 
 from certbot_apache.tests import util
 

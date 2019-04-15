@@ -1,11 +1,11 @@
 """Test for certbot_apache.configurator for Debian overrides"""
-import os
 import shutil
 import unittest
 
 import mock
 
 from certbot import errors
+from certbot.compat import os
 
 from certbot_apache import apache_util
 from certbot_apache import obj

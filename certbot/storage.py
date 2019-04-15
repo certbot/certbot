@@ -2,7 +2,6 @@
 import datetime
 import glob
 import logging
-import os
 import re
 import shutil
 import stat
@@ -20,6 +19,7 @@ from certbot import error_handler
 from certbot import errors
 from certbot import util
 from certbot.compat import misc
+from certbot.compat import os
 from certbot.plugins import common as plugins_common
 from certbot.plugins import disco as plugins_disco
 

@@ -3,7 +3,6 @@
 import copy
 import fnmatch
 import logging
-import os
 import re
 import socket
 import time
@@ -17,13 +16,14 @@ import zope.component
 import zope.interface
 
 from acme import challenges
-from acme.magic_typing import Any, DefaultDict, Dict, List, Set, Union  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import DefaultDict, Dict, List, Set, Union  # pylint: disable=unused-import, no-name-in-module
 
 from certbot import errors
 from certbot import interfaces
 from certbot import util
 
 from certbot.achallenges import KeyAuthorizationAnnotatedChallenge  # pylint: disable=unused-import
+from certbot.compat import os
 from certbot.plugins import common
 from certbot.plugins.util import path_surgery
 from certbot.plugins.enhancements import AutoHSTSEnhancement

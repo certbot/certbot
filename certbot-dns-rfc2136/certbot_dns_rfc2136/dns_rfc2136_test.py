@@ -1,6 +1,5 @@
 """Tests for certbot_dns_rfc2136.dns_rfc2136."""
 
-import os
 import unittest
 
 import dns.flags
@@ -9,6 +8,7 @@ import dns.tsig
 import mock
 
 from certbot import errors
+from certbot.compat import os
 from certbot.plugins import dns_test_common
 from certbot.plugins.dns_test_common import DOMAIN
 from certbot.tests import util as test_util
