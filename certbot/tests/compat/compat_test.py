@@ -1,8 +1,7 @@
 """Tests for certbot.compat."""
-import os
-
 import certbot.tests.util as test_util
 from certbot.compat import misc
+from certbot.compat import os
 
 
 class OsReplaceTest(test_util.TempDirTestCase):

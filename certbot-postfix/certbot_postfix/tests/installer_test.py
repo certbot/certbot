@@ -1,16 +1,16 @@
 """Tests for certbot_postfix.installer."""
 import copy
 import functools
-import os
 import unittest
 from contextlib import contextmanager
 
 import mock
 import pkg_resources
 import six
-from acme.magic_typing import Dict, Tuple  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Dict, Tuple  # pylint: disable=unused-import,no-name-in-module
 
 from certbot import errors
+from certbot.compat import os
 from certbot.tests import util as certbot_test_util
 
 

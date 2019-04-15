@@ -1,7 +1,6 @@
 """Tests for certbot.util."""
 import argparse
 import errno
-import os
 import unittest
 
 import mock
@@ -11,6 +10,7 @@ from six.moves import reload_module  # pylint: disable=import-error
 import certbot.tests.util as test_util
 from certbot import errors
 from certbot.compat import misc
+from certbot.compat import os
 
 
 class RunScriptTest(unittest.TestCase):

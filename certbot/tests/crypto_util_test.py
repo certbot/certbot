@@ -1,17 +1,16 @@
 """Tests for certbot.crypto_util."""
 import logging
-import os
 import unittest
 
 import OpenSSL
 import mock
 import zope.component
 
+import certbot.tests.util as test_util
 from certbot import errors
 from certbot import interfaces
 from certbot import util
-import certbot.tests.util as test_util
-
+from certbot.compat import os
 
 RSA256_KEY = test_util.load_vector('rsa256_key.pem')
 RSA256_KEY_PATH = test_util.vector_path('rsa256_key.pem')
