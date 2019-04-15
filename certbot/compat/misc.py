@@ -7,14 +7,13 @@ from __future__ import absolute_import
 import select
 import sys
 
-from certbot.compat import os
-
 try:
     from win32com.shell import shell as shellwin32  # pylint: disable=import-error
 except ImportError:  # pragma: no cover
     shellwin32 = None  # type: ignore
 
 from certbot import errors
+from certbot.compat import os
 
 
 def raise_for_non_administrative_windows_rights():

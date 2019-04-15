@@ -1,7 +1,7 @@
 """Compat module to handle files security on Windows and Linux"""
 from __future__ import absolute_import
 
-import os
+import os  # pylint: disable=os-module-forbidden
 import stat
 import tempfile
 
