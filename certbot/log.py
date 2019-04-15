@@ -245,7 +245,7 @@ class TempHandler(logging.StreamHandler):
         self.path = stream.name
         # On Windows, built-in support of POSIX mode is extremely limited. So the underlying file
         # will not have 0600 by default on this platform. We ensure manually that.
-        security.apply_mode(self.path, 0o600)
+        security.chmod(self.path, 0o600)
         self._delete = True
 
     def emit(self, record):

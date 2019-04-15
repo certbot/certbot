@@ -66,7 +66,7 @@ def rename(*args, **kwargs):
 # default definition, giving effectively at least read permissions to any one, as the default
 # permissions on root path will be inherit by the file (as NTFS state), and root path can be read
 # by anyone. So the given mode will be translated into a secured and not inherited DACL that will
-# be applied to this file using security.apply_mode, that will call internally the win32security
+# be applied to this file using security.chmod, that will call internally the win32security
 # module to construct and apply the DACL. Complete security model to translate a POSIX mode for
 # something usable on Windows for Certbot can be found here:
 # https://github.com/certbot/certbot/issues/6356
@@ -82,7 +82,7 @@ def chmod(*args, **kwargs):
 # The os.open function on Windows will have the same effect than a bare os.chown towards the given
 # mode, and will create a file with the same flaws that what have been described for os.chown.
 # So upon file creation, security.take_ownership will be called to ensure current user is the owner
-# of the file, and security.apply_mode will do the same thing than for the modified os.chown.
+# of the file, and security.chmod will do the same thing than for the modified os.chown.
 # Internally, take_ownership will update the existing metdata of the file, to set the current
 # username (resolved thanks to win32api module) as the owner of the file.
 def open(*args, **kwargs):
@@ -92,7 +92,7 @@ def open(*args, **kwargs):
 
 
 # Very similarly to os.open, os.mkdir has the same effect on Windows, to create an unsecured
-# folder. Same mitigation is provided using security.take_ownership and security.apply_mode.
+# folder. Same mitigation is provided using security.take_ownership and security.chmod.
 # On top of that, we need to handle the fact that os.mkdir is called recursively by os.makedirs.
 # This is done by protecting the original os.mkdir to have the real logic, call it during the
 # recurrence and apply immediately the security model on every processed folder.

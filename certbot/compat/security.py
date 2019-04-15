@@ -49,7 +49,7 @@ def get_current_user():
         return win32security.LookupAccountSid(None, current_user)[0]
 
 
-def apply_mode(file_path, mode):
+def chmod(file_path, mode):
     # type: (str, int) -> None
     """
     Apply a POSIX mode on given file_path:
@@ -64,21 +64,6 @@ def apply_mode(file_path, mode):
         os.chmod(file_path, mode)
     else:
         _apply_win_mode(file_path, mode)
-
-
-def take_ownership(file_path, group=False):
-    # type: (str, bool) -> None
-    """
-    Take ownership on the given file path, in compatible way for Linux and Windows.
-
-    :param str file_path: Path of the file
-    :param bool group: Set also file group to current user group (False by default)
-    """
-    if not win32security:
-        group_id = os.getegid() if group else -1
-        os.chown(file_path, os.geteuid(), group_id)
-    else:
-        _take_win_ownership(file_path)
 
 
 def copy_ownership_and_apply_mode(src, dst, mode, user=True, group=False):
@@ -214,16 +199,6 @@ def _generate_dacl(user_sid, mode):
     return dacl
 
 
-def _take_win_ownership(file_path):
-    username = get_current_user()
-    user = win32security.LookupAccountName('', username)[0]
-
-    security = win32security.GetFileSecurity(file_path, win32security.OWNER_SECURITY_INFORMATION)
-    security.SetSecurityDescriptorOwner(user, False)
-
-    win32security.SetFileSecurity(file_path, win32security.OWNER_SECURITY_INFORMATION, security)
-
-
 def _copy_win_ownership(src, dst):
     security_src = win32security.GetFileSecurity(src, win32security.OWNER_SECURITY_INFORMATION)
     user_src = security_src.GetSecurityDescriptorOwner()
@@ -340,7 +315,7 @@ def open(file_path, flags, mode=0o777):  # pylint: disable=function-redefined,re
     :rtype: int
     """
     file_descriptor = os.open(file_path, flags, mode)
-    apply_mode(file_path, mode)
+    chmod(file_path, mode)
 
     return file_descriptor
 
@@ -385,16 +360,4 @@ def mkdir(file_path, mode=0o777, mkdir_fn=None):  # pylint: disable=function-red
     mkdir_fn = mkdir_fn or os.mkdir
 
     mkdir_fn(file_path, mode)
-    apply_mode(file_path, mode)
-
-
-def chmod(file_path, mode):  # pylint: disable=function-redefined
-    # type: (str, int) -> None
-    """
-    Wrapper of original os.chmod function, that will ensure on Windows that given mode
-    is correctly applied.
-
-    :param str file_path: The file path to modify
-    :param int mode: POSIX mode to apply on file
-    """
-    apply_mode(file_path, mode)
+    chmod(file_path, mode)

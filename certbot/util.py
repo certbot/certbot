@@ -202,7 +202,7 @@ def safe_open(path, mode='w', chmod=None):
         raise OSError(errno.EEXIST, 'File exists', path)
     file_handler = open(path, mode)
     if chmod:
-        security.apply_mode(path, chmod)
+        security.chmod(path, chmod)
     return file_handler
 
 

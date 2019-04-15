@@ -11,11 +11,11 @@ class SecurityTest(TempDirTestCase):
 
         open(probe, 'w').close()
 
-        security.apply_mode(probe, 0o755)
+        security.chmod(probe, 0o755)
 
         self.assertTrue(security.check_mode(probe, 0o755))
 
-        security.apply_mode(probe, 0o700)
+        security.chmod(probe, 0o700)
 
         self.assertFalse(security.check_mode(probe, 0o755))
 
@@ -26,8 +26,8 @@ class SecurityTest(TempDirTestCase):
         open(probe1, 'w').close()
         open(probe2, 'w').close()
 
-        security.apply_mode(probe1, 0o700)
-        security.apply_mode(probe2, 0o755)
+        security.chmod(probe1, 0o700)
+        security.chmod(probe2, 0o755)
 
         self.assertFalse(security.check_mode(probe2, 0o700))
 
@@ -44,7 +44,7 @@ class SecurityTest(TempDirTestCase):
         os.symlink(probe, link_abs)
         os.symlink(os.path.join('.', 'probe'), link_rel)
 
-        security.apply_mode(probe, 0o700)
+        security.chmod(probe, 0o700)
 
         self.assertTrue(security.check_mode(link_abs, 0o700))
         self.assertTrue(security.check_mode(link_rel, 0o700))
@@ -53,10 +53,6 @@ class SecurityTest(TempDirTestCase):
         probe = os.path.join(self.tempdir, 'probe')
 
         open(probe, 'w').close()
-
-        self.assertTrue(security.check_owner(probe))
-
-        security.take_ownership(probe)
 
         self.assertTrue(security.check_owner(probe))
 
@@ -69,6 +65,6 @@ class SecurityTest(TempDirTestCase):
         probe = os.path.join(self.tempdir, 'probe')
 
         open(probe, 'w').close()
-        security.apply_mode(probe, 0o700)
+        security.chmod(probe, 0o700)
 
         self.assertTrue(security.check_permissions(probe, 0o700))
