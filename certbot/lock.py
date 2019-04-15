@@ -1,7 +1,6 @@
 """Implements file locks compatible with Linux and Windows for locking files and directories."""
 import errno
 import logging
-import os
 try:
     import fcntl  # pylint: disable=import-error
 except ImportError:
@@ -10,8 +9,10 @@ except ImportError:
 else:
     POSIX_MODE = True
 
+from acme.magic_typing import Optional  # pylint: disable=unused-import, no-name-in-module
+
 from certbot import errors
-from acme.magic_typing import Optional, Callable  # pylint: disable=unused-import, no-name-in-module
+from certbot.compat import os
 
 logger = logging.getLogger(__name__)
 
