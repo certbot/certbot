@@ -352,6 +352,49 @@ def test_renew_hook_override(context):
     assert_hook_execution(context.hook_probe, 'deploy-override')
 
 
+def test_invalid_domain_with_dns_challenge(context):
+    """Test certificate issuance failure with DNS-01 challenge."""
+    # Manual dns auth hooks from misc are designed to fail if the domain contains 'fail-*'.
+    domains = ','.join([context.get_domain('dns1'), context.get_domain('fail-dns1')])
+    context.certbot([
+        '-a', 'manual', '-d', domains,
+        '--allow-subset-of-names',
+        '--preferred-challenges', 'dns',
+        '--manual-auth-hook', context.manual_dns_auth_hook,
+        '--manual-cleanup-hook', context.manual_dns_cleanup_hook
+    ])
+
+    output = context.certbot(['certificates'])
+
+    assert context.get_domain('fail-dns1') not in output
+
+
+def test_reuse_key(context):
+    """Test various scenarios where a key is reused."""
+    certname = context.get_domain('reusekey')
+    context.certbot(['--domains', certname, '--reuse-key'])
+    context.certbot(['renew', '--cert-name', certname])
+
+    with open(join(context.config_dir, 'archive/{0}/privkey1.pem').format(certname), 'r') as file:
+        privkey1 = file.read()
+    with open(join(context.config_dir, 'archive/{0}/privkey2.pem').format(certname), 'r') as file:
+        privkey2 = file.read()
+    assert privkey1 == privkey2
+
+    context.certbot(['--cert-name', certname, '--domains', certname, '--force-renewal'])
+
+    with open(join(context.config_dir, 'archive/{0}/privkey3.pem').format(certname), 'r') as file:
+        privkey3 = file.read()
+    assert privkey2 != privkey3
+
+    with open(join(context.config_dir, 'archive/{0}/cert1.pem').format(certname), 'r') as file:
+        cert1 = file.read()
+    with open(join(context.config_dir, 'archive/{0}/cert2.pem').format(certname), 'r') as file:
+        cert2 = file.read()
+    with open(join(context.config_dir, 'archive/{0}/cert3.pem').format(certname), 'r') as file:
+        cert3 = file.read()
+
+
 def test_ecdsa(context):
     """Test certificate issuance with ECDSA key."""
     key_path = join(context.workspace, 'privkey-p384.pem')
@@ -374,4 +417,3 @@ def test_ocsp_must_staple(context):
     certificate = misc.read_certificate(join(context.config_dir,
                                              'live/{0}/cert.pem').format(certname))
     assert 'status_request' in certificate or '1.3.6.1.5.5.7.1.24'
-
