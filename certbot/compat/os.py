@@ -35,7 +35,7 @@ del ourselves, std_os, std_sys
 # So we cannot use python methods that relies on uid, on geteuid() is useless.
 def geteuid(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
     """Method os.geteuid() is forbidden"""
-    raise RuntimeError('Usage of os.geteuid() is forbidden. '
+    raise RuntimeError('Usage of os.geteuid() is forbidden. '  # pragma: no cover
                        'Use certbot.compat.security.get_current_user() instead.')
 
 
@@ -44,7 +44,7 @@ def geteuid(*unused_args, **unused_kwargs):  # pylint: disable=function-redefine
 # always forbidden.
 def chown(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
     """Method os.chown() is forbidden"""
-    raise RuntimeError('Usage of os.chown() is forbidden.'
+    raise RuntimeError('Usage of os.chown() is forbidden.'  # pragma: no cover
                        'Use certbot.compat.security.take_ownership() or '
                        'certbot.compat.security.copy_ownership_and_apply_mode() instead.')
 
@@ -56,7 +56,7 @@ def chown(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
 # on Windows.
 def rename(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
     """Method os.rename() is forbidden"""
-    raise RuntimeError('Usage of os.rename() is forbidden. '
+    raise RuntimeError('Usage of os.rename() is forbidden. '  # pragma: no cover
                        'Use certbot.compat.misc.rename() instead.')
 
 
@@ -75,7 +75,7 @@ def rename(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
 # "Administrators" group, as they can do everything anyway.
 def chmod(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
     """Method os.chmod() is forbidden"""
-    raise RuntimeError('Usage of os.chmod() is forbidden. '
+    raise RuntimeError('Usage of os.chmod() is forbidden. '  # pragma: no cover
                        'Use certbot.compat.security.chmod() instead.')
 
 
@@ -87,7 +87,7 @@ def chmod(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
 # username (resolved thanks to win32api module) as the owner of the file.
 def open(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
     """Method os.open() is forbidden"""
-    raise RuntimeError('Usage of os.open() is forbidden. '
+    raise RuntimeError('Usage of os.open() is forbidden. '  # pragma: no cover
                        'Use certbot.compat.security.open() instead.')
 
 
@@ -98,7 +98,7 @@ def open(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
 # recurrence and apply immediately the security model on every processed folder.
 def mkdir(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
     """Method os.mkdir() is forbidden"""
-    raise RuntimeError('Usage of os.mkdir() is forbidden. '
+    raise RuntimeError('Usage of os.mkdir() is forbidden. '  # pragma: no cover
                        'Use certbot.compat.security.mkdir() instead.')
 
 
@@ -109,5 +109,5 @@ def mkdir(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
 # then restoring original mkdir method in the os module.
 def makedirs(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
     """Method os.makedirs() is forbidden"""
-    raise RuntimeError('Usage of os.makedirs() is forbidden. '
+    raise RuntimeError('Usage of os.makedirs() is forbidden. '  # pragma: no cover
                        'Use certbot.compat.security.makedirs() instead.')
