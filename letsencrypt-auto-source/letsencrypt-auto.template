@@ -172,7 +172,9 @@ SetRootAuthMechanism() {
       sudo)
         SUDO="sudo -E"
         ;;
-      '') ;; # Nothing to do for plain root method.
+      '')
+        SKIPPED_ROOT_AUTH=1
+        ;;
       *)
         error "Error: unknown root authorization mechanism '$LE_AUTO_SUDO'."
         exit 1
@@ -652,6 +654,21 @@ else
     exit 0
   fi
 
+  DeterminePythonVersion "NOCRASH"
+  # If we can't find an up-to-date Python or the user disabled root
+  # authorization, don't warn about file permissions.
+  if [ "$PYVER" -ge "$MIN_PYVER" -a "$SKIPPED_ROOT_AUTH" != 1 ]; then
+    # ---------------------------------------------------------------------------
+    cat << "UNLIKELY_EOF" > "$TEMP_DIR/check_permissions.py"
+{{ check_permissions.py }}
+UNLIKELY_EOF
+    # ---------------------------------------------------------------------------
+    # If the script fails for some reason, don't break certbot-auto.
+    if ! "$LE_PYTHON" "$TEMP_DIR/check_permissions.py" "$0"; then
+      error "WARNING: unable to validate certbot-auto's file permissions."
+    fi
+  fi
+
   if [ "$NO_SELF_UPGRADE" != 1 ]; then
     TEMP_DIR=$(TempDir)
     trap 'rm -rf "$TEMP_DIR"' EXIT
@@ -660,7 +677,6 @@ else
 {{ fetch.py }}
 UNLIKELY_EOF
     # ---------------------------------------------------------------------------
-    DeterminePythonVersion "NOCRASH"
     if [ "$PYVER" -lt "$MIN_PYVER" ]; then
       error "WARNING: couldn't find Python $MIN_PYTHON_VERSION+ to check for updates."
     elif ! REMOTE_VERSION=`"$LE_PYTHON" "$TEMP_DIR/fetch.py" --latest-version` ; then
