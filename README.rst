@@ -28,6 +28,8 @@ Contributing
 If you'd like to contribute to this project please read `Developer Guide
 <https://certbot.eff.org/docs/contributing.html>`_.
 
+This project is governed by `EFF's Public Projects Code of Conduct <https://www.eff.org/pages/eppcode>`_.
+
 .. _installation:
 
 Installation
