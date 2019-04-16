@@ -26,7 +26,7 @@ def raise_for_non_administrative_windows_rights():
     :raises .errors.Error: If the current shell does not have administrative rights on Windows.
 
     """
-    if shellwin32 and shellwin32.IsUserAnAdmin() == 0:
+    if shellwin32 and shellwin32.IsUserAnAdmin() == 0:  # pragma: no cover
         raise errors.Error('Error, certbot must be run on a shell with administrative rights.')
 
 

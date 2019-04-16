@@ -343,7 +343,7 @@ class TempDirTestCase(unittest.TestCase):
         logging.getLogger().handlers = []
         util._release_locks()  # pylint: disable=protected-access
 
-        def handle_rw_files(_, path, __):
+        def handle_rw_files(_, path, __):  # pragma: no cover
             """Handle read-only files, that will fail to be removed on Windows."""
             security.chmod(path, stat.S_IWRITE)
             os.remove(path)
