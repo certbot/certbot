@@ -11,20 +11,21 @@ from six.moves import reload_module  # pylint: disable=import-error
 
 from acme import challenges
 
+import certbot.tests.util as test_util
 from certbot import cli
 from certbot import constants
 from certbot import errors
 from certbot.compat import os
 from certbot.compat import security
 from certbot.plugins import disco
-import certbot.tests.util as test_util
 from certbot.tests.util import TempDirTestCase
 
 PLUGINS = disco.PluginsRegistry.find_all()
 
 
 class TestReadFile(TempDirTestCase):
-    """Test cli.read_file"""
+    '''Test cli.read_file'''
+
 
     def test_read_file(self):
         rel_test_path = os.path.relpath(os.path.join(self.tempdir, 'foo'))
@@ -41,7 +42,8 @@ class TestReadFile(TempDirTestCase):
 
 
 class FlagDefaultTest(unittest.TestCase):
-    """Tests cli.flag_default"""
+    '''Test the cli args entrypoint'''
+
 
     def test_linux_directories(self):
         if 'fcntl' in sys.modules:

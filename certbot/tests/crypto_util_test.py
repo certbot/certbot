@@ -6,11 +6,11 @@ import OpenSSL
 import mock
 import zope.component
 
+import certbot.tests.util as test_util
 from certbot import errors
 from certbot import interfaces
 from certbot import util
 from certbot.compat import os
-import certbot.tests.util as test_util
 
 
 RSA256_KEY = test_util.load_vector('rsa256_key.pem')
@@ -69,7 +69,7 @@ class InitSaveCSRTest(test_util.TempDirTestCase):
 
     @mock.patch('acme.crypto_util.make_csr')
     @mock.patch('certbot.crypto_util.util.make_or_verify_dir')
-    def test_it(self, _, mock_csr):
+    def test_it(self, unused_mock_verify, mock_csr):
         from certbot.crypto_util import init_save_csr
 
         mock_csr.return_value = b'csr_pem'
