@@ -80,9 +80,9 @@ class PluginStorage(object):
 
         try:
             serialized = json.dumps(self._data)
-        except TypeError as err:
+        except TypeError as e:
             errmsg = "Could not serialize PluginStorage data: {0}".format(
-                str(err))
+                str(e))
             logger.error(errmsg)
             raise errors.PluginStorageError(errmsg)
         try:
@@ -91,9 +91,9 @@ class PluginStorage(object):
                     os.O_WRONLY | os.O_CREAT | os.O_TRUNC,
                     0o600), 'w') as file_handler:
                 file_handler.write(serialized)
-        except IOError as err:
+        except IOError as e:
             errmsg = "Could not write PluginStorage data to file {0} : {1}".format(
-                self._storagepath, str(err))
+                self._storagepath, str(e))
             logger.error(errmsg)
             raise errors.PluginStorageError(errmsg)
 
