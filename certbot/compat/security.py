@@ -49,6 +49,69 @@ def get_current_user():
         return win32security.LookupAccountSid(None, current_user)[0]
 
 
+def open(file_path, flags, mode=0o777):  # pylint: disable=function-redefined,redefined-builtin
+    # type: (str, int, int) -> int
+    """
+    Wrapper of original os.open function, that will ensure on Windows that given mode
+    is correctly applied.
+
+    :param str file_path: The file path to open
+    :param int flags: Flags to apply on file while opened
+    :param int mode: POSIX mode to apply on file when opened,
+        Python defaults will be applied if ``None``
+
+    :returns: the file descriptor to the opened file
+    :rtype: int
+    """
+    file_descriptor = os.open(file_path, flags, mode)
+    chmod(file_path, mode)
+
+    return file_descriptor
+
+
+def makedirs(file_path, mode=0o777):  # pylint: disable=function-redefined
+    # type: (str, int) -> None
+    """
+    Wrapper of original os.makedirs function, that will ensure on Windows that given mode
+    is correctly applied.
+
+    :param str file_path: The file path to open
+    :param int mode: POSIX mode to apply on file when opened,
+        Python defaults will be applied if ``None``
+    """
+    # As we know that os.mkdir is called internally by os.makedirs, we will swap the function in
+    # os module for the time of makedirs execution.
+    orig_mkdir_fn = os.mkdir
+    try:
+        def wrapper(one_path, one_mode=0o777):  # pylint: disable=missing-docstring
+            # Note, we need to provide the origin os.mkdir to our mkdir function,
+            # or we will have a nice infinite loop ...
+            mkdir(one_path, mode=one_mode, mkdir_fn=orig_mkdir_fn)
+
+        os.mkdir = wrapper
+
+        os.makedirs(file_path, mode)
+    finally:
+        os.mkdir = orig_mkdir_fn
+
+
+def mkdir(file_path, mode=0o777, mkdir_fn=None):  # pylint: disable=function-redefined
+    # type: (str, int, Callable[[str, int], None]) -> None
+    """
+    Wrapper of original os.mkdir function, that will ensure on Windows that given mode
+    is correctly applied.
+
+    :param str file_path: The file path to open
+    :param int mode: POSIX mode to apply on file when opened,
+        Python defaults will be applied if ``None``
+    :param callable mkdir_fn: The underlying mkdir function to use
+    """
+    mkdir_fn = mkdir_fn or os.mkdir
+
+    mkdir_fn(file_path, mode)
+    chmod(file_path, mode)
+
+
 def chmod(file_path, mode):
     # type: (str, int) -> None
     """
@@ -298,66 +361,3 @@ def _analyze_mode(mode):
             'execute': mode & stat.S_IXOTH,
         },
     }
-
-
-def open(file_path, flags, mode=0o777):  # pylint: disable=function-redefined,redefined-builtin
-    # type: (str, int, int) -> int
-    """
-    Wrapper of original os.open function, that will ensure on Windows that given mode
-    is correctly applied.
-
-    :param str file_path: The file path to open
-    :param int flags: Flags to apply on file while opened
-    :param int mode: POSIX mode to apply on file when opened,
-        Python defaults will be applied if ``None``
-
-    :returns: the file descriptor to the opened file
-    :rtype: int
-    """
-    file_descriptor = os.open(file_path, flags, mode)
-    chmod(file_path, mode)
-
-    return file_descriptor
-
-
-def makedirs(file_path, mode=0o777):  # pylint: disable=function-redefined
-    # type: (str, int) -> None
-    """
-    Wrapper of original os.makedirs function, that will ensure on Windows that given mode
-    is correctly applied.
-
-    :param str file_path: The file path to open
-    :param int mode: POSIX mode to apply on file when opened,
-        Python defaults will be applied if ``None``
-    """
-    # As we know that os.mkdir is called internally by os.makedirs, we will swap the function in
-    # os module for the time of makedirs execution.
-    orig_mkdir_fn = os.mkdir
-    try:
-        def wrapper(one_path, one_mode=0o777):  # pylint: disable=missing-docstring
-            # Note, we need to provide the origin os.mkdir to our mkdir function,
-            # or we will have a nice infinite loop ...
-            mkdir(one_path, mode=one_mode, mkdir_fn=orig_mkdir_fn)
-
-        os.mkdir = wrapper
-
-        os.makedirs(file_path, mode)
-    finally:
-        os.mkdir = orig_mkdir_fn
-
-
-def mkdir(file_path, mode=0o777, mkdir_fn=None):  # pylint: disable=function-redefined
-    # type: (str, int, Callable[[str, int], None]) -> None
-    """
-    Wrapper of original os.mkdir function, that will ensure on Windows that given mode
-    is correctly applied.
-
-    :param str file_path: The file path to open
-    :param int mode: POSIX mode to apply on file when opened,
-        Python defaults will be applied if ``None``
-    :param callable mkdir_fn: The underlying mkdir function to use
-    """
-    mkdir_fn = mkdir_fn or os.mkdir
-
-    mkdir_fn(file_path, mode)
-    chmod(file_path, mode)
