@@ -33,7 +33,7 @@ del ourselves, std_os, std_sys
 
 # The concept of uid is specific to POSIX system. On Windows, there is nothing like this.
 # So we cannot use python methods that relies on uid, on geteuid() is useless.
-def geteuid(*args, **kwargs):  # pylint: disable=function-redefined
+def geteuid(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
     """Method os.geteuid() is forbidden"""
     raise RuntimeError('Usage of os.geteuid() is forbidden. '
                        'Use certbot.compat.security.get_current_user() instead.')
@@ -42,7 +42,7 @@ def geteuid(*args, **kwargs):  # pylint: disable=function-redefined
 # Because uid is not a concept on Windows, chown is useless. In fact, it is not even available
 # on Python for Windows. So to be consistent with both platforms for Certbot, this method is
 # always forbidden.
-def chown(*args, **kwargs):  # pylint: disable=function-redefined
+def chown(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
     """Method os.chown() is forbidden"""
     raise RuntimeError('Usage of os.chown() is forbidden.'
                        'Use certbot.compat.security.take_ownership() or '
@@ -54,7 +54,7 @@ def chown(*args, **kwargs):  # pylint: disable=function-redefined
 # os.replace on Windows for Python 3, that will do the same than on POSIX. Hopefully also, only
 # Python 3 is supported for Certbot. So we can rely on os.rename on Linux, and os.replace
 # on Windows.
-def rename(*args, **kwargs):
+def rename(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
     """Method os.rename() is forbidden"""
     raise RuntimeError('Usage of os.rename() is forbidden. '
                        'Use certbot.compat.misc.rename() instead.')
@@ -73,7 +73,7 @@ def rename(*args, **kwargs):
 # Basically, it states that appropriate permissions will be set for the owner, nothing for the
 # group, appropriate permissions for the "Everyone" group, and all permissions to the
 # "Administrators" group, as they can do everything anyway.
-def chmod(*args, **kwargs):
+def chmod(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
     """Method os.chmod() is forbidden"""
     raise RuntimeError('Usage of os.chmod() is forbidden. '
                        'Use certbot.compat.security.chmod() instead.')
@@ -85,7 +85,7 @@ def chmod(*args, **kwargs):
 # of the file, and security.chmod will do the same thing than for the modified os.chown.
 # Internally, take_ownership will update the existing metdata of the file, to set the current
 # username (resolved thanks to win32api module) as the owner of the file.
-def open(*args, **kwargs):
+def open(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
     """Method os.open() is forbidden"""
     raise RuntimeError('Usage of os.open() is forbidden. '
                        'Use certbot.compat.security.open() instead.')
@@ -96,7 +96,7 @@ def open(*args, **kwargs):
 # On top of that, we need to handle the fact that os.mkdir is called recursively by os.makedirs.
 # This is done by protecting the original os.mkdir to have the real logic, call it during the
 # recurrence and apply immediately the security model on every processed folder.
-def mkdir(*args, **kwargs):
+def mkdir(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
     """Method os.mkdir() is forbidden"""
     raise RuntimeError('Usage of os.mkdir() is forbidden. '
                        'Use certbot.compat.security.mkdir() instead.')
@@ -107,7 +107,7 @@ def mkdir(*args, **kwargs):
 # modified os.mkdir is called, by monkey patching temporarily the mkdir method on the
 # original os module, executing the modified logic to protect corecrtly newly created folders,
 # then restoring original mkdir method in the os module.
-def chmod(*args, **kwargs):
+def makedirs(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
     """Method os.makedirs() is forbidden"""
     raise RuntimeError('Usage of os.makedirs() is forbidden. '
                        'Use certbot.compat.security.makedirs() instead.')
