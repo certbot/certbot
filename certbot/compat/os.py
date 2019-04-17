@@ -29,3 +29,22 @@ std_sys.modules[__name__ + '.path'] = path
 
 # Clean all remaining importables that are not from the core os module.
 del ourselves, std_os, std_sys
+
+
+# Chmod is the root of all evil for our security model on Windows. With the default implementation
+# of os.chmod on Windows, almost all bits on mode will be ignored, and only a general RO or RW will
+# be applied. The DACL, the inner mechanism to control file access on Windows, will stay on its
+# default definition, giving effectively at least read permissions to any one, as the default
+# permissions on root path will be inherit by the file (as NTFS state), and root path can be read
+# by anyone. So the given mode will be translated into a secured and not inherited DACL that will
+# be applied to this file using security.chmod, that will call internally the win32security
+# module to construct and apply the DACL. Complete security model to translate a POSIX mode for
+# something usable on Windows for Certbot can be found here:
+# https://github.com/certbot/certbot/issues/6356
+# Basically, it states that appropriate permissions will be set for the owner, nothing for the
+# group, appropriate permissions for the "Everyone" group, and all permissions to the
+# "Administrators" group, as they can do everything anyway.
+def chmod(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
+    """Method os.chmod() is forbidden"""
+    raise RuntimeError('Usage of os.chmod() is forbidden. '  # pragma: no cover
+                       'Use certbot.compat.security.chmod() instead.')

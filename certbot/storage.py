@@ -20,6 +20,7 @@ from certbot import errors
 from certbot import util
 from certbot.compat import misc
 from certbot.compat import os
+from certbot.compat import security
 from certbot.plugins import common as plugins_common
 from certbot.plugins import disco as plugins_disco
 
@@ -143,7 +144,7 @@ def write_renewal_config(o_filename, n_filename, archive_dir, target, relevant_d
     # Copy permissions from the old version of the file, if it exists.
     if os.path.exists(o_filename):
         current_permissions = stat.S_IMODE(os.lstat(o_filename).st_mode)
-        os.chmod(n_filename, current_permissions)
+        security.chmod(n_filename, current_permissions)
 
     with open(n_filename, "wb") as f:
         config.write(outfile=f)
@@ -1110,7 +1111,7 @@ class RenewableCert(object):
                  stat.S_IROTH)
             mode = BASE_PRIVKEY_MODE | old_mode
             os.chown(target["privkey"], -1, os.stat(old_privkey).st_gid)
-            os.chmod(target["privkey"], mode)
+            security.chmod(target["privkey"], mode)
 
         # Save everything else
         with open(target["cert"], "wb") as f:

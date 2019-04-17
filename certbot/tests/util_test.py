@@ -11,6 +11,7 @@ import certbot.tests.util as test_util
 from certbot import errors
 from certbot.compat import misc
 from certbot.compat import os
+from certbot.compat import security
 
 
 class RunScriptTest(unittest.TestCase):
@@ -188,17 +189,17 @@ class CheckPermissionsTest(test_util.TempDirTestCase):
         return check_permissions(self.tempdir, mode, self.uid)
 
     def test_ok_mode(self):
-        os.chmod(self.tempdir, 0o600)
+        security.chmod(self.tempdir, 0o600)
         self.assertTrue(self._call(0o600))
 
     def test_wrong_mode(self):
-        os.chmod(self.tempdir, 0o400)
+        security.chmod(self.tempdir, 0o400)
         try:
             self.assertFalse(self._call(0o600))
         finally:
             # Without proper write permissions, Windows is unable to delete a folder,
             # even with admin permissions. Write access must be explicitly set first.
-            os.chmod(self.tempdir, 0o700)
+            security.chmod(self.tempdir, 0o700)
 
 
 class UniqueFileTest(test_util.TempDirTestCase):
