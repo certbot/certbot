@@ -419,7 +419,7 @@ def test_ocsp_must_staple(context):
 
     certificate = misc.read_certificate(join(context.config_dir,
                                              'live/{0}/cert.pem').format(certname))
-    assert 'status_request' in certificate or '1.3.6.1.5.5.7.1.24'
+    assert 'status_request' in certificate or '1.3.6.1.5.5.7.1.24' in certificate
 
 
 def test_revoke_simple(context):
