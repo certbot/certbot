@@ -106,13 +106,11 @@ def get_default_folder(folder_type):
     :rtype: str
 
     """
-    try:
+    if os.name != 'nt':
         # Linux specific
-        import fcntl  # pylint: disable=import-error,unused-import,unused-variable
         return LINUX_DEFAULT_FOLDERS[folder_type]
-    except ImportError:
-        # Windows specific
-        return WINDOWS_DEFAULT_FOLDERS[folder_type]
+    # Windows specific
+    return WINDOWS_DEFAULT_FOLDERS[folder_type]
 
 
 def underscores_for_unsupported_characters_in_path(path):
