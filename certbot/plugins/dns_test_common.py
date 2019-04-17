@@ -8,7 +8,6 @@ import six
 from acme import challenges
 
 from certbot import achallenges
-from certbot.compat import os
 from certbot.compat import security
 from certbot.tests import acme_util
 from certbot.tests import util as test_util
