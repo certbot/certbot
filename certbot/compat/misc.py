@@ -71,6 +71,7 @@ def os_rename(src, dst):
 
 
 def readline_with_timeout(timeout, prompt):
+    # type: (float, str) -> str
     """
     Read user input to return the first line entered, or raise after specified timeout.
 
@@ -122,6 +123,7 @@ LINUX_DEFAULT_FOLDERS = {
 
 
 def get_default_folder(folder_type):
+    # type: (str) -> str
     """
     Return the relevant default folder for the current OS
 
