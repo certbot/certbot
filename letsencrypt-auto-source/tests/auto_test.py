@@ -1,10 +1,10 @@
-"""Tests for letsencrypt-auto"""
+"i""Tests for letsencrypt-auto"""
 
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 from contextlib import contextmanager
 from functools import partial
 from json import dumps
-from os import chmod, environ, makedirs
+from os import chmod, environ, makedirs, stat
 from os.path import abspath, dirname, exists, join
 import re
 from shutil import copy, rmtree
@@ -46,6 +46,10 @@ from build import build as build_le_auto
 
 BOOTSTRAP_FILENAME = 'certbot-auto-bootstrap-version.txt'
 """Name of the file where certbot-auto saves its bootstrap version."""
+
+
+RECOMMENDED_DIR = '/usr/local/bin'
+"""Directory where we recommend placing certbot-auto."""
 
 
 class RequestHandler(BaseHTTPRequestHandler):
@@ -192,7 +196,7 @@ def install_le_auto(contents, install_path):
     chmod(install_path, S_IRUSR | S_IXUSR)
 
 
-def run_le_auto(le_auto_path, venv_dir, base_url, **kwargs):
+def run_le_auto(le_auto_path, venv_dir, base_url=None, le_auto_args_str=None, **kwargs):
     """Run the prebuilt version of letsencrypt-auto, returning stdout and
     stderr strings.
 
@@ -201,13 +205,17 @@ def run_le_auto(le_auto_path, venv_dir, base_url, **kwargs):
     """
     env = environ.copy()
     d = dict(VENV_PATH=venv_dir,
-             # URL to PyPI-style JSON that tell us the latest released version
-             # of LE:
-             LE_AUTO_JSON_URL=base_url + 'certbot/json',
-             # URL to dir containing letsencrypt-auto and letsencrypt-auto.sig:
-             LE_AUTO_DIR_TEMPLATE=base_url + '%s/',
-             # The public key corresponding to signing.key:
-             LE_AUTO_PUBLIC_KEY="""-----BEGIN PUBLIC KEY-----
+             NO_CERT_VERIFY='1',
+             **kwargs)
+
+    if base_url is not None:
+        # URL to PyPI-style JSON that tell us the latest released version
+        # of LE:
+        d['LE_AUTO_JSON_URL'] = base_url + 'certbot/json'
+        # URL to dir containing letsencrypt-auto and letsencrypt-auto.sig:
+        d['LE_AUTO_DIR_TEMPLATE'] = base_url + '%s/'
+        # The public key corresponding to signing.key:
+        d['LE_AUTO_PUBLIC_KEY'] = """-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsMoSzLYQ7E1sdSOkwelg
 tzKIh2qi3bpXuYtcfFC0XrvWig071NwIj+dZiT0OLZ2hPispEH0B7ISuuWg1ll7G
 hFW0VdbxL6JdGzS2ShNWkX9hE9z+j8VqwDPOBn3ZHm03qwpYkBDwQib3KqOdYbTT
@@ -215,12 +223,14 @@ uUtJmmGcuk3a9Aq/sCT6DdfmTSdP5asdQYwIcaQreDrOosaS84DTWI3IU+UYJVgl
 LsIVPBuy9IcgHidUQ96hJnoPsDCWsHwX62495QKEarauyKQrJzFes0EY95orDM47
 Z5o/NDiQB11m91yNB0MmPYY9QSbnOA9j7IaaC97AwRLuwXY+/R2ablTcxurWou68
 iQIDAQAB
------END PUBLIC KEY-----""",
-             NO_CERT_VERIFY='1',
-             **kwargs)
+-----END PUBLIC KEY-----"""
+
     env.update(d)
+
+    if le_auto_args_str is None:
+        le_auto_args_str = '--version'
     return out_and_err(
-        le_auto_path + ' --version',
+        le_auto_path + ' ' + le_auto_args_str,
         shell=True,
         env=env)
 
@@ -395,3 +405,44 @@ class AutoTests(TestCase):
                 else:
                     self.fail("Pip didn't detect a bad hash and stop the "
                               "installation.")
+
+    def test_permissions_warnings(self):
+        """Make sure certbot-auto properly warns about permissions problems."""
+        with temp_paths() as (le_auto_path, venv_dir):
+            le_auto_path = abspath(le_auto_path)
+            le_auto_dir = dirname(le_auto_path)
+            install_le_auto(build_le_auto(version='50.0.0'), le_auto_path)
+            chmod(le_auto_path, 0o777)
+            chmod(le_auto_dir, 0o777)
+            file_stat = stat(le_auto_path)
+            dir_stat = stat(le_auto_dir)
+
+            _, err = run_le_auto(le_auto_path, venv_dir, le_auto_args_str='--install-only --no-self-upgrade')
+            for path in (le_auto_dir, le_auto_path):
+                self.assertTrue('{0} is world writable'.format(path) in err)
+                stat_result = stat(path)
+                if stat_result.st_gid != 0:
+                    self.assertTrue('{0} is writable by a group other than group id 0'.format(path) in err)
+                if stat_result.st_uid != 0:
+                    self.assertTrue('{0} is writable by users other than root'.format(path) in err)
+            self.assertTrue('sudo chown root' in err)
+            self.assertTrue('sudo chmod 0755' in err)
+
+            if exists(RECOMMENDED_DIR):
+                rec_dir_stat = stat(RECOMMENDED_DIR)
+            else:
+                rec_dir_stat = None
+            if rec_dir_stat is not None and rec_dir_stat.st_uid == 0 and not rec_dir_stat.st_mode & 0o022:
+                self.assertTrue(RECOMMENDED_DIR in err)
+            else:
+                self.assertFalse(RECOMMENDED_DIR in err)
+
+    def test_no_permissions_warnings(self):
+        """Make sure certbot-auto doesn't warn when run without root."""
+        with temp_paths() as (le_auto_path, venv_dir):
+            install_le_auto(build_le_auto(version='50.0.0'), le_auto_path)
+            run_le_auto(le_auto_path, venv_dir, le_auto_args_str='--os-packages-only')
+            chmod(le_auto_path, 0o777)
+            chmod(dirname(le_auto_path), 0o777)
+            out, err = run_le_auto(le_auto_path, venv_dir, le_auto_args_str='--install-only --no-bootstrap --no-self-upgrade', LE_AUTO_SUDO='')
+            self.assertFalse('writeable' in err)
