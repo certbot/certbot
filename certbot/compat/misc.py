@@ -128,4 +128,3 @@ def underscores_for_unsupported_characters_in_path(path):
     # Windows specific
     drive, tail = os.path.splitdrive(path)
     return drive + tail.replace(':', '_')
-
