@@ -57,7 +57,7 @@ def chown(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
 def rename(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
     """Method os.rename() is forbidden"""
     raise RuntimeError('Usage of os.rename() is forbidden. '  # pragma: no cover
-                       'Use certbot.compat.misc.rename() instead.')
+                       'Use certbot.compat.misc.os_rename() instead.')
 
 
 # Chmod is the root of all evil for our security model on Windows. With the default implementation
