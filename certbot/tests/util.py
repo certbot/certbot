@@ -342,7 +342,11 @@ class TempDirTestCase(unittest.TestCase):
         def handle_rw_files(_, path, __):
             """Handle read-only files, that will fail to be removed on Windows."""
             security.chmod(path, stat.S_IWRITE)
-            os.remove(path)
+            try:
+                os.remove(path)
+            except (IOError, OSError):
+                # TODO: remote the try/except once all logic from windows file permissions is merged
+                pass
         shutil.rmtree(self.tempdir, onerror=handle_rw_files)
 
 
