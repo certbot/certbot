@@ -414,12 +414,15 @@ def test_ecdsa(context):
 
 def test_ocsp_must_staple(context):
     """Test that OCSP Must-Staple is correctly set in the generated certificate."""
+    if context.acme_server == 'pebble':
+        pytest.skip('Pebble does not support OCSP Must-Staple.')
+
     certname = context.get_domain('must-staple')
     context.certbot(['auth', '--must-staple', '--domains', certname])
 
     certificate = misc.read_certificate(join(context.config_dir,
                                              'live/{0}/cert.pem').format(certname))
-    assert 'status_request' in certificate or '1.3.6.1.5.5.7.1.24'
+    assert 'status_request' in certificate or '1.3.6.1.5.5.7.1.24' in certificate
 
 
 def test_revoke_simple(context):
