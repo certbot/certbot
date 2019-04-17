@@ -1,10 +1,10 @@
-"""Tests for certbot.compat."""
+"""Tests for certbot.compat.misc"""
 import certbot.tests.util as test_util
 from certbot.compat import misc
 from certbot.compat import os
 
 
-class OsReplaceTest(test_util.TempDirTestCase):
+class OsRenameTest(test_util.TempDirTestCase):
     """Test to ensure consistent behavior of os_rename method"""
 
     def test_os_rename_to_existing_file(self):
