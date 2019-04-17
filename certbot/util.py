@@ -23,6 +23,7 @@ from certbot import errors
 from certbot import lock
 from certbot.compat import misc
 from certbot.compat import os
+from certbot.compat import security
 
 logger = logging.getLogger(__name__)
 
@@ -180,7 +181,7 @@ def make_or_verify_dir(directory, mode=0o755, uid=0, strict=False):
 
     """
     try:
-        os.makedirs(directory, mode)
+        security.makedirs(directory, mode)
     except OSError as exception:
         if exception.errno == errno.EEXIST:
             if strict and not check_permissions(directory, mode, uid):

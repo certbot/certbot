@@ -19,6 +19,7 @@ from certbot import cli
 from certbot import errors
 from certbot import interfaces
 from certbot.compat import os
+from certbot.compat import security
 from certbot.display import ops
 from certbot.display import util as display_util
 from certbot.plugins import common
@@ -174,9 +175,9 @@ to serve all files under specified web root ({0})."""
                 for prefix in sorted(util.get_prefixes(self.full_roots[name])[:-1], key=len):
                     try:
                         # This is coupled with the "umask" call above because
-                        # os.mkdir's "mode" parameter may not always work:
-                        # https://docs.python.org/3/library/os.html#os.mkdir
-                        os.mkdir(prefix, 0o0755)
+                        # security.mkdir's "mode" parameter may not always work:
+                        # https://docs.python.org/3/library/os.html#security.mkdir
+                        security.mkdir(prefix, 0o0755)
                         self._created_dirs.append(prefix)
                         # Set owner as parent directory if possible
                         try:

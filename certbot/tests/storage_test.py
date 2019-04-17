@@ -15,6 +15,7 @@ import certbot.tests.util as test_util
 from certbot import errors
 from certbot.compat import misc
 from certbot.compat import os
+from certbot.compat import security
 from certbot.storage import ALL_FOUR
 
 CERT = test_util.load_cert('cert_512.pem')
@@ -91,10 +92,10 @@ class BaseRenewableCertTest(test_util.ConfigTestCase):
 
         # TODO: maybe provide NamespaceConfig.make_dirs?
         # TODO: main() should create those dirs, c.f. #902
-        os.makedirs(os.path.join(self.config.config_dir, "live", "example.org"))
+        security.makedirs(os.path.join(self.config.config_dir, "live", "example.org"))
         archive_path = os.path.join(self.config.config_dir, "archive", "example.org")
-        os.makedirs(archive_path)
-        os.makedirs(os.path.join(self.config.config_dir, "renewal"))
+        security.makedirs(archive_path)
+        security.makedirs(os.path.join(self.config.config_dir, "renewal"))
 
         config_file = configobj.ConfigObj()
         for kind in ALL_FOUR:
@@ -633,12 +634,12 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertTrue(os.path.exists(os.path.join(
             self.config.live_dir, "the-lineage.com-0001", "README")))
         # Now trigger the detection of already existing files
-        os.mkdir(os.path.join(
+        security.mkdir(os.path.join(
             self.config.live_dir, "the-lineage.com-0002"))
         self.assertRaises(errors.CertStorageError,
                           storage.RenewableCert.new_lineage, "the-lineage.com",
                           b"cert3", b"privkey3", b"chain3", self.config)
-        os.mkdir(os.path.join(self.config.default_archive_dir, "other-example.com"))
+        security.mkdir(os.path.join(self.config.default_archive_dir, "other-example.com"))
         self.assertRaises(errors.CertStorageError,
                           storage.RenewableCert.new_lineage,
                           "other-example.com", b"cert4",

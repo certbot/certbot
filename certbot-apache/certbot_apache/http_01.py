@@ -5,6 +5,7 @@ from acme.magic_typing import List, Set  # pylint: disable=unused-import, no-nam
 
 from certbot import errors
 from certbot.compat import os
+from certbot.compat import security
 from certbot.plugins import common
 
 from certbot_apache.obj import VirtualHost  # pylint: disable=unused-import
@@ -168,7 +169,7 @@ class ApacheHttp01(common.TLSSNI01):
 
     def _set_up_challenges(self):
         if not os.path.isdir(self.challenge_dir):
-            os.makedirs(self.challenge_dir)
+            security.makedirs(self.challenge_dir)
             os.chmod(self.challenge_dir, 0o755)
 
         responses = []

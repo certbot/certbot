@@ -11,6 +11,7 @@ import certbot.tests.util as test_util
 from certbot import errors
 from certbot.compat import misc
 from certbot.compat import os
+from certbot.compat import security
 
 
 class RunScriptTest(unittest.TestCase):
@@ -91,7 +92,7 @@ class LockDirUntilExit(test_util.TempDirTestCase):
     @mock.patch('certbot.util.atexit_register')
     def test_it(self, mock_register, mock_logger):
         subdir = os.path.join(self.tempdir, 'subdir')
-        os.mkdir(subdir)
+        security.mkdir(subdir)
         self._call(self.tempdir)
         self._call(subdir)
         self._call(subdir)
@@ -142,7 +143,7 @@ class MakeOrVerifyDirTest(test_util.TempDirTestCase):
         super(MakeOrVerifyDirTest, self).setUp()
 
         self.path = os.path.join(self.tempdir, "foo")
-        os.mkdir(self.path, 0o600)
+        security.mkdir(self.path, 0o600)
 
         self.uid = misc.os_geteuid()
 

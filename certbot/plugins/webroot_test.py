@@ -19,6 +19,7 @@ from certbot import achallenges
 from certbot import errors
 from certbot.compat import misc
 from certbot.compat import os
+from certbot.compat import security
 from certbot.display import util as display_util
 from certbot.tests import acme_util
 from certbot.tests import util as test_util
@@ -202,7 +203,7 @@ class AuthenticatorTest(unittest.TestCase):
         self.assertFalse(os.path.exists(self.partial_root_challenge_path))
 
     def test_perform_cleanup_existing_dirs(self):
-        os.mkdir(self.partial_root_challenge_path)
+        security.mkdir(self.partial_root_challenge_path)
         self.auth.prepare()
         self.auth.perform([self.achall])
         self.auth.cleanup([self.achall])
@@ -218,7 +219,7 @@ class AuthenticatorTest(unittest.TestCase):
             domain="thing.com", account_key=KEY)
 
         bingo_validation_path = "YmluZ28"
-        os.mkdir(self.partial_root_challenge_path)
+        security.mkdir(self.partial_root_challenge_path)
         self.auth.prepare()
         self.auth.perform([bingo_achall, self.achall])
 
@@ -234,7 +235,7 @@ class AuthenticatorTest(unittest.TestCase):
         self.auth.perform([self.achall])
 
         leftover_path = os.path.join(self.root_challenge_path, 'leftover')
-        os.mkdir(leftover_path)
+        security.mkdir(leftover_path)
 
         self.auth.cleanup([self.achall])
         self.assertFalse(os.path.exists(self.validation_path))

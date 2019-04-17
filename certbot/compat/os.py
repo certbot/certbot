@@ -29,3 +29,25 @@ std_sys.modules[__name__ + '.path'] = path
 
 # Clean all remaining importables that are not from the core os module.
 del ourselves, std_os, std_sys
+
+
+# Very similarly to os.open, os.mkdir has the same effect on Windows, to create an unsecured
+# folder. Same mitigation is provided using security.take_ownership and security.chmod.
+# On top of that, we need to handle the fact that os.mkdir is called recursively by os.makedirs.
+# This is done by protecting the original os.mkdir to have the real logic, call it during the
+# recurrence and apply immediately the security model on every processed folder.
+def mkdir(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
+    """Method os.mkdir() is forbidden"""
+    raise RuntimeError('Usage of os.mkdir() is forbidden. '  # pragma: no cover
+                       'Use certbot.compat.security.mkdir() instead.')
+
+
+# As said above, os.makedirs would call the original os.mkdir function recursively, creating the
+# same flaws for every actual folder created. This method is modified to ensure that our
+# modified os.mkdir is called, by monkey patching temporarily the mkdir method on the
+# original os module, executing the modified logic to protect corecrtly newly created folders,
+# then restoring original mkdir method in the os module.
+def makedirs(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
+    """Method os.makedirs() is forbidden"""
+    raise RuntimeError('Usage of os.makedirs() is forbidden. '  # pragma: no cover
+                       'Use certbot.compat.security.makedirs() instead.')

@@ -27,6 +27,7 @@ from certbot import lock
 from certbot import storage
 from certbot import util
 from certbot.compat import os
+from certbot.compat import security
 from certbot.display import util as display_util
 
 
@@ -138,7 +139,7 @@ def make_lineage(config_dir, testfile):
 
     for directory in (archive_dir, conf_dir, live_dir,):
         if not os.path.exists(directory):
-            os.makedirs(directory)
+            security.makedirs(directory)
 
     sample_archive = vector_path('sample-archive')
     for kind in os.listdir(sample_archive):

@@ -10,6 +10,7 @@ import six
 
 from certbot import errors
 from certbot.compat import os
+from certbot.compat import security
 from certbot.tests import util as test_util
 
 
@@ -395,7 +396,7 @@ class TestFullCheckpointsReverter(test_util.ConfigTestCase):
     def test_view_config_changes_bad_backups_dir(self):
         # There shouldn't be any "in progress directories when this is called
         # It must just be clean checkpoints
-        os.makedirs(os.path.join(self.config.backup_dir, "in_progress"))
+        security.makedirs(os.path.join(self.config.backup_dir, "in_progress"))
 
         self.assertRaises(
             errors.ReverterError, self.reverter.view_config_changes)
