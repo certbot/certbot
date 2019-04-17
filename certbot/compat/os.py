@@ -36,7 +36,7 @@ del ourselves, std_os, std_sys
 # os.replace on Windows for Python 3, that will do the same than on POSIX. Hopefully also, only
 # Python 3 is supported for Certbot. So we can rely on os.rename on Linux, and os.replace
 # on Windows.
-def rename(*unused_args, **unused_kwargs):
+def rename(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
     """Method os.rename() is forbidden"""
     raise RuntimeError('Usage of os.rename() is forbidden. '  # pragma: no cover
                        'Use certbot.compat.misc.os_rename() instead.')
