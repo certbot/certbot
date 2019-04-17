@@ -198,12 +198,12 @@ def safe_open(path, mode="w", chmod=None):
         if ``None``.
 
     """
-    open_args = ()  # type: Union[Tuple[()], Tuple[int]]
-    if chmod is not None:
-        open_args = (chmod,)
-    fdopen_args = ()  # type: Union[Tuple[()], Tuple[int]]
-    fd = security.open(path, os.O_CREAT | os.O_EXCL | os.O_RDWR, *open_args)
-    return os.fdopen(fd, mode, *fdopen_args)
+    if os.path.exists(path):
+        raise OSError(errno.EEXIST, 'File exists', path)
+    file_handler = open(path, mode)
+    if chmod:
+        security.chmod(path, chmod)
+    return file_handler
 
 
 def _unique_file(path, filename_pat, count, chmod, mode):
