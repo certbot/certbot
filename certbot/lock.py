@@ -13,7 +13,6 @@ else:
 from acme.magic_typing import Optional  # pylint: disable=unused-import, no-name-in-module
 
 from certbot import errors
-from certbot.compat import security
 from certbot.compat import os
 from certbot.compat import security
 
