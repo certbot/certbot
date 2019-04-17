@@ -162,7 +162,7 @@ def rename_renewal_config(prev_name, new_name, cli_config):
         raise errors.ConfigurationError("The new certificate name "
             "is already in use.")
     try:
-        os.rename(prev_filename, new_filename)
+        misc.os_rename(prev_filename, new_filename)
     except OSError:
         raise errors.ConfigurationError("Please specify a valid filename "
             "for the new certificate name.")
