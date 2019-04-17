@@ -95,7 +95,7 @@ def makedirs(file_path, mode=0o777):  # pylint: disable=function-redefined
         os.mkdir = orig_mkdir_fn
 
 
-def mkdir(file_path, mode=0o777, mkdir_fn=None):  # pylint: disable=function-redefined
+def mkdir(file_path, mode=0o777, mkdir_fn=None):
     # type: (str, int, Callable[[str, int], None]) -> None
     """
     Wrapper of original os.mkdir function, that will ensure on Windows that given mode
