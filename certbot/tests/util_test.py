@@ -192,6 +192,8 @@ class CheckPermissionsTest(test_util.TempDirTestCase):
         security.chmod(self.tempdir, 0o600)
         self.assertTrue(self._call(0o600))
 
+    # TODO: reactivate the test when all logic from windows file permissions is merged.
+    @test_util.broken_on_windows
     def test_wrong_mode(self):
         security.chmod(self.tempdir, 0o400)
         try:
