@@ -583,7 +583,7 @@ class Reverter(object):
             timestamp = self._checkpoint_timestamp()
             final_dir = os.path.join(self.config.backup_dir, timestamp)
             try:
-                misc.rename(self.config.in_progress_dir, final_dir)
+                misc.os_rename(self.config.in_progress_dir, final_dir)
                 return
             except OSError:
                 logger.warning("Extreme, unexpected race condition, retrying (%s)", timestamp)
