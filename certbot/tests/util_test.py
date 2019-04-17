@@ -271,7 +271,7 @@ class UniqueLineageNameTest(test_util.TempDirTestCase):
             f.close()
 
     def test_failure(self):
-        with mock.patch("six.moves.builtins.open", side_effect=OSError(errno.EIO)):
+        with mock.patch("certbot.compat.security.open", side_effect=OSError(errno.EIO)):
             self.assertRaises(OSError, self._call, "wow")
 
 

@@ -189,21 +189,21 @@ def make_or_verify_dir(directory, mode=0o755, strict=False):
             raise
 
 
-def safe_open(path, mode='w', chmod=None):
+def safe_open(path, mode="w", chmod=None):
     """Safely open a file.
 
     :param str path: Path to a file.
     :param str mode: Same os `mode` for `open`.
     :param int chmod: Same as `mode` for `os.open`, uses Python defaults
-        if ``None``.`.
+        if ``None``.
 
     """
-    if os.path.exists(path):
-        raise OSError(errno.EEXIST, 'File exists', path)
-    file_handler = open(path, mode)
-    if chmod:
-        security.chmod(path, chmod)
-    return file_handler
+    open_args = ()  # type: Union[Tuple[()], Tuple[int]]
+    if chmod is not None:
+        open_args = (chmod,)
+    fdopen_args = ()  # type: Union[Tuple[()], Tuple[int]]
+    fd = security.open(path, os.O_CREAT | os.O_EXCL | os.O_RDWR, *open_args)
+    return os.fdopen(fd, mode, *fdopen_args)
 
 
 def _unique_file(path, filename_pat, count, chmod, mode):

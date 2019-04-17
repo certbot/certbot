@@ -89,8 +89,8 @@ class PluginStorage(object):
             with os.fdopen(security.open(
                     self._storagepath,
                     os.O_WRONLY | os.O_CREAT | os.O_TRUNC,
-                    0o600), 'w') as file_handler:
-                file_handler.write(serialized)
+                    0o600), 'w') as fh:
+                fh.write(serialized)
         except IOError as e:
             errmsg = "Could not write PluginStorage data to file {0} : {1}".format(
                 self._storagepath, str(e))

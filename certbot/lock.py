@@ -15,6 +15,7 @@ from acme.magic_typing import Optional  # pylint: disable=unused-import, no-name
 from certbot import errors
 from certbot.compat import security
 from certbot.compat import os
+from certbot.compat import security
 
 logger = logging.getLogger(__name__)
 
@@ -210,14 +211,14 @@ class _WindowsLockMechanism(_BaseLockMechanism):
     A Windows lock file mechanism.
     By default on Windows, acquiring a file handler gives exclusive access to the process
     and results in an effective lock. However, it is possible to explicitly acquire the
-    file handler in shared access in terms of read and write, and this is done by os.open
+    file handler in shared access in terms of read and write, and this is done by security.open
     and io.open in Python. So an explicit lock needs to be done through the call of
     msvcrt.locking, that will lock the first byte of the file. In theory, it is also
     possible to access a file in shared delete access, allowing other processes to delete an
     opened file. But this needs also to be done explicitly by all processes using the Windows
     low level APIs, and Python does not do it. As of Python 3.7 and below, Python developers
     state that deleting a file opened by a process from another process is not possible with
-    os.open and io.open.
+    security.open and io.open.
     Consequently, mscvrt.locking is sufficient to obtain an effective lock, and the race
     condition encountered on Linux is not possible on Windows, leading to a simpler workflow.
     """
