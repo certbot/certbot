@@ -49,7 +49,7 @@ def get_current_user():
         return win32security.LookupAccountSid(None, current_user)[0]
 
 
-def open(file_path, flags, mode=0o777):  # pylint: disable=function-redefined,redefined-builtin
+def open(file_path, flags, mode=0o777):  # pylint: disable=redefined-builtin
     # type: (str, int, int) -> int
     """
     Wrapper of original os.open function, that will ensure on Windows that given mode
