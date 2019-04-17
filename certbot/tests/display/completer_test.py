@@ -13,7 +13,7 @@ from six.moves import reload_module  # pylint: disable=import-error
 from acme.magic_typing import List  # pylint: disable=unused-import,no-name-in-module
 
 from certbot.compat import os  # pylint: disable=ungrouped-imports
-from certbot.compat import security  # pylint: disable=ungroupd-imports
+from certbot.compat import security  # pylint: disable=ungrouped-imports
 import certbot.tests.util as test_util  # pylint: disable=ungrouped-imports
 
 
