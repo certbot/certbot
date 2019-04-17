@@ -4,7 +4,7 @@ from __future__ import absolute_import
 import os  # pylint: disable=os-module-forbidden
 
 
-def open(file_path, flags, mode=0o777):  # pylint: disable=function-redefined,redefined-builtin
+def open(file_path, flags, mode=0o777):  # pylint: disable=redefined-builtin
     # type: (str, int, int) -> int
     """
     Wrapper of original os.open function, that will ensure on Windows that given mode
