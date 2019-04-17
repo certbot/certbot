@@ -7,6 +7,7 @@ from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-
 
 from certbot import errors
 from certbot.compat import os
+from certbot.compat import security
 from certbot.tests import util
 
 
@@ -41,7 +42,7 @@ class ValidateHookTest(util.TempDirTestCase):
     def test_not_executable(self):
         file_path = os.path.join(self.tempdir, "foo")
         # create a non-executable file
-        os.close(os.open(file_path, os.O_CREAT | os.O_WRONLY, 0o666))
+        os.close(security.open(file_path, os.O_CREAT | os.O_WRONLY, 0o666))
         # prevent unnecessary modifications to PATH
         with mock.patch("certbot.hooks.plug_util.path_surgery"):
             self.assertRaises(errors.HookCommandNotFound,
