@@ -262,6 +262,21 @@ def _generate_dacl(user_sid, mode):
     return dacl
 
 
+def _analyze_mode(mode):
+    return {
+        'user': {
+            'read': mode & stat.S_IRUSR,
+            'write': mode & stat.S_IWUSR,
+            'execute': mode & stat.S_IXUSR,
+        },
+        'all': {
+            'read': mode & stat.S_IROTH,
+            'write': mode & stat.S_IWOTH,
+            'execute': mode & stat.S_IXOTH,
+        },
+    }
+
+
 def _copy_win_ownership(src, dst):
     security_src = win32security.GetFileSecurity(src, win32security.OWNER_SECURITY_INFORMATION)
     user_src = security_src.GetSecurityDescriptorOwner()
@@ -346,18 +361,3 @@ def _generate_windows_flags(rights_desc):
         flag = flag | ntsecuritycon.FILE_GENERIC_EXECUTE
 
     return flag
-
-
-def _analyze_mode(mode):
-    return {
-        'user': {
-            'read': mode & stat.S_IRUSR,
-            'write': mode & stat.S_IWUSR,
-            'execute': mode & stat.S_IXUSR,
-        },
-        'all': {
-            'read': mode & stat.S_IROTH,
-            'write': mode & stat.S_IWOTH,
-            'execute': mode & stat.S_IXOTH,
-        },
-    }
