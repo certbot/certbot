@@ -414,6 +414,9 @@ def test_ecdsa(context):
 
 def test_ocsp_must_staple(context):
     """Test that OCSP Must-Staple is correctly set in the generated certificate."""
+    if context.acme_server == 'pebble':
+        pytest.skip('Pebble does not support OCSP Must-Staple.')
+
     certname = context.get_domain('must-staple')
     context.certbot(['auth', '--must-staple', '--domains', certname])
 
