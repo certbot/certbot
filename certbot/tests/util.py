@@ -27,7 +27,7 @@ from certbot import lock
 from certbot import storage
 from certbot import util
 from certbot.compat import os
-from certbot.compat import security
+from certbot.compat import filesystem
 from certbot.display import util as display_util
 
 
@@ -139,7 +139,7 @@ def make_lineage(config_dir, testfile):
 
     for directory in (archive_dir, conf_dir, live_dir,):
         if not os.path.exists(directory):
-            security.makedirs(directory)
+            filesystem.makedirs(directory)
 
     sample_archive = vector_path('sample-archive')
     for kind in os.listdir(sample_archive):
@@ -329,7 +329,7 @@ class TempDirTestCase(unittest.TestCase):
         # Normally mkdtemp() generates a directory with mode 0o700. But this is not enforced on
         # Windows, as standard os library is extremely limited with modes on this platform.
         # So we use our own functions to apply strict permissions on this folder.
-        security.chmod(self.tempdir, 0o700)
+        filesystem.chmod(self.tempdir, 0o700)
 
     def tearDown(self):
         """Execute after test"""
@@ -345,7 +345,7 @@ class TempDirTestCase(unittest.TestCase):
 
         def handle_rw_files(_, path, __):  # pragma: no cover
             """Handle read-only files, that will fail to be removed on Windows."""
-            security.chmod(path, stat.S_IWRITE)
+            filesystem.chmod(path, stat.S_IWRITE)
             os.remove(path)
         shutil.rmtree(self.tempdir, onerror=handle_rw_files)
 

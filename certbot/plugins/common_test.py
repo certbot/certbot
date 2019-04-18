@@ -14,7 +14,7 @@ from certbot import achallenges
 from certbot import crypto_util
 from certbot import errors
 from certbot.compat import os
-from certbot.compat import security
+from certbot.compat import filesystem
 from certbot.tests import acme_util
 from certbot.tests import util as test_util
 
@@ -95,7 +95,7 @@ class InstallerTest(test_util.ConfigTestCase):
 
     def setUp(self):
         super(InstallerTest, self).setUp()
-        security.mkdir(self.config.config_dir)
+        filesystem.mkdir(self.config.config_dir)
         from certbot.plugins.common import Installer
 
         with mock.patch("certbot.plugins.common.reverter.Reverter"):

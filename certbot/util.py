@@ -22,7 +22,7 @@ from certbot import constants
 from certbot import errors
 from certbot import lock
 from certbot.compat import os
-from certbot.compat import security
+from certbot.compat import filesystem
 
 logger = logging.getLogger(__name__)
 
@@ -178,13 +178,13 @@ def make_or_verify_dir(directory, mode=0o755, strict=False):
 
     """
     try:
-        security.makedirs(directory, mode)
+        filesystem.makedirs(directory, mode)
     except OSError as exception:
         if exception.errno == errno.EEXIST:
-            if strict and not security.check_permissions(directory, mode):
+            if strict and not filesystem.check_permissions(directory, mode):
                 raise errors.Error(
                     '{0} exists, but it should be owned by user {1} with permissions {2}'
-                    .format(directory, security.get_current_user(), oct(mode)))
+                    .format(directory, filesystem.get_current_user(), oct(mode)))
         else:
             raise
 
@@ -202,7 +202,7 @@ def safe_open(path, mode="w", chmod=None):
         raise OSError(errno.EEXIST, 'File exists', path)
     file_handler = open(path, mode)
     if chmod:
-        security.chmod(path, chmod)
+        filesystem.chmod(path, chmod)
     return file_handler
 
 

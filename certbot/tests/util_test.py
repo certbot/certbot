@@ -10,7 +10,7 @@ from six.moves import reload_module  # pylint: disable=import-error
 import certbot.tests.util as test_util
 from certbot import errors
 from certbot.compat import os
-from certbot.compat import security
+from certbot.compat import filesystem
 
 
 class RunScriptTest(unittest.TestCase):
@@ -91,7 +91,7 @@ class LockDirUntilExit(test_util.TempDirTestCase):
     @mock.patch('certbot.util.atexit_register')
     def test_it(self, mock_register, mock_logger):
         subdir = os.path.join(self.tempdir, 'subdir')
-        security.mkdir(subdir)
+        filesystem.mkdir(subdir)
         self._call(self.tempdir)
         self._call(subdir)
         self._call(subdir)
@@ -142,7 +142,7 @@ class MakeOrVerifyDirTest(test_util.TempDirTestCase):
         super(MakeOrVerifyDirTest, self).setUp()
 
         self.path = os.path.join(self.tempdir, "foo")
-        security.mkdir(self.path, 0o600)
+        filesystem.mkdir(self.path, 0o600)
 
     def _call(self, directory, mode):
         from certbot.util import make_or_verify_dir
@@ -152,17 +152,17 @@ class MakeOrVerifyDirTest(test_util.TempDirTestCase):
         path = os.path.join(self.tempdir, "bar")
         self._call(path, 0o650)
         self.assertTrue(os.path.isdir(path))
-        self.assertTrue(security.check_mode(path, 0o650))
+        self.assertTrue(filesystem.check_mode(path, 0o650))
 
     def test_existing_correct_mode_does_not_fail(self):
         self._call(self.path, 0o600)
-        self.assertTrue(security.check_mode(self.path, 0o600))
+        self.assertTrue(filesystem.check_mode(self.path, 0o600))
 
     def test_existing_wrong_mode_fails(self):
         self.assertRaises(errors.Error, self._call, self.path, 0o644)
 
     def test_reraises_os_error(self):
-        with mock.patch.object(security, "makedirs") as makedirs:
+        with mock.patch.object(filesystem, "makedirs") as makedirs:
             makedirs.side_effect = OSError()
             self.assertRaises(OSError, self._call, "bar", 12312312)
 
@@ -176,14 +176,14 @@ class CheckPermissionsTest(test_util.TempDirTestCase):
     """
 
     def _call(self, mode):
-        return security.check_permissions(self.tempdir, mode)
+        return filesystem.check_permissions(self.tempdir, mode)
 
     def test_ok_mode(self):
-        security.chmod(self.tempdir, 0o600)
+        filesystem.chmod(self.tempdir, 0o600)
         self.assertTrue(self._call(0o600))
 
     def test_wrong_mode(self):
-        security.chmod(self.tempdir, 0o400)
+        filesystem.chmod(self.tempdir, 0o400)
         self.assertFalse(self._call(0o644))
 
 
@@ -209,8 +209,8 @@ class UniqueFileTest(test_util.TempDirTestCase):
     def test_right_mode(self):
         fd1, name1 = self._call(0o700)
         fd2, name2 = self._call(0o600)
-        self.assertTrue(security.check_mode(name1, 0o700))
-        self.assertTrue(security.check_mode(name2, 0o600))
+        self.assertTrue(filesystem.check_mode(name1, 0o700))
+        self.assertTrue(filesystem.check_mode(name2, 0o600))
         fd1.close()
         fd2.close()
 

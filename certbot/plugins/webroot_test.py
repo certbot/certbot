@@ -18,7 +18,7 @@ from acme import challenges
 from certbot import achallenges
 from certbot import errors
 from certbot.compat import os
-from certbot.compat import security
+from certbot.compat import filesystem
 from certbot.display import util as display_util
 from certbot.tests import acme_util
 from certbot.tests import util as test_util
@@ -132,16 +132,16 @@ class AuthenticatorTest(unittest.TestCase):
         permission_canary = os.path.join(self.path, "rnd")
         with open(permission_canary, "w") as f:
             f.write("thingimy")
-        security.chmod(self.path, 0o000)
+        filesystem.chmod(self.path, 0o000)
         try:
             open(permission_canary, "r")
             print("Warning, running tests as root skips permissions tests...")
         except IOError:
             # ok, permissions work, test away...
             self.assertRaises(errors.PluginError, self.auth.perform, [])
-        security.chmod(self.path, 0o700)
+        filesystem.chmod(self.path, 0o700)
 
-    @mock.patch("certbot.plugins.webroot.security.copy_ownership_and_apply_mode")
+    @mock.patch("certbot.plugins.webroot.filesystem.copy_ownership_and_apply_mode")
     def test_failed_chown(self, mock_chown):
         mock_chown.side_effect = OSError(errno.EACCES, "msg")
         self.auth.perform([self.achall])  # exception caught and logged
@@ -167,15 +167,15 @@ class AuthenticatorTest(unittest.TestCase):
         # Remove exec bit from permission check, so that it
         # matches the file
         self.auth.perform([self.achall])
-        self.assertTrue(security.check_owner(self.validation_path))
-        self.assertTrue(security.check_mode(self.validation_path, 0o644))
+        self.assertTrue(filesystem.check_owner(self.validation_path))
+        self.assertTrue(filesystem.check_mode(self.validation_path, 0o644))
 
         # Check permissions of the directories
         for dirpath, dirnames, _ in os.walk(self.path):
             for directory in dirnames:
                 full_path = os.path.join(dirpath, directory)
-                self.assertTrue(security.check_owner(full_path))
-                self.assertTrue(security.check_mode(full_path, 0o755))
+                self.assertTrue(filesystem.check_owner(full_path))
+                self.assertTrue(filesystem.check_mode(full_path, 0o755))
 
         parent_gid = os.stat(self.path).st_gid
         parent_uid = os.stat(self.path).st_uid
@@ -201,7 +201,7 @@ class AuthenticatorTest(unittest.TestCase):
         self.assertFalse(os.path.exists(self.partial_root_challenge_path))
 
     def test_perform_cleanup_existing_dirs(self):
-        security.mkdir(self.partial_root_challenge_path)
+        filesystem.mkdir(self.partial_root_challenge_path)
         self.auth.prepare()
         self.auth.perform([self.achall])
         self.auth.cleanup([self.achall])
@@ -217,7 +217,7 @@ class AuthenticatorTest(unittest.TestCase):
             domain="thing.com", account_key=KEY)
 
         bingo_validation_path = "YmluZ28"
-        security.mkdir(self.partial_root_challenge_path)
+        filesystem.mkdir(self.partial_root_challenge_path)
         self.auth.prepare()
         self.auth.perform([bingo_achall, self.achall])
 
@@ -233,7 +233,7 @@ class AuthenticatorTest(unittest.TestCase):
         self.auth.perform([self.achall])
 
         leftover_path = os.path.join(self.root_challenge_path, 'leftover')
-        security.mkdir(leftover_path)
+        filesystem.mkdir(leftover_path)
 
         self.auth.cleanup([self.achall])
         self.assertFalse(os.path.exists(self.validation_path))

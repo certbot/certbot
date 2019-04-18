@@ -7,7 +7,7 @@ from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-
 
 from certbot import errors
 from certbot.compat import os
-from certbot.compat import security
+from certbot.compat import filesystem
 from certbot.tests import util
 
 
@@ -42,7 +42,7 @@ class ValidateHookTest(util.TempDirTestCase):
     def test_not_executable(self):
         file_path = os.path.join(self.tempdir, "foo")
         # create a non-executable file
-        os.close(security.open(file_path, os.O_CREAT | os.O_WRONLY, 0o666))
+        os.close(filesystem.open(file_path, os.O_CREAT | os.O_WRONLY, 0o666))
         # prevent unnecessary modifications to PATH
         with mock.patch("certbot.hooks.plug_util.path_surgery"):
             self.assertRaises(errors.HookCommandNotFound,
@@ -96,7 +96,7 @@ class PreHookTest(HookTest):
         super(PreHookTest, self).setUp()
         self.config.pre_hook = "foo"
 
-        security.makedirs(self.config.renewal_pre_hooks_dir)
+        filesystem.makedirs(self.config.renewal_pre_hooks_dir)
         self.dir_hook = os.path.join(self.config.renewal_pre_hooks_dir, "bar")
         create_hook(self.dir_hook)
 
@@ -174,7 +174,7 @@ class PostHookTest(HookTest):
         super(PostHookTest, self).setUp()
 
         self.config.post_hook = "bar"
-        security.makedirs(self.config.renewal_post_hooks_dir)
+        filesystem.makedirs(self.config.renewal_post_hooks_dir)
         self.dir_hook = os.path.join(self.config.renewal_post_hooks_dir, "foo")
         create_hook(self.dir_hook)
 
@@ -376,7 +376,7 @@ class RenewHookTest(RenewalHookTest):
         super(RenewHookTest, self).setUp()
         self.config.renew_hook = "foo"
 
-        security.makedirs(self.config.renewal_deploy_hooks_dir)
+        filesystem.makedirs(self.config.renewal_deploy_hooks_dir)
         self.dir_hook = os.path.join(self.config.renewal_deploy_hooks_dir,
                                      "bar")
         create_hook(self.dir_hook)
@@ -489,7 +489,7 @@ def create_hook(file_path):
 
     """
     open(file_path, "w").close()
-    security.chmod(file_path, os.stat(file_path).st_mode | stat.S_IXUSR)
+    filesystem.chmod(file_path, os.stat(file_path).st_mode | stat.S_IXUSR)
 
 
 if __name__ == '__main__':

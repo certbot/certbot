@@ -36,7 +36,7 @@ del ourselves, std_os, std_sys
 def geteuid(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
     """Method os.geteuid() is forbidden"""
     raise RuntimeError('Usage of os.geteuid() is forbidden. '  # pragma: no cover
-                       'Use certbot.compat.security.get_current_user() instead.')
+                       'Use certbot.compat.filesystem.get_current_user() instead.')
 
 
 # Because uid is not a concept on Windows, chown is useless. In fact, it is not even available
@@ -45,8 +45,8 @@ def geteuid(*unused_args, **unused_kwargs):  # pylint: disable=function-redefine
 def chown(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
     """Method os.chown() is forbidden"""
     raise RuntimeError('Usage of os.chown() is forbidden.'  # pragma: no cover
-                       'Use certbot.compat.security.take_ownership() or '
-                       'certbot.compat.security.copy_ownership_and_apply_mode() instead.')
+                       'Use certbot.compat.filesystem.take_ownership() or '
+                       'certbot.compat.filesystem.copy_ownership_and_apply_mode() instead.')
 
 
 # Because of the blocking strategy on file handlers on Windows, rename to not behave as expected
@@ -66,7 +66,7 @@ def rename(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
 # default definition, giving effectively at least read permissions to any one, as the default
 # permissions on root path will be inherit by the file (as NTFS state), and root path can be read
 # by anyone. So the given mode will be translated into a secured and not inherited DACL that will
-# be applied to this file using security.chmod, that will call internally the win32security
+# be applied to this file using filesystem.chmod, that will call internally the win32security
 # module to construct and apply the DACL. Complete security model to translate a POSIX mode for
 # something usable on Windows for Certbot can be found here:
 # https://github.com/certbot/certbot/issues/6356
@@ -76,30 +76,30 @@ def rename(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
 def chmod(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
     """Method os.chmod() is forbidden"""
     raise RuntimeError('Usage of os.chmod() is forbidden. '  # pragma: no cover
-                       'Use certbot.compat.security.chmod() instead.')
+                       'Use certbot.compat.filesystem.chmod() instead.')
 
 
 # The os.open function on Windows will have the same effect than a bare os.chown towards the given
 # mode, and will create a file with the same flaws that what have been described for os.chown.
-# So upon file creation, security.take_ownership will be called to ensure current user is the owner
-# of the file, and security.chmod will do the same thing than for the modified os.chown.
+# So upon file creation, filesystem.take_ownership will be called to ensure current user is the owner
+# of the file, and filesystem.chmod will do the same thing than for the modified os.chown.
 # Internally, take_ownership will update the existing metdata of the file, to set the current
 # username (resolved thanks to win32api module) as the owner of the file.
 def open(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
     """Method os.open() is forbidden"""
     raise RuntimeError('Usage of os.open() is forbidden. '  # pragma: no cover
-                       'Use certbot.compat.security.open() instead.')
+                       'Use certbot.compat.filesystem.open() instead.')
 
 
 # Very similarly to os.open, os.mkdir has the same effect on Windows, to create an unsecured
-# folder. Same mitigation is provided using security.take_ownership and security.chmod.
+# folder. Same mitigation is provided using filesystem.take_ownership and filesystem.chmod.
 # On top of that, we need to handle the fact that os.mkdir is called recursively by os.makedirs.
 # This is done by protecting the original os.mkdir to have the real logic, call it during the
 # recurrence and apply immediately the security model on every processed folder.
 def mkdir(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
     """Method os.mkdir() is forbidden"""
     raise RuntimeError('Usage of os.mkdir() is forbidden. '  # pragma: no cover
-                       'Use certbot.compat.security.mkdir() instead.')
+                       'Use certbot.compat.filesystem.mkdir() instead.')
 
 
 # As said above, os.makedirs would call the original os.mkdir function recursively, creating the
@@ -110,4 +110,4 @@ def mkdir(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
 def makedirs(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
     """Method os.makedirs() is forbidden"""
     raise RuntimeError('Usage of os.makedirs() is forbidden. '  # pragma: no cover
-                       'Use certbot.compat.security.makedirs() instead.')
+                       'Use certbot.compat.filesystem.makedirs() instead.')

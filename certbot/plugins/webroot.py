@@ -20,7 +20,7 @@ from certbot import errors
 from certbot import interfaces
 from certbot import util as certbot_util
 from certbot.compat import os
-from certbot.compat import security
+from certbot.compat import filesystem
 from certbot.display import ops
 from certbot.display import util as display_util
 from certbot.plugins import common
@@ -174,12 +174,12 @@ to serve all files under specified web root ({0})."""
                 # as it does not correspond to a folder path ('/' or 'C:')
                 for prefix in sorted(util.get_prefixes(self.full_roots[name])[:-1], key=len):
                     try:
-                        security.mkdir(prefix)
+                        filesystem.mkdir(prefix)
                         self._created_dirs.append(prefix)
                         try:
                             # Set owner like parent directory if possible,
                             # apply mode for Linux/Windows
-                            security.copy_ownership_and_apply_mode(path, prefix, 0o755, group=True)
+                            filesystem.copy_ownership_and_apply_mode(path, prefix, 0o755, group=True)
                         except (OSError, AttributeError) as exception:
                             logger.info("Unable to change owner and uid of webroot directory")
                             logger.debug("Error was: %s", exception)

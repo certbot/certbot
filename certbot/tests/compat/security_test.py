@@ -1,6 +1,6 @@
 """Unit test for security module."""
 from certbot.compat import os
-from certbot.compat import security
+from certbot.compat import filesystem
 from certbot.tests.util import TempDirTestCase
 
 
@@ -11,13 +11,13 @@ class SecurityTest(TempDirTestCase):
 
         open(probe, 'w').close()
 
-        security.chmod(probe, 0o755)
+        filesystem.chmod(probe, 0o755)
 
-        self.assertTrue(security.check_mode(probe, 0o755))
+        self.assertTrue(filesystem.check_mode(probe, 0o755))
 
-        security.chmod(probe, 0o700)
+        filesystem.chmod(probe, 0o700)
 
-        self.assertFalse(security.check_mode(probe, 0o755))
+        self.assertFalse(filesystem.check_mode(probe, 0o755))
 
     def test_copy_auth(self):
         probe1 = os.path.join(self.tempdir, 'probe1')
@@ -26,14 +26,14 @@ class SecurityTest(TempDirTestCase):
         open(probe1, 'w').close()
         open(probe2, 'w').close()
 
-        security.chmod(probe1, 0o700)
-        security.chmod(probe2, 0o755)
+        filesystem.chmod(probe1, 0o700)
+        filesystem.chmod(probe2, 0o755)
 
-        self.assertFalse(security.check_mode(probe2, 0o700))
+        self.assertFalse(filesystem.check_mode(probe2, 0o700))
 
-        security.copy_ownership_and_apply_mode(probe1, probe2, 0o700)
+        filesystem.copy_ownership_and_apply_mode(probe1, probe2, 0o700)
 
-        self.assertTrue(security.check_mode(probe2, 0o700))
+        self.assertTrue(filesystem.check_mode(probe2, 0o700))
 
     def test_check_modes_symlink(self):
         probe = os.path.join(self.tempdir, 'probe')
@@ -44,20 +44,20 @@ class SecurityTest(TempDirTestCase):
         os.symlink(probe, link_abs)
         os.symlink(os.path.join('.', 'probe'), link_rel)
 
-        security.chmod(probe, 0o700)
+        filesystem.chmod(probe, 0o700)
 
-        self.assertTrue(security.check_mode(link_abs, 0o700))
-        self.assertTrue(security.check_mode(link_rel, 0o700))
+        self.assertTrue(filesystem.check_mode(link_abs, 0o700))
+        self.assertTrue(filesystem.check_mode(link_rel, 0o700))
 
     def test_check_owner(self):
         probe = os.path.join(self.tempdir, 'probe')
 
         open(probe, 'w').close()
 
-        self.assertTrue(security.check_owner(probe))
+        self.assertTrue(filesystem.check_owner(probe))
 
     def test_current_user(self):
-        current_user = security.get_current_user()
+        current_user = filesystem.get_current_user()
 
         self.assertTrue(isinstance(current_user, str))
 
@@ -65,6 +65,6 @@ class SecurityTest(TempDirTestCase):
         probe = os.path.join(self.tempdir, 'probe')
 
         open(probe, 'w').close()
-        security.chmod(probe, 0o700)
+        filesystem.chmod(probe, 0o700)
 
-        self.assertTrue(security.check_permissions(probe, 0o700))
+        self.assertTrue(filesystem.check_permissions(probe, 0o700))

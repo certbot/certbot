@@ -15,7 +15,7 @@ from certbot import constants
 from certbot import errors
 from certbot import util
 from certbot.compat import os
-from certbot.compat import security
+from certbot.compat import filesystem
 from certbot.tests import util as test_util
 
 
@@ -261,7 +261,7 @@ class TempHandlerTest(unittest.TestCase):
 
     def test_permissions(self):
         self.assertTrue(
-            security.check_permissions(self.handler.path, 0o600))
+            filesystem.check_permissions(self.handler.path, 0o600))
 
     def test_delete(self):
         self.handler.close()
