@@ -40,7 +40,7 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
         try:
             assert not process.poll()
             misc.check_until_timeout('http://localhost:{0}'.format(self.http_01_port))
-            yield True
+            yield
         finally:
             process.terminate()
             process.wait()
@@ -48,7 +48,7 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
     def certbot_test_nginx(self, args):
         """
         Main command to execute certbot using the nginx plugin.
-        :param str[] args: list of arguments to pass to nginx
+        :param list args: list of arguments to pass to nginx
         """
         command = ['--authenticator', 'nginx', '--installer', 'nginx',
                    '--nginx-server-root', self.nginx_root]
