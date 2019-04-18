@@ -1,11 +1,11 @@
 """Tests for certbot_dns_cloudxns.dns_cloudxns."""
 
-import os
 import unittest
 
 import mock
 from requests.exceptions import HTTPError, RequestException
 
+from certbot.compat import os
 from certbot.plugins import dns_test_common
 from certbot.plugins import dns_test_common_lexicon
 from certbot.tests import util as test_util

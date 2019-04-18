@@ -15,13 +15,8 @@ if ! command -v git ; then
         exit 1
     fi
 fi
-# 0.17.0 is the oldest version of letsencrypt-auto that has precompiled
-# cryptography and the tagged commit is in master. 0.16.0 was the first version
-# to use precompiled cryptography, but the release PR was squashed losing the
-# commit. We want to use a precompiled version of cryptography for stability.
-# Previous versions that have to compile against OpenSSL on installation
-# started failing on newer distros with newer versions of OpenSSL.
-INITIAL_VERSION="0.17.0"
+# 0.18.0 is the oldest version of letsencrypt-auto that works on Fedora 26+.
+INITIAL_VERSION="0.18.0"
 git checkout -f "v$INITIAL_VERSION" letsencrypt-auto
 if ! ./letsencrypt-auto -v --debug --version --no-self-upgrade 2>&1 | tail -n1 | grep "^certbot $INITIAL_VERSION$" ; then
     echo initial installation appeared to fail

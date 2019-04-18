@@ -1,6 +1,5 @@
 """Common utilities for certbot_nginx."""
 import copy
-import os
 import shutil
 import tempfile
 import unittest
@@ -12,6 +11,7 @@ import pkg_resources
 import zope.component
 
 from certbot import configuration
+from certbot.compat import os
 from certbot.plugins import common
 from certbot.tests import util as test_util
 
