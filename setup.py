@@ -3,7 +3,8 @@ import os
 import re
 import sys
 
-from setuptools import find_packages, setup
+from distutils.version import StrictVersion
+from setuptools import find_packages, setup, __version__ as setuptools_version
 from setuptools.command.test import test as TestCommand
 
 # Workaround for http://bugs.python.org/issue8876, see
@@ -52,15 +53,13 @@ install_requires = [
     'zope.interface',
 ]
 
-# Add pywin32 on Windows platform to handle low-level system calls.
-# This dependency needs to be added dynamically to avoid being here
-# when certbot-oldest tests are launched.
-# Indeed, during these tests, a requirements constraints file will be
-# passed to pip, pip will ignore platform_system directive and try
-# to install pywin32 on Unix systems.
-# This would fail and break certbot-oldest tests.
-if os.environ.get('CERTBOT_OLDEST') != '1':
-    install_requires.append('pywin32;platform_system=="Windows"')
+# Add pywin32 on Windows platforms to handle low-level system calls.
+# This dependency needs to be added using environment markers to avoid its installation on Linux.
+# However environment markers are supported only with setuptools >= 36.2.
+# So this dependency is not added for old Linux distributions with old setuptools,
+# in order to allow these systems to build certbot from sources.
+if StrictVersion(setuptools_version) >= StrictVersion('36.2'):
+    install_requires.append('pywin32 : sys.platform == \'win32\'')
 
 dev_extras = [
     'astroid==1.6.5',
