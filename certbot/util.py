@@ -23,7 +23,7 @@ from certbot import errors
 from certbot import lock
 from certbot.compat import misc
 from certbot.compat import os
-from certbot.compat import security
+from certbot.compat import filesystem
 
 logger = logging.getLogger(__name__)
 
@@ -220,7 +220,7 @@ def safe_open(path, mode="w", chmod=None):
     if chmod is not None:
         open_args = (chmod,)
     fdopen_args = ()  # type: Union[Tuple[()], Tuple[int]]
-    fd = security.open(path, os.O_CREAT | os.O_EXCL | os.O_RDWR, *open_args)
+    fd = filesystem.open(path, os.O_CREAT | os.O_EXCL | os.O_RDWR, *open_args)
     return os.fdopen(fd, mode, *fdopen_args)
 
 

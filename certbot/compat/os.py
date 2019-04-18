@@ -40,4 +40,4 @@ del ourselves, std_os, std_sys
 def open(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
     """Method os.open() is forbidden"""
     raise RuntimeError('Usage of os.open() is forbidden. '  # pragma: no cover
-                       'Use certbot.compat.security.open() instead.')
+                       'Use certbot.compat.filesystem.open() instead.')

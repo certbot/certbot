@@ -6,7 +6,7 @@ from acme.magic_typing import Any, Dict  # pylint: disable=unused-import, no-nam
 
 from certbot import errors
 from certbot.compat import os
-from certbot.compat import security
+from certbot.compat import filesystem
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +86,7 @@ class PluginStorage(object):
             logger.error(errmsg)
             raise errors.PluginStorageError(errmsg)
         try:
-            with os.fdopen(security.open(
+            with os.fdopen(filesystem.open(
                     self._storagepath,
                     os.O_WRONLY | os.O_CREAT | os.O_TRUNC,
                     0o600), 'w') as fh:
