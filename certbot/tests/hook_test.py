@@ -7,7 +7,7 @@ from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-
 
 from certbot import errors
 from certbot.compat import os
-from certbot.compat import security
+from certbot.compat import filesystem
 from certbot.tests import util
 
 
@@ -96,7 +96,7 @@ class PreHookTest(HookTest):
         super(PreHookTest, self).setUp()
         self.config.pre_hook = "foo"
 
-        security.makedirs(self.config.renewal_pre_hooks_dir)
+        filesystem.makedirs(self.config.renewal_pre_hooks_dir)
         self.dir_hook = os.path.join(self.config.renewal_pre_hooks_dir, "bar")
         create_hook(self.dir_hook)
 
@@ -174,7 +174,7 @@ class PostHookTest(HookTest):
         super(PostHookTest, self).setUp()
 
         self.config.post_hook = "bar"
-        security.makedirs(self.config.renewal_post_hooks_dir)
+        filesystem.makedirs(self.config.renewal_post_hooks_dir)
         self.dir_hook = os.path.join(self.config.renewal_post_hooks_dir, "foo")
         create_hook(self.dir_hook)
 
@@ -376,7 +376,7 @@ class RenewHookTest(RenewalHookTest):
         super(RenewHookTest, self).setUp()
         self.config.renew_hook = "foo"
 
-        security.makedirs(self.config.renewal_deploy_hooks_dir)
+        filesystem.makedirs(self.config.renewal_deploy_hooks_dir)
         self.dir_hook = os.path.join(self.config.renewal_deploy_hooks_dir,
                                      "bar")
         create_hook(self.dir_hook)

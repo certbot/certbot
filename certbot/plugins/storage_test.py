@@ -6,7 +6,7 @@ import mock
 from certbot import errors
 
 from certbot.compat import os
-from certbot.compat import security
+from certbot.compat import filesystem
 from certbot.plugins import common
 from certbot.tests import util as test_util
 
@@ -17,7 +17,7 @@ class PluginStorageTest(test_util.ConfigTestCase):
     def setUp(self):
         super(PluginStorageTest, self).setUp()
         self.plugin_cls = common.Installer
-        security.mkdir(self.config.config_dir)
+        filesystem.mkdir(self.config.config_dir)
         with mock.patch("certbot.reverter.util"):
             self.plugin = self.plugin_cls(config=self.config, name="mockplugin")
 

@@ -39,7 +39,7 @@ del ourselves, std_os, std_sys
 def mkdir(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
     """Method os.mkdir() is forbidden"""
     raise RuntimeError('Usage of os.mkdir() is forbidden. '  # pragma: no cover
-                       'Use certbot.compat.security.mkdir() instead.')
+                       'Use certbot.compat.filesystem.mkdir() instead.')
 
 
 # As said above, os.makedirs would call the original os.mkdir function recursively, creating the
@@ -50,4 +50,4 @@ def mkdir(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
 def makedirs(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
     """Method os.makedirs() is forbidden"""
     raise RuntimeError('Usage of os.makedirs() is forbidden. '  # pragma: no cover
-                       'Use certbot.compat.security.makedirs() instead.')
+                       'Use certbot.compat.filesystem.makedirs() instead.')

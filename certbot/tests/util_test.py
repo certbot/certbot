@@ -11,7 +11,7 @@ import certbot.tests.util as test_util
 from certbot import errors
 from certbot.compat import misc
 from certbot.compat import os
-from certbot.compat import security
+from certbot.compat import filesystem
 
 
 class RunScriptTest(unittest.TestCase):
@@ -92,7 +92,7 @@ class LockDirUntilExit(test_util.TempDirTestCase):
     @mock.patch('certbot.util.atexit_register')
     def test_it(self, mock_register, mock_logger):
         subdir = os.path.join(self.tempdir, 'subdir')
-        security.mkdir(subdir)
+        filesystem.mkdir(subdir)
         self._call(self.tempdir)
         self._call(subdir)
         self._call(subdir)
@@ -143,7 +143,7 @@ class MakeOrVerifyDirTest(test_util.TempDirTestCase):
         super(MakeOrVerifyDirTest, self).setUp()
 
         self.path = os.path.join(self.tempdir, "foo")
-        security.mkdir(self.path, 0o600)
+        filesystem.mkdir(self.path, 0o600)
 
         self.uid = misc.os_geteuid()
 
@@ -166,7 +166,7 @@ class MakeOrVerifyDirTest(test_util.TempDirTestCase):
         self.assertRaises(errors.Error, self._call, self.path, 0o400)
 
     def test_reraises_os_error(self):
-        with mock.patch.object(security, "makedirs") as makedirs:
+        with mock.patch.object(filesystem, "makedirs") as makedirs:
             makedirs.side_effect = OSError()
             self.assertRaises(OSError, self._call, "bar", 12312312)
 

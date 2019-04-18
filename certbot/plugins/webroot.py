@@ -19,7 +19,7 @@ from certbot import cli
 from certbot import errors
 from certbot import interfaces
 from certbot.compat import os
-from certbot.compat import security
+from certbot.compat import filesystem
 from certbot.display import ops
 from certbot.display import util as display_util
 from certbot.plugins import common
@@ -177,7 +177,7 @@ to serve all files under specified web root ({0})."""
                         # This is coupled with the "umask" call above because
                         # security.mkdir's "mode" parameter may not always work:
                         # https://docs.python.org/3/library/os.html#security.mkdir
-                        security.mkdir(prefix, 0o0755)
+                        filesystem.mkdir(prefix, 0o0755)
                         self._created_dirs.append(prefix)
                         # Set owner as parent directory if possible
                         try:
