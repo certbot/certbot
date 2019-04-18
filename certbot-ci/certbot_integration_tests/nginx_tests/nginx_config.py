@@ -1,4 +1,4 @@
-"""General test purpose nginx configuration generator."""
+"""General purpose nginx test configuration generator."""
 import getpass
 
 import pkg_resources
