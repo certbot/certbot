@@ -1,5 +1,6 @@
 """Module executing integration tests against certbot with nginx plugin."""
-import subprocess
+import os
+import ssl
 
 import pytest
 
@@ -35,3 +36,19 @@ def test_certificate_deployment(certname_pattern, params, default_server, contex
         context.certbot_test_nginx(command)
 
         context.assert_deployment_and_rollback(certname.split(',')[0])
+
+        server_cert = ssl.get_server_certificate(('localhost', context.tls_alpn_01_port))
+        with open(os.path.join(context.workspace, 'conf/live/{0}/cert.pem'.format(certname)), 'r') as file:
+            certbot_cert = file.read()
+
+        assert server_cert == certbot_cert
+
+        command = ['--authenticator', 'nginx', '--installer', 'nginx',
+                   '--nginx-server-root', context.nginx_root,
+                   'rollback', '--checkpoints', '1']
+        context._common_test_no_force_renew(command)
+
+        with open(context.nginx_config_path, 'r') as file_h:
+            current_nginx_config = file_h.read()
+
+        assert context.nginx_config == current_nginx_config

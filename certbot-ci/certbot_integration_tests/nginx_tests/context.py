@@ -1,7 +1,6 @@
 import os
 import subprocess
 import contextlib
-import ssl
 
 from certbot_integration_tests.certbot_tests import context as certbot_context
 from certbot_integration_tests.utils import misc
@@ -54,25 +53,3 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
                    '--nginx-server-root', self.nginx_root]
         command.extend(args)
         return self._common_test(command)
-
-    def assert_deployment_and_rollback(self, certname):
-        """
-        Assert that the given certificate has been deployed to the nginx instance, and assert that
-        rollback correctly removes all configuration added by certbot to nginx.
-        :param certname: name of the certificate generated through certbot
-        """
-        server_cert = ssl.get_server_certificate(('localhost', self.tls_alpn_01_port))
-        with open(os.path.join(self.workspace, 'conf/live/{0}/cert.pem'.format(certname)), 'r') as file:
-            certbot_cert = file.read()
-
-        assert server_cert == certbot_cert
-
-        command = ['--authenticator', 'nginx', '--installer', 'nginx',
-                   '--nginx-server-root', self.nginx_root,
-                   'rollback', '--checkpoints', '1']
-        self._common_test_no_force_renew(command)
-
-        with open(self.nginx_config_path, 'r') as file_h:
-            current_nginx_config = file_h.read()
-
-        assert self.nginx_config == current_nginx_config
