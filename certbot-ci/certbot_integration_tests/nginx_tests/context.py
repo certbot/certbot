@@ -31,7 +31,7 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
         :param bool default_server: True to set a default server in nginx config, False otherwise
         """
         self.nginx_config = config.construct_nginx_config(
-            self.nginx_root, self.webroot, self.tls_alpn_01_port,
+            self.nginx_root, self.webroot, self.http_01_port, self.tls_alpn_01_port,
             self.other_port, default_server, self.worker_id)
         with open(self.nginx_config_path, 'w') as file:
             file.write(self.nginx_config)

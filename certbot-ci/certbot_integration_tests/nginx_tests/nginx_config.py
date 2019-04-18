@@ -98,6 +98,6 @@ http {{
 }}
 '''.format(nginx_root=nginx_root, nginx_webroot=nginx_webroot, user=getpass.getuser(),
            http_port=http_port, https_port=https_port, other_port=other_port,
-           default_server=default_server, wtf_prefix=wtf_prefix,
-           cert_path=pkg_resources.resource_filename('certbot_integration_tests', 'assets/nginx_key.pem'),
-           key_path=pkg_resources.resource_filename('certbot_integration_tests', 'assets/nginx_cert.pem'))
+           default_server='default_server' if default_server else '', wtf_prefix=wtf_prefix,
+           key_path=pkg_resources.resource_filename('certbot_integration_tests', 'assets/nginx_key.pem'),
+           cert_path=pkg_resources.resource_filename('certbot_integration_tests', 'assets/nginx_cert.pem'))

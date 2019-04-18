@@ -16,11 +16,7 @@ def context(request):
         integration_test_context.cleanup()
 
 
-def test_nginx_version():
-    print(subprocess.check_output(['nginx', '-v']))
-
-
-@pytest.mark.parametrize('certname_pattern, params, set_default_server', [
+@pytest.mark.parametrize('certname_pattern, params, default_server', [
     ('nginx.{0}.wtf', ['run'], True),
     ('nginx2.{0}.wtf', ['--preferred-challenges', 'http'], True),
     ('nginx3.{0}.wtf', ['--preferred-challenges', 'http'], True),
@@ -28,11 +24,11 @@ def test_nginx_version():
     ('nginx5.{0}.wtf', ['--preferred-challenges', 'http'], False),
     ('nginx6.{0}.wtf,nginx7.{0}.wtf', ['--preferred-challenges', 'http'], False),
 ])
-def test_certificate_deployment(certname_pattern, params, set_default_server, context):
+def test_certificate_deployment(certname_pattern, params, default_server, context):
     """
     Test various scenarios to deploy a certificate to nginx using certbot.
     """
-    with context.nginx_server('default_server' if set_default_server else ''):
+    with context.nginx_server(default_server):
         certname = certname_pattern.format(context.worker_id)
         command = ['--domains', certname]
         command.extend(params)
