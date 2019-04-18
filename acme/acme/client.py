@@ -156,23 +156,7 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
         :raises .UnexpectedUpdate:
 
         """
-        # Because sending keyAuthorization in a response challenge has been removed from the ACME
-        # spec, it is not included in the KeyAuthorizationResponseChallenge JSON by default.
-        # However as a migration path, we temporarily expect a malformed error from the server,
-        # and fallback by resending the challenge response with the keyAuthorization field.
-        # TODO: Remove this fallback for Certbot 0.34.0
-        try:
-            response = self._post(challb.uri, response)
-        except messages.Error as error:
-            if (error.code == 'malformed'
-                    and isinstance(response, challenges.KeyAuthorizationChallengeResponse)):
-                logger.debug('Error while responding to a challenge without keyAuthorization '
-                             'in the JWS, your ACME CA server may not support it:\n%s', error)
-                logger.debug('Retrying request with keyAuthorization set.')
-                response._dump_authorization_key(True)  # pylint: disable=protected-access
-                response = self._post(challb.uri, response)
-            else:
-                raise
+        response = self._post(challb.uri, response)
         try:
             authzr_uri = response.links['up']['url']
         except KeyError:
