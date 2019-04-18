@@ -21,8 +21,6 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
         with open(os.path.join(self.webroot, 'index.html'), 'w') as file_handler:
             file_handler.write('Hello World!')
 
-        self.key_path, self.cert_path = config.create_self_signed_certificate(self.nginx_root)
-
         self.nginx_config_path = os.path.join(self.nginx_root, 'nginx.conf')
         self.nginx_config = None
 
@@ -30,11 +28,11 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
     def nginx_server(self, default_server):
         """
         Start an nginx server configured to execute integration tests.
-        :param str default_server: set to 'default_server' to enable a default vhost in this nginx instance
+        :param bool default_server: True to set a default server in nginx config, False otherwise
         """
         self.nginx_config = config.construct_nginx_config(
-            self.nginx_root, self.webroot, self.key_path, self.cert_path, self.http_01_port,
-            self.tls_alpn_01_port, self.other_port, default_server, self.worker_id)
+            self.nginx_root, self.webroot, self.tls_alpn_01_port,
+            self.other_port, default_server, self.worker_id)
         with open(self.nginx_config_path, 'w') as file:
             file.write(self.nginx_config)
 
