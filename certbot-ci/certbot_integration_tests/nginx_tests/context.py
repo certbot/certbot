@@ -37,10 +37,11 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
 
         process = subprocess.Popen(['nginx', '-c', self.nginx_config_path, '-g', 'daemon off;'])
         try:
-            assert not process.poll()
+            assert process.poll() is None
             misc.check_until_timeout('http://localhost:{0}'.format(self.http_01_port))
             yield
         finally:
+            assert process.poll() is None
             process.terminate()
             process.wait()
 
