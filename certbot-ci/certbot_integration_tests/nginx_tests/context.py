@@ -58,7 +58,7 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
     def assert_deployment_and_rollback(self, certname):
         """
         Assert that the given certificate has been deployed to the nginx instance, and assert that
-        rollback correctly remove all configuration added by certbot to nginx.
+        rollback correctly removes all configuration added by certbot to nginx.
         :param certname: name of the certificate generated through certbot
         """
         server_cert = ssl.get_server_certificate(('localhost', self.tls_alpn_01_port))
