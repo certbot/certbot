@@ -1,6 +1,5 @@
 import os
 import subprocess
-import random
 import contextlib
 import ssl
 
@@ -21,8 +20,6 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
         os.mkdir(self.webroot)
         with open(os.path.join(self.webroot, 'index.html'), 'w') as file_handler:
             file_handler.write('Hello World!')
-
-        self.other_port = random.randint(6000, 6999)
 
         self.key_path, self.cert_path = config.create_self_signed_certificate(self.nginx_root)
 
