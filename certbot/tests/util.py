@@ -27,7 +27,7 @@ from certbot import lock
 from certbot import storage
 from certbot import util
 from certbot.compat import os
-from certbot.compat import security
+from certbot.compat import filesystem
 from certbot.display import util as display_util
 
 
@@ -341,7 +341,7 @@ class TempDirTestCase(unittest.TestCase):
 
         def handle_rw_files(_, path, __):
             """Handle read-only files, that will fail to be removed on Windows."""
-            security.chmod(path, stat.S_IWRITE)
+            filesystem.chmod(path, stat.S_IWRITE)
             try:
                 os.remove(path)
             except (IOError, OSError):

@@ -47,4 +47,4 @@ del ourselves, std_os, std_sys
 def chmod(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
     """Method os.chmod() is forbidden"""
     raise RuntimeError('Usage of os.chmod() is forbidden. '  # pragma: no cover
-                       'Use certbot.compat.security.chmod() instead.')
+                       'Use certbot.compat.filesystem.chmod() instead.')

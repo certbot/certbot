@@ -1,6 +1,6 @@
 """Unit test for security module."""
 from certbot.compat import os
-from certbot.compat import security
+from certbot.compat import filesystem
 from certbot.tests.util import TempDirTestCase
 
 
@@ -11,12 +11,12 @@ class SecurityTest(TempDirTestCase):
 
         open(probe, 'w').close()
 
-        security.chmod(probe, 0o755)
+        filesystem.chmod(probe, 0o755)
 
         # TODO: add assertion when check_mode is implemented
         #self.assertTrue(security.check_mode(probe, 0o755))
 
-        security.chmod(probe, 0o700)
+        filesystem.chmod(probe, 0o700)
 
         # TODO: add assertion when check_mode is implemented
         #self.assertFalse(security.check_mode(probe, 0o755))
