@@ -20,9 +20,13 @@ def context(request):
 @pytest.mark.parametrize('certname_pattern, params, default_server', [
     ('nginx.{0}.wtf', ['run'], True),
     ('nginx2.{0}.wtf', ['--preferred-challenges', 'http'], True),
+    # Overlapping location block and server-block-level return 301
     ('nginx3.{0}.wtf', ['--preferred-challenges', 'http'], True),
+    # No matching server block; default_server exists
     ('nginx4.{0}.wtf', ['--preferred-challenges', 'http'], True),
+    # No default server starting to this point.
     ('nginx5.{0}.wtf', ['--preferred-challenges', 'http'], False),
+    # Mutiple domains, mix of matching and not
     ('nginx6.{0}.wtf,nginx7.{0}.wtf', ['--preferred-challenges', 'http'], False),
 ])
 def test_certificate_deployment(certname_pattern, params, default_server, context):
