@@ -18,8 +18,8 @@ def context(request):
 
 
 @pytest.mark.parametrize('certname_pattern, params, context', [
-    # Passing True as third level makes the context fixture start Nginx with a default server.
-    ('nginx.{0}.wtf', ['run'], True),
+    ('nginx.{0}.wtf', ['run'], True),  # Passing True here makes the context
+                                       # fixture start Nginx with a default server.
     ('nginx2.{0}.wtf', ['--preferred-challenges', 'http'], True),
     # Overlapping location block and server-block-level return 301
     ('nginx3.{0}.wtf', ['--preferred-challenges', 'http'], True),
