@@ -104,8 +104,9 @@ def set_up_nginx_dir(root_path):
     conf_path = os.path.join(repo_root, 'certbot-ci', 'certbot_integration_tests', 'nginx_tests')
     sys.path.append(conf_path)
     import nginx_config  # pylint: disable=import-error
-    config = nginx_config.construct_nginx_config(root_path, os.path.join(root_path, 'webroot'),
-                                                 5002, 5001, 8082, '')
+    key_path, cert_path = setup_certificate(root_path)
+    config = nginx_config.construct_nginx_config(root_path, os.path.join(root_path, 'webroot'), 5002,
+                                                 5001, 8082, False, key_path=key_path, cert_path=cert_path)
     with open(os.path.join(root_path, 'nginx.conf'), 'w') as f:
         f.write(config)
 
@@ -133,6 +134,50 @@ def set_up_command(config_dir, logs_dir, work_dir, nginx_dir):
             test_util.vector_path('rsa512_key.pem'),
             config_dir, logs_dir, work_dir, nginx_dir).split())
 
+
+def setup_certificate(workspace):
+    """Generate a self-signed certificate for nginx.
+    :param workspace: path of folder where to put the certificate
+    :return: tuple containing the key path and certificate path
+    :rtype: `tuple`
+    """
+    # Generate key
+    # See comment on cryptography import about type: ignore
+    private_key = rsa.generate_private_key(  # type: ignore
+        public_exponent=65537,
+        key_size=2048,
+        backend=default_backend()
+    )
+    subject = issuer = x509.Name([
+        x509.NameAttribute(x509.NameOID.COMMON_NAME, u'nginx.wtf')
+    ])
+    certificate = x509.CertificateBuilder().subject_name(
+        subject
+    ).issuer_name(
+        issuer
+    ).public_key(
+        private_key.public_key()
+    ).serial_number(
+        1
+    ).not_valid_before(
+        datetime.datetime.utcnow()
+    ).not_valid_after(
+        datetime.datetime.utcnow() + datetime.timedelta(days=1)
+    ).sign(private_key, hashes.SHA256(), default_backend())
+
+    key_path = os.path.join(workspace, 'cert.key')
+    with open(key_path, 'wb') as file_handle:
+        file_handle.write(private_key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.TraditionalOpenSSL,
+            encryption_algorithm=serialization.NoEncryption()
+        ))
+
+    cert_path = os.path.join(workspace, 'cert.pem')
+    with open(cert_path, 'wb') as file_handle:
+        file_handle.write(certificate.public_bytes(serialization.Encoding.PEM))
+
+    return key_path, cert_path
 
 def test_command(command, directories):
     """Assert Certbot acquires locks in a specific order.
