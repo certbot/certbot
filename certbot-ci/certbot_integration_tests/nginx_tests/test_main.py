@@ -1,5 +1,6 @@
 """Module executing integration tests against certbot with nginx plugin."""
-import subprocess
+import os
+import ssl
 
 import pytest
 
@@ -16,26 +17,42 @@ def context(request):
         integration_test_context.cleanup()
 
 
-def test_nginx_version():
-    print(subprocess.check_output(['nginx', '-v']))
-
-
-@pytest.mark.parametrize('certname_pattern, params, set_default_server', [
+@pytest.mark.parametrize('certname_pattern, params, context', [
+    # Passing True as third level makes the context fixture start Nginx with a default server.
     ('nginx.{0}.wtf', ['run'], True),
     ('nginx2.{0}.wtf', ['--preferred-challenges', 'http'], True),
+    # Overlapping location block and server-block-level return 301
     ('nginx3.{0}.wtf', ['--preferred-challenges', 'http'], True),
+    # No matching server block; default_server exists
     ('nginx4.{0}.wtf', ['--preferred-challenges', 'http'], True),
+    # No default server in Nginx starting to this point.
     ('nginx5.{0}.wtf', ['--preferred-challenges', 'http'], False),
+    # Multiple domains, mix of matching and not
     ('nginx6.{0}.wtf,nginx7.{0}.wtf', ['--preferred-challenges', 'http'], False),
-])
-def test_certificate_deployment(certname_pattern, params, set_default_server, context):
+], indirect=['context'])
+def test_certificate_deployment(certname_pattern, params, context):
     """
     Test various scenarios to deploy a certificate to nginx using certbot.
     """
-    with context.nginx_server('default_server' if set_default_server else ''):
-        certname = certname_pattern.format(context.worker_id)
-        command = ['--domains', certname]
-        command.extend(params)
-        context.certbot_test_nginx(command)
+    certname = certname_pattern.format(context.worker_id)
+    command = ['--domains', certname]
+    command.extend(params)
+    context.certbot_test_nginx(command)
 
-        context.assert_deployment_and_rollback(certname.split(',')[0])
+    context.assert_deployment_and_rollback(certname.split(',')[0])
+
+    server_cert = ssl.get_server_certificate(('localhost', context.tls_alpn_01_port))
+    with open(os.path.join(context.workspace, 'conf/live/{0}/cert.pem'.format(certname)), 'r') as file:
+        certbot_cert = file.read()
+
+    assert server_cert == certbot_cert
+
+    command = ['--authenticator', 'nginx', '--installer', 'nginx',
+               '--nginx-server-root', context.nginx_root,
+               'rollback', '--checkpoints', '1']
+    context._common_test_no_force_renew(command)
+
+    with open(context.nginx_config_path, 'r') as file_h:
+        current_nginx_config = file_h.read()
+
+    assert context.nginx_config == current_nginx_config
