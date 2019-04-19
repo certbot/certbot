@@ -53,7 +53,7 @@ def get_unprepared_installer(config, plugins):
     _, req_inst = cli_plugin_requests(config)
     if not req_inst:
         return None
-    installers = plugins.filter(lambda p_ep: p_ep.name == req_inst)
+    installers = plugins.filter(lambda p_ep: p_ep.check_name(req_inst))
     installers.init(config)
     installers = installers.verify((interfaces.IInstaller,))
     if len(installers) > 1:
@@ -84,7 +84,7 @@ def pick_plugin(config, default, plugins, question, ifaces):
     """
     if default is not None:
         # throw more UX-friendly error if default not in plugins
-        filtered = plugins.filter(lambda p_ep: p_ep.name == default)
+        filtered = plugins.filter(lambda p_ep: p_ep.check_name(default))
     else:
         if config.noninteractive_mode:
             # it's really bad to auto-select the single available plugin in

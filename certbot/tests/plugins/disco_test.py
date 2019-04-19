@@ -30,6 +30,7 @@ class PluginEntryPointTest(unittest.TestCase):
     def setUp(self):
         self.ep1 = pkg_resources.EntryPoint(
             "ep1", "p1.ep1", dist=mock.MagicMock(key="p1"))
+        self.ep1.load = mock.MagicMock
         self.ep1prim = pkg_resources.EntryPoint(
             "ep1", "p2.ep2", dist=mock.MagicMock(key="p2"))
         # nested
@@ -55,7 +56,29 @@ class PluginEntryPointTest(unittest.TestCase):
 
         for entry_point, name in six.iteritems(names):
             self.assertEqual(
-                name, PluginEntryPoint.entry_point_to_plugin_name(entry_point))
+                name, PluginEntryPoint.entry_point_to_plugin_long_name(entry_point))
+
+    def test_check_name_internal(self):
+        self.assertEqual(self.plugin_ep.name, 'sa')
+        # internal plugins accept only prefix-free form:
+        self.assertTrue(self.plugin_ep.check_name('sa'))
+        self.assertFalse(self.plugin_ep.check_name('certbot:sa'))
+        # should not match other names:
+        self.assertFalse(self.plugin_ep.check_name(''))
+        self.assertFalse(self.plugin_ep.check_name('so'))
+        self.assertFalse(self.plugin_ep.check_name('nocert:sa'))
+
+    def test_check_name_external(self):
+        from certbot._internal.plugins.disco import PluginEntryPoint
+        plugin_ep1 = PluginEntryPoint(self.ep1)
+        self.assertEqual(plugin_ep1.name, 'ep1')
+        # external plugins accept prefix-free (new) AND prefixed (old) form:
+        self.assertTrue(plugin_ep1.check_name('ep1'))
+        self.assertTrue(plugin_ep1.check_name('p1:ep1'))
+        # should not match other names:
+        self.assertFalse(plugin_ep1.check_name(''))
+        self.assertFalse(plugin_ep1.check_name('ep2'))
+        self.assertFalse(plugin_ep1.check_name('p2:ep1'))
 
     def test_description(self):
         self.assertTrue("temporary webserver" in self.plugin_ep.description)

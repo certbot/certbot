@@ -180,9 +180,13 @@ class GetUnpreparedInstallerTest(test_util.ConfigTestCase):
         self.mock_apache_fail_ep = mock.Mock(
             description_with_name="afail")
         self.mock_apache_fail_ep.name = "afail"
+        self.mock_apache_fail_ep.check_name = \
+            lambda name: name == self.mock_apache_fail_ep.name
         self.mock_apache_ep = mock.Mock(
             description_with_name="apache")
         self.mock_apache_ep.name = "apache"
+        self.mock_apache_ep.check_name = \
+            lambda name: name == self.mock_apache_ep.name
         self.mock_apache_plugin = mock.MagicMock()
         self.mock_apache_ep.init.return_value = self.mock_apache_plugin
         self.plugins = PluginsRegistry({

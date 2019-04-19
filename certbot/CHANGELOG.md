@@ -15,6 +15,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * Disable old SSL versions and ciphersuites to follow Mozilla recommendations in Apache.
 * Remove ECDHE-RSA-AES128-SHA from NGINX ciphers list now that Windows 2008 R2 and Windows 7 are EOLed
 * Support for Python 3.4 has been removed.
+* Refer to third-party plugin options by their prefix-free name by default
 
 ### Fixed
 

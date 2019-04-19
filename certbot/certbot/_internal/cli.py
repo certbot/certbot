@@ -469,8 +469,13 @@ class HelpfulArgumentParser(object):
         HELP_TOPICS = ["all", "security", "paths", "automation", "testing"]
         HELP_TOPICS += list(self.VERBS) + self.COMMANDS_TOPICS + ["manage"]
 
-        plugin_names = list(plugins)
-        self.help_topics = HELP_TOPICS + plugin_names + [None]  # type: ignore
+        short_names = list(plugins)
+        long_names = [
+            plugin.long_name for plugin in plugins.values()
+            if plugin.name != plugin.long_name
+        ]
+        self.help_topics = \
+            HELP_TOPICS + short_names + long_names + [None]  # type: ignore
 
         self.detect_defaults = detect_defaults
         self.args = args
@@ -828,6 +833,15 @@ class HelpfulArgumentParser(object):
             parser_or_group = self.add_group(name,
                                              description=plugin_ep.long_description)
             plugin_ep.plugin_cls.inject_parser_options(parser_or_group, name)
+
+            # add arguments for old name with colon prefix:
+            if name != plugin_ep.long_name:
+                parser_or_group = self.add_group(
+                    plugin_ep.long_name,
+                    description="(long form) " + plugin_ep.long_description)
+                plugin_ep.plugin_cls.inject_parser_options(
+                    parser_or_group, plugin_ep.long_name)
+
 
     def determine_help_topics(self, chosen_topic):
         """

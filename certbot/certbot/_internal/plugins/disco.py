@@ -50,15 +50,20 @@ class PluginEntryPoint(object):
     __hash__ = None  # type: ignore
 
     def __init__(self, entry_point):
-        self.name = self.entry_point_to_plugin_name(entry_point)
+        self.short_name = self.name = entry_point.name
+        self.long_name = self.entry_point_to_plugin_long_name(entry_point)
         self.plugin_cls = entry_point.load()
         self.entry_point = entry_point
         self._initialized = None
         self._prepared = None
 
+    def check_name(self, name):
+        """Check if the name refers to this plugin."""
+        return name == self.name or name == self.long_name
+
     @classmethod
-    def entry_point_to_plugin_name(cls, entry_point):
-        """Unique plugin name for an ``entry_point``"""
+    def entry_point_to_plugin_long_name(cls, entry_point):
+        """Unique plugin name for an ``entry_point`` (long format)."""
         if entry_point.dist.key in cls.PREFIX_FREE_DISTRIBUTIONS:
             return entry_point.name
         return entry_point.dist.key + ":" + entry_point.name
@@ -210,8 +215,10 @@ class PluginsRegistry(Mapping):
                 constants.OLD_SETUPTOOLS_PLUGINS_ENTRY_POINT),)
         for entry_point in entry_points:
             plugin_ep = PluginEntryPoint(entry_point)
-            assert plugin_ep.name not in plugins, (
-                "PREFIX_FREE_DISTRIBUTIONS messed up")
+            if plugin_ep.name in plugins:
+                prev_ep = plugins[plugin_ep.name]
+                raise Exception("Duplicate plugin name: {!r} / {!r}.".format(
+                    plugin_ep.long_name, prev_ep.long_name))
             # providedBy | pylint: disable=no-member
             if interfaces.IPluginFactory.providedBy(plugin_ep.plugin_cls):
                 plugins[plugin_ep.name] = plugin_ep
