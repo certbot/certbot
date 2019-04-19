@@ -17,7 +17,6 @@ import requests
 from requests.adapters import HTTPAdapter
 from requests_toolbelt.adapters.source import SourceAddressAdapter
 
-from acme import challenges
 from acme import crypto_util
 from acme import errors
 from acme import jws
