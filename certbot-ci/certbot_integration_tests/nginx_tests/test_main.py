@@ -34,15 +34,14 @@ def test_certificate_deployment(certname_pattern, params, context):
     """
     Test various scenarios to deploy a certificate to nginx using certbot.
     """
-    certname = certname_pattern.format(context.worker_id)
-    command = ['--domains', certname]
+    domains = certname_pattern.format(context.worker_id)
+    command = ['--domains', domains]
     command.extend(params)
     context.certbot_test_nginx(command)
 
-    context.assert_deployment_and_rollback(certname.split(',')[0])
-
+    lineage = domains.split(',')[0]
     server_cert = ssl.get_server_certificate(('localhost', context.tls_alpn_01_port))
-    with open(os.path.join(context.workspace, 'conf/live/{0}/cert.pem'.format(certname)), 'r') as file:
+    with open(os.path.join(context.workspace, 'conf/live/{0}/cert.pem'.format(lineage)), 'r') as file:
         certbot_cert = file.read()
 
     assert server_cert == certbot_cert
