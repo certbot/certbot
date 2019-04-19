@@ -1,6 +1,5 @@
 import os
 import subprocess
-import contextlib
 
 from certbot_integration_tests.certbot_tests import context as certbot_context
 from certbot_integration_tests.utils import misc
@@ -23,27 +22,12 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
         self.nginx_config_path = os.path.join(self.nginx_root, 'nginx.conf')
         self.nginx_config = None
 
-    @contextlib.contextmanager
-    def nginx_server(self, default_server):
-        """
-        Start an nginx server configured to execute integration tests.
-        :param bool default_server: True to set a default server in nginx config, False otherwise
-        """
-        self.nginx_config = config.construct_nginx_config(
-            self.nginx_root, self.webroot, self.http_01_port, self.tls_alpn_01_port,
-            self.other_port, default_server, self.worker_id)
-        with open(self.nginx_config_path, 'w') as file:
-            file.write(self.nginx_config)
+        default_server = request.param
+        self.process = self._start_nginx(default_server)
 
-        process = subprocess.Popen(['nginx', '-c', self.nginx_config_path, '-g', 'daemon off;'])
-        try:
-            assert process.poll() is None
-            misc.check_until_timeout('http://localhost:{0}'.format(self.http_01_port))
-            yield
-        finally:
-            assert process.poll() is None
-            process.terminate()
-            process.wait()
+    def cleanup(self):
+        self._stop_nginx()
+        super(IntegrationTestsContext, self).cleanup()
 
     def certbot_test_nginx(self, args):
         """
@@ -54,3 +38,21 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
                    '--nginx-server-root', self.nginx_root]
         command.extend(args)
         return self._common_test(command)
+
+    def _start_nginx(self, default_server):
+        self.nginx_config = config.construct_nginx_config(
+            self.nginx_root, self.webroot, self.http_01_port, self.tls_alpn_01_port,
+            self.other_port, default_server, self.worker_id)
+        with open(self.nginx_config_path, 'w') as file:
+            file.write(self.nginx_config)
+
+        process = subprocess.Popen(['nginx', '-c', self.nginx_config_path, '-g', 'daemon off;'])
+
+        assert process.poll() is None
+        misc.check_until_timeout('http://localhost:{0}'.format(self.http_01_port))
+        return process
+
+    def _stop_nginx(self):
+        assert self.process.poll() is None
+        self.process.terminate()
+        self.process.wait()
