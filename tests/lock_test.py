@@ -2,6 +2,7 @@
 from __future__ import print_function
 
 import atexit
+import datetime
 import functools
 import logging
 import os
@@ -10,6 +11,13 @@ import shutil
 import subprocess
 import sys
 import tempfile
+
+from cryptography import x509
+from cryptography.hazmat.backends import default_backend
+# TODO: once mypy has cryptography types bundled, type: ignore can be removed.
+# See https://github.com/python/typeshed/tree/master/third_party/2/cryptography
+from cryptography.hazmat.primitives import serialization, hashes  # type: ignore
+from cryptography.hazmat.primitives.asymmetric import rsa
 
 from certbot import lock
 from certbot import util
