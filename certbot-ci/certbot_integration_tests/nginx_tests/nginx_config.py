@@ -4,8 +4,8 @@ import getpass
 import pkg_resources
 
 
-def construct_nginx_config(nginx_root, nginx_webroot, http_port, https_port,
-                           other_port, default_server, wtf_prefix='le'):
+def construct_nginx_config(nginx_root, nginx_webroot, http_port, https_port, other_port,
+                           default_server, key_path=None, cert_path=None, wtf_prefix='le'):
     """
     This method returns a full nginx configuration suitable for integration tests.
     :param str nginx_root: nginx root configuration path
@@ -14,10 +14,16 @@ def construct_nginx_config(nginx_root, nginx_webroot, http_port, https_port,
     :param int https_port: HTTPS port to listen on
     :param int other_port: other HTTP port to listen on
     :param bool default_server: True to set a default server in nginx config, False otherwise
+    :param str key_path: the path to a SSL key
+    :param str cert_path: the path to a SSL certificate
     :param str wtf_prefix: the prefix to use in all domains handled by this nginx config
     :return: a string containing the full nginx configuration
     :rtype: str
     """
+    key_path = key_path if key_path \
+        else pkg_resources.resource_filename('certbot_integration_tests', 'assets/nginx_key.pem')
+    cert_path = cert_path if cert_path \
+        else pkg_resources.resource_filename('certbot_integration_tests', 'assets/nginx_cert.pem')
     return '''\
 # This error log will be written regardless of server scope error_log
 # definitions, so we have to set this here in the main scope.
@@ -117,5 +123,4 @@ http {{
 '''.format(nginx_root=nginx_root, nginx_webroot=nginx_webroot, user=getpass.getuser(),
            http_port=http_port, https_port=https_port, other_port=other_port,
            default_server='default_server' if default_server else '', wtf_prefix=wtf_prefix,
-           key_path=pkg_resources.resource_filename('certbot_integration_tests', 'assets/nginx_key.pem'),
-           cert_path=pkg_resources.resource_filename('certbot_integration_tests', 'assets/nginx_cert.pem'))
+           key_path=key_path, cert_path=cert_path)
