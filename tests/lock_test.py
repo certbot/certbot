@@ -113,8 +113,9 @@ def set_up_nginx_dir(root_path):
     sys.path.append(conf_path)
     import nginx_config  # pylint: disable=import-error
     key_path, cert_path = setup_certificate(root_path)
-    config = nginx_config.construct_nginx_config(root_path, os.path.join(root_path, 'webroot'), 5002,
-                                                 5001, 8082, False, key_path=key_path, cert_path=cert_path)
+    config = nginx_config.construct_nginx_config(root_path, os.path.join(root_path, 'webroot'),
+                                                 5002, 5001, 8082, False,
+                                                 key_path=key_path, cert_path=cert_path)
     with open(os.path.join(root_path, 'nginx.conf'), 'w') as f:
         f.write(config)
 
