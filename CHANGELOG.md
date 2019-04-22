@@ -16,7 +16,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   restart.
 * Updated Certbot and its plugins to improve the handling of file system permissions
   on Windows as a step towards adding proper Windows support to Certbot.
-* Updated urllib3 to 1.24.2.
+* Updated urllib3 to 1.24.2 in certbot-auto.
 
 ### Fixed
 
