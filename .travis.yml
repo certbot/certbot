@@ -30,12 +30,17 @@ matrix:
   include:
     # Main test suite
     - python: "2.7"
-      env: BOULDER_INTEGRATION=v1 INTEGRATION_TEST=all TOXENV=py27_install
+      env: ACME_SERVER=boulder-v1 PYTEST_ADDOPTS=-n4 TOXENV=integration
       sudo: required
       services: docker
       <<: *not-on-master
     - python: "2.7"
-      env: BOULDER_INTEGRATION=v2 INTEGRATION_TEST=all TOXENV=py27_install
+      env: ACME_SERVER=boulder-v2 PYTEST_ADDOPTS=-n4 TOXENV=integration
+      sudo: required
+      services: docker
+      <<: *not-on-master
+    - python: "2.7"
+      env: ACME_SERVER=pebble PYTEST_ADDOPTS=-n4 TOXENV=integration
       sudo: required
       services: docker
       <<: *not-on-master
@@ -220,9 +225,7 @@ addons:
     - openssl
 
 install: "$(command -v pip || command -v pip3) install codecov tox"
-script:
-    - tox
-    - '[ -z "${BOULDER_INTEGRATION+x}" ] || (tests/boulder-fetch.sh && tests/tox-boulder-integration.sh)'
+script: tox
 
 after_success: '[ "$TOXENV" == "py27-cover" ] && codecov -F linux'
 

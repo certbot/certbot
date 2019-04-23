@@ -11,7 +11,6 @@ install_requires = [
     'pyopenssl',
     'pytest',
     'pytest-cov',
-    'pytest-rerunfailures==4.2',
     'pytest-sugar',
     'pytest-xdist',
     'pyyaml',
