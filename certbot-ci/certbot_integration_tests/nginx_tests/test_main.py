@@ -25,7 +25,7 @@ def context(request):
     ('nginx3.{0}.wtf', ['--preferred-challenges', 'http'], True),
     # No matching server block; default_server exists
     ('nginx4.{0}.wtf', ['--preferred-challenges', 'http'], True),
-    # No default server in Nginx starting to this point.
+    # No default server in Nginx starting at this point.
     ('nginx5.{0}.wtf', ['--preferred-challenges', 'http'], False),
     # Multiple domains, mix of matching and not
     ('nginx6.{0}.wtf,nginx7.{0}.wtf', ['--preferred-challenges', 'http'], False),
