@@ -33,11 +33,11 @@ OVERRIDE_CLASSES = {
 def get_configurator():
     """ Get correct configurator class based on the OS fingerprint """
     os_name, os_version = util.get_os_info()
-    os_name, os_version = os_name.lower(), int(os_version)
+    os_name = os_name.lower()
     override_class = None
 
     # Special case for older Fedora versions
-    if os_name == 'fedora' and os_version < 29:
+    if os_name == 'fedora' and int(os_version) < 29:
         os_name = 'fedora_old'
 
     try:
