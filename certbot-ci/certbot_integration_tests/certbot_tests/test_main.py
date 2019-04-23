@@ -2,8 +2,10 @@
 from __future__ import print_function
 
 import os
+import re
+import shutil
 import subprocess
-from os.path import join
+from os.path import join, exists
 
 import pytest
 from certbot_integration_tests.certbot_tests import context as certbot_context
@@ -350,7 +352,7 @@ def test_renew_hook_override(context):
     assert_hook_execution(context.hook_probe, 'post-override')
     assert_hook_execution(context.hook_probe, 'deploy-override')
 
-
+    
 def test_invalid_domain_with_dns_challenge(context):
     """Test certificate issuance failure with DNS-01 challenge."""
     # Manual dns auth hooks from misc are designed to fail if the domain contains 'fail-*'.
@@ -394,3 +396,178 @@ def test_reuse_key(context):
         cert3 = file.read()
 
     assert len({cert1, cert2, cert3}) == 3
+
+
+def test_ecdsa(context):
+    """Test certificate issuance with ECDSA key."""
+    key_path = join(context.workspace, 'privkey-p384.pem')
+    csr_path = join(context.workspace, 'csr-p384.der')
+    cert_path = join(context.workspace, 'cert-p384.pem')
+    chain_path = join(context.workspace, 'chain-p384.pem')
+
+    misc.generate_csr([context.get_domain('ecdsa')], key_path, csr_path, key_type=misc.ECDSA_KEY_TYPE)
+    context.certbot(['auth', '--csr', csr_path, '--cert-path', cert_path, '--chain-path', chain_path])
+
+    certificate = misc.read_certificate(cert_path)
+    assert 'ASN1 OID: secp384r1' in certificate
+
+
+def test_ocsp_must_staple(context):
+    """Test that OCSP Must-Staple is correctly set in the generated certificate."""
+    if context.acme_server == 'pebble':
+        pytest.skip('Pebble does not support OCSP Must-Staple.')
+
+    certname = context.get_domain('must-staple')
+    context.certbot(['auth', '--must-staple', '--domains', certname])
+
+    certificate = misc.read_certificate(join(context.config_dir,
+                                             'live/{0}/cert.pem').format(certname))
+    assert 'status_request' in certificate or '1.3.6.1.5.5.7.1.24' in certificate
+
+
+def test_revoke_simple(context):
+    """Test various scenarios that revokes a certificate."""
+    # Default action after revoke is to delete the certificate.
+    certname = context.get_domain()
+    cert_path = join(context.config_dir, 'live', certname, 'cert.pem')
+    context.certbot(['-d', certname])
+    context.certbot(['revoke', '--cert-path', cert_path, '--delete-after-revoke'])
+
+    assert not exists(cert_path)
+
+    # Check default deletion is overridden.
+    certname = context.get_domain('le1')
+    cert_path = join(context.config_dir, 'live', certname, 'cert.pem')
+    context.certbot(['-d', certname])
+    context.certbot(['revoke', '--cert-path', cert_path, '--no-delete-after-revoke'])
+
+    assert exists(cert_path)
+
+    context.certbot(['delete', '--cert-name', certname])
+
+    assert not exists(join(context.config_dir, 'archive', certname))
+    assert not exists(join(context.config_dir, 'live', certname))
+    assert not exists(join(context.config_dir, 'renewal', '{0}.conf'.format(certname)))
+
+    certname = context.get_domain('le2')
+    key_path = join(context.config_dir, 'live', certname, 'privkey.pem')
+    cert_path = join(context.config_dir, 'live', certname, 'cert.pem')
+    context.certbot(['-d', certname])
+    context.certbot(['revoke', '--cert-path', cert_path, '--key-path', key_path])
+
+
+def test_revoke_and_unregister(context):
+    """Test revoke with a reason then unregister."""
+    cert1 = context.get_domain('le1')
+    cert2 = context.get_domain('le2')
+    cert3 = context.get_domain('le3')
+
+    cert_path1 = join(context.config_dir, 'live', cert1, 'cert.pem')
+    key_path2 = join(context.config_dir, 'live', cert2, 'privkey.pem')
+    cert_path2 = join(context.config_dir, 'live', cert2, 'cert.pem')
+
+    context.certbot(['-d', cert1])
+    context.certbot(['-d', cert2])
+    context.certbot(['-d', cert3])
+
+    context.certbot(['revoke', '--cert-path', cert_path1,
+                    '--reason', 'cessationOfOperation'])
+    context.certbot(['revoke', '--cert-path', cert_path2, '--key-path', key_path2,
+                    '--reason', 'keyCompromise'])
+
+    context.certbot(['unregister'])
+
+    output = context.certbot(['certificates'])
+
+    assert cert1 not in output
+    assert cert2 not in output
+    assert cert3 in output
+
+
+def test_revoke_mutual_exclusive_flags(context):
+    """Test --cert-path and --cert-name cannot be used during revoke."""
+    cert = context.get_domain('le1')
+    context.certbot(['-d', cert])
+    with pytest.raises(subprocess.CalledProcessError) as error:
+        context.certbot([
+            'revoke', '--cert-name', cert,
+            '--cert-path', join(context.config_dir, 'live', cert, 'fullchain.pem')
+        ])
+        assert 'Exactly one of --cert-path or --cert-name must be specified' in error.out
+
+
+def test_revoke_multiple_lineages(context):
+    """Test revoke does not delete certs if multiple lineages share the same dir."""
+    cert1 = context.get_domain('le1')
+    context.certbot(['-d', cert1])
+
+    assert os.path.isfile(join(context.config_dir, 'renewal', '{0}.conf'.format(cert1)))
+
+    cert2 = context.get_domain('le2')
+    context.certbot(['-d', cert2])
+
+    # Copy over renewal configuration of cert1 into renewal configuration of cert2.
+    with open(join(context.config_dir, 'renewal', '{0}.conf'.format(cert2)), 'r') as file:
+        data = file.read()
+
+    data = re.sub('archive_dir = .*\n',
+                  'archive_dir = {0}\n'.format(join(context.config_dir, 'archive', cert1)),
+                  data)
+
+    with open(join(context.config_dir, 'renewal', '{0}.conf'.format(cert2)), 'w') as file:
+        file.write(data)
+
+    output = context.certbot([
+        'revoke', '--cert-path', join(context.config_dir, 'live', cert1, 'cert.pem')
+    ])
+
+    assert 'Not deleting revoked certs due to overlapping archive dirs' in output
+
+
+def test_wildcard_certificates(context):
+    """Test wildcard certificate issuance."""
+    if context.acme_server == 'boulder-v1':
+        pytest.skip('Wildcard certificates are not supported on ACME v1')
+
+    certname = context.get_domain('wild')
+
+    context.certbot([
+        '-a', 'manual', '-d', '*.{0},{0}'.format(certname),
+        '--preferred-challenge', 'dns',
+        '--manual-auth-hook', context.manual_dns_auth_hook,
+        '--manual-cleanup-hook', context.manual_dns_cleanup_hook
+    ])
+
+    assert exists(join(context.config_dir, 'live', certname, 'fullchain.pem'))
+
+
+def test_ocsp_status_stale(context):
+    """Test retrieval of OCSP statuses for staled config"""
+    sample_data_path = misc.load_sample_data_path(context.workspace)
+    output = context.certbot(['certificates', '--config-dir', sample_data_path])
+
+    assert output.count('TEST_CERT') == 2, ('Did not find two test certs as expected ({0})'
+                                            .format(output.count('TEST_CERT')))
+    assert output.count('EXPIRED') == 2, ('Did not find two expired certs as expected ({0})'
+                                          .format(output.count('EXPIRED')))
+
+
+def test_ocsp_status_live(context):
+    """Test retrieval of OCSP statuses for live config"""
+    if context.acme_server == 'pebble':
+        pytest.skip('Pebble does not support OCSP status requests.')
+
+    # OSCP 1: Check live certificate OCSP status (VALID)
+    cert = context.get_domain('ocsp-check')
+    context.certbot(['--domains', cert])
+    output = context.certbot(['certificates'])
+
+    assert output.count('VALID') == 1, 'Expected {0} to be VALID'.format(cert)
+    assert output.count('EXPIRED') == 0, 'Did not expect {0} to be EXPIRED'.format(cert)
+
+    # OSCP 2: Check live certificate OCSP status (REVOKED)
+    context.certbot(['revoke', '--cert-name', cert, '--no-delete-after-revoke'])
+    output = context.certbot(['certificates'])
+
+    assert output.count('INVALID') == 1, 'Expected {0} to be INVALID'.format(cert)
+    assert output.count('REVOKED') == 1, 'Expected {0} to be REVOKED'.format(cert)

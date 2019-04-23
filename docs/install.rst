@@ -71,8 +71,10 @@ from your web server OS and putting others in a python virtual environment. You 
 download and run it as follows::
 
   user@webserver:~$ wget https://dl.eff.org/certbot-auto
-  user@webserver:~$ chmod a+x ./certbot-auto
-  user@webserver:~$ ./certbot-auto --help
+  user@webserver:~$ sudo mv certbot-auto /usr/local/bin/certbot-auto
+  user@webserver:~$ sudo chown root /usr/local/bin/certbot-auto
+  user@webserver:~$ chmod 0755 /usr/local/bin/certbot-auto
+  user@webserver:~$ /usr/local/bin/certbot-auto --help
 
 To check the integrity of the ``certbot-auto`` script,
 you can use these steps::
@@ -80,7 +82,7 @@ you can use these steps::
 
 	    user@webserver:~$ wget -N https://dl.eff.org/certbot-auto.asc
 	    user@webserver:~$ gpg2 --keyserver pool.sks-keyservers.net --recv-key A2CFB51FA275A7286234E7B24D17C995CD9775F2
-	    user@webserver:~$ gpg2 --trusted-key 4D17C995CD9775F2 --verify certbot-auto.asc certbot-auto
+	    user@webserver:~$ gpg2 --trusted-key 4D17C995CD9775F2 --verify certbot-auto.asc /usr/local/bin/certbot-auto
 
 
 
@@ -106,7 +108,7 @@ the same command line flags and arguments. For more information, see
 
 For full command line help, you can type::
 
-  ./certbot-auto --help all
+  /usr/local/bin/certbot-auto --help all
 
 Problems with Python virtual environment
 ----------------------------------------
