@@ -149,7 +149,7 @@ class MultipleVhostsTestFedora(util.ApacheTest):
     def test_get_version(self, mock_run_script):
         mock_run_script.return_value = ('', None)
         self.assertRaises(errors.PluginError, self.config.get_version)
-        self.assertEquals(mock_run_script.call_args[0][0][0], 'httpd')
+        self.assertEqual(mock_run_script.call_args[0][0][0], 'httpd')
 
     def test_get_virtual_hosts(self):
         """Make sure all vhosts are being properly found."""

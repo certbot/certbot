@@ -1,3 +1,4 @@
+""" Distribution specific override class for Fedora 29+ """
 import pkg_resources
 import zope.interface
 
