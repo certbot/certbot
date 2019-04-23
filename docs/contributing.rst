@@ -116,37 +116,24 @@ of output can make it hard to find specific failures when they happen.
 
 .. _integration:
 
-Integration testing with Pebble CA
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Integration testing with the Pebble CA
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Generally it is sufficient to open a pull request and let Github and Travis run
 integration tests for you. However, you may want to run them locally before submitting
-your pull request. To do so, you need Docker and docker-compose installed and working.
+your pull request. You need Docker and docker-compose installed and working.
 
-A unique script allows you to setup Pebble, the LetsEncrypt ACME CA server for integration
-testing, and to launch the tests with Certbot: ``launch-integration-tests.py``
+The tox environment `integration` will setup Pebble, the LetsEncrypt ACME CA server
+for integration testing, then launch the Certbot integration tests.
 
 With a user allowed to access your local Docker daemon, run:
 
 .. code-block:: shell
 
-  ./certbot-ci/launch-integration-tests.py --numprocesses=auto --coverage
+  tox -e integration
 
-After environment setup, tests will be run using pytest. An execution report and a
-code coverage report will be displayed at the end of the integration tests process.
-
-Check embedded help to see other integration tests execution options:
-
-.. code-block:: shell
-
-  ./certbot-ci/launch-integration-tests.py --help
-
-If you encounter errors during the environment setup, you may need to clean up your
-Docker instance. See `removing all containers and volumes`_ for more details. Ensure to
-have enough RAM (typically 2GB). You can also reduce/turn off the parallel execution to
-limit the memory footprint by editing/removing the ``--numprocesses`` option.
-
-.. _removing all containers and volumes: https://www.digitalocean.com/community/tutorials/how-to-remove-docker-images-containers-and-volumes
+Tests will be run using pytest. An test report and a code coverage report will be
+displayed at the end of the integration tests execution.
 
 Code components and layout
 ==========================
