@@ -3,6 +3,7 @@ from certbot import util
 
 from certbot_apache import configurator
 from certbot_apache import override_arch
+from certbot_apache import override_fedora_next
 from certbot_apache import override_darwin
 from certbot_apache import override_debian
 from certbot_apache import override_centos
@@ -17,6 +18,7 @@ OVERRIDE_CLASSES = {
     "centos": override_centos.CentOSConfigurator,
     "centos linux": override_centos.CentOSConfigurator,
     "fedora": override_centos.CentOSConfigurator,
+    "fedora_next": override_fedora_next.FedoraConfigurator,
     "ol": override_centos.CentOSConfigurator,
     "red hat enterprise linux server": override_centos.CentOSConfigurator,
     "rhel": override_centos.CentOSConfigurator,
@@ -27,12 +29,19 @@ OVERRIDE_CLASSES = {
     "suse": override_suse.OpenSUSEConfigurator,
 }
 
+
 def get_configurator():
     """ Get correct configurator class based on the OS fingerprint """
-    os_info = util.get_os_info()
+    os_name, os_version = util.get_os_info()
     override_class = None
+
+    # Special case for Fedora >= 29
+    if os_name == 'fedora' and int(os_version) >= 29:
+        os_name = 'fedora_next'
+    os_name = os_name.lower()
+
     try:
-        override_class = OVERRIDE_CLASSES[os_info[0].lower()]
+        override_class = OVERRIDE_CLASSES[os_name]
     except KeyError:
         # OS not found in the list
         os_like = util.get_systemd_os_like()
@@ -44,5 +53,6 @@ def get_configurator():
             # No override class found, return the generic configurator
             override_class = configurator.ApacheConfigurator
     return override_class
+
 
 ENTRYPOINT = get_configurator()
