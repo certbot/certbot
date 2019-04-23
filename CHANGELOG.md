@@ -17,6 +17,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * Updated Certbot and its plugins to improve the handling of file system permissions
   on Windows as a step towards adding proper Windows support to Certbot.
 * Updated urllib3 to 1.24.2 in certbot-auto.
+* Removed the fallback introduced with 0.32.0 in `acme` to retry a challenge response
+  with a `keyAuthorization` if sending the response without this field caused a
+  `malformed` error to be received from the ACME server.
 
 ### Fixed
 
@@ -26,6 +29,7 @@ Despite us having broken lockstep, we are continuing to release new versions of
 all Certbot components during releases for the time being, however, the only
 package with changes other than its version number was:
 
+* acme
 * certbot
 * certbot-apache
 * certbot-dns-cloudflare
