@@ -28,18 +28,18 @@ extended-test-suite: &extended-test-suite
 
 matrix:
   include:
-    # These environments are always executed
-    - python: "3.6"
+    # Main test suite
+    - python: "2.7"
       env: ACME_SERVER=boulder-v1 PYTEST_ADDOPTS=-n4 TOXENV=integration
       sudo: required
       services: docker
       <<: *not-on-master
-    - python: "3.6"
+    - python: "2.7"
       env: ACME_SERVER=boulder-v2 PYTEST_ADDOPTS=-n4 TOXENV=integration
       sudo: required
       services: docker
       <<: *not-on-master
-    - python: "3.6"
+    - python: "2.7"
       env: ACME_SERVER=pebble PYTEST_ADDOPTS=-n4 TOXENV=integration
       sudo: required
       services: docker
