@@ -12,6 +12,7 @@ from certbot_apache import parser
 
 @zope.interface.provider(interfaces.IPluginFactory)
 class FedoraConfigurator(configurator.ApacheConfigurator):
+    """Fedora 29+ specific ApacheConfigurator override class"""
 
     OS_DEFAULTS = dict(
         server_root="/etc/httpd",
@@ -79,9 +80,9 @@ class FedoraConfigurator(configurator.ApacheConfigurator):
 
 
 class FedoraParser(parser.ApacheParser):
-
+    """Fedora 29+ specific ApacheParser override class"""
     def __init__(self, *args, **kwargs):
-        # CentOS specific configuration file for Apache
+        # Fedora 29+ specific configuration file for Apache
         self.sysconfig_filep = "/etc/sysconfig/httpd"
         super(FedoraParser, self).__init__(*args, **kwargs)
 
@@ -92,7 +93,7 @@ class FedoraParser(parser.ApacheParser):
         self._parse_sysconfig_var()
 
     def _parse_sysconfig_var(self):
-        """ Parses Apache CLI options from CentOS configuration file """
+        """ Parses Apache CLI options from Fedora configuration file """
         defines = apache_util.parse_define_file(self.sysconfig_filep, "OPTIONS")
         for k in defines:
             self.variables[k] = defines[k]
