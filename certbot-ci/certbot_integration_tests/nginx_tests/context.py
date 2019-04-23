@@ -22,7 +22,7 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
         self.nginx_config_path = os.path.join(self.nginx_root, 'nginx.conf')
         self.nginx_config = None
 
-        default_server = request.param
+        default_server = request.param['default_server']
         self.process = self._start_nginx(default_server)
 
     def cleanup(self):
