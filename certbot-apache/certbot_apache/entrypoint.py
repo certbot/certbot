@@ -3,7 +3,7 @@ from certbot import util
 
 from certbot_apache import configurator
 from certbot_apache import override_arch
-from certbot_apache import override_fedora_next
+from certbot_apache import override_fedora
 from certbot_apache import override_darwin
 from certbot_apache import override_debian
 from certbot_apache import override_centos
@@ -17,8 +17,8 @@ OVERRIDE_CLASSES = {
     "ubuntu": override_debian.DebianConfigurator,
     "centos": override_centos.CentOSConfigurator,
     "centos linux": override_centos.CentOSConfigurator,
-    "fedora": override_centos.CentOSConfigurator,
-    "fedora_next": override_fedora_next.FedoraConfigurator,
+    "fedora_old": override_centos.CentOSConfigurator,
+    "fedora": override_fedora.FedoraConfigurator,
     "ol": override_centos.CentOSConfigurator,
     "red hat enterprise linux server": override_centos.CentOSConfigurator,
     "rhel": override_centos.CentOSConfigurator,
@@ -33,12 +33,12 @@ OVERRIDE_CLASSES = {
 def get_configurator():
     """ Get correct configurator class based on the OS fingerprint """
     os_name, os_version = util.get_os_info()
+    os_name, os_version = os_name.lower(), int(os_version)
     override_class = None
 
-    # Special case for Fedora >= 29
-    if os_name == 'fedora' and int(os_version) >= 29:
-        os_name = 'fedora_next'
-    os_name = os_name.lower()
+    # Special case for older Fedora versions
+    if os_name == 'fedora' and os_version < 29:
+        os_name = 'fedora_old'
 
     try:
         override_class = OVERRIDE_CLASSES[os_name]
