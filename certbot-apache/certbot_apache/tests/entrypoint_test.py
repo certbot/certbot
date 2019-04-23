@@ -5,8 +5,7 @@ import mock
 
 from certbot_apache import configurator
 from certbot_apache import entrypoint
-from certbot_apache import override_centos
-from certbot_apache import override_fedora
+
 
 class EntryPointTest(unittest.TestCase):
     """Entrypoint tests"""
