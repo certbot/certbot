@@ -16,6 +16,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   restart.
 * Updated Certbot and its plugins to improve the handling of file system permissions
   on Windows as a step towards adding proper Windows support to Certbot.
+* Removed the fallback introduced with 0.32.0 in `acme` to retry a response
+  challenge with a `keyAuthorization` after a failed response without this field.
 
 ### Fixed
 
