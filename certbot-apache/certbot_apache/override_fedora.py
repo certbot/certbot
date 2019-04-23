@@ -18,8 +18,8 @@ class FedoraConfigurator(configurator.ApacheConfigurator):
         vhost_root="/etc/httpd/conf.d",
         vhost_files="*.conf",
         logs_root="/var/log/httpd",
-        ctl="apachectl",
-        version_cmd=['apachectl', '-v'],
+        ctl="httpd",
+        version_cmd=['httpd', '-v'],
         restart_cmd=['apachectl', 'graceful'],
         restart_cmd_alt=['apachectl', 'restart'],
         conftest_cmd=['apachectl', 'configtest'],
@@ -30,7 +30,8 @@ class FedoraConfigurator(configurator.ApacheConfigurator):
         handle_sites=False,
         challenge_location="/etc/httpd/conf.d",
         MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
-            "certbot_apache", "centos-options-ssl-apache.conf")
+            # TODO: eventually newest version of Fedora will need their own config
+            "certbot_apache", "fedora-options-ssl-apache.conf")
     )
 
     def config_test(self):
@@ -64,6 +65,17 @@ class FedoraConfigurator(configurator.ApacheConfigurator):
 
         # Finish with actual config check to see if systemctl restart helped
         super(FedoraConfigurator, self).config_test()
+
+    def _prepare_options(self):
+        """
+        Override the options dictionary initialization to keep using apachectl
+        instead of httpd and so take advantages of this new bash script in newer versions
+        of Fedora to restart httpd.
+        """
+        super(FedoraConfigurator, self)._prepare_options()
+        self.options["restart_cmd"][0] = 'apachectl'
+        self.options["restart_cmd_alt"][0] = 'apachectl'
+        self.options["conftest_cmd"][0] = 'apachectl'
 
 
 class FedoraParser(parser.ApacheParser):
