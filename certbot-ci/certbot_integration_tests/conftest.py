@@ -22,6 +22,21 @@ def pytest_addoption(parser):
                      choices=['boulder-v1', 'boulder-v2', 'pebble'],
                      help='select the ACME server to use (boulder-v1, boulder-v2, '
                           'pebble), defaulting to pebble')
+    parser.addoption('--campaign', choices=['certbot', 'nginx'],
+                     help='If set, will select the related specific test campaign to run.')
+
+
+def pytest_ignore_collect(path, config):
+    """
+    Standard pytest hook to ignore particular tests. Used to consume the value of --campaign if set.
+    :param path: current discovery path
+    :param config: current pytest config
+    :return: None to include the path, any other value to ignore it
+    """
+    campaign = config.getoption('campaign')
+    if campaign and '{0}_test'.format(campaign) not in path:
+        return True
+    return None
 
 
 def pytest_configure(config):
