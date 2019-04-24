@@ -12,6 +12,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import warnings
 from distutils.version import LooseVersion
 
 import pkg_resources
@@ -239,7 +240,10 @@ def generate_csr(domains, key_path, csr_path, key_type=RSA_KEY_TYPE):
         key = crypto.PKey()
         key.generate_key(crypto.TYPE_RSA, 2048)
     elif key_type == ECDSA_KEY_TYPE:
-        key = ec.generate_private_key(ec.SECP384R1(), default_backend())
+        with warnings.catch_warnings():
+            # Ignore a warning on some old versions of cryptography
+            warnings.simplefilter('ignore:CRLExtensionOID:PendingDeprecationWarning')
+            key = ec.generate_private_key(ec.SECP384R1(), default_backend())
         key = key.private_bytes(encoding=Encoding.PEM, format=PrivateFormat.TraditionalOpenSSL,
                                 encryption_algorithm=NoEncryption())
         key = crypto.load_privatekey(crypto.FILETYPE_PEM, key)
