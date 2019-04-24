@@ -20,6 +20,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * Removed the fallback introduced with 0.32.0 in `acme` to retry a challenge response
   with a `keyAuthorization` if sending the response without this field caused a
   `malformed` error to be received from the ACME server.
+* Linode DNS plugin now supports api keys created from their new panel
+  at [cloud.linode.com](https://cloud.linode.com)
 
 ### Fixed
 
