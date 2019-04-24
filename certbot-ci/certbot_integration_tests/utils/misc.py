@@ -242,7 +242,7 @@ def generate_csr(domains, key_path, csr_path, key_type=RSA_KEY_TYPE):
     elif key_type == ECDSA_KEY_TYPE:
         with warnings.catch_warnings():
             # Ignore a warning on some old versions of cryptography
-            warnings.simplefilter('ignore:CRLExtensionOID:PendingDeprecationWarning')
+            warnings.simplefilter('ignore', category=PendingDeprecationWarning)
             key = ec.generate_private_key(ec.SECP384R1(), default_backend())
         key = key.private_bytes(encoding=Encoding.PEM, format=PrivateFormat.TraditionalOpenSSL,
                                 encryption_algorithm=NoEncryption())
