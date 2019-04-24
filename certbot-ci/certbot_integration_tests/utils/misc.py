@@ -40,7 +40,9 @@ def check_until_timeout(url):
         import urllib3
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     except ImportError:
-        pass
+        # Handle old versions of request with vendorized urllib3
+        from requests.packages.urllib3.exceptions import InsecureRequestWarning
+        requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
     for _ in range(0, 150):
         time.sleep(1)
