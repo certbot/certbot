@@ -4,8 +4,8 @@
 
 """
 import os
-import pkg_resources
 import unittest
+import pkg_resources
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
@@ -92,5 +92,4 @@ def skip_unless(condition, reason):  # pragma: no cover
         return unittest.skipUnless(condition, reason)
     elif condition:
         return lambda cls: cls
-    else:
-        return lambda cls: None
+    return lambda cls: None

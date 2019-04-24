@@ -1,7 +1,6 @@
 """Tools for managing certificates."""
 import datetime
 import logging
-import os
 import re
 import traceback
 
@@ -17,6 +16,7 @@ from certbot import ocsp
 from certbot import storage
 from certbot import util
 from certbot.compat import misc
+from certbot.compat import os
 from certbot.display import util as display_util
 
 logger = logging.getLogger(__name__)
@@ -184,10 +184,9 @@ def _archive_files(candidate_lineage, filetype):
     archive_dir = candidate_lineage.archive_dir
     pattern = [os.path.join(archive_dir, f) for f in os.listdir(archive_dir)
                     if re.match("{0}[0-9]*.pem".format(filetype), f)]
-    if len(pattern) > 0:
+    if pattern:
         return pattern
-    else:
-        return None
+    return None
 
 def _acceptable_matches():
     """ Generates the list that's passed to match_and_check_overlaps. Is its own function to

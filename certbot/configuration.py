@@ -1,15 +1,15 @@
 """Certbot user-supplied configuration."""
 import copy
-import os
 
 import zope.interface
-from six.moves.urllib import parse  # pylint: disable=import-error
+from six.moves.urllib import parse  # pylint: disable=relative-import
 
 from certbot import constants
 from certbot import errors
 from certbot import interfaces
 from certbot import util
 from certbot.compat import misc
+from certbot.compat import os
 
 
 @zope.interface.implementer(interfaces.IConfig)

@@ -31,14 +31,14 @@ class TLSServerTest(unittest.TestCase):
         from acme.standalone import TLSServer
         server = TLSServer(
             ('', 0), socketserver.BaseRequestHandler, bind_and_activate=True)
-        server.server_close()  # pylint: disable=no-member
+        server.server_close()
 
     def test_ipv6(self):
         if socket.has_ipv6:
             from acme.standalone import TLSServer
             server = TLSServer(
                 ('', 0), socketserver.BaseRequestHandler, bind_and_activate=True, ipv6=True)
-            server.server_close()  # pylint: disable=no-member
+            server.server_close()
 
 
 class TLSSNI01ServerTest(unittest.TestCase):
@@ -52,12 +52,11 @@ class TLSSNI01ServerTest(unittest.TestCase):
         )}
         from acme.standalone import TLSSNI01Server
         self.server = TLSSNI01Server(('localhost', 0), certs=self.certs)
-        # pylint: disable=no-member
         self.thread = threading.Thread(target=self.server.serve_forever)
         self.thread.start()
 
     def tearDown(self):
-        self.server.shutdown()  # pylint: disable=no-member
+        self.server.shutdown()
         self.thread.join()
 
     def test_it(self):
@@ -80,13 +79,12 @@ class HTTP01ServerTest(unittest.TestCase):
         from acme.standalone import HTTP01Server
         self.server = HTTP01Server(('', 0), resources=self.resources)
 
-        # pylint: disable=no-member
         self.port = self.server.socket.getsockname()[1]
         self.thread = threading.Thread(target=self.server.serve_forever)
         self.thread.start()
 
     def tearDown(self):
-        self.server.shutdown()  # pylint: disable=no-member
+        self.server.shutdown()
         self.thread.join()
 
     def test_index(self):
@@ -139,7 +137,6 @@ class BaseDualNetworkedServersTest(unittest.TestCase):
                 # NB: On Windows, socket.IPPROTO_IPV6 constant may be missing.
                 # We use the corresponding value (41) instead.
                 level = getattr(socket, "IPPROTO_IPV6", 41)
-                # pylint: disable=no-member
                 self.socket.setsockopt(level, socket.IPV6_V6ONLY, 1)
                 try:
                     self.server_bind()
@@ -212,7 +209,6 @@ class HTTP01DualNetworkedServersTest(unittest.TestCase):
         from acme.standalone import HTTP01DualNetworkedServers
         self.servers = HTTP01DualNetworkedServers(('', 0), resources=self.resources)
 
-        # pylint: disable=no-member
         self.port = self.servers.getsocknames()[0][1]
         self.servers.serve_forever()
 

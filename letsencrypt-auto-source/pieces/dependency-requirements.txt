@@ -121,9 +121,9 @@ requests-toolbelt==0.9.1 \
 six==1.12.0 \
     --hash=sha256:3350809f0555b11f552448330d0b52d5f24c91a322ea4a15ef22629740f3761c \
     --hash=sha256:d16a0141ec1a18405cd4ce8b4613101da75da0e9a7aec5bdd4fa804d0e0eba73
-urllib3==1.24.1 \
-    --hash=sha256:61bf29cada3fc2fbefad4fdf059ea4bd1b4a86d2b6d15e1c7c0b582b9752fe39 \
-    --hash=sha256:de9529817c93f27c8ccbfead6985011db27bd0ddfcdb2d86f3f663385c6a9c22
+urllib3==1.24.2 \
+    --hash=sha256:4c291ca23bbb55c76518905869ef34bdd5f0e46af7afe6861e8375643ffee1a0 \
+    --hash=sha256:9a247273df709c4fedb38c711e44292304f73f39ab01beda9f6b9fc375669ac3
 zope.component==4.5 \
     --hash=sha256:6edfd626c3b593b72895a8cfcf79bff41f4619194ce996a85bce31ac02b94e55 \
     --hash=sha256:984a06ba3def0b02b1117fa4c45b56e772e8c29c0340820fbf367e440a93a3a4

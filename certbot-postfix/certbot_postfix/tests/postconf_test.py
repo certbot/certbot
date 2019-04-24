@@ -1,9 +1,11 @@
 """Tests for certbot_postfix.postconf."""
 
-import mock
 import unittest
 
+import mock
+
 from certbot import errors
+
 
 class PostConfTest(unittest.TestCase):
     """Tests for certbot_postfix.util.PostConf."""

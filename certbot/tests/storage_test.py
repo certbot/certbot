@@ -1,7 +1,6 @@
 """Tests for certbot.storage."""
 # pylint disable=protected-access
 import datetime
-import os
 import shutil
 import stat
 import unittest
@@ -15,6 +14,7 @@ import certbot
 import certbot.tests.util as test_util
 from certbot import errors
 from certbot.compat import misc
+from certbot.compat import os
 from certbot.storage import ALL_FOUR
 
 CERT = test_util.load_cert('cert_512.pem')

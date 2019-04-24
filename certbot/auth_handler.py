@@ -264,7 +264,7 @@ def challb_to_achall(challb, account_key, domain):
         return achallenges.DNS(challb=challb, domain=domain)
     else:
         raise errors.Error(
-            "Received unsupported challenge of type: %s", chall.typ)
+            "Received unsupported challenge of type: {0}".format(chall.typ))
 
 
 def gen_challenge_path(challbs, preferences, combinations):
@@ -295,8 +295,7 @@ def gen_challenge_path(challbs, preferences, combinations):
     """
     if combinations:
         return _find_smart_path(challbs, preferences, combinations)
-    else:
-        return _find_dumb_path(challbs, preferences)
+    return _find_dumb_path(challbs, preferences)
 
 
 def _find_smart_path(challbs, preferences, combinations):

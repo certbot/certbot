@@ -17,7 +17,6 @@ from __future__ import print_function
 import functools
 import logging
 import logging.handlers
-import os
 import sys
 import tempfile
 import traceback
@@ -28,6 +27,7 @@ from certbot import constants
 from certbot import errors
 from certbot import util
 from certbot.compat import misc
+from certbot.compat import os
 
 # Logging format
 CLI_FMT = "%(message)s"
@@ -182,8 +182,7 @@ class ColoredStreamHandler(logging.StreamHandler):
         out = super(ColoredStreamHandler, self).format(record)
         if self.colored and record.levelno >= self.red_level:
             return ''.join((util.ANSI_SGR_RED, out, util.ANSI_SGR_RESET))
-        else:
-            return out
+        return out
 
 
 class MemoryHandler(logging.handlers.MemoryHandler):

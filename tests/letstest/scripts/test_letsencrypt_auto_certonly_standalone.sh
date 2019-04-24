@@ -11,11 +11,25 @@ set -eo pipefail
 cd letsencrypt
 export PATH="$PWD/letsencrypt-auto-source:$PATH"
 letsencrypt-auto --os-packages-only --debug --version
+
+# Create a venv-like layout at the old virtual environment path to test that a
+# symlink is properly created when letsencrypt-auto runs.
+HOME=${HOME:-~root}
+XDG_DATA_HOME=${XDG_DATA_HOME:-~/.local/share}
+OLD_VENV_BIN="$XDG_DATA_HOME/letsencrypt/bin"
+mkdir -p "$OLD_VENV_BIN"
+touch "$OLD_VENV_BIN/letsencrypt"
+
 letsencrypt-auto certonly --no-self-upgrade -v --standalone --debug \
                    --text --agree-dev-preview --agree-tos \
                    --renew-by-default --redirect \
                    --register-unsafely-without-email \
                    --domain $PUBLIC_HOSTNAME --server $BOULDER_URL
+
+if [ "$(tools/readlink.py ${XDG_DATA_HOME:-~/.local/share}/letsencrypt)" != "/opt/eff.org/certbot/venv" ]; then
+    echo symlink from old venv path not properly created!
+    exit 1
+fi
 
 if ! letsencrypt-auto --help --no-self-upgrade | grep -F "letsencrypt-auto [SUBCOMMAND]"; then
     echo "letsencrypt-auto not included in help output!"

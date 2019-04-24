@@ -1,17 +1,16 @@
 """Tests for certbot.crypto_util."""
 import logging
-import os
 import unittest
 
 import OpenSSL
 import mock
 import zope.component
 
+import certbot.tests.util as test_util
 from certbot import errors
 from certbot import interfaces
 from certbot import util
-import certbot.tests.util as test_util
-
+from certbot.compat import os
 
 RSA256_KEY = test_util.load_vector('rsa256_key.pem')
 RSA256_KEY_PATH = test_util.vector_path('rsa256_key.pem')
@@ -192,9 +191,6 @@ class VerifyCertSetup(unittest.TestCase):
 class VerifyRenewableCertTest(VerifyCertSetup):
     """Tests for certbot.crypto_util.verify_renewable_cert."""
 
-    def setUp(self):
-        super(VerifyRenewableCertTest, self).setUp()
-
     def _call(self, renewable_cert):
         from certbot.crypto_util import verify_renewable_cert
         return verify_renewable_cert(renewable_cert)
@@ -209,9 +205,6 @@ class VerifyRenewableCertTest(VerifyCertSetup):
 
 class VerifyRenewableCertSigTest(VerifyCertSetup):
     """Tests for certbot.crypto_util.verify_renewable_cert."""
-
-    def setUp(self):
-        super(VerifyRenewableCertSigTest, self).setUp()
 
     def _call(self, renewable_cert):
         from certbot.crypto_util import verify_renewable_cert_sig
@@ -235,9 +228,6 @@ class VerifyRenewableCertSigTest(VerifyCertSetup):
 class VerifyFullchainTest(VerifyCertSetup):
     """Tests for certbot.crypto_util.verify_fullchain."""
 
-    def setUp(self):
-        super(VerifyFullchainTest, self).setUp()
-
     def _call(self, renewable_cert):
         from certbot.crypto_util import verify_fullchain
         return verify_fullchain(renewable_cert)
@@ -255,9 +245,6 @@ class VerifyFullchainTest(VerifyCertSetup):
 
 class VerifyCertMatchesPrivKeyTest(VerifyCertSetup):
     """Tests for certbot.crypto_util.verify_cert_matches_priv_key."""
-
-    def setUp(self):
-        super(VerifyCertMatchesPrivKeyTest, self).setUp()
 
     def _call(self, renewable_cert):
         from certbot.crypto_util import verify_cert_matches_priv_key

@@ -1,6 +1,6 @@
 """ACME protocol messages."""
-import six
 import json
+import six
 try:
     from collections.abc import Hashable  # pylint: disable=no-name-in-module
 except ImportError:  # pragma: no cover
@@ -46,8 +46,7 @@ def is_acme_error(err):
     """Check if argument is an ACME error."""
     if isinstance(err, Error) and (err.typ is not None):
         return (ERROR_PREFIX in err.typ) or (OLD_ERROR_PREFIX in err.typ)
-    else:
-        return False
+    return False
 
 
 @six.python_2_unicode_compatible
@@ -102,6 +101,7 @@ class Error(jose.JSONObjectWithFields, errors.Error):
         code = str(self.typ).split(':')[-1]
         if code in ERROR_CODES:
             return code
+        return None
 
     def __str__(self):
         return b' :: '.join(
@@ -116,18 +116,19 @@ class _Constant(jose.JSONDeSerializable, Hashable):  # type: ignore
     POSSIBLE_NAMES = NotImplemented
 
     def __init__(self, name):
-        self.POSSIBLE_NAMES[name] = self
+        super(_Constant, self).__init__()
+        self.POSSIBLE_NAMES[name] = self  # pylint: disable=unsupported-assignment-operation
         self.name = name
 
     def to_partial_json(self):
         return self.name
 
     @classmethod
-    def from_json(cls, value):
-        if value not in cls.POSSIBLE_NAMES:
+    def from_json(cls, jobj):
+        if jobj not in cls.POSSIBLE_NAMES:  # pylint: disable=unsupported-membership-test
             raise jose.DeserializationError(
                 '{0} not recognized'.format(cls.__name__))
-        return cls.POSSIBLE_NAMES[value]
+        return cls.POSSIBLE_NAMES[jobj]  # pylint: disable=unsubscriptable-object
 
     def __repr__(self):
         return '{0}({1})'.format(self.__class__.__name__, self.name)
@@ -186,7 +187,6 @@ class Directory(jose.JSONDeSerializable):
 
         def __init__(self, **kwargs):
             kwargs = dict((self._internal_name(k), v) for k, v in kwargs.items())
-            # pylint: disable=star-args
             super(Directory.Meta, self).__init__(**kwargs)
 
         @property
@@ -322,7 +322,7 @@ class Registration(ResourceBody):
 
     def _filter_contact(self, prefix):
         return tuple(
-            detail[len(prefix):] for detail in self.contact
+            detail[len(prefix):] for detail in self.contact  # pylint: disable=not-an-iterable
             if detail.startswith(prefix))
 
     @property
@@ -394,7 +394,6 @@ class ChallengeBody(ResourceBody):
 
     def __init__(self, **kwargs):
         kwargs = dict((self._internal_name(k), v) for k, v in kwargs.items())
-        # pylint: disable=star-args
         super(ChallengeBody, self).__init__(**kwargs)
 
     def encode(self, name):
@@ -477,7 +476,7 @@ class Authorization(ResourceBody):
     def resolved_combinations(self):
         """Combinations with challenges instead of indices."""
         return tuple(tuple(self.challenges[idx] for idx in combo)
-                     for combo in self.combinations)
+                     for combo in self.combinations)  # pylint: disable=not-an-iterable
 
 
 @Directory.register

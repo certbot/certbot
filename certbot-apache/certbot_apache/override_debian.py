@@ -1,18 +1,19 @@
 """ Distribution specific override class for Debian family (Ubuntu/Debian) """
 import logging
-import os
-import pkg_resources
 
+import pkg_resources
 import zope.interface
 
 from certbot import errors
 from certbot import interfaces
 from certbot import util
+from certbot.compat import os
 
 from certbot_apache import apache_util
 from certbot_apache import configurator
 
 logger = logging.getLogger(__name__)
+
 
 @zope.interface.provider(interfaces.IPluginFactory)
 class DebianConfigurator(configurator.ApacheConfigurator):
@@ -51,7 +52,7 @@ class DebianConfigurator(configurator.ApacheConfigurator):
 
         """
         if vhost.enabled:
-            return
+            return None
 
         enabled_path = ("%s/sites-enabled/%s" %
                         (self.parser.root,
@@ -68,7 +69,7 @@ class DebianConfigurator(configurator.ApacheConfigurator):
                enabled_path) == vhost.filep:
                 # Already in shape
                 vhost.enabled = True
-                return
+                return None
             else:
                 logger.warning(
                     "Could not symlink %s to %s, got error: %s", enabled_path,
@@ -81,9 +82,9 @@ class DebianConfigurator(configurator.ApacheConfigurator):
         vhost.enabled = True
         logger.info("Enabling available site: %s", vhost.filep)
         self.save_notes += "Enabled site %s\n" % vhost.filep
+        return None
 
     def enable_mod(self, mod_name, temp=False):
-        # pylint: disable=unused-argument
         """Enables module in Apache.
 
         Both enables and reloads Apache so module is active.

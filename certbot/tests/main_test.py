@@ -6,7 +6,6 @@ from __future__ import print_function
 import datetime
 import itertools
 import json
-import os
 import shutil
 import sys
 import tempfile
@@ -33,6 +32,7 @@ from certbot import main
 from certbot import updater
 from certbot import util
 from certbot.compat import misc
+from certbot.compat import os
 from certbot.plugins import disco
 from certbot.plugins import enhancements
 from certbot.plugins import manual
@@ -153,8 +153,7 @@ class CertonlyTest(unittest.TestCase):
         mock_find_cert.return_value = False, None
         self._call('certonly --webroot -d example.com'.split())
 
-    def _assert_no_pause(self, message, pause=True):
-        # pylint: disable=unused-argument
+    def _assert_no_pause(self, message, pause=True):  # pylint: disable=unused-argument
         self.assertFalse(pause)
 
     @mock.patch('certbot.cert_manager.lineage_for_certname')
@@ -533,14 +532,14 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
 
         if mockisfile:
             orig_open = os.path.isfile
+
             def mock_isfile(fn, *args, **kwargs):  # pylint: disable=unused-argument
                 """Mock os.path.isfile()"""
                 if (fn.endswith("cert") or
-                    fn.endswith("chain") or
-                    fn.endswith("privkey")):
+                        fn.endswith("chain") or
+                        fn.endswith("privkey")):
                     return True
-                else:
-                    return orig_open(fn)
+                return orig_open(fn)
 
             with mock.patch("os.path.isfile") as mock_if:
                 mock_if.side_effect = mock_isfile

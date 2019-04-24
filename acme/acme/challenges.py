@@ -20,11 +20,8 @@ from acme import _TLSSNI01DeprecationModule
 logger = logging.getLogger(__name__)
 
 
-# pylint: disable=too-few-public-methods
-
-
 class Challenge(jose.TypedJSONObjectWithFields):
-    # _fields_to_partial_json | pylint: disable=abstract-method
+    # _fields_to_partial_json
     """ACME challenge."""
     TYPES = {}  # type: dict
 
@@ -38,7 +35,7 @@ class Challenge(jose.TypedJSONObjectWithFields):
 
 
 class ChallengeResponse(jose.TypedJSONObjectWithFields):
-    # _fields_to_partial_json | pylint: disable=abstract-method
+    # _fields_to_partial_json
     """ACME challenge response."""
     TYPES = {}  # type: dict
     resource_type = 'challenge'
@@ -97,6 +94,7 @@ class _TokenChallenge(Challenge):
         """
         # TODO: check that path combined with uri does not go above
         # URI_ROOT_PATH!
+        # pylint: disable=unsupported-membership-test
         return b'..' not in self.token and b'/' not in self.token
 
 
@@ -108,10 +106,6 @@ class KeyAuthorizationChallengeResponse(ChallengeResponse):
     """
     key_authorization = jose.Field("keyAuthorization")
     thumbprint_hash_function = hashes.SHA256
-
-    def __init__(self, *args, **kwargs):
-        super(KeyAuthorizationChallengeResponse, self).__init__(*args, **kwargs)
-        self._dump_authorization_key(False)
 
     def verify(self, chall, account_public_key):
         """Verify the key authorization.
@@ -145,26 +139,14 @@ class KeyAuthorizationChallengeResponse(ChallengeResponse):
 
         return True
 
-    def _dump_authorization_key(self, dump):
-        # type: (bool) -> None
-        """
-        Set if keyAuthorization is dumped in the JSON representation of this ChallengeResponse.
-        NB: This method is declared as private because it will eventually be removed.
-        :param bool dump: True to dump the keyAuthorization, False otherwise
-        """
-        object.__setattr__(self, '_dump_auth_key', dump)
-
     def to_partial_json(self):
         jobj = super(KeyAuthorizationChallengeResponse, self).to_partial_json()
-        if not self._dump_auth_key:  # pylint: disable=no-member
-            jobj.pop('keyAuthorization', None)
-
+        jobj.pop('keyAuthorization', None)
         return jobj
 
 
 @six.add_metaclass(abc.ABCMeta)
 class KeyAuthorizationChallenge(_TokenChallenge):
-    # pylint: disable=abstract-class-little-used,too-many-ancestors
     """Challenge based on Key Authorization.
 
     :param response_cls: Subclass of `KeyAuthorizationChallengeResponse`
@@ -196,7 +178,7 @@ class KeyAuthorizationChallenge(_TokenChallenge):
         :rtype: KeyAuthorizationChallengeResponse
 
         """
-        return self.response_cls(
+        return self.response_cls(  # pylint: disable=not-callable
             key_authorization=self.key_authorization(account_key))
 
     @abc.abstractmethod
@@ -233,7 +215,7 @@ class DNS01Response(KeyAuthorizationChallengeResponse):
     """ACME dns-01 challenge response."""
     typ = "dns-01"
 
-    def simple_verify(self, chall, domain, account_public_key):
+    def simple_verify(self, chall, domain, account_public_key):  # pylint: disable=unused-argument
         """Simple verify.
 
         This method no longer checks DNS records and is a simple wrapper
@@ -249,7 +231,6 @@ class DNS01Response(KeyAuthorizationChallengeResponse):
         :rtype: bool
 
         """
-        # pylint: disable=unused-argument
         verified = self.verify(chall, account_public_key)
         if not verified:
             logger.debug("Verification of key authorization in response failed")
@@ -454,7 +435,6 @@ class TLSSNI01Response(KeyAuthorizationChallengeResponse):
         kwargs.setdefault("port", self.PORT)
         kwargs["name"] = self.z_domain
         # TODO: try different methods?
-        # pylint: disable=protected-access
         return crypto_util.probe_sni(**kwargs)
 
     def verify_cert(self, cert):
@@ -515,9 +495,6 @@ class TLSSNI01(KeyAuthorizationChallenge):
     # boulder#962, ietf-wg-acme#22
     #n = jose.Field("n", encoder=int, decoder=int)
 
-    def __init__(self, *args, **kwargs):
-        super(TLSSNI01, self).__init__(*args, **kwargs)
-
     def validation(self, account_key, **kwargs):
         """Generate validation.
 
@@ -559,7 +536,7 @@ class TLSALPN01(KeyAuthorizationChallenge):
         raise NotImplementedError()
 
 
-@Challenge.register  # pylint: disable=too-many-ancestors
+@Challenge.register
 class DNS(_TokenChallenge):
     """ACME "dns" challenge."""
     typ = "dns"
