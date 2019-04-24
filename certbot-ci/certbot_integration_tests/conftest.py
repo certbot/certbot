@@ -34,7 +34,7 @@ def pytest_ignore_collect(path, config):
     :return: None to include the path, any other value to ignore it
     """
     campaign = config.getoption('campaign')
-    if campaign and '{0}_test'.format(campaign) not in path:
+    if campaign and '{0}_test'.format(campaign) not in str(path):
         return True
     return None
 
