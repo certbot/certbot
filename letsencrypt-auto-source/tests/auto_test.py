@@ -455,13 +455,13 @@ class AutoTests(TestCase):
         self.assertTrue('insecure permissions' in out)
 
         # Test group permissions
-        if stat_result.st_gid != 0:
+        if stat_result.st_gid >= 1000:
             chmod(path, original_mode | S_IWGRP)
             out, _ = run_le_auto_func()
             self.assertTrue('insecure permissions' in out)
 
         # Test owner permissions
-        if stat_result.st_uid != 0:
+        if stat_result.st_uid >= 1000:
             chmod(path, original_mode | S_IWUSR)
             out, _ = run_le_auto_func()
             self.assertTrue('insecure permissions' in out)
