@@ -564,6 +564,21 @@ class EnhanceConfigTest(ClientTestCommon):
         self.assertEqual(mock_log.warning.call_args[0][1],
                           'redirect')
 
+    @mock.patch("certbot.client.logger")
+    def test_config_set_no_warning_redirect(self, mock_log):
+        self.config.redirect = False
+        self._test_with_already_existing()
+        self.assertFalse(mock_log.warning.called)
+
+    @mock.patch("certbot.client.enhancements.ask")
+    @mock.patch("certbot.client.logger")
+    def test_warn_redirect(self, mock_log, mock_ask):
+        self.config.redirect = None
+        mock_ask.return_value = False
+        self._test_with_already_existing()
+        self.assertTrue(mock_log.warning.called)
+        self.assertTrue("disable" in mock_log.warning.call_args[0][0])
+
     def test_no_ask_hsts(self):
         self.config.hsts = True
         self._test_with_all_supported()
