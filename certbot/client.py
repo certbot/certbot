@@ -498,10 +498,6 @@ class Client(object):
                            "the certificate")
             raise errors.Error("No installer available")
 
-        logger.warning("Future versions of Certbot will automatically configure "
-            "the webserver so that all requests redirect to secure HTTPS access. "
-            "If you do not want this feature, run Certbot with the --no-redirect flag.")
-
         chain_path = None if chain_path is None else os.path.abspath(chain_path)
 
         msg = ("Unable to install the certificate")
@@ -553,6 +549,11 @@ class Client(object):
                 if ask_redirect:
                     if config_name == "redirect" and config_value is None:
                         config_value = enhancements.ask(enhancement_name)
+                        if not config_value:
+                            logger.warning("Future versions of Certbot will automatically "
+                                "configure the webserver so that all requests redirect to secure "
+                                "HTTPS access. You can control this behavior and disable this "
+                                "warning with the --redirect and --no-redirect flags.")
                 if config_value:
                     self.apply_enhancement(domains, enhancement_name, option)
                     enhanced = True
