@@ -470,3 +470,32 @@ class AutoTests(TestCase):
         chmod(path, original_mode)
         out, _ = run_le_auto_func()
         self.assertFalse('insecure permissions' in out)
+
+    def test_disabled_permissions_warnings(self):
+        """Make sure that letsencrypt-auto permissions warnings can be disabled."""
+        with temp_paths() as (le_auto_path, venv_dir):
+            le_auto_path = abspath(le_auto_path)
+            install_le_auto(self.NEW_LE_AUTO, le_auto_path)
+
+            le_auto_args_str='--install-only --no-self-upgrade'
+            pip_links=join(tests_dir(), 'fake-letsencrypt', 'dist')
+            out, _ = run_le_auto(le_auto_path, venv_dir,
+                                 le_auto_args_str=le_auto_args_str,
+                                 PIP_FIND_LINKS=pip_links)
+            self.assertTrue('insecure permissions' in out)
+
+            # Test that warnings are disabled when the script isn't run as
+            # root.
+            out, _ = run_le_auto(le_auto_path, venv_dir,
+                                 le_auto_args_str=le_auto_args_str,
+                                 LE_AUTO_SUDO='',
+                                 PIP_FIND_LINKS=pip_links)
+            self.assertFalse('insecure permissions' in out)
+
+            # Test that --no-permissions-check disables warnings.
+            le_auto_args_str += ' --no-permissions-check'
+            out, _ = run_le_auto(
+                le_auto_path, venv_dir,
+                le_auto_args_str=le_auto_args_str,
+                PIP_FIND_LINKS=pip_links)
+            self.assertFalse('insecure permissions' in out)

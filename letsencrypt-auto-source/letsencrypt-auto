@@ -45,6 +45,7 @@ Help for certbot itself cannot be provided until it is installed.
   -h, --help                                print this help
   -n, --non-interactive, --noninteractive   run without asking for user input
   --no-bootstrap                            do not install OS dependencies
+  --no-permissions-check                    do not warn about file system permissions
   --no-self-upgrade                         do not download updates
   --os-packages-only                        install OS dependencies and exit
   --install-only                            install certbot, upgrade if needed, and exit
@@ -67,6 +68,8 @@ for arg in "$@" ; do
       # Do not upgrade this script (also prevents client upgrades, because each
       # copy of the script pins a hash of the python client)
       NO_SELF_UPGRADE=1;;
+    --no-permissions-check)
+      NO_PERMISSIONS_CHECK=1;;
     --no-bootstrap)
       NO_BOOTSTRAP=1;;
     --help)
@@ -173,7 +176,9 @@ SetRootAuthMechanism() {
         SUDO="sudo -E"
         ;;
       '')
-        SKIPPED_ROOT_AUTH=1
+        # If we're not running with root, don't check that this script can only
+        # be modified by system users and groups.
+        NO_PERMISSIONS_CHECK=1
         ;;
       *)
         error "Error: unknown root authorization mechanism '$LE_AUTO_SUDO'."
@@ -1497,9 +1502,9 @@ else
   fi
 
   DeterminePythonVersion "NOCRASH"
-  # If we can't find an up-to-date Python or the user disabled root
-  # authorization, don't warn about file permissions.
-  if [ "$PYVER" -ge "$MIN_PYVER" -a "$SKIPPED_ROOT_AUTH" != 1 ]; then
+  # Don't warn about file permissions if the user disabled the check or we
+  # can't find an up-to-date Python.
+  if [ "$PYVER" -ge "$MIN_PYVER" -a "$NO_PERMISSIONS_CHECK" != 1 ]; then
     # ---------------------------------------------------------------------------
     cat << "UNLIKELY_EOF" > "$TEMP_DIR/check_permissions.py"
 """Verifies certbot-auto cannot be modified by unprivileged users.
