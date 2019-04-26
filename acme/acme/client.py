@@ -603,6 +603,9 @@ class ClientV2(ClientBase):
             Resource.
 
         """
+        self.net.account = regr  # See certbot/certbot#6258
+        # ACME v2 requires to use a POST-as-GET request (POST an empty JWS) here.
+        # This is done by passing None instead of an empty UpdateRegistration to _post().
         self.net.account = self._send_recv_regr(regr, None)
         return self.net.account
 
