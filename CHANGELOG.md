@@ -22,6 +22,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   `malformed` error to be received from the ACME server.
 * Linode DNS plugin now supports api keys created from their new panel
   at [cloud.linode.com](https://cloud.linode.com)
+* Adding a warning noting that future versions of Certbot will automatically configure the
+  webserver so that all requests redirect to secure HTTPS access. You can control this
+  behavior and disable this warning with the --redirect and --no-redirect flags.
 
 ### Fixed
 
