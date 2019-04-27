@@ -34,17 +34,17 @@ def has_safe_permissions(path):
 
     The reason we allow more IDs than 0 is because on some systems such
     as Debian, system users/groups other than uid/gid 0 are used for the
-    path we recommend in our forum post which is /usr/local/bin.  1000
+    path we recommend in our instructions which is /usr/local/bin.  1000
     was chosen because on Debian 0-999 is reserved for system IDs[1] and
-    on RHEL 0-500 is reserved[2]. Debian recommends normal uids start at
-    uid 1000 and RHEL recommends uid 5000 to allow them to increase the
-    range used for system IDs in the future. It's possible that the
-    threshold of 1000 is too high, however, this seems unlikely and
-    avoids printing warnings when we're not confident there is a
-    problem.
+    on RHEL either 0-499 or 0-999 is reserved depending on the
+    version[2][3]. Due to these differences across different OSes, this
+    detection isn't perfect so we only determine permissions are
+    insecure when we can be reasonably confident there is a problem
+    regardless of the underlying OS.
 
     [1] https://www.debian.org/doc/debian-policy/ch-opersys.html#uid-and-gid-classes
-    [2] https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/system_administrators_guide/ch-managing_users_and_groups
+    [2] https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/6/html/deployment_guide/ch-managing_users_and_groups
+    [3] https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/system_administrators_guide/ch-managing_users_and_groups
 
     :param str path: filesystem path to check
     :returns: True if the path has secure permissions, otherwise, False
