@@ -1514,11 +1514,11 @@ argument.  It then checks that the file can only be modified by uid/gid
 < 1000 and if other users can modify the file, it prints a warning with
 a suggestion on how to solve the problem.
 
-If the absolute path of certbot-auto contains a symlink, it is not
-handled specially and the symlink is followed. Due to this, there could
-be permissions problems unreported by this script, however, issues like
-this were not caused by our documentation and are ignored for the sake
-of simplicity.
+Permissions on symlinks in the absolute path of certbot-auto are ignored
+and only the canonical path to certbot-auto is checked. There could be
+permissions problems due to the symlinks that are unreported by this
+script, however, issues like this were not caused by our documentation
+and are ignored for the sake of simplicity.
 
 All warnings are printed to stdout rather than stderr so all stderr
 output from this script can be suppressed to avoid printing messages if
@@ -1560,6 +1560,7 @@ def has_safe_permissions(path):
     :rtype: bool
 
     """
+    # os.stat follows symlinks before obtaining information about a file.
     stat_result = os.stat(path)
     if stat_result.st_mode & stat.S_IWOTH:
         return False
@@ -1571,7 +1572,7 @@ def has_safe_permissions(path):
 
 
 def main(certbot_auto_path):
-    current_path = os.path.abspath(certbot_auto_path)
+    current_path = os.path.realpath(certbot_auto_path)
     last_path = None
     permissions_ok = True
     # This loop makes use of the fact that os.path.dirname('/') == '/'.
