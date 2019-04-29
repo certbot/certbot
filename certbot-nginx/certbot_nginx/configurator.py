@@ -555,7 +555,12 @@ class NginxConfigurator(common.Installer):
         all_names = set()  # type: Set[str]
 
         for vhost in self.parser.get_vhosts():
-            all_names.update(vhost.names)
+            for server_name in vhost.names:
+                if util.is_wildcard_dot_domain(server_name):
+                    # expand .example.com into *.example.com and example.com
+                    all_names.update(('*' + server_name, server_name[1:]))
+                else:
+                    all_names.add(server_name)
 
             for addr in vhost.addrs:
                 host = addr.get_addr()

@@ -497,12 +497,21 @@ class EnforceDomainSanityTest(unittest.TestCase):
         # that it's _not_ an error (at the initial sanity check stage)
         self._call('this.is.xn--ls8h.tld')
 
+    def test_wildcard_star_domain(self):
+        """ star-style domain should pass through unchanged """
+        self.assertEqual(self._call('*.example.com'), '*.example.com')
+
+    def test_wildcard_dot_domain(self):
+        """ dot-style domain should get mutated into a star-style wildcard domain """
+        self.assertEqual(self._call('.example.com'), '*.example.com')
+
 
 class IsWildcardDomainTest(unittest.TestCase):
     """Tests for is_wildcard_domain."""
 
     def setUp(self):
-        self.wildcard = u"*.example.org"
+        self.star_wildcard = u"*.example.org"
+        self.dot_wildcard = u".example.org"
         self.no_wildcard = u"example.org"
 
     def _call(self, domain):
@@ -513,9 +522,13 @@ class IsWildcardDomainTest(unittest.TestCase):
         self.assertFalse(self._call(self.no_wildcard))
         self.assertFalse(self._call(self.no_wildcard.encode()))
 
-    def test_wildcard(self):
-        self.assertTrue(self._call(self.wildcard))
-        self.assertTrue(self._call(self.wildcard.encode()))
+    def test_star_wildcard(self):
+        self.assertTrue(self._call(self.star_wildcard))
+        self.assertTrue(self._call(self.star_wildcard.encode()))
+
+    def test_dot_wildcard(self):
+        self.assertTrue(self._call(self.dot_wildcard))
+        self.assertTrue(self._call(self.dot_wildcard.encode()))
 
 
 class OsInfoTest(unittest.TestCase):

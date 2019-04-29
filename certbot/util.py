@@ -515,7 +515,12 @@ def enforce_le_validity(domain):
 
     """
     domain = enforce_domain_sanity(domain)
-    if not re.match("^[A-Za-z0-9.-]*$", domain):
+    if is_wildcard_domain(domain):
+        domain_to_regex = domain[2:]
+    else:
+        domain_to_regex = domain
+
+    if not re.match("^[A-Za-z0-9.-]*$", domain_to_regex):
         raise errors.ConfigurationError(
             "{0} contains an invalid character. "
             "Valid characters are A-Z, a-z, 0-9, ., and -.".format(domain))
@@ -590,6 +595,8 @@ def enforce_domain_sanity(domain):
     msg = "Requested domain {0} is not a FQDN because".format(domain)
     if len(domain) > 255:
         raise errors.ConfigurationError("{0} it is too long.".format(msg))
+    if is_wildcard_dot_domain(domain):
+        domain = '*' + domain
     labels = domain.split('.')
     for l in labels:
         if not l:
@@ -600,8 +607,26 @@ def enforce_domain_sanity(domain):
     return domain
 
 
-def is_wildcard_domain(domain):
-    """"Is domain a wildcard domain?
+def is_wildcard_dot_domain(domain):
+    """"Is domain a wildcard domain like .example.com
+
+    :param domain: domain to check
+    :type domain: `bytes` or `str` or `unicode`
+
+    :returns: True if domain is a wildcard, otherwise, False
+    :rtype: bool
+
+    """
+    if isinstance(domain, six.text_type):
+        wildcard_marker = u"."
+    else:
+        wildcard_marker = b"."
+
+    return domain.startswith(wildcard_marker)
+
+
+def is_wildcard_star_domain(domain):
+    """"Is domain a wildcard domain like *.example.com
 
     :param domain: domain to check
     :type domain: `bytes` or `str` or `unicode`
@@ -616,6 +641,19 @@ def is_wildcard_domain(domain):
         wildcard_marker = b"*."
 
     return domain.startswith(wildcard_marker)
+
+
+def is_wildcard_domain(domain):
+    """"Is domain a wildcard domain?
+
+    :param domain: domain to check
+    :type domain: `bytes` or `str` or `unicode`
+
+    :returns: True if domain is a wildcard, otherwise, False
+    :rtype: bool
+
+    """
+    return is_wildcard_star_domain(domain) or is_wildcard_dot_domain(domain)
 
 
 def get_strict_version(normalized):
