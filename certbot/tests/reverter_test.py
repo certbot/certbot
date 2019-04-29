@@ -1,7 +1,6 @@
 """Test certbot.reverter."""
 import csv
 import logging
-import os
 import shutil
 import tempfile
 import unittest
@@ -10,7 +9,7 @@ import mock
 import six
 
 from certbot import errors
-
+from certbot.compat import os
 from certbot.tests import util as test_util
 
 
@@ -50,7 +49,6 @@ class ReverterCheckpointLocalTest(test_util.ConfigTestCase):
             x = f.read()
         self.assertTrue("No changes" in x)
 
-    @test_util.broken_on_windows
     def test_basic_add_to_temp_checkpoint(self):
         # These shouldn't conflict even though they are both named config.txt
         self.reverter.add_to_temp_checkpoint(self.sets[0], "save1")
@@ -92,7 +90,6 @@ class ReverterCheckpointLocalTest(test_util.ConfigTestCase):
         self.assertRaises(errors.ReverterError, self.reverter.add_to_checkpoint,
                           set([config3]), "invalid save")
 
-    @test_util.broken_on_windows
     def test_multiple_saves_and_temp_revert(self):
         self.reverter.add_to_temp_checkpoint(self.sets[0], "save1")
         update_file(self.config1, "updated-directive")
@@ -122,7 +119,6 @@ class ReverterCheckpointLocalTest(test_util.ConfigTestCase):
         self.assertFalse(os.path.isfile(config3))
         self.assertFalse(os.path.isfile(config4))
 
-    @test_util.broken_on_windows
     def test_multiple_registration_same_file(self):
         self.reverter.register_file_creation(True, self.config1)
         self.reverter.register_file_creation(True, self.config1)
@@ -147,7 +143,6 @@ class ReverterCheckpointLocalTest(test_util.ConfigTestCase):
             errors.ReverterError, self.reverter.register_file_creation,
             "filepath")
 
-    @test_util.broken_on_windows
     def test_register_undo_command(self):
         coms = [
             ["a2dismod", "ssl"],
@@ -170,7 +165,6 @@ class ReverterCheckpointLocalTest(test_util.ConfigTestCase):
                 errors.ReverterError, self.reverter.register_undo_command,
                 True, ["command"])
 
-    @test_util.broken_on_windows
     @mock.patch("certbot.util.run_script")
     def test_run_undo_commands(self, mock_run):
         mock_run.side_effect = ["", errors.SubprocessError]
@@ -234,7 +228,6 @@ class ReverterCheckpointLocalTest(test_util.ConfigTestCase):
             self.assertRaises(
                 errors.ReverterError, self.reverter.revert_temporary_config)
 
-    @test_util.broken_on_windows
     @mock.patch("certbot.reverter.logger.warning")
     def test_recover_checkpoint_missing_new_files(self, mock_warn):
         self.reverter.register_file_creation(
@@ -249,7 +242,6 @@ class ReverterCheckpointLocalTest(test_util.ConfigTestCase):
         self.assertRaises(
             errors.ReverterError, self.reverter.revert_temporary_config)
 
-    @test_util.broken_on_windows
     def test_recovery_routine_temp_and_perm(self):
         # Register a new perm checkpoint file
         config3 = os.path.join(self.dir1, "config3.txt")
@@ -313,7 +305,6 @@ class TestFullCheckpointsReverter(test_util.ConfigTestCase):
         self.assertRaises(
             errors.ReverterError, self.reverter.rollback_checkpoints, "one")
 
-    @test_util.broken_on_windows
     def test_rollback_finalize_checkpoint_valid_inputs(self):
 
         config3 = self._setup_three_checkpoints()
@@ -356,7 +347,7 @@ class TestFullCheckpointsReverter(test_util.ConfigTestCase):
         self.assertRaises(
             errors.ReverterError, self.reverter.finalize_checkpoint, "Title")
 
-    @mock.patch("certbot.reverter.compat.os_rename")
+    @mock.patch("certbot.reverter.misc.os_rename")
     def test_finalize_checkpoint_no_rename_directory(self, mock_rename):
 
         self.reverter.add_to_checkpoint(self.sets[0], "perm save")
@@ -365,7 +356,6 @@ class TestFullCheckpointsReverter(test_util.ConfigTestCase):
         self.assertRaises(
             errors.ReverterError, self.reverter.finalize_checkpoint, "Title")
 
-    @test_util.broken_on_windows
     @mock.patch("certbot.reverter.logger")
     def test_rollback_too_many(self, mock_logger):
         # Test no exist warning...
@@ -378,7 +368,6 @@ class TestFullCheckpointsReverter(test_util.ConfigTestCase):
         self.reverter.rollback_checkpoints(4)
         self.assertEqual(mock_logger.warning.call_count, 1)
 
-    @test_util.broken_on_windows
     def test_multi_rollback(self):
         config3 = self._setup_three_checkpoints()
         self.reverter.rollback_checkpoints(3)

@@ -15,9 +15,11 @@ command -v python > /dev/null || (echo "Error, python executable is not in the P
 
 . ./tests/integration/_common.sh
 export PATH="$PATH:/usr/sbin"  # /usr/sbin/nginx
+CURRENT_DIR="$(pwd)"
 
 cleanup_and_exit() {
     EXIT_STATUS=$?
+    cd $CURRENT_DIR
     if SERVER_STILL_RUNNING=`ps -p $python_server_pid -o pid=`
     then
         echo Kill server subprocess, left running by abnormal exit
@@ -221,20 +223,20 @@ common plugins --init --prepare | grep webroot
 
 # We start a server listening on the port for the
 # unrequested challenge to prevent regressions in #3601.
-python ./tests/run_http_server.py $http_01_port &
+python ./tests/run_http_server.py $https_port &
 python_server_pid=$!
-
 certname="le1.wtf"
-common --domains le1.wtf --preferred-challenges tls-sni-01 auth \
+common --domains le1.wtf --preferred-challenges http-01 auth \
        --cert-name $certname \
        --pre-hook 'echo wtf.pre >> "$HOOK_TEST"' \
        --post-hook 'echo wtf.post >> "$HOOK_TEST"'\
        --deploy-hook 'echo deploy >> "$HOOK_TEST"'
-kill $python_server_pid
 CheckDeployHook $certname
 
-python ./tests/run_http_server.py $tls_sni_01_port &
-python_server_pid=$!
+# Previous test used to be a tls-sni-01 challenge that is not supported anymore.
+# Now it is a http-01 challenge and this makes it a duplicate of the following test.
+# But removing it would break many tests here, as they are strongly coupled.
+# See https://github.com/certbot/certbot/pull/6852
 certname="le2.wtf"
 common --domains le2.wtf --preferred-challenges http-01 run \
        --cert-name $certname \
@@ -254,7 +256,7 @@ common certonly -a manual -d le.wtf --rsa-key-size 4096 --cert-name $certname \
 CheckRenewHook $certname
 
 certname="dns.le.wtf"
-common -a manual -d dns.le.wtf --preferred-challenges dns,tls-sni run \
+common -a manual -d dns.le.wtf --preferred-challenges dns run \
     --cert-name $certname \
     --manual-auth-hook ./tests/manual-dns-auth.sh \
     --manual-cleanup-hook ./tests/manual-dns-cleanup.sh \
@@ -396,7 +398,7 @@ CheckDirHooks 1
 # with fail.
 common -a manual -d dns1.le.wtf,fail.dns1.le.wtf \
     --allow-subset-of-names \
-    --preferred-challenges dns,tls-sni \
+    --preferred-challenges dns \
     --manual-auth-hook ./tests/manual-dns-auth.sh \
     --manual-cleanup-hook ./tests/manual-dns-cleanup.sh
 
@@ -524,6 +526,59 @@ if [ "${BOULDER_INTEGRATION:-v1}" = "v2" ]; then
     common -a manual -d '*.le4.wtf,le4.wtf' --preferred-challenges dns \
         --manual-auth-hook ./tests/manual-dns-auth.sh \
         --manual-cleanup-hook ./tests/manual-dns-cleanup.sh
+fi
+
+# Test OCSP status
+
+## OCSP 1: Check stale OCSP status
+pushd ./tests/integration
+
+OUT=`common certificates --config-dir sample-config`
+TEST_CERTS=`echo "$OUT" | grep TEST_CERT | wc -l`
+EXPIRED=`echo "$OUT" | grep EXPIRED | wc -l`
+
+if [ "$TEST_CERTS" != 2 ] ; then
+    echo "Did not find two test certs as expected ($TEST_CERTS)"
+    exit 1
+fi
+
+if [ "$EXPIRED" != 2 ] ; then
+    echo "Did not find two test certs as expected ($EXPIRED)"
+    exit 1
+fi
+
+popd
+
+## OSCP 2: Check live certificate OCSP status (VALID)
+common --domains le-ocsp-check.wtf
+OUT=`common certificates`
+VALID=`echo $OUT | grep 'Domains: le-ocsp-check.wtf' -A 1 | grep VALID | wc -l`
+EXPIRED=`echo $OUT | grep 'Domains: le-ocsp-check.wtf' -A 1 | grep EXPIRED | wc -l`
+
+if [ "$VALID" != 1 ] ; then
+    echo "Expected le-ocsp-check.wtf to be VALID"
+    exit 1
+fi
+
+if [ "$EXPIRED" != 0 ] ; then
+    echo "Did not expect le-ocsp-check.wtf to be EXPIRED"
+    exit 1
+fi
+
+## OSCP 3: Check live certificate OCSP status (REVOKED)
+common revoke --cert-name le-ocsp-check.wtf --no-delete-after-revoke
+OUT=`common certificates`
+INVALID=`echo $OUT | grep 'Domains: le-ocsp-check.wtf' -A 1 | grep INVALID | wc -l`
+REVOKED=`echo $OUT | grep 'Domains: le-ocsp-check.wtf' -A 1 | grep REVOKED | wc -l`
+
+if [ "$INVALID" != 1 ] ; then
+    echo "Expected le-ocsp-check.wtf to be INVALID"
+    exit 1
+fi
+
+if [ "$REVOKED" != 1 ] ; then
+    echo "Expected le-ocsp-check.wtf to be REVOKED"
+    exit 1
 fi
 
 coverage report --fail-under 64 --include 'certbot/*' --show-missing

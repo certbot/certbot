@@ -312,6 +312,23 @@ Please:
 .. _PEP 8 - Style Guide for Python Code:
   https://www.python.org/dev/peps/pep-0008
 
+Use ``certbot.compat.os`` instead of ``os``
+===========================================
+
+
+Python's standard library ``os`` module lacks full support for several Windows
+security features about file permissions (eg. DACLs). However several files
+handled by Certbot (eg. private keys) need strongly restricted access
+on both Linux and Windows.
+
+To help with this, the ``certbot.compat.os`` module wraps the standard
+``os`` module, and forbids usage of methods that lack support for these Windows
+security features.
+
+As a developer, when working on Certbot or its plugins, you must use ``certbot.compat.os``
+in every place you would need ``os`` (eg. ``from certbot.compat import os`` instead of
+``import os``). Otherwise the tests will fail when your PR is submitted.
+
 Mypy type annotations
 =====================
 
@@ -353,8 +370,8 @@ Steps:
 
 1. Write your code!
 2. Make sure your environment is set up properly and that you're in your
-   virtualenv. You can do this by running ``pip tools/venv.py``.
-   (this is a **very important** step)
+   virtualenv. You can do this by following the instructions in the
+   :ref:`Getting Started <getting_started>` section.
 3. Run ``tox -e lint`` to check for pylint errors. Fix any errors.
 4. Run ``tox --skip-missing-interpreters`` to run the entire test suite
    including coverage. The ``--skip-missing-interpreters`` argument ignores
@@ -369,9 +386,11 @@ Asking for help
 ===============
 
 If you have any questions while working on a Certbot issue, don't hesitate to
-ask for help! You can do this in the #letsencrypt-dev IRC channel on Freenode.
-If you don't already have an IRC client set up, we recommend you join using
-`Riot <https://riot.im/app/#/room/#freenode_#letsencrypt-dev:matrix.org>`_.
+ask for help! You can do this in the Certbot channel in EFF's Mattermost
+instance for its open source projects. To join, `create an account
+<https://opensource.eff.org/signup_user_complete/?id=6iqur37ucfrctfswrs14iscobw>`_
+and then visit the `Certbot channel
+<https://opensource.eff.org/eff-open-source/channels/certbot>`_.
 
 Updating certbot-auto and letsencrypt-auto
 ==========================================

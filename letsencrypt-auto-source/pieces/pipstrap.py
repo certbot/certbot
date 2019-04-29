@@ -23,7 +23,6 @@ from distutils.version import StrictVersion
 from hashlib import sha256
 from os import environ
 from os.path import join
-from pipes import quote
 from shutil import rmtree
 try:
     from subprocess import check_output
@@ -43,7 +42,7 @@ except ImportError:
                 cmd = popenargs[0]
             raise CalledProcessError(retcode, cmd)
         return output
-from sys import exit, version_info
+import sys
 from tempfile import mkdtemp
 try:
     from urllib2 import build_opener, HTTPHandler, HTTPSHandler
@@ -65,7 +64,7 @@ maybe_argparse = (
     [('18/dd/e617cfc3f6210ae183374cd9f6a26b20514bbb5a792af97949c5aacddf0f/'
       'argparse-1.4.0.tar.gz',
       '62b089a55be1d8949cd2bc7e0df0bddb9e028faefc8c32038cc84862aefdd6e4')]
-    if version_info < (2, 7, 0) else [])
+    if sys.version_info < (2, 7, 0) else [])
 
 
 PACKAGES = maybe_argparse + [
@@ -146,7 +145,8 @@ def get_index_base():
 
 
 def main():
-    pip_version = StrictVersion(check_output(['pip', '--version'])
+    python = sys.executable or 'python'
+    pip_version = StrictVersion(check_output([python, '-m', 'pip', '--version'])
                                 .decode('utf-8').split()[1])
     has_pip_cache = pip_version >= StrictVersion('6.0')
     index_base = get_index_base()
@@ -156,12 +156,12 @@ def main():
                                      temp,
                                      digest)
                      for path, digest in PACKAGES]
-        check_output('pip install --no-index --no-deps -U ' +
-                     # Disable cache since we're not using it and it otherwise
-                     # sometimes throws permission warnings:
-                     ('--no-cache-dir ' if has_pip_cache else '') +
-                     ' '.join(quote(d) for d in downloads),
-                     shell=True)
+        # Calling pip as a module is the preferred way to avoid problems about pip self-upgrade.
+        command = [python, '-m', 'pip', 'install', '--no-index', '--no-deps', '-U']
+        # Disable cache since it is not used and it otherwise sometimes throws permission warnings:
+        command.extend(['--no-cache-dir'] if has_pip_cache else [])
+        command.extend(downloads)
+        check_output(command)
     except HashError as exc:
         print(exc)
     except Exception:
@@ -174,4 +174,4 @@ def main():
 
 
 if __name__ == '__main__':
-    exit(main())
+    sys.exit(main())

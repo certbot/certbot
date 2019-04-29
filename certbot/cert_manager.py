@@ -1,21 +1,22 @@
 """Tools for managing certificates."""
 import datetime
 import logging
-import os
-import pytz
 import re
 import traceback
+
+import pytz
 import zope.component
 
 from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
-from certbot import compat
+
 from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
 from certbot import ocsp
 from certbot import storage
 from certbot import util
-
+from certbot.compat import misc
+from certbot.compat import os
 from certbot.display import util as display_util
 
 logger = logging.getLogger(__name__)
@@ -105,7 +106,7 @@ def lineage_for_certname(cli_config, certname):
     """Find a lineage object with name certname."""
     configs_dir = cli_config.renewal_configs_dir
     # Verify the directory is there
-    util.make_or_verify_dir(configs_dir, mode=0o755, uid=compat.os_geteuid())
+    util.make_or_verify_dir(configs_dir, mode=0o755, uid=misc.os_geteuid())
     try:
         renewal_file = storage.renewal_file_for_certname(cli_config, certname)
     except errors.CertStorageError:
@@ -183,10 +184,9 @@ def _archive_files(candidate_lineage, filetype):
     archive_dir = candidate_lineage.archive_dir
     pattern = [os.path.join(archive_dir, f) for f in os.listdir(archive_dir)
                     if re.match("{0}[0-9]*.pem".format(filetype), f)]
-    if len(pattern) > 0:
+    if pattern:
         return pattern
-    else:
-        return None
+    return None
 
 def _acceptable_matches():
     """ Generates the list that's passed to match_and_check_overlaps. Is its own function to
@@ -375,7 +375,7 @@ def _search_lineages(cli_config, func, initial_rv, *args):
     """
     configs_dir = cli_config.renewal_configs_dir
     # Verify the directory is there
-    util.make_or_verify_dir(configs_dir, mode=0o755, uid=compat.os_geteuid())
+    util.make_or_verify_dir(configs_dir, mode=0o755, uid=misc.os_geteuid())
 
     rv = initial_rv
     for renewal_file in storage.renewal_conf_files(cli_config):

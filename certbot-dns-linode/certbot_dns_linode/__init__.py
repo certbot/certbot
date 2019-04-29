@@ -27,7 +27,8 @@ Credentials
 
 Use of this plugin requires a configuration file containing Linode API
 credentials, obtained from your Linode account's `Applications & API
-Tokens page <https://manager.linode.com/profile/api>`_.
+Tokens page (legacy) <https://manager.linode.com/profile/api>`_ or `Applications
+& API Tokens page (new) <https://cloud.linode.com/profile/tokens>`_.
 
 .. code-block:: ini
    :name: credentials.ini
@@ -35,6 +36,7 @@ Tokens page <https://manager.linode.com/profile/api>`_.
 
    # Linode API credentials used by Certbot
    dns_linode_key = 0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ64
+   dns_linode_version = [<blank>|3|4]
 
 The path to this file can be provided interactively or using the
 ``--dns-linode-credentials`` command-line argument. Certbot records the path

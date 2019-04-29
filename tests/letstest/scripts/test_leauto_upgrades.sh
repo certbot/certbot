@@ -15,15 +15,10 @@ if ! command -v git ; then
         exit 1
     fi
 fi
-# 0.17.0 is the oldest version of letsencrypt-auto that has precompiled
-# cryptography and the tagged commit is in master. 0.16.0 was the first version
-# to use precompiled cryptography, but the release PR was squashed losing the
-# commit. We want to use a precompiled version of cryptography for stability.
-# Previous versions that have to compile against OpenSSL on installation
-# started failing on newer distros with newer versions of OpenSSL.
-INITIAL_VERSION="0.17.0"
+# 0.18.0 is the oldest version of letsencrypt-auto that works on Fedora 26+.
+INITIAL_VERSION="0.18.0"
 git checkout -f "v$INITIAL_VERSION" letsencrypt-auto
-if ! ./letsencrypt-auto -v --debug --version --no-self-upgrade 2>&1 | grep "$INITIAL_VERSION" ; then
+if ! ./letsencrypt-auto -v --debug --version --no-self-upgrade 2>&1 | tail -n1 | grep "^certbot $INITIAL_VERSION$" ; then
     echo initial installation appeared to fail
     exit 1
 fi
@@ -79,13 +74,12 @@ if [ $(python -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//') -eq 26 ];
         echo "Certbot shouldn't have updated to a new version!"
         exit 1
     fi
-    if [ -d "/opt/eff.org" ]; then
-        echo "New directory shouldn't have been created!"
-        exit 1
-    fi
-    # Create a 2nd venv at the new path to ensure we properly handle this case
-    export VENV_PATH="/opt/eff.org/certbot/venv"
-    if ! sudo -E ./letsencrypt-auto -v --debug --version --no-self-upgrade 2>&1 | grep "$INITIAL_VERSION" ; then
+    # Create a 2nd venv at the old path to ensure we properly handle the (unlikely) case of two separate virtual environments below.
+    HOME=${HOME:-~root}
+    XDG_DATA_HOME=${XDG_DATA_HOME:-~/.local/share}
+    OLD_VENV_PATH="$XDG_DATA_HOME/letsencrypt"
+    export VENV_PATH="$OLD_VENV_PATH"
+    if ! sudo -E ./letsencrypt-auto -v --debug --version --no-self-upgrade 2>&1 | tail -n1 | grep "^certbot $INITIAL_VERSION$" ; then
         echo second installation appeared to fail
         exit 1
     fi
@@ -98,7 +92,7 @@ if ./letsencrypt-auto -v --debug --version | grep "WARNING: couldn't find Python
 fi
 
 EXPECTED_VERSION=$(grep -m1 LE_AUTO_VERSION certbot-auto | cut -d\" -f2)
-if ! /opt/eff.org/certbot/venv/bin/letsencrypt --version 2>&1 | grep "$EXPECTED_VERSION" ; then
+if ! /opt/eff.org/certbot/venv/bin/letsencrypt --version 2>&1 | tail -n1 | grep "^certbot $EXPECTED_VERSION$" ; then
     echo upgrade appeared to fail
     exit 1
 fi
@@ -117,11 +111,10 @@ if [ "$RUN_PYTHON3_TESTS" = 1 ]; then
         echo "Python3 wasn't used in venv!"
         exit 1
     fi
+
+    if [ "$(tools/readlink.py $OLD_VENV_PATH)" != "/opt/eff.org/certbot/venv" ]; then
+        echo symlink from old venv path not properly created!
+        exit 1
+    fi
 fi
 echo upgrade appeared to be successful
-
-if [ "$(tools/readlink.py ${XDG_DATA_HOME:-~/.local/share}/letsencrypt)" != "/opt/eff.org/certbot/venv" ]; then
-    echo symlink from old venv path not properly created!
-    exit 1
-fi
-echo symlink properly created

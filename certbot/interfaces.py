@@ -73,7 +73,7 @@ class IPluginFactory(zope.interface.Interface):
 
     description = zope.interface.Attribute("Short plugin description")
 
-    def __call__(config, name):
+    def __call__(config, name):  # pylint: disable=signature-differs
         """Create new `IPlugin`.
 
         :param IConfig config: Configuration.
@@ -159,21 +159,14 @@ class IAuthenticator(IPlugin):
             :func:`get_chall_pref` only.
 
         :returns: `collections.Iterable` of ACME
-            :class:`~acme.challenges.ChallengeResponse` instances
-            or if the :class:`~acme.challenges.Challenge` cannot
-            be fulfilled then:
-
-            ``None``
-              Authenticator can perform challenge, but not at this time.
-            ``False``
-              Authenticator will never be able to perform (error).
-
+            :class:`~acme.challenges.ChallengeResponse` instances corresponding to each provided
+            :class:`~acme.challenges.Challenge`.
         :rtype: :class:`collections.Iterable` of
             :class:`acme.challenges.ChallengeResponse`,
             where responses are required to be returned in
             the same order as corresponding input challenges
 
-        :raises .PluginError: If challenges cannot be performed
+        :raises .PluginError: If some or all challenges cannot be performed
 
         """
 
@@ -227,12 +220,6 @@ class IConfig(zope.interface.Interface):
 
     no_verify_ssl = zope.interface.Attribute(
         "Disable verification of the ACME server's certificate.")
-    tls_sni_01_port = zope.interface.Attribute(
-        "Port used during tls-sni-01 challenge. "
-        "This only affects the port Certbot listens on. "
-        "A conforming ACME server will still attempt to connect on port 443.")
-    tls_sni_01_address = zope.interface.Attribute(
-        "The address the server listens to during tls-sni-01 challenge.")
 
     http01_port = zope.interface.Attribute(
         "Port used in the http-01 challenge. "
@@ -241,6 +228,11 @@ class IConfig(zope.interface.Interface):
 
     http01_address = zope.interface.Attribute(
         "The address the server listens to during http-01 challenge.")
+
+    https_port = zope.interface.Attribute(
+        "Port used to serve HTTPS. "
+        "This affects which port Nginx will listen on after a LE certificate "
+        "is installed.")
 
     pref_challs = zope.interface.Attribute(
         "Sorted user specified preferred challenges"

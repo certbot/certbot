@@ -1,7 +1,6 @@
 """Tests for certbot.account."""
 import datetime
 import json
-import os
 import shutil
 import stat
 import unittest
@@ -12,11 +11,10 @@ import pytz
 
 from acme import messages
 
-from certbot import compat
-from certbot import errors
-
 import certbot.tests.util as test_util
-
+from certbot import errors
+from certbot.compat import misc
+from certbot.compat import os
 
 KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 
@@ -116,7 +114,7 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
 
     def test_init_creates_dir(self):
         self.assertTrue(os.path.isdir(
-            compat.underscores_for_unsupported_characters_in_path(self.config.accounts_dir)))
+            misc.underscores_for_unsupported_characters_in_path(self.config.accounts_dir)))
 
     @test_util.broken_on_windows
     def test_save_and_restore(self):
@@ -235,7 +233,7 @@ class AccountFileStorageTest(test_util.ConfigTestCase):
         self._set_server('https://acme-v02.api.letsencrypt.org/directory')
         self.assertEqual([self.acc], self.storage.find_all())
 
-    @mock.patch('os.rmdir')
+    @mock.patch('certbot.compat.os.rmdir')
     def test_corrupted_account(self, mock_rmdir):
         # pylint: disable=protected-access
         self._set_server('https://acme-staging.api.letsencrypt.org/directory')

@@ -13,20 +13,21 @@ and properly flushed before program exit.
 
 """
 from __future__ import print_function
+
 import functools
 import logging
 import logging.handlers
-import os
 import sys
 import tempfile
 import traceback
 
 from acme import messages
 
-from certbot import compat
 from certbot import constants
 from certbot import errors
 from certbot import util
+from certbot.compat import misc
+from certbot.compat import os
 
 # Logging format
 CLI_FMT = "%(message)s"
@@ -134,7 +135,7 @@ def setup_log_file_handler(config, logfile, fmt):
     # TODO: logs might contain sensitive data such as contents of the
     # private key! #525
     util.set_up_core_dir(
-        config.logs_dir, 0o700, compat.os_geteuid(), config.strict_permissions)
+        config.logs_dir, 0o700, misc.os_geteuid(), config.strict_permissions)
     log_file_path = os.path.join(config.logs_dir, logfile)
     try:
         handler = logging.handlers.RotatingFileHandler(
@@ -181,8 +182,7 @@ class ColoredStreamHandler(logging.StreamHandler):
         out = super(ColoredStreamHandler, self).format(record)
         if self.colored and record.levelno >= self.red_level:
             return ''.join((util.ANSI_SGR_RED, out, util.ANSI_SGR_RESET))
-        else:
-            return out
+        return out
 
 
 class MemoryHandler(logging.handlers.MemoryHandler):

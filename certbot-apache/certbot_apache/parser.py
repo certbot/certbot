@@ -2,7 +2,6 @@
 import copy
 import fnmatch
 import logging
-import os
 import re
 import subprocess
 import sys
@@ -10,7 +9,9 @@ import sys
 import six
 
 from acme.magic_typing import Dict, List, Set  # pylint: disable=unused-import, no-name-in-module
+
 from certbot import errors
+from certbot.compat import os
 
 logger = logging.getLogger(__name__)
 
@@ -83,7 +84,7 @@ class ApacheParser(object):
         :param str inc_path: path of file to include
 
         """
-        if len(self.find_dir(case_i("Include"), inc_path)) == 0:
+        if not self.find_dir(case_i("Include"), inc_path):
             logger.debug("Adding Include %s to %s",
                          inc_path, get_aug_path(main_config))
             self.add_dir(
@@ -93,12 +94,7 @@ class ApacheParser(object):
             # Add new path to parser paths
             new_dir = os.path.dirname(inc_path)
             new_file = os.path.basename(inc_path)
-            if new_dir in self.existing_paths.keys():
-                # Add to existing path
-                self.existing_paths[new_dir].append(new_file)
-            else:
-                # Create a new path
-                self.existing_paths[new_dir] = [new_file]
+            self.existing_paths.setdefault(new_dir, []).append(new_file)
 
     def add_mod(self, mod_name):
         """Shortcut for updating parser modules."""
@@ -139,7 +135,7 @@ class ApacheParser(object):
                     mods.add(os.path.basename(mod_filename)[:-2] + "c")
                 else:
                     logger.debug("Could not read LoadModule directive from " +
-                                 "Augeas path: {0}".format(match_name[6:]))
+                                 "Augeas path: %s", match_name[6:])
         self.modules.update(mods)
 
     def update_runtime_variables(self):
@@ -229,8 +225,8 @@ class ApacheParser(object):
                 "Error running command %s for runtime parameters!%s",
                 command, os.linesep)
             raise errors.MisconfigurationError(
-                "Error accessing loaded Apache parameters: %s",
-                command)
+                "Error accessing loaded Apache parameters: {0}".format(
+                command))
         # Small errors that do not impede
         if proc.returncode != 0:
             logger.warning("Error in checking parameter list: %s", stderr)
@@ -256,12 +252,12 @@ class ApacheParser(object):
         """
         filtered = []
         if args == 1:
-            for i in range(len(matches)):
-                if matches[i].endswith("/arg"):
+            for i, match in enumerate(matches):
+                if match.endswith("/arg"):
                     filtered.append(matches[i][:-4])
         else:
-            for i in range(len(matches)):
-                if matches[i].endswith("/arg[%d]" % args):
+            for i, match in enumerate(matches):
+                if match.endswith("/arg[%d]" % args):
                     # Make sure we don't cause an IndexError (end of list)
                     # Check to make sure arg + 1 doesn't exist
                     if (i == (len(matches) - 1) or
@@ -286,7 +282,7 @@ class ApacheParser(object):
         """
         # TODO: Add error checking code... does the path given even exist?
         #       Does it throw exceptions?
-        if_mod_path = self._get_ifmod(aug_conf_path, "mod_ssl.c")
+        if_mod_path = self.get_ifmod(aug_conf_path, "mod_ssl.c")
         # IfModule can have only one valid argument, so append after
         self.aug.insert(if_mod_path + "arg", "directive", False)
         nvh_path = if_mod_path + "directive[1]"
@@ -297,22 +293,54 @@ class ApacheParser(object):
             for i, arg in enumerate(args):
                 self.aug.set("%s/arg[%d]" % (nvh_path, i + 1), arg)
 
-    def _get_ifmod(self, aug_conf_path, mod):
+    def get_ifmod(self, aug_conf_path, mod, beginning=False):
         """Returns the path to <IfMod mod> and creates one if it doesn't exist.
 
         :param str aug_conf_path: Augeas configuration path
         :param str mod: module ie. mod_ssl.c
+        :param bool beginning: If the IfModule should be created to the beginning
+            of augeas path DOM tree.
+
+        :returns: Augeas path of the requested IfModule directive that pre-existed
+            or was created during the process. The path may be dynamic,
+            i.e. .../IfModule[last()]
+        :rtype: str
 
         """
         if_mods = self.aug.match(("%s/IfModule/*[self::arg='%s']" %
                                   (aug_conf_path, mod)))
-        if len(if_mods) == 0:
-            self.aug.set("%s/IfModule[last() + 1]" % aug_conf_path, "")
-            self.aug.set("%s/IfModule[last()]/arg" % aug_conf_path, mod)
-            if_mods = self.aug.match(("%s/IfModule/*[self::arg='%s']" %
-                                      (aug_conf_path, mod)))
+        if not if_mods:
+            return self.create_ifmod(aug_conf_path, mod, beginning)
+
         # Strip off "arg" at end of first ifmod path
-        return if_mods[0][:len(if_mods[0]) - 3]
+        return if_mods[0].rpartition("arg")[0]
+
+    def create_ifmod(self, aug_conf_path, mod, beginning=False):
+        """Creates a new <IfMod mod> and returns its path.
+
+        :param str aug_conf_path: Augeas configuration path
+        :param str mod: module ie. mod_ssl.c
+        :param bool beginning: If the IfModule should be created to the beginning
+            of augeas path DOM tree.
+
+        :returns: Augeas path of the newly created IfModule directive.
+            The path may be dynamic, i.e. .../IfModule[last()]
+        :rtype: str
+
+        """
+        if beginning:
+            c_path_arg = "{}/IfModule[1]/arg".format(aug_conf_path)
+            # Insert IfModule before the first directive
+            self.aug.insert("{}/directive[1]".format(aug_conf_path),
+                            "IfModule", True)
+            retpath = "{}/IfModule[1]/".format(aug_conf_path)
+        else:
+            c_path = "{}/IfModule[last() + 1]".format(aug_conf_path)
+            c_path_arg = "{}/IfModule[last()]/arg".format(aug_conf_path)
+            self.aug.set(c_path, "")
+            retpath = "{}/IfModule[last()]/".format(aug_conf_path)
+        self.aug.set(c_path_arg, mod)
+        return retpath
 
     def add_dir(self, aug_conf_path, directive, args):
         """Appends directive to the end fo the file given by aug_conf_path.
@@ -458,6 +486,20 @@ class ApacheParser(object):
 
         return ordered_matches
 
+    def get_all_args(self, match):
+        """
+        Tries to fetch all arguments for a directive. See get_arg.
+
+        Note that if match is an ancestor node, it returns all names of
+        child directives as well as the list of arguments.
+
+        """
+
+        if match[-1] != "/":
+            match = match+"/"
+        allargs = self.aug.match(match + '*')
+        return [self.get_arg(arg) for arg in allargs]
+
     def get_arg(self, match):
         """Uses augeas.get to get argument value and interprets result.
 
@@ -601,9 +643,8 @@ class ApacheParser(object):
         if sys.version_info < (3, 6):
             # This strips off final /Z(?ms)
             return fnmatch.translate(clean_fn_match)[:-7]
-        else:  # pragma: no cover
-            # Since Python 3.6, it returns a different pattern like (?s:.*\.load)\Z
-            return fnmatch.translate(clean_fn_match)[4:-3]
+        # Since Python 3.6, it returns a different pattern like (?s:.*\.load)\Z
+        return fnmatch.translate(clean_fn_match)[4:-3]  # pragma: no cover
 
     def parse_file(self, filepath):
         """Parse file with Augeas
@@ -685,10 +726,7 @@ class ApacheParser(object):
                 use_new = False
             else:
                 use_new = True
-            if new_file_match == "*":
-                remove_old = True
-            else:
-                remove_old = False
+            remove_old = new_file_match == "*"
         except KeyError:
             use_new = True
             remove_old = False

@@ -2,7 +2,7 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 0.32.0 - master
+## 0.34.0 - master
 
 ### Added
 
@@ -11,7 +11,21 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* Apache plugin now tries to restart httpd on Fedora using systemctl if a
+  configuration test error is detected. This has to be done due to the way
+  Fedora now generates the self signed certificate files upon first
+  restart.
+* Updated Certbot and its plugins to improve the handling of file system permissions
+  on Windows as a step towards adding proper Windows support to Certbot.
+* Updated urllib3 to 1.24.2 in certbot-auto.
+* Removed the fallback introduced with 0.32.0 in `acme` to retry a challenge response
+  with a `keyAuthorization` if sending the response without this field caused a
+  `malformed` error to be received from the ACME server.
+* Linode DNS plugin now supports api keys created from their new panel
+  at [cloud.linode.com](https://cloud.linode.com)
+* Adding a warning noting that future versions of Certbot will automatically configure the
+  webserver so that all requests redirect to secure HTTPS access. You can control this
+  behavior and disable this warning with the --redirect and --no-redirect flags.
 
 ### Fixed
 
@@ -21,7 +35,117 @@ Despite us having broken lockstep, we are continuing to release new versions of
 all Certbot components during releases for the time being, however, the only
 package with changes other than its version number was:
 
-*
+* acme
+* certbot
+* certbot-apache
+* certbot-dns-cloudflare
+* certbot-dns-cloudxns
+* certbot-dns-digitalocean
+* certbot-dns-dnsimple
+* certbot-dns-dnsmadeeasy
+* certbot-dns-gehirn
+* certbot-dns-google
+* certbot-dns-linode
+* certbot-dns-luadns
+* certbot-dns-nsone
+* certbot-dns-ovh
+* certbot-dns-rfc2136
+* certbot-dns-route53
+* certbot-dns-sakuracloud
+* certbot-nginx
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.33.1 - 2019-04-04
+
+### Fixed
+
+* A bug causing certbot-auto to print warnings or crash on some RHEL based
+  systems has been resolved.
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+changes in this release were to certbot-auto.
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.33.0 - 2019-04-03
+
+### Added
+
+* Fedora 29+ is now supported by certbot-auto. Since Python 2.x is on a deprecation
+  path in Fedora, certbot-auto will install and use Python 3.x on Fedora 29+.
+* CLI flag `--https-port` has been added for Nginx plugin exclusively, and replaces
+  `--tls-sni-01-port`. It defines the HTTPS port the Nginx plugin will use while
+  setting up a new SSL vhost. By default the HTTPS port is 443.
+
+### Changed
+
+* Support for TLS-SNI-01 has been removed from all official Certbot plugins.
+* Attributes related to the TLS-SNI-01 challenge in `acme.challenges` and `acme.standalone`
+  modules are deprecated and will be removed soon.
+* CLI flags `--tls-sni-01-port` and `--tls-sni-01-address` are now no-op, will
+  generate a deprecation warning if used, and will be removed soon.
+* Options `tls-sni` and `tls-sni-01` in `--preferred-challenges` flag are now no-op,
+  will generate a deprecation warning if used, and will be removed soon.
+* CLI flag `--standalone-supported-challenges` has been removed.
+
+### Fixed
+
+* Certbot uses the Python library cryptography for OCSP when cryptography>=2.5
+  is installed. We fixed a bug in Certbot causing it to interpret timestamps in
+  the OCSP response as being in the local timezone rather than UTC.
+* Issue causing the default CentOS 6 TLS configuration to ignore some of the
+  HTTPS VirtualHosts created by Certbot. mod_ssl loading is now moved to main
+  http.conf for this environment where possible.
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+package with changes other than its version number was:
+
+* acme
+* certbot
+* certbot-apache
+* certbot-nginx
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.32.0 - 2019-03-06
+
+### Added
+
+* If possible, Certbot uses built-in support for OCSP from recent cryptography
+  versions instead of the OpenSSL binary: as a consequence Certbot does not need
+  the OpenSSL binary to be installed anymore if cryptography>=2.5 is installed.
+
+### Changed
+
+* Certbot and its acme module now depend on josepy>=1.1.0 to avoid printing the
+  warnings described at https://github.com/certbot/josepy/issues/13.
+* Apache plugin now respects CERTBOT_DOCS environment variable when adding
+  command line defaults.
+* The running of manual plugin hooks is now always included in Certbot's log
+  output.
+* Tests execution for certbot, certbot-apache and certbot-nginx packages now relies on pytest.
+* An ACME CA server may return a "Retry-After" HTTP header on authorization polling, as
+  specified in the ACME protocol, to indicate when the next polling should occur. Certbot now
+  reads this header if set and respect its value.
+* The `acme` module avoids sending the `keyAuthorization` field in the JWS
+  payload when responding to a challenge as the field is not included in the
+  current ACME protocol. To ease the migration path for ACME CA servers,
+  Certbot and its `acme` module will first try the request without the
+  `keyAuthorization` field but will temporarily retry the request with the
+  field included if a `malformed` error is received. This fallback will be
+  removed in version 0.34.0.
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+package with changes other than its version number was:
+
+* acme
+* certbot
+* certbot-apache
+* certbot-nginx
 
 More details about these changes can be found on our GitHub repo.
 

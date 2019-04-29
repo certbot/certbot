@@ -1,6 +1,6 @@
 """Tests for certbot.renewal"""
-import mock
 import unittest
+import mock
 
 from acme import challenges
 
@@ -12,9 +12,6 @@ import certbot.tests.util as test_util
 
 
 class RenewalTest(test_util.ConfigTestCase):
-    def setUp(self):
-        super(RenewalTest, self).setUp()
-
     @mock.patch('certbot.cli.set_by_cli')
     def test_ancient_webroot_renewal_conf(self, mock_set_by_cli):
         mock_set_by_cli.return_value = False
@@ -34,9 +31,6 @@ class RenewalTest(test_util.ConfigTestCase):
 
 class RestoreRequiredConfigElementsTest(test_util.ConfigTestCase):
     """Tests for certbot.renewal.restore_required_config_elements."""
-    def setUp(self):
-        super(RestoreRequiredConfigElementsTest, self).setUp()
-
     @classmethod
     def _call(cls, *args, **kwargs):
         from certbot.renewal import restore_required_config_elements
@@ -58,11 +52,15 @@ class RestoreRequiredConfigElementsTest(test_util.ConfigTestCase):
     @mock.patch('certbot.renewal.cli.set_by_cli')
     def test_pref_challs_list(self, mock_set_by_cli):
         mock_set_by_cli.return_value = False
+        # TODO: remove tls-sni and related assertions to logger.warning call once
+        #  the deprecation logic has been removed
         renewalparams = {'pref_challs': 'tls-sni, http-01, dns'.split(',')}
-        self._call(self.config, renewalparams)
-        expected = [challenges.TLSSNI01.typ,
-                    challenges.HTTP01.typ, challenges.DNS01.typ]
+        with mock.patch('certbot.renewal.cli.logger.warning') as mock_warn:
+            self._call(self.config, renewalparams)
+        expected = [challenges.HTTP01.typ, challenges.DNS01.typ]
         self.assertEqual(self.config.pref_challs, expected)
+        self.assertEqual(mock_warn.call_count, 1)
+        self.assertTrue('deprecated' in mock_warn.call_args[0][0])
 
     @mock.patch('certbot.renewal.cli.set_by_cli')
     def test_pref_challs_str(self, mock_set_by_cli):

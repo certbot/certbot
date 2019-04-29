@@ -169,9 +169,6 @@ the bound IPv6 port and the failure during the second bind is expected.
 Use ``--<challenge-type>-address`` to explicitly tell Certbot which interface
 (and protocol) to bind.
 
-.. note:: The ``--standalone-supported-challenges`` option has been
-   deprecated since ``certbot`` version 0.9.0.
-
 .. _dns_plugins:
 
 DNS Plugins
@@ -277,7 +274,7 @@ Plugin      Auth Inst Notes
 plesk_      Y    Y    Integration with the Plesk web hosting tool
 haproxy_    Y    Y    Integration with the HAProxy load balancer
 s3front_    Y    Y    Integration with Amazon CloudFront distribution of S3 buckets
-gandi_      Y    Y    Integration with Gandi's hosting products and API
+gandi_      Y    Y    Integration with Gandi LiveDNS API
 varnish_    Y    N    Obtain certificates via a Varnish server
 external_   Y    N    A plugin for convenient scripting (See also ticket 2782_)
 icecast_    N    Y    Deploy certificates to Icecast 2 streaming media servers
@@ -290,7 +287,7 @@ heroku_     Y    Y    Integration with Heroku SSL
 .. _plesk: https://github.com/plesk/letsencrypt-plesk
 .. _haproxy: https://github.com/greenhost/certbot-haproxy
 .. _s3front: https://github.com/dlapiduz/letsencrypt-s3front
-.. _gandi: https://github.com/Gandi/letsencrypt-gandi
+.. _gandi: https://github.com/obynio/certbot-plugin-gandi
 .. _icecast: https://github.com/e00E/lets-encrypt-icecast
 .. _varnish: http://git.sesse.net/?p=letsencrypt-varnish-plugin
 .. _2782: https://github.com/certbot/certbot/issues/2782
@@ -926,7 +923,7 @@ files that can be found in ``/etc/letsencrypt/renewal``.
 
 By default no cli.ini file is created, after creating one
 it is possible to specify the location of this configuration file with
-``certbot-auto --config cli.ini`` (or shorter ``-c cli.ini``). An
+``certbot --config cli.ini`` (or shorter ``-c cli.ini``). An
 example configuration file is shown below:
 
 .. include:: ../examples/cli.ini

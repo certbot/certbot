@@ -3,29 +3,30 @@
 .. warning:: This module is not part of the public API.
 
 """
-import multiprocessing
-import os
-import pkg_resources
+import logging
 import shutil
+import stat
+import sys
 import tempfile
 import unittest
-import sys
-import warnings
+from multiprocessing import Process, Event
 
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import serialization
-import mock
 import OpenSSL
 import josepy as jose
+import mock
+import pkg_resources
 import six
 from six.moves import reload_module  # pylint: disable=import-error
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
 
+from certbot import configuration
 from certbot import constants
 from certbot import interfaces
+from certbot import lock
 from certbot import storage
 from certbot import util
-from certbot import configuration
-
+from certbot.compat import os
 from certbot.display import util as display_util
 
 
@@ -110,8 +111,7 @@ def skip_unless(condition, reason):  # pragma: no cover
         return unittest.skipUnless(condition, reason)
     elif condition:
         return lambda cls: cls
-    else:
-        return lambda cls: None
+    return lambda cls: None
 
 
 def make_lineage(config_dir, testfile):
@@ -211,7 +211,7 @@ class FreezableMock(object):
 
     """
     def __init__(self, frozen=False, func=None, return_value=mock.sentinel.DEFAULT):
-        self._frozen_set = set() if frozen else set(('freeze',))
+        self._frozen_set = set() if frozen else {'freeze', }
         self._func = func
         self._mock = mock.MagicMock()
         if return_value != mock.sentinel.DEFAULT:
@@ -263,13 +263,13 @@ class FreezableMock(object):
         if name in ('return_value', 'side_effect'):
             return setattr(self._mock, name, value)
 
-        else:
-            return object.__setattr__(self, name, value)
+        return object.__setattr__(self, name, value)
 
 
 def _create_get_utility_mock():
     display = FreezableMock()
-    for name in interfaces.IDisplay.names():  # pylint: disable=no-member
+    # Use pylint code for disable to keep on single line under line length limit
+    for name in interfaces.IDisplay.names():  # pylint: disable=no-member,E1120
         if name != 'notification':
             frozen_mock = FreezableMock(frozen=True, func=_assert_valid_call)
             setattr(display, name, frozen_mock)
@@ -293,7 +293,8 @@ def _create_get_utility_mock_with_stdout(stdout):
 
 
     display = FreezableMock()
-    for name in interfaces.IDisplay.names():  # pylint: disable=no-member
+    # Use pylint code for disable to keep on single line under line length limit
+    for name in interfaces.IDisplay.names():  # pylint: disable=no-member,E1120
         if name == 'notification':
             frozen_mock = FreezableMock(frozen=True,
                                         func=_write_msg)
@@ -315,7 +316,6 @@ def _assert_valid_call(*args, **kwargs):
     assert_kwargs['cli_flag'] = kwargs.get('cli_flag', None)
     assert_kwargs['force_interactive'] = kwargs.get('force_interactive', False)
 
-    # pylint: disable=star-args
     display_util.assert_valid_call(*assert_args, **assert_kwargs)
 
 
@@ -328,22 +328,25 @@ class TempDirTestCase(unittest.TestCase):
 
     def tearDown(self):
         """Execute after test"""
-        # On Windows we have various files which are not correctly closed at the time of tearDown.
-        # For know, we log them until a proper file close handling is written.
-        # Useful for development only, so no warning when we are on a CI process.
-        def onerror_handler(_, path, excinfo):
-            """On error handler"""
-            if not os.environ.get('APPVEYOR'): # pragma: no cover
-                message = ('Following error occurred when deleting the tempdir {0}'
-                           ' for path {1} during tearDown process: {2}'
-                           .format(self.tempdir, path, str(excinfo)))
-                warnings.warn(message)
-        shutil.rmtree(self.tempdir, onerror=onerror_handler)
+        # Cleanup opened resources after a test. This is usually done through atexit handlers in
+        # Certbot, but during tests, atexit will not run registered functions before tearDown is
+        # called and instead will run them right before the entire test process exits.
+        # It is a problem on Windows, that does not accept to clean resources before closing them.
+        logging.shutdown()
+        # Remove logging handlers that have been closed so they won't be
+        # accidentally used in future tests.
+        logging.getLogger().handlers = []
+        util._release_locks()  # pylint: disable=protected-access
+
+        def handle_rw_files(_, path, __):
+            """Handle read-only files, that will fail to be removed on Windows."""
+            os.chmod(path, stat.S_IWRITE)
+            os.remove(path)
+        shutil.rmtree(self.tempdir, onerror=handle_rw_files)
+
 
 class ConfigTestCase(TempDirTestCase):
-    """Test class which sets up a NamespaceConfig object.
-
-    """
+    """Test class which sets up a NamespaceConfig object."""
     def setUp(self):
         super(ConfigTestCase, self).setUp()
         self.config = configuration.NamespaceConfig(
@@ -358,47 +361,51 @@ class ConfigTestCase(TempDirTestCase):
         self.config.chain_path = constants.CLI_DEFAULTS['auth_chain_path']
         self.config.server = "https://example.com"
 
-def lock_and_call(func, lock_path):
-    """Grab a lock for lock_path and call func.
 
-    :param callable func: object to call after acquiring the lock
-    :param str lock_path: path to file or directory to lock
-
+def _handle_lock(event_in, event_out, path):
     """
-    # Reload module to reset internal _LOCKS dictionary
+    Acquire a file lock on given path, then wait to release it. This worker is coordinated
+    using events to signal when the lock should be acquired and released.
+    :param multiprocessing.Event event_in: event object to signal when to release the lock
+    :param multiprocessing.Event event_out: event object to signal when the lock is acquired
+    :param path: the path to lock
+    """
+    if os.path.isdir(path):
+        my_lock = lock.lock_dir(path)
+    else:
+        my_lock = lock.LockFile(path)
+    try:
+        event_out.set()
+        assert event_in.wait(timeout=20), 'Timeout while waiting to release the lock.'
+    finally:
+        my_lock.release()
+
+
+def lock_and_call(callback, path_to_lock):
+    """
+    Grab a lock on path_to_lock from a foreign process then execute the callback.
+    :param callable callback: object to call after acquiring the lock
+    :param str path_to_lock: path to file or directory to lock
+    """
+    # Reload certbot.util module to reset internal _LOCKS dictionary.
     reload_module(util)
 
-    # start child and wait for it to grab the lock
-    cv = multiprocessing.Condition()
-    cv.acquire()
-    child_args = (cv, lock_path,)
-    child = multiprocessing.Process(target=hold_lock, args=child_args)
-    child.start()
-    cv.wait()
+    emit_event = Event()
+    receive_event = Event()
+    process = Process(target=_handle_lock, args=(emit_event, receive_event, path_to_lock))
+    process.start()
 
-    # call func and terminate the child
-    func()
-    cv.notify()
-    cv.release()
-    child.join()
-    assert child.exitcode == 0
+    # Wait confirmation that lock is acquired
+    assert receive_event.wait(timeout=10), 'Timeout while waiting to acquire the lock.'
+    # Execute the callback
+    callback()
+    # Trigger unlock from foreign process
+    emit_event.set()
 
-def hold_lock(cv, lock_path):  # pragma: no cover
-    """Acquire a file lock at lock_path and wait to release it.
+    # Wait for process termination
+    process.join(timeout=10)
+    assert process.exitcode == 0
 
-    :param multiprocessing.Condition cv: condition for synchronization
-    :param str lock_path: path to the file lock
-
-    """
-    from certbot import lock
-    if os.path.isdir(lock_path):
-        my_lock = lock.lock_dir(lock_path)
-    else:
-        my_lock = lock.LockFile(lock_path)
-    cv.acquire()
-    cv.notify()
-    cv.wait()
-    my_lock.release()
 
 def skip_on_windows(reason):
     """Decorator to skip permanently a test on Windows. A reason is required."""
@@ -406,6 +413,7 @@ def skip_on_windows(reason):
         """Wrapped version"""
         return unittest.skipIf(sys.platform == 'win32', reason)(function)
     return wrapper
+
 
 def broken_on_windows(function):
     """Decorator to skip temporarily a broken test on Windows."""
@@ -415,9 +423,10 @@ def broken_on_windows(function):
         and os.environ.get('SKIP_BROKEN_TESTS_ON_WINDOWS', 'true') == 'true',
         reason)(function)
 
+
 def temp_join(path):
     """
     Return the given path joined to the tempdir path for the current platform
     Eg.: 'cert' => /tmp/cert (Linux) or 'C:\\Users\\currentuser\\AppData\\Temp\\cert' (Windows)
     """
-    return  os.path.join(tempfile.gettempdir(), path)
+    return os.path.join(tempfile.gettempdir(), path)

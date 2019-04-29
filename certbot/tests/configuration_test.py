@@ -1,14 +1,14 @@
 """Tests for certbot.configuration."""
-import os
 import unittest
 
 import mock
 
-from certbot import compat
 from certbot import constants
 from certbot import errors
-
+from certbot.compat import misc
+from certbot.compat import os
 from certbot.tests import util as test_util
+
 
 class NamespaceConfigTest(test_util.ConfigTestCase):
     """Tests for certbot.configuration.NamespaceConfig."""
@@ -17,11 +17,11 @@ class NamespaceConfigTest(test_util.ConfigTestCase):
         super(NamespaceConfigTest, self).setUp()
         self.config.foo = 'bar'
         self.config.server = 'https://acme-server.org:443/new'
-        self.config.tls_sni_01_port = 1234
+        self.config.https_port = 1234
         self.config.http01_port = 4321
 
     def test_init_same_ports(self):
-        self.config.namespace.tls_sni_01_port = 4321
+        self.config.namespace.https_port = 4321
         from certbot.configuration import NamespaceConfig
         self.assertRaises(errors.Error, NamespaceConfig, self.config.namespace)
 
@@ -48,7 +48,7 @@ class NamespaceConfigTest(test_util.ConfigTestCase):
         mock_constants.KEY_DIR = 'keys'
         mock_constants.TEMP_CHECKPOINT_DIR = 't'
 
-        ref_path = compat.underscores_for_unsupported_characters_in_path(
+        ref_path = misc.underscores_for_unsupported_characters_in_path(
             'acc/acme-server.org:443/new')
         self.assertEqual(
             os.path.normpath(self.config.accounts_dir),
@@ -79,7 +79,7 @@ class NamespaceConfigTest(test_util.ConfigTestCase):
 
         mock_namespace = mock.MagicMock(spec=['config_dir', 'work_dir',
                                               'logs_dir', 'http01_port',
-                                              'tls_sni_01_port',
+                                              'https_port',
                                               'domains', 'server'])
         mock_namespace.config_dir = config_base
         mock_namespace.work_dir = work_base
@@ -126,7 +126,7 @@ class NamespaceConfigTest(test_util.ConfigTestCase):
 
         mock_namespace = mock.MagicMock(spec=['config_dir', 'work_dir',
                                               'logs_dir', 'http01_port',
-                                              'tls_sni_01_port',
+                                              'https_port',
                                               'domains', 'server'])
         mock_namespace.config_dir = config_base
         mock_namespace.work_dir = work_base

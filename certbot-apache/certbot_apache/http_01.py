@@ -1,14 +1,17 @@
 """A class that performs HTTP-01 challenges for Apache"""
 import logging
-import os
 
 from acme.magic_typing import List, Set  # pylint: disable=unused-import, no-name-in-module
+
 from certbot import errors
+from certbot.compat import os
 from certbot.plugins import common
+
 from certbot_apache.obj import VirtualHost  # pylint: disable=unused-import
 from certbot_apache.parser import get_aug_path
 
 logger = logging.getLogger(__name__)
+
 
 class ApacheHttp01(common.TLSSNI01):
     """Class that performs HTTP-01 challenges within the Apache configurator."""

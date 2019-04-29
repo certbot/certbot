@@ -1,15 +1,15 @@
 """Certbot display."""
 import logging
-import os
 import sys
 import textwrap
 
 import zope.interface
 
-from certbot import compat
 from certbot import constants
-from certbot import interfaces
 from certbot import errors
+from certbot import interfaces
+from certbot.compat import misc
+from certbot.compat import os
 from certbot.display import completer
 
 logger = logging.getLogger(__name__)
@@ -79,7 +79,7 @@ def input_with_timeout(prompt=None, timeout=36000.0):
         sys.stdout.write(prompt)
         sys.stdout.flush()
 
-    line = compat.readline_with_timeout(timeout, prompt)
+    line = misc.readline_with_timeout(timeout, prompt)
 
     if not line:
         raise EOFError
@@ -122,10 +122,9 @@ class FileDisplay(object):
             else:
                 logger.debug("Not pausing for user confirmation")
 
-    def menu(self, message, choices, ok_label=None, cancel_label=None,
-             help_label=None, default=None,
+    def menu(self, message, choices, ok_label=None, cancel_label=None,  # pylint: disable=unused-argument
+             help_label=None, default=None,  # pylint: disable=unused-argument
              cli_flag=None, force_interactive=False, **unused_kwargs):
-        # pylint: disable=unused-argument
         """Display a menu.
 
         .. todo:: This doesn't enable the help label/button (I wasn't sold on
@@ -181,8 +180,7 @@ class FileDisplay(object):
 
         if ans == "c" or ans == "C":
             return CANCEL, "-1"
-        else:
-            return OK, ans
+        return OK, ans
 
     def yesno(self, message, yes_label="Yes", no_label="No", default=None,
               cli_flag=None, force_interactive=False, **unused_kwargs):
@@ -228,7 +226,6 @@ class FileDisplay(object):
 
     def checklist(self, message, tags, default=None,
                   cli_flag=None, force_interactive=False, **unused_kwargs):
-        # pylint: disable=unused-argument
         """Display a checklist.
 
         :param str message: Message to display to user
@@ -256,7 +253,7 @@ class FileDisplay(object):
                                    force_interactive=True)
 
             if code == OK:
-                if len(ans.strip()) == 0:
+                if not ans.strip():
                     ans = " ".join(str(x) for x in range(1, len(tags)+1))
                 indices = separate_list_input(ans)
                 selected_tags = self._scrub_checklist_input(indices, tags)
@@ -468,8 +465,7 @@ class NoninteractiveDisplay(object):
             msg += "\n\n(You can set this with the {0} flag)".format(cli_flag)
         raise errors.MissingCommandlineFlag(msg)
 
-    def notification(self, message, pause=False, wrap=True, **unused_kwargs):
-        # pylint: disable=unused-argument
+    def notification(self, message, pause=False, wrap=True, **unused_kwargs):  # pylint: disable=unused-argument
         """Displays a notification without waiting for user acceptance.
 
         :param str message: Message to display to stdout
@@ -522,12 +518,10 @@ class NoninteractiveDisplay(object):
         """
         if default is None:
             self._interaction_fail(message, cli_flag)
-        else:
-            return OK, default
+        return OK, default
 
-    def yesno(self, message, yes_label=None, no_label=None,
+    def yesno(self, message, yes_label=None, no_label=None,  # pylint: disable=unused-argument
               default=None, cli_flag=None, **unused_kwargs):
-        # pylint: disable=unused-argument
         """Decide Yes or No, without asking anybody
 
         :param str message: question for the user
@@ -540,8 +534,7 @@ class NoninteractiveDisplay(object):
         """
         if default is None:
             self._interaction_fail(message, cli_flag)
-        else:
-            return default
+        return default
 
     def checklist(self, message, tags, default=None,
                   cli_flag=None, **unused_kwargs):
@@ -559,8 +552,7 @@ class NoninteractiveDisplay(object):
         """
         if default is None:
             self._interaction_fail(message, cli_flag, "? ".join(tags))
-        else:
-            return OK, default
+        return OK, default
 
     def directory_select(self, message, default=None,
                          cli_flag=None, **unused_kwargs):

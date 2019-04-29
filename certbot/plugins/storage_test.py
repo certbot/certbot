@@ -1,13 +1,14 @@
 """Tests for certbot.plugins.storage.PluginStorage"""
 import json
-import mock
-import os
 import unittest
+import mock
 
 from certbot import errors
 
+from certbot.compat import os
 from certbot.plugins import common
 from certbot.tests import util as test_util
+
 
 class PluginStorageTest(test_util.ConfigTestCase):
     """Test for certbot.plugins.storage.PluginStorage"""
@@ -71,7 +72,7 @@ class PluginStorageTest(test_util.ConfigTestCase):
     def test_save_errors_unable_to_write_file(self):
         mock_open = mock.mock_open()
         mock_open.side_effect = IOError
-        with mock.patch("os.open", mock_open):
+        with mock.patch("certbot.compat.os.open", mock_open):
             with mock.patch("certbot.plugins.storage.logger.error") as mock_log:
                 self.plugin.storage._data = {"valid": "data"}  # pylint: disable=protected-access
                 self.plugin.storage._initialized = True  # pylint: disable=protected-access

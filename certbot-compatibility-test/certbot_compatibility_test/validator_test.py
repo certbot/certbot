@@ -1,6 +1,6 @@
 """Tests for certbot_compatibility_test.validator."""
-import requests
 import unittest
+import requests
 
 import mock
 import OpenSSL

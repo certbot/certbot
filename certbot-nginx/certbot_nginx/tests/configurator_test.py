@@ -1,18 +1,16 @@
 # pylint: disable=too-many-public-methods
 """Test for certbot_nginx.configurator."""
-import os
-import shutil
 import unittest
 
-import mock
 import OpenSSL
-
+import mock
 from acme import challenges
 from acme import messages
 
 from certbot import achallenges
 from certbot import crypto_util
 from certbot import errors
+from certbot.compat import os
 from certbot.tests import util as certbot_test_util
 
 from certbot_nginx import constants
@@ -32,12 +30,6 @@ class NginxConfiguratorTest(util.NginxTest):
 
         self.config = util.get_nginx_configurator(
             self.config_path, self.config_dir, self.work_dir, self.logs_dir)
-
-    def tearDown(self):
-        shutil.rmtree(self.temp_dir)
-        shutil.rmtree(self.config_dir)
-        shutil.rmtree(self.work_dir)
-        shutil.rmtree(self.logs_dir)
 
     @mock.patch("certbot_nginx.configurator.util.exe_exists")
     def test_prepare_no_install(self, mock_exe_exists):
@@ -69,8 +61,11 @@ class NginxConfiguratorTest(util.NginxTest):
 
     def test_prepare_locked(self):
         server_root = self.config.conf("server-root")
+
+        from certbot import util as certbot_util
+        certbot_util._LOCKS[server_root].release()  # pylint: disable=protected-access
+
         self.config.config_test = mock.Mock()
-        os.remove(os.path.join(server_root, ".certbot.lock"))
         certbot_test_util.lock_and_call(self._test_prepare_locked, server_root)
 
     @mock.patch("certbot_nginx.configurator.util.exe_exists")
@@ -88,11 +83,11 @@ class NginxConfiguratorTest(util.NginxTest):
     def test_get_all_names(self, mock_gethostbyaddr):
         mock_gethostbyaddr.return_value = ('155.225.50.69.nephoscale.net', [], [])
         names = self.config.get_all_names()
-        self.assertEqual(names, set(
-            ["155.225.50.69.nephoscale.net", "www.example.org", "another.alias",
+        self.assertEqual(names, {
+            "155.225.50.69.nephoscale.net", "www.example.org", "another.alias",
              "migration.com", "summer.com", "geese.com", "sslon.com",
              "globalssl.com", "globalsslsetssl.com", "ipv6.com", "ipv6ssl.com",
-             "headers.com"]))
+             "headers.com"})
 
     def test_supported_enhancements(self):
         self.assertEqual(['redirect', 'ensure-http-header', 'staple-ocsp'],
@@ -171,6 +166,7 @@ class NginxConfiguratorTest(util.NginxTest):
                    'abc.www.foo.com': "etc_nginx/foo.conf",
                    'www.bar.co.uk': "etc_nginx/nginx.conf",
                    'ipv6.com': "etc_nginx/sites-enabled/ipv6.com"}
+        conf_path = {key: os.path.normpath(value) for key, value in conf_path.items()}
 
         vhost = self.config.choose_vhosts(name)[0]
         path = os.path.relpath(vhost.filep, self.temp_dir)
@@ -321,21 +317,13 @@ class NginxConfiguratorTest(util.NginxTest):
                            ]],
                          parsed_migration_conf[0])
 
-    @mock.patch("certbot_nginx.configurator.tls_sni_01.NginxTlsSni01.perform")
     @mock.patch("certbot_nginx.configurator.http_01.NginxHttp01.perform")
     @mock.patch("certbot_nginx.configurator.NginxConfigurator.restart")
     @mock.patch("certbot_nginx.configurator.NginxConfigurator.revert_challenge_config")
-    def test_perform_and_cleanup(self, mock_revert, mock_restart, mock_http_perform,
-        mock_tls_perform):
+    def test_perform_and_cleanup(self, mock_revert, mock_restart, mock_http_perform):
         # Only tests functionality specific to configurator.perform
         # Note: As more challenges are offered this will have to be expanded
-        achall1 = achallenges.KeyAuthorizationAnnotatedChallenge(
-            challb=messages.ChallengeBody(
-                chall=challenges.TLSSNI01(token=b"kNdwjwOeX0I_A8DXt9Msmg"),
-                uri="https://ca.org/chall0_uri",
-                status=messages.Status("pending"),
-            ), domain="localhost", account_key=self.rsa512jwk)
-        achall2 = achallenges.KeyAuthorizationAnnotatedChallenge(
+        achall = achallenges.KeyAuthorizationAnnotatedChallenge(
             challb=messages.ChallengeBody(
                 chall=challenges.HTTP01(token=b"m8TdO1qik4JVFtgPPurJmg"),
                 uri="https://ca.org/chall1_uri",
@@ -343,19 +331,16 @@ class NginxConfiguratorTest(util.NginxTest):
             ), domain="example.com", account_key=self.rsa512jwk)
 
         expected = [
-            achall1.response(self.rsa512jwk),
-            achall2.response(self.rsa512jwk),
+            achall.response(self.rsa512jwk),
         ]
 
-        mock_tls_perform.return_value = expected[:1]
-        mock_http_perform.return_value = expected[1:]
-        responses = self.config.perform([achall1, achall2])
+        mock_http_perform.return_value = expected[:]
+        responses = self.config.perform([achall])
 
-        self.assertEqual(mock_tls_perform.call_count, 1)
         self.assertEqual(mock_http_perform.call_count, 1)
         self.assertEqual(responses, expected)
 
-        self.config.cleanup([achall1, achall2])
+        self.config.cleanup([achall])
         self.assertEqual(0, self.config._chall_out) # pylint: disable=protected-access
         self.assertEqual(mock_revert.call_count, 1)
         self.assertEqual(mock_restart.call_count, 2)

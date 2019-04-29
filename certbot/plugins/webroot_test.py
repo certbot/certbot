@@ -5,7 +5,6 @@ from __future__ import print_function
 import argparse
 import errno
 import json
-import os
 import shutil
 import tempfile
 import unittest
@@ -17,13 +16,12 @@ import six
 from acme import challenges
 
 from certbot import achallenges
-from certbot import compat
 from certbot import errors
+from certbot.compat import misc
+from certbot.compat import os
 from certbot.display import util as display_util
-
 from certbot.tests import acme_util
 from certbot.tests import util as test_util
-
 
 KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 
@@ -171,14 +169,14 @@ class AuthenticatorTest(unittest.TestCase):
         # Remove exec bit from permission check, so that it
         # matches the file
         self.auth.perform([self.achall])
-        self.assertTrue(compat.compare_file_modes(os.stat(self.validation_path).st_mode, 0o644))
+        self.assertTrue(misc.compare_file_modes(os.stat(self.validation_path).st_mode, 0o644))
 
         # Check permissions of the directories
 
         for dirpath, dirnames, _ in os.walk(self.path):
             for directory in dirnames:
                 full_path = os.path.join(dirpath, directory)
-                self.assertTrue(compat.compare_file_modes(os.stat(full_path).st_mode, 0o755))
+                self.assertTrue(misc.compare_file_modes(os.stat(full_path).st_mode, 0o755))
 
         parent_gid = os.stat(self.path).st_gid
         parent_uid = os.stat(self.path).st_uid
@@ -244,7 +242,7 @@ class AuthenticatorTest(unittest.TestCase):
 
         os.rmdir(leftover_path)
 
-    @mock.patch('os.rmdir')
+    @mock.patch('certbot.compat.os.rmdir')
     def test_cleanup_failure(self, mock_rmdir):
         self.auth.prepare()
         self.auth.perform([self.achall])

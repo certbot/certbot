@@ -1,13 +1,12 @@
 """Tests for acme.challenges."""
 import unittest
-import warnings
 
 import josepy as jose
 import mock
 import OpenSSL
 import requests
 
-from six.moves.urllib import parse as urllib_parse  # pylint: disable=import-error
+from six.moves.urllib import parse as urllib_parse  # pylint: disable=relative-import
 
 from acme import errors
 from acme import test_util
@@ -94,7 +93,8 @@ class DNS01ResponseTest(unittest.TestCase):
         self.response = self.chall.response(KEY)
 
     def test_to_partial_json(self):
-        self.assertEqual(self.jmsg, self.msg.to_partial_json())
+        self.assertEqual({k: v for k, v in self.jmsg.items() if k != 'keyAuthorization'},
+                         self.msg.to_partial_json())
 
     def test_from_json(self):
         from acme.challenges import DNS01Response
@@ -165,7 +165,8 @@ class HTTP01ResponseTest(unittest.TestCase):
         self.response = self.chall.response(KEY)
 
     def test_to_partial_json(self):
-        self.assertEqual(self.jmsg, self.msg.to_partial_json())
+        self.assertEqual({k: v for k, v in self.jmsg.items() if k != 'keyAuthorization'},
+                         self.msg.to_partial_json())
 
     def test_from_json(self):
         from acme.challenges import HTTP01Response
@@ -285,7 +286,8 @@ class TLSSNI01ResponseTest(unittest.TestCase):
         self.assertEqual(self.z_domain, self.response.z_domain)
 
     def test_to_partial_json(self):
-        self.assertEqual(self.jmsg, self.response.to_partial_json())
+        self.assertEqual({k: v for k, v in self.jmsg.items() if k != 'keyAuthorization'},
+                         self.response.to_partial_json())
 
     def test_from_json(self):
         from acme.challenges import TLSSNI01Response
@@ -365,25 +367,16 @@ class TLSSNI01Test(unittest.TestCase):
             'type': 'tls-sni-01',
             'token': 'a82d5ff8ef740d12881f6d3c2277ab2e',
         }
-
-    def _msg(self):
         from acme.challenges import TLSSNI01
-        with warnings.catch_warnings(record=True) as warn:
-            warnings.simplefilter("always")
-            msg = TLSSNI01(
-                token=jose.b64decode('a82d5ff8ef740d12881f6d3c2277ab2e'))
-            assert warn is not None # using a raw assert for mypy
-            self.assertTrue(len(warn) == 1)
-            self.assertTrue(issubclass(warn[-1].category, DeprecationWarning))
-            self.assertTrue('deprecated' in str(warn[-1].message))
-        return msg
+        self.msg = TLSSNI01(
+            token=jose.b64decode('a82d5ff8ef740d12881f6d3c2277ab2e'))
 
     def test_to_partial_json(self):
-        self.assertEqual(self.jmsg, self._msg().to_partial_json())
+        self.assertEqual(self.jmsg, self.msg.to_partial_json())
 
     def test_from_json(self):
         from acme.challenges import TLSSNI01
-        self.assertEqual(self._msg(), TLSSNI01.from_json(self.jmsg))
+        self.assertEqual(self.msg, TLSSNI01.from_json(self.jmsg))
 
     def test_from_json_hashable(self):
         from acme.challenges import TLSSNI01
@@ -398,9 +391,17 @@ class TLSSNI01Test(unittest.TestCase):
     @mock.patch('acme.challenges.TLSSNI01Response.gen_cert')
     def test_validation(self, mock_gen_cert):
         mock_gen_cert.return_value = ('cert', 'key')
-        self.assertEqual(('cert', 'key'), self._msg().validation(
+        self.assertEqual(('cert', 'key'), self.msg.validation(
             KEY, cert_key=mock.sentinel.cert_key))
         mock_gen_cert.assert_called_once_with(key=mock.sentinel.cert_key)
+
+    def test_deprecation_message(self):
+        with mock.patch('acme.warnings.warn') as mock_warn:
+            from acme.challenges import TLSSNI01
+            assert TLSSNI01
+        self.assertEqual(mock_warn.call_count, 1)
+        self.assertTrue('deprecated' in mock_warn.call_args[0][0])
+
 
 class TLSALPN01ResponseTest(unittest.TestCase):
     # pylint: disable=too-many-instance-attributes
@@ -419,7 +420,8 @@ class TLSALPN01ResponseTest(unittest.TestCase):
         self.response = self.chall.response(KEY)
 
     def test_to_partial_json(self):
-        self.assertEqual(self.jmsg, self.msg.to_partial_json())
+        self.assertEqual({k: v for k, v in self.jmsg.items() if k != 'keyAuthorization'},
+                         self.msg.to_partial_json())
 
     def test_from_json(self):
         from acme.challenges import TLSALPN01Response

@@ -28,45 +28,19 @@ Contributing
 If you'd like to contribute to this project please read `Developer Guide
 <https://certbot.eff.org/docs/contributing.html>`_.
 
+This project is governed by `EFF's Public Projects Code of Conduct <https://www.eff.org/pages/eppcode>`_.
+
 .. _installation:
-
-Installation
-------------
-
-The easiest way to install Certbot is by visiting `certbot.eff.org`_, where you can
-find the correct installation instructions for many web server and OS combinations.
-For more information, see `Get Certbot <https://certbot.eff.org/docs/install.html>`_.
-
-.. _certbot.eff.org: https://certbot.eff.org/
 
 How to run the client
 ---------------------
 
-In many cases, you can just run ``certbot-auto`` or ``certbot``, and the
-client will guide you through the process of obtaining and installing certs
-interactively.
+The easiest way to install and run Certbot is by visiting `certbot.eff.org`_,
+where you can find the correct instructions for many web server and OS
+combinations.  For more information, see `Get Certbot
+<https://certbot.eff.org/docs/install.html>`_.
 
-For full command line help, you can type::
-
-  ./certbot-auto --help all
-
-
-You can also tell it exactly what you want it to do from the command line.
-For instance, if you want to obtain a cert for ``example.com``,
-``www.example.com``, and ``other.example.net``, using the Apache plugin to both
-obtain and install the certs, you could do this::
-
-  ./certbot-auto --apache -d example.com -d www.example.com -d other.example.net
-
-(The first time you run the command, it will make an account, and ask for an
-email and agreement to the Let's Encrypt Subscriber Agreement; you can
-automate those with ``--email`` and ``--agree-tos``)
-
-If you want to use a webserver that doesn't have full plugin support yet, you
-can still use "standalone" or "webroot" plugins to obtain a certificate::
-
-  ./certbot-auto certonly --standalone --email admin@example.com -d example.com -d www.example.com -d other.example.net
-
+.. _certbot.eff.org: https://certbot.eff.org/
 
 Understanding the client in more depth
 --------------------------------------

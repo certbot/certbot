@@ -1,17 +1,15 @@
 """Certbot client API."""
 import datetime
 import logging
-import os
 import platform
 
-
+import OpenSSL
+import josepy as jose
+import zope.component
 from cryptography.hazmat.backends import default_backend
 # https://github.com/python/typeshed/blob/master/third_party/
 # 2/cryptography/hazmat/primitives/asymmetric/rsa.pyi
 from cryptography.hazmat.primitives.asymmetric.rsa import generate_private_key  # type: ignore
-import josepy as jose
-import OpenSSL
-import zope.component
 
 from acme import client as acme_client
 from acme import crypto_util as acme_crypto_util
@@ -20,11 +18,9 @@ from acme import messages
 from acme.magic_typing import Optional  # pylint: disable=unused-import,no-name-in-module
 
 import certbot
-
 from certbot import account
 from certbot import auth_handler
 from certbot import cli
-from certbot import compat
 from certbot import constants
 from certbot import crypto_util
 from certbot import eff
@@ -34,11 +30,11 @@ from certbot import interfaces
 from certbot import reverter
 from certbot import storage
 from certbot import util
-
-from certbot.display import ops as display_ops
+from certbot.compat import misc
+from certbot.compat import os
 from certbot.display import enhancements
+from certbot.display import ops as display_ops
 from certbot.plugins import selection as plugin_selection
-
 
 logger = logging.getLogger(__name__)
 
@@ -352,7 +348,7 @@ class Client(object):
 
         orderr = self._get_order_and_authorizations(csr.data, self.config.allow_subset_of_names)
         authzr = orderr.authorizations
-        auth_domains = set(a.body.identifier.value for a in authzr)
+        auth_domains = set(a.body.identifier.value for a in authzr)  # pylint: disable=not-an-iterable
         successful_domains = [d for d in domains if d in auth_domains]
 
         # allow_subset_of_names is currently disabled for wildcard
@@ -421,11 +417,10 @@ class Client(object):
             logger.debug("Dry run: Skipping creating new lineage for %s",
                         new_name)
             return None
-        else:
-            return storage.RenewableCert.new_lineage(
-                new_name, cert,
-                key.pem, chain,
-                self.config)
+        return storage.RenewableCert.new_lineage(
+            new_name, cert,
+            key.pem, chain,
+            self.config)
 
     def _choose_lineagename(self, domains, certname):
         """Chooses a name for the new lineage.
@@ -444,8 +439,7 @@ class Client(object):
         elif util.is_wildcard_domain(domains[0]):
             # Don't make files and directories starting with *.
             return domains[0][2:]
-        else:
-            return domains[0]
+        return domains[0]
 
     def save_certificate(self, cert_pem, chain_pem,
                          cert_path, chain_path, fullchain_path):
@@ -466,7 +460,7 @@ class Client(object):
         """
         for path in cert_path, chain_path, fullchain_path:
             util.make_or_verify_dir(
-                os.path.dirname(path), 0o755, compat.os_geteuid(),
+                os.path.dirname(path), 0o755, misc.os_geteuid(),
                 self.config.strict_permissions)
 
 
@@ -555,6 +549,11 @@ class Client(object):
                 if ask_redirect:
                     if config_name == "redirect" and config_value is None:
                         config_value = enhancements.ask(enhancement_name)
+                        if not config_value:
+                            logger.warning("Future versions of Certbot will automatically "
+                                "configure the webserver so that all requests redirect to secure "
+                                "HTTPS access. You can control this behavior and disable this "
+                                "warning with the --redirect and --no-redirect flags.")
                 if config_value:
                     self.apply_enhancement(domains, enhancement_name, option)
                     enhanced = True
@@ -731,9 +730,8 @@ def _open_pem_file(cli_arg_path, pem_path):
     if cli.set_by_cli(cli_arg_path):
         return util.safe_open(pem_path, chmod=0o644, mode="wb"),\
             os.path.abspath(pem_path)
-    else:
-        uniq = util.unique_file(pem_path, 0o644, "wb")
-        return uniq[0], os.path.abspath(uniq[1])
+    uniq = util.unique_file(pem_path, 0o644, "wb")
+    return uniq[0], os.path.abspath(uniq[1])
 
 def _save_chain(chain_pem, chain_file):
     """Saves chain_pem at a unique path based on chain_path.

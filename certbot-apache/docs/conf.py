@@ -13,7 +13,7 @@
 # serve to show the default.
 
 import sys
-import os
+from certbot.compat import os
 import shlex
 
 import mock

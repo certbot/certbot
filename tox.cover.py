@@ -12,7 +12,7 @@ DEFAULT_PACKAGES = [
     'certbot_dns_sakuracloud', 'certbot_nginx', 'certbot_postfix', 'letshelp_certbot']
 
 COVER_THRESHOLDS = {
-    'certbot': {'linux': 98, 'windows': 94},
+    'certbot': {'linux': 98, 'windows': 93},
     'acme': {'linux': 100, 'windows': 99},
     'certbot_apache': {'linux': 100, 'windows': 100},
     'certbot_dns_cloudflare': {'linux': 98, 'windows': 98},
@@ -35,7 +35,8 @@ COVER_THRESHOLDS = {
 }
 
 SKIP_PROJECTS_ON_WINDOWS = [
-    'certbot-apache', 'certbot-nginx', 'certbot-postfix', 'letshelp-certbot']
+    'certbot-apache', 'certbot-postfix', 'letshelp-certbot']
+
 
 def cover(package):
     threshold = COVER_THRESHOLDS.get(package)['windows' if os.name == 'nt' else 'linux']
@@ -53,6 +54,7 @@ def cover(package):
     subprocess.check_call([
         sys.executable, '-m', 'coverage', 'report', '--fail-under', str(threshold), '--include',
         '{0}/*'.format(pkg_dir), '--show-missing'])
+
 
 def main():
     description = """
@@ -76,6 +78,7 @@ Option -e makes sure we fail fast and don't submit to codecov."""
 
     for package in packages:
         cover(package)
+
 
 if __name__ == '__main__':
     main()

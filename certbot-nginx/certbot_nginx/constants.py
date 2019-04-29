@@ -1,6 +1,7 @@
 """nginx plugin constants."""
-import pkg_resources
 import platform
+
+import pkg_resources
 
 FREEBSD_DARWIN_SERVER_ROOT = "/usr/local/etc/nginx"
 LINUX_SERVER_ROOT = "/etc/nginx"

@@ -1,7 +1,6 @@
 """Decide which plugins to use for authentication & installation"""
 from __future__ import print_function
 
-import os
 import logging
 
 import six
@@ -9,7 +8,7 @@ import zope.component
 
 from certbot import errors
 from certbot import interfaces
-
+from certbot.compat import os
 from certbot.display import util as display_util
 
 logger = logging.getLogger(__name__)
@@ -111,8 +110,7 @@ def pick_plugin(config, default, plugins, question, ifaces):
         plugin_ep = choose_plugin(list(six.itervalues(prepared)), question)
         if plugin_ep is None:
             return None
-        else:
-            return plugin_ep.init()
+        return plugin_ep.init()
     elif len(prepared) == 1:
         plugin_ep = list(prepared.values())[0]
         logger.debug("Single candidate plugin: %s", plugin_ep)

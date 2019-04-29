@@ -1,14 +1,13 @@
 """Contains UI methods for LE user operations."""
 import logging
-import os
 
 import zope.component
 
-from certbot import compat
 from certbot import errors
 from certbot import interfaces
 from certbot import util
-
+from certbot.compat import misc
+from certbot.compat import os
 from certbot.display import util as display_util
 
 logger = logging.getLogger(__name__)
@@ -36,7 +35,7 @@ def get_email(invalid=False, optional=True):
                          "the client with --register-unsafely-without-email "
                          "but make sure you then backup your account key from "
                          "{0}\n\n".format(os.path.join(
-                             compat.get_default_folder('config'), 'accounts')))
+                             misc.get_default_folder('config'), 'accounts')))
     if optional:
         if invalid:
             msg += unsafe_suggestion
@@ -86,8 +85,7 @@ def choose_account(accounts):
         "Please choose an account", labels, force_interactive=True)
     if code == display_util.OK:
         return accounts[index]
-    else:
-        return None
+    return None
 
 def choose_values(values, question=None):
     """Display screen to let user pick one or multiple values from the provided
@@ -102,8 +100,7 @@ def choose_values(values, question=None):
         question, tags=values, force_interactive=True)
     if code == display_util.OK and items:
         return items
-    else:
-        return []
+    return []
 
 def choose_names(installer, question=None):
     """Display screen to select domains to validate.
@@ -132,8 +129,7 @@ def choose_names(installer, question=None):
     code, names = _filter_names(names, question)
     if code == display_util.OK and names:
         return names
-    else:
-        return []
+    return []
 
 
 def get_valid_domains(domains):
@@ -217,7 +213,7 @@ def _choose_names_manually(prompt_prefix=""):
             except errors.ConfigurationError as e:
                 invalid_domains[domain] = str(e)
 
-        if len(invalid_domains):
+        if invalid_domains:
             retry_message = (
                 "One or more of the entered domain names was not valid:"
                 "{0}{0}").format(os.linesep)

@@ -2,12 +2,12 @@
 
 import collections
 import logging
-import os
 import unittest
 
 import mock
 
 from certbot import errors
+from certbot.compat import os
 from certbot.display import util as display_util
 from certbot.plugins import dns_common
 from certbot.plugins import dns_test_common
@@ -21,10 +21,6 @@ class DNSAuthenticatorTest(util.TempDirTestCase, dns_test_common.BaseAuthenticat
         _setup_credentials = mock.MagicMock()
         _perform = mock.MagicMock()
         _cleanup = mock.MagicMock()
-
-        def __init__(self, *args, **kwargs):
-            # pylint: disable=protected-access
-            super(DNSAuthenticatorTest._FakeDNSAuthenticator, self).__init__(*args, **kwargs)
 
         def more_info(self):  # pylint: disable=missing-docstring,no-self-use
             return 'A fake authenticator for testing.'

@@ -6,16 +6,16 @@ from email.utils import parsedate_tz
 import heapq
 import logging
 import time
+import re
+import sys
 
 import six
 from six.moves import http_client  # pylint: disable=import-error
 import josepy as jose
 import OpenSSL
-import re
-from requests_toolbelt.adapters.source import SourceAddressAdapter
 import requests
 from requests.adapters import HTTPAdapter
-import sys
+from requests_toolbelt.adapters.source import SourceAddressAdapter
 
 from acme import crypto_util
 from acme import errors
@@ -652,7 +652,7 @@ class ClientV2(ClientBase):
         response = self._post(self.directory['newOrder'], order)
         body = messages.Order.from_json(response.json())
         authorizations = []
-        for url in body.authorizations:
+        for url in body.authorizations:  # pylint: disable=not-an-iterable
             authorizations.append(self._authzr_from_response(self._post_as_get(url), uri=url))
         return messages.OrderResource(
             body=body,
@@ -714,7 +714,7 @@ class ClientV2(ClientBase):
                 for chall in authzr.body.challenges:
                     if chall.error != None:
                         failed.append(authzr)
-        if len(failed) > 0:
+        if failed:
             raise errors.ValidationError(failed)
         return orderr.update(authorizations=responses)
 
@@ -739,8 +739,7 @@ class ClientV2(ClientBase):
             if body.error is not None:
                 raise errors.IssuanceError(body.error)
             if body.certificate is not None:
-                certificate_response = self._post_as_get(body.certificate,
-                                                    content_type=DER_CONTENT_TYPE).text
+                certificate_response = self._post_as_get(body.certificate).text
                 return orderr.update(body=body, fullchain_pem=certificate_response)
         raise errors.TimeoutError()
 
@@ -759,10 +758,7 @@ class ClientV2(ClientBase):
 
     def external_account_required(self):
         """Checks if ACME server requires External Account Binding authentication."""
-        if hasattr(self.directory, 'meta') and self.directory.meta.external_account_required:
-            return True
-        else:
-            return False
+        return hasattr(self.directory, 'meta') and self.directory.meta.external_account_required
 
     def _post_as_get(self, *args, **kwargs):
         """
@@ -778,11 +774,11 @@ class ClientV2(ClientBase):
             # We add an empty payload for POST-as-GET requests
             new_args = args[:1] + (None,) + args[1:]
             try:
-                return self._post(*new_args, **kwargs)  # pylint: disable=star-args
+                return self._post(*new_args, **kwargs)
             except messages.Error as error:
                 if error.code == 'malformed':
                     logger.debug('Error during a POST-as-GET request, '
-                                 'your ACME CA may not support it:\n%s', error)
+                                 'your ACME CA server may not support it:\n%s', error)
                     logger.debug('Retrying request with GET.')
                 else:  # pragma: no cover
                     raise
@@ -866,8 +862,7 @@ class BackwardsCompatibleClientV2(object):
             for domain in dnsNames:
                 authorizations.append(self.client.request_domain_challenges(domain))
             return messages.OrderResource(authorizations=authorizations, csr_pem=csr_pem)
-        else:
-            return self.client.new_order(csr_pem)
+        return self.client.new_order(csr_pem)
 
     def finalize_order(self, orderr, deadline):
         """Finalize an order and obtain a certificate.
@@ -904,8 +899,7 @@ class BackwardsCompatibleClientV2(object):
             chain = crypto_util.dump_pyopenssl_chain(chain).decode()
 
             return orderr.update(fullchain_pem=(cert + chain))
-        else:
-            return self.client.finalize_order(orderr, deadline)
+        return self.client.finalize_order(orderr, deadline)
 
     def revoke(self, cert, rsn):
         """Revoke certificate.
@@ -923,8 +917,7 @@ class BackwardsCompatibleClientV2(object):
     def _acme_version_from_directory(self, directory):
         if hasattr(directory, 'newNonce'):
             return 2
-        else:
-            return 1
+        return 1
 
     def external_account_required(self):
         """Checks if the server requires an external account for ACMEv2 servers.
@@ -932,8 +925,7 @@ class BackwardsCompatibleClientV2(object):
         Always return False for ACMEv1 servers, as it doesn't use External Account Binding."""
         if self.acme_version == 1:
             return False
-        else:
-            return self.client.external_account_required()
+        return self.client.external_account_required()
 
 
 class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
@@ -1011,7 +1003,6 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
             if self.account is not None:
                 kwargs["kid"] = self.account["uri"]
         kwargs["key"] = self.key
-        # pylint: disable=star-args
         return jws.JWS.sign(jobj, **kwargs).json_dumps(indent=2)
 
     @classmethod
@@ -1192,10 +1183,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
 
     def _post_once(self, url, obj, content_type=JOSE_CONTENT_TYPE,
             acme_version=1, **kwargs):
-        try:
-            new_nonce_url = kwargs.pop('new_nonce_url')
-        except KeyError:
-            new_nonce_url = None
+        new_nonce_url = kwargs.pop('new_nonce_url', None)
         data = self._wrap_in_jws(obj, self._get_nonce(url, new_nonce_url), url, acme_version)
         kwargs.setdefault('headers', {'Content-Type': content_type})
         response = self._send_request('POST', url, data=data, **kwargs)

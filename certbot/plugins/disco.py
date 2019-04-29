@@ -2,10 +2,9 @@
 import collections
 import itertools
 import logging
+
 import pkg_resources
 import six
-
-from collections import OrderedDict
 
 import zope.interface
 import zope.interface.verify
@@ -190,7 +189,11 @@ class PluginsRegistry(collections.Mapping):
         # This prevents deadlock caused by plugins acquiring a lock
         # and ensures at least one concurrent Certbot instance will run
         # successfully.
-        self._plugins = OrderedDict(sorted(six.iteritems(plugins)))
+
+        # Pylint checks for super init, but also claims the super
+        # has no __init__member
+        # pylint: disable=super-init-not-called
+        self._plugins = collections.OrderedDict(sorted(six.iteritems(plugins)))
 
     @classmethod
     def find_all(cls):
@@ -239,7 +242,6 @@ class PluginsRegistry(collections.Mapping):
 
     def ifaces(self, *ifaces_groups):
         """Filter plugins based on interfaces."""
-        # pylint: disable=star-args
         return self.filter(lambda p_ep: p_ep.ifaces(*ifaces_groups))
 
     def verify(self, ifaces):
@@ -275,8 +277,7 @@ class PluginsRegistry(collections.Mapping):
         assert len(candidates) <= 1
         if candidates:
             return candidates[0]
-        else:
-            return None
+        return None
 
     def __repr__(self):
         return "{0}({1})".format(

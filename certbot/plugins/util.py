@@ -1,8 +1,8 @@
 """Plugin utilities."""
 import logging
-import os
 
 from certbot import util
+from certbot.compat import os
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +18,7 @@ def get_prefixes(path):
     """
     prefix = os.path.normpath(path)
     prefixes = []
-    while len(prefix) > 0:
+    while prefix:
         prefixes.append(prefix)
         prefix, _ = os.path.split(prefix)
         # break once we hit the root path
@@ -50,8 +50,7 @@ def path_surgery(cmd):
 
     if util.exe_exists(cmd):
         return True
-    else:
-        expanded = " expanded" if any(added) else ""
-        logger.debug("Failed to find executable %s in%s PATH: %s", cmd,
-                     expanded, path)
-        return False
+    expanded = " expanded" if any(added) else ""
+    logger.debug("Failed to find executable %s in%s PATH: %s", cmd,
+                 expanded, path)
+    return False

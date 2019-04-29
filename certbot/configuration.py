@@ -1,15 +1,15 @@
 """Certbot user-supplied configuration."""
 import copy
-import os
 
-from six.moves.urllib import parse  # pylint: disable=import-error
 import zope.interface
+from six.moves.urllib import parse  # pylint: disable=relative-import
 
-from certbot import compat
 from certbot import constants
 from certbot import errors
 from certbot import interfaces
 from certbot import util
+from certbot.compat import misc
+from certbot.compat import os
 
 
 @zope.interface.implementer(interfaces.IConfig)
@@ -70,7 +70,7 @@ class NamespaceConfig(object):
 
     def accounts_dir_for_server_path(self, server_path):
         """Path to accounts directory based on server_path"""
-        server_path = compat.underscores_for_unsupported_characters_in_path(server_path)
+        server_path = misc.underscores_for_unsupported_characters_in_path(server_path)
         return os.path.join(
             self.namespace.config_dir, constants.ACCOUNTS_DIR, server_path)
 
@@ -148,10 +148,10 @@ def check_config_sanity(config):
 
     """
     # Port check
-    if config.http01_port == config.tls_sni_01_port:
+    if config.http01_port == config.https_port:
         raise errors.ConfigurationError(
-            "Trying to run http-01 and tls-sni-01 "
-            "on the same port ({0})".format(config.tls_sni_01_port))
+            "Trying to run http-01 and https-port "
+            "on the same port ({0})".format(config.https_port))
 
     # Domain checks
     if config.namespace.domains is not None:

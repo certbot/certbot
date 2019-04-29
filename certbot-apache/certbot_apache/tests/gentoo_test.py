@@ -1,14 +1,15 @@
 """Test for certbot_apache.configurator for Gentoo overrides"""
-import os
 import unittest
 
 import mock
 
 from certbot import errors
+from certbot.compat import os
 
-from certbot_apache import override_gentoo
 from certbot_apache import obj
+from certbot_apache import override_gentoo
 from certbot_apache.tests import util
+
 
 def get_vh_truth(temp_dir, config_name):
     """Return the ground truth for the specified directory."""
@@ -113,6 +114,7 @@ class MultipleVhostsTestGentoo(util.ApacheTest):
             """Mock httpd process stdout"""
             if command == ['apache2ctl', 'modules']:
                 return mod_val
+            return None  # pragma: no cover
         mock_get.side_effect = mock_get_cfg
         self.config.parser.modules = set()
 
