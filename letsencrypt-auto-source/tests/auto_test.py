@@ -192,7 +192,7 @@ def install_le_auto(contents, install_path):
     chmod(install_path, S_IRUSR | S_IXUSR)
 
 
-def run_le_auto(le_auto_path, venv_dir, base_url=None, le_auto_args_str=None, **kwargs):
+def run_le_auto(le_auto_path, venv_dir, base_url=None, le_auto_args_str='--version', **kwargs):
     """Run the prebuilt version of letsencrypt-auto, returning stdout and
     stderr strings.
 
@@ -223,8 +223,6 @@ iQIDAQAB
 
     env.update(d)
 
-    if le_auto_args_str is None:
-        le_auto_args_str = '--version'
     return out_and_err(
         le_auto_path + ' ' + le_auto_args_str,
         shell=True,
