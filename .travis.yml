@@ -44,12 +44,6 @@ matrix:
     - python: "2.7"
       env: TOXENV=py27-cover FYI="py27 tests + code coverage"
 
-    - sudo: required
-      env: TOXENV=nginx_compat
-      services: docker
-      before_install:
-      addons:
-      <<: *not-on-master
     - python: "2.7"
       env: TOXENV=lint
       <<: *not-on-master
@@ -97,6 +91,12 @@ matrix:
       <<: *not-on-master
 
     # Extended test suite on cron jobs and pushes to tested branches other than master
+    - sudo: required
+      env: TOXENV=nginx_compat
+      services: docker
+      before_install:
+      addons:
+      <<: *extended-test-suite
     - python: "3.7"
       dist: xenial
       env: TOXENV=py37 CERTBOT_NO_PIN=1
