@@ -33,7 +33,7 @@ targets:
     type: ubuntu
     virt: hvm
     user: admin
-  - ami: ami-116d857a
+  - ami: ami-077bf3962f29d3fa4
     name: debian8.1
     type: ubuntu
     virt: hvm
