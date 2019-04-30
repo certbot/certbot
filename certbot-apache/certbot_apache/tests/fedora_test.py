@@ -74,8 +74,7 @@ class FedoraRestartTest(util.ApacheTest):
                 mock_test.side_effect = [errors.MisconfigurationError, '']
                 self._run_fedora_test()
                 self.assertEqual(mock_test.call_count, 2)
-                self.assertEqual(mock_run.call_args[0][0],
-                                ['systemctl', 'restart', 'httpd'])
+                self.assertEqual(mock_run.call_args[0][0], ['apachectl', 'graceful'])
 
 
 class MultipleVhostsTestFedora(util.ApacheTest):
