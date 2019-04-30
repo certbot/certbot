@@ -1,4 +1,4 @@
-"""Test for certbot_apache.configurator for Centos overrides"""
+"""Test for certbot_apache.configurator for Fedora 29+ overrides"""
 import unittest
 
 import mock
