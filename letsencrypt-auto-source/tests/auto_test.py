@@ -409,7 +409,7 @@ class AutoTests(TestCase):
     def test_permissions_warnings(self):
         """Make sure letsencrypt-auto properly warns about permissions problems."""
         # This test assumes that only the parent of the directory containing
-        # letesncrypt-auto (usually /tmp) may have permissions letsencrypt-auto
+        # letsencrypt-auto (usually /tmp) may have permissions letsencrypt-auto
         # considers insecure.
         with temp_paths() as (le_auto_path, venv_dir):
             le_auto_path = abspath(le_auto_path)
