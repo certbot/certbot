@@ -54,18 +54,7 @@ class FedoraRestartTest(util.ApacheTest):
 
     def _run_fedora_test(self):
         self.assertIsInstance(self.config, override_fedora.FedoraConfigurator)
-        with mock.patch("certbot.util.get_os_info") as mock_info:
-            mock_info.return_value = ["fedora", "29"]
-            self.config.config_test()
-
-    def test_non_fedora_error(self):
-        c_test = "certbot_apache.configurator.ApacheConfigurator.config_test"
-        with mock.patch(c_test) as mock_test:
-            mock_test.side_effect = errors.MisconfigurationError
-            with mock.patch("certbot.util.get_os_info") as mock_info:
-                mock_info.return_value = ["not_fedora"]
-                self.assertRaises(errors.MisconfigurationError,
-                                  self.config.config_test)
+        self.config.config_test()
 
     def test_fedora_restart_error(self):
         c_test = "certbot_apache.configurator.ApacheConfigurator.config_test"
