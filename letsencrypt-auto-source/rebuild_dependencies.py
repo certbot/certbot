@@ -221,7 +221,6 @@ def _write_requirements(dest_file, requirements, conflicts):
 # ```
 # If you want to update a single dependency, run commands similar to these:
 # ```
-# pip install --no-cache-dir -e acme -e . -e certbot-apache -e certbot-nginx
 # pip install hashin
 # hashin -r dependency-requirements.txt cryptography==1.5.2
 # ```
