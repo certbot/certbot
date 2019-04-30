@@ -58,7 +58,7 @@ class FedoraConfigurator(configurator.ApacheConfigurator):
         """
         Tries to restart httpd using systemctl to generate the self signed keypair.
         """
-        super(FedoraConfigurator)._reload()
+        super(FedoraConfigurator, self)._reload()
 
         # Finish with actual config check to see if systemctl restart helped
         super(FedoraConfigurator, self).config_test()
