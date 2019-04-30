@@ -150,9 +150,8 @@ def get_default_folder(folder_type):
         if sys.platform.startswith('freebsd') or sys.platform.startswith('dragonfly'):
             # FreeBSD specific
             return FREEBSD_DEFAULT_FOLDERS[folder_type]
-        else:
-            # Linux specific
-            return LINUX_DEFAULT_FOLDERS[folder_type]
+        # Linux specific
+        return LINUX_DEFAULT_FOLDERS[folder_type]
     # Windows specific
     return WINDOWS_DEFAULT_FOLDERS[folder_type]
 
