@@ -1,4 +1,6 @@
 """ Entry point for Apache Plugin """
+from distutils.version import LooseVersion
+
 from certbot import util
 
 from certbot_apache import configurator
@@ -37,7 +39,7 @@ def get_configurator():
     override_class = None
 
     # Special case for older Fedora versions
-    if os_name == 'fedora' and int(os_version) < 29:
+    if os_name == 'fedora' and LooseVersion(os_version) < LooseVersion('29'):
         os_name = 'fedora_old'
 
     try:
