@@ -31,6 +31,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   https://community.letsencrypt.org/t/certbot-auto-deployment-best-practices/91979/,
   however, these warnings can be disabled as necessary with the flag
   --no-permissions-check.
+* `acme` module uses now a POST-as-GET request to retrieve the registration
+  from an ACME v2 server
 
 ### Fixed
 
