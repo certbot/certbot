@@ -20,7 +20,5 @@ sed -i '/httpPort/ s/5002/80/' ./test/config/va.json
 sed -i '/httpsPort/ s/5001/443/' ./test/config/va.json
 sed -i '/tlsPort/ s/5001/443/' ./test/config/va.json
 # set dns resolver
-sed -i 's/"127.0.0.1:8053",/"'$resolver'"/' ./test/config/ra.json
-sed -i 's/"127.0.0.1:8054"//' ./test/config/ra.json
 sed -i 's/"127.0.0.1:8053",/"'$resolver'"/' ./test/config/va.json
 sed -i 's/"127.0.0.1:8054"//' ./test/config/va.json
