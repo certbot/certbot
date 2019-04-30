@@ -25,6 +25,12 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * Adding a warning noting that future versions of Certbot will automatically configure the
   webserver so that all requests redirect to secure HTTPS access. You can control this
   behavior and disable this warning with the --redirect and --no-redirect flags.
+* certbot-auto now prints warnings when run as root with insecure file system
+  permissions. If you see these messages, you should fix the problem by
+  following the instructions at
+  https://community.letsencrypt.org/t/certbot-auto-deployment-best-practices/91979/,
+  however, these warnings can be disabled as necessary with the flag
+  --no-permissions-check.
 * `acme` module uses now a POST-as-GET request to retrieve the registration
   from an ACME v2 server
 

@@ -46,6 +46,7 @@ CLI_DEFAULTS = dict(
     duplicate=False,
     os_packages_only=False,
     no_self_upgrade=False,
+    no_permissions_check=False,
     no_bootstrap=False,
     quiet=False,
     staging=False,

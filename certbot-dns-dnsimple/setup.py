@@ -1,3 +1,4 @@
+import os
 from setuptools import setup
 from setuptools import find_packages
 
@@ -9,11 +10,22 @@ version = '0.34.0.dev0'
 install_requires = [
     'acme>=0.31.0',
     'certbot>=0.34.0.dev0',
-    'dns-lexicon>=2.2.1',  # Support for >1 TXT record per name
     'mock',
     'setuptools',
     'zope.interface',
 ]
+
+# This package normally depends on dns-lexicon>=3.2.1 to address the
+# problem described in https://github.com/AnalogJ/lexicon/issues/387,
+# however, the fix there has been backported to older versions of
+# lexicon found in various Linux distros. This conditional helps us test
+# that we've maintained compatibility with these versions of lexicon
+# which allows us to potentially upgrade our packages in these distros
+# as necessary.
+if os.environ.get('CERTBOT_OLDEST') == '1':
+    install_requires.append('dns-lexicon>=2.2.1')
+else:
+    install_requires.append('dns-lexicon>=3.2.1')
 
 docs_extras = [
     'Sphinx>=1.0',  # autodoc_member_order = 'bysource', autodoc_default_flags
