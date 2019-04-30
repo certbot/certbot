@@ -4,6 +4,7 @@ import zope.interface
 
 from certbot import errors
 from certbot import interfaces
+from certbot import util
 
 from certbot_apache import apache_util
 from certbot_apache import configurator
@@ -57,7 +58,10 @@ class FedoraConfigurator(configurator.ApacheConfigurator):
         """
         Tries to restart httpd using systemctl to generate the self signed keypair.
         """
-        super(FedoraConfigurator, self)._reload()
+        try:
+            util.run_script(['systemctl', 'restart', 'httpd'])
+        except errors.SubprocessError as err:
+            raise errors.MisconfigurationError(str(err))
 
         # Finish with actual config check to see if systemctl restart helped
         super(FedoraConfigurator, self).config_test()
