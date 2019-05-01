@@ -2,11 +2,29 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 0.34.0 - master
+## 0.35.0 - master
 
 ### Added
 
 *
+
+### Changed
+
+*
+
+### Fixed
+
+*
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+package with changes other than its version number was:
+
+*
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.34.0 - 2019-05-01
 
 ### Changed
 
@@ -36,10 +54,6 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * Convert the tsig algorithm specified in the certbot_dns_rfc2136 configuration file to
   all uppercase letters before validating. This makes the value in the config case
   insensitive.
-
-### Fixed
-
-*
 
 Despite us having broken lockstep, we are continuing to release new versions of
 all Certbot components during releases for the time being, however, the only
