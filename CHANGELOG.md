@@ -33,6 +33,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   --no-permissions-check.
 * `acme` module uses now a POST-as-GET request to retrieve the registration
   from an ACME v2 server
+* Convert the tsig algorithm specified in the certbot_dns_rfc2136 configuration file to
+  all uppercase letters before validating. This makes the value in the config case
+  insensitive.
 
 ### Fixed
 
