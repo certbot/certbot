@@ -1,4 +1,4 @@
-FROM certbot/certbot
+FROM gcr.io/fathom-containers/certbot
 
 COPY . src/certbot-dns-google
 
