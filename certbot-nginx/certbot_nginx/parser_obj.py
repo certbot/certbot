@@ -7,6 +7,8 @@ import six
 
 from certbot import errors
 
+from certbot_nginx import nginxparser
+
 from acme.magic_typing import List # pylint: disable=unused-import, no-name-in-module
 
 logger = logging.getLogger(__name__)
@@ -84,14 +86,32 @@ class Parsable(object):
         """
         return [elem.dump(include_spaces) for elem in self._data]
 
-    def child_context(self, filename=None):
+    def dump_unspaced_list(self):
+        """ Dumps back to pyparsing-like list tree into an UnspacedList.
+        Use for compatibility with UnspacedList dependencies while migrating
+        to new parsing objects.
+
+        :returns: Pyparsing-like list tree.
+        :rtype :class:`.nginxparser.UnspacedList`:
+        """
+        return nginxparser.UnspacedList(self.dump(True))
+
+
+    def child_context(self, filename=None, cwd=None):
         """ Spawn a child context. """
-        cwd = None
         if self.context:
-            cwd = self.context.cwd
-            if not filename: 
-                filename = self.context.filename
+            return self.context.child(self, filename=filename)
         return ParseContext(parent=self, filename=filename, cwd=cwd)
+
+    def get_path(self):
+        """ TODO: document and test"""
+        if not self.context.parent or self.context.parent.context.filename != self.context.filename:
+            return None
+        parent_path = self.context.parent.get_path()
+        my_index = self.context.parent._data.index(self)
+        if parent_path:
+            return parent_path + [my_index]
+        return [my_index]
 
 class Directives(Parsable):
     """ A group or list of Directives.
@@ -115,13 +135,22 @@ class Directives(Parsable):
         Expects all elements in `raw_list` to be parseable by `type(self).parsing_hooks`,
         with an optional whitespace string at the last index of `raw_list`.
         """
+        if isinstance(raw_list, nginxparser.UnspacedList):
+            raw_list = raw_list.spaced
         if not isinstance(raw_list, list):
             raise errors.MisconfigurationError("Directives parsing expects a list!")
-        # If there's a trailing whitespace in the list of statements, keep track of it.
-        if raw_list and isinstance(raw_list[-1], six.string_types) and raw_list[-1].isspace():
-            self._trailing_whitespace = raw_list[-1]
-            raw_list = raw_list[:-1]
-        self._data = [parse_raw(elem, self.child_context(), add_spaces) for elem in raw_list]
+        # If there's a trailing whitespace in the list of statements, keep track of them
+        if raw_list:
+            i = -1
+            while len(raw_list) >= -i and isinstance(raw_list[i], six.string_types) and raw_list[i].isspace():
+                i -= 1
+            self._trailing_whitespace = "".join(raw_list[i+1:])
+            raw_list = raw_list[:i+1]
+        # Create parsing objects first, then parse. Then references to parent
+        # data exist while we parse the child objects.
+        self._data = [_choose_parser(self.child_context(), elem) for elem in raw_list]
+        for i, elem in enumerate(raw_list):
+            self._data[i].parse(elem, add_spaces)
 
     def dump(self, include_spaces=False):
         """ Dumps this object by first dumping each statement, then appending its
@@ -138,6 +167,12 @@ class Directives(Parsable):
                 yield sub_elem
 
     # ======== End overridden functions
+
+    def get_type(self, match_type):
+        """ TODO
+        """
+        return self.iterate(expanded=True,
+            match=lambda elem: isinstance(elem, match_type))
 
 
 def _space_list(list_):
@@ -179,7 +214,7 @@ class Sentence(Parsable):
 
     def iterate(self, expanded=False, match=None):
         """ Simply yields itself. """
-        if match is None or match(self):
+        if (match is None) or match(self):
             yield self
 
     def dump(self, include_spaces=False):
@@ -194,6 +229,9 @@ class Sentence(Parsable):
     def words(self):
         """ Iterates over words, but without spaces. Like Unspaced List. """
         return [word.strip("\"\'") for word in self._data if not word.isspace()]
+
+    def __len__(self):
+        return len(self.words)
 
     def __getitem__(self, index):
         return self.words[index]
@@ -251,14 +289,14 @@ class Block(Parsable):
         if not Block.should_parse(raw_list):
             raise errors.MisconfigurationError("Block parsing expects a list of length 2. "
                 "First element should be a list of string types (the bloc names), "
-                "and second should be another list of statements (the bloc content).")
+                "and second should be another list of directives (the bloc content).")
         self.names = Sentence(self.child_context())
+        self.contents = Directives(self.child_context())
+        self._data = [self.names, self.contents]
         if add_spaces:
             raw_list[0].append(" ")
         self.names.parse(raw_list[0], add_spaces)
-        self.contents = Directives(self.child_context())
         self.contents.parse(raw_list[1], add_spaces)
-        self._data = [self.names, self.contents]
 
 def _is_comment(parsed_obj):
     """ Checks whether parsed_obj is a comment.
@@ -345,8 +383,12 @@ class ParseContext(object):
         self.filename = filename
         self.cwd = cwd
 
+    def child(self, parent, filename=None):
+        """ Returns Context with all fields inherited, except parent points to this object.
+        """
+        return ParseContext(parent, filename if filename else self.filename, self.cwd)
+
     @staticmethod
-    @abc.abstractmethod
     def parsing_hooks():
         """Returns object types that this class should be able to `parse` recusrively.
         The order of the objects indicates the order in which the parser should

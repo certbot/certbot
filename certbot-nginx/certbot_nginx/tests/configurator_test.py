@@ -633,6 +633,7 @@ class NginxConfiguratorTest(util.NginxTest):
         default_conf = self.config.parser.abs_path('sites-enabled/default')
         foo_conf = self.config.parser.abs_path('foo.conf')
         del self.config.parser.parsed[foo_conf][2][1][0][1][0] # remove default_server
+        self.config.parser.get_vhost(foo_conf).raw_obj.parse(self.config.parser.parsed[foo_conf][2][1][0])
         self.config.version = (1, 3, 1)
 
         self.config.deploy_cert(
@@ -687,6 +688,7 @@ class NginxConfiguratorTest(util.NginxTest):
         foo_conf = self.config.parser.abs_path('foo.conf')
         del self.config.parser.parsed[default_conf][0][1][0]
         del self.config.parser.parsed[default_conf][0][1][0]
+        self.config.parser.get_vhost(default_conf).raw_obj.parse(self.config.parser.parsed[default_conf][0])
         self.config.version = (1, 3, 1)
 
         self.config.deploy_cert(
@@ -721,6 +723,8 @@ class NginxConfiguratorTest(util.NginxTest):
         del self.config.parser.parsed[default_conf][0][1][0]
         del self.config.parser.parsed[default_conf][0][1][0]
         del self.config.parser.parsed[foo_conf][2][1][0][1][0]
+        self.config.parser.get_vhost(foo_conf).raw_obj.parse(self.config.parser.parsed[foo_conf][2][1][0])
+        self.config.parser.get_vhost(default_conf).raw_obj.parse(self.config.parser.parsed[default_conf][0])
         self.config.version = (1, 3, 1)
 
         self.assertRaises(errors.MisconfigurationError, self.config.deploy_cert,
@@ -736,6 +740,7 @@ class NginxConfiguratorTest(util.NginxTest):
     def test_deploy_no_match_multiple_defaults_ok(self):
         foo_conf = self.config.parser.abs_path('foo.conf')
         self.config.parser.parsed[foo_conf][2][1][0][1][0][1] = '*:5001'
+        self.config.parser.get_vhost(foo_conf).raw_obj.parse(self.config.parser.parsed[foo_conf][2][1][0])
         self.config.version = (1, 3, 1)
         self.config.deploy_cert("www.nomatch.com", "example/cert.pem", "example/key.pem",
             "example/chain.pem", "example/fullchain.pem")
@@ -744,6 +749,7 @@ class NginxConfiguratorTest(util.NginxTest):
         default_conf = self.config.parser.abs_path('sites-enabled/default')
         foo_conf = self.config.parser.abs_path('foo.conf')
         del self.config.parser.parsed[foo_conf][2][1][0][1][0] # remove default_server
+        self.config.parser.get_vhost(foo_conf).raw_obj.parse(self.config.parser.parsed[foo_conf][2][1][0])
         self.config.version = (1, 3, 1)
 
         self.config.deploy_cert(

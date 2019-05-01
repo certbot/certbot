@@ -12,6 +12,7 @@ from certbot import errors
 from certbot.compat import os
 
 from certbot_nginx import obj
+from certbot_nginx import nginx_parser_obj as nginx_obj
 from certbot_nginx import nginxparser
 from acme.magic_typing import Union, Dict, Set, Any, List, Tuple # pylint: disable=unused-import, no-name-in-module
 
@@ -32,6 +33,8 @@ class NginxParser(object):
         self.root = os.path.abspath(root)
         self.config_root = self._find_config_root()
 
+        self.parsed_root = None
+
         # Parse nginx.conf and included files.
         # TODO: Check sites-available/ as well. For now, the configurator does
         # not enable sites from there.
@@ -43,6 +46,10 @@ class NginxParser(object):
         """
         self.parsed = {}
         self._parse_recursively(self.config_root)
+        if self.parsed_root:
+            return
+        self.parsed_root = nginx_obj.parse_from_file_nginx(
+            nginx_obj.NginxParseContext(cwd=self.root, filename=self.config_root))
 
     def _parse_recursively(self, filepath):
         """Parses nginx config files recursively by looking at 'include'
@@ -123,6 +130,14 @@ class NginxParser(object):
                 servers[filename][i] = (new_server, path)
         return servers
 
+    def get_vhost(self, filename):
+        """ Retrieve first found vhost in file for testing purposes. """
+        blocks = self.parsed_root.get_type(nginx_obj.ServerBlock)
+        for server_block in blocks:
+            if server_block.vhost.filep == filename:
+                return server_block.vhost
+        return None
+
     def get_vhosts(self):
         # pylint: disable=cell-var-from-loop
         """Gets list of all 'virtual hosts' found in Nginx configuration.
@@ -134,26 +149,11 @@ class NginxParser(object):
         :rtype: list
 
         """
-        enabled = True  # We only look at enabled vhosts for now
-        servers = self._get_raw_servers()
-
         vhosts = []
-        for filename in servers:
-            for server, path in servers[filename]:
-                # Parse the server block into a VirtualHost object
-
-                parsed_server = _parse_server_raw(server)
-                vhost = obj.VirtualHost(filename,
-                                        parsed_server['addrs'],
-                                        parsed_server['ssl'],
-                                        enabled,
-                                        parsed_server['names'],
-                                        server,
-                                        path)
-                vhosts.append(vhost)
-
+        blocks = self.parsed_root.get_type(nginx_obj.ServerBlock)
+        for server_block in blocks:
+            vhosts.append(server_block.vhost)
         self._update_vhosts_addrs_ssl(vhosts)
-
         return vhosts
 
     def _update_vhosts_addrs_ssl(self, vhosts):
@@ -339,6 +339,8 @@ class NginxParser(object):
         vhost.ssl = parsed_server['ssl']
         vhost.names = parsed_server['names']
         vhost.raw = new_server
+        if vhost.raw_obj:
+            vhost.raw_obj.contents.parse(vhost.raw.spaced)
 
     def _modify_server_directives(self, vhost, block_func):
         filename = vhost.filep
@@ -374,8 +376,10 @@ class NginxParser(object):
         new_vhost = copy.deepcopy(vhost_template)
 
         enclosing_block = self.parsed[vhost_template.filep]
+        parsing_obj = self.parsed_root.context.parsed_files[vhost_template.filep]
         for index in vhost_template.path[:-1]:
             enclosing_block = enclosing_block[index]
+            parsing_obj = parsing_obj._data[index]
         raw_in_parsed = copy.deepcopy(enclosing_block[vhost_template.path[-1]])
 
         if only_directives is not None:
@@ -383,11 +387,14 @@ class NginxParser(object):
             for directive in raw_in_parsed[1]:
                 if directive and directive[0] in only_directives:
                     new_directives.append(directive)
+            new_directives.append("\n")
             raw_in_parsed[1] = new_directives
 
             self._update_vhost_based_on_new_directives(new_vhost, new_directives)
 
         enclosing_block.append(raw_in_parsed)
+        if "\n" not in enclosing_block[-1][0][0]:
+            enclosing_block[-1][0].insert(0, "\n")
         new_vhost.path[-1] = len(enclosing_block) - 1
         if remove_singleton_listen_params:
             for addr in new_vhost.addrs:
@@ -406,6 +413,11 @@ class NginxParser(object):
                         keys = [x.split('=')[0] for x in directive]
                         if param in keys:
                             del directive[keys.index(param)]
+        og_vhost_path = vhost_template.raw_obj.get_path()[-1]
+        parsing_obj.parse(enclosing_block.spaced)
+        new_vhost = parsing_obj._data[new_vhost.path[-1]].vhost
+        vhost_template.raw_obj = parsing_obj._data[og_vhost_path]
+        vhost_template.raw_obj.vhost = vhost_template
         return new_vhost
 
 

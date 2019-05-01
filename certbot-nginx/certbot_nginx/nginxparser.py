@@ -214,7 +214,10 @@ class UnspacedList(list):
 
     def extend(self, x):
         item, spaced_item = self._coerce(x)
-        self.spaced.extend(spaced_item)
+        if len(self.spaced) > 0 and spacey(self.spaced[-1]):
+            self.spaced[-1:-1] = spaced_item
+        else:
+            self.spaced.extend(spaced_item)
         list.extend(self, item)
         self.dirty = True
 
