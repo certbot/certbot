@@ -8,7 +8,7 @@ steps:
 
 - name: 'gcr.io/cloud-builders/docker'
   args: ["build", "-t", "gcr.io/$PROJECT_ID/certbot-dns-google:latest", "."]
-  dir: certbox-dns-google
+  dir: certbot-dns-google
   waitFor:
     - certbot
 
