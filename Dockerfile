@@ -1,4 +1,4 @@
-FROM python:2-alpine3.9
+FROM gcr.io/fathom-containers/debian-python2
 
 ENTRYPOINT [ "certbot" ]
 EXPOSE 80 443
