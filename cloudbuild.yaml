@@ -1,0 +1,17 @@
+timeout: 3600s
+steps:
+- id: certbot
+  name: 'gcr.io/cloud-builders/docker'
+  args: ["build", "-t", "gcr.io/$PROJECT_ID/certbot:latest", "."]
+  dir: .
+  waitFor: ['-']
+
+- name: 'gcr.io/cloud-builders/docker'
+  args: ["build", "-t", "gcr.io/$PROJECT_ID/certbot-dns-google:latest", "."]
+  dir: certbox-dns-google
+  waitFor:
+    - certbot
+
+images:
+  - gcr.io/$PROJECT_ID/certbot
+  - gcr.io/$PROJECT_ID/certbot-dns-google
