@@ -16,20 +16,15 @@ RUN sh -c 'cat tools/dev_constraints.txt unhashed_requirements.txt | /opt/certbo
 COPY acme src/acme
 COPY certbot src/certbot
 
-RUN apk add --no-cache --virtual .certbot-deps \
-        libffi \
-        libssl1.1 \
+RUN apt-get install --no-install-recommends -y \
         openssl \
         ca-certificates \
         binutils
-RUN apk add --no-cache --virtual .build-deps \
+RUN apt-get install --no-install-recommends -y \
         gcc \
-        linux-headers \
-        openssl-dev \
         musl-dev \
         libffi-dev \
     && pip install -r /opt/certbot/dependency-requirements.txt \
     && pip install --no-cache-dir --no-deps \
         --editable /opt/certbot/src/acme \
-        --editable /opt/certbot/src \
-    && apk del .build-deps
+        --editable /opt/certbot/src
