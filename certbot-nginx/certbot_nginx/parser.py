@@ -95,18 +95,14 @@ class NginxParser(object):
     def _build_addr_to_ssl(self):
         """Builds a map from address to whether it listens on ssl in any server block
         """
-        servers = self._get_raw_servers()
-
-        addr_to_ssl = {} # type: Dict[Tuple[str, str], bool]
-        for filename in servers:
-            for server, _ in servers[filename]:
-                # Parse the server block to save addr info
-                parsed_server = _parse_server_raw(server)
-                for addr in parsed_server['addrs']:
-                    addr_tuple = addr.normalized_tuple()
-                    if addr_tuple not in addr_to_ssl:
-                        addr_to_ssl[addr_tuple] = addr.ssl
-                    addr_to_ssl[addr_tuple] = addr.ssl or addr_to_ssl[addr_tuple]
+        servers = self.parsed_root.get_type(nginx_obj.ServerBlock)
+        addr_to_ssl = {}
+        for server in servers:
+            for addr in server.vhost.addrs:
+                addr_tuple = addr.normalized_tuple()
+                if addr_tuple not in addr_to_ssl:
+                    addr_to_ssl[addr_tuple] = addr.ssl
+                addr_to_ssl[addr_tuple] = addr.ssl or addr_to_ssl[addr_tuple]
         return addr_to_ssl
 
     def _get_raw_servers(self):
@@ -124,7 +120,7 @@ class NginxParser(object):
             _do_for_subarray(tree, lambda x: len(x) >= 2 and x[0] == ['server'],
                              lambda x, y: srv.append((x[1], y)))
 
-            # Find 'include' statements in server blocks and append their trees
+            # Find 'include statement in server blocks and append their trees
             for i, (server, path) in enumerate(servers[filename]):
                 new_server = self._get_included_directives(server)
                 servers[filename][i] = (new_server, path)
@@ -295,8 +291,18 @@ class NginxParser(object):
             of the server block instead of the bottom
 
         """
-        self._modify_server_directives(vhost,
-            functools.partial(_add_directives, directives, insert_at_top))
+        
+        for directive in directives:
+            if not _is_whitespace_or_empty(directive):
+                vhost.raw_obj.add_directive(directive, insert_at_top)
+        self._sync_old_structs(vhost)
+
+    def _sync_old_structs(self, vhost):
+        vhost.raw_obj._update_vhost()
+        old = self.parsed[vhost.filep]
+        for index in vhost.path[:-1]:
+            old = old[index]
+        old[vhost.path[-1]] = vhost.raw_obj.dump_unspaced_list()
 
     def update_or_add_server_directives(self, vhost, directives, insert_at_top=False):
         """Add or replace directives in the server block identified by vhost.
@@ -317,8 +323,10 @@ class NginxParser(object):
             of the server block instead of the bottom
 
         """
-        self._modify_server_directives(vhost,
-            functools.partial(_update_or_add_directives, directives, insert_at_top))
+        for directive in directives:
+            if not _is_whitespace_or_empty(directive):
+                vhost.raw_obj.update_or_add_directive(directive, insert_at_top)
+        self._sync_old_structs(vhost)
 
     def remove_server_directives(self, vhost, directive_name, match_func=None):
         """Remove all directives of type directive_name.
@@ -389,7 +397,6 @@ class NginxParser(object):
                     new_directives.append(directive)
             new_directives.append("\n")
             raw_in_parsed[1] = new_directives
-
             self._update_vhost_based_on_new_directives(new_vhost, new_directives)
 
         enclosing_block.append(raw_in_parsed)
@@ -564,18 +571,11 @@ def _is_ssl_on_directive(entry):
             len(entry) == 2 and entry[0] == 'ssl' and
             entry[1] == 'on')
 
-def _add_directives(directives, insert_at_top, block):
-    """Adds directives to a config block."""
-    for directive in directives:
-        _add_directive(block, directive, insert_at_top)
-    if block and '\n' not in block[-1]:  # could be "   \n  " or ["\n"] !
-        block.append(nginxparser.UnspacedList('\n'))
-
 def _update_or_add_directives(directives, insert_at_top, block):
     """Adds or replaces directives in a config block."""
     for directive in directives:
         _update_or_add_directive(block, directive, insert_at_top)
-    if block and '\n' not in block[-1]:  # could be "   \n  " or ["\n"] !
+    if block and '\n' not in block.spaced[-1]:  # could be "   \n  " or ["\n"] !
         block.append(nginxparser.UnspacedList('\n'))
 
 
@@ -634,6 +634,7 @@ def _is_whitespace_or_comment(directive):
     """Is this directive either a whitespace or comment directive?"""
     return len(directive) == 0 or directive[0] == '#'
 
+# block = Statements
 def _add_directive(block, directive, insert_at_top):
     if not isinstance(directive, nginxparser.UnspacedList):
         directive = nginxparser.UnspacedList(directive)
@@ -732,6 +733,13 @@ def _apply_global_addr_ssl(addr_to_ssl, parsed_server):
         addr.ssl = addr_to_ssl[addr.normalized_tuple()]
         if addr.ssl:
             parsed_server['ssl'] = True
+
+def _is_whitespace_or_empty(directive):
+    if not directive:
+        return True
+    if len(directive) != 1:
+        return False
+    return len(directive[0]) == 0 or directive[0].isspace()
 
 def _parse_server_raw(server):
     """Parses a list of server directives.

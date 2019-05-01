@@ -3,6 +3,7 @@ import glob
 import logging
 import pyparsing
 
+from certbot import errors
 from certbot.compat import os
 
 from certbot_nginx import nginxparser
@@ -91,6 +92,9 @@ class ServerBlock(obj.Block):
     def __init__(self, context=None):
         super(ServerBlock, self).__init__(context)
         self.vhost = None
+        self.addrs = set()
+        self.ssl = False
+        self.server_names = set()
 
     @staticmethod
     def should_parse(lists):
@@ -114,16 +118,37 @@ class ServerBlock(obj.Block):
             if directive[0] == 'server_name':
                 self.server_names.update(x.strip('"\'') for x in directive[1:])
             for ssl in self.get_directives('ssl'):
-                if ssl.words[1] == "on":
+                if ssl[1] == "on":
                     self.ssl = True
                     apply_ssl_to_all_addrs = True
         if apply_ssl_to_all_addrs:
             for addr in self.addrs:
                 addr.ssl = True
-        return nginx_obj.VirtualHost(
-            self.context.filename if self.context is not None else "",
-            self.addrs, self.ssl, True, self.server_names, self.dump_unspaced_list()[1],
-            self.get_path(), self)
+        self.vhost.addrs = self.addrs
+        self.vhost.names = self.server_names
+        self.vhost.ssl = self.ssl
+        self.vhost.raw = self.dump_unspaced_list()[1]
+        self.vhost.raw_obj = self
+
+    def add_directive(self, raw_list, insert_at_top=False):
+        """ Adds a single directive to this Server Block's contents, while enforcing
+        repeatability rules."""
+        statement = obj.parse_raw(raw_list, self.contents.child_context(), add_spaces=False)
+        if isinstance(statement, obj.Sentence) and statement[0] not in self.REPEATABLE_DIRECTIVES \
+            and len(list(self.get_directives(statement[0]))) > 0:
+            raise errors.MisconfigurationError(
+                "Existing %s directive conflicts with %s" % (statement[0], statement))
+        self.contents.add_directive(statement, insert_at_top)
+
+    def update_or_add_directive(self, raw_list, insert_at_top=False):
+        """ Adds a single directive to this Server Block's contents, while enforcing
+        repeatability rules."""
+        statement = obj.parse_raw(raw_list, self.contents.child_context(), add_spaces=False)
+        index = self.contents.find_directive(lambda elem: elem[0] == statement[0])
+        if index < 0:
+            self.contents.add_directive(statement, insert_at_top)
+            return
+        self.contents.update_directive(statement, index)
 
     def get_directives(self, name, match=None):
         """ Retrieves any child directive starting with `name`.
@@ -138,6 +163,10 @@ class ServerBlock(obj.Block):
         """ Parses lists into a ServerBlock object, and creates a
         corresponding VirtualHost metadata object. """
         super(ServerBlock, self).parse(raw_list, add_spaces)
-        self.vhost = self._update_vhost()
+        self.vhost = nginx_obj.VirtualHost(
+            self.context.filename if self.context is not None else "",
+            self.addrs, self.ssl, True, self.server_names, self.dump_unspaced_list()[1],
+            self.get_path(), self)
+        self._update_vhost()
 
 NGINX_PARSING_HOOKS = (ServerBlock, obj.Block, Include, obj.Sentence, obj.Directives)

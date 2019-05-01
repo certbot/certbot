@@ -168,6 +168,31 @@ class Directives(Parsable):
 
     # ======== End overridden functions
 
+    def update_directive(self, statement, index):
+        """ upd8 
+        """
+        self._data[index] = statement
+        if index + 1 >= len(self._data) or not _is_certbot_comment(self._data[index+1]):
+            self._data.insert(index+1, _certbot_comment(self.context))
+
+    def find_directive(self, match_func):
+        for i, elem in enumerate(self._data):
+            if isinstance(elem, Sentence) and match_func(elem):
+                return i
+        return -1
+
+    def add_directive(self, statement, insert_at_top=False):
+        """ Takes in a parse obj
+        """
+        index = 0
+        if insert_at_top:
+            self._data.insert(0, statement)
+        else:
+            index = len(self._data)
+            self._data.append(statement)
+        if not _is_comment(statement):
+            self._data.insert(index+1, _certbot_comment(self.context))
+
     def get_type(self, match_type):
         """ TODO
         """
