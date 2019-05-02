@@ -99,25 +99,25 @@ def main(args):
         else:
             # Otherwise, we merge requirements to build the constraints and pin dependencies
             requirements = None
-            reinstall = False
             if os.environ.get('CERTBOT_OLDEST') == '1':
                 requirements = certbot_oldest_processing(tools_path, args, test_constraints)
-                # We need to --force-reinstall the tested distribution when using oldest
-                # requirements because of an error in these tests in particular situations
-                # described in https://github.com/certbot/certbot/issues/7014.
-                # However this slows down considerably the oldest tests (5 min -> 10 min),
-                # so we need to find a better mitigation in the future.
-                reinstall = True
             else:
                 certbot_normal_processing(tools_path, test_constraints)
 
             merge_requirements(tools_path, requirements, test_constraints, all_constraints)
-            if requirements:
+            if requirements:  # This branch is executed during the oldest tests
+                # First step, install the transitive dependencies of oldest requirements
+                # in respect with oldest constraints.
                 pip_install_with_print('--constraint "{0}" --requirement "{1}"'
                                        .format(all_constraints, requirements))
+                # Second step, ensure that oldest requirements themselves are effectively
+                # installed using --force-reinstall, and avoid corner cases like the one described
+                # in https://github.com/certbot/certbot/issues/7014.
+                pip_install_with_print('--force-reinstall --no-deps --requirement "{0}"'
+                                       .format(requirements))
 
-            pip_install_with_print('--constraint "{0}" {1} {2}'.format(
-                all_constraints, '--force-reinstall' if reinstall else '', ' '.join(args)))
+            pip_install_with_print('--constraint "{0}" {1}'.format(
+                all_constraints, ' '.join(args)))
     finally:
         if os.environ.get('TRAVIS'):
             print('travis_fold:end:install_certbot_deps')
