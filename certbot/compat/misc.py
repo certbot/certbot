@@ -4,7 +4,6 @@ particular category.
 """
 from __future__ import absolute_import
 
-import errno
 import os  # pylint: disable=os-module-forbidden
 import select
 import sys
