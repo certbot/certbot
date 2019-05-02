@@ -36,22 +36,24 @@ def main(args):
         else:
             new_args.append(arg)
 
-    for requirement in new_args:
-        current_command = command[:]
-        current_command.append(requirement)
-        call_with_print(' '.join(current_command))
-        pkg = re.sub(r'\[\w+\]', '', requirement)
-
-        if pkg == '.':
-            pkg = 'certbot'
-
-        temp_cwd = tempfile.mkdtemp()
+    # We use a temporary directory during both installation and testing to
+    # avoid other files in the repo from impacting tests.
+    temp_cwd = tempfile.mkdtemp()
+    try:
         shutil.copy2("pytest.ini", temp_cwd)
-        try:
+        for requirement in new_args:
+            current_command = command[:]
+            current_command.append(os.path.abspath(requirement))
+            call_with_print(' '.join(current_command), cwd=temp_cwd)
+            pkg = re.sub(r'\[\w+\]', '', requirement)
+
+            if pkg == '.':
+                pkg = 'certbot'
+
             call_with_print(' '.join([
                 sys.executable, '-m', 'pytest', '--pyargs', pkg.replace('-', '_')]), cwd=temp_cwd)
-        finally:
-            shutil.rmtree(temp_cwd)
+    finally:
+        shutil.rmtree(temp_cwd)
 
 if __name__ == '__main__':
     main(sys.argv[1:])
