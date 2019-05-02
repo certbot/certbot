@@ -15,8 +15,8 @@ if ! command -v git ; then
         exit 1
     fi
 fi
-# 0.18.0 is the oldest version of letsencrypt-auto that works on Fedora 26+.
-INITIAL_VERSION="0.18.0"
+# 0.33.x is the oldest version of letsencrypt-auto that works on Fedora 29+.
+INITIAL_VERSION="0.33.1"
 git checkout -f "v$INITIAL_VERSION" letsencrypt-auto
 if ! ./letsencrypt-auto -v --debug --version --no-self-upgrade 2>&1 | tail -n1 | grep "^certbot $INITIAL_VERSION$" ; then
     echo initial installation appeared to fail
