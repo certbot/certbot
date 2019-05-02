@@ -2,7 +2,7 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 0.34.0 - master
+## 0.35.0 - master
 
 ### Added
 
@@ -21,6 +21,62 @@ all Certbot components during releases for the time being, however, the only
 package with changes other than its version number was:
 
 *
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.34.0 - 2019-05-01
+
+### Changed
+
+* Apache plugin now tries to restart httpd on Fedora using systemctl if a
+  configuration test error is detected. This has to be done due to the way
+  Fedora now generates the self signed certificate files upon first
+  restart.
+* Updated Certbot and its plugins to improve the handling of file system permissions
+  on Windows as a step towards adding proper Windows support to Certbot.
+* Updated urllib3 to 1.24.2 in certbot-auto.
+* Removed the fallback introduced with 0.32.0 in `acme` to retry a challenge response
+  with a `keyAuthorization` if sending the response without this field caused a
+  `malformed` error to be received from the ACME server.
+* Linode DNS plugin now supports api keys created from their new panel
+  at [cloud.linode.com](https://cloud.linode.com)
+* Adding a warning noting that future versions of Certbot will automatically configure the
+  webserver so that all requests redirect to secure HTTPS access. You can control this
+  behavior and disable this warning with the --redirect and --no-redirect flags.
+* certbot-auto now prints warnings when run as root with insecure file system
+  permissions. If you see these messages, you should fix the problem by
+  following the instructions at
+  https://community.letsencrypt.org/t/certbot-auto-deployment-best-practices/91979/,
+  however, these warnings can be disabled as necessary with the flag
+  --no-permissions-check.
+* `acme` module uses now a POST-as-GET request to retrieve the registration
+  from an ACME v2 server
+* Convert the tsig algorithm specified in the certbot_dns_rfc2136 configuration file to
+  all uppercase letters before validating. This makes the value in the config case
+  insensitive.
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+package with changes other than its version number was:
+
+* acme
+* certbot
+* certbot-apache
+* certbot-dns-cloudflare
+* certbot-dns-cloudxns
+* certbot-dns-digitalocean
+* certbot-dns-dnsimple
+* certbot-dns-dnsmadeeasy
+* certbot-dns-gehirn
+* certbot-dns-google
+* certbot-dns-linode
+* certbot-dns-luadns
+* certbot-dns-nsone
+* certbot-dns-ovh
+* certbot-dns-rfc2136
+* certbot-dns-route53
+* certbot-dns-sakuracloud
+* certbot-nginx
 
 More details about these changes can be found on our GitHub repo.
 
@@ -63,8 +119,8 @@ More details about these changes can be found on our GitHub repo.
 * Certbot uses the Python library cryptography for OCSP when cryptography>=2.5
   is installed. We fixed a bug in Certbot causing it to interpret timestamps in
   the OCSP response as being in the local timezone rather than UTC.
-* Issue causing the default CentOS 6 TLS configuration to ignore some of the 
-  HTTPS VirtualHosts created by Certbot. mod_ssl loading is now moved to main 
+* Issue causing the default CentOS 6 TLS configuration to ignore some of the
+  HTTPS VirtualHosts created by Certbot. mod_ssl loading is now moved to main
   http.conf for this environment where possible.
 
 Despite us having broken lockstep, we are continuing to release new versions of

@@ -4,7 +4,6 @@ from __future__ import print_function
 
 import functools
 import logging.handlers
-import os
 import sys
 
 import configobj
@@ -33,6 +32,7 @@ from certbot import storage
 from certbot import updater
 from certbot import util
 from certbot.compat import misc
+from certbot.compat import os
 from certbot.display import util as display_util, ops as display_ops
 from certbot.plugins import disco as plugins_disco
 from certbot.plugins import enhancements

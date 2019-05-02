@@ -1,5 +1,4 @@
 """Tests for certbot.client."""
-import os
 import platform
 import shutil
 import tempfile
@@ -12,6 +11,7 @@ from josepy import interfaces
 import certbot.tests.util as test_util
 from certbot import account
 from certbot import errors
+from certbot.compat import os
 from certbot import util
 
 KEY = test_util.load_vector("rsa512_key.pem")
@@ -323,7 +323,7 @@ class ClientTest(ClientTestCommon):
             self.eg_order.fullchain_pem)
 
     @mock.patch("certbot.client.crypto_util")
-    @mock.patch("os.remove")
+    @mock.patch("certbot.compat.os.remove")
     def test_obtain_certificate_partial_success(self, mock_remove, mock_crypto_util):
         csr = util.CSR(form="pem", file=mock.sentinel.csr_file, data=CSR_SAN)
         key = util.CSR(form="pem", file=mock.sentinel.key_file, data=CSR_SAN)
@@ -563,6 +563,21 @@ class EnhanceConfigTest(ClientTestCommon):
         self.assertTrue(mock_log.warning.called)
         self.assertEqual(mock_log.warning.call_args[0][1],
                           'redirect')
+
+    @mock.patch("certbot.client.logger")
+    def test_config_set_no_warning_redirect(self, mock_log):
+        self.config.redirect = False
+        self._test_with_already_existing()
+        self.assertFalse(mock_log.warning.called)
+
+    @mock.patch("certbot.client.enhancements.ask")
+    @mock.patch("certbot.client.logger")
+    def test_warn_redirect(self, mock_log, mock_ask):
+        self.config.redirect = None
+        mock_ask.return_value = False
+        self._test_with_already_existing()
+        self.assertTrue(mock_log.warning.called)
+        self.assertTrue("disable" in mock_log.warning.call_args[0][0])
 
     def test_no_ask_hsts(self):
         self.config.hsts = True

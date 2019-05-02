@@ -2,7 +2,6 @@
 import csv
 import glob
 import logging
-import os
 import shutil
 import sys
 import time
@@ -11,11 +10,12 @@ import traceback
 import six
 import zope.component
 
-from certbot.compat import misc
 from certbot import constants
 from certbot import errors
 from certbot import interfaces
 from certbot import util
+from certbot.compat import misc
+from certbot.compat import os
 
 logger = logging.getLogger(__name__)
 

@@ -1,5 +1,4 @@
 """Tests for letsencrypt.plugins.selection"""
-import os
 import sys
 import unittest
 
@@ -10,6 +9,7 @@ from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-
 
 from certbot import errors
 from certbot import interfaces
+from certbot.compat import os
 from certbot.display import util as display_util
 from certbot.plugins.disco import PluginsRegistry
 from certbot.tests import util as test_util

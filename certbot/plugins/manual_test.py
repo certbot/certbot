@@ -1,15 +1,14 @@
 """Tests for certbot.plugins.manual"""
-import os
 import unittest
 import sys
 
-import six
 import mock
+import six
 
 from acme import challenges
 
 from certbot import errors
-
+from certbot.compat import os
 from certbot.tests import acme_util
 from certbot.tests import util as test_util
 
@@ -73,7 +72,7 @@ class AuthenticatorTest(test_util.TempDirTestCase):
         self.config.manual_public_ip_logging_ok = True
         self.config.manual_auth_hook = (
             '{0} -c "from __future__ import print_function;'
-            'import os;  print(os.environ.get(\'CERTBOT_DOMAIN\'));'
+            'from certbot.compat import os;  print(os.environ.get(\'CERTBOT_DOMAIN\'));'
             'print(os.environ.get(\'CERTBOT_TOKEN\', \'notoken\'));'
             'print(os.environ.get(\'CERTBOT_VALIDATION\', \'novalidation\'));"'
             .format(sys.executable))

@@ -8,7 +8,6 @@ from collections import OrderedDict
 import distutils.version  # pylint: disable=import-error,no-name-in-module
 import errno
 import logging
-import os
 import platform
 import re
 import socket
@@ -23,6 +22,7 @@ from certbot import constants
 from certbot import errors
 from certbot import lock
 from certbot.compat import misc
+from certbot.compat import os
 
 logger = logging.getLogger(__name__)
 
@@ -323,7 +323,7 @@ def get_os_info(filepath="/etc/os-release"):
         # Systemd os-release parsing might be viable
         os_name, os_version = get_systemd_os_info(filepath=filepath)
         if os_name:
-            return (os_name, os_version)
+            return os_name, os_version
 
     # Fallback to platform module
     return get_python_os_info()
