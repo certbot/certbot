@@ -57,6 +57,8 @@ def _construct_acme_xdist(acme_server, nodes):
                                in zip(nodes, range(5200, 5200 + len(nodes)))}
     acme_xdist['https_port'] = {node: port for (node, port)
                                 in zip(nodes, range(5100, 5100 + len(nodes)))}
+    acme_xdist['other_port'] = {node: port for (node, port)
+                                in zip(nodes, range(5300, 5300 + len(nodes)))}
 
     return acme_xdist
 

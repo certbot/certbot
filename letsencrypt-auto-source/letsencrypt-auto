@@ -31,7 +31,7 @@ if [ -z "$VENV_PATH" ]; then
 fi
 VENV_BIN="$VENV_PATH/bin"
 BOOTSTRAP_VERSION_PATH="$VENV_PATH/certbot-auto-bootstrap-version.txt"
-LE_AUTO_VERSION="0.34.0.dev0"
+LE_AUTO_VERSION="0.35.0.dev0"
 BASENAME=$(basename $0)
 USAGE="Usage: $BASENAME [OPTIONS]
 A self-updating wrapper script for the Certbot ACME client. When run, updates
@@ -45,6 +45,7 @@ Help for certbot itself cannot be provided until it is installed.
   -h, --help                                print this help
   -n, --non-interactive, --noninteractive   run without asking for user input
   --no-bootstrap                            do not install OS dependencies
+  --no-permissions-check                    do not warn about file system permissions
   --no-self-upgrade                         do not download updates
   --os-packages-only                        install OS dependencies and exit
   --install-only                            install certbot, upgrade if needed, and exit
@@ -67,6 +68,8 @@ for arg in "$@" ; do
       # Do not upgrade this script (also prevents client upgrades, because each
       # copy of the script pins a hash of the python client)
       NO_SELF_UPGRADE=1;;
+    --no-permissions-check)
+      NO_PERMISSIONS_CHECK=1;;
     --no-bootstrap)
       NO_BOOTSTRAP=1;;
     --help)
@@ -172,7 +175,11 @@ SetRootAuthMechanism() {
       sudo)
         SUDO="sudo -E"
         ;;
-      '') ;; # Nothing to do for plain root method.
+      '')
+        # If we're not running with root, don't check that this script can only
+        # be modified by system users and groups.
+        NO_PERMISSIONS_CHECK=1
+        ;;
       *)
         error "Error: unknown root authorization mechanism '$LE_AUTO_SUDO'."
         exit 1
@@ -1218,18 +1225,18 @@ letsencrypt==0.7.0 \
     --hash=sha256:105a5fb107e45bcd0722eb89696986dcf5f08a86a321d6aef25a0c7c63375ade \
     --hash=sha256:c36e532c486a7e92155ee09da54b436a3c420813ec1c590b98f635d924720de9
 
-certbot==0.33.1 \
-    --hash=sha256:e2a08467146b7a7ed2c8ca6625b1705d93b51e89866f6ede8a8a262594c18f3f \
-    --hash=sha256:d5203f32c50f3ec5a32df97e4affddbcd288a569678ecb5669adda21cd5ac3d9
-acme==0.33.1 \
-    --hash=sha256:02467d4b1d246105d6d1ea01822dd9e2eea5bf3a50607523969d8e400d53c07b \
-    --hash=sha256:b38cdb71d0071efe1f1190a744f8f95f3c698b76ac0f5d919bbfe3522e277a82
-certbot-apache==0.33.1 \
-    --hash=sha256:0d2a463539e6396de2d374de62faba34e1fe40dd8059e3c64dcd5dabaa66887b \
-    --hash=sha256:659db7335d919fee52ae707567994e13c31ed25109c94b246c60c97d21c46f3a
-certbot-nginx==0.33.1 \
-    --hash=sha256:df9fb86e735eb2668e070f20317e85c37952f3f612fa7f6bbc2c63784b213f28 \
-    --hash=sha256:b3201eee03be74fc743c21c721d3b5586c3323db63e78b68583a6250ad680cff
+certbot==0.34.0 \
+    --hash=sha256:51dddf2cb1c50a9f8b993090890bf4858d8fadffce38bafcdf6bf585a2040317 \
+    --hash=sha256:e75bdabfd9183bd9842ada42a51070f120d15982e81c490df59dde62e4df2c8b
+acme==0.34.0 \
+    --hash=sha256:3448024d2c274aebfb9b31b53862576d167626ce2fd1997a78d450c32a292fa3 \
+    --hash=sha256:92478e58f541c5c7c527427a50650005cdede799b78f0a0a65b8093d6368bcfd
+certbot-apache==0.34.0 \
+    --hash=sha256:79e686f25b63dac17d771d71f791f252774da22125f3f6e0665f4cf791d516fe \
+    --hash=sha256:d5ae09b4801fbac23d5acf64a5ee265108199d2852fbe743e7b6ab06fa08edf6
+certbot-nginx==0.34.0 \
+    --hash=sha256:868d7dcb59bb2548cb4a2ae187db5da1bfe33aac306b1b844b96ee00a39cac52 \
+    --hash=sha256:d6c728b85c523711ec0dc800f8d4ebbef192fb0ca1ec7914c173207e4aba5194
 
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
@@ -1494,6 +1501,108 @@ else
     exit 0
   fi
 
+  DeterminePythonVersion "NOCRASH"
+  # Don't warn about file permissions if the user disabled the check or we
+  # can't find an up-to-date Python.
+  if [ "$PYVER" -ge "$MIN_PYVER" -a "$NO_PERMISSIONS_CHECK" != 1 ]; then
+    # ---------------------------------------------------------------------------
+    cat << "UNLIKELY_EOF" > "$TEMP_DIR/check_permissions.py"
+"""Verifies certbot-auto cannot be modified by unprivileged users.
+
+This script takes the path to certbot-auto as its only command line
+argument.  It then checks that the file can only be modified by uid/gid
+< 1000 and if other users can modify the file, it prints a warning with
+a suggestion on how to solve the problem.
+
+Permissions on symlinks in the absolute path of certbot-auto are ignored
+and only the canonical path to certbot-auto is checked. There could be
+permissions problems due to the symlinks that are unreported by this
+script, however, issues like this were not caused by our documentation
+and are ignored for the sake of simplicity.
+
+All warnings are printed to stdout rather than stderr so all stderr
+output from this script can be suppressed to avoid printing messages if
+this script fails for some reason.
+
+"""
+from __future__ import print_function
+
+import os
+import stat
+import sys
+
+
+FORUM_POST_URL = 'https://community.letsencrypt.org/t/certbot-auto-deployment-best-practices/91979/'
+
+
+def has_safe_permissions(path):
+    """Returns True if the given path has secure permissions.
+
+    The permissions are considered safe if the file is only writable by
+    uid/gid < 1000.
+
+    The reason we allow more IDs than 0 is because on some systems such
+    as Debian, system users/groups other than uid/gid 0 are used for the
+    path we recommend in our instructions which is /usr/local/bin.  1000
+    was chosen because on Debian 0-999 is reserved for system IDs[1] and
+    on RHEL either 0-499 or 0-999 is reserved depending on the
+    version[2][3]. Due to these differences across different OSes, this
+    detection isn't perfect so we only determine permissions are
+    insecure when we can be reasonably confident there is a problem
+    regardless of the underlying OS.
+
+    [1] https://www.debian.org/doc/debian-policy/ch-opersys.html#uid-and-gid-classes
+    [2] https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/6/html/deployment_guide/ch-managing_users_and_groups
+    [3] https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/system_administrators_guide/ch-managing_users_and_groups
+
+    :param str path: filesystem path to check
+    :returns: True if the path has secure permissions, otherwise, False
+    :rtype: bool
+
+    """
+    # os.stat follows symlinks before obtaining information about a file.
+    stat_result = os.stat(path)
+    if stat_result.st_mode & stat.S_IWOTH:
+        return False
+    if stat_result.st_mode & stat.S_IWGRP and stat_result.st_gid >= 1000:
+        return False
+    if stat_result.st_mode & stat.S_IWUSR and stat_result.st_uid >= 1000:
+        return False
+    return True
+
+
+def main(certbot_auto_path):
+    current_path = os.path.realpath(certbot_auto_path)
+    last_path = None
+    permissions_ok = True
+    # This loop makes use of the fact that os.path.dirname('/') == '/'.
+    while current_path != last_path and permissions_ok:
+        permissions_ok = has_safe_permissions(current_path)
+        last_path = current_path
+        current_path = os.path.dirname(current_path)
+
+    if not permissions_ok:
+        print('{0} has insecure permissions!'.format(certbot_auto_path))
+        print('To learn how to fix them, visit {0}'.format(FORUM_POST_URL))
+
+
+if __name__ == '__main__':
+    main(sys.argv[1])
+
+UNLIKELY_EOF
+    # ---------------------------------------------------------------------------
+    # If the script fails for some reason, don't break certbot-auto.
+    set +e
+    # Suppress unexpected error output and only print the script's output if it
+    # ran successfully.
+    CHECK_PERM_OUT=$("$LE_PYTHON" "$TEMP_DIR/check_permissions.py" "$0" 2>/dev/null)
+    CHECK_PERM_STATUS="$?"
+    set -e
+    if [ "$CHECK_PERM_STATUS" = 0 ]; then
+      error "$CHECK_PERM_OUT"
+    fi
+  fi
+
   if [ "$NO_SELF_UPGRADE" != 1 ]; then
     TEMP_DIR=$(TempDir)
     trap 'rm -rf "$TEMP_DIR"' EXIT
@@ -1650,7 +1759,6 @@ if __name__ == '__main__':
 
 UNLIKELY_EOF
     # ---------------------------------------------------------------------------
-    DeterminePythonVersion "NOCRASH"
     if [ "$PYVER" -lt "$MIN_PYVER" ]; then
       error "WARNING: couldn't find Python $MIN_PYTHON_VERSION+ to check for updates."
     elif ! REMOTE_VERSION=`"$LE_PYTHON" "$TEMP_DIR/fetch.py" --latest-version` ; then

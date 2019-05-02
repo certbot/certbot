@@ -323,7 +323,7 @@ def get_os_info(filepath="/etc/os-release"):
         # Systemd os-release parsing might be viable
         os_name, os_version = get_systemd_os_info(filepath=filepath)
         if os_name:
-            return (os_name, os_version)
+            return os_name, os_version
 
     # Fallback to platform module
     return get_python_os_info()
