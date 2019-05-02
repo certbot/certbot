@@ -31,7 +31,7 @@ def raise_for_non_administrative_windows_rights(subcommand):
     # Because windll exists only on a Windows runtime, and static code analysis engines
     # do not like at all non existent objects when run from Linux (even if we handle properly
     # all the cases in the code).
-    # So we access windll only by reflection to trick theses engines.
+    # So we access windll only by reflection to trick these engines.
     if hasattr(ctypes, 'windll') and subcommand not in UNPRIVILEGED_SUBCOMMANDS_ALLOWED:
         windll = getattr(ctypes, 'windll')
         if windll.shell32.IsUserAnAdmin() == 0:
