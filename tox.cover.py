@@ -21,7 +21,7 @@ COVER_THRESHOLDS = {
     'certbot_dns_dnsimple': {'linux': 98, 'windows': 98},
     'certbot_dns_dnsmadeeasy': {'linux': 99, 'windows': 99},
     'certbot_dns_gehirn': {'linux': 97, 'windows': 97},
-    'certbot_dns_godaddy': {'linux': 99, 'windows': 99},
+    'certbot_dns_godaddy': {'linux': 96, 'windows': 96},
     'certbot_dns_google': {'linux': 99, 'windows': 99},
     'certbot_dns_linode': {'linux': 98, 'windows': 98},
     'certbot_dns_luadns': {'linux': 98, 'windows': 98},
