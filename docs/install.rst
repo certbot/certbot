@@ -220,7 +220,7 @@ repo, if you have not already done so. Then run:
 
 **Ubuntu**
 
-If you run Ubuntu Trusty, Xenial or Bionic, certbot is available through the official PPA,
+If you run Ubuntu Trusty, Xenial, or Bionic, certbot is available through the official PPA,
 that can be installed as followed:
 
 .. code-block:: shell
