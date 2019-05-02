@@ -60,7 +60,12 @@ matrix:
       env: TOXENV=mypy
       <<: *not-on-master
     - python: "2.7"
-      env: TOXENV='py27-{acme,apache,certbot,dns,nginx,postfix}-oldest'
+      env: TOXENV='py27-{acme,apache,certbot,nginx,postfix}-oldest'
+      sudo: required
+      services: docker
+      <<: *not-on-master
+    - python: "2.7"
+      env: TOXENV='py27-dns-oldest'
       sudo: required
       services: docker
       <<: *not-on-master
