@@ -98,7 +98,7 @@ PROFILE = cl_args.aws_profile
 
 # Globals
 #-------------------------------------------------------------------------------
-BOULDER_AMI = 'ami-5f490b35' # premade shared boulder AMI 14.04LTS us-east-1
+BOULDER_AMI = 'ami-072a9534772bec854' # premade shared boulder AMI 18.04LTS us-east-1
 LOGDIR = "" #points to logging / working directory
 # boto3/AWS api globals
 AWS_SESSION = None
@@ -290,8 +290,7 @@ def deploy_script(scriptpath, *args):
 
 def run_boulder():
     with cd('$GOPATH/src/github.com/letsencrypt/boulder'):
-        run('go run cmd/rabbitmq-setup/main.go -server amqp://localhost')
-        run('nohup ./start.py >& /dev/null < /dev/null &')
+        run('sudo docker-compose up -d')
 
 def config_and_launch_boulder(instance):
     execute(deploy_script, 'scripts/boulder_config.sh')
