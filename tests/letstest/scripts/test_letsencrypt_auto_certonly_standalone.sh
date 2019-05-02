@@ -42,8 +42,8 @@ if ! letsencrypt-auto --help --no-self-upgrade | grep -F "letsencrypt-auto [SUBC
     exit 1
 fi
 
-OUTPUT=$(letsencrypt-auto --install-only --no-self-upgrade --quiet 2>&1)
-if [ -n "$OUTPUT" ]; then
+OUTPUT_LEN=$(letsencrypt-auto --install-only --no-self-upgrade --quiet 2>&1 | wc -c)
+if [ "$OUTPUT_LEN" != 0 ]; then
     echo letsencrypt-auto produced unexpected output!
     exit 1
 fi
