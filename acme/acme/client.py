@@ -17,7 +17,6 @@ import requests
 from requests.adapters import HTTPAdapter
 from requests_toolbelt.adapters.source import SourceAddressAdapter
 
-from acme import challenges
 from acme import crypto_util
 from acme import errors
 from acme import jws
@@ -124,15 +123,6 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
         """
         return self.update_registration(regr, update={'status': 'deactivated'})
 
-    def query_registration(self, regr):
-        """Query server about registration.
-
-        :param messages.RegistrationResource: Existing Registration
-            Resource.
-
-        """
-        return self._send_recv_regr(regr, messages.UpdateRegistration())
-
     def _authzr_from_response(self, response, identifier=None, uri=None):
         authzr = messages.AuthorizationResource(
             body=messages.Authorization.from_json(response.json()),
@@ -156,23 +146,7 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
         :raises .UnexpectedUpdate:
 
         """
-        # Because sending keyAuthorization in a response challenge has been removed from the ACME
-        # spec, it is not included in the KeyAuthorizationResponseChallenge JSON by default.
-        # However as a migration path, we temporarily expect a malformed error from the server,
-        # and fallback by resending the challenge response with the keyAuthorization field.
-        # TODO: Remove this fallback for Certbot 0.34.0
-        try:
-            response = self._post(challb.uri, response)
-        except messages.Error as error:
-            if (error.code == 'malformed'
-                    and isinstance(response, challenges.KeyAuthorizationChallengeResponse)):
-                logger.debug('Error while responding to a challenge without keyAuthorization '
-                             'in the JWS, your ACME CA server may not support it:\n%s', error)
-                logger.debug('Retrying request with keyAuthorization set.')
-                response._dump_authorization_key(True)  # pylint: disable=protected-access
-                response = self._post(challb.uri, response)
-            else:
-                raise
+        response = self._post(challb.uri, response)
         try:
             authzr_uri = response.links['up']['url']
         except KeyError:
@@ -292,6 +266,15 @@ class Client(ClientBase):
         # "Instance of 'Field' has no key/contact member" bug:
         # pylint: disable=no-member
         return self._regr_from_response(response)
+
+    def query_registration(self, regr):
+        """Query server about registration.
+
+        :param messages.RegistrationResource: Existing Registration
+            Resource.
+
+        """
+        return self._send_recv_regr(regr, messages.UpdateRegistration())
 
     def agree_to_tos(self, regr):
         """Agree to the terms-of-service.
@@ -620,10 +603,13 @@ class ClientV2(ClientBase):
             Resource.
 
         """
-        self.net.account = regr
-        updated_regr = super(ClientV2, self).query_registration(regr)
-        self.net.account = updated_regr
-        return updated_regr
+        self.net.account = regr  # See certbot/certbot#6258
+        # ACME v2 requires to use a POST-as-GET request (POST an empty JWS) here.
+        # This is done by passing None instead of an empty UpdateRegistration to _post().
+        response = self._post(regr.uri, None)
+        self.net.account = self._regr_from_response(response, uri=regr.uri,
+                                                    terms_of_service=regr.terms_of_service)
+        return self.net.account
 
     def update_registration(self, regr, update=None):
         """Update registration.

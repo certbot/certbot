@@ -64,7 +64,7 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
 
     def test_valid_algorithm_passes(self):
         config = VALID_CONFIG.copy()
-        config["rfc2136_algorithm"] = "HMAC-SHA512"
+        config["rfc2136_algorithm"] = "HMAC-sha512"
         dns_test_common.write(config, self.config.rfc2136_credentials)
 
         self.auth.perform([self.achall])
