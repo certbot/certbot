@@ -1417,6 +1417,10 @@ def _plugins_parsing(helpful, plugins):
                 default=flag_default("dns_gehirn"),
                 help=("Obtain certificates using a DNS TXT record "
                      "(if you are using Gehirn Infrastracture Service for DNS)."))
+    helpful.add(["plugins", "certonly"], "--dns-godaddy", action="store_true",
+                default=flag_default("dns_godaddy"),
+                help=("Obtain certificates using a DNS TXT record (if you are "
+                      "using Godaddy DNS)."))
     helpful.add(["plugins", "certonly"], "--dns-google", action="store_true",
                 default=flag_default("dns_google"),
                 help=("Obtain certificates using a DNS TXT record (if you are "

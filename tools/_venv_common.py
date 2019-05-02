@@ -30,6 +30,7 @@ REQUIREMENTS = [
     '-e certbot-dns-dnsimple',
     '-e certbot-dns-dnsmadeeasy',
     '-e certbot-dns-gehirn',
+    '-e certbot-dns-godaddy',
     '-e certbot-dns-google',
     '-e certbot-dns-linode',
     '-e certbot-dns-luadns',

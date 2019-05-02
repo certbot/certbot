@@ -109,6 +109,7 @@ CLI_DEFAULTS = dict(
     dns_dnsimple=False,
     dns_dnsmadeeasy=False,
     dns_gehirn=False,
+    dns_godaddy=False,
     dns_google=False,
     dns_linode=False,
     dns_luadns=False,
