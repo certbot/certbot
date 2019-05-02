@@ -41,7 +41,12 @@ if sys.version_info < (2, 7, 9):  # pragma: no cover
 
 DEFAULT_NETWORK_TIMEOUT = 45
 
-DER_CONTENT_TYPE = 'application/pkix-cert'
+class ContentTypes(object):
+    """Mime Types"""
+    DER = 'application/pkix-cert'
+    JSON = 'application/json'
+    JOSE = 'application/jose+json'
+    JSON_ERROR = 'application/problem+json'
 
 
 class ClientBase(object):  # pylint: disable=too-many-instance-attributes
@@ -355,7 +360,7 @@ class Client(ClientBase):
         # TODO: assert len(authzrs) == number of SANs
         req = messages.CertificateRequest(csr=csr)
 
-        content_type = DER_CONTENT_TYPE  # TODO: add 'cert_type 'argument
+        content_type = ContentTypes.JOSE  # TODO: add 'cert_type 'argument
         response = self._post(
             self.directory.new_cert,
             req,
@@ -477,7 +482,7 @@ class Client(ClientBase):
         :rtype: tuple
 
         """
-        content_type = DER_CONTENT_TYPE  # TODO: make it a param
+        content_type = ContentTypes.JOSE  # TODO: make it a param
         response = self.net.get(uri, headers={'Accept': content_type},
                                 content_type=content_type)
         return response, jose.ComparableX509(OpenSSL.crypto.load_certificate(
@@ -936,9 +941,6 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
 
     Also adds user agent, and handles Content-Type.
     """
-    JSON_CONTENT_TYPE = 'application/json'
-    JOSE_CONTENT_TYPE = 'application/jose+json'
-    JSON_ERROR_CONTENT_TYPE = 'application/problem+json'
     REPLAY_NONCE_HEADER = 'Replay-Nonce'
 
     """Initialize.
@@ -954,6 +956,9 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
     :param source_address: Optional source address to bind to when making requests.
     :type source_address: str or tuple(str, int)
     """
+    JSON_CONTENT_TYPE = ContentTypes.JSON
+    JOSE_CONTENT_TYPE = ContentTypes.JOSE
+    JSON_ERROR_CONTENT_TYPE = ContentTypes.JSON_ERROR
     def __init__(self, key, account=None, alg=jose.RS256, verify_ssl=True,
                  user_agent='acme-python', timeout=DEFAULT_NETWORK_TIMEOUT,
                  source_address=None):
@@ -1040,7 +1045,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
 
         if not response.ok:
             if jobj is not None:
-                if response_ct != cls.JSON_ERROR_CONTENT_TYPE:
+                if response_ct != ContentTypes.JSON_ERROR:
                     logger.debug(
                         'Ignoring wrong Content-Type (%r) for JSON Error',
                         response_ct)
@@ -1053,12 +1058,12 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
                 # response is not JSON object
                 raise errors.ClientError(response)
         else:
-            if jobj is not None and response_ct != cls.JSON_CONTENT_TYPE:
+            if jobj is not None and response_ct != ContentTypes.JSON:
                 logger.debug(
                     'Ignoring wrong Content-Type (%r) for JSON decodable '
                     'response', response_ct)
 
-            if content_type == cls.JSON_CONTENT_TYPE and jobj is None:
+            if content_type == ContentTypes.JSON and jobj is None:
                 raise errors.ClientError(
                     'Unexpected response Content-Type: {0}'.format(response_ct))
 
@@ -1119,7 +1124,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
 
         # If content is DER, log the base64 of it instead of raw bytes, to keep
         # binary data out of the logs.
-        if response.headers.get("Content-Type") == DER_CONTENT_TYPE:
+        if response.headers.get("Content-Type") == ContentTypes.DER:
             debug_content = base64.b64encode(response.content)
         else:
             debug_content = response.content.decode("utf-8")
@@ -1140,7 +1145,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         """
         return self._send_request('HEAD', *args, **kwargs)
 
-    def get(self, url, content_type=JSON_CONTENT_TYPE, **kwargs):
+    def get(self, url, content_type=ContentTypes.JSON, **kwargs):
         """Send GET request and check response."""
         return self._check_response(
             self._send_request('GET', url, **kwargs), content_type=content_type)
@@ -1184,7 +1189,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
             else:
                 raise
 
-    def _post_once(self, url, obj, content_type=JOSE_CONTENT_TYPE,
+    def _post_once(self, url, obj, content_type=ContentTypes.JOSE,
             acme_version=1, **kwargs):
         new_nonce_url = kwargs.pop('new_nonce_url', None)
         data = self._wrap_in_jws(obj, self._get_nonce(url, new_nonce_url), url, acme_version)
