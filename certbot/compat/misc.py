@@ -31,7 +31,7 @@ def raise_for_non_administrative_windows_rights(subcommand):
     # Because windll exists only on a Windows runtime, and static code analysis engines
     # do not like at all non existent objects when run from Linux (even if we handle properly
     # all the cases in the code).
-    # So we access windll only by reflection to trick theses engines.
+    # So we access windll only by reflection to trick these engines.
     if hasattr(ctypes, 'windll') and subcommand not in UNPRIVILEGED_SUBCOMMANDS_ALLOWED:
         windll = getattr(ctypes, 'windll')
         if windll.shell32.IsUserAnAdmin() == 0:
@@ -73,7 +73,7 @@ def os_rename(src, dst):
             raise
         if not hasattr(os, 'replace'):  # pragma: no cover
             # We should never go on this line. Either we are on Linux and os.rename has succeeded,
-            # either we are on Windows, and only Python >= 3.4 is supported where os.replace is
+            # or we are on Windows, and only Python >= 3.4 is supported where os.replace is
             # available.
             raise RuntimeError('Error: tried to run os_rename on Python < 3.3. '
                                'Certbot supports only Python 3.4 >= on Windows.')
