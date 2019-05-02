@@ -5,6 +5,7 @@ import atexit
 import os
 import subprocess
 import shutil
+import stat
 import sys
 from os.path import join
 
@@ -79,7 +80,11 @@ def _construct_workspace(acme_type):
                 pass
             print('=> Finished tear down of {0} instance.'.format(acme_type))
 
-        shutil.rmtree(workspace)
+        try:
+            shutil.rmtree(workspace)
+        except (OSError, IOError):
+            # Not critical
+            pass
 
     # Here with atexit we ensure that clean function is called no matter what.
     atexit.register(cleanup)
