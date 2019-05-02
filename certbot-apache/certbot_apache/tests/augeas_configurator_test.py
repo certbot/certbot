@@ -1,11 +1,11 @@
 """Test for certbot_apache.augeas_configurator."""
-import os
 import shutil
 import unittest
 
 import mock
 
 from certbot import errors
+from certbot.compat import os
 
 from certbot_apache.tests import util
 

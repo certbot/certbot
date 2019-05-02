@@ -1,10 +1,9 @@
 """Tests for certbot.cli."""
 import argparse
-import unittest
-import os
-import tempfile
 import copy
 import sys
+import tempfile
+import unittest
 
 import mock
 import six
@@ -12,13 +11,12 @@ from six.moves import reload_module  # pylint: disable=import-error
 
 from acme import challenges
 
+import certbot.tests.util as test_util
 from certbot import cli
 from certbot import constants
 from certbot import errors
+from certbot.compat import os
 from certbot.plugins import disco
-
-import certbot.tests.util as test_util
-
 from certbot.tests.util import TempDirTestCase
 
 PLUGINS = disco.PluginsRegistry.find_all()
@@ -454,6 +452,10 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         for help_flag in ['-h', '--help']:
             for topic in ['all', 'plugins', 'dns-route53']:
                 self.assertFalse('certbot-route53:auth' in self._help_output([help_flag, topic]))
+
+    def test_no_permissions_check_accepted(self):
+        namespace = self.parse(["--no-permissions-check"])
+        self.assertTrue(namespace.no_permissions_check)
 
 
 class DefaultTest(unittest.TestCase):

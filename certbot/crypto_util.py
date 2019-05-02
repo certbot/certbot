@@ -6,7 +6,6 @@
 """
 import hashlib
 import logging
-import os
 import warnings
 
 import pyrfc3339
@@ -30,6 +29,7 @@ from certbot import errors
 from certbot import interfaces
 from certbot import util
 from certbot.compat import misc
+from certbot.compat import os
 
 logger = logging.getLogger(__name__)
 

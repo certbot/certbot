@@ -1,8 +1,10 @@
 """DNS Authenticator for Linode."""
 import logging
+import re
 
 import zope.interface
 from lexicon.providers import linode
+from lexicon.providers import linode4
 
 from certbot import errors
 from certbot import interfaces
@@ -12,6 +14,7 @@ from certbot.plugins import dns_common_lexicon
 logger = logging.getLogger(__name__)
 
 API_KEY_URL = 'https://manager.linode.com/profile/api'
+API_KEY_URL_V4 = 'https://cloud.linode.com/profile/tokens'
 
 @zope.interface.implementer(interfaces.IAuthenticator)
 @zope.interface.provider(interfaces.IPluginFactory)
@@ -41,7 +44,8 @@ class Authenticator(dns_common.DNSAuthenticator):
             'credentials',
             'Linode credentials INI file',
             {
-                'key': 'API key for Linode account, obtained from {0}'.format(API_KEY_URL)
+                'key': 'API key for Linode account, obtained from {0} or {1}'
+                        .format(API_KEY_URL, API_KEY_URL_V4)
             }
         )
 
@@ -52,7 +56,23 @@ class Authenticator(dns_common.DNSAuthenticator):
         self._get_linode_client().del_txt_record(validation_name, validation)
 
     def _get_linode_client(self):
-        return _LinodeLexiconClient(self.credentials.conf('key'))
+        api_key = self.credentials.conf('key')
+        api_version = self.credentials.conf('version')
+        if api_version == '':
+            api_version = None
+
+        if not api_version:
+            api_version = 3
+
+            # Match for v4 api key
+            regex_v4 = re.compile('^[0-9a-f]{64}$')
+            regex_match = regex_v4.match(api_key)
+            if regex_match:
+                api_version = 4
+        else:
+            api_version = int(api_version)
+
+        return _LinodeLexiconClient(api_key, api_version)
 
 
 class _LinodeLexiconClient(dns_common_lexicon.LexiconClient):
@@ -60,14 +80,26 @@ class _LinodeLexiconClient(dns_common_lexicon.LexiconClient):
     Encapsulates all communication with the Linode API.
     """
 
-    def __init__(self, api_key):
+    def __init__(self, api_key, api_version):
         super(_LinodeLexiconClient, self).__init__()
 
-        config = dns_common_lexicon.build_lexicon_config('linode', {}, {
-            'auth_token': api_key,
-        })
+        self.api_version = api_version
 
-        self.provider = linode.Provider(config)
+        if api_version == 3:
+            config = dns_common_lexicon.build_lexicon_config('linode', {}, {
+                'auth_token': api_key,
+            })
+
+            self.provider = linode.Provider(config)
+        elif api_version == 4:
+            config = dns_common_lexicon.build_lexicon_config('linode4', {}, {
+                'auth_token': api_key,
+            })
+
+            self.provider = linode4.Provider(config)
+        else:
+            raise errors.PluginError('Invalid api version specified: {0}. (Supported: 3, 4)'
+                                     .format(api_version))
 
     def _handle_general_error(self, e, domain_name):
         if not str(e).startswith('Domain not found'):

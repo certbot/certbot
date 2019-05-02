@@ -1,12 +1,12 @@
 """Certbot constants."""
 import logging
-import os
 
 import pkg_resources
 
 from acme import challenges
 
 from certbot.compat import misc
+from certbot.compat import os
 
 SETUPTOOLS_PLUGINS_ENTRY_POINT = "certbot.plugins"
 """Setuptools entry point group name for plugins."""
@@ -46,6 +46,7 @@ CLI_DEFAULTS = dict(
     duplicate=False,
     os_packages_only=False,
     no_self_upgrade=False,
+    no_permissions_check=False,
     no_bootstrap=False,
     quiet=False,
     staging=False,

@@ -1,14 +1,15 @@
 """Test for certbot_apache.configurator for Centos overrides"""
-import os
 import unittest
 
 import mock
 
 from certbot import errors
+from certbot.compat import os
 
 from certbot_apache import obj
 from certbot_apache import override_centos
 from certbot_apache.tests import util
+
 
 def get_vh_truth(temp_dir, config_name):
     """Return the ground truth for the specified directory."""
@@ -30,6 +31,59 @@ def get_vh_truth(temp_dir, config_name):
     ]
     return vh_truth
 
+class FedoraRestartTest(util.ApacheTest):
+    """Tests for Fedora specific self-signed certificate override"""
+
+    def setUp(self):  # pylint: disable=arguments-differ
+        test_dir = "centos7_apache/apache"
+        config_root = "centos7_apache/apache/httpd"
+        vhost_root = "centos7_apache/apache/httpd/conf.d"
+        super(FedoraRestartTest, self).setUp(test_dir=test_dir,
+                                             config_root=config_root,
+                                             vhost_root=vhost_root)
+        self.config = util.get_apache_configurator(
+            self.config_path, self.vhost_path, self.config_dir, self.work_dir,
+            os_info="fedora_old")
+        self.vh_truth = get_vh_truth(
+            self.temp_dir, "centos7_apache/apache")
+
+    def _run_fedora_test(self):
+        self.assertIsInstance(self.config, override_centos.CentOSConfigurator)
+        with mock.patch("certbot.util.get_os_info") as mock_info:
+            mock_info.return_value = ["fedora", "28"]
+            self.config.config_test()
+
+    def test_non_fedora_error(self):
+        c_test = "certbot_apache.configurator.ApacheConfigurator.config_test"
+        with mock.patch(c_test) as mock_test:
+            mock_test.side_effect = errors.MisconfigurationError
+            with mock.patch("certbot.util.get_os_info") as mock_info:
+                mock_info.return_value = ["not_fedora"]
+                self.assertRaises(errors.MisconfigurationError,
+                                  self.config.config_test)
+
+    def test_fedora_restart_error(self):
+        c_test = "certbot_apache.configurator.ApacheConfigurator.config_test"
+        with mock.patch(c_test) as mock_test:
+            # First call raises error, second doesn't
+            mock_test.side_effect = [errors.MisconfigurationError, '']
+            with mock.patch("certbot.util.run_script") as mock_run:
+                mock_run.side_effect = errors.SubprocessError
+                self.assertRaises(errors.MisconfigurationError,
+                                  self._run_fedora_test)
+
+    def test_fedora_restart(self):
+        c_test = "certbot_apache.configurator.ApacheConfigurator.config_test"
+        with mock.patch(c_test) as mock_test:
+            with mock.patch("certbot.util.run_script") as mock_run:
+                # First call raises error, second doesn't
+                mock_test.side_effect = [errors.MisconfigurationError, '']
+                self._run_fedora_test()
+                self.assertEqual(mock_test.call_count, 2)
+                self.assertEqual(mock_run.call_args[0][0],
+                                ['systemctl', 'restart', 'httpd'])
+
+
 class MultipleVhostsTestCentOS(util.ApacheTest):
     """Multiple vhost tests for CentOS / RHEL family of distros"""
 
@@ -50,8 +104,7 @@ class MultipleVhostsTestCentOS(util.ApacheTest):
             self.temp_dir, "centos7_apache/apache")
 
     def test_get_parser(self):
-        self.assertTrue(isinstance(self.config.parser,
-                                   override_centos.CentOSParser))
+        self.assertIsInstance(self.config.parser, override_centos.CentOSParser)
 
     @mock.patch("certbot_apache.parser.ApacheParser._get_runtime_cfg")
     def test_opportunistic_httpd_runtime_parsing(self, mock_get):

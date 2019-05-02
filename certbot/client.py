@@ -1,7 +1,6 @@
 """Certbot client API."""
 import datetime
 import logging
-import os
 import platform
 
 import OpenSSL
@@ -32,6 +31,7 @@ from certbot import reverter
 from certbot import storage
 from certbot import util
 from certbot.compat import misc
+from certbot.compat import os
 from certbot.display import enhancements
 from certbot.display import ops as display_ops
 from certbot.plugins import selection as plugin_selection
@@ -549,6 +549,11 @@ class Client(object):
                 if ask_redirect:
                     if config_name == "redirect" and config_value is None:
                         config_value = enhancements.ask(enhancement_name)
+                        if not config_value:
+                            logger.warning("Future versions of Certbot will automatically "
+                                "configure the webserver so that all requests redirect to secure "
+                                "HTTPS access. You can control this behavior and disable this "
+                                "warning with the --redirect and --no-redirect flags.")
                 if config_value:
                     self.apply_enhancement(domains, enhancement_name, option)
                     enhanced = True

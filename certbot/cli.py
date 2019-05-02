@@ -1,19 +1,17 @@
 """Certbot command line argument & config processing."""
 # pylint: disable=too-many-lines
 from __future__ import print_function
+
 import argparse
 import copy
 import glob
-import logging
 import logging.handlers
-import os
 import sys
 
 import configargparse
 import six
 import zope.component
 import zope.interface
-
 from zope.interface import interfaces as zope_interfaces
 
 from acme import challenges
@@ -22,18 +20,17 @@ from acme.magic_typing import Any, Dict, Optional
 # pylint: enable=unused-import, no-name-in-module
 
 import certbot
-
+import certbot.plugins.enhancements as enhancements
+import certbot.plugins.selection as plugin_selection
 from certbot import constants
 from certbot import crypto_util
 from certbot import errors
 from certbot import hooks
 from certbot import interfaces
 from certbot import util
-
+from certbot.compat import os
 from certbot.display import util as display_util
 from certbot.plugins import disco as plugins_disco
-import certbot.plugins.enhancements as enhancements
-import certbot.plugins.selection as plugin_selection
 
 logger = logging.getLogger(__name__)
 
@@ -1096,6 +1093,11 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         help="(certbot-auto only) prevent the certbot-auto script from"
              " installing OS-level dependencies (default: Prompt to install "
              " OS-wide dependencies, but exit if the user says 'No')")
+    helpful.add(
+        "automation", "--no-permissions-check", action="store_true",
+        default=flag_default("no_permissions_check"),
+        help="(certbot-auto only) skip the check on the file system"
+             " permissions of the certbot-auto script")
     helpful.add(
         ["automation", "renew", "certonly", "run"],
         "-q", "--quiet", dest="quiet", action="store_true",

@@ -1,11 +1,11 @@
 """Tests for certbot_dns_luadns.dns_luadns."""
 
-import os
 import unittest
 
 import mock
 from requests.exceptions import HTTPError
 
+from certbot.compat import os
 from certbot.plugins import dns_test_common
 from certbot.plugins import dns_test_common_lexicon
 from certbot.tests import util as test_util

@@ -45,6 +45,7 @@ Help for certbot itself cannot be provided until it is installed.
   -h, --help                                print this help
   -n, --non-interactive, --noninteractive   run without asking for user input
   --no-bootstrap                            do not install OS dependencies
+  --no-permissions-check                    do not warn about file system permissions
   --no-self-upgrade                         do not download updates
   --os-packages-only                        install OS dependencies and exit
   --install-only                            install certbot, upgrade if needed, and exit
@@ -67,6 +68,8 @@ for arg in "$@" ; do
       # Do not upgrade this script (also prevents client upgrades, because each
       # copy of the script pins a hash of the python client)
       NO_SELF_UPGRADE=1;;
+    --no-permissions-check)
+      NO_PERMISSIONS_CHECK=1;;
     --no-bootstrap)
       NO_BOOTSTRAP=1;;
     --help)
@@ -172,7 +175,11 @@ SetRootAuthMechanism() {
       sudo)
         SUDO="sudo -E"
         ;;
-      '') ;; # Nothing to do for plain root method.
+      '')
+        # If we're not running with root, don't check that this script can only
+        # be modified by system users and groups.
+        NO_PERMISSIONS_CHECK=1
+        ;;
       *)
         error "Error: unknown root authorization mechanism '$LE_AUTO_SUDO'."
         exit 1
@@ -652,6 +659,27 @@ else
     exit 0
   fi
 
+  DeterminePythonVersion "NOCRASH"
+  # Don't warn about file permissions if the user disabled the check or we
+  # can't find an up-to-date Python.
+  if [ "$PYVER" -ge "$MIN_PYVER" -a "$NO_PERMISSIONS_CHECK" != 1 ]; then
+    # ---------------------------------------------------------------------------
+    cat << "UNLIKELY_EOF" > "$TEMP_DIR/check_permissions.py"
+{{ check_permissions.py }}
+UNLIKELY_EOF
+    # ---------------------------------------------------------------------------
+    # If the script fails for some reason, don't break certbot-auto.
+    set +e
+    # Suppress unexpected error output and only print the script's output if it
+    # ran successfully.
+    CHECK_PERM_OUT=$("$LE_PYTHON" "$TEMP_DIR/check_permissions.py" "$0" 2>/dev/null)
+    CHECK_PERM_STATUS="$?"
+    set -e
+    if [ "$CHECK_PERM_STATUS" = 0 ]; then
+      error "$CHECK_PERM_OUT"
+    fi
+  fi
+
   if [ "$NO_SELF_UPGRADE" != 1 ]; then
     TEMP_DIR=$(TempDir)
     trap 'rm -rf "$TEMP_DIR"' EXIT
@@ -660,7 +688,6 @@ else
 {{ fetch.py }}
 UNLIKELY_EOF
     # ---------------------------------------------------------------------------
-    DeterminePythonVersion "NOCRASH"
     if [ "$PYVER" -lt "$MIN_PYVER" ]; then
       error "WARNING: couldn't find Python $MIN_PYTHON_VERSION+ to check for updates."
     elif ! REMOTE_VERSION=`"$LE_PYTHON" "$TEMP_DIR/fetch.py" --latest-version` ; then

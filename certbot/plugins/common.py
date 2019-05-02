@@ -1,6 +1,5 @@
 """Plugin common functions."""
 import logging
-import os
 import re
 import shutil
 import tempfile
@@ -12,6 +11,7 @@ import zope.interface
 from josepy import util as jose_util
 
 from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
+
 from certbot import achallenges  # pylint: disable=unused-import
 from certbot import constants
 from certbot import crypto_util
@@ -19,7 +19,7 @@ from certbot import errors
 from certbot import interfaces
 from certbot import reverter
 from certbot import util
-
+from certbot.compat import os
 from certbot.plugins.storage import PluginStorage
 
 logger = logging.getLogger(__name__)

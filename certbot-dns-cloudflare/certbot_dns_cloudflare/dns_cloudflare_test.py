@@ -1,12 +1,12 @@
 """Tests for certbot_dns_cloudflare.dns_cloudflare."""
 
-import os
 import unittest
 
 import CloudFlare
 import mock
 
 from certbot import errors
+from certbot.compat import os
 from certbot.plugins import dns_test_common
 from certbot.plugins.dns_test_common import DOMAIN
 from certbot.tests import util as test_util

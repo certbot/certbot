@@ -1,6 +1,5 @@
 """Tests for certbot_dns_google.dns_google."""
 
-import os
 import unittest
 
 import mock
@@ -10,6 +9,7 @@ from googleapiclient.http import HttpMock
 from httplib2 import ServerNotFoundError
 
 from certbot import errors
+from certbot.compat import os
 from certbot.errors import PluginError
 from certbot.plugins import dns_test_common
 from certbot.plugins.dns_test_common import DOMAIN

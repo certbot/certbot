@@ -3,16 +3,17 @@
 import abc
 import argparse
 import logging
-import os
 import stat
 from time import sleep
 
 import configobj
 import zope.interface
+
 from acme import challenges
 
 from certbot import errors
 from certbot import interfaces
+from certbot.compat import os
 from certbot.display import ops
 from certbot.display import util as display_util
 from certbot.plugins import common

@@ -1,23 +1,23 @@
 """certbot installer plugin for postfix."""
 import logging
-import os
 
-import zope.interface
-import zope.component
 import six
+import zope.component
+import zope.interface
+
+# pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Callable, Dict, List
+# pylint: enable=unused-import, no-name-in-module
 
 from certbot import errors
 from certbot import interfaces
 from certbot import util as certbot_util
+from certbot.compat import os
 from certbot.plugins import common as plugins_common
 
 from certbot_postfix import constants
 from certbot_postfix import postconf
 from certbot_postfix import util
-
-# pylint: disable=unused-import, no-name-in-module
-from acme.magic_typing import Callable, Dict, List
-# pylint: enable=unused-import, no-name-in-module
 
 logger = logging.getLogger(__name__)
 

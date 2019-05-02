@@ -1,15 +1,16 @@
 """Base test class for DNS authenticators."""
 
-import os
 from unittest import TestCase
 
 import configobj
 import josepy as jose
 import mock
 import six
+
 from acme import challenges
 
 from certbot import achallenges
+from certbot.compat import os
 from certbot.tests import acme_util
 from certbot.tests import util as test_util
 
