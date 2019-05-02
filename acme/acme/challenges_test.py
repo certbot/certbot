@@ -422,7 +422,7 @@ class TLSALPN01ResponseTest(unittest.TestCase):
 
     def test_to_partial_json(self):
         self.assertEqual({k: v for k, v in self.jmsg.items() if k != 'keyAuthorization'},
-                         self.msg.to_partial_json())
+                         self.response.to_partial_json())
 
     def test_from_json(self):
         from acme.challenges import TLSALPN01Response
