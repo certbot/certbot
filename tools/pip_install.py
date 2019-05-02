@@ -102,9 +102,9 @@ def main(args):
             reinstall = False
             if os.environ.get('CERTBOT_OLDEST') == '1':
                 requirements = certbot_oldest_processing(tools_path, args, test_constraints)
-                # We need to --force-reinstall the tested distribution during oldest requirements
-                # because of an error in these tests in particular situations described in
-                # https://github.com/certbot/certbot/issues/7014
+                # We need to --force-reinstall the tested distribution when using oldest
+                # requirements because of an error in these tests in particular situations
+                # described in https://github.com/certbot/certbot/issues/7014.
                 # However this slows down considerably the oldest tests (5 min -> 10 min),
                 # so we need to find a better mitigation in the future.
                 reinstall = True
