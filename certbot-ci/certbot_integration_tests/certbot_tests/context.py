@@ -25,6 +25,7 @@ class IntegrationTestsContext(object):
         self.directory_url = acme_xdist['directory_url']
         self.tls_alpn_01_port = acme_xdist['https_port'][self.worker_id]
         self.http_01_port = acme_xdist['http_port'][self.worker_id]
+        self.other_port = acme_xdist['other_port'][self.worker_id]
         # Challtestsrv REST API, that exposes entrypoints to register new DNS entries,
         # is listening on challtestsrv_port.
         self.challtestsrv_port = acme_xdist['challtestsrv_port']
