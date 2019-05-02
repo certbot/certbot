@@ -113,7 +113,7 @@ optional arguments:
                         case, and to know when to deprecate support for past
                         Python versions and flags. If you wish to hide this
                         information from the Let's Encrypt server, set this to
-                        "". (default: CertbotACMEClient/0.33.1
+                        "". (default: CertbotACMEClient/0.34.0
                         (certbot(-auto); OS_NAME OS_VERSION) Authenticator/XXX
                         Installer/YYY (SUBCOMMAND; flags: FLAGS)
                         Py/major.minor.patchlevel). The flags encoded in the
@@ -171,6 +171,10 @@ automation:
                         from installing OS-level dependencies (default: Prompt
                         to install OS-wide dependencies, but exit if the user
                         says 'No')
+  --no-permissions-check
+                        (certbot-auto only) skip the check on the file system
+                        permissions of the certbot-auto script (default:
+                        False)
   -q, --quiet           Silence all output except errors. Useful for
                         automation via cron. Implies --non-interactive.
                         (default: False)

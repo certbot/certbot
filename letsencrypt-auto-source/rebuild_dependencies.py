@@ -217,7 +217,12 @@ def _write_requirements(dest_file, requirements, conflicts):
 # To generate this, do (with docker and package hashin installed):
 # ```
 # letsencrypt-auto-source/rebuild_dependencies.py \\
-#   letsencrypt-auto-sources/pieces/dependency-requirements.txt
+#   letsencrypt-auto-source/pieces/dependency-requirements.txt
+# ```
+# If you want to update a single dependency, run commands similar to these:
+# ```
+# pip install hashin
+# hashin -r dependency-requirements.txt cryptography==1.5.2
 # ```
 ''')
 

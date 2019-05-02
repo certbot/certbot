@@ -2,11 +2,29 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 0.34.0 - master
+## 0.35.0 - master
 
 ### Added
 
 *
+
+### Changed
+
+*
+
+### Fixed
+
+*
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+package with changes other than its version number was:
+
+*
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.34.0 - 2019-05-01
 
 ### Changed
 
@@ -25,10 +43,17 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * Adding a warning noting that future versions of Certbot will automatically configure the
   webserver so that all requests redirect to secure HTTPS access. You can control this
   behavior and disable this warning with the --redirect and --no-redirect flags.
-
-### Fixed
-
-*
+* certbot-auto now prints warnings when run as root with insecure file system
+  permissions. If you see these messages, you should fix the problem by
+  following the instructions at
+  https://community.letsencrypt.org/t/certbot-auto-deployment-best-practices/91979/,
+  however, these warnings can be disabled as necessary with the flag
+  --no-permissions-check.
+* `acme` module uses now a POST-as-GET request to retrieve the registration
+  from an ACME v2 server
+* Convert the tsig algorithm specified in the certbot_dns_rfc2136 configuration file to
+  all uppercase letters before validating. This makes the value in the config case
+  insensitive.
 
 Despite us having broken lockstep, we are continuing to release new versions of
 all Certbot components during releases for the time being, however, the only
