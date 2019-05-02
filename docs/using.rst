@@ -923,7 +923,7 @@ files that can be found in ``/etc/letsencrypt/renewal``.
 
 By default no cli.ini file is created, after creating one
 it is possible to specify the location of this configuration file with
-``certbot-auto --config cli.ini`` (or shorter ``-c cli.ini``). An
+``certbot --config cli.ini`` (or shorter ``-c cli.ini``). An
 example configuration file is shown below:
 
 .. include:: ../examples/cli.ini

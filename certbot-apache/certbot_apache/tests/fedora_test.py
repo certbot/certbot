@@ -1,4 +1,4 @@
-"""Test for certbot_apache.configurator for Centos overrides"""
+"""Test for certbot_apache.configurator for Fedora 29+ overrides"""
 import unittest
 
 import mock
@@ -7,7 +7,7 @@ from certbot import errors
 from certbot.compat import os
 
 from certbot_apache import obj
-from certbot_apache import override_centos
+from certbot_apache import override_fedora
 from certbot_apache.tests import util
 
 
@@ -17,23 +17,28 @@ def get_vh_truth(temp_dir, config_name):
         temp_dir, config_name, "httpd/conf.d")
 
     aug_pre = "/files" + prefix
+    # TODO: eventually, these tests should have a dedicated configuration instead
+    #  of reusing the ones from centos_test
     vh_truth = [
         obj.VirtualHost(
             os.path.join(prefix, "centos.example.com.conf"),
             os.path.join(aug_pre, "centos.example.com.conf/VirtualHost"),
-            set([obj.Addr.fromstring("*:80")]),
+            {obj.Addr.fromstring("*:80")},
             False, True, "centos.example.com"),
         obj.VirtualHost(
             os.path.join(prefix, "ssl.conf"),
             os.path.join(aug_pre, "ssl.conf/VirtualHost"),
-            set([obj.Addr.fromstring("_default_:443")]),
+            {obj.Addr.fromstring("_default_:443")},
             True, True, None)
     ]
     return vh_truth
 
+
 class FedoraRestartTest(util.ApacheTest):
     """Tests for Fedora specific self-signed certificate override"""
 
+    # TODO: eventually, these tests should have a dedicated configuration instead
+    #  of reusing the ones from centos_test
     def setUp(self):  # pylint: disable=arguments-differ
         test_dir = "centos7_apache/apache"
         config_root = "centos7_apache/apache/httpd"
@@ -43,24 +48,13 @@ class FedoraRestartTest(util.ApacheTest):
                                              vhost_root=vhost_root)
         self.config = util.get_apache_configurator(
             self.config_path, self.vhost_path, self.config_dir, self.work_dir,
-            os_info="fedora_old")
+            os_info="fedora")
         self.vh_truth = get_vh_truth(
             self.temp_dir, "centos7_apache/apache")
 
     def _run_fedora_test(self):
-        self.assertIsInstance(self.config, override_centos.CentOSConfigurator)
-        with mock.patch("certbot.util.get_os_info") as mock_info:
-            mock_info.return_value = ["fedora", "28"]
-            self.config.config_test()
-
-    def test_non_fedora_error(self):
-        c_test = "certbot_apache.configurator.ApacheConfigurator.config_test"
-        with mock.patch(c_test) as mock_test:
-            mock_test.side_effect = errors.MisconfigurationError
-            with mock.patch("certbot.util.get_os_info") as mock_info:
-                mock_info.return_value = ["not_fedora"]
-                self.assertRaises(errors.MisconfigurationError,
-                                  self.config.config_test)
+        self.assertIsInstance(self.config, override_fedora.FedoraConfigurator)
+        self.config.config_test()
 
     def test_fedora_restart_error(self):
         c_test = "certbot_apache.configurator.ApacheConfigurator.config_test"
@@ -84,7 +78,7 @@ class FedoraRestartTest(util.ApacheTest):
                                 ['systemctl', 'restart', 'httpd'])
 
 
-class MultipleVhostsTestCentOS(util.ApacheTest):
+class MultipleVhostsTestFedora(util.ApacheTest):
     """Multiple vhost tests for CentOS / RHEL family of distros"""
 
     _multiprocess_can_split_ = True
@@ -93,18 +87,18 @@ class MultipleVhostsTestCentOS(util.ApacheTest):
         test_dir = "centos7_apache/apache"
         config_root = "centos7_apache/apache/httpd"
         vhost_root = "centos7_apache/apache/httpd/conf.d"
-        super(MultipleVhostsTestCentOS, self).setUp(test_dir=test_dir,
+        super(MultipleVhostsTestFedora, self).setUp(test_dir=test_dir,
                                                     config_root=config_root,
                                                     vhost_root=vhost_root)
 
         self.config = util.get_apache_configurator(
             self.config_path, self.vhost_path, self.config_dir, self.work_dir,
-            os_info="centos")
+            os_info="fedora")
         self.vh_truth = get_vh_truth(
             self.temp_dir, "centos7_apache/apache")
 
     def test_get_parser(self):
-        self.assertIsInstance(self.config.parser, override_centos.CentOSParser)
+        self.assertIsInstance(self.config.parser, override_fedora.FedoraParser)
 
     @mock.patch("certbot_apache.parser.ApacheParser._get_runtime_cfg")
     def test_opportunistic_httpd_runtime_parsing(self, mock_get):
@@ -120,9 +114,9 @@ class MultipleVhostsTestCentOS(util.ApacheTest):
         )
         def mock_get_cfg(command):
             """Mock httpd process stdout"""
-            if command == ['apachectl', '-t', '-D', 'DUMP_RUN_CFG']:
+            if command == ['httpd', '-t', '-D', 'DUMP_RUN_CFG']:
                 return define_val
-            elif command == ['apachectl', '-t', '-D', 'DUMP_MODULES']:
+            elif command == ['httpd', '-t', '-D', 'DUMP_MODULES']:
                 return mod_val
             return ""
         mock_get.side_effect = mock_get_cfg
@@ -131,7 +125,7 @@ class MultipleVhostsTestCentOS(util.ApacheTest):
 
         with mock.patch("certbot.util.get_os_info") as mock_osi:
             # Make sure we have the have the CentOS httpd constants
-            mock_osi.return_value = ("centos", "7")
+            mock_osi.return_value = ("fedora", "29")
             self.config.parser.update_runtime_variables()
 
         self.assertEqual(mock_get.call_count, 3)
@@ -139,6 +133,12 @@ class MultipleVhostsTestCentOS(util.ApacheTest):
         self.assertEqual(len(self.config.parser.variables), 2)
         self.assertTrue("TEST2" in self.config.parser.variables.keys())
         self.assertTrue("mod_another.c" in self.config.parser.modules)
+
+    @mock.patch("certbot_apache.configurator.util.run_script")
+    def test_get_version(self, mock_run_script):
+        mock_run_script.return_value = ('', None)
+        self.assertRaises(errors.PluginError, self.config.get_version)
+        self.assertEqual(mock_run_script.call_args[0][0][0], 'httpd')
 
     def test_get_virtual_hosts(self):
         """Make sure all vhosts are being properly found."""
@@ -166,7 +166,7 @@ class MultipleVhostsTestCentOS(util.ApacheTest):
 
         with mock.patch("certbot.util.get_os_info") as mock_osi:
             # Make sure we have the have the CentOS httpd constants
-            mock_osi.return_value = ("centos", "7")
+            mock_osi.return_value = ("fedora", "29")
             self.config.parser.update_runtime_variables()
 
         self.assertTrue("mock_define" in self.config.parser.variables.keys())
