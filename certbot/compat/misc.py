@@ -73,7 +73,7 @@ def os_rename(src, dst):
             raise
         if not hasattr(os, 'replace'):  # pragma: no cover
             # We should never go on this line. Either we are on Linux and os.rename has succeeded,
-            # either we are on Windows, and only Python >= 3.4 is supported where os.replace is
+            # or we are on Windows, and only Python >= 3.4 is supported where os.replace is
             # available.
             raise RuntimeError('Error: tried to run os_rename on Python < 3.3. '
                                'Certbot supports only Python 3.4 >= on Windows.')
