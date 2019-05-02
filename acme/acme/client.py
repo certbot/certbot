@@ -123,15 +123,6 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
         """
         return self.update_registration(regr, update={'status': 'deactivated'})
 
-    def query_registration(self, regr):
-        """Query server about registration.
-
-        :param messages.RegistrationResource: Existing Registration
-            Resource.
-
-        """
-        return self._send_recv_regr(regr, messages.UpdateRegistration())
-
     def _authzr_from_response(self, response, identifier=None, uri=None):
         authzr = messages.AuthorizationResource(
             body=messages.Authorization.from_json(response.json()),
@@ -275,6 +266,15 @@ class Client(ClientBase):
         # "Instance of 'Field' has no key/contact member" bug:
         # pylint: disable=no-member
         return self._regr_from_response(response)
+
+    def query_registration(self, regr):
+        """Query server about registration.
+
+        :param messages.RegistrationResource: Existing Registration
+            Resource.
+
+        """
+        return self._send_recv_regr(regr, messages.UpdateRegistration())
 
     def agree_to_tos(self, regr):
         """Agree to the terms-of-service.
@@ -603,10 +603,13 @@ class ClientV2(ClientBase):
             Resource.
 
         """
-        self.net.account = regr
-        updated_regr = super(ClientV2, self).query_registration(regr)
-        self.net.account = updated_regr
-        return updated_regr
+        self.net.account = regr  # See certbot/certbot#6258
+        # ACME v2 requires to use a POST-as-GET request (POST an empty JWS) here.
+        # This is done by passing None instead of an empty UpdateRegistration to _post().
+        response = self._post(regr.uri, None)
+        self.net.account = self._regr_from_response(response, uri=regr.uri,
+                                                    terms_of_service=regr.terms_of_service)
+        return self.net.account
 
     def update_registration(self, regr, update=None):
         """Update registration.
