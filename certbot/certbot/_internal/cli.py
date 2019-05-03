@@ -838,7 +838,7 @@ class HelpfulArgumentParser(object):
             if name != plugin_ep.long_name:
                 parser_or_group = self.add_group(
                     plugin_ep.long_name,
-                    description="(long form) " + plugin_ep.long_description)
+                    description="(deprecated) " + plugin_ep.long_description)
                 plugin_ep.plugin_cls.inject_parser_options(
                     parser_or_group, plugin_ep.long_name)
 

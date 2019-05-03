@@ -61,8 +61,10 @@ class PluginEntryPointTest(unittest.TestCase):
     def test_check_name_internal(self):
         self.assertEqual(self.plugin_ep.name, 'sa')
         # internal plugins accept only prefix-free form:
-        self.assertTrue(self.plugin_ep.check_name('sa'))
-        self.assertFalse(self.plugin_ep.check_name('certbot:sa'))
+        with mock.patch('certbot._internal.plugins.disco.logger') as logger:
+            self.assertTrue(self.plugin_ep.check_name('sa'))
+            self.assertFalse(self.plugin_ep.check_name('certbot:sa'))
+            self.assertFalse(logger.warning.called)
         # should not match other names:
         self.assertFalse(self.plugin_ep.check_name(''))
         self.assertFalse(self.plugin_ep.check_name('so'))
@@ -73,8 +75,11 @@ class PluginEntryPointTest(unittest.TestCase):
         plugin_ep1 = PluginEntryPoint(self.ep1)
         self.assertEqual(plugin_ep1.name, 'ep1')
         # external plugins accept prefix-free (new) AND prefixed (old) form:
-        self.assertTrue(plugin_ep1.check_name('ep1'))
-        self.assertTrue(plugin_ep1.check_name('p1:ep1'))
+        with mock.patch('certbot._internal.plugins.disco.logger') as logger:
+            self.assertTrue(plugin_ep1.check_name('ep1'))
+            self.assertFalse(logger.warning.called)
+            self.assertTrue(plugin_ep1.check_name('p1:ep1'))
+            self.assertTrue(logger.warning.called)
         # should not match other names:
         self.assertFalse(plugin_ep1.check_name(''))
         self.assertFalse(plugin_ep1.check_name('ep2'))

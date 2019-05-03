@@ -59,11 +59,19 @@ class PluginEntryPoint(object):
 
     def check_name(self, name):
         """Check if the name refers to this plugin."""
-        return name == self.name or name == self.long_name
+        if name == self.name:
+            return True
+        if name == self.long_name:
+            logger.warning(
+                "Plugin legacy name %r may be removed in a future version."
+                "Please use %r instead.",
+                name, self.name)
+            return True
+        return False
 
     @classmethod
     def entry_point_to_plugin_long_name(cls, entry_point):
-        """Unique plugin name for an ``entry_point`` (long format)."""
+        """Unique plugin name for an ``entry_point`` (legacy format)."""
         if entry_point.dist.key in cls.PREFIX_FREE_DISTRIBUTIONS:
             return entry_point.name
         return entry_point.dist.key + ":" + entry_point.name
