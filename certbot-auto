@@ -1600,7 +1600,7 @@ UNLIKELY_EOF
     CHECK_PERM_OUT=$("$LE_PYTHON" "$TEMP_DIR/check_permissions.py" "$0" 2>/dev/null)
     CHECK_PERM_STATUS="$?"
     set -e
-    if [ "$CHECK_PERM_STATUS" = 0 ]; then
+    if [ "$CHECK_PERM_STATUS" = 0 ] && [ -n "$CHECK_PERM_OUT" ]; then
       error "$CHECK_PERM_OUT"
     fi
   fi
