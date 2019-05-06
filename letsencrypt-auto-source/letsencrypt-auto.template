@@ -501,6 +501,14 @@ CreateVenv() {
 UNLIKELY_EOF
 }
 
+# Check that the given PATH_TO_CHECK has secured permissions.
+# Parameters: LE_PYTHON, PATH_TO_CHECK
+CheckPathPermissions() {
+    "$1" - "$2" << "UNLIKELY_EOF"
+{{ check_permissions.py }}
+UNLIKELY_EOF
+}
+
 if [ "$1" = "--le-auto-phase2" ]; then
   # Phase 2: Create venv, install LE, and run.
 
@@ -663,15 +671,10 @@ else
   # Don't warn about file permissions if the user disabled the check or we
   # can't find an up-to-date Python.
   if [ "$PYVER" -ge "$MIN_PYVER" -a "$NO_PERMISSIONS_CHECK" != 1 ]; then
-    # ---------------------------------------------------------------------------
-    cat << "UNLIKELY_EOF" > "$TEMP_DIR/check_permissions.py"
-{{ check_permissions.py }}
-UNLIKELY_EOF
-    # ---------------------------------------------------------------------------
     # If the script fails for some reason, don't break certbot-auto.
     set +e
     # Suppress unexpected error output.
-    CHECK_PERM_OUT=$("$LE_PYTHON" "$TEMP_DIR/check_permissions.py" "$0" 2>/dev/null)
+    CHECK_PERM_OUT=$(CheckPathPermissions "$LE_PYTHON" "$0" 2>/dev/null)
     CHECK_PERM_STATUS="$?"
     set -e
     # Only print output if the script ran successfully and it actually produced
