@@ -1017,7 +1017,7 @@ if [ "$1" = "--le-auto-phase2" ]; then
     fi
 
     say "Installing Python packages..."
-    TEMP_DIR=$(TempDir)
+    TEMP_DIR="$(TempDir)"
     trap 'rm -rf "$TEMP_DIR"' EXIT
     # There is no $ interpolation due to quotes on starting heredoc delimiter.
     # -------------------------------------------------------------------------
@@ -1501,6 +1501,8 @@ else
     exit 0
   fi
 
+  TEMP_DIR="$(TempDir)"
+  trap 'rm -rf "$TEMP_DIR"' EXIT
   DeterminePythonVersion "NOCRASH"
   # Don't warn about file permissions if the user disabled the check or we
   # can't find an up-to-date Python.
