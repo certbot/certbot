@@ -31,7 +31,7 @@ if [ -z "$VENV_PATH" ]; then
 fi
 VENV_BIN="$VENV_PATH/bin"
 BOOTSTRAP_VERSION_PATH="$VENV_PATH/certbot-auto-bootstrap-version.txt"
-LE_AUTO_VERSION="0.34.0"
+LE_AUTO_VERSION="0.34.1"
 BASENAME=$(basename $0)
 USAGE="Usage: $BASENAME [OPTIONS]
 A self-updating wrapper script for the Certbot ACME client. When run, updates
@@ -1225,18 +1225,18 @@ letsencrypt==0.7.0 \
     --hash=sha256:105a5fb107e45bcd0722eb89696986dcf5f08a86a321d6aef25a0c7c63375ade \
     --hash=sha256:c36e532c486a7e92155ee09da54b436a3c420813ec1c590b98f635d924720de9
 
-certbot==0.34.0 \
-    --hash=sha256:51dddf2cb1c50a9f8b993090890bf4858d8fadffce38bafcdf6bf585a2040317 \
-    --hash=sha256:e75bdabfd9183bd9842ada42a51070f120d15982e81c490df59dde62e4df2c8b
-acme==0.34.0 \
-    --hash=sha256:3448024d2c274aebfb9b31b53862576d167626ce2fd1997a78d450c32a292fa3 \
-    --hash=sha256:92478e58f541c5c7c527427a50650005cdede799b78f0a0a65b8093d6368bcfd
-certbot-apache==0.34.0 \
-    --hash=sha256:79e686f25b63dac17d771d71f791f252774da22125f3f6e0665f4cf791d516fe \
-    --hash=sha256:d5ae09b4801fbac23d5acf64a5ee265108199d2852fbe743e7b6ab06fa08edf6
-certbot-nginx==0.34.0 \
-    --hash=sha256:868d7dcb59bb2548cb4a2ae187db5da1bfe33aac306b1b844b96ee00a39cac52 \
-    --hash=sha256:d6c728b85c523711ec0dc800f8d4ebbef192fb0ca1ec7914c173207e4aba5194
+certbot==0.34.1 \
+    --hash=sha256:84b0990e9a0d1390f80467af4b29b6f65b80f6ed3b2b32aae6baba9d968e957f \
+    --hash=sha256:464f49371ed308aa17356a7152167defc342b67a8bbf8f4b8d9019788f6d4b52
+acme==0.34.1 \
+    --hash=sha256:6b989576dee7b57c25e391cbe93f817961cd9307aca1c429fe9fa36c1c3c95d3 \
+    --hash=sha256:7bdbdbfcec5c05834e91a2d950e964654401e0112a27afd34f5f03a5cadf23f1
+certbot-apache==0.34.1 \
+    --hash=sha256:a199202d212492fca92939e8424a1b312b0959843dd46c673888275407bb341d \
+    --hash=sha256:6223e61eb83ade317693e8542b480fc5ef9cd67fc54f8137a5ac13f0f75c62f7
+certbot-nginx==0.34.1 \
+    --hash=sha256:c115f5f3d47aacaa67790e5628148b0074b57d0e538cf0118231e832bc410e52 \
+    --hash=sha256:b92f457afa1a1c7596c2d22a6863b5917376677746996da73faa2b4e56692576
 
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
@@ -1593,12 +1593,14 @@ UNLIKELY_EOF
     # ---------------------------------------------------------------------------
     # If the script fails for some reason, don't break certbot-auto.
     set +e
-    # Suppress unexpected error output and only print the script's output if it
-    # ran successfully.
+    # Suppress unexpected error output.
     CHECK_PERM_OUT=$("$LE_PYTHON" "$TEMP_DIR/check_permissions.py" "$0" 2>/dev/null)
     CHECK_PERM_STATUS="$?"
     set -e
-    if [ "$CHECK_PERM_STATUS" = 0 ]; then
+    # Only print output if the script ran successfully and it actually produced
+    # output. The latter check resolves
+    # https://github.com/certbot/certbot/issues/7012.
+    if [ "$CHECK_PERM_STATUS" = 0 -a -n "$CHECK_PERM_OUT" ]; then
       error "$CHECK_PERM_OUT"
     fi
   fi
