@@ -1593,12 +1593,14 @@ UNLIKELY_EOF
     # ---------------------------------------------------------------------------
     # If the script fails for some reason, don't break certbot-auto.
     set +e
-    # Suppress unexpected error output and only print the script's output if it
-    # ran successfully.
+    # Suppress unexpected error output.
     CHECK_PERM_OUT=$("$LE_PYTHON" "$TEMP_DIR/check_permissions.py" "$0" 2>/dev/null)
     CHECK_PERM_STATUS="$?"
     set -e
-    if [ "$CHECK_PERM_STATUS" = 0 ]; then
+    # Only print output if the script ran successfully and it actually produced
+    # output. The latter check resolves
+    # https://github.com/certbot/certbot/issues/7012.
+    if [ "$CHECK_PERM_STATUS" = 0 -a -n "$CHECK_PERM_OUT" ]; then
       error "$CHECK_PERM_OUT"
     fi
   fi
