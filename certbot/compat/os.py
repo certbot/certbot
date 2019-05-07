@@ -36,14 +36,14 @@ del ourselves, std_os, std_sys
 # be applied. The DACL, the inner mechanism to control file access on Windows, will stay on its
 # default definition, giving effectively at least read permissions to any one, as the default
 # permissions on root path will be inherit by the file (as NTFS state), and root path can be read
-# by anyone. So the given mode will be translated into a secured and not inherited DACL that will
-# be applied to this file using security.chmod, that will call internally the win32security
-# module to construct and apply the DACL. Complete security model to translate a POSIX mode for
-# something usable on Windows for Certbot can be found here:
+# by anyone. So the given mode needs to be translated into a secured and not inherited DACL that
+# will be applied to this file using filesystem.chmod, calling internally the win32security
+# module to construct and apply the DACL. Complete security model to translate a POSIX mode into
+# a suitable DACL on Windows for Certbot can be found here:
 # https://github.com/certbot/certbot/issues/6356
 # Basically, it states that appropriate permissions will be set for the owner, nothing for the
 # group, appropriate permissions for the "Everyone" group, and all permissions to the
-# "Administrators" group, as they can do everything anyway.
+# "Administrators" group + "System" user, as they can do everything anyway.
 def chmod(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
     """Method os.chmod() is forbidden"""
     raise RuntimeError('Usage of os.chmod() is forbidden. '  # pragma: no cover
