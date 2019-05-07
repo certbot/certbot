@@ -28,7 +28,7 @@ class SecurityTest(TempDirTestCase):
         import win32security
 
         normal_user = win32security.ConvertStringSidToSid('S-1-4-1')
-        dacl = filesystem._generate_dacl(normal_user, 0o700)
+        dacl = filesystem._generate_dacl(normal_user, 0o700)  # pylint: disable=protected-access
         # We expect two ACE: one for admins, one for the user
         self.assertEqual(dacl.GetAceCount(), 2)
 
