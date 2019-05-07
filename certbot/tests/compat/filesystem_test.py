@@ -29,10 +29,10 @@ class FilesystemTest(TempDirTestCase):
 
         normal_user = win32security.ConvertStringSidToSid('S-1-4-1')
         dacl = filesystem._generate_dacl(normal_user, 0o700)  # pylint: disable=protected-access
-        # We expect two ACE: one for admins, one for the user
-        self.assertEqual(dacl.GetAceCount(), 2)
+        # We expect two ACE: one for admins, one for system, and one for the user
+        self.assertEqual(dacl.GetAceCount(), 3)
 
         admin_user = win32security.ConvertStringSidToSid('S-1-5-18')
         dacl = filesystem._generate_dacl(admin_user, 0o700)
-        # Now we expect only ACE, the one for admins, since the user is also an admin
-        self.assertEqual(dacl.GetAceCount(), 1)
+        # We expect only two ACE: one for admins, one for system, since the user is also an admin
+        self.assertEqual(dacl.GetAceCount(), 2)
