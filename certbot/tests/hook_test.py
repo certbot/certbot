@@ -66,7 +66,7 @@ class HookTest(util.ConfigTestCase):
     """Common base class for hook tests."""
 
     @classmethod
-    def _call(cls, *args, **kwargs):
+    def _call(cls, *args, **kwargs):  # pragma: no cover
         """Calls the method being tested with the given arguments."""
         raise NotImplementedError
 
