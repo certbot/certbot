@@ -6,8 +6,8 @@ from certbot.compat import filesystem
 from certbot.tests.util import TempDirTestCase
 
 
-class SecurityTest(TempDirTestCase):
-    """Unit tests for security module."""
+class FilesystemTest(TempDirTestCase):
+    """Unit tests for filesystem module."""
     def test_check_modes(self):
         probe = os.path.join(self.tempdir, 'probe')
 
