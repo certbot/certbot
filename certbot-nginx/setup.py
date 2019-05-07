@@ -4,7 +4,7 @@ from setuptools.command.test import test as TestCommand
 import sys
 
 
-version = '0.34.1'
+version = '0.34.2'
 
 # Remember to update local-oldest-requirements.txt when changing the minimum
 # acme/certbot version.
