@@ -179,10 +179,11 @@ class _RFC2136Client(object):
 
     def _find_domain(self, record_name):
         """
-        Determine the authorative domain by either using the base domain specified in the
-        credentials or find the closest domain with an SOA record for a given domain name.
+        If 'base_domain' option is specified check if the requested domain matches this base domain
+        and return it. If not explicitly specified find the closest domain with an SOA record for
+        the given domain name.
 
-        :param str record_name: The record name for which to find the closest SOA record.
+        :param str record_name: The record name for which to find the base domain.
         :returns: The domain, if found.
         :rtype: str
         :raises certbot.errors.PluginError: if no SOA record can be found.
