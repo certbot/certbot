@@ -33,7 +33,7 @@ different to HMAC-MD5.
    dns_rfc2136_server = 192.0.2.1
    # Target DNS port
    dns_rfc2136_port = 53
-   # Authorative domain (optional, will be auto-detected if missing)
+   # Authorative domain (optional, will try to auto-detect if missing)
    dns_rfc2136_base_domain = example.com
    # TSIG key name
    dns_rfc2136_name = keyname.
