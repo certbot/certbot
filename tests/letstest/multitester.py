@@ -338,7 +338,7 @@ def create_client_instances(ec2_client, targetlist, security_group_id, subnet_id
     return instances
 
 
-def test_client_process(inqueue, outqueue):
+def test_client_process(inqueue, outqueue, boulder_url):
     cur_proc = mp.current_process()
     for inreq in iter(inqueue.get, SENTINEL):
         ii, instance_id, target = inreq
@@ -536,7 +536,7 @@ try:
 
     # initiate process execution
     for i in range(num_processes):
-        p = mp.Process(target=test_client_process, args=(inqueue, outqueue))
+        p = mp.Process(target=test_client_process, args=(inqueue, outqueue, boulder_url))
         jobs.append(p)
         p.daemon = True  # kills subprocesses if parent is killed
         p.start()
