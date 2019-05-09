@@ -80,11 +80,7 @@ def _construct_workspace(acme_type):
                 pass
             print('=> Finished tear down of {0} instance.'.format(acme_type))
 
-        try:
-            shutil.rmtree(workspace)
-        except (OSError, IOError):
-            # Not critical
-            pass
+        shutil.rmtree(workspace)
 
     # Here with atexit we ensure that clean function is called no matter what.
     atexit.register(cleanup)
