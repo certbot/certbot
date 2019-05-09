@@ -30,16 +30,6 @@ matrix:
   include:
     # Main test suite
     - python: "2.7"
-      env: ACME_SERVER=boulder-v1 PYTEST_ADDOPTS=-n4 TOXENV=integration
-      sudo: required
-      services: docker
-      <<: *not-on-master
-    - python: "2.7"
-      env: ACME_SERVER=boulder-v2 PYTEST_ADDOPTS=-n4 TOXENV=integration
-      sudo: required
-      services: docker
-      <<: *not-on-master
-    - python: "2.7"
       env: ACME_SERVER=pebble PYTEST_ADDOPTS=-n4 TOXENV=integration
       sudo: required
       services: docker
@@ -105,6 +95,16 @@ matrix:
     - python: "3.7"
       dist: xenial
       env: TOXENV=py37 CERTBOT_NO_PIN=1
+      <<: *extended-test-suite
+    - python: "2.7"
+      env: ACME_SERVER=boulder-v1 PYTEST_ADDOPTS=-n4 TOXENV=integration
+      sudo: required
+      services: docker
+      <<: *extended-test-suite
+    - python: "2.7"
+      env: ACME_SERVER=boulder-v2 PYTEST_ADDOPTS=-n4 TOXENV=integration
+      sudo: required
+      services: docker
       <<: *extended-test-suite
     - python: "2.7"
       env: ACME_SERVER=boulder-v1 TOXENV=py27-certbot-oldest,integration-certbot-oldest
