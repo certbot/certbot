@@ -100,9 +100,6 @@ PROFILE = cl_args.aws_profile
 #-------------------------------------------------------------------------------
 BOULDER_AMI = 'ami-072a9534772bec854' # premade shared boulder AMI 18.04LTS us-east-1
 LOGDIR = "letest-%d"%int(time.time()) #points to logging / working directory
-# boto3/AWS api globals
-AWS_SESSION = None
-EC2 = None
 SECURITY_GROUP_NAME = 'certbot-security-group'
 SENTINEL = None #queue kill signal
 SUBNET_NAME = 'certbot-subnet'
@@ -140,7 +137,8 @@ def make_security_group(vpc):
     mysg.authorize_ingress(IpProtocol="udp", CidrIp="0.0.0.0/0", FromPort=60000, ToPort=61000)
     return mysg
 
-def make_instance(instance_name,
+def make_instance(ec2_client,
+                  instance_name,
                   ami_id,
                   keyname,
                   security_group_id,
@@ -148,8 +146,8 @@ def make_instance(instance_name,
                   machine_type='t2.micro',
                   userdata=""): #userdata contains bash or cloud-init script
 
-    new_instance = EC2.create_instances(
-        BlockDeviceMappings=_get_block_device_mappings(ami_id),
+    new_instance = ec2_client.create_instances(
+        BlockDeviceMappings=_get_block_device_mappings(ec2_client, ami_id),
         ImageId=ami_id,
         SecurityGroupIds=[security_group_id],
         SubnetId=subnet_id,
@@ -174,7 +172,7 @@ def make_instance(instance_name,
             raise
     return new_instance
 
-def _get_block_device_mappings(ami_id):
+def _get_block_device_mappings(ec2_client, ami_id):
     """Returns the list of block device mappings to ensure cleanup.
 
     This list sets connected EBS volumes to be deleted when the EC2
@@ -187,7 +185,7 @@ def _get_block_device_mappings(ami_id):
     # * https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ec2-blockdev-template.html
     return [{'DeviceName': mapping['DeviceName'],
              'Ebs': {'DeleteOnTermination': True}}
-            for mapping in EC2.Image(ami_id).block_device_mappings
+            for mapping in ec2_client.Image(ami_id).block_device_mappings
             if not mapping.get('Ebs', {}).get('DeleteOnTermination', True)]
 
 
@@ -312,7 +310,7 @@ def grab_certbot_log():
     sudo('if [ -f ./certbot.log ]; then \
     cat ./certbot.log; else echo "[nolocallog]"; fi')
 
-def create_client_instances(targetlist, security_group_id, subnet_id):
+def create_client_instances(ec2_client, targetlist, security_group_id, subnet_id):
     "Create a fleet of client instances"
     instances = []
     print("Creating instances: ", end="")
@@ -328,7 +326,8 @@ def create_client_instances(targetlist, security_group_id, subnet_id):
             userdata = ''
         name = 'le-%s'%target['name']
         print(name, end=" ")
-        instances.append(make_instance(name,
+        instances.append(make_instance(ec2_client,
+                                       name,
                                        target['ami'],
                                        KEYNAME,
                                        machine_type=machine_type,
@@ -342,19 +341,25 @@ def create_client_instances(targetlist, security_group_id, subnet_id):
 def test_client_process(inqueue, outqueue):
     cur_proc = mp.current_process()
     for inreq in iter(inqueue.get, SENTINEL):
-        ii, target = inreq
+        ii, instance_id, target = inreq
+
+        # Each client process is given its own session due to the suggestion at
+        # https://boto3.amazonaws.com/v1/documentation/api/latest/guide/resources.html?highlight=multithreading#multithreading-multiprocessing.
+        aws_session = boto3.session.Session(profile_name=PROFILE)
+        ec2_client = aws_session.resource('ec2')
+        instance = ec2_client.Instance(id=instance_id)
 
         #save all stdout to log file
         sys.stdout = open(LOGDIR+'/'+'%d_%s.log'%(ii,target['name']), 'w')
 
         print("[%s : client %d %s %s]" % (cur_proc.name, ii, target['ami'], target['name']))
-        instances[ii] = block_until_instance_ready(instances[ii])
-        print("server %s at %s"%(instances[ii], instances[ii].public_ip_address))
-        env.host_string = "%s@%s"%(target['user'], instances[ii].public_ip_address)
+        instance = block_until_instance_ready(instance)
+        print("server %s at %s"%(instance, instance.public_ip_address))
+        env.host_string = "%s@%s"%(target['user'], instance.public_ip_address)
         print(env.host_string)
 
         try:
-            install_and_launch_certbot(instances[ii], boulder_url, target)
+            install_and_launch_certbot(instance, boulder_url, target)
             outqueue.put((ii, target, 'pass'))
             print("%s - %s SUCCESS"%(target['ami'], target['name']))
         except:
@@ -437,11 +442,11 @@ for target in targetlist:
     print(target['ami'], target['name'])
 
 print("Connecting to EC2 using\n profile %s\n keyname %s\n keyfile %s"%(PROFILE, KEYNAME, KEYFILE))
-AWS_SESSION = boto3.session.Session(profile_name=PROFILE)
-EC2 = AWS_SESSION.resource('ec2')
+aws_session = boto3.session.Session(profile_name=PROFILE)
+ec2_client = aws_session.resource('ec2')
 
 print("Determining Subnet")
-for subnet in EC2.subnets.all():
+for subnet in ec2_client.subnets.all():
     if should_use_subnet(subnet):
         subnet_id = subnet.id
         vpc_id = subnet.vpc.id
@@ -453,7 +458,7 @@ else:
     sys.exit(1)
 
 print("Making Security Group")
-vpc = EC2.Vpc(vpc_id)
+vpc = ec2_client.Vpc(vpc_id)
 sg_exists = False
 for sg in vpc.security_groups.all():
     if sg.group_name == SECURITY_GROUP_NAME:
@@ -465,7 +470,7 @@ if not sg_exists:
     time.sleep(30)
 
 boulder_preexists = False
-boulder_servers = EC2.instances.filter(Filters=[
+boulder_servers = ec2_client.instances.filter(Filters=[
     {'Name': 'tag:Name',            'Values': ['le-boulderserver']},
     {'Name': 'instance-state-name', 'Values': ['running']}])
 
@@ -477,7 +482,8 @@ if boulder_server:
     boulder_preexists = True
 else:
     print("Can't find a boulder server, starting one...")
-    boulder_server = make_instance('le-boulderserver',
+    boulder_server = make_instance(ec2_client,
+                                   'le-boulderserver',
                                    BOULDER_AMI,
                                    KEYNAME,
                                    machine_type='t2.micro',
@@ -487,7 +493,7 @@ else:
 
 try:
     if not cl_args.boulderonly:
-        instances = create_client_instances(targetlist, security_group_id, subnet_id)
+        instances = create_client_instances(ec2_client, targetlist, security_group_id, subnet_id)
 
     # Configure and launch boulder server
     #-------------------------------------------------------------------------------
@@ -537,7 +543,7 @@ try:
 
     # fill up work queue
     for ii, target in enumerate(targetlist):
-        inqueue.put((ii, target))
+        inqueue.put((ii, instances[ii].id, target))
 
     # add SENTINELs to end client processes
     for i in range(num_processes):
