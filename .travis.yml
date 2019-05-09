@@ -107,22 +107,32 @@ matrix:
       services: docker
       <<: *extended-test-suite
     - python: "2.7"
-      env: ACME_SERVER=boulder-v1 TOXENV=py27-certbot-oldest,integration-certbot-oldest
+      env: TOXENV=py27-certbot-oldest
       sudo: required
       services: docker
       <<: *extended-test-suite
     - python: "2.7"
-      env: ACME_SERVER=boulder-v2 TOXENV=py27-certbot-oldest,integration-certbot-oldest
+      env: TOXENV=py27-nginx-oldest
       sudo: required
       services: docker
       <<: *extended-test-suite
     - python: "2.7"
-      env: ACME_SERVER=boulder-v1 TOXENV=py27-nginx-oldest,integration-nginx-oldest
+      env: ACME_SERVER=boulder-v1 TOXENV=integration-certbot-oldest
       sudo: required
       services: docker
       <<: *extended-test-suite
     - python: "2.7"
-      env: ACME_SERVER=boulder-v2 TOXENV=py27-nginx-oldest,integration-nginx-oldest
+      env: ACME_SERVER=boulder-v2 TOXENV=integration-certbot-oldest
+      sudo: required
+      services: docker
+      <<: *extended-test-suite
+    - python: "2.7"
+      env: ACME_SERVER=boulder-v1 TOXENV=integration-nginx-oldest
+      sudo: required
+      services: docker
+      <<: *extended-test-suite
+    - python: "2.7"
+      env: ACME_SERVER=boulder-v2 TOXENV=integration-nginx-oldest
       sudo: required
       services: docker
       <<: *extended-test-suite
