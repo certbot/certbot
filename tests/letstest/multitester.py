@@ -104,6 +104,7 @@ LOGDIR = "letest-%d"%int(time.time()) #points to logging / working directory
 AWS_SESSION = None
 EC2 = None
 SECURITY_GROUP_NAME = 'certbot-security-group'
+SENTINEL = None #queue kill signal
 SUBNET_NAME = 'certbot-subnet'
 
 # Boto3/AWS automation functions
@@ -524,7 +525,6 @@ try:
     manager = Manager()
     outqueue = manager.Queue()
     inqueue = manager.Queue()
-    SENTINEL = None #queue kill signal
 
     # launch as many processes as clients to test
     num_processes = len(targetlist)
