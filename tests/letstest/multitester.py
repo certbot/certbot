@@ -99,7 +99,7 @@ PROFILE = cl_args.aws_profile
 # Globals
 #-------------------------------------------------------------------------------
 BOULDER_AMI = 'ami-072a9534772bec854' # premade shared boulder AMI 18.04LTS us-east-1
-LOGDIR = "" #points to logging / working directory
+LOGDIR = "letest-%d"%int(time.time()) #points to logging / working directory
 # boto3/AWS api globals
 AWS_SESSION = None
 EC2 = None
@@ -408,7 +408,6 @@ env['abort_exception'] = FabricException
 
 # Set up local copy of git repo
 #-------------------------------------------------------------------------------
-LOGDIR = "letest-%d"%int(time.time())
 print("Making local dir for test repo and logs: %s"%LOGDIR)
 local('mkdir %s'%LOGDIR)
 
