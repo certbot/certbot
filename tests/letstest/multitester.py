@@ -226,20 +226,17 @@ def block_until_ssh_open(ipstring, wait_time=10, timeout=120):
 
 def block_until_instance_ready(booting_instance, wait_time=5, extra_wait_time=20):
     "Blocks booting_instance until AWS EC2 instance is ready to accept SSH connections"
-    # the reinstantiation from id is necessary to force boto3
-    # to correctly update the 'state' variable during init
-    _id = booting_instance.id
-    _instance = EC2.Instance(id=_id)
-    _state = _instance.state['Name']
-    _ip = _instance.public_ip_address
-    while _state != 'running' or _ip is None:
+    state = booting_instance.state['Name']
+    ip = booting_instance.public_ip_address
+    while state != 'running' or ip is None:
         time.sleep(wait_time)
-        _instance = EC2.Instance(id=_id)
-        _state = _instance.state['Name']
-        _ip = _instance.public_ip_address
-    block_until_ssh_open(_ip)
+        # The instance needs to be reloaded to update its local attributes.
+        booting_instance.reload()
+        state = booting_instance.state['Name']
+        ip = booting_instance.public_ip_address
+    block_until_ssh_open(ip)
     time.sleep(extra_wait_time)
-    return _instance
+    return booting_instance
 
 
 # Fabric Routines
