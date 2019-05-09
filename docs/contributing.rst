@@ -132,7 +132,7 @@ With a user allowed to access your local Docker daemon, run:
 
   tox -e integration
 
-Tests will be run using pytest. An test report and a code coverage report will be
+Tests will be run using pytest. A test report and a code coverage report will be
 displayed at the end of the integration tests execution.
 
 Code components and layout
