@@ -110,13 +110,9 @@ matrix:
       <<: *extended-test-suite
     - python: "2.7"
       env: TOXENV=py27-certbot-oldest
-      sudo: required
-      services: docker
       <<: *extended-test-suite
     - python: "2.7"
       env: TOXENV=py27-nginx-oldest
-      sudo: required
-      services: docker
       <<: *extended-test-suite
     - python: "2.7"
       env: ACME_SERVER=boulder-v1 TOXENV=integration-certbot-oldest
@@ -139,44 +135,57 @@ matrix:
       services: docker
       <<: *extended-test-suite
     - python: "3.4"
-      env: ACME_SERVER=boulder-v1 TOXENV=py34,integration
+      env: TOXENV=py34
+      <<: *extended-test-suite
+    - python: "3.5"
+      env: TOXENV=py35
+      <<: *extended-test-suite
+    - python: "3.6"
+      env: TOXENV=py36
+      <<: *extended-test-suite
+    - python: "3.7"
+      dist: xenial
+      env: TOXENV=py37
+      <<: *extended-test-suite
+    - python: "3.4"
+      env: ACME_SERVER=boulder-v1 TOXENV=integration
       sudo: required
       services: docker
       <<: *extended-test-suite
     - python: "3.4"
-      env: ACME_SERVER=boulder-v2 TOXENV=py34,integration
+      env: ACME_SERVER=boulder-v2 TOXENV=integration
       sudo: required
       services: docker
       <<: *extended-test-suite
     - python: "3.5"
-      env: ACME_SERVER=boulder-v1 TOXENV=py35,integration
+      env: ACME_SERVER=boulder-v1 TOXENV=integration
       sudo: required
       services: docker
       <<: *extended-test-suite
     - python: "3.5"
-      env: ACME_SERVER=boulder-v2 TOXENV=py35,integration
+      env: ACME_SERVER=boulder-v2 TOXENV=integration
       sudo: required
       services: docker
       <<: *extended-test-suite
     - python: "3.6"
-      env: ACME_SERVER=boulder-v1 TOXENV=py36,integration
+      env: ACME_SERVER=boulder-v1 TOXENV=integration
       sudo: required
       services: docker
       <<: *extended-test-suite
     - python: "3.6"
-      env: ACME_SERVER=boulder-v2 TOXENV=py36,integration
+      env: ACME_SERVER=boulder-v2 TOXENV=integration
       sudo: required
       services: docker
       <<: *extended-test-suite
     - python: "3.7"
       dist: xenial
-      env: ACME_SERVER=boulder-v1 TOXENV=py37,integration
+      env: ACME_SERVER=boulder-v1 TOXENV=integration
       sudo: required
       services: docker
       <<: *extended-test-suite
     - python: "3.7"
       dist: xenial
-      env: ACME_SERVER=boulder-v2 TOXENV=py37,integration
+      env: ACME_SERVER=boulder-v2 TOXENV=integration
       sudo: required
       services: docker
       <<: *extended-test-suite
