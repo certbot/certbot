@@ -1,4 +1,0 @@
-# Even if only pyparsing 1.5.6 is available on CentOS 6, version 2.0.2 is required
-# to make pytest plugins auto-discovery working. No breaking change is done from 1.5.6
-# besides removal of support to Python < 2.6, that is irrelevant for oldest tests.
-pyparsing==2.0.2

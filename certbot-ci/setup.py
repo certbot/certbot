@@ -46,9 +46,4 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     install_requires=install_requires,
-    entry_points={
-        'pytest11': [
-            'acme-xdist = certbot_integration_tests.utils.pytest_plugin'
-        ]
-    }
 )
