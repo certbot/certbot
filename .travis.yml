@@ -7,7 +7,7 @@ cache:
 before_script:
   - 'if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then ulimit -n 1024 ; fi'
   # On Travis, the fastest parallelization for integration tests is proved to be 4.
-  - 'if [[ "$TOXENV" == "integration"* ]]; then export PYTEST_ADDOPTS="--numprocesses 4"; fi'
+  - 'if [[ "$TOXENV" == *"integration"* ]]; then export PYTEST_ADDOPTS="--numprocesses 4"; fi'
   - export TOX_TESTENV_PASSENV=TRAVIS
 
 # Only build pushes to the master branch, PRs, and branches beginning with
