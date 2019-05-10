@@ -6,7 +6,7 @@ cache:
 
 before_script:
   - 'if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then ulimit -n 1024 ; fi'
-  # On Travis, the fastest parallelization for integration tests is proved to be 4.
+  # On Travis, the fastest parallelization for integration tests has proved to be 4.
   - 'if [[ "$TOXENV" == *"integration"* ]]; then export PYTEST_ADDOPTS="--numprocesses 4"; fi'
   - export TOX_TESTENV_PASSENV=TRAVIS
 
