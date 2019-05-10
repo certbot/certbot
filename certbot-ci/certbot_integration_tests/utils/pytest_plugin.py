@@ -18,25 +18,9 @@ def pytest_addoption(parser):
     Standard pytest hook to add options to the pytest parser.
     :param parser: current pytest parser that will be used on the CLI
     """
-    parser.addoption('--acme-server', default='pebble',
+    parser.addoption('--acme-server',
                      choices=['boulder-v1', 'boulder-v2', 'pebble'],
-                     help='select the ACME server to use (boulder-v1, boulder-v2, '
-                          'pebble), defaulting to pebble')
-    parser.addoption('--campaign', choices=['certbot', 'nginx'],
-                     help='If set, will select the related specific test campaign to run.')
-
-
-def pytest_ignore_collect(path, config):
-    """
-    Standard pytest hook to ignore particular tests. Used to consume the value of --campaign if set.
-    :param path: current discovery path
-    :param config: current pytest config
-    :return: None to include the path, any other value to ignore it
-    """
-    campaign = config.getoption('campaign')
-    if campaign and '{0}_test'.format(campaign) not in str(path):
-        return True
-    return None
+                     help='select the ACME server to use (boulder-v1, boulder-v2, pebble)')
 
 
 def pytest_configure(config):
@@ -44,7 +28,8 @@ def pytest_configure(config):
     Standard pytest hook used to add a configuration logic for each node of a pytest run.
     :param config: the current pytest configuration
     """
-    if not hasattr(config, 'slaveinput'):  # If true, this is the primary node
+    acme_server = config.option.acme_server if hasattr(config.option, 'acme_server') else None
+    if not hasattr(config, 'slaveinput') and acme_server:  # If true, this is the primary node
         with _print_on_err():
             config.acme_xdist = _setup_primary_node(config)
 
@@ -54,7 +39,8 @@ def pytest_configure_node(node):
     Standard pytest-xdist hook used to configure a worker node.
     :param node: current worker node
     """
-    node.slaveinput['acme_xdist'] = node.config.acme_xdist
+    if hasattr(node.config, 'acme_xdist'):
+        node.slaveinput['acme_xdist'] = node.config.acme_xdist
 
 
 @contextlib.contextmanager

@@ -5,7 +5,9 @@ cache:
         - $HOME/.cache/pip
 
 before_script:
-  - 'if [ $TRAVIS_OS_NAME = osx ] ; then ulimit -n 1024 ; fi'
+  - 'if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then ulimit -n 1024 ; fi'
+  # On Travis, the fastest parallelization for integration tests is proved to be 4.
+  - 'if [[ "$TOXENV" == "integration"* ]]; then export PYTEST_ADDOPTS="--numprocesses 4"; fi'
   - export TOX_TESTENV_PASSENV=TRAVIS
 
 # Only build pushes to the master branch, PRs, and branches beginning with
@@ -30,7 +32,7 @@ matrix:
   include:
     # Main test suite
     - python: "2.7"
-      env: ACME_SERVER=pebble PYTEST_ADDOPTS=-n4 TOXENV=integration
+      env: ACME_SERVER=pebble TOXENV=integration
       sudo: required
       services: docker
       <<: *not-on-master
@@ -97,12 +99,12 @@ matrix:
       env: TOXENV=py37 CERTBOT_NO_PIN=1
       <<: *extended-test-suite
     - python: "2.7"
-      env: ACME_SERVER=boulder-v1 PYTEST_ADDOPTS=-n4 TOXENV=integration
+      env: ACME_SERVER=boulder-v1 TOXENV=integration
       sudo: required
       services: docker
       <<: *extended-test-suite
     - python: "2.7"
-      env: ACME_SERVER=boulder-v2 PYTEST_ADDOPTS=-n4 TOXENV=integration
+      env: ACME_SERVER=boulder-v2 TOXENV=integration
       sudo: required
       services: docker
       <<: *extended-test-suite
