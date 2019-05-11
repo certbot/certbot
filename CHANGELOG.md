@@ -6,6 +6,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+* Add FreeBSD specific paths to certbot
 *
 
 ### Changed
