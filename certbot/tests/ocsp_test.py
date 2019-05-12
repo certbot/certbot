@@ -4,6 +4,7 @@ import unittest
 from datetime import datetime, timedelta
 
 from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives import hashes  # type: ignore
 from cryptography.exceptions import UnsupportedAlgorithm, InvalidSignature
 from cryptography import x509
@@ -87,11 +88,11 @@ class OCSPTestOpenSSL(unittest.TestCase):
         self.assertEqual(mock_run.call_count, 2)
 
     def test_determine_ocsp_server(self):
-        cert_path = test_util.vector_path('google_certificate.pem')
+        cert_path = test_util.vector_path('ocsp_certificate.pem')
 
         from certbot import ocsp
         result = ocsp._determine_ocsp_server(cert_path)
-        self.assertEqual(('http://ocsp.digicert.com', 'ocsp.digicert.com'), result)
+        self.assertEqual(('http://ocsp.test4.buypass.com', 'ocsp.test4.buypass.com'), result)
 
     @mock.patch('certbot.ocsp.logger')
     @mock.patch('certbot.util.run_script')
@@ -128,8 +129,8 @@ class OSCPTestCryptography(unittest.TestCase):
     def setUp(self):
         from certbot import ocsp
         self.checker = ocsp.RevocationChecker()
-        self.cert_path = test_util.vector_path('google_certificate.pem')
-        self.chain_path = test_util.vector_path('google_issuer_certificate.pem')
+        self.cert_path = test_util.vector_path('ocsp_certificate.pem')
+        self.chain_path = test_util.vector_path('ocsp_issuer_certificate.pem')
 
     @mock.patch('certbot.ocsp._determine_ocsp_server')
     @mock.patch('certbot.ocsp._check_ocsp_cryptography')
@@ -149,6 +150,38 @@ class OSCPTestCryptography(unittest.TestCase):
             revoked = self.checker.ocsp_revoked(self.cert_path, self.chain_path)
 
         self.assertTrue(revoked)
+
+    @mock.patch('certbot.ocsp.crypto_util.verify_signed_payload')
+    @mock.patch('certbot.ocsp.requests.post')
+    @mock.patch('certbot.ocsp.ocsp.load_der_ocsp_response')
+    def test_responder_signing(self, mock_ocsp_response, mock_post, mock_check):
+        response = _construct_mock_ocsp_response(
+            ocsp_lib.OCSPCertStatus.UNKNOWN, ocsp_lib.OCSPResponseStatus.SUCCESSFUL)
+        mock_ocsp_response.return_value = response
+        mock_post.return_value = mock.Mock(status_code=200)
+
+        issuer = x509.load_pem_x509_certificate(
+            test_util.load_vector('ocsp_issuer_certificate.pem'), default_backend())
+        responder = x509.load_pem_x509_certificate(
+            test_util.load_vector('ocsp_responder_certificate.pem'), default_backend())
+
+        self.checker.ocsp_revoked(self.cert_path, self.chain_path)
+        # On first call, responder and issuer are not the same. Two signatures will be checked
+        # then, first to verify the responder cert (using the issuer public key), second to
+        # to verify the OCSP response itself (using the responder public key).
+        self.assertEqual(mock_check.call_count, 2)
+        self.assertEqual(mock_check.call_args_list[0][0][0].public_numbers(),
+                         issuer.public_key().public_numbers())
+        self.assertEqual(mock_check.call_args_list[1][0][0].public_numbers(),
+                         responder.public_key().public_numbers())
+
+        response.responder_name = issuer.subject
+        self.checker.ocsp_revoked(self.cert_path, self.chain_path)
+        # On second call, responder and issuer are the same. So only the signature of the OCSP
+        # response is checked (using the issuer/responder public key).
+        self.assertEqual(mock_check.call_count, 3)
+        self.assertEqual(mock_check.call_args_list[0][0][0].public_numbers(),
+                         issuer.public_key().public_numbers())
 
     @mock.patch('certbot.ocsp.crypto_util.verify_signed_payload')
     @mock.patch('certbot.ocsp.requests.post')
@@ -221,9 +254,11 @@ class OSCPTestCryptography(unittest.TestCase):
 
 def _construct_mock_ocsp_response(certificate_status, response_status):
     cert = x509.load_pem_x509_certificate(
-        test_util.load_vector('google_certificate.pem'), default_backend())
+        test_util.load_vector('ocsp_certificate.pem'), default_backend())
     issuer = x509.load_pem_x509_certificate(
-        test_util.load_vector('google_issuer_certificate.pem'), default_backend())
+        test_util.load_vector('ocsp_issuer_certificate.pem'), default_backend())
+    responder = x509.load_pem_x509_certificate(
+        test_util.load_vector('ocsp_responder_certificate.pem'), default_backend())
     builder = ocsp_lib.OCSPRequestBuilder()
     builder = builder.add_certificate(cert, issuer, hashes.SHA1())
     request = builder.build()
@@ -234,6 +269,8 @@ def _construct_mock_ocsp_response(certificate_status, response_status):
         serial_number=request.serial_number,
         issuer_key_hash=request.issuer_key_hash,
         issuer_name_hash=request.issuer_name_hash,
+        responder_name=responder.subject,
+        certificates=[responder],
         hash_algorithm=hashes.SHA1(),
         next_update=datetime.now() + timedelta(days=1),
         this_update=datetime.now() - timedelta(days=1),

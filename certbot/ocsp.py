@@ -209,6 +209,7 @@ def _check_ocsp_response(response_ocsp, request_ocsp, issuer_cert, cert_path):
 
 def _check_ocsp_response_signature(response_ocsp, issuer_cert, cert_path):
     """Verify an OCSP response signature against certificate issuer or responder"""
+    print(response_ocsp.responder_name)
     if response_ocsp.responder_name == issuer_cert.subject:
         logger.debug('OCSP response for certificate %s is signed by the certificate\'s issuer.',
                      cert_path)
@@ -216,6 +217,7 @@ def _check_ocsp_response_signature(response_ocsp, issuer_cert, cert_path):
     else:
         logger.debug('OCSP response for certificate %s is delegated to an external responder.',
                      cert_path)
+
         responder_certs = [cert for cert in response_ocsp.certificates
                            if cert.subject == response_ocsp.responder_name]
         if not responder_certs:
