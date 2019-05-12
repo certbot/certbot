@@ -22,8 +22,6 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.serialization import Encoding, PrivateFormat, NoEncryption
 from six.moves import socketserver, SimpleHTTPServer
 
-from acme import crypto_util
-
 
 RSA_KEY_TYPE = 'rsa'
 ECDSA_KEY_TYPE = 'ecdsa'
@@ -241,13 +239,19 @@ def generate_csr(domains, key_path, csr_path, key_type=RSA_KEY_TYPE):
     else:
         raise ValueError('Invalid key type: {0}'.format(key_type))
 
-    key_bytes = crypto.dump_privatekey(crypto.FILETYPE_PEM, key)
-    with open(key_path, 'wb') as file:
-        file.write(key_bytes)
+    with open(key_path, 'wb') as file_h:
+        file_h.write(crypto.dump_privatekey(crypto.FILETYPE_PEM, key))
 
-    csr_bytes = crypto_util.make_csr(key_bytes, domains)
-    with open(csr_path, 'wb') as file:
-        file.write(csr_bytes)
+    req = crypto.X509Req()
+    san = ', '.join(['DNS:{0}'.format(item) for item in domains])
+    san_constraint = crypto.X509Extension(b'subjectAltName', False, san.encode('utf-8'))
+    req.add_extensions([san_constraint])
+
+    req.set_pubkey(key)
+    req.sign(key, 'sha256')
+
+    with open(csr_path, 'wb') as file_h:
+        file_h.write(crypto.dump_certificate_request(crypto.FILETYPE_ASN1, req))
 
 
 def read_certificate(cert_path):
