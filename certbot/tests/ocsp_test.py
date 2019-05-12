@@ -4,7 +4,6 @@ import unittest
 from datetime import datetime, timedelta
 
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives import hashes  # type: ignore
 from cryptography.exceptions import UnsupportedAlgorithm, InvalidSignature
 from cryptography import x509
