@@ -129,11 +129,7 @@ LINUX_DEFAULT_FOLDERS = {
     'work': '/var/lib/letsencrypt',
     'logs': '/var/log/letsencrypt',
 }
-FREEBSD_DEFAULT_FOLDERS = {
-    'config': '/usr/local/etc/letsencrypt',
-    'work': '/var/db/letsencrypt',
-    'logs': '/var/log/letsencrypt',
-}
+
 
 def get_default_folder(folder_type):
     """
@@ -146,10 +142,6 @@ def get_default_folder(folder_type):
 
     """
     if os.name != 'nt':
-        # Unix-like
-        if sys.platform.startswith('freebsd') or sys.platform.startswith('dragonfly'):
-            # FreeBSD specific
-            return FREEBSD_DEFAULT_FOLDERS[folder_type]
         # Linux specific
         return LINUX_DEFAULT_FOLDERS[folder_type]
     # Windows specific
