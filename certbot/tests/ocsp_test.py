@@ -179,7 +179,7 @@ class OSCPTestCryptography(unittest.TestCase):
         # On second call, responder and issuer are the same. So only the signature of the OCSP
         # response is checked (using the issuer/responder public key).
         self.assertEqual(mock_check.call_count, 3)
-        self.assertEqual(mock_check.call_args_list[0][0][0].public_numbers(),
+        self.assertEqual(mock_check.call_args_list[2][0][0].public_numbers(),
                          issuer.public_key().public_numbers())
 
     @mock.patch('certbot.ocsp.crypto_util.verify_signed_payload')
