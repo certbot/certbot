@@ -387,10 +387,23 @@ Asking for help
 
 If you have any questions while working on a Certbot issue, don't hesitate to
 ask for help! You can do this in the Certbot channel in EFF's Mattermost
-instance for its open source projects. To join, `create an account
-<https://opensource.eff.org/signup_user_complete/?id=6iqur37ucfrctfswrs14iscobw>`_
-and then visit the `Certbot channel
-<https://opensource.eff.org/eff-open-source/channels/certbot>`_.
+instance for its open source projects as described below.
+
+You can get involved with several of EFF's software projects such as Certbot at
+the `EFF Open Source Contributor Chat Platform
+<https://opensource.eff.org/signup_user_complete/?id=6iqur37ucfrctfswrs14iscobw>`_.
+By signing up for the EFF Open Source Contributor Chat Platform, you consent to
+share your personal information with the Electronic Frontier Foundation, which
+is the operator and data controller for this platform. The channels will be
+available both to EFF, and to other users of EFFOSCCP, who may use or disclose
+information in these channels outside of EFFOSCCP. EFF will use your
+information, according to the `Privacy Policy <https://www.eff.org/policy>`_,
+to further the mission of EFF, including hosting and moderating the discussions
+on this platform.
+
+Use of EFFOSCCP is subject to the `EFF Code of Conduct
+<https://www.eff.org/pages/eppcode>`_. When investigating an alleged Code of
+Conduct violation, EFF may review discussion channels or direct messages.
 
 Updating certbot-auto and letsencrypt-auto
 ==========================================
