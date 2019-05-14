@@ -8,6 +8,7 @@ install_requires = [
     'acme',
     'coverage',
     'cryptography',
+    'flask',
     'pyopenssl',
     'pytest',
     'pytest-cov',
