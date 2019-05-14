@@ -45,10 +45,7 @@ def test_certificate_deployment(certname_pattern, params, context):
 
     assert server_cert == certbot_cert
 
-    command = ['--authenticator', 'nginx', '--installer', 'nginx',
-               '--nginx-server-root', context.nginx_root,
-               'rollback', '--checkpoints', '1']
-    context._common_test_no_force_renew(command)
+    context.certbot_test_nginx(['rollback', '--checkpoints', '1'], False)
 
     with open(context.nginx_config_path, 'r') as file_h:
         current_nginx_config = file_h.read()

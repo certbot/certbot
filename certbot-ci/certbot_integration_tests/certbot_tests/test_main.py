@@ -229,8 +229,8 @@ def test_graceful_renew_it_is_not_time(context):
 
     assert_cert_count_for_lineage(context.config_dir, certname, 1)
 
-    context.certbot_no_force_renew([
-        'renew', '--deploy-hook', 'echo deploy >> "{0}"'.format(context.hook_probe)])
+    context.certbot(['renew', '--deploy-hook', 'echo deploy >> "{0}"'.format(context.hook_probe)],
+                    force_renew=False)
 
     assert_cert_count_for_lineage(context.config_dir, certname, 1)
     with pytest.raises(AssertionError):
@@ -250,8 +250,8 @@ def test_graceful_renew_it_is_time(context):
     with open(join(context.config_dir, 'renewal', '{0}.conf'.format(certname)), 'w') as file:
         file.writelines(lines)
 
-    context.certbot_no_force_renew([
-        'renew', '--deploy-hook', 'echo deploy >> "{0}"'.format(context.hook_probe)])
+    context.certbot(['renew', '--deploy-hook', 'echo deploy >> "{0}"'.format(context.hook_probe)],
+                    force_renew=False)
 
     assert_cert_count_for_lineage(context.config_dir, certname, 2)
     assert_hook_execution(context.hook_probe, 'deploy')

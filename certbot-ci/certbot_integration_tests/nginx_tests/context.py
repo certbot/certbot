@@ -29,15 +29,16 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
         self._stop_nginx()
         super(IntegrationTestsContext, self).cleanup()
 
-    def certbot_test_nginx(self, args):
+    def certbot_test_nginx(self, args, force_renew=True):
         """
         Main command to execute certbot using the nginx plugin.
         :param list args: list of arguments to pass to nginx
+        :param bool force_renew: set to False to not renew by default
         """
         command = ['--authenticator', 'nginx', '--installer', 'nginx',
                    '--nginx-server-root', self.nginx_root]
         command.extend(args)
-        return self._common_test(command)
+        return self._common_test(command, force_renew)
 
     def _start_nginx(self, default_server):
         self.nginx_config = config.construct_nginx_config(

@@ -45,4 +45,8 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     install_requires=install_requires,
+
+    entry_points={
+        'console_scripts': ['certbot_test=certbot_integration_tests.utils.certbot_call:main'],
+    }
 )
