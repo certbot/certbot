@@ -953,6 +953,95 @@ if __name__ == '__main__':
 UNLIKELY_EOF
 }
 
+# Check that the given PATH_TO_CHECK has secured permissions.
+# Parameters: LE_PYTHON, PATH_TO_CHECK
+CheckPathPermissions() {
+    "$1" - "$2" << "UNLIKELY_EOF"
+"""Verifies certbot-auto cannot be modified by unprivileged users.
+
+This script takes the path to certbot-auto as its only command line
+argument.  It then checks that the file can only be modified by uid/gid
+< 1000 and if other users can modify the file, it prints a warning with
+a suggestion on how to solve the problem.
+
+Permissions on symlinks in the absolute path of certbot-auto are ignored
+and only the canonical path to certbot-auto is checked. There could be
+permissions problems due to the symlinks that are unreported by this
+script, however, issues like this were not caused by our documentation
+and are ignored for the sake of simplicity.
+
+All warnings are printed to stdout rather than stderr so all stderr
+output from this script can be suppressed to avoid printing messages if
+this script fails for some reason.
+
+"""
+from __future__ import print_function
+
+import os
+import stat
+import sys
+
+
+FORUM_POST_URL = 'https://community.letsencrypt.org/t/certbot-auto-deployment-best-practices/91979/'
+
+
+def has_safe_permissions(path):
+    """Returns True if the given path has secure permissions.
+
+    The permissions are considered safe if the file is only writable by
+    uid/gid < 1000.
+
+    The reason we allow more IDs than 0 is because on some systems such
+    as Debian, system users/groups other than uid/gid 0 are used for the
+    path we recommend in our instructions which is /usr/local/bin.  1000
+    was chosen because on Debian 0-999 is reserved for system IDs[1] and
+    on RHEL either 0-499 or 0-999 is reserved depending on the
+    version[2][3]. Due to these differences across different OSes, this
+    detection isn't perfect so we only determine permissions are
+    insecure when we can be reasonably confident there is a problem
+    regardless of the underlying OS.
+
+    [1] https://www.debian.org/doc/debian-policy/ch-opersys.html#uid-and-gid-classes
+    [2] https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/6/html/deployment_guide/ch-managing_users_and_groups
+    [3] https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/system_administrators_guide/ch-managing_users_and_groups
+
+    :param str path: filesystem path to check
+    :returns: True if the path has secure permissions, otherwise, False
+    :rtype: bool
+
+    """
+    # os.stat follows symlinks before obtaining information about a file.
+    stat_result = os.stat(path)
+    if stat_result.st_mode & stat.S_IWOTH:
+        return False
+    if stat_result.st_mode & stat.S_IWGRP and stat_result.st_gid >= 1000:
+        return False
+    if stat_result.st_mode & stat.S_IWUSR and stat_result.st_uid >= 1000:
+        return False
+    return True
+
+
+def main(certbot_auto_path):
+    current_path = os.path.realpath(certbot_auto_path)
+    last_path = None
+    permissions_ok = True
+    # This loop makes use of the fact that os.path.dirname('/') == '/'.
+    while current_path != last_path and permissions_ok:
+        permissions_ok = has_safe_permissions(current_path)
+        last_path = current_path
+        current_path = os.path.dirname(current_path)
+
+    if not permissions_ok:
+        print('{0} has insecure permissions!'.format(certbot_auto_path))
+        print('To learn how to fix them, visit {0}'.format(FORUM_POST_URL))
+
+
+if __name__ == '__main__':
+    main(sys.argv[1])
+
+UNLIKELY_EOF
+}
+
 if [ "$1" = "--le-auto-phase2" ]; then
   # Phase 2: Create venv, install LE, and run.
 
@@ -1225,18 +1314,18 @@ letsencrypt==0.7.0 \
     --hash=sha256:105a5fb107e45bcd0722eb89696986dcf5f08a86a321d6aef25a0c7c63375ade \
     --hash=sha256:c36e532c486a7e92155ee09da54b436a3c420813ec1c590b98f635d924720de9
 
-certbot==0.34.0 \
-    --hash=sha256:51dddf2cb1c50a9f8b993090890bf4858d8fadffce38bafcdf6bf585a2040317 \
-    --hash=sha256:e75bdabfd9183bd9842ada42a51070f120d15982e81c490df59dde62e4df2c8b
-acme==0.34.0 \
-    --hash=sha256:3448024d2c274aebfb9b31b53862576d167626ce2fd1997a78d450c32a292fa3 \
-    --hash=sha256:92478e58f541c5c7c527427a50650005cdede799b78f0a0a65b8093d6368bcfd
-certbot-apache==0.34.0 \
-    --hash=sha256:79e686f25b63dac17d771d71f791f252774da22125f3f6e0665f4cf791d516fe \
-    --hash=sha256:d5ae09b4801fbac23d5acf64a5ee265108199d2852fbe743e7b6ab06fa08edf6
-certbot-nginx==0.34.0 \
-    --hash=sha256:868d7dcb59bb2548cb4a2ae187db5da1bfe33aac306b1b844b96ee00a39cac52 \
-    --hash=sha256:d6c728b85c523711ec0dc800f8d4ebbef192fb0ca1ec7914c173207e4aba5194
+certbot==0.34.2 \
+    --hash=sha256:238bb1c100d0d17f0bda147387435c307e128b2f1a8339eb85cef7fb99909cb9 \
+    --hash=sha256:30732ddcb10ccd8b8410c515a76ae0429ad907130b8bf8caa58b73826d0ec9bb
+acme==0.34.2 \
+    --hash=sha256:f2b3cec09270499211fa54e588571bac67a015d375a4806c6c23431c91fdf7e3 \
+    --hash=sha256:bd5b0dfcbca82a2be6fe12e7c7939721d6b3dacb7d8529ba519b56274060dc2a
+certbot-apache==0.34.2 \
+    --hash=sha256:c9cbbc2499084361a741f865a6f9af717296d5b0fec5fdd45819df2a56014a63 \
+    --hash=sha256:74c302b2099c9906dd4783cd57f546393235902dcc179302a2da280d83e72b96
+certbot-nginx==0.34.2 \
+    --hash=sha256:4883f638e703b8fbab0ec15df6d9f0ebbb3cd81e221521b65ca27cdc9e9d070d \
+    --hash=sha256:13d58e40097f6b36e323752c146dc90d06120dc69a313e141476e0bc1a74ee17
 
 UNLIKELY_EOF
     # -------------------------------------------------------------------------
@@ -1505,100 +1594,16 @@ else
   # Don't warn about file permissions if the user disabled the check or we
   # can't find an up-to-date Python.
   if [ "$PYVER" -ge "$MIN_PYVER" -a "$NO_PERMISSIONS_CHECK" != 1 ]; then
-    # ---------------------------------------------------------------------------
-    cat << "UNLIKELY_EOF" > "$TEMP_DIR/check_permissions.py"
-"""Verifies certbot-auto cannot be modified by unprivileged users.
-
-This script takes the path to certbot-auto as its only command line
-argument.  It then checks that the file can only be modified by uid/gid
-< 1000 and if other users can modify the file, it prints a warning with
-a suggestion on how to solve the problem.
-
-Permissions on symlinks in the absolute path of certbot-auto are ignored
-and only the canonical path to certbot-auto is checked. There could be
-permissions problems due to the symlinks that are unreported by this
-script, however, issues like this were not caused by our documentation
-and are ignored for the sake of simplicity.
-
-All warnings are printed to stdout rather than stderr so all stderr
-output from this script can be suppressed to avoid printing messages if
-this script fails for some reason.
-
-"""
-from __future__ import print_function
-
-import os
-import stat
-import sys
-
-
-FORUM_POST_URL = 'https://community.letsencrypt.org/t/certbot-auto-deployment-best-practices/91979/'
-
-
-def has_safe_permissions(path):
-    """Returns True if the given path has secure permissions.
-
-    The permissions are considered safe if the file is only writable by
-    uid/gid < 1000.
-
-    The reason we allow more IDs than 0 is because on some systems such
-    as Debian, system users/groups other than uid/gid 0 are used for the
-    path we recommend in our instructions which is /usr/local/bin.  1000
-    was chosen because on Debian 0-999 is reserved for system IDs[1] and
-    on RHEL either 0-499 or 0-999 is reserved depending on the
-    version[2][3]. Due to these differences across different OSes, this
-    detection isn't perfect so we only determine permissions are
-    insecure when we can be reasonably confident there is a problem
-    regardless of the underlying OS.
-
-    [1] https://www.debian.org/doc/debian-policy/ch-opersys.html#uid-and-gid-classes
-    [2] https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/6/html/deployment_guide/ch-managing_users_and_groups
-    [3] https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/system_administrators_guide/ch-managing_users_and_groups
-
-    :param str path: filesystem path to check
-    :returns: True if the path has secure permissions, otherwise, False
-    :rtype: bool
-
-    """
-    # os.stat follows symlinks before obtaining information about a file.
-    stat_result = os.stat(path)
-    if stat_result.st_mode & stat.S_IWOTH:
-        return False
-    if stat_result.st_mode & stat.S_IWGRP and stat_result.st_gid >= 1000:
-        return False
-    if stat_result.st_mode & stat.S_IWUSR and stat_result.st_uid >= 1000:
-        return False
-    return True
-
-
-def main(certbot_auto_path):
-    current_path = os.path.realpath(certbot_auto_path)
-    last_path = None
-    permissions_ok = True
-    # This loop makes use of the fact that os.path.dirname('/') == '/'.
-    while current_path != last_path and permissions_ok:
-        permissions_ok = has_safe_permissions(current_path)
-        last_path = current_path
-        current_path = os.path.dirname(current_path)
-
-    if not permissions_ok:
-        print('{0} has insecure permissions!'.format(certbot_auto_path))
-        print('To learn how to fix them, visit {0}'.format(FORUM_POST_URL))
-
-
-if __name__ == '__main__':
-    main(sys.argv[1])
-
-UNLIKELY_EOF
-    # ---------------------------------------------------------------------------
     # If the script fails for some reason, don't break certbot-auto.
     set +e
-    # Suppress unexpected error output and only print the script's output if it
-    # ran successfully.
-    CHECK_PERM_OUT=$("$LE_PYTHON" "$TEMP_DIR/check_permissions.py" "$0" 2>/dev/null)
+    # Suppress unexpected error output.
+    CHECK_PERM_OUT=$(CheckPathPermissions "$LE_PYTHON" "$0" 2>/dev/null)
     CHECK_PERM_STATUS="$?"
     set -e
-    if [ "$CHECK_PERM_STATUS" = 0 ]; then
+    # Only print output if the script ran successfully and it actually produced
+    # output. The latter check resolves
+    # https://github.com/certbot/certbot/issues/7012.
+    if [ "$CHECK_PERM_STATUS" = 0 -a -n "$CHECK_PERM_OUT" ]; then
       error "$CHECK_PERM_OUT"
     fi
   fi

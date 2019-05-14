@@ -24,6 +24,32 @@ package with changes other than its version number was:
 
 More details about these changes can be found on our GitHub repo.
 
+## 0.34.2 - 2019-05-07
+
+### Fixed
+
+* certbot-auto no longer writes a check_permissions.py script at the root
+  of the filesystem.
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+changes in this release were to certbot-auto.
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.34.1 - 2019-05-06
+
+### Fixed
+
+* certbot-auto no longer prints a blank line when there are no permissions
+  problems.
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+changes in this release were to certbot-auto.
+
+More details about these changes can be found on our GitHub repo.
+
 ## 0.34.0 - 2019-05-01
 
 ### Changed

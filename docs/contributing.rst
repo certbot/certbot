@@ -123,7 +123,7 @@ Generally it is sufficient to open a pull request and let Github and Travis run
 integration tests for you. However, you may want to run them locally before submitting
 your pull request. You need Docker and docker-compose installed and working.
 
-The tox environment `integration` will setup Pebble, the LetsEncrypt ACME CA server
+The tox environment `integration` will setup Pebble, the Let's Encrypt ACME CA server
 for integration testing, then launch the Certbot integration tests.
 
 With a user allowed to access your local Docker daemon, run:
@@ -132,7 +132,7 @@ With a user allowed to access your local Docker daemon, run:
 
   tox -e integration
 
-Tests will be run using pytest. An test report and a code coverage report will be
+Tests will be run using pytest. A test report and a code coverage report will be
 displayed at the end of the integration tests execution.
 
 Code components and layout
@@ -375,10 +375,23 @@ Asking for help
 
 If you have any questions while working on a Certbot issue, don't hesitate to
 ask for help! You can do this in the Certbot channel in EFF's Mattermost
-instance for its open source projects. To join, `create an account
-<https://opensource.eff.org/signup_user_complete/?id=6iqur37ucfrctfswrs14iscobw>`_
-and then visit the `Certbot channel
-<https://opensource.eff.org/eff-open-source/channels/certbot>`_.
+instance for its open source projects as described below.
+
+You can get involved with several of EFF's software projects such as Certbot at
+the `EFF Open Source Contributor Chat Platform
+<https://opensource.eff.org/signup_user_complete/?id=6iqur37ucfrctfswrs14iscobw>`_.
+By signing up for the EFF Open Source Contributor Chat Platform, you consent to
+share your personal information with the Electronic Frontier Foundation, which
+is the operator and data controller for this platform. The channels will be
+available both to EFF, and to other users of EFFOSCCP, who may use or disclose
+information in these channels outside of EFFOSCCP. EFF will use your
+information, according to the `Privacy Policy <https://www.eff.org/policy>`_,
+to further the mission of EFF, including hosting and moderating the discussions
+on this platform.
+
+Use of EFFOSCCP is subject to the `EFF Code of Conduct
+<https://www.eff.org/pages/eppcode>`_. When investigating an alleged Code of
+Conduct violation, EFF may review discussion channels or direct messages.
 
 Updating certbot-auto and letsencrypt-auto
 ==========================================
