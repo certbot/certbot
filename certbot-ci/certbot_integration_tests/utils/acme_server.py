@@ -1,11 +1,12 @@
+#!/usr/bin/env python
 """Module to setup an ACME CA server environment able to run multiple tests in parallel"""
 from __future__ import print_function
 import tempfile
+import time
 import atexit
 import os
 import subprocess
 import shutil
-import stat
 import sys
 from os.path import join
 
@@ -20,7 +21,7 @@ CHALLTESTSRV_PORT = 8055
 HTTP_01_PORT = 5002
 
 
-def setup_acme_server(acme_server, nodes):
+def setup_acme_server(acme_server, nodes, proxy=True):
     """
     This method will setup an ACME CA server and an HTTP reverse proxy instance, to allow parallel
     execution of integration tests against the unique http-01 port expected by the ACME CA server.
@@ -30,6 +31,7 @@ def setup_acme_server(acme_server, nodes):
     with the relevant pytest xdist node.
     :param str acme_server: the type of acme server used (boulder-v1, boulder-v2 or pebble)
     :param str[] nodes: list of node names that will be setup by pytest xdist
+    :param bool proxy: set to False to not start the Traefik proxy
     :return: a dict describing the challenge ports that have been setup for the nodes
     :rtype: dict
     """
@@ -37,7 +39,8 @@ def setup_acme_server(acme_server, nodes):
     acme_xdist = _construct_acme_xdist(acme_server, nodes)
     workspace = _construct_workspace(acme_type)
 
-    _prepare_traefik_proxy(workspace, acme_xdist)
+    if proxy:
+        _prepare_traefik_proxy(workspace, acme_xdist)
     _prepare_acme_server(workspace, acme_type, acme_xdist)
 
     return acme_xdist
@@ -195,3 +198,27 @@ def _launch_command(command, cwd=os.getcwd()):
     except subprocess.CalledProcessError as e:
         sys.stderr.write(e.output)
         raise
+
+
+def main():
+    args = sys.argv[1:]
+    server_type = args[0] if args else 'pebble'
+    possible_values = ('pebble', 'boulder-v1', 'boulder-v2')
+    if server_type not in possible_values:
+        raise ValueError('Invalid server value {0}, should be one of {1}'
+                         .format(server_type, possible_values))
+
+    acme_xdist = setup_acme_server(server_type, [], False)
+
+    print('--> Instance of {0} is running, directory URL is {0}'.format(acme_xdist['directory_url']))
+    print('--> Press CTRL+C to stop the ACME server.')
+
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        pass
+
+
+if __name__ == '__main__':
+    main()

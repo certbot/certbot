@@ -48,17 +48,16 @@ def certbot_test(certbot_args, directory_url, http_01_port, tls_alpn_01_port,
                            cwd=workspace, env=new_environ)
 
 
-def main(args=None):
-    if args is None:
-        args = sys.argv[1:]
+def main():
+    args = sys.argv[1:]
 
     # Default config is pebble
     directory_url = os.environ.get('SERVER', 'https://localhost:14000')
     http_01_port = int(os.environ.get('HTTP_01_PORT', '5002'))
     tls_alpn_01_port = int(os.environ.get('TLS_ALPN_01_PORT', '5001'))
 
-    # Execution of certbot is on-the-fly using a workspace in current directory
-    workspace = os.path.join(os.getcwd(), '.certbot_test_workspace')
+    # Execution of certbot in a self-contained workspace
+    workspace = os.environ.get('WORKSPACE', os.path.join(os.getcwd(), '.certbot_test_workspace'))
     if not os.path.exists(workspace):
         print('--> Create a workspace for certbot_test: {0}'.format(workspace))
         os.mkdir(workspace)
