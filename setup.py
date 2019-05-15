@@ -59,7 +59,7 @@ install_requires = [
 # So this dependency is not added for old Linux distributions with old setuptools,
 # in order to allow these systems to build certbot from sources.
 if StrictVersion(setuptools_version) >= StrictVersion('36.2'):
-    install_requires.append('pywin32 ; sys.platform == \'win32\'')
+    install_requires.append('pywin32 ; sys_platform == \'win32\'')
 
 dev_extras = [
     'astroid==1.6.5',
