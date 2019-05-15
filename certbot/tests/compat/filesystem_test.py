@@ -36,3 +36,7 @@ class FilesystemTest(TempDirTestCase):
         dacl = filesystem._generate_dacl(admin_user, 0o700)  # pylint: disable=protected-access
         # We expect only two ACE: one for admins, one for system, since the user is also an admin
         self.assertEqual(dacl.GetAceCount(), 2)
+
+
+if __name__ == "__main__":
+    unittest.main()  # pragma: no cover

@@ -1,4 +1,6 @@
 """Tests for certbot.compat."""
+import unittest
+
 import certbot.tests.util as test_util
 from certbot.compat import misc
 from certbot.compat import os
@@ -19,3 +21,7 @@ class OsReplaceTest(test_util.TempDirTestCase):
 
         self.assertFalse(os.path.exists(src))
         self.assertTrue(os.path.exists(dst))
+
+
+if __name__ == "__main__":
+    unittest.main()  # pragma: no cover
