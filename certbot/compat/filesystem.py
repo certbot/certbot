@@ -52,7 +52,8 @@ def _generate_dacl(user_sid, mode):
     analysis = _analyze_mode(mode)
 
     # Get standard accounts from "well-known" sid
-    # See the list here: https://docs.microsoft.com/en-us/windows/desktop/secauthz/well-known-sids
+    # See the list here:
+    # https://support.microsoft.com/en-us/help/243330/well-known-security-identifiers-in-windows-operating-systems
     system = win32security.ConvertStringSidToSid('S-1-5-18')
     admins = win32security.ConvertStringSidToSid('S-1-5-32-544')
     everyone = win32security.ConvertStringSidToSid('S-1-1-0')
