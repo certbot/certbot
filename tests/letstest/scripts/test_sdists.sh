@@ -1,14 +1,21 @@
 #!/bin/sh -xe
 
 cd letsencrypt
-./certbot-auto --os-packages-only -n --debug
+./certbot-auto --install-only -n --debug
 
 PLUGINS="certbot-apache certbot-nginx"
+PYTHON_MAJOR_VERSION=$(/opt/eff.org/certbot/venv/bin/python --version 2>&1 | cut -d" " -f 2 | cut -d. -f1)
 TEMP_DIR=$(mktemp -d)
 VERSION=$(letsencrypt-auto-source/version.py)
 
+if [ "$PYTHON_MAJOR_VERSION" = "3" ]; then
+    VENV_SCRIPT="tools/venv3.py"
+else
+    VENV_SCRIPT="tools/venv.py"
+fi
+
 # setup venv
-tools/venv.py --requirement letsencrypt-auto-source/pieces/dependency-requirements.txt
+"$VENV_SCRIPT" --requirement letsencrypt-auto-source/pieces/dependency-requirements.txt
 . ./venv/bin/activate
 # pytest is needed to run tests on some of our packages so we install a pinned version here.
 tools/pip_install.py pytest
