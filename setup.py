@@ -60,6 +60,9 @@ install_requires = [
 # in order to allow these systems to build certbot from sources.
 if StrictVersion(setuptools_version) >= StrictVersion('36.2'):
     install_requires.append('pywin32 ; sys_platform == \'win32\'')
+elif 'bdist_wheel' in sys.argv[1:]:
+    raise RuntimeError('Error, you are trying to build certbot wheels using an old version '
+                       'of setuptools. Version 36.2+ of setuptools is required.')
 
 dev_extras = [
     'astroid==1.6.5',
