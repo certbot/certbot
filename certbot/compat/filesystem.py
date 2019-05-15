@@ -20,6 +20,11 @@ def chmod(file_path, mode):
         * for Linux, the POSIX mode will be directly applied using chmod,
         * for Windows, the POSIX mode will be translated into a Windows DACL that make sense for
           Certbot context, and applied to the file using kernel calls.
+
+    The definition of the Windows DACL that correspond to a POSIX mode, in the context of Certbot,
+    is explained at https://github.com/certbot/certbot/issues/6356 and is implemented by the
+    method _generate_windows_flags().
+
     :param str file_path: Path of the file
     :param int mode: POSIX mode to apply
     """
