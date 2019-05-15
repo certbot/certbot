@@ -9,14 +9,16 @@ TEMP_DIR=$(mktemp -d)
 VERSION=$(letsencrypt-auto-source/version.py)
 
 if [ "$PYTHON_MAJOR_VERSION" = "3" ]; then
+    VENV_PATH="venv3"
     VENV_SCRIPT="tools/venv3.py"
 else
     VENV_SCRIPT="tools/venv.py"
+    VENV_PATH="venv"
 fi
 
 # setup venv
 "$VENV_SCRIPT" --requirement letsencrypt-auto-source/pieces/dependency-requirements.txt
-. ./venv/bin/activate
+. "$VENV_PATH/bin/activate"
 # pytest is needed to run tests on some of our packages so we install a pinned version here.
 tools/pip_install.py pytest
 
