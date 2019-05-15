@@ -116,7 +116,10 @@ def _generate_windows_flags(rights_desc):
     # substracted of the rights corresponding to POSIX read and POSIX execute.
     #
     # Finally, having read + write + execute gives a ntsecuritycon.GENERIC_ALL,
-    # so a full control of the file.
+    # so a "Full Control" on the file.
+    #
+    # A complete list of the rights defined on NTFS can be found here:
+    # https://docs.microsoft.com/en-us/previous-versions/windows/it-pro/windows-server-2003/cc783530(v=ws.10)#permissions-for-files-and-folders
     flag = 0
     if rights_desc['read']:
         flag = flag | ntsecuritycon.FILE_GENERIC_READ
