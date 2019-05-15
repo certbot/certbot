@@ -6,12 +6,11 @@ import stat
 
 try:
     import ntsecuritycon  # pylint: disable=import-error
-except ImportError:  # pragma: no cover
-    ntsecuritycon = None  # type: ignore
-try:
     import win32security  # pylint: disable=import-error
-except ImportError:  # pragma: no cover
-    win32security = None  # type: ignore
+except ImportError:
+    POSIX_MODE = True
+else:
+    POSIX_MODE = False
 
 
 def chmod(file_path, mode):
@@ -24,7 +23,7 @@ def chmod(file_path, mode):
     :param str file_path: Path of the file
     :param int mode: POSIX mode to apply
     """
-    if not win32security:
+    if POSIX_MODE:
         os.chmod(file_path, mode)
     else:
         _apply_win_mode(file_path, mode)
