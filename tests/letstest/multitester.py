@@ -552,15 +552,11 @@ def main():
         # add SENTINELs to end client processes
         for i in range(num_processes):
             inqueue.put(SENTINEL)
-        print('Waiting on client processes', end='')
-        sys.stdout.flush()
         for p in jobs:
             while p.is_alive():
                 p.join(5 * 60)
-                # Regularly print output to keep Travis happy
-                print('.', end='')
+                subprocess.check_call(['ls', '-al', LOGDIR])
                 sys.stdout.flush()
-        print()
         # add SENTINEL to output queue
         outqueue.put(SENTINEL)
 
