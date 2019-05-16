@@ -553,8 +553,12 @@ def main():
         for i in range(num_processes):
             inqueue.put(SENTINEL)
         # wait on termination of client processes
+        timeout = 5 * 60
         for p in jobs:
-            p.join()
+            p.join(timeout)
+            while p.is_alive():
+                print('Waiting on client processes...')
+                p.join(timeout)
         # add SENTINEL to output queue
         outqueue.put(SENTINEL)
 
