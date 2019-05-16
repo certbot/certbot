@@ -104,6 +104,11 @@ SECURITY_GROUP_NAME = 'certbot-security-group'
 SENTINEL = None #queue kill signal
 SUBNET_NAME = 'certbot-subnet'
 
+class Status(object):
+    """Possible statuses of client tests."""
+    PASS = 'pass'
+    FAIL = 'fail'
+
 # Boto3/AWS automation functions
 #-------------------------------------------------------------------------------
 def should_use_subnet(subnet):
@@ -360,10 +365,10 @@ def test_client_process(inqueue, outqueue, boulder_url):
 
         try:
             install_and_launch_certbot(instance, boulder_url, target)
-            outqueue.put((ii, target, 'pass'))
+            outqueue.put((ii, target, Status.PASS))
             print("%s - %s SUCCESS"%(target['ami'], target['name']))
         except:
-            outqueue.put((ii, target, 'fail'))
+            outqueue.put((ii, target, Status.FAIL))
             print("%s - %s FAIL"%(target['ami'], target['name']))
             traceback.print_exc(file=sys.stdout)
             pass
@@ -557,16 +562,23 @@ def main():
         results_file = open(LOGDIR+'/results', 'w')
         outputs = [outq for outq in iter(outqueue.get, SENTINEL)]
         outputs.sort(key=lambda x: x[0])
+        failed = False
         for outq in outputs:
             ii, target, status = outq
+            if status == Status.FAIL:
+                failed = True
             print('%d %s %s'%(ii, target['name'], status))
             results_file.write('%d %s %s\n'%(ii, target['name'], status))
         if len(outputs) != num_processes:
+            failed = True
             failure_message = 'FAILURE: Some target machines failed to run and were not tested. ' +\
                 'Tests should be rerun.'
             print(failure_message)
             results_file.write(failure_message + '\n')
         results_file.close()
+
+        if failed:
+            sys.exit(1)
 
     finally:
         cleanup(cl_args, instances, targetlist)
