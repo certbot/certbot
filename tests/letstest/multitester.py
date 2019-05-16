@@ -552,6 +552,7 @@ try:
             p.join(5 * 60)
             # Regularly print output to keep Travis happy
             print('.', end='')
+            sys.stdout.flush()
     print()
     # add SENTINEL to output queue
     outqueue.put(SENTINEL)
