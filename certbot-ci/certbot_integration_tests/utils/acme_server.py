@@ -3,7 +3,6 @@
 from __future__ import print_function
 import tempfile
 import time
-import atexit
 import os
 import subprocess
 import shutil
@@ -28,22 +27,24 @@ def setup_acme_server(acme_server, nodes, proxy=True):
     Instances are properly closed and cleaned when the Python process exits using atexit.
     Typically all pytest integration tests will be executed in this context.
     This method returns an object describing ports and directory url to use for each pytest node
-    with the relevant pytest xdist node.
+    with the relevant pytest xdist node, and appropriate method to start and stop the stack.
     :param str acme_server: the type of acme server used (boulder-v1, boulder-v2 or pebble)
     :param str[] nodes: list of node names that will be setup by pytest xdist
     :param bool proxy: set to False to not start the Traefik proxy
-    :return: a dict describing the challenge ports that have been setup for the nodes
-    :rtype: dict
+    :return: a tuple with a dict describing the challenge ports that have been setup for the nodes,
+             a function to start the stack, and one to clean up everything
+    :rtype: tuple
     """
     acme_type = 'pebble' if acme_server == 'pebble' else 'boulder'
     acme_xdist = _construct_acme_xdist(acme_server, nodes)
-    workspace = _construct_workspace(acme_type)
+    workspace, stop = _construct_workspace(acme_type)
 
-    if proxy:
-        _prepare_traefik_proxy(workspace, acme_xdist)
-    _prepare_acme_server(workspace, acme_type, acme_xdist)
+    def start():
+        if proxy:
+            _prepare_traefik_proxy(workspace, acme_xdist)
+        _prepare_acme_server(workspace, acme_type, acme_xdist)
 
-    return acme_xdist
+    return acme_xdist, start, stop
 
 
 def _construct_acme_xdist(acme_server, nodes):
@@ -85,10 +86,7 @@ def _construct_workspace(acme_type):
 
         shutil.rmtree(workspace)
 
-    # Here with atexit we ensure that clean function is called no matter what.
-    atexit.register(cleanup)
-
-    return workspace
+    return workspace, cleanup
 
 
 def _prepare_acme_server(workspace, acme_type, acme_xdist):
@@ -208,15 +206,24 @@ def main():
         raise ValueError('Invalid server value {0}, should be one of {1}'
                          .format(server_type, possible_values))
 
-    acme_xdist = setup_acme_server(server_type, [], False)
-
-    print('--> Instance of {0} is running, directory URL is {0}'.format(acme_xdist['directory_url']))
-    print('--> Press CTRL+C to stop the ACME server.')
+    acme_xdist, start, stop = setup_acme_server(server_type, [], False)
+    process = None
 
     try:
+        start()
+        print('--> Instance of {0} is running, directory URL is {0}'
+              .format(acme_xdist['directory_url']))
+        print('--> Press CTRL+C to stop the ACME server.')
+
+        docker_name = 'pebble_pebble_1' if 'pebble' in server_type else 'boulder_boulder_1'
+        process = subprocess.Popen(['docker', 'logs', '-f', docker_name])
+
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
+        stop()
+        if process:
+            process.poll()
         pass
 
 

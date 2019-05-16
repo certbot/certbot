@@ -86,7 +86,9 @@ def _setup_primary_node(config):
 
     # By calling setup_acme_server we ensure that all necessary acme server instances will be
     # fully started. This runtime is reflected by the acme_xdist returned.
-    acme_xdist = acme_lib.setup_acme_server(config.option.acme_server, workers)
+    acme_xdist, start, stop = acme_lib.setup_acme_server(config.option.acme_server, workers)
+    config.add_cleanup(stop)
     print('ACME xdist config:\n{0}'.format(acme_xdist))
+    start()
 
     return acme_xdist
