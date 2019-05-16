@@ -558,6 +558,7 @@ def main():
             p.join(timeout)
             while p.is_alive():
                 print('Waiting on client processes...')
+                sys.stdout.flush()
                 p.join(timeout)
         # add SENTINEL to output queue
         outqueue.put(SENTINEL)
