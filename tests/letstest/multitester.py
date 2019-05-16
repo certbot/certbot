@@ -377,7 +377,10 @@ def test_client_process(inqueue, outqueue):
 
 def cleanup(cl_args, instances, targetlist):
     print('Logs in ', LOGDIR)
-    if not cl_args.saveinstances:
+    # If lengths of instances and targetlist aren't equal, instances failed to
+    # start before running tests so leaving instances running for debugging
+    # isn't very useful. Let's cleanup after ourselves instead.
+    if len(instances) == len(targetlist) or not cl_args.save_instances:
         print('Terminating EC2 Instances')
         if cl_args.killboulder:
             boulder_server.terminate()
@@ -488,6 +491,7 @@ else:
                                    security_group_id=security_group_id,
                                    subnet_id=subnet_id)
 
+instances = []
 try:
     if not cl_args.boulderonly:
         instances = create_client_instances(targetlist, security_group_id, subnet_id)
