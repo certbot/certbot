@@ -552,6 +552,7 @@ def main():
         # add SENTINELs to end client processes
         for i in range(num_processes):
             inqueue.put(SENTINEL)
+        import subprocess
         for p in jobs:
             while p.is_alive():
                 p.join(5 * 60)
