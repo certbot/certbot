@@ -314,31 +314,27 @@ def grab_certbot_log():
     sudo('if [ -f ./certbot.log ]; then \
     cat ./certbot.log; else echo "[nolocallog]"; fi')
 
-def create_client_instances(targetlist, security_group_id, subnet_id):
-    "Create a fleet of client instances"
-    instances = []
-    print("Creating instances: ", end="")
-    for target in targetlist:
-        if target['virt'] == 'hvm':
-            machine_type = 't2.medium' if cl_args.fast else 't2.micro'
-        else:
-            # 32 bit systems
-            machine_type = 'c1.medium' if cl_args.fast else 't1.micro'
-        if 'userdata' in target.keys():
-            userdata = target['userdata']
-        else:
-            userdata = ''
-        name = 'le-%s'%target['name']
-        print(name, end=" ")
-        instances.append(make_instance(name,
-                                       target['ami'],
-                                       KEYNAME,
-                                       machine_type=machine_type,
-                                       security_group_id=security_group_id,
-                                       subnet_id=subnet_id,
-                                       userdata=userdata))
-    print()
-    return instances
+
+def create_client_instance(target, security_group_id, subnet_id):
+    """Create a single client instance for running tests."""
+    if target['virt'] == 'hvm':
+        machine_type = 't2.medium' if cl_args.fast else 't2.micro'
+    else:
+        # 32 bit systems
+        machine_type = 'c1.medium' if cl_args.fast else 't1.micro'
+    if 'userdata' in target.keys():
+        userdata = target['userdata']
+    else:
+        userdata = ''
+    name = 'le-%s'%target['name']
+    print(name, end=" ")
+    return make_instance(name,
+                         target['ami'],
+                         KEYNAME,
+                         machine_type=machine_type,
+                         security_group_id=security_group_id,
+                         subnet_id=subnet_id,
+                         userdata=userdata)
 
 
 def test_client_process(inqueue, outqueue):
@@ -380,7 +376,7 @@ def cleanup(cl_args, instances, targetlist):
     # If lengths of instances and targetlist aren't equal, instances failed to
     # start before running tests so leaving instances running for debugging
     # isn't very useful. Let's cleanup after ourselves instead.
-    if len(instances) == len(targetlist) or not cl_args.save_instances:
+    if len(instances) == len(targetlist) or not cl_args.saveinstances:
         print('Terminating EC2 Instances')
         if cl_args.killboulder:
             boulder_server.terminate()
@@ -494,7 +490,10 @@ else:
 instances = []
 try:
     if not cl_args.boulderonly:
-        instances = create_client_instances(targetlist, security_group_id, subnet_id)
+        print("Creating instances: ", end="")
+        for target in targetlist:
+            instances.append(create_client_instance(target, security_group_id, subnet_id))
+        print()
 
     # Configure and launch boulder server
     #-------------------------------------------------------------------------------
