@@ -7,9 +7,6 @@ version = '0.35.0.dev0'
 
 # Please update tox.ini when modifying dependency version requirements
 install_requires = [
-    # prevent request to transitively install urllib 1.25+
-    # that is still not supported by all libraries (eg. botocore)
-    'urllib3<1.25',
     # load_pem_private/public_key (>=0.6)
     # rsa_recover_prime_factors (>=0.8)
     'cryptography>=1.2.3',
