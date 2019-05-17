@@ -52,7 +52,7 @@ def main():
     args = sys.argv[1:]
 
     # Default config is pebble
-    directory_url = os.environ.get('SERVER', 'https://localhost:14000')
+    directory_url = os.environ.get('SERVER', 'https://localhost:14000/dir')
     http_01_port = int(os.environ.get('HTTP_01_PORT', '5002'))
     tls_alpn_01_port = int(os.environ.get('TLS_ALPN_01_PORT', '5001'))
 
