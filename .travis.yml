@@ -94,6 +94,16 @@ matrix:
       <<: *not-on-master
 
     # Extended test suite on cron jobs and pushes to tested branches other than master
+    - python: "2.7"
+      env:
+        - TOXENV=travis-test-farm-tests-part1
+        - secure: "f+j/Lj9s1lcuKo5sEFrlRd1kIAMnIJI4z0MTI7QF8jl9Fkmbx7KECGzw31TNgzrOSzxSapHbcueFYvNCLKST+kE/8ogMZBbwqXfEDuKpyF6BY3uYoJn+wPVE5pIb8Hhe08xPte8TTDSMIyHI3EyTfcAKrIreauoArePvh/cRvSw="
+      <<: *extended-test-suite
+    - python: "2.7"
+      env:
+        - TOXENV=travis-test-farm-tests-part2
+        - secure: "f+j/Lj9s1lcuKo5sEFrlRd1kIAMnIJI4z0MTI7QF8jl9Fkmbx7KECGzw31TNgzrOSzxSapHbcueFYvNCLKST+kE/8ogMZBbwqXfEDuKpyF6BY3uYoJn+wPVE5pIb8Hhe08xPte8TTDSMIyHI3EyTfcAKrIreauoArePvh/cRvSw="
+      <<: *extended-test-suite
     - python: "3.7"
       dist: xenial
       env: TOXENV=py37 CERTBOT_NO_PIN=1
