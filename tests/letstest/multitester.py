@@ -549,9 +549,14 @@ try:
     # add SENTINELs to end client processes
     for i in range(num_processes):
         inqueue.put(SENTINEL)
-    # wait on termination of client processes
+    print('Waiting on client processes', end='')
     for p in jobs:
-        p.join()
+        while p.is_alive():
+            p.join(5 * 60)
+            # Regularly print output to keep Travis happy
+            print('.', end='')
+            sys.stdout.flush()
+    print()
     # add SENTINEL to output queue
     outqueue.put(SENTINEL)
 
