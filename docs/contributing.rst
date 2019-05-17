@@ -116,36 +116,24 @@ of output can make it hard to find specific failures when they happen.
 
 .. _integration:
 
-Integration testing with the Boulder CA
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Integration testing with the Pebble CA
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Generally it is sufficient to open a pull request and let Github and Travis run
-integration tests for you, however, if you want to run them locally you need
-Docker and docker-compose installed and working. Fetch and start Boulder, Let's
-Encrypt's ACME CA software, by using:
+integration tests for you. However, you may want to run them locally before submitting
+your pull request. You need Docker and docker-compose installed and working.
+
+The tox environment `integration` will setup Pebble, the Let's Encrypt ACME CA server
+for integration testing, then launch the Certbot integration tests.
+
+With a user allowed to access your local Docker daemon, run:
 
 .. code-block:: shell
 
-  ./tests/boulder-fetch.sh
+  tox -e integration
 
-If you have problems with Docker, you may want to try `removing all containers and
-volumes`_ and making sure you have at least 1GB of memory.
-
-Set up a certbot_test alias that enables easily running against the local
-Boulder:
-
-.. code-block:: shell
-
-   export SERVER=http://localhost:4000/directory
-   source tests/integration/_common.sh
-
-Run the integration tests using:
-
-.. code-block:: shell
-
-  ./tests/boulder-integration.sh
-
-.. _removing all containers and volumes: https://www.digitalocean.com/community/tutorials/how-to-remove-docker-images-containers-and-volumes
+Tests will be run using pytest. A test report and a code coverage report will be
+displayed at the end of the integration tests execution.
 
 Code components and layout
 ==========================
@@ -387,10 +375,23 @@ Asking for help
 
 If you have any questions while working on a Certbot issue, don't hesitate to
 ask for help! You can do this in the Certbot channel in EFF's Mattermost
-instance for its open source projects. To join, `create an account
-<https://opensource.eff.org/signup_user_complete/?id=6iqur37ucfrctfswrs14iscobw>`_
-and then visit the `Certbot channel
-<https://opensource.eff.org/eff-open-source/channels/certbot>`_.
+instance for its open source projects as described below.
+
+You can get involved with several of EFF's software projects such as Certbot at
+the `EFF Open Source Contributor Chat Platform
+<https://opensource.eff.org/signup_user_complete/?id=6iqur37ucfrctfswrs14iscobw>`_.
+By signing up for the EFF Open Source Contributor Chat Platform, you consent to
+share your personal information with the Electronic Frontier Foundation, which
+is the operator and data controller for this platform. The channels will be
+available both to EFF, and to other users of EFFOSCCP, who may use or disclose
+information in these channels outside of EFFOSCCP. EFF will use your
+information, according to the `Privacy Policy <https://www.eff.org/policy>`_,
+to further the mission of EFF, including hosting and moderating the discussions
+on this platform.
+
+Use of EFFOSCCP is subject to the `EFF Code of Conduct
+<https://www.eff.org/pages/eppcode>`_. When investigating an alleged Code of
+Conduct violation, EFF may review discussion channels or direct messages.
 
 Updating certbot-auto and letsencrypt-auto
 ==========================================

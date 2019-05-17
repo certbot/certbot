@@ -145,9 +145,11 @@ def make_instance(ec2_client,
                   subnet_id,
                   machine_type='t2.micro',
                   userdata=""): #userdata contains bash or cloud-init script
-
-    new_instance = ec2_client.create_instances(
-        BlockDeviceMappings=_get_block_device_mappings(ec2_client, ami_id),
+    block_device_mappings = _get_block_device_mappings(ec2_client, ami_id)
+    tags = [{'Key': 'Name', 'Value': instance_name}]
+    tag_spec = [{'ResourceType': 'instance', 'Tags': tags}]
+    return ec2_client.create_instances(
+        BlockDeviceMappings=block_device_mappings,
         ImageId=ami_id,
         SecurityGroupIds=[security_group_id],
         SubnetId=subnet_id,
@@ -155,22 +157,8 @@ def make_instance(ec2_client,
         MinCount=1,
         MaxCount=1,
         UserData=userdata,
-        InstanceType=machine_type)[0]
-
-    # brief pause to prevent rare error on EC2 delay, should block until ready instead
-    time.sleep(1.0)
-
-    # give instance a name
-    try:
-        new_instance.create_tags(Tags=[{'Key': 'Name', 'Value': instance_name}])
-    except ClientError as e:
-        if "InvalidInstanceID.NotFound" in str(e):
-            # This seems to be ephemeral... retry
-            time.sleep(1)
-            new_instance.create_tags(Tags=[{'Key': 'Name', 'Value': instance_name}])
-        else:
-            raise
-    return new_instance
+        InstanceType=machine_type,
+        TagSpecifications=tag_spec)[0]
 
 def _get_block_device_mappings(ec2_client, ami_id):
     """Returns the list of block device mappings to ensure cleanup.
@@ -311,32 +299,28 @@ def grab_certbot_log():
     sudo('if [ -f ./certbot.log ]; then \
     cat ./certbot.log; else echo "[nolocallog]"; fi')
 
-def create_client_instances(ec2_client, targetlist, security_group_id, subnet_id):
-    "Create a fleet of client instances"
-    instances = []
-    print("Creating instances: ", end="")
-    for target in targetlist:
-        if target['virt'] == 'hvm':
-            machine_type = 't2.medium' if cl_args.fast else 't2.micro'
-        else:
-            # 32 bit systems
-            machine_type = 'c1.medium' if cl_args.fast else 't1.micro'
-        if 'userdata' in target.keys():
-            userdata = target['userdata']
-        else:
-            userdata = ''
-        name = 'le-%s'%target['name']
-        print(name, end=" ")
-        instances.append(make_instance(ec2_client,
-                                       name,
-                                       target['ami'],
-                                       KEYNAME,
-                                       machine_type=machine_type,
-                                       security_group_id=security_group_id,
-                                       subnet_id=subnet_id,
-                                       userdata=userdata))
-    print()
-    return instances
+
+def create_client_instance(ec2_client, target, security_group_id, subnet_id):
+    """Create a single client instance for running tests."""
+    if target['virt'] == 'hvm':
+        machine_type = 't2.medium' if cl_args.fast else 't2.micro'
+    else:
+        # 32 bit systems
+        machine_type = 'c1.medium' if cl_args.fast else 't1.micro'
+    if 'userdata' in target.keys():
+        userdata = target['userdata']
+    else:
+        userdata = ''
+    name = 'le-%s'%target['name']
+    print(name, end=" ")
+    return make_instance(ec2_client,
+                         name,
+                         target['ami'],
+                         KEYNAME,
+                         machine_type=machine_type,
+                         security_group_id=security_group_id,
+                         subnet_id=subnet_id,
+                         userdata=userdata)
 
 
 def test_client_process(inqueue, outqueue, boulder_url):
@@ -381,7 +365,10 @@ def test_client_process(inqueue, outqueue, boulder_url):
 
 def cleanup(cl_args, instances, targetlist):
     print('Logs in ', LOGDIR)
-    if not cl_args.saveinstances:
+    # If lengths of instances and targetlist aren't equal, instances failed to
+    # start before running tests so leaving instances running for debugging
+    # isn't very useful. Let's cleanup after ourselves instead.
+    if len(instances) == len(targetlist) or not cl_args.saveinstances:
         print('Terminating EC2 Instances')
         if cl_args.killboulder:
             boulder_server.terminate()
@@ -488,9 +475,16 @@ def main():
                                        security_group_id=security_group_id,
                                        subnet_id=subnet_id)
 
+    instances = []
     try:
         if not cl_args.boulderonly:
-            instances = create_client_instances(ec2_client, targetlist, security_group_id, subnet_id)
+            print("Creating instances: ", end="")
+            for target in targetlist:
+                instances.append(
+                    create_client_instance(ec2_client, target,
+                                           security_group_id, subnet_id)
+                )
+            print()
 
         # Configure and launch boulder server
         #-------------------------------------------------------------------------------
@@ -545,9 +539,14 @@ def main():
         # add SENTINELs to end client processes
         for i in range(num_processes):
             inqueue.put(SENTINEL)
-        # wait on termination of client processes
+        print('Waiting on client processes', end='')
         for p in jobs:
-            p.join()
+            while p.is_alive():
+                p.join(5 * 60)
+                # Regularly print output to keep Travis happy
+                print('.', end='')
+                sys.stdout.flush()
+        print()
         # add SENTINEL to output queue
         outqueue.put(SENTINEL)
 
