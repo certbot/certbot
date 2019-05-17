@@ -228,7 +228,8 @@ def block_until_instance_ready(booting_instance, wait_time=5, extra_wait_time=20
     ip = booting_instance.public_ip_address
     while state != 'running' or ip is None:
         time.sleep(wait_time)
-        # The instance needs to be reloaded to update its local attributes.
+        # The instance needs to be reloaded to update its local attributes. See
+        # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ec2.html#EC2.Instance.reload.
         booting_instance.reload()
         state = booting_instance.state['Name']
         ip = booting_instance.public_ip_address
