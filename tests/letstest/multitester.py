@@ -146,32 +146,19 @@ def make_instance(instance_name,
                   subnet_id,
                   machine_type='t2.micro',
                   userdata=""): #userdata contains bash or cloud-init script
-
-    new_instance = EC2.create_instances(
-        BlockDeviceMappings=_get_block_device_mappings(ami_id),
-        ImageId=ami_id,
-        SecurityGroupIds=[security_group_id],
-        SubnetId=subnet_id,
-        KeyName=keyname,
-        MinCount=1,
-        MaxCount=1,
-        UserData=userdata,
-        InstanceType=machine_type)[0]
-
-    # brief pause to prevent rare error on EC2 delay, should block until ready instead
-    time.sleep(1.0)
-
-    # give instance a name
-    try:
-        new_instance.create_tags(Tags=[{'Key': 'Name', 'Value': instance_name}])
-    except ClientError as e:
-        if "InvalidInstanceID.NotFound" in str(e):
-            # This seems to be ephemeral... retry
-            time.sleep(1)
-            new_instance.create_tags(Tags=[{'Key': 'Name', 'Value': instance_name}])
-        else:
-            raise
-    return new_instance
+    block_device_mappings = _get_block_device_mappings(ami_id)
+    tags = [{'Key': 'Name', 'Value': instance_name}]
+    tag_spec = [{'ResourceType': 'instance', 'Tags': tags}]
+    return EC2.create_instances(BlockDeviceMappings=block_device_mappings,
+                                ImageId=ami_id,
+                                SecurityGroupIds=[security_group_id],
+                                SubnetId=subnet_id,
+                                KeyName=keyname,
+                                MinCount=1,
+                                MaxCount=1,
+                                UserData=userdata,
+                                InstanceType=machine_type,
+                                TagSpecifications=tag_spec)[0]
 
 def _get_block_device_mappings(ami_id):
     """Returns the list of block device mappings to ensure cleanup.
