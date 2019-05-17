@@ -32,22 +32,7 @@ matrix:
   include:
     - python: "2.7"
       env:
-        - TOXENV=travis-test-farm-apache2
-        - secure: "f+j/Lj9s1lcuKo5sEFrlRd1kIAMnIJI4z0MTI7QF8jl9Fkmbx7KECGzw31TNgzrOSzxSapHbcueFYvNCLKST+kE/8ogMZBbwqXfEDuKpyF6BY3uYoJn+wPVE5pIb8Hhe08xPte8TTDSMIyHI3EyTfcAKrIreauoArePvh/cRvSw="
-      <<: *extended-test-suite
-    - python: "2.7"
-      env:
         - TOXENV=travis-test-farm-leauto-upgrades
-        - secure: "f+j/Lj9s1lcuKo5sEFrlRd1kIAMnIJI4z0MTI7QF8jl9Fkmbx7KECGzw31TNgzrOSzxSapHbcueFYvNCLKST+kE/8ogMZBbwqXfEDuKpyF6BY3uYoJn+wPVE5pIb8Hhe08xPte8TTDSMIyHI3EyTfcAKrIreauoArePvh/cRvSw="
-      <<: *extended-test-suite
-    - python: "2.7"
-      env:
-        - TOXENV=travis-test-farm-certonly-standalone
-        - secure: "f+j/Lj9s1lcuKo5sEFrlRd1kIAMnIJI4z0MTI7QF8jl9Fkmbx7KECGzw31TNgzrOSzxSapHbcueFYvNCLKST+kE/8ogMZBbwqXfEDuKpyF6BY3uYoJn+wPVE5pIb8Hhe08xPte8TTDSMIyHI3EyTfcAKrIreauoArePvh/cRvSw="
-      <<: *extended-test-suite
-    - python: "2.7"
-      env:
-        - TOXENV=travis-test-farm-sdists
         - secure: "f+j/Lj9s1lcuKo5sEFrlRd1kIAMnIJI4z0MTI7QF8jl9Fkmbx7KECGzw31TNgzrOSzxSapHbcueFYvNCLKST+kE/8ogMZBbwqXfEDuKpyF6BY3uYoJn+wPVE5pIb8Hhe08xPte8TTDSMIyHI3EyTfcAKrIreauoArePvh/cRvSw="
       <<: *extended-test-suite
 
