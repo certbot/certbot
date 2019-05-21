@@ -158,6 +158,10 @@ class NginxConfigurator(common.Installer):
                 "Could not find a usable 'nginx' binary. Ensure nginx exists, "
                 "the binary is executable, and your PATH is set correctly.")
 
+        # Set Version
+        if self.version is None:
+            self.version = self.get_version()
+
         # Make sure configuration is valid
         self.config_test()
 
@@ -166,10 +170,6 @@ class NginxConfigurator(common.Installer):
         self.install_ssl_options_conf(self.mod_ssl_conf, self.updated_mod_ssl_conf_digest)
 
         self.install_ssl_dhparams()
-
-        # Set Version
-        if self.version is None:
-            self.version = self.get_version()
 
         # Prevent two Nginx plugins from modifying a config at once
         try:
