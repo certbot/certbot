@@ -13,7 +13,6 @@ from certbot import errors
 from certbot.compat import os
 from certbot.tests import util as certbot_test_util
 
-from certbot_nginx import constants
 from certbot_nginx import obj
 from certbot_nginx import parser
 from certbot_nginx.configurator import _redirect_block_for_domain
