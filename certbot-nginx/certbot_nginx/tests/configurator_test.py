@@ -950,13 +950,11 @@ class InstallSslOptionsConfTest(util.NginxTest):
 
     def test_old_nginx_version_uses_old_config(self):
         self.config.version = (1, 5, 8)
-        self.assertTrue(self.config.mod_ssl_conf_src.endswith(
-                        "certbot_nginx/options-ssl-nginx-old.conf"))
+        self.assertEqual(os.path.basename(self.config.mod_ssl_conf_src), "options-ssl-nginx-old.conf")
         self._call()
         self._assert_current_file()
         self.config.version = (1, 5, 9)
-        self.assertTrue(self.config.mod_ssl_conf_src.endswith(
-                        "certbot_nginx/options-ssl-nginx.conf"))
+        self.assertEqual(os.path.basename(self.config.mod_ssl_conf_src), "options-ssl-nginx.conf")
 
 
 class DetermineDefaultServerRootTest(certbot_test_util.ConfigTestCase):
