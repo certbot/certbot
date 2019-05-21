@@ -109,6 +109,8 @@ def _restore_webroot_config(config, renewalparams):
     if "webroot_map" in renewalparams:
         if not cli.set_by_cli("webroot_map"):
             config.webroot_map = renewalparams["webroot_map"]
+    # To understand why webroot_path and webroot_map processing are not mutually exclusive, see:
+    # https://github.com/certbot/certbot/pull/7095
     if "webroot_path" in renewalparams and not renewalparams.get('webroot_map', {}):
         logger.debug("Ancient renewal conf file without webroot-map, restoring webroot-path")
         wp = renewalparams["webroot_path"]
