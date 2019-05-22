@@ -68,7 +68,7 @@ def _generate_dacl(user_sid, mode):
 
     # If user is already system or admins, any ACE defined here would be superseeded by
     # the full control ACE that will be added after.
-    if str(user_sid) not in [str(system), str(admins)]:
+    if user_sid not in [system, admins]:
         # Handle user rights
         user_flags = _generate_windows_flags(analysis['user'])
         if user_flags:
