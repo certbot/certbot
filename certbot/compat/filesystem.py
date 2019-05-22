@@ -74,14 +74,10 @@ def _generate_dacl(user_sid, mode):
         if user_flags:
             dacl.AddAccessAllowedAce(win32security.ACL_REVISION, user_flags, user_sid)
 
-    # Handle everybody rights
-    everybody_flags = _generate_windows_flags(analysis['all'])
-    if everybody_flags:
-        dacl.AddAccessAllowedAce(win32security.ACL_REVISION, everybody_flags, everyone)
+    dacl.AddAccessAllowedAce(win32security.ACL_REVISION, ntsecuritycon.FILE_ALL_ACCESS, everyone)
 
     # Handle administrator rights
     full_permissions = _generate_windows_flags({'read': True, 'write': True, 'execute': True})
-    dacl.AddAccessAllowedAce(win32security.ACL_REVISION, full_permissions, system)
     dacl.AddAccessAllowedAce(win32security.ACL_REVISION, full_permissions, admins)
 
     return dacl
