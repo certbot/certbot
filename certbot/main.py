@@ -1165,15 +1165,20 @@ def _csr_get_and_save_cert(config, le_client):
     :rtype: `tuple` of `str`
 
     """
+    hooks.pre_hook(config)
     csr, _ = config.actual_csr
     cert, chain = le_client.obtain_certificate_from_csr(csr)
     if config.dry_run:
         logger.debug(
             "Dry run: skipping saving certificate to %s", config.cert_path)
         return None, None
-    cert_path, _, fullchain_path = le_client.save_certificate(
-        cert, chain, os.path.normpath(config.cert_path),
-        os.path.normpath(config.chain_path), os.path.normpath(config.fullchain_path))
+    try:
+        cert_path, _, fullchain_path = le_client.save_certificate(
+            cert, chain, os.path.normpath(config.cert_path),
+            os.path.normpath(config.chain_path), os.path.normpath(config.fullchain_path))
+    finally:
+        hooks.post_hook(config)
+
     return cert_path, fullchain_path
 
 def renew_cert(config, plugins, lineage):

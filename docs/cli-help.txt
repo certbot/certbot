@@ -279,7 +279,8 @@ certonly:
 
   --csr CSR             Path to a Certificate Signing Request (CSR) in DER or
                         PEM format. Currently --csr only works with the
-                        'certonly' subcommand. (default: None)
+                        'certonly' subcommand. It also calls --pre-hook and 
+                        --post-hook commands if they are defined. (default: None)
 
 renew:
   The 'renew' subcommand will attempt to renew all certificates (or more
