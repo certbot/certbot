@@ -276,7 +276,11 @@ notifications:
   email: false
   irc:
     channels:
-      - secure: "SGWZl3ownKx9xKVV2VnGt7DqkTmutJ89oJV9tjKhSs84kLijU6EYdPnllqISpfHMTxXflNZuxtGo0wTDYHXBuZL47w1O32W6nzuXdra5zC+i4sYQwYULUsyfOv9gJX8zWAULiK0Z3r0oho45U+FR5ZN6TPCidi8/eGU+EEPwaAw="
+      # This is set to a secure variable to prevent forks from sending
+      # notifications. This value was created by installing
+      # https://github.com/travis-ci/travis.rb and running
+      # `travis encrypt "chat.freenode.net#certbot-devel"`.
+      - secure: "EWW66E2+KVPZyIPR8ViENZwfcup4Gx3/dlimmAZE0WuLwxDCshBBOd3O8Rf6pBokEoZlXM5eDT6XdyJj8n0DLslgjO62pExdunXpbcMwdY7l1ELxX2/UbnDTE6UnPYa09qVBHNG7156Z6yE0x2lH4M9Ykvp0G0cubjPQHylAwo0="
     on_cancel: never
     on_success: never
     on_failure: always
