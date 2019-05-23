@@ -74,27 +74,28 @@ to serve all files under specified web root ({0})."""
         self._created_dirs = []  # type: List[str]
 
     def prepare(self):  # pylint: disable=missing-docstring
-        # To understand why set_webroots is in the early prepare phase, and not in the perform phase,
-        # see https://github.com/certbot/certbot/pull/7095
-        self._set_webroots(self.config.domains)
+        pass
 
     def perform(self, achalls):  # pylint: disable=missing-docstring
+        self._set_webroots(achalls)
+
         self._create_challenge_dirs()
 
         return [self._perform_single(achall) for achall in achalls]
 
-    def _set_webroots(self, domains):
+    def _set_webroots(self, achalls):
         if self.conf("path"):
             webroot_path = self.conf("path")[-1]
             logger.info("Using the webroot path %s for all unmatched domains.",
                         webroot_path)
-            for domain in domains:
-                self.conf("map").setdefault(domain, webroot_path)
+            for achall in achalls:
+                self.conf("map").setdefault(achall.domain, webroot_path)
         else:
             known_webroots = list(set(six.itervalues(self.conf("map"))))
-            for domain in domains:
-                if domain not in self.conf("map"):
-                    new_webroot = self._prompt_for_webroot(domain, known_webroots)
+            for achall in achalls:
+                if achall.domain not in self.conf("map"):
+                    new_webroot = self._prompt_for_webroot(achall.domain,
+                                                           known_webroots)
                     # Put the most recently input
                     # webroot first for easy selection
                     try:
@@ -102,7 +103,7 @@ to serve all files under specified web root ({0})."""
                     except ValueError:
                         pass
                     known_webroots.insert(0, new_webroot)
-                    self.conf("map")[domain] = new_webroot
+                    self.conf("map")[achall.domain] = new_webroot
 
     def _prompt_for_webroot(self, domain, known_webroots):
         webroot = None
