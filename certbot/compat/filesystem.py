@@ -107,10 +107,10 @@ def _generate_windows_flags(rights_desc):
     #
     # For the rights read and execute, we have a pretty bijective relation between
     # POSIX flags and their generic counterparts on Windows, so we use them directly
-    # (respectively ntsecuritycon.FILE_GENERIC_READ) and (respectively ntsecuritycon.FILE_GENERIC_EXECUTE).
+    # (respectively ntsecuritycon.FILE_GENERIC_READ and ntsecuritycon.FILE_GENERIC_EXECUTE).
     #
-    # But ntsecuritycon.FILE_GENERIC_WRITE does not correspond to what one could expect from a write
-    # access on Linux: for Windows, FILE_GENERIC_WRITE does not include delete, move or
+    # But ntsecuritycon.FILE_GENERIC_WRITE does not correspond to what one could expect from a
+    # write access on Linux: for Windows, FILE_GENERIC_WRITE does not include delete, move or
     # rename. This is something that requires ntsecuritycon.FILE_ALL_ACCESS.
     # So to reproduce the write right as POSIX, we will apply ntsecuritycon.FILE_ALL_ACCESS
     # substracted of the rights corresponding to POSIX read and POSIX execute.

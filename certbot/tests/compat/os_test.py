@@ -1,3 +1,4 @@
+"""Unit test for os module."""
 import unittest
 
 from certbot.compat import os
