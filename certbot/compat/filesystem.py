@@ -126,8 +126,35 @@ def _generate_windows_flags(rights_desc):
     if rights_desc['write']:
         flag = flag | (ntsecuritycon.FILE_ALL_ACCESS
                        ^ ntsecuritycon.FILE_GENERIC_READ
-                       ^ ntsecuritycon.FILE_GENERIC_EXECUTE)
+                       ^ ntsecuritycon.FILE_GENERIC_EXECUTE
+                       # Despite bit `512` being present in ntsecuritycon.FILE_ALL_ACCESS, it is
+                       # not effectively applied to the file or the directory.
+                       # As _generate_windows_flags is also used to compare two dacls, we remove
+                       # it right now to have flags that contain only the bits effectively applied
+                       # by Windows.
+                       ^ 512)
     if rights_desc['execute']:
         flag = flag | ntsecuritycon.FILE_GENERIC_EXECUTE
 
     return flag
+
+
+def _compare_dacls(dacl1, dacl2):
+    aces1 = [dacl1.GetAce(index) for index in range(0, dacl1.GetAceCount())]
+    aces2 = [dacl2.GetAce(index) for index in range(0, dacl2.GetAceCount())]
+
+     # Convert PySIDs into hashable objects
+    aces1_refined = []
+    aces2_refined = []
+    for ace in aces1:
+        if len(ace) == 3:
+            aces1_refined.append((ace[0], ace[1], str(ace[2])))
+        else:
+            aces1_refined.append((ace[0], ace[1], ace[2], ace[3], str(ace[4])))  # type: ignore
+    for index, ace in enumerate(aces2):
+        if len(ace) == 3:
+            aces2_refined.append((ace[0], ace[1], str(ace[2])))
+        else:
+            aces2_refined.append((ace[0], ace[1], ace[2], ace[3], str(ace[4])))  # type: ignore
+
+    return set(aces1_refined) == set(aces2_refined)
