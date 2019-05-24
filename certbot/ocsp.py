@@ -210,10 +210,12 @@ def _check_ocsp_response(response_ocsp, request_ocsp, issuer_cert, cert_path):
 def _check_ocsp_response_signature(response_ocsp, issuer_cert, cert_path):
     """Verify an OCSP response signature against certificate issuer or responder"""
     if response_ocsp.responder_name == issuer_cert.subject:
+        # Case where the OCSP responder is also the certificate issuer
         logger.debug('OCSP response for certificate %s is signed by the certificate\'s issuer.',
                      cert_path)
         responder_cert = issuer_cert
     else:
+        # Case where the OCSP responder is not the certificate issuer
         logger.debug('OCSP response for certificate %s is delegated to an external responder.',
                      cert_path)
 
@@ -222,6 +224,9 @@ def _check_ocsp_response_signature(response_ocsp, issuer_cert, cert_path):
         if not responder_certs:
             raise AssertionError('no matching responder certificate could be found')
 
+        # We suppose here that the ACME server support only one certificate in the OCSP status
+        # request. This is currently the case for LetsEncrypt servers.
+        # See https://github.com/letsencrypt/boulder/issues/2331
         responder_cert = responder_certs[0]
 
         if responder_cert.issuer != issuer_cert.subject:
@@ -230,19 +235,23 @@ def _check_ocsp_response_signature(response_ocsp, issuer_cert, cert_path):
 
         try:
             extension = responder_cert.extensions.get_extension_for_class(x509.ExtendedKeyUsage)
-            authorized = x509.oid.ExtendedKeyUsageOID.OCSP_SIGNING in extension.value
+            delegate_authorized = x509.oid.ExtendedKeyUsageOID.OCSP_SIGNING in extension.value
         except (x509.ExtensionNotFound, IndexError):
-            authorized = False
-        if not authorized:
+            delegate_authorized = False
+        if not delegate_authorized:
             raise AssertionError('responder is not authorized by issuer to sign OCSP responses')
 
         # Following line may raise UnsupportedAlgorithm
         chosen_hash = responder_cert.signature_hash_algorithm
+        # For a delegate OCSP responder, we need first check that its certificate is effectively
+        # signed by the certificate issuer.
         crypto_util.verify_signed_payload(issuer_cert.public_key(), responder_cert.signature,
                                           responder_cert.tbs_certificate_bytes, chosen_hash)
 
     # Following line may raise UnsupportedAlgorithm
     chosen_hash = response_ocsp.signature_hash_algorithm
+    # We check that the OSCP response is effectively signed by the responder
+    # (an authorized delegate one or the certificate issuer itself).
     crypto_util.verify_signed_payload(responder_cert.public_key(), response_ocsp.signature,
                                       response_ocsp.tbs_response_bytes, chosen_hash)
 
