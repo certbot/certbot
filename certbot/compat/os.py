@@ -46,5 +46,5 @@ del ourselves, std_os, std_sys
 # "Administrators" group + "System" user, as they can do everything anyway.
 def chmod(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
     """Method os.chmod() is forbidden"""
-    raise RuntimeError('Usage of os.chmod() is forbidden. '  # pragma: no cover
+    raise RuntimeError('Usage of os.chmod() is forbidden. '
                        'Use certbot.compat.filesystem.chmod() instead.')
