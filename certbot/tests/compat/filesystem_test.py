@@ -43,7 +43,7 @@ class WindowsChmodTests(TempDirTestCase):
         dacl = _get_security_dacl(probe_path).GetSecurityDescriptorDacl()
 
         self.assertTrue([dacl.GetAce(index) for index in range(0, dacl.GetAceCount())
-                         if dacl.GetAce(index)[2] == all])
+                         if dacl.GetAce(index)[2] == everybody])
 
     def test_group_permissions_noop(self):
         probe_path = _create_probe(self.tempdir)
