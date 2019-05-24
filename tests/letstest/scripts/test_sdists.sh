@@ -6,7 +6,6 @@ cd letsencrypt
 PLUGINS="certbot-apache certbot-nginx"
 PYTHON_MAJOR_VERSION=$(/opt/eff.org/certbot/venv/bin/python --version 2>&1 | cut -d" " -f 2 | cut -d. -f1)
 TEMP_DIR=$(mktemp -d)
-VERSION=$(letsencrypt-auto-source/version.py)
 
 if [ "$PYTHON_MAJOR_VERSION" = "3" ]; then
     VENV_PATH="venv3"
