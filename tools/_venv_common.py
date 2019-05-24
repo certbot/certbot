@@ -42,6 +42,7 @@ REQUIREMENTS = [
     '-e certbot-postfix',
     '-e letshelp-certbot',
     '-e certbot-compatibility-test',
+    '-e certbot-ci',
 ]
 
 VERSION_PATTERN = re.compile(r'^(\d+)\.(\d+).*$')
