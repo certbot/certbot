@@ -28,16 +28,16 @@ class WindowsChmodTests(TempDirTestCase):
         self.assertTrue(filesystem._compare_dacls(ref_dacl_link, cur_dacl_link))  # pylint: disable=protected-access
 
     def test_world_permission(self):
-        import win32security
+        import win32security  # pylint: disable=import-error
         probe_path = _create_probe(self.tempdir)
 
-        all = win32security.ConvertStringSidToSid('S-1-1-0')
+        everybody = win32security.ConvertStringSidToSid('S-1-1-0')
 
         filesystem.chmod(probe_path, 0o700)
         dacl = _get_security_dacl(probe_path).GetSecurityDescriptorDacl()
 
         self.assertFalse([dacl.GetAce(index) for index in range(0, dacl.GetAceCount())
-                          if dacl.GetAce(index)[2] == all])
+                          if dacl.GetAce(index)[2] == everybody])
 
         filesystem.chmod(probe_path, 0o704)
         dacl = _get_security_dacl(probe_path).GetSecurityDescriptorDacl()
@@ -57,7 +57,7 @@ class WindowsChmodTests(TempDirTestCase):
         self.assertTrue(filesystem._compare_dacls(ref_dacl_probe, cur_dacl_probe))  # pylint: disable=protected-access
 
     def test_admin_permissions(self):
-        import win32security
+        import win32security  # pylint: disable=import-error
         probe_path = _create_probe(self.tempdir)
 
         system = win32security.ConvertStringSidToSid('S-1-5-18')
@@ -72,22 +72,22 @@ class WindowsChmodTests(TempDirTestCase):
                          if dacl.GetAce(index)[2] == admins])
 
     def test_read_flag(self):
-        import ntsecuritycon
+        import ntsecuritycon  # pylint: disable=import-error
         self._test_flag(4, ntsecuritycon.FILE_GENERIC_READ)
 
     def test_execute_flag(self):
-        import ntsecuritycon
+        import ntsecuritycon  # pylint: disable=import-error
         self._test_flag(1, ntsecuritycon.FILE_GENERIC_EXECUTE)
 
     def test_write_flag(self):
-        import ntsecuritycon
+        import ntsecuritycon  # pylint: disable=import-error
         self._test_flag(2, (ntsecuritycon.FILE_ALL_ACCESS
                             ^ ntsecuritycon.FILE_GENERIC_READ
                             ^ ntsecuritycon.FILE_GENERIC_EXECUTE
                             ^ 512))
 
     def test_full_flag(self):
-        import ntsecuritycon
+        import ntsecuritycon  # pylint: disable=import-error
         self._test_flag(7, (ntsecuritycon.FILE_ALL_ACCESS
                             ^ 512))
 
@@ -95,15 +95,15 @@ class WindowsChmodTests(TempDirTestCase):
         # Note that flag are tested again `everyone`, not `user`, because practically these unit
         # tests are executed with admin privilege, so current user is effectively the admins group,
         # and so will always have all rights.
-        import win32security
+        import win32security  # pylint: disable=import-error
         probe_path = _create_probe(self.tempdir)
 
         filesystem.chmod(probe_path, 0o700 + everyone_mode)
         dacl = _get_security_dacl(probe_path).GetSecurityDescriptorDacl()
-        all = win32security.ConvertStringSidToSid('S-1-1-0')
+        everybody = win32security.ConvertStringSidToSid('S-1-1-0')
 
         acls_user = [dacl.GetAce(index) for index in range(0, dacl.GetAceCount())
-                     if dacl.GetAce(index)[2] == all]
+                     if dacl.GetAce(index)[2] == everybody]
 
         self.assertEqual(len(acls_user), 1)
 
@@ -142,17 +142,17 @@ class WindowsChmodTests(TempDirTestCase):
 
 
 def _get_security_dacl(target):
-    import win32security
-    return win32security.GetFileSecurity( target, win32security.DACL_SECURITY_INFORMATION)
+    import win32security  # pylint: disable=import-error
+    return win32security.GetFileSecurity(target, win32security.DACL_SECURITY_INFORMATION)
 
 
 def _get_security_owner(target):
-    import win32security
+    import win32security  # pylint: disable=import-error
     return win32security.GetFileSecurity(target, win32security.OWNER_SECURITY_INFORMATION)
 
 
 def _set_owner(target, security_owner, user):
-    import win32security
+    import win32security  # pylint: disable=import-error
     security_owner.SetSecurityDescriptorOwner(user, False)
     win32security.SetFileSecurity(
         target, win32security.OWNER_SECURITY_INFORMATION, security_owner)
