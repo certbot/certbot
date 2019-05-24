@@ -8,3 +8,7 @@ class OsTest(unittest.TestCase):
     def test_forbidden_methods(self):
         for method in ['chmod']:
             self.assertRaises(RuntimeError, getattr(os, method))
+
+
+if __name__ == "__main__":
+    unittest.main()  # pragma: no cover
