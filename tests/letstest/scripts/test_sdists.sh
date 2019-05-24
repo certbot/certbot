@@ -8,12 +8,17 @@ PYTHON_MAJOR_VERSION=$(/opt/eff.org/certbot/venv/bin/python --version 2>&1 | cut
 TEMP_DIR=$(mktemp -d)
 
 if [ "$PYTHON_MAJOR_VERSION" = "3" ]; then
+    # Some distros like Fedora may only have an executable named python3 installed.
+    PYTHON_NAME="python3"
     VENV_PATH="venv3"
     VENV_SCRIPT="tools/venv3.py"
 else
+    PYTHON_NAME="python"
     VENV_SCRIPT="tools/venv.py"
     VENV_PATH="venv"
 fi
+
+VERSION=$("$PYTHON_NAME" letsencrypt-auto-source/version.py)
 
 # setup venv
 "$VENV_SCRIPT" --requirement letsencrypt-auto-source/pieces/dependency-requirements.txt
