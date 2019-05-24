@@ -126,11 +126,7 @@ def _generate_windows_flags(rights_desc):
     if rights_desc['write']:
         flag = flag | (ntsecuritycon.FILE_ALL_ACCESS
                        ^ ntsecuritycon.FILE_GENERIC_READ
-                       ^ ntsecuritycon.FILE_GENERIC_EXECUTE
-                       # Following bit is never set for file/directory objects using the
-                       # ntsecuritycon.FILE_* flags, but is effectively present when
-                       # the "Full Permissions" are applied from Windows UI.
-                       ^ 512)
+                       ^ ntsecuritycon.FILE_GENERIC_EXECUTE)
     if rights_desc['execute']:
         flag = flag | ntsecuritycon.FILE_GENERIC_EXECUTE
 
