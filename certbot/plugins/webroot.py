@@ -175,7 +175,7 @@ to serve all files under specified web root ({0})."""
                 for prefix in sorted(util.get_prefixes(self.full_roots[name])[:-1], key=len):
                     try:
                         # This is coupled with the "umask" call above because
-                        # security.mkdir's "mode" parameter may not always work:
+                        # filesystem.mkdir's "mode" parameter may not always work:
                         # https://docs.python.org/3/library/os.html#security.mkdir
                         filesystem.mkdir(prefix, 0o0755)
                         self._created_dirs.append(prefix)
