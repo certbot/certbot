@@ -35,7 +35,7 @@ del ourselves, std_os, std_sys
 # mode, and will create a file with the same flaws that what have been described for os.chown.
 # So upon file creation, security.take_ownership will be called to ensure current user is the owner
 # of the file, and security.chmod will do the same thing than for the modified os.chown.
-# Internally, take_ownership will update the existing metdata of the file, to set the current
+# Internally, take_ownership will update the existing metadata of the file, to set the current
 # username (determined by the win32api module) as the owner of the file.
 def open(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
     """Method os.open() is forbidden"""
