@@ -212,7 +212,7 @@ def safe_open(path, mode="w", chmod=None):
 
     :param str path: Path to a file.
     :param str mode: Same os `mode` for `open`.
-    :param int chmod: Same as `mode` for `security.open`, uses Python defaults
+    :param int chmod: Same as `mode` for `filesystem.open`, uses Python defaults
         if ``None``.
 
     """
