@@ -16,7 +16,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-*
+* Renewal parameter `webroot_path` is always saved, avoiding some regressions
+  when `webroot` authenticator plugin is invoked with no challenge to perform.
 
 Despite us having broken lockstep, we are continuing to release new versions of
 all Certbot components during releases for the time being, however, the only
