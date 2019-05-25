@@ -38,5 +38,5 @@ del ourselves, std_os, std_sys
 # on Windows.
 def rename(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
     """Method os.rename() is forbidden"""
-    raise RuntimeError('Usage of os.rename() is forbidden. '  # pragma: no cover
+    raise RuntimeError('Usage of os.rename() is forbidden. '
                        'Use certbot.compat.filesystem.rename() instead.')
