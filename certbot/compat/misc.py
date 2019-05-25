@@ -11,8 +11,9 @@ import sys
 
 try:
     from win32com.shell import shell as shellwin32  # pylint: disable=import-error
+    POSIX_MODE = False
 except ImportError:  # pragma: no cover
-    shellwin32 = None  # type: ignore
+    POSIX_MODE = True
 
 from certbot import errors
 
@@ -25,7 +26,7 @@ def raise_for_non_administrative_windows_rights():
 
     :raises .errors.Error: If the current shell does not have administrative rights on Windows.
     """
-    if shellwin32 and shellwin32.IsUserAnAdmin() == 0:  # pragma: no cover
+    if not POSIX_MODE and shellwin32.IsUserAnAdmin() == 0:  # pragma: no cover
         raise errors.Error('Error, certbot must be run on a shell with administrative rights.')
 
 
