@@ -6,7 +6,7 @@ import os  # pylint: disable=os-module-forbidden
 from acme.magic_typing import Callable  # pylint: disable=unused-import,no-name-in-module
 
 
-def makedirs(file_path, mode=0o777):  # pylint: disable=function-redefined
+def makedirs(file_path, mode=0o777):
     # type: (str, int) -> None
     """
     Wrapper of original os.makedirs function, that will ensure on Windows that given mode
@@ -17,15 +17,13 @@ def makedirs(file_path, mode=0o777):  # pylint: disable=function-redefined
     """
     # As we know that os.mkdir is called internally by os.makedirs, we will swap the function in
     # os module for the time of makedirs execution.
+    def wrapper(one_path, one_mode=0o777):  # pylint: disable=missing-docstring
+        # Note, we need to provide the origin os.mkdir to our mkdir function,
+        # or we will have a nice infinite loop ...
+        mkdir(one_path, mode=one_mode, mkdir_fn=orig_mkdir_fn)
     orig_mkdir_fn = os.mkdir
     try:
-        def wrapper(one_path, one_mode=0o777):  # pylint: disable=missing-docstring
-            # Note, we need to provide the origin os.mkdir to our mkdir function,
-            # or we will have a nice infinite loop ...
-            mkdir(one_path, mode=one_mode, mkdir_fn=orig_mkdir_fn)
-
         os.mkdir = wrapper
-
         os.makedirs(file_path, mode)
     finally:
         os.mkdir = orig_mkdir_fn
