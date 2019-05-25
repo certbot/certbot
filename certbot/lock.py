@@ -209,7 +209,7 @@ class _WindowsLockMechanism(_BaseLockMechanism):
     A Windows lock file mechanism.
     By default on Windows, acquiring a file handler gives exclusive access to the process
     and results in an effective lock. However, it is possible to explicitly acquire the
-    file handler in shared access in terms of read and write, and this is done by security.open
+    file handler in shared access in terms of read and write, and this is done by filesystem.open
     and io.open in Python. So an explicit lock needs to be done through the call of
     msvcrt.locking, that will lock the first byte of the file. In theory, it is also
     possible to access a file in shared delete access, allowing other processes to delete an
