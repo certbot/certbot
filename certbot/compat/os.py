@@ -38,7 +38,7 @@ del ourselves, std_os, std_sys
 # recurrence and apply immediately the security model on every processed folder.
 def mkdir(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
     """Method os.mkdir() is forbidden"""
-    raise RuntimeError('Usage of os.mkdir() is forbidden. '  # pragma: no cover
+    raise RuntimeError('Usage of os.mkdir() is forbidden. '
                        'Use certbot.compat.filesystem.mkdir() instead.')
 
 
@@ -49,5 +49,5 @@ def mkdir(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
 # then restoring original mkdir method in the os module.
 def makedirs(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
     """Method os.makedirs() is forbidden"""
-    raise RuntimeError('Usage of os.makedirs() is forbidden. '  # pragma: no cover
+    raise RuntimeError('Usage of os.makedirs() is forbidden. '
                        'Use certbot.compat.filesystem.makedirs() instead.')
