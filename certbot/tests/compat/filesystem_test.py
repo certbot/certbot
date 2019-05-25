@@ -1,4 +1,4 @@
-"""Tests for certbot.compat.misc"""
+"""Tests for certbot.compat.filesystem"""
 import certbot.tests.util as test_util
 from certbot.compat import os
 from certbot.compat import filesystem
