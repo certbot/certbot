@@ -17,7 +17,7 @@ def open(file_path, flags, mode=0o777):  # pylint: disable=redefined-builtin
     :rtype: int
     """
     file_descriptor = os.open(file_path, flags, mode)
-    # TODO: Change to security.chmod once all logic of windows files permissions has been merged
+    # TODO: Change to filesystem.chmod once all logic of windows files permissions has been merged
     os.chmod(file_path, mode)
 
     return file_descriptor
