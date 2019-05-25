@@ -216,7 +216,7 @@ class _WindowsLockMechanism(_BaseLockMechanism):
     opened file. But this needs also to be done explicitly by all processes using the Windows
     low level APIs, and Python does not do it. As of Python 3.7 and below, Python developers
     state that deleting a file opened by a process from another process is not possible with
-    security.open and io.open.
+    filesystem.open and io.open.
     Consequently, mscvrt.locking is sufficient to obtain an effective lock, and the race
     condition encountered on Linux is not possible on Windows, leading to a simpler workflow.
     """
