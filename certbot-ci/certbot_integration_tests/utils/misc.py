@@ -12,6 +12,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import warnings
 from distutils.version import LooseVersion
 
 import pkg_resources
@@ -36,8 +37,13 @@ def check_until_timeout(url):
     :param str url: the URL to test
     :raise ValueError: exception raised after 150 unsuccessful attempts to reach the URL
     """
-    import urllib3
-    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    try:
+        import urllib3
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    except ImportError:
+        # Handle old versions of request with vendorized urllib3
+        from requests.packages.urllib3.exceptions import InsecureRequestWarning
+        requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
     for _ in range(0, 150):
         time.sleep(1)
@@ -234,7 +240,10 @@ def generate_csr(domains, key_path, csr_path, key_type=RSA_KEY_TYPE):
         key = crypto.PKey()
         key.generate_key(crypto.TYPE_RSA, 2048)
     elif key_type == ECDSA_KEY_TYPE:
-        key = ec.generate_private_key(ec.SECP384R1(), default_backend())
+        with warnings.catch_warnings():
+            # Ignore a warning on some old versions of cryptography
+            warnings.simplefilter('ignore', category=PendingDeprecationWarning)
+            key = ec.generate_private_key(ec.SECP384R1(), default_backend())
         key = key.private_bytes(encoding=Encoding.PEM, format=PrivateFormat.TraditionalOpenSSL,
                                 encryption_algorithm=NoEncryption())
         key = crypto.load_privatekey(crypto.FILETYPE_PEM, key)

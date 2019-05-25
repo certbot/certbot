@@ -105,12 +105,19 @@ def main(args):
                 certbot_normal_processing(tools_path, test_constraints)
 
             merge_requirements(tools_path, requirements, test_constraints, all_constraints)
-            if requirements:
+            if requirements:  # This branch is executed during the oldest tests
+                # First step, install the transitive dependencies of oldest requirements
+                # in respect with oldest constraints.
                 pip_install_with_print('--constraint "{0}" --requirement "{1}"'
                                        .format(all_constraints, requirements))
+                # Second step, ensure that oldest requirements themselves are effectively
+                # installed using --force-reinstall, and avoid corner cases like the one described
+                # in https://github.com/certbot/certbot/issues/7014.
+                pip_install_with_print('--force-reinstall --no-deps --requirement "{0}"'
+                                       .format(requirements))
 
-            pip_install_with_print('--constraint "{0}" {1}'
-                                   .format(all_constraints, ' '.join(args)))
+            pip_install_with_print('--constraint "{0}" {1}'.format(
+                all_constraints, ' '.join(args)))
     finally:
         if os.environ.get('TRAVIS'):
             print('travis_fold:end:install_certbot_deps')

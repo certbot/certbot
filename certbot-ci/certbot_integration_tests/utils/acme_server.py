@@ -5,6 +5,7 @@ import atexit
 import os
 import subprocess
 import shutil
+import stat
 import sys
 from os.path import join
 

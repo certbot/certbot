@@ -15,8 +15,17 @@ if ! command -v git ; then
         exit 1
     fi
 fi
-# 0.18.0 is the oldest version of letsencrypt-auto that works on Fedora 26+.
-INITIAL_VERSION="0.18.0"
+# If we're on a RHEL 6 based system, we can be confident Python is already
+# installed because the package manager is written in Python.
+if command -v python && [ $(python -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//') -eq 26 ]; then
+    # 0.20.0 is the latest version of letsencrypt-auto that doesn't install
+    # Python 3 on RHEL 6.
+    INITIAL_VERSION="0.20.0"
+    RUN_PYTHON3_TESTS=1
+else
+    # 0.33.x is the oldest version of letsencrypt-auto that works on Fedora 29+.
+    INITIAL_VERSION="0.33.1"
+fi
 git checkout -f "v$INITIAL_VERSION" letsencrypt-auto
 if ! ./letsencrypt-auto -v --debug --version --no-self-upgrade 2>&1 | tail -n1 | grep "^certbot $INITIAL_VERSION$" ; then
     echo initial installation appeared to fail
@@ -63,8 +72,7 @@ iQIDAQAB
 -----END PUBLIC KEY-----
 "
 
-if [ $(python -V 2>&1 | cut -d" " -f 2 | cut -d. -f1,2 | sed 's/\.//') -eq 26 ]; then
-    RUN_PYTHON3_TESTS=1
+if [ "$RUN_PYTHON3_TESTS" = 1 ]; then
     if command -v python3; then
         echo "Didn't expect Python 3 to be installed!"
         exit 1
