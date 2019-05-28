@@ -241,7 +241,7 @@ class OSCPTestCryptography(unittest.TestCase):
             # This mock is necessary to avoid the first call contained in _determine_ocsp_server
             # of the method cryptography.x509.Extensions.get_extension_for_class.
             with mock.patch('certbot.ocsp._determine_ocsp_server') as mock_server:
-                mock_server.return_value = ('https://i.do.not.care', 'i.do.not.care')
+                mock_server.return_value = ('https://example.com', 'example.com')
                 with mock.patch('cryptography.x509.Extensions.get_extension_for_class',
                                 side_effect=x509.ExtensionNotFound(
                                     'Not found', x509.AuthorityInformationAccessOID.OCSP)):
