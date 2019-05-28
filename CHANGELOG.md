@@ -23,6 +23,7 @@ Despite us having broken lockstep, we are continuing to release new versions of
 all Certbot components during releases for the time being, however, the only
 package with changes other than its version number was:
 
+* certbot
 * certbot-dns-rfc2136
 
 More details about these changes can be found on our GitHub repo.
