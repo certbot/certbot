@@ -28,6 +28,29 @@ class RenewalTest(test_util.ConfigTestCase):
         renewal._restore_webroot_config(config, renewalparams)
         self.assertEqual(config.webroot_path, ['/var/www/'])
 
+    @mock.patch('certbot.renewal.cli.set_by_cli')
+    def test_webroot_params_conservation(self, mock_set_by_cli):
+        # For more details about why this test is important, see:
+        # certbot.plugins.webroot_test::WebrootActionTest::test_webroot_map_partial_without_perform
+        from certbot import renewal
+        mock_set_by_cli.return_value = False
+
+        renewalparams = {
+            'webroot_map': {'test.example.com': '/var/www/test'},
+            'webroot_path': ['/var/www/test', '/var/www/other'],
+        }
+        renewal._restore_webroot_config(self.config, renewalparams)  # pylint: disable=protected-access
+        self.assertEqual(self.config.webroot_map, {'test.example.com': '/var/www/test'})
+        self.assertEqual(self.config.webroot_path, ['/var/www/test', '/var/www/other'])
+
+        renewalparams = {
+            'webroot_map': {},
+            'webroot_path': '/var/www/test',
+        }
+        renewal._restore_webroot_config(self.config, renewalparams)  # pylint: disable=protected-access
+        self.assertEqual(self.config.webroot_map, {})
+        self.assertEqual(self.config.webroot_path, ['/var/www/test'])
+
 
 class RestoreRequiredConfigElementsTest(test_util.ConfigTestCase):
     """Tests for certbot.renewal.restore_required_config_elements."""
@@ -88,6 +111,7 @@ class RestoreRequiredConfigElementsTest(test_util.ConfigTestCase):
         renewalparams = {'must_staple': 'maybe'}
         self.assertRaises(
             errors.Error, self._call, self.config, renewalparams)
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
