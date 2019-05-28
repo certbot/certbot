@@ -284,4 +284,3 @@ notifications:
     on_cancel: never
     on_success: never
     on_failure: always
-    use_notice: true
