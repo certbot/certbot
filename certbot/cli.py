@@ -1453,7 +1453,7 @@ def _plugins_parsing(helpful, plugins):
                       "using DNSimple for DNS)."))
     helpful.add(["plugins", "certonly"], "--dns-dnsmadeeasy", action="store_true",
                 default=flag_default("dns_dnsmadeeasy"),
-                help=("Obtain certificates using a DNS TXT record (if you are"
+                help=("Obtain certificates using a DNS TXT record (if you are "
                       "using DNS Made Easy for DNS)."))
     helpful.add(["plugins", "certonly"], "--dns-gehirn", action="store_true",
                 default=flag_default("dns_gehirn"),
