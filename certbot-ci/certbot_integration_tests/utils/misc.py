@@ -248,6 +248,7 @@ def generate_csr(domains, key_path, csr_path, key_type=RSA_KEY_TYPE):
     req.add_extensions([san_constraint])
 
     req.set_pubkey(key)
+    req.set_version(2)
     req.sign(key, 'sha256')
 
     with open(csr_path, 'wb') as file_h:
