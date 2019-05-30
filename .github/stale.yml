@@ -18,7 +18,8 @@ markComment: >
   To help us better see what issues are still affecting our users, this issue
   has been automatically marked as stale. If you still have this issue with an
   up-to-date version of Certbot and are interested in seeing it resolved,
-  please add a comment letting us know.
+  please add a comment letting us know. If there is no further activity, this
+  issue will be automatically closed.
 
 # Comment to post when closing a stale Issue or Pull Request.
 closeComment: >
