@@ -266,5 +266,6 @@ def list_hooks(dir_path):
     :rtype: sorted list of absolute paths to executables in dir_path
 
     """
-    paths = (os.path.join(dir_path, f) for f in os.listdir(dir_path))
-    return sorted(path for path in paths if util.is_exe(path))
+    allpaths = (os.path.join(dir_path, f) for f in os.listdir(dir_path))
+    hooks = [path for path in allpaths if util.is_exe(path) and not path.endswith('~')]
+    return sorted(hooks)
