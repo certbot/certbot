@@ -92,7 +92,7 @@ class WindowsChmodTests(TempDirTestCase):
                             ^ 512))
 
     def _test_flag(self, everyone_mode, windows_flag):
-        # Note that flag are tested again `everyone`, not `user`, because practically these unit
+        # Note that flag is tested against `everyone`, not `user`, because practically these unit
         # tests are executed with admin privilege, so current user is effectively the admins group,
         # and so will always have all rights.
         import win32security  # pylint: disable=import-error
