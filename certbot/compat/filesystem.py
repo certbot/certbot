@@ -66,7 +66,7 @@ def _generate_dacl(user_sid, mode):
     # New dacl, without inherited permissions
     dacl = win32security.ACL()
 
-    # If user is already system or admins, any ACE defined here would be superseeded by
+    # If user is already system or admins, any ACE defined here would be superseded by
     # the full control ACE that will be added after.
     if user_sid not in [system, admins]:
         # Handle user rights
