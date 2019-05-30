@@ -7,6 +7,9 @@ daysUntilStale: 180
 # Set to false to disable. If disabled, issues still need to be closed manually, but will remain marked as stale.
 daysUntilClose: 7
 
+# Ignore issues with an assignee (defaults to false)
+exemptAssignees: true
+
 # Label to use when marking as stale
 staleLabel: stale
 
