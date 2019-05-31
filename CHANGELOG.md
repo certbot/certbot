@@ -9,6 +9,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * dns_rfc2136 plugin now supports explicitly specifing an authorative 
   base domain for cases when the automatic method does not work (e.g. 
   Split horizon DNS)
+* NGINX plugin now supports using HTTP2 when rewriting configuration.
 
 ### Changed
 
