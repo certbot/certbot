@@ -62,7 +62,7 @@ def main():
         print('--> Create a workspace for certbot_test: {0}'.format(workspace))
         os.mkdir(workspace)
     else:
-        print('--> Use an existing workspace for certbot_test: {0}'.format(workspace))
+        print('--> Using an existing workspace for certbot_test: {0}'.format(workspace))
     config_dir = os.path.join(workspace, 'conf')
 
     certbot_test(args, directory_url, http_01_port, tls_alpn_01_port,
