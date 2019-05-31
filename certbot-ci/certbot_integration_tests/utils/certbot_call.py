@@ -59,7 +59,7 @@ def main():
     # Execution of certbot in a self-contained workspace
     workspace = os.environ.get('WORKSPACE', os.path.join(os.getcwd(), '.certbot_test_workspace'))
     if not os.path.exists(workspace):
-        print('--> Create a workspace for certbot_test: {0}'.format(workspace))
+        print('--> Creating a workspace for certbot_test: {0}'.format(workspace))
         os.mkdir(workspace)
     else:
         print('--> Using an existing workspace for certbot_test: {0}'.format(workspace))
