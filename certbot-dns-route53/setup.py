@@ -6,11 +6,6 @@ version = '0.35.0.dev0'
 # Remember to update local-oldest-requirements.txt when changing the minimum
 # acme/certbot version.
 install_requires = [
-    # boto3 requires urllib<1.25 while requests 2.22+ requires urllib<1.26
-    # Since pip lacks a real dependency graph resolver, it will peak the constraint only from
-    # requests, and install urllib==1.25.2. Setting an explicit dependency here solves the issue.
-    # Check https://github.com/boto/botocore/issues/1733 for resolution in botocore.
-    'urllib3<1.25',
     'acme>=0.29.0',
     'certbot>=0.34.0',
     'boto3',

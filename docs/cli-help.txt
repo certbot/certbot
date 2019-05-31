@@ -454,8 +454,8 @@ plugins:
                         using DigitalOcean for DNS). (default: False)
   --dns-dnsimple        Obtain certificates using a DNS TXT record (if you are
                         using DNSimple for DNS). (default: False)
-  --dns-dnsmadeeasy     Obtain certificates using a DNS TXT record (if you
-                        areusing DNS Made Easy for DNS). (default: False)
+  --dns-dnsmadeeasy     Obtain certificates using a DNS TXT record (if you are
+                        using DNS Made Easy for DNS). (default: False)
   --dns-gehirn          Obtain certificates using a DNS TXT record (if you are
                         using Gehirn Infrastracture Service for DNS).
                         (default: False)
