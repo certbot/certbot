@@ -114,7 +114,7 @@ class NginxConfigurator(common.Installer):
         # These will be set in the prepare function
         self.parser = None
         self.version = version
-        self.http2 = False;
+        self.http2 = False
         self._enhance_func = {"redirect": self._enable_redirect,
                               "ensure-http-header": self._set_http_header,
                               "staple-ocsp": self._enable_ocsp_stapling,
@@ -608,9 +608,9 @@ class NginxConfigurator(common.Installer):
         ipv6info = self.ipv6_info(https_port)
         ipv6_block = ['']
         ipv4_block = ['']
-        
+
         http2 = ''
-        if (self.http2):
+        if self.http2:
             http2 = 'http2 '
 
         # If the vhost was implicitly listening on the default Nginx port,
@@ -787,9 +787,13 @@ class NginxConfigurator(common.Installer):
 
         for vhost in vhosts:
             self._enable_redirect_single(domain, vhost)
-    
-    def _enable_http2(self, domain, unused_options):
-        """Use HTTP2 In NGINX Configuration"""
+
+    def _enable_http2(self, unused_options):
+        """Use HTTP2 In NGINX Configuration
+
+        :param unused_options: Not currently used
+        :type unused_options: Not Available
+        """
 
         self.http2 = True;
 
