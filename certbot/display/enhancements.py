@@ -58,7 +58,30 @@ def redirect_by_default():
 
     return selection == 1
 
+def http2_by_default():
+    """Determines whether the user would like to enable HTTP2.
+
+    :returns: True if HTTP2 is desired, False otherwise
+    :rtype: bool
+
+    """
+    choices = [
+        ("No", "Make no further changes to the webserver configuration."),
+        ("Yes", "Enable HTTP2"),
+    ]
+
+    code, selection = util(interfaces.IDisplay).menu(
+        "Please choose whether or not to enable HTTP2.",
+        choices, default=0,
+        cli_flag="--http2 / --no-http2", force_interactive=False)
+
+    if code != display_util.OK:
+        return False
+
+    return selection == 1
+
 
 DISPATCH = {
-    "redirect": redirect_by_default
+    "redirect": redirect_by_default,
+    "http2": http2_by_default
 }

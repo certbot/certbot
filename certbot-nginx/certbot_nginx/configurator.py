@@ -114,9 +114,11 @@ class NginxConfigurator(common.Installer):
         # These will be set in the prepare function
         self.parser = None
         self.version = version
+        self.http2 = False;
         self._enhance_func = {"redirect": self._enable_redirect,
                               "ensure-http-header": self._set_http_header,
-                              "staple-ocsp": self._enable_ocsp_stapling}
+                              "staple-ocsp": self._enable_ocsp_stapling,
+                              "http2": self._enable_http2}
 
         self.reverter.recovery_routine()
 
@@ -606,6 +608,10 @@ class NginxConfigurator(common.Installer):
         ipv6info = self.ipv6_info(https_port)
         ipv6_block = ['']
         ipv4_block = ['']
+        
+        http2 = ''
+        if (self.http2):
+            http2 = 'http2 '
 
         # If the vhost was implicitly listening on the default Nginx port,
         # have it continue to do so.
@@ -619,6 +625,7 @@ class NginxConfigurator(common.Installer):
                           ' ',
                           '[::]:{0}'.format(https_port),
                           ' ',
+                          '{0}'.format(http2),
                           'ssl']
             if not ipv6info[1]:
                 # ipv6only=on is absent in global config
@@ -631,6 +638,7 @@ class NginxConfigurator(common.Installer):
                           ' ',
                           '{0}'.format(https_port),
                           ' ',
+                          '{0}'.format(http2),
                           'ssl']
 
         snakeoil_cert, snakeoil_key = self._get_snakeoil_paths()
@@ -779,6 +787,11 @@ class NginxConfigurator(common.Installer):
 
         for vhost in vhosts:
             self._enable_redirect_single(domain, vhost)
+    
+    def _enable_http2(self, domain, unused_options):
+        """Use HTTP2 In NGINX Configuration"""
+
+        self.http2 = True;
 
     def _enable_redirect_single(self, domain, vhost):
         """Redirect all equivalent HTTP traffic to ssl_vhost.
