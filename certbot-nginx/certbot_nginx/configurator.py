@@ -795,7 +795,7 @@ class NginxConfigurator(common.Installer):
         :type unused_options: Not Available
         """
 
-        self.http2 = True;
+        self.http2 = True
 
     def _enable_redirect_single(self, domain, vhost):
         """Redirect all equivalent HTTP traffic to ssl_vhost.
