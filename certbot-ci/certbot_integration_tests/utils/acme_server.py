@@ -223,7 +223,7 @@ def main():
     except KeyboardInterrupt:
         stop()
         if process:
-            process.poll()
+            process.wait()
 
 
 if __name__ == '__main__':
