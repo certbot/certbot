@@ -75,6 +75,7 @@ Authors
 * [Fabian](https://github.com/faerbit)
 * [Faidon Liambotis](https://github.com/paravoid)
 * [Fan Jiang](https://github.com/tcz001)
+* [Felix Lechner](https://github.com/lechner)
 * [Felix Schwarz](https://github.com/FelixSchwarz)
 * [Felix Yan](https://github.com/felixonmars)
 * [Filip Ochnik](https://github.com/filipochnik)
