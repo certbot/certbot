@@ -219,7 +219,7 @@ def main():
         process = subprocess.Popen(['docker', 'logs', '-f', docker_name])
 
         while True:
-            time.sleep(1)
+            time.sleep(3600)
     except KeyboardInterrupt:
         stop()
         if process:
