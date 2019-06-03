@@ -4,10 +4,11 @@ particular category.
 """
 from __future__ import absolute_import
 
-import os  # pylint: disable=os-module-forbidden
 import select
 import stat
 import sys
+
+from certbot.compat import os
 
 try:
     from win32com.shell import shell as shellwin32  # pylint: disable=import-error
