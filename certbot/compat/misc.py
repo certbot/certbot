@@ -8,8 +8,6 @@ import select
 import stat
 import sys
 
-from certbot.compat import os
-
 try:
     from win32com.shell import shell as shellwin32  # pylint: disable=import-error
     POSIX_MODE = False
@@ -17,7 +15,7 @@ except ImportError:  # pragma: no cover
     POSIX_MODE = True
 
 from certbot import errors
-
+from certbot.compat import os
 
 def raise_for_non_administrative_windows_rights():
     # type: () -> None
