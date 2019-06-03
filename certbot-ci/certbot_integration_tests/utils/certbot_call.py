@@ -10,6 +10,21 @@ from certbot_integration_tests.utils import misc
 
 def certbot_test(certbot_args, directory_url, http_01_port, tls_alpn_01_port,
                  config_dir, workspace, force_renew, capture_stdout):
+    """
+    Invoke the certbot executable available in PATH in a test context for the given args.
+    The test context consists in running certbot in debug mode, with various flags suitable
+    for tests (eg. no ssl check, customizable ACME challenge ports and config directory ...).
+    :param str[] certbot_args: the arguments to pass to the certbot executable
+    :param str directory_url: URL of the ACME directory server to use
+    :param int http_01_port: port for the HTTP-01 challenges
+    :param int tls_alpn_01_port: port for the TLS-ALPN-01 challenges
+    :param str config_dir: certbot configuration directory to use
+    :param str workspace: certbot current directory to use
+    :param bool force_renew: set to True to renew by default existing certificates
+    :param bool capture_stdout: set to True to capture the stdout and return it
+    :return: stdout as string if capture_stdout is True, else None
+    :rtype: str or None
+    """
     new_environ = os.environ.copy()
     new_environ['TMPDIR'] = workspace
 
