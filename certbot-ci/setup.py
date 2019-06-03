@@ -49,7 +49,7 @@ setup(
     entry_points={
         'console_scripts': [
             'certbot_test=certbot_integration_tests.utils.certbot_call:main',
-            'acme_server=certbot_integration_tests.utils.acme_server:main',
+            'run_acme_server=certbot_integration_tests.utils.acme_server:main',
         ],
     }
 )
