@@ -224,7 +224,6 @@ def main():
         stop()
         if process:
             process.poll()
-        pass
 
 
 if __name__ == '__main__':
