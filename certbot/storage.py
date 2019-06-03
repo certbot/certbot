@@ -162,7 +162,7 @@ def rename_renewal_config(prev_name, new_name, cli_config):
         raise errors.ConfigurationError("The new certificate name "
             "is already in use.")
     try:
-        filesystem.rename(prev_filename, new_filename)
+        filesystem.replace(prev_filename, new_filename)
     except OSError:
         raise errors.ConfigurationError("Please specify a valid filename "
             "for the new certificate name.")
@@ -191,7 +191,7 @@ def update_configuration(lineagename, archive_dir, target, cli_config):
     # Save only the config items that are relevant to renewal
     values = relevant_values(vars(cli_config.namespace))
     write_renewal_config(config_filename, temp_filename, archive_dir, target, values)
-    filesystem.rename(temp_filename, config_filename)
+    filesystem.replace(temp_filename, config_filename)
 
     return configobj.ConfigObj(config_filename)
 

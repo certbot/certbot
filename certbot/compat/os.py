@@ -31,12 +31,16 @@ std_sys.modules[__name__ + '.path'] = path
 del ourselves, std_os, std_sys
 
 
-# Because of the blocking strategy on file handlers on Windows, rename to not behave as expected
-# with POSIX systems: an exception will be raised if dst already exists. Hopefully there is
-# os.replace on Windows for Python 3, that will do the same than on POSIX. Hopefully also, only
-# Python 3 is supported for Certbot. So we can rely on os.rename on Linux, and os.replace
-# on Windows.
+# Because of the blocking strategy on file handlers on Windows, rename do not behave as expected
+# with POSIX systems: an exception will be raised if dst already exists.
 def rename(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
     """Method os.rename() is forbidden"""
     raise RuntimeError('Usage of os.rename() is forbidden. '
-                       'Use certbot.compat.filesystem.rename() instead.')
+                       'Use certbot.compat.filesystem.replace() instead.')
+
+
+# To be consistent across Windows and Linux, filesystem.replace should be used.
+def replace(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
+    """Method os.replace() is forbidden"""
+    raise RuntimeError('Usage of os.replace() is forbidden. '
+                       'Use certbot.compat.filesystem.replace() instead.')
