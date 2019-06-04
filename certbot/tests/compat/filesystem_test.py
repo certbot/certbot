@@ -14,11 +14,11 @@ from certbot.compat import filesystem
 from certbot.tests.util import TempDirTestCase
 
 
-@unittest.skipIf(not POSIX_MODE, reason='Test specific to Windows security')
+@unittest.skipIf(POSIX_MODE, reason='Test specific to Windows security')
 class WindowsChmodTests(TempDirTestCase):
     """Unit tests for Windows chmod function in filesystem module"""
     def test_symlink_resolution(self):
-        probe_path = _create_probe(self.tempdir)  # This is 0o744 by default
+        probe_path = _create_probe(self.tempdir)
 
         link_path = os.path.join(self.tempdir, 'link')
         os.symlink(probe_path, link_path)
@@ -26,7 +26,6 @@ class WindowsChmodTests(TempDirTestCase):
         ref_dacl_probe = _get_security_dacl(probe_path).GetSecurityDescriptorDacl()
         ref_dacl_link = _get_security_dacl(link_path).GetSecurityDescriptorDacl()
 
-        # Removing the rights for `all`, we have at least one ACL less than in the case of 0o744.
         filesystem.chmod(link_path, 0o700)
 
         # Assert the real file is impacted, not the link.
