@@ -35,12 +35,21 @@ def chmod(file_path, mode):
 
 
 def _apply_win_mode(file_path, mode):
-    # Resolve symbolic links
-    if os.path.islink(file_path):
+    """
+    This function converts the given POSIX mode into a Windows ACL list, and applies it to the
+    file given its path. If the given path is a symbolic link, it will resolved to apply the
+    mode on the targeted file.
+    """
+    original_path = file_path
+    inspected_paths = []
+    while os.path.islink(file_path):
         link_path = file_path
         file_path = os.readlink(file_path)
         if not os.path.isabs(file_path):
             file_path = os.path.join(os.path.dirname(link_path), file_path)
+        if file_path in inspected_paths:
+            raise RuntimeError('Error, link {0} is a loop!'.format(original_path))
+        inspected_paths.append(file_path)
     # Get owner sid of the file
     security = win32security.GetFileSecurity(file_path, win32security.OWNER_SECURITY_INFORMATION)
     user = security.GetSecurityDescriptorOwner()
