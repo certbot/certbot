@@ -6,6 +6,7 @@ for a directory a specific configuration using built-in pytest hooks.
 
 See https://docs.pytest.org/en/latest/reference.html#hook-reference
 """
+from __future__ import print_function
 import contextlib
 import sys
 import subprocess
@@ -72,12 +73,6 @@ def _setup_primary_node(config):
         subprocess.check_output(['docker', '-v'], stderr=subprocess.STDOUT)
     except (subprocess.CalledProcessError, OSError):
         raise ValueError('Error: docker is required in PATH to launch the integration tests, '
-                         'but is not installed or not available for current user.')
-
-    try:
-        subprocess.check_output(['docker-compose', '-v'], stderr=subprocess.STDOUT)
-    except (subprocess.CalledProcessError, OSError):
-        raise ValueError('Error: docker-compose is required in PATH to launch the integration tests, '
                          'but is not installed or not available for current user.')
 
     # Parameter numprocesses is added to option by pytest-xdist
