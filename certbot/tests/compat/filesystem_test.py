@@ -96,18 +96,18 @@ class WindowsChmodTests(TempDirTestCase):
         # Note that flag is tested against `everyone`, not `user`, because practically these unit
         # tests are executed with admin privilege, so current user is effectively the admins group,
         # and so will always have all rights.
-        filesystem.chmod(self.probe_path, 0o700 + everyone_mode)
+        filesystem.chmod(self.probe_path, 0o700 | everyone_mode)
         dacl = _get_security_dacl(self.probe_path).GetSecurityDescriptorDacl()
         everybody = win32security.ConvertStringSidToSid(EVERYBODY_SID)
 
-        acls_user = [dacl.GetAce(index) for index in range(0, dacl.GetAceCount())
-                     if dacl.GetAce(index)[2] == everybody]
+        acls_everybody = [dacl.GetAce(index) for index in range(0, dacl.GetAceCount())
+                          if dacl.GetAce(index)[2] == everybody]
 
-        self.assertEqual(len(acls_user), 1)
+        self.assertEqual(len(acls_everybody), 1)
 
-        acl_user = acls_user[0]
+        acls_everybody = acls_everybody[0]
 
-        self.assertEqual(acl_user[1], windows_flag)
+        self.assertEqual(acls_everybody[1], windows_flag)
 
     def test_user_admin_dacl_consistency(self):
         # Set ownership of target to authenticated user
