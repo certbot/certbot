@@ -152,18 +152,18 @@ def _compare_dacls(dacl1, dacl2):
     aces1 = [dacl1.GetAce(index) for index in range(0, dacl1.GetAceCount())]
     aces2 = [dacl2.GetAce(index) for index in range(0, dacl2.GetAceCount())]
 
-     # Convert PySIDs into hashable objects
+    # Convert PySIDs into hashable objects
     aces1_refined = []
     aces2_refined = []
     for ace in aces1:
         if len(ace) == 3:
             aces1_refined.append((ace[0], ace[1], str(ace[2])))
         else:
-            aces1_refined.append((ace[0], ace[1], ace[2], ace[3], str(ace[4])))  # type: ignore
+            aces1_refined.append((ace[0], ace[1], ace[2], ace[3], ace[4]))  # type: ignore
     for index, ace in enumerate(aces2):
         if len(ace) == 3:
             aces2_refined.append((ace[0], ace[1], str(ace[2])))
         else:
-            aces2_refined.append((ace[0], ace[1], ace[2], ace[3], str(ace[4])))  # type: ignore
+            aces2_refined.append((ace[0], ace[1], ace[2], ace[3], ace[4]))  # type: ignore
 
     return set(aces1_refined) == set(aces2_refined)

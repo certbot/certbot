@@ -23,6 +23,7 @@ ADMINS_SID = 'S-1-5-32-544'
 class WindowsChmodTests(TempDirTestCase):
     """Unit tests for Windows chmod function in filesystem module"""
     def setUp(self):
+        super(WindowsChmodTests, self).setUp()
         self.probe_path = _create_probe(self.tempdir)
 
     def test_symlink_resolution(self):
