@@ -27,7 +27,6 @@ from certbot import lock
 from certbot import storage
 from certbot import util
 from certbot.compat import os
-from certbot.compat import filesystem
 from certbot.display import util as display_util
 
 
@@ -341,12 +340,9 @@ class TempDirTestCase(unittest.TestCase):
 
         def handle_rw_files(_, path, __):
             """Handle read-only files, that will fail to be removed on Windows."""
-            filesystem.chmod(path, stat.S_IWRITE)
-            try:
-                os.remove(path)
-            except (IOError, OSError):
-                # TODO: remote the try/except once all logic from windows file permissions is merged
-                pass
+            from os import chmod  # pylint: disable=os-module-forbidden
+            chmod(path, stat.S_IWRITE)
+            os.remove(path)
         shutil.rmtree(self.tempdir, onerror=handle_rw_files)
 
 
