@@ -14,62 +14,62 @@ from certbot.compat import filesystem
 from certbot.tests.util import TempDirTestCase
 
 
+EVERYBODY_SID = 'S-1-1-0'
+SYSTEM_SID = 'S-1-5-18'
+ADMINS_SID = 'S-1-5-32-544'
+
+
 @unittest.skipIf(POSIX_MODE, reason='Test specific to Windows security')
 class WindowsChmodTests(TempDirTestCase):
     """Unit tests for Windows chmod function in filesystem module"""
+    def setUp(self):
+        self.probe_path = _create_probe(self.tempdir)
+
     def test_symlink_resolution(self):
-        probe_path = _create_probe(self.tempdir)
-
         link_path = os.path.join(self.tempdir, 'link')
-        os.symlink(probe_path, link_path)
+        os.symlink(self.probe_path, link_path)
 
-        ref_dacl_probe = _get_security_dacl(probe_path).GetSecurityDescriptorDacl()
+        ref_dacl_probe = _get_security_dacl(self.probe_path).GetSecurityDescriptorDacl()
         ref_dacl_link = _get_security_dacl(link_path).GetSecurityDescriptorDacl()
 
         filesystem.chmod(link_path, 0o700)
 
         # Assert the real file is impacted, not the link.
-        cur_dacl_probe = _get_security_dacl(probe_path).GetSecurityDescriptorDacl()
+        cur_dacl_probe = _get_security_dacl(self.probe_path).GetSecurityDescriptorDacl()
         cur_dacl_link = _get_security_dacl(link_path).GetSecurityDescriptorDacl()
         self.assertFalse(filesystem._compare_dacls(ref_dacl_probe, cur_dacl_probe))  # pylint: disable=protected-access
         self.assertTrue(filesystem._compare_dacls(ref_dacl_link, cur_dacl_link))  # pylint: disable=protected-access
 
     def test_world_permission(self):
-        probe_path = _create_probe(self.tempdir)
+        everybody = win32security.ConvertStringSidToSid(EVERYBODY_SID)
 
-        everybody = win32security.ConvertStringSidToSid('S-1-1-0')
-
-        filesystem.chmod(probe_path, 0o700)
-        dacl = _get_security_dacl(probe_path).GetSecurityDescriptorDacl()
+        filesystem.chmod(self.probe_path, 0o700)
+        dacl = _get_security_dacl(self.probe_path).GetSecurityDescriptorDacl()
 
         self.assertFalse([dacl.GetAce(index) for index in range(0, dacl.GetAceCount())
                           if dacl.GetAce(index)[2] == everybody])
 
-        filesystem.chmod(probe_path, 0o704)
-        dacl = _get_security_dacl(probe_path).GetSecurityDescriptorDacl()
+        filesystem.chmod(self.probe_path, 0o704)
+        dacl = _get_security_dacl(self.probe_path).GetSecurityDescriptorDacl()
 
         self.assertTrue([dacl.GetAce(index) for index in range(0, dacl.GetAceCount())
                          if dacl.GetAce(index)[2] == everybody])
 
     def test_group_permissions_noop(self):
-        probe_path = _create_probe(self.tempdir)
+        filesystem.chmod(self.probe_path, 0o700)
+        ref_dacl_probe = _get_security_dacl(self.probe_path).GetSecurityDescriptorDacl()
 
-        filesystem.chmod(probe_path, 0o700)
-        ref_dacl_probe = _get_security_dacl(probe_path).GetSecurityDescriptorDacl()
-
-        filesystem.chmod(probe_path, 0o740)
-        cur_dacl_probe = _get_security_dacl(probe_path).GetSecurityDescriptorDacl()
+        filesystem.chmod(self.probe_path, 0o740)
+        cur_dacl_probe = _get_security_dacl(self.probe_path).GetSecurityDescriptorDacl()
 
         self.assertTrue(filesystem._compare_dacls(ref_dacl_probe, cur_dacl_probe))  # pylint: disable=protected-access
 
     def test_admin_permissions(self):
-        probe_path = _create_probe(self.tempdir)
+        system = win32security.ConvertStringSidToSid(SYSTEM_SID)
+        admins = win32security.ConvertStringSidToSid(ADMINS_SID)
 
-        system = win32security.ConvertStringSidToSid('S-1-5-18')
-        admins = win32security.ConvertStringSidToSid('S-1-5-32-544')
-
-        filesystem.chmod(probe_path, 0o700)
-        dacl = _get_security_dacl(probe_path).GetSecurityDescriptorDacl()
+        filesystem.chmod(self.probe_path, 0o700)
+        dacl = _get_security_dacl(self.probe_path).GetSecurityDescriptorDacl()
 
         self.assertTrue([dacl.GetAce(index) for index in range(0, dacl.GetAceCount())
                          if dacl.GetAce(index)[2] == system])
@@ -96,11 +96,9 @@ class WindowsChmodTests(TempDirTestCase):
         # Note that flag is tested against `everyone`, not `user`, because practically these unit
         # tests are executed with admin privilege, so current user is effectively the admins group,
         # and so will always have all rights.
-        probe_path = _create_probe(self.tempdir)
-
-        filesystem.chmod(probe_path, 0o700 + everyone_mode)
-        dacl = _get_security_dacl(probe_path).GetSecurityDescriptorDacl()
-        everybody = win32security.ConvertStringSidToSid('S-1-1-0')
+        filesystem.chmod(self.probe_path, 0o700 + everyone_mode)
+        dacl = _get_security_dacl(self.probe_path).GetSecurityDescriptorDacl()
+        everybody = win32security.ConvertStringSidToSid(EVERYBODY_SID)
 
         acls_user = [dacl.GetAce(index) for index in range(0, dacl.GetAceCount())
                      if dacl.GetAce(index)[2] == everybody]
@@ -112,27 +110,25 @@ class WindowsChmodTests(TempDirTestCase):
         self.assertEqual(acl_user[1], windows_flag)
 
     def test_user_admin_dacl_consistency(self):
-        probe_path = _create_probe(self.tempdir)
-
         # Set ownership of target to authenticated user
         authenticated_user, _, _ = win32security.LookupAccountName("", win32api.GetUserName())
-        security_owner = _get_security_owner(probe_path)
-        _set_owner(probe_path, security_owner, authenticated_user)
+        security_owner = _get_security_owner(self.probe_path)
+        _set_owner(self.probe_path, security_owner, authenticated_user)
 
-        filesystem.chmod(probe_path, 0o700)
+        filesystem.chmod(self.probe_path, 0o700)
 
-        security_dacl = _get_security_dacl(probe_path)
+        security_dacl = _get_security_dacl(self.probe_path)
         # We expect three ACE: one for admins, one for system, and one for the user
         self.assertEqual(security_dacl.GetSecurityDescriptorDacl().GetAceCount(), 3)
 
         # Set ownership of target to Administrators user group
-        admin_user = win32security.ConvertStringSidToSid('S-1-5-32-544')
-        security_owner = _get_security_owner(probe_path)
-        _set_owner(probe_path, security_owner, admin_user)
+        admin_user = win32security.ConvertStringSidToSid(ADMINS_SID)
+        security_owner = _get_security_owner(self.probe_path)
+        _set_owner(self.probe_path, security_owner, admin_user)
 
-        filesystem.chmod(probe_path, 0o700)
+        filesystem.chmod(self.probe_path, 0o700)
 
-        security_dacl = _get_security_dacl(probe_path)
+        security_dacl = _get_security_dacl(self.probe_path)
         # We expect only two ACE: one for admins, one for system,
         # since the user is also the admins group
         self.assertEqual(security_dacl.GetSecurityDescriptorDacl().GetAceCount(), 2)
