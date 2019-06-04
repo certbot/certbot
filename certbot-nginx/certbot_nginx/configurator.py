@@ -158,14 +158,14 @@ class NginxConfigurator(common.Installer):
                 "Could not find a usable 'nginx' binary. Ensure nginx exists, "
                 "the binary is executable, and your PATH is set correctly.")
 
-        # Set Version
-        if self.version is None:
-            self.version = self.get_version()
-
         # Make sure configuration is valid
         self.config_test()
 
         self.parser = parser.NginxParser(self.conf('server-root'))
+
+        # Set Version
+        if self.version is None:
+            self.version = self.get_version()
 
         self.install_ssl_options_conf(self.mod_ssl_conf, self.updated_mod_ssl_conf_digest)
 

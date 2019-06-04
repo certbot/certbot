@@ -907,6 +907,11 @@ class InstallSslOptionsConfTest(util.NginxTest):
         self._assert_current_file()
 
     def _mock_hash_except_ssl_conf_src(self, fake_hash):
+        # Write a bad file in place so that update tests fail if no update occurs.
+        # We're going to pretend this file (the currently installed conf file)
+        # actually hashes to `fake_hash` for the update tests.
+        with open(self.config.mod_ssl_conf, "w") as f:
+            f.write("bogus")
         sha256 = crypto_util.sha256sum
         def _hash(filename):
             return sha256(filename) if filename == self.config.mod_ssl_conf_src else fake_hash
