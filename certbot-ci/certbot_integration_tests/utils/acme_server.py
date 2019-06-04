@@ -20,6 +20,20 @@ CHALLTESTSRV_PORT = 8055
 HTTP_01_PORT = 5002
 
 
+class _Handler(object):
+    def __init__(self, acme_xdist, start, stop):
+        self.acme_xdist = acme_xdist
+        self.start = start
+        self.stop = stop
+
+    def __enter__(self):
+        self.start()
+        return self.acme_xdist
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.stop()
+
+
 def setup_acme_server(acme_server, nodes, proxy=True):
     """
     This method will setup an ACME CA server and an HTTP reverse proxy instance, to allow parallel
@@ -44,7 +58,7 @@ def setup_acme_server(acme_server, nodes, proxy=True):
             _prepare_traefik_proxy(workspace, acme_xdist)
         _prepare_acme_server(workspace, acme_type, acme_xdist)
 
-    return acme_xdist, start, stop
+    return _Handler(acme_xdist, start, stop)
 
 
 def _construct_acme_xdist(acme_server, nodes):
@@ -206,23 +220,23 @@ def main():
         raise ValueError('Invalid server value {0}, should be one of {1}'
                          .format(server_type, possible_values))
 
-    acme_xdist, start, stop = setup_acme_server(server_type, [], False)
+    acme_server = setup_acme_server(server_type, [], False)
     process = None
 
     try:
-        start()
-        print('--> Instance of {0} is running, directory URL is {0}'
-              .format(acme_xdist['directory_url']))
-        print('--> Press CTRL+C to stop the ACME server.')
+        with acme_server as acme_xdist:
+            print('--> Instance of {0} is running, directory URL is {0}'
+                  .format(acme_xdist['directory_url']))
+            print('--> Press CTRL+C to stop the ACME server.')
 
-        docker_name = 'pebble_pebble_1' if 'pebble' in server_type else 'boulder_boulder_1'
-        process = subprocess.Popen(['docker', 'logs', '-f', docker_name])
+            docker_name = 'pebble_pebble_1' if 'pebble' in server_type else 'boulder_boulder_1'
+            process = subprocess.Popen(['docker', 'logs', '-f', docker_name])
 
-        while True:
-            time.sleep(3600)
+            while True:
+                time.sleep(3600)
     except KeyboardInterrupt:
-        stop()
         if process:
+            process.terminate()
             process.wait()
 
 
