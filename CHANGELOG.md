@@ -18,7 +18,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 * Renewal parameter `webroot_path` is always saved, avoiding some regressions
   when `webroot` authenticator plugin is invoked with no challenge to perform.
-* Certbot now accepts OCSP responses when when an explicit authorized
+* Certbot now accepts OCSP responses when an explicit authorized
   responder, different from the issuer, is used to sign OCSP
   responses.
 * Scripts in Certbot hook directories are no longer executed when their
