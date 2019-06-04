@@ -722,7 +722,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
 
         args = ["install", "--nginx", "--cert-path",
                 test_util.temp_join('blah'), "--key-path", test_util.temp_join('blah'),
-                "--nginx-server-root", "/nonexistent/thing", "-d",
+                "--nginx-server-root", os.path.join(os.sep, "nonexistent", "thing"), "-d",
                 "example.com", "--debug"]
         if "nginx" in real_plugins:
             # Sending nginx a non-existent conf dir will simulate misconfiguration
