@@ -69,6 +69,45 @@ found in the `virtualenv docs`_.
 
 .. _`virtualenv docs`: https://virtualenv.pypa.io
 
+Running certbot against a locally deployed Pebble CA
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+By following the instructions above, you can execute Certbot against a local instance
+of Pebble CA. This is useful to verify that the modifications done to the code makes
+Certbot behave as expected.
+
+You need Docker installed, and a user with access to the Docker client.
+
+The virtual environment set up with `python tools/venv.py` contains two commands
+that can be used once the virtual environment is activated:
+
+.. code-block:: shell
+
+    run_acme_server
+
+- Start a local instance of Pebble CA, and keep displaying its log on foreground.
+- Press CTRL+C to stop this instance.
+- This instance is configured to validate challenges against a certbot executed locally.
+
+.. code-block:: shell
+
+    certbot_tests [ARGS...]
+
+- Execute certbot with the provided ARGS in test mode: verbose output, debug enabled...
+- Execution is preconfigured to interact with the Pebble CA started with ``run_acme_server``.
+- Any arguments can be passed as they would be to Certbot (eg. ``certonly -d test.example.com``).
+
+Here is a typical workflow to verify that Certbot successfully issued a certificate
+using an HTTP-01 challenge on a machine with Python 3:
+
+.. code-block:: shell
+
+    python tools/venv3.py
+    source venv3/bin/activate
+    run_acme_server &
+    certbot_tests certonly --standalone -d test.example.com
+    # To stop Pebble, launch `bg` to get back the background job, then press CTRL+C
+
 Find issues to work on
 ----------------------
 
@@ -88,6 +127,11 @@ tests, and be compliant with the :ref:`coding style <coding-style>`.
 
 Testing
 -------
+
+.. _unit:
+
+Unit testing
+~~~~~~~~~~~~
 
 When you are working in a file ``foo.py``, there should also be a file ``foo_test.py``
 either in the same directory as ``foo.py`` or in the ``tests`` subdirectory
