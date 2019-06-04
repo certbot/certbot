@@ -5,6 +5,7 @@ Authors
 * Aaron Zuehlke
 * Ada Lovelace
 * [Adam Woodbeck](https://github.com/awoodbeck)
+* [Adrien Ferrand](https://github.com/adferrand)
 * [Aidin Gharibnavaz](https://github.com/aidin36)
 * [AJ ONeal](https://github.com/coolaj86)
 * [Alcaro](https://github.com/Alcaro)
