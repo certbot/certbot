@@ -69,13 +69,19 @@ class WindowsChmodTests(TempDirTestCase):
         system = win32security.ConvertStringSidToSid(SYSTEM_SID)
         admins = win32security.ConvertStringSidToSid(ADMINS_SID)
 
-        filesystem.chmod(self.probe_path, 0o700)
+        filesystem.chmod(self.probe_path, 0o400)
         dacl = _get_security_dacl(self.probe_path).GetSecurityDescriptorDacl()
 
-        self.assertTrue([dacl.GetAce(index) for index in range(0, dacl.GetAceCount())
-                         if dacl.GetAce(index)[2] == system])
-        self.assertTrue([dacl.GetAce(index) for index in range(0, dacl.GetAceCount())
-                         if dacl.GetAce(index)[2] == admins])
+        system_aces = [dacl.GetAce(index) for index in range(0, dacl.GetAceCount())
+                       if dacl.GetAce(index)[2] == system]
+        admin_aces = [dacl.GetAce(index) for index in range(0, dacl.GetAceCount())
+                      if dacl.GetAce(index)[2] == admins]
+
+        self.assertEqual(len(system_aces), 1)
+        self.assertEqual(len(admin_aces), 1)
+
+        self.assertEqual(system_aces[0][1], ntsecuritycon.FILE_ALL_ACCESS ^ 512)
+        self.assertEqual(admin_aces[0][1], ntsecuritycon.FILE_ALL_ACCESS ^ 512)
 
     def test_read_flag(self):
         self._test_flag(4, ntsecuritycon.FILE_GENERIC_READ)
