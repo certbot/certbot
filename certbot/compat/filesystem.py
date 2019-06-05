@@ -12,6 +12,8 @@ except ImportError:
 else:
     POSIX_MODE = False
 
+from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
+
 
 def chmod(file_path, mode):
     # type: (str, int) -> None
@@ -41,7 +43,7 @@ def _apply_win_mode(file_path, mode):
     mode on the targeted file.
     """
     original_path = file_path
-    inspected_paths = []
+    inspected_paths = []  # type: List[str]
     while os.path.islink(file_path):
         link_path = file_path
         file_path = os.readlink(file_path)

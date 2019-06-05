@@ -150,6 +150,7 @@ def _set_owner(target, security_owner, user):
 
 
 def _create_probe(tempdir):
+    filesystem.chmod(tempdir, 0o744)
     probe_path = os.path.join(tempdir, 'probe')
     open(probe_path, 'w').close()
     return probe_path
