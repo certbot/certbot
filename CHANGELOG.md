@@ -10,7 +10,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* Update the 'manage your account' help to be more generic.
 
 ### Fixed
 
