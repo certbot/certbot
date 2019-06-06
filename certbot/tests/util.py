@@ -346,7 +346,8 @@ class TempDirTestCase(unittest.TestCase):
                 os.remove(path)
             except (IOError, OSError):
                 # TODO: remote the try/except once all logic from windows file permissions is merged
-                pass
+                if os.name != 'nt':
+                    raise
         shutil.rmtree(self.tempdir, onerror=handle_rw_files)
 
 
