@@ -276,7 +276,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             util.lock_dir_until_exit(self.option("server_root"))
         except (OSError, errors.LockError):
             logger.debug("Encountered error:", exc_info=True)
-            raise errors.PluginError("Unable to lock {0}".format(self.option("server_root")))
+            raise errors.PluginError(
+                "Unable to create a lock file in {0}".format(self.option("server_root")))
         self._prepared = True
 
     def _verify_exe_availability(self, exe):
