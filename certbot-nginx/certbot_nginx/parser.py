@@ -588,8 +588,6 @@ def comment_directive(block, location):
             next_entry = next_entry[0]
 
     block.insert(location + 1, COMMENT_BLOCK[:])
-    if next_entry is not None and "\n" not in next_entry:
-        block.insert(location + 2, '\n')
 
 def _comment_out_directive(block, location, include_location):
     """Comment out the line at location, with a note of explanation."""

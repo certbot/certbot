@@ -365,7 +365,6 @@ class NginxParserTest(util.NginxTest): #pylint: disable=too-many-public-methods
         self.assertEqual(block.spaced, [
             ["\n", "a", " ", "b", "\n"],
             COMMENT_BLOCK,
-            "\n",
             ["c", " ", "d"],
             COMMENT_BLOCK,
             ["\n", "e", " ", "f"]])

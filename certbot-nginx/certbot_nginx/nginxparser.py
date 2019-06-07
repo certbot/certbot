@@ -195,6 +195,8 @@ class UnspacedList(list):
     def insert(self, i, x):
         item, spaced_item = self._coerce(x)
         slicepos = self._spaced_position(i) if i < len(self) else len(self.spaced)
+        if slicepos > 0 and spacey(self.spaced[slicepos-1]):
+            slicepos -= 1
         self.spaced.insert(slicepos, spaced_item)
         if not spacey(item):
             list.insert(self, i, item)
@@ -202,7 +204,10 @@ class UnspacedList(list):
 
     def append(self, x):
         item, spaced_item = self._coerce(x)
-        self.spaced.append(spaced_item)
+        if len(self.spaced) > 0 and  spacey(self.spaced[-1]):
+            self.spaced.insert(-1, spaced_item)
+        else:
+            self.spaced.append(spaced_item)
         if not spacey(item):
             list.append(self, item)
         self.dirty = True
