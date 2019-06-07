@@ -277,7 +277,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         except (OSError, errors.LockError):
             logger.debug("Encountered error:", exc_info=True)
             raise errors.PluginError(
-                "Unable to create a lock file in {0}".format(self.option("server_root")))
+                "Unable to create a lock file in {0}. Are you running"
+                " Certbot with sufficient privileges to modify your"
+                " Apache configuration?".format(self.option("server_root")))
         self._prepared = True
 
     def _verify_exe_availability(self, exe):
