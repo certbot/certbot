@@ -282,6 +282,7 @@ pritunl_    N    Y    Install certificates in pritunl distributed OpenVPN server
 proxmox_    N    Y    Install certificates in Proxmox Virtualization servers
 postfix_    N    Y    STARTTLS Everywhere is becoming a Certbot Postfix/Exim plugin
 heroku_     Y    Y    Integration with Heroku SSL
+dns-standalone_     Y    N    Obtain certificates via an integrated DNS server
 =========== ==== ==== ===============================================================
 
 .. _plesk: https://github.com/plesk/letsencrypt-plesk
@@ -296,6 +297,7 @@ heroku_     Y    Y    Integration with Heroku SSL
 .. _external: https://github.com/marcan/letsencrypt-external
 .. _postfix: https://github.com/EFForg/starttls-everywhere
 .. _heroku: https://github.com/gboudreau/certbot-heroku
+.. _dns-standalone: https://github.com/siilike/certbot-dns-standalone
 
 If you're interested, you can also :ref:`write your own plugin <dev-plugin>`.
 
