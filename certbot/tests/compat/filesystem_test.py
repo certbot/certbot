@@ -8,7 +8,7 @@ class OsReplaceTest(test_util.TempDirTestCase):
     """Test to ensure consistent behavior of rename method"""
 
     def test_os_replace_to_existing_file(self):
-        """Ensure that rename will effectively rename src into dst for all platforms."""
+        """Ensure that replace will effectively rename src into dst for all platforms."""
         src = os.path.join(self.tempdir, 'src')
         dst = os.path.join(self.tempdir, 'dst')
         open(src, 'w').close()
