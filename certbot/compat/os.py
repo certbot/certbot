@@ -31,7 +31,7 @@ std_sys.modules[__name__ + '.path'] = path
 del ourselves, std_os, std_sys
 
 
-# Because of the blocking strategy on file handlers on Windows, rename do not behave as expected
+# Because of the blocking strategy on file handlers on Windows, rename does not behave as expected
 # with POSIX systems: an exception will be raised if dst already exists.
 def rename(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
     """Method os.rename() is forbidden"""
