@@ -73,12 +73,9 @@ class AuthenticatorTest(test_util.TempDirTestCase, dns_test_common.BaseAuthentic
 class RFC2136ClientTest(unittest.TestCase):
 
     def setUp(self):
-        from certbot_dns_rfc2136.dns_rfc2136 import _RFC2136Client, _RFC2136Key
+        from certbot_dns_rfc2136.dns_rfc2136 import _RFC2136Client
 
-        self.rfc2136_client = _RFC2136Client(SERVER,
-                                             PORT,
-                                             None,
-                                             _RFC2136Key(NAME, SECRET, dns.tsig.HMAC_MD5))
+        self.rfc2136_client = _RFC2136Client(SERVER, PORT, NAME, SECRET, dns.tsig.HMAC_MD5)
 
     @mock.patch("dns.query.tcp")
     def test_add_txt_record(self, query_mock):
@@ -164,28 +161,6 @@ class RFC2136ClientTest(unittest.TestCase):
             # _find_domain | pylint: disable=protected-access
             self.rfc2136_client._find_domain,
             'foo.bar.'+DOMAIN)
-
-    def test_find_domain_with_base(self):
-        # _query_soa | pylint: disable=protected-access
-        self.rfc2136_client._query_soa = mock.MagicMock(side_effect=[False, False, True])
-        self.rfc2136_client.base_domain = 'bar.' + DOMAIN
-
-        # _find_domain | pylint: disable=protected-access
-        domain = self.rfc2136_client._find_domain('foo.bar.' + DOMAIN)
-
-        self.assertTrue(domain == 'bar.' + DOMAIN)
-
-    def test_find_domain_with_wrong_base(self):
-
-        # _query_soa | pylint: disable=protected-access
-        self.rfc2136_client._query_soa = mock.MagicMock(side_effect=[False, False, True])
-        self.rfc2136_client.base_domain = 'wrong.' + DOMAIN
-
-        self.assertRaises(
-            errors.PluginError,
-            # _find_domain | pylint: disable=protected-access
-            self.rfc2136_client._find_domain,
-            'foo.bar.' + DOMAIN)
 
     @mock.patch("dns.query.udp")
     def test_query_soa_found(self, query_mock):
