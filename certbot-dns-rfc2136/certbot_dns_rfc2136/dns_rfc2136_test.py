@@ -77,8 +77,8 @@ class RFC2136ClientTest(unittest.TestCase):
 
         self.rfc2136_client = _RFC2136Client(SERVER,
                                              PORT,
-                                             None,
-                                             _RFC2136Key(NAME, SECRET, dns.tsig.HMAC_MD5))
+                                             _RFC2136Key(NAME, SECRET, dns.tsig.HMAC_MD5),
+                                             None)
 
     @mock.patch("dns.query.tcp")
     def test_add_txt_record(self, query_mock):
