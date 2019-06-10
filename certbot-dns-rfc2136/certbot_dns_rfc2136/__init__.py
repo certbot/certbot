@@ -21,8 +21,8 @@ Credentials
 -----------
 
 Use of this plugin requires a configuration file containing the target DNS
-server, optional authorative domain and optional port that supports RFC 2136 Dynamic Updates,
-the name of the TSIG key, the TSIG key secret itself and the algorithm used if it's
+server and optional port that supports RFC 2136 Dynamic Updates, the name
+of the TSIG key, the TSIG key secret itself and the algorithm used if it's
 different to HMAC-MD5.
 
 .. code-block:: ini
@@ -33,8 +33,6 @@ different to HMAC-MD5.
    dns_rfc2136_server = 192.0.2.1
    # Target DNS port
    dns_rfc2136_port = 53
-   # Authorative domain (optional, will try to auto-detect if missing)
-   dns_rfc2136_base_domain = example.com
    # TSIG key name
    dns_rfc2136_name = keyname.
    # TSIG key secret
