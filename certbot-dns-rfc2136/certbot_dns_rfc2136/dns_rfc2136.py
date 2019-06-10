@@ -98,7 +98,7 @@ class _RFC2136Client(object):
     """
     Encapsulates all communication with the target DNS server.
     """
-    def __init__(self, server, port, base_domain, key):
+    def __init__(self, server, port, key, base_domain):
         self.server = server
         self.port = port
         self.keyring = dns.tsigkeyring.from_text({
