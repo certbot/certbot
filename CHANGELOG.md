@@ -21,14 +21,6 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   which caused the plugin to fail so the feature has been removed until it can
   be added properly.
 
-Despite us having broken lockstep, we are continuing to release new versions of
-all Certbot components during releases for the time being, however, the only
-package with changes other than its version number was:
-
-* certbot
-* certbot-apache
-* certbot-dns-rfc2136
-
 More details about these changes can be found on our GitHub repo.
 
 ## 0.35.0 - 2019-06-05
