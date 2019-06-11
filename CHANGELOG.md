@@ -18,13 +18,6 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 *
 
-Despite us having broken lockstep, we are continuing to release new versions of
-all Certbot components during releases for the time being, however, the only
-package with changes other than its version number was:
-
-* certbot
-* certbot-apache
-
 More details about these changes can be found on our GitHub repo.
 
 ## 0.35.1 - 2019-06-10
