@@ -3,6 +3,7 @@ This compat modules is a wrapper of the core os module that forbids usage of spe
 (e.g. chown, chmod, getuid) that would be harmful to the Windows file security model of Certbot.
 This module is intended to replace standard os module throughout certbot projects (except acme).
 """
+# pylint: disable=function-redefined
 from __future__ import absolute_import
 
 # First round of wrapping: we import statically all public attributes exposed by the os module
@@ -33,14 +34,14 @@ del ourselves, std_os, std_sys
 
 # Because of the blocking strategy on file handlers on Windows, rename does not behave as expected
 # with POSIX systems: an exception will be raised if dst already exists.
-def rename(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
+def rename(*unused_args, **unused_kwargs):
     """Method os.rename() is forbidden"""
     raise RuntimeError('Usage of os.rename() is forbidden. '
                        'Use certbot.compat.filesystem.replace() instead.')
 
 
 # To be consistent across Windows and Linux, filesystem.replace should be used.
-def replace(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
+def replace(*unused_args, **unused_kwargs):
     """Method os.replace() is forbidden"""
     raise RuntimeError('Usage of os.replace() is forbidden. '
                        'Use certbot.compat.filesystem.replace() instead.')
