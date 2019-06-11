@@ -45,8 +45,13 @@ if [ $? -ne 0 ] ; then
     exit 1
 fi
 
-python tools/venv.py -e acme[dev] -e .[dev,docs] -e certbot-apache
-sudo venv/bin/certbot -v --debug --text --agree-dev-preview --agree-tos \
+# This script sets the environment variables PYTHON_NAME, VENV_PATH, and
+# VENV_SCRIPT based on the version of Python available on the system. For
+# instance, Fedora uses Python 3 and Python 2 is not installed.
+. tests/letstest/scripts/set_python_envvars.sh
+
+"$VENV_SCRIPT" -e acme[dev] -e .[dev,docs] -e certbot-apache
+sudo "$VENV_PATH/bin/certbot" -v --debug --text --agree-dev-preview --agree-tos \
                    --renew-by-default --redirect --register-unsafely-without-email \
                    --domain $PUBLIC_HOSTNAME --server $BOULDER_URL
 if [ $? -ne 0 ] ; then
@@ -55,7 +60,7 @@ fi
 
 if [ "$OS_TYPE" = "ubuntu" ] ; then
     export SERVER="$BOULDER_URL"
-    venv/bin/tox -e apacheconftest
+    "$VENV_PATH/bin/tox" -e apacheconftest
 else
     echo Not running hackish apache tests on $OS_TYPE
 fi

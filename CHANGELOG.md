@@ -2,7 +2,36 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 0.35.0 - master
+## 0.36.0 - master
+
+### Added
+
+*
+
+### Changed
+
+* Update the 'manage your account' help to be more generic.
+* The error message when Certbot's Apache plugin is unable to modify your
+  Apache configuration has been improved.
+
+### Fixed
+
+* Support for specifying an authoritative base domain in our dns-rfc2136 plugin
+  has been removed. This feature was added in our last release but had a bug
+  which caused the plugin to fail so the feature has been removed until it can
+  be added properly.
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+package with changes other than its version number was:
+
+* certbot
+* certbot-apache
+* certbot-dns-rfc2136
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.35.0 - 2019-06-05
 
 ### Added
 
@@ -16,12 +45,19 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-*
+* Renewal parameter `webroot_path` is always saved, avoiding some regressions
+  when `webroot` authenticator plugin is invoked with no challenge to perform.
+* Certbot now accepts OCSP responses when an explicit authorized
+  responder, different from the issuer, is used to sign OCSP
+  responses.
+* Scripts in Certbot hook directories are no longer executed when their
+  filenames end in a tilde.
 
 Despite us having broken lockstep, we are continuing to release new versions of
 all Certbot components during releases for the time being, however, the only
 package with changes other than its version number was:
 
+* certbot
 * certbot-dns-rfc2136
 
 More details about these changes can be found on our GitHub repo.
