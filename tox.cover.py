@@ -9,7 +9,7 @@ DEFAULT_PACKAGES = [
     'certbot_dns_digitalocean', 'certbot_dns_dnsimple', 'certbot_dns_dnsmadeeasy',
     'certbot_dns_gehirn', 'certbot_dns_google', 'certbot_dns_linode', 'certbot_dns_luadns',
     'certbot_dns_nsone', 'certbot_dns_ovh', 'certbot_dns_rfc2136', 'certbot_dns_route53',
-    'certbot_dns_sakuracloud', 'certbot_nginx', 'certbot_postfix', 'letshelp_certbot']
+    'certbot_dns_sakuracloud', 'certbot_nginx', 'letshelp_certbot']
 
 COVER_THRESHOLDS = {
     'certbot': {'linux': 98, 'windows': 93},
@@ -30,12 +30,10 @@ COVER_THRESHOLDS = {
     'certbot_dns_route53': {'linux': 92, 'windows': 92},
     'certbot_dns_sakuracloud': {'linux': 97, 'windows': 97},
     'certbot_nginx': {'linux': 97, 'windows': 97},
-    'certbot_postfix': {'linux': 100, 'windows': 100},
     'letshelp_certbot': {'linux': 100, 'windows': 100}
 }
 
-SKIP_PROJECTS_ON_WINDOWS = [
-    'certbot-apache', 'certbot-postfix', 'letshelp-certbot']
+SKIP_PROJECTS_ON_WINDOWS = ['certbot-apache', 'letshelp-certbot']
 
 
 def cover(package):

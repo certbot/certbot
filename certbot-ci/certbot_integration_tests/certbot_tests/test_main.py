@@ -5,6 +5,7 @@ import os
 import re
 import shutil
 import subprocess
+import time
 from os.path import join, exists
 
 import pytest
@@ -567,6 +568,9 @@ def test_ocsp_status_live(context):
 
     # OSCP 2: Check live certificate OCSP status (REVOKED)
     context.certbot(['revoke', '--cert-name', cert, '--no-delete-after-revoke'])
+    # Sometimes in oldest tests (using openssl binary and not cryptography), the OCSP status is
+    # not seen immediately by Certbot as invalid. Waiting few seconds solves this transient issue.
+    time.sleep(5)
     output = context.certbot(['certificates'])
 
     assert output.count('INVALID') == 1, 'Expected {0} to be INVALID'.format(cert)

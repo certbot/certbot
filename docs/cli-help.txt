@@ -113,7 +113,7 @@ optional arguments:
                         case, and to know when to deprecate support for past
                         Python versions and flags. If you wish to hide this
                         information from the Let's Encrypt server, set this to
-                        "". (default: CertbotACMEClient/0.34.0
+                        "". (default: CertbotACMEClient/0.35.1
                         (certbot(-auto); OS_NAME OS_VERSION) Authenticator/XXX
                         Installer/YYY (SUBCOMMAND; flags: FLAGS)
                         Py/major.minor.patchlevel). The flags encoded in the
@@ -454,8 +454,8 @@ plugins:
                         using DigitalOcean for DNS). (default: False)
   --dns-dnsimple        Obtain certificates using a DNS TXT record (if you are
                         using DNSimple for DNS). (default: False)
-  --dns-dnsmadeeasy     Obtain certificates using a DNS TXT record (if you
-                        areusing DNS Made Easy for DNS). (default: False)
+  --dns-dnsmadeeasy     Obtain certificates using a DNS TXT record (if you are
+                        using DNS Made Easy for DNS). (default: False)
   --dns-gehirn          Obtain certificates using a DNS TXT record (if you are
                         using Gehirn Infrastracture Service for DNS).
                         (default: False)
