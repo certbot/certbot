@@ -40,7 +40,8 @@ def rename(*unused_args, **unused_kwargs):
                        'Use certbot.compat.filesystem.replace() instead.')
 
 
-# To be consistent across Windows and Linux, filesystem.replace should be used.
+# Behavior of os.replace is consistent between Windows and Linux. However, it is not supported on
+# Python 2.x. So, as for os.rename, we forbid it in favor of filesystem.replace.
 def replace(*unused_args, **unused_kwargs):
     """Method os.replace() is forbidden"""
     raise RuntimeError('Usage of os.replace() is forbidden. '
