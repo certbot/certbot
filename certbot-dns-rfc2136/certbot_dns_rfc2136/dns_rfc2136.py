@@ -79,33 +79,25 @@ class Authenticator(dns_common.DNSAuthenticator):
         self._get_rfc2136_client().del_txt_record(validation_name, validation)
 
     def _get_rfc2136_client(self):
-        key = _RFC2136Key(self.credentials.conf('name'),
-                          self.credentials.conf('secret'),
-                          self.ALGORITHMS.get(self.credentials.conf('algorithm'),
-                                              dns.tsig.HMAC_MD5))
         return _RFC2136Client(self.credentials.conf('server'),
                               int(self.credentials.conf('port') or self.PORT),
-                              key,
-                              self.credentials.conf('base-domain'))
+                              self.credentials.conf('name'),
+                              self.credentials.conf('secret'),
+                              self.ALGORITHMS.get(self.credentials.conf('algorithm'),
+                                                  dns.tsig.HMAC_MD5))
 
-class _RFC2136Key(object):
-    def __init__(self, name, secret, algorithm):
-        self.name = name
-        self.secret = secret
-        self.algorithm = algorithm
 
 class _RFC2136Client(object):
     """
     Encapsulates all communication with the target DNS server.
     """
-    def __init__(self, server, port, base_domain, key):
+    def __init__(self, server, port, key_name, key_secret, key_algorithm):
         self.server = server
         self.port = port
         self.keyring = dns.tsigkeyring.from_text({
-            key.name: key.secret
+            key_name: key_secret
         })
-        self.algorithm = key.algorithm
-        self.base_domain = base_domain
+        self.algorithm = key_algorithm
 
     def add_txt_record(self, record_name, record_content, record_ttl):
         """
@@ -179,33 +171,23 @@ class _RFC2136Client(object):
 
     def _find_domain(self, record_name):
         """
-        If 'base_domain' option is specified check if the requested domain matches this base domain
-        and return it. If not explicitly specified find the closest domain with an SOA record for
-        the given domain name.
+        Find the closest domain with an SOA record for a given domain name.
 
-        :param str record_name: The record name for which to find the base domain.
+        :param str record_name: The record name for which to find the closest SOA record.
         :returns: The domain, if found.
         :rtype: str
         :raises certbot.errors.PluginError: if no SOA record can be found.
         """
 
-        if self.base_domain:
-            if not record_name.endswith(self.base_domain):
-                raise errors.PluginError('Requested domain {0} does not match specified base '
-                                         'domain {1}.'
-                                         .format(record_name, self.base_domain))
-            else:
-                return self.base_domain
-        else:
-            domain_name_guesses = dns_common.base_domain_name_guesses(record_name)
+        domain_name_guesses = dns_common.base_domain_name_guesses(record_name)
 
-            # Loop through until we find an authoritative SOA record
-            for guess in domain_name_guesses:
-                if self._query_soa(guess):
-                    return guess
+        # Loop through until we find an authoritative SOA record
+        for guess in domain_name_guesses:
+            if self._query_soa(guess):
+                return guess
 
-            raise errors.PluginError('Unable to determine base domain for {0} using names: {1}.'
-                                     .format(record_name, domain_name_guesses))
+        raise errors.PluginError('Unable to determine base domain for {0} using names: {1}.'
+                                 .format(record_name, domain_name_guesses))
 
     def _query_soa(self, domain_name):
         """
