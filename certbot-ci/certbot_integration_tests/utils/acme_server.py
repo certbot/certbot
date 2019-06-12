@@ -20,7 +20,12 @@ CHALLTESTSRV_PORT = 8055
 HTTP_01_PORT = 5002
 
 
-class _Handler(object):
+class ACMEServer(object):
+    """
+    Handler to start and stop the ACME server, and get its configuration (eg. challenges ports).
+    Upon stop the server assets are properly cleaned up. ACMEServer is also a context manager,
+    and so can be used as it to ensure implicit safe stop/cleanup.
+    """
     def __init__(self, acme_xdist, start, stop):
         self.acme_xdist = acme_xdist
         self.start = start
@@ -38,16 +43,14 @@ def setup_acme_server(acme_server, nodes, proxy=True):
     """
     This method will setup an ACME CA server and an HTTP reverse proxy instance, to allow parallel
     execution of integration tests against the unique http-01 port expected by the ACME CA server.
-    Instances are properly closed and cleaned when the Python process exits using atexit.
     Typically all pytest integration tests will be executed in this context.
-    This method returns an object describing ports and directory url to use for each pytest node
-    with the relevant pytest xdist node, and appropriate method to start and stop the stack.
+    An ACMEServer instance will be returned, giving access to the ports and directory url to use
+    for each pytest node, and appropriate methods to start and stop the stack.
     :param str acme_server: the type of acme server used (boulder-v1, boulder-v2 or pebble)
     :param str[] nodes: list of node names that will be setup by pytest xdist
     :param bool proxy: set to False to not start the Traefik proxy
-    :return: a tuple with a dict describing the challenge ports that have been setup for the nodes,
-             a function to start the stack, and one to clean up everything
-    :rtype: tuple
+    :return: a properly configured ACMEServer instance
+    :rtype: ACMEServer
     """
     acme_type = 'pebble' if acme_server == 'pebble' else 'boulder'
     acme_xdist = _construct_acme_xdist(acme_server, nodes)
@@ -58,7 +61,7 @@ def setup_acme_server(acme_server, nodes, proxy=True):
             _prepare_traefik_proxy(workspace, acme_xdist)
         _prepare_acme_server(workspace, acme_type, acme_xdist)
 
-    return _Handler(acme_xdist, start, stop)
+    return ACMEServer(acme_xdist, start, stop)
 
 
 def _construct_acme_xdist(acme_server, nodes):
