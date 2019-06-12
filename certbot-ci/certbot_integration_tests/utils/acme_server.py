@@ -19,9 +19,9 @@ from certbot_integration_tests.utils.constants import *
 
 class ACMEServer(object):
     """
-    Handler to start and stop the ACME server, and get its configuration (eg. challenges ports).
-    Upon stop the server assets are properly cleaned up. ACMEServer is also a context manager,
-    and so can be used as it to ensure implicit safe stop/cleanup.
+    Handler exposing methods to start and stop the ACME server, and get its configuration
+    (eg. challenges ports). ACMEServer is also a context manager, and so can be used to
+    ensure ACME server is start/stop upon context enter/exit.
     """
     def __init__(self, acme_xdist, start, stop):
         self.acme_xdist = acme_xdist
@@ -42,7 +42,8 @@ def setup_acme_server(acme_server, nodes, proxy=True):
     execution of integration tests against the unique http-01 port expected by the ACME CA server.
     Typically all pytest integration tests will be executed in this context.
     An ACMEServer instance will be returned, giving access to the ports and directory url to use
-    for each pytest node, and appropriate methods to start and stop the stack.
+    for each pytest node, and its start and stop methods are appropriately configured to
+    respectively start the server, and stop it with proper resources cleanup.
     :param str acme_server: the type of acme server used (boulder-v1, boulder-v2 or pebble)
     :param str[] nodes: list of node names that will be setup by pytest xdist
     :param bool proxy: set to False to not start the Traefik proxy
