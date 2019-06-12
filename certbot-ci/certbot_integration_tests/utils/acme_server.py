@@ -14,10 +14,7 @@ import json
 import yaml
 
 from certbot_integration_tests.utils import misc
-
-# These ports are set implicitly in the docker-compose.yml files of Boulder/Pebble.
-CHALLTESTSRV_PORT = 8055
-HTTP_01_PORT = 5002
+from certbot_integration_tests.utils.constants import *
 
 
 class ACMEServer(object):
@@ -70,10 +67,10 @@ def _construct_acme_xdist(acme_server, nodes):
 
     # Directory and ACME port are set implicitly in the docker-compose.yml files of Boulder/Pebble.
     if acme_server == 'pebble':
-        acme_xdist['directory_url'] = 'https://localhost:14000/dir'
+        acme_xdist['directory_url'] = PEBBLE_DIRECTORY_URL
     else:  # boulder
-        port = 4001 if acme_server == 'boulder-v2' else 4000
-        acme_xdist['directory_url'] = 'http://localhost:{0}/directory'.format(port)
+        acme_xdist['directory_url'] = BOULDER_V2_DIRECTORY_URL \
+            if acme_server == 'boulder-v2' else BOULDER_V1_DIRECTORY_URL
 
     acme_xdist['http_port'] = {node: port for (node, port)
                                in zip(nodes, range(5200, 5200 + len(nodes)))}
@@ -154,7 +151,6 @@ def _prepare_traefik_proxy(workspace, acme_xdist):
     print('=> Starting traefik instance deployment...')
     instance_path = join(workspace, 'traefik')
     traefik_subnet = '10.33.33'
-    traefik_api_port = 8056
     try:
         os.mkdir(instance_path)
 
@@ -177,12 +173,12 @@ networks:
       config:
         - subnet: {traefik_subnet}.0/24
 '''.format(traefik_subnet=traefik_subnet,
-           traefik_api_port=traefik_api_port,
+           traefik_api_port=TRAEFIK_API_PORT,
            http_01_port=HTTP_01_PORT))
 
         _launch_command(['docker-compose', 'up', '--force-recreate', '-d'], cwd=instance_path)
 
-        misc.check_until_timeout('http://localhost:{0}/api'.format(traefik_api_port))
+        misc.check_until_timeout('http://localhost:{0}/api'.format(TRAEFIK_API_PORT))
         config = {
             'backends': {
                 node: {
@@ -196,7 +192,7 @@ networks:
                 } for node in acme_xdist['http_port'].keys()
             }
         }
-        response = requests.put('http://localhost:{0}/api/providers/rest'.format(traefik_api_port),
+        response = requests.put('http://localhost:{0}/api/providers/rest'.format(TRAEFIK_API_PORT),
                                 data=json.dumps(config))
         response.raise_for_status()
 

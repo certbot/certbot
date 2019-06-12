@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+"""Module to call certbot in test mode"""
 from __future__ import absolute_import
 from distutils.version import LooseVersion
 import subprocess
@@ -6,6 +7,7 @@ import sys
 import os
 
 from certbot_integration_tests.utils import misc
+from certbot_integration_tests.utils.constants import *
 
 
 def certbot_test(certbot_args, directory_url, http_01_port, tls_alpn_01_port,
@@ -73,9 +75,9 @@ def main():
     args = sys.argv[1:]
 
     # Default config is pebble
-    directory_url = os.environ.get('SERVER', 'https://localhost:14000/dir')
-    http_01_port = int(os.environ.get('HTTP_01_PORT', '5002'))
-    tls_alpn_01_port = int(os.environ.get('TLS_ALPN_01_PORT', '5001'))
+    directory_url = os.environ.get('SERVER', PEBBLE_DIRECTORY_URL)
+    http_01_port = int(os.environ.get('HTTP_01_PORT', HTTP_01_PORT))
+    tls_alpn_01_port = int(os.environ.get('TLS_ALPN_01_PORT', TLS_ALPN_01_PORT))
 
     # Execution of certbot in a self-contained workspace
     workspace = os.environ.get('WORKSPACE', os.path.join(os.getcwd(), '.certbot_test_workspace'))
