@@ -105,7 +105,7 @@ using an HTTP-01 challenge on a machine with Python 3:
     python tools/venv3.py
     source venv3/bin/activate
     run_acme_server &
-    certbot_tests certonly --standalone -d test.example.com
+    certbot_test certonly --standalone -d test.example.com
     # To stop Pebble, launch `bg` to get back the background job, then press CTRL+C
 
 Find issues to work on
