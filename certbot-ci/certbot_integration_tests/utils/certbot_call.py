@@ -15,7 +15,7 @@ def certbot_test(certbot_args, directory_url, http_01_port, tls_alpn_01_port,
     The test context consists in running certbot in debug mode, with various flags suitable
     for tests (eg. no ssl check, customizable ACME challenge ports and config directory ...).
     This command capture stdout and returns it to the caller.
-    :param str[] certbot_args: the arguments to pass to the certbot executable
+    :param list certbot_args: the arguments to pass to the certbot executable
     :param str directory_url: URL of the ACME directory server to use
     :param int http_01_port: port for the HTTP-01 challenges
     :param int tls_alpn_01_port: port for the TLS-ALPN-01 challenges
@@ -26,7 +26,7 @@ def certbot_test(certbot_args, directory_url, http_01_port, tls_alpn_01_port,
     :rtype: str
     """
     command, env = _prepare_args_env(certbot_args, directory_url, http_01_port, tls_alpn_01_port,
-                                     config_dir, workspace, force_renew=True)
+                                     config_dir, workspace, force_renew)
 
     return subprocess.check_output(command, universal_newlines=True, cwd=workspace, env=env)
 
