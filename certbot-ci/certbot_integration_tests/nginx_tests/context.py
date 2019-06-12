@@ -2,7 +2,7 @@ import os
 import subprocess
 
 from certbot_integration_tests.certbot_tests import context as certbot_context
-from certbot_integration_tests.utils import misc
+from certbot_integration_tests.utils import misc, certbot_call
 from certbot_integration_tests.nginx_tests import nginx_config as config
 
 
@@ -38,7 +38,9 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
         command = ['--authenticator', 'nginx', '--installer', 'nginx',
                    '--nginx-server-root', self.nginx_root]
         command.extend(args)
-        return self._common_test(command, force_renew)
+        return certbot_call.certbot_test(
+            command, self.directory_url, self.http_01_port, self.tls_alpn_01_port,
+            self.config_dir, self.workspace, force_renew)
 
     def _start_nginx(self, default_server):
         self.nginx_config = config.construct_nginx_config(

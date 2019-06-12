@@ -53,14 +53,6 @@ class IntegrationTestsContext(object):
         """Cleanup the integration test context."""
         shutil.rmtree(self.workspace)
 
-    def _common_test(self, args, force_renew):
-        """
-        Base command to execute certbot in a distributed integration test context.
-        """
-        return certbot_call.certbot_test(
-            args, self.directory_url, self.http_01_port, self.tls_alpn_01_port,
-            self.config_dir, self.workspace, force_renew, True)
-
     def certbot(self, args, force_renew=True):
         """
         Execute certbot with given args, not renewing certificates by default.
@@ -70,7 +62,9 @@ class IntegrationTestsContext(object):
         """
         command = ['--authenticator', 'standalone', '--installer', 'null']
         command.extend(args)
-        return self._common_test(command, force_renew)
+        return certbot_call.certbot_test(
+            command, self.directory_url, self.http_01_port, self.tls_alpn_01_port,
+            self.config_dir, self.workspace, force_renew)
 
     def get_domain(self, subdomain='le'):
         """

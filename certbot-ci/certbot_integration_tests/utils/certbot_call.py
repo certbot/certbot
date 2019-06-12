@@ -9,11 +9,12 @@ from certbot_integration_tests.utils import misc
 
 
 def certbot_test(certbot_args, directory_url, http_01_port, tls_alpn_01_port,
-                 config_dir, workspace, force_renew, capture_stdout):
+                 config_dir, workspace, force_renew):
     """
     Invoke the certbot executable available in PATH in a test context for the given args.
     The test context consists in running certbot in debug mode, with various flags suitable
     for tests (eg. no ssl check, customizable ACME challenge ports and config directory ...).
+    This command capture stdout and returns it to the caller.
     :param str[] certbot_args: the arguments to pass to the certbot executable
     :param str directory_url: URL of the ACME directory server to use
     :param int http_01_port: port for the HTTP-01 challenges
@@ -21,10 +22,17 @@ def certbot_test(certbot_args, directory_url, http_01_port, tls_alpn_01_port,
     :param str config_dir: certbot configuration directory to use
     :param str workspace: certbot current directory to use
     :param bool force_renew: set to True to renew by default existing certificates
-    :param bool capture_stdout: set to True to capture the stdout and return it
-    :return: stdout as string if capture_stdout is True, else None
-    :rtype: str or None
+    :return: stdout as string
+    :rtype: str
     """
+    command, env = _prepare_args_env(certbot_args, directory_url, http_01_port, tls_alpn_01_port,
+                      config_dir, workspace, force_renew)
+
+    return subprocess.check_output(command, universal_newlines=True, cwd=workspace, env=env)
+
+
+def _prepare_args_env(certbot_args, directory_url, http_01_port, tls_alpn_01_port,
+                      config_dir, workspace, force_renew):
     new_environ = os.environ.copy()
     new_environ['TMPDIR'] = workspace
 
@@ -56,11 +64,9 @@ def certbot_test(certbot_args, directory_url, http_01_port, tls_alpn_01_port,
     command.extend(certbot_args)
     command.extend(additional_args)
 
-    subprocess_call = subprocess.check_output if capture_stdout else subprocess.check_call
-
     print('--> Invoke command:\n=====\n{0}\n====='.format(subprocess.list2cmdline(command)))
-    return subprocess_call(command, universal_newlines=True,
-                           cwd=workspace, env=new_environ)
+
+    return command, new_environ
 
 
 def main():
@@ -80,8 +86,10 @@ def main():
         print('--> Using an existing workspace for certbot_test: {0}'.format(workspace))
     config_dir = os.path.join(workspace, 'conf')
 
-    certbot_test(args, directory_url, http_01_port, tls_alpn_01_port,
-                 config_dir, workspace, True, False)
+    # Invoke certbot in test mode, without capturing output so users see directly the outcome.
+    command, env = _prepare_args_env(args, directory_url, http_01_port, tls_alpn_01_port,
+                                     config_dir, workspace, True)
+    subprocess.check_call(command, universal_newlines=True, cwd=workspace, env=env)
 
 
 if __name__ == '__main__':
