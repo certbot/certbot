@@ -21,7 +21,7 @@ class ACMEServer(object):
     """
     Handler exposing methods to start and stop the ACME server, and get its configuration
     (eg. challenges ports). ACMEServer is also a context manager, and so can be used to
-    ensure ACME server is start/stop upon context enter/exit.
+    ensure ACME server is started/stopped upon context enter/exit.
     """
     def __init__(self, acme_xdist, start, stop):
         self.acme_xdist = acme_xdist

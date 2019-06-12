@@ -178,7 +178,7 @@ that can be used once the virtual environment is activated:
 
     certbot_tests [ARGS...]
 
-- Execute certbot with the provided arguments and other arguments useful for testing purpose,
+- Execute certbot with the provided arguments and other arguments useful for testing purposes,
   such as: verbose output, full tracebacks in case Certbot crashes, *etc.*
 - Execution is preconfigured to interact with the Pebble CA started with ``run_acme_server``.
 - Any arguments can be passed as they would be to Certbot (eg. ``certbot_test certonly -d test.example.com``).
