@@ -42,6 +42,18 @@ class WindowsChmodTests(TempDirTestCase):
         self.assertFalse(filesystem._compare_dacls(ref_dacl_probe, cur_dacl_probe))  # pylint: disable=protected-access
         self.assertTrue(filesystem._compare_dacls(ref_dacl_link, cur_dacl_link))  # pylint: disable=protected-access
 
+    def test_symlink_loop_mitigation(self):
+        link1_path = os.path.join(self.tempdir, 'link1')
+        link2_path = os.path.join(self.tempdir, 'link2')
+        link3_path = os.path.join(self.tempdir, 'link3')
+        os.symlink(link1_path, link2_path)
+        os.symlink(link2_path, link3_path)
+        os.symlink(link3_path, link1_path)
+
+        with self.assertRaises(RuntimeError) as error:
+            filesystem.chmod(link1_path, 0o755)
+        self.assertTrue('link1 is a loop!' in str(error.exception))
+
     def test_world_permission(self):
         everybody = win32security.ConvertStringSidToSid(EVERYBODY_SID)
 
