@@ -85,7 +85,7 @@ that can be used once the virtual environment is activated:
 
     run_acme_server
 
-- Start a local instance of Pebble CA, and keep displaying its log on foreground.
+- Starts a local instance of Pebble and runs in the foreground printing its logs.
 - Press CTRL+C to stop this instance.
 - This instance is configured to validate challenges against certbot executed locally.
 
