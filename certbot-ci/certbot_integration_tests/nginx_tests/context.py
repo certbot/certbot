@@ -29,7 +29,7 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
         self._stop_nginx()
         super(IntegrationTestsContext, self).cleanup()
 
-    def certbot_test_nginx(self, args, force_renew=True):
+    def certbot_test_nginx(self, args):
         """
         Main command to execute certbot using the nginx plugin.
         :param list args: list of arguments to pass to nginx
@@ -40,7 +40,7 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
         command.extend(args)
         return certbot_call.certbot_test(
             command, self.directory_url, self.http_01_port, self.tls_alpn_01_port,
-            self.config_dir, self.workspace, force_renew)
+            self.config_dir, self.workspace, force_renew=True)
 
     def _start_nginx(self, default_server):
         self.nginx_config = config.construct_nginx_config(

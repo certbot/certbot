@@ -9,7 +9,7 @@ from certbot_integration_tests.utils import misc
 
 
 def certbot_test(certbot_args, directory_url, http_01_port, tls_alpn_01_port,
-                 config_dir, workspace, force_renew):
+                 config_dir, workspace, force_renew=True):
     """
     Invoke the certbot executable available in PATH in a test context for the given args.
     The test context consists in running certbot in debug mode, with various flags suitable
@@ -21,12 +21,12 @@ def certbot_test(certbot_args, directory_url, http_01_port, tls_alpn_01_port,
     :param int tls_alpn_01_port: port for the TLS-ALPN-01 challenges
     :param str config_dir: certbot configuration directory to use
     :param str workspace: certbot current directory to use
-    :param bool force_renew: set to True to renew by default existing certificates
+    :param bool force_renew: set False to not force renew existing certificates (default: True)
     :return: stdout as string
     :rtype: str
     """
     command, env = _prepare_args_env(certbot_args, directory_url, http_01_port, tls_alpn_01_port,
-                      config_dir, workspace, force_renew)
+                                     config_dir, workspace, force_renew=True)
 
     return subprocess.check_output(command, universal_newlines=True, cwd=workspace, env=env)
 

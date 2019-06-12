@@ -64,7 +64,7 @@ class IntegrationTestsContext(object):
         command.extend(args)
         return certbot_call.certbot_test(
             command, self.directory_url, self.http_01_port, self.tls_alpn_01_port,
-            self.config_dir, self.workspace, force_renew)
+            self.config_dir, self.workspace, force_renew=force_renew)
 
     def get_domain(self, subdomain='le'):
         """
