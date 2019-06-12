@@ -87,7 +87,7 @@ that can be used once the virtual environment is activated:
 
 - Start a local instance of Pebble CA, and keep displaying its log on foreground.
 - Press CTRL+C to stop this instance.
-- This instance is configured to validate challenges against a certbot executed locally.
+- This instance is configured to validate challenges against certbot executed locally.
 
 .. code-block:: shell
 
