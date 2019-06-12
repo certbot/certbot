@@ -17,6 +17,8 @@ its dependencies, Certbot needs to be run on a UNIX-like OS so if you're using
 Windows, you'll need to set up a (virtual) machine running an OS such as Linux
 and continue with these instructions on that UNIX-like OS.
 
+.. _local copy:
+
 Running a local copy of the client
 ----------------------------------
 
@@ -69,14 +71,97 @@ found in the `virtualenv docs`_.
 
 .. _`virtualenv docs`: https://virtualenv.pypa.io
 
-Running certbot against a locally deployed Pebble CA
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Find issues to work on
+----------------------
 
-After following the instructions above, you are ready to manually execute Certbot against
-a local instance of the `Pebble`_ ACME server. This is useful to verify that the modifications
-done to the code makes Certbot behave as expected.
+You can find the open issues in the `github issue tracker`_.  Comparatively
+easy ones are marked `good first issue`_.  If you're starting work on
+something, post a comment to let others know and seek feedback on your plan
+where appropriate.
 
-To do so you need Docker installed, and a user with access to the Docker client.
+Once you've got a working branch, you can open a pull request.  All changes in
+your pull request must have thorough unit test coverage, pass our
+tests, and be compliant with the :ref:`coding style <coding-style>`.
+
+.. _github issue tracker: https://github.com/certbot/certbot/issues
+.. _good first issue: https://github.com/certbot/certbot/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22
+
+.. _testing:
+
+Testing
+-------
+
+You can test your code in several ways:
+
+- running the `automated unit`_ tests,
+- running the `automated integration`_ tests
+- running an *ad hoc* `manual integration`_ test
+
+.. _automated unit:
+
+Running automated unit tests
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When you are working in a file ``foo.py``, there should also be a file ``foo_test.py``
+either in the same directory as ``foo.py`` or in the ``tests`` subdirectory
+(if there isn't, make one). While you are working on your code and tests, run
+``python foo_test.py`` to run the relevant tests.
+
+For debugging, we recommend putting
+``import ipdb; ipdb.set_trace()`` statements inside the source code.
+
+Once you are done with your code changes, and the tests in ``foo_test.py`` pass,
+run all of the unittests for Certbot with ``tox -e py27`` (this uses Python
+2.7).
+
+Once all the unittests pass, check for sufficient test coverage using
+``tox -e cover``, and then check for code style with ``tox -e lint`` (all files)
+or ``pylint --rcfile=.pylintrc path/to/file.py`` (single file at a time).
+
+Once all of the above is successful, you may run the full test suite using
+``tox --skip-missing-interpreters``. We recommend running the commands above
+first, because running all tests like this is very slow, and the large amount
+of output can make it hard to find specific failures when they happen.
+
+.. warning:: The full test suite may attempt to modify your system's Apache
+  config if your user has sudo permissions, so it should not be run on a
+  production Apache server.
+
+.. _automated integration:
+
+Running automated integration tests
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Generally it is sufficient to open a pull request and let Github and Travis run
+integration tests for you. However, you may want to run them locally before submitting
+your pull request. You need Docker and docker-compose installed and working.
+
+The tox environment `integration` will setup `Pebble`_, the Let's Encrypt ACME CA server
+for integration testing, then launch the Certbot integration tests.
+
+With a user allowed to access your local Docker daemon, run:
+
+.. code-block:: shell
+
+  tox -e integration
+
+Tests will be run using pytest. A test report and a code coverage report will be
+displayed at the end of the integration tests execution.
+
+.. _Pebble: https://github.com/letsencrypt/pebble
+
+.. _manual integration:
+
+Running manual integration tests
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can also manually execute Certbot against a local instance of the `Pebble`_ ACME server.
+This is useful to verify that the modifications done to the code makes Certbot behave as expected.
+
+To do so you need:
+
+- Docker installed, and a user with access to the Docker client,
+- an available `local copy`_ of Certbot.
 
 The virtual environment set up with `python tools/venv.py` contains two commands
 that can be used once the virtual environment is activated:
@@ -108,79 +193,6 @@ using an HTTP-01 challenge on a machine with Python 3:
     run_acme_server &
     certbot_test certonly --standalone -d test.example.com
     # To stop Pebble, launch `fg` to get back the background job, then press CTRL+C
-
-.. _Pebble: https://github.com/letsencrypt/pebble
-
-Find issues to work on
-----------------------
-
-You can find the open issues in the `github issue tracker`_.  Comparatively
-easy ones are marked `good first issue`_.  If you're starting work on
-something, post a comment to let others know and seek feedback on your plan
-where appropriate.
-
-Once you've got a working branch, you can open a pull request.  All changes in
-your pull request must have thorough unit test coverage, pass our
-tests, and be compliant with the :ref:`coding style <coding-style>`.
-
-.. _github issue tracker: https://github.com/certbot/certbot/issues
-.. _good first issue: https://github.com/certbot/certbot/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22
-
-.. _testing:
-
-Testing
--------
-
-.. _unit:
-
-Unit testing
-~~~~~~~~~~~~
-
-When you are working in a file ``foo.py``, there should also be a file ``foo_test.py``
-either in the same directory as ``foo.py`` or in the ``tests`` subdirectory
-(if there isn't, make one). While you are working on your code and tests, run
-``python foo_test.py`` to run the relevant tests.
-
-For debugging, we recommend putting
-``import ipdb; ipdb.set_trace()`` statements inside the source code.
-
-Once you are done with your code changes, and the tests in ``foo_test.py`` pass,
-run all of the unittests for Certbot with ``tox -e py27`` (this uses Python
-2.7).
-
-Once all the unittests pass, check for sufficient test coverage using
-``tox -e cover``, and then check for code style with ``tox -e lint`` (all files)
-or ``pylint --rcfile=.pylintrc path/to/file.py`` (single file at a time).
-
-Once all of the above is successful, you may run the full test suite using
-``tox --skip-missing-interpreters``. We recommend running the commands above
-first, because running all tests like this is very slow, and the large amount
-of output can make it hard to find specific failures when they happen.
-
-.. warning:: The full test suite may attempt to modify your system's Apache
-  config if your user has sudo permissions, so it should not be run on a
-  production Apache server.
-
-.. _integration:
-
-Integration testing with the Pebble CA
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Generally it is sufficient to open a pull request and let Github and Travis run
-integration tests for you. However, you may want to run them locally before submitting
-your pull request. You need Docker and docker-compose installed and working.
-
-The tox environment `integration` will setup `Pebble`_, the Let's Encrypt ACME CA server
-for integration testing, then launch the Certbot integration tests.
-
-With a user allowed to access your local Docker daemon, run:
-
-.. code-block:: shell
-
-  tox -e integration
-
-Tests will be run using pytest. A test report and a code coverage report will be
-displayed at the end of the integration tests execution.
 
 Code components and layout
 ==========================
