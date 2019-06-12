@@ -72,11 +72,11 @@ found in the `virtualenv docs`_.
 Running certbot against a locally deployed Pebble CA
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-By following the instructions above, you can execute Certbot against a local instance
-of Pebble CA. This is useful to verify that the modifications done to the code makes
-Certbot behave as expected.
+After following the instructions above, you are ready to manually execute Certbot against
+a local instance of the `Pebble`_ ACME server. This is useful to verify that the modifications
+done to the code makes Certbot behave as expected.
 
-You need Docker installed, and a user with access to the Docker client.
+To do so you need Docker installed, and a user with access to the Docker client.
 
 The virtual environment set up with `python tools/venv.py` contains two commands
 that can be used once the virtual environment is activated:
@@ -93,9 +93,10 @@ that can be used once the virtual environment is activated:
 
     certbot_tests [ARGS...]
 
-- Execute certbot with the provided ARGS in test mode: verbose output, debug enabled...
+- Execute certbot with the provided arguments and other arguments useful for testing purpose,
+  such as: verbose output, full tracebacks in case Certbot crashes, *etc.*
 - Execution is preconfigured to interact with the Pebble CA started with ``run_acme_server``.
-- Any arguments can be passed as they would be to Certbot (eg. ``certonly -d test.example.com``).
+- Any arguments can be passed as they would be to Certbot (eg. ``certbot_test certonly -d test.example.com``).
 
 Here is a typical workflow to verify that Certbot successfully issued a certificate
 using an HTTP-01 challenge on a machine with Python 3:
@@ -106,7 +107,9 @@ using an HTTP-01 challenge on a machine with Python 3:
     source venv3/bin/activate
     run_acme_server &
     certbot_test certonly --standalone -d test.example.com
-    # To stop Pebble, launch `bg` to get back the background job, then press CTRL+C
+    # To stop Pebble, launch `fg` to get back the background job, then press CTRL+C
+
+.. _Pebble: https://github.com/letsencrypt/pebble
 
 Find issues to work on
 ----------------------
@@ -167,7 +170,7 @@ Generally it is sufficient to open a pull request and let Github and Travis run
 integration tests for you. However, you may want to run them locally before submitting
 your pull request. You need Docker and docker-compose installed and working.
 
-The tox environment `integration` will setup Pebble, the Let's Encrypt ACME CA server
+The tox environment `integration` will setup `Pebble`_, the Let's Encrypt ACME CA server
 for integration testing, then launch the Certbot integration tests.
 
 With a user allowed to access your local Docker daemon, run:
