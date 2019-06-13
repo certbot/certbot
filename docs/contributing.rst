@@ -302,7 +302,6 @@ virtualenv like this:
 .. code-block:: shell
 
   . venv/bin/activate
-  . tests/integration/_common.sh
   pip install -e examples/plugins/
   certbot_test plugins
 
