@@ -99,6 +99,14 @@ def _construct_workspace(acme_type):
                 pass
             print('=> Finished tear down of {0} instance.'.format(acme_type))
 
+        if acme_type == 'boulder' and os.path.exists(os.path.join(workspace, 'boulder')):
+            # Boulder docker generates build artifacts owned by root user with 0o744 permissions.
+            # If we started the acme server from a normal user that has access to the Docker
+            # daemon, this user will not be able to delete these artifacts from the host.
+            # We need to do it through a docker.
+            _launch_command(['docker', 'run', '--rm', '-v', '{0}:/workspace'.format(workspace),
+                             'alpine', 'rm', '-rf', '/workspace/boulder'])
+
         shutil.rmtree(workspace)
 
     return workspace, cleanup
