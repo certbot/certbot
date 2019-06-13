@@ -1,4 +1,4 @@
-#!/usr/bin/env
+#!/usr/bin/env python
 """
 This executable script wraps the apache-conf-test bash script, in order to setup a pebble instance
 before its execution. Directory URL is passed through the SERVER environment variable.
