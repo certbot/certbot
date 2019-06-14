@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """Module to setup an ACME CA server environment able to run multiple tests in parallel"""
 from __future__ import print_function
+import json
 import tempfile
 import time
 import os
@@ -10,10 +11,9 @@ import sys
 from os.path import join
 
 import requests
-import json
 import yaml
 
-from certbot_integration_tests.utils import misc
+from certbot_integration_tests.utils import misc, proxy
 from certbot_integration_tests.utils.constants import *
 
 
@@ -23,13 +23,20 @@ class ACMEServer(object):
     (eg. challenges ports). ACMEServer is also a context manager, and so can be used to
     ensure ACME server is started/stopped upon context enter/exit.
     """
-    def __init__(self, acme_xdist, start, stop):
+    def __init__(self, acme_xdist, start, server_cleanup):
+        self._proxy_process = None
+        self._server_cleanup = server_cleanup
         self.acme_xdist = acme_xdist
         self.start = start
-        self.stop = stop
+
+    def stop(self):
+        if self._proxy_process:
+            self._proxy_process.terminate()
+            self._proxy_process.wait()
+        self._server_cleanup()
 
     def __enter__(self):
-        self.start()
+        self._proxy_process = self.start()
         return self.acme_xdist
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -46,20 +53,21 @@ def setup_acme_server(acme_server, nodes, proxy=True):
     respectively start the server, and stop it with proper resources cleanup.
     :param str acme_server: the type of acme server used (boulder-v1, boulder-v2 or pebble)
     :param str[] nodes: list of node names that will be setup by pytest xdist
-    :param bool proxy: set to False to not start the Traefik proxy
+    :param bool proxy: set to False to not start the HTTP proxy
     :return: a properly configured ACMEServer instance
     :rtype: ACMEServer
     """
     acme_type = 'pebble' if acme_server == 'pebble' else 'boulder'
     acme_xdist = _construct_acme_xdist(acme_server, nodes)
-    workspace, stop = _construct_workspace(acme_type)
+    workspace, server_cleanup = _construct_workspace(acme_type)
 
     def start():
-        if proxy:
-            _prepare_traefik_proxy(workspace, acme_xdist)
+        proxy_process = _prepare_http_proxy(acme_xdist) if proxy else None
         _prepare_acme_server(workspace, acme_type, acme_xdist)
 
-    return ACMEServer(acme_xdist, start, stop)
+        return proxy_process
+
+    return ACMEServer(acme_xdist, start, server_cleanup)
 
 
 def _construct_acme_xdist(acme_server, nodes):
@@ -89,15 +97,14 @@ def _construct_workspace(acme_type):
 
     def cleanup():
         """Cleanup function to call that will teardown relevant dockers and their configuration."""
-        for instance in [acme_type, 'traefik']:
-            print('=> Tear down the {0} instance...'.format(instance))
-            instance_path = join(workspace, instance)
-            try:
-                if os.path.isfile(join(instance_path, 'docker-compose.yml')):
-                    _launch_command(['docker-compose', 'down'], cwd=instance_path)
-            except subprocess.CalledProcessError:
-                pass
-            print('=> Finished tear down of {0} instance.'.format(acme_type))
+        print('=> Tear down the {0} instance...'.format(acme_type))
+        instance_path = join(workspace, acme_type)
+        try:
+            if os.path.isfile(join(instance_path, 'docker-compose.yml')):
+                _launch_command(['docker-compose', 'down'], cwd=instance_path)
+        except subprocess.CalledProcessError:
+            pass
+        print('=> Finished tear down of {0} instance.'.format(acme_type))
 
         if acme_type == 'boulder' and os.path.exists(os.path.join(workspace, 'boulder')):
             # Boulder docker generates build artifacts owned by root user with 0o744 permissions.
@@ -155,60 +162,16 @@ def _prepare_acme_server(workspace, acme_type, acme_xdist):
         raise
 
 
-def _prepare_traefik_proxy(workspace, acme_xdist):
-    """Configure and launch Traefik, the HTTP reverse proxy"""
-    print('=> Starting traefik instance deployment...')
-    instance_path = join(workspace, 'traefik')
-    traefik_subnet = '10.33.33'
-    try:
-        os.mkdir(instance_path)
+def _prepare_http_proxy(acme_xdist):
+    """Configure and launch an HTTP proxy"""
+    print('=> Configuring the HTTP proxy...')
+    mapping = {r'.+\.{0}\.wtf'.format(node): 'http://127.0.0.1:{0}'.format(port)
+               for node, port in acme_xdist['http_port'].items()}
+    command = [sys.executable, proxy.__file__, str(HTTP_01_PORT), json.dumps(mapping)]
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    print('=> Finished configuring the HTTP proxy.')
 
-        with open(join(instance_path, 'docker-compose.yml'), 'w') as file_h:
-            file_h.write('''\
-version: '3'
-services:
-  traefik:
-    image: traefik
-    command: --api --rest
-    ports:
-      - {http_01_port}:80
-      - {traefik_api_port}:8080
-    networks:
-      traefiknet:
-        ipv4_address: {traefik_subnet}.2
-networks:
-  traefiknet:
-    ipam:
-      config:
-        - subnet: {traefik_subnet}.0/24
-'''.format(traefik_subnet=traefik_subnet,
-           traefik_api_port=TRAEFIK_API_PORT,
-           http_01_port=HTTP_01_PORT))
-
-        _launch_command(['docker-compose', 'up', '--force-recreate', '-d'], cwd=instance_path)
-
-        misc.check_until_timeout('http://localhost:{0}/api'.format(TRAEFIK_API_PORT))
-        config = {
-            'backends': {
-                node: {
-                    'servers': {node: {'url': 'http://{0}.1:{1}'.format(traefik_subnet, port)}}
-                } for node, port in acme_xdist['http_port'].items()
-            },
-            'frontends': {
-                node: {
-                    'backend': node, 'passHostHeader': True,
-                    'routes': {node: {'rule': 'HostRegexp: {{subdomain:.+}}.{0}.wtf'.format(node)}}
-                } for node in acme_xdist['http_port'].keys()
-            }
-        }
-        response = requests.put('http://localhost:{0}/api/providers/rest'.format(TRAEFIK_API_PORT),
-                                data=json.dumps(config))
-        response.raise_for_status()
-
-        print('=> Finished traefik instance deployment.')
-    except BaseException:
-        print('Error while setting up traefik instance.')
-        raise
+    return process
 
 
 def _launch_command(command, cwd=os.getcwd()):
