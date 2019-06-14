@@ -12,7 +12,7 @@ from os.path import join
 import requests
 import yaml
 
-from certbot_integration_tests.utils import misc
+from certbot_integration_tests.utils import misc, proxy
 
 # These ports are set implicitly in the docker-compose.yml files of Boulder/Pebble.
 CHALLTESTSRV_PORT = 8055
@@ -36,7 +36,7 @@ def setup_acme_server(acme_server, nodes):
     acme_xdist = _construct_acme_xdist(acme_server, nodes)
     workspace = _construct_workspace(acme_type)
 
-    _prepare_traefik_proxy(workspace, acme_xdist)
+    _prepare_traefik_proxy(acme_xdist)
     _prepare_acme_server(workspace, acme_type, acme_xdist)
 
     return acme_xdist
@@ -130,15 +130,14 @@ def _prepare_acme_server(workspace, acme_type, acme_xdist):
         raise
 
 
-def _prepare_traefik_proxy(workspace, acme_xdist):
+def _prepare_traefik_proxy(acme_xdist):
     """Configure and launch Traefik, the HTTP reverse proxy"""
     print('=> Configuring HTTP proxy...')
     mapping = {'.{0}.wtf'.format(node): port
                for node, port in acme_xdist['http_port'].items()}
-    current_directory = os.path.dirname(__file__)
-    proxy_script_path = os.path.join(current_directory, 'proxy.py')
+    proxy_script_path = os.path.join(os.path.dirname(__file__), 'proxy.py')
     command = [sys.executable, proxy_script_path, str(HTTP_01_PORT), json.dumps(mapping)]
-    process = subprocess.Popen(command)
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     atexit.register(lambda: process.terminate())
     print('=> Finished traefik instance deployment.')
 

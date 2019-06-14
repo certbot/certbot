@@ -2,8 +2,8 @@
 import json
 import sys
 
-from six.moves import SimpleHTTPServer, socketserver
-from six.moves.urllib.request import Request, urlopen
+import requests
+from six.moves import BaseHTTPServer, socketserver
 
 
 class _GracefulTCPServer(socketserver.TCPServer):
@@ -17,18 +17,17 @@ def _select_port(mapping, host):
 
 
 def _create_proxy(mapping):
-    class ProxyHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
+    class ProxyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         def do_GET(self):
-            host = self.headers.get('Host')
-            url = '{0}:{1}{2}'.format('http://127.0.0.1', _select_port(mapping, host), self.path)
-            req = Request(url, headers={'Host': host})
-            response = urlopen(req)
+            headers = {key: value for key, value in self.headers.items()}
+            url = '{0}:{1}{2}'.format('http://127.0.0.1', _select_port(mapping, headers['host']), self.path)
+            response = requests.get(url, headers=headers)
 
-            self.send_response(response.getcode())
-            for key, value in response.getinfo():
+            self.send_response(response.status_code)
+            for key, value in response.headers.items():
                 self.send_header(key, value)
             self.end_headers()
-            self.copyfile(urlopen(url), self.wfile)
+            self.wfile.write(response.content)
 
     return ProxyHandler
 
