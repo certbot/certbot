@@ -23,13 +23,19 @@ class ACMEServer(object):
     (eg. challenges ports). ACMEServer is also a context manager, and so can be used to
     ensure ACME server is started/stopped upon context enter/exit.
     """
-    def __init__(self, acme_xdist, start, stop):
+    def __init__(self, acme_xdist, start, server_cleanup):
+        self._proxy_process = None
+        self._server_cleanup = server_cleanup
         self.acme_xdist = acme_xdist
         self.start = start
-        self.stop = stop
+
+    def stop(self):
+        if self._proxy_process:
+            self._proxy_process.terminate()
+        self._server_cleanup()
 
     def __enter__(self):
-        self.start()
+        self._proxy_process = self.start()
         return self.acme_xdist
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -52,14 +58,15 @@ def setup_acme_server(acme_server, nodes, proxy=True):
     """
     acme_type = 'pebble' if acme_server == 'pebble' else 'boulder'
     acme_xdist = _construct_acme_xdist(acme_server, nodes)
-    workspace, stop = _construct_workspace(acme_type)
+    workspace, server_cleanup = _construct_workspace(acme_type)
 
     def start():
-        if proxy:
-            _prepare_traefik_proxy(acme_xdist)
+        proxy_process = _prepare_traefik_proxy(acme_xdist) if proxy else None
         _prepare_acme_server(workspace, acme_type, acme_xdist)
 
-    return ACMEServer(acme_xdist, start, stop)
+        return proxy_process
+
+    return ACMEServer(acme_xdist, start, server_cleanup)
 
 
 def _construct_acme_xdist(acme_server, nodes):
@@ -162,8 +169,9 @@ def _prepare_traefik_proxy(acme_xdist):
                for node, port in acme_xdist['http_port'].items()}
     command = [sys.executable, proxy.__file__, str(HTTP_01_PORT), json.dumps(mapping)]
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    atexit.register(lambda: process.terminate())
     print('=> Finished traefik instance deployment.')
+
+    return process
 
 
 def _launch_command(command, cwd=os.getcwd()):
