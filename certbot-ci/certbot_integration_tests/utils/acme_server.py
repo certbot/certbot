@@ -164,12 +164,12 @@ def _prepare_acme_server(workspace, acme_type, acme_xdist):
 
 def _prepare_traefik_proxy(acme_xdist):
     """Configure and launch Traefik, the HTTP reverse proxy"""
-    print('=> Configuring HTTP proxy...')
+    print('=> Configuring the HTTP proxy...')
     mapping = {r'.+\.{0}\.wtf'.format(node): 'http://127.0.0.1:{0}'.format(port)
                for node, port in acme_xdist['http_port'].items()}
     command = [sys.executable, proxy.__file__, str(HTTP_01_PORT), json.dumps(mapping)]
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    print('=> Finished traefik instance deployment.')
+    print('=> Finished configuring the HTTP proxy.')
 
     return process
 
