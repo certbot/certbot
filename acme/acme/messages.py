@@ -19,13 +19,15 @@ ERROR_PREFIX = "urn:ietf:params:acme:error:"
 
 ERROR_CODES = {
     'accountDoesNotExist': 'The request specified an account that does not exist',
-    'alreadyRevoked': 'The request specified a certificate to be revoked that has already been revoked',
+    'alreadyRevoked': 'The request specified a certificate to be revoked thathas' \
+    ' already been revoked',
     'badCSR': 'The CSR is unacceptable (e.g., due to a short key)',
     'badNonce': 'The client sent an unacceptable anti-replay nonce',
     'badPublicKey': 'The JWS was signed by a public key the server does not support',
     'badRevocationReason': 'The revocation reason provided is not allowed by the server',
     'badSignatureAlgorithm': 'The JWS was signed with an algorithm the server does not support',
-    'caa': 'Certification Authority Authorization (CAA) records forbid the CA from issuing a certificate',
+    'caa': 'Certification Authority Authorization (CAA) records forbid the CA from issuing' \
+    ' a certificate',
     'compound': 'Specific error conditions are indicated in the "subproblems" array',
     'connection': ('The server could not connect to the client to verify the'
                    ' domain'),
@@ -36,6 +38,7 @@ ERROR_CODES = {
     'invalidEmail': 'The provided email for a registration was invalid',
     'invalidContact': 'The provided contact URI was invalid',
     'malformed': 'The request message was malformed',
+    'rejectedIdentifier': 'The server will not issue certificates for the identifier',
     'orderNotReady': 'The request attempted to finalize an order that is not ready to be finalized',
     'rateLimited': 'There were too many requests of a given type',
     'serverInternal': 'The server experienced an internal error',
