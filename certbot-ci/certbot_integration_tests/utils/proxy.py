@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import json
 import sys
+import re
 
 import requests
 from six.moves import BaseHTTPServer, socketserver
@@ -11,19 +12,17 @@ class _GracefulTCPServer(socketserver.TCPServer):
 
 
 def _get_port(mapping, host):
-    fqdn = host.split(':')[0]
     return [port for pattern, port in mapping.items()
-            if fqdn.endswith(pattern)][0]
+            if re.matches(pattern, host)][0]
 
 
 def _create_proxy(mapping):
     class ProxyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         def do_GET(self):
             headers = {key.lower(): value for key, value in self.headers.items()}
-            url = '{0}:{1}{2}'.format('http://127.0.0.1',
-                                      _get_port(mapping, headers['host']),
-                                      self.path)
-            response = requests.get(url, headers=headers)
+            backend = [backend for pattern, backend in mapping.items()
+                       if re.matches(pattern, host)][0]
+            response = requests.get(backend + self.path, headers=headers)
 
             self.send_response(response.status_code)
             for key, value in response.headers.items():
