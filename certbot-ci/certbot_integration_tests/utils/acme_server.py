@@ -135,8 +135,7 @@ def _prepare_traefik_proxy(acme_xdist):
     print('=> Configuring HTTP proxy...')
     mapping = {'.{0}.wtf'.format(node): port
                for node, port in acme_xdist['http_port'].items()}
-    proxy_script_path = os.path.join(os.path.dirname(__file__), 'proxy.py')
-    command = [sys.executable, proxy_script_path, str(HTTP_01_PORT), json.dumps(mapping)]
+    command = [sys.executable, proxy.__file__, str(HTTP_01_PORT), json.dumps(mapping)]
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     atexit.register(lambda: process.terminate())
     print('=> Finished traefik instance deployment.')
