@@ -6,9 +6,7 @@ import re
 import requests
 from six.moves import BaseHTTPServer, socketserver
 
-
-class _GracefulTCPServer(socketserver.TCPServer):
-    allow_reuse_address = True
+from certbot_integration_tests import GracefulTCPServer
 
 
 def _create_proxy(mapping):
@@ -31,7 +29,7 @@ def _create_proxy(mapping):
 if __name__ == '__main__':
     http_port = int(sys.argv[1])
     port_mapping = json.loads(sys.argv[2])
-    httpd = _GracefulTCPServer(('', http_port), _create_proxy(port_mapping))
+    httpd = GracefulTCPServer(('', http_port), _create_proxy(port_mapping))
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
