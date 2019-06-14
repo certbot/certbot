@@ -10,7 +10,7 @@ class _GracefulTCPServer(socketserver.TCPServer):
     allow_reuse_address = True
 
 
-def _select_port(mapping, host):
+def _get_port(mapping, host):
     fqdn = host.split(':')[0]
     return [port for pattern, port in mapping.items()
             if fqdn.endswith(pattern)][0]
@@ -19,8 +19,10 @@ def _select_port(mapping, host):
 def _create_proxy(mapping):
     class ProxyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         def do_GET(self):
-            headers = {key: value for key, value in self.headers.items()}
-            url = '{0}:{1}{2}'.format('http://127.0.0.1', _select_port(mapping, headers['host']), self.path)
+            headers = {key.lower(): value for key, value in self.headers.items()}
+            url = '{0}:{1}{2}'.format('http://127.0.0.1',
+                                      _get_port(mapping, headers['host']),
+                                      self.path)
             response = requests.get(url, headers=headers)
 
             self.send_response(response.status_code)
