@@ -32,6 +32,7 @@ class ACMEServer(object):
     def stop(self):
         if self._proxy_process:
             self._proxy_process.terminate()
+            self._proxy_process.wait()
         self._server_cleanup()
 
     def __enter__(self):
@@ -52,7 +53,7 @@ def setup_acme_server(acme_server, nodes, proxy=True):
     respectively start the server, and stop it with proper resources cleanup.
     :param str acme_server: the type of acme server used (boulder-v1, boulder-v2 or pebble)
     :param str[] nodes: list of node names that will be setup by pytest xdist
-    :param bool proxy: set to False to not start the Traefik proxy
+    :param bool proxy: set to False to not start the HTTP proxy
     :return: a properly configured ACMEServer instance
     :rtype: ACMEServer
     """
@@ -61,7 +62,7 @@ def setup_acme_server(acme_server, nodes, proxy=True):
     workspace, server_cleanup = _construct_workspace(acme_type)
 
     def start():
-        proxy_process = _prepare_traefik_proxy(acme_xdist) if proxy else None
+        proxy_process = _prepare_http_proxy(acme_xdist) if proxy else None
         _prepare_acme_server(workspace, acme_type, acme_xdist)
 
         return proxy_process
@@ -96,15 +97,14 @@ def _construct_workspace(acme_type):
 
     def cleanup():
         """Cleanup function to call that will teardown relevant dockers and their configuration."""
-        for instance in [acme_type, 'traefik']:
-            print('=> Tear down the {0} instance...'.format(instance))
-            instance_path = join(workspace, instance)
-            try:
-                if os.path.isfile(join(instance_path, 'docker-compose.yml')):
-                    _launch_command(['docker-compose', 'down'], cwd=instance_path)
-            except subprocess.CalledProcessError:
-                pass
-            print('=> Finished tear down of {0} instance.'.format(acme_type))
+        print('=> Tear down the {0} instance...'.format(acme_type))
+        instance_path = join(workspace, acme_type)
+        try:
+            if os.path.isfile(join(instance_path, 'docker-compose.yml')):
+                _launch_command(['docker-compose', 'down'], cwd=instance_path)
+        except subprocess.CalledProcessError:
+            pass
+        print('=> Finished tear down of {0} instance.'.format(acme_type))
 
         if acme_type == 'boulder' and os.path.exists(os.path.join(workspace, 'boulder')):
             # Boulder docker generates build artifacts owned by root user with 0o744 permissions.
@@ -162,8 +162,8 @@ def _prepare_acme_server(workspace, acme_type, acme_xdist):
         raise
 
 
-def _prepare_traefik_proxy(acme_xdist):
-    """Configure and launch Traefik, the HTTP reverse proxy"""
+def _prepare_http_proxy(acme_xdist):
+    """Configure and launch an HTTP proxy"""
     print('=> Configuring the HTTP proxy...')
     mapping = {r'.+\.{0}\.wtf'.format(node): 'http://127.0.0.1:{0}'.format(port)
                for node, port in acme_xdist['http_port'].items()}
