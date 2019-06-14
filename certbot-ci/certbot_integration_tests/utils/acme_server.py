@@ -11,22 +11,70 @@ from os.path import join
 
 import requests
 import json
-import yaml
 
-from certbot_integration_tests.utils import misc
+from certbot_integration_tests.utils import misc, pebble_artifacts
 from certbot_integration_tests.utils.constants import *
 
 
 class ACMEServer(object):
     """
-    Handler exposing methods to start and stop the ACME server, and get its configuration
-    (eg. challenges ports). ACMEServer is also a context manager, and so can be used to
-    ensure ACME server is started/stopped upon context enter/exit.
+    ACMEServer configure and handle lifecycle of an ACME CA server and an HTTP reverse proxy
+    instance, to allow parallel execution of integration tests against the unique http-01 port
+    expected by the ACME CA server.
+    Typically all pytest integration tests will be executed in this context.
+    ACMEServer gives access the acme_xdist parameter, listing the ports and directory url to use
+    for each pytest node. It exposes also start and stop methods in order to start the stack, and
+    stop it with proper resources cleanup.
+    An ACMEServer instance will be returned, giving access to the ports and directory url to use
+    for each pytest node, and its start and stop methods are appropriately configured to
+    respectively start the server, and stop it with proper resources cleanup.
+    ACMEServer is also a context manager, and so can be used to ensure ACME server is started/stopped
+    upon context enter/exit.
     """
-    def __init__(self, acme_xdist, start, stop):
-        self.acme_xdist = acme_xdist
-        self.start = start
-        self.stop = stop
+    def __init__(self, acme_server, nodes, proxy=True):
+        """
+        Create an ACMEServer instance.
+        :param acme_server: the type of acme server used (boulder-v1, boulder-v2 or pebble)
+        :param str[] nodes: list of node names that will be setup by pytest xdist
+        :param bool proxy: set to False to not start the Traefik proxy
+        """
+        self.acme_xdist = _construct_acme_xdist(acme_server, nodes)
+
+        self._acme_type = 'pebble' if acme_server == 'pebble' else 'boulder'
+        self._proxy = proxy
+        self._workspace = tempfile.mkdtemp()
+        self._processes = []
+
+    def start(self):
+        """Start the test stack"""
+        if self._proxy:
+            self._processes.extend(_prepare_traefik_proxy(self._workspace, self.acme_xdist))
+        if self._acme_type == 'pebble':
+            self._processes.extend(_prepare_pebble_server(self._workspace, self.acme_xdist))
+        if self._acme_type == 'boulder':
+            self._processes.extend(_prepare_boulder_server(self._workspace, self.acme_xdist))
+
+    def stop(self):
+        """Stop the test stack, and clean its resources"""
+        print('=> Tear down the test infrastructure...')
+        try:
+            for process in self._processes:
+                process.terminate()
+            for process in self._processes:
+                process.wait()
+
+            if os.path.exists(os.path.join(self._workspace, 'boulder')):
+                # Boulder docker generates build artifacts owned by root with 0o744 permissions.
+                # If we started the acme server from a normal user that has access to the Docker
+                # daemon, this user will not be able to delete these artifacts from the host.
+                # We need to do it through a docker.
+                process = _launch_process(['docker', 'run', '--rm', '-v',
+                                           '{0}:/workspace'.format(self._workspace),
+                                            'alpine', 'rm', '-rf', '/workspace/boulder'])
+                process.wait()
+        finally:
+            shutil.rmtree(self._workspace)
+        print('=> Test infrastructure stopped and cleaned up.')
 
     def __enter__(self):
         self.start()
@@ -34,32 +82,6 @@ class ACMEServer(object):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.stop()
-
-
-def setup_acme_server(acme_server, nodes, proxy=True):
-    """
-    This method will setup an ACME CA server and an HTTP reverse proxy instance, to allow parallel
-    execution of integration tests against the unique http-01 port expected by the ACME CA server.
-    Typically all pytest integration tests will be executed in this context.
-    An ACMEServer instance will be returned, giving access to the ports and directory url to use
-    for each pytest node, and its start and stop methods are appropriately configured to
-    respectively start the server, and stop it with proper resources cleanup.
-    :param str acme_server: the type of acme server used (boulder-v1, boulder-v2 or pebble)
-    :param str[] nodes: list of node names that will be setup by pytest xdist
-    :param bool proxy: set to False to not start the Traefik proxy
-    :return: a properly configured ACMEServer instance
-    :rtype: ACMEServer
-    """
-    acme_type = 'pebble' if acme_server == 'pebble' else 'boulder'
-    acme_xdist = _construct_acme_xdist(acme_server, nodes)
-    workspace, stop = _construct_workspace(acme_type)
-
-    def start():
-        if proxy:
-            _prepare_traefik_proxy(workspace, acme_xdist)
-        _prepare_acme_server(workspace, acme_type, acme_xdist)
-
-    return ACMEServer(acme_xdist, start, stop)
 
 
 def _construct_acme_xdist(acme_server, nodes):
@@ -83,76 +105,62 @@ def _construct_acme_xdist(acme_server, nodes):
     return acme_xdist
 
 
-def _construct_workspace(acme_type):
-    """Create a temporary workspace for integration tests stack"""
-    workspace = tempfile.mkdtemp()
+def _prepare_pebble_server(workspace, acme_xdist):
+    print('=> Starting pebble instance deployment...')
+    pebble_path, challtestsrv_path, pebble_config_path = pebble_artifacts.fetch(workspace)
 
-    def cleanup():
-        """Cleanup function to call that will teardown relevant dockers and their configuration."""
-        for instance in [acme_type, 'traefik']:
-            print('=> Tear down the {0} instance...'.format(instance))
-            instance_path = join(workspace, instance)
-            try:
-                if os.path.isfile(join(instance_path, 'docker-compose.yml')):
-                    _launch_command(['docker-compose', 'down'], cwd=instance_path)
-            except subprocess.CalledProcessError:
-                pass
-            print('=> Finished tear down of {0} instance.'.format(acme_type))
+    # Configure Pebble at full speed (PEBBLE_VA_NOSLEEP=1) and not randomly refusing valid
+    # nonce (PEBBLE_WFE_NONCEREJECT=0) to have a stable test environment.
+    environ = os.environ.copy()
+    environ['PEBBLE_VA_NOSLEEP'] = '1'
+    environ['PEBBLE_WFE_NONCEREJECT'] = '0'
 
-        if acme_type == 'boulder' and os.path.exists(os.path.join(workspace, 'boulder')):
-            # Boulder docker generates build artifacts owned by root user with 0o744 permissions.
-            # If we started the acme server from a normal user that has access to the Docker
-            # daemon, this user will not be able to delete these artifacts from the host.
-            # We need to do it through a docker.
-            _launch_command(['docker', 'run', '--rm', '-v', '{0}:/workspace'.format(workspace),
-                             'alpine', 'rm', '-rf', '/workspace/boulder'])
+    process_pebble = _launch_process(
+        [pebble_path, '-config', pebble_config_path, '-strict', '-dnsserver', '127.0.0.1:8053'],
+        env=environ)
 
-        shutil.rmtree(workspace)
+    process_challtestsrv = _launch_process(
+        [challtestsrv_path, '-management', ':{0}'.format(CHALLTESTSRV_PORT), '-defaultIPv6', '""',
+         '-defaultIPv4', '127.0.0.1', '-http01', '""', '-tlsalpn01', '""', '-https01', '""'])
 
-    return workspace, cleanup
+    # Wait for the ACME CA server to be up.
+    print('=> Waiting for pebble instance to respond...')
+    misc.check_until_timeout(acme_xdist['directory_url'])
+
+    print('=> Finished pebble instance deployment.')
+
+    return [process_pebble, process_challtestsrv]
 
 
-def _prepare_acme_server(workspace, acme_type, acme_xdist):
+def _prepare_boulder_server(workspace, acme_xdist):
     """Configure and launch the ACME server, Boulder or Pebble"""
-    print('=> Starting {0} instance deployment...'.format(acme_type))
-    instance_path = join(workspace, acme_type)
-    try:
-        # Load Boulder/Pebble from git, that includes a docker-compose.yml ready for production.
-        _launch_command(['git', 'clone', 'https://github.com/letsencrypt/{0}'.format(acme_type),
-                         '--single-branch', '--depth=1', instance_path])
-        if acme_type == 'boulder':
-            # Allow Boulder to ignore usual limit rate policies, useful for tests.
-            os.rename(join(instance_path, 'test/rate-limit-policies-b.yml'),
-                      join(instance_path, 'test/rate-limit-policies.yml'))
-        if acme_type == 'pebble':
-            # Configure Pebble at full speed (PEBBLE_VA_NOSLEEP=1) and not randomly refusing valid
-            # nonce (PEBBLE_WFE_NONCEREJECT=0) to have a stable test environment.
-            with open(os.path.join(instance_path, 'docker-compose.yml'), 'r') as file_handler:
-                config = yaml.load(file_handler.read())
+    print('=> Starting boulder instance deployment...')
+    instance_path = join(workspace, 'boulder')
 
-            config['services']['pebble'].setdefault('environment', [])\
-                .extend(['PEBBLE_VA_NOSLEEP=1', 'PEBBLE_WFE_NONCEREJECT=0'])
-            with open(os.path.join(instance_path, 'docker-compose.yml'), 'w') as file_handler:
-                file_handler.write(yaml.dump(config))
+    # Load Boulder from git, that includes a docker-compose.yml ready for production.
+    process = _launch_process(['git', 'clone', 'https://github.com/letsencrypt/boulder',
+                               '--single-branch', '--depth=1', instance_path])
+    process.wait()
 
-        # Launch the ACME CA server.
-        _launch_command(['docker-compose', 'up', '--force-recreate', '-d'], cwd=instance_path)
+    # Allow Boulder to ignore usual limit rate policies, useful for tests.
+    os.rename(join(instance_path, 'test/rate-limit-policies-b.yml'),
+              join(instance_path, 'test/rate-limit-policies.yml'))
 
-        # Wait for the ACME CA server to be up.
-        print('=> Waiting for {0} instance to respond...'.format(acme_type))
-        misc.check_until_timeout(acme_xdist['directory_url'])
+    # Launch the Boulder server
+    process = _launch_process(['docker-compose', 'up', '--force-recreate'], cwd=instance_path)
 
-        # Configure challtestsrv to answer any A record request with ip of the docker host.
-        acme_subnet = '10.77.77' if acme_type == 'boulder' else '10.30.50'
-        response = requests.post('http://localhost:{0}/set-default-ipv4'
-                                 .format(acme_xdist['challtestsrv_port']),
-                                 json={'ip': '{0}.1'.format(acme_subnet)})
-        response.raise_for_status()
+    # Wait for the ACME CA server to be up.
+    print('=> Waiting for boulder instance to respond...')
+    misc.check_until_timeout(acme_xdist['directory_url'])
 
-        print('=> Finished {0} instance deployment.'.format(acme_type))
-    except BaseException:
-        print('Error while setting up {0} instance.'.format(acme_type))
-        raise
+    # Configure challtestsrv to answer any A record request with ip of the docker host.
+    response = requests.post('http://localhost:{0}/set-default-ipv4'.format(CHALLTESTSRV_PORT),
+                             json={'ip': '10.77.77.1'})
+    response.raise_for_status()
+
+    print('=> Finished boulder instance deployment.')
+
+    return [process]
 
 
 def _prepare_traefik_proxy(workspace, acme_xdist):
@@ -185,7 +193,7 @@ networks:
            traefik_api_port=TRAEFIK_API_PORT,
            http_01_port=HTTP_01_PORT))
 
-        _launch_command(['docker-compose', 'up', '--force-recreate', '-d'], cwd=instance_path)
+        process = _launch_process(['docker-compose', 'up', '--force-recreate'], cwd=instance_path)
 
         misc.check_until_timeout('http://localhost:{0}/api'.format(TRAEFIK_API_PORT))
         config = {
@@ -206,18 +214,19 @@ networks:
         response.raise_for_status()
 
         print('=> Finished traefik instance deployment.')
+
+        return [process]
     except BaseException:
         print('Error while setting up traefik instance.')
         raise
 
 
-def _launch_command(command, cwd=os.getcwd()):
-    """Launch silently an OS command, output will be displayed in case of failure"""
-    try:
-        subprocess.check_output(command, stderr=subprocess.STDOUT, cwd=cwd, universal_newlines=True)
-    except subprocess.CalledProcessError as e:
-        sys.stderr.write(e.output)
-        raise
+def _launch_process(command, cwd=os.getcwd(), env=None):
+    """Launch silently an subprocess OS command"""
+    if not env:
+        env = os.environ
+    with open(os.devnull, 'w') as null:
+        return subprocess.Popen(command, stdout=null, stderr=subprocess.STDOUT, cwd=cwd, env=env)
 
 
 def main():
@@ -228,7 +237,7 @@ def main():
         raise ValueError('Invalid server value {0}, should be one of {1}'
                          .format(server_type, possible_values))
 
-    acme_server = setup_acme_server(server_type, [], False)
+    acme_server = ACMEServer(server_type, [], False)
     process = None
 
     try:
