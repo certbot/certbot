@@ -11,11 +11,6 @@ class _GracefulTCPServer(socketserver.TCPServer):
     allow_reuse_address = True
 
 
-def _get_port(mapping, host):
-    return [port for pattern, port in mapping.items()
-            if re.matches(pattern, host)][0]
-
-
 def _create_proxy(mapping):
     class ProxyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         def do_GET(self):
