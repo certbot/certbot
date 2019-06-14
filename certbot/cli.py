@@ -96,10 +96,10 @@ manage certificates:
     revoke          Revoke a certificate (supply --cert-path or --cert-name)
     delete          Delete a certificate
 
-manage your account with Let's Encrypt:
-    register        Create a Let's Encrypt ACME account
-    unregister      Deactivate a Let's Encrypt ACME account
-    update_account  Update a Let's Encrypt ACME account
+manage your account:
+    register        Create an ACME account
+    unregister      Deactivate an ACME account
+    update_account  Update an ACME account
   --agree-tos       Agree to the ACME server's Subscriber Agreement
    -m EMAIL         Email address for important account notifications
 """
@@ -1453,7 +1453,7 @@ def _plugins_parsing(helpful, plugins):
                       "using DNSimple for DNS)."))
     helpful.add(["plugins", "certonly"], "--dns-dnsmadeeasy", action="store_true",
                 default=flag_default("dns_dnsmadeeasy"),
-                help=("Obtain certificates using a DNS TXT record (if you are"
+                help=("Obtain certificates using a DNS TXT record (if you are "
                       "using DNS Made Easy for DNS)."))
     helpful.add(["plugins", "certonly"], "--dns-gehirn", action="store_true",
                 default=flag_default("dns_gehirn"),

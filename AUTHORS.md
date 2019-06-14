@@ -5,6 +5,7 @@ Authors
 * Aaron Zuehlke
 * Ada Lovelace
 * [Adam Woodbeck](https://github.com/awoodbeck)
+* [Adrien Ferrand](https://github.com/adferrand)
 * [Aidin Gharibnavaz](https://github.com/aidin36)
 * [AJ ONeal](https://github.com/coolaj86)
 * [Alcaro](https://github.com/Alcaro)
@@ -75,6 +76,7 @@ Authors
 * [Fabian](https://github.com/faerbit)
 * [Faidon Liambotis](https://github.com/paravoid)
 * [Fan Jiang](https://github.com/tcz001)
+* [Felix Lechner](https://github.com/lechner)
 * [Felix Schwarz](https://github.com/FelixSchwarz)
 * [Felix Yan](https://github.com/felixonmars)
 * [Filip Ochnik](https://github.com/filipochnik)

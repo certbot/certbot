@@ -671,7 +671,7 @@ def register(config, unused_plugins):
     # delete the true case of if block
     if config.update_registration:
         msg = ("Usage 'certbot register --update-registration' is deprecated.\n"
-               "Please use 'cerbot update_account [options]' instead.\n")
+               "Please use 'certbot update_account [options]' instead.\n")
         logger.warning(msg)
         return update_account(config, unused_plugins)
 
@@ -1359,7 +1359,7 @@ def main(cli_args=None):
 
     # On windows, shell without administrative right cannot create symlinks required by certbot.
     # So we check the rights before continuing.
-    misc.raise_for_non_administrative_windows_rights(config.verb)
+    misc.raise_for_non_administrative_windows_rights()
 
     try:
         log.post_arg_parse_setup(config)

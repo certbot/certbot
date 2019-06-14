@@ -106,11 +106,11 @@ def _restore_webroot_config(config, renewalparams):
     restoring logic is not able to correctly parse it from the serialized
     form.
     """
-    if "webroot_map" in renewalparams:
-        if not cli.set_by_cli("webroot_map"):
-            config.webroot_map = renewalparams["webroot_map"]
-    elif "webroot_path" in renewalparams:
-        logger.debug("Ancient renewal conf file without webroot-map, restoring webroot-path")
+    if "webroot_map" in renewalparams and not cli.set_by_cli("webroot_map"):
+        config.webroot_map = renewalparams["webroot_map"]
+    # To understand why webroot_path and webroot_map processing are not mutually exclusive,
+    # see https://github.com/certbot/certbot/pull/7095
+    if "webroot_path" in renewalparams and not cli.set_by_cli("webroot_path"):
         wp = renewalparams["webroot_path"]
         if isinstance(wp, six.string_types):  # prior to 0.1.0, webroot_path was a string
             wp = [wp]

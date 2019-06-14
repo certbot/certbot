@@ -295,6 +295,19 @@ class WebrootActionTest(unittest.TestCase):
         self.assertEqual(
             config.webroot_map[self.achall.domain], self.path)
 
+    def test_webroot_map_partial_without_perform(self):
+        # This test acknowledges the fact that webroot_map content will be partial if webroot
+        # plugin perform method is not invoked (corner case when all auths are already valid).
+        # To not be a problem, the webroot_path must always been conserved during renew.
+        # This condition is challenged by:
+        # certbot.tests.renewal_tests::RenewalTest::test_webroot_params_conservation
+        # See https://github.com/certbot/certbot/pull/7095 for details.
+        other_webroot_path = tempfile.mkdtemp()
+        args = self.parser.parse_args("-w {0} -d {1} -w {2} -d bar".format(
+            self.path, self.achall.domain, other_webroot_path).split())
+        self.assertEqual(args.webroot_map, {self.achall.domain: self.path})
+        self.assertEqual(args.webroot_path, [self.path, other_webroot_path])
+
     def _get_config_after_perform(self, config):
         from certbot.plugins.webroot import Authenticator
         auth = Authenticator(config, "webroot")
