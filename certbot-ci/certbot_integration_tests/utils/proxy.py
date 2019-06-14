@@ -4,9 +4,9 @@ import sys
 import re
 
 import requests
-from six.moves import BaseHTTPServer, socketserver
+from six.moves import BaseHTTPServer
 
-from certbot_integration_tests import GracefulTCPServer
+from certbot_integration_tests.utils.misc import GracefulTCPServer
 
 
 def _create_proxy(mapping):
@@ -14,7 +14,7 @@ def _create_proxy(mapping):
         def do_GET(self):
             headers = {key.lower(): value for key, value in self.headers.items()}
             backend = [backend for pattern, backend in mapping.items()
-                       if re.matches(pattern, host)][0]
+                       if re.match(pattern, headers['host'])][0]
             response = requests.get(backend + self.path, headers=headers)
 
             self.send_response(response.status_code)
