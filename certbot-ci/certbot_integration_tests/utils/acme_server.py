@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """Module to setup an ACME CA server environment able to run multiple tests in parallel"""
 from __future__ import print_function
+import json
 import tempfile
 import time
 import os
@@ -10,9 +11,8 @@ import sys
 from os.path import join
 
 import requests
-import json
 
-from certbot_integration_tests.utils import misc, pebble_artifacts
+from certbot_integration_tests.utils import misc, proxy, pebble_artifacts
 from certbot_integration_tests.utils.constants import *
 
 
@@ -48,7 +48,7 @@ class ACMEServer(object):
     def start(self):
         """Start the test stack"""
         if self._proxy:
-            self._processes.extend(_prepare_traefik_proxy(self._workspace, self.acme_xdist))
+            self._processes.extend(_prepare_http_proxy(self.acme_xdist))
         if self._acme_type == 'pebble':
             self._processes.extend(_prepare_pebble_server(self._workspace, self.acme_xdist))
         if self._acme_type == 'boulder':
@@ -163,62 +163,16 @@ def _prepare_boulder_server(workspace, acme_xdist):
     return [process]
 
 
-def _prepare_traefik_proxy(workspace, acme_xdist):
-    """Configure and launch Traefik, the HTTP reverse proxy"""
-    print('=> Starting traefik instance deployment...')
-    instance_path = join(workspace, 'traefik')
-    traefik_subnet = '10.33.33'
-    try:
-        os.mkdir(instance_path)
+def _prepare_http_proxy(acme_xdist):
+    """Configure and launch an HTTP proxy"""
+    print('=> Configuring the HTTP proxy...')
+    mapping = {r'.+\.{0}\.wtf'.format(node): 'http://127.0.0.1:{0}'.format(port)
+               for node, port in acme_xdist['http_port'].items()}
+    command = [sys.executable, proxy.__file__, str(HTTP_01_PORT), json.dumps(mapping)]
+    process = _launch_process(command)
+    print('=> Finished configuring the HTTP proxy.')
 
-        with open(join(instance_path, 'docker-compose.yml'), 'w') as file_h:
-            file_h.write('''\
-version: '3'
-services:
-  traefik:
-    image: traefik
-    command: --api --rest
-    ports:
-      - {http_01_port}:80
-      - {traefik_api_port}:8080
-    networks:
-      traefiknet:
-        ipv4_address: {traefik_subnet}.2
-networks:
-  traefiknet:
-    ipam:
-      config:
-        - subnet: {traefik_subnet}.0/24
-'''.format(traefik_subnet=traefik_subnet,
-           traefik_api_port=TRAEFIK_API_PORT,
-           http_01_port=HTTP_01_PORT))
-
-        process = _launch_process(['docker-compose', 'up', '--force-recreate'], cwd=instance_path)
-
-        misc.check_until_timeout('http://localhost:{0}/api'.format(TRAEFIK_API_PORT))
-        config = {
-            'backends': {
-                node: {
-                    'servers': {node: {'url': 'http://{0}.1:{1}'.format(traefik_subnet, port)}}
-                } for node, port in acme_xdist['http_port'].items()
-            },
-            'frontends': {
-                node: {
-                    'backend': node, 'passHostHeader': True,
-                    'routes': {node: {'rule': 'HostRegexp: {{subdomain:.+}}.{0}.wtf'.format(node)}}
-                } for node in acme_xdist['http_port'].keys()
-            }
-        }
-        response = requests.put('http://localhost:{0}/api/providers/rest'.format(TRAEFIK_API_PORT),
-                                data=json.dumps(config))
-        response.raise_for_status()
-
-        print('=> Finished traefik instance deployment.')
-
-        return [process]
-    except BaseException:
-        print('Error while setting up traefik instance.')
-        raise
+    return [process]
 
 
 def _launch_process(command, cwd=os.getcwd(), env=None):

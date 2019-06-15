@@ -6,7 +6,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* Turn off session tickets for nginx plugin by default
 
 ### Changed
 
