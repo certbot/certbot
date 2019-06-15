@@ -19,7 +19,7 @@ ERROR_PREFIX = "urn:ietf:params:acme:error:"
 
 ERROR_CODES = {
     'accountDoesNotExist': 'The request specified an account that does not exist',
-    'alreadyRevoked': 'The request specified a certificate to be revoked thathas' \
+    'alreadyRevoked': 'The request specified a certificate to be revoked that has' \
     ' already been revoked',
     'badCSR': 'The CSR is unacceptable (e.g., due to a short key)',
     'badNonce': 'The client sent an unacceptable anti-replay nonce',
