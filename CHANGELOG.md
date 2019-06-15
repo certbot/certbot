@@ -6,7 +6,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-* Added missing error types from RFC8555 to acme 
+*
 
 ### Changed
 
