@@ -41,12 +41,6 @@ matrix:
     - python: "2.7"
       env: TOXENV=py27-cover FYI="py27 tests + code coverage"
 
-    - sudo: required
-      env: TOXENV=nginx_compat
-      services: docker
-      before_install:
-      addons:
-      <<: *not-on-master
     - python: "2.7"
       env: TOXENV=lint
       <<: *not-on-master
@@ -57,7 +51,7 @@ matrix:
       env: TOXENV=mypy
       <<: *not-on-master
     - python: "2.7"
-      env: TOXENV='py27-{acme,apache,certbot,dns,nginx,postfix}-oldest'
+      env: TOXENV='py27-{acme,apache,certbot,dns,nginx}-oldest'
       sudo: required
       services: docker
       <<: *not-on-master
@@ -94,6 +88,12 @@ matrix:
       <<: *not-on-master
 
     # Extended test suite on cron jobs and pushes to tested branches other than master
+    - sudo: required
+      env: TOXENV=nginx_compat
+      services: docker
+      before_install:
+      addons:
+      <<: *extended-test-suite
     - python: "2.7"
       env:
         - TOXENV=travis-test-farm-apache2
