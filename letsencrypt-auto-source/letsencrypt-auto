@@ -342,6 +342,7 @@ BootstrapDebCommon() {
   augeas_pkg="libaugeas0 augeas-lenses"
 
   if [ "$ASSUME_YES" = 1 ]; then
+    export DEBIAN_FRONTEND='noninteractive'
     YES_FLAG="-y"
   fi
 
