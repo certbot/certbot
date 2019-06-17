@@ -6,6 +6,10 @@ set -o pipefail
 
 cd letsencrypt
 
+# Setting this variable prevents old versions of certbot-auto on Debian from
+# blocking on user input.
+export DEBIAN_FRONTEND='noninteractive'
+
 if ! command -v git ; then
     if [ "$OS_TYPE" = "ubuntu" ] ; then
         sudo apt-get update
