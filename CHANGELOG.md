@@ -13,6 +13,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * Update the 'manage your account' help to be more generic.
 * The error message when Certbot's Apache plugin is unable to modify your
   Apache configuration has been improved.
+* When running certbot-auto with --non-interactive,
+  DEBIAN_FRONTEND=noninteractive is set on Debian based systems to prevent
+  debconf prompts from waiting on user input.
 
 ### Fixed
 
