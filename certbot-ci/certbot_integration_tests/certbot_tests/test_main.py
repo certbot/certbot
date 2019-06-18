@@ -5,6 +5,7 @@ import os
 import re
 import shutil
 import subprocess
+import time
 from os.path import join, exists
 
 import pytest
@@ -228,8 +229,8 @@ def test_graceful_renew_it_is_not_time(context):
 
     assert_cert_count_for_lineage(context.config_dir, certname, 1)
 
-    context.certbot_no_force_renew([
-        'renew', '--deploy-hook', 'echo deploy >> "{0}"'.format(context.hook_probe)])
+    context.certbot(['renew', '--deploy-hook', 'echo deploy >> "{0}"'.format(context.hook_probe)],
+                    force_renew=False)
 
     assert_cert_count_for_lineage(context.config_dir, certname, 1)
     with pytest.raises(AssertionError):
@@ -249,8 +250,8 @@ def test_graceful_renew_it_is_time(context):
     with open(join(context.config_dir, 'renewal', '{0}.conf'.format(certname)), 'w') as file:
         file.writelines(lines)
 
-    context.certbot_no_force_renew([
-        'renew', '--deploy-hook', 'echo deploy >> "{0}"'.format(context.hook_probe)])
+    context.certbot(['renew', '--deploy-hook', 'echo deploy >> "{0}"'.format(context.hook_probe)],
+                    force_renew=False)
 
     assert_cert_count_for_lineage(context.config_dir, certname, 2)
     assert_hook_execution(context.hook_probe, 'deploy')
@@ -567,6 +568,9 @@ def test_ocsp_status_live(context):
 
     # OSCP 2: Check live certificate OCSP status (REVOKED)
     context.certbot(['revoke', '--cert-name', cert, '--no-delete-after-revoke'])
+    # Sometimes in oldest tests (using openssl binary and not cryptography), the OCSP status is
+    # not seen immediately by Certbot as invalid. Waiting few seconds solves this transient issue.
+    time.sleep(5)
     output = context.certbot(['certificates'])
 
     assert output.count('INVALID') == 1, 'Expected {0} to be INVALID'.format(cert)

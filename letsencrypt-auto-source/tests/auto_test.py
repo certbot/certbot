@@ -4,13 +4,13 @@ from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 from contextlib import contextmanager
 from functools import partial
 from json import dumps
-from os import chmod, environ, makedirs
+from os import chmod, environ, makedirs, stat
 from os.path import abspath, dirname, exists, join
 import re
 from shutil import copy, rmtree
 import socket
 import ssl
-from stat import S_IRUSR, S_IXUSR
+from stat import S_IMODE, S_IRUSR, S_IWUSR, S_IXUSR, S_IWGRP, S_IWOTH
 from subprocess import CalledProcessError, Popen, PIPE
 import sys
 from tempfile import mkdtemp
@@ -192,7 +192,7 @@ def install_le_auto(contents, install_path):
     chmod(install_path, S_IRUSR | S_IXUSR)
 
 
-def run_le_auto(le_auto_path, venv_dir, base_url, **kwargs):
+def run_le_auto(le_auto_path, venv_dir, base_url=None, le_auto_args_str='--version', **kwargs):
     """Run the prebuilt version of letsencrypt-auto, returning stdout and
     stderr strings.
 
@@ -201,13 +201,17 @@ def run_le_auto(le_auto_path, venv_dir, base_url, **kwargs):
     """
     env = environ.copy()
     d = dict(VENV_PATH=venv_dir,
-             # URL to PyPI-style JSON that tell us the latest released version
-             # of LE:
-             LE_AUTO_JSON_URL=base_url + 'certbot/json',
-             # URL to dir containing letsencrypt-auto and letsencrypt-auto.sig:
-             LE_AUTO_DIR_TEMPLATE=base_url + '%s/',
-             # The public key corresponding to signing.key:
-             LE_AUTO_PUBLIC_KEY="""-----BEGIN PUBLIC KEY-----
+             NO_CERT_VERIFY='1',
+             **kwargs)
+
+    if base_url is not None:
+        # URL to PyPI-style JSON that tell us the latest released version
+        # of LE:
+        d['LE_AUTO_JSON_URL'] = base_url + 'certbot/json'
+        # URL to dir containing letsencrypt-auto and letsencrypt-auto.sig:
+        d['LE_AUTO_DIR_TEMPLATE'] = base_url + '%s/'
+        # The public key corresponding to signing.key:
+        d['LE_AUTO_PUBLIC_KEY'] = """-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsMoSzLYQ7E1sdSOkwelg
 tzKIh2qi3bpXuYtcfFC0XrvWig071NwIj+dZiT0OLZ2hPispEH0B7ISuuWg1ll7G
 hFW0VdbxL6JdGzS2ShNWkX9hE9z+j8VqwDPOBn3ZHm03qwpYkBDwQib3KqOdYbTT
@@ -215,12 +219,12 @@ uUtJmmGcuk3a9Aq/sCT6DdfmTSdP5asdQYwIcaQreDrOosaS84DTWI3IU+UYJVgl
 LsIVPBuy9IcgHidUQ96hJnoPsDCWsHwX62495QKEarauyKQrJzFes0EY95orDM47
 Z5o/NDiQB11m91yNB0MmPYY9QSbnOA9j7IaaC97AwRLuwXY+/R2ablTcxurWou68
 iQIDAQAB
------END PUBLIC KEY-----""",
-             NO_CERT_VERIFY='1',
-             **kwargs)
+-----END PUBLIC KEY-----"""
+
     env.update(d)
+
     return out_and_err(
-        le_auto_path + ' --version',
+        le_auto_path + ' ' + le_auto_args_str,
         shell=True,
         env=env)
 
@@ -238,6 +242,12 @@ def set_le_script_version(venv_dir, version):
                      "from sys import stderr\n"
                      "stderr.write('letsencrypt %s\\n')" % version)
     chmod(letsencrypt_path, S_IRUSR | S_IXUSR)
+
+
+def sudo_chmod(path, mode):
+    """Runs `sudo chmod mode path`."""
+    mode = oct(mode).replace('o', '')
+    out_and_err(['sudo', 'chmod', mode, path])
 
 
 class AutoTests(TestCase):
@@ -395,3 +405,95 @@ class AutoTests(TestCase):
                 else:
                     self.fail("Pip didn't detect a bad hash and stop the "
                               "installation.")
+
+    def test_permissions_warnings(self):
+        """Make sure letsencrypt-auto properly warns about permissions problems."""
+        # This test assumes that only the parent of the directory containing
+        # letsencrypt-auto (usually /tmp) may have permissions letsencrypt-auto
+        # considers insecure.
+        with temp_paths() as (le_auto_path, venv_dir):
+            le_auto_path = abspath(le_auto_path)
+            le_auto_dir = dirname(le_auto_path)
+            le_auto_dir_parent = dirname(le_auto_dir)
+            install_le_auto(self.NEW_LE_AUTO, le_auto_path)
+
+            run_letsencrypt_auto = partial(
+                run_le_auto, le_auto_path, venv_dir,
+                le_auto_args_str='--install-only --no-self-upgrade',
+                PIP_FIND_LINKS=join(tests_dir(), 'fake-letsencrypt', 'dist'))
+            # Run letsencrypt-auto once with current permissions to avoid
+            # potential problems when the script tries to write to temporary
+            # directories.
+            run_letsencrypt_auto()
+
+            le_auto_dir_mode = stat(le_auto_dir).st_mode
+            le_auto_dir_parent_mode = S_IMODE(stat(le_auto_dir_parent).st_mode)
+            try:
+                # Make letsencrypt-auto happy with the current permissions
+                chmod(le_auto_dir, S_IRUSR | S_IXUSR)
+                sudo_chmod(le_auto_dir_parent, 0o755)
+
+                self._test_permissions_warnings_about_path(le_auto_path, run_letsencrypt_auto)
+                self._test_permissions_warnings_about_path(le_auto_dir, run_letsencrypt_auto)
+            finally:
+                chmod(le_auto_dir, le_auto_dir_mode)
+                sudo_chmod(le_auto_dir_parent, le_auto_dir_parent_mode)
+
+    def _test_permissions_warnings_about_path(self, path, run_le_auto_func):
+        # Test that there are no problems with the current permissions
+        out, _ = run_le_auto_func()
+        self.assertFalse('insecure permissions' in out)
+
+        stat_result = stat(path)
+        original_mode = stat_result.st_mode
+
+        # Test world permissions
+        chmod(path, original_mode | S_IWOTH)
+        out, _ = run_le_auto_func()
+        self.assertTrue('insecure permissions' in out)
+
+        # Test group permissions
+        if stat_result.st_gid >= 1000:
+            chmod(path, original_mode | S_IWGRP)
+            out, _ = run_le_auto_func()
+            self.assertTrue('insecure permissions' in out)
+
+        # Test owner permissions
+        if stat_result.st_uid >= 1000:
+            chmod(path, original_mode | S_IWUSR)
+            out, _ = run_le_auto_func()
+            self.assertTrue('insecure permissions' in out)
+
+        # Test that permissions were properly restored
+        chmod(path, original_mode)
+        out, _ = run_le_auto_func()
+        self.assertFalse('insecure permissions' in out)
+
+    def test_disabled_permissions_warnings(self):
+        """Make sure that letsencrypt-auto permissions warnings can be disabled."""
+        with temp_paths() as (le_auto_path, venv_dir):
+            le_auto_path = abspath(le_auto_path)
+            install_le_auto(self.NEW_LE_AUTO, le_auto_path)
+
+            le_auto_args_str='--install-only --no-self-upgrade'
+            pip_links=join(tests_dir(), 'fake-letsencrypt', 'dist')
+            out, _ = run_le_auto(le_auto_path, venv_dir,
+                                 le_auto_args_str=le_auto_args_str,
+                                 PIP_FIND_LINKS=pip_links)
+            self.assertTrue('insecure permissions' in out)
+
+            # Test that warnings are disabled when the script isn't run as
+            # root.
+            out, _ = run_le_auto(le_auto_path, venv_dir,
+                                 le_auto_args_str=le_auto_args_str,
+                                 LE_AUTO_SUDO='',
+                                 PIP_FIND_LINKS=pip_links)
+            self.assertFalse('insecure permissions' in out)
+
+            # Test that --no-permissions-check disables warnings.
+            le_auto_args_str += ' --no-permissions-check'
+            out, _ = run_le_auto(
+                le_auto_path, venv_dir,
+                le_auto_args_str=le_auto_args_str,
+                PIP_FIND_LINKS=pip_links)
+            self.assertFalse('insecure permissions' in out)

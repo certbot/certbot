@@ -43,13 +43,14 @@ class FedoraRestartTest(util.ApacheTest):
                                              vhost_root=vhost_root)
         self.config = util.get_apache_configurator(
             self.config_path, self.vhost_path, self.config_dir, self.work_dir,
-            os_info="fedora")
+            os_info="fedora_old")
         self.vh_truth = get_vh_truth(
             self.temp_dir, "centos7_apache/apache")
 
     def _run_fedora_test(self):
+        self.assertIsInstance(self.config, override_centos.CentOSConfigurator)
         with mock.patch("certbot.util.get_os_info") as mock_info:
-            mock_info.return_value = ["fedora"]
+            mock_info.return_value = ["fedora", "28"]
             self.config.config_test()
 
     def test_non_fedora_error(self):
@@ -103,8 +104,7 @@ class MultipleVhostsTestCentOS(util.ApacheTest):
             self.temp_dir, "centos7_apache/apache")
 
     def test_get_parser(self):
-        self.assertTrue(isinstance(self.config.parser,
-                                   override_centos.CentOSParser))
+        self.assertIsInstance(self.config.parser, override_centos.CentOSParser)
 
     @mock.patch("certbot_apache.parser.ApacheParser._get_runtime_cfg")
     def test_opportunistic_httpd_runtime_parsing(self, mock_get):

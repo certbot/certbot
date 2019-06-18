@@ -2,11 +2,99 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 0.34.0 - master
+## 0.36.0 - master
 
 ### Added
 
+* Turn off session tickets for nginx plugin by default
+
+### Changed
+
+* Update the 'manage your account' help to be more generic.
+* The error message when Certbot's Apache plugin is unable to modify your
+  Apache configuration has been improved.
+
+### Fixed
+
 *
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.35.1 - 2019-06-10
+
+### Fixed
+
+* Support for specifying an authoritative base domain in our dns-rfc2136 plugin
+  has been removed. This feature was added in our last release but had a bug
+  which caused the plugin to fail so the feature has been removed until it can
+  be added properly.
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+package with changes other than its version number was:
+
+* certbot-dns-rfc2136
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.35.0 - 2019-06-05
+
+### Added
+
+* dns_rfc2136 plugin now supports explicitly specifing an authorative
+  base domain for cases when the automatic method does not work (e.g.
+  Split horizon DNS)
+
+### Changed
+
+*
+
+### Fixed
+
+* Renewal parameter `webroot_path` is always saved, avoiding some regressions
+  when `webroot` authenticator plugin is invoked with no challenge to perform.
+* Certbot now accepts OCSP responses when an explicit authorized
+  responder, different from the issuer, is used to sign OCSP
+  responses.
+* Scripts in Certbot hook directories are no longer executed when their
+  filenames end in a tilde.
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+package with changes other than its version number was:
+
+* certbot
+* certbot-dns-rfc2136
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.34.2 - 2019-05-07
+
+### Fixed
+
+* certbot-auto no longer writes a check_permissions.py script at the root
+  of the filesystem.
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+changes in this release were to certbot-auto.
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.34.1 - 2019-05-06
+
+### Fixed
+
+* certbot-auto no longer prints a blank line when there are no permissions
+  problems.
+
+Despite us having broken lockstep, we are continuing to release new versions of
+all Certbot components during releases for the time being, however, the only
+changes in this release were to certbot-auto.
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.34.0 - 2019-05-01
 
 ### Changed
 
@@ -26,6 +114,20 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Fixed
 
 * Fixed Google DNS Challenge issues when private zones exist
+* Adding a warning noting that future versions of Certbot will automatically configure the
+  webserver so that all requests redirect to secure HTTPS access. You can control this
+  behavior and disable this warning with the --redirect and --no-redirect flags.
+* certbot-auto now prints warnings when run as root with insecure file system
+  permissions. If you see these messages, you should fix the problem by
+  following the instructions at
+  https://community.letsencrypt.org/t/certbot-auto-deployment-best-practices/91979/,
+  however, these warnings can be disabled as necessary with the flag
+  --no-permissions-check.
+* `acme` module uses now a POST-as-GET request to retrieve the registration
+  from an ACME v2 server
+* Convert the tsig algorithm specified in the certbot_dns_rfc2136 configuration file to
+  all uppercase letters before validating. This makes the value in the config case
+  insensitive.
 
 Despite us having broken lockstep, we are continuing to release new versions of
 all Certbot components during releases for the time being, however, the only

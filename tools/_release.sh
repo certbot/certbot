@@ -109,6 +109,9 @@ SetVersion() {
 
 SetVersion "$version"
 
+# Unset CERTBOT_OLDEST to prevent wheels from being built improperly due to
+# conditionals like the one found in certbot-dns-dnsimple's setup.py file.
+unset CERTBOT_OLDEST
 echo "Preparing sdists and wheels"
 for pkg_dir in . $SUBPKGS_NO_CERTBOT
 do
