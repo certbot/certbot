@@ -1,8 +1,8 @@
 targets:
   #-----------------------------------------------------------------------------
   #Ubuntu
-  - ami: ami-064bd2d44a1d6c097
-    name: ubuntu18.10
+  - ami: ami-08ab45c4343f5f5c6
+    name: ubuntu19.04
     type: ubuntu
     virt: hvm
     user: ubuntu
@@ -49,8 +49,8 @@ targets:
     type: centos
     virt: hvm
     user: ec2-user
-  - ami: ami-5c69df23
-    name: fedora28
+  - ami: ami-00bbc6858140f19ed
+    name: fedora30
     type: centos
     virt: hvm
     user: fedora

@@ -1,7 +1,9 @@
+#!/usr/bin/env python
 """Module to setup an ACME CA server environment able to run multiple tests in parallel"""
 from __future__ import print_function
+import json
 import tempfile
-import atexit
+import time
 import os
 import subprocess
 import shutil
@@ -9,37 +11,63 @@ import sys
 from os.path import join
 
 import requests
-import json
 import yaml
 
-from certbot_integration_tests.utils import misc
-
-# These ports are set implicitly in the docker-compose.yml files of Boulder/Pebble.
-CHALLTESTSRV_PORT = 8055
-HTTP_01_PORT = 5002
+from certbot_integration_tests.utils import misc, proxy
+from certbot_integration_tests.utils.constants import *
 
 
-def setup_acme_server(acme_server, nodes):
+class ACMEServer(object):
+    """
+    Handler exposing methods to start and stop the ACME server, and get its configuration
+    (eg. challenges ports). ACMEServer is also a context manager, and so can be used to
+    ensure ACME server is started/stopped upon context enter/exit.
+    """
+    def __init__(self, acme_xdist, start, server_cleanup):
+        self._proxy_process = None
+        self._server_cleanup = server_cleanup
+        self.acme_xdist = acme_xdist
+        self.start = start
+
+    def stop(self):
+        if self._proxy_process:
+            self._proxy_process.terminate()
+            self._proxy_process.wait()
+        self._server_cleanup()
+
+    def __enter__(self):
+        self._proxy_process = self.start()
+        return self.acme_xdist
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.stop()
+
+
+def setup_acme_server(acme_server, nodes, proxy=True):
     """
     This method will setup an ACME CA server and an HTTP reverse proxy instance, to allow parallel
     execution of integration tests against the unique http-01 port expected by the ACME CA server.
-    Instances are properly closed and cleaned when the Python process exits using atexit.
     Typically all pytest integration tests will be executed in this context.
-    This method returns an object describing ports and directory url to use for each pytest node
-    with the relevant pytest xdist node.
+    An ACMEServer instance will be returned, giving access to the ports and directory url to use
+    for each pytest node, and its start and stop methods are appropriately configured to
+    respectively start the server, and stop it with proper resources cleanup.
     :param str acme_server: the type of acme server used (boulder-v1, boulder-v2 or pebble)
     :param str[] nodes: list of node names that will be setup by pytest xdist
-    :return: a dict describing the challenge ports that have been setup for the nodes
-    :rtype: dict
+    :param bool proxy: set to False to not start the HTTP proxy
+    :return: a properly configured ACMEServer instance
+    :rtype: ACMEServer
     """
     acme_type = 'pebble' if acme_server == 'pebble' else 'boulder'
     acme_xdist = _construct_acme_xdist(acme_server, nodes)
-    workspace = _construct_workspace(acme_type)
+    workspace, server_cleanup = _construct_workspace(acme_type)
 
-    _prepare_traefik_proxy(workspace, acme_xdist)
-    _prepare_acme_server(workspace, acme_type, acme_xdist)
+    def start():
+        proxy_process = _prepare_http_proxy(acme_xdist) if proxy else None
+        _prepare_acme_server(workspace, acme_type, acme_xdist)
 
-    return acme_xdist
+        return proxy_process
+
+    return ACMEServer(acme_xdist, start, server_cleanup)
 
 
 def _construct_acme_xdist(acme_server, nodes):
@@ -48,10 +76,10 @@ def _construct_acme_xdist(acme_server, nodes):
 
     # Directory and ACME port are set implicitly in the docker-compose.yml files of Boulder/Pebble.
     if acme_server == 'pebble':
-        acme_xdist['directory_url'] = 'https://localhost:14000/dir'
+        acme_xdist['directory_url'] = PEBBLE_DIRECTORY_URL
     else:  # boulder
-        port = 4001 if acme_server == 'boulder-v2' else 4000
-        acme_xdist['directory_url'] = 'http://localhost:{0}/directory'.format(port)
+        acme_xdist['directory_url'] = BOULDER_V2_DIRECTORY_URL \
+            if acme_server == 'boulder-v2' else BOULDER_V1_DIRECTORY_URL
 
     acme_xdist['http_port'] = {node: port for (node, port)
                                in zip(nodes, range(5200, 5200 + len(nodes)))}
@@ -69,22 +97,26 @@ def _construct_workspace(acme_type):
 
     def cleanup():
         """Cleanup function to call that will teardown relevant dockers and their configuration."""
-        for instance in [acme_type, 'traefik']:
-            print('=> Tear down the {0} instance...'.format(instance))
-            instance_path = join(workspace, instance)
-            try:
-                if os.path.isfile(join(instance_path, 'docker-compose.yml')):
-                    _launch_command(['docker-compose', 'down'], cwd=instance_path)
-            except subprocess.CalledProcessError:
-                pass
-            print('=> Finished tear down of {0} instance.'.format(acme_type))
+        print('=> Tear down the {0} instance...'.format(acme_type))
+        instance_path = join(workspace, acme_type)
+        try:
+            if os.path.isfile(join(instance_path, 'docker-compose.yml')):
+                _launch_command(['docker-compose', 'down'], cwd=instance_path)
+        except subprocess.CalledProcessError:
+            pass
+        print('=> Finished tear down of {0} instance.'.format(acme_type))
+
+        if acme_type == 'boulder' and os.path.exists(os.path.join(workspace, 'boulder')):
+            # Boulder docker generates build artifacts owned by root user with 0o744 permissions.
+            # If we started the acme server from a normal user that has access to the Docker
+            # daemon, this user will not be able to delete these artifacts from the host.
+            # We need to do it through a docker.
+            _launch_command(['docker', 'run', '--rm', '-v', '{0}:/workspace'.format(workspace),
+                             'alpine', 'rm', '-rf', '/workspace/boulder'])
 
         shutil.rmtree(workspace)
 
-    # Here with atexit we ensure that clean function is called no matter what.
-    atexit.register(cleanup)
-
-    return workspace
+    return workspace, cleanup
 
 
 def _prepare_acme_server(workspace, acme_type, acme_xdist):
@@ -130,61 +162,16 @@ def _prepare_acme_server(workspace, acme_type, acme_xdist):
         raise
 
 
-def _prepare_traefik_proxy(workspace, acme_xdist):
-    """Configure and launch Traefik, the HTTP reverse proxy"""
-    print('=> Starting traefik instance deployment...')
-    instance_path = join(workspace, 'traefik')
-    traefik_subnet = '10.33.33'
-    traefik_api_port = 8056
-    try:
-        os.mkdir(instance_path)
+def _prepare_http_proxy(acme_xdist):
+    """Configure and launch an HTTP proxy"""
+    print('=> Configuring the HTTP proxy...')
+    mapping = {r'.+\.{0}\.wtf'.format(node): 'http://127.0.0.1:{0}'.format(port)
+               for node, port in acme_xdist['http_port'].items()}
+    command = [sys.executable, proxy.__file__, str(HTTP_01_PORT), json.dumps(mapping)]
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    print('=> Finished configuring the HTTP proxy.')
 
-        with open(join(instance_path, 'docker-compose.yml'), 'w') as file_h:
-            file_h.write('''\
-version: '3'
-services:
-  traefik:
-    image: traefik
-    command: --api --rest
-    ports:
-      - {http_01_port}:80
-      - {traefik_api_port}:8080
-    networks:
-      traefiknet:
-        ipv4_address: {traefik_subnet}.2
-networks:
-  traefiknet:
-    ipam:
-      config:
-        - subnet: {traefik_subnet}.0/24
-'''.format(traefik_subnet=traefik_subnet,
-           traefik_api_port=traefik_api_port,
-           http_01_port=HTTP_01_PORT))
-
-        _launch_command(['docker-compose', 'up', '--force-recreate', '-d'], cwd=instance_path)
-
-        misc.check_until_timeout('http://localhost:{0}/api'.format(traefik_api_port))
-        config = {
-            'backends': {
-                node: {
-                    'servers': {node: {'url': 'http://{0}.1:{1}'.format(traefik_subnet, port)}}
-                } for node, port in acme_xdist['http_port'].items()
-            },
-            'frontends': {
-                node: {
-                    'backend': node, 'passHostHeader': True,
-                    'routes': {node: {'rule': 'HostRegexp: {{subdomain:.+}}.{0}.wtf'.format(node)}}
-                } for node in acme_xdist['http_port'].keys()
-            }
-        }
-        response = requests.put('http://localhost:{0}/api/providers/rest'.format(traefik_api_port),
-                                data=json.dumps(config))
-        response.raise_for_status()
-
-        print('=> Finished traefik instance deployment.')
-    except BaseException:
-        print('Error while setting up traefik instance.')
-        raise
+    return process
 
 
 def _launch_command(command, cwd=os.getcwd()):
@@ -194,3 +181,35 @@ def _launch_command(command, cwd=os.getcwd()):
     except subprocess.CalledProcessError as e:
         sys.stderr.write(e.output)
         raise
+
+
+def main():
+    args = sys.argv[1:]
+    server_type = args[0] if args else 'pebble'
+    possible_values = ('pebble', 'boulder-v1', 'boulder-v2')
+    if server_type not in possible_values:
+        raise ValueError('Invalid server value {0}, should be one of {1}'
+                         .format(server_type, possible_values))
+
+    acme_server = setup_acme_server(server_type, [], False)
+    process = None
+
+    try:
+        with acme_server as acme_xdist:
+            print('--> Instance of {0} is running, directory URL is {0}'
+                  .format(acme_xdist['directory_url']))
+            print('--> Press CTRL+C to stop the ACME server.')
+
+            docker_name = 'pebble_pebble_1' if 'pebble' in server_type else 'boulder_boulder_1'
+            process = subprocess.Popen(['docker', 'logs', '-f', docker_name])
+
+            while True:
+                time.sleep(3600)
+    except KeyboardInterrupt:
+        if process:
+            process.terminate()
+            process.wait()
+
+
+if __name__ == '__main__':
+    main()

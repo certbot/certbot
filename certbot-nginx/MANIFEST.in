@@ -3,3 +3,4 @@ include README.rst
 recursive-include docs *
 recursive-include certbot_nginx/tests/testdata *
 include certbot_nginx/options-ssl-nginx.conf
+include certbot_nginx/options-ssl-nginx-old.conf

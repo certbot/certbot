@@ -44,3 +44,6 @@ tests/letstest/venv/
 
 # docker files
 .docker
+
+# certbot tests
+.certbot_test_workspace

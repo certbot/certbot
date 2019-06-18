@@ -480,6 +480,12 @@ class ListHooksTest(util.TempDirTestCase):
 
         self.assertEqual(self._call(self.tempdir), [name])
 
+    def test_ignore_tilde(self):
+        name = os.path.join(self.tempdir, "foo~")
+        create_hook(name)
+
+        self.assertEqual(self._call(self.tempdir), [])
+
 
 def create_hook(file_path):
     """Creates an executable file at the specified path.
