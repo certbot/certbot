@@ -6,7 +6,7 @@ targets:
     type: ubuntu
     virt: hvm
     user: ubuntu
-  - ami: ami-012fd5eb46f56731f
+  - ami: ami-095192256fe1477ad
     name: ubuntu18.04LTS
     type: ubuntu
     virt: hvm
