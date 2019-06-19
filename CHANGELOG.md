@@ -2,25 +2,12 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 0.36.1 - master
-
-### Added
-
-*
-
-### Changed
-
-* Updated acme messages.py to adhere to RFC8555
-
-### Fixed
-
-*
-
 ## 0.36.0
 
 ### Added
 
 * Turn off session tickets for nginx plugin by default
+* Added missing error types from RFC8555 to acme
 
 ### Changed
 
