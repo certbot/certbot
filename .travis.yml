@@ -33,6 +33,7 @@ matrix:
     - language: generic
       env: TOXENV=py27
       os: osx
+      osx_image: xcode10.2
       addons:
         homebrew:
           packages:
@@ -42,6 +43,7 @@ matrix:
     - language: generic
       env: TOXENV=py3
       os: osx
+      osx_image: xcode10.2
       addons:
         homebrew:
           packages:
