@@ -7,6 +7,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Added
 
 * Turn off session tickets for nginx plugin by default
+* Added missing error types from RFC8555 to acme
 
 ### Changed
 
