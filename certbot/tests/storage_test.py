@@ -15,6 +15,7 @@ import certbot.tests.util as test_util
 from certbot import errors
 from certbot.compat import misc
 from certbot.compat import os
+from certbot.compat import filesystem
 from certbot.storage import ALL_FOUR
 
 CERT = test_util.load_cert('cert_512.pem')
@@ -132,7 +133,7 @@ class BaseRenewableCertTest(test_util.ConfigTestCase):
         with open(link, "wb") as f:
             f.write(kind.encode('ascii') if value is None else value)
         if kind == "privkey":
-            os.chmod(link, 0o600)
+            filesystem.chmod(link, 0o600)
 
     def _write_out_ex_kinds(self):
         for kind in ALL_FOUR:
@@ -572,7 +573,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.test_rc.update_all_links_to(1)
         self.assertTrue(misc.compare_file_modes(
             os.stat(self.test_rc.version("privkey", 1)).st_mode, 0o600))
-        os.chmod(self.test_rc.version("privkey", 1), 0o444)
+        filesystem.chmod(self.test_rc.version("privkey", 1), 0o444)
         # If no new key, permissions should be the same (we didn't write any keys)
         self.test_rc.save_successor(1, b"newcert", None, b"new chain", self.config)
         self.assertTrue(misc.compare_file_modes(
@@ -582,7 +583,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertTrue(misc.compare_file_modes(
             os.stat(self.test_rc.version("privkey", 3)).st_mode, 0o644))
         # If permissions reverted, next renewal will also revert permissions of new key
-        os.chmod(self.test_rc.version("privkey", 3), 0o400)
+        filesystem.chmod(self.test_rc.version("privkey", 3), 0o400)
         self.test_rc.save_successor(3, b"newcert", b"new_privkey", b"new chain", self.config)
         self.assertTrue(misc.compare_file_modes(
             os.stat(self.test_rc.version("privkey", 4)).st_mode, 0o600))
@@ -776,7 +777,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         with open(temp, "w") as f:
             f.write("[renewalparams]\nuseful = value # A useful value\n"
                     "useless = value # Not needed\n")
-        os.chmod(temp, 0o640)
+        filesystem.chmod(temp, 0o640)
         target = {}
         for x in ALL_FOUR:
             target[x] = "somewhere"

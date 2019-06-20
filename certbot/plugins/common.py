@@ -20,6 +20,7 @@ from certbot import interfaces
 from certbot import reverter
 from certbot import util
 from certbot.compat import os
+from certbot.compat import filesystem
 from certbot.plugins.storage import PluginStorage
 
 logger = logging.getLogger(__name__)
@@ -482,9 +483,9 @@ def dir_setup(test_dir, pkg):  # pragma: no cover
     config_dir = expanded_tempdir("config")
     work_dir = expanded_tempdir("work")
 
-    os.chmod(temp_dir, constants.CONFIG_DIRS_MODE)
-    os.chmod(config_dir, constants.CONFIG_DIRS_MODE)
-    os.chmod(work_dir, constants.CONFIG_DIRS_MODE)
+    filesystem.chmod(temp_dir, constants.CONFIG_DIRS_MODE)
+    filesystem.chmod(config_dir, constants.CONFIG_DIRS_MODE)
+    filesystem.chmod(work_dir, constants.CONFIG_DIRS_MODE)
 
     test_configs = pkg_resources.resource_filename(
         pkg, os.path.join("testdata", test_dir))
