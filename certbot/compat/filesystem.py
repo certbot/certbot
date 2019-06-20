@@ -5,8 +5,12 @@ import os  # pylint: disable=os-module-forbidden
 import stat
 
 try:
-    import ntsecuritycon  # pylint: disable=import-error
-    import win32security  # pylint: disable=import-error
+    # pylint: disable=import-error
+    import ntsecuritycon
+    import win32security
+    import win32file
+    import win32api
+    # pylint: enable=import-error
 except ImportError:
     POSIX_MODE = True
 else:
@@ -39,7 +43,7 @@ def chmod(file_path, mode):
 def makedirs(file_path, mode=0o777):
     # type: (str, int) -> None
     """
-    Wrapper of original os.makedirs function, that will ensure on Windows that given mode
+    Rewrite of original os.makedirs function, that will ensure on Windows that given mode
     is correctly applied.
     :param str file_path: The file path to open
     :param int mode: POSIX mode to apply on file when opened,
@@ -59,21 +63,25 @@ def makedirs(file_path, mode=0o777):
         os.mkdir = orig_mkdir_fn
 
 
-def mkdir(file_path, mode=0o777, mkdir_fn=None):
-    # type: (str, int, Callable[[str, int], None]) -> None
+def mkdir(file_path, mode=0o777):
+    # type: (str, int) -> None
     """
-    Wrapper of original os.mkdir function, that will ensure on Windows that given mode
+    Rewrite of original os.mkdir function, that will ensure on Windows that given mode
     is correctly applied.
     :param str file_path: The file path to open
     :param int mode: POSIX mode to apply on file when opened,
         Python defaults will be applied if ``None``
-    :param callable mkdir_fn: The underlying mkdir function to use
     """
-    mkdir_fn = mkdir_fn or os.mkdir
+    if POSIX_MODE:
+        os.mkdir(file_path, mode)
+    else:
+        attributes = win32security.SECURITY_ATTRIBUTES()
+        security = attributes.SECURITY_DESCRIPTOR
+        user = _get_current_user()
+        dacl = _generate_dacl(user, mode)
+        security.SetSecurityDescriptorDacl(1, dacl, 0)
 
-    mkdir_fn(file_path, mode)
-    # TODO: Replace by security.chmod when all logic from windows files permissions is merged.
-    os.chmod(file_path, mode)
+        win32file.CreateDirectory(file_path, attributes)
 
 
 def replace(src, dst):
@@ -213,3 +221,14 @@ def _compare_dacls(dacl1, dacl2):
     """
     return ([dacl1.GetAce(index) for index in range(0, dacl1.GetAceCount())] ==
             [dacl2.GetAce(index) for index in range(0, dacl2.GetAceCount())])
+
+
+def _get_current_user():
+    """
+    Return the pySID corresponding to the current user.
+    """
+    account_name = win32api.GetUserNameEx(win32api.NameSamCompatible)
+    # Passing None to systemName instruct the lookup to start from the local system,
+    # then continue the lookup to associated domain.
+    # See https://docs.microsoft.com/en-us/windows/desktop/api/winbase/nf-winbase-lookupaccountnamea
+    return win32security.LookupAccountName(None, account_name)[0]
