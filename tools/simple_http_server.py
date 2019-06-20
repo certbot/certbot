@@ -1,8 +1,11 @@
 #!/usr/bin/env python
-"""A version of Python 2.x's SimpleHTTPServer that flushes its output."""
-from BaseHTTPServer import HTTPServer
-from SimpleHTTPServer import SimpleHTTPRequestHandler
+"""A version of Python's SimpleHTTPServer that flushes its output."""
 import sys
+try:
+    from http.server import HTTPServer, SimpleHTTPRequestHandler
+except ImportError:
+    from BaseHTTPServer import HTTPServer
+    from SimpleHTTPServer import SimpleHTTPRequestHandler
 
 def serve_forever(port=0):
     """Spins up an HTTP server on all interfaces and the given port.

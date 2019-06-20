@@ -30,6 +30,7 @@ def context(request):
     ('nginx6.{0}.wtf,nginx7.{0}.wtf', ['--preferred-challenges', 'http'], {'default_server': False}),
 ], indirect=['context'])
 def test_certificate_deployment(certname_pattern, params, context):
+    # type: (str, list, nginx_context.IntegrationTestsContext) -> None
     """
     Test various scenarios to deploy a certificate to nginx using certbot.
     """
@@ -45,10 +46,7 @@ def test_certificate_deployment(certname_pattern, params, context):
 
     assert server_cert == certbot_cert
 
-    command = ['--authenticator', 'nginx', '--installer', 'nginx',
-               '--nginx-server-root', context.nginx_root,
-               'rollback', '--checkpoints', '1']
-    context._common_test_no_force_renew(command)
+    context.certbot_test_nginx(['rollback', '--checkpoints', '1'])
 
     with open(context.nginx_config_path, 'r') as file_h:
         current_nginx_config = file_h.read()

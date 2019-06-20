@@ -12,6 +12,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import warnings
 from distutils.version import LooseVersion
 
 import pkg_resources
@@ -21,8 +22,6 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.serialization import Encoding, PrivateFormat, NoEncryption
 from six.moves import socketserver, SimpleHTTPServer
-
-from acme import crypto_util
 
 
 RSA_KEY_TYPE = 'rsa'
@@ -36,8 +35,13 @@ def check_until_timeout(url):
     :param str url: the URL to test
     :raise ValueError: exception raised after 150 unsuccessful attempts to reach the URL
     """
-    import urllib3
-    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    try:
+        import urllib3
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    except ImportError:
+        # Handle old versions of request with vendorized urllib3
+        from requests.packages.urllib3.exceptions import InsecureRequestWarning
+        requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
     for _ in range(0, 150):
         time.sleep(1)
@@ -234,20 +238,30 @@ def generate_csr(domains, key_path, csr_path, key_type=RSA_KEY_TYPE):
         key = crypto.PKey()
         key.generate_key(crypto.TYPE_RSA, 2048)
     elif key_type == ECDSA_KEY_TYPE:
-        key = ec.generate_private_key(ec.SECP384R1(), default_backend())
+        with warnings.catch_warnings():
+            # Ignore a warning on some old versions of cryptography
+            warnings.simplefilter('ignore', category=PendingDeprecationWarning)
+            key = ec.generate_private_key(ec.SECP384R1(), default_backend())
         key = key.private_bytes(encoding=Encoding.PEM, format=PrivateFormat.TraditionalOpenSSL,
                                 encryption_algorithm=NoEncryption())
         key = crypto.load_privatekey(crypto.FILETYPE_PEM, key)
     else:
         raise ValueError('Invalid key type: {0}'.format(key_type))
 
-    key_bytes = crypto.dump_privatekey(crypto.FILETYPE_PEM, key)
-    with open(key_path, 'wb') as file:
-        file.write(key_bytes)
+    with open(key_path, 'wb') as file_h:
+        file_h.write(crypto.dump_privatekey(crypto.FILETYPE_PEM, key))
 
-    csr_bytes = crypto_util.make_csr(key_bytes, domains)
-    with open(csr_path, 'wb') as file:
-        file.write(csr_bytes)
+    req = crypto.X509Req()
+    san = ', '.join(['DNS:{0}'.format(item) for item in domains])
+    san_constraint = crypto.X509Extension(b'subjectAltName', False, san.encode('utf-8'))
+    req.add_extensions([san_constraint])
+
+    req.set_pubkey(key)
+    req.set_version(2)
+    req.sign(key, 'sha256')
+
+    with open(csr_path, 'wb') as file_h:
+        file_h.write(crypto.dump_certificate_request(crypto.FILETYPE_ASN1, req))
 
 
 def read_certificate(cert_path):

@@ -133,14 +133,14 @@ class AuthenticatorTest(unittest.TestCase):
         permission_canary = os.path.join(self.path, "rnd")
         with open(permission_canary, "w") as f:
             f.write("thingimy")
-        os.chmod(self.path, 0o000)
+        filesystem.chmod(self.path, 0o000)
         try:
             open(permission_canary, "r")
             print("Warning, running tests as root skips permissions tests...")
         except IOError:
             # ok, permissions work, test away...
             self.assertRaises(errors.PluginError, self.auth.perform, [])
-        os.chmod(self.path, 0o700)
+        filesystem.chmod(self.path, 0o700)
 
     @test_util.skip_on_windows('On Windows, there is no chown.')
     @mock.patch("certbot.plugins.webroot.os.chown")
@@ -295,6 +295,19 @@ class WebrootActionTest(unittest.TestCase):
         config = self._get_config_after_perform(args)
         self.assertEqual(
             config.webroot_map[self.achall.domain], self.path)
+
+    def test_webroot_map_partial_without_perform(self):
+        # This test acknowledges the fact that webroot_map content will be partial if webroot
+        # plugin perform method is not invoked (corner case when all auths are already valid).
+        # To not be a problem, the webroot_path must always been conserved during renew.
+        # This condition is challenged by:
+        # certbot.tests.renewal_tests::RenewalTest::test_webroot_params_conservation
+        # See https://github.com/certbot/certbot/pull/7095 for details.
+        other_webroot_path = tempfile.mkdtemp()
+        args = self.parser.parse_args("-w {0} -d {1} -w {2} -d bar".format(
+            self.path, self.achall.domain, other_webroot_path).split())
+        self.assertEqual(args.webroot_map, {self.achall.domain: self.path})
+        self.assertEqual(args.webroot_path, [self.path, other_webroot_path])
 
     def _get_config_after_perform(self, config):
         from certbot.plugins.webroot import Authenticator
