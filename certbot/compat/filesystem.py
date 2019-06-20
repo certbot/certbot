@@ -55,12 +55,7 @@ def open(file_path, flags, mode=0o777):  # pylint: disable=redefined-builtin
     """
     if not POSIX_MODE:
         # Handle creation of the file atomically with proper permissions
-        if flags & os.O_CREAT:
-            # If os.O_EXCL is set, we will use the "CREATE_NEW", that will raise an exception if file exist,
-            # matching the API contract of this bit flag. Otherwise, we use "OPEN_ALWAYS" that will create
-            # the file if not exist.
-            creation_disp = win32con.CREATE_NEW if flags & os.O_EXCL else win32con.OPEN_ALWAYS
-
+        if not os.path.exists(file_path) and flags & os.O_CREAT:
             attributes = win32security.SECURITY_ATTRIBUTES()
             security = attributes.SECURITY_DESCRIPTOR
             user = _get_current_user()
@@ -68,17 +63,18 @@ def open(file_path, flags, mode=0o777):  # pylint: disable=redefined-builtin
             security.SetSecurityDescriptorDacl(1, dacl, 0)
 
             handle = win32file.CreateFile(file_path, win32file.GENERIC_READ, 0,
-                                          attributes, creation_disp, 0, None)
+                                          attributes, win32con.CREATE_NEW, 0, None)
             handle.Close()
 
-        # At this point, the file has been created with proper permissions if os.O_CREAT is set,
-        # or an exception has been raised if file already exists and os.O_CREAT | os.O_EXCL is set.
-        # We can safely invoke chmod for the general case.
-        if os.path.exists(file_path):
+            # At this point, the file that was not existing has been created, with proper
+            # permissions, so os.O_CREAT and os.O_EXCL are not needed anymore. We remove them
+            # from the flags to avoid a FileExists exception when os.open will be called.
+            flags = flags ^ os.O_CREAT ^ os.O_EXCL
+        elif os.path.exists(file_path):
             chmod(file_path, mode)
 
-    # On Linux, invoke directly os.open. On Windows, file creation with proper permissions in
-    # respect with os.O_CREAT and os.O_EXCL has already been handled, so we can call os.open.
+    # On Linux, invoke directly os.open. On Windows, file creation with proper
+    # permissions in respect with os.O_CREAT so we can call os.open.
     return os.open(file_path, flags, mode)
 
 
