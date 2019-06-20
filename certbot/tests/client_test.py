@@ -12,6 +12,7 @@ import certbot.tests.util as test_util
 from certbot import account
 from certbot import errors
 from certbot.compat import os
+from certbot.compat import filesystem
 from certbot import util
 
 KEY = test_util.load_vector("rsa512_key.pem")
@@ -423,7 +424,7 @@ class ClientTest(ClientTestCommon):
         # pylint: disable=too-many-locals
         certs = ["cert_512.pem", "cert-san_512.pem"]
         tmp_path = tempfile.mkdtemp()
-        os.chmod(tmp_path, 0o755)  # TODO: really??
+        filesystem.chmod(tmp_path, 0o755)  # TODO: really??
 
         cert_pem = test_util.load_vector(certs[0])
         chain_pem = (test_util.load_vector(certs[0]) + test_util.load_vector(certs[1]))

@@ -66,7 +66,7 @@ class HookTest(util.ConfigTestCase):
     """Common base class for hook tests."""
 
     @classmethod
-    def _call(cls, *args, **kwargs):
+    def _call(cls, *args, **kwargs):  # pragma: no cover
         """Calls the method being tested with the given arguments."""
         raise NotImplementedError
 
@@ -481,6 +481,12 @@ class ListHooksTest(util.TempDirTestCase):
 
         self.assertEqual(self._call(self.tempdir), [name])
 
+    def test_ignore_tilde(self):
+        name = os.path.join(self.tempdir, "foo~")
+        create_hook(name)
+
+        self.assertEqual(self._call(self.tempdir), [])
+
 
 def create_hook(file_path):
     """Creates an executable file at the specified path.
@@ -489,7 +495,7 @@ def create_hook(file_path):
 
     """
     open(file_path, "w").close()
-    os.chmod(file_path, os.stat(file_path).st_mode | stat.S_IXUSR)
+    filesystem.chmod(file_path, os.stat(file_path).st_mode | stat.S_IXUSR)
 
 
 if __name__ == '__main__':

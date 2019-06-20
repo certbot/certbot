@@ -1,8 +1,9 @@
 """
 This compat modules is a wrapper of the core os module that forbids usage of specific operations
-(eg. chown, chmod, getuid) that would be harmful to the Windows file security model of Certbot.
+(e.g. chown, chmod, getuid) that would be harmful to the Windows file security model of Certbot.
 This module is intended to replace standard os module throughout certbot projects (except acme).
 """
+# pylint: disable=function-redefined
 from __future__ import absolute_import
 
 # First round of wrapping: we import statically all public attributes exposed by the os module
@@ -31,11 +32,46 @@ std_sys.modules[__name__ + '.path'] = path
 del ourselves, std_os, std_sys
 
 
+# Chmod is the root of all evil for our security model on Windows. With the default implementation
+# of os.chmod on Windows, almost all bits on mode will be ignored, and only a general RO or RW will
+# be applied. The DACL, the inner mechanism to control file access on Windows, will stay on its
+# default definition, giving effectively at least read permissions to any one, as the default
+# permissions on root path will be inherit by the file (as NTFS state), and root path can be read
+# by anyone. So the given mode needs to be translated into a secured and not inherited DACL that
+# will be applied to this file using filesystem.chmod, calling internally the win32security
+# module to construct and apply the DACL. Complete security model to translate a POSIX mode into
+# a suitable DACL on Windows for Certbot can be found here:
+# https://github.com/certbot/certbot/issues/6356
+# Basically, it states that appropriate permissions will be set for the owner, nothing for the
+# group, appropriate permissions for the "Everyone" group, and all permissions to the
+# "Administrators" group + "System" user, as they can do everything anyway.
+def chmod(*unused_args, **unused_kwargs):
+    """Method os.chmod() is forbidden"""
+    raise RuntimeError('Usage of os.chmod() is forbidden. '
+                       'Use certbot.compat.filesystem.chmod() instead.')
+
+
 # The os.open function on Windows has the same effect than a call to os.chown concerning the file
 # modes: these modes lack of a correct control over the permissions given to the file. Instead,
 # filesystem.open invokes filesystem.take_ownership and filesystem.chown to ensure that both owner
 # and permissions are correctly set.
-def open(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
+def open(*unused_args, **unused_kwargs):
     """Method os.open() is forbidden"""
     raise RuntimeError('Usage of os.open() is forbidden. '
                        'Use certbot.compat.filesystem.open() instead.')
+
+
+# Because of the blocking strategy on file handlers on Windows, rename does not behave as expected
+# with POSIX systems: an exception will be raised if dst already exists.
+def rename(*unused_args, **unused_kwargs):
+    """Method os.rename() is forbidden"""
+    raise RuntimeError('Usage of os.rename() is forbidden. '
+                       'Use certbot.compat.filesystem.replace() instead.')
+
+
+# Behavior of os.replace is consistent between Windows and Linux. However, it is not supported on
+# Python 2.x. So, as for os.rename, we forbid it in favor of filesystem.replace.
+def replace(*unused_args, **unused_kwargs):
+    """Method os.replace() is forbidden"""
+    raise RuntimeError('Usage of os.replace() is forbidden. '
+                       'Use certbot.compat.filesystem.replace() instead.')
