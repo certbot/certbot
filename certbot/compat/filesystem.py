@@ -5,8 +5,13 @@ import os  # pylint: disable=os-module-forbidden
 import stat
 
 try:
-    import ntsecuritycon  # pylint: disable=import-error
-    import win32security  # pylint: disable=import-error
+    # pylint: disable=import-error
+    import ntsecuritycon
+    import win32security
+    import win32con
+    import win32api
+    import win32file
+    # pylint: enable=import-error
 except ImportError:
     POSIX_MODE = True
 else:
@@ -48,11 +53,33 @@ def open(file_path, flags, mode=0o777):  # pylint: disable=redefined-builtin
     :returns: the file descriptor to the opened file
     :rtype: int
     """
-    file_descriptor = os.open(file_path, flags, mode)
-    # TODO: Change to filesystem.chmod once all logic of windows files permissions has been merged
-    os.chmod(file_path, mode)
+    if not POSIX_MODE:
+        # Handle creation of the file atomically with proper permissions
+        if flags & os.O_CREAT:
+            # If os.O_EXCL is set, we will use the "CREATE_NEW", that will raise an exception if file exist,
+            # matching the API contract of this bit flag. Otherwise, we use "OPEN_ALWAYS" that will create
+            # the file if not exist.
+            creation_disp = win32con.CREATE_NEW if flags & os.O_EXCL else win32con.OPEN_ALWAYS
 
-    return file_descriptor
+            attributes = win32security.SECURITY_ATTRIBUTES()
+            security = attributes.SECURITY_DESCRIPTOR
+            user = _get_current_user()
+            dacl = _generate_dacl(user, mode)
+            security.SetSecurityDescriptorDacl(1, dacl, 0)
+
+            handle = win32file.CreateFile(file_path, win32file.GENERIC_READ, 0,
+                                          attributes, creation_disp, 0, None)
+            handle.Close()
+
+        # At this point, the file has been created with proper permissions if os.O_CREAT is set,
+        # or an exception has been raised if file already exists and os.O_CREAT | os.O_EXCL is set.
+        # We can safely invoke chmod for the general case.
+        if os.path.exists(file_path):
+            chmod(file_path, mode)
+
+    # On Linux, invoke directly os.open. On Windows, file creation with proper permissions in
+    # respect with os.O_CREAT and os.O_EXCL has already been handled, so we can call os.open.
+    return os.open(file_path, flags, mode)
 
 
 def replace(src, dst):
@@ -192,3 +219,14 @@ def _compare_dacls(dacl1, dacl2):
     """
     return ([dacl1.GetAce(index) for index in range(0, dacl1.GetAceCount())] ==
             [dacl2.GetAce(index) for index in range(0, dacl2.GetAceCount())])
+
+
+def _get_current_user():
+    """
+    Return the pySID corresponding to the current user.
+    """
+    account_name = win32api.GetUserNameEx(win32api.NameSamCompatible)
+    # Passing None to systemName instruct the lookup to start from the local system,
+    # then continue the lookup to associated domain.
+    # See https://docs.microsoft.com/en-us/windows/desktop/api/winbase/nf-winbase-lookupaccountnamea
+    return win32security.LookupAccountName(None, account_name)[0]
