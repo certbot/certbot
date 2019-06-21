@@ -7,6 +7,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Added
 
 * Turn off session tickets for nginx plugin by default
+* Added missing error types from RFC8555 to acme
 
 ### Changed
 
@@ -110,6 +111,10 @@ More details about these changes can be found on our GitHub repo.
   `malformed` error to be received from the ACME server.
 * Linode DNS plugin now supports api keys created from their new panel
   at [cloud.linode.com](https://cloud.linode.com)
+
+### Fixed
+
+* Fixed Google DNS Challenge issues when private zones exist
 * Adding a warning noting that future versions of Certbot will automatically configure the
   webserver so that all requests redirect to secure HTTPS access. You can control this
   behavior and disable this warning with the --redirect and --no-redirect flags.

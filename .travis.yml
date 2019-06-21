@@ -234,6 +234,9 @@ matrix:
     - language: generic
       env: TOXENV=py27
       os: osx
+      # Using this osx_image is a workaround for
+      # https://travis-ci.community/t/xcode-8-3-homebrew-outdated-error/3798.
+      osx_image: xcode10.2
       addons:
         homebrew:
           packages:
@@ -243,6 +246,9 @@ matrix:
     - language: generic
       env: TOXENV=py3
       os: osx
+      # Using this osx_image is a workaround for
+      # https://travis-ci.community/t/xcode-8-3-homebrew-outdated-error/3798.
+      osx_image: xcode10.2
       addons:
         homebrew:
           packages:
