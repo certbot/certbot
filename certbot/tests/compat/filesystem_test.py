@@ -1,7 +1,8 @@
 """Tests for certbot.compat.filesystem"""
 import unittest
-import mock
 import errno
+
+import mock
 
 try:
     import win32api  # pylint: disable=import-error
@@ -158,6 +159,7 @@ class WindowsChmodTests(TempDirTestCase):
 
 @unittest.skipIf(POSIX_MODE, reason='Test specific to Windows security')
 class WindowsMkdirTests(test_util.TempDirTestCase):
+    """Unit tests for Windows mkdir + makedirs functions in filesystem module"""
     def test_mkdir_correct_permissions(self):
         path = os.path.join(self.tempdir, 'dir')
 
