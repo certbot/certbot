@@ -24,6 +24,16 @@ from cryptography.hazmat.primitives.serialization import Encoding, PrivateFormat
 from six.moves import socketserver, SimpleHTTPServer
 
 
+from certbot_integration_tests.utils import ocsp_server
+
+try:
+    import urllib3
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+except ImportError:
+    # Handle old versions of request with vendorized urllib3
+    from requests.packages.urllib3.exceptions import InsecureRequestWarning
+    requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+
 RSA_KEY_TYPE = 'rsa'
 ECDSA_KEY_TYPE = 'ecdsa'
 
@@ -35,14 +45,6 @@ def check_until_timeout(url):
     :param str url: the URL to test
     :raise ValueError: exception raised after 150 unsuccessful attempts to reach the URL
     """
-    try:
-        import urllib3
-        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    except ImportError:
-        # Handle old versions of request with vendorized urllib3
-        from requests.packages.urllib3.exceptions import InsecureRequestWarning
-        requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
-
     for _ in range(0, 150):
         time.sleep(1)
         try:
@@ -288,3 +290,27 @@ def load_sample_data_path(workspace):
     copied = os.path.join(workspace, 'sample-config')
     shutil.copytree(original, copied, symlinks=True)
     return copied
+
+
+@contextlib.contextmanager
+def mock_ocsp_server(directory_url, workspace):
+    root_url = directory_url.replace('/dir', '')
+
+    key_path = os.path.join(workspace, 'ocsp_key.pem')
+    cert_path = os.path.join(workspace, 'ocsp_cert.pem')
+    with open(key_path, 'w') as file_h:
+        file_h.write(requests.get(root_url + '/intermediate-key', verify=False).content)
+    with open(cert_path, 'w') as file_h:
+        file_h.write(requests.get(root_url + '/intermediate', verify=False).content)
+
+    environ = os.environ.copy()
+    environ['ISSUER_KEY_PATH'] = key_path
+    environ['ISSUER_CERT_PATH'] = cert_path
+    environ['OCSP_PORT'] = '4002'
+
+    process = subprocess.Popen([sys.executable, ocsp_server.__file__], env=environ)
+    try:
+        yield 'http://127.0.0.1:4002'
+    finally:
+        process.terminate()
+        process.wait()

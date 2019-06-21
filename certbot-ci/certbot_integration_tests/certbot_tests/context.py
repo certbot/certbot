@@ -4,7 +4,7 @@ import shutil
 import sys
 import tempfile
 
-from certbot_integration_tests.utils import misc, certbot_call
+from certbot_integration_tests.utils import certbot_call
 
 
 class IntegrationTestsContext(object):

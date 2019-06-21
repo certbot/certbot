@@ -11,11 +11,6 @@ from flask import Flask, request
 app = Flask(__name__)
 app.debug = False
 
-with open(os.environ['ISSUER_CERT_PATH'], 'rb') as file_h1:
-    issuer_cert = x509.load_pem_x509_certificate(file_h1.read(), default_backend())
-with open(os.environ['ISSUER_KEY_PATH'], 'rb') as file_h2:
-    issuer_key = serialization.load_pem_private_key(file_h2.read(), None, default_backend())
-
 certificates_map = {}
 
 
@@ -52,6 +47,10 @@ def status_certificate():
         cert_path = config[0]
         ocsp_status = getattr(ocsp.OCSPCertStatus, config[1])
 
+        with open(os.environ['ISSUER_CERT_PATH'], 'rb') as file_h1:
+            issuer_cert = x509.load_pem_x509_certificate(file_h1.read(), default_backend())
+        with open(os.environ['ISSUER_KEY_PATH'], 'rb') as file_h2:
+            issuer_key = serialization.load_pem_private_key(file_h2.read(), None, default_backend())
         with open(cert_path, 'rb') as file_h3:
             cert = x509.load_pem_x509_certificate(file_h3.read(), default_backend())
 
@@ -70,4 +69,4 @@ def status_certificate():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=4002)
+    app.run(host='0.0.0.0', port=int(os.environ.get('OCSP_PORT', 4002)))
