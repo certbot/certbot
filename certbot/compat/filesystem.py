@@ -19,7 +19,7 @@ except ImportError:
 else:
     POSIX_MODE = False
 
-from acme.magic_typing import List, Callable  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
 
 
 def chmod(file_path, mode):
