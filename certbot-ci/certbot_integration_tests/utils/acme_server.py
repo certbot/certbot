@@ -115,7 +115,7 @@ class ACMEServer(object):
         environ['PEBBLE_WFE_NONCEREJECT'] = '0'
 
         self._launch_process(
-            [pebble_path, '-config', pebble_config_path, '-strict', '-dnsserver', '127.0.0.1:8053'],
+            [pebble_path, '-config', pebble_config_path, '-dnsserver', '127.0.0.1:8053'],
             env=environ)
 
         self._launch_process(
