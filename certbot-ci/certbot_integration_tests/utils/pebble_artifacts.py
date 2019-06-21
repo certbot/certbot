@@ -16,7 +16,7 @@ def fetch(workspace):
                                  '.exe' if platform.system() == 'Windows' else '')
 
     pebble_path = _fetch_asset('pebble', suffix)
-    challtestsrv_path = _fetch_asset('challtestsrv', suffix)
+    challtestsrv_path = _fetch_asset('pebble-challtestsrv', suffix)
     pebble_config_path = _build_pebble_config(workspace)
 
     return pebble_path, challtestsrv_path, pebble_config_path
