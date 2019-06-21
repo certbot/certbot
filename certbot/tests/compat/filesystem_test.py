@@ -156,6 +156,7 @@ class WindowsChmodTests(TempDirTestCase):
         self.assertEqual(security_dacl.GetSecurityDescriptorDacl().GetAceCount(), 2)
 
 
+@unittest.skipIf(POSIX_MODE, reason='Test specific to Windows security')
 class WindowsMkdirTests(test_util.TempDirTestCase):
     def test_mkdir_correct_permissions(self):
         path = os.path.join(self.tempdir, 'dir')
