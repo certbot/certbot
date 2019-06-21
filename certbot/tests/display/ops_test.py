@@ -13,6 +13,7 @@ import certbot.tests.util as test_util
 from certbot import account
 from certbot import errors
 from certbot.compat import os
+from certbot.compat import filesystem
 from certbot.display import ops
 from certbot.display import util as display_util
 
@@ -93,7 +94,7 @@ class ChooseAccountTest(test_util.TempDirTestCase):
                                                                False))
 
         self.account_keys_dir = os.path.join(self.tempdir, "keys")
-        os.makedirs(self.account_keys_dir, 0o700)
+        filesystem.makedirs(self.account_keys_dir, 0o700)
 
         self.config = mock.MagicMock(
             accounts_dir=self.tempdir,

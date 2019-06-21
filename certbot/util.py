@@ -23,6 +23,7 @@ from certbot import errors
 from certbot import lock
 from certbot.compat import misc
 from certbot.compat import os
+from certbot.compat import filesystem
 
 logger = logging.getLogger(__name__)
 
@@ -180,7 +181,7 @@ def make_or_verify_dir(directory, mode=0o755, uid=0, strict=False):
 
     """
     try:
-        os.makedirs(directory, mode)
+        filesystem.makedirs(directory, mode)
     except OSError as exception:
         if exception.errno == errno.EEXIST:
             if strict and not check_permissions(directory, mode, uid):
@@ -206,24 +207,20 @@ def check_permissions(filepath, mode, uid=0):
     return misc.compare_file_modes(file_stat.st_mode, mode) and file_stat.st_uid == uid
 
 
-def safe_open(path, mode="w", chmod=None, buffering=None):
+def safe_open(path, mode="w", chmod=None):
     """Safely open a file.
 
     :param str path: Path to a file.
     :param str mode: Same os `mode` for `open`.
-    :param int chmod: Same as `mode` for `os.open`, uses Python defaults
+    :param int chmod: Same as `mode` for `filesystem.open`, uses Python defaults
         if ``None``.
-    :param int buffering: Same as `bufsize` for `os.fdopen`, uses Python
-        defaults if ``None``.
 
     """
     open_args = ()  # type: Union[Tuple[()], Tuple[int]]
     if chmod is not None:
         open_args = (chmod,)
     fdopen_args = ()  # type: Union[Tuple[()], Tuple[int]]
-    if buffering is not None:
-        fdopen_args = (buffering,)
-    fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_RDWR, *open_args)
+    fd = filesystem.open(path, os.O_CREAT | os.O_EXCL | os.O_RDWR, *open_args)
     return os.fdopen(fd, mode, *fdopen_args)
 
 

@@ -12,6 +12,7 @@ import mock
 from certbot import configuration
 from certbot import errors
 from certbot.compat import os
+from certbot.compat import filesystem
 from certbot.display import util as display_util
 from certbot.storage import ALL_FOUR
 from certbot.tests import storage_test
@@ -25,7 +26,7 @@ class BaseCertManagerTest(test_util.ConfigTestCase):
         super(BaseCertManagerTest, self).setUp()
 
         self.config.quiet = False
-        os.makedirs(self.config.renewal_configs_dir)
+        filesystem.makedirs(self.config.renewal_configs_dir)
 
         self.domains = {
             "example.org": None,
@@ -43,14 +44,14 @@ class BaseCertManagerTest(test_util.ConfigTestCase):
     def _set_up_config(self, domain, custom_archive):
         # TODO: maybe provide NamespaceConfig.make_dirs?
         # TODO: main() should create those dirs, c.f. #902
-        os.makedirs(os.path.join(self.config.live_dir, domain))
+        filesystem.makedirs(os.path.join(self.config.live_dir, domain))
         config_file = configobj.ConfigObj()
 
         if custom_archive is not None:
-            os.makedirs(custom_archive)
+            filesystem.makedirs(custom_archive)
             config_file["archive_dir"] = custom_archive
         else:
-            os.makedirs(os.path.join(self.config.default_archive_dir, domain))
+            filesystem.makedirs(os.path.join(self.config.default_archive_dir, domain))
 
         for kind in ALL_FOUR:
             config_file[kind] = os.path.join(self.config.live_dir, domain,
@@ -194,7 +195,7 @@ class CertificatesTest(BaseCertManagerTest):
             quiet=False
         ))
 
-        os.makedirs(empty_config.renewal_configs_dir)
+        filesystem.makedirs(empty_config.renewal_configs_dir)
         self._certificates(empty_config)
         self.assertFalse(mock_logger.warning.called) #pylint: disable=no-member
         self.assertTrue(mock_utility.called)

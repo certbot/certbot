@@ -375,6 +375,8 @@ As a developer, when working on Certbot or its plugins, you must use ``certbot.c
 in every place you would need ``os`` (eg. ``from certbot.compat import os`` instead of
 ``import os``). Otherwise the tests will fail when your PR is submitted.
 
+.. _type annotations:
+
 Mypy type annotations
 =====================
 
@@ -414,7 +416,10 @@ Submitting a pull request
 
 Steps:
 
-1. Write your code!
+1. Write your code! When doing this, you should add :ref:`mypy type annotations
+   <type annotations>` for any functions you add or modify. You can check that
+   you've done this correctly by running ``tox -e mypy`` on a machine that has
+   Python 3 installed.
 2. Make sure your environment is set up properly and that you're in your
    virtualenv. You can do this by following the instructions in the
    :ref:`Getting Started <getting_started>` section.
@@ -427,6 +432,8 @@ Steps:
    merges <https://github.com/blog/2141-squash-your-commits>`_ on PRs and
    rewriting commits makes changes harder to track between reviews.
 6. Did your tests pass on Travis? If they didn't, fix any errors.
+
+.. _ask for help:
 
 Asking for help
 ===============
@@ -453,6 +460,11 @@ Conduct violation, EFF may review discussion channels or direct messages.
 
 Updating certbot-auto and letsencrypt-auto
 ==========================================
+
+.. note:: We are currently only accepting changes to certbot-auto that fix
+  regressions on platforms where certbot-auto is the recommended installation
+  method at https://certbot.eff.org/instructions. If you are unsure if a change
+  you want to make qualifies, don't hesitate to `ask for help`_!
 
 Updating the scripts
 --------------------

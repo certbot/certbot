@@ -2,21 +2,45 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 0.36.0 - master
+## 0.37.0 - master
 
 ### Added
 
-* Turn off session tickets for nginx plugin by default
+*
 
 ### Changed
 
-* Update the 'manage your account' help to be more generic.
-* The error message when Certbot's Apache plugin is unable to modify your
-  Apache configuration has been improved.
+*
 
 ### Fixed
 
 *
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.36.0 - 2019-07-11
+
+### Added
+
+* Turn off session tickets for nginx plugin by default
+* Added missing error types from RFC8555 to acme
+
+### Changed
+
+* Support for Ubuntu 14.04 Trusty has been removed.
+* Update the 'manage your account' help to be more generic.
+* The error message when Certbot's Apache plugin is unable to modify your
+  Apache configuration has been improved.
+* Certbot's config_changes subcommand has been deprecated and will be
+  removed in a future release.
+* `certbot config_changes` no longer accepts a --num parameter.
+* The functions `certbot.plugins.common.Installer.view_config_changes` and
+  `certbot.reverter.Reverter.view_config_changes` have been deprecated and will
+  be removed in a future release.
+
+### Fixed
+
+* Replace some unnecessary platform-specific line separation.
 
 More details about these changes can be found on our GitHub repo.
 
@@ -110,6 +134,10 @@ More details about these changes can be found on our GitHub repo.
   `malformed` error to be received from the ACME server.
 * Linode DNS plugin now supports api keys created from their new panel
   at [cloud.linode.com](https://cloud.linode.com)
+
+### Fixed
+
+* Fixed Google DNS Challenge issues when private zones exist
 * Adding a warning noting that future versions of Certbot will automatically configure the
   webserver so that all requests redirect to secure HTTPS access. You can control this
   behavior and disable this warning with the --redirect and --no-redirect flags.

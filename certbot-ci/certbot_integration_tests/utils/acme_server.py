@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """Module to setup an ACME CA server environment able to run multiple tests in parallel"""
 from __future__ import print_function
+import errno
 import json
 import tempfile
 import time
@@ -18,48 +19,57 @@ from certbot_integration_tests.utils.constants import *
 
 class ACMEServer(object):
     """
-    ACMEServer configure and handle lifecycle of an ACME CA server and an HTTP reverse proxy
+    ACMEServer configures and handles the lifecycle of an ACME CA server and an HTTP reverse proxy
     instance, to allow parallel execution of integration tests against the unique http-01 port
     expected by the ACME CA server.
     Typically all pytest integration tests will be executed in this context.
     ACMEServer gives access the acme_xdist parameter, listing the ports and directory url to use
     for each pytest node. It exposes also start and stop methods in order to start the stack, and
     stop it with proper resources cleanup.
-    An ACMEServer instance will be returned, giving access to the ports and directory url to use
-    for each pytest node, and its start and stop methods are appropriately configured to
-    respectively start the server, and stop it with proper resources cleanup.
     ACMEServer is also a context manager, and so can be used to ensure ACME server is started/stopped
     upon context enter/exit.
     """
-    def __init__(self, acme_server, nodes, proxy=True):
+    def __init__(self, acme_server, nodes, http_proxy=True, stdout=False):
         """
         Create an ACMEServer instance.
-        :param acme_server: the type of acme server used (boulder-v1, boulder-v2 or pebble)
-        :param str[] nodes: list of node names that will be setup by pytest xdist
-        :param bool proxy: set to False to not start the Traefik proxy
+        :param str acme_server: the type of acme server used (boulder-v1, boulder-v2 or pebble)
+        :param list nodes: list of node names that will be setup by pytest xdist
+        :param bool http_proxy: if False do not start the HTTP proxy
+        :param bool stdout: if True stream subprocesses stdout to standard stdout
         """
         self._construct_acme_xdist(acme_server, nodes)
 
         self._acme_type = 'pebble' if acme_server == 'pebble' else 'boulder'
-        self._proxy = proxy
+        self._proxy = http_proxy
         self._workspace = tempfile.mkdtemp()
         self._processes = []
+        self._stdout = sys.stdout if stdout else open(os.devnull, 'w')
 
     def start(self):
         """Start the test stack"""
-        if self._proxy:
-            self._prepare_http_proxy()
-        if self._acme_type == 'pebble':
-            self._prepare_pebble_server()
-        if self._acme_type == 'boulder':
-            self._prepare_boulder_server()
+        try:
+            if self._proxy:
+                self._prepare_http_proxy()
+            if self._acme_type == 'pebble':
+                self._prepare_pebble_server()
+            if self._acme_type == 'boulder':
+                self._prepare_boulder_server()
+        except BaseException as e:
+            self.stop()
+            raise e
 
     def stop(self):
         """Stop the test stack, and clean its resources"""
         print('=> Tear down the test infrastructure...')
         try:
             for process in self._processes:
-                process.terminate()
+                try:
+                    process.terminate()
+                except OSError as e:
+                    # Process may be not started yet, so no PID and terminate fails.
+                    # Then the process never started, and the situation is acceptable.
+                    if e.errno != errno.ESRCH:
+                        raise
             for process in self._processes:
                 process.wait()
 
@@ -74,6 +84,8 @@ class ACMEServer(object):
                 process.wait()
         finally:
             shutil.rmtree(self._workspace)
+        if self._stdout != sys.stdout:
+            self._stdout.close()
         print('=> Test infrastructure stopped and cleaned up.')
 
     def __enter__(self):
@@ -135,7 +147,7 @@ class ACMEServer(object):
 
         # Load Boulder from git, that includes a docker-compose.yml ready for production.
         process = self._launch_process(['git', 'clone', 'https://github.com/letsencrypt/boulder',
-                                   '--single-branch', '--depth=1', instance_path])
+                                        '--single-branch', '--depth=1', instance_path])
         process.wait()
 
         # Allow Boulder to ignore usual limit rate policies, useful for tests.
@@ -169,10 +181,9 @@ class ACMEServer(object):
         """Launch silently an subprocess OS command"""
         if not env:
             env = os.environ
-        with open(os.devnull, 'w') as null:
-            process = subprocess.Popen(command, stdout=null, stderr=subprocess.STDOUT, cwd=cwd, env=env)
-            self._processes.append(process)
-            return process
+        process = subprocess.Popen(command, stdout=self._stdout, stderr=subprocess.STDOUT, cwd=cwd, env=env)
+        self._processes.append(process)
+        return process
 
 
 def main():
@@ -183,8 +194,7 @@ def main():
         raise ValueError('Invalid server value {0}, should be one of {1}'
                          .format(server_type, possible_values))
 
-    acme_server = ACMEServer(server_type, [], False)
-    process = None
+    acme_server = ACMEServer(server_type, [], http_proxy=False, stdout=True)
 
     try:
         with acme_server as acme_xdist:
@@ -192,15 +202,10 @@ def main():
                   .format(acme_xdist['directory_url']))
             print('--> Press CTRL+C to stop the ACME server.')
 
-            docker_name = 'pebble_pebble_1' if 'pebble' in server_type else 'boulder_boulder_1'
-            process = subprocess.Popen(['docker', 'logs', '-f', docker_name])
-
             while True:
                 time.sleep(3600)
     except KeyboardInterrupt:
-        if process:
-            process.terminate()
-            process.wait()
+        pass
 
 
 if __name__ == '__main__':

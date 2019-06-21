@@ -27,10 +27,10 @@ manage certificates:
     revoke          Revoke a certificate (supply --cert-path or --cert-name)
     delete          Delete a certificate
 
-manage your account with Let's Encrypt:
-    register        Create a Let's Encrypt ACME account
-    unregister      Deactivate a Let's Encrypt ACME account
-    update_account  Update a Let's Encrypt ACME account
+manage your account:
+    register        Create an ACME account
+    unregister      Deactivate an ACME account
+    update_account  Update an ACME account
   --agree-tos       Agree to the ACME server's Subscriber Agreement
    -m EMAIL         Email address for important account notifications
 
@@ -113,7 +113,7 @@ optional arguments:
                         case, and to know when to deprecate support for past
                         Python versions and flags. If you wish to hide this
                         information from the Let's Encrypt server, set this to
-                        "". (default: CertbotACMEClient/0.35.1
+                        "". (default: CertbotACMEClient/0.36.0
                         (certbot(-auto); OS_NAME OS_VERSION) Authenticator/XXX
                         Installer/YYY (SUBCOMMAND; flags: FLAGS)
                         Py/major.minor.patchlevel). The flags encoded in the
@@ -393,10 +393,7 @@ install:
   Options for modifying how a certificate is deployed
 
 config_changes:
-  Options for controlling which changes are displayed
-
-  --num NUM             How many past revisions you want to be displayed
-                        (default: None)
+  Options for viewing configuration changes
 
 rollback:
   Options for rolling back server configuration changes
@@ -405,7 +402,7 @@ rollback:
                         (default: 1)
 
 plugins:
-  Options for for the "plugins" subcommand
+  Options for the "plugins" subcommand
 
   --init                Initialize plugins. (default: False)
   --prepare             Initialize and prepare plugins. (default: False)

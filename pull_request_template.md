@@ -1,4 +1,8 @@
-Be sure to edit the `master` section of `CHANGELOG.md` to include a description
-of the change being made in this PR.
+## Pull Request Checklist
 
-You are also welcome to add your name to `AUTHORS.md` if you like.
+- [ ] Edit the `master` section of `CHANGELOG.md` to include a description of
+  the change being made.
+- [ ] Add [mypy type
+  annotations](https://certbot.eff.org/docs/contributing.html#mypy-type-annotations)
+  for any functions that were added or modified.
+- [ ] Include your name in `AUTHORS.md` if you like.

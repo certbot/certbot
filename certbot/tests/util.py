@@ -27,6 +27,7 @@ from certbot import lock
 from certbot import storage
 from certbot import util
 from certbot.compat import os
+from certbot.compat import filesystem
 from certbot.display import util as display_util
 
 
@@ -138,7 +139,7 @@ def make_lineage(config_dir, testfile):
 
     for directory in (archive_dir, conf_dir, live_dir,):
         if not os.path.exists(directory):
-            os.makedirs(directory)
+            filesystem.makedirs(directory)
 
     sample_archive = vector_path('sample-archive')
     for kind in os.listdir(sample_archive):
@@ -340,8 +341,13 @@ class TempDirTestCase(unittest.TestCase):
 
         def handle_rw_files(_, path, __):
             """Handle read-only files, that will fail to be removed on Windows."""
-            os.chmod(path, stat.S_IWRITE)
-            os.remove(path)
+            filesystem.chmod(path, stat.S_IWRITE)
+            try:
+                os.remove(path)
+            except (IOError, OSError):
+                # TODO: remote the try/except once all logic from windows file permissions is merged
+                if os.name != 'nt':
+                    raise
         shutil.rmtree(self.tempdir, onerror=handle_rw_files)
 
 

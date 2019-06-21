@@ -3,6 +3,7 @@ import logging
 import re
 import shutil
 import tempfile
+import warnings
 
 import OpenSSL
 import pkg_resources
@@ -20,6 +21,7 @@ from certbot import interfaces
 from certbot import reverter
 from certbot import util
 from certbot.compat import os
+from certbot.compat import filesystem
 from certbot.plugins.storage import PluginStorage
 
 logger = logging.getLogger(__name__)
@@ -196,10 +198,18 @@ class Installer(Plugin):
             the checkpoints directories.
 
         """
-        try:
-            self.reverter.view_config_changes()
-        except errors.ReverterError as err:
-            raise errors.PluginError(str(err))
+        warnings.warn(
+            "The view_config_changes method is no longer part of Certbot's"
+            " plugin interface, has been deprecated, and will be removed in a"
+            " future release.", DeprecationWarning, stacklevel=2)
+        with warnings.catch_warnings():
+            # Don't let the reverter code warn about this function. Calling
+            # this function in the first place is the real problem.
+            warnings.filterwarnings("ignore", ".*view_config_changes", DeprecationWarning)
+            try:
+                self.reverter.view_config_changes()
+            except errors.ReverterError as err:
+                raise errors.PluginError(str(err))
 
     @property
     def ssl_dhparams(self):
@@ -482,9 +492,9 @@ def dir_setup(test_dir, pkg):  # pragma: no cover
     config_dir = expanded_tempdir("config")
     work_dir = expanded_tempdir("work")
 
-    os.chmod(temp_dir, constants.CONFIG_DIRS_MODE)
-    os.chmod(config_dir, constants.CONFIG_DIRS_MODE)
-    os.chmod(work_dir, constants.CONFIG_DIRS_MODE)
+    filesystem.chmod(temp_dir, constants.CONFIG_DIRS_MODE)
+    filesystem.chmod(config_dir, constants.CONFIG_DIRS_MODE)
+    filesystem.chmod(work_dir, constants.CONFIG_DIRS_MODE)
 
     test_configs = pkg_resources.resource_filename(
         pkg, os.path.join("testdata", test_dir))

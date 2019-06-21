@@ -15,6 +15,7 @@ import certbot.tests.util as test_util
 from certbot import errors
 from certbot.compat import misc
 from certbot.compat import os
+from certbot.compat import filesystem
 from certbot.storage import ALL_FOUR
 
 CERT = test_util.load_cert('cert_512.pem')
@@ -91,10 +92,10 @@ class BaseRenewableCertTest(test_util.ConfigTestCase):
 
         # TODO: maybe provide NamespaceConfig.make_dirs?
         # TODO: main() should create those dirs, c.f. #902
-        os.makedirs(os.path.join(self.config.config_dir, "live", "example.org"))
+        filesystem.makedirs(os.path.join(self.config.config_dir, "live", "example.org"))
         archive_path = os.path.join(self.config.config_dir, "archive", "example.org")
-        os.makedirs(archive_path)
-        os.makedirs(os.path.join(self.config.config_dir, "renewal"))
+        filesystem.makedirs(archive_path)
+        filesystem.makedirs(os.path.join(self.config.config_dir, "renewal"))
 
         config_file = configobj.ConfigObj()
         for kind in ALL_FOUR:
@@ -132,7 +133,7 @@ class BaseRenewableCertTest(test_util.ConfigTestCase):
         with open(link, "wb") as f:
             f.write(kind.encode('ascii') if value is None else value)
         if kind == "privkey":
-            os.chmod(link, 0o600)
+            filesystem.chmod(link, 0o600)
 
     def _write_out_ex_kinds(self):
         for kind in ALL_FOUR:
@@ -572,7 +573,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.test_rc.update_all_links_to(1)
         self.assertTrue(misc.compare_file_modes(
             os.stat(self.test_rc.version("privkey", 1)).st_mode, 0o600))
-        os.chmod(self.test_rc.version("privkey", 1), 0o444)
+        filesystem.chmod(self.test_rc.version("privkey", 1), 0o444)
         # If no new key, permissions should be the same (we didn't write any keys)
         self.test_rc.save_successor(1, b"newcert", None, b"new chain", self.config)
         self.assertTrue(misc.compare_file_modes(
@@ -582,15 +583,14 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertTrue(misc.compare_file_modes(
             os.stat(self.test_rc.version("privkey", 3)).st_mode, 0o644))
         # If permissions reverted, next renewal will also revert permissions of new key
-        os.chmod(self.test_rc.version("privkey", 3), 0o400)
+        filesystem.chmod(self.test_rc.version("privkey", 3), 0o400)
         self.test_rc.save_successor(3, b"newcert", b"new_privkey", b"new chain", self.config)
         self.assertTrue(misc.compare_file_modes(
             os.stat(self.test_rc.version("privkey", 4)).st_mode, 0o600))
 
-    @test_util.broken_on_windows
     @mock.patch("certbot.storage.relevant_values")
-    @mock.patch("certbot.storage.os.chown")
-    def test_save_successor_maintains_gid(self, mock_chown, mock_rv):
+    @mock.patch("certbot.storage.filesystem.copy_ownership_and_apply_mode")
+    def test_save_successor_maintains_gid(self, mock_ownership, mock_rv):
         # Mock relevant_values() to claim that all values are relevant here
         # (to avoid instantiating parser)
         mock_rv.side_effect = lambda x: x
@@ -598,9 +598,9 @@ class RenewableCertTests(BaseRenewableCertTest):
             self._write_out_kind(kind, 1)
         self.test_rc.update_all_links_to(1)
         self.test_rc.save_successor(1, b"newcert", None, b"new chain", self.config)
-        self.assertFalse(mock_chown.called)
+        self.assertFalse(mock_ownership.called)
         self.test_rc.save_successor(2, b"newcert", b"new_privkey", b"new chain", self.config)
-        self.assertTrue(mock_chown.called)
+        self.assertTrue(mock_ownership.called)
 
     @mock.patch("certbot.storage.relevant_values")
     def test_new_lineage(self, mock_rv):
@@ -633,12 +633,12 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertTrue(os.path.exists(os.path.join(
             self.config.live_dir, "the-lineage.com-0001", "README")))
         # Now trigger the detection of already existing files
-        os.mkdir(os.path.join(
+        filesystem.mkdir(os.path.join(
             self.config.live_dir, "the-lineage.com-0002"))
         self.assertRaises(errors.CertStorageError,
                           storage.RenewableCert.new_lineage, "the-lineage.com",
                           b"cert3", b"privkey3", b"chain3", self.config)
-        os.mkdir(os.path.join(self.config.default_archive_dir, "other-example.com"))
+        filesystem.mkdir(os.path.join(self.config.default_archive_dir, "other-example.com"))
         self.assertRaises(errors.CertStorageError,
                           storage.RenewableCert.new_lineage,
                           "other-example.com", b"cert4",
@@ -776,7 +776,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         with open(temp, "w") as f:
             f.write("[renewalparams]\nuseful = value # A useful value\n"
                     "useless = value # Not needed\n")
-        os.chmod(temp, 0o640)
+        filesystem.chmod(temp, 0o640)
         target = {}
         for x in ALL_FOUR:
             target[x] = "somewhere"
