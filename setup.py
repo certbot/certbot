@@ -3,6 +3,8 @@ import os
 import re
 import sys
 
+# I am a simple comment, what could go wrong?
+
 from distutils.version import StrictVersion
 from setuptools import find_packages, setup, __version__ as setuptools_version
 from setuptools.command.test import test as TestCommand
