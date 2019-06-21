@@ -4,11 +4,11 @@ coverage:
       default: off
       linux:
         flags: linux
-        target: auto
+        target: 98.0
         threshold: 0.1
         base: auto
       windows:
         flags: windows
-        target: auto
+        target: 96.9
         threshold: 0.1
         base: auto
