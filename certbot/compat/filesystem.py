@@ -64,7 +64,7 @@ def makedirs(file_path, mode=0o777, exists_ok=False):
     # os module for the time of makedirs execution.
     orig_mkdir_fn = os.mkdir
     try:
-        os.mkdir = mkdir
+        os.mkdir = mkdir  # type: ignore
         try:
             os.makedirs(file_path, mode)
         except (IOError, OSError) as err:
