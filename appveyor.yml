@@ -27,7 +27,7 @@ install:
   # Upgrade pip to avoid warnings
   - "python -m pip install --upgrade pip"
   # Ready to install tox and coverage
-  - "pip install tox codecov"
+  - "pip install tox python-coveralls"
 
 build: off
 
@@ -37,4 +37,4 @@ test_script:
   - tox
 
 on_success:
-  - if exist .coverage codecov -F windows
+  - if exist .coverage coveralls

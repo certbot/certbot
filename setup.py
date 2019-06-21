@@ -66,7 +66,7 @@ elif 'bdist_wheel' in sys.argv[1:]:
 
 dev_extras = [
     'astroid==1.6.5',
-    'coverage',
+    'python-coveralls',
     'ipdb',
     'pytest',
     'pytest-cov',
