@@ -20,7 +20,7 @@ SYSTEM_SID = 'S-1-5-18'
 ADMINS_SID = 'S-1-5-32-544'
 
 
-@unittest.skipIf(POSIX_MODE, reason='Test specific to Windows security')
+@unittest.skipIf(POSIX_MODE, reason='Tests specific to Windows security')
 class WindowsChmodTests(TempDirTestCase):
     """Unit tests for Windows chmod function in filesystem module"""
     def setUp(self):
@@ -152,6 +152,34 @@ class WindowsChmodTests(TempDirTestCase):
         # We expect only two ACE: one for admins, one for system,
         # since the user is also the admins group
         self.assertEqual(security_dacl.GetSecurityDescriptorDacl().GetAceCount(), 2)
+
+
+@unittest.skipIf(POSIX_MODE, reason='Tests specific to Windows security')
+class WindowsOpenTest(TempDirTestCase):
+    def test_new_file_correct_permissions(self):
+        path = os.path.join(self.tempdir, 'file')
+
+        desc = filesystem.open(path, os.O_CREAT | os.O_EXCL | os.O_RDWR, 0o700)
+        os.close(desc)
+
+        dacl = _get_security_dacl(path).GetSecurityDescriptorDacl()
+        everybody = win32security.ConvertStringSidToSid(EVERYBODY_SID)
+
+        self.assertFalse([dacl.GetAce(index) for index in range(0, dacl.GetAceCount())
+                          if dacl.GetAce(index)[2] == everybody])
+
+    def test_existing_file_correct_permissions(self):
+        path = os.path.join(self.tempdir, 'file')
+        open(path, 'w').close()
+
+        desc = filesystem.open(path, os.O_EXCL | os.O_RDWR, 0o700)
+        os.close(desc)
+
+        dacl = _get_security_dacl(path).GetSecurityDescriptorDacl()
+        everybody = win32security.ConvertStringSidToSid(EVERYBODY_SID)
+
+        self.assertFalse([dacl.GetAce(index) for index in range(0, dacl.GetAceCount())
+                          if dacl.GetAce(index)[2] == everybody])
 
 
 class OsReplaceTest(test_util.TempDirTestCase):
