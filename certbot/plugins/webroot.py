@@ -174,8 +174,8 @@ to serve all files under specified web root ({0})."""
                 # as it does not correspond to a folder path ('/' or 'C:')
                 for prefix in sorted(util.get_prefixes(self.full_roots[name])[:-1], key=len):
                     try:
-                        # This is coupled with the "umask" call above because
-                        # filesystem.mkdir's "mode" parameter may not always work:
+                        # This is coupled with the "umask" call above because filesystem.mkdir's
+                        # "mode" parameter may not always work under Linux:
                         # https://docs.python.org/3/library/os.html#security.mkdir
                         filesystem.mkdir(prefix, 0o0755)
                         self._created_dirs.append(prefix)

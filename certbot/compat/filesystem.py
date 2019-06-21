@@ -1,6 +1,7 @@
 """Compat module to handle files security on Windows and Linux"""
 from __future__ import absolute_import
 
+import errno
 import os  # pylint: disable=os-module-forbidden
 import stat
 
@@ -10,6 +11,8 @@ try:
     import win32security
     import win32file
     import win32api
+    import pywintypes
+    import winerror
     # pylint: enable=import-error
 except ImportError:
     POSIX_MODE = True
@@ -40,25 +43,35 @@ def chmod(file_path, mode):
         _apply_win_mode(file_path, mode)
 
 
-def makedirs(file_path, mode=0o777):
-    # type: (str, int) -> None
+# Funtion os.makedirs will temporarily monkeypatch os.mkdir to replace it by filesystem.mkdir.
+# However, filesystem.mkdir also invokes os.mkdir. To avoid a looped reference, we take now a
+# reference of the original os.mkdir, to use it in filesystem.mkdir.
+_os_mkdir = os.mkdir
+
+
+def makedirs(file_path, mode=0o777, exists_ok=False):
+    # type: (str, int, bool) -> None
     """
     Rewrite of original os.makedirs function, that will ensure on Windows that given mode
     is correctly applied.
     :param str file_path: The file path to open
-    :param int mode: POSIX mode to apply on file when opened,
-        Python defaults will be applied if ``None``
+    :param int mode: POSIX mode to apply on leaf directory when created, Python defaults
+                     will be applied if ``None``
+    :param bool exists_ok: If set to ``True``, do not raise exception if leaf directory
+                           already exists.
     """
     # As we know that os.mkdir is called internally by os.makedirs, we will swap the function in
     # os module for the time of makedirs execution.
-    def wrapper(one_path, one_mode=0o777):  # pylint: disable=missing-docstring
-        # Note, we need to provide the origin os.mkdir to our mkdir function,
-        # or we will have a nice infinite loop ...
-        mkdir(one_path, mode=one_mode, mkdir_fn=orig_mkdir_fn)
     orig_mkdir_fn = os.mkdir
     try:
-        os.mkdir = wrapper
-        os.makedirs(file_path, mode)
+        os.mkdir = mkdir
+        try:
+            os.makedirs(file_path, mode)
+        except (IOError, OSError) as err:
+            # In case of exists_ok is True, and exception was about the path to already exist,
+            # we ignore the exception.
+            if not exists_ok or err.errno != errno.EEXIST:
+                raise
     finally:
         os.mkdir = orig_mkdir_fn
 
@@ -69,11 +82,11 @@ def mkdir(file_path, mode=0o777):
     Rewrite of original os.mkdir function, that will ensure on Windows that given mode
     is correctly applied.
     :param str file_path: The file path to open
-    :param int mode: POSIX mode to apply on file when opened,
-        Python defaults will be applied if ``None``
+    :param int mode: POSIX mode to apply on directory when created, Python defaults
+                     will be applied if ``None``
     """
     if POSIX_MODE:
-        os.mkdir(file_path, mode)
+        _os_mkdir(file_path, mode)
     else:
         attributes = win32security.SECURITY_ATTRIBUTES()
         security = attributes.SECURITY_DESCRIPTOR
@@ -81,7 +94,14 @@ def mkdir(file_path, mode=0o777):
         dacl = _generate_dacl(user, mode)
         security.SetSecurityDescriptorDacl(1, dacl, 0)
 
-        win32file.CreateDirectory(file_path, attributes)
+        try:
+            win32file.CreateDirectory(file_path, attributes)
+        except pywintypes.error as err:
+            # Handle native windows error into python error to be consistent with the API
+            # of os.mkdir in the situation of a directory already existing.
+            if err.winerror == winerror.ERROR_ALREADY_EXISTS:
+                raise OSError(errno.EEXIST, err.strerror)
+            raise err
 
 
 def replace(src, dst):

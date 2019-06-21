@@ -1,5 +1,7 @@
 """Tests for certbot.compat.filesystem"""
 import unittest
+import mock
+import errno
 
 try:
     import win32api  # pylint: disable=import-error
@@ -152,6 +154,47 @@ class WindowsChmodTests(TempDirTestCase):
         # We expect only two ACE: one for admins, one for system,
         # since the user is also the admins group
         self.assertEqual(security_dacl.GetSecurityDescriptorDacl().GetAceCount(), 2)
+
+
+class WindowsMkdirTests(test_util.TempDirTestCase):
+    def test_mkdir_correct_permissions(self):
+        path = os.path.join(self.tempdir, 'dir')
+
+        filesystem.mkdir(path, 0o700)
+
+        everybody = win32security.ConvertStringSidToSid(EVERYBODY_SID)
+
+        dacl = _get_security_dacl(path).GetSecurityDescriptorDacl()
+        self.assertFalse([dacl.GetAce(index) for index in range(0, dacl.GetAceCount())
+                          if dacl.GetAce(index)[2] == everybody])
+
+    def test_makedirs_correct_permissions(self):
+        path = os.path.join(self.tempdir, 'dir')
+        subpath = os.path.join(path, 'subpath')
+
+        filesystem.makedirs(subpath, 0o700)
+
+        everybody = win32security.ConvertStringSidToSid(EVERYBODY_SID)
+
+        dacl = _get_security_dacl(subpath).GetSecurityDescriptorDacl()
+        self.assertFalse([dacl.GetAce(index) for index in range(0, dacl.GetAceCount())
+                          if dacl.GetAce(index)[2] == everybody])
+
+    def test_makedirs_exists_ok(self):
+        path = os.path.join(self.tempdir, 'dir')
+        subpath = os.path.join(path, 'subpath')
+
+        filesystem.mkdir(path)
+        filesystem.mkdir(subpath)
+
+        filesystem.makedirs(subpath, exists_ok=True)
+        with self.assertRaises(OSError):
+            filesystem.makedirs(subpath)  # By default, exists_ok=False
+
+        with mock.patch('certbot.compat.filesystem.mkdir') as mock_mkdir:
+            mock_mkdir.side_effect = OSError(errno.EACCES)
+            with self.assertRaises(OSError):
+                filesystem.makedirs(subpath, exists_ok=True)
 
 
 class OsReplaceTest(test_util.TempDirTestCase):
