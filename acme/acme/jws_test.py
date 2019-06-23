@@ -63,5 +63,36 @@ class JWSTest(unittest.TestCase):
         self.assertEqual(jws.signature.combined.jwk, self.pubkey)
 
 
+class JWSPayloadCompliant(unittest.TestCase):
+    """Test for compliant_rfc8555_payload"""
+    def test_post_as_get_payload(self):
+        from acme.jws import compliant_rfc8555_payload
+        jobj = compliant_rfc8555_payload(None, 2)
+        self.assertEqual(jobj, b'')
+
+    def test_challenge_payload(self):
+        from acme.jws import compliant_rfc8555_payload
+        from acme.challenges import HTTP01Response
+
+        challenge_body = HTTP01Response()
+
+        jobj = compliant_rfc8555_payload(challenge_body, 2)
+        self.assertEqual(jobj, b'{}')
+
+    def test_resource_payload(self):
+        from acme.jws import compliant_rfc8555_payload
+        from acme.messages import ResourceBody
+        from acme import fields
+
+        class _MockResourceResponse(ResourceBody):
+            resource_type = 'one-resource'
+            resource = fields.Resource(resource_type)
+
+        resource_body = _MockResourceResponse()
+
+        jobj = compliant_rfc8555_payload(resource_body, 2)
+        self.assertTrue(b'resource' not in jobj)
+
+
 if __name__ == '__main__':
     unittest.main()  # pragma: no cover

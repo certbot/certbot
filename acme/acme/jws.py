@@ -4,7 +4,11 @@ The JWS implementation in josepy only implements the base JOSE standard. In
 order to support the new header fields defined in ACME, this module defines some
 ACME-specific classes that layer on top of josepy.
 """
+import json
+
 import josepy as jose
+
+from acme.challenges import ChallengeResponse
 
 
 class Header(jose.Header):
@@ -52,3 +56,31 @@ class JWS(jose.JWS):
                                     protect=frozenset(['nonce', 'url', 'kid', 'jwk', 'alg']),
                                     nonce=nonce, url=url, kid=kid,
                                     include_jwk=include_jwk)
+
+
+def compliant_rfc8555_payload(obj, acme_version):
+    """
+    This method extracts and fixes the JWS payload in respect with RFC 8555.
+    :param jose.JSONDeSerializable obj:
+    :param int acme_version: Version of ACME protocol to use
+    :rtype: str
+    """
+    # POST-as-GET requests should contain an empty JWS payload.
+    # See: https://tools.ietf.org/html/rfc8555#section-6.3
+    if not obj:
+        return b''
+
+    jobj = obj.json_dumps(indent=2).encode()
+
+    if acme_version == 2:
+        # Challenge POST JWS bodies should be exactly `{}`.
+        # See: https://tools.ietf.org/html/rfc8555#section-7.5.1
+        if isinstance(obj, ChallengeResponse):
+            return b'{}'
+
+        # Field `resource` is not part of RFC 8555.
+        jobj = json.loads(jobj.decode('utf-8'))
+        jobj.pop('resource', None)
+        jobj = json.dumps(jobj).encode('utf-8')
+
+    return jobj

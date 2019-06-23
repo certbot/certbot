@@ -993,7 +993,7 @@ class ClientNetwork(object):  # pylint: disable=too-many-instance-attributes
         :rtype: `josepy.JWS`
 
         """
-        jobj = obj.json_dumps(indent=2).encode() if obj else b''
+        jobj = jws.compliant_rfc8555_payload(obj, acme_version)
         logger.debug('JWS payload:\n%s', jobj)
         kwargs = {
             "alg": self.alg,
