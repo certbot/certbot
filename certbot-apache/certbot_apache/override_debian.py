@@ -81,7 +81,7 @@ class DebianConfigurator(configurator.ApacheConfigurator):
                                                                 enabled_path))
         vhost.enabled = True
         logger.info("Enabling available site: %s", vhost.filep)
-        self.save_notes += "Enabled site %s\n" % vhost.filep
+        self.parser.save_notes += "Enabled site %s\n" % vhost.filep
         return None
 
     def enable_mod(self, mod_name, temp=False):
@@ -114,7 +114,7 @@ class DebianConfigurator(configurator.ApacheConfigurator):
                 self.parser.add_mod(dep)
                 note = "Enabled dependency of %s module - %s" % (mod_name, dep)
                 if not temp:
-                    self.save_notes += note + os.linesep
+                    self.parser.save_notes += note + os.linesep
                 logger.debug(note)
 
         # Enable actual module
@@ -122,7 +122,7 @@ class DebianConfigurator(configurator.ApacheConfigurator):
         self.parser.add_mod(mod_name)
 
         if not temp:
-            self.save_notes += "Enabled %s module in Apache\n" % mod_name
+            self.parser.save_notes += "Enabled %s module in Apache\n" % mod_name
         logger.info("Enabled Apache %s module", mod_name)
 
         # Modules can enable additional config files. Variables may be defined

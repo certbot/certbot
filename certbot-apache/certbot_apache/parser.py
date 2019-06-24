@@ -13,6 +13,8 @@ from acme.magic_typing import Dict, List, Set  # pylint: disable=unused-import, 
 from certbot import errors
 from certbot.compat import os
 
+from certbot_apache import constants
+
 logger = logging.getLogger(__name__)
 
 
@@ -190,7 +192,7 @@ class ApacheParser(object):
         tasks of saving.
 
         """
-        save_files = self.parser.unsaved_files()
+        save_files = self.unsaved_files()
         self.save_notes = ""
         self.aug.save()
 
