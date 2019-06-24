@@ -23,10 +23,6 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.serialization import Encoding, PrivateFormat, NoEncryption
 from six.moves import socketserver, SimpleHTTPServer
 
-
-from certbot_integration_tests.utils import ocsp_server
-from certbot_integration_tests.utils.constants import MOCK_OCSP_SERVER_PORT
-
 RSA_KEY_TYPE = 'rsa'
 ECDSA_KEY_TYPE = 'ecdsa'
 
@@ -41,7 +37,7 @@ def check_until_timeout(url):
     for _ in range(0, 150):
         time.sleep(1)
         try:
-            _ignore_https_warnings()
+            ignore_https_warnings()
             if requests.get(url, verify=False).status_code == 200:
                 return
         except requests.exceptions.ConnectionError:
@@ -286,28 +282,8 @@ def load_sample_data_path(workspace):
     return copied
 
 
-def mock_ocsp_server(directory_url, workspace):
-    root_url = directory_url.replace('/dir', '')
-
-    key_path = os.path.join(workspace, 'ocsp_key.pem')
-    cert_path = os.path.join(workspace, 'ocsp_cert.pem')
-    with open(key_path, 'w') as file_h:
-        _ignore_https_warnings()
-        file_h.write(requests.get(root_url + '/intermediate-key', verify=False).content)
-    with open(cert_path, 'w') as file_h:
-        _ignore_https_warnings()
-        file_h.write(requests.get(root_url + '/intermediate', verify=False).content)
-
-    environ = os.environ.copy()
-    environ['ISSUER_KEY_PATH'] = key_path
-    environ['ISSUER_CERT_PATH'] = cert_path
-
-    process = subprocess.Popen([sys.executable, ocsp_server.__file__], env=environ)
-
-    return process, 'http://127.0.0.1:{0}'.format(MOCK_OCSP_SERVER_PORT)
-
-
-def _ignore_https_warnings():
+def ignore_https_warnings():
+    """Invoke logic to ignore HTTPS warning while invoking request"""
     try:
         import urllib3
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)

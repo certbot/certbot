@@ -3,7 +3,6 @@ from __future__ import print_function
 
 import os
 import re
-import requests
 import shutil
 import subprocess
 import time
@@ -556,35 +555,26 @@ def test_ocsp_status_stale(context):
 
 def test_ocsp_status_live(context):
     """Test retrieval of OCSP statuses for live config"""
-    mock_ocsp_server = None
-    if context.acme_server == 'pebble':
-        mock_ocsp_server = misc.mock_ocsp_server(context.directory_url, context.workspace)
-
     cert = context.get_domain('ocsp-check')
     cert_path = join(context.config_dir, 'live', cert, 'cert.pem')
 
-    try:
-        # OSCP 1: Check live certificate OCSP status (VALID)
-        context.certbot(['--domains', cert])
-        if mock_ocsp_server:
-            requests.put(mock_ocsp_server[1], json={'cert_path': cert_path, 'ocsp_status': 'GOOD'})
-        output = context.certbot(['certificates'])
+    # OSCP 1: Check live certificate OCSP status (VALID)
+    context.certbot(['--domains', cert])
+    if context.acme_server == 'pebble':
+        context.mock_ocsp_server(cert_path, 'GOOD')
+    output = context.certbot(['certificates'])
 
-        assert output.count('VALID') == 1, 'Expected {0} to be VALID'.format(cert)
-        assert output.count('EXPIRED') == 0, 'Did not expect {0} to be EXPIRED'.format(cert)
+    assert output.count('VALID') == 1, 'Expected {0} to be VALID'.format(cert)
+    assert output.count('EXPIRED') == 0, 'Did not expect {0} to be EXPIRED'.format(cert)
 
-        # OSCP 2: Check live certificate OCSP status (REVOKED)
-        context.certbot(['revoke', '--cert-name', cert, '--no-delete-after-revoke'])
-        if mock_ocsp_server:
-            requests.put(mock_ocsp_server[1], json={'cert_path': cert_path, 'ocsp_status': 'REVOKED'})
-        # Sometimes in oldest tests (using openssl binary and not cryptography), the OCSP status is
-        # not seen immediately by Certbot as invalid. Waiting few seconds solves this transient issue.
-        time.sleep(5)
-        output = context.certbot(['certificates'])
+    # OSCP 2: Check live certificate OCSP status (REVOKED)
+    context.certbot(['revoke', '--cert-name', cert, '--no-delete-after-revoke'])
+    if context.acme_server == 'pebble':
+        context.mock_ocsp_server(cert_path, 'REVOKED')
+    # Sometimes in oldest tests (using openssl binary and not cryptography), the OCSP status is
+    # not seen immediately by Certbot as invalid. Waiting few seconds solves this transient issue.
+    time.sleep(5)
+    output = context.certbot(['certificates'])
 
-        assert output.count('INVALID') == 1, 'Expected {0} to be INVALID'.format(cert)
-        assert output.count('REVOKED') == 1, 'Expected {0} to be REVOKED'.format(cert)
-    finally:
-        if mock_ocsp_server:
-            mock_ocsp_server[0].terminate()
-            mock_ocsp_server[0].wait()
+    assert output.count('INVALID') == 1, 'Expected {0} to be INVALID'.format(cert)
+    assert output.count('REVOKED') == 1, 'Expected {0} to be REVOKED'.format(cert)

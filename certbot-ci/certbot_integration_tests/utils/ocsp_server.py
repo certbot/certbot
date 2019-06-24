@@ -1,79 +1,53 @@
 import datetime
-import json
-import os
+import sys
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography import x509
 from cryptography.x509 import ocsp
-from flask import Flask, request
+from six.moves import BaseHTTPServer
 
+from certbot_integration_tests.utils.misc import GracefulTCPServer
 from certbot_integration_tests.utils.constants import MOCK_OCSP_SERVER_PORT
 
-app = Flask(__name__)
-app.debug = False
 
-certificates_map = {}
+def _create_ocsp_handler(cert_path, issuer_cert_path, issuer_key_path, ocsp_status_text):
+    class ProxyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
+        def do_POST(self):
+            with open(issuer_cert_path, 'rb') as file_h1:
+                issuer_cert = x509.load_pem_x509_certificate(file_h1.read(), default_backend())
+            with open(issuer_key_path, 'rb') as file_h2:
+                issuer_key = serialization.load_pem_private_key(file_h2.read(), None, default_backend())
+            with open(cert_path, 'rb') as file_h3:
+                cert = x509.load_pem_x509_certificate(file_h3.read(), default_backend())
 
+            ocsp_status = getattr(ocsp.OCSPCertStatus, ocsp_status_text)
 
-@app.route('/', methods=['GET'])
-def heartbeat():
-    return 'Done', 200
+            now = datetime.datetime.utcnow()
+            revocation_time = now if ocsp_status == ocsp.OCSPCertStatus.REVOKED else None
+            revocation_reason = x509.ReasonFlags.unspecified if ocsp_status == ocsp.OCSPCertStatus.REVOKED else None
 
+            builder = ocsp.OCSPResponseBuilder()
+            builder = builder.add_response(
+                cert=cert, issuer=issuer_cert, algorithm=hashes.SHA1(),
+                cert_status=ocsp_status,
+                this_update=now,
+                next_update=now + datetime.timedelta(hours=1),
+                revocation_time=revocation_time, revocation_reason=revocation_reason
+            ).responder_id(ocsp.OCSPResponderEncoding.NAME, issuer_cert)
 
-@app.route('/', methods=['PUT'])
-def register_certificate():
-    config = json.loads(request.get_data())
-    cert_path = config['cert_path']
-    ocsp_status = config['ocsp_status']
+            response = builder.sign(issuer_key, hashes.SHA256())
 
-    with open(cert_path, 'rb') as file_h3:
-        cert = x509.load_pem_x509_certificate(file_h3.read(), default_backend())
-    serial_number = cert.serial_number
-    certificates_map[serial_number] = (cert_path, ocsp_status)
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(response.public_bytes(serialization.Encoding.DER))
 
-    return 'Done', 200
-
-
-@app.route('/', methods=['POST'])
-def status_certificate():
-    raw = request.get_data()
-    ocsp_request = ocsp.load_der_ocsp_request(raw)
-
-    serial_number = ocsp_request.serial_number
-    if serial_number not in certificates_map:
-        response = ocsp.OCSPResponseBuilder.build_unsuccessful(
-            ocsp.OCSPResponseStatus.UNAUTHORIZED)
-    else:
-        config = certificates_map[serial_number]
-        cert_path = config[0]
-        ocsp_status = getattr(ocsp.OCSPCertStatus, config[1])
-
-        with open(os.environ['ISSUER_CERT_PATH'], 'rb') as file_h1:
-            issuer_cert = x509.load_pem_x509_certificate(file_h1.read(), default_backend())
-        with open(os.environ['ISSUER_KEY_PATH'], 'rb') as file_h2:
-            issuer_key = serialization.load_pem_private_key(file_h2.read(), None, default_backend())
-        with open(cert_path, 'rb') as file_h3:
-            cert = x509.load_pem_x509_certificate(file_h3.read(), default_backend())
-
-        now = datetime.datetime.utcnow()
-
-        revocation_time = now if ocsp_status == ocsp.OCSPCertStatus.REVOKED else None
-        revocation_reason = x509.ReasonFlags.unspecified if ocsp_status == ocsp.OCSPCertStatus.REVOKED else None
-
-        builder = ocsp.OCSPResponseBuilder()
-        builder = builder.add_response(
-            cert=cert, issuer=issuer_cert, algorithm=hashes.SHA1(),
-            cert_status=ocsp_status,
-            this_update=now,
-            next_update=now + datetime.timedelta(hours=1),
-            revocation_time=revocation_time, revocation_reason=revocation_reason
-        ).responder_id(ocsp.OCSPResponderEncoding.NAME, issuer_cert)
-
-        response = builder.sign(issuer_key, hashes.SHA256())
-
-    return response.public_bytes(serialization.Encoding.DER), 200
+    return ProxyHandler
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.environ.get('OCSP_PORT', MOCK_OCSP_SERVER_PORT)))
+    httpd = GracefulTCPServer(('', MOCK_OCSP_SERVER_PORT), _create_ocsp_handler(*sys.argv[1:5]))
+    try:
+        httpd.handle_request()
+    except KeyboardInterrupt:
+        pass
