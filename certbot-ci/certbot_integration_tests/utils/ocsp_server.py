@@ -56,13 +56,18 @@ def status_certificate():
         with open(cert_path, 'rb') as file_h3:
             cert = x509.load_pem_x509_certificate(file_h3.read(), default_backend())
 
+        now = datetime.datetime.utcnow()
+
+        revocation_time = now if ocsp_status == ocsp.OCSPCertStatus.REVOKED else None
+        revocation_reason = x509.ReasonFlags.unspecified if ocsp_status == ocsp.OCSPCertStatus.REVOKED else None
+
         builder = ocsp.OCSPResponseBuilder()
         builder = builder.add_response(
             cert=cert, issuer=issuer_cert, algorithm=hashes.SHA1(),
             cert_status=ocsp_status,
-            this_update=datetime.datetime.now(),
-            next_update=datetime.datetime.now(),
-            revocation_time=None, revocation_reason=None
+            this_update=now,
+            next_update=now + datetime.timedelta(hours=1),
+            revocation_time=revocation_time, revocation_reason=revocation_reason
         ).responder_id(ocsp.OCSPResponderEncoding.NAME, issuer_cert)
 
         response = builder.sign(issuer_key, hashes.SHA256())
