@@ -147,8 +147,6 @@ def _prepare_acme_server(workspace, acme_type, acme_xdist):
             config['services']['pebble']['command'] = config['services']['pebble']['command']\
                 .replace('-strict', '')
 
-            print(yaml.dump(config))
-
             with open(os.path.join(instance_path, 'docker-compose.yml'), 'w') as file_handler:
                 file_handler.write(yaml.dump(config))
 
