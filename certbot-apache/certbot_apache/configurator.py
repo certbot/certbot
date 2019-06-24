@@ -29,7 +29,6 @@ from certbot.plugins.util import path_surgery
 from certbot.plugins.enhancements import AutoHSTSEnhancement
 
 from certbot_apache import apache_util
-from certbot_apache import augeas_configurator
 from certbot_apache import constants
 from certbot_apache import display_ops
 from certbot_apache import http_01
@@ -70,7 +69,7 @@ logger = logging.getLogger(__name__)
 
 @zope.interface.implementer(interfaces.IAuthenticator, interfaces.IInstaller)
 @zope.interface.provider(interfaces.IPluginFactory)
-class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
+class ApacheConfigurator(common.Installer):
     # pylint: disable=too-many-instance-attributes,too-many-public-methods
     """Apache configurator.
 
@@ -231,12 +230,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :raises .errors.PluginError: If there is any other error
 
         """
-        # Perform the actual Augeas initialization to be able to react
-        try:
-            self.init_augeas()
-        except ImportError:
-            raise errors.NoInstallationError("Problem in Augeas installation")
-
         self._prepare_options()
 
         # Verify Apache is installed
@@ -254,16 +247,23 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             raise errors.NotSupportedError(
                 "Apache Version {0} not supported.".format(str(self.version)))
 
-        if not self._check_aug_version():
+        # Recover from previous crash before Augeas initialization to have the
+        # correct parse tree from the get go.
+        self.recovery_routine()
+        # Perform the actual Augeas initialization to be able to react
+        try:
+            self.parser = self.get_parser()
+        except ImportError:
+            raise errors.NoInstallationError("Problem in Augeas installation")
+
+        if not self.parser.check_aug_version():
             raise errors.NotSupportedError(
                 "Apache plugin support requires libaugeas0 and augeas-lenses "
                 "version 1.2.0 or higher, please make sure you have you have "
                 "those installed.")
 
-        self.parser = self.get_parser()
-
         # Check for errors in parsing files with Augeas
-        self.check_parsing_errors("httpd.aug")
+        self.parser.check_parsing_errors("httpd.aug")
 
         # Get all of the available vhosts
         self.vhosts = self.get_virtual_hosts()
@@ -282,27 +282,58 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 " Apache configuration?".format(self.option("server_root")))
         self._prepared = True
 
+    def save(self, title=None, temporary=False):
+        """Saves all changes to the configuration files.
+
+        This function first checks for save errors, if none are found,
+        all configuration changes made will be saved. According to the
+        function parameters. If an exception is raised, a new checkpoint
+        was not created.
+
+        :param str title: The title of the save. If a title is given, the
+            configuration will be saved as a new checkpoint and put in a
+            timestamped directory.
+
+        :param bool temporary: Indicates whether the changes made will
+            be quickly reversed in the future (ie. challenges)
+
+        """
+        save_files = self.parser.unsaved_files()
+        if save_files:
+            self.add_to_checkpoint(save_files,
+                                   self.parser.save_notes, temporary=temporary)
+        # Handle the parser specific tasks
+        self.parser.save()
+        if title and not temporary:
+            self.finalize_checkpoint(title)
+
+    def revert_challenge_config(self):
+        """Used to cleanup challenge configurations.
+
+        :raises .errors.PluginError: If unable to revert the challenge config.
+
+        """
+        self.revert_temporary_config()
+        self.parser.aug.load()
+
+    def rollback_checkpoints(self, rollback=1):
+        """Rollback saved checkpoints.
+
+        :param int rollback: Number of checkpoints to revert
+
+        :raises .errors.PluginError: If there is a problem with the input or
+            the function is unable to correctly revert the configuration
+
+        """
+        super(ApacheConfigurator, self).rollback_checkpoints(rollback)
+        self.parser.aug.load()
+
     def _verify_exe_availability(self, exe):
         """Checks availability of Apache executable"""
         if not util.exe_exists(exe):
             if not path_surgery(exe):
                 raise errors.NoInstallationError(
                     'Cannot find Apache executable {0}'.format(exe))
-
-    def _check_aug_version(self):
-        """ Checks that we have recent enough version of libaugeas.
-        If augeas version is recent enough, it will support case insensitive
-        regexp matching"""
-
-        self.aug.set("/test/path/testing/arg", "aRgUMeNT")
-        try:
-            matches = self.aug.match(
-                "/test//*[self::arg=~regexp('argument', 'i')]")
-        except RuntimeError:
-            self.aug.remove("/test/path")
-            return False
-        self.aug.remove("/test/path")
-        return matches
 
     def get_parser(self):
         """Initializes the ApacheParser"""
