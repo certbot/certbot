@@ -8,6 +8,8 @@ from cryptography import x509
 from cryptography.x509 import ocsp
 from flask import Flask, request
 
+from certbot_integration_tests.utils.constants import MOCK_OCSP_SERVER_PORT
+
 app = Flask(__name__)
 app.debug = False
 
@@ -69,4 +71,4 @@ def status_certificate():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.environ.get('OCSP_PORT', 4002)))
+    app.run(host='0.0.0.0', port=int(os.environ.get('OCSP_PORT', MOCK_OCSP_SERVER_PORT)))

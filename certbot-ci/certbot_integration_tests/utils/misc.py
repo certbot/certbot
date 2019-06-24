@@ -25,6 +25,7 @@ from six.moves import socketserver, SimpleHTTPServer
 
 
 from certbot_integration_tests.utils import ocsp_server
+from certbot_integration_tests.utils.constants import MOCK_OCSP_SERVER_PORT
 
 try:
     import urllib3
@@ -306,11 +307,10 @@ def mock_ocsp_server(directory_url, workspace):
     environ = os.environ.copy()
     environ['ISSUER_KEY_PATH'] = key_path
     environ['ISSUER_CERT_PATH'] = cert_path
-    environ['OCSP_PORT'] = '4002'
 
     process = subprocess.Popen([sys.executable, ocsp_server.__file__], env=environ)
     try:
-        yield 'http://127.0.0.1:4002'
+        yield 'http://127.0.0.1:{0}'.format(MOCK_OCSP_SERVER_PORT)
     finally:
         process.terminate()
         process.wait()
