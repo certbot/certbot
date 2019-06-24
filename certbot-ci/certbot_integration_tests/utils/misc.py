@@ -293,7 +293,6 @@ def load_sample_data_path(workspace):
     return copied
 
 
-@contextlib.contextmanager
 def mock_ocsp_server(directory_url, workspace):
     root_url = directory_url.replace('/dir', '')
 
@@ -309,8 +308,5 @@ def mock_ocsp_server(directory_url, workspace):
     environ['ISSUER_CERT_PATH'] = cert_path
 
     process = subprocess.Popen([sys.executable, ocsp_server.__file__], env=environ)
-    try:
-        yield 'http://127.0.0.1:{0}'.format(MOCK_OCSP_SERVER_PORT)
-    finally:
-        process.terminate()
-        process.wait()
+
+    return process, 'http://127.0.0.1:{0}'.format(MOCK_OCSP_SERVER_PORT)
