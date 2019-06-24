@@ -6,6 +6,7 @@ import mock
 from certbot import errors
 
 from certbot.compat import os
+from certbot.compat import filesystem
 from certbot.plugins import common
 from certbot.tests import util as test_util
 
@@ -16,7 +17,7 @@ class PluginStorageTest(test_util.ConfigTestCase):
     def setUp(self):
         super(PluginStorageTest, self).setUp()
         self.plugin_cls = common.Installer
-        os.mkdir(self.config.config_dir)
+        filesystem.mkdir(self.config.config_dir)
         with mock.patch("certbot.reverter.util"):
             self.plugin = self.plugin_cls(config=self.config, name="mockplugin")
 
@@ -72,7 +73,7 @@ class PluginStorageTest(test_util.ConfigTestCase):
     def test_save_errors_unable_to_write_file(self):
         mock_open = mock.mock_open()
         mock_open.side_effect = IOError
-        with mock.patch("certbot.compat.os.open", mock_open):
+        with mock.patch("certbot.compat.filesystem.open", mock_open):
             with mock.patch("certbot.plugins.storage.logger.error") as mock_log:
                 self.plugin.storage._data = {"valid": "data"}  # pylint: disable=protected-access
                 self.plugin.storage._initialized = True  # pylint: disable=protected-access

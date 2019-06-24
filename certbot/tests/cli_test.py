@@ -1,7 +1,6 @@
 """Tests for certbot.cli."""
 import argparse
 import copy
-import sys
 import tempfile
 import unittest
 
@@ -16,6 +15,7 @@ from certbot import cli
 from certbot import constants
 from certbot import errors
 from certbot.compat import os
+from certbot.compat import filesystem
 from certbot.plugins import disco
 from certbot.tests.util import TempDirTestCase
 
@@ -43,11 +43,15 @@ class TestReadFile(TempDirTestCase):
 class FlagDefaultTest(unittest.TestCase):
     """Tests cli.flag_default"""
 
-    def test_linux_directories(self):
-        if 'fcntl' in sys.modules:
+    def test_default_directories(self):
+        if os.name != 'nt':
             self.assertEqual(cli.flag_default('config_dir'), '/etc/letsencrypt')
             self.assertEqual(cli.flag_default('work_dir'), '/var/lib/letsencrypt')
             self.assertEqual(cli.flag_default('logs_dir'), '/var/log/letsencrypt')
+        else:
+            self.assertEqual(cli.flag_default('config_dir'), 'C:\\Certbot')
+            self.assertEqual(cli.flag_default('work_dir'), 'C:\\Certbot\\lib')
+            self.assertEqual(cli.flag_default('logs_dir'), 'C:\\Certbot\\log')
 
 
 class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
@@ -318,8 +322,8 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             self.parse(short_args + ['renew']), False)
 
         account_dir = os.path.join(config_dir, constants.ACCOUNTS_DIR)
-        os.mkdir(account_dir)
-        os.mkdir(os.path.join(account_dir, 'fake_account_dir'))
+        filesystem.mkdir(account_dir)
+        filesystem.mkdir(os.path.join(account_dir, 'fake_account_dir'))
 
         self._assert_dry_run_flag_worked(self.parse(short_args + ['auth']), True)
         self._assert_dry_run_flag_worked(self.parse(short_args + ['renew']), True)

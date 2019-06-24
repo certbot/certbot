@@ -274,10 +274,11 @@ class _GoogleClient(object):
                 raise errors.PluginError('Encountered error finding managed zone: {0}'
                                          .format(e))
 
-            if zones:
-                zone_id = zones[0]['id']
-                logger.debug('Found id of %s for %s using name %s', zone_id, domain, zone_name)
-                return zone_id
+            for zone in zones:
+                zone_id = zone['id']
+                if 'privateVisibilityConfig' not in zone:
+                    logger.debug('Found id of %s for %s using name %s', zone_id, domain, zone_name)
+                    return zone_id
 
         raise errors.PluginError('Unable to determine managed zone for {0} using zone names: {1}.'
                                  .format(domain, zone_dns_name_guesses))

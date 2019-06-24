@@ -17,6 +17,7 @@ from os import *  # type: ignore  # pylint: disable=wildcard-import,unused-wildc
 # and so not in `from os import *`.
 import os as std_os  # pylint: disable=os-module-forbidden
 import sys as std_sys
+
 ourselves = std_sys.modules[__name__]
 for attribute in dir(std_os):
     # Check if the attribute does not already exist in our module. It could be internal attributes
@@ -30,6 +31,64 @@ std_sys.modules[__name__ + '.path'] = path
 
 # Clean all remaining importables that are not from the core os module.
 del ourselves, std_os, std_sys
+
+
+# Chmod is the root of all evil for our security model on Windows. With the default implementation
+# of os.chmod on Windows, almost all bits on mode will be ignored, and only a general RO or RW will
+# be applied. The DACL, the inner mechanism to control file access on Windows, will stay on its
+# default definition, giving effectively at least read permissions to any one, as the default
+# permissions on root path will be inherit by the file (as NTFS state), and root path can be read
+# by anyone. So the given mode needs to be translated into a secured and not inherited DACL that
+# will be applied to this file using filesystem.chmod, calling internally the win32security
+# module to construct and apply the DACL. Complete security model to translate a POSIX mode into
+# a suitable DACL on Windows for Certbot can be found here:
+# https://github.com/certbot/certbot/issues/6356
+# Basically, it states that appropriate permissions will be set for the owner, nothing for the
+# group, appropriate permissions for the "Everyone" group, and all permissions to the
+# "Administrators" group + "System" user, as they can do everything anyway.
+def chmod(*unused_args, **unused_kwargs):
+    """Method os.chmod() is forbidden"""
+    raise RuntimeError('Usage of os.chmod() is forbidden. '
+                       'Use certbot.compat.filesystem.chmod() instead.')
+
+
+# Because uid is not a concept on Windows, chown is useless. In fact, it is not even available
+# on Python for Windows. So to be consistent on both platforms for Certbot, this method is
+# always forbidden.
+def chown(*unused_args, **unused_kwargs):
+    """Method os.chown() is forbidden"""
+    raise RuntimeError('Usage of os.chown() is forbidden.'
+                       'Use certbot.compat.filesystem.copy_ownership_and_apply_mode() instead.')
+
+
+# The os.open function on Windows has the same effect as a call to os.chown concerning the file
+# modes: these modes lack the correct control over the permissions given to the file. Instead,
+# filesystem.open invokes the Windows native API `CreateFile` to ensure that permissions are
+# atomically set in case of file creation, or invokes filesystem.chmod to properly set the
+# permissions for the other cases.
+def open(*unused_args, **unused_kwargs):
+    """Method os.open() is forbidden"""
+    raise RuntimeError('Usage of os.open() is forbidden. '
+                       'Use certbot.compat.filesystem.open() instead.')
+
+
+# Very similarly to os.open, os.mkdir has the same effects on Windows and creates an unsecured
+# folder. So a similar mitigation to security.chmod is provided on this platform.
+def mkdir(*unused_args, **unused_kwargs):
+    """Method os.mkdir() is forbidden"""
+    raise RuntimeError('Usage of os.mkdir() is forbidden. '
+                       'Use certbot.compat.filesystem.mkdir() instead.')
+
+
+# As said above, os.makedirs would call the original os.mkdir function recursively on Windows,
+# creating the same flaws for every actual folder created. This method is modified to ensure
+# that our modified os.mkdir is called on Windows, by monkey patching temporarily the mkdir method
+# on the original os module, executing the modified logic to correctly protect newly created
+# folders, then restoring original mkdir method in the os module.
+def makedirs(*unused_args, **unused_kwargs):
+    """Method os.makedirs() is forbidden"""
+    raise RuntimeError('Usage of os.makedirs() is forbidden. '
+                       'Use certbot.compat.filesystem.makedirs() instead.')
 
 
 # Because of the blocking strategy on file handlers on Windows, rename does not behave as expected
