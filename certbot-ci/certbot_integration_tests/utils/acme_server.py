@@ -132,34 +132,15 @@ def _prepare_acme_server(workspace, acme_type, acme_xdist):
             os.rename(join(instance_path, 'test/rate-limit-policies-b.yml'),
                       join(instance_path, 'test/rate-limit-policies.yml'))
         if acme_type == 'pebble':
+            # Configure Pebble at full speed (PEBBLE_VA_NOSLEEP=1) and not randomly refusing valid
+            # nonce (PEBBLE_WFE_NONCEREJECT=0) to have a stable test environment.
             with open(os.path.join(instance_path, 'docker-compose.yml'), 'r') as file_handler:
                 config = yaml.load(file_handler.read())
 
-            # Configure Pebble at full speed (PEBBLE_VA_NOSLEEP=1) and not randomly refusing valid
-            # nonce (PEBBLE_WFE_NONCEREJECT=0) to have a stable test environment.
             config['services']['pebble'].setdefault('environment', [])\
                 .extend(['PEBBLE_VA_NOSLEEP=1', 'PEBBLE_WFE_NONCEREJECT=0'])
-
-            # Also disable strict mode for now, since Pebble v2.1.0 added specs in
-            # strict mode for which Certbot is not compliant for now.
-            # See https:/l/github.com/certbot/certbot/pull/7175
-            # TODO: Add back -strict mode once Certbot is compliant with Pebble v2.1.0+
-            config['services']['pebble']['command'] = config['services']['pebble']['command']\
-                .replace('-strict', '')
-
             with open(os.path.join(instance_path, 'docker-compose.yml'), 'w') as file_handler:
                 file_handler.write(yaml.dump(config))
-
-            with open(os.path.join(instance_path, 'test', 'config', 'pebble-config.json'), 'r') as file_handler:
-                config = json.loads(file_handler.read())
-
-            # Setup the OCSP Responder URL for Pebble to local mock
-            config['pebble']['ocspResponderURL'] = 'http://127.0.0.1:{0}'.format(MOCK_OCSP_SERVER_PORT)
-
-            print(json.dumps(config))
-
-            with open(os.path.join(instance_path, 'test', 'config', 'pebble-config.json'), 'w') as file_handler:
-                file_handler.write(json.dumps(config))
 
         # Launch the ACME CA server.
         _launch_command(['docker-compose', 'up', '--force-recreate', '-d'], cwd=instance_path)
