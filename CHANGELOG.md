@@ -6,7 +6,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* Turn off session tickets for nginx plugin by default
+* Added missing error types from RFC8555 to acme
 
 ### Changed
 
@@ -18,12 +19,22 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 *
 
+More details about these changes can be found on our GitHub repo.
+
+## 0.35.1 - 2019-06-10
+
+### Fixed
+
+* Support for specifying an authoritative base domain in our dns-rfc2136 plugin
+  has been removed. This feature was added in our last release but had a bug
+  which caused the plugin to fail so the feature has been removed until it can
+  be added properly.
+
 Despite us having broken lockstep, we are continuing to release new versions of
 all Certbot components during releases for the time being, however, the only
 package with changes other than its version number was:
 
-* certbot
-* certbot-apache
+* certbot-dns-rfc2136
 
 More details about these changes can be found on our GitHub repo.
 
@@ -31,8 +42,8 @@ More details about these changes can be found on our GitHub repo.
 
 ### Added
 
-* dns_rfc2136 plugin now supports explicitly specifing an authorative 
-  base domain for cases when the automatic method does not work (e.g. 
+* dns_rfc2136 plugin now supports explicitly specifing an authorative
+  base domain for cases when the automatic method does not work (e.g.
   Split horizon DNS)
 
 ### Changed
@@ -100,6 +111,10 @@ More details about these changes can be found on our GitHub repo.
   `malformed` error to be received from the ACME server.
 * Linode DNS plugin now supports api keys created from their new panel
   at [cloud.linode.com](https://cloud.linode.com)
+
+### Fixed
+
+* Fixed Google DNS Challenge issues when private zones exist
 * Adding a warning noting that future versions of Certbot will automatically configure the
   webserver so that all requests redirect to secure HTTPS access. You can control this
   behavior and disable this warning with the --redirect and --no-redirect flags.

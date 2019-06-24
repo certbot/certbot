@@ -7,6 +7,7 @@ from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-
 
 from certbot import errors
 from certbot.compat import os
+from certbot.compat import filesystem
 from certbot.tests import util
 
 
@@ -65,7 +66,7 @@ class HookTest(util.ConfigTestCase):
     """Common base class for hook tests."""
 
     @classmethod
-    def _call(cls, *args, **kwargs):
+    def _call(cls, *args, **kwargs):  # pragma: no cover
         """Calls the method being tested with the given arguments."""
         raise NotImplementedError
 
@@ -494,7 +495,7 @@ def create_hook(file_path):
 
     """
     open(file_path, "w").close()
-    os.chmod(file_path, os.stat(file_path).st_mode | stat.S_IXUSR)
+    filesystem.chmod(file_path, os.stat(file_path).st_mode | stat.S_IXUSR)
 
 
 if __name__ == '__main__':

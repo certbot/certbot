@@ -16,6 +16,7 @@ from certbot import achallenges
 from certbot import crypto_util
 from certbot import errors
 from certbot.compat import os
+from certbot.compat import filesystem
 from certbot.tests import acme_util
 from certbot.tests import util as certbot_util
 
@@ -1366,7 +1367,7 @@ class MultipleVhostsTest(util.ApacheTest):
         self.config.parser.modules.add("mod_ssl.c")
         self.config.parser.modules.add("socache_shmcb_module")
         tmp_path = os.path.realpath(tempfile.mkdtemp("vhostroot"))
-        os.chmod(tmp_path, 0o755)
+        filesystem.chmod(tmp_path, 0o755)
         mock_p = "certbot_apache.configurator.ApacheConfigurator._get_ssl_vhost_path"
         mock_a = "certbot_apache.parser.ApacheParser.add_include"
 

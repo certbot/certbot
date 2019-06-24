@@ -751,9 +751,10 @@ class HelpfulArgumentParser(object):
         """Add a new command line argument.
 
         :param topics: str or [str] help topic(s) this should be listed under,
-                       or None for "always documented". The first entry
-                       determines where the flag lives in the "--help all"
-                       output (None -> "optional arguments").
+                       or None for options that don't fit under a specific
+                       topic which will only be shown in "--help all" output.
+                       The first entry determines where the flag lives in the
+                       "--help all" output (None -> "optional arguments").
         :param list *args: the names of this argument flag
         :param dict **kwargs: various argparse settings for this argument
 

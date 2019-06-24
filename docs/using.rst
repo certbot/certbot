@@ -294,7 +294,6 @@ dns-standalone_    Y    N    Obtain certificates via an integrated DNS server
 .. _pritunl: https://github.com/kharkevich/letsencrypt-pritunl
 .. _proxmox: https://github.com/kharkevich/letsencrypt-proxmox
 .. _external: https://github.com/marcan/letsencrypt-external
-.. _postfix: https://github.com/EFForg/starttls-everywhere
 .. _heroku: https://github.com/gboudreau/certbot-heroku
 .. _dns-standalone: https://github.com/siilike/certbot-dns-standalone
 
