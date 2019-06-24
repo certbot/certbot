@@ -132,13 +132,21 @@ def _prepare_acme_server(workspace, acme_type, acme_xdist):
             os.rename(join(instance_path, 'test/rate-limit-policies-b.yml'),
                       join(instance_path, 'test/rate-limit-policies.yml'))
         if acme_type == 'pebble':
-            # Configure Pebble at full speed (PEBBLE_VA_NOSLEEP=1) and not randomly refusing valid
-            # nonce (PEBBLE_WFE_NONCEREJECT=0) to have a stable test environment.
             with open(os.path.join(instance_path, 'docker-compose.yml'), 'r') as file_handler:
                 config = yaml.load(file_handler.read())
 
+            # Configure Pebble at full speed (PEBBLE_VA_NOSLEEP=1) and not randomly refusing valid
+            # nonce (PEBBLE_WFE_NONCEREJECT=0) to have a stable test environment.
             config['services']['pebble'].setdefault('environment', [])\
                 .extend(['PEBBLE_VA_NOSLEEP=1', 'PEBBLE_WFE_NONCEREJECT=0'])
+
+            # Also disable strict mode for now, since Pebble v2.1.0 added specs in
+            # strict mode for which Certbot is not compliant for now.
+            # See https://github.com/certbot/certbot/pull/7175
+            # TODO: Add back -strict mode once Certbot is compliant with Pebble v2.1.0+
+            config['services']['pebble']['command'] = config['services']['pebble']['command']\
+                .replace('-strict', '')
+
             with open(os.path.join(instance_path, 'docker-compose.yml'), 'w') as file_handler:
                 file_handler.write(yaml.dump(config))
 
