@@ -27,14 +27,6 @@ from six.moves import socketserver, SimpleHTTPServer
 from certbot_integration_tests.utils import ocsp_server
 from certbot_integration_tests.utils.constants import MOCK_OCSP_SERVER_PORT
 
-try:
-    import urllib3
-    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-except ImportError:
-    # Handle old versions of request with vendorized urllib3
-    from requests.packages.urllib3.exceptions import InsecureRequestWarning
-    requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
-
 RSA_KEY_TYPE = 'rsa'
 ECDSA_KEY_TYPE = 'ecdsa'
 
@@ -49,6 +41,7 @@ def check_until_timeout(url):
     for _ in range(0, 150):
         time.sleep(1)
         try:
+            _ignore_https_warnings()
             if requests.get(url, verify=False).status_code == 200:
                 return
         except requests.exceptions.ConnectionError:
@@ -299,8 +292,10 @@ def mock_ocsp_server(directory_url, workspace):
     key_path = os.path.join(workspace, 'ocsp_key.pem')
     cert_path = os.path.join(workspace, 'ocsp_cert.pem')
     with open(key_path, 'w') as file_h:
+        _ignore_https_warnings()
         file_h.write(requests.get(root_url + '/intermediate-key', verify=False).content)
     with open(cert_path, 'w') as file_h:
+        _ignore_https_warnings()
         file_h.write(requests.get(root_url + '/intermediate', verify=False).content)
 
     environ = os.environ.copy()
@@ -310,3 +305,13 @@ def mock_ocsp_server(directory_url, workspace):
     process = subprocess.Popen([sys.executable, ocsp_server.__file__], env=environ)
 
     return process, 'http://127.0.0.1:{0}'.format(MOCK_OCSP_SERVER_PORT)
+
+
+def _ignore_https_warnings():
+    try:
+        import urllib3
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    except ImportError:
+        # Handle old versions of request with vendorized urllib3
+        from requests.packages.urllib3.exceptions import InsecureRequestWarning
+        requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
