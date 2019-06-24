@@ -6,6 +6,8 @@ import stat
 import pkg_resources
 import requests
 
+from certbot_integration_tests.utils.constants import MOCK_OCSP_SERVER_PORT
+
 PEBBLE_VERSION = 'v2.1.0'
 ASSETS_PATH = pkg_resources.resource_filename('certbot_integration_tests', 'assets')
 
@@ -46,6 +48,7 @@ def _build_pebble_config(workspace):
                 'privateKey': os.path.join(ASSETS_PATH, 'key.pem'),
                 'httpPort': 5002,
                 'tlsPort': 5001,
+                'ocspResponderURL': 'http://127.0.0.1:{0}'.format(MOCK_OCSP_SERVER_PORT),
             },
         }))
 
