@@ -16,16 +16,6 @@ targets:
     type: ubuntu
     virt: hvm
     user: ubuntu
-  - ami: ami-7b89cc11
-    name: ubuntu14.04LTS
-    type: ubuntu
-    virt: hvm
-    user: ubuntu
-  - ami: ami-9295d0f8
-    name: ubuntu14.04LTS_32bit
-    type: ubuntu
-    virt: pv
-    user: ubuntu
   #-----------------------------------------------------------------------------
   # Debian
   - ami: ami-003f19e0e687de1cd

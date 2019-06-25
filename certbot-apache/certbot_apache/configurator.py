@@ -74,9 +74,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     # pylint: disable=too-many-instance-attributes,too-many-public-methods
     """Apache configurator.
 
-    State of Configurator: This code has been been tested and built for Ubuntu
-    14.04 Apache 2.4 and it works for Ubuntu 12.04 Apache 2.2
-
     :ivar config: Configuration.
     :type config: :class:`~certbot.interfaces.IConfig`
 
