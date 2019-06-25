@@ -53,8 +53,9 @@ def chmod(*unused_args, **unused_kwargs):
 
 # The os.open function on Windows has the same effect than a call to os.chown concerning the file
 # modes: these modes lack of a correct control over the permissions given to the file. Instead,
-# filesystem.open invokes filesystem.take_ownership and filesystem.chown to ensure that both owner
-# and permissions are correctly set.
+# filesystem.open invokes the Windows native API `CreateFile` to ensure that permissions are
+# atomically set in case of file creation, or invoke filesystem.chmod to set properly the
+# permissions for the other cases.
 def open(*unused_args, **unused_kwargs):
     """Method os.open() is forbidden"""
     raise RuntimeError('Usage of os.open() is forbidden. '

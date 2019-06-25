@@ -57,10 +57,10 @@ def open(file_path, flags, mode=0o777):  # pylint: disable=redefined-builtin
     :rtype: int
     """
     if POSIX_MODE:
-        # On Linux, invoke directly os.open
+        # On Linux, invoke os.open directly.
         return os.open(file_path, flags, mode)
 
-    # Windows: handle creation of the file atomically with proper permissions
+    # Windows: handle creation of the file atomically with proper permissions.
     if flags & os.O_CREAT:
         # If os.O_EXCL is set, we will use the "CREATE_NEW", that will raise an exception if
         # file exists, matching the API contract of this bit flag. Otherwise, we use
@@ -79,7 +79,7 @@ def open(file_path, flags, mode=0o777):  # pylint: disable=redefined-builtin
                                           attributes, disposition, 0, None)
             handle.Close()
         except pywintypes.error as err:
-            # Handle native windows error into python error to be consistent with the API
+            # Handle native windows errors into python errors to be consistent with the API
             # of os.open in the situation of a file already existing or locked.
             if err.winerror == winerror.ERROR_FILE_EXISTS:
                 raise OSError(errno.EEXIST, err.strerror)
@@ -87,12 +87,12 @@ def open(file_path, flags, mode=0o777):  # pylint: disable=redefined-builtin
                 raise OSError(errno.EACCES, err.strerror)
             raise err
 
-        # At this point, the file that was not existing has been created, with proper
-        # permissions, so os.O_CREAT and os.O_EXCL are not needed anymore. We remove them
-        # from the flags to avoid a FileExists exception before calling os.open.
+        # At this point, the file that did not exist has been created with proper permissions,
+        # so os.O_CREAT and os.O_EXCL are not needed anymore. We remove them from the flags to
+        # avoid a FileExists exception before calling os.open.
         return os.open(file_path, flags ^ os.O_CREAT ^ os.O_EXCL)
 
-    # Windows: general case, we call os.open, let exceptions be thrown, then chmod if ok.
+    # Windows: general case, we call os.open, let exceptions be thrown, then chmod if all is fine.
     handle = os.open(file_path, flags)
     chmod(file_path, mode)
     return handle
