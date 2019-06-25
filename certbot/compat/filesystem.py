@@ -1,6 +1,7 @@
 """Compat module to handle files security on Windows and Linux"""
 from __future__ import absolute_import
 
+import errno
 import os  # pylint: disable=os-module-forbidden
 import stat
 
@@ -11,6 +12,8 @@ try:
     import win32con
     import win32api
     import win32file
+    import pywintypes
+    import winerror
     # pylint: enable=import-error
 except ImportError:
     POSIX_MODE = True
@@ -53,29 +56,46 @@ def open(file_path, flags, mode=0o777):  # pylint: disable=redefined-builtin
     :returns: the file descriptor to the opened file
     :rtype: int
     """
-    if not POSIX_MODE:
-        # Handle creation of the file atomically with proper permissions
-        if not os.path.exists(file_path) and flags & os.O_CREAT:
-            attributes = win32security.SECURITY_ATTRIBUTES()
-            security = attributes.SECURITY_DESCRIPTOR
-            user = _get_current_user()
-            dacl = _generate_dacl(user, mode)
-            security.SetSecurityDescriptorDacl(1, dacl, 0)
+    if POSIX_MODE:
+        # On Linux, invoke directly os.open
+        return os.open(file_path, flags, mode)
 
-            handle = win32file.CreateFile(file_path, win32file.GENERIC_READ, 0,
-                                          attributes, win32con.CREATE_NEW, 0, None)
+    # Windows: handle creation of the file atomically with proper permissions
+    if flags & os.O_CREAT:
+        # If os.O_EXCL is set, we will use the "CREATE_NEW", that will raise an exception if
+        # file exists, matching the API contract of this bit flag. Otherwise, we use
+        # "OPEN_ALWAYS" that will create the file if it not exists.
+        disposition = win32con.CREATE_NEW if flags & os.O_EXCL else win32con.OPEN_ALWAYS
+
+        attributes = win32security.SECURITY_ATTRIBUTES()
+        security = attributes.SECURITY_DESCRIPTOR
+        user = _get_current_user()
+        dacl = _generate_dacl(user, mode)
+        security.SetSecurityDescriptorDacl(1, dacl, 0)
+
+        try:
+            handle = win32file.CreateFile(file_path, win32file.GENERIC_READ,
+                                          win32file.FILE_SHARE_READ & win32file.FILE_SHARE_WRITE,
+                                          attributes, disposition, 0, None)
             handle.Close()
+        except pywintypes.error as err:
+            # Handle native windows error into python error to be consistent with the API
+            # of os.open in the situation of a file already existing or locked.
+            if err.winerror == winerror.ERROR_FILE_EXISTS:
+                raise OSError(errno.EEXIST, err.strerror)
+            if err.winerror == winerror.ERROR_SHARING_VIOLATION:
+                raise OSError(errno.EACCES, err.strerror)
+            raise err
 
-            # At this point, the file that was not existing has been created, with proper
-            # permissions, so os.O_CREAT and os.O_EXCL are not needed anymore. We remove them
-            # from the flags to avoid a FileExists exception when os.open will be called.
-            flags = flags ^ os.O_CREAT ^ os.O_EXCL
-        elif os.path.exists(file_path):
-            chmod(file_path, mode)
+        # At this point, the file that was not existing has been created, with proper
+        # permissions, so os.O_CREAT and os.O_EXCL are not needed anymore. We remove them
+        # from the flags to avoid a FileExists exception before calling os.open.
+        return os.open(file_path, flags ^ os.O_CREAT ^ os.O_EXCL)
 
-    # On Linux, invoke directly os.open. On Windows, file creation with proper
-    # permissions in respect with os.O_CREAT so we can call os.open.
-    return os.open(file_path, flags, mode)
+    # Windows: general case, we call os.open, let exceptions be thrown, then chmod if ok.
+    handle = os.open(file_path, flags)
+    chmod(file_path, mode)
+    return handle
 
 
 def replace(src, dst):

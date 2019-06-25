@@ -224,11 +224,15 @@ class _WindowsLockMechanism(_BaseLockMechanism):
         """Acquire the lock"""
         open_mode = os.O_RDWR | os.O_CREAT | os.O_TRUNC
 
-        fd = filesystem.open(self._path, open_mode, 0o600)
+        fd = None
         try:
+            # Under Windows, filesystem.open will raise directly an EACCES error
+            # if the lock file is already locked.
+            fd = filesystem.open(self._path, open_mode, 0o600)
             msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
         except (IOError, OSError) as err:
-            os.close(fd)
+            if fd:
+                os.close(fd)
             # Anything except EACCES is unexpected. Raise directly the error in that case.
             if err.errno != errno.EACCES:
                 raise
