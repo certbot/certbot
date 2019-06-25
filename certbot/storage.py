@@ -1105,12 +1105,11 @@ class RenewableCert(object):
                 logger.debug("Writing new private key to %s.", target["privkey"])
                 f.write(new_privkey)
             # Preserve gid and (mode & 074) from previous privkey in this lineage.
-            old_mode = stat.S_IMODE(os.stat(old_privkey).st_mode) & \
-                (stat.S_IRGRP | stat.S_IWGRP | stat.S_IXGRP | \
-                 stat.S_IROTH)
+            old_mode = (stat.S_IMODE(os.stat(old_privkey).st_mode) &
+                        (stat.S_IRGRP | stat.S_IWGRP | stat.S_IXGRP | stat.S_IROTH))
             mode = BASE_PRIVKEY_MODE | old_mode
-            os.chown(target["privkey"], -1, os.stat(old_privkey).st_gid)
-            filesystem.chmod(target["privkey"], mode)
+            filesystem.copy_ownership_and_apply_mode(
+                old_privkey, target["privkey"], mode, user=False, group=True)
 
         # Save everything else
         with open(target["cert"], "wb") as f:

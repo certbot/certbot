@@ -36,6 +36,32 @@ def chmod(file_path, mode):
         _apply_win_mode(file_path, mode)
 
 
+def copy_ownership_and_apply_mode(src, dst, mode, user=True, group=False):
+    # type: (str, str, int, bool, bool) -> None
+    """
+    Copy ownership (user and optionally group) from the source to the destination,
+    then apply given mode in compatible way for Linux and Windows.
+    NB: The copy_ownership() function does not exist, because on Windows, DACLs would to be
+    recalculated after a change of ownership. As it is not required to implement it in Certbot,
+    we keep the implementation as simple as possible.
+    :param str src: Path of the source file
+    :param str dst: Path of the destination file
+    :param int mode: Permission mode to apply on the destination file
+    :param bool user: Copy user (True by default)
+    :param bool group: Copy group (False by default)
+    """
+    if POSIX_MODE:
+        stats = os.stat(src)
+        user_id = stats.st_uid if user else -1
+        group_id = stats.st_gid if group else -1
+        os.chown(dst, user_id, group_id)
+        os.chmod(dst, mode)
+    elif user:
+        # There is no group handling in Windows
+        _copy_win_ownership(src, dst)
+        _apply_win_mode(dst, mode)
+
+
 def replace(src, dst):
     # type: (str, str) -> None
     """
@@ -127,6 +153,16 @@ def _analyze_mode(mode):
             'execute': mode & stat.S_IXOTH,
         },
     }
+
+
+def _copy_win_ownership(src, dst):
+    security_src = win32security.GetFileSecurity(src, win32security.OWNER_SECURITY_INFORMATION)
+    user_src = security_src.GetSecurityDescriptorOwner()
+
+    security_dst = win32security.GetFileSecurity(dst, win32security.OWNER_SECURITY_INFORMATION)
+    security_dst.SetSecurityDescriptorOwner(user_src, False)
+
+    win32security.SetFileSecurity(dst, win32security.OWNER_SECURITY_INFORMATION, security_dst)
 
 
 def _generate_windows_flags(rights_desc):

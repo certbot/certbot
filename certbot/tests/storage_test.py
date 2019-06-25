@@ -588,10 +588,9 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertTrue(misc.compare_file_modes(
             os.stat(self.test_rc.version("privkey", 4)).st_mode, 0o600))
 
-    @test_util.broken_on_windows
     @mock.patch("certbot.storage.relevant_values")
-    @mock.patch("certbot.storage.os.chown")
-    def test_save_successor_maintains_gid(self, mock_chown, mock_rv):
+    @mock.patch("certbot.storage.filesystem.copy_ownership_and_apply_mode")
+    def test_save_successor_maintains_gid(self, mock_ownership, mock_rv):
         # Mock relevant_values() to claim that all values are relevant here
         # (to avoid instantiating parser)
         mock_rv.side_effect = lambda x: x
@@ -599,9 +598,9 @@ class RenewableCertTests(BaseRenewableCertTest):
             self._write_out_kind(kind, 1)
         self.test_rc.update_all_links_to(1)
         self.test_rc.save_successor(1, b"newcert", None, b"new chain", self.config)
-        self.assertFalse(mock_chown.called)
+        self.assertFalse(mock_ownership.called)
         self.test_rc.save_successor(2, b"newcert", b"new_privkey", b"new chain", self.config)
-        self.assertTrue(mock_chown.called)
+        self.assertTrue(mock_ownership.called)
 
     @mock.patch("certbot.storage.relevant_values")
     def test_new_lineage(self, mock_rv):

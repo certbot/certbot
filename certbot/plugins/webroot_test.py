@@ -142,12 +142,10 @@ class AuthenticatorTest(unittest.TestCase):
             self.assertRaises(errors.PluginError, self.auth.perform, [])
         filesystem.chmod(self.path, 0o700)
 
-    @test_util.skip_on_windows('On Windows, there is no chown.')
-    @mock.patch("certbot.plugins.webroot.os.chown")
-    def test_failed_chown(self, mock_chown):
-        mock_chown.side_effect = OSError(errno.EACCES, "msg")
+    @mock.patch("certbot.plugins.webroot.filesystem.copy_ownership_and_apply_mode")
+    def test_failed_chown(self, mock_ownership):
+        mock_ownership.side_effect = OSError(errno.EACCES, "msg")
         self.auth.perform([self.achall])  # exception caught and logged
-
 
     @test_util.patch_get_utility()
     def test_perform_new_webroot_not_in_map(self, mock_get_utility):
