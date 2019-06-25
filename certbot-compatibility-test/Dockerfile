@@ -1,4 +1,4 @@
-FROM debian:jessie
+FROM debian:stretch
 MAINTAINER Brad Warren <bmw@eff.org>
 
 # no need to mkdir anything:
