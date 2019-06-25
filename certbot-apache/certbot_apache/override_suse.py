@@ -1,6 +1,4 @@
 """ Distribution specific override class for OpenSUSE """
-import pkg_resources
-
 import zope.interface
 
 from certbot import interfaces

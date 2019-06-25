@@ -1,7 +1,6 @@
 """ Distribution specific override class for Debian family (Ubuntu/Debian) """
 import logging
 
-import pkg_resources
 import zope.interface
 
 from certbot import errors
