@@ -64,8 +64,8 @@ def open(file_path, flags, mode=0o777):  # pylint: disable=redefined-builtin
     if flags & os.O_CREAT:
         # If os.O_EXCL is set, we will use the "CREATE_NEW", that will raise an exception if
         # file exists, matching the API contract of this bit flag. Otherwise, we use
-        # "OPEN_ALWAYS" that will create the file if it not exists.
-        disposition = win32con.CREATE_NEW if flags & os.O_EXCL else win32con.OPEN_ALWAYS
+        # "CREATE_ALWAYS" that will always create the file whether it exists or not.
+        disposition = win32con.CREATE_NEW if flags & os.O_EXCL else win32con.CREATE_ALWAYS
 
         attributes = win32security.SECURITY_ATTRIBUTES()
         security = attributes.SECURITY_DESCRIPTOR
