@@ -29,8 +29,6 @@ class GentooConfigurator(configurator.ApacheConfigurator):
         handle_modules=False,
         handle_sites=False,
         challenge_location="/etc/apache2/vhosts.d",
-        MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
-            "certbot_apache", "options-ssl-apache.conf")
     )
 
     def _prepare_options(self):

@@ -39,8 +39,6 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
         handle_modules=False,
         handle_sites=False,
         challenge_location="/etc/httpd/conf.d",
-        MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
-            "certbot_apache", "centos-options-ssl-apache.conf")
     )
 
     def config_test(self):
@@ -74,6 +72,9 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
 
         # Finish with actual config check to see if systemctl restart helped
         super(CentOSConfigurator, self).config_test()
+
+    def _pick_apache_config(self):
+        return pkg_resources.resource_filename("certbot_apache", "centos-options-ssl-apache.conf")
 
     def _prepare_options(self):
         """

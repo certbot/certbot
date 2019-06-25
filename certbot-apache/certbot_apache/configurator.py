@@ -110,13 +110,18 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         handle_modules=False,
         handle_sites=False,
         challenge_location="/etc/apache2",
-        MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
-            "certbot_apache", "options-ssl-apache.conf")
     )
 
     def option(self, key):
         """Get a value from options"""
         return self.options.get(key)
+
+    def _pick_apache_config(self):
+        # Disabling TLS session tickets is possible supported by Apache 2.4.11+.
+        # So for old versions of Apache, we pick a configuration without this option.
+        if self.version < (2, 4, 11):
+            return pkg_resources.resource_filename("certbot_apache", "old-options-ssl-apache.conf")
+        return pkg_resources.resource_filename("certbot_apache", "options-ssl-apache.conf")
 
     def _prepare_options(self):
         """
@@ -2299,8 +2304,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # XXX if we ever try to enforce a local privilege boundary (eg, running
         # certbot for unprivileged users via setuid), this function will need
         # to be modified.
-        return common.install_version_controlled_file(options_ssl, options_ssl_digest,
-            self.option("MOD_SSL_CONF_SRC"), constants.ALL_SSL_OPTIONS_HASHES)
+        apache_config_path = self._pick_apache_config()
+        return common.install_version_controlled_file(
+            options_ssl, options_ssl_digest, apache_config_path, constants.ALL_SSL_OPTIONS_HASHES)
 
     def enable_autohsts(self, _unused_lineage, domains):
         """
