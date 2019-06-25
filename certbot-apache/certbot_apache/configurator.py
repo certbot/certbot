@@ -117,8 +117,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         return self.options.get(key)
 
     def _pick_apache_config(self):
-        # Disabling TLS session tickets is possible supported by Apache 2.4.11+.
-        # So for old versions of Apache, we pick a configuration without this option.
+        # Disabling TLS session tickets is supported by Apache 2.4.11+.
+        # So for old versions of Apache we pick a configuration without this option.
         if self.version < (2, 4, 11):
             return pkg_resources.resource_filename("certbot_apache", "old-options-ssl-apache.conf")
         return pkg_resources.resource_filename("certbot_apache", "options-ssl-apache.conf")
