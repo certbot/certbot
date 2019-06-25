@@ -33,12 +33,12 @@ class AugeasConfiguratorTest(util.ApacheTest):
         self.config.parser.parse_file(os.path.join(
             self.config.parser.root, "conf-available", "bad_conf_file.conf"))
         self.assertRaises(
-            errors.PluginError, self.config.check_parsing_errors, "httpd.aug")
+            errors.PluginError, self.config.parser.check_parsing_errors, "httpd.aug")
 
     def test_bad_save(self):
         mock_save = mock.Mock()
         mock_save.side_effect = IOError
-        self.config.aug.save = mock_save
+        self.config.parser.aug.save = mock_save
 
         self.assertRaises(errors.PluginError, self.config.save)
 
@@ -63,23 +63,9 @@ class AugeasConfiguratorTest(util.ApacheTest):
 
         self.assertTrue(mock_finalize.is_called)
 
-    def test_recovery_routine(self):
-        mock_load = mock.Mock()
-        self.config.aug.load = mock_load
-
-        self.config.recovery_routine()
-        self.assertEqual(mock_load.call_count, 1)
-
-    def test_recovery_routine_error(self):
-        self.config.reverter.recovery_routine = mock.Mock(
-            side_effect=errors.ReverterError)
-
-        self.assertRaises(
-            errors.PluginError, self.config.recovery_routine)
-
     def test_revert_challenge_config(self):
         mock_load = mock.Mock()
-        self.config.aug.load = mock_load
+        self.config.parser.aug.load = mock_load
 
         self.config.revert_challenge_config()
         self.assertEqual(mock_load.call_count, 1)
@@ -93,7 +79,7 @@ class AugeasConfiguratorTest(util.ApacheTest):
 
     def test_rollback_checkpoints(self):
         mock_load = mock.Mock()
-        self.config.aug.load = mock_load
+        self.config.parser.aug.load = mock_load
 
         self.config.rollback_checkpoints()
         self.assertEqual(mock_load.call_count, 1)

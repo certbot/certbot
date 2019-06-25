@@ -48,6 +48,12 @@ class ApacheParser(object):
         self.save_notes = ""
         self.init_augeas()
 
+        if not self.check_aug_version():
+            raise errors.NotSupportedError(
+                "Apache plugin support requires libaugeas0 and augeas-lenses "
+                "version 1.2.0 or higher, please make sure you have you have "
+                "those installed.")
+
         self.modules = set()  # type: Set[str]
         self.parser_paths = {}  # type: Dict[str, List[str]]
         self.variables = {}  # type: Dict[str, str]

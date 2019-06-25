@@ -256,12 +256,6 @@ class ApacheConfigurator(common.Installer):
         except ImportError:
             raise errors.NoInstallationError("Problem in Augeas installation")
 
-        if not self.parser.check_aug_version():
-            raise errors.NotSupportedError(
-                "Apache plugin support requires libaugeas0 and augeas-lenses "
-                "version 1.2.0 or higher, please make sure you have you have "
-                "those installed.")
-
         # Check for errors in parsing files with Augeas
         self.parser.check_parsing_errors("httpd.aug")
 
