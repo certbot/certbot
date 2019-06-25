@@ -61,11 +61,7 @@ class MultipleVhostsTest(util.ApacheTest):
 
     @mock.patch("certbot_apache.parser.ApacheParser.init_augeas")
     def test_prepare_no_augeas(self, mock_init_augeas):
-        """ Test augeas initialization ImportError """
-        def side_effect_error():
-            """ Side effect error for the test """
-            raise ImportError
-        mock_init_augeas.side_effect = side_effect_error
+        mock_init_augeas.side_effect = ImportError
         self.config.config_test = mock.Mock()
         self.assertRaises(
             errors.NoInstallationError, self.config.prepare)
