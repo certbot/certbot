@@ -51,7 +51,7 @@ def chmod(*unused_args, **unused_kwargs):
                        'Use certbot.compat.filesystem.chmod() instead.')
 
 
-# The os.open function on Windows has the same effect than a call to os.chown concerning the file
+# The os.open function on Windows has the same effect as a call to os.chown concerning the file
 # modes: these modes lack of a correct control over the permissions given to the file. Instead,
 # filesystem.open invokes the Windows native API `CreateFile` to ensure that permissions are
 # atomically set in case of file creation, or invoke filesystem.chmod to set properly the
