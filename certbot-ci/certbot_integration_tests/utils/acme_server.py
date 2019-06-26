@@ -25,23 +25,20 @@ class ACMEServer(object):
     ACMEServer gives access the acme_xdist parameter, listing the ports and directory url to use
     for each pytest node. It exposes also start and stop methods in order to start the stack, and
     stop it with proper resources cleanup.
-    An ACMEServer instance will be returned, giving access to the ports and directory url to use
-    for each pytest node, and its start and stop methods are appropriately configured to
-    respectively start the server, and stop it with proper resources cleanup.
     ACMEServer is also a context manager, and so can be used to ensure ACME server is started/stopped
     upon context enter/exit.
     """
-    def __init__(self, acme_server, nodes, proxy=True):
+    def __init__(self, acme_server, nodes, http_proxy=True):
         """
         Create an ACMEServer instance.
         :param str acme_server: the type of acme server used (boulder-v1, boulder-v2 or pebble)
         :param list nodes: list of node names that will be setup by pytest xdist
-        :param bool proxy: set to False to not start the Traefik proxy
+        :param bool http_proxy: set to False to not start the HTTP proxy
         """
         self._construct_acme_xdist(acme_server, nodes)
 
         self._acme_type = 'pebble' if acme_server == 'pebble' else 'boulder'
-        self._proxy = proxy
+        self._proxy = http_proxy
         self._workspace = tempfile.mkdtemp()
         self._processes = []
 
