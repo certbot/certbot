@@ -136,7 +136,7 @@ class ACMEServer(object):
 
         # Load Boulder from git, that includes a docker-compose.yml ready for production.
         process = self._launch_process(['git', 'clone', 'https://github.com/letsencrypt/boulder',
-                                   '--single-branch', '--depth=1', instance_path])
+                                        '--single-branch', '--depth=1', instance_path])
         process.wait()
 
         # Allow Boulder to ignore usual limit rate policies, useful for tests.
@@ -191,9 +191,6 @@ def main():
             print('--> Instance of {0} is running, directory URL is {0}'
                   .format(acme_xdist['directory_url']))
             print('--> Press CTRL+C to stop the ACME server.')
-
-            if 'boulder' in server_type:
-                process = subprocess.Popen(['docker', 'logs', '-f', 'boulder_boulder_1'])
 
             while True:
                 time.sleep(3600)
