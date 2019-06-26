@@ -34,7 +34,7 @@ class ACMEServer(object):
     def __init__(self, acme_server, nodes, proxy=True):
         """
         Create an ACMEServer instance.
-        :param acme_server: the type of acme server used (boulder-v1, boulder-v2 or pebble)
+        :param str acme_server: the type of acme server used (boulder-v1, boulder-v2 or pebble)
         :param str[] nodes: list of node names that will be setup by pytest xdist
         :param bool proxy: set to False to not start the Traefik proxy
         """
