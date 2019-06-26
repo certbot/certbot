@@ -72,12 +72,6 @@ matrix:
       before_install:
       addons:
       <<: *not-on-master
-    - sudo: required
-      env: TOXENV=le_auto_trusty
-      services: docker
-      before_install:
-      addons:
-      <<: *not-on-master
     - python: "2.7"
       env: TOXENV=apacheconftest-with-pebble
       sudo: required
