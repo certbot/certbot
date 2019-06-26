@@ -132,7 +132,7 @@ class Reverter(object):
                     "Unable to load checkpoint during rollback")
             rollback -= 1
 
-    def view_config_changes(self, num=None):
+    def view_config_changes(self):
         """Displays all saved checkpoints.
 
         All checkpoints are printed by
@@ -145,8 +145,6 @@ class Reverter(object):
         """
         backups = os.listdir(self.config.backup_dir)
         backups.sort(reverse=True)
-        if num:
-            backups = backups[:num]
         if not backups:
             logger.info("Certbot has not saved backups of your configuration")
 
