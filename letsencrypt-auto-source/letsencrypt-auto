@@ -1033,7 +1033,7 @@ def main(certbot_auto_path):
 
     if not permissions_ok:
         print('{0} has insecure permissions!'.format(certbot_auto_path))
-        print('To learn how to fix them, visit {0}'.format(FORUM_POST_URL))
+        print('To learn how to fix them, visit <{0}>'.format(FORUM_POST_URL))
 
 
 if __name__ == '__main__':
