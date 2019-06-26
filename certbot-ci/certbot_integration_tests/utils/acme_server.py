@@ -28,12 +28,13 @@ class ACMEServer(object):
     ACMEServer is also a context manager, and so can be used to ensure ACME server is started/stopped
     upon context enter/exit.
     """
-    def __init__(self, acme_server, nodes, http_proxy=True):
+    def __init__(self, acme_server, nodes, http_proxy=True, stdout=False):
         """
         Create an ACMEServer instance.
         :param str acme_server: the type of acme server used (boulder-v1, boulder-v2 or pebble)
         :param list nodes: list of node names that will be setup by pytest xdist
-        :param bool http_proxy: set to False to not start the HTTP proxy
+        :param bool http_proxy: if False do not start the HTTP proxy
+        :param bool stdout: if True stream subprocesses stdout to standard stdout
         """
         self._construct_acme_xdist(acme_server, nodes)
 
@@ -41,6 +42,7 @@ class ACMEServer(object):
         self._proxy = http_proxy
         self._workspace = tempfile.mkdtemp()
         self._processes = []
+        self._stdout = sys.stdout if stdout else open(os.devnull, 'w')
 
     def start(self):
         """Start the test stack"""
@@ -71,6 +73,8 @@ class ACMEServer(object):
                 process.wait()
         finally:
             shutil.rmtree(self._workspace)
+        if self._stdout != sys.stdout:
+            self._stdout.close()
         print('=> Test infrastructure stopped and cleaned up.')
 
     def __enter__(self):
@@ -166,10 +170,9 @@ class ACMEServer(object):
         """Launch silently an subprocess OS command"""
         if not env:
             env = os.environ
-        with open(os.devnull, 'w') as null:
-            process = subprocess.Popen(command, stdout=null, stderr=subprocess.STDOUT, cwd=cwd, env=env)
-            self._processes.append(process)
-            return process
+        process = subprocess.Popen(command, stdout=self._stdout, stderr=subprocess.STDOUT, cwd=cwd, env=env)
+        self._processes.append(process)
+        return process
 
 
 def main():
@@ -180,7 +183,7 @@ def main():
         raise ValueError('Invalid server value {0}, should be one of {1}'
                          .format(server_type, possible_values))
 
-    acme_server = ACMEServer(server_type, [], False)
+    acme_server = ACMEServer(server_type, [], http_proxy=False, stdout=True)
     process = None
 
     try:
