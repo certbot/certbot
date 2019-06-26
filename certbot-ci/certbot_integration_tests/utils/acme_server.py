@@ -192,8 +192,8 @@ def main():
                   .format(acme_xdist['directory_url']))
             print('--> Press CTRL+C to stop the ACME server.')
 
-            docker_name = 'pebble_pebble_1' if 'pebble' in server_type else 'boulder_boulder_1'
-            process = subprocess.Popen(['docker', 'logs', '-f', docker_name])
+            if 'boulder' in server_type:
+                process = subprocess.Popen(['docker', 'logs', '-f', 'boulder_boulder_1'])
 
             while True:
                 time.sleep(3600)

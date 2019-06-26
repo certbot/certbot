@@ -26,7 +26,7 @@ import argparse
 
 # The list of docker distributions to test dependencies against with.
 DISTRIBUTION_LIST = [
-    'ubuntu:18.04', 'ubuntu:14.04',
+    'ubuntu:18.04', 'ubuntu:16.04',
     'debian:stretch', 'debian:jessie',
     'centos:7', 'centos:6',
     'opensuse/leap:15',
