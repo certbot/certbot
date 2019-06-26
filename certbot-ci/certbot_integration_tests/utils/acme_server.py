@@ -184,7 +184,6 @@ def main():
                          .format(server_type, possible_values))
 
     acme_server = ACMEServer(server_type, [], http_proxy=False, stdout=True)
-    process = None
 
     try:
         with acme_server as acme_xdist:
@@ -195,9 +194,7 @@ def main():
             while True:
                 time.sleep(3600)
     except KeyboardInterrupt:
-        if process:
-            process.terminate()
-            process.wait()
+        pass
 
 
 if __name__ == '__main__':
