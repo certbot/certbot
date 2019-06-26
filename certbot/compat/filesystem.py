@@ -242,7 +242,7 @@ def _get_current_user():
     Return the pySID corresponding to the current user.
     """
     account_name = win32api.GetUserNameEx(win32api.NameSamCompatible)
-    # Passing None to systemName instruct the lookup to start from the local system,
+    # Passing None to systemName instructs the lookup to start from the local system,
     # then continue the lookup to associated domain.
     # See https://docs.microsoft.com/en-us/windows/desktop/api/winbase/nf-winbase-lookupaccountnamea
     return win32security.LookupAccountName(None, account_name)[0]
