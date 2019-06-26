@@ -18,7 +18,7 @@ from certbot_integration_tests.utils.constants import *
 
 class ACMEServer(object):
     """
-    ACMEServer configure and handle lifecycle of an ACME CA server and an HTTP reverse proxy
+    ACMEServer configures and handles the lifecycle of an ACME CA server and an HTTP reverse proxy
     instance, to allow parallel execution of integration tests against the unique http-01 port
     expected by the ACME CA server.
     Typically all pytest integration tests will be executed in this context.
