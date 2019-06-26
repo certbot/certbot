@@ -200,6 +200,8 @@ class ApacheConfigurator(common.Installer):
         self._enhanced_vhosts = defaultdict(set)  # type: DefaultDict[str, Set[obj.VirtualHost]]
         # Temporary state for AutoHSTS enhancement
         self._autohsts = {}  # type: Dict[str, Dict[str, Union[int, float]]]
+        # Reverter save notes
+        self.save_notes = ""
 
         # These will be set in the prepare function
         self._prepared = False
@@ -251,10 +253,7 @@ class ApacheConfigurator(common.Installer):
         # correct parse tree from the get go.
         self.recovery_routine()
         # Perform the actual Augeas initialization to be able to react
-        try:
-            self.parser = self.get_parser()
-        except ImportError:
-            raise errors.NoInstallationError("Problem in Augeas installation")
+        self.parser = self.get_parser()
 
         # Check for errors in parsing files with Augeas
         self.parser.check_parsing_errors("httpd.aug")
@@ -295,11 +294,26 @@ class ApacheConfigurator(common.Installer):
         save_files = self.parser.unsaved_files()
         if save_files:
             self.add_to_checkpoint(save_files,
-                                   self.parser.save_notes, temporary=temporary)
+                                   self.save_notes, temporary=temporary)
         # Handle the parser specific tasks
-        self.parser.save()
+        self.parser.save(save_files)
         if title and not temporary:
             self.finalize_checkpoint(title)
+
+    def recovery_routine(self):
+        """Revert all previously modified files.
+
+        Reverts all modified files that have not been saved as a checkpoint
+
+        :raises .errors.PluginError: If unable to recover the configuration
+
+        """
+        super(ApacheConfigurator, self).recovery_routine()
+        # Reload configuration after these changes take effect if needed
+        # ie. ApacheParser has been initialized.
+        if self.parser:
+            # TODO: wrap into non-implementation specific  parser interface
+            self.parser.aug.load()
 
     def revert_challenge_config(self):
         """Used to cleanup challenge configurations.
@@ -533,14 +547,14 @@ class ApacheConfigurator(common.Installer):
             self.enable_site(vhost)
 
         # Save notes about the transaction that took place
-        self.parser.save_notes += ("Changed vhost at %s with addresses of %s\n"
+        self.save_notes += ("Changed vhost at %s with addresses of %s\n"
                             "\tSSLCertificateFile %s\n"
                             "\tSSLCertificateKeyFile %s\n" %
                             (vhost.filep,
                              ", ".join(str(addr) for addr in vhost.addrs),
                              set_cert_path, key_path))
         if chain_path is not None:
-            self.parser.save_notes += "\tSSLCertificateChainFile %s\n" % chain_path
+            self.save_notes += "\tSSLCertificateChainFile %s\n" % chain_path
 
     def choose_vhost(self, target_name, create_if_no_ssl=True):
         """Chooses a virtual host based on the given domain name.
@@ -951,7 +965,7 @@ class ApacheConfigurator(common.Installer):
         msg = ("Setting %s to be NameBasedVirtualHost\n"
                "\tDirective added to %s\n" % (addr, path))
         logger.debug(msg)
-        self.parser.save_notes += msg
+        self.save_notes += msg
 
     def prepare_server_https(self, port, temp=False):
         """Prepare the server for HTTPS.
@@ -1031,13 +1045,13 @@ class ApacheConfigurator(common.Installer):
             # We have wildcard, skip the rest
             self.parser.add_dir(parser.get_aug_path(self.parser.loc["listen"]),
                                 "Listen", port)
-            self.parser.save_notes += "Added Listen %s directive to %s\n" % (
+            self.save_notes += "Added Listen %s directive to %s\n" % (
                 port, self.parser.loc["listen"])
         else:
             for listen in new_listens:
                 self.parser.add_dir(parser.get_aug_path(
                     self.parser.loc["listen"]), "Listen", listen.split(" "))
-                self.parser.save_notes += ("Added Listen %s directive to "
+                self.save_notes += ("Added Listen %s directive to "
                                     "%s\n") % (listen,
                                                self.parser.loc["listen"])
 
@@ -1063,14 +1077,14 @@ class ApacheConfigurator(common.Installer):
             self.parser.add_dir_to_ifmodssl(
                 parser.get_aug_path(self.parser.loc["listen"]),
                 "Listen", port_service.split(" "))
-            self.parser.save_notes += "Added Listen %s directive to %s\n" % (
+            self.save_notes += "Added Listen %s directive to %s\n" % (
                 port_service, self.parser.loc["listen"])
         else:
             for listen in new_listens:
                 self.parser.add_dir_to_ifmodssl(
                     parser.get_aug_path(self.parser.loc["listen"]),
                     "Listen", listen.split(" "))
-                self.parser.save_notes += ("Added Listen %s directive to "
+                self.save_notes += ("Added Listen %s directive to "
                                     "%s\n") % (listen,
                                                self.parser.loc["listen"])
 
@@ -1163,7 +1177,7 @@ class ApacheConfigurator(common.Installer):
 
         # Log actions and create save notes
         logger.info("Created an SSL vhost at %s", ssl_fp)
-        self.parser.save_notes += "Created ssl vhost at %s\n" % ssl_fp
+        self.save_notes += "Created ssl vhost at %s\n" % ssl_fp
         self.save()
 
         # We know the length is one because of the assertion above
@@ -1681,7 +1695,7 @@ class ApacheConfigurator(common.Installer):
         note_msg = ("Increasing HSTS max-age value to {0} for VirtualHost "
                     "in {1}\n".format(nextstep_value, vhost.filep))
         logger.debug(note_msg)
-        self.parser.save_notes += note_msg
+        self.save_notes += note_msg
         self.save(note_msg)
 
     def _autohsts_fetch_state(self):
@@ -1768,7 +1782,7 @@ class ApacheConfigurator(common.Installer):
 
         msg = "OCSP Stapling was enabled on SSL Vhost: %s.\n"%(
                 ssl_vhost.filep)
-        self.parser.save_notes += msg
+        self.save_notes += msg
         self.save()
         logger.info(msg)
 
@@ -1805,7 +1819,7 @@ class ApacheConfigurator(common.Installer):
         self.parser.add_dir(ssl_vhost.path, "Header",
                             constants.HEADER_ARGS[header_substring])
 
-        self.parser.save_notes += ("Adding %s header to ssl vhost in %s\n" %
+        self.save_notes += ("Adding %s header to ssl vhost in %s\n" %
                             (header_substring, ssl_vhost.filep))
 
         self.save()
@@ -1913,7 +1927,7 @@ class ApacheConfigurator(common.Installer):
 
             self._set_https_redirection_rewrite_rule(general_vh)
 
-            self.parser.save_notes += ("Redirecting host in %s to ssl vhost in %s\n" %
+            self.save_notes += ("Redirecting host in %s to ssl vhost in %s\n" %
                                 (general_vh.filep, ssl_vhost.filep))
             self.save()
 
@@ -2030,7 +2044,7 @@ class ApacheConfigurator(common.Installer):
         self._enhanced_vhosts["redirect"].add(new_vhost)
 
         # Finally create documentation for the change
-        self.parser.save_notes += ("Created a port 80 vhost, %s, for redirection to "
+        self.save_notes += ("Created a port 80 vhost, %s, for redirection to "
                             "ssl vhost %s\n" %
                             (new_vhost.filep, ssl_vhost.filep))
 
@@ -2154,7 +2168,7 @@ class ApacheConfigurator(common.Installer):
             # Add direct include to root conf
             logger.info("Enabling site %s by adding Include to root configuration",
                         vhost.filep)
-            self.parser.save_notes += "Enabled site %s\n" % vhost.filep
+            self.save_notes += "Enabled site %s\n" % vhost.filep
             self.parser.add_include(self.parser.loc["default"], vhost.filep)
             vhost.enabled = True
         return
@@ -2396,14 +2410,14 @@ class ApacheConfigurator(common.Installer):
 
         # Add ID to the VirtualHost for mapping back to it later
         uniq_id = self.add_vhost_id(ssl_vhost)
-        self.parser.save_notes += "Adding unique ID {0} to VirtualHost in {1}\n".format(
+        self.save_notes += "Adding unique ID {0} to VirtualHost in {1}\n".format(
             uniq_id, ssl_vhost.filep)
         # Add the actual HSTS header
         self.parser.add_dir(ssl_vhost.path, "Header", hsts_header)
         note_msg = ("Adding gradually increasing HSTS header with initial value "
                     "of {0} to VirtualHost in {1}\n".format(
                         initial_maxage, ssl_vhost.filep))
-        self.parser.save_notes += note_msg
+        self.save_notes += note_msg
 
         # Save the current state to pluginstorage
         self._autohsts[uniq_id] = {"laststep": 0, "timestamp": time.time()}
@@ -2445,7 +2459,7 @@ class ApacheConfigurator(common.Installer):
                 self._autohsts_increase(vhost, id_str, nextstep)
                 msg = ("Increasing HSTS max-age value for VirtualHost with id "
                        "{0}").format(id_str)
-                self.parser.save_notes += msg
+                self.save_notes += msg
                 save_and_restart = True
 
         if save_and_restart:
@@ -2491,7 +2505,7 @@ class ApacheConfigurator(common.Installer):
             msg = ("Strict-Transport-Security max-age value for "
                    "VirtualHost in {0} was made permanent.").format(vhost.filep)
             logger.debug(msg)
-            self.parser.save_notes += msg+"\n"
+            self.save_notes += msg+"\n"
             save_and_restart = True
 
         if save_and_restart:

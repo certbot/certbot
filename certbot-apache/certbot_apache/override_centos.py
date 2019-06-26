@@ -148,7 +148,7 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
         # parser.get_ifmod returns a path postfixed with "/", remove that
         self.parser.add_dir(rootconf_ifmod[:-1], "LoadModule", loadmod_args)
         correct_ifmods.append(rootconf_ifmod[:-1])
-        self.parser.save_notes += "Added LoadModule ssl_module to main configuration.\n"
+        self.save_notes += "Added LoadModule ssl_module to main configuration.\n"
 
         # Wrap LoadModule mod_ssl inside of <IfModule !mod_ssl.c> if it's not
         # configured like this already.
@@ -163,7 +163,7 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
             if ssl_ifmod not in correct_ifmods:
                 self.parser.add_dir(ssl_ifmod, "LoadModule", loadmod_args)
                 correct_ifmods.append(ssl_ifmod)
-                self.parser.save_notes += ("Wrapped pre-existing LoadModule ssl_module "
+                self.save_notes += ("Wrapped pre-existing LoadModule ssl_module "
                                     "inside of <IfModule !mod_ssl> block.\n")
 
 

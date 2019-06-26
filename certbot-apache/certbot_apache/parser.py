@@ -45,7 +45,6 @@ class ApacheParser(object):
 
         # Initialize augeas
         self.aug = None
-        self.save_notes = ""
         self.init_augeas()
 
         if not self.check_aug_version():
@@ -91,7 +90,12 @@ class ApacheParser(object):
 
     def init_augeas(self):
         """ Initialize the actual Augeas instance """
-        import augeas
+
+        try:
+            import augeas
+        except ImportError:
+            raise errors.NoInstallationError("Problem in Augeas installation")
+
         self.aug = augeas.Augeas(
             # specify a directory to load our preferred lens from
             loadpath=constants.AUGEAS_LENS_DIR,
@@ -163,7 +167,7 @@ class ApacheParser(object):
         except (RuntimeError, IOError):
             self._log_save_errors(ex_errs)
             # Erase Save Notes
-            self.save_notes = ""
+            self.configurator.save_notes = ""
             raise errors.PluginError(
                 "Error saving files, check logs for more info.")
 
@@ -188,18 +192,19 @@ class ApacheParser(object):
         """
 
         if self.unsaved_files():
-            self.save_notes += "(autosave)"
+            self.configurator.save_notes += "(autosave)"
             self.configurator.save()
 
-    def save(self):
+    def save(self, save_files=None):
         """Saves all changes to the configuration files.
 
         save() is called from ApacheConfigurator to handle the parser specific
         tasks of saving.
 
+        :param list save_files: list of strings of file paths that we need to save.
+
         """
-        save_files = self.unsaved_files()
-        self.save_notes = ""
+        self.configurator.save_notes = ""
         self.aug.save()
 
         # Force reload if files were modified
@@ -221,7 +226,7 @@ class ApacheParser(object):
         logger.error("Unable to save files: %s. Attempted Save Notes: %s",
                      ", ".join(err[13:len(err) - 6] for err in new_errs
                                # Only new errors caused by recent save
-                               if err not in ex_errs), self.save_notes)
+                               if err not in ex_errs), self.configurator.save_notes)
 
     def add_include(self, main_config, inc_path):
         """Add Include for a new configuration file if one does not exist

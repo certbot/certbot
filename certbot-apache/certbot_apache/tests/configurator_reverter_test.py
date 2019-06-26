@@ -1,21 +1,20 @@
-"""Test for certbot_apache.augeas_configurator."""
+"""Test for certbot_apache.configurator implementations of reverter"""
 import shutil
 import unittest
 
 import mock
 
 from certbot import errors
-from certbot.compat import os
 
 from certbot_apache.tests import util
 
 
-class AugeasConfiguratorTest(util.ApacheTest):
-    """Test for Augeas Configurator base class."""
+class ConfiguratorReverterTest(util.ApacheTest):
+    """Test for ApacheConfigurator reverter methods"""
 
 
     def setUp(self):  # pylint: disable=arguments-differ
-        super(AugeasConfiguratorTest, self).setUp()
+        super(ConfiguratorReverterTest, self).setUp()
 
         self.config = util.get_apache_configurator(
             self.config_path, self.vhost_path, self.config_dir, self.work_dir)
@@ -27,20 +26,6 @@ class AugeasConfiguratorTest(util.ApacheTest):
         shutil.rmtree(self.config_dir)
         shutil.rmtree(self.work_dir)
         shutil.rmtree(self.temp_dir)
-
-    def test_bad_parse(self):
-        # pylint: disable=protected-access
-        self.config.parser.parse_file(os.path.join(
-            self.config.parser.root, "conf-available", "bad_conf_file.conf"))
-        self.assertRaises(
-            errors.PluginError, self.config.parser.check_parsing_errors, "httpd.aug")
-
-    def test_bad_save(self):
-        mock_save = mock.Mock()
-        mock_save.side_effect = IOError
-        self.config.parser.aug.save = mock_save
-
-        self.assertRaises(errors.PluginError, self.config.save)
 
     def test_bad_save_checkpoint(self):
         self.config.reverter.add_to_checkpoint = mock.Mock(

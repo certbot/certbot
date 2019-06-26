@@ -50,21 +50,13 @@ class MultipleVhostsTest(util.ApacheTest):
         self.config.deploy_cert = mocked_deploy_cert
         return self.config
 
-    @mock.patch("certbot_apache.parser.ApacheParser.init_augeas")
     @mock.patch("certbot_apache.configurator.path_surgery")
-    def test_prepare_no_install(self, mock_surgery, _init_augeas):
+    def test_prepare_no_install(self, mock_surgery):
         silly_path = {"PATH": "/tmp/nothingness2342"}
         mock_surgery.return_value = False
         with mock.patch.dict('os.environ', silly_path):
             self.assertRaises(errors.NoInstallationError, self.config.prepare)
             self.assertEqual(mock_surgery.call_count, 1)
-
-    @mock.patch("certbot_apache.parser.ApacheParser.init_augeas")
-    def test_prepare_no_augeas(self, mock_init_augeas):
-        mock_init_augeas.side_effect = ImportError
-        self.config.config_test = mock.Mock()
-        self.assertRaises(
-            errors.NoInstallationError, self.config.prepare)
 
     @mock.patch("certbot_apache.parser.ApacheParser")
     @mock.patch("certbot_apache.configurator.util.exe_exists")
@@ -76,15 +68,6 @@ class MultipleVhostsTest(util.ApacheTest):
 
         self.assertRaises(
             errors.NotSupportedError, self.config.prepare)
-
-    @mock.patch("certbot_apache.configurator.util.exe_exists")
-    def test_prepare_old_aug(self, mock_exe_exists):
-        mock_exe_exists.return_value = True
-        self.config.config_test = mock.Mock()
-        with mock.patch("certbot_apache.parser.ApacheParser.check_aug_version") as mock_c:
-            mock_c.return_value = False
-            self.assertRaises(
-                errors.NotSupportedError, self.config.prepare)
 
     def test_prepare_locked(self):
         server_root = self.config.conf("server-root")
