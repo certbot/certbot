@@ -63,6 +63,7 @@ Authors
 * [David Kreitschmann](https://kreitschmann.de)
 * [David Xia](https://github.com/davidxia)
 * [Devin Howard](https://github.com/devvmh)
+* [dkp](https://github.com/commit-dkp)
 * [dokazaki](https://github.com/dokazaki)
 * [Dominic Cleal](https://github.com/domcleal)
 * [Dominic Lüchinger](https://github.com/dol)
