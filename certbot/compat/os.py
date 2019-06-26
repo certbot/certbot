@@ -57,7 +57,7 @@ def chmod(*unused_args, **unused_kwargs):
 # always forbidden.
 def chown(*unused_args, **unused_kwargs):
     """Method os.chown() is forbidden"""
-    raise RuntimeError('Usage of os.chown() is forbidden.'  # pragma: no cover
+    raise RuntimeError('Usage of os.chown() is forbidden.'
                        'Use certbot.compat.filesystem.copy_ownership_and_apply_mode() instead.')
 
 
