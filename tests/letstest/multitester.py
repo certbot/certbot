@@ -307,7 +307,9 @@ def grab_certbot_log():
 
 def create_client_instance(ec2_client, target, security_group_id, subnet_id):
     """Create a single client instance for running tests."""
-    if target['virt'] == 'hvm':
+    if 'machine_type' in target:
+        machine_type = target['machine_type']
+    elif target['virt'] == 'hvm':
         machine_type = 't2.medium' if cl_args.fast else 't2.micro'
     else:
         # 32 bit systems
