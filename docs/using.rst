@@ -273,7 +273,7 @@ Plugin             Auth Inst Notes
 ================== ==== ==== ===============================================================
 haproxy_           Y    Y    Integration with the HAProxy load balancer
 s3front_           Y    Y    Integration with Amazon CloudFront distribution of S3 buckets
-gandi_             Y    Y    Integration with Gandi LiveDNS API
+gandi_             Y    N    Obtain certificates via the Gandi LiveDNS API
 varnish_           Y    N    Obtain certificates via a Varnish server
 external_          Y    N    A plugin for convenient scripting (See also ticket 2782_)
 icecast_           N    Y    Deploy certificates to Icecast 2 streaming media servers
