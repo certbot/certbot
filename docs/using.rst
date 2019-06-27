@@ -271,7 +271,6 @@ widespread use:
 ================== ==== ==== ===============================================================
 Plugin             Auth Inst Notes
 ================== ==== ==== ===============================================================
-plesk_             Y    Y    Integration with the Plesk web hosting tool
 haproxy_           Y    Y    Integration with the HAProxy load balancer
 s3front_           Y    Y    Integration with Amazon CloudFront distribution of S3 buckets
 gandi_             Y    Y    Integration with Gandi LiveDNS API
@@ -284,7 +283,6 @@ heroku_            Y    Y    Integration with Heroku SSL
 dns-standalone_    Y    N    Obtain certificates via an integrated DNS server
 ================== ==== ==== ===============================================================
 
-.. _plesk: https://github.com/plesk/letsencrypt-plesk
 .. _haproxy: https://github.com/greenhost/certbot-haproxy
 .. _s3front: https://github.com/dlapiduz/letsencrypt-s3front
 .. _gandi: https://github.com/obynio/certbot-plugin-gandi
