@@ -21,6 +21,12 @@ else:
 
 from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
 
+if POSIX_MODE:
+    # Function os.makedirs will temporarily monkeypatch os.mkdir to replace it by filesystem.mkdir.
+    # However, filesystem.mkdir also invokes os.mkdir on Linux. To avoid a looped reference, we take
+    # now a reference of the original os.mkdir, to use it in filesystem.mkdir when appropriate.
+    _os_mkdir = os.mkdir
+
 
 def chmod(file_path, mode):
     # type: (str, int) -> None
@@ -41,12 +47,6 @@ def chmod(file_path, mode):
         os.chmod(file_path, mode)
     else:
         _apply_win_mode(file_path, mode)
-
-
-# Funtion os.makedirs will temporarily monkeypatch os.mkdir to replace it by filesystem.mkdir.
-# However, filesystem.mkdir also invokes os.mkdir. To avoid a looped reference, we take now a
-# reference of the original os.mkdir, to use it in filesystem.mkdir.
-_os_mkdir = os.mkdir
 
 
 def makedirs(file_path, mode=0o777, exists_ok=False):
@@ -86,22 +86,24 @@ def mkdir(file_path, mode=0o777):
                      will be applied if ``None``
     """
     if POSIX_MODE:
-        _os_mkdir(file_path, mode)
-    else:
-        attributes = win32security.SECURITY_ATTRIBUTES()
-        security = attributes.SECURITY_DESCRIPTOR
-        user = _get_current_user()
-        dacl = _generate_dacl(user, mode)
-        security.SetSecurityDescriptorDacl(1, dacl, 0)
+        return _os_mkdir(file_path, mode)
 
-        try:
-            win32file.CreateDirectory(file_path, attributes)
-        except pywintypes.error as err:
-            # Handle native windows error into python error to be consistent with the API
-            # of os.mkdir in the situation of a directory already existing.
-            if err.winerror == winerror.ERROR_ALREADY_EXISTS:
-                raise OSError(errno.EEXIST, err.strerror)
-            raise err
+    attributes = win32security.SECURITY_ATTRIBUTES()
+    security = attributes.SECURITY_DESCRIPTOR
+    user = _get_current_user()
+    dacl = _generate_dacl(user, mode)
+    security.SetSecurityDescriptorDacl(1, dacl, 0)
+
+    try:
+        win32file.CreateDirectory(file_path, attributes)
+    except pywintypes.error as err:
+        # Handle native windows error into python error to be consistent with the API
+        # of os.mkdir in the situation of a directory already existing.
+        if err.winerror == winerror.ERROR_ALREADY_EXISTS:
+            raise OSError(errno.EEXIST, err.strerror)
+        raise err
+
+    return None
 
 
 def replace(src, dst):
