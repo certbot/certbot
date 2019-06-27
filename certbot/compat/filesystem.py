@@ -36,14 +36,21 @@ def chmod(file_path, mode):
         _apply_win_mode(file_path, mode)
 
 
+# One could ask why there is no copy_ownership() function, or even a reimplementation
+# of os.chown() that would modify the ownership of file without touching the mode itself.
+# This is because on Windows, it would require to recalculate the existing DACL against
+# the new owner, since DACL are composed of ACLs that targets a specific user, not dynamically
+# the current owner of a file. This action would be necessary to keep consistency between
+# the POSIX mode applied to the file and the current user of this file.
+# Since copying and editing arbitrary DACL is very difficult, and since we actually know
+# the mode to apply at the time the owner of a file should change, it is easier to just
+# change the owner, then reapply the known mode, as copy_ownership_and_apply_mode() does.
 def copy_ownership_and_apply_mode(src, dst, mode, copy_user, copy_group):
     # type: (str, str, int, bool, bool) -> None
     """
     Copy ownership (user and optionally group) from the source to the destination,
-    then apply given mode in compatible way for Linux and Windows.
-    NB: The copy_ownership() function does not exist, because on Windows, DACLs would to be
-    recalculated after a change of ownership. As it is not required to implement it in Certbot,
-    we keep the implementation as simple as possible.
+    then apply given mode in compatible way for Linux and Windows. This replaces
+    the os.chown command.
     :param str src: Path of the source file
     :param str dst: Path of the destination file
     :param int mode: Permission mode to apply on the destination file
