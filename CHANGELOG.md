@@ -15,6 +15,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * Update the 'manage your account' help to be more generic.
 * The error message when Certbot's Apache plugin is unable to modify your
   Apache configuration has been improved.
+* `certbot config_changes` no longer accepts a --num parameter.
 
 ### Fixed
 
