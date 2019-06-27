@@ -65,7 +65,7 @@ def mkdir(*unused_args, **unused_kwargs):
 # As said above, os.makedirs would call the original os.mkdir function recursively, creating the
 # same flaws for every actual folder created. This method is modified to ensure that our
 # modified os.mkdir is called, by monkey patching temporarily the mkdir method on the
-# original os module, executing the modified logic to protect corecrtly newly created folders,
+# original os module, executing the modified logic to correctly protect newly created folders,
 # then restoring original mkdir method in the os module.
 def makedirs(*unused_args, **unused_kwargs):
     """Method os.makedirs() is forbidden"""
