@@ -19,7 +19,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-*
+* Replace some unnecessary platform-specific line separation.
 
 More details about these changes can be found on our GitHub repo.
 
