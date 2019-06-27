@@ -31,8 +31,8 @@ class BasicParserTest(util.ParserTest):
     def test_bad_save(self):
         mock_save = mock.Mock()
         mock_save.side_effect = IOError
-        self.config.parser.aug.save = mock_save
-        self.assertRaises(errors.PluginError, self.config.save)
+        self.parser.aug.save = mock_save
+        self.assertRaises(errors.PluginError, self.parser.unsaved_files)
 
     def test_aug_version(self):
         mock_match = mock.Mock(return_value=["something"])
@@ -48,13 +48,6 @@ class BasicParserTest(util.ParserTest):
         self.config.parser.aug.load = mock_load
         self.config.recovery_routine()
         self.assertEqual(mock_load.call_count, 1)
-
-    @mock.patch("certbot_apache.parser.ApacheParser.init_augeas")
-    def test_prepare_no_augeas(self, mock_init_augeas):
-        mock_init_augeas.side_effect = errors.NoInstallationError
-        self.config.config_test = mock.Mock()
-        self.assertRaises(
-            errors.NoInstallationError, self.config.prepare)
 
     def test_find_config_root_no_root(self):
         # pylint: disable=protected-access
@@ -350,6 +343,16 @@ class ParserInitTest(util.ApacheTest):
         shutil.rmtree(self.temp_dir)
         shutil.rmtree(self.config_dir)
         shutil.rmtree(self.work_dir)
+
+    @mock.patch("certbot_apache.parser.ApacheParser.init_augeas")
+    def test_prepare_no_augeas(self, mock_init_augeas):
+        from certbot_apache.parser import ApacheParser
+        mock_init_augeas.side_effect = errors.NoInstallationError
+        self.config.config_test = mock.Mock()
+        self.assertRaises(
+            errors.NoInstallationError, ApacheParser,
+            os.path.relpath(self.config_path), "/dummy/vhostpath",
+            version=(2, 4, 22), configurator=self.config)
 
     def test_init_old_aug(self):
         from certbot_apache.parser import ApacheParser

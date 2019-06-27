@@ -93,7 +93,7 @@ class ApacheParser(object):
 
         try:
             import augeas
-        except ImportError:
+        except ImportError:  # pragma: no cover
             raise errors.NoInstallationError("Problem in Augeas installation")
 
         self.aug = augeas.Augeas(
@@ -195,7 +195,7 @@ class ApacheParser(object):
             self.configurator.save_notes += "(autosave)"
             self.configurator.save()
 
-    def save(self, save_files=None):
+    def save(self, save_files):
         """Saves all changes to the configuration files.
 
         save() is called from ApacheConfigurator to handle the parser specific
