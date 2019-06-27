@@ -180,7 +180,7 @@ to serve all files under specified web root ({0})."""
                         # https://docs.python.org/3/library/os.html#os.mkdir
                         try:
                             filesystem.copy_ownership_and_apply_mode(
-                                path, prefix, 0o755, group=True)
+                                path, prefix, 0o755, True, True)
                         except (OSError, AttributeError) as exception:
                             logger.info("Unable to change owner and uid of webroot directory")
                             logger.debug("Error was: %s", exception)

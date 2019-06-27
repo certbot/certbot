@@ -1109,7 +1109,7 @@ class RenewableCert(object):
                         (stat.S_IRGRP | stat.S_IWGRP | stat.S_IXGRP | stat.S_IROTH))
             mode = BASE_PRIVKEY_MODE | old_mode
             filesystem.copy_ownership_and_apply_mode(
-                old_privkey, target["privkey"], mode, user=False, group=True)
+                old_privkey, target["privkey"], mode, False, True)
 
         # Save everything else
         with open(target["cert"], "wb") as f:

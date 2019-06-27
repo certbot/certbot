@@ -36,7 +36,7 @@ def chmod(file_path, mode):
         _apply_win_mode(file_path, mode)
 
 
-def copy_ownership_and_apply_mode(src, dst, mode, user=True, group=False):
+def copy_ownership_and_apply_mode(src, dst, mode, copy_user, copy_group):
     # type: (str, str, int, bool, bool) -> None
     """
     Copy ownership (user and optionally group) from the source to the destination,
@@ -47,16 +47,16 @@ def copy_ownership_and_apply_mode(src, dst, mode, user=True, group=False):
     :param str src: Path of the source file
     :param str dst: Path of the destination file
     :param int mode: Permission mode to apply on the destination file
-    :param bool user: Copy user (True by default)
-    :param bool group: Copy group (False by default)
+    :param bool copy_user: Copy user if `True`
+    :param bool copy_group: Copy group if `True`
     """
     if POSIX_MODE:
         stats = os.stat(src)
-        user_id = stats.st_uid if user else -1
-        group_id = stats.st_gid if group else -1
+        user_id = stats.st_uid if copy_user else -1
+        group_id = stats.st_gid if copy_group else -1
         os.chown(dst, user_id, group_id)
         os.chmod(dst, mode)
-    elif user:
+    elif copy_user:
         # There is no group handling in Windows
         _copy_win_ownership(src, dst)
         _apply_win_mode(dst, mode)
@@ -160,6 +160,8 @@ def _copy_win_ownership(src, dst):
     user_src = security_src.GetSecurityDescriptorOwner()
 
     security_dst = win32security.GetFileSecurity(dst, win32security.OWNER_SECURITY_INFORMATION)
+    # Second parameter indicates, if `False`, that the owner of the file is not provided by some
+    # default mechanism, but is explicitly set instead. This is obviously what we are doing here.
     security_dst.SetSecurityDescriptorOwner(user_src, False)
 
     win32security.SetFileSecurity(dst, win32security.OWNER_SECURITY_INFORMATION, security_dst)
