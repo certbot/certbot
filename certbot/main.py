@@ -976,7 +976,7 @@ def config_changes(config, unused_plugins):
     :rtype: None
 
     """
-    client.view_config_changes(config, num=config.num)
+    client.view_config_changes(config)
 
 def update_symlinks(config, unused_plugins):
     """Update the certificate file family symlinks

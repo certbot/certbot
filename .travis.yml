@@ -72,6 +72,10 @@ matrix:
       before_install:
       addons:
       <<: *not-on-master
+    - sudo: required
+      env: TOXENV=le_auto_xenial
+      services: docker
+      <<: *not-on-master
     - python: "2.7"
       env: TOXENV=apacheconftest-with-pebble
       sudo: required
@@ -203,10 +207,6 @@ matrix:
       dist: xenial
       env: ACME_SERVER=boulder-v2 TOXENV=integration
       sudo: required
-      services: docker
-      <<: *extended-test-suite
-    - sudo: required
-      env: TOXENV=le_auto_xenial
       services: docker
       <<: *extended-test-suite
     - sudo: required
