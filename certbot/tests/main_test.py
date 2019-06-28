@@ -759,7 +759,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
 
     @mock.patch('certbot.main.logger.warning')
     def test_config_changes_deprecation(self, mock_warning):
-        _, _, _, client = self._call(['config_changes'])
+        self._call(['config_changes'])
         self.assertTrue(mock_warning.called)
         msg = mock_warning.call_args[0][0]
         self.assertIn("config_changes subcommand has been deprecated", msg)
