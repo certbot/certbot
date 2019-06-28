@@ -418,8 +418,8 @@ VERB_HELP = [
     }),
     ("config_changes", {
         "short": "Show changes that Certbot has made to server configurations",
-        "opts": "Options for controlling which changes are displayed",
-        "usage": "\n\n  certbot config_changes --num NUM [options]\n\n"
+        "opts": "Options for viewing configuration changes",
+        "usage": "\n\n  certbot config_changes [options]\n\n"
     }),
     ("rollback", {
         "short": "Roll back server conf changes made during certificate installation",
@@ -428,7 +428,7 @@ VERB_HELP = [
     }),
     ("plugins", {
         "short": "List plugins that are installed and available on your system",
-        "opts": 'Options for for the "plugins" subcommand',
+        "opts": 'Options for the "plugins" subcommand',
         "usage": "\n\n  certbot plugins [options]\n\n"
     }),
     ("update_symlinks", {
@@ -1289,9 +1289,6 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
 
 
 def _create_subparsers(helpful):
-    helpful.add("config_changes", "--num", type=int, default=flag_default("num"),
-                help="How many past revisions you want to be displayed")
-
     from certbot.client import sample_user_agent # avoid import loops
     helpful.add(
         None, "--user-agent", default=flag_default("user_agent"),

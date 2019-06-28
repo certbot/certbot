@@ -78,8 +78,7 @@ class ParserTest(ApacheTest):
         with mock.patch("certbot_apache.parser.ApacheParser."
                         "update_runtime_variables"):
             self.parser = ApacheParser(
-                self.aug, self.config_path, self.vhost_path,
-                configurator=self.config)
+                self.config_path, self.vhost_path, configurator=self.config)
 
 
 def get_apache_configurator(  # pylint: disable=too-many-arguments, too-many-locals

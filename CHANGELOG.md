@@ -17,10 +17,11 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
   Apache configuration has been improved.
 * Certbot's config_changes subcommand has been deprecated and will be
   removed in a future release.
+* `certbot config_changes` no longer accepts a --num parameter.
 
 ### Fixed
 
-*
+* Replace some unnecessary platform-specific line separation.
 
 More details about these changes can be found on our GitHub repo.
 
