@@ -43,12 +43,6 @@ class BasicParserTest(util.ParserTest):
         self.parser.aug.match.side_effect = RuntimeError
         self.assertFalse(self.parser.check_aug_version())
 
-    def test_recovery_routine_reload(self):
-        mock_load = mock.Mock()
-        self.config.parser.aug.load = mock_load
-        self.config.recovery_routine()
-        self.assertEqual(mock_load.call_count, 1)
-
     def test_find_config_root_no_root(self):
         # pylint: disable=protected-access
         os.remove(self.parser.loc["root"])

@@ -82,6 +82,12 @@ class ConfiguratorReverterTest(util.ApacheTest):
             side_effect=errors.ReverterError)
         self.assertRaises(errors.PluginError, self.config.view_config_changes)
 
+    def test_recovery_routine_reload(self):
+        mock_load = mock.Mock()
+        self.config.parser.aug.load = mock_load
+        self.config.recovery_routine()
+        self.assertEqual(mock_load.call_count, 1)
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
