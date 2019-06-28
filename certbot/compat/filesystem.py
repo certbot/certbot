@@ -41,7 +41,7 @@ def chmod(file_path, mode):
 # This is because on Windows, it would require recalculating the existing DACL against
 # the new owner, since DACL are composed of ACLs that targets a specific user, not dynamically
 # the current owner of a file. This action would be necessary to keep consistency between
-# the POSIX mode applied to the file and the current user of this file.
+# the POSIX mode applied to the file and the current owner of this file.
 # Since copying and editing arbitrary DACL is very difficult, and since we actually know
 # the mode to apply at the time the owner of a file should change, it is easier to just
 # change the owner, then reapply the known mode, as copy_ownership_and_apply_mode() does.
