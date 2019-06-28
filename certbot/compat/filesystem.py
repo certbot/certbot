@@ -38,7 +38,7 @@ def chmod(file_path, mode):
 
 # One could ask why there is no copy_ownership() function, or even a reimplementation
 # of os.chown() that would modify the ownership of file without touching the mode itself.
-# This is because on Windows, it would require to recalculate the existing DACL against
+# This is because on Windows, it would require recalculating the existing DACL against
 # the new owner, since DACL are composed of ACLs that targets a specific user, not dynamically
 # the current owner of a file. This action would be necessary to keep consistency between
 # the POSIX mode applied to the file and the current user of this file.
