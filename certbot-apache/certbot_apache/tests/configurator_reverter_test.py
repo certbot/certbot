@@ -74,14 +74,6 @@ class ConfiguratorReverterTest(util.ApacheTest):
             side_effect=errors.ReverterError)
         self.assertRaises(errors.PluginError, self.config.rollback_checkpoints)
 
-    def test_view_config_changes(self):
-        self.config.view_config_changes()
-
-    def test_view_config_changes_error(self):
-        self.config.reverter.view_config_changes = mock.Mock(
-            side_effect=errors.ReverterError)
-        self.assertRaises(errors.PluginError, self.config.view_config_changes)
-
     def test_recovery_routine_reload(self):
         mock_load = mock.Mock()
         self.config.parser.aug.load = mock_load
