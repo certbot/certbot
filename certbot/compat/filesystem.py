@@ -21,12 +21,6 @@ else:
 
 from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
 
-if POSIX_MODE:
-    # Function os.makedirs will temporarily monkeypatch os.mkdir to replace it by filesystem.mkdir.
-    # However, filesystem.mkdir also invokes os.mkdir on Linux. To avoid a looped reference, we take
-    # now a reference of the original os.mkdir, to use it in filesystem.mkdir when appropriate.
-    _os_mkdir = os.mkdir
-
 
 def chmod(file_path, mode):
     # type: (str, int) -> None
@@ -60,11 +54,11 @@ def makedirs(file_path, mode=0o777, exists_ok=False):
     :param bool exists_ok: If set to ``True``, do not raise exception if leaf directory
                            already exists.
     """
-    # As we know that os.mkdir is called internally by os.makedirs, we will swap the function in
-    # os module for the time of makedirs execution.
     orig_mkdir_fn = os.mkdir
     try:
-        os.mkdir = mkdir  # type: ignore
+        # As we know that os.mkdir is called internally by os.makedirs, we will swap the function in
+        # os module for the time of makedirs execution on Windows.
+        os.mkdir = mkdir if not POSIX_MODE else os.mkdir  # type: ignore
         try:
             os.makedirs(file_path, mode)
         except (IOError, OSError) as err:
@@ -86,7 +80,7 @@ def mkdir(file_path, mode=0o777):
                      will be applied if ``None``
     """
     if POSIX_MODE:
-        return _os_mkdir(file_path, mode)
+        return os.mkdir(file_path, mode)
 
     attributes = win32security.SECURITY_ATTRIBUTES()
     security = attributes.SECURITY_DESCRIPTOR
@@ -100,7 +94,7 @@ def mkdir(file_path, mode=0o777):
         # Handle native windows error into python error to be consistent with the API
         # of os.mkdir in the situation of a directory already existing.
         if err.winerror == winerror.ERROR_ALREADY_EXISTS:
-            raise OSError(errno.EEXIST, err.strerror)
+            raise OSError(errno.EEXIST, err.strerror, file_path, err.winerror)
         raise err
 
     return None
