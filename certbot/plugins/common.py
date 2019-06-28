@@ -3,6 +3,7 @@ import logging
 import re
 import shutil
 import tempfile
+import warnings
 
 import OpenSSL
 import pkg_resources
@@ -197,10 +198,18 @@ class Installer(Plugin):
             the checkpoints directories.
 
         """
-        try:
-            self.reverter.view_config_changes()
-        except errors.ReverterError as err:
-            raise errors.PluginError(str(err))
+        warnings.warn(
+            "The view_config_changes method is no longer part of Certbot's"
+            " plugin interface, has been deprecated, and will be removed in a"
+            " future release.", DeprecationWarning, stacklevel=2)
+        with warnings.catch_warnings():
+            # Don't let the reverter code warn about this function. Calling
+            # this function in the first place is the real problem.
+            warnings.filterwarnings("ignore", ".*view_config_changes", DeprecationWarning)
+            try:
+                self.reverter.view_config_changes()
+            except errors.ReverterError as err:
+                raise errors.PluginError(str(err))
 
     @property
     def ssl_dhparams(self):

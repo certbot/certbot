@@ -18,6 +18,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * Certbot's config_changes subcommand has been deprecated and will be
   removed in a future release.
 * `certbot config_changes` no longer accepts a --num parameter.
+* The functions `certbot.plugins.common.Installer.view_config_changes` and
+  `certbot.reverter.Reverter.view_config_changes` have been deprecated and will
+  be removed in a future release.
 
 ### Fixed
 
