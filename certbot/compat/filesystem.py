@@ -55,6 +55,7 @@ def open(file_path, flags, mode=0o777):  # pylint: disable=redefined-builtin
         Python defaults will be applied if ``None``
     :returns: the file descriptor to the opened file
     :rtype: int
+    :raise: OSError(errno.EEXIST) if the file already exists and os.O_CREAT & os.O_EXCL are set.
     """
     if POSIX_MODE:
         # On Linux, invoke os.open directly.
