@@ -5,6 +5,7 @@ import json
 import tempfile
 import time
 import os
+import signal
 import subprocess
 import shutil
 import sys
@@ -46,6 +47,10 @@ class ACMEServer(object):
 
     def start(self):
         """Start the test stack"""
+        if hasattr(signal, 'SIGINT'):
+            # In case of CTRL+C, handle the tearDown by a proper exit.
+            signal.signal(signal.SIGINT, lambda sig, frame: sys.exit(0))
+
         if self._proxy:
             self._prepare_http_proxy()
         if self._acme_type == 'pebble':
@@ -58,7 +63,10 @@ class ACMEServer(object):
         print('=> Tear down the test infrastructure...')
         try:
             for process in self._processes:
-                process.terminate()
+                try:
+                    process.terminate()
+                except OSError:
+                    pass
             for process in self._processes:
                 process.wait()
 
@@ -72,7 +80,11 @@ class ACMEServer(object):
                                                 'alpine', 'rm', '-rf', '/workspace/boulder'])
                 process.wait()
         finally:
-            shutil.rmtree(self._workspace)
+            try:
+                def _onerror(*_args): pass
+                shutil.rmtree(self._workspace, onerror=_onerror)
+            except OSError:
+                pass
         if self._stdout != sys.stdout:
             self._stdout.close()
         print('=> Test infrastructure stopped and cleaned up.')
@@ -185,16 +197,13 @@ def main():
 
     acme_server = ACMEServer(server_type, [], http_proxy=False, stdout=True)
 
-    try:
-        with acme_server as acme_xdist:
-            print('--> Instance of {0} is running, directory URL is {0}'
-                  .format(acme_xdist['directory_url']))
-            print('--> Press CTRL+C to stop the ACME server.')
+    with acme_server as acme_xdist:
+        print('--> Instance of {0} is running, directory URL is {0}'
+              .format(acme_xdist['directory_url']))
+        print('--> Press CTRL+C to stop the ACME server.')
 
-            while True:
-                time.sleep(3600)
-    except KeyboardInterrupt:
-        pass
+        while True:
+            time.sleep(3600)
 
 
 if __name__ == '__main__':
