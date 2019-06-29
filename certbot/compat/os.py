@@ -51,22 +51,19 @@ def chmod(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
                        'Use certbot.compat.filesystem.chmod() instead.')
 
 
-# Very similarly to os.open, os.mkdir has the same effect on Windows, to create an unsecured
-# folder. Same mitigation is provided using security.take_ownership and security.chmod.
-# On top of that, we need to handle the fact that os.mkdir is called recursively by os.makedirs.
-# This is done by protecting the original os.mkdir to have the real logic, call it during the
-# recurrence and apply immediately the security model on every processed folder.
+# Very similarly to os.open, os.mkdir has the same effects on Windows and creates an unsecured
+# folder. So a similar mitigation than security.chmod is provided on this platform.
 def mkdir(*unused_args, **unused_kwargs):
     """Method os.mkdir() is forbidden"""
     raise RuntimeError('Usage of os.mkdir() is forbidden. '
                        'Use certbot.compat.filesystem.mkdir() instead.')
 
 
-# As said above, os.makedirs would call the original os.mkdir function recursively, creating the
-# same flaws for every actual folder created. This method is modified to ensure that our
-# modified os.mkdir is called, by monkey patching temporarily the mkdir method on the
-# original os module, executing the modified logic to correctly protect newly created folders,
-# then restoring original mkdir method in the os module.
+# As said above, os.makedirs would call the original os.mkdir function recursively on Windows,
+# creating the same flaws for every actual folder created. This method is modified to ensure
+# that our modified os.mkdir is called on Windows, by monkey patching temporarily the mkdir method
+# on the original os module, executing the modified logic to correctly protect newly created
+# folders, then restoring original mkdir method in the os module.
 def makedirs(*unused_args, **unused_kwargs):
     """Method os.makedirs() is forbidden"""
     raise RuntimeError('Usage of os.makedirs() is forbidden. '
