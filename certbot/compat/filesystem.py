@@ -43,29 +43,24 @@ def chmod(file_path, mode):
         _apply_win_mode(file_path, mode)
 
 
-def makedirs(file_path, mode=0o777, exists_ok=False):
-    # type: (str, int, bool) -> None
+def makedirs(file_path, mode=0o777):
+    # type: (str, int) -> None
     """
     Rewrite of original os.makedirs function, that will ensure on Windows that given mode
     is correctly applied.
     :param str file_path: The file path to open
     :param int mode: POSIX mode to apply on leaf directory when created, Python defaults
                      will be applied if ``None``
-    :param bool exists_ok: If set to ``True``, do not raise exception if leaf directory
-                           already exists.
     """
+    if POSIX_MODE:
+        return os.makedirs(file_path, mode)
+
     orig_mkdir_fn = os.mkdir
     try:
         # As we know that os.mkdir is called internally by os.makedirs, we will swap the function in
         # os module for the time of makedirs execution on Windows.
-        os.mkdir = mkdir if not POSIX_MODE else os.mkdir  # type: ignore
-        try:
-            os.makedirs(file_path, mode)
-        except (IOError, OSError) as err:
-            # In case of exists_ok is True, and exception was about the path to already exist,
-            # we ignore the exception.
-            if not exists_ok or err.errno != errno.EEXIST:
-                raise
+        os.mkdir = mkdir  # type: ignore
+        return os.makedirs(file_path, mode)
     finally:
         os.mkdir = orig_mkdir_fn
 

@@ -183,22 +183,6 @@ class WindowsMkdirTests(test_util.TempDirTestCase):
         self.assertFalse([dacl.GetAce(index) for index in range(0, dacl.GetAceCount())
                           if dacl.GetAce(index)[2] == everybody])
 
-    def test_makedirs_exists_ok(self):
-        path = os.path.join(self.tempdir, 'dir')
-        subpath = os.path.join(path, 'subpath')
-
-        filesystem.mkdir(path)
-        filesystem.mkdir(subpath)
-
-        filesystem.makedirs(subpath, exists_ok=True)
-        with self.assertRaises(OSError):
-            filesystem.makedirs(subpath)  # By default, exists_ok=False
-
-        with mock.patch('certbot.compat.filesystem.mkdir') as mock_mkdir:
-            mock_mkdir.side_effect = OSError(errno.EACCES)
-            with self.assertRaises(OSError):
-                filesystem.makedirs(subpath, exists_ok=True)
-
 
 class OsReplaceTest(test_util.TempDirTestCase):
     """Test to ensure consistent behavior of rename method"""
