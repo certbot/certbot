@@ -7,7 +7,6 @@ try:
     import win32api
     import win32security
     import ntsecuritycon
-    import msvcrt
     # pylint: enable=import-error
     POSIX_MODE = False
 except ImportError:
