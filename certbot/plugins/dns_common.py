@@ -333,4 +333,4 @@ def base_domain_name_guesses(domain):
     """
     domain = '_acme-challenge.' + domain
     fragments = domain.split('.')
-    return ['.'.join(fragments[i:]) for i in range(0, len(fragments)-1)]
+    return ['.'.join(fragments[i:]) for i in range(0, len(fragments))]
