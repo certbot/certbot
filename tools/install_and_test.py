@@ -48,7 +48,7 @@ def main(args):
         shutil.copy2("pytest.ini", temp_cwd)
         try:
             call_with_print(' '.join([
-                sys.executable, '-m', 'pytest', '--pyargs', pkg.replace('-', '_')]), cwd=temp_cwd)
+                sys.executable, '-m', 'pytest', '-s', '--pyargs', pkg.replace('-', '_')]), cwd=temp_cwd)
         finally:
             shutil.rmtree(temp_cwd)
 
