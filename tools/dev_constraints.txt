@@ -13,6 +13,7 @@ backports.shutil-get-terminal-size==1.0.0
 boto3==1.9.36
 botocore==1.12.36
 cloudflare==1.5.1
+codecov==2.0.15
 configparser==3.7.4
 coverage==4.4.2
 decorator==4.1.2
