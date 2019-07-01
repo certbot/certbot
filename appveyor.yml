@@ -28,7 +28,7 @@ install:
   - "python -m pip install --upgrade pip"
   # Ready to install tox and coverage
   # tools/pip_install.py is used to pin packages to a known working version.
-  - "tools\\pip_install.py tox codecov"
+  - "python tools\\pip_install.py tox codecov"
 
 build: off
 
