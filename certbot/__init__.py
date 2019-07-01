@@ -1,6 +1,8 @@
 """Certbot client."""
 import distutils
 import imp
+import importlib
+importlib.reload(imp)
 
 
 # version number like 1.2.3a0, must have at least 2 parts, like 1.2
