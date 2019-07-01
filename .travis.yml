@@ -255,7 +255,7 @@ sudo: false
 
 addons:
   apt:
-    packages:
+    packages:  # Keep in sync with letsencrypt-auto-source/pieces/bootstrappers/deb_common.sh and Boulder.
     - python-dev
     - gcc
     - libaugeas0
