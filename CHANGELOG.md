@@ -16,6 +16,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * The error message when Certbot's Apache plugin is unable to modify your
   Apache configuration has been improved.
 * `certbot config_changes` no longer accepts a --num parameter.
+* DNS plugins also checks _acme-challenge.(domain) for more specific DNS delegation.
+* DNS plugins no longer check the root-level domain, e.g. must be two-levels.
 
 ### Fixed
 

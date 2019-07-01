@@ -331,6 +331,6 @@ def base_domain_name_guesses(domain):
     :returns: The a list of less specific domain names.
     :rtype: list
     """
-
+    domain = '_acme-challenge.' + domain
     fragments = domain.split('.')
-    return ['.'.join(fragments[i:]) for i in range(0, len(fragments))]
+    return ['.'.join(fragments[i:]) for i in range(0, len(fragments)-1)]
