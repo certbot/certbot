@@ -5,6 +5,7 @@ This module is an implementation of the `ACME protocol`_.
 .. _`ACME protocol`: https://ietf-wg-acme.github.io/acme
 
 """
+import imp
 import sys
 import warnings
 
