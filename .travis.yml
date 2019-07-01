@@ -268,7 +268,10 @@ addons:
 
 # tools/pip_install.py is used to pin packages to a known working version
 # except in tests where the environment variable CERTBOT_NO_PIN is set.
-install: "tools/pip_install.py -U codecov tox"
+# virtualenv is listed here explicitly to make sure it is upgraded when
+# CERTBOT_NO_PIN is set to work around failures we've seen when using an older
+# version of virtualenv.
+install: "tools/pip_install.py -U codecov tox virtualenv"
 script: tox
 
 after_success: '[ "$TOXENV" == "py27-cover" ] && codecov -F linux'
