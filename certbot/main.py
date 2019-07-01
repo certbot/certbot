@@ -5,7 +5,6 @@ from __future__ import print_function
 import functools
 import logging.handlers
 import sys
-import warnings
 
 import configobj
 import josepy as jose
@@ -1342,7 +1341,6 @@ def main(cli_args=None):
     :raises errors.Error: error if plugin command is not supported
 
     """
-    warnings.warn("I'm deprecated!" DeprecationWarning)
     if not cli_args:
         cli_args = sys.argv[1:]
 
