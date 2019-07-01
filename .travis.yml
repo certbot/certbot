@@ -4,6 +4,10 @@ cache:
     directories:
         - $HOME/.cache/pip
 
+# Travis' Linux images still default to Ubuntu Trusty which has reached its
+# end-of-life.
+dist: xenial
+
 before_script:
   - 'if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then ulimit -n 1024 ; fi'
   # On Travis, the fastest parallelization for integration tests has proved to be 4.
@@ -61,7 +65,6 @@ matrix:
       services: docker
       <<: *not-on-master
     - python: "3.7"
-      dist: xenial
       env: TOXENV=py37
       sudo: required
       services: docker
