@@ -48,7 +48,7 @@ pkginfo==1.4.2
 pluggy==0.5.2
 prompt-toolkit==1.0.15
 ptyprocess==0.5.2
-py==1.4.34
+py==1.8.0
 pyasn1==0.1.9
 pyasn1-modules==0.0.10
 Pygments==2.2.0
