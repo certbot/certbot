@@ -26,7 +26,7 @@ futures==3.1.1
 google-api-python-client==1.5
 httplib2==0.10.3
 imagesize==0.7.1
-ipdb==0.10.2
+ipdb==0.12
 ipython==5.5.0
 ipython-genutils==0.2.0
 isort==4.2.5
