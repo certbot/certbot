@@ -1,8 +1,5 @@
 """Tests for certbot.compat.filesystem"""
 import unittest
-import errno
-
-import mock
 
 try:
     import win32api  # pylint: disable=import-error
