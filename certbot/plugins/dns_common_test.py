@@ -224,6 +224,18 @@ class DomainNameGuessTest(unittest.TestCase):
             dns_common.base_domain_name_guesses("foo.bar.baz.example.co.uk")
         )
 
+    def test_most_specific_domain(self):
+        self.assertTrue(
+            '_acme-challenge.foo.bar.baz.example.co.uk' in
+            dns_common.base_domain_name_guesses("foo.bar.baz.example.co.uk")
+        )
+
+#    def test_no_root_domain(self):
+#        self.assertFalse(
+#            'uk' in
+#            dns_common.base_domain_name_guesses("foo.bar.baz.example.co.uk")
+#        )
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

@@ -91,11 +91,16 @@ class LexiconClient(object):
             except HTTPError as e:
                 result = self._handle_http_error(e, domain_name)
 
+                # It's ok if the most specific does not already exist, skip to next
+                if (domain_name.startswith('_acme-challenge.')
+                    and ((e.response and e.response == 404)
+                         or str(e).startswith('404 Client Error: Not Found for url:'))):
+                    continue
+
                 if result:
                     raise result
             except Exception as e:  # pylint: disable=broad-except
                 result = self._handle_general_error(e, domain_name)
-
                 if result:
                     raise result
 
