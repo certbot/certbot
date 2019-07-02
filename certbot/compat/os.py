@@ -45,10 +45,21 @@ del ourselves, std_os, std_sys
 # Basically, it states that appropriate permissions will be set for the owner, nothing for the
 # group, appropriate permissions for the "Everyone" group, and all permissions to the
 # "Administrators" group + "System" user, as they can do everything anyway.
-def chmod(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
+def chmod(*unused_args, **unused_kwargs):
     """Method os.chmod() is forbidden"""
     raise RuntimeError('Usage of os.chmod() is forbidden. '
                        'Use certbot.compat.filesystem.chmod() instead.')
+
+
+# The os.open function on Windows has the same effect as a call to os.chown concerning the file
+# modes: these modes lack the correct control over the permissions given to the file. Instead,
+# filesystem.open invokes the Windows native API `CreateFile` to ensure that permissions are
+# atomically set in case of file creation, or invokes filesystem.chmod to properly set the
+# permissions for the other cases.
+def open(*unused_args, **unused_kwargs):
+    """Method os.open() is forbidden"""
+    raise RuntimeError('Usage of os.open() is forbidden. '
+                       'Use certbot.compat.filesystem.open() instead.')
 
 
 # Because of the blocking strategy on file handlers on Windows, rename does not behave as expected
