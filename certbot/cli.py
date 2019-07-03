@@ -1418,10 +1418,10 @@ def _plugins_parsing(helpful, plugins):
                 help="Authenticator plugin name.")
     helpful.add("plugins", "-i", "--installer", default=flag_default("installer"),
                 help="Installer plugin name (also used to find domains).")
-    helpful.add(["plugins", "certonly", "run", "install", "config_changes"],
+    helpful.add(["plugins", "certonly", "run", "install"],
                 "--apache", action="store_true", default=flag_default("apache"),
                 help="Obtain and install certificates using Apache")
-    helpful.add(["plugins", "certonly", "run", "install", "config_changes"],
+    helpful.add(["plugins", "certonly", "run", "install"],
                 "--nginx", action="store_true", default=flag_default("nginx"),
                 help="Obtain and install certificates using Nginx")
     helpful.add(["plugins", "certonly"], "--standalone", action="store_true",

@@ -6,6 +6,7 @@ import shutil
 import sys
 import time
 import traceback
+import warnings
 
 import six
 import zope.component
@@ -143,6 +144,12 @@ class Reverter(object):
         :raises .errors.ReverterError: If invalid directory structure.
 
         """
+        warnings.warn(
+            "The view_config_changes method has been deprecated and will be"
+            " removed in a future release. If you were using this method to"
+            " implement the view_config_changes method of IInstaller, know that"
+            " that method has been removed from the plugin interface and is no"
+            " longer used by Certbot.", DeprecationWarning, stacklevel=2)
         backups = os.listdir(self.config.backup_dir)
         backups.sort(reverse=True)
         if not backups:
