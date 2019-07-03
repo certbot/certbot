@@ -52,7 +52,7 @@ def chmod(*unused_args, **unused_kwargs):  # pylint: disable=function-redefined
 
 
 # Very similarly to os.open, os.mkdir has the same effects on Windows and creates an unsecured
-# folder. So a similar mitigation than security.chmod is provided on this platform.
+# folder. So a similar mitigation to security.chmod is provided on this platform.
 def mkdir(*unused_args, **unused_kwargs):
     """Method os.mkdir() is forbidden"""
     raise RuntimeError('Usage of os.mkdir() is forbidden. '
