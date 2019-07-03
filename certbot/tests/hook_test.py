@@ -42,7 +42,7 @@ class ValidateHookTest(util.TempDirTestCase):
     def test_not_executable(self):
         file_path = os.path.join(self.tempdir, "foo")
         # create a non-executable file
-        os.close(os.open(file_path, os.O_CREAT | os.O_WRONLY, 0o666))
+        os.close(filesystem.open(file_path, os.O_CREAT | os.O_WRONLY, 0o666))
         # prevent unnecessary modifications to PATH
         with mock.patch("certbot.hooks.plug_util.path_surgery"):
             self.assertRaises(errors.HookCommandNotFound,

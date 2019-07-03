@@ -114,7 +114,7 @@ class FileDisplay(object):
             message = _wrap_lines(message)
         self.outfile.write(
             "{line}{frame}{line}{msg}{line}{frame}{line}".format(
-                line=os.linesep, frame=SIDE_FRAME, msg=message))
+                line='\n', frame=SIDE_FRAME, msg=message))
         self.outfile.flush()
         if pause:
             if self._can_interact(force_interactive):
