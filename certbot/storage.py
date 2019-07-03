@@ -18,6 +18,7 @@ from certbot import crypto_util
 from certbot import error_handler
 from certbot import errors
 from certbot import util
+from certbot.compat import misc
 from certbot.compat import os
 from certbot.compat import filesystem
 from certbot.plugins import common as plugins_common
@@ -1104,9 +1105,10 @@ class RenewableCert(object):
             with util.safe_open(target["privkey"], "wb", chmod=BASE_PRIVKEY_MODE) as f:
                 logger.debug("Writing new private key to %s.", target["privkey"])
                 f.write(new_privkey)
-            # Preserve gid and (mode & 074) from previous privkey in this lineage.
+            # Preserve gid and (mode & UMASK_FOR_PRIVATE_KEY_PERMISSIONS)
+            # from previous privkey in this lineage.
             old_mode = (stat.S_IMODE(os.stat(old_privkey).st_mode) &
-                        (stat.S_IRGRP | stat.S_IWGRP | stat.S_IXGRP | stat.S_IROTH))
+                        misc.UMASK_FOR_PRIVATE_KEY_PERMISSIONS)
             mode = BASE_PRIVKEY_MODE | old_mode
             filesystem.copy_ownership_and_apply_mode(
                 old_privkey, target["privkey"], mode, copy_user=False, copy_group=True)
