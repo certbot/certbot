@@ -2,8 +2,6 @@
 import errno
 import unittest
 
-import mock
-
 try:
     # pylint: disable=import-error
     import win32api
