@@ -13,6 +13,7 @@ backports.shutil-get-terminal-size==1.0.0
 boto3==1.9.36
 botocore==1.12.36
 cloudflare==1.5.1
+codecov==2.0.15
 configparser==3.7.4
 coverage==4.4.2
 decorator==4.1.2
@@ -47,7 +48,7 @@ pkginfo==1.4.2
 pluggy==0.5.2
 prompt-toolkit==1.0.15
 ptyprocess==0.5.2
-py==1.4.34
+py==1.8.0
 pyasn1==0.1.9
 pyasn1-modules==0.0.10
 Pygments==2.2.0
@@ -81,6 +82,6 @@ twine==1.11.0
 typed-ast==1.1.0
 typing==3.6.4
 uritemplate==0.6
-virtualenv==15.1.0
+virtualenv==16.6.1
 wcwidth==0.1.7
 wrapt==1.11.1

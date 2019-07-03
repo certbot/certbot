@@ -288,7 +288,7 @@ class UniqueLineageNameTest(test_util.TempDirTestCase):
             f.close()
 
     def test_failure(self):
-        with mock.patch("certbot.util.os.open", side_effect=OSError(errno.EIO)):
+        with mock.patch("certbot.compat.filesystem.open", side_effect=OSError(errno.EIO)):
             self.assertRaises(OSError, self._call, "wow")
 
 

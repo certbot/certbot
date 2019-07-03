@@ -15,10 +15,16 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * Update the 'manage your account' help to be more generic.
 * The error message when Certbot's Apache plugin is unable to modify your
   Apache configuration has been improved.
+* Certbot's config_changes subcommand has been deprecated and will be
+  removed in a future release.
+* `certbot config_changes` no longer accepts a --num parameter.
+* The functions `certbot.plugins.common.Installer.view_config_changes` and
+  `certbot.reverter.Reverter.view_config_changes` have been deprecated and will
+  be removed in a future release.
 
 ### Fixed
 
-*
+* Replace some unnecessary platform-specific line separation.
 
 More details about these changes can be found on our GitHub repo.
 

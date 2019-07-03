@@ -428,6 +428,8 @@ Steps:
    rewriting commits makes changes harder to track between reviews.
 6. Did your tests pass on Travis? If they didn't, fix any errors.
 
+.. _ask for help:
+
 Asking for help
 ===============
 
@@ -453,6 +455,11 @@ Conduct violation, EFF may review discussion channels or direct messages.
 
 Updating certbot-auto and letsencrypt-auto
 ==========================================
+
+.. note:: We are currently only accepting changes to certbot-auto that fix
+  regressions on platforms where certbot-auto is the recommended installation
+  method at https://certbot.eff.org/instructions. If you are unsure if a change
+  you want to make qualifies, don't hesitate to `ask for help`_!
 
 Updating the scripts
 --------------------

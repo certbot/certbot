@@ -702,7 +702,7 @@ def rollback(default_installer, checkpoints, config, plugins):
         installer.restart()
 
 
-def view_config_changes(config, num=None):
+def view_config_changes(config):
     """View checkpoints and associated configuration changes.
 
     .. note:: This assumes that the installation is using a Reverter object.
@@ -713,7 +713,7 @@ def view_config_changes(config, num=None):
     """
     rev = reverter.Reverter(config)
     rev.recovery_routine()
-    rev.view_config_changes(num)
+    rev.view_config_changes()
 
 def _open_pem_file(cli_arg_path, pem_path):
     """Open a pem file.
