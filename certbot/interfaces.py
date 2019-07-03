@@ -355,13 +355,6 @@ class IInstaller(IPlugin):
 
         """
 
-    def view_config_changes():  # type: ignore
-        """Display all of the LE config changes.
-
-        :raises .PluginError: when config changes cannot be parsed
-
-        """
-
     def config_test():  # type: ignore
         """Make sure the configuration is valid.
 

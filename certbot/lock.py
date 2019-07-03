@@ -13,6 +13,7 @@ from acme.magic_typing import Optional  # pylint: disable=unused-import, no-name
 
 from certbot import errors
 from certbot.compat import os
+from certbot.compat import filesystem
 
 logger = logging.getLogger(__name__)
 
@@ -131,7 +132,7 @@ class _UnixLockMechanism(_BaseLockMechanism):
         """Acquire the lock."""
         while self._fd is None:
             # Open the file
-            fd = os.open(self._path, os.O_CREAT | os.O_WRONLY, 0o600)
+            fd = filesystem.open(self._path, os.O_CREAT | os.O_WRONLY, 0o600)
             try:
                 self._try_lock(fd)
                 if self._lock_success(fd):
@@ -223,11 +224,15 @@ class _WindowsLockMechanism(_BaseLockMechanism):
         """Acquire the lock"""
         open_mode = os.O_RDWR | os.O_CREAT | os.O_TRUNC
 
-        fd = os.open(self._path, open_mode, 0o600)
+        fd = None
         try:
+            # Under Windows, filesystem.open will raise directly an EACCES error
+            # if the lock file is already locked.
+            fd = filesystem.open(self._path, open_mode, 0o600)
             msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
         except (IOError, OSError) as err:
-            os.close(fd)
+            if fd:
+                os.close(fd)
             # Anything except EACCES is unexpected. Raise directly the error in that case.
             if err.errno != errno.EACCES:
                 raise

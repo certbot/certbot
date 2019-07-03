@@ -73,7 +73,7 @@ class PluginStorageTest(test_util.ConfigTestCase):
     def test_save_errors_unable_to_write_file(self):
         mock_open = mock.mock_open()
         mock_open.side_effect = IOError
-        with mock.patch("certbot.compat.os.open", mock_open):
+        with mock.patch("certbot.compat.filesystem.open", mock_open):
             with mock.patch("certbot.plugins.storage.logger.error") as mock_log:
                 self.plugin.storage._data = {"valid": "data"}  # pylint: disable=protected-access
                 self.plugin.storage._initialized = True  # pylint: disable=protected-access

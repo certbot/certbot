@@ -9,8 +9,9 @@ try:
     # pylint: disable=import-error
     import ntsecuritycon
     import win32security
-    import win32file
+    import win32con
     import win32api
+    import win32file
     import pywintypes
     import winerror
     # pylint: enable=import-error
@@ -41,6 +42,68 @@ def chmod(file_path, mode):
         os.chmod(file_path, mode)
     else:
         _apply_win_mode(file_path, mode)
+
+
+def open(file_path, flags, mode=0o777):  # pylint: disable=redefined-builtin
+    # type: (str, int, int) -> int
+    """
+    Wrapper of original os.open function, that will ensure on Windows that given mode
+    is correctly applied.
+    :param str file_path: The file path to open
+    :param int flags: Flags to apply on file while opened
+    :param int mode: POSIX mode to apply on file when opened,
+        Python defaults will be applied if ``None``
+    :returns: the file descriptor to the opened file
+    :rtype: int
+    :raise: OSError(errno.EEXIST) if the file already exists and os.O_CREAT & os.O_EXCL are set,
+            OSError(errno.EACCES) on Windows if the file already exists and is a directory, and
+                os.O_CREAT is set.
+    """
+    if POSIX_MODE:
+        # On Linux, invoke os.open directly.
+        return os.open(file_path, flags, mode)
+
+    # Windows: handle creation of the file atomically with proper permissions.
+    if flags & os.O_CREAT:
+        # If os.O_EXCL is set, we will use the "CREATE_NEW", that will raise an exception if
+        # file exists, matching the API contract of this bit flag. Otherwise, we use
+        # "CREATE_ALWAYS" that will always create the file whether it exists or not.
+        disposition = win32con.CREATE_NEW if flags & os.O_EXCL else win32con.CREATE_ALWAYS
+
+        attributes = win32security.SECURITY_ATTRIBUTES()
+        security = attributes.SECURITY_DESCRIPTOR
+        user = _get_current_user()
+        dacl = _generate_dacl(user, mode)
+        # We set first parameter to 1 (`True`) to say that this security descriptor contains
+        # a DACL. Otherwise second and third parameters are ignored.
+        # We set third parameter to 0 (`False`) to say that this security descriptor is
+        # NOT constructed from a default mechanism, but is explicitly set by the user.
+        # See https://docs.microsoft.com/en-us/windows/desktop/api/securitybaseapi/nf-securitybaseapi-setsecuritydescriptordacl  # pylint: disable=line-too-long
+        security.SetSecurityDescriptorDacl(1, dacl, 0)
+
+        try:
+            handle = win32file.CreateFile(file_path, win32file.GENERIC_READ,
+                                          win32file.FILE_SHARE_READ & win32file.FILE_SHARE_WRITE,
+                                          attributes, disposition, 0, None)
+            handle.Close()
+        except pywintypes.error as err:
+            # Handle native windows errors into python errors to be consistent with the API
+            # of os.open in the situation of a file already existing or locked.
+            if err.winerror == winerror.ERROR_FILE_EXISTS:
+                raise OSError(errno.EEXIST, err.strerror)
+            if err.winerror == winerror.ERROR_SHARING_VIOLATION:
+                raise OSError(errno.EACCES, err.strerror)
+            raise err
+
+        # At this point, the file that did not exist has been created with proper permissions,
+        # so os.O_CREAT and os.O_EXCL are not needed anymore. We remove them from the flags to
+        # avoid a FileExists exception before calling os.open.
+        return os.open(file_path, flags ^ os.O_CREAT ^ os.O_EXCL)
+
+    # Windows: general case, we call os.open, let exceptions be thrown, then chmod if all is fine.
+    handle = os.open(file_path, flags)
+    chmod(file_path, mode)
+    return handle
 
 
 def makedirs(file_path, mode=0o777):
