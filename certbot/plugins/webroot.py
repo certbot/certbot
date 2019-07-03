@@ -176,7 +176,7 @@ to serve all files under specified web root ({0})."""
                     try:
                         # This is coupled with the "umask" call above because os.mkdir's
                         # "mode" parameter may not always work under Linux:
-                        # https://docs.python.org/3/library/os.html#security.mkdir
+                        # https://docs.python.org/3/library/os.html#os.mkdir
                         filesystem.mkdir(prefix, 0o0755)
                         self._created_dirs.append(prefix)
                         # Set owner as parent directory if possible
