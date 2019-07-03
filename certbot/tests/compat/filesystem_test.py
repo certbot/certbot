@@ -2,6 +2,8 @@
 import errno
 import unittest
 
+import mock
+
 try:
     # pylint: disable=import-error
     import win32api
@@ -254,6 +256,20 @@ class WindowsMkdirTests(test_util.TempDirTestCase):
         dacl = _get_security_dacl(subpath).GetSecurityDescriptorDacl()
         self.assertFalse([dacl.GetAce(index) for index in range(0, dacl.GetAceCount())
                           if dacl.GetAce(index)[2] == everybody])
+
+    def test_makedirs_switch_os_mkdir(self):
+        path = os.path.join(self.tempdir, 'dir')
+        import os as std_os  # pylint: disable=os-module-forbidden
+        original_mkdir = std_os.mkdir
+
+        filesystem.makedirs(path)
+        self.assertEqual(original_mkdir, std_os.mkdir)
+
+        try:
+            filesystem.makedirs(path)  # Will fail because path already exists
+        except OSError:
+            pass
+        self.assertEqual(original_mkdir, std_os.mkdir)
 
 
 class OsReplaceTest(test_util.TempDirTestCase):
