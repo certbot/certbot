@@ -68,8 +68,7 @@ class Reverter(object):
         self.config = config
 
         util.make_or_verify_dir(
-            config.backup_dir, constants.CONFIG_DIRS_MODE, misc.os_geteuid(),
-            self.config.strict_permissions)
+            config.backup_dir, constants.CONFIG_DIRS_MODE, self.config.strict_permissions)
 
     def revert_temporary_config(self):
         """Reload users original configuration files after a temporary save.
@@ -225,8 +224,7 @@ class Reverter(object):
 
         """
         util.make_or_verify_dir(
-            cp_dir, constants.CONFIG_DIRS_MODE, misc.os_geteuid(),
-            self.config.strict_permissions)
+            cp_dir, constants.CONFIG_DIRS_MODE, self.config.strict_permissions)
 
         op_fd, existing_filepaths = self._read_and_append(
             os.path.join(cp_dir, "FILEPATHS"))
@@ -445,8 +443,7 @@ class Reverter(object):
             cp_dir = self.config.in_progress_dir
 
         util.make_or_verify_dir(
-            cp_dir, constants.CONFIG_DIRS_MODE, misc.os_geteuid(),
-            self.config.strict_permissions)
+            cp_dir, constants.CONFIG_DIRS_MODE, self.config.strict_permissions)
 
         return cp_dir
 

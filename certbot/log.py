@@ -134,8 +134,7 @@ def setup_log_file_handler(config, logfile, fmt):
     """
     # TODO: logs might contain sensitive data such as contents of the
     # private key! #525
-    util.set_up_core_dir(
-        config.logs_dir, 0o700, misc.os_geteuid(), config.strict_permissions)
+    util.set_up_core_dir(config.logs_dir, 0o700, config.strict_permissions)
     log_file_path = os.path.join(config.logs_dir, logfile)
     try:
         handler = logging.handlers.RotatingFileHandler(

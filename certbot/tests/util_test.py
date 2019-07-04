@@ -120,15 +120,14 @@ class SetUpCoreDirTest(test_util.TempDirTestCase):
     @mock.patch('certbot.util.lock_dir_until_exit')
     def test_success(self, mock_lock):
         new_dir = os.path.join(self.tempdir, 'new')
-        self._call(new_dir, 0o700, misc.os_geteuid(), False)
+        self._call(new_dir, 0o700, False)
         self.assertTrue(os.path.exists(new_dir))
         self.assertEqual(mock_lock.call_count, 1)
 
     @mock.patch('certbot.util.make_or_verify_dir')
     def test_failure(self, mock_make_or_verify):
         mock_make_or_verify.side_effect = OSError
-        self.assertRaises(errors.Error, self._call,
-                          self.tempdir, 0o700, misc.os_geteuid(), False)
+        self.assertRaises(errors.Error, self._call, self.tempdir, 0o700, False)
 
 
 class MakeOrVerifyDirTest(test_util.TempDirTestCase):
@@ -145,11 +144,9 @@ class MakeOrVerifyDirTest(test_util.TempDirTestCase):
         self.path = os.path.join(self.tempdir, "foo")
         filesystem.mkdir(self.path, 0o600)
 
-        self.uid = misc.os_geteuid()
-
     def _call(self, directory, mode):
         from certbot.util import make_or_verify_dir
-        return make_or_verify_dir(directory, mode, self.uid, strict=True)
+        return make_or_verify_dir(directory, mode, strict=True)
 
     def test_creates_dir_when_missing(self):
         path = os.path.join(self.tempdir, "bar")
@@ -178,15 +175,8 @@ class CheckPermissionsTest(test_util.TempDirTestCase):
     as this testing script would have to be run as root.
 
     """
-
-    def setUp(self):
-        super(CheckPermissionsTest, self).setUp()
-
-        self.uid = misc.os_geteuid()
-
     def _call(self, mode):
-        from certbot.util import check_permissions
-        return check_permissions(self.tempdir, mode, self.uid)
+        return filesystem.check_permissions(self.tempdir, mode)
 
     def test_ok_mode(self):
         filesystem.chmod(self.tempdir, 0o600)

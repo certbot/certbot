@@ -42,22 +42,6 @@ def raise_for_non_administrative_windows_rights():
         raise errors.Error('Error, certbot must be run on a shell with administrative rights.')
 
 
-def os_geteuid():
-    """
-    Get current user uid
-
-    :returns: The current user uid.
-    :rtype: int
-
-    """
-    try:
-        # Linux specific
-        return os.geteuid()
-    except AttributeError:
-        # Windows specific
-        return 0
-
-
 def readline_with_timeout(timeout, prompt):
     # type: (float, str) -> str
     """
