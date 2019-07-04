@@ -8,6 +8,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 * Turn off session tickets for nginx plugin by default
 * Added missing error types from RFC8555 to acme
+* Add support for SafeDNS DNS auth via Lexicon library
 
 ### Changed
 
@@ -21,6 +22,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * The functions `certbot.plugins.common.Installer.view_config_changes` and
   `certbot.reverter.Reverter.view_config_changes` have been deprecated and will
   be removed in a future release.
+* Update `dns-lexicon` required version to 3.2.9 (providing SafeDNS support)
 
 ### Fixed
 
