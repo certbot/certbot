@@ -18,7 +18,8 @@ from certbot import achallenges  # pylint: disable=unused-import
 from certbot import cli
 from certbot import errors
 from certbot import interfaces
-from certbot.compat import os, filesystem
+from certbot.compat import os
+from certbot.compat import filesystem
 from certbot.display import ops
 from certbot.display import util as display_util
 from certbot.plugins import common
@@ -172,12 +173,12 @@ to serve all files under specified web root ({0})."""
                 # as it does not correspond to a folder path ('/' or 'C:')
                 for prefix in sorted(util.get_prefixes(self.full_roots[name])[:-1], key=len):
                     try:
-                        os.mkdir(prefix)
-                        self._created_dirs.append(prefix)
                         # Set owner as parent directory if possible, apply mode for Linux/Windows.
                         # For Linux, this is coupled with the "umask" call above because
                         # os.mkdir's "mode" parameter may not always work:
                         # https://docs.python.org/3/library/os.html#os.mkdir
+                        filesystem.mkdir(prefix, 0o755)
+                        self._created_dirs.append(prefix)
                         try:
                             filesystem.copy_ownership_and_apply_mode(
                                 path, prefix, 0o755, copy_user=True, copy_group=True)

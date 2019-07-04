@@ -169,8 +169,7 @@ class ApacheHttp01(common.TLSSNI01):
 
     def _set_up_challenges(self):
         if not os.path.isdir(self.challenge_dir):
-            os.makedirs(self.challenge_dir)
-            filesystem.chmod(self.challenge_dir, 0o755)
+            filesystem.makedirs(self.challenge_dir, 0o755)
 
         responses = []
         for achall in self.achalls:

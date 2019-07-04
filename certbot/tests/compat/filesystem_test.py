@@ -229,6 +229,47 @@ class WindowsOpenTest(TempDirTestCase):
             raise err
 
 
+@unittest.skipIf(POSIX_MODE, reason='Test specific to Windows security')
+class WindowsMkdirTests(test_util.TempDirTestCase):
+    """Unit tests for Windows mkdir + makedirs functions in filesystem module"""
+    def test_mkdir_correct_permissions(self):
+        path = os.path.join(self.tempdir, 'dir')
+
+        filesystem.mkdir(path, 0o700)
+
+        everybody = win32security.ConvertStringSidToSid(EVERYBODY_SID)
+
+        dacl = _get_security_dacl(path).GetSecurityDescriptorDacl()
+        self.assertFalse([dacl.GetAce(index) for index in range(0, dacl.GetAceCount())
+                          if dacl.GetAce(index)[2] == everybody])
+
+    def test_makedirs_correct_permissions(self):
+        path = os.path.join(self.tempdir, 'dir')
+        subpath = os.path.join(path, 'subpath')
+
+        filesystem.makedirs(subpath, 0o700)
+
+        everybody = win32security.ConvertStringSidToSid(EVERYBODY_SID)
+
+        dacl = _get_security_dacl(subpath).GetSecurityDescriptorDacl()
+        self.assertFalse([dacl.GetAce(index) for index in range(0, dacl.GetAceCount())
+                          if dacl.GetAce(index)[2] == everybody])
+
+    def test_makedirs_switch_os_mkdir(self):
+        path = os.path.join(self.tempdir, 'dir')
+        import os as std_os  # pylint: disable=os-module-forbidden
+        original_mkdir = std_os.mkdir
+
+        filesystem.makedirs(path)
+        self.assertEqual(original_mkdir, std_os.mkdir)
+
+        try:
+            filesystem.makedirs(path)  # Will fail because path already exists
+        except OSError:
+            pass
+        self.assertEqual(original_mkdir, std_os.mkdir)
+
+
 class OsReplaceTest(test_util.TempDirTestCase):
     """Test to ensure consistent behavior of rename method"""
 
