@@ -77,6 +77,54 @@ def copy_ownership_and_apply_mode(src, dst, mode, copy_user, copy_group):
     chmod(dst, mode)
 
 
+def check_mode(file_path, mode):
+    # type: (str, int) -> bool
+    """
+    Check if the given mode matches the permissions of the given file.
+    On Linux, will make a direct comparison, on Windows, mode will be compared against
+    the security model.
+    :param str file_path: Path of the file
+    :param int mode: POSIX mode to test
+    :rtype: bool
+    :return: True if the POSIX mode matches the file permissions
+    """
+    if POSIX_MODE:
+        return stat.S_IMODE(os.stat(file_path).st_mode) == mode
+
+    return _check_win_mode(file_path, mode)
+
+
+def check_owner(file_path):
+    # type: (str) -> bool
+    """
+    Check if given file is owner by current user.
+    :param str file_path: File path to check
+    :rtype: bool
+    :return: True if given file is owned by current user, False otherwise.
+    """
+    if POSIX_MODE:
+        return os.stat(file_path).st_uid == os.getuid()
+
+    # Get owner sid of the file
+    security = win32security.GetFileSecurity(file_path, win32security.OWNER_SECURITY_INFORMATION)
+    user = security.GetSecurityDescriptorOwner()
+
+    # Compare sids
+    return _get_current_user() == user
+
+
+def check_permissions(file_path, mode):
+    # type: (str, int) -> bool
+    """
+    Check if given file has the given mode and is owned by current user.
+    :param str file_path: File path to check
+    :param int mode: POSIX mode to check
+    :rtype: bool
+    :return: True if file has correct mode and owner, False otherwise.
+    """
+    return check_owner(file_path) and check_mode(file_path, mode)
+
+
 def open(file_path, flags, mode=0o777):  # pylint: disable=redefined-builtin
     # type: (str, int, int) -> int
     """
@@ -213,16 +261,7 @@ def _apply_win_mode(file_path, mode):
     file given its path. If the given path is a symbolic link, it will resolved to apply the
     mode on the targeted file.
     """
-    original_path = file_path
-    inspected_paths = []  # type: List[str]
-    while os.path.islink(file_path):
-        link_path = file_path
-        file_path = os.readlink(file_path)
-        if not os.path.isabs(file_path):
-            file_path = os.path.join(os.path.dirname(link_path), file_path)
-        if file_path in inspected_paths:
-            raise RuntimeError('Error, link {0} is a loop!'.format(original_path))
-        inspected_paths.append(file_path)
+    file_path = _resolve_symlinks(file_path)
     # Get owner sid of the file
     security = win32security.GetFileSecurity(file_path, win32security.OWNER_SECURITY_INFORMATION)
     user = security.GetSecurityDescriptorOwner()
@@ -233,6 +272,25 @@ def _apply_win_mode(file_path, mode):
     # Apply the new DACL
     security.SetSecurityDescriptorDacl(1, dacl, 0)
     win32security.SetFileSecurity(file_path, win32security.DACL_SECURITY_INFORMATION, security)
+
+
+def _resolve_symlinks(file_path):
+    """
+    Find the real path for the given path. This method resolves symlinks, including
+    recursive symlinks, and is protected against symlinks that creates an infinite loop.
+    """
+    original_path = file_path
+    inspected_paths = []  # type: List[str]
+    while os.path.islink(file_path):
+        link_path = file_path
+        file_path = os.readlink(file_path)
+        if not os.path.isabs(file_path):
+            file_path = os.path.join(os.path.dirname(link_path), file_path)
+        if file_path in inspected_paths:
+            raise RuntimeError('Error, link {0} is a loop!'.format(original_path))
+        inspected_paths.append(file_path)
+
+    return file_path
 
 
 def _generate_dacl(user_sid, mode):
@@ -331,6 +389,28 @@ def _generate_windows_flags(rights_desc):
         flag = flag | ntsecuritycon.FILE_GENERIC_EXECUTE
 
     return flag
+
+
+def _check_win_mode(file_path, mode):
+    # Resolve symbolic links
+    file_path = _resolve_symlinks(file_path)
+    # Get current dacl file
+    security = win32security.GetFileSecurity(file_path, win32security.OWNER_SECURITY_INFORMATION
+                                             | win32security.DACL_SECURITY_INFORMATION)
+    dacl = security.GetSecurityDescriptorDacl()
+
+    # Get current file owner sid
+    user = security.GetSecurityDescriptorOwner()
+
+    if not dacl:
+        # No DACL means full control to everyone
+        # This is not a deterministic permissions set.
+        return False
+
+    # Calculate the target dacl
+    ref_dacl = _generate_dacl(user, mode)
+
+    return _compare_dacls(dacl, ref_dacl)
 
 
 def _compare_dacls(dacl1, dacl2):
