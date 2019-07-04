@@ -157,6 +157,7 @@ Authors
 * [Martin Brugger](https://github.com/mbrugger)
 * [Mathieu Leduc-Hamel](https://github.com/mlhamel)
 * [Matt Bostock](https://github.com/mattbostock)
+* [Matt Calvert](https://github.com/miff2000)
 * [Matthew Ames](https://github.com/SuperMatt)
 * [Michael Schumacher](https://github.com/schumaml)
 * [Michael Strache](https://github.com/Jarodiv)
