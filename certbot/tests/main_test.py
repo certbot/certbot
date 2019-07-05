@@ -31,7 +31,6 @@ from certbot import interfaces  # pylint: disable=unused-import
 from certbot import main
 from certbot import updater
 from certbot import util
-from certbot.compat import misc
 from certbot.compat import os
 from certbot.compat import filesystem
 from certbot.plugins import disco

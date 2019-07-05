@@ -20,7 +20,6 @@ from certbot import constants
 from certbot import errors
 from certbot import interfaces
 from certbot import util
-from certbot.compat import misc
 from certbot.compat import os
 
 logger = logging.getLogger(__name__)

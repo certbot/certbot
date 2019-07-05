@@ -13,13 +13,11 @@ import six
 import certbot
 import certbot.tests.util as test_util
 from certbot import errors
-from certbot.compat import misc
 from certbot.compat import os
 from certbot.compat import filesystem
 from certbot.storage import ALL_FOUR
 
 CERT = test_util.load_cert('cert_512.pem')
-
 
 
 def unlink_all(rc_object):

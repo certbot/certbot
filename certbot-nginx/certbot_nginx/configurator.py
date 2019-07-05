@@ -20,7 +20,6 @@ from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
 from certbot import util
-from certbot.compat import misc
 from certbot.compat import os
 from certbot.plugins import common
 

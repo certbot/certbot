@@ -26,7 +26,6 @@ from acme import messages
 from certbot import constants
 from certbot import errors
 from certbot import util
-from certbot.compat import misc
 from certbot.compat import os
 
 # Logging format

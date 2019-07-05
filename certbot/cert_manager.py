@@ -15,7 +15,6 @@ from certbot import interfaces
 from certbot import ocsp
 from certbot import storage
 from certbot import util
-from certbot.compat import misc
 from certbot.compat import os
 from certbot.display import util as display_util
 
