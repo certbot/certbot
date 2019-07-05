@@ -239,9 +239,12 @@ class TempHandler(logging.StreamHandler):
 
     """
     def __init__(self):
-        stream = tempfile.NamedTemporaryFile('w', delete=False)
+        fd, path = tempfile.mkstemp()  # To get a proper tempfile path
+        os.close(fd)
+        os.remove(path)
+        stream = util.safe_open(path, mode='w', chmod=0o600)
         super(TempHandler, self).__init__(stream)
-        self.path = stream.name
+        self.path = path
         self._delete = True
 
     def emit(self, record):
