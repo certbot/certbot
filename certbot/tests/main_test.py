@@ -809,9 +809,9 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         ifaces = []  # type: List[interfaces.IPlugin]
         plugins = mock_disco.PluginsRegistry.find_all()
 
-        def throw_error(directory, mode, uid, strict):
+        def throw_error(directory, mode, strict):
             """Raises error.Error."""
-            _, _, _, _ = directory, mode, uid, strict
+            _, _, _ = directory, mode, strict
             raise errors.Error()
 
         stdout = six.StringIO()

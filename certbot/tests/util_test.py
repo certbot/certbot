@@ -189,8 +189,8 @@ class UniqueFileTest(test_util.TempDirTestCase):
     def test_right_mode(self):
         fd1, name1 = self._call(0o700)
         fd2, name2 = self._call(0o600)
-        self.assertTrue(filesystem.check_mode(0o700, name1))
-        self.assertTrue(filesystem.check_mode(0o600, name2))
+        self.assertTrue(filesystem.check_mode(name1, 0o700))
+        self.assertTrue(filesystem.check_mode(name2, 0o600))
         fd1.close()
         fd2.close()
 
