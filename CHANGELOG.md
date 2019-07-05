@@ -11,6 +11,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+* Template support `--dns-rfc2136-credentials <(/usr/bin/envsubst < /usr/local/share/rfc2136.ini.template)`
 * Support for Ubuntu 14.04 Trusty has been removed.
 * Update the 'manage your account' help to be more generic.
 * The error message when Certbot's Apache plugin is unable to modify your

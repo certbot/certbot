@@ -303,8 +303,8 @@ def validate_file(filename):
     if not os.path.exists(filename):
         raise errors.PluginError('File not found: {0}'.format(filename))
 
-    if not os.path.isfile(filename):
-        raise errors.PluginError('Path is not a file: {0}'.format(filename))
+    if os.path.isdir(filename):
+        raise errors.PluginError('Path is a directory: {0}'.format(filename))
 
 
 def validate_file_permissions(filename):
