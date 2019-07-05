@@ -160,6 +160,7 @@ def open(file_path, flags, mode=0o777):  # pylint: disable=redefined-builtin
         # We set third parameter to 0 (`False`) to say that this security descriptor is
         # NOT constructed from a default mechanism, but is explicitly set by the user.
         # See https://docs.microsoft.com/en-us/windows/desktop/api/securitybaseapi/nf-securitybaseapi-setsecuritydescriptordacl  # pylint: disable=line-too-long
+        security.SetSecurityDescriptorOwner(user, False)
         security.SetSecurityDescriptorDacl(1, dacl, 0)
 
         try:
