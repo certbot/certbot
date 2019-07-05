@@ -226,6 +226,7 @@ def mkdir(file_path, mode=0o777):
     security = attributes.SECURITY_DESCRIPTOR
     user = _get_current_user()
     dacl = _generate_dacl(user, mode)
+    security.SetSecurityDescriptorOwner(user, False)
     security.SetSecurityDescriptorDacl(1, dacl, 0)
 
     try:
