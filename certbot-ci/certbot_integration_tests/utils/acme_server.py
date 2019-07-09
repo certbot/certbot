@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 """Module to setup an ACME CA server environment able to run multiple tests in parallel"""
 from __future__ import print_function
+import errno
 import json
 import tempfile
 import time
 import os
-import signal
 import subprocess
 import shutil
 import sys
@@ -47,16 +47,16 @@ class ACMEServer(object):
 
     def start(self):
         """Start the test stack"""
-        if hasattr(signal, 'SIGINT'):
-            # In case of CTRL+C, handle the tearDown by a proper exit.
-            signal.signal(signal.SIGINT, lambda sig, frame: sys.exit(0))
-
-        if self._proxy:
-            self._prepare_http_proxy()
-        if self._acme_type == 'pebble':
-            self._prepare_pebble_server()
-        if self._acme_type == 'boulder':
-            self._prepare_boulder_server()
+        try:
+            if self._proxy:
+                self._prepare_http_proxy()
+            if self._acme_type == 'pebble':
+                self._prepare_pebble_server()
+            if self._acme_type == 'boulder':
+                self._prepare_boulder_server()
+        except BaseException as e:
+            self.stop()
+            raise e
 
     def stop(self):
         """Stop the test stack, and clean its resources"""
@@ -65,8 +65,11 @@ class ACMEServer(object):
             for process in self._processes:
                 try:
                     process.terminate()
-                except OSError:
-                    pass
+                except OSError as e:
+                    # Process may be not started yet, so no PID and terminate fails.
+                    # Then the process never started, and the situation is acceptable.
+                    if e.errno != errno.ESRCH:
+                        raise
             for process in self._processes:
                 process.wait()
 
@@ -80,11 +83,8 @@ class ACMEServer(object):
                                                 'alpine', 'rm', '-rf', '/workspace/boulder'])
                 process.wait()
         finally:
-            try:
-                def _onerror(*_args): pass
-                shutil.rmtree(self._workspace, onerror=_onerror)
-            except OSError:
-                pass
+            def _onerror(*_args): pass
+            shutil.rmtree(self._workspace, onerror=_onerror)
         if self._stdout != sys.stdout:
             self._stdout.close()
         print('=> Test infrastructure stopped and cleaned up.')
@@ -197,13 +197,16 @@ def main():
 
     acme_server = ACMEServer(server_type, [], http_proxy=False, stdout=True)
 
-    with acme_server as acme_xdist:
-        print('--> Instance of {0} is running, directory URL is {0}'
-              .format(acme_xdist['directory_url']))
-        print('--> Press CTRL+C to stop the ACME server.')
+    try:
+        with acme_server as acme_xdist:
+            print('--> Instance of {0} is running, directory URL is {0}'
+                  .format(acme_xdist['directory_url']))
+            print('--> Press CTRL+C to stop the ACME server.')
 
-        while True:
-            time.sleep(3600)
+            while True:
+                time.sleep(3600)
+    except KeyboardInterrupt:
+        pass
 
 
 if __name__ == '__main__':
