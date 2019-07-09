@@ -25,8 +25,8 @@ if POSIX_MODE:
     # for group and read permissions for everybody.
     MASK_FOR_PRIVATE_KEY_PERMISSIONS = stat.S_IRGRP | stat.S_IWGRP | stat.S_IXGRP | stat.S_IROTH
 else:
-    # On Windows, the mode returned by os.stat is not reliable (all bits are always set.
-    # So we do not keep any permission from the previous private key.
+    # On Windows, the mode returned by os.stat is not reliable,
+    # so we do not keep any permission from the previous private key.
     MASK_FOR_PRIVATE_KEY_PERMISSIONS = 0
 
 
