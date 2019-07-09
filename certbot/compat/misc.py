@@ -18,16 +18,16 @@ from certbot import errors
 from certbot.compat import os
 
 
-# UMASK_FOR_PRIVATE_KEY_PERMISSIONS defines what are the permissions flags to keep
+# MASK_FOR_PRIVATE_KEY_PERMISSIONS defines what are the permissions flags to keep
 # when transferring the permissions from an old private key to a new one.
 if POSIX_MODE:
     # On Linux, we keep read/write/execute permissions
     # for group and read permissions for everybody.
-    UMASK_FOR_PRIVATE_KEY_PERMISSIONS = stat.S_IRGRP | stat.S_IWGRP | stat.S_IXGRP | stat.S_IROTH
+    MASK_FOR_PRIVATE_KEY_PERMISSIONS = stat.S_IRGRP | stat.S_IWGRP | stat.S_IXGRP | stat.S_IROTH
 else:
     # On Windows, the mode returned by os.stat is not reliable (all bits are always set.
     # So we do not keep any permission from the previous private key.
-    UMASK_FOR_PRIVATE_KEY_PERMISSIONS = 0
+    MASK_FOR_PRIVATE_KEY_PERMISSIONS = 0
 
 
 def raise_for_non_administrative_windows_rights():

@@ -1105,10 +1105,10 @@ class RenewableCert(object):
             with util.safe_open(target["privkey"], "wb", chmod=BASE_PRIVKEY_MODE) as f:
                 logger.debug("Writing new private key to %s.", target["privkey"])
                 f.write(new_privkey)
-            # Preserve gid and (mode & UMASK_FOR_PRIVATE_KEY_PERMISSIONS)
+            # Preserve gid and (mode & MASK_FOR_PRIVATE_KEY_PERMISSIONS)
             # from previous privkey in this lineage.
             old_mode = (stat.S_IMODE(os.stat(old_privkey).st_mode) &
-                        misc.UMASK_FOR_PRIVATE_KEY_PERMISSIONS)
+                        misc.MASK_FOR_PRIVATE_KEY_PERMISSIONS)
             mode = BASE_PRIVKEY_MODE | old_mode
             filesystem.copy_ownership_and_apply_mode(
                 old_privkey, target["privkey"], mode, copy_user=False, copy_group=True)
