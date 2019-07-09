@@ -16,6 +16,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * The error message when Certbot's Apache plugin is unable to modify your
   Apache configuration has been improved.
 * `certbot config_changes` no longer accepts a --num parameter.
+* The acme and certbot packages now require josepy>=1.2.0 in preparation for
+  support for Python 3.8.
 
 ### Fixed
 
