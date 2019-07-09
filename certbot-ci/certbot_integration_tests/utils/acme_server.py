@@ -83,8 +83,7 @@ class ACMEServer(object):
                                                 'alpine', 'rm', '-rf', '/workspace/boulder'])
                 process.wait()
         finally:
-            def _onerror(*_args): pass
-            shutil.rmtree(self._workspace, onerror=_onerror)
+            shutil.rmtree(self._workspace)
         if self._stdout != sys.stdout:
             self._stdout.close()
         print('=> Test infrastructure stopped and cleaned up.')
