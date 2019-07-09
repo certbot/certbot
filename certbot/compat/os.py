@@ -62,6 +62,25 @@ def open(*unused_args, **unused_kwargs):
                        'Use certbot.compat.filesystem.open() instead.')
 
 
+# Very similarly to os.open, os.mkdir has the same effects on Windows and creates an unsecured
+# folder. So a similar mitigation to security.chmod is provided on this platform.
+def mkdir(*unused_args, **unused_kwargs):
+    """Method os.mkdir() is forbidden"""
+    raise RuntimeError('Usage of os.mkdir() is forbidden. '
+                       'Use certbot.compat.filesystem.mkdir() instead.')
+
+
+# As said above, os.makedirs would call the original os.mkdir function recursively on Windows,
+# creating the same flaws for every actual folder created. This method is modified to ensure
+# that our modified os.mkdir is called on Windows, by monkey patching temporarily the mkdir method
+# on the original os module, executing the modified logic to correctly protect newly created
+# folders, then restoring original mkdir method in the os module.
+def makedirs(*unused_args, **unused_kwargs):
+    """Method os.makedirs() is forbidden"""
+    raise RuntimeError('Usage of os.makedirs() is forbidden. '
+                       'Use certbot.compat.filesystem.makedirs() instead.')
+
+
 # Because of the blocking strategy on file handlers on Windows, rename does not behave as expected
 # with POSIX systems: an exception will be raised if dst already exists.
 def rename(*unused_args, **unused_kwargs):

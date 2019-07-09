@@ -181,7 +181,7 @@ def make_or_verify_dir(directory, mode=0o755, uid=0, strict=False):
 
     """
     try:
-        os.makedirs(directory, mode)
+        filesystem.makedirs(directory, mode)
     except OSError as exception:
         if exception.errno == errno.EEXIST:
             if strict and not check_permissions(directory, mode, uid):

@@ -203,7 +203,7 @@ class AuthenticatorTest(unittest.TestCase):
         self.assertFalse(os.path.exists(self.partial_root_challenge_path))
 
     def test_perform_cleanup_existing_dirs(self):
-        os.mkdir(self.partial_root_challenge_path)
+        filesystem.mkdir(self.partial_root_challenge_path)
         self.auth.prepare()
         self.auth.perform([self.achall])
         self.auth.cleanup([self.achall])
@@ -219,7 +219,7 @@ class AuthenticatorTest(unittest.TestCase):
             domain="thing.com", account_key=KEY)
 
         bingo_validation_path = "YmluZ28"
-        os.mkdir(self.partial_root_challenge_path)
+        filesystem.mkdir(self.partial_root_challenge_path)
         self.auth.prepare()
         self.auth.perform([bingo_achall, self.achall])
 
@@ -235,7 +235,7 @@ class AuthenticatorTest(unittest.TestCase):
         self.auth.perform([self.achall])
 
         leftover_path = os.path.join(self.root_challenge_path, 'leftover')
-        os.mkdir(leftover_path)
+        filesystem.mkdir(leftover_path)
 
         self.auth.cleanup([self.achall])
         self.assertFalse(os.path.exists(self.validation_path))

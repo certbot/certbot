@@ -106,6 +106,58 @@ def open(file_path, flags, mode=0o777):  # pylint: disable=redefined-builtin
     return handle
 
 
+def makedirs(file_path, mode=0o777):
+    # type: (str, int) -> None
+    """
+    Rewrite of original os.makedirs function, that will ensure on Windows that given mode
+    is correctly applied.
+    :param str file_path: The file path to open
+    :param int mode: POSIX mode to apply on leaf directory when created, Python defaults
+                     will be applied if ``None``
+    """
+    if POSIX_MODE:
+        return os.makedirs(file_path, mode)
+
+    orig_mkdir_fn = os.mkdir
+    try:
+        # As we know that os.mkdir is called internally by os.makedirs, we will swap the function in
+        # os module for the time of makedirs execution on Windows.
+        os.mkdir = mkdir  # type: ignore
+        return os.makedirs(file_path, mode)
+    finally:
+        os.mkdir = orig_mkdir_fn
+
+
+def mkdir(file_path, mode=0o777):
+    # type: (str, int) -> None
+    """
+    Rewrite of original os.mkdir function, that will ensure on Windows that given mode
+    is correctly applied.
+    :param str file_path: The file path to open
+    :param int mode: POSIX mode to apply on directory when created, Python defaults
+                     will be applied if ``None``
+    """
+    if POSIX_MODE:
+        return os.mkdir(file_path, mode)
+
+    attributes = win32security.SECURITY_ATTRIBUTES()
+    security = attributes.SECURITY_DESCRIPTOR
+    user = _get_current_user()
+    dacl = _generate_dacl(user, mode)
+    security.SetSecurityDescriptorDacl(1, dacl, 0)
+
+    try:
+        win32file.CreateDirectory(file_path, attributes)
+    except pywintypes.error as err:
+        # Handle native windows error into python error to be consistent with the API
+        # of os.mkdir in the situation of a directory already existing.
+        if err.winerror == winerror.ERROR_ALREADY_EXISTS:
+            raise OSError(errno.EEXIST, err.strerror, file_path, err.winerror)
+        raise err
+
+    return None
+
+
 def replace(src, dst):
     # type: (str, str) -> None
     """
