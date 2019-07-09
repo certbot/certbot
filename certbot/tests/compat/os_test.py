@@ -7,7 +7,7 @@ from certbot.compat import os
 class OsTest(unittest.TestCase):
     """Unit tests for os module."""
     def test_forbidden_methods(self):
-        for method in ['chmod', 'rename', 'replace']:
+        for method in ['chmod', 'open', 'mkdir', 'makedirs', 'rename', 'replace']:
             self.assertRaises(RuntimeError, getattr(os, method))
 
 

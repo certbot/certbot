@@ -427,11 +427,6 @@ class NginxConfiguratorTest(util.NginxTest):
         mock_recovery_routine.side_effect = errors.ReverterError("foo")
         self.assertRaises(errors.PluginError, self.config.recovery_routine)
 
-    @mock.patch("certbot.reverter.Reverter.view_config_changes")
-    def test_view_config_changes_throws_error_from_reverter(self, mock_view_config_changes):
-        mock_view_config_changes.side_effect = errors.ReverterError("foo")
-        self.assertRaises(errors.PluginError, self.config.view_config_changes)
-
     @mock.patch("certbot.reverter.Reverter.rollback_checkpoints")
     def test_rollback_checkpoints_throws_error_from_reverter(self, mock_rollback_checkpoints):
         mock_rollback_checkpoints.side_effect = errors.ReverterError("foo")

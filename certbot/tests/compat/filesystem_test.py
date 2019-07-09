@@ -1,15 +1,19 @@
 """Tests for certbot.compat.filesystem"""
+import errno
 import unittest
 
 try:
-    import win32api  # pylint: disable=import-error
-    import win32security  # pylint: disable=import-error
-    import ntsecuritycon  # pylint: disable=import-error
+    # pylint: disable=import-error
+    import win32api
+    import win32security
+    import ntsecuritycon
+    # pylint: enable=import-error
     POSIX_MODE = False
 except ImportError:
     POSIX_MODE = True
 
 import certbot.tests.util as test_util
+from certbot import lock
 from certbot.compat import os
 from certbot.compat import filesystem
 from certbot.tests.util import TempDirTestCase
@@ -20,7 +24,7 @@ SYSTEM_SID = 'S-1-5-18'
 ADMINS_SID = 'S-1-5-32-544'
 
 
-@unittest.skipIf(POSIX_MODE, reason='Test specific to Windows security')
+@unittest.skipIf(POSIX_MODE, reason='Tests specific to Windows security')
 class WindowsChmodTests(TempDirTestCase):
     """Unit tests for Windows chmod function in filesystem module"""
     def setUp(self):
@@ -152,6 +156,118 @@ class WindowsChmodTests(TempDirTestCase):
         # We expect only two ACE: one for admins, one for system,
         # since the user is also the admins group
         self.assertEqual(security_dacl.GetSecurityDescriptorDacl().GetAceCount(), 2)
+
+
+@unittest.skipIf(POSIX_MODE, reason='Tests specific to Windows security')
+class WindowsOpenTest(TempDirTestCase):
+    def test_new_file_correct_permissions(self):
+        path = os.path.join(self.tempdir, 'file')
+
+        desc = filesystem.open(path, os.O_CREAT | os.O_EXCL | os.O_RDWR, 0o700)
+        os.close(desc)
+
+        dacl = _get_security_dacl(path).GetSecurityDescriptorDacl()
+        everybody = win32security.ConvertStringSidToSid(EVERYBODY_SID)
+
+        self.assertFalse([dacl.GetAce(index) for index in range(0, dacl.GetAceCount())
+                          if dacl.GetAce(index)[2] == everybody])
+
+    def test_existing_file_correct_permissions(self):
+        path = os.path.join(self.tempdir, 'file')
+        open(path, 'w').close()
+
+        desc = filesystem.open(path, os.O_EXCL | os.O_RDWR, 0o700)
+        os.close(desc)
+
+        dacl = _get_security_dacl(path).GetSecurityDescriptorDacl()
+        everybody = win32security.ConvertStringSidToSid(EVERYBODY_SID)
+
+        self.assertFalse([dacl.GetAce(index) for index in range(0, dacl.GetAceCount())
+                          if dacl.GetAce(index)[2] == everybody])
+
+    def test_create_file_on_open(self):
+        # os.O_CREAT | os.O_EXCL + file not exists = OK
+        self._test_one_creation(1, file_exist=False, flags=(os.O_CREAT | os.O_EXCL))
+
+        # os.O_CREAT | os.O_EXCL + file exists = EEXIST OS exception
+        with self.assertRaises(OSError) as raised:
+            self._test_one_creation(2, file_exist=True, flags=(os.O_CREAT | os.O_EXCL))
+        self.assertEqual(raised.exception.errno, errno.EEXIST)
+
+        # os.O_CREAT + file not exists = OK
+        self._test_one_creation(3, file_exist=False, flags=os.O_CREAT)
+
+        # os.O_CREAT + file exists = OK
+        self._test_one_creation(4, file_exist=True, flags=os.O_CREAT)
+
+        # os.O_CREAT + file exists (locked) = EACCES OS exception
+        path = os.path.join(self.tempdir, '5')
+        open(path, 'w').close()
+        filelock = lock.LockFile(path)
+        try:
+            with self.assertRaises(OSError) as raised:
+                self._test_one_creation(5, file_exist=True, flags=os.O_CREAT)
+            self.assertEqual(raised.exception.errno, errno.EACCES)
+        finally:
+            filelock.release()
+
+        # os.O_CREAT not set + file not exists = OS exception
+        with self.assertRaises(OSError):
+            self._test_one_creation(6, file_exist=False, flags=os.O_RDONLY)
+
+    def _test_one_creation(self, num, file_exist, flags):
+        one_file = os.path.join(self.tempdir, str(num))
+        if file_exist and not os.path.exists(one_file):
+            open(one_file, 'w').close()
+
+        handler = None
+        try:
+            handler = filesystem.open(one_file, flags)
+        except BaseException as err:
+            if handler:
+                os.close(handler)
+            raise err
+
+
+@unittest.skipIf(POSIX_MODE, reason='Test specific to Windows security')
+class WindowsMkdirTests(test_util.TempDirTestCase):
+    """Unit tests for Windows mkdir + makedirs functions in filesystem module"""
+    def test_mkdir_correct_permissions(self):
+        path = os.path.join(self.tempdir, 'dir')
+
+        filesystem.mkdir(path, 0o700)
+
+        everybody = win32security.ConvertStringSidToSid(EVERYBODY_SID)
+
+        dacl = _get_security_dacl(path).GetSecurityDescriptorDacl()
+        self.assertFalse([dacl.GetAce(index) for index in range(0, dacl.GetAceCount())
+                          if dacl.GetAce(index)[2] == everybody])
+
+    def test_makedirs_correct_permissions(self):
+        path = os.path.join(self.tempdir, 'dir')
+        subpath = os.path.join(path, 'subpath')
+
+        filesystem.makedirs(subpath, 0o700)
+
+        everybody = win32security.ConvertStringSidToSid(EVERYBODY_SID)
+
+        dacl = _get_security_dacl(subpath).GetSecurityDescriptorDacl()
+        self.assertFalse([dacl.GetAce(index) for index in range(0, dacl.GetAceCount())
+                          if dacl.GetAce(index)[2] == everybody])
+
+    def test_makedirs_switch_os_mkdir(self):
+        path = os.path.join(self.tempdir, 'dir')
+        import os as std_os  # pylint: disable=os-module-forbidden
+        original_mkdir = std_os.mkdir
+
+        filesystem.makedirs(path)
+        self.assertEqual(original_mkdir, std_os.mkdir)
+
+        try:
+            filesystem.makedirs(path)  # Will fail because path already exists
+        except OSError:
+            pass
+        self.assertEqual(original_mkdir, std_os.mkdir)
 
 
 class OsReplaceTest(test_util.TempDirTestCase):

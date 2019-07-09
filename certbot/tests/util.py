@@ -139,7 +139,7 @@ def make_lineage(config_dir, testfile):
 
     for directory in (archive_dir, conf_dir, live_dir,):
         if not os.path.exists(directory):
-            os.makedirs(directory)
+            filesystem.makedirs(directory)
 
     sample_archive = vector_path('sample-archive')
     for kind in os.listdir(sample_archive):
