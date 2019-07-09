@@ -41,9 +41,9 @@ install_requires = [
     'ConfigArgParse>=0.9.3',
     'configobj',
     'cryptography>=1.2.3',  # load_pem_x509_certificate
-    # 1.1.0+ is required to avoid the warnings described at
-    # https://github.com/certbot/josepy/issues/13.
-    'josepy>=1.1.0',
+    # 1.2.0+ is required in preparation of support for Python 3.8. See
+    # https://github.com/certbot/josepy/pull/40
+    'josepy>=1.2.0',
     'mock',
     'parsedatetime>=1.3',  # Calendar.parseDT
     'pyrfc3339',
