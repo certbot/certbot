@@ -56,25 +56,25 @@ def chmod(file_path, mode):
 def copy_ownership_and_apply_mode(src, dst, mode, copy_user, copy_group):
     # type: (str, str, int, bool, bool) -> None
     """
-    Copy ownership (user and optionally group) from the source to the destination,
-    then apply given mode in compatible way for Linux and Windows. This replaces
-    the os.chown command.
+    Copy ownership (user and optionally group on Linux) from the source to the
+    destination, then apply given mode in compatible way for Linux and Windows.
+    This replaces the os.chown command.
     :param str src: Path of the source file
     :param str dst: Path of the destination file
     :param int mode: Permission mode to apply on the destination file
     :param bool copy_user: Copy user if `True`
-    :param bool copy_group: Copy group if `True`
+    :param bool copy_group: Copy group if `True` on Linux (has no effect on Windows)
     """
     if POSIX_MODE:
         stats = os.stat(src)
         user_id = stats.st_uid if copy_user else -1
         group_id = stats.st_gid if copy_group else -1
         os.chown(dst, user_id, group_id)
-        os.chmod(dst, mode)
     elif copy_user:
         # There is no group handling in Windows
         _copy_win_ownership(src, dst)
-        _apply_win_mode(dst, mode)
+
+    chmod(dst, mode)
 
 
 def open(file_path, flags, mode=0o777):  # pylint: disable=redefined-builtin
