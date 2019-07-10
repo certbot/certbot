@@ -248,7 +248,7 @@ Dutch National Cyber Security Centre
 
 The Dutch National Cyber Security Centre has published guidance on "ICT-beveiligingsrichtlijnen voor Transport Layer Security (TLS)" ("IT Security Guidelines for Transport Layer Security (TLS)").  These are available only in Dutch at
 
-https://www.ncsc.nl/dienstverlening/expertise-advies/kennisdeling/whitepapers/ict-beveiligingsrichtlijnen-voor-transport-layer-security-tls.html
+https://web.archive.org/web/20190516085116/https://www.ncsc.nl/actueel/whitepapers/ict-beveiligingsrichtlijnen-voor-transport-layer-security-tls.html
 
 I have access to an English-language summary of the recommendations.
 
