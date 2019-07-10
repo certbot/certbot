@@ -2,6 +2,8 @@
 import errno
 import unittest
 
+import mock
+
 try:
     # pylint: disable=import-error
     import win32api
@@ -268,6 +270,52 @@ class WindowsMkdirTests(test_util.TempDirTestCase):
         except OSError:
             pass
         self.assertEqual(original_mkdir, std_os.mkdir)
+
+
+class CopyOwnershipTest(test_util.TempDirTestCase):
+    """Tests about replacement of chown: copy_ownership_and_apply_mode"""
+    def setUp(self):
+        super(CopyOwnershipTest, self).setUp()
+        self.probe_path = _create_probe(self.tempdir)
+
+    @unittest.skipIf(POSIX_MODE, reason='Test specific to Windows security')
+    def test_windows(self):
+        system = win32security.ConvertStringSidToSid(SYSTEM_SID)
+        security = win32security.SECURITY_ATTRIBUTES().SECURITY_DESCRIPTOR
+        security.SetSecurityDescriptorOwner(system, False)
+
+        with mock.patch('win32security.GetFileSecurity') as mock_get:
+            with mock.patch('win32security.SetFileSecurity') as mock_set:
+                mock_get.return_value = security
+                filesystem.copy_ownership_and_apply_mode(
+                    'dummy', self.probe_path, 0o700, copy_user=True, copy_group=False)
+
+        self.assertEqual(mock_set.call_count, 2)
+
+        first_call = mock_set.call_args_list[0]
+        security = first_call[0][2]
+        self.assertEqual(system, security.GetSecurityDescriptorOwner())
+
+        second_call = mock_set.call_args_list[1]
+        security = second_call[0][2]
+        dacl = security.GetSecurityDescriptorDacl()
+        everybody = win32security.ConvertStringSidToSid(EVERYBODY_SID)
+        self.assertTrue(dacl.GetAceCount())
+        self.assertFalse([dacl.GetAce(index) for index in range(0, dacl.GetAceCount())
+                          if dacl.GetAce(index)[2] == everybody])
+
+    @unittest.skipUnless(POSIX_MODE, reason='Test specific to Linux security')
+    def test_linux(self):
+        with mock.patch('os.chown') as mock_chown:
+            with mock.patch('os.chmod') as mock_chmod:
+                with mock.patch('os.stat') as mock_stat:
+                    mock_stat.return_value.st_uid = 50
+                    mock_stat.return_value.st_gid = 51
+                    filesystem.copy_ownership_and_apply_mode(
+                        'dummy', self.probe_path, 0o700, copy_user=True, copy_group=True)
+
+        mock_chown.assert_called_once_with(self.probe_path, 50, 51)
+        mock_chmod.assert_called_once_with(self.probe_path, 0o700)
 
 
 class OsReplaceTest(test_util.TempDirTestCase):
