@@ -16,6 +16,7 @@ before_script:
 # is a cap of on the number of simultaneous runs.
 branches:
   only:
+    - apache-parser-v2
     - master
     - /^\d+\.\d+\.x$/
     - /^test-.*$/
