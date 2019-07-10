@@ -7,7 +7,6 @@ version = '0.32.0.dev0'
 install_requires = [
     'coverage',
     'cryptography',
-    'flask',
     'pyopenssl',
     'pytest',
     'pytest-cov',
