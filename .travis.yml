@@ -16,6 +16,8 @@ before_script:
 # is a cap of on the number of simultaneous runs.
 branches:
   only:
+    # apache-parser-v2 is a temporary branch for doing work related to
+    # rewriting the parser in the Apache plugin.
     - apache-parser-v2
     - master
     - /^\d+\.\d+\.x$/
