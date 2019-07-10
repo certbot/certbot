@@ -27,9 +27,10 @@ branches:
 not-on-master: &not-on-master
   if: NOT (type = push AND branch = master)
 
-# Jobs for the extended test suite are executed for cron jobs and pushes on non-master branches.
+# Jobs for the extended test suite are executed for cron jobs and pushes to
+# non-development branches. See the explanation for apache-parser-v2 above.
 extended-test-suite: &extended-test-suite
-  if: type = cron OR (type = push AND branch != master)
+  if: type = cron OR (type = push AND branch NOT IN (apache-parser-v2, master))
 
 matrix:
   include:
