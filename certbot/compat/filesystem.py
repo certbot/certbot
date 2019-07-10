@@ -44,6 +44,39 @@ def chmod(file_path, mode):
         _apply_win_mode(file_path, mode)
 
 
+# One could ask why there is no copy_ownership() function, or even a reimplementation
+# of os.chown() that would modify the ownership of file without touching the mode itself.
+# This is because on Windows, it would require recalculating the existing DACL against
+# the new owner, since the DACL is composed of ACEs that targets a specific user, not dynamically
+# the current owner of a file. This action would be necessary to keep consistency between
+# the POSIX mode applied to the file and the current owner of this file.
+# Since copying and editing arbitrary DACL is very difficult, and since we actually know
+# the mode to apply at the time the owner of a file should change, it is easier to just
+# change the owner, then reapply the known mode, as copy_ownership_and_apply_mode() does.
+def copy_ownership_and_apply_mode(src, dst, mode, copy_user, copy_group):
+    # type: (str, str, int, bool, bool) -> None
+    """
+    Copy ownership (user and optionally group on Linux) from the source to the
+    destination, then apply given mode in compatible way for Linux and Windows.
+    This replaces the os.chown command.
+    :param str src: Path of the source file
+    :param str dst: Path of the destination file
+    :param int mode: Permission mode to apply on the destination file
+    :param bool copy_user: Copy user if `True`
+    :param bool copy_group: Copy group if `True` on Linux (has no effect on Windows)
+    """
+    if POSIX_MODE:
+        stats = os.stat(src)
+        user_id = stats.st_uid if copy_user else -1
+        group_id = stats.st_gid if copy_group else -1
+        os.chown(dst, user_id, group_id)
+    elif copy_user:
+        # There is no group handling in Windows
+        _copy_win_ownership(src, dst)
+
+    chmod(dst, mode)
+
+
 def open(file_path, flags, mode=0o777):  # pylint: disable=redefined-builtin
     # type: (str, int, int) -> int
     """
@@ -249,6 +282,18 @@ def _analyze_mode(mode):
             'execute': mode & stat.S_IXOTH,
         },
     }
+
+
+def _copy_win_ownership(src, dst):
+    security_src = win32security.GetFileSecurity(src, win32security.OWNER_SECURITY_INFORMATION)
+    user_src = security_src.GetSecurityDescriptorOwner()
+
+    security_dst = win32security.GetFileSecurity(dst, win32security.OWNER_SECURITY_INFORMATION)
+    # Second parameter indicates, if `False`, that the owner of the file is not provided by some
+    # default mechanism, but is explicitly set instead. This is obviously what we are doing here.
+    security_dst.SetSecurityDescriptorOwner(user_src, False)
+
+    win32security.SetFileSecurity(dst, win32security.OWNER_SECURITY_INFORMATION, security_dst)
 
 
 def _generate_windows_flags(rights_desc):
