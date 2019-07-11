@@ -375,6 +375,8 @@ As a developer, when working on Certbot or its plugins, you must use ``certbot.c
 in every place you would need ``os`` (eg. ``from certbot.compat import os`` instead of
 ``import os``). Otherwise the tests will fail when your PR is submitted.
 
+.. _type annotations:
+
 Mypy type annotations
 =====================
 
@@ -414,7 +416,10 @@ Submitting a pull request
 
 Steps:
 
-1. Write your code!
+1. Write your code! When doing this, you should add :ref:`mypy type annotations
+   <type annotations>` for any functions you add or modify. You can check that
+   you've done this correctly by running ``tox -e mypy`` on a machine that has
+   Python 3 installed.
 2. Make sure your environment is set up properly and that you're in your
    virtualenv. You can do this by following the instructions in the
    :ref:`Getting Started <getting_started>` section.
