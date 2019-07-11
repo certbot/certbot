@@ -142,8 +142,8 @@ class AuthenticatorTest(unittest.TestCase):
         filesystem.chmod(self.path, 0o700)
 
     @mock.patch("certbot.plugins.webroot.filesystem.copy_ownership_and_apply_mode")
-    def test_failed_chown(self, mock_chown):
-        mock_chown.side_effect = OSError(errno.EACCES, "msg")
+    def test_failed_chown(self, mock_ownership):
+        mock_ownership.side_effect = OSError(errno.EACCES, "msg")
         self.auth.perform([self.achall])  # exception caught and logged
 
     @test_util.patch_get_utility()
@@ -167,14 +167,13 @@ class AuthenticatorTest(unittest.TestCase):
         # Remove exec bit from permission check, so that it
         # matches the file
         self.auth.perform([self.achall])
-        self.assertTrue(filesystem.check_owner(self.validation_path))
         self.assertTrue(filesystem.check_mode(self.validation_path, 0o644))
 
         # Check permissions of the directories
+
         for dirpath, dirnames, _ in os.walk(self.path):
             for directory in dirnames:
                 full_path = os.path.join(dirpath, directory)
-                self.assertTrue(filesystem.check_owner(full_path))
                 self.assertTrue(filesystem.check_mode(full_path, 0o755))
 
         parent_gid = os.stat(self.path).st_gid
@@ -293,6 +292,19 @@ class WebrootActionTest(unittest.TestCase):
         config = self._get_config_after_perform(args)
         self.assertEqual(
             config.webroot_map[self.achall.domain], self.path)
+
+    def test_webroot_map_partial_without_perform(self):
+        # This test acknowledges the fact that webroot_map content will be partial if webroot
+        # plugin perform method is not invoked (corner case when all auths are already valid).
+        # To not be a problem, the webroot_path must always been conserved during renew.
+        # This condition is challenged by:
+        # certbot.tests.renewal_tests::RenewalTest::test_webroot_params_conservation
+        # See https://github.com/certbot/certbot/pull/7095 for details.
+        other_webroot_path = tempfile.mkdtemp()
+        args = self.parser.parse_args("-w {0} -d {1} -w {2} -d bar".format(
+            self.path, self.achall.domain, other_webroot_path).split())
+        self.assertEqual(args.webroot_map, {self.achall.domain: self.path})
+        self.assertEqual(args.webroot_path, [self.path, other_webroot_path])
 
     def _get_config_after_perform(self, config):
         from certbot.plugins.webroot import Authenticator

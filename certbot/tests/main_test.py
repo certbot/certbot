@@ -541,7 +541,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
                     return True
                 return orig_open(fn)
 
-            with mock.patch("certbot.compat.os.path.isfile") as mock_if:
+            with mock.patch("os.path.isfile") as mock_if:
                 mock_if.side_effect = mock_isfile
                 with mock.patch('certbot.main.client') as client:
                     ret, stdout, stderr = self._call_no_clientmock(args, stdout)
@@ -756,6 +756,13 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
     def test_config_changes(self):
         _, _, _, client = self._call(['config_changes'])
         self.assertEqual(1, client.view_config_changes.call_count)
+
+    @mock.patch('certbot.main.logger.warning')
+    def test_config_changes_deprecation(self, mock_warning):
+        self._call(['config_changes'])
+        self.assertTrue(mock_warning.called)
+        msg = mock_warning.call_args[0][0]
+        self.assertIn("config_changes subcommand has been deprecated", msg)
 
     @mock.patch('certbot.cert_manager.update_live_symlinks')
     def test_update_symlinks(self, mock_cert_manager):
@@ -1594,8 +1601,7 @@ class MakeOrVerifyNeededDirs(test_util.ConfigTestCase):
         for hook_dir in hook_dirs:
             # default mode of 755 is used
             mock_util.make_or_verify_dir.assert_any_call(
-                hook_dir,
-                strict=self.config.strict_permissions)
+                hook_dir, strict=self.config.strict_permissions)
 
 
 class EnhanceTest(test_util.ConfigTestCase):

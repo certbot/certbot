@@ -5,6 +5,7 @@ import atexit
 import datetime
 import functools
 import logging
+import os
 import re
 import shutil
 import subprocess
@@ -20,8 +21,8 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 
 from certbot import lock
 from certbot import util
-from certbot.compat import os
 from certbot.compat import filesystem
+
 from certbot.tests import util as test_util
 
 

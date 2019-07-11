@@ -268,23 +268,21 @@ There are also a number of third-party plugins for the client, provided by
 other developers. Many are beta/experimental, but some are already in
 widespread use:
 
-=========== ==== ==== ===============================================================
-Plugin      Auth Inst Notes
-=========== ==== ==== ===============================================================
-plesk_      Y    Y    Integration with the Plesk web hosting tool
-haproxy_    Y    Y    Integration with the HAProxy load balancer
-s3front_    Y    Y    Integration with Amazon CloudFront distribution of S3 buckets
-gandi_      Y    Y    Integration with Gandi LiveDNS API
-varnish_    Y    N    Obtain certificates via a Varnish server
-external_   Y    N    A plugin for convenient scripting (See also ticket 2782_)
-icecast_    N    Y    Deploy certificates to Icecast 2 streaming media servers
-pritunl_    N    Y    Install certificates in pritunl distributed OpenVPN servers
-proxmox_    N    Y    Install certificates in Proxmox Virtualization servers
-postfix_    N    Y    STARTTLS Everywhere is becoming a Certbot Postfix/Exim plugin
-heroku_     Y    Y    Integration with Heroku SSL
-=========== ==== ==== ===============================================================
+================== ==== ==== ===============================================================
+Plugin             Auth Inst Notes
+================== ==== ==== ===============================================================
+haproxy_           Y    Y    Integration with the HAProxy load balancer
+s3front_           Y    Y    Integration with Amazon CloudFront distribution of S3 buckets
+gandi_             Y    N    Obtain certificates via the Gandi LiveDNS API
+varnish_           Y    N    Obtain certificates via a Varnish server
+external_          Y    N    A plugin for convenient scripting (See also ticket 2782_)
+icecast_           N    Y    Deploy certificates to Icecast 2 streaming media servers
+pritunl_           N    Y    Install certificates in pritunl distributed OpenVPN servers
+proxmox_           N    Y    Install certificates in Proxmox Virtualization servers
+heroku_            Y    Y    Integration with Heroku SSL
+dns-standalone_    Y    N    Obtain certificates via an integrated DNS server
+================== ==== ==== ===============================================================
 
-.. _plesk: https://github.com/plesk/letsencrypt-plesk
 .. _haproxy: https://github.com/greenhost/certbot-haproxy
 .. _s3front: https://github.com/dlapiduz/letsencrypt-s3front
 .. _gandi: https://github.com/obynio/certbot-plugin-gandi
@@ -294,8 +292,8 @@ heroku_     Y    Y    Integration with Heroku SSL
 .. _pritunl: https://github.com/kharkevich/letsencrypt-pritunl
 .. _proxmox: https://github.com/kharkevich/letsencrypt-proxmox
 .. _external: https://github.com/marcan/letsencrypt-external
-.. _postfix: https://github.com/EFForg/starttls-everywhere
 .. _heroku: https://github.com/gboudreau/certbot-heroku
+.. _dns-standalone: https://github.com/siilike/certbot-dns-standalone
 
 If you're interested, you can also :ref:`write your own plugin <dev-plugin>`.
 

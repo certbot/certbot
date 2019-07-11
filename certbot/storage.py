@@ -18,6 +18,7 @@ from certbot import crypto_util
 from certbot import error_handler
 from certbot import errors
 from certbot import util
+from certbot.compat import misc
 from certbot.compat import os
 from certbot.compat import filesystem
 from certbot.plugins import common as plugins_common
@@ -162,7 +163,7 @@ def rename_renewal_config(prev_name, new_name, cli_config):
         raise errors.ConfigurationError("The new certificate name "
             "is already in use.")
     try:
-        filesystem.rename(prev_filename, new_filename)
+        filesystem.replace(prev_filename, new_filename)
     except OSError:
         raise errors.ConfigurationError("Please specify a valid filename "
             "for the new certificate name.")
@@ -191,7 +192,7 @@ def update_configuration(lineagename, archive_dir, target, cli_config):
     # Save only the config items that are relevant to renewal
     values = relevant_values(vars(cli_config.namespace))
     write_renewal_config(config_filename, temp_filename, archive_dir, target, values)
-    filesystem.rename(temp_filename, config_filename)
+    filesystem.replace(temp_filename, config_filename)
 
     return configobj.ConfigObj(config_filename)
 
@@ -1104,13 +1105,13 @@ class RenewableCert(object):
             with util.safe_open(target["privkey"], "wb", chmod=BASE_PRIVKEY_MODE) as f:
                 logger.debug("Writing new private key to %s.", target["privkey"])
                 f.write(new_privkey)
-            # Preserve gid and (mode & 074) from previous privkey in this lineage.
-            old_mode = stat.S_IMODE(os.stat(old_privkey).st_mode) & \
-                (stat.S_IRGRP | stat.S_IWGRP | stat.S_IXGRP | \
-                 stat.S_IROTH)
+            # Preserve gid and (mode & MASK_FOR_PRIVATE_KEY_PERMISSIONS)
+            # from previous privkey in this lineage.
+            old_mode = (stat.S_IMODE(os.stat(old_privkey).st_mode) &
+                        misc.MASK_FOR_PRIVATE_KEY_PERMISSIONS)
             mode = BASE_PRIVKEY_MODE | old_mode
-            filesystem.copy_ownership_and_apply_mode(old_privkey, target["privkey"],
-                                                     mode, user=False, group=True)
+            filesystem.copy_ownership_and_apply_mode(
+                old_privkey, target["privkey"], mode, copy_user=False, copy_group=True)
 
         # Save everything else
         with open(target["cert"], "wb") as f:

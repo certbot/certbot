@@ -20,7 +20,6 @@ from certbot.storage import ALL_FOUR
 CERT = test_util.load_cert('cert_512.pem')
 
 
-
 def unlink_all(rc_object):
     """Unlink all four items associated with this RenewableCert."""
     for kind in ALL_FOUR:
@@ -106,7 +105,7 @@ class BaseRenewableCertTest(test_util.ConfigTestCase):
             pass
         config_file["archive"] = archive_path
         config_file.filename = os.path.join(self.config.config_dir, "renewal",
-                                            "example.org.conf")
+                                       "example.org.conf")
         config_file.write()
         self.config_file = config_file
 
@@ -126,9 +125,9 @@ class BaseRenewableCertTest(test_util.ConfigTestCase):
         link = getattr(self.test_rc, kind)
         if os.path.lexists(link):
             os.unlink(link)
-        target = os.path.join(self.config.config_dir, "archive",
-                              "example.org", "{0}{1}.pem".format(kind, ver))
-        os.symlink(target, link)
+        os.symlink(os.path.join(os.path.pardir, os.path.pardir, "archive",
+                                "example.org", "{0}{1}.pem".format(kind, ver)),
+                   link)
         with open(link, "wb") as f:
             f.write(kind.encode('ascii') if value is None else value)
         if kind == "privkey":
@@ -560,6 +559,7 @@ class RenewableCertTests(BaseRenewableCertTest):
         self.assertFalse(os.path.islink(self.test_rc.version("privkey", 10)))
         self.assertFalse(os.path.exists(temp_config_file))
 
+    @test_util.skip_on_windows('Group/everybody permissions are not maintained on Windows.')
     @mock.patch("certbot.storage.relevant_values")
     def test_save_successor_maintains_group_mode(self, mock_rv):
         # Mock relevant_values() to claim that all values are relevant here
@@ -572,14 +572,14 @@ class RenewableCertTests(BaseRenewableCertTest):
         filesystem.chmod(self.test_rc.version("privkey", 1), 0o444)
         # If no new key, permissions should be the same (we didn't write any keys)
         self.test_rc.save_successor(1, b"newcert", None, b"new chain", self.config)
-        self.assertTrue(self.test_rc.version("privkey", 2), 0o444)
+        self.assertTrue(filesystem.check_mode(self.test_rc.version("privkey", 2), 0o444))
         # If new key, permissions should be kept as 644
         self.test_rc.save_successor(2, b"newcert", b"new_privkey", b"new chain", self.config)
-        self.assertTrue(self.test_rc.version("privkey", 3), 0o644)
+        self.assertTrue(filesystem.check_mode(self.test_rc.version("privkey", 3), 0o644))
         # If permissions reverted, next renewal will also revert permissions of new key
         filesystem.chmod(self.test_rc.version("privkey", 3), 0o400)
         self.test_rc.save_successor(3, b"newcert", b"new_privkey", b"new chain", self.config)
-        self.assertTrue(self.test_rc.version("privkey", 4), 0o600)
+        self.assertTrue(filesystem.check_mode(self.test_rc.version("privkey", 4), 0o600))
 
     @mock.patch("certbot.storage.relevant_values")
     @mock.patch("certbot.storage.filesystem.copy_ownership_and_apply_mode")
@@ -639,7 +639,8 @@ class RenewableCertTests(BaseRenewableCertTest):
         # Make sure it can accept renewal parameters
         result = storage.RenewableCert.new_lineage(
             "the-lineage.com", b"cert2", b"privkey2", b"chain2", self.config)
-        # TODO: Conceivably we could test that the renewal parameters actually got saved
+        # TODO: Conceivably we could test that the renewal parameters actually
+        #       got saved
 
     @mock.patch("certbot.storage.relevant_values")
     def test_new_lineage_nonexistent_dirs(self, mock_rv):

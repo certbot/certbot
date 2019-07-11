@@ -12,6 +12,7 @@ import zope.component
 
 from acme import errors as acme_errors
 from acme.magic_typing import Union  # pylint: disable=unused-import, no-name-in-module
+
 import certbot
 from certbot import account
 from certbot import cert_manager
@@ -670,7 +671,7 @@ def register(config, unused_plugins):
     # delete the true case of if block
     if config.update_registration:
         msg = ("Usage 'certbot register --update-registration' is deprecated.\n"
-               "Please use 'cerbot update_account [options]' instead.\n")
+               "Please use 'certbot update_account [options]' instead.\n")
         logger.warning(msg)
         return update_account(config, unused_plugins)
 
@@ -975,7 +976,9 @@ def config_changes(config, unused_plugins):
     :rtype: None
 
     """
-    client.view_config_changes(config, num=config.num)
+    logger.warning("The config_changes subcommand has been deprecated"
+                   " and will be removed in a future release.")
+    client.view_config_changes(config)
 
 def update_symlinks(config, unused_plugins):
     """Update the certificate file family symlinks
@@ -1295,17 +1298,14 @@ def make_or_verify_needed_dirs(config):
     :rtype: None
 
     """
-    util.set_up_core_dir(config.config_dir, constants.CONFIG_DIRS_MODE,
-                         config.strict_permissions)
-    util.set_up_core_dir(config.work_dir, constants.CONFIG_DIRS_MODE,
-                         config.strict_permissions)
+    util.set_up_core_dir(config.config_dir, constants.CONFIG_DIRS_MODE, config.strict_permissions)
+    util.set_up_core_dir(config.work_dir, constants.CONFIG_DIRS_MODE, config.strict_permissions)
 
     hook_dirs = (config.renewal_pre_hooks_dir,
                  config.renewal_deploy_hooks_dir,
                  config.renewal_post_hooks_dir,)
     for hook_dir in hook_dirs:
-        util.make_or_verify_dir(hook_dir,
-                                strict=config.strict_permissions)
+        util.make_or_verify_dir(hook_dir, strict=config.strict_permissions)
 
 
 def set_displayer(config):

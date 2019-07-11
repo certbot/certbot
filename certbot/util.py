@@ -148,7 +148,7 @@ def set_up_core_dir(directory, mode, strict):
 
     :param str directory: Path to a directory.
     :param int mode: Directory mode.
-    :param bool strict: require directory to be owned by current user with correct mode
+    :param bool strict: require directory to be owned by current user
 
     :raises .errors.LockError: if the directory cannot be locked
     :raises .errors.Error: if the directory cannot be made or verified
@@ -167,7 +167,7 @@ def make_or_verify_dir(directory, mode=0o755, strict=False):
 
     :param str directory: Path to a directory.
     :param int mode: Directory mode.
-    :param bool strict: require directory to be owned by current user with correct mode
+    :param bool strict: require directory to be owned by current user
 
     :raises .errors.Error: if a directory already exists,
         but has wrong permissions or owner
@@ -183,8 +183,8 @@ def make_or_verify_dir(directory, mode=0o755, strict=False):
         if exception.errno == errno.EEXIST:
             if strict and not filesystem.check_permissions(directory, mode):
                 raise errors.Error(
-                    '{0} exists, but it should be owned by user {1} with permissions {2}'
-                    .format(directory, filesystem.get_current_user(), oct(mode)))
+                    "%s exists, but it should be owned by current user with"
+                    " permissions %s" % (directory, oct(mode)))
         else:
             raise
 
@@ -194,16 +194,16 @@ def safe_open(path, mode="w", chmod=None):
 
     :param str path: Path to a file.
     :param str mode: Same os `mode` for `open`.
-    :param int chmod: Same as `mode` for `os.open`, uses Python defaults
+    :param int chmod: Same as `mode` for `filesystem.open`, uses Python defaults
         if ``None``.
 
     """
-    if os.path.exists(path):
-        raise OSError(errno.EEXIST, 'File exists', path)
-    file_handler = open(path, mode)
-    if chmod:
-        filesystem.chmod(path, chmod)
-    return file_handler
+    open_args = ()  # type: Union[Tuple[()], Tuple[int]]
+    if chmod is not None:
+        open_args = (chmod,)
+    fdopen_args = ()  # type: Union[Tuple[()], Tuple[int]]
+    fd = filesystem.open(path, os.O_CREAT | os.O_EXCL | os.O_RDWR, *open_args)
+    return os.fdopen(fd, mode, *fdopen_args)
 
 
 def _unique_file(path, filename_pat, count, chmod, mode):

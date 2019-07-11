@@ -348,11 +348,11 @@ class TestFullCheckpointsReverter(test_util.ConfigTestCase):
         self.assertRaises(
             errors.ReverterError, self.reverter.finalize_checkpoint, "Title")
 
-    @mock.patch("certbot.reverter.filesystem.rename")
-    def test_finalize_checkpoint_no_rename_directory(self, mock_rename):
+    @mock.patch("certbot.reverter.filesystem.replace")
+    def test_finalize_checkpoint_no_rename_directory(self, mock_replace):
 
         self.reverter.add_to_checkpoint(self.sets[0], "perm save")
-        mock_rename.side_effect = OSError
+        mock_replace.side_effect = OSError
 
         self.assertRaises(
             errors.ReverterError, self.reverter.finalize_checkpoint, "Title")
@@ -400,15 +400,6 @@ class TestFullCheckpointsReverter(test_util.ConfigTestCase):
 
         self.assertRaises(
             errors.ReverterError, self.reverter.view_config_changes)
-
-    def test_view_config_changes_for_logging(self):
-        self._setup_three_checkpoints()
-
-        config_changes = self.reverter.view_config_changes(for_logging=True)
-
-        self.assertTrue("First Checkpoint" in config_changes)
-        self.assertTrue("Second Checkpoint" in config_changes)
-        self.assertTrue("Third Checkpoint" in config_changes)
 
     def _setup_three_checkpoints(self):
         """Generate some finalized checkpoints."""

@@ -27,7 +27,6 @@ from certbot import constants
 from certbot import errors
 from certbot import util
 from certbot.compat import os
-from certbot.compat import filesystem
 
 # Logging format
 CLI_FMT = "%(message)s"
@@ -134,8 +133,7 @@ def setup_log_file_handler(config, logfile, fmt):
     """
     # TODO: logs might contain sensitive data such as contents of the
     # private key! #525
-    util.set_up_core_dir(
-        config.logs_dir, 0o700, config.strict_permissions)
+    util.set_up_core_dir(config.logs_dir, 0o700, config.strict_permissions)
     log_file_path = os.path.join(config.logs_dir, logfile)
     try:
         handler = logging.handlers.RotatingFileHandler(
@@ -240,12 +238,12 @@ class TempHandler(logging.StreamHandler):
 
     """
     def __init__(self):
-        stream = tempfile.NamedTemporaryFile('w', delete=False)
+        fd, path = tempfile.mkstemp()  # To get a proper tempfile path
+        os.close(fd)
+        os.remove(path)
+        stream = util.safe_open(path, mode='w', chmod=0o600)
         super(TempHandler, self).__init__(stream)
-        self.path = stream.name
-        # On Windows, built-in support of POSIX mode is extremely limited. So the underlying file
-        # will not have 0600 by default on this platform. We ensure manually that.
-        filesystem.chmod(self.path, 0o600)
+        self.path = path
         self._delete = True
 
     def emit(self, record):

@@ -6,6 +6,8 @@ import subprocess
 import tempfile
 import time
 
+import pkg_resources
+
 import OpenSSL
 import zope.interface
 
@@ -104,8 +106,8 @@ class NginxConfigurator(common.Installer):
 
         # List of vhosts configured per wildcard domain on this run.
         # used by deploy_cert() and enhance()
-        self._wildcard_vhosts = {}  # type: Dict[str, List[obj.VirtualHost]]
-        self._wildcard_redirect_vhosts = {}  # type: Dict[str, List[obj.VirtualHost]]
+        self._wildcard_vhosts = {} # type: Dict[str, List[obj.VirtualHost]]
+        self._wildcard_redirect_vhosts = {} # type: Dict[str, List[obj.VirtualHost]]
 
         # Add number of outstanding challenges
         self._chall_out = 0
@@ -120,6 +122,14 @@ class NginxConfigurator(common.Installer):
         self.reverter.recovery_routine()
 
     @property
+    def mod_ssl_conf_src(self):
+        """Full absolute path to SSL configuration file source."""
+        config_filename = "options-ssl-nginx.conf"
+        if self.version < (1, 5, 9):
+            config_filename = "options-ssl-nginx-old.conf"
+        return pkg_resources.resource_filename("certbot_nginx", config_filename)
+
+    @property
     def mod_ssl_conf(self):
         """Full absolute path to SSL configuration file."""
         return os.path.join(self.config.config_dir, constants.MOD_SSL_CONF_DEST)
@@ -128,6 +138,11 @@ class NginxConfigurator(common.Installer):
     def updated_mod_ssl_conf_digest(self):
         """Full absolute path to digest of updated SSL configuration file."""
         return os.path.join(self.config.config_dir, constants.UPDATED_MOD_SSL_CONF_DIGEST)
+
+    def install_ssl_options_conf(self, options_ssl, options_ssl_digest):
+        """Copy Certbot's SSL options file into the system's config dir if required."""
+        return common.install_version_controlled_file(options_ssl, options_ssl_digest,
+            self.mod_ssl_conf_src, constants.ALL_SSL_OPTIONS_HASHES)
 
     # This is called in determine_authenticator and determine_installer
     def prepare(self):
@@ -147,13 +162,13 @@ class NginxConfigurator(common.Installer):
 
         self.parser = parser.NginxParser(self.conf('server-root'))
 
-        install_ssl_options_conf(self.mod_ssl_conf, self.updated_mod_ssl_conf_digest)
-
-        self.install_ssl_dhparams()
-
         # Set Version
         if self.version is None:
             self.version = self.get_version()
+
+        self.install_ssl_options_conf(self.mod_ssl_conf, self.updated_mod_ssl_conf_digest)
+
+        self.install_ssl_dhparams()
 
         # Prevent two Nginx plugins from modifying a config at once
         try:
@@ -887,12 +902,9 @@ class NginxConfigurator(common.Installer):
         have permissions of root.
 
         """
-        util.make_or_verify_dir(
-            self.config.work_dir, core_constants.CONFIG_DIRS_MODE)
-        util.make_or_verify_dir(
-            self.config.backup_dir, core_constants.CONFIG_DIRS_MODE)
-        util.make_or_verify_dir(
-            self.config.config_dir, core_constants.CONFIG_DIRS_MODE)
+        util.make_or_verify_dir(self.config.work_dir, core_constants.CONFIG_DIRS_MODE)
+        util.make_or_verify_dir(self.config.backup_dir, core_constants.CONFIG_DIRS_MODE)
+        util.make_or_verify_dir(self.config.config_dir, core_constants.CONFIG_DIRS_MODE)
 
     def get_version(self):
         """Return version of Nginx Server.
@@ -1127,12 +1139,6 @@ def nginx_restart(nginx_ctl, nginx_conf):
     # for a second. TODO: Check for expected servername and loop until it
     # appears or return an error if looping too long.
     time.sleep(1)
-
-
-def install_ssl_options_conf(options_ssl, options_ssl_digest):
-    """Copy Certbot's SSL options file into the system's config dir if required."""
-    return common.install_version_controlled_file(options_ssl, options_ssl_digest,
-        constants.MOD_SSL_CONF_SRC, constants.ALL_SSL_OPTIONS_HASHES)
 
 
 def _determine_default_server_root():

@@ -326,10 +326,6 @@ class TempDirTestCase(unittest.TestCase):
     def setUp(self):
         """Execute before test"""
         self.tempdir = tempfile.mkdtemp()
-        # Normally mkdtemp() generates a directory with mode 0o700. But this is not enforced on
-        # Windows, as standard os library is extremely limited with modes on this platform.
-        # So we use our own functions to apply strict permissions on this folder.
-        filesystem.chmod(self.tempdir, 0o700)
 
     def tearDown(self):
         """Execute after test"""
@@ -343,10 +339,15 @@ class TempDirTestCase(unittest.TestCase):
         logging.getLogger().handlers = []
         util._release_locks()  # pylint: disable=protected-access
 
-        def handle_rw_files(_, path, __):  # pragma: no cover
+        def handle_rw_files(_, path, __):
             """Handle read-only files, that will fail to be removed on Windows."""
             filesystem.chmod(path, stat.S_IWRITE)
-            os.remove(path)
+            try:
+                os.remove(path)
+            except (IOError, OSError):
+                # TODO: remote the try/except once all logic from windows file permissions is merged
+                if os.name != 'nt':
+                    raise
         shutil.rmtree(self.tempdir, onerror=handle_rw_files)
 
 

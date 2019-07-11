@@ -1,7 +1,6 @@
 """Implements file locks compatible with Linux and Windows for locking files and directories."""
 import errno
 import logging
-
 try:
     import fcntl  # pylint: disable=import-error
 except ImportError:
@@ -210,14 +209,14 @@ class _WindowsLockMechanism(_BaseLockMechanism):
     A Windows lock file mechanism.
     By default on Windows, acquiring a file handler gives exclusive access to the process
     and results in an effective lock. However, it is possible to explicitly acquire the
-    file handler in shared access in terms of read and write, and this is done by security.open
+    file handler in shared access in terms of read and write, and this is done by os.open
     and io.open in Python. So an explicit lock needs to be done through the call of
     msvcrt.locking, that will lock the first byte of the file. In theory, it is also
     possible to access a file in shared delete access, allowing other processes to delete an
     opened file. But this needs also to be done explicitly by all processes using the Windows
     low level APIs, and Python does not do it. As of Python 3.7 and below, Python developers
     state that deleting a file opened by a process from another process is not possible with
-    security.open and io.open.
+    os.open and io.open.
     Consequently, mscvrt.locking is sufficient to obtain an effective lock, and the race
     condition encountered on Linux is not possible on Windows, leading to a simpler workflow.
     """
@@ -225,11 +224,15 @@ class _WindowsLockMechanism(_BaseLockMechanism):
         """Acquire the lock"""
         open_mode = os.O_RDWR | os.O_CREAT | os.O_TRUNC
 
-        fd = filesystem.open(self._path, open_mode, 0o600)
+        fd = None
         try:
+            # Under Windows, filesystem.open will raise directly an EACCES error
+            # if the lock file is already locked.
+            fd = filesystem.open(self._path, open_mode, 0o600)
             msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
         except (IOError, OSError) as err:
-            os.close(fd)
+            if fd:
+                os.close(fd)
             # Anything except EACCES is unexpected. Raise directly the error in that case.
             if err.errno != errno.EACCES:
                 raise

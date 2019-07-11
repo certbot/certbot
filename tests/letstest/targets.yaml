@@ -1,12 +1,12 @@
 targets:
   #-----------------------------------------------------------------------------
   #Ubuntu
-  - ami: ami-064bd2d44a1d6c097
-    name: ubuntu18.10
+  - ami: ami-08ab45c4343f5f5c6
+    name: ubuntu19.04
     type: ubuntu
     virt: hvm
     user: ubuntu
-  - ami: ami-012fd5eb46f56731f
+  - ami: ami-095192256fe1477ad
     name: ubuntu18.04LTS
     type: ubuntu
     virt: hvm
@@ -16,16 +16,6 @@ targets:
     type: ubuntu
     virt: hvm
     user: ubuntu
-  - ami: ami-7b89cc11
-    name: ubuntu14.04LTS
-    type: ubuntu
-    virt: hvm
-    user: ubuntu
-  - ami: ami-9295d0f8
-    name: ubuntu14.04LTS_32bit
-    type: ubuntu
-    virt: pv
-    user: ubuntu
   #-----------------------------------------------------------------------------
   # Debian
   - ami: ami-003f19e0e687de1cd
@@ -33,6 +23,12 @@ targets:
     type: ubuntu
     virt: hvm
     user: admin
+  - ami: ami-0ed54dd1b25657636
+    name: debian9_arm64
+    type: ubuntu
+    virt: hvm
+    user: admin
+    machine_type: a1.medium
   - ami: ami-077bf3962f29d3fa4
     name: debian8.1
     type: ubuntu
@@ -49,8 +45,8 @@ targets:
     type: centos
     virt: hvm
     user: ec2-user
-  - ami: ami-5c69df23
-    name: fedora28
+  - ami: ami-00bbc6858140f19ed
+    name: fedora30
     type: centos
     virt: hvm
     user: fedora

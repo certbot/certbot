@@ -66,7 +66,7 @@ class HookTest(util.ConfigTestCase):
     """Common base class for hook tests."""
 
     @classmethod
-    def _call(cls, *args, **kwargs):
+    def _call(cls, *args, **kwargs):  # pragma: no cover
         """Calls the method being tested with the given arguments."""
         raise NotImplementedError
 
@@ -480,6 +480,12 @@ class ListHooksTest(util.TempDirTestCase):
         create_hook(name)
 
         self.assertEqual(self._call(self.tempdir), [name])
+
+    def test_ignore_tilde(self):
+        name = os.path.join(self.tempdir, "foo~")
+        create_hook(name)
+
+        self.assertEqual(self._call(self.tempdir), [])
 
 
 def create_hook(file_path):

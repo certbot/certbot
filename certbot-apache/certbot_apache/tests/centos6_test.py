@@ -165,10 +165,6 @@ class CentOS6Tests(util.ApacheTest):
             "LoadModule", "ssl_module", start=self.vh_truth[1].path, exclude=False)
         self.assertEqual(len(post_loadmods), 1)
 
-
-
-
-
     def test_loadmod_non_duplicate(self):
         # the modules/mod_ssl.so exists in ssl.conf
         sslmod_args = ["ssl_module", "modules/mod_somethingelse.so"]
@@ -197,7 +193,7 @@ class CentOS6Tests(util.ApacheTest):
                                                     exclude=False)
         for mod in orig_loadmods:
             noarg_path = mod.rpartition("/")[0]
-            self.config.aug.remove(noarg_path)
+            self.config.parser.aug.remove(noarg_path)
         self.config.save()
         self.config.deploy_cert(
             "random.demo", "example/cert.pem", "example/key.pem",

@@ -18,13 +18,13 @@ from certbot import achallenges  # pylint: disable=unused-import
 from certbot import cli
 from certbot import errors
 from certbot import interfaces
-from certbot import util as certbot_util
 from certbot.compat import os
 from certbot.compat import filesystem
 from certbot.display import ops
 from certbot.display import util as display_util
 from certbot.plugins import common
 from certbot.plugins import util
+from certbot.util import safe_open
 
 logger = logging.getLogger(__name__)
 
@@ -174,12 +174,15 @@ to serve all files under specified web root ({0})."""
                 # as it does not correspond to a folder path ('/' or 'C:')
                 for prefix in sorted(util.get_prefixes(self.full_roots[name])[:-1], key=len):
                     try:
-                        filesystem.mkdir(prefix)
+                        # Set owner as parent directory if possible, apply mode for Linux/Windows.
+                        # For Linux, this is coupled with the "umask" call above because
+                        # os.mkdir's "mode" parameter may not always work:
+                        # https://docs.python.org/3/library/os.html#os.mkdir
+                        filesystem.mkdir(prefix, 0o755)
                         self._created_dirs.append(prefix)
                         try:
-                            # Set owner like parent directory if possible,
-                            # apply mode for Linux/Windows
-                            filesystem.copy_ownership_and_apply_mode(path, prefix, 0o755, group=True)
+                            filesystem.copy_ownership_and_apply_mode(
+                                path, prefix, 0o755, copy_user=True, copy_group=True)
                         except (OSError, AttributeError) as exception:
                             logger.info("Unable to change owner and uid of webroot directory")
                             logger.debug("Error was: %s", exception)
@@ -201,9 +204,14 @@ to serve all files under specified web root ({0})."""
         validation_path = self._get_validation_path(root_path, achall)
         logger.debug("Attempting to save validation to %s", validation_path)
 
-        # Permissions of validation_file must be world-readable, owner-writable (GH #1795)
-        with certbot_util.safe_open(validation_path, "wb", chmod=0o644) as validation_file:
-            validation_file.write(validation.encode())
+        # Change permissions to be world-readable, owner-writable (GH #1795)
+        old_umask = os.umask(0o022)
+
+        try:
+            with safe_open(validation_path, mode="wb", chmod=0o644) as validation_file:
+                validation_file.write(validation.encode())
+        finally:
+            os.umask(old_umask)
 
         self.performed[root_path].add(achall)
         return response

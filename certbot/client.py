@@ -15,7 +15,7 @@ from acme import client as acme_client
 from acme import crypto_util as acme_crypto_util
 from acme import errors as acme_errors
 from acme import messages
-from acme.magic_typing import Optional  # type: ignore  # pylint: disable=unused-import,no-name-in-module
+from acme.magic_typing import Optional  # pylint: disable=unused-import,no-name-in-module
 
 import certbot
 from certbot import account
@@ -458,9 +458,7 @@ class Client(object):
 
         """
         for path in cert_path, chain_path, fullchain_path:
-            util.make_or_verify_dir(
-                os.path.dirname(path), 0o755,
-                self.config.strict_permissions)
+            util.make_or_verify_dir(os.path.dirname(path), 0o755, self.config.strict_permissions)
 
 
         cert_file, abs_cert_path = _open_pem_file('cert_path', cert_path)
@@ -701,7 +699,7 @@ def rollback(default_installer, checkpoints, config, plugins):
         installer.restart()
 
 
-def view_config_changes(config, num=None):
+def view_config_changes(config):
     """View checkpoints and associated configuration changes.
 
     .. note:: This assumes that the installation is using a Reverter object.
@@ -712,7 +710,7 @@ def view_config_changes(config, num=None):
     """
     rev = reverter.Reverter(config)
     rev.recovery_routine()
-    rev.view_config_changes(num)
+    rev.view_config_changes()
 
 def _open_pem_file(cli_arg_path, pem_path):
     """Open a pem file.
