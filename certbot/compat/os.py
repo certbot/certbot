@@ -105,3 +105,14 @@ def replace(*unused_args, **unused_kwargs):
     """Method os.replace() is forbidden"""
     raise RuntimeError('Usage of os.replace() is forbidden. '
                        'Use certbot.compat.filesystem.replace() instead.')
+
+
+def realpath(*unused_args, **unused_kwargs):
+    """Method os.path.realpath() is forbidden"""
+    raise RuntimeError('Usage of os.path.realpath() is forbidden. '
+                       'Use certbot.compat.filesystem.realpath() instead.')
+
+
+# Associate new realpath method to current os.path module
+setattr(path, 'realpath', realpath)
+del realpath
