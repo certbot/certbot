@@ -4,6 +4,7 @@ import unittest
 import mock
 
 from certbot import errors
+from certbot.compat import filesystem
 from certbot.compat import os
 
 from certbot_apache import obj

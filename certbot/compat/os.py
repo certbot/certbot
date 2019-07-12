@@ -27,7 +27,7 @@ for attribute in dir(std_os):
         setattr(ourselves, attribute, getattr(std_os, attribute))
 
 # Import our path module, then allow certbot.compat.os.path to behave as a module (like os.path)
-from certbot.compat import path
+from certbot.compat import path  # type: ignore  # pylint: disable=wrong-import-position
 std_sys.modules[__name__ + '.path'] = path
 
 # Clean all remaining importables that are not from the core os module.
