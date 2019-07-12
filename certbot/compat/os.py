@@ -17,6 +17,7 @@ from os import *  # type: ignore  # pylint: disable=wildcard-import,unused-wildc
 # and so not in `from os import *`.
 import os as std_os  # pylint: disable=os-module-forbidden
 import sys as std_sys
+import importlib as std_importlib
 
 ourselves = std_sys.modules[__name__]
 for attribute in dir(std_os):
@@ -27,10 +28,11 @@ for attribute in dir(std_os):
         setattr(ourselves, attribute, getattr(std_os, attribute))
 
 # Similar to os.path, allow certbot.compat.os.path to behave as a module
+path = std_importlib.import_module('os.path')
 std_sys.modules[__name__ + '.path'] = path
 
 # Clean all remaining importables that are not from the core os module.
-del ourselves, std_os, std_sys
+del ourselves, std_os, std_sys, std_importlib
 
 
 # Chmod is the root of all evil for our security model on Windows. With the default implementation
