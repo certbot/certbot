@@ -212,10 +212,17 @@ def realpath(file_path):
     Find the real path for the given path. This method resolves symlinks, including
     recursive symlinks, and is protected against symlinks that creates an infinite loop.
     """
-    if POSIX_MODE:
-        return os.path.realpath(file_path)
-
     original_path = file_path
+
+    if POSIX_MODE:
+        path = os.path.realpath(file_path)
+        if os.path.islink(path):
+            # If path returned by realpath is still a link, it means that it failed to
+            # resolve the symlink because of a loop.
+            # See realpath code: https://github.com/python/cpython/blob/master/Lib/posixpath.py
+            raise RuntimeError('Error, link {0} is a loop!'.format(original_path))
+        return path
+
     inspected_paths = []  # type: List[str]
     while os.path.islink(file_path):
         link_path = file_path
