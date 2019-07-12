@@ -1,7 +1,6 @@
 """Tests for certbot.cli."""
 import argparse
 import copy
-import sys
 import tempfile
 import unittest
 
@@ -45,8 +44,8 @@ class FlagDefaultTest(unittest.TestCase):
     '''Test the cli args entrypoint'''
 
 
-    def test_linux_directories(self):
-        if 'fcntl' in sys.modules:
+    def test_default_directories(self):
+        if os.name != 'nt':
             self.assertEqual(cli.flag_default('config_dir'), '/etc/letsencrypt')
             self.assertEqual(cli.flag_default('work_dir'), '/var/lib/letsencrypt')
             self.assertEqual(cli.flag_default('logs_dir'), '/var/log/letsencrypt')
