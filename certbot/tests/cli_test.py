@@ -41,8 +41,7 @@ class TestReadFile(TempDirTestCase):
 
 
 class FlagDefaultTest(unittest.TestCase):
-    '''Test the cli args entrypoint'''
-
+    """Tests cli.flag_default"""
 
     def test_default_directories(self):
         if os.name != 'nt':
@@ -56,7 +55,8 @@ class FlagDefaultTest(unittest.TestCase):
 
 
 class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
-    """Test the cli args entrypoint"""
+    '''Test the cli args entrypoint'''
+
 
     def setUp(self):
         reload_module(cli)
@@ -73,7 +73,7 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             return ParseTest._unmocked_parse(*args, **kwargs)
 
     def _help_output(self, args):
-        """Run a command, and return the output string for scrutiny"""
+        "Run a command, and return the output string for scrutiny"
 
         output = six.StringIO()
 

@@ -4,6 +4,7 @@ import unittest
 import mock
 
 from certbot import errors
+
 from certbot.compat import os
 from certbot.compat import filesystem
 from certbot.plugins import common
@@ -30,7 +31,7 @@ class PluginStorageTest(test_util.ConfigTestCase):
         self.plugin.storage.storagepath = os.path.join(self.config.config_dir,
                                                        ".pluginstorage.json")
         with mock.patch("six.moves.builtins.open", mock_open):
-            with mock.patch('certbot.compat.os.path.isfile', return_value=True):
+            with mock.patch('os.path.isfile', return_value=True):
                 with mock.patch("certbot.reverter.util"):
                     self.assertRaises(errors.PluginStorageError,
                                       self.plugin.storage._load)  # pylint: disable=protected-access

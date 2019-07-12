@@ -74,7 +74,7 @@ class GoogleClientTest(unittest.TestCase):
         rel_path = 'testdata/discovery.json'
         discovery_file = os.path.join(pwd, rel_path)
         http_mock = HttpMock(discovery_file, {'status': '200'})
-        dns_api = discovery.build('dns', 'v1', http=http_mock, cache_discovery=False)
+        dns_api = discovery.build('dns', 'v1', http=http_mock)
 
         client = _GoogleClient(ACCOUNT_JSON_PATH, dns_api)
 
