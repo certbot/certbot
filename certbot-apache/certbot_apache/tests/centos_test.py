@@ -4,6 +4,7 @@ import unittest
 import mock
 
 from certbot import errors
+from certbot.compat import filesystem
 from certbot.compat import os
 
 from certbot_apache import obj
@@ -160,7 +161,7 @@ class MultipleVhostsTestCentOS(util.ApacheTest):
         """Make sure we read the sysconfig OPTIONS variable correctly"""
         # Return nothing for the process calls
         mock_cfg.return_value = ""
-        self.config.parser.sysconfig_filep = os.path.realpath(
+        self.config.parser.sysconfig_filep = filesystem.realpath(
             os.path.join(self.config.parser.root, "../sysconfig/httpd"))
         self.config.parser.variables = {}
 
