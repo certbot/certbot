@@ -14,7 +14,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-*
+* Fix certbot-auto failures on RHEL 8.
 
 More details about these changes can be found on our GitHub repo.
 

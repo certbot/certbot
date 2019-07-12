@@ -161,6 +161,7 @@ Authors
 * [Michael Schumacher](https://github.com/schumaml)
 * [Michael Strache](https://github.com/Jarodiv)
 * [Michael Sverdlin](https://github.com/sveder)
+* [Michael Watters](https://github.com/blackknight36)
 * [Michal Moravec](https://github.com/https://github.com/Majkl578)
 * [Michal Papis](https://github.com/mpapis)
 * [Minn Soe](https://github.com/MinnSoe)
