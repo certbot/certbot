@@ -260,7 +260,7 @@ class TempHandlerTest(unittest.TestCase):
         self.handler.close()
 
     def test_permissions(self):
-        self.assertTrue(filesystem.check_mode(self.handler.path, 0o600))
+        self.assertTrue(filesystem.check_permissions(self.handler.path, 0o600))
 
     def test_delete(self):
         self.handler.close()
