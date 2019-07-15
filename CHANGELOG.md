@@ -72,6 +72,12 @@ More details about these changes can be found on our GitHub repo.
 
 More details about these changes can be found on our GitHub repo.
 
+## 0.37.0 - 2019-07-15
+
+### Added
+* CLI flag `--key-type` has been added to specify 'rsa' or 'ec' (default 'rsa')
+* CLI flag `--ec-key-size` has been added to specify bits for EC type keys (default 384)
+
 ## 0.36.0 - 2019-07-11
 
 ### Added
