@@ -198,6 +198,8 @@ class IConfig(zope.interface.Interface):
         "register multiple emails, ex: u1@example.com,u2@example.com. "
         "(default: Ask).")
     rsa_key_size = zope.interface.Attribute("Size of the RSA key.")
+    ec_key_size = zope.interface.Attribute("Size of the EC key.")
+    key_type = zope.interface.Attribute("Type of generated private key")
     must_staple = zope.interface.Attribute(
         "Adds the OCSP Must Staple extension to the certificate. "
         "Autoconfigures OCSP Stapling for supported setups "

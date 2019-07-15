@@ -358,6 +358,12 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertFalse(cli.option_was_set(
             'authenticator', cli.flag_default('authenticator')))
 
+        key_type_option = 'key_type'
+        key_type_value = cli.flag_default(key_type_option)
+        self.parse('--key-type {}'.format(key_type_value))
+        self.assertFalse(cli.option_was_set(key_type_option, key_type_value))
+
+
     def test_encode_revocation_reason(self):
         for reason, code in constants.REVOCATION_REASONS.items():
             namespace = self.parse(['--reason', reason])

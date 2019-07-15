@@ -167,11 +167,29 @@ class ImportCSRFileTest(unittest.TestCase):
 class MakeKeyTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
     """Tests for certbot.crypto_util.make_key."""
 
-    def test_it(self):  # pylint: disable=no-self-use
+    def test_rsa(self):  # pylint: disable=no-self-use
+        # RSA Key Type Test
         from certbot.crypto_util import make_key
         # Do not test larger keys as it takes too long.
+        OpenSSL.crypto.load_privatekey(OpenSSL.crypto.FILETYPE_PEM, make_key(1024))
+
+    def test_ec(self):  # pylint: disable=no-self-use
+        # EC Key Type Tests
+        from certbot.crypto_util import make_key
+        # Do not test larger keys as it takes too long.
+
+        # Try a good key size
         OpenSSL.crypto.load_privatekey(
-            OpenSSL.crypto.FILETYPE_PEM, make_key(1024))
+            OpenSSL.crypto.FILETYPE_PEM, make_key(1024, 160, key_type='ec'))
+
+        # Try a bad key size
+        with self.assertRaises(errors.Error) as e:
+            make_key(1024, 100, key_type='ec')
+        self.assertEqual(
+            "Unsupported EC key length: 100",
+            str(e.exception),
+            "Unsupported EC key length: 100"
+        )
 
 
 class VerifyCertSetup(unittest.TestCase):
