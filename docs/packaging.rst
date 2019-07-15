@@ -51,6 +51,16 @@ Notes for package maintainers
 Already ongoing efforts
 =======================
 
+Alpine
+----
+
+From our official releases:
+
+- https://pkgs.alpinelinux.org/packages?name=certbot&branch=v3.10
+
+From "edge": 
+
+- https://pkgs.alpinelinux.org/packages?name=certbot&branch=edge
 
 Arch
 ----
