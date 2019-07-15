@@ -97,7 +97,7 @@ def check_mode(file_path, mode):
 def check_owner(file_path):
     # type: (str) -> bool
     """
-    Check if given file is owner by current user.
+    Check if given file is owned by current user.
     :param str file_path: File path to check
     :rtype: bool
     :return: True if given file is owned by current user, False otherwise.
