@@ -1140,6 +1140,12 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         "security", "--rsa-key-size", type=int, metavar="N",
         default=flag_default("rsa_key_size"), help=config_help("rsa_key_size"))
     helpful.add(
+        "security", "--ec-key-size", type=int, metavar="N",
+        default=flag_default("ec_key_size"), help=config_help("ec_key_size"))
+    helpful.add(
+        "security", "--key-type", type=str, choices=['rsa', 'ec'],
+        default=flag_default("key_type"), help=config_help("key_type"))
+    helpful.add(
         "security", "--must-staple", action="store_true",
         dest="must_staple", default=flag_default("must_staple"),
         help=config_help("must_staple"))

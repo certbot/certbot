@@ -17,10 +17,12 @@ from OpenSSL import crypto
 from cryptography import x509  # type: ignore
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric.ec import ECDSA
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey
 from cryptography.hazmat.primitives.asymmetric.padding import PKCS1v15
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
+from cryptography.hazmat.primitives.serialization import Encoding, PrivateFormat, NoEncryption
 
 from acme import crypto_util as acme_crypto_util
 from acme.magic_typing import IO  # pylint: disable=unused-import, no-name-in-module
@@ -35,7 +37,10 @@ logger = logging.getLogger(__name__)
 
 
 # High level functions
-def init_save_key(key_size, key_dir, keyname="key-certbot.pem"):
+def init_save_key(
+    key_size, key_dir,
+    ec_key_size=384, key_type='rsa',
+    keyname="key-certbot.pem"):
     """Initializes and saves a privkey.
 
     Inits key and saves it in PEM format on the filesystem.
@@ -43,7 +48,8 @@ def init_save_key(key_size, key_dir, keyname="key-certbot.pem"):
     .. note:: keyname is the attempted filename, it may be different if a file
         already exists at the path.
 
-    :param int key_size: RSA key size in bits
+    :param int rsa_key_size: RSA key size in bits
+    :param int ec_key_size: EC key size in bits
     :param str key_dir: Key save directory.
     :param str keyname: Filename of key
 
@@ -54,7 +60,7 @@ def init_save_key(key_size, key_dir, keyname="key-certbot.pem"):
 
     """
     try:
-        key_pem = make_key(key_size)
+        key_pem = make_key(rsa_bits=key_size, ec_bits=ec_key_size, key_type=key_type)
     except ValueError as err:
         logger.error("", exc_info=True)
         raise err
@@ -67,7 +73,10 @@ def init_save_key(key_size, key_dir, keyname="key-certbot.pem"):
         os.path.join(key_dir, keyname), 0o600, "wb")
     with key_f:
         key_f.write(key_pem)
-    logger.debug("Generating key (%d bits): %s", key_size, key_path)
+    if key_type.lower() == 'rsa':
+        logger.debug("Generating RSA key (%d bits): %s", key_size, key_path)
+    else:
+        logger.debug("Generating EC key (%d bits): %s", ec_key_size, key_path)
 
     return util.Key(key_path, key_pem)
 
@@ -177,18 +186,44 @@ def import_csr_file(csrfile, data):
     return PEM, util.CSR(file=csrfile, data=data_pem, form="pem"), domains
 
 
-def make_key(bits):
-    """Generate PEM encoded RSA key.
+def make_key(rsa_bits, ec_bits=384, key_type='rsa'):
+    """Generate PEM encoded RSA|EC key.
 
-    :param int bits: Number of bits, at least 1024.
+    :param int rsa_bits: Number of bits, at least 1024 for RSA.
+    :param int ec_bits: Number of bits, at least 160 for EC.
+    :param str key_type: Key type to create (rsa|ec).
 
-    :returns: new RSA key in PEM form with specified number of bits
+    :returns: new RSA|EC key in PEM form with specified number of bits
     :rtype: str
 
     """
-    assert bits >= 1024  # XXX
-    key = crypto.PKey()
-    key.generate_key(crypto.TYPE_RSA, bits)
+
+    if key_type.lower() == 'rsa':
+        assert rsa_bits >= 1024  # XXX
+        key = crypto.PKey()
+        key.generate_key(crypto.TYPE_RSA, rsa_bits)
+    elif key_type.lower() == 'ec':
+        _ECDSACurves = {
+            160: ec.SECP192R1(),
+            224: ec.SECP224R1(),
+            384: ec.SECP384R1(),
+            521: ec.SECP521R1(),
+        }
+        if _ECDSACurves.get(ec_bits) is None:
+            raise errors.Error(("Unsupported EC key length: {}".format(ec_bits)))
+
+        _key = ec.generate_private_key(
+            _ECDSACurves.get(ec_bits),
+            backend=default_backend()
+        )
+        _key_pem = _key.private_bytes(
+            encoding=Encoding.PEM,
+            format=PrivateFormat.TraditionalOpenSSL,
+            encryption_algorithm=NoEncryption()
+        )
+        key = crypto.load_privatekey(crypto.FILETYPE_PEM, _key_pem)
+    else:
+        raise errors.Error("Invalid key_type specified: {}.  Use [rsa|ecc]".format(key_type))
     return crypto.dump_privatekey(crypto.FILETYPE_PEM, key)
 
 
