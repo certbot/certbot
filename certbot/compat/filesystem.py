@@ -282,7 +282,7 @@ def _apply_win_mode(file_path, mode):
 def _resolve_symlinks(file_path):
     """
     Find the real path for the given path. This method resolves symlinks, including
-    recursive symlinks, and is protected against symlinks that creates an infinite loop.
+    recursive symlinks, and is protected against symlinks that create an infinite loop.
     """
     original_path = file_path
     inspected_paths = []  # type: List[str]
