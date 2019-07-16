@@ -10,7 +10,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* Certbot's official Docker images are now based on Python 3.6 rather than 2.7.
 
 ### Fixed
 
