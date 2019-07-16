@@ -180,7 +180,7 @@ class MakeKeyTest(unittest.TestCase):  # pylint: disable=too-few-public-methods
 
         # Try a good key size
         OpenSSL.crypto.load_privatekey(
-            OpenSSL.crypto.FILETYPE_PEM, make_key(1024, 160, key_type='ec'))
+            OpenSSL.crypto.FILETYPE_PEM, make_key(1024, 256, key_type='ec'))
 
         # Try a bad key size
         with self.assertRaises(errors.Error) as e:

@@ -187,7 +187,7 @@ def make_key(rsa_bits, ec_bits=384, key_type='rsa'):
     """Generate PEM encoded RSA|EC key.
 
     :param int rsa_bits: Number of bits, at least 1024 for RSA.
-    :param int ec_bits: Number of bits, at least 160 for EC.
+    :param int ec_bits: Number of bits, at least 256 for EC.
     :param str key_type: Key type to create (rsa|ec).
 
     :returns: new RSA|EC key in PEM form with specified number of bits
@@ -201,13 +201,11 @@ def make_key(rsa_bits, ec_bits=384, key_type='rsa'):
         key.generate_key(crypto.TYPE_RSA, rsa_bits)
     elif key_type.lower() == 'ec':
         _ECDSACurves = {
-            160: ec.SECP192R1(),
-            224: ec.SECP224R1(),
+            256: ec.SECP256R1(),
             384: ec.SECP384R1(),
-            521: ec.SECP521R1(),
         }
         if _ECDSACurves.get(ec_bits) is None:
-            raise errors.Error(("Unsupported EC key length: {}".format(ec_bits)))
+            raise errors.Error("Unsupported EC key length: {}".format(ec_bits))
 
         _key = ec.generate_private_key(
             _ECDSACurves.get(ec_bits),
