@@ -325,10 +325,10 @@ class CheckPermissionsTest(test_util.TempDirTestCase):
         self.probe_path = _create_probe(self.tempdir)
 
     def test_check_mode(self):
-        self.assertTrue(filesystem.check_mode(self.probe_path, 0o700))
+        self.assertTrue(filesystem.check_mode(self.probe_path, 0o744))
 
-        filesystem.chmod(self.probe_path, 0o744)
-        self.assertFalse(filesystem.check_mode(self.probe_path, 0o700))
+        filesystem.chmod(self.probe_path, 0o700)
+        self.assertFalse(filesystem.check_mode(self.probe_path, 0o744))
 
     @unittest.skipIf(POSIX_MODE, reason='Test specific to Windows security')
     def test_check_owner_windows(self):
@@ -354,15 +354,15 @@ class CheckPermissionsTest(test_util.TempDirTestCase):
             self.assertFalse(filesystem.check_owner(self.probe_path))
 
     def test_check_permissions(self):
-        self.assertTrue(filesystem.check_permissions(self.probe_path, 0o700))
+        self.assertTrue(filesystem.check_permissions(self.probe_path, 0o744))
 
         with mock.patch('certbot.compat.filesystem.check_mode') as mock_mode:
             mock_mode.return_value = False
-            self.assertFalse(filesystem.check_permissions(self.probe_path, 0o700))
+            self.assertFalse(filesystem.check_permissions(self.probe_path, 0o744))
 
         with mock.patch('certbot.compat.filesystem.check_owner') as mock_owner:
             mock_owner.return_value = False
-            self.assertFalse(filesystem.check_permissions(self.probe_path, 0o700))
+            self.assertFalse(filesystem.check_permissions(self.probe_path, 0o744))
 
 
 class OsReplaceTest(test_util.TempDirTestCase):
@@ -399,7 +399,7 @@ def _set_owner(target, security_owner, user):
 def _create_probe(tempdir):
     filesystem.chmod(tempdir, 0o744)
     probe_path = os.path.join(tempdir, 'probe')
-    util.safe_open(probe_path, 'w', chmod=0o700).close()
+    util.safe_open(probe_path, 'w', chmod=0o744).close()
     return probe_path
 
 
