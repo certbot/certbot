@@ -637,6 +637,13 @@ class ClientTest(ClientTestBase):
             errors.PollError, self.client.poll_and_request_issuance,
             csr, authzrs, mintime=mintime, max_attempts=2)
 
+    def test_deactivate_authorization(self):
+        # TODO: this test doesn't seem to do anything
+        self.response.headers['Location'] = self.authzr.uri
+        self.response.json.return_value = self.authzr.body.to_json()
+        self.assertEqual(self.authzr,
+                         self.client.deactivate_authorization(self.authzr))
+
     def test_check_cert(self):
         self.response.headers['Location'] = self.certr.uri
         self.response.content = CERT_DER
