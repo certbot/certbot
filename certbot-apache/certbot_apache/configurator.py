@@ -9,7 +9,6 @@ import time
 
 from collections import defaultdict
 
-import pkg_resources
 import six
 
 import zope.component
@@ -115,12 +114,17 @@ class ApacheConfigurator(common.Installer):
         """Get a value from options"""
         return self.options.get(key)
 
-    def _pick_apache_config(self):
+    def pick_apache_config(self):
+        """
+        Pick the appropriate TLS Apache configuration file for current version of Apache and OS.
+        :return: the path to the TLS Apache configuration file to use
+        :rtype: str
+        """
         # Disabling TLS session tickets is supported by Apache 2.4.11+.
         # So for old versions of Apache we pick a configuration without this option.
         if self.version < (2, 4, 11):
-            return find_ssl_apache_conf("old")
-        return find_ssl_apache_conf("current")
+            return apache_util.find_ssl_apache_conf("old")
+        return apache_util.find_ssl_apache_conf("current")
 
     def _prepare_options(self):
         """
@@ -2343,7 +2347,7 @@ class ApacheConfigurator(common.Installer):
         # XXX if we ever try to enforce a local privilege boundary (eg, running
         # certbot for unprivileged users via setuid), this function will need
         # to be modified.
-        apache_config_path = self._pick_apache_config()
+        apache_config_path = self.pick_apache_config()
         return common.install_version_controlled_file(
             options_ssl, options_ssl_digest, apache_config_path, constants.ALL_SSL_OPTIONS_HASHES)
 
@@ -2520,18 +2524,6 @@ class ApacheConfigurator(common.Installer):
 
         # Update AutoHSTS storage (We potentially removed vhosts from managed)
         self._autohsts_save_state()
-
-
-def find_ssl_apache_conf(prefix):
-    """
-    Find a TLS Apache config in the dedicated storage.
-    :param str prefix: prefix of the TLS Apache config to find
-    :return: the path the TLS Apache config
-    :rtype: str
-    """
-    return pkg_resources.resource_filename(
-        "certbot_apache",
-        os.path.join("tls_configs", "{0}-options-ssl-apache.conf".format(prefix)))
 
 
 AutoHSTSEnhancement.register(ApacheConfigurator)  # pylint: disable=no-member

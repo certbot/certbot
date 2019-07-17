@@ -1707,7 +1707,7 @@ class InstallSslOptionsConfTest(util.ApacheTest):
                                              self.config.updated_mod_ssl_conf_digest)
 
     def _current_ssl_options_hash(self):
-        return crypto_util.sha256sum(self.config._pick_apache_config())  # pylint: disable=protected-access
+        return crypto_util.sha256sum(self.config.pick_apache_config())
 
     def _assert_current_file(self):
         self.assertTrue(os.path.isfile(self.config.mod_ssl_conf))
@@ -1743,7 +1743,7 @@ class InstallSslOptionsConfTest(util.ApacheTest):
             self.assertFalse(mock_logger.warning.called)
         self.assertTrue(os.path.isfile(self.config.mod_ssl_conf))
         self.assertEqual(crypto_util.sha256sum(
-            self.config._pick_apache_config()),  # pylint: disable=protected-access
+            self.config.pick_apache_config()),
             self._current_ssl_options_hash())
         self.assertNotEqual(crypto_util.sha256sum(self.config.mod_ssl_conf),
             self._current_ssl_options_hash())
@@ -1759,7 +1759,7 @@ class InstallSslOptionsConfTest(util.ApacheTest):
                 "%s has been manually modified; updated file "
                 "saved to %s. We recommend updating %s for security purposes.")
         self.assertEqual(crypto_util.sha256sum(
-            self.config._pick_apache_config()),  # pylint: disable=protected-access
+            self.config.pick_apache_config()),
             self._current_ssl_options_hash())
         # only print warning once
         with mock.patch("certbot.plugins.common.logger") as mock_logger:

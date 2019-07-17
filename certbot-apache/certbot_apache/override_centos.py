@@ -1,7 +1,6 @@
 """ Distribution specific override class for CentOS family (RHEL, Fedora) """
 import logging
 
-import pkg_resources
 import zope.interface
 
 from certbot import errors
@@ -73,8 +72,17 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
         # Finish with actual config check to see if systemctl restart helped
         super(CentOSConfigurator, self).config_test()
 
-    def _pick_apache_config(self):
-        return configurator.find_ssl_apache_conf("centos")
+    def pick_apache_config(self):
+        """
+        Pick the appropriate TLS Apache configuration file for current version of Apache and OS.
+        :return: the path to the TLS Apache configuration file to use
+        :rtype: str
+        """
+        # Disabling TLS session tickets is supported by Apache 2.4.11+.
+        # So for old versions of Apache we pick a configuration without this option.
+        if self.version < (2, 4, 11):
+            return apache_util.find_ssl_apache_conf("centos-old")
+        return apache_util.find_ssl_apache_conf("centos-current")
 
     def _prepare_options(self):
         """
