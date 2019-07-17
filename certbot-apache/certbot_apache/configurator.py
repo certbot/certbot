@@ -119,8 +119,8 @@ class ApacheConfigurator(common.Installer):
         # Disabling TLS session tickets is supported by Apache 2.4.11+.
         # So for old versions of Apache we pick a configuration without this option.
         if self.version < (2, 4, 11):
-            return pkg_resources.resource_filename("certbot_apache", "old-options-ssl-apache.conf")
-        return pkg_resources.resource_filename("certbot_apache", "options-ssl-apache.conf")
+            return find_ssl_apache_conf("old")
+        return find_ssl_apache_conf("current")
 
     def _prepare_options(self):
         """
@@ -2520,6 +2520,18 @@ class ApacheConfigurator(common.Installer):
 
         # Update AutoHSTS storage (We potentially removed vhosts from managed)
         self._autohsts_save_state()
+
+
+def find_ssl_apache_conf(prefix):
+    """
+    Find a TLS Apache config in the dedicated storage.
+    :param str prefix: prefix of the TLS Apache config to find
+    :return: the path the TLS Apache config
+    :rtype: str
+    """
+    return pkg_resources.resource_filename(
+        "certbot_apache",
+        os.path.join("tls_configs", "{0}-options-ssl-apache.conf".format(prefix)))
 
 
 AutoHSTSEnhancement.register(ApacheConfigurator)  # pylint: disable=no-member

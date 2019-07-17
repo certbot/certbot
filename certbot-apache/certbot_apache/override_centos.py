@@ -74,7 +74,7 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
         super(CentOSConfigurator, self).config_test()
 
     def _pick_apache_config(self):
-        return pkg_resources.resource_filename("certbot_apache", "centos-options-ssl-apache.conf")
+        return configurator.find_ssl_apache_conf("centos")
 
     def _prepare_options(self):
         """

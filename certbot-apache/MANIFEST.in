@@ -5,3 +5,4 @@ recursive-include certbot_apache/tests/testdata *
 include certbot_apache/centos-options-ssl-apache.conf
 include certbot_apache/options-ssl-apache.conf
 recursive-include certbot_apache/augeas_lens *.aug
+recursive-include certbot_apache/tls_configs *.conf
