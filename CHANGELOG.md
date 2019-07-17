@@ -6,7 +6,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* acme: Authz deactivation added to `acme` module.
 
 ### Changed
 
