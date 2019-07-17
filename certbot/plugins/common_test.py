@@ -3,6 +3,7 @@ import functools
 import shutil
 import tempfile
 import unittest
+import warnings
 
 import OpenSSL
 import josepy as jose
@@ -14,6 +15,7 @@ from certbot import achallenges
 from certbot import crypto_util
 from certbot import errors
 from certbot.compat import os
+from certbot.compat import filesystem
 from certbot.tests import acme_util
 from certbot.tests import util as test_util
 
@@ -94,12 +96,11 @@ class InstallerTest(test_util.ConfigTestCase):
 
     def setUp(self):
         super(InstallerTest, self).setUp()
-        os.mkdir(self.config.config_dir)
+        filesystem.mkdir(self.config.config_dir)
         from certbot.plugins.common import Installer
 
-        with mock.patch("certbot.plugins.common.reverter.Reverter"):
-            self.installer = Installer(config=self.config,
-                                       name="Installer")
+        self.installer = Installer(config=self.config,
+                                   name="Installer")
         self.reverter = self.installer.reverter
 
     def test_add_to_real_checkpoint(self):
@@ -121,12 +122,11 @@ class InstallerTest(test_util.ConfigTestCase):
                                            temporary=temporary)
 
         if temporary:
-            reverter_func = self.reverter.add_to_temp_checkpoint
+            reverter_func_name = "add_to_temp_checkpoint"
         else:
-            reverter_func = self.reverter.add_to_checkpoint
+            reverter_func_name = "add_to_checkpoint"
 
-        self._test_adapted_method(
-            installer_func, reverter_func, files, save_notes)
+        self._test_adapted_method(installer_func, reverter_func_name, files, save_notes)
 
     def test_finalize_checkpoint(self):
         self._test_wrapped_method("finalize_checkpoint", "foo")
@@ -143,6 +143,19 @@ class InstallerTest(test_util.ConfigTestCase):
     def test_view_config_changes(self):
         self._test_wrapped_method("view_config_changes")
 
+    def test_view_config_changes_warning_supression(self):
+        with warnings.catch_warnings():
+            # Without the catch_warnings() code in
+            # common.Installer.view_config_changes, this would raise an
+            # exception. The module parameter here is ".*common$" because the
+            # stacklevel=2 parameter of warnings.warn causes the warning to
+            # refer to the code in the caller rather than the call to
+            # warnings.warn. This means the warning in common.Installer refers
+            # to this module and the warning in the reverter refers to the
+            # plugins.common module.
+            warnings.filterwarnings("error", ".*view_config_changes", module=".*common$")
+            self.installer.view_config_changes()
+
     def _test_wrapped_method(self, name, *args, **kwargs):
         """Test a wrapped reverter method.
 
@@ -152,28 +165,27 @@ class InstallerTest(test_util.ConfigTestCase):
 
         """
         installer_func = getattr(self.installer, name)
-        reverter_func = getattr(self.reverter, name)
-        self._test_adapted_method(
-            installer_func, reverter_func, *args, **kwargs)
+        self._test_adapted_method(installer_func, name, *args, **kwargs)
 
     def _test_adapted_method(self, installer_func,
-                             reverter_func, *passed_args, **passed_kwargs):
+                             reverter_func_name, *passed_args, **passed_kwargs):
         """Test an adapted reverter method
 
         :param callable installer_func: installer method to test
-        :param mock.MagicMock reverter_func: mocked adapated
-            reverter method
+        :param str reverter_func_name: name of the method on the
+            reverter that should be called
         :param tuple passed_args: positional arguments passed from
             installer method to the reverter method
         :param dict passed_kargs: keyword arguments passed from
             installer method to the reverter method
 
         """
-        installer_func(*passed_args, **passed_kwargs)
-        reverter_func.assert_called_once_with(*passed_args, **passed_kwargs)
-        reverter_func.side_effect = errors.ReverterError
-        self.assertRaises(
-            errors.PluginError, installer_func, *passed_args, **passed_kwargs)
+        with mock.patch.object(self.reverter, reverter_func_name) as reverter_func:
+            installer_func(*passed_args, **passed_kwargs)
+            reverter_func.assert_called_once_with(*passed_args, **passed_kwargs)
+            reverter_func.side_effect = errors.ReverterError
+            self.assertRaises(
+                errors.PluginError, installer_func, *passed_args, **passed_kwargs)
 
     def test_install_ssl_dhparams(self):
         self.installer.install_ssl_dhparams()

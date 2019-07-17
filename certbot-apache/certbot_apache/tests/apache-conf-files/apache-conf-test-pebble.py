@@ -15,7 +15,7 @@ SCRIPT_DIRNAME = os.path.dirname(__file__)
 def main(args=None):
     if not args:
         args = sys.argv[1:]
-    with acme_server.setup_acme_server('pebble', [], False) as acme_xdist:
+    with acme_server.ACMEServer('pebble', [], False) as acme_xdist:
         environ = os.environ.copy()
         environ['SERVER'] = acme_xdist['directory_url']
         command = [os.path.join(SCRIPT_DIRNAME, 'apache-conf-test')]

@@ -49,9 +49,6 @@ class Installer(common.Plugin):
     def recovery_routine(self):
         pass  # pragma: no cover
 
-    def view_config_changes(self):
-        pass  # pragma: no cover
-
     def config_test(self):
         pass  # pragma: no cover
 

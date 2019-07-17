@@ -142,12 +142,10 @@ class AuthenticatorTest(unittest.TestCase):
             self.assertRaises(errors.PluginError, self.auth.perform, [])
         filesystem.chmod(self.path, 0o700)
 
-    @test_util.skip_on_windows('On Windows, there is no chown.')
-    @mock.patch("certbot.plugins.webroot.os.chown")
-    def test_failed_chown(self, mock_chown):
-        mock_chown.side_effect = OSError(errno.EACCES, "msg")
+    @mock.patch("certbot.plugins.webroot.filesystem.copy_ownership_and_apply_mode")
+    def test_failed_chown(self, mock_ownership):
+        mock_ownership.side_effect = OSError(errno.EACCES, "msg")
         self.auth.perform([self.achall])  # exception caught and logged
-
 
     @test_util.patch_get_utility()
     def test_perform_new_webroot_not_in_map(self, mock_get_utility):
@@ -203,7 +201,7 @@ class AuthenticatorTest(unittest.TestCase):
         self.assertFalse(os.path.exists(self.partial_root_challenge_path))
 
     def test_perform_cleanup_existing_dirs(self):
-        os.mkdir(self.partial_root_challenge_path)
+        filesystem.mkdir(self.partial_root_challenge_path)
         self.auth.prepare()
         self.auth.perform([self.achall])
         self.auth.cleanup([self.achall])
@@ -219,7 +217,7 @@ class AuthenticatorTest(unittest.TestCase):
             domain="thing.com", account_key=KEY)
 
         bingo_validation_path = "YmluZ28"
-        os.mkdir(self.partial_root_challenge_path)
+        filesystem.mkdir(self.partial_root_challenge_path)
         self.auth.prepare()
         self.auth.perform([bingo_achall, self.achall])
 
@@ -235,7 +233,7 @@ class AuthenticatorTest(unittest.TestCase):
         self.auth.perform([self.achall])
 
         leftover_path = os.path.join(self.root_challenge_path, 'leftover')
-        os.mkdir(leftover_path)
+        filesystem.mkdir(leftover_path)
 
         self.auth.cleanup([self.achall])
         self.assertFalse(os.path.exists(self.validation_path))

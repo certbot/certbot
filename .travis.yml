@@ -16,6 +16,9 @@ before_script:
 # is a cap of on the number of simultaneous runs.
 branches:
   only:
+    # apache-parser-v2 is a temporary branch for doing work related to
+    # rewriting the parser in the Apache plugin.
+    - apache-parser-v2
     - master
     - /^\d+\.\d+\.x$/
     - /^test-.*$/
@@ -24,9 +27,10 @@ branches:
 not-on-master: &not-on-master
   if: NOT (type = push AND branch = master)
 
-# Jobs for the extended test suite are executed for cron jobs and pushes on non-master branches.
+# Jobs for the extended test suite are executed for cron jobs and pushes to
+# non-development branches. See the explanation for apache-parser-v2 above.
 extended-test-suite: &extended-test-suite
-  if: type = cron OR (type = push AND branch != master)
+  if: type = cron OR (type = push AND branch NOT IN (apache-parser-v2, master))
 
 matrix:
   include:
@@ -71,6 +75,10 @@ matrix:
       services: docker
       before_install:
       addons:
+      <<: *not-on-master
+    - sudo: required
+      env: TOXENV=le_auto_xenial
+      services: docker
       <<: *not-on-master
     - python: "2.7"
       env: TOXENV=apacheconftest-with-pebble
@@ -206,10 +214,6 @@ matrix:
       services: docker
       <<: *extended-test-suite
     - sudo: required
-      env: TOXENV=le_auto_xenial
-      services: docker
-      <<: *extended-test-suite
-    - sudo: required
       env: TOXENV=le_auto_jessie
       services: docker
       <<: *extended-test-suite
@@ -257,7 +261,6 @@ addons:
   apt:
     packages:  # Keep in sync with letsencrypt-auto-source/pieces/bootstrappers/deb_common.sh and Boulder.
     - python-dev
-    - python-virtualenv
     - gcc
     - libaugeas0
     - libssl-dev
@@ -267,7 +270,12 @@ addons:
     - nginx-light
     - openssl
 
-install: "$(command -v pip || command -v pip3) install codecov tox"
+# tools/pip_install.py is used to pin packages to a known working version
+# except in tests where the environment variable CERTBOT_NO_PIN is set.
+# virtualenv is listed here explicitly to make sure it is upgraded when
+# CERTBOT_NO_PIN is set to work around failures we've seen when using an older
+# version of virtualenv.
+install: "tools/pip_install.py -U codecov tox virtualenv"
 script: tox
 
 after_success: '[ "$TOXENV" == "py27-cover" ] && codecov -F linux'

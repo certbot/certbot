@@ -42,7 +42,7 @@ class ValidateHookTest(util.TempDirTestCase):
     def test_not_executable(self):
         file_path = os.path.join(self.tempdir, "foo")
         # create a non-executable file
-        os.close(os.open(file_path, os.O_CREAT | os.O_WRONLY, 0o666))
+        os.close(filesystem.open(file_path, os.O_CREAT | os.O_WRONLY, 0o666))
         # prevent unnecessary modifications to PATH
         with mock.patch("certbot.hooks.plug_util.path_surgery"):
             self.assertRaises(errors.HookCommandNotFound,
@@ -96,7 +96,7 @@ class PreHookTest(HookTest):
         super(PreHookTest, self).setUp()
         self.config.pre_hook = "foo"
 
-        os.makedirs(self.config.renewal_pre_hooks_dir)
+        filesystem.makedirs(self.config.renewal_pre_hooks_dir)
         self.dir_hook = os.path.join(self.config.renewal_pre_hooks_dir, "bar")
         create_hook(self.dir_hook)
 
@@ -174,7 +174,7 @@ class PostHookTest(HookTest):
         super(PostHookTest, self).setUp()
 
         self.config.post_hook = "bar"
-        os.makedirs(self.config.renewal_post_hooks_dir)
+        filesystem.makedirs(self.config.renewal_post_hooks_dir)
         self.dir_hook = os.path.join(self.config.renewal_post_hooks_dir, "foo")
         create_hook(self.dir_hook)
 
@@ -376,7 +376,7 @@ class RenewHookTest(RenewalHookTest):
         super(RenewHookTest, self).setUp()
         self.config.renew_hook = "foo"
 
-        os.makedirs(self.config.renewal_deploy_hooks_dir)
+        filesystem.makedirs(self.config.renewal_deploy_hooks_dir)
         self.dir_hook = os.path.join(self.config.renewal_deploy_hooks_dir,
                                      "bar")
         create_hook(self.dir_hook)

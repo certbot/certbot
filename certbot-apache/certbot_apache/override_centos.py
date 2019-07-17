@@ -87,7 +87,7 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
     def get_parser(self):
         """Initializes the ApacheParser"""
         return CentOSParser(
-            self.aug, self.option("server_root"), self.option("vhost_root"),
+            self.option("server_root"), self.option("vhost_root"),
             self.version, configurator=self)
 
     def _deploy_cert(self, *args, **kwargs):  # pylint: disable=arguments-differ
@@ -156,7 +156,7 @@ class CentOSConfigurator(configurator.ApacheConfigurator):
         for loadmod_path in loadmod_paths:
             nodir_path = loadmod_path.split("/directive")[0]
             # Remove the old LoadModule directive
-            self.aug.remove(loadmod_path)
+            self.parser.aug.remove(loadmod_path)
 
             # Create a new IfModule !mod_ssl.c if not already found on path
             ssl_ifmod = self.parser.get_ifmod(nodir_path, "!mod_ssl.c",
