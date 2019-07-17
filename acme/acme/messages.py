@@ -170,6 +170,7 @@ STATUS_REVOKED = Status('revoked')
 STATUS_READY = Status('ready')
 STATUS_DEACTIVATED = Status('deactivated')
 
+
 class IdentifierType(_Constant):
     """ACME identifier type."""
     POSSIBLE_NAMES = {}  # type: dict
