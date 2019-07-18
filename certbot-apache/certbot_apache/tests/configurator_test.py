@@ -1780,10 +1780,10 @@ class InstallSslOptionsConfTest(util.ApacheTest):
                      if name.endswith('options-ssl-apache.conf')]
         self.assertTrue(all_files)
         for one_file in all_files:
-            hash = crypto_util.sha256sum(one_file)
-            self.assertTrue(hash in ALL_SSL_OPTIONS_HASHES,
-                            "Constants.ALL_SSL_OPTIONS_HASHES must be appended with the sha256 hash "
-                            "of {0} when it is updated.".format(one_file))
+            file_hash = crypto_util.sha256sum(one_file)
+            self.assertTrue(file_hash in ALL_SSL_OPTIONS_HASHES,
+                            "Constants.ALL_SSL_OPTIONS_HASHES must be appended with the sha256 "
+                            "hash of {0} when it is updated.".format(one_file))
 
 
 if __name__ == "__main__":
