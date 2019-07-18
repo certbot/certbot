@@ -289,6 +289,29 @@ def realpath(file_path):
     return os.path.abspath(file_path)
 
 
+def is_executable(path):
+    """
+    Is path an executable file?
+    :param str path: path to test
+    :returns: True if path is an executable file
+    :rtype: bool
+    """
+    if POSIX_MODE:
+        return os.path.isfile(path) and os.access(path, os.X_OK)
+
+    path = _resolve_symlinks(path)
+    security = win32security.GetFileSecurity(path, win32security.DACL_SECURITY_INFORMATION)
+    dacl = security.GetSecurityDescriptorDacl()
+
+    mode = dacl.GetEffectiveRightsFromAcl({
+        'TrusteeForm': win32security.TRUSTEE_IS_SID,
+        'TrusteeType': win32security.TRUSTEE_IS_USER,
+        'Identifier': _get_current_user(),
+    })
+
+    return mode & ntsecuritycon.FILE_GENERIC_EXECUTE == ntsecuritycon.FILE_GENERIC_EXECUTE
+
+
 def _apply_win_mode(file_path, mode):
     """
     This function converts the given POSIX mode into a Windows ACL list, and applies it to the

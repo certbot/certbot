@@ -38,11 +38,29 @@ class ValidateHookTest(util.TempDirTestCase):
         from certbot.hooks import validate_hook
         return validate_hook(*args, **kwargs)
 
-    @util.broken_on_windows
     def test_not_executable(self):
         file_path = os.path.join(self.tempdir, "foo")
+
+        # On Windows a file created within Certbot will always have all permissions to the
+        # Administrators group set. Since the unit tests are typically executed under elevated
+        # privileges, it means that current user will always have effective execute rights on the
+        # hook script, and so the test will fail. To prevent that and represent a file created
+        # outside Certbot as typically a hook file is, we mock the _generate_dacl function in
+        # certbot.compat.filesystem to give rights only to the current user. This implies removing
+        # all ACEs except the first one from the DACL created by original _generate_dacl function.
+
+        from certbot.compat.filesystem import _generate_dacl
+
+        def _execute_mock(user_sid, mode):
+            dacl = _generate_dacl(user_sid, mode)
+            for i in range(1, dacl.GetAceCount()):
+                dacl.DeleteAce(1)  # DeleteAce dynamically updates the internal index mapping.
+            return dacl
+
         # create a non-executable file
-        os.close(filesystem.open(file_path, os.O_CREAT | os.O_WRONLY, 0o666))
+        with mock.patch("certbot.compat.filesystem._generate_dacl", side_effect=_execute_mock):
+            os.close(filesystem.open(file_path, os.O_CREAT | os.O_WRONLY, 0o666))
+
         # prevent unnecessary modifications to PATH
         with mock.patch("certbot.hooks.plug_util.path_surgery"):
             self.assertRaises(errors.HookCommandNotFound,
@@ -495,7 +513,7 @@ def create_hook(file_path):
 
     """
     open(file_path, "w").close()
-    filesystem.chmod(file_path, os.stat(file_path).st_mode | stat.S_IXUSR)
+    filesystem.chmod(file_path, 0o744)
 
 
 if __name__ == '__main__':

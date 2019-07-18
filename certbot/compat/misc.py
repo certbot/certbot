@@ -30,6 +30,10 @@ else:
     MASK_FOR_PRIVATE_KEY_PERMISSIONS = 0
 
 
+# For Linux: define OS specific standard binaries directories
+STD_BINARIES_DIRS = ("/usr/sbin", "/usr/local/bin", "/usr/local/sbin") if POSIX_MODE else ()
+
+
 def raise_for_non_administrative_windows_rights():
     # type: () -> None
     """

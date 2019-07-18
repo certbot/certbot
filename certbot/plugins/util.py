@@ -3,8 +3,10 @@ import logging
 
 from certbot import util
 from certbot.compat import os
+from certbot.compat.misc import STD_BINARIES_DIRS
 
 logger = logging.getLogger(__name__)
+
 
 def get_prefixes(path):
     """Retrieves all possible path prefixes of a path, in descending order
@@ -26,6 +28,7 @@ def get_prefixes(path):
             break
     return prefixes
 
+
 def path_surgery(cmd):
     """Attempt to perform PATH surgery to find cmd
 
@@ -35,22 +38,22 @@ def path_surgery(cmd):
 
     :returns: True if the operation succeeded, False otherwise
     """
-    dirs = ("/usr/sbin", "/usr/local/bin", "/usr/local/sbin")
-    path = os.environ["PATH"]
-    added = []
-    for d in dirs:
-        if d not in path:
-            path += os.pathsep + d
-            added.append(d)
+    if STD_BINARIES_DIRS:
+        path = os.environ["PATH"]
+        added = []
+        for d in STD_BINARIES_DIRS:
+            if d not in path:
+                path += os.pathsep + d
+                added.append(d)
 
-    if any(added):
-        logger.debug("Can't find %s, attempting PATH mitigation by adding %s",
-                     cmd, os.pathsep.join(added))
-        os.environ["PATH"] = path
+        if any(added):
+            logger.debug("Can't find %s, attempting PATH mitigation by adding %s",
+                         cmd, os.pathsep.join(added))
+            os.environ["PATH"] = path
 
-    if util.exe_exists(cmd):
-        return True
-    expanded = " expanded" if any(added) else ""
-    logger.debug("Failed to find executable %s in%s PATH: %s", cmd,
-                 expanded, path)
+        if util.exe_exists(cmd):
+            return True
+        expanded = " expanded" if any(added) else ""
+        logger.debug("Failed to find executable %s in%s PATH: %s", cmd,
+                     expanded, path)
     return False
