@@ -1,0 +1,5 @@
+#!/bin/bash
+set -ex
+
+PLUGIN_NAME=${DOCKER_REPO//*\//}
+docker build --build-arg PLUGIN_NAME=${PLUGIN_NAME} -f ${DOCKERFILE_PATH} -t ${IMAGE_NAME} .

@@ -1,0 +1,5 @@
+#!/bin/bash
+set -ex
+
+CERTBOT_VERSION=${DOCKER_TAG//v/}
+docker build --build-arg CERTBOT_VERSION=${CERTBOT_VERSION} -f ${DOCKERFILE_PATH} -t ${IMAGE_NAME} .
