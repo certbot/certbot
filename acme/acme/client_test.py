@@ -642,6 +642,8 @@ class ClientTest(ClientTestBase):
         self.response.json.return_value = authzb.to_json()
         authzr = self.client.deactivate_authorization(self.authzr)
         self.assertEqual(authzb, authzr.body)
+        self.assertEqual(self.client.net.post.call_count, 1)
+        self.assertTrue(self.authzr.uri in self.net.post.call_args_list[0][0])
 
     def test_check_cert(self):
         self.response.headers['Location'] = self.certr.uri

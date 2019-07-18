@@ -126,11 +126,11 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
     def deactivate_authorization(self, authzr):
         """Deactivate authorization.
 
-        :param messages.AuthorizationResources authzr: The Authorization resource
+        :param messages.AuthorizationResource authzr: The Authorization resource
             to be deactivated.
 
         :returns: The Authorization resource that was deactivated.
-        :rtype: `.AuthorizationResources`
+        :rtype: `.AuthorizationResource`
 
         """
         body = messages.Authorization(**dict({'status': 'deactivated'}))
