@@ -17,6 +17,7 @@ from __future__ import print_function
 import functools
 import logging
 import logging.handlers
+import shutil
 import sys
 import tempfile
 import traceback
@@ -238,12 +239,10 @@ class TempHandler(logging.StreamHandler):
 
     """
     def __init__(self):
-        fd, path = tempfile.mkstemp()  # To get a proper tempfile path
-        os.close(fd)
-        os.remove(path)
-        stream = util.safe_open(path, mode='w', chmod=0o600)
+        self._workdir = tempfile.mkdtemp()
+        self.path = os.path.join(self._workdir, 'log')
+        stream = util.safe_open(self.path, mode='w', chmod=0o600)
         super(TempHandler, self).__init__(stream)
-        self.path = path
         self._delete = True
 
     def emit(self, record):
@@ -267,7 +266,7 @@ class TempHandler(logging.StreamHandler):
             # stream like stderr to be used
             self.stream.close()
             if self._delete:
-                os.remove(self.path)
+                shutil.rmtree(self._workdir)
             self._delete = False
             super(TempHandler, self).close()
         finally:
