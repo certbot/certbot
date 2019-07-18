@@ -1778,7 +1778,7 @@ class InstallSslOptionsConfTest(util.ApacheTest):
         tls_configs_dir = pkg_resources.resource_filename("certbot_apache", "tls_configs")
         all_files = [os.path.join(tls_configs_dir, name) for name in os.listdir(tls_configs_dir)
                      if name.endswith('options-ssl-apache.conf')]
-        print(all_files)
+        self.assertTrue(all_files)
         for one_file in all_files:
             hash = crypto_util.sha256sum(one_file)
             self.assertTrue(hash in ALL_SSL_OPTIONS_HASHES,
