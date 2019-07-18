@@ -299,6 +299,13 @@ def is_executable(path):
     if POSIX_MODE:
         return os.path.isfile(path) and os.access(path, os.X_OK)
 
+    return _win_is_executable(path)
+
+
+def _win_is_executable(path):
+    if os.path.isfile(path):
+        return False
+
     path = _resolve_symlinks(path)
     security = win32security.GetFileSecurity(path, win32security.DACL_SECURITY_INFORMATION)
     dacl = security.GetSecurityDescriptorDacl()

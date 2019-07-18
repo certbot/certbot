@@ -52,22 +52,26 @@ class ExeExistsTest(unittest.TestCase):
         from certbot.util import exe_exists
         return exe_exists(exe)
 
-    @mock.patch("certbot.util.os.path.isfile")
-    @mock.patch("certbot.util.os.access")
-    def test_full_path(self, mock_access, mock_isfile):
+    @mock.patch("certbot.util.filesystem.os.path.isfile")
+    @mock.patch("certbot.util.filesystem.os.access")
+    @mock.patch("certbot.util.filesystem._win_is_executable")
+    def test_full_path(self, mock_win_executable, mock_access, mock_isfile):
+        mock_win_executable.return_value = True
         mock_access.return_value = True
         mock_isfile.return_value = True
         self.assertTrue(self._call("/path/to/exe"))
 
-    @mock.patch("certbot.util.os.path.isfile")
-    @mock.patch("certbot.util.os.access")
-    def test_on_path(self, mock_access, mock_isfile):
+    @mock.patch("certbot.util.filesystem.os.path.isfile")
+    @mock.patch("certbot.util.filesystem.os.access")
+    @mock.patch("certbot.util.filesystem._win_is_executable")
+    def test_rel_path(self, mock_win_executable, mock_access, mock_isfile):
+        mock_win_executable.return_value = True
         mock_access.return_value = True
         mock_isfile.return_value = True
         self.assertTrue(self._call("exe"))
 
-    @mock.patch("certbot.util.os.path.isfile")
-    @mock.patch("certbot.util.os.access")
+    @mock.patch("certbot.util.filesystem.os.path.isfile")
+    @mock.patch("certbot.util.filesystem.os.access")
     def test_not_found(self, mock_access, mock_isfile):
         mock_access.return_value = False
         mock_isfile.return_value = True
