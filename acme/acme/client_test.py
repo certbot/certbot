@@ -638,11 +638,10 @@ class ClientTest(ClientTestBase):
             csr, authzrs, mintime=mintime, max_attempts=2)
 
     def test_deactivate_authorization(self):
-        # TODO: this test doesn't seem to do anything
-        self.response.headers['Location'] = self.authzr.uri
-        self.response.json.return_value = self.authzr.body.to_json()
-        self.assertEqual(self.authzr,
-                         self.client.deactivate_authorization(self.authzr))
+        authzb = self.authzr.body.update(status=messages.STATUS_INVALID)
+        self.response.json.return_value = authzb.to_json()
+        authzr = self.client.deactivate_authorization(self.authzr)
+        self.assertEqual(authzb, authzr.body)
 
     def test_check_cert(self):
         self.response.headers['Location'] = self.certr.uri
