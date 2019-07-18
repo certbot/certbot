@@ -9,6 +9,7 @@ MOD_SSL_CONF_DEST = "options-ssl-apache.conf"
 UPDATED_MOD_SSL_CONF_DIGEST = ".updated-options-ssl-apache-conf-digest.txt"
 """Name of the hash of the updated or informed mod_ssl_conf as saved in `IConfig.config_dir`."""
 
+# NEVER REMOVE A SINGLE HASH FROM THIS LIST UNLESS YOU KNOW EXACTLY WHAT YOU ARE DOING!
 ALL_SSL_OPTIONS_HASHES = [
     '2086bca02db48daf93468332543c60ac6acdb6f0b58c7bfdf578a5d47092f82a',
     '4844d36c9a0f587172d9fa10f4f1c9518e3bcfa1947379f155e16a70a728c21a',
