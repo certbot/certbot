@@ -638,7 +638,7 @@ class ClientTest(ClientTestBase):
             csr, authzrs, mintime=mintime, max_attempts=2)
 
     def test_deactivate_authorization(self):
-        authzb = self.authzr.body.update(status=messages.STATUS_INVALID)
+        authzb = self.authzr.body.update(status=messages.STATUS_DEACTIVATED)
         self.response.json.return_value = authzb.to_json()
         authzr = self.client.deactivate_authorization(self.authzr)
         self.assertEqual(authzb, authzr.body)
