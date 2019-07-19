@@ -33,7 +33,10 @@ class IntegrationTestsContext(object):
 
         self.workspace = tempfile.mkdtemp()
         self.config_dir = os.path.join(self.workspace, 'conf')
-        self.hook_probe = tempfile.mkstemp(dir=self.workspace)[1]
+
+        probe = tempfile.mkstemp(dir=self.workspace)
+        os.close(probe[0])
+        self.hook_probe = probe[1]
 
         self.manual_dns_auth_hook = (
             '{0} -c "import os; import requests; import json; '
@@ -55,7 +58,8 @@ class IntegrationTestsContext(object):
     def cleanup(self):
         """Cleanup the integration test context."""
         try:
-            shutil.rmtree(self.workspace)
+            #shutil.rmtree(self.workspace)
+            pass
         except BaseException as err:
             LOGGER.warning('Could not clean workspace {0}, error was: {1}'.format(self.workspace, err))
 

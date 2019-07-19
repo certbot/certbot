@@ -297,5 +297,5 @@ def load_sample_data_path(workspace):
 
 
 def echo(line, path=None):
-    return '{0} -c "import sys; sys.stdout.write(\'{1}\')"{2}'.format(
+    return '{0} -c "from __future__ import print_function; print(\'{1}\')"{2}'.format(
         os.path.basename(sys.executable), line, ' >> "{0}"'.format(path) if path else '')

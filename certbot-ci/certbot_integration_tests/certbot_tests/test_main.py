@@ -104,9 +104,9 @@ def test_manual_http_auth(context):
             '--cert-name', certname,
             '--manual-auth-hook', scripts[0],
             '--manual-cleanup-hook', scripts[1],
-            '--pre-hook', 'echo wtf.pre >> "{0}"'.format(context.hook_probe),
-            '--post-hook', 'echo wtf.post >> "{0}"'.format(context.hook_probe),
-            '--renew-hook', 'echo renew >> "{0}"'.format(context.hook_probe)
+            '--pre-hook', misc.echo('wtf.pre', context.hook_probe),
+            '--post-hook', misc.echo('wtf.post', context.hook_probe),
+            '--renew-hook', misc.echo('renew', context.hook_probe),
         ])
 
     with pytest.raises(AssertionError):
@@ -122,9 +122,9 @@ def test_manual_dns_auth(context):
         'run', '--cert-name', certname,
         '--manual-auth-hook', context.manual_dns_auth_hook,
         '--manual-cleanup-hook', context.manual_dns_cleanup_hook,
-        '--pre-hook', 'echo wtf.pre >> "{0}"'.format(context.hook_probe),
-        '--post-hook', 'echo wtf.post >> "{0}"'.format(context.hook_probe),
-        '--renew-hook', 'echo renew >> "{0}"'.format(context.hook_probe)
+        '--pre-hook', misc.echo('wtf.pre', context.hook_probe),
+        '--post-hook', misc.echo('wtf.post', context.hook_probe),
+        '--renew-hook', misc.echo('renew', context.hook_probe),
     ])
 
     with pytest.raises(AssertionError):
@@ -317,9 +317,9 @@ def test_renew_hook_override(context):
     context.certbot([
         'certonly', '-d', certname,
         '--preferred-challenges', 'http-01',
-        '--pre-hook', 'echo pre >> "{0}"'.format(context.hook_probe),
-        '--post-hook', 'echo post >> "{0}"'.format(context.hook_probe),
-        '--deploy-hook', 'echo deploy >> "{0}"'.format(context.hook_probe)
+        '--pre-hook', misc.echo('pre', context.hook_probe),
+        '--post-hook', misc.echo('post', context.hook_probe),
+        '--deploy-hook', misc.echo('deploy', context.hook_probe),
     ])
 
     assert_hook_execution(context.hook_probe, 'pre')
@@ -330,9 +330,9 @@ def test_renew_hook_override(context):
     open(context.hook_probe, 'w').close()
     context.certbot([
         'renew', '--cert-name', certname,
-        '--pre-hook', 'echo pre-override >> "{0}"'.format(context.hook_probe),
-        '--post-hook', 'echo post-override >> "{0}"'.format(context.hook_probe),
-        '--deploy-hook', 'echo deploy-override >> "{0}"'.format(context.hook_probe)
+        '--pre-hook', misc.echo('pre-override', context.hook_probe),
+        '--post-hook', misc.echo('post-override', context.hook_probe),
+        '--deploy-hook', misc.echo('deploy-override', context.hook_probe),
     ])
 
     assert_hook_execution(context.hook_probe, 'pre-override')
