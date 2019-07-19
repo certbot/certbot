@@ -207,13 +207,22 @@ def replace(src, dst):
         os.rename(src, dst)
 
 
-def _apply_win_mode(file_path, mode):
+def realpath(file_path):
     """
-    This function converts the given POSIX mode into a Windows ACL list, and applies it to the
-    file given its path. If the given path is a symbolic link, it will resolved to apply the
-    mode on the targeted file.
+    Find the real path for the given path. This method resolves symlinks, including
+    recursive symlinks, and is protected against symlinks that creates an infinite loop.
     """
     original_path = file_path
+
+    if POSIX_MODE:
+        path = os.path.realpath(file_path)
+        if os.path.islink(path):
+            # If path returned by realpath is still a link, it means that it failed to
+            # resolve the symlink because of a loop.
+            # See realpath code: https://github.com/python/cpython/blob/master/Lib/posixpath.py
+            raise RuntimeError('Error, link {0} is a loop!'.format(original_path))
+        return path
+
     inspected_paths = []  # type: List[str]
     while os.path.islink(file_path):
         link_path = file_path
@@ -223,6 +232,17 @@ def _apply_win_mode(file_path, mode):
         if file_path in inspected_paths:
             raise RuntimeError('Error, link {0} is a loop!'.format(original_path))
         inspected_paths.append(file_path)
+
+    return os.path.abspath(file_path)
+
+
+def _apply_win_mode(file_path, mode):
+    """
+    This function converts the given POSIX mode into a Windows ACL list, and applies it to the
+    file given its path. If the given path is a symbolic link, it will resolved to apply the
+    mode on the targeted file.
+    """
+    file_path = realpath(file_path)
     # Get owner sid of the file
     security = win32security.GetFileSecurity(file_path, win32security.OWNER_SECURITY_INFORMATION)
     user = security.GetSecurityDescriptorOwner()

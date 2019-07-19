@@ -486,7 +486,7 @@ def dir_setup(test_dir, pkg):  # pragma: no cover
         link, (ex: OS X) such plugins will be confused. This function prevents
         such a case.
         """
-        return os.path.realpath(tempfile.mkdtemp(prefix))
+        return filesystem.realpath(tempfile.mkdtemp(prefix))
 
     temp_dir = expanded_tempdir("temp")
     config_dir = expanded_tempdir("config")
