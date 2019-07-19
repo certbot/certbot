@@ -97,8 +97,8 @@ class UpdateLiveSymlinksTest(BaseCertManagerTest):
                 for kind in ALL_FOUR:
                     os.chdir(os.path.dirname(self.config_files[domain][kind]))
                     self.assertEqual(
-                        os.path.realpath(os.readlink(self.config_files[domain][kind])),
-                        os.path.realpath(archive_paths[domain][kind]))
+                        filesystem.realpath(os.readlink(self.config_files[domain][kind])),
+                        filesystem.realpath(archive_paths[domain][kind]))
         finally:
             os.chdir(prev_dir)
 

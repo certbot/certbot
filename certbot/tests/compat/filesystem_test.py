@@ -49,18 +49,6 @@ class WindowsChmodTests(TempDirTestCase):
         self.assertFalse(filesystem._compare_dacls(ref_dacl_probe, cur_dacl_probe))  # pylint: disable=protected-access
         self.assertTrue(filesystem._compare_dacls(ref_dacl_link, cur_dacl_link))  # pylint: disable=protected-access
 
-    def test_symlink_loop_mitigation(self):
-        link1_path = os.path.join(self.tempdir, 'link1')
-        link2_path = os.path.join(self.tempdir, 'link2')
-        link3_path = os.path.join(self.tempdir, 'link3')
-        os.symlink(link1_path, link2_path)
-        os.symlink(link2_path, link3_path)
-        os.symlink(link3_path, link1_path)
-
-        with self.assertRaises(RuntimeError) as error:
-            filesystem.chmod(link1_path, 0o755)
-        self.assertTrue('link1 is a loop!' in str(error.exception))
-
     def test_world_permission(self):
         everybody = win32security.ConvertStringSidToSid(EVERYBODY_SID)
 
@@ -367,7 +355,6 @@ class CheckPermissionsTest(test_util.TempDirTestCase):
 
 class OsReplaceTest(test_util.TempDirTestCase):
     """Test to ensure consistent behavior of rename method"""
-
     def test_os_replace_to_existing_file(self):
         """Ensure that replace will effectively rename src into dst for all platforms."""
         src = os.path.join(self.tempdir, 'src')
@@ -380,6 +367,46 @@ class OsReplaceTest(test_util.TempDirTestCase):
 
         self.assertFalse(os.path.exists(src))
         self.assertTrue(os.path.exists(dst))
+
+
+class RealpathTest(test_util.TempDirTestCase):
+    """Tests for realpath method"""
+    def setUp(self):
+        super(RealpathTest, self).setUp()
+        self.probe_path = _create_probe(self.tempdir)
+
+    def test_symlink_resolution(self):
+        # Absolute resolution
+        link_path = os.path.join(self.tempdir, 'link_abs')
+        os.symlink(self.probe_path, link_path)
+
+        self.assertEqual(self.probe_path, filesystem.realpath(self.probe_path))
+        self.assertEqual(self.probe_path, filesystem.realpath(link_path))
+
+        # Relative resolution
+        curdir = os.getcwd()
+        link_path = os.path.join(self.tempdir, 'link_rel')
+        probe_name = os.path.basename(self.probe_path)
+        try:
+            os.chdir(os.path.dirname(self.probe_path))
+            os.symlink(probe_name, link_path)
+
+            self.assertEqual(self.probe_path, filesystem.realpath(probe_name))
+            self.assertEqual(self.probe_path, filesystem.realpath(link_path))
+        finally:
+            os.chdir(curdir)
+
+    def test_symlink_loop_mitigation(self):
+        link1_path = os.path.join(self.tempdir, 'link1')
+        link2_path = os.path.join(self.tempdir, 'link2')
+        link3_path = os.path.join(self.tempdir, 'link3')
+        os.symlink(link1_path, link2_path)
+        os.symlink(link2_path, link3_path)
+        os.symlink(link3_path, link1_path)
+
+        with self.assertRaises(RuntimeError) as error:
+            filesystem.realpath(link1_path)
+        self.assertTrue('link1 is a loop!' in str(error.exception))
 
 
 def _get_security_dacl(target):

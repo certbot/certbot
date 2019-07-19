@@ -31,6 +31,7 @@ from certbot import reporter
 from certbot import storage
 from certbot import updater
 from certbot import util
+from certbot.compat import filesystem
 from certbot.compat import misc
 from certbot.compat import os
 from certbot.display import util as display_util, ops as display_ops
@@ -841,12 +842,12 @@ def _populate_from_certname(config):
     return config
 
 def _check_certificate_and_key(config):
-    if not os.path.isfile(os.path.realpath(config.cert_path)):
+    if not os.path.isfile(filesystem.realpath(config.cert_path)):
         raise errors.ConfigurationError("Error while reading certificate from path "
-                                       "{0}".format(config.cert_path))
-    if not os.path.isfile(os.path.realpath(config.key_path)):
+                                        "{0}".format(config.cert_path))
+    if not os.path.isfile(filesystem.realpath(config.key_path)):
         raise errors.ConfigurationError("Error while reading private key from path "
-                                       "{0}".format(config.key_path))
+                                        "{0}".format(config.key_path))
 def plugins_cmd(config, plugins):
     """List server software plugins.
 

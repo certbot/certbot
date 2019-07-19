@@ -541,7 +541,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
                     return True
                 return orig_open(fn)
 
-            with mock.patch("os.path.isfile") as mock_if:
+            with mock.patch("certbot.compat.os.path.isfile") as mock_if:
                 mock_if.side_effect = mock_isfile
                 with mock.patch('certbot.main.client') as client:
                     ret, stdout, stderr = self._call_no_clientmock(args, stdout)
