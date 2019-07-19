@@ -1,5 +1,6 @@
 """Tests for certbot.util."""
 import argparse
+import contextlib
 import errno
 import unittest
 
@@ -54,28 +55,40 @@ class ExeExistsTest(unittest.TestCase):
 
     @mock.patch("certbot.util.filesystem.os.path.isfile")
     @mock.patch("certbot.util.filesystem.os.access")
-    @mock.patch("certbot.util.filesystem._win_is_executable")
-    def test_full_path(self, mock_win_executable, mock_access, mock_isfile):
-        mock_win_executable.return_value = True
-        mock_access.return_value = True
-        mock_isfile.return_value = True
-        self.assertTrue(self._call("/path/to/exe"))
+    def test_full_path(self, mock_access, mock_isfile):
+        with _fix_window_runtime():
+            mock_access.return_value = True
+            mock_isfile.return_value = True
+            self.assertTrue(self._call("/path/to/exe"))
 
     @mock.patch("certbot.util.filesystem.os.path.isfile")
     @mock.patch("certbot.util.filesystem.os.access")
-    @mock.patch("certbot.util.filesystem._win_is_executable")
-    def test_rel_path(self, mock_win_executable, mock_access, mock_isfile):
-        mock_win_executable.return_value = True
-        mock_access.return_value = True
-        mock_isfile.return_value = True
-        self.assertTrue(self._call("exe"))
+    def test_rel_path(self, mock_access, mock_isfile):
+        with _fix_window_runtime():
+            mock_access.return_value = True
+            mock_isfile.return_value = True
+            self.assertTrue(self._call("exe"))
 
     @mock.patch("certbot.util.filesystem.os.path.isfile")
     @mock.patch("certbot.util.filesystem.os.access")
     def test_not_found(self, mock_access, mock_isfile):
-        mock_access.return_value = True
-        mock_isfile.return_value = False
-        self.assertFalse(self._call("exe"))
+        with _fix_window_runtime():
+            mock_access.return_value = True
+            mock_isfile.return_value = False
+            self.assertFalse(self._call("exe"))
+
+
+@contextlib.contextmanager
+def _fix_window_runtime():
+    if os.name != 'nt':
+        yield
+
+    import ntsecuritycon  # pylint: disable=import-error
+    with mock.patch('win32security.GetFileSecurity') as mock_get:
+        dacl_mock = mock_get.return_value.GetSecurityDescriptorDacl
+        mode_mock = dacl_mock.return_value.GetEffectiveRightsFromAcl
+        mode_mock.return_value = ntsecuritycon.FILE_GENERIC_EXECUTE
+        yield
 
 
 class LockDirUntilExit(test_util.TempDirTestCase):
