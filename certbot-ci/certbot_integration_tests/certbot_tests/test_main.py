@@ -75,6 +75,7 @@ def test_prepare_plugins(context):
     assert 'webroot' in output
 
 
+@misc.broken_on_windows
 def test_http_01(context):
     """Test the HTTP-01 challenge using standalone plugin."""
     # We start a server listening on the port for the
@@ -93,6 +94,7 @@ def test_http_01(context):
     assert_saved_renew_hook(context.config_dir, certname)
 
 
+@misc.broken_on_windows
 def test_manual_http_auth(context):
     """Test the HTTP-01 challenge using manual plugin."""
     with misc.create_http_server(context.http_01_port) as webroot,\
@@ -114,6 +116,7 @@ def test_manual_http_auth(context):
     assert_saved_renew_hook(context.config_dir, certname)
 
 
+@misc.broken_on_windows
 def test_manual_dns_auth(context):
     """Test the DNS-01 challenge using manual plugin."""
     certname = context.get_domain('dns')
@@ -136,11 +139,13 @@ def test_manual_dns_auth(context):
     assert_cert_count_for_lineage(context.config_dir, certname, 2)
 
 
+@misc.broken_on_windows
 def test_certonly(context):
     """Test the certonly verb on certbot."""
     context.certbot(['certonly', '--cert-name', 'newname', '-d', context.get_domain('newname')])
 
 
+@misc.broken_on_windows
 def test_auth_and_install_with_csr(context):
     """Test certificate issuance and install using an existing CSR."""
     certname = context.get_domain('le3')
@@ -168,6 +173,7 @@ def test_auth_and_install_with_csr(context):
     ])
 
 
+@misc.broken_on_windows
 def test_renew_files_permissions(context):
     """Test proper certificate file permissions upon renewal"""
     certname = context.get_domain('renew')
@@ -190,6 +196,7 @@ def test_renew_files_permissions(context):
         join(context.config_dir, 'archive', certname, 'privkey2.pem'), 0o074)
 
 
+@misc.broken_on_windows
 def test_renew_with_hook_scripts(context):
     """Test certificate renewal with script hooks."""
     certname = context.get_domain('renew')
@@ -204,6 +211,7 @@ def test_renew_with_hook_scripts(context):
     assert_hook_execution(context.hook_probe, 'deploy')
 
 
+@misc.broken_on_windows
 def test_renew_files_propagate_permissions(context):
     """Test proper certificate renewal with custom permissions propagated on private key."""
     certname = context.get_domain('renew')
@@ -222,6 +230,7 @@ def test_renew_files_propagate_permissions(context):
         join(context.config_dir, 'archive', certname, 'privkey2.pem'), 0o074)
 
 
+@misc.broken_on_windows
 def test_graceful_renew_it_is_not_time(context):
     """Test graceful renew is not done when it is not due time."""
     certname = context.get_domain('renew')
@@ -237,6 +246,7 @@ def test_graceful_renew_it_is_not_time(context):
         assert_hook_execution(context.hook_probe, 'deploy')
 
 
+@misc.broken_on_windows
 def test_graceful_renew_it_is_time(context):
     """Test graceful renew is done when it is due time."""
     certname = context.get_domain('renew')
@@ -257,6 +267,7 @@ def test_graceful_renew_it_is_time(context):
     assert_hook_execution(context.hook_probe, 'deploy')
 
 
+@misc.broken_on_windows
 def test_renew_with_changed_private_key_complexity(context):
     """Test proper renew with updated private key complexity."""
     certname = context.get_domain('renew')
@@ -279,6 +290,7 @@ def test_renew_with_changed_private_key_complexity(context):
     assert os.stat(key3).st_size < 1800  # 2048 bits keys takes less than 1800 bytes
 
 
+@misc.broken_on_windows
 def test_renew_ignoring_directory_hooks(context):
     """Test hooks are ignored during renewal with relevant CLI flag."""
     certname = context.get_domain('renew')
@@ -294,6 +306,7 @@ def test_renew_ignoring_directory_hooks(context):
         assert_hook_execution(context.hook_probe, 'deploy')
 
 
+@misc.broken_on_windows
 def test_renew_empty_hook_scripts(context):
     """Test proper renew with empty hook scripts."""
     certname = context.get_domain('renew')
@@ -311,6 +324,7 @@ def test_renew_empty_hook_scripts(context):
     assert_cert_count_for_lineage(context.config_dir, certname, 2)
 
 
+@misc.broken_on_windows
 def test_renew_hook_override(context):
     """Test correct hook override on renew."""
     certname = context.get_domain('override')
@@ -353,7 +367,8 @@ def test_renew_hook_override(context):
     assert_hook_execution(context.hook_probe, 'post-override')
     assert_hook_execution(context.hook_probe, 'deploy-override')
 
-    
+
+@misc.broken_on_windows
 def test_invalid_domain_with_dns_challenge(context):
     """Test certificate issuance failure with DNS-01 challenge."""
     # Manual dns auth hooks from misc are designed to fail if the domain contains 'fail-*'.
@@ -371,6 +386,7 @@ def test_invalid_domain_with_dns_challenge(context):
     assert context.get_domain('fail-dns1') not in output
 
 
+@misc.broken_on_windows
 def test_reuse_key(context):
     """Test various scenarios where a key is reused."""
     certname = context.get_domain('reusekey')
@@ -399,6 +415,7 @@ def test_reuse_key(context):
     assert len({cert1, cert2, cert3}) == 3
 
 
+@misc.broken_on_windows
 def test_ecdsa(context):
     """Test certificate issuance with ECDSA key."""
     key_path = join(context.workspace, 'privkey-p384.pem')
@@ -426,6 +443,7 @@ def test_ocsp_must_staple(context):
     assert 'status_request' in certificate or '1.3.6.1.5.5.7.1.24' in certificate
 
 
+@misc.broken_on_windows
 def test_revoke_simple(context):
     """Test various scenarios that revokes a certificate."""
     # Default action after revoke is to delete the certificate.
@@ -457,6 +475,7 @@ def test_revoke_simple(context):
     context.certbot(['revoke', '--cert-path', cert_path, '--key-path', key_path])
 
 
+@misc.broken_on_windows
 def test_revoke_and_unregister(context):
     """Test revoke with a reason then unregister."""
     cert1 = context.get_domain('le1')
@@ -485,6 +504,7 @@ def test_revoke_and_unregister(context):
     assert cert3 in output
 
 
+@misc.broken_on_windows
 def test_revoke_mutual_exclusive_flags(context):
     """Test --cert-path and --cert-name cannot be used during revoke."""
     cert = context.get_domain('le1')
@@ -497,6 +517,7 @@ def test_revoke_mutual_exclusive_flags(context):
         assert 'Exactly one of --cert-path or --cert-name must be specified' in error.out
 
 
+@misc.broken_on_windows
 def test_revoke_multiple_lineages(context):
     """Test revoke does not delete certs if multiple lineages share the same dir."""
     cert1 = context.get_domain('le1')
@@ -525,6 +546,7 @@ def test_revoke_multiple_lineages(context):
     assert 'Not deleting revoked certs due to overlapping archive dirs' in output
 
 
+@misc.broken_on_windows
 def test_wildcard_certificates(context):
     """Test wildcard certificate issuance."""
     if context.acme_server == 'boulder-v1':
@@ -542,6 +564,7 @@ def test_wildcard_certificates(context):
     assert exists(join(context.config_dir, 'live', certname, 'fullchain.pem'))
 
 
+@misc.broken_on_windows
 def test_ocsp_status_stale(context):
     """Test retrieval of OCSP statuses for staled config"""
     sample_data_path = misc.load_sample_data_path(context.workspace)
@@ -553,6 +576,7 @@ def test_ocsp_status_stale(context):
                                           .format(output.count('EXPIRED')))
 
 
+@misc.broken_on_windows
 def test_ocsp_status_live(context):
     """Test retrieval of OCSP statuses for live config"""
     if context.acme_server == 'pebble':
