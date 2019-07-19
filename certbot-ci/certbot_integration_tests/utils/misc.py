@@ -294,3 +294,8 @@ def load_sample_data_path(workspace):
     copied = os.path.join(workspace, 'sample-config')
     shutil.copytree(original, copied, symlinks=True)
     return copied
+
+
+def echo(line, path=None):
+    return '{0} -c "import sys; sys.stdout.write(\'{1}\')"{2}'.format(
+        os.path.basename(sys.executable), line, ' >> "{0}"'.format(path) if path else '')
