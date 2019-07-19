@@ -1,6 +1,10 @@
 """This module contains advanced assertions for the certbot integration tests."""
 import os
-import grp
+try:
+    import grp
+    POSIX_MODE = True
+except ImportError:
+    POSIX_MODE = False
 
 
 def assert_hook_execution(probe_path, probe_content):
@@ -59,10 +63,11 @@ def assert_equals_group_owner(file1, file2):
     :param file2: second file path to compare
     :return:
     """
-    group_owner_file1 = grp.getgrgid(os.stat(file1).st_gid)[0]
-    group_owner_file2 = grp.getgrgid(os.stat(file2).st_gid)[0]
+    if POSIX_MODE:
+        group_owner_file1 = grp.getgrgid(os.stat(file1).st_gid)[0]
+        group_owner_file2 = grp.getgrgid(os.stat(file2).st_gid)[0]
 
-    assert group_owner_file1 == group_owner_file2
+        assert group_owner_file1 == group_owner_file2
 
 
 def assert_world_permissions(file, mode):

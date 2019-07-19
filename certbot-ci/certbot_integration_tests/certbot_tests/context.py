@@ -1,10 +1,13 @@
 """Module to handle the context of integration tests."""
+import logging
 import os
 import shutil
 import sys
 import tempfile
 
-from certbot_integration_tests.utils import misc, certbot_call
+from certbot_integration_tests.utils import certbot_call
+
+LOGGER = logging.getLogger()
 
 
 class IntegrationTestsContext(object):
@@ -51,7 +54,10 @@ class IntegrationTestsContext(object):
 
     def cleanup(self):
         """Cleanup the integration test context."""
-        shutil.rmtree(self.workspace)
+        try:
+            shutil.rmtree(self.workspace)
+        except BaseException as err:
+            LOGGER.warning('Could not clean workspace {0}, error was: {1}'.format(self.workspace, err))
 
     def certbot(self, args, force_renew=True):
         """

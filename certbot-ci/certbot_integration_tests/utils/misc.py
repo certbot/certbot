@@ -3,6 +3,7 @@ Misc module contains stateless functions that could be used during pytest execut
 or outside during setup/teardown of the integration tests environment.
 """
 import contextlib
+import logging
 import errno
 import multiprocessing
 import os
@@ -23,6 +24,7 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.serialization import Encoding, PrivateFormat, NoEncryption
 from six.moves import socketserver, SimpleHTTPServer
 
+LOGGER = logging.getLogger()
 
 RSA_KEY_TYPE = 'rsa'
 ECDSA_KEY_TYPE = 'ecdsa'
@@ -62,6 +64,10 @@ class GracefulTCPServer(socketserver.TCPServer):
     allow_reuse_address = True
 
 
+def _run_server(port):
+    GracefulTCPServer(('', port), SimpleHTTPServer.SimpleHTTPRequestHandler).serve_forever()
+
+
 @contextlib.contextmanager
 def create_http_server(port):
     """
@@ -74,10 +80,7 @@ def create_http_server(port):
     current_cwd = os.getcwd()
     webroot = tempfile.mkdtemp()
 
-    def run():
-        GracefulTCPServer(('', port), SimpleHTTPServer.SimpleHTTPRequestHandler).serve_forever()
-
-    process = multiprocessing.Process(target=run)
+    process = multiprocessing.Process(target=_run_server, args=(port,))
 
     try:
         # SimpleHTTPServer is designed to serve files from the current working directory at the
@@ -97,7 +100,10 @@ def create_http_server(port):
                 process.terminate()
                 process.join()  # Block until process is effectively terminated
         finally:
-            shutil.rmtree(webroot)
+            try:
+                shutil.rmtree(webroot)
+            except BaseException as err:
+                LOGGER.warning('Could not clean webroot {0}, error was: {1}'.format(webroot, err))
 
 
 def list_renewal_hooks_dirs(config_dir):
