@@ -73,8 +73,8 @@ class ExeExistsTest(unittest.TestCase):
     @mock.patch("certbot.util.filesystem.os.path.isfile")
     @mock.patch("certbot.util.filesystem.os.access")
     def test_not_found(self, mock_access, mock_isfile):
-        mock_access.return_value = False
-        mock_isfile.return_value = True
+        mock_access.return_value = True
+        mock_isfile.return_value = False
         self.assertFalse(self._call("exe"))
 
 

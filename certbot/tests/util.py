@@ -348,7 +348,7 @@ class TempDirTestCase(unittest.TestCase):
                 # TODO: remote the try/except once all logic from windows file permissions is merged
                 if os.name != 'nt':
                     raise
-        shutil.rmtree(self.tempdir, onerror=handle_rw_files)
+        #shutil.rmtree(self.tempdir, onerror=handle_rw_files)
 
 
 class ConfigTestCase(TempDirTestCase):

@@ -303,10 +303,9 @@ def is_executable(path):
 
 
 def _win_is_executable(path):
-    if os.path.isfile(path):
+    if not os.path.isfile(path):
         return False
 
-    path = _resolve_symlinks(path)
     security = win32security.GetFileSecurity(path, win32security.DACL_SECURITY_INFORMATION)
     dacl = security.GetSecurityDescriptorDacl()
 

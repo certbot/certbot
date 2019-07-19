@@ -1,14 +1,14 @@
 """Tests for certbot.hooks."""
-import stat
 import unittest
 
 import mock
 from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
 
 from certbot import errors
+from certbot import util
 from certbot.compat import os
 from certbot.compat import filesystem
-from certbot.tests import util
+from certbot.tests import util as test_util
 
 
 class ValidateHooksTest(unittest.TestCase):
@@ -30,7 +30,7 @@ class ValidateHooksTest(unittest.TestCase):
         self.assertEqual("renew", types[-1])
 
 
-class ValidateHookTest(util.TempDirTestCase):
+class ValidateHookTest(test_util.TempDirTestCase):
     """Tests for certbot.hooks.validate_hook."""
 
     @classmethod
@@ -80,7 +80,7 @@ class ValidateHookTest(util.TempDirTestCase):
         self.assertFalse(mock_prog.called)
 
 
-class HookTest(util.ConfigTestCase):
+class HookTest(test_util.ConfigTestCase):
     """Common base class for hook tests."""
 
     @classmethod
@@ -472,7 +472,7 @@ class ExecuteTest(unittest.TestCase):
             self.assertTrue(mock_logger.error.called)
 
 
-class ListHooksTest(util.TempDirTestCase):
+class ListHooksTest(test_util.TempDirTestCase):
     """Tests for certbot.hooks.list_hooks."""
 
     @classmethod
@@ -512,8 +512,7 @@ def create_hook(file_path):
     :param str file_path: path to create the file at
 
     """
-    open(file_path, "w").close()
-    filesystem.chmod(file_path, 0o744)
+    util.safe_open(file_path, mode="w", chmod=0o744).close()
 
 
 if __name__ == '__main__':

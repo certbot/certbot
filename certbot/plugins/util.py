@@ -38,22 +38,21 @@ def path_surgery(cmd):
 
     :returns: True if the operation succeeded, False otherwise
     """
-    if STD_BINARIES_DIRS:
-        path = os.environ["PATH"]
-        added = []
-        for d in STD_BINARIES_DIRS:
-            if d not in path:
-                path += os.pathsep + d
-                added.append(d)
+    path = os.environ["PATH"]
+    added = []
+    for d in STD_BINARIES_DIRS:
+        if d not in path:
+            path += os.pathsep + d
+            added.append(d)
 
-        if any(added):
-            logger.debug("Can't find %s, attempting PATH mitigation by adding %s",
-                         cmd, os.pathsep.join(added))
-            os.environ["PATH"] = path
+    if any(added):
+        logger.debug("Can't find %s, attempting PATH mitigation by adding %s",
+                     cmd, os.pathsep.join(added))
+        os.environ["PATH"] = path
 
-        if util.exe_exists(cmd):
-            return True
-        expanded = " expanded" if any(added) else ""
-        logger.debug("Failed to find executable %s in%s PATH: %s", cmd,
-                     expanded, path)
+    if util.exe_exists(cmd):
+        return True
+    expanded = " expanded" if any(added) else ""
+    logger.debug("Failed to find executable %s in%s PATH: %s", cmd,
+                 expanded, path)
     return False
