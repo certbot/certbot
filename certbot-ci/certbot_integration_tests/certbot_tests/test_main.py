@@ -84,9 +84,9 @@ def test_http_01(context):
         context.certbot([
             '--domains', certname, '--preferred-challenges', 'http-01', 'run',
             '--cert-name', certname,
-            '--pre-hook', 'echo wtf.pre >> "{0}"'.format(context.hook_probe),
-            '--post-hook', 'echo wtf.post >> "{0}"'.format(context.hook_probe),
-            '--deploy-hook', 'echo deploy >> "{0}"'.format(context.hook_probe)
+            '--pre-hook', misc.echo('wtf.pre', context.hook_probe),
+            '--post-hook', misc.echo('wtf.post', context.hook_probe),
+            '--deploy-hook', misc.echo('deploy', context.hook_probe),
         ])
 
     assert_hook_execution(context.hook_probe, 'deploy')
