@@ -53,25 +53,6 @@ class ParserNode(object):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def arguments(self):
-        """
-        Returns a list of arguments for this ParserNode object
-
-        :returns: list of arguments
-        """
-
-    @abc.abstractmethod
-    def dirty(self):
-        """
-        Returns a boolean telling if the state of the node was changed after the
-        initial read or the last save operation. The main usage for this method is
-        to discover the nodes in the tree that need to be written to disk upon
-        save.
-
-        :returns: True if the node needs to be written to disk
-        """
-
-    @abc.abstractmethod
     def save(self, msg):
         """
         Save traverses the children, and attempts to write the AST to disk for
@@ -106,6 +87,14 @@ class CommentNode(ParserNode):
     have a specific name.
     """
 
+    @property
+    @abc.abstractmethod
+    def comment(self):
+        """
+        Comment property contains the contents of the comment.
+        """
+
+        raise NotImplementedError
 
 @six.add_metaclass(abc.ABCMeta)
 class DirectiveNode(ParserNode):
@@ -115,6 +104,15 @@ class DirectiveNode(ParserNode):
     single directives, it is not able to have child nodes and hence it is always
     treated as a leaf node.
     """
+
+    @property
+    @abc.abstractmethod
+    def name(self):
+        """
+        Name property contains the name of the directive.
+        """
+
+        raise NotImplementedError
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -149,16 +147,6 @@ class BlockNode(ParserNode):
     The applicable arguments are dependent on the underlying configuration language
     and its grammar.
     """
-
-    @property
-    @abc.abstractmethod
-    def children(self):
-        """
-        This property contains a list ParserNode objects that are the children
-        for this node.
-        """
-
-        raise NotImplementedError
 
     @abc.abstractmethod
     def add_child_block(self, name, arguments=None, position=None):
@@ -205,14 +193,27 @@ class BlockNode(ParserNode):
         """
 
     @abc.abstractmethod
-    def changed_files(self):
+    def unsaved_files(self):
         """
         Returns a list of file paths that have been changed since the last save
         (or the initial configuration parse). The intended use for this method
         is to tell the Reverter which files need to be included in a checkpoint.
 
-        :returns: list of file paths of files that have been changed
+        This is typically called for the root of the ParserNode tree.
+
+        :returns: list of file paths of files that have been changed but not yet
+            saved to disk.
         """
+
+    @property
+    @abc.abstractmethod
+    def children(self):
+        """
+        This property contains a list ParserNode objects that are the children
+        for this node.
+        """
+
+        raise NotImplementedError
 
     @abc.abstractmethod
     def find_blocks(self, name):
@@ -267,3 +268,14 @@ class BlockNode(ParserNode):
         :param ParserNode child: Child ParserNode object to remove from the list
             of children of the callee.
         """
+
+    @property
+    @abc.abstractmethod
+    def name(self):
+        """
+        Name property contains the name of the block. As an example for config:
+            <VirtualHost *:80> ... </VirtualHost>
+        the name would be "VirtualHost".
+        """
+
+        raise NotImplementedError
