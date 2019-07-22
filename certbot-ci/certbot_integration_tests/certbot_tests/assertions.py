@@ -14,9 +14,10 @@ def assert_hook_execution(probe_path, probe_content):
     :param probe_content: content expected when the hook is executed
     """
     with open(probe_path, 'r') as file:
-        lines = file.readlines()
+        data = file.read()
 
-    assert '{0}{1}'.format(probe_content, os.linesep) in lines
+    lines = data.splitlines(keepends=False)
+    assert probe_content in lines
 
 
 def assert_saved_renew_hook(config_dir, lineage):
