@@ -200,7 +200,7 @@ for _ in range(0, 10):
     except requests.exceptions.ConnectionError:
         pass
 raise ValueError('Error, url did not respond after 10 attempts: {{0}}'.format(url))
-'''.format(http_server_root, http_port))
+'''.format(http_server_root.replace('\\', '\\\\'), http_port))
         os.chmod(auth_script_path, 0o755)
 
         cleanup_script_path = os.path.join(tempdir, 'cleanup.py')
@@ -211,7 +211,7 @@ import os
 import shutil
 well_known = os.path.join('{0}', '.well-known')
 shutil.rmtree(well_known)
-'''.format(http_server_root))
+'''.format(http_server_root.replace('\\', '\\\\')))
         os.chmod(cleanup_script_path, 0o755)
 
         yield ('{0} {1}'.format(sys.executable, auth_script_path),
