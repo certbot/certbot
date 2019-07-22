@@ -126,13 +126,8 @@ def generate_test_file_hooks(config_dir, hook_probe):
     :param str config_dir: current certbot config directory
     :param hook_probe: path to the hook probe to test hook scripts execution
     """
-    if sys.platform == 'win32':
-        extension = 'bat'
-    else:
-        extension = 'sh'
-
     renewal_hooks_dirs = list_renewal_hooks_dirs(config_dir)
-    renewal_deploy_hook_path = os.path.join(renewal_hooks_dirs[1], 'hook.sh')
+    renewal_deploy_hook_path = os.path.join(renewal_hooks_dirs[1], 'hook.py')
 
     for hook_dir in renewal_hooks_dirs:
         # We want an equivalent of bash `chmod -p $HOOK_DIR, that does not fail if one folder of
@@ -144,25 +139,22 @@ def generate_test_file_hooks(config_dir, hook_probe):
         except OSError as error:
             if error.errno != errno.EEXIST:
                 raise
-        hook_path = os.path.join(hook_dir, 'hook.{0}'.format(extension))
-        if extension == 'sh':
-            data = '''\
-#!/bin/bash -xe
-if [ "$0" = "{0}" ]; then
-    if [ -z "$RENEWED_DOMAINS" -o -z "$RENEWED_LINEAGE" ]; then
-        echo "Environment variables not properly set!" >&2
-        exit 1
-    fi
-fi
-echo $(basename $(dirname "$0")) >> "{1}"\
-'''.format(renewal_deploy_hook_path, hook_probe)
-        else:
-            # TODO: Write the equivalent bat file for Windows
-            data = '''\
 
-'''
+        hook_path = os.path.join(hook_dir, 'hook.py')
         with open(hook_path, 'w') as file:
-            file.write(data)
+            file.write('''\
+#!/usr/bin/env python
+import sys
+import os
+
+current_script = sys.argv[0]
+if current_script != '{0}' and ('RENEW_DOMAINS' not in os.environ or 'RENEWED_LINEAGE' not in os.environ):
+    sys.stderr.write('Environment variables not properly set!\n')
+    sys.exit(1)
+    
+with open('{1}', 'w') as file_h:
+    file_h.write(os.path.basename(os.path.dirname(current_script)))
+'''.format(renewal_deploy_hook_path.replace('\\', '\\\\'), hook_probe.replace('\\', '\\\\')))
         os.chmod(hook_path, os.stat(hook_path).st_mode | stat.S_IEXEC)
 
 
