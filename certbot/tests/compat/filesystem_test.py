@@ -329,6 +329,8 @@ class RealpathTest(test_util.TempDirTestCase):
         self.probe_path = _create_probe(self.tempdir)
 
     def test_symlink_resolution(self):
+        # Remove any symlinks already in probe_path
+        self.probe_path = filesystem.realpath(self.probe_path)
         # Absolute resolution
         link_path = os.path.join(self.tempdir, 'link_abs')
         os.symlink(self.probe_path, link_path)
