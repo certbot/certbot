@@ -45,6 +45,11 @@ targets:
     type: centos
     virt: hvm
     user: ec2-user
+  - ami: ami-0c322300a1dd5dc79
+    name: RHEL8
+    type: centos
+    virt: hvc
+    user: ec2-user
   - ami: ami-00bbc6858140f19ed
     name: fedora30
     type: centos
