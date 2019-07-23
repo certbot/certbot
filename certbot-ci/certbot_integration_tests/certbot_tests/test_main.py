@@ -12,7 +12,8 @@ import pytest
 from certbot_integration_tests.certbot_tests import context as certbot_context
 from certbot_integration_tests.certbot_tests.assertions import (
     assert_hook_execution, assert_saved_renew_hook, assert_cert_count_for_lineage,
-    assert_world_permissions, assert_equals_group_owner, assert_equals_permissions,
+    assert_world_no_permissions, assert_world_read_permissions, assert_equals_group_owner,
+    assert_equals_permissions,
 )
 from certbot_integration_tests.utils import misc
 
@@ -168,21 +169,18 @@ def test_auth_and_install_with_csr(context):
     ])
 
 
-@misc.broken_on_windows
 def test_renew_files_permissions(context):
     """Test proper certificate file permissions upon renewal"""
     certname = context.get_domain('renew')
     context.certbot(['-d', certname])
 
     assert_cert_count_for_lineage(context.config_dir, certname, 1)
-    assert_world_permissions(
-        join(context.config_dir, 'archive', certname, 'privkey1.pem'), 0)
+    assert_world_no_permissions(join(context.config_dir, 'archive', certname, 'privkey1.pem'))
 
     context.certbot(['renew'])
 
     assert_cert_count_for_lineage(context.config_dir, certname, 2)
-    assert_world_permissions(
-        join(context.config_dir, 'archive', certname, 'privkey2.pem'), 0)
+    assert_world_no_permissions(join(context.config_dir, 'archive', certname, 'privkey2.pem'))
     assert_equals_group_owner(
         join(context.config_dir, 'archive', certname, 'privkey1.pem'),
         join(context.config_dir, 'archive', certname, 'privkey2.pem'))
@@ -217,8 +215,7 @@ def test_renew_files_propagate_permissions(context):
     context.certbot(['renew'])
 
     assert_cert_count_for_lineage(context.config_dir, certname, 2)
-    assert_world_permissions(
-        join(context.config_dir, 'archive', certname, 'privkey2.pem'), 4)
+    assert_world_read_permissions(join(context.config_dir, 'archive', certname, 'privkey2.pem'))
     assert_equals_permissions(
         join(context.config_dir, 'archive', certname, 'privkey1.pem'),
         join(context.config_dir, 'archive', certname, 'privkey2.pem'), 0o074)
