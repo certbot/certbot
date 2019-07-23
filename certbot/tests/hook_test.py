@@ -53,7 +53,7 @@ class ValidateHookTest(test_util.TempDirTestCase):
 
         def _execute_mock(user_sid, mode):
             dacl = _generate_dacl(user_sid, mode)
-            for i in range(1, dacl.GetAceCount()):
+            for _ in range(1, dacl.GetAceCount()):
                 dacl.DeleteAce(1)  # DeleteAce dynamically updates the internal index mapping.
             return dacl
 
