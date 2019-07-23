@@ -58,7 +58,7 @@ class ParserNode(object):
         Save traverses the children, and attempts to write the AST to disk for
         all the objects that are marked dirty. The actual operation of course
         depends on the underlying implementation. save() shouldn't be called
-        from the Configurator outside of it's designated save() method in order
+        from the Configurator outside of its designated save() method in order
         to ensure that the Reverter checkpoints are created properly.
 
         Note: this approach of keeping internal structure of the configuration
