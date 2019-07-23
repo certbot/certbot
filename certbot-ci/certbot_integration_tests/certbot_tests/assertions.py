@@ -4,7 +4,14 @@ try:
     import grp
     POSIX_MODE = True
 except ImportError:
+    import win32api
+    import win32security
+    import ntsecuritycon
     POSIX_MODE = False
+
+EVERYBODY_SID = 'S-1-1-0'
+SYSTEM_SID = 'S-1-5-18'
+ADMINS_SID = 'S-1-5-32-544'
 
 
 def assert_hook_execution(probe_path, probe_content):
@@ -71,12 +78,43 @@ def assert_equals_group_owner(file1, file2):
         assert group_owner_file1 == group_owner_file2
 
 
-def assert_world_permissions(file, mode):
-    """
-    Assert that a file has the expected world permission.
-    :param file: file path to check
-    :param mode: world permissions mode expected
-    """
-    mode_file_all = os.stat(file).st_mode & 0o007
+def assert_world_no_permissions(file):
+    if POSIX_MODE:
+        mode_file_all = os.stat(file).st_mode & 0o007
+        assert mode_file_all == 0
+    else:
+        security = win32security.GetFileSecurity(file, win32security.DACL_SECURITY_INFORMATION)
+        dacl = security.GetSecurityDescriptorDacl()
+        authorized = (
+            _get_current_user(),
+            win32security.ConvertStringSidToSid(SYSTEM_SID),
+            win32security.ConvertStringSidToSid(ADMINS_SID),
+        )
 
-    assert mode_file_all == mode
+        assert not [index for index in range(0, dacl.GetAceCount())
+                    if dacl.GetAce(index)[2] not in authorized]
+
+
+def assert_world_read_permissions(file):
+    if POSIX_MODE:
+        mode_file_all = os.stat(file).st_mode & 0o007
+        assert mode_file_all == 4
+    else:
+        security = win32security.GetFileSecurity(file, win32security.DACL_SECURITY_INFORMATION)
+        dacl = security.GetSecurityDescriptorDacl()
+        authorized_rw = (
+            _get_current_user(),
+            win32security.ConvertStringSidToSid(SYSTEM_SID),
+            win32security.ConvertStringSidToSid(ADMINS_SID),
+        )
+
+        modes_should_ro = [dacl.GetAce(index)[1] for index in range(0, dacl.GetAceCount())
+                           if dacl.GetAce(index)[2] not in authorized_rw]
+
+        assert not [mode for mode in modes_should_ro
+                    if mode != ntsecuritycon.FILE_GENERIC_READ]
+
+
+def _get_current_user():
+    account_name = win32api.GetUserNameEx(win32api.NameSamCompatible)
+    return win32security.LookupAccountName(None, account_name)[0]

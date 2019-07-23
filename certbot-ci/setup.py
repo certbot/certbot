@@ -14,6 +14,7 @@ install_requires = [
     'pyyaml',
     'requests',
     'six',
+    'pywin32; sys_platform == "win32"'
 ]
 
 setup(
