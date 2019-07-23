@@ -117,7 +117,7 @@ def list_renewal_hooks_dirs(config_dir):
     return [os.path.join(renewal_hooks_root, item) for item in ['pre', 'deploy', 'post']]
 
 
-def generate_test_file_hooks(config_dir, hook_probe):
+def generate_test_file_hooks(config_dir, hook_probe, workspace):
     """
     Create a suite of certbot hook scripts and put them in the relevant hook directory
     for the given certbot configuration directory. These scripts, when executed, will write
@@ -126,10 +126,23 @@ def generate_test_file_hooks(config_dir, hook_probe):
     :param str config_dir: current certbot config directory
     :param hook_probe: path to the hook probe to test hook scripts execution
     """
-    renewal_hooks_dirs = list_renewal_hooks_dirs(config_dir)
-    renewal_deploy_hook_path = os.path.join(renewal_hooks_dirs[1], 'hook.py')
+    hook_path = os.path.join(workspace, 'hook.py')
+    with open(hook_path, 'w') as file_h:
+        file_h.write('''\
+#!/usr/bin/env python
+import sys
+import os
 
-    for hook_dir in renewal_hooks_dirs:
+hook_script_type = os.path.basename(os.path.dirname(sys.argv[1]))
+if hook_script_type == 'deploy' and ('RENEW_DOMAINS' not in os.environ or 'RENEWED_LINEAGE' not in os.environ):
+    sys.stderr.write('Environment variables not properly set!\\n')
+    sys.exit(1)
+
+with open(sys.argv[2], 'a') as file_h:
+    file_h.write(hook_script_type)
+''')
+
+    for hook_dir in list_renewal_hooks_dirs(config_dir):
         # We want an equivalent of bash `chmod -p $HOOK_DIR, that does not fail if one folder of
         # the hierarchy already exists. It is not the case of os.makedirs. Python 3 has an
         # optional parameter `exists_ok` to not fail on existing dir, but Python 2.7 does not.
@@ -140,22 +153,23 @@ def generate_test_file_hooks(config_dir, hook_probe):
             if error.errno != errno.EEXIST:
                 raise
 
-        hook_path = os.path.join(hook_dir, 'hook.py')
-        with open(hook_path, 'w') as file:
-            file.write('''\
-#!/usr/bin/env python
-import sys
-import os
+        if os.name != 'nt':
+            entrypoint_script_path = os.path.join(hook_dir, 'entrypoint.sh')
+            entrypoint_script = '''\
+#!/usr/bin/env bash
+"{0}" "{1}" "{2}" "{3}"
+'''.format(sys.executable, hook_path, entrypoint_script_path, hook_probe)
+        else:
+            entrypoint_script_path = os.path.join(hook_dir, 'entrypoint.bat')
+            entrypoint_script = '''\
+@echo off
+"{0}" "{1}" "{2}" "{3}"
+            '''.format(sys.executable, hook_path, entrypoint_script_path, hook_probe)
 
-current_script = sys.argv[0]
-if current_script != '{0}' and ('RENEW_DOMAINS' not in os.environ or 'RENEWED_LINEAGE' not in os.environ):
-    sys.stderr.write('Environment variables not properly set!\n')
-    sys.exit(1)
-    
-with open('{1}', 'w') as file_h:
-    file_h.write(os.path.basename(os.path.dirname(current_script)))
-'''.format(renewal_deploy_hook_path.replace('\\', '\\\\'), hook_probe.replace('\\', '\\\\')))
-        os.chmod(hook_path, os.stat(hook_path).st_mode | stat.S_IEXEC)
+        with open(entrypoint_script_path, 'w') as file_h:
+            file_h.write(entrypoint_script)
+
+        os.chmod(hook_path, os.stat(entrypoint_script_path).st_mode | stat.S_IEXEC)
 
 
 @contextlib.contextmanager
