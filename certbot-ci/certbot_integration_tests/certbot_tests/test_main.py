@@ -11,9 +11,10 @@ from os.path import join, exists
 import pytest
 from certbot_integration_tests.certbot_tests import context as certbot_context
 from certbot_integration_tests.certbot_tests.assertions import (
-    assert_hook_execution, assert_saved_renew_hook, assert_cert_count_for_lineage,
-    assert_world_no_permissions, assert_world_read_permissions, assert_equals_group_owner,
-    assert_equals_permissions,
+    assert_hook_execution, assert_saved_renew_hook,
+    assert_cert_count_for_lineage,
+    assert_world_no_permissions, assert_world_read_permissions,
+    assert_equals_group_owner, assert_equals_group_permissions, assert_equals_world_read_permissions
 )
 from certbot_integration_tests.utils import misc
 
@@ -174,19 +175,19 @@ def test_renew_files_permissions(context):
     certname = context.get_domain('renew')
     context.certbot(['-d', certname])
 
+    privkey1 = join(context.config_dir, 'archive', certname, 'privkey1.pem')
+    privkey2 = join(context.config_dir, 'archive', certname, 'privkey2.pem')
+
     assert_cert_count_for_lineage(context.config_dir, certname, 1)
-    assert_world_no_permissions(join(context.config_dir, 'archive', certname, 'privkey1.pem'))
+    assert_world_no_permissions(privkey1)
 
     context.certbot(['renew'])
 
     assert_cert_count_for_lineage(context.config_dir, certname, 2)
-    assert_world_no_permissions(join(context.config_dir, 'archive', certname, 'privkey2.pem'))
-    assert_equals_group_owner(
-        join(context.config_dir, 'archive', certname, 'privkey1.pem'),
-        join(context.config_dir, 'archive', certname, 'privkey2.pem'))
-    assert_equals_permissions(
-        join(context.config_dir, 'archive', certname, 'privkey1.pem'),
-        join(context.config_dir, 'archive', certname, 'privkey2.pem'), 0o074)
+    assert_world_no_permissions(privkey2)
+    assert_equals_group_owner(privkey1, privkey2)
+    assert_equals_world_read_permissions(privkey1, privkey2)
+    assert_equals_group_permissions(privkey1, privkey2)
 
 
 def test_renew_with_hook_scripts(context):
@@ -203,6 +204,7 @@ def test_renew_with_hook_scripts(context):
     assert_hook_execution(context.hook_probe, 'deploy')
 
 
+# Currently certbot does not propagate the permissions between private keys on Windows.
 @misc.broken_on_windows
 def test_renew_files_propagate_permissions(context):
     """Test proper certificate renewal with custom permissions propagated on private key."""
@@ -211,14 +213,16 @@ def test_renew_files_propagate_permissions(context):
 
     assert_cert_count_for_lineage(context.config_dir, certname, 1)
 
-    os.chmod(join(context.config_dir, 'archive', certname, 'privkey1.pem'), 0o444)
+    privkey1 = join(context.config_dir, 'archive', certname, 'privkey1.pem')
+    privkey2 = join(context.config_dir, 'archive', certname, 'privkey2.pem')
+
+    os.chmod(privkey1, 0o444)
     context.certbot(['renew'])
 
     assert_cert_count_for_lineage(context.config_dir, certname, 2)
-    assert_world_read_permissions(join(context.config_dir, 'archive', certname, 'privkey2.pem'))
-    assert_equals_permissions(
-        join(context.config_dir, 'archive', certname, 'privkey1.pem'),
-        join(context.config_dir, 'archive', certname, 'privkey2.pem'), 0o074)
+    assert_world_read_permissions(privkey2)
+    assert_equals_world_read_permissions(privkey1, privkey2)
+    assert_equals_group_permissions(privkey1, privkey2)
 
 
 def test_graceful_renew_it_is_not_time(context):
