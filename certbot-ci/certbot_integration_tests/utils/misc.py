@@ -126,21 +126,7 @@ def generate_test_file_hooks(config_dir, hook_probe, workspace):
     :param str config_dir: current certbot config directory
     :param hook_probe: path to the hook probe to test hook scripts execution
     """
-    hook_path = os.path.join(workspace, 'hook.py')
-    with open(hook_path, 'w') as file_h:
-        file_h.write('''\
-#!/usr/bin/env python
-import sys
-import os
-
-hook_script_type = os.path.basename(os.path.dirname(sys.argv[1]))
-if hook_script_type == 'deploy' and ('RENEW_DOMAINS' not in os.environ or 'RENEWED_LINEAGE' not in os.environ):
-    sys.stderr.write('Environment variables not properly set!\\n')
-    sys.exit(1)
-
-with open(sys.argv[2], 'a') as file_h:
-    file_h.write(hook_script_type)
-''')
+    hook_path = pkg_resources.resource_filename('certbot_integration_tests', 'assets/hook.py')
 
     for hook_dir in list_renewal_hooks_dirs(config_dir):
         # We want an equivalent of bash `chmod -p $HOOK_DIR, that does not fail if one folder of
@@ -157,6 +143,7 @@ with open(sys.argv[2], 'a') as file_h:
             entrypoint_script_path = os.path.join(hook_dir, 'entrypoint.sh')
             entrypoint_script = '''\
 #!/usr/bin/env bash
+set -e
 "{0}" "{1}" "{2}" "{3}"
 '''.format(sys.executable, hook_path, entrypoint_script_path, hook_probe)
         else:

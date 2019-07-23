@@ -191,7 +191,6 @@ def test_renew_files_permissions(context):
         join(context.config_dir, 'archive', certname, 'privkey2.pem'), 0o074)
 
 
-@misc.broken_on_windows
 def test_renew_with_hook_scripts(context):
     """Test certificate renewal with script hooks."""
     certname = context.get_domain('renew')
@@ -199,7 +198,7 @@ def test_renew_with_hook_scripts(context):
 
     assert_cert_count_for_lineage(context.config_dir, certname, 1)
 
-    misc.generate_test_file_hooks(context.config_dir, context.hook_probe)
+    misc.generate_test_file_hooks(context.config_dir, context.hook_probe, context.workspace)
     context.certbot(['renew'])
 
     assert_cert_count_for_lineage(context.config_dir, certname, 2)
@@ -282,7 +281,6 @@ def test_renew_with_changed_private_key_complexity(context):
     assert os.stat(key3).st_size < 1800  # 2048 bits keys takes less than 1800 bytes
 
 
-@misc.broken_on_windows
 def test_renew_ignoring_directory_hooks(context):
     """Test hooks are ignored during renewal with relevant CLI flag."""
     certname = context.get_domain('renew')
@@ -290,7 +288,7 @@ def test_renew_ignoring_directory_hooks(context):
 
     assert_cert_count_for_lineage(context.config_dir, certname, 1)
 
-    misc.generate_test_file_hooks(context.config_dir, context.hook_probe)
+    misc.generate_test_file_hooks(context.config_dir, context.hook_probe, context.workspace)
     context.certbot(['renew', '--no-directory-hooks'])
 
     assert_cert_count_for_lineage(context.config_dir, certname, 2)
@@ -298,7 +296,6 @@ def test_renew_ignoring_directory_hooks(context):
         assert_hook_execution(context.hook_probe, 'deploy')
 
 
-@misc.broken_on_windows
 def test_renew_empty_hook_scripts(context):
     """Test proper renew with empty hook scripts."""
     certname = context.get_domain('renew')
@@ -306,7 +303,7 @@ def test_renew_empty_hook_scripts(context):
 
     assert_cert_count_for_lineage(context.config_dir, certname, 1)
 
-    misc.generate_test_file_hooks(context.config_dir, context.hook_probe)
+    misc.generate_test_file_hooks(context.config_dir, context.hook_probe, context.workspace)
     for hook_dir in misc.list_renewal_hooks_dirs(context.config_dir):
         shutil.rmtree(hook_dir)
         os.makedirs(join(hook_dir, 'dir'))
