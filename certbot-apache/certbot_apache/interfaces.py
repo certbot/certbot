@@ -29,6 +29,9 @@ class ParserNode(object):
         """
         This property contains a reference to ancestor node, or None if the node
         is the root node of the configuration tree.
+
+        :returns: The ancestor BlockNode object, or None for root node.
+        :rtype: ParserNode
         """
 
         raise NotImplementedError
@@ -38,6 +41,9 @@ class ParserNode(object):
     def arguments(self):
         """
         This property contains a list of arguments of this ParserNode object.
+
+        :returns: A list of arguments for this node
+        :rtype: list
         """
 
         raise NotImplementedError
@@ -48,6 +54,10 @@ class ParserNode(object):
         """
         This property contains a boolean value of the information if this node has
         been modified since last save (or after the initial parse).
+
+        :returns: True if this node has had changes that have not yet been written
+            to disk.
+        :rtype: bool
         """
 
         raise NotImplementedError
@@ -69,12 +79,6 @@ class ParserNode(object):
 
         """
 
-    @abc.abstractmethod
-    def set_arguments(self, arguments):
-        """
-        Sets argument list of the ParserNode object and marks the node dirty.
-        """
-
 
 @six.add_metaclass(abc.ABCMeta)
 class CommentNode(ParserNode):
@@ -92,6 +96,9 @@ class CommentNode(ParserNode):
     def comment(self):
         """
         Comment property contains the contents of the comment.
+
+        :returns: A string containing the comment
+        :rtype: str
         """
 
         raise NotImplementedError
@@ -107,9 +114,23 @@ class DirectiveNode(ParserNode):
 
     @property
     @abc.abstractmethod
+    def enabled(self):
+        """
+        Configuration blocks may have conditional statements enabling or disabling
+        their contents. This property returns the state of this DirectiveNode.
+
+        :returns: True if the DirectiveNode is parsed and enabled in the configuration.
+        :rtype: bool
+        """
+
+    @property
+    @abc.abstractmethod
     def name(self):
         """
         Name property contains the name of the directive.
+
+        :returns: Name of this node
+        :rtype: str
         """
 
         raise NotImplementedError
@@ -158,6 +179,8 @@ class BlockNode(ParserNode):
         :param list arguments: list of arguments for the node
         :param int position: Position in the list of children to add the new child
             node to. Defaults to None, which appends the newly created node to the list.
+            If an integer is given, the child is inserted before that index in the
+            list similar to list().insert.
 
         :returns: BlockNode instance of the created child block
 
@@ -173,6 +196,8 @@ class BlockNode(ParserNode):
         :param list arguments: list of arguments for the node
         :param int position: Position in the list of children to add the new child
             node to. Defaults to None, which appends the newly created node to the list.
+            If an integer is given, the child is inserted before that index in the
+            list similar to list().insert.
 
         :returns: DirectiveNode instance of the created child directive
 
@@ -187,22 +212,11 @@ class BlockNode(ParserNode):
         :param list arguments: list of arguments for the node
         :param int position: Position in the list of children to add the new child
             node to. Defaults to None, which appends the newly created node to the list.
+            If an integer is given, the child is inserted before that index in the
+            list similar to list().insert.
 
         :returns: CommentNode instance of the created child comment
 
-        """
-
-    @abc.abstractmethod
-    def unsaved_files(self):
-        """
-        Returns a list of file paths that have been changed since the last save
-        (or the initial configuration parse). The intended use for this method
-        is to tell the Reverter which files need to be included in a checkpoint.
-
-        This is typically called for the root of the ParserNode tree.
-
-        :returns: list of file paths of files that have been changed but not yet
-            saved to disk.
         """
 
     @property
@@ -210,13 +224,30 @@ class BlockNode(ParserNode):
     def children(self):
         """
         This property contains a list ParserNode objects that are the children
-        for this node.
+        for this node. The order of children is the same than that of the parsed
+        configuration block.
+
+        :returns: A tuple of this blocks children
+        :rtype: tuple
         """
 
         raise NotImplementedError
 
+    @property
     @abc.abstractmethod
-    def find_blocks(self, name):
+    def enabled(self):
+        """
+        Configuration blocks may have conditional statements enabling or disabling
+        their contents. This property returns the state of this configuration block.
+        In case of unmatched conditional statement in block, this block itself should
+        be set enabled while its children should be set disabled.
+
+        :returns: True if the BlockNode is parsed and enabled in the configuration.
+        :rtype: bool
+        """
+
+    @abc.abstractmethod
+    def find_blocks(self, name, exclude=True):
         """
         Find a configuration block by name. This method walks the child tree of
         ParserNodes under the instance it was called from. This way it is possible
@@ -224,12 +255,15 @@ class BlockNode(ParserNode):
         to do a partial search when starting from a specified branch.
 
         :param str name: The name of the directive to search for
+        :param bool exclude: If the search results should exclude the contents of
+            ParserNode objects that reside within conditional blocks and because
+            of current state are not enabled.
 
         :returns: A list of found BlockNode objects.
         """
 
     @abc.abstractmethod
-    def find_directives(self, name):
+    def find_directives(self, name, exclude=True):
         """
         Find a directive by name. This method walks the child tree of ParserNodes
         under the instance it was called from. This way it is possible to search
@@ -237,6 +271,9 @@ class BlockNode(ParserNode):
         a partial search when starting from a specified branch.
 
         :param str name: The name of the directive to search for
+        :param bool exclude: If the search results should exclude the contents of
+            ParserNode objects that reside within conditional blocks and because
+            of current state are not enabled.
 
         :returns: A list of found DirectiveNode objects.
 
@@ -276,6 +313,23 @@ class BlockNode(ParserNode):
         Name property contains the name of the block. As an example for config:
             <VirtualHost *:80> ... </VirtualHost>
         the name would be "VirtualHost".
+
+        :returns: Name of this node
+        :rtype: str
         """
 
         raise NotImplementedError
+
+    @abc.abstractmethod
+    def unsaved_files(self):
+        """
+        Returns a list of file paths that have been changed since the last save
+        (or the initial configuration parse). The intended use for this method
+        is to tell the Reverter which files need to be included in a checkpoint.
+
+        This is typically called for the root of the ParserNode tree.
+
+        :returns: list of file paths of files that have been changed but not yet
+            saved to disk.
+        """
+
