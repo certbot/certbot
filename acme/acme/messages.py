@@ -502,6 +502,12 @@ class NewAuthorization(Authorization):
     resource = fields.Resource(resource_type)
 
 
+class UpdateAuthorization(Authorization):
+    """Update authorization."""
+    resource_type = 'authz'
+    resource = fields.Resource(resource_type)
+
+
 class AuthorizationResource(ResourceWithURI):
     """Authorization Resource.
 
