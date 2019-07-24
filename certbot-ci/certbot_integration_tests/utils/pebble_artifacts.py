@@ -5,7 +5,7 @@ import stat
 import pkg_resources
 import requests
 
-PEBBLE_VERSION = 'v2.1.0'
+PEBBLE_VERSION = 'v2.1.1-afe'
 ASSETS_PATH = pkg_resources.resource_filename('certbot_integration_tests', 'assets')
 
 
@@ -22,7 +22,7 @@ def fetch(workspace):
 def _fetch_asset(asset, suffix):
     asset_path = os.path.join(ASSETS_PATH, '{0}_{1}_{2}'.format(asset, PEBBLE_VERSION, suffix))
     if not os.path.exists(asset_path):
-        asset_url = ('https://github.com/letsencrypt/pebble/releases/download/{0}/{1}_{2}'
+        asset_url = ('https://github.com/adferrand/pebble/releases/download/{0}/{1}_{2}'
                      .format(PEBBLE_VERSION, asset, suffix))
         response = requests.get(asset_url)
         response.raise_for_status()
