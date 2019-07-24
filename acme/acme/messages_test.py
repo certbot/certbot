@@ -389,6 +389,12 @@ class AuthorizationTest(unittest.TestCase):
             (self.challbs[1],),
         ))
 
+    def test_from_json_null_challenges(self):
+        from acme.messages import Authorization
+        jobj_null_challs = self.jobj_from.copy()
+        jobj_null_challs['challenges'] = None
+        Authorization.from_json(jobj_null_challs)
+
 
 class AuthorizationResourceTest(unittest.TestCase):
     """Tests for acme.messages.AuthorizationResource."""
