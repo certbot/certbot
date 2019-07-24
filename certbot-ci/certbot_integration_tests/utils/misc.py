@@ -287,6 +287,19 @@ def load_sample_data_path(workspace):
     original = pkg_resources.resource_filename('certbot_integration_tests', 'assets/sample-config')
     copied = os.path.join(workspace, 'sample-config')
     shutil.copytree(original, copied, symlinks=True)
+
+    if os.name == 'nt':
+        # Fix the symlinks on Windows since GIT is not creating them upon checkout
+        for lineage in ['a.encryption-example.com', 'b.encryption-example.com']:
+            current_live = os.path.join(copied, 'live', lineage)
+            for name in os.listdir(current_live):
+                if name != 'README':
+                    current_file = os.path.join(current_live, name)
+                    with open(current_file) as file_h:
+                        src = file_h.read()
+                    os.unlink(current_file)
+                    os.symlink(os.path.join(current_live, src), current_file)
+
     return copied
 
 
