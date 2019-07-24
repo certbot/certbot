@@ -204,10 +204,11 @@ def test_renew_with_hook_scripts(context):
     assert_hook_execution(context.hook_probe, 'deploy')
 
 
-# Currently certbot does not propagate the permissions between private keys on Windows.
-@misc.broken_on_windows
 def test_renew_files_propagate_permissions(context):
     """Test proper certificate renewal with custom permissions propagated on private key."""
+    if os.name == 'nt':
+        pytest.skip('Certbot does not keep permissions across private keys on Windows for now.')
+
     certname = context.get_domain('renew')
     context.certbot(['-d', certname])
 
@@ -545,7 +546,6 @@ def test_wildcard_certificates(context):
     assert exists(join(context.config_dir, 'live', certname, 'fullchain.pem'))
 
 
-@misc.broken_on_windows
 def test_ocsp_status_stale(context):
     """Test retrieval of OCSP statuses for staled config"""
     sample_data_path = misc.load_sample_data_path(context.workspace)
