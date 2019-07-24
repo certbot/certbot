@@ -124,6 +124,7 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
         return self.update_registration(regr, update={'status': 'deactivated'})
 
     def deactivate_authorization(self, authzr):
+        # type: (messages.AuthorizationResource) -> messages.AuthorizationResource
         """Deactivate authorization.
 
         :param messages.AuthorizationResource authzr: The Authorization resource
@@ -133,7 +134,7 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
         :rtype: `.AuthorizationResource`
 
         """
-        body = messages.Authorization(status='deactivated')
+        body = messages.UpdateAuthorization(status='deactivated')
         response = self._post(authzr.uri, body)
         return self._authzr_from_response(response)
 
