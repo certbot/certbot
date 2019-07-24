@@ -4,7 +4,7 @@ environment:
   matrix:
 #    - TOXENV: py35
 #    - TOXENV: py37-cover
-    - TOXENV: integration
+    - TOXENV: integration-certbot-windows
 
 branches:
   only:
