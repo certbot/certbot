@@ -23,7 +23,7 @@ def assert_hook_execution(probe_path, probe_content):
     with open(probe_path, 'r') as file:
         data = file.read()
 
-    lines = data.splitlines(keepends=False)
+    lines = [line.strip() for line in data.splitlines()]
     assert probe_content in lines
 
 
