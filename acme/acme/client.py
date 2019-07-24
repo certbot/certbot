@@ -133,7 +133,7 @@ class ClientBase(object):  # pylint: disable=too-many-instance-attributes
         :rtype: `.AuthorizationResource`
 
         """
-        body = messages.Authorization(**dict({'status': 'deactivated'}))
+        body = messages.Authorization(status='deactivated')
         response = self._post(authzr.uri, body)
         return self._authzr_from_response(response)
 
