@@ -1387,7 +1387,7 @@ except ImportError:
 
 
 __version__ = 1, 5, 1
-PIP_VERSION = '9.0.1'
+PIP_VERSION = '19.2.1'
 DEFAULT_INDEX_BASE = 'https://pypi.python.org'
 
 
@@ -1401,9 +1401,9 @@ maybe_argparse = (
 
 PACKAGES = maybe_argparse + [
     # Pip has no dependencies, as it vendors everything:
-    ('11/b6/abcb525026a4be042b486df43905d6893fb04f05aac21c32c638e939e447/'
+    ('8b/8a/1b2aadd922db1afe6bc107b03de41d6d37a28a5923383e60695fba24ae81/'
      'pip-{0}.tar.gz'.format(PIP_VERSION),
-     '09f243e1a7b461f654c26a725fa373211bb7ff17a9300058b205c61658ca940d'),
+     '258d702483dd749400aec59c23d638a5b2249ae28a0f478b6cab12ad45681a80'),
     # This version of setuptools has only optional dependencies:
     ('37/1b/b25507861991beeade31473868463dad0e58b1978c209de27384ae541b0b/'
      'setuptools-40.6.3.zip',
