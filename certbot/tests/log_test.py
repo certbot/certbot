@@ -14,7 +14,7 @@ from acme.magic_typing import Optional  # pylint: disable=unused-import, no-name
 from certbot import constants
 from certbot import errors
 from certbot import util
-from certbot.compat import misc
+from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.tests import util as test_util
 
@@ -260,8 +260,7 @@ class TempHandlerTest(unittest.TestCase):
         self.handler.close()
 
     def test_permissions(self):
-        self.assertTrue(
-            util.check_permissions(self.handler.path, 0o600, misc.os_geteuid()))
+        self.assertTrue(filesystem.check_permissions(self.handler.path, 0o600))
 
     def test_delete(self):
         self.handler.close()
