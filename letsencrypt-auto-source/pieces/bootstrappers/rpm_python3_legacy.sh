@@ -3,6 +3,8 @@
 BOOTSTRAP_RPM_PYTHON3_LEGACY_VERSION=1
 
 BootstrapRpmPython3Legacy() {
+  # Tested with:
+  #   - CentOS 6
 
   InitializeRPMCommonBase
 
@@ -28,7 +30,9 @@ BootstrapRpmPython3Legacy() {
 
   # CentOS 6 must use rh-python36 from SCL
   if $TOOL list rh-python36 >/dev/null 2>&1; then
-    python_pkgs="rh-python36
+    python_pkgs="rh-python36-python
+      rh-python36-python-virtualenv
+      rh-python36-python-devel
     "
   else
     error "No supported Python package available to install. Aborting bootstrap!"
