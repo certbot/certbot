@@ -298,6 +298,7 @@ DeterminePythonVersion() {
 {{ bootstrappers/deb_common.sh }}
 {{ bootstrappers/rpm_common_base.sh }}
 {{ bootstrappers/rpm_common.sh }}
+{{ bootstrappers/rpm_python3_legacy.sh }}
 {{ bootstrappers/rpm_python3.sh }}
 {{ bootstrappers/suse_common.sh }}
 {{ bootstrappers/arch_common.sh }}
@@ -336,7 +337,14 @@ elif [ -f /etc/redhat-release ]; then
   if [ "$RPM_DIST_NAME" = "fedora" ]; then
     RPM_DIST_VERSION=`(. /etc/os-release 2> /dev/null && echo $VERSION_ID) || echo "0"`
   fi
-  if [ "$RPM_DIST_NAME" = "fedora" -a "$RPM_DIST_VERSION" -ge 29 -o "$PYVER" -eq 26 ]; then
+  if [ "$PYVER" -eq 26 ]; then
+    Bootstrap() {
+      BootstrapMessage "Legacy RedHat-based OSes that will use Python3"
+      BootstrapRpmPython3Legacy
+    }
+    USE_PYTHON_3=1
+    BOOTSTRAP_VERSION="BootstrapRpmPython3Legacy $BOOTSTRAP_RPM_PYTHON3_LEGACY_VERSION"
+  elif [ "$RPM_DIST_NAME" = "fedora" -a "$RPM_DIST_VERSION" -ge 29 -o "$PYVER" -eq 26 ]; then
     Bootstrap() {
       BootstrapMessage "RedHat-based OSes that will use Python3"
       BootstrapRpmPython3
