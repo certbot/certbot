@@ -517,7 +517,7 @@ BootstrapRpmPython3Legacy() {
   fi
 
   # CentOS 6 must use rh-python36 from SCL
-  if $TOOL list python3-virtualenv >/dev/null 2>&1; then
+  if $TOOL list rh-python36 >/dev/null 2>&1; then
     python_pkgs="rh-python36
     "
   else
