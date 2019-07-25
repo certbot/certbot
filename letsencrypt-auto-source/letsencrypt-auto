@@ -529,9 +529,6 @@ BootstrapRpmPython3Legacy() {
     exit 1
   fi
 
-  # Insert the SCL specific path in PATH to resolve the correct virtualenv binary from SCL
-  PATH="/opt/rh/rh-python36/root/usr/bin:$PATH"
-
   BootstrapRpmCommonBase "$python_pkgs"
 }
 
@@ -808,6 +805,8 @@ elif [ -f /etc/redhat-release ]; then
     }
     USE_PYTHON_3=1
     BOOTSTRAP_VERSION="BootstrapRpmPython3Legacy $BOOTSTRAP_RPM_PYTHON3_LEGACY_VERSION"
+    # Insert the SCL specific path in PATH to resolve the correct python binaries from SCL
+    PATH="/opt/rh/rh-python36/root/usr/bin:$PATH"
   elif [ "$RPM_DIST_NAME" = "fedora" -a "$RPM_DIST_VERSION" -ge 29 -o "$PYVER" -eq 26 ]; then
     Bootstrap() {
       BootstrapMessage "RedHat-based OSes that will use Python3"

@@ -39,8 +39,5 @@ BootstrapRpmPython3Legacy() {
     exit 1
   fi
 
-  # Insert the SCL specific path in PATH to resolve the correct virtualenv binary from SCL
-  PATH="/opt/rh/rh-python36/root/usr/bin:$PATH"
-
   BootstrapRpmCommonBase "$python_pkgs"
 }
