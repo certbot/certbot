@@ -332,4 +332,3 @@ class BlockNode(ParserNode):
         :returns: list of file paths of files that have been changed but not yet
             saved to disk.
         """
-
