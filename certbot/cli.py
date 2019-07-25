@@ -657,6 +657,10 @@ class HelpfulArgumentParser(object):
 
         parsed_args.server = constants.STAGING_URI
 
+        # Deactivate authzs for staging if the user has not expressed a preference otherwise
+        if parsed_args.deactivate_authorizations is None:
+            parsed_args.deactivate_authorizations = True
+
         if parsed_args.dry_run:
             if self.verb not in ["certonly", "renew"]:
                 raise errors.Error("--dry-run currently only works with the "
@@ -1115,6 +1119,16 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         default=flag_default("debug_challenges"),
         help="After setting up challenges, wait for user input before "
              "submitting to CA")
+    helpful.add(
+        [None, "certonly", "run", "renew"], "--deactivate-authorizations", action="store_true",
+        default=flag_default("deactivate_authorizations"),
+        help="Before and after completing an order, deactivate any existing valid "
+             "authorizations. This guarantees that all required challenges will be "
+             "performed. Automatically enabled by --staging and --dry-run.")
+    helpful.add(
+        [None, "certonly", "run", "renew"], "--no-deactivate-authorizations", action="store_false",
+        dest="deactivate_authorizations", default=flag_default("deactivate_authorizations"),
+        help=argparse.SUPPRESS)
     helpful.add(
         "testing", "--no-verify-ssl", action="store_true",
         help=config_help("no_verify_ssl"),

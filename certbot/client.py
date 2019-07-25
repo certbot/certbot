@@ -290,11 +290,15 @@ class Client(object):
 
         logger.debug("CSR: %s", csr)
 
-        if orderr is None:
-            orderr = self._get_order_and_authorizations(csr.data, best_effort=False)
+        # After order finalization, we might need to perform deactivation of valid
+        # authzs to prevent future re-use.
+        with error_handler.ExitHandler(self._deactivate_authorizations, orderr):
+            if orderr is None:
+                orderr = self._get_order_and_authorizations(csr.data, best_effort=False)
 
-        deadline = datetime.datetime.now() + datetime.timedelta(seconds=90)
-        orderr = self.acme.finalize_order(orderr, deadline)
+            deadline = datetime.datetime.now() + datetime.timedelta(seconds=90)
+            orderr = self.acme.finalize_order(orderr, deadline)
+
         cert, chain = crypto_util.cert_and_chain_from_fullchain(orderr.fullchain_pem)
         return cert.encode(), chain.encode()
 
@@ -382,8 +386,42 @@ class Client(object):
         except acme_errors.WildcardUnsupportedError:
             raise errors.Error("The currently selected ACME CA endpoint does"
                                " not support issuing wildcard certificates.")
+
+        # If we received an order with existing valid authorizations and --deactivate-authorizations
+        # is configured, deactivate the authorizations and create a new order.
+        deactivated_authzrs = self._deactivate_authorizations(orderr, refresh=False)
+        if deactivated_authzrs:
+            logger.debug('Recreating order after deactivating existing valid authorizations')
+            return self._get_order_and_authorizations(csr_pem, best_effort)
+
         authzr = self.auth_handler.handle_authorizations(orderr, best_effort)
         return orderr.update(authorizations=authzr)
+
+    def _deactivate_authorizations(self, orderr, refresh=True):
+        # type (acme.messages.OrderResource, bool) -> List[acme.messages.AuthorizationResource]
+        """
+        If Certbot is running with --deactivate-authorizations (including --dry-run
+        and --staging), deactivate authorizations so that new orders will not re-use them.
+        This function swallows any ACME errors that it encounters, as failure to deactivate
+        an authorization is not treated as fatal.
+
+        :param acme.messages.OrderResource orderr: must have authorizations filled in
+        :param bool refresh: whether to refresh the status of the authorization
+        :returns: list of deactivated authorization resources
+        :rtype: List
+        """
+        if not orderr or not self.config.deactivate_authorizations:
+            return []
+
+        try:
+            authzrs = self.auth_handler.deactivate_valid_authorizations(orderr, refresh)
+            if authzrs:
+                logger.debug("Deactivated authorizations: %s",
+                            ", ".join([authzr.uri for authzr in authzrs]))
+            return authzrs
+        except acme_errors.Error as e:
+            logger.warning("Failed to deactivate authorizations %s", e)
+            return []
 
     # pylint: disable=no-member
     def obtain_and_enroll_certificate(self, domains, certname):

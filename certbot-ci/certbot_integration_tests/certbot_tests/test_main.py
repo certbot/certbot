@@ -575,3 +575,17 @@ def test_ocsp_status_live(context):
 
     assert output.count('INVALID') == 1, 'Expected {0} to be INVALID'.format(cert)
     assert output.count('REVOKED') == 1, 'Expected {0} to be REVOKED'.format(cert)
+
+def test_deactivate_authzs(context):
+    """Test deactivation of valid authzs after a successful order"""
+    # This skip is commented because pebble doesn't seem to reuse authzs at all.
+    # if context.acme_server == 'pebble':
+    #     pytest.skip('This test is skipped for Pebble due to ' +
+    #                 'https://github.com/letsencrypt/pebble/issues/256')
+    name = context.get_domain('authz-deactivation')
+    # First run to generate a valid authz
+    context.certbot(['certonly', '--cert-name', name, '-d', name])
+    # On the second run, we expect to invalidate the authz on order creation,
+    # and then after the finalization of the re-created order.
+    context.certbot(['certonly', '--cert-name', name, '--deactivate-authorizations',
+                     '-d', name, '--force-renewal'])

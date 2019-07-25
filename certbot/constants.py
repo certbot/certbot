@@ -52,6 +52,7 @@ CLI_DEFAULTS = dict(
     staging=False,
     debug=False,
     debug_challenges=False,
+    deactivate_authorizations=None,
     no_verify_ssl=False,
     http01_port=challenges.HTTP01Response.PORT,
     http01_address="",

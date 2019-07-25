@@ -6,6 +6,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+* CLI flag `--deactivate-authorizations` has been added. It deactivates existing valid authorizations before and after issuing new certificates, ensuring that the results of all challenges are fresh. It is automatically enabled by `--dry-run` and `--staging`, but can be disabled with `--no-deactivate-authorizations`. 
 * acme: Authz deactivation added to `acme` module.
 
 ### Changed
