@@ -4,7 +4,6 @@ import ssl
 
 import pytest
 
-from certbot_integration_tests.utils import misc
 from certbot_integration_tests.nginx_tests import context as nginx_context
 
 
@@ -18,7 +17,6 @@ def context(request):
         integration_test_context.cleanup()
 
 
-@misc.broken_on_windows
 @pytest.mark.parametrize('certname_pattern, params, context', [
     ('nginx.{0}.wtf', ['run'], {'default_server': True}),
     ('nginx2.{0}.wtf', ['--preferred-challenges', 'http'], {'default_server': True}),
