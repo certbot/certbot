@@ -133,12 +133,6 @@ matrix:
       services: docker
       <<: *extended-test-suite
     - python: "2.7"
-      env: TOXENV=py27-certbot-oldest
-      <<: *extended-test-suite
-    - python: "2.7"
-      env: TOXENV=py27-nginx-oldest
-      <<: *extended-test-suite
-    - python: "2.7"
       env: ACME_SERVER=boulder-v1 TOXENV=integration-certbot-oldest
       sudo: required
       services: docker
