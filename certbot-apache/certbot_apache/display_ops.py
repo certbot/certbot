@@ -1,22 +1,54 @@
 """Contains UI methods for Apache operations."""
 import logging
-import os
 
 import zope.component
 
+import certbot.display.util as display_util
 from certbot import errors
 from certbot import interfaces
-
-import certbot.display.util as display_util
-
+from certbot.compat import os
 
 logger = logging.getLogger(__name__)
 
 
+def select_vhost_multiple(vhosts):
+    """Select multiple Vhosts to install the certificate for
+
+    :param vhosts: Available Apache VirtualHosts
+    :type vhosts: :class:`list` of type `~obj.Vhost`
+
+    :returns: List of VirtualHosts
+    :rtype: :class:`list`of type `~obj.Vhost`
+    """
+    if not vhosts:
+        return list()
+    tags_list = [vhost.display_repr()+"\n" for vhost in vhosts]
+    # Remove the extra newline from the last entry
+    if tags_list:
+        tags_list[-1] = tags_list[-1][:-1]
+    code, names = zope.component.getUtility(interfaces.IDisplay).checklist(
+        "Which VirtualHosts would you like to install the wildcard certificate for?",
+        tags=tags_list, force_interactive=True)
+    if code == display_util.OK:
+        return_vhosts = _reversemap_vhosts(names, vhosts)
+        return return_vhosts
+    return []
+
+def _reversemap_vhosts(names, vhosts):
+    """Helper function for select_vhost_multiple for mapping string
+    representations back to actual vhost objects"""
+    return_vhosts = list()
+
+    for selection in names:
+        for vhost in vhosts:
+            if vhost.display_repr().strip() == selection.strip():
+                return_vhosts.append(vhost)
+    return return_vhosts
+
 def select_vhost(domain, vhosts):
     """Select an appropriate Apache Vhost.
 
-    :param vhosts: Available Apache Virtual Hosts
+    :param vhosts: Available Apache VirtualHosts
     :type vhosts: :class:`list` of type `~obj.Vhost`
 
     :returns: VirtualHost or `None`
@@ -25,13 +57,10 @@ def select_vhost(domain, vhosts):
     """
     if not vhosts:
         return None
-    while True:
-        code, tag = _vhost_menu(domain, vhosts)
-        if code == display_util.OK:
-            return vhosts[tag]
-        else:
-            return None
-
+    code, tag = _vhost_menu(domain, vhosts)
+    if code == display_util.OK:
+        return vhosts[tag]
+    return None
 
 def _vhost_menu(domain, vhosts):
     """Select an appropriate Apache Vhost.
@@ -61,7 +90,7 @@ def _vhost_menu(domain, vhosts):
     for vhost in vhosts:
         if len(vhost.get_names()) == 1:
             disp_name = next(iter(vhost.get_names()))
-        elif len(vhost.get_names()) == 0:
+        elif not vhost.get_names():
             disp_name = ""
         else:
             disp_name = "Multiple Names"
@@ -81,15 +110,15 @@ def _vhost_menu(domain, vhosts):
         code, tag = zope.component.getUtility(interfaces.IDisplay).menu(
             "We were unable to find a vhost with a ServerName "
             "or Address of {0}.{1}Which virtual host would you "
-            "like to choose?\n(note: conf files with multiple "
-            "vhosts are not yet supported)".format(domain, os.linesep),
+            "like to choose?".format(domain, os.linesep),
             choices, force_interactive=True)
     except errors.MissingCommandlineFlag:
         msg = (
-            "Encountered vhost ambiguity but unable to ask for user "
+            "Encountered vhost ambiguity when trying to find a vhost for "
+            "{0} but was unable to ask for user "
             "guidance in non-interactive mode. Certbot may need "
             "vhosts to be explicitly labelled with ServerName or "
-            "ServerAlias directives.")
+            "ServerAlias directives.".format(domain))
         logger.warning(msg)
         raise errors.MissingCommandlineFlag(msg)
 

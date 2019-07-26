@@ -1,7 +1,8 @@
 """Tests for acme.jws."""
 import unittest
 
-from acme import jose
+import josepy as jose
+
 from acme import test_util
 
 

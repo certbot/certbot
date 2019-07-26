@@ -1,15 +1,15 @@
 """Certbot client interfaces."""
 import abc
+import six
 import zope.interface
 
 # pylint: disable=no-self-argument,no-method-argument,no-init,inherit-non-class
 # pylint: disable=too-few-public-methods
 
 
+@six.add_metaclass(abc.ABCMeta)
 class AccountStorage(object):
     """Accounts storage interface."""
-
-    __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
     def find_all(self):  # pragma: no cover
@@ -73,7 +73,7 @@ class IPluginFactory(zope.interface.Interface):
 
     description = zope.interface.Attribute("Short plugin description")
 
-    def __call__(config, name):
+    def __call__(config, name):  # pylint: disable=signature-differs
         """Create new `IPlugin`.
 
         :param IConfig config: Configuration.
@@ -159,21 +159,14 @@ class IAuthenticator(IPlugin):
             :func:`get_chall_pref` only.
 
         :returns: `collections.Iterable` of ACME
-            :class:`~acme.challenges.ChallengeResponse` instances
-            or if the :class:`~acme.challenges.Challenge` cannot
-            be fulfilled then:
-
-            ``None``
-              Authenticator can perform challenge, but not at this time.
-            ``False``
-              Authenticator will never be able to perform (error).
-
+            :class:`~acme.challenges.ChallengeResponse` instances corresponding to each provided
+            :class:`~acme.challenges.Challenge`.
         :rtype: :class:`collections.Iterable` of
             :class:`acme.challenges.ChallengeResponse`,
             where responses are required to be returned in
             the same order as corresponding input challenges
 
-        :raises .PluginError: If challenges cannot be performed
+        :raises .PluginError: If some or all challenges cannot be performed
 
         """
 
@@ -201,7 +194,9 @@ class IConfig(zope.interface.Interface):
     """
     server = zope.interface.Attribute("ACME Directory Resource URI.")
     email = zope.interface.Attribute(
-        "Email used for registration and recovery contact. (default: Ask)")
+        "Email used for registration and recovery contact. Use comma to "
+        "register multiple emails, ex: u1@example.com,u2@example.com. "
+        "(default: Ask).")
     rsa_key_size = zope.interface.Attribute("Size of the RSA key.")
     must_staple = zope.interface.Attribute(
         "Adds the OCSP Must Staple extension to the certificate. "
@@ -225,12 +220,6 @@ class IConfig(zope.interface.Interface):
 
     no_verify_ssl = zope.interface.Attribute(
         "Disable verification of the ACME server's certificate.")
-    tls_sni_01_port = zope.interface.Attribute(
-        "Port used during tls-sni-01 challenge. "
-        "This only affects the port Certbot listens on. "
-        "A conforming ACME server will still attempt to connect on port 443.")
-    tls_sni_01_address = zope.interface.Attribute(
-        "The address the server listens to during tls-sni-01 challenge.")
 
     http01_port = zope.interface.Attribute(
         "Port used in the http-01 challenge. "
@@ -239,6 +228,11 @@ class IConfig(zope.interface.Interface):
 
     http01_address = zope.interface.Attribute(
         "The address the server listens to during http-01 challenge.")
+
+    https_port = zope.interface.Attribute(
+        "Port used to serve HTTPS. "
+        "This affects which port Nginx will listen on after a LE certificate "
+        "is installed.")
 
     pref_challs = zope.interface.Attribute(
         "Sorted user specified preferred challenges"
@@ -255,6 +249,10 @@ class IConfig(zope.interface.Interface):
         "Require that all configuration files are owned by the current "
         "user; only needed if your config is somewhere unsafe like /tmp/."
         "This is a boolean")
+
+    disable_renew_updates = zope.interface.Attribute(
+        "If updates provided by installer enhancements when Certbot is being run"
+        " with \"renew\" verb should be disabled.")
 
 class IInstaller(IPlugin):
     """Generic Certbot Installer Interface.
@@ -354,13 +352,6 @@ class IInstaller(IPlugin):
         execution interruptions.
 
         :raises .errors.PluginError: If unable to recover the configuration
-
-        """
-
-    def view_config_changes():  # type: ignore
-        """Display all of the LE config changes.
-
-        :raises .PluginError: when config changes cannot be parsed
 
         """
 
@@ -516,56 +507,6 @@ class IDisplay(zope.interface.Interface):
         """
 
 
-class IValidator(zope.interface.Interface):
-    """Configuration validator."""
-
-    def certificate(cert, name, alt_host=None, port=443):
-        """Verifies the certificate presented at name is cert
-
-        :param OpenSSL.crypto.X509 cert: Expected certificate
-        :param str name: Server's domain name
-        :param bytes alt_host: Host to connect to instead of the IP
-            address of host
-        :param int port: Port to connect to
-
-        :returns: True if the certificate was verified successfully
-        :rtype: bool
-
-        """
-
-    def redirect(name, port=80, headers=None):
-        """Verify redirect to HTTPS
-
-        :param str name: Server's domain name
-        :param int port: Port to connect to
-        :param dict headers: HTTP headers to include in request
-
-        :returns: True if redirect is successfully enabled
-        :rtype: bool
-
-        """
-
-    def hsts(name):
-        """Verify HSTS header is enabled
-
-        :param str name: Server's domain name
-
-        :returns: True if HSTS header is successfully enabled
-        :rtype: bool
-
-        """
-
-    def ocsp_stapling(name):
-        """Verify ocsp stapling for domain
-
-        :param str name: Server's domain name
-
-        :returns: True if ocsp stapling is successfully enabled
-        :rtype: bool
-
-        """
-
-
 class IReporter(zope.interface.Interface):
     """Interface to collect and display information to the user."""
 
@@ -591,3 +532,75 @@ class IReporter(zope.interface.Interface):
 
     def print_messages(self):
         """Prints messages to the user and clears the message queue."""
+
+
+# Updater interfaces
+#
+# When "certbot renew" is run, Certbot will iterate over each lineage and check
+# if the selected installer for that lineage is a subclass of each updater
+# class. If it is and the update of that type is configured to be run for that
+# lineage, the relevant update function will be called for it. These functions
+# are never called for other subcommands, so if an installer wants to perform
+# an update during the run or install subcommand, it should do so when
+# :func:`IInstaller.deploy_cert` is called.
+
+@six.add_metaclass(abc.ABCMeta)
+class GenericUpdater(object):
+    """Interface for update types not currently specified by Certbot.
+
+    This class allows plugins to perform types of updates that Certbot hasn't
+    defined (yet).
+
+    To make use of this interface, the installer should implement the interface
+    methods, and interfaces.GenericUpdater.register(InstallerClass) should
+    be called from the installer code.
+
+    The plugins implementing this enhancement are responsible of handling
+    the saving of configuration checkpoints as well as other calls to
+    interface methods of `interfaces.IInstaller` such as prepare() and restart()
+    """
+
+    @abc.abstractmethod
+    def generic_updates(self, lineage, *args, **kwargs):
+        """Perform any update types defined by the installer.
+
+        If an installer is a subclass of the class containing this method, this
+        function will always be called when "certbot renew" is run. If the
+        update defined by the installer should be run conditionally, the
+        installer needs to handle checking the conditions itself.
+
+        This method is called once for each lineage.
+
+        :param lineage: Certificate lineage object
+        :type lineage: storage.RenewableCert
+
+        """
+
+
+@six.add_metaclass(abc.ABCMeta)
+class RenewDeployer(object):
+    """Interface for update types run when a lineage is renewed
+
+    This class allows plugins to perform types of updates that need to run at
+    lineage renewal that Certbot hasn't defined (yet).
+
+    To make use of this interface, the installer should implement the interface
+    methods, and interfaces.RenewDeployer.register(InstallerClass) should
+    be called from the installer code.
+    """
+
+    @abc.abstractmethod
+    def renew_deploy(self, lineage, *args, **kwargs):
+        """Perform updates defined by installer when a certificate has been renewed
+
+        If an installer is a subclass of the class containing this method, this
+        function will always be called when a certficate has been renewed by
+        running "certbot renew". For example if a plugin needs to copy a
+        certificate over, or change configuration based on the new certificate.
+
+        This method is called once for each lineage renewed
+
+        :param lineage: Certificate lineage object
+        :type lineage: storage.RenewableCert
+
+        """

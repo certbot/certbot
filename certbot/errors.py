@@ -32,6 +32,8 @@ class HookCommandNotFound(Error):
 class SignalExit(Error):
     """A Unix signal was received while in the ErrorHandler context manager."""
 
+class OverlappingMatchFound(Error):
+    """Multiple lineages matched what should have been a unique result."""
 
 class LockError(Error):
     """File locking error."""
@@ -83,6 +85,10 @@ class MisconfigurationError(PluginError):
 
 class NotSupportedError(PluginError):
     """Certbot Plugin function not supported error."""
+
+
+class PluginStorageError(PluginError):
+    """Certbot Plugin Storage error."""
 
 
 class StandaloneBindError(Error):

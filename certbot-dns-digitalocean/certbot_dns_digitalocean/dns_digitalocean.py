@@ -134,7 +134,7 @@ class _DigitalOceanClient(object):
                 logger.debug('Removing TXT record with id: %s', record.id)
                 record.destroy()
             except digitalocean.Error as e:
-                logger.warn('Error deleting TXT record %s using the DigitalOcean API: %s',
+                logger.warning('Error deleting TXT record %s using the DigitalOcean API: %s',
                             record.id, e)
 
     def _find_domain(self, domain_name):
@@ -154,7 +154,7 @@ class _DigitalOceanClient(object):
         for guess in domain_name_guesses:
             matches = [domain for domain in domains if domain.name == guess]
 
-            if len(matches) > 0:
+            if matches:
                 domain = matches[0]
                 logger.debug('Found base domain for %s using name %s', domain_name, guess)
                 return domain

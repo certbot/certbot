@@ -1,22 +1,31 @@
-import sys
-
+import os
 from setuptools import setup
 from setuptools import find_packages
 
 
-version = '0.18.0.dev0'
+version = '0.37.0.dev0'
 
-# Please update tox.ini when modifying dependency version requirements
+# Remember to update local-oldest-requirements.txt when changing the minimum
+# acme/certbot version.
 install_requires = [
-    'acme=={0}'.format(version),
-    'certbot=={0}'.format(version),
-    'dns-lexicon',
+    'acme>=0.31.0',
+    'certbot>=0.34.0',
     'mock',
-    # For pkg_resources. >=1.0 so pip resolves it to a version cryptography
-    # will tolerate; see #2599:
-    'setuptools>=1.0',
+    'setuptools',
     'zope.interface',
 ]
+
+# This package normally depends on dns-lexicon>=3.2.1 to address the
+# problem described in https://github.com/AnalogJ/lexicon/issues/387,
+# however, the fix there has been backported to older versions of
+# lexicon found in various Linux distros. This conditional helps us test
+# that we've maintained compatibility with these versions of lexicon
+# which allows us to potentially upgrade our packages in these distros
+# as necessary.
+if os.environ.get('CERTBOT_OLDEST') == '1':
+    install_requires.append('dns-lexicon>=2.2.1')
+else:
+    install_requires.append('dns-lexicon>=3.2.1')
 
 docs_extras = [
     'Sphinx>=1.0',  # autodoc_member_order = 'bysource', autodoc_default_flags
@@ -31,6 +40,7 @@ setup(
     author="Certbot Project",
     author_email='client-dev@letsencrypt.org',
     license='Apache License 2.0',
+    python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*',
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Environment :: Plugins',
@@ -41,10 +51,10 @@ setup(
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Security',
         'Topic :: System :: Installation/Setup',

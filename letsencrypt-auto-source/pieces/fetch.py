@@ -11,16 +11,22 @@ On failure, return non-zero.
 
 """
 
-from __future__ import print_function
+from __future__ import print_function, unicode_literals
 
 from distutils.version import LooseVersion
 from json import loads
 from os import devnull, environ
 from os.path import dirname, join
 import re
+import ssl
 from subprocess import check_call, CalledProcessError
 from sys import argv, exit
-from urllib2 import build_opener, HTTPHandler, HTTPSHandler, HTTPError
+try:
+    from urllib2 import build_opener, HTTPHandler, HTTPSHandler
+    from urllib2 import HTTPError, URLError
+except ImportError:
+    from urllib.request import build_opener, HTTPHandler, HTTPSHandler
+    from urllib.error import HTTPError, URLError
 
 PUBLIC_KEY = environ.get('LE_AUTO_PUBLIC_KEY', """-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA6MR8W/galdxnpGqBsYbq
@@ -42,8 +48,11 @@ class HttpsGetter(object):
     def __init__(self):
         """Build an HTTPS opener."""
         # Based on pip 1.4.1's URLOpener
-        # This verifies certs on only Python >=2.7.9.
-        self._opener = build_opener(HTTPSHandler())
+        # This verifies certs on only Python >=2.7.9, and when NO_CERT_VERIFY isn't set.
+        if environ.get('NO_CERT_VERIFY') == '1' and hasattr(ssl, 'SSLContext'):
+            self._opener = build_opener(HTTPSHandler(context=cert_none_context()))
+        else:
+            self._opener = build_opener(HTTPSHandler())
         # Strip out HTTPHandler to prevent MITM spoof:
         for handler in self._opener.handlers:
             if isinstance(handler, HTTPHandler):
@@ -56,14 +65,16 @@ class HttpsGetter(object):
 
         """
         try:
-            return self._opener.open(url).read()
+            # socket module docs say default timeout is None: that is, no
+            # timeout
+            return self._opener.open(url, timeout=30).read()
         except (HTTPError, IOError) as exc:
             raise ExpectedError("Couldn't download %s." % url, exc)
 
 
 def write(contents, dir, filename):
     """Write something to a file in a certain directory."""
-    with open(join(dir, filename), 'w') as file:
+    with open(join(dir, filename), 'wb') as file:
         file.write(contents)
 
 
@@ -71,13 +82,13 @@ def latest_stable_version(get):
     """Return the latest stable release of letsencrypt."""
     metadata = loads(get(
         environ.get('LE_AUTO_JSON_URL',
-                    'https://pypi.python.org/pypi/certbot/json')))
+                    'https://pypi.python.org/pypi/certbot/json')).decode('UTF-8'))
     # metadata['info']['version'] actually returns the latest of any kind of
     # release release, contrary to https://wiki.python.org/moin/PyPIJSON.
     # The regex is a sufficient regex for picking out prereleases for most
     # packages, LE included.
     return str(max(LooseVersion(r) for r
-                   in metadata['releases'].iterkeys()
+                   in metadata['releases'].keys()
                    if re.match('^[0-9.]+$', r)))
 
 
@@ -94,7 +105,7 @@ def verified_new_le_auto(get, tag, temp_dir):
         'letsencrypt-auto-source/') % tag
     write(get(le_auto_dir + 'letsencrypt-auto'), temp_dir, 'letsencrypt-auto')
     write(get(le_auto_dir + 'letsencrypt-auto.sig'), temp_dir, 'letsencrypt-auto.sig')
-    write(PUBLIC_KEY, temp_dir, 'public_key.pem')
+    write(PUBLIC_KEY.encode('UTF-8'), temp_dir, 'public_key.pem')
     try:
         with open(devnull, 'w') as dev_null:
             check_call(['openssl', 'dgst', '-sha256', '-verify',
@@ -107,6 +118,14 @@ def verified_new_le_auto(get, tag, temp_dir):
     except CalledProcessError as exc:
         raise ExpectedError("Couldn't verify signature of downloaded "
                             "certbot-auto.", exc)
+
+
+def cert_none_context():
+    """Create a SSLContext object to not check hostname."""
+    # PROTOCOL_TLS isn't available before 2.7.13 but this code is for 2.7.9+, so use this.
+    context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+    context.verify_mode = ssl.CERT_NONE
+    return context
 
 
 def main():

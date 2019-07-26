@@ -2,21 +2,17 @@
 import collections
 import itertools
 import logging
+
 import pkg_resources
 import six
 
 import zope.interface
 import zope.interface.verify
 
+from acme.magic_typing import Dict  # pylint: disable=unused-import, no-name-in-module
 from certbot import constants
 from certbot import errors
 from certbot import interfaces
-
-try:
-    from collections import OrderedDict
-except ImportError:  # pragma: no cover
-    # OrderedDict was added in Python 2.7
-    from ordereddict import OrderedDict  # pylint: disable=import-error
 
 
 logger = logging.getLogger(__name__)
@@ -33,11 +29,15 @@ class PluginEntryPoint(object):
         "certbot-dns-digitalocean",
         "certbot-dns-dnsimple",
         "certbot-dns-dnsmadeeasy",
+        "certbot-dns-gehirn",
         "certbot-dns-google",
+        "certbot-dns-linode",
         "certbot-dns-luadns",
         "certbot-dns-nsone",
+        "certbot-dns-ovh",
         "certbot-dns-rfc2136",
         "certbot-dns-route53",
+        "certbot-dns-sakuracloud",
         "certbot-nginx",
     ]
     """Distributions for which prefix will be omitted."""
@@ -188,12 +188,17 @@ class PluginsRegistry(collections.Mapping):
         # This prevents deadlock caused by plugins acquiring a lock
         # and ensures at least one concurrent Certbot instance will run
         # successfully.
-        self._plugins = OrderedDict(sorted(six.iteritems(plugins)))
+
+        # Pylint checks for super init, but also claims the super
+        # has no __init__member
+        # pylint: disable=super-init-not-called
+        self._plugins = collections.OrderedDict(sorted(six.iteritems(plugins)))
 
     @classmethod
     def find_all(cls):
         """Find plugins using setuptools entry points."""
-        plugins = {}
+        plugins = {}  # type: Dict[str, PluginEntryPoint]
+        # pylint: disable=not-callable
         entry_points = itertools.chain(
             pkg_resources.iter_entry_points(
                 constants.SETUPTOOLS_PLUGINS_ENTRY_POINT),
@@ -236,7 +241,6 @@ class PluginsRegistry(collections.Mapping):
 
     def ifaces(self, *ifaces_groups):
         """Filter plugins based on interfaces."""
-        # pylint: disable=star-args
         return self.filter(lambda p_ep: p_ep.ifaces(*ifaces_groups))
 
     def verify(self, ifaces):
@@ -272,8 +276,7 @@ class PluginsRegistry(collections.Mapping):
         assert len(candidates) <= 1
         if candidates:
             return candidates[0]
-        else:
-            return None
+        return None
 
     def __repr__(self):
         return "{0}({1})".format(

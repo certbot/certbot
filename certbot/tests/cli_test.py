@@ -1,8 +1,8 @@
 """Tests for certbot.cli."""
 import argparse
-import unittest
-import os
+import copy
 import tempfile
+import unittest
 
 import mock
 import six
@@ -10,13 +10,13 @@ from six.moves import reload_module  # pylint: disable=import-error
 
 from acme import challenges
 
+import certbot.tests.util as test_util
 from certbot import cli
 from certbot import constants
 from certbot import errors
+from certbot.compat import os
+from certbot.compat import filesystem
 from certbot.plugins import disco
-
-import certbot.tests.util as test_util
-
 from certbot.tests.util import TempDirTestCase
 
 PLUGINS = disco.PluginsRegistry.find_all()
@@ -25,7 +25,6 @@ PLUGINS = disco.PluginsRegistry.find_all()
 class TestReadFile(TempDirTestCase):
     '''Test cli.read_file'''
 
-    _multiprocess_can_split_ = True
 
     def test_read_file(self):
         rel_test_path = os.path.relpath(os.path.join(self.tempdir, 'foo'))
@@ -41,11 +40,23 @@ class TestReadFile(TempDirTestCase):
         self.assertEqual(contents, test_contents)
 
 
+class FlagDefaultTest(unittest.TestCase):
+    """Tests cli.flag_default"""
+
+    def test_default_directories(self):
+        if os.name != 'nt':
+            self.assertEqual(cli.flag_default('config_dir'), '/etc/letsencrypt')
+            self.assertEqual(cli.flag_default('work_dir'), '/var/lib/letsencrypt')
+            self.assertEqual(cli.flag_default('logs_dir'), '/var/log/letsencrypt')
+        else:
+            self.assertEqual(cli.flag_default('config_dir'), 'C:\\Certbot')
+            self.assertEqual(cli.flag_default('work_dir'), 'C:\\Certbot\\lib')
+            self.assertEqual(cli.flag_default('logs_dir'), 'C:\\Certbot\\log')
+
 
 class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     '''Test the cli args entrypoint'''
 
-    _multiprocess_can_split_ = True
 
     def setUp(self):
         reload_module(cli)
@@ -79,19 +90,24 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
     @mock.patch("certbot.cli.flag_default")
     def test_cli_ini_domains(self, mock_flag_default):
-        tmp_config = tempfile.NamedTemporaryFile()
-        # use a shim to get ConfigArgParse to pick up tmp_config
-        shim = lambda v: constants.CLI_DEFAULTS[v] if v != "config_files" else [tmp_config.name]
-        mock_flag_default.side_effect = shim
+        with tempfile.NamedTemporaryFile() as tmp_config:
+            tmp_config.close()  # close now because of compatibility issues on Windows
+            # use a shim to get ConfigArgParse to pick up tmp_config
+            shim = (
+                    lambda v: copy.deepcopy(constants.CLI_DEFAULTS[v])
+                    if v != "config_files"
+                    else [tmp_config.name]
+                    )
+            mock_flag_default.side_effect = shim
 
-        namespace = self.parse(["certonly"])
-        self.assertEqual(namespace.domains, [])
-        tmp_config.write(b"domains = example.com")
-        tmp_config.flush()
-        namespace = self.parse(["certonly"])
-        self.assertEqual(namespace.domains, ["example.com"])
-        namespace = self.parse(["renew"])
-        self.assertEqual(namespace.domains, [])
+            namespace = self.parse(["certonly"])
+            self.assertEqual(namespace.domains, [])
+            with open(tmp_config.name, 'w') as file_h:
+                file_h.write("domains = example.com")
+            namespace = self.parse(["certonly"])
+            self.assertEqual(namespace.domains, ["example.com"])
+            namespace = self.parse(["renew"])
+            self.assertEqual(namespace.domains, [])
 
     def test_no_args(self):
         namespace = self.parse([])
@@ -161,6 +177,8 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertTrue("--cert-path" in out)
         self.assertTrue("--key-path" in out)
         self.assertTrue("--reason" in out)
+        self.assertTrue("--delete-after-revoke" in out)
+        self.assertTrue("--no-delete-after-revoke" in out)
 
         out = self._help_output(['-h', 'config_changes'])
         self.assertTrue("--cert-path" not in out)
@@ -219,12 +237,18 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertEqual(namespace.domains, ['example.com', 'another.net'])
 
     def test_preferred_challenges(self):
-        short_args = ['--preferred-challenges', 'http, tls-sni-01, dns']
+        short_args = ['--preferred-challenges', 'http, dns']
         namespace = self.parse(short_args)
 
-        expected = [challenges.HTTP01.typ,
-                    challenges.TLSSNI01.typ, challenges.DNS01.typ]
+        expected = [challenges.HTTP01.typ, challenges.DNS01.typ]
         self.assertEqual(namespace.pref_challs, expected)
+
+        # TODO: to be removed once tls-sni deprecation logic is removed
+        with mock.patch('certbot.cli.logger.warning') as mock_warn:
+            self.assertEqual(self.parse(['--preferred-challenges', 'http, tls-sni']).pref_challs,
+                             [challenges.HTTP01.typ])
+        self.assertEqual(mock_warn.call_count, 1)
+        self.assertTrue('deprecated' in mock_warn.call_args[0][0])
 
         short_args = ['--preferred-challenges', 'jumping-over-the-moon']
         # argparse.ArgumentError makes argparse print more information
@@ -244,12 +268,13 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
     def test_no_gui(self):
         args = ['renew', '--dialog']
-        stderr = six.StringIO()
-        with mock.patch('certbot.main.sys.stderr', new=stderr):
+        with mock.patch("certbot.util.logger.warning") as mock_warn:
             namespace = self.parse(args)
 
         self.assertTrue(namespace.noninteractive_mode)
-        self.assertTrue("--dialog is deprecated" in stderr.getvalue())
+        self.assertEqual(mock_warn.call_count, 1)
+        self.assertTrue("is deprecated" in mock_warn.call_args[0][0])
+        self.assertEqual("--dialog", mock_warn.call_args[0][1])
 
     def _check_server_conflict_message(self, parser_args, conflicting_args):
         try:
@@ -297,8 +322,8 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
             self.parse(short_args + ['renew']), False)
 
         account_dir = os.path.join(config_dir, constants.ACCOUNTS_DIR)
-        os.mkdir(account_dir)
-        os.mkdir(os.path.join(account_dir, 'fake_account_dir'))
+        filesystem.mkdir(account_dir)
+        filesystem.mkdir(os.path.join(account_dir, 'fake_account_dir'))
 
         self._assert_dry_run_flag_worked(self.parse(short_args + ['auth']), True)
         self._assert_dry_run_flag_worked(self.parse(short_args + ['renew']), True)
@@ -324,6 +349,8 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         config_dir_option = 'config_dir'
         self.assertFalse(cli.option_was_set(
             config_dir_option, cli.flag_default(config_dir_option)))
+        self.assertFalse(cli.option_was_set(
+            'authenticator', cli.flag_default('authenticator')))
 
     def test_encode_revocation_reason(self):
         for reason, code in constants.REVOCATION_REASONS.items():
@@ -391,11 +418,53 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         namespace = self.parse(["--max-log-backups", value])
         self.assertEqual(namespace.max_log_backups, int(value))
 
+    def test_unchanging_defaults(self):
+        namespace = self.parse([])
+        self.assertEqual(namespace.domains, [])
+        self.assertEqual(namespace.pref_challs, [])
+
+        namespace.pref_challs = [challenges.HTTP01.typ]
+        namespace.domains = ['example.com']
+
+        namespace = self.parse([])
+        self.assertEqual(namespace.domains, [])
+        self.assertEqual(namespace.pref_challs, [])
+
+    def test_no_directory_hooks_set(self):
+        self.assertFalse(self.parse(["--no-directory-hooks"]).directory_hooks)
+
+    def test_no_directory_hooks_unset(self):
+        self.assertTrue(self.parse([]).directory_hooks)
+
+    def test_delete_after_revoke(self):
+        namespace = self.parse(["--delete-after-revoke"])
+        self.assertTrue(namespace.delete_after_revoke)
+
+    def test_delete_after_revoke_default(self):
+        namespace = self.parse([])
+        self.assertEqual(namespace.delete_after_revoke, None)
+
+    def test_no_delete_after_revoke(self):
+        namespace = self.parse(["--no-delete-after-revoke"])
+        self.assertFalse(namespace.delete_after_revoke)
+
+    def test_allow_subset_with_wildcard(self):
+        self.assertRaises(errors.Error, self.parse,
+                          "--allow-subset-of-names -d *.example.org".split())
+
+    def test_route53_no_revert(self):
+        for help_flag in ['-h', '--help']:
+            for topic in ['all', 'plugins', 'dns-route53']:
+                self.assertFalse('certbot-route53:auth' in self._help_output([help_flag, topic]))
+
+    def test_no_permissions_check_accepted(self):
+        namespace = self.parse(["--no-permissions-check"])
+        self.assertTrue(namespace.no_permissions_check)
+
 
 class DefaultTest(unittest.TestCase):
     """Tests for certbot.cli._Default."""
 
-    _multiprocess_can_split_ = True
 
     def setUp(self):
         # pylint: disable=protected-access
@@ -416,10 +485,13 @@ class DefaultTest(unittest.TestCase):
 class SetByCliTest(unittest.TestCase):
     """Tests for certbot.set_by_cli and related functions."""
 
-    _multiprocess_can_split_ = True
 
     def setUp(self):
         reload_module(cli)
+
+    def test_deploy_hook(self):
+        self.assertTrue(_call_set_by_cli(
+            'renew_hook', '--deploy-hook foo'.split(), 'renew'))
 
     def test_webroot_map(self):
         args = '-w /var/www/html -d example.com'.split()
@@ -454,7 +526,8 @@ class SetByCliTest(unittest.TestCase):
         for v in ('manual', 'manual_auth_hook', 'manual_public_ip_logging_ok'):
             self.assertTrue(_call_set_by_cli(v, args, verb))
 
-        cli.set_by_cli.detector = None
+        # https://github.com/python/mypy/issues/2087
+        cli.set_by_cli.detector = None  # type: ignore
 
         args = ['--manual-auth-hook', 'command']
         for v in ('manual_auth_hook', 'manual_public_ip_logging_ok'):

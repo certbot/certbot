@@ -4,25 +4,24 @@ from __future__ import print_function
 
 import argparse
 import errno
-import os
+import json
 import shutil
-import stat
 import tempfile
 import unittest
 
+import josepy as jose
 import mock
 import six
 
 from acme import challenges
-from acme import jose
 
 from certbot import achallenges
 from certbot import errors
+from certbot.compat import os
+from certbot.compat import filesystem
 from certbot.display import util as display_util
-
 from certbot.tests import acme_util
 from certbot.tests import util as test_util
-
 
 KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 
@@ -36,6 +35,8 @@ class AuthenticatorTest(unittest.TestCase):
     def setUp(self):
         from certbot.plugins.webroot import Authenticator
         self.path = tempfile.mkdtemp()
+        self.partial_root_challenge_path = os.path.join(
+            self.path, ".well-known")
         self.root_challenge_path = os.path.join(
             self.path, ".well-known", "acme-challenge")
         self.validation_path = os.path.join(
@@ -50,7 +51,7 @@ class AuthenticatorTest(unittest.TestCase):
 
     def test_more_info(self):
         more_info = self.auth.more_info()
-        self.assertTrue(isinstance(more_info, str))
+        self.assertTrue(isinstance(more_info, six.string_types))
         self.assertTrue(self.path in more_info)
 
     def test_add_parser_arguments(self):
@@ -96,7 +97,7 @@ class AuthenticatorTest(unittest.TestCase):
     @test_util.patch_get_utility()
     def test_new_webroot(self, mock_get_utility):
         self.config.webroot_path = []
-        self.config.webroot_map = {}
+        self.config.webroot_map = {"something.com": self.path}
 
         mock_display = mock_get_utility()
         mock_display.menu.return_value = (display_util.OK, 0,)
@@ -108,6 +109,19 @@ class AuthenticatorTest(unittest.TestCase):
 
         self.assertEqual(self.config.webroot_map[self.achall.domain], self.path)
 
+    @test_util.patch_get_utility()
+    def test_new_webroot_empty_map_cancel(self, mock_get_utility):
+        self.config.webroot_path = []
+        self.config.webroot_map = {}
+
+        mock_display = mock_get_utility()
+        mock_display.menu.return_value = (display_util.OK, 0,)
+        with mock.patch('certbot.display.ops.validated_directory') as m:
+            m.return_value = (display_util.CANCEL, -1)
+            self.assertRaises(errors.PluginError,
+                              self.auth.perform,
+                              [self.achall])
+
     def test_perform_missing_root(self):
         self.config.webroot_path = None
         self.config.webroot_map = {}
@@ -118,19 +132,34 @@ class AuthenticatorTest(unittest.TestCase):
         permission_canary = os.path.join(self.path, "rnd")
         with open(permission_canary, "w") as f:
             f.write("thingimy")
-        os.chmod(self.path, 0o000)
+        filesystem.chmod(self.path, 0o000)
         try:
             open(permission_canary, "r")
             print("Warning, running tests as root skips permissions tests...")
         except IOError:
             # ok, permissions work, test away...
             self.assertRaises(errors.PluginError, self.auth.perform, [])
-        os.chmod(self.path, 0o700)
+        filesystem.chmod(self.path, 0o700)
 
-    @mock.patch("certbot.plugins.webroot.os.chown")
-    def test_failed_chown(self, mock_chown):
-        mock_chown.side_effect = OSError(errno.EACCES, "msg")
+    @mock.patch("certbot.plugins.webroot.filesystem.copy_ownership_and_apply_mode")
+    def test_failed_chown(self, mock_ownership):
+        mock_ownership.side_effect = OSError(errno.EACCES, "msg")
         self.auth.perform([self.achall])  # exception caught and logged
+
+    @test_util.patch_get_utility()
+    def test_perform_new_webroot_not_in_map(self, mock_get_utility):
+        new_webroot = tempfile.mkdtemp()
+        self.config.webroot_path = []
+        self.config.webroot_map = {"whatever.com": self.path}
+        mock_display = mock_get_utility()
+        mock_display.menu.side_effect = ((display_util.OK, 0),
+                                         (display_util.OK, new_webroot))
+        achall = achallenges.KeyAuthorizationAnnotatedChallenge(
+            challb=acme_util.HTTP01_P, domain="something.com", account_key=KEY)
+        with mock.patch('certbot.display.ops.validated_directory') as m:
+            m.return_value = (display_util.OK, new_webroot,)
+            self.auth.perform([achall])
+        self.assertEqual(self.config.webroot_map[achall.domain], new_webroot)
 
     def test_perform_permissions(self):
         self.auth.prepare()
@@ -138,16 +167,14 @@ class AuthenticatorTest(unittest.TestCase):
         # Remove exec bit from permission check, so that it
         # matches the file
         self.auth.perform([self.achall])
-        path_permissions = stat.S_IMODE(os.stat(self.validation_path).st_mode)
-        self.assertEqual(path_permissions, 0o644)
+        self.assertTrue(filesystem.check_mode(self.validation_path, 0o644))
 
         # Check permissions of the directories
 
         for dirpath, dirnames, _ in os.walk(self.path):
             for directory in dirnames:
                 full_path = os.path.join(dirpath, directory)
-                dir_permissions = stat.S_IMODE(os.stat(full_path).st_mode)
-                self.assertEqual(dir_permissions, 0o755)
+                self.assertTrue(filesystem.check_mode(full_path, 0o755))
 
         parent_gid = os.stat(self.path).st_gid
         parent_uid = os.stat(self.path).st_uid
@@ -170,13 +197,42 @@ class AuthenticatorTest(unittest.TestCase):
         self.auth.cleanup([self.achall])
         self.assertFalse(os.path.exists(self.validation_path))
         self.assertFalse(os.path.exists(self.root_challenge_path))
+        self.assertFalse(os.path.exists(self.partial_root_challenge_path))
+
+    def test_perform_cleanup_existing_dirs(self):
+        filesystem.mkdir(self.partial_root_challenge_path)
+        self.auth.prepare()
+        self.auth.perform([self.achall])
+        self.auth.cleanup([self.achall])
+
+        # Ensure we don't "clean up" directories that previously existed
+        self.assertFalse(os.path.exists(self.validation_path))
+        self.assertFalse(os.path.exists(self.root_challenge_path))
+
+    def test_perform_cleanup_multiple_challenges(self):
+        bingo_achall = achallenges.KeyAuthorizationAnnotatedChallenge(
+            challb=acme_util.chall_to_challb(
+                challenges.HTTP01(token=b"bingo"), "pending"),
+            domain="thing.com", account_key=KEY)
+
+        bingo_validation_path = "YmluZ28"
+        filesystem.mkdir(self.partial_root_challenge_path)
+        self.auth.prepare()
+        self.auth.perform([bingo_achall, self.achall])
+
+        self.auth.cleanup([self.achall])
+        self.assertFalse(os.path.exists(bingo_validation_path))
+        self.assertTrue(os.path.exists(self.root_challenge_path))
+        self.auth.cleanup([bingo_achall])
+        self.assertFalse(os.path.exists(self.validation_path))
+        self.assertFalse(os.path.exists(self.root_challenge_path))
 
     def test_cleanup_leftovers(self):
         self.auth.prepare()
         self.auth.perform([self.achall])
 
         leftover_path = os.path.join(self.root_challenge_path, 'leftover')
-        os.mkdir(leftover_path)
+        filesystem.mkdir(leftover_path)
 
         self.auth.cleanup([self.achall])
         self.assertFalse(os.path.exists(self.validation_path))
@@ -184,7 +240,7 @@ class AuthenticatorTest(unittest.TestCase):
 
         os.rmdir(leftover_path)
 
-    @mock.patch('os.rmdir')
+    @mock.patch('certbot.compat.os.rmdir')
     def test_cleanup_failure(self, mock_rmdir):
         self.auth.prepare()
         self.auth.perform([self.achall])
@@ -214,7 +270,7 @@ class WebrootActionTest(unittest.TestCase):
 
     def test_webroot_map_action(self):
         args = self.parser.parse_args(
-            ["--webroot-map", '{{"thing.com":"{0}"}}'.format(self.path)])
+            ["--webroot-map", json.dumps({'thing.com': self.path})])
         self.assertEqual(args.webroot_map["thing.com"], self.path)
 
     def test_domain_before_webroot(self):
@@ -236,6 +292,19 @@ class WebrootActionTest(unittest.TestCase):
         config = self._get_config_after_perform(args)
         self.assertEqual(
             config.webroot_map[self.achall.domain], self.path)
+
+    def test_webroot_map_partial_without_perform(self):
+        # This test acknowledges the fact that webroot_map content will be partial if webroot
+        # plugin perform method is not invoked (corner case when all auths are already valid).
+        # To not be a problem, the webroot_path must always been conserved during renew.
+        # This condition is challenged by:
+        # certbot.tests.renewal_tests::RenewalTest::test_webroot_params_conservation
+        # See https://github.com/certbot/certbot/pull/7095 for details.
+        other_webroot_path = tempfile.mkdtemp()
+        args = self.parser.parse_args("-w {0} -d {1} -w {2} -d bar".format(
+            self.path, self.achall.domain, other_webroot_path).split())
+        self.assertEqual(args.webroot_map, {self.achall.domain: self.path})
+        self.assertEqual(args.webroot_path, [self.path, other_webroot_path])
 
     def _get_config_after_perform(self, config):
         from certbot.plugins.webroot import Authenticator

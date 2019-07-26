@@ -4,30 +4,48 @@ from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 from contextlib import contextmanager
 from functools import partial
 from json import dumps
-from os import chmod, environ, makedirs
+from os import chmod, environ, makedirs, stat
 from os.path import abspath, dirname, exists, join
 import re
 from shutil import copy, rmtree
 import socket
 import ssl
-from stat import S_IRUSR, S_IXUSR
+from stat import S_IMODE, S_IRUSR, S_IWUSR, S_IXUSR, S_IWGRP, S_IWOTH
 from subprocess import CalledProcessError, Popen, PIPE
 import sys
 from tempfile import mkdtemp
 from threading import Thread
 from unittest import TestCase
 
-from nose.tools import eq_, nottest, ok_
+from pytest import mark
+from six.moves import xrange  # pylint: disable=redefined-builtin
 
 
-@nottest
+@mark.skip
 def tests_dir():
     """Return a path to the "tests" directory."""
     return dirname(abspath(__file__))
 
 
+def copy_stable(src, dst):
+    """
+    Copy letsencrypt-auto, and replace its current version to its equivalent stable one.
+    This is needed to test correctly the self-upgrade functionality.
+    """
+    copy(src, dst)
+    with open(dst, 'r') as file:
+        filedata = file.read()
+    filedata = re.sub(r'LE_AUTO_VERSION="(.*)\.dev0"', r'LE_AUTO_VERSION="\1"', filedata)
+    with open(dst, 'w') as file:
+        file.write(filedata)
+
+
 sys.path.insert(0, dirname(tests_dir()))
 from build import build as build_le_auto
+
+
+BOOTSTRAP_FILENAME = 'certbot-auto-bootstrap-version.txt'
+"""Name of the file where certbot-auto saves its bootstrap version."""
 
 
 class RequestHandler(BaseHTTPRequestHandler):
@@ -174,7 +192,7 @@ def install_le_auto(contents, install_path):
     chmod(install_path, S_IRUSR | S_IXUSR)
 
 
-def run_le_auto(le_auto_path, venv_dir, base_url, **kwargs):
+def run_le_auto(le_auto_path, venv_dir, base_url=None, le_auto_args_str='--version', **kwargs):
     """Run the prebuilt version of letsencrypt-auto, returning stdout and
     stderr strings.
 
@@ -183,13 +201,17 @@ def run_le_auto(le_auto_path, venv_dir, base_url, **kwargs):
     """
     env = environ.copy()
     d = dict(VENV_PATH=venv_dir,
-             # URL to PyPI-style JSON that tell us the latest released version
-             # of LE:
-             LE_AUTO_JSON_URL=base_url + 'certbot/json',
-             # URL to dir containing letsencrypt-auto and letsencrypt-auto.sig:
-             LE_AUTO_DIR_TEMPLATE=base_url + '%s/',
-             # The public key corresponding to signing.key:
-             LE_AUTO_PUBLIC_KEY="""-----BEGIN PUBLIC KEY-----
+             NO_CERT_VERIFY='1',
+             **kwargs)
+
+    if base_url is not None:
+        # URL to PyPI-style JSON that tell us the latest released version
+        # of LE:
+        d['LE_AUTO_JSON_URL'] = base_url + 'certbot/json'
+        # URL to dir containing letsencrypt-auto and letsencrypt-auto.sig:
+        d['LE_AUTO_DIR_TEMPLATE'] = base_url + '%s/'
+        # The public key corresponding to signing.key:
+        d['LE_AUTO_PUBLIC_KEY'] = """-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsMoSzLYQ7E1sdSOkwelg
 tzKIh2qi3bpXuYtcfFC0XrvWig071NwIj+dZiT0OLZ2hPispEH0B7ISuuWg1ll7G
 hFW0VdbxL6JdGzS2ShNWkX9hE9z+j8VqwDPOBn3ZHm03qwpYkBDwQib3KqOdYbTT
@@ -197,11 +219,12 @@ uUtJmmGcuk3a9Aq/sCT6DdfmTSdP5asdQYwIcaQreDrOosaS84DTWI3IU+UYJVgl
 LsIVPBuy9IcgHidUQ96hJnoPsDCWsHwX62495QKEarauyKQrJzFes0EY95orDM47
 Z5o/NDiQB11m91yNB0MmPYY9QSbnOA9j7IaaC97AwRLuwXY+/R2ablTcxurWou68
 iQIDAQAB
------END PUBLIC KEY-----""",
-             **kwargs)
+-----END PUBLIC KEY-----"""
+
     env.update(d)
+
     return out_and_err(
-        le_auto_path + ' --version',
+        le_auto_path + ' ' + le_auto_args_str,
         shell=True,
         env=env)
 
@@ -219,6 +242,12 @@ def set_le_script_version(venv_dir, version):
                      "from sys import stderr\n"
                      "stderr.write('letsencrypt %s\\n')" % version)
     chmod(letsencrypt_path, S_IRUSR | S_IXUSR)
+
+
+def sudo_chmod(path, mode):
+    """Runs `sudo chmod mode path`."""
+    mode = oct(mode).replace('o', '')
+    out_and_err(['sudo', 'chmod', mode, path])
 
 
 class AutoTests(TestCase):
@@ -279,8 +308,8 @@ class AutoTests(TestCase):
                 # installed, and pip hashes verify:
                 install_le_auto(build_le_auto(version='50.0.0'), le_auto_path)
                 out, err = run_letsencrypt_auto()
-                ok_(re.match(r'letsencrypt \d+\.\d+\.\d+',
-                             err.strip().splitlines()[-1]))
+                self.assertTrue(re.match(r'letsencrypt \d+\.\d+\.\d+',
+                                err.strip().splitlines()[-1]))
                 # Make a few assertions to test the validity of the next tests:
                 self.assertTrue('Upgrading certbot-auto ' in out)
                 self.assertTrue('Creating virtual environment...' in out)
@@ -296,17 +325,31 @@ class AutoTests(TestCase):
 
     def test_phase2_upgrade(self):
         """Test a phase-2 upgrade without a phase-1 upgrade."""
-        with temp_paths() as (le_auto_path, venv_dir):
-            resources = {'certbot/json': dumps({'releases': {'99.9.9': None}}),
-                         'v99.9.9/letsencrypt-auto': self.NEW_LE_AUTO,
-                         'v99.9.9/letsencrypt-auto.sig': self.NEW_LE_AUTO_SIG}
-            with serving(resources) as base_url:
+        resources = {'certbot/json': dumps({'releases': {'99.9.9': None}}),
+                     'v99.9.9/letsencrypt-auto': self.NEW_LE_AUTO,
+                     'v99.9.9/letsencrypt-auto.sig': self.NEW_LE_AUTO_SIG}
+        with serving(resources) as base_url:
+            pip_find_links=join(tests_dir(), 'fake-letsencrypt', 'dist')
+            with temp_paths() as (le_auto_path, venv_dir):
+                install_le_auto(self.NEW_LE_AUTO, le_auto_path)
+
+                # Create venv saving the correct bootstrap script version
+                out, err = run_le_auto(le_auto_path, venv_dir, base_url,
+                                       PIP_FIND_LINKS=pip_find_links)
+                self.assertFalse('Upgrading certbot-auto ' in out)
+                self.assertTrue('Creating virtual environment...' in out)
+                with open(join(venv_dir, BOOTSTRAP_FILENAME)) as f:
+                    bootstrap_version = f.read()
+
+            # Create a new venv with an old letsencrypt version
+            with temp_paths() as (le_auto_path, venv_dir):
                 venv_bin = join(venv_dir, 'bin')
                 makedirs(venv_bin)
                 set_le_script_version(venv_dir, '0.0.1')
+                with open(join(venv_dir, BOOTSTRAP_FILENAME), 'w') as f:
+                    f.write(bootstrap_version)
 
                 install_le_auto(self.NEW_LE_AUTO, le_auto_path)
-                pip_find_links=join(tests_dir(), 'fake-letsencrypt', 'dist')
                 out, err = run_le_auto(le_auto_path, venv_dir, base_url,
                                        PIP_FIND_LINKS=pip_find_links)
 
@@ -323,14 +366,15 @@ class AutoTests(TestCase):
                          'v99.9.9/letsencrypt-auto': build_le_auto(version='99.9.9'),
                          'v99.9.9/letsencrypt-auto.sig': signed('something else')}
             with serving(resources) as base_url:
-                copy(LE_AUTO_PATH, le_auto_path)
+                copy_stable(LE_AUTO_PATH, le_auto_path)
                 try:
                     out, err = run_le_auto(le_auto_path, venv_dir, base_url)
                 except CalledProcessError as exc:
-                    eq_(exc.returncode, 1)
+                    self.assertEqual(exc.returncode, 1)
                     self.assertTrue("Couldn't verify signature of downloaded "
                                     "certbot-auto." in exc.output)
                 else:
+                    print(out)
                     self.fail('Signature check on certbot-auto erroneously passed.')
 
     def test_pip_failure(self):
@@ -348,10 +392,11 @@ class AutoTests(TestCase):
                 try:
                     out, err = run_le_auto(le_auto_path, venv_dir, base_url)
                 except CalledProcessError as exc:
-                    eq_(exc.returncode, 1)
+                    self.assertEqual(exc.returncode, 1)
                     self.assertTrue("THESE PACKAGES DO NOT MATCH THE HASHES "
                                     "FROM THE REQUIREMENTS FILE" in exc.output)
-                    ok_(not exists(venv_dir),
+                    self.assertFalse(
+                        exists(venv_dir),
                         msg="The virtualenv was left around, even though "
                             "installation didn't succeed. We shouldn't do "
                             "this, as it foils our detection of whether we "
@@ -360,3 +405,95 @@ class AutoTests(TestCase):
                 else:
                     self.fail("Pip didn't detect a bad hash and stop the "
                               "installation.")
+
+    def test_permissions_warnings(self):
+        """Make sure letsencrypt-auto properly warns about permissions problems."""
+        # This test assumes that only the parent of the directory containing
+        # letsencrypt-auto (usually /tmp) may have permissions letsencrypt-auto
+        # considers insecure.
+        with temp_paths() as (le_auto_path, venv_dir):
+            le_auto_path = abspath(le_auto_path)
+            le_auto_dir = dirname(le_auto_path)
+            le_auto_dir_parent = dirname(le_auto_dir)
+            install_le_auto(self.NEW_LE_AUTO, le_auto_path)
+
+            run_letsencrypt_auto = partial(
+                run_le_auto, le_auto_path, venv_dir,
+                le_auto_args_str='--install-only --no-self-upgrade',
+                PIP_FIND_LINKS=join(tests_dir(), 'fake-letsencrypt', 'dist'))
+            # Run letsencrypt-auto once with current permissions to avoid
+            # potential problems when the script tries to write to temporary
+            # directories.
+            run_letsencrypt_auto()
+
+            le_auto_dir_mode = stat(le_auto_dir).st_mode
+            le_auto_dir_parent_mode = S_IMODE(stat(le_auto_dir_parent).st_mode)
+            try:
+                # Make letsencrypt-auto happy with the current permissions
+                chmod(le_auto_dir, S_IRUSR | S_IXUSR)
+                sudo_chmod(le_auto_dir_parent, 0o755)
+
+                self._test_permissions_warnings_about_path(le_auto_path, run_letsencrypt_auto)
+                self._test_permissions_warnings_about_path(le_auto_dir, run_letsencrypt_auto)
+            finally:
+                chmod(le_auto_dir, le_auto_dir_mode)
+                sudo_chmod(le_auto_dir_parent, le_auto_dir_parent_mode)
+
+    def _test_permissions_warnings_about_path(self, path, run_le_auto_func):
+        # Test that there are no problems with the current permissions
+        out, _ = run_le_auto_func()
+        self.assertFalse('insecure permissions' in out)
+
+        stat_result = stat(path)
+        original_mode = stat_result.st_mode
+
+        # Test world permissions
+        chmod(path, original_mode | S_IWOTH)
+        out, _ = run_le_auto_func()
+        self.assertTrue('insecure permissions' in out)
+
+        # Test group permissions
+        if stat_result.st_gid >= 1000:
+            chmod(path, original_mode | S_IWGRP)
+            out, _ = run_le_auto_func()
+            self.assertTrue('insecure permissions' in out)
+
+        # Test owner permissions
+        if stat_result.st_uid >= 1000:
+            chmod(path, original_mode | S_IWUSR)
+            out, _ = run_le_auto_func()
+            self.assertTrue('insecure permissions' in out)
+
+        # Test that permissions were properly restored
+        chmod(path, original_mode)
+        out, _ = run_le_auto_func()
+        self.assertFalse('insecure permissions' in out)
+
+    def test_disabled_permissions_warnings(self):
+        """Make sure that letsencrypt-auto permissions warnings can be disabled."""
+        with temp_paths() as (le_auto_path, venv_dir):
+            le_auto_path = abspath(le_auto_path)
+            install_le_auto(self.NEW_LE_AUTO, le_auto_path)
+
+            le_auto_args_str='--install-only --no-self-upgrade'
+            pip_links=join(tests_dir(), 'fake-letsencrypt', 'dist')
+            out, _ = run_le_auto(le_auto_path, venv_dir,
+                                 le_auto_args_str=le_auto_args_str,
+                                 PIP_FIND_LINKS=pip_links)
+            self.assertTrue('insecure permissions' in out)
+
+            # Test that warnings are disabled when the script isn't run as
+            # root.
+            out, _ = run_le_auto(le_auto_path, venv_dir,
+                                 le_auto_args_str=le_auto_args_str,
+                                 LE_AUTO_SUDO='',
+                                 PIP_FIND_LINKS=pip_links)
+            self.assertFalse('insecure permissions' in out)
+
+            # Test that --no-permissions-check disables warnings.
+            le_auto_args_str += ' --no-permissions-check'
+            out, _ = run_le_auto(
+                le_auto_path, venv_dir,
+                le_auto_args_str=le_auto_args_str,
+                PIP_FIND_LINKS=pip_links)
+            self.assertFalse('insecure permissions' in out)

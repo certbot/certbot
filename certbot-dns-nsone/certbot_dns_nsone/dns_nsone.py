@@ -65,19 +65,21 @@ class _NS1LexiconClient(dns_common_lexicon.LexiconClient):
     def __init__(self, api_key, ttl):
         super(_NS1LexiconClient, self).__init__()
 
-        self.provider = nsone.Provider({
-            'auth_token': api_key,
+        config = dns_common_lexicon.build_lexicon_config('nsone', {
             'ttl': ttl,
+        }, {
+            'auth_token': api_key,
         })
+
+        self.provider = nsone.Provider(config)
 
     def _handle_http_error(self, e, domain_name):
         if domain_name in str(e) and (str(e).startswith('404 Client Error: Not Found for url:') or \
                                       str(e).startswith("400 Client Error: Bad Request for url:")):
-            return  # Expected errors when zone name guess is wrong
-        else:
-            hint = None
-            if str(e).startswith('401 Client Error: Unauthorized for url:'):
-                hint = 'Is your API key correct?'
+            return None  # Expected errors when zone name guess is wrong
+        hint = None
+        if str(e).startswith('401 Client Error: Unauthorized for url:'):
+            hint = 'Is your API key correct?'
 
-            return errors.PluginError('Error determining zone identifier: {0}.{1}'
-                                      .format(e, ' ({0})'.format(hint) if hint else ''))
+        return errors.PluginError('Error determining zone identifier: {0}.{1}'
+                                  .format(e, ' ({0})'.format(hint) if hint else ''))

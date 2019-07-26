@@ -6,8 +6,9 @@ import certbot.interfaces
 # pylint: disable=no-self-argument,no-method-argument
 
 
-class IPluginProxy(zope.interface.Interface):
+class IPluginProxy(zope.interface.Interface):  # pylint: disable=inherit-non-class
     """Wraps a Certbot plugin"""
+
     http_port = zope.interface.Attribute(
         "The port to connect to on localhost for HTTP traffic")
 
@@ -17,7 +18,7 @@ class IPluginProxy(zope.interface.Interface):
     def add_parser_arguments(cls, parser):
         """Adds command line arguments needed by the parser"""
 
-    def __init__(args):
+    def __init__(args):  # pylint: disable=super-init-not-called
         """Initializes the plugin with the given command line args"""
 
     def cleanup_from_tests():  # type: ignore

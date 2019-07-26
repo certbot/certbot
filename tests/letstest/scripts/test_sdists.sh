@@ -1,18 +1,30 @@
 #!/bin/sh -xe
 
 cd letsencrypt
-./certbot-auto --os-packages-only -n --debug
+./certbot-auto --install-only -n --debug
 
 PLUGINS="certbot-apache certbot-nginx"
-PYTHON=$(command -v python2.7 || command -v python27 || command -v python2 || command -v python)
+PYTHON_MAJOR_VERSION=$(/opt/eff.org/certbot/venv/bin/python --version 2>&1 | cut -d" " -f 2 | cut -d. -f1)
 TEMP_DIR=$(mktemp -d)
-VERSION=$(letsencrypt-auto-source/version.py)
+
+if [ "$PYTHON_MAJOR_VERSION" = "3" ]; then
+    # Some distros like Fedora may only have an executable named python3 installed.
+    PYTHON_NAME="python3"
+    VENV_PATH="venv3"
+    VENV_SCRIPT="tools/venv3.py"
+else
+    PYTHON_NAME="python"
+    VENV_SCRIPT="tools/venv.py"
+    VENV_PATH="venv"
+fi
+
+VERSION=$("$PYTHON_NAME" letsencrypt-auto-source/version.py)
 
 # setup venv
-virtualenv --no-site-packages -p $PYTHON --setuptools venv
-. ./venv/bin/activate
-pip install -U pip
-pip install -U setuptools
+"$VENV_SCRIPT" --requirement letsencrypt-auto-source/pieces/dependency-requirements.txt
+. "$VENV_PATH/bin/activate"
+# pytest is needed to run tests on some of our packages so we install a pinned version here.
+tools/pip_install.py pytest
 
 # build sdists
 for pkg_dir in acme . $PLUGINS; do

@@ -1,17 +1,17 @@
 """Tests for certbot.crypto_util."""
 import logging
-import os
 import unittest
 
 import OpenSSL
 import mock
 import zope.component
 
+import certbot.tests.util as test_util
 from certbot import errors
 from certbot import interfaces
 from certbot import util
-import certbot.tests.util as test_util
-
+from certbot.compat import os
+from certbot.compat import filesystem
 
 RSA256_KEY = test_util.load_vector('rsa256_key.pem')
 RSA256_KEY_PATH = test_util.vector_path('rsa256_key.pem')
@@ -21,11 +21,17 @@ CERT_PATH = test_util.vector_path('cert_512.pem')
 CERT = test_util.load_vector('cert_512.pem')
 SS_CERT_PATH = test_util.vector_path('cert_2048.pem')
 SS_CERT = test_util.load_vector('cert_2048.pem')
+P256_KEY = test_util.load_vector('nistp256_key.pem')
+P256_CERT_PATH = test_util.vector_path('cert-nosans_nistp256.pem')
+P256_CERT = test_util.load_vector('cert-nosans_nistp256.pem')
 
 class InitSaveKeyTest(test_util.TempDirTestCase):
     """Tests for certbot.crypto_util.init_save_key."""
     def setUp(self):
         super(InitSaveKeyTest, self).setUp()
+
+        self.workdir = os.path.join(self.tempdir, 'workdir')
+        filesystem.mkdir(self.workdir, mode=0o700)
 
         logging.disable(logging.CRITICAL)
         zope.component.provideUtility(
@@ -44,15 +50,15 @@ class InitSaveKeyTest(test_util.TempDirTestCase):
     @mock.patch('certbot.crypto_util.make_key')
     def test_success(self, mock_make):
         mock_make.return_value = b'key_pem'
-        key = self._call(1024, self.tempdir)
+        key = self._call(1024, self.workdir)
         self.assertEqual(key.pem, b'key_pem')
         self.assertTrue('key-certbot.pem' in key.file)
-        self.assertTrue(os.path.exists(os.path.join(self.tempdir, key.file)))
+        self.assertTrue(os.path.exists(os.path.join(self.workdir, key.file)))
 
     @mock.patch('certbot.crypto_util.make_key')
     def test_key_failure(self, mock_make):
         mock_make.side_effect = ValueError
-        self.assertRaises(ValueError, self._call, 431, self.tempdir)
+        self.assertRaises(ValueError, self._call, 431, self.workdir)
 
 
 class InitSaveCSRTest(test_util.TempDirTestCase):
@@ -137,7 +143,7 @@ class ImportCSRFileTest(unittest.TestCase):
              util.CSR(file=csrfile,
                       data=data_pem,
                       form="pem"),
-             ["Example.com"],),
+             ["Example.com"]),
             self._call(csrfile, data))
 
     def test_pem_csr(self):
@@ -189,9 +195,6 @@ class VerifyCertSetup(unittest.TestCase):
 class VerifyRenewableCertTest(VerifyCertSetup):
     """Tests for certbot.crypto_util.verify_renewable_cert."""
 
-    def setUp(self):
-        super(VerifyRenewableCertTest, self).setUp()
-
     def _call(self, renewable_cert):
         from certbot.crypto_util import verify_renewable_cert
         return verify_renewable_cert(renewable_cert)
@@ -207,15 +210,19 @@ class VerifyRenewableCertTest(VerifyCertSetup):
 class VerifyRenewableCertSigTest(VerifyCertSetup):
     """Tests for certbot.crypto_util.verify_renewable_cert."""
 
-    def setUp(self):
-        super(VerifyRenewableCertSigTest, self).setUp()
-
     def _call(self, renewable_cert):
         from certbot.crypto_util import verify_renewable_cert_sig
         return verify_renewable_cert_sig(renewable_cert)
 
     def test_cert_sig_match(self):
         self.assertEqual(None, self._call(self.renewable_cert))
+
+    def test_cert_sig_match_ec(self):
+        renewable_cert = mock.MagicMock()
+        renewable_cert.cert = P256_CERT_PATH
+        renewable_cert.chain = P256_CERT_PATH
+        renewable_cert.privkey = P256_KEY
+        self.assertEqual(None, self._call(renewable_cert))
 
     def test_cert_sig_mismatch(self):
         self.bad_renewable_cert.cert = test_util.vector_path('cert_512_bad.pem')
@@ -224,9 +231,6 @@ class VerifyRenewableCertSigTest(VerifyCertSetup):
 
 class VerifyFullchainTest(VerifyCertSetup):
     """Tests for certbot.crypto_util.verify_fullchain."""
-
-    def setUp(self):
-        super(VerifyFullchainTest, self).setUp()
 
     def _call(self, renewable_cert):
         from certbot.crypto_util import verify_fullchain
@@ -245,9 +249,6 @@ class VerifyFullchainTest(VerifyCertSetup):
 
 class VerifyCertMatchesPrivKeyTest(VerifyCertSetup):
     """Tests for certbot.crypto_util.verify_cert_matches_priv_key."""
-
-    def setUp(self):
-        super(VerifyCertMatchesPrivKeyTest, self).setUp()
 
     def _call(self, renewable_cert):
         from certbot.crypto_util import verify_cert_matches_priv_key
@@ -366,11 +367,25 @@ class NotAfterTest(unittest.TestCase):
 
 class Sha256sumTest(unittest.TestCase):
     """Tests for certbot.crypto_util.notAfter"""
-
     def test_sha256sum(self):
         from certbot.crypto_util import sha256sum
         self.assertEqual(sha256sum(CERT_PATH),
             '914ffed8daf9e2c99d90ac95c77d54f32cbd556672facac380f0c063498df84e')
+
+
+class CertAndChainFromFullchainTest(unittest.TestCase):
+    """Tests for certbot.crypto_util.cert_and_chain_from_fullchain"""
+
+    def test_cert_and_chain_from_fullchain(self):
+        cert_pem = CERT.decode()
+        chain_pem = cert_pem + SS_CERT.decode()
+        fullchain_pem = cert_pem + chain_pem
+        spacey_fullchain_pem = cert_pem + u'\n' + chain_pem
+        from certbot.crypto_util import cert_and_chain_from_fullchain
+        for fullchain in (fullchain_pem, spacey_fullchain_pem):
+            cert_out, chain_out = cert_and_chain_from_fullchain(fullchain)
+            self.assertEqual(cert_out, cert_pem)
+            self.assertEqual(chain_out, chain_pem)
 
 
 if __name__ == '__main__':

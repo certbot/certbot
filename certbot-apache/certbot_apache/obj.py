@@ -1,6 +1,7 @@
 """Module contains classes used by the Apache Configurator."""
 import re
 
+from acme.magic_typing import Set # pylint: disable=unused-import, no-name-in-module
 from certbot.plugins import common
 
 
@@ -25,7 +26,7 @@ class Addr(common.Addr):
     def __repr__(self):
         return "certbot_apache.obj.Addr(" + repr(self.tup) + ")"
 
-    def __hash__(self):
+    def __hash__(self):  # pylint: disable=useless-super-delegation
         # Python 3 requires explicit overridden for __hash__ if __eq__ or
         # __cmp__ is overridden. See https://bugs.python.org/issue2235
         return super(Addr, self).__hash__()
@@ -46,8 +47,7 @@ class Addr(common.Addr):
             return 0
         elif self.get_addr() == "*":
             return 1
-        else:
-            return 2
+        return 2
 
     def conflicts(self, addr):
         r"""Returns if address could conflict with correct function of self.
@@ -140,7 +140,7 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
 
     def get_names(self):
         """Return a set of all names."""
-        all_names = set()
+        all_names = set()  # type: Set[str]
         all_names.update(self.aliases)
         # Strip out any scheme:// and <port> field from servername
         if self.name is not None:
@@ -166,6 +166,19 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
                 tls="Yes" if self.ssl else "No",
                 active="Yes" if self.enabled else "No",
                 modmacro="Yes" if self.modmacro else "No"))
+
+    def display_repr(self):
+        """Return a representation of VHost to be used in dialog"""
+        return (
+            "File: {filename}\n"
+            "Addresses: {addrs}\n"
+            "Names: {names}\n"
+            "HTTPS: {https}\n".format(
+                filename=self.filep,
+                addrs=", ".join(str(addr) for addr in self.addrs),
+                names=", ".join(self.get_names()),
+                https="Yes" if self.ssl else "No"))
+
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
@@ -238,7 +251,7 @@ class VirtualHost(object):  # pylint: disable=too-few-public-methods
 
         # already_found acts to keep everything very conservative.
         # Don't allow multiple ip:ports in same set.
-        already_found = set()
+        already_found = set()  # type: Set[str]
 
         for addr in vhost.addrs:
             for local_addr in self.addrs:

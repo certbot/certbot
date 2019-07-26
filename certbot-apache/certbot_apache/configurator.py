@@ -1,33 +1,40 @@
-"""Apache Configuration based off of Augeas Configurator."""
+"""Apache Configurator."""
 # pylint: disable=too-many-lines
-import filecmp
+import copy
 import fnmatch
 import logging
-import os
 import re
 import socket
 import time
+
+from collections import defaultdict
+
+import pkg_resources
+import six
 
 import zope.component
 import zope.interface
 
 from acme import challenges
+from acme.magic_typing import DefaultDict, Dict, List, Set, Union  # pylint: disable=unused-import, no-name-in-module
 
 from certbot import errors
 from certbot import interfaces
 from certbot import util
 
+from certbot.achallenges import KeyAuthorizationAnnotatedChallenge  # pylint: disable=unused-import
+from certbot.compat import filesystem
+from certbot.compat import os
 from certbot.plugins import common
 from certbot.plugins.util import path_surgery
+from certbot.plugins.enhancements import AutoHSTSEnhancement
 
-from certbot_apache import augeas_configurator
+from certbot_apache import apache_util
 from certbot_apache import constants
 from certbot_apache import display_ops
-from certbot_apache import tls_sni_01
+from certbot_apache import http_01
 from certbot_apache import obj
 from certbot_apache import parser
-
-from collections import defaultdict
 
 logger = logging.getLogger(__name__)
 
@@ -63,12 +70,9 @@ logger = logging.getLogger(__name__)
 
 @zope.interface.implementer(interfaces.IAuthenticator, interfaces.IInstaller)
 @zope.interface.provider(interfaces.IPluginFactory)
-class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
+class ApacheConfigurator(common.Installer):
     # pylint: disable=too-many-instance-attributes,too-many-public-methods
     """Apache configurator.
-
-    State of Configurator: This code has been been tested and built for Ubuntu
-    14.04 Apache 2.4 and it works for Ubuntu 12.04 Apache 2.2
 
     :ivar config: Configuration.
     :type config: :class:`~certbot.interfaces.IConfig`
@@ -84,32 +88,92 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
     """
 
-    description = "Apache Web Server plugin - Beta"
+    description = "Apache Web Server plugin"
+    if os.environ.get("CERTBOT_DOCS") == "1":
+        description += (  # pragma: no cover
+            " (Please note that the default values of the Apache plugin options"
+            " change depending on the operating system Certbot is run on.)"
+        )
+
+    OS_DEFAULTS = dict(
+        server_root="/etc/apache2",
+        vhost_root="/etc/apache2/sites-available",
+        vhost_files="*",
+        logs_root="/var/log/apache2",
+        ctl="apache2ctl",
+        version_cmd=['apache2ctl', '-v'],
+        restart_cmd=['apache2ctl', 'graceful'],
+        conftest_cmd=['apache2ctl', 'configtest'],
+        enmod=None,
+        dismod=None,
+        le_vhost_ext="-le-ssl.conf",
+        handle_modules=False,
+        handle_sites=False,
+        challenge_location="/etc/apache2",
+        MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
+            "certbot_apache", "options-ssl-apache.conf")
+    )
+
+    def option(self, key):
+        """Get a value from options"""
+        return self.options.get(key)
+
+    def _prepare_options(self):
+        """
+        Set the values possibly changed by command line parameters to
+        OS_DEFAULTS constant dictionary
+        """
+        opts = ["enmod", "dismod", "le_vhost_ext", "server_root", "vhost_root",
+                "logs_root", "challenge_location", "handle_modules", "handle_sites",
+                "ctl"]
+        for o in opts:
+            # Config options use dashes instead of underscores
+            if self.conf(o.replace("_", "-")) is not None:
+                self.options[o] = self.conf(o.replace("_", "-"))
+            else:
+                self.options[o] = self.OS_DEFAULTS[o]
+
+        # Special cases
+        self.options["version_cmd"][0] = self.option("ctl")
+        self.options["restart_cmd"][0] = self.option("ctl")
+        self.options["conftest_cmd"][0] = self.option("ctl")
 
     @classmethod
     def add_parser_arguments(cls, add):
-        add("enmod", default=constants.os_constant("enmod"),
-            help="Path to the Apache 'a2enmod' binary.")
-        add("dismod", default=constants.os_constant("dismod"),
-            help="Path to the Apache 'a2dismod' binary.")
-        add("le-vhost-ext", default=constants.os_constant("le_vhost_ext"),
-            help="SSL vhost configuration extension.")
-        add("server-root", default=constants.os_constant("server_root"),
-            help="Apache server root directory.")
-        add("vhost-root", default=constants.os_constant("vhost_root"),
+        # When adding, modifying or deleting command line arguments, be sure to
+        # include the changes in the list used in method _prepare_options() to
+        # ensure consistent behavior.
+
+        # Respect CERTBOT_DOCS environment variable and use default values from
+        # base class regardless of the underlying distribution (overrides).
+        if os.environ.get("CERTBOT_DOCS") == "1":
+            DEFAULTS = ApacheConfigurator.OS_DEFAULTS
+        else:
+            # cls.OS_DEFAULTS can be distribution specific, see override classes
+            DEFAULTS = cls.OS_DEFAULTS
+        add("enmod", default=DEFAULTS["enmod"],
+            help="Path to the Apache 'a2enmod' binary")
+        add("dismod", default=DEFAULTS["dismod"],
+            help="Path to the Apache 'a2dismod' binary")
+        add("le-vhost-ext", default=DEFAULTS["le_vhost_ext"],
+            help="SSL vhost configuration extension")
+        add("server-root", default=DEFAULTS["server_root"],
+            help="Apache server root directory")
+        add("vhost-root", default=None,
             help="Apache server VirtualHost configuration root")
-        add("logs-root", default=constants.os_constant("logs_root"),
+        add("logs-root", default=DEFAULTS["logs_root"],
             help="Apache server logs directory")
         add("challenge-location",
-            default=constants.os_constant("challenge_location"),
-            help="Directory path for challenge configuration.")
-        add("handle-modules", default=constants.os_constant("handle_mods"),
-            help="Let installer handle enabling required modules for you." +
+            default=DEFAULTS["challenge_location"],
+            help="Directory path for challenge configuration")
+        add("handle-modules", default=DEFAULTS["handle_modules"],
+            help="Let installer handle enabling required modules for you " +
                  "(Only Ubuntu/Debian currently)")
-        add("handle-sites", default=constants.os_constant("handle_sites"),
-            help="Let installer handle enabling sites for you." +
+        add("handle-sites", default=DEFAULTS["handle_sites"],
+            help="Let installer handle enabling sites for you " +
                  "(Only Ubuntu/Debian currently)")
-        util.add_deprecated_argument(add, argument_name="ctl", nargs=1)
+        add("ctl", default=DEFAULTS["ctl"],
+            help="Full path to Apache control script")
         util.add_deprecated_argument(
             add, argument_name="init-script", nargs=1)
 
@@ -124,16 +188,25 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         super(ApacheConfigurator, self).__init__(*args, **kwargs)
 
         # Add name_server association dict
-        self.assoc = dict()
+        self.assoc = dict()  # type: Dict[str, obj.VirtualHost]
         # Outstanding challenges
-        self._chall_out = set()
+        self._chall_out = set()  # type: Set[KeyAuthorizationAnnotatedChallenge]
+        # List of vhosts configured per wildcard domain on this run.
+        # used by deploy_cert() and enhance()
+        self._wildcard_vhosts = dict()  # type: Dict[str, List[obj.VirtualHost]]
         # Maps enhancements to vhosts we've enabled the enhancement for
-        self._enhanced_vhosts = defaultdict(set)
+        self._enhanced_vhosts = defaultdict(set)  # type: DefaultDict[str, Set[obj.VirtualHost]]
+        # Temporary state for AutoHSTS enhancement
+        self._autohsts = {}  # type: Dict[str, Dict[str, Union[int, float]]]
+        # Reverter save notes
+        self.save_notes = ""
 
         # These will be set in the prepare function
+        self._prepared = False
         self.parser = None
         self.version = version
         self.vhosts = None
+        self.options = copy.deepcopy(self.OS_DEFAULTS)
         self._enhance_func = {"redirect": self._enable_redirect,
                               "ensure-http-header": self._set_http_header,
                               "staple-ocsp": self._enable_ocsp_stapling}
@@ -141,14 +214,12 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     @property
     def mod_ssl_conf(self):
         """Full absolute path to SSL configuration file."""
-        return os.path.join(self.config.config_dir,
-                            constants.MOD_SSL_CONF_DEST)
+        return os.path.join(self.config.config_dir, constants.MOD_SSL_CONF_DEST)
 
     @property
     def updated_mod_ssl_conf_digest(self):
         """Full absolute path to digest of updated SSL configuration file."""
         return os.path.join(self.config.config_dir, constants.UPDATED_MOD_SSL_CONF_DIGEST)
-
 
     def prepare(self):
         """Prepare the authenticator/installer.
@@ -159,18 +230,10 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :raises .errors.PluginError: If there is any other error
 
         """
-        # Perform the actual Augeas initialization to be able to react
-        try:
-            self.init_augeas()
-        except ImportError:
-            raise errors.NoInstallationError("Problem in Augeas installation")
+        self._prepare_options()
 
         # Verify Apache is installed
-        restart_cmd = constants.os_constant("restart_cmd")[0]
-        if not util.exe_exists(restart_cmd):
-            if not path_surgery(restart_cmd):
-                raise errors.NoInstallationError(
-                    'Cannot find Apache control command {0}'.format(restart_cmd))
+        self._verify_exe_availability(self.option("ctl"))
 
         # Make sure configuration is valid
         self.config_test()
@@ -182,54 +245,130 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                          '.'.join(str(i) for i in self.version))
         if self.version < (2, 2):
             raise errors.NotSupportedError(
-                "Apache Version %s not supported.", str(self.version))
+                "Apache Version {0} not supported.".format(str(self.version)))
 
-        if not self._check_aug_version():
-            raise errors.NotSupportedError(
-                "Apache plugin support requires libaugeas0 and augeas-lenses "
-                "version 1.2.0 or higher, please make sure you have you have "
-                "those installed.")
+        # Recover from previous crash before Augeas initialization to have the
+        # correct parse tree from the get go.
+        self.recovery_routine()
+        # Perform the actual Augeas initialization to be able to react
+        self.parser = self.get_parser()
 
-        self.parser = parser.ApacheParser(
-            self.aug, self.conf("server-root"), self.conf("vhost-root"),
-            self.version)
         # Check for errors in parsing files with Augeas
-        self.check_parsing_errors("httpd.aug")
+        self.parser.check_parsing_errors("httpd.aug")
 
         # Get all of the available vhosts
         self.vhosts = self.get_virtual_hosts()
 
-        install_ssl_options_conf(self.mod_ssl_conf, self.updated_mod_ssl_conf_digest)
+        self.install_ssl_options_conf(self.mod_ssl_conf,
+                                      self.updated_mod_ssl_conf_digest)
 
         # Prevent two Apache plugins from modifying a config at once
         try:
-            util.lock_dir_until_exit(self.conf("server-root"))
+            util.lock_dir_until_exit(self.option("server_root"))
         except (OSError, errors.LockError):
             logger.debug("Encountered error:", exc_info=True)
             raise errors.PluginError(
-                "Unable to lock %s", self.conf("server-root"))
+                "Unable to create a lock file in {0}. Are you running"
+                " Certbot with sufficient privileges to modify your"
+                " Apache configuration?".format(self.option("server_root")))
+        self._prepared = True
 
-    def _check_aug_version(self):
-        """ Checks that we have recent enough version of libaugeas.
-        If augeas version is recent enough, it will support case insensitive
-        regexp matching"""
+    def save(self, title=None, temporary=False):
+        """Saves all changes to the configuration files.
 
-        self.aug.set("/test/path/testing/arg", "aRgUMeNT")
-        try:
-            matches = self.aug.match(
-                "/test//*[self::arg=~regexp('argument', 'i')]")
-        except RuntimeError:
-            self.aug.remove("/test/path")
-            return False
-        self.aug.remove("/test/path")
-        return matches
+        This function first checks for save errors, if none are found,
+        all configuration changes made will be saved. According to the
+        function parameters. If an exception is raised, a new checkpoint
+        was not created.
+
+        :param str title: The title of the save. If a title is given, the
+            configuration will be saved as a new checkpoint and put in a
+            timestamped directory.
+
+        :param bool temporary: Indicates whether the changes made will
+            be quickly reversed in the future (ie. challenges)
+
+        """
+        save_files = self.parser.unsaved_files()
+        if save_files:
+            self.add_to_checkpoint(save_files,
+                                   self.save_notes, temporary=temporary)
+        # Handle the parser specific tasks
+        self.parser.save(save_files)
+        if title and not temporary:
+            self.finalize_checkpoint(title)
+
+    def recovery_routine(self):
+        """Revert all previously modified files.
+
+        Reverts all modified files that have not been saved as a checkpoint
+
+        :raises .errors.PluginError: If unable to recover the configuration
+
+        """
+        super(ApacheConfigurator, self).recovery_routine()
+        # Reload configuration after these changes take effect if needed
+        # ie. ApacheParser has been initialized.
+        if self.parser:
+            # TODO: wrap into non-implementation specific  parser interface
+            self.parser.aug.load()
+
+    def revert_challenge_config(self):
+        """Used to cleanup challenge configurations.
+
+        :raises .errors.PluginError: If unable to revert the challenge config.
+
+        """
+        self.revert_temporary_config()
+        self.parser.aug.load()
+
+    def rollback_checkpoints(self, rollback=1):
+        """Rollback saved checkpoints.
+
+        :param int rollback: Number of checkpoints to revert
+
+        :raises .errors.PluginError: If there is a problem with the input or
+            the function is unable to correctly revert the configuration
+
+        """
+        super(ApacheConfigurator, self).rollback_checkpoints(rollback)
+        self.parser.aug.load()
+
+    def _verify_exe_availability(self, exe):
+        """Checks availability of Apache executable"""
+        if not util.exe_exists(exe):
+            if not path_surgery(exe):
+                raise errors.NoInstallationError(
+                    'Cannot find Apache executable {0}'.format(exe))
+
+    def get_parser(self):
+        """Initializes the ApacheParser"""
+        # If user provided vhost_root value in command line, use it
+        return parser.ApacheParser(
+            self.option("server_root"), self.conf("vhost-root"),
+            self.version, configurator=self)
+
+    def _wildcard_domain(self, domain):
+        """
+        Checks if domain is a wildcard domain
+
+        :param str domain: Domain to check
+
+        :returns: If the domain is wildcard domain
+        :rtype: bool
+        """
+        if isinstance(domain, six.text_type):
+            wildcard_marker = u"*."
+        else:
+            wildcard_marker = b"*."
+        return domain.startswith(wildcard_marker)
 
     def deploy_cert(self, domain, cert_path, key_path,
                     chain_path=None, fullchain_path=None):
         """Deploys certificate to specified virtual host.
 
-        Currently tries to find the last directives to deploy the cert in
-        the VHost associated with the given domain. If it can't find the
+        Currently tries to find the last directives to deploy the certificate
+        in the VHost associated with the given domain. If it can't find the
         directives, it searches the "included" confs. The function verifies
         that it has located the three directives and finally modifies them
         to point to the correct destination. After the certificate is
@@ -242,12 +381,117 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             a lack of directives
 
         """
-        vhost = self.choose_vhost(domain)
-        self._clean_vhost(vhost)
+        vhosts = self.choose_vhosts(domain)
+        for vhost in vhosts:
+            self._deploy_cert(vhost, cert_path, key_path, chain_path, fullchain_path)
 
+    def choose_vhosts(self, domain, create_if_no_ssl=True):
+        """
+        Finds VirtualHosts that can be used with the provided domain
+
+        :param str domain: Domain name to match VirtualHosts to
+        :param bool create_if_no_ssl: If found VirtualHost doesn't have a HTTPS
+            counterpart, should one get created
+
+        :returns: List of VirtualHosts or None
+        :rtype: `list` of :class:`~certbot_apache.obj.VirtualHost`
+        """
+
+        if self._wildcard_domain(domain):
+            if domain in self._wildcard_vhosts:
+                # Vhosts for a wildcard domain were already selected
+                return self._wildcard_vhosts[domain]
+            # Ask user which VHosts to support.
+            # Returned objects are guaranteed to be ssl vhosts
+            return self._choose_vhosts_wildcard(domain, create_if_no_ssl)
+        else:
+            return [self.choose_vhost(domain, create_if_no_ssl)]
+
+    def _vhosts_for_wildcard(self, domain):
+        """
+        Get VHost objects for every VirtualHost that the user wants to handle
+        with the wildcard certificate.
+        """
+
+        # Collect all vhosts that match the name
+        matched = set()
+        for vhost in self.vhosts:
+            for name in vhost.get_names():
+                if self._in_wildcard_scope(name, domain):
+                    matched.add(vhost)
+
+        return list(matched)
+
+    def _in_wildcard_scope(self, name, domain):
+        """
+        Helper method for _vhosts_for_wildcard() that makes sure that the domain
+        is in the scope of wildcard domain.
+
+        eg. in scope: domain = *.wild.card, name = 1.wild.card
+        not in scope: domain = *.wild.card, name = 1.2.wild.card
+        """
+        if len(name.split(".")) == len(domain.split(".")):
+            return fnmatch.fnmatch(name, domain)
+        return None
+
+    def _choose_vhosts_wildcard(self, domain, create_ssl=True):
+        """Prompts user to choose vhosts to install a wildcard certificate for"""
+
+        # Get all vhosts that are covered by the wildcard domain
+        vhosts = self._vhosts_for_wildcard(domain)
+
+        # Go through the vhosts, making sure that we cover all the names
+        # present, but preferring the SSL vhosts
+        filtered_vhosts = dict()
+        for vhost in vhosts:
+            for name in vhost.get_names():
+                if vhost.ssl:
+                    # Always prefer SSL vhosts
+                    filtered_vhosts[name] = vhost
+                elif name not in filtered_vhosts and create_ssl:
+                    # Add if not in list previously
+                    filtered_vhosts[name] = vhost
+
+        # Only unique VHost objects
+        dialog_input = set([vhost for vhost in filtered_vhosts.values()])
+
+        # Ask the user which of names to enable, expect list of names back
+        dialog_output = display_ops.select_vhost_multiple(list(dialog_input))
+
+        if not dialog_output:
+            logger.error(
+                "No vhost exists with servername or alias for domain %s. "
+                "No vhost was selected. Please specify ServerName or ServerAlias "
+                "in the Apache config.",
+                domain)
+            raise errors.PluginError("No vhost selected")
+
+        # Make sure we create SSL vhosts for the ones that are HTTP only
+        # if requested.
+        return_vhosts = list()
+        for vhost in dialog_output:
+            if not vhost.ssl:
+                return_vhosts.append(self.make_vhost_ssl(vhost))
+            else:
+                return_vhosts.append(vhost)
+
+        self._wildcard_vhosts[domain] = return_vhosts
+        return return_vhosts
+
+    def _deploy_cert(self, vhost, cert_path, key_path, chain_path, fullchain_path):
+        """
+        Helper function for deploy_cert() that handles the actual deployment
+        this exists because we might want to do multiple deployments per
+        domain originally passed for deploy_cert(). This is especially true
+        with wildcard certificates
+        """
         # This is done first so that ssl module is enabled and cert_path,
         # cert_key... can all be parsed appropriately
         self.prepare_server_https("443")
+
+        # Add directives and remove duplicates
+        self._add_dummy_ssl_directives(vhost.path)
+        self._clean_vhost(vhost)
 
         path = {"cert_path": self.parser.find_dir("SSLCertificateFile",
                                                   None, vhost.path),
@@ -259,23 +503,29 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             path["chain_path"] = self.parser.find_dir(
                 "SSLCertificateChainFile", None, vhost.path)
 
-        if not path["cert_path"] or not path["cert_key"]:
-            # Throw some can't find all of the directives error"
+        # Handle errors when certificate/key directives cannot be found
+        if not path["cert_path"]:
             logger.warning(
-                "Cannot find a cert or key directive in %s. "
+                "Cannot find an SSLCertificateFile directive in %s. "
                 "VirtualHost was not modified", vhost.path)
-            # Presumably break here so that the virtualhost is not modified
             raise errors.PluginError(
-                "Unable to find cert and/or key directives")
+                "Unable to find an SSLCertificateFile directive")
+        elif not path["cert_key"]:
+            logger.warning(
+                "Cannot find an SSLCertificateKeyFile directive for "
+                "certificate in %s. VirtualHost was not modified", vhost.path)
+            raise errors.PluginError(
+                "Unable to find an SSLCertificateKeyFile directive for "
+                "certificate")
 
-        logger.info("Deploying Certificate for %s to VirtualHost %s", domain, vhost.filep)
+        logger.info("Deploying Certificate to VirtualHost %s", vhost.filep)
 
         if self.version < (2, 4, 8) or (chain_path and not fullchain_path):
             # install SSLCertificateFile, SSLCertificateKeyFile,
             # and SSLCertificateChainFile directives
             set_cert_path = cert_path
-            self.aug.set(path["cert_path"][-1], cert_path)
-            self.aug.set(path["cert_key"][-1], key_path)
+            self.parser.aug.set(path["cert_path"][-1], cert_path)
+            self.parser.aug.set(path["cert_key"][-1], key_path)
             if chain_path is not None:
                 self.parser.add_dir(vhost.path,
                                     "SSLCertificateChainFile", chain_path)
@@ -284,11 +534,15 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                                          "version of Apache")
         else:
             if not fullchain_path:
-                raise errors.PluginError("Please provide the --fullchain-path\
- option pointing to your full chain file")
+                raise errors.PluginError("Please provide the --fullchain-path "
+                                         "option pointing to your full chain file")
             set_cert_path = fullchain_path
-            self.aug.set(path["cert_path"][-1], fullchain_path)
-            self.aug.set(path["cert_key"][-1], key_path)
+            self.parser.aug.set(path["cert_path"][-1], fullchain_path)
+            self.parser.aug.set(path["cert_key"][-1], key_path)
+
+        # Enable the new vhost if needed
+        if not vhost.enabled:
+            self.enable_site(vhost)
 
         # Save notes about the transaction that took place
         self.save_notes += ("Changed vhost at %s with addresses of %s\n"
@@ -300,25 +554,21 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if chain_path is not None:
             self.save_notes += "\tSSLCertificateChainFile %s\n" % chain_path
 
-        # Make sure vhost is enabled if distro with enabled / available
-        if self.conf("handle-sites"):
-            if not vhost.enabled:
-                self.enable_site(vhost)
-
-    def choose_vhost(self, target_name, temp=False):
+    def choose_vhost(self, target_name, create_if_no_ssl=True):
         """Chooses a virtual host based on the given domain name.
 
         If there is no clear virtual host to be selected, the user is prompted
         with all available choices.
 
-        The returned vhost is guaranteed to have TLS enabled unless temp is
-        True. If temp is True, there is no such guarantee and the result is
-        not cached.
+        The returned vhost is guaranteed to have TLS enabled unless
+        create_if_no_ssl is set to False, in which case there is no such guarantee
+        and the result is not cached.
 
         :param str target_name: domain name
-        :param bool temp: whether the vhost is only used temporarily
+        :param bool create_if_no_ssl: If found VirtualHost doesn't have a HTTPS
+            counterpart, should one get created
 
-        :returns: ssl vhost associated with name
+        :returns: vhost associated with name
         :rtype: :class:`~certbot_apache.obj.VirtualHost`
 
         :raises .errors.PluginError: If no vhost is available or chosen
@@ -331,7 +581,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Try to find a reasonable vhost
         vhost = self._find_best_vhost(target_name)
         if vhost is not None:
-            if temp:
+            if not create_if_no_ssl:
                 return vhost
             if not vhost.ssl:
                 vhost = self.make_vhost_ssl(vhost)
@@ -340,7 +590,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             self.assoc[target_name] = vhost
             return vhost
 
-        return self._choose_vhost_from_list(target_name, temp)
+        # Negate create_if_no_ssl value to indicate if we want a SSL vhost
+        # to get created if a non-ssl vhost is selected.
+        return self._choose_vhost_from_list(target_name, temp=not create_if_no_ssl)
 
     def _choose_vhost_from_list(self, target_name, temp=False):
         # Select a vhost from a list
@@ -349,7 +601,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             logger.error(
                 "No vhost exists with servername or alias of %s. "
                 "No vhost was selected. Please specify ServerName or ServerAlias "
-                "in the Apache config, or split vhosts into separate files.",
+                "in the Apache config.",
                 target_name)
             raise errors.PluginError("No vhost selected")
         elif temp:
@@ -372,8 +624,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         self.assoc[target_name] = vhost
         return vhost
 
-    def included_in_wildcard(self, names, target_name):
-        """Is target_name covered by a wildcard?
+    def domain_in_names(self, names, target_name):
+        """Checks if target domain is covered by one or more of the provided
+        names. The target name is matched by wildcard as well as exact match.
 
         :param names: server aliases
         :type names: `collections.Iterable` of `str`
@@ -394,11 +647,34 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 return True
         return False
 
-    def _find_best_vhost(self, target_name):
+    def find_best_http_vhost(self, target, filter_defaults, port="80"):
+        """Returns non-HTTPS vhost objects found from the Apache config
+
+        :param str target: Domain name of the desired VirtualHost
+        :param bool filter_defaults: whether _default_ vhosts should be
+            included if it is the best match
+        :param str port: port number the vhost should be listening on
+
+        :returns: VirtualHost object that's the best match for target name
+        :rtype: `obj.VirtualHost` or None
+        """
+        filtered_vhosts = []
+        for vhost in self.vhosts:
+            if any(a.is_wildcard() or a.get_port() == port for a in vhost.addrs) and not vhost.ssl:
+                filtered_vhosts.append(vhost)
+        return self._find_best_vhost(target, filtered_vhosts, filter_defaults)
+
+    def _find_best_vhost(self, target_name, vhosts=None, filter_defaults=True):
         """Finds the best vhost for a target_name.
 
         This does not upgrade a vhost to HTTPS... it only finds the most
         appropriate vhost for the given target_name.
+
+        :param str target_name: domain handled by the desired vhost
+        :param vhosts: vhosts to consider
+        :type vhosts: `collections.Iterable` of :class:`~certbot_apache.obj.VirtualHost`
+        :param bool filter_defaults: whether a vhost with a _default_
+            addr is acceptable
 
         :returns: VHost or None
 
@@ -411,13 +687,17 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Points 1 - Address name with no SSL
         best_candidate = None
         best_points = 0
-        for vhost in self.vhosts:
+
+        if vhosts is None:
+            vhosts = self.vhosts
+
+        for vhost in vhosts:
             if vhost.modmacro is True:
                 continue
             names = vhost.get_names()
             if target_name in names:
                 points = 3
-            elif self.included_in_wildcard(names, target_name):
+            elif self.domain_in_names(names, target_name):
                 points = 2
             elif any(addr.get_addr() == target_name for addr in vhost.addrs):
                 points = 1
@@ -435,8 +715,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         # No winners here... is there only one reasonable vhost?
         if best_candidate is None:
-            # reasonable == Not all _default_ addrs
-            vhosts = self._non_default_vhosts()
+            if filter_defaults:
+                vhosts = self._non_default_vhosts(vhosts)
             # remove mod_macro hosts from reasonable vhosts
             reasonable_vhosts = [vh for vh
                                  in vhosts if vh.modmacro is False]
@@ -445,9 +725,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         return best_candidate
 
-    def _non_default_vhosts(self):
+    def _non_default_vhosts(self, vhosts):
         """Return all non _default_ only vhosts."""
-        return [vh for vh in self.vhosts if not all(
+        return [vh for vh in vhosts if not all(
             addr.get_addr() == "_default_" for addr in vh.addrs
         )]
 
@@ -459,7 +739,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :rtype: set
 
         """
-        all_names = set()
+        all_names = set()  # type: Set[str]
 
         vhost_macro = []
 
@@ -476,7 +756,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                     if name:
                         all_names.add(name)
 
-        if len(vhost_macro) > 0:
+        if vhost_macro:
             zope.component.getUtility(interfaces.IDisplay).notification(
                 "Apache mod_macro seems to be in use in file(s):\n{0}"
                 "\n\nUnfortunately mod_macro is not yet supported".format(
@@ -558,7 +838,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         addrs = set()
         try:
-            args = self.aug.match(path + "/arg")
+            args = self.parser.aug.match(path + "/arg")
         except RuntimeError:
             logger.warning("Encountered a problem while parsing file: %s, skipping", path)
             return None
@@ -575,21 +855,19 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             if addr.get_port() == "443":
                 is_ssl = True
 
-        filename = get_file_path(self.aug.get("/augeas/files%s/path" % get_file_path(path)))
+        filename = apache_util.get_file_path(
+            self.parser.aug.get("/augeas/files%s/path" % apache_util.get_file_path(path)))
         if filename is None:
             return None
-
-        if self.conf("handle-sites"):
-            is_enabled = self.is_site_enabled(filename)
-        else:
-            is_enabled = True
 
         macro = False
         if "/macro/" in path.lower():
             macro = True
 
+        vhost_enabled = self.parser.parsed_in_original(filename)
+
         vhost = obj.VirtualHost(filename, path, addrs, is_ssl,
-                                is_enabled, modmacro=macro)
+                                vhost_enabled, modmacro=macro)
         self._add_servernames(vhost)
         return vhost
 
@@ -602,13 +880,13 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         # Search base config, and all included paths for VirtualHosts
-        file_paths = {}
-        internal_paths = defaultdict(set)
+        file_paths = {}  # type: Dict[str, str]
+        internal_paths = defaultdict(set)  # type: DefaultDict[str, Set[str]]
         vhs = []
         # Make a list of parser paths because the parser_paths
         # dictionary may be modified during the loop.
         for vhost_path in list(self.parser.parser_paths):
-            paths = self.aug.match(
+            paths = self.parser.aug.match(
                 ("/files%s//*[label()=~regexp('%s')]" %
                     (vhost_path, parser.case_i("VirtualHost"))))
             paths = [path for path in paths if
@@ -617,8 +895,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 new_vhost = self._create_vhost(path)
                 if not new_vhost:
                     continue
-                internal_path = get_internal_aug_path(new_vhost.path)
-                realpath = os.path.realpath(new_vhost.filep)
+                internal_path = apache_util.get_internal_aug_path(new_vhost.path)
+                realpath = filesystem.realpath(new_vhost.filep)
                 if realpath not in file_paths:
                     file_paths[realpath] = new_vhost.filep
                     internal_paths[realpath].add(internal_path)
@@ -633,7 +911,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                     for v in vhs:
                         if v.filep == file_paths[realpath]:
                             internal_paths[realpath].remove(
-                                get_internal_aug_path(v.path))
+                                apache_util.get_internal_aug_path(v.path))
                         else:
                             new_vhs.append(v)
                     vhs = new_vhs
@@ -644,7 +922,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 elif internal_path not in internal_paths[realpath]:
                     internal_paths[realpath].add(internal_path)
                     vhs.append(new_vhost)
-
         return vhs
 
     def is_name_vhost(self, target_addr):
@@ -698,21 +975,30 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
 
-        # If nonstandard port, add service definition for matching
-        if port != "443":
+        self.prepare_https_modules(temp)
+        self.ensure_listen(port, https=True)
+
+    def ensure_listen(self, port, https=False):
+        """Make sure that Apache is listening on the port. Checks if the
+        Listen statement for the port already exists, and adds it to the
+        configuration if necessary.
+
+        :param str port: Port number to check and add Listen for if not in
+            place already
+        :param bool https: If the port will be used for HTTPS
+
+        """
+
+        # If HTTPS requested for nonstandard port, add service definition
+        if https and port != "443":
             port_service = "%s %s" % (port, "https")
         else:
             port_service = port
 
-        self.prepare_https_modules(temp)
         # Check for Listen <port>
         # Note: This could be made to also look for ip:443 combo
         listens = [self.parser.get_arg(x).split()[0] for
                    x in self.parser.find_dir("Listen")]
-
-        # In case no Listens are set (which really is a broken apache config)
-        if not listens:
-            listens = ["80"]
 
         # Listen already in place
         if self._has_port_already(listens, port):
@@ -720,9 +1006,12 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         listen_dirs = set(listens)
 
+        if not listens:
+            listen_dirs.add(port_service)
+
         for listen in listens:
             # For any listen statement, check if the machine also listens on
-            # Port 443. If not, add such a listen statement.
+            # the given port. If not, add such a listen statement.
             if len(listen.split(":")) == 1:
                 # Its listening to all interfaces
                 if port not in listen_dirs and port_service not in listen_dirs:
@@ -734,11 +1023,39 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 if "%s:%s" % (ip, port_service) not in listen_dirs and (
                    "%s:%s" % (ip, port_service) not in listen_dirs):
                     listen_dirs.add("%s:%s" % (ip, port_service))
-        self._add_listens(listen_dirs, listens, port)
+        if https:
+            self._add_listens_https(listen_dirs, listens, port)
+        else:
+            self._add_listens_http(listen_dirs, listens, port)
 
-    def _add_listens(self, listens, listens_orig, port):
-        """Helper method for prepare_server_https to figure out which new
-        listen statements need adding
+    def _add_listens_http(self, listens, listens_orig, port):
+        """Helper method for ensure_listen to figure out which new
+        listen statements need adding for listening HTTP on port
+
+        :param set listens: Set of all needed Listen statements
+        :param list listens_orig: List of existing listen statements
+        :param string port: Port number we're adding
+        """
+
+        new_listens = listens.difference(listens_orig)
+
+        if port in new_listens:
+            # We have wildcard, skip the rest
+            self.parser.add_dir(parser.get_aug_path(self.parser.loc["listen"]),
+                                "Listen", port)
+            self.save_notes += "Added Listen %s directive to %s\n" % (
+                port, self.parser.loc["listen"])
+        else:
+            for listen in new_listens:
+                self.parser.add_dir(parser.get_aug_path(
+                    self.parser.loc["listen"]), "Listen", listen.split(" "))
+                self.save_notes += ("Added Listen %s directive to "
+                                    "%s\n") % (listen,
+                                               self.parser.loc["listen"])
+
+    def _add_listens_https(self, listens, listens_orig, port):
+        """Helper method for ensure_listen to figure out which new
+        listen statements need adding for listening HTTPS on port
 
         :param set listens: Set of all needed Listen statements
         :param list listens_orig: List of existing listen statements
@@ -785,6 +1102,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 # Ugly but takes care of protocol def, eg: 1.1.1.1:443 https
                 if listen.split(":")[-1].split(" ")[0] == port:
                     return True
+        return None
 
     def prepare_https_modules(self, temp):
         """Helper method for prepare_server_https, taking care of enabling
@@ -793,36 +1111,19 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :param boolean temp: If the change is temporary
         """
 
-        if self.conf("handle-modules"):
+        if self.option("handle_modules"):
             if self.version >= (2, 4) and ("socache_shmcb_module" not in
                                            self.parser.modules):
                 self.enable_mod("socache_shmcb", temp=temp)
             if "ssl_module" not in self.parser.modules:
                 self.enable_mod("ssl", temp=temp)
 
-    def make_addrs_sni_ready(self, addrs):
-        """Checks to see if the server is ready for SNI challenges.
-
-        :param addrs: Addresses to check SNI compatibility
-        :type addrs: :class:`~certbot_apache.obj.Addr`
-
-        """
-        # Version 2.4 and later are automatically SNI ready.
-        if self.version >= (2, 4):
-            return
-
-        for addr in addrs:
-            if not self.is_name_vhost(addr):
-                logger.debug("Setting VirtualHost at %s to be a name "
-                             "based virtual host", addr)
-                self.add_name_vhost(addr)
-
     def make_vhost_ssl(self, nonssl_vhost):  # pylint: disable=too-many-locals
         """Makes an ssl_vhost version of a nonssl_vhost.
 
         Duplicates vhost and adds default ssl options
         New vhost will reside as (nonssl_vhost.path) +
-        ``certbot_apache.constants.os_constant("le_vhost_ext")``
+        ``self.option("le_vhost_ext")``
 
         .. note:: This function saves the configuration
 
@@ -839,30 +1140,38 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         avail_fp = nonssl_vhost.filep
         ssl_fp = self._get_ssl_vhost_path(avail_fp)
 
-        orig_matches = self.aug.match("/files%s//* [label()=~regexp('%s')]" %
+        orig_matches = self.parser.aug.match("/files%s//* [label()=~regexp('%s')]" %
                                       (self._escape(ssl_fp),
                                        parser.case_i("VirtualHost")))
 
         self._copy_create_ssl_vhost_skeleton(nonssl_vhost, ssl_fp)
 
         # Reload augeas to take into account the new vhost
-        self.aug.load()
+        self.parser.aug.load()
         # Get Vhost augeas path for new vhost
-        new_matches = self.aug.match("/files%s//* [label()=~regexp('%s')]" %
+        new_matches = self.parser.aug.match("/files%s//* [label()=~regexp('%s')]" %
                                      (self._escape(ssl_fp),
                                       parser.case_i("VirtualHost")))
 
         vh_p = self._get_new_vh_path(orig_matches, new_matches)
 
         if not vh_p:
-            raise errors.PluginError(
-                "Could not reverse map the HTTPS VirtualHost to the original")
+            # The vhost was not found on the currently parsed paths
+            # Make Augeas aware of the new vhost
+            self.parser.parse_file(ssl_fp)
+            # Try to search again
+            new_matches = self.parser.aug.match(
+                "/files%s//* [label()=~regexp('%s')]" %
+                (self._escape(ssl_fp),
+                 parser.case_i("VirtualHost")))
+            vh_p = self._get_new_vh_path(orig_matches, new_matches)
+            if not vh_p:
+                raise errors.PluginError(
+                    "Could not reverse map the HTTPS VirtualHost to the original")
+
 
         # Update Addresses
         self._update_ssl_vhosts_addrs(vh_p)
-        # Add directives
-        self._add_dummy_ssl_directives(vh_p)
-        self.save()
 
         # Log actions and create save notes
         logger.info("Created an SSL vhost at %s", ssl_fp)
@@ -873,6 +1182,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Create the Vhost object
         ssl_vhost = self._create_vhost(vh_p)
         ssl_vhost.ancestor = nonssl_vhost
+
         self.vhosts.append(ssl_vhost)
 
         # NOTE: Searches through Augeas seem to ruin changes to directives
@@ -901,11 +1211,26 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         return None
 
     def _get_ssl_vhost_path(self, non_ssl_vh_fp):
-        # Get filepath of new ssl_vhost
-        if non_ssl_vh_fp.endswith(".conf"):
-            return non_ssl_vh_fp[:-(len(".conf"))] + self.conf("le_vhost_ext")
+        """ Get a file path for SSL vhost, uses user defined path as priority,
+        but if the value is invalid or not defined, will fall back to non-ssl
+        vhost filepath.
+
+        :param str non_ssl_vh_fp: Filepath of non-SSL vhost
+
+        :returns: Filepath for SSL vhost
+        :rtype: str
+        """
+
+        if self.conf("vhost-root") and os.path.exists(self.conf("vhost-root")):
+            fp = os.path.join(filesystem.realpath(self.option("vhost_root")),
+                              os.path.basename(non_ssl_vh_fp))
         else:
-            return non_ssl_vh_fp + self.conf("le_vhost_ext")
+            # Use non-ssl filepath
+            fp = filesystem.realpath(non_ssl_vh_fp)
+
+        if fp.endswith(".conf"):
+            return fp[:-(len(".conf"))] + self.option("le_vhost_ext")
+        return fp + self.option("le_vhost_ext")
 
     def _sift_rewrite_rule(self, line):
         """Decides whether a line should be copied to a SSL vhost.
@@ -970,8 +1295,12 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 # The content does not include the closing tag, so add it
                 new_file.write("</VirtualHost>\n")
                 new_file.write("</IfModule>\n")
+            # Add new file to augeas paths if we're supposed to handle
+            # activation (it's not included as default)
+            if not self.parser.parsed_in_current(ssl_fp):
+                self.parser.parse_file(ssl_fp)
         except IOError:
-            logger.fatal("Error writing/reading to file in make_vhost_ssl")
+            logger.critical("Error writing/reading to file in make_vhost_ssl", exc_info=True)
             raise errors.PluginError("Unable to write/read in make_vhost_ssl")
 
         if sift:
@@ -981,8 +1310,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                 "vhost for your HTTPS site located at {1} because they have "
                 "the potential to create redirection loops.".format(
                     vhost.filep, ssl_fp), reporter.MEDIUM_PRIORITY)
-        self.aug.set("/augeas/files%s/mtime" % (self._escape(ssl_fp)), "0")
-        self.aug.set("/augeas/files%s/mtime" % (self._escape(vhost.filep)), "0")
+        self.parser.aug.set("/augeas/files%s/mtime" % (self._escape(ssl_fp)), "0")
+        self.parser.aug.set("/augeas/files%s/mtime" % (self._escape(vhost.filep)), "0")
 
     def _sift_rewrite_rules(self, contents):
         """ Helper function for _copy_create_ssl_vhost_skeleton to prepare the
@@ -1057,9 +1386,9 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
 
         try:
-            span_val = self.aug.span(vhost.path)
+            span_val = self.parser.aug.span(vhost.path)
         except ValueError:
-            logger.fatal("Error while reading the VirtualHost %s from "
+            logger.critical("Error while reading the VirtualHost %s from "
                          "file %s", vhost.name, vhost.filep, exc_info=True)
             raise errors.PluginError("Unable to read VirtualHost from file")
         span_filep = span_val[0]
@@ -1092,13 +1421,13 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
     def _update_ssl_vhosts_addrs(self, vh_path):
         ssl_addrs = set()
-        ssl_addr_p = self.aug.match(vh_path + "/arg")
+        ssl_addr_p = self.parser.aug.match(vh_path + "/arg")
 
         for addr in ssl_addr_p:
             old_addr = obj.Addr.fromstring(
                 str(self.parser.get_arg(addr)))
             ssl_addr = old_addr.get_addr_obj("443")
-            self.aug.set(addr, str(ssl_addr))
+            self.parser.aug.set(addr, str(ssl_addr))
             ssl_addrs.add(ssl_addr)
 
         return ssl_addrs
@@ -1117,22 +1446,24 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                                            vh_path, False)) > 1:
                 directive_path = self.parser.find_dir(directive, None,
                                                       vh_path, False)
-                self.aug.remove(re.sub(r"/\w*$", "", directive_path[0]))
+                self.parser.aug.remove(re.sub(r"/\w*$", "", directive_path[0]))
 
     def _remove_directives(self, vh_path, directives):
         for directive in directives:
-            while len(self.parser.find_dir(directive, None,
-                                           vh_path, False)) > 0:
+            while self.parser.find_dir(directive, None, vh_path, False):
                 directive_path = self.parser.find_dir(directive, None,
                                                       vh_path, False)
-                self.aug.remove(re.sub(r"/\w*$", "", directive_path[0]))
+                self.parser.aug.remove(re.sub(r"/\w*$", "", directive_path[0]))
 
     def _add_dummy_ssl_directives(self, vh_path):
         self.parser.add_dir(vh_path, "SSLCertificateFile",
                             "insert_cert_file_path")
         self.parser.add_dir(vh_path, "SSLCertificateKeyFile",
                             "insert_key_file_path")
-        self.parser.add_dir(vh_path, "Include", self.mod_ssl_conf)
+        # Only include the TLS configuration if not already included
+        existing_inc = self.parser.find_dir("Include", self.mod_ssl_conf, vh_path)
+        if not existing_inc:
+            self.parser.add_dir(vh_path, "Include", self.mod_ssl_conf)
 
     def _add_servername_alias(self, target_name, vhost):
         vh_path = vhost.path
@@ -1161,8 +1492,8 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         matches = self.parser.find_dir(
             "ServerAlias", start=vh_path, exclude=False)
-        aliases = (self.aug.get(match) for match in matches)
-        return self.included_in_wildcard(aliases, target_name)
+        aliases = (self.parser.aug.get(match) for match in matches)
+        return self.domain_in_names(aliases, target_name)
 
     def _add_name_vhost_if_necessary(self, vhost):
         """Add NameVirtualHost Directives if necessary for new vhost.
@@ -1198,6 +1529,67 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         if need_to_save:
             self.save()
+
+    def find_vhost_by_id(self, id_str):
+        """
+        Searches through VirtualHosts and tries to match the id in a comment
+
+        :param str id_str: Id string for matching
+
+        :returns: The matched VirtualHost or None
+        :rtype: :class:`~certbot_apache.obj.VirtualHost` or None
+
+        :raises .errors.PluginError: If no VirtualHost is found
+        """
+
+        for vh in self.vhosts:
+            if self._find_vhost_id(vh) == id_str:
+                return vh
+        msg = "No VirtualHost with ID {} was found.".format(id_str)
+        logger.warning(msg)
+        raise errors.PluginError(msg)
+
+    def _find_vhost_id(self, vhost):
+        """Tries to find the unique ID from the VirtualHost comments. This is
+        used for keeping track of VirtualHost directive over time.
+
+        :param vhost: Virtual host to add the id
+        :type vhost: :class:`~certbot_apache.obj.VirtualHost`
+
+        :returns: The unique ID or None
+        :rtype: str or None
+        """
+
+        # Strip the {} off from the format string
+        search_comment = constants.MANAGED_COMMENT_ID.format("")
+
+        id_comment = self.parser.find_comments(search_comment, vhost.path)
+        if id_comment:
+            # Use the first value, multiple ones shouldn't exist
+            comment = self.parser.get_arg(id_comment[0])
+            return comment.split(" ")[-1]
+        return None
+
+    def add_vhost_id(self, vhost):
+        """Adds an unique ID to the VirtualHost as a comment for mapping back
+        to it on later invocations, as the config file order might have changed.
+        If ID already exists, returns that instead.
+
+        :param vhost: Virtual host to add or find the id
+        :type vhost: :class:`~certbot_apache.obj.VirtualHost`
+
+        :returns: The unique ID for vhost
+        :rtype: str or None
+        """
+
+        vh_id = self._find_vhost_id(vhost)
+        if vh_id:
+            return vh_id
+
+        id_string = apache_util.unique_id()
+        comment = constants.MANAGED_COMMENT_ID.format(id_string)
+        self.parser.add_comment(vhost.path, comment)
+        return id_string
 
     def _escape(self, fp):
         fp = fp.replace(",", "\\,")
@@ -1236,11 +1628,99 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         except KeyError:
             raise errors.PluginError(
                 "Unsupported enhancement: {0}".format(enhancement))
+
+        matched_vhosts = self.choose_vhosts(domain, create_if_no_ssl=False)
+        # We should be handling only SSL vhosts for enhancements
+        vhosts = [vhost for vhost in matched_vhosts if vhost.ssl]
+
+        if not vhosts:
+            msg_tmpl = ("Certbot was not able to find SSL VirtualHost for a "
+                        "domain {0} for enabling enhancement \"{1}\". The requested "
+                        "enhancement was not configured.")
+            msg_enhancement = enhancement
+            if options:
+                msg_enhancement += ": " + options
+            msg = msg_tmpl.format(domain, msg_enhancement)
+            logger.warning(msg)
+            raise errors.PluginError(msg)
         try:
-            func(self.choose_vhost(domain), options)
+            for vhost in vhosts:
+                func(vhost, options)
         except errors.PluginError:
             logger.warning("Failed %s for %s", enhancement, domain)
             raise
+
+    def _autohsts_increase(self, vhost, id_str, nextstep):
+        """Increase the AutoHSTS max-age value
+
+        :param vhost: Virtual host object to modify
+        :type vhost: :class:`~certbot_apache.obj.VirtualHost`
+
+        :param str id_str: The unique ID string of VirtualHost
+
+        :param int nextstep: Next AutoHSTS max-age value index
+
+        """
+        nextstep_value = constants.AUTOHSTS_STEPS[nextstep]
+        self._autohsts_write(vhost, nextstep_value)
+        self._autohsts[id_str] = {"laststep": nextstep, "timestamp": time.time()}
+
+    def _autohsts_write(self, vhost, nextstep_value):
+        """
+        Write the new HSTS max-age value to the VirtualHost file
+        """
+
+        hsts_dirpath = None
+        header_path = self.parser.find_dir("Header", None, vhost.path)
+        if header_path:
+            pat = '(?:[ "]|^)(strict-transport-security)(?:[ "]|$)'
+            for match in header_path:
+                if re.search(pat, self.parser.aug.get(match).lower()):
+                    hsts_dirpath = match
+        if not hsts_dirpath:
+            err_msg = ("Certbot was unable to find the existing HSTS header "
+                       "from the VirtualHost at path {0}.").format(vhost.filep)
+            raise errors.PluginError(err_msg)
+
+        # Prepare the HSTS header value
+        hsts_maxage = "\"max-age={0}\"".format(nextstep_value)
+
+        # Update the header
+        # Our match statement was for string strict-transport-security, but
+        # we need to update the value instead. The next index is for the value
+        hsts_dirpath = hsts_dirpath.replace("arg[3]", "arg[4]")
+        self.parser.aug.set(hsts_dirpath, hsts_maxage)
+        note_msg = ("Increasing HSTS max-age value to {0} for VirtualHost "
+                    "in {1}\n".format(nextstep_value, vhost.filep))
+        logger.debug(note_msg)
+        self.save_notes += note_msg
+        self.save(note_msg)
+
+    def _autohsts_fetch_state(self):
+        """
+        Populates the AutoHSTS state from the pluginstorage
+        """
+        try:
+            self._autohsts = self.storage.fetch("autohsts")
+        except KeyError:
+            self._autohsts = dict()
+
+    def _autohsts_save_state(self):
+        """
+        Saves the state of AutoHSTS object to pluginstorage
+        """
+        self.storage.put("autohsts", self._autohsts)
+        self.storage.save()
+
+    def _autohsts_vhost_in_lineage(self, vhost, lineage):
+        """
+        Searches AutoHSTS managed VirtualHosts that belong to the lineage.
+        Matches the private key path.
+        """
+
+        return bool(
+            self.parser.find_dir("SSLCertificateKeyFile",
+                                 lineage.key_path, vhost.path))
 
     def _enable_ocsp_stapling(self, ssl_vhost, unused_options):
         """Enables OCSP Stapling
@@ -1258,13 +1738,13 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         .. note:: This function saves the configuration
 
         :param ssl_vhost: Destination of traffic, an ssl enabled vhost
-        :type ssl_vhost: :class:`~letsencrypt_apache.obj.VirtualHost`
+        :type ssl_vhost: :class:`~certbot_apache.obj.VirtualHost`
 
         :param unused_options: Not currently used
         :type unused_options: Not Available
 
         :returns: Success, general_vhost (HTTP vhost)
-        :rtype: (bool, :class:`~letsencrypt_apache.obj.VirtualHost`)
+        :rtype: (bool, :class:`~certbot_apache.obj.VirtualHost`)
 
         """
         min_apache_ver = (2, 3, 3)
@@ -1291,7 +1771,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # We'll simply delete the directive, so that we'll have a
         # consistent OCSP cache path.
         if stapling_cache_aug_path:
-            self.aug.remove(
+            self.parser.aug.remove(
                     re.sub(r"/\w*$", "", stapling_cache_aug_path[0]))
 
         self.parser.add_dir_to_ifmodssl(ssl_vhost_aug_path,
@@ -1368,7 +1848,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             # "Existing Header directive for virtualhost"
             pat = '(?:[ "]|^)(%s)(?:[ "]|$)' % (header_substring.lower())
             for match in header_path:
-                if re.search(pat, self.aug.get(match).lower()):
+                if re.search(pat, self.parser.aug.get(match).lower()):
                     raise errors.PluginEnhancementAlreadyPresent(
                         "Existing %s header" % (header_substring))
 
@@ -1461,7 +1941,6 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             self.parser.add_dir(vhost.path, "RewriteRule",
                     constants.REWRITE_HTTPS_ARGS)
 
-
     def _verify_no_certbot_redirect(self, vhost):
         """Checks to see if a redirect was already installed by certbot.
 
@@ -1483,7 +1962,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # There can be other RewriteRule directive lines in vhost config.
         # rewrite_args_dict keys are directive ids and the corresponding value
         # for each is a list of arguments to that directive.
-        rewrite_args_dict = defaultdict(list)
+        rewrite_args_dict = defaultdict(list)  # type: DefaultDict[str, List[str]]
         pat = r'(.*directive\[\d+\]).*'
         for match in rewrite_path:
             m = re.match(pat, match)
@@ -1496,11 +1975,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                              constants.REWRITE_HTTPS_ARGS_WITH_END]
 
             for dir_path, args_paths in rewrite_args_dict.items():
-                arg_vals = [self.aug.get(x) for x in args_paths]
+                arg_vals = [self.parser.aug.get(x) for x in args_paths]
 
                 # Search for past redirection rule, delete it, set the new one
                 if arg_vals in constants.OLD_REWRITE_HTTPS_ARGS:
-                    self.aug.remove(dir_path)
+                    self.parser.aug.remove(dir_path)
                     self._set_https_redirection_rewrite_rule(vhost)
                     self.save()
                     raise errors.PluginEnhancementAlreadyPresent(
@@ -1556,7 +2035,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         redirect_filepath = self._write_out_redirect(ssl_vhost, text)
 
-        self.aug.load()
+        self.parser.aug.load()
         # Make a new vhost data structure and add it to the lists
         new_vhost = self._create_vhost(parser.get_aug_path(self._escape(redirect_filepath)))
         self.vhosts.append(new_vhost)
@@ -1577,7 +2056,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if ssl_vhost.aliases:
             serveralias = "ServerAlias " + " ".join(ssl_vhost.aliases)
 
-        rewrite_rule_args = []
+        rewrite_rule_args = []  # type: List[str]
         if self.get_version() >= (2, 3, 9):
             rewrite_rule_args = constants.REWRITE_HTTPS_ARGS_WITH_END
         else:
@@ -1598,7 +2077,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
                             addr in self._get_proposed_addrs(ssl_vhost)),
                    servername, serveralias,
                    " ".join(rewrite_rule_args),
-                   self.conf("logs-root")))
+                   self.option("logs_root")))
 
     def _write_out_redirect(self, ssl_vhost, text):
         # This is the default name
@@ -1610,7 +2089,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             if len(ssl_vhost.name) < (255 - (len(redirect_filename) + 1)):
                 redirect_filename = "le-redirect-%s.conf" % ssl_vhost.name
 
-        redirect_filepath = os.path.join(self.conf("vhost-root"),
+        redirect_filepath = os.path.join(self.option("vhost_root"),
                                          redirect_filename)
 
         # Register the new file that will be created
@@ -1621,6 +2100,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         # Write out file
         with open(redirect_filepath, "w") as redirect_file:
             redirect_file.write(text)
+
+        # Add new include to configuration if it doesn't exist yet
+        if not self.parser.parsed_in_current(redirect_filepath):
+            self.parser.parse_file(redirect_filepath)
+
         logger.info("Created redirect file: %s", redirect_filename)
 
         return redirect_filepath
@@ -1660,43 +2144,13 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         return redirects
 
-    def is_site_enabled(self, avail_fp):
-        """Checks to see if the given site is enabled.
-
-        .. todo:: fix hardcoded sites-enabled, check os.path.samefile
-
-        :param str avail_fp: Complete file path of available site
-
-        :returns: Success
-        :rtype: bool
-
-        """
-
-        enabled_dir = os.path.join(self.parser.root, "sites-enabled")
-        if not os.path.isdir(enabled_dir):
-            error_msg = ("Directory '{0}' does not exist. Please ensure "
-                         "that the values for --apache-handle-sites and "
-                         "--apache-server-root are correct for your "
-                         "environment.".format(enabled_dir))
-            raise errors.ConfigurationError(error_msg)
-        for entry in os.listdir(enabled_dir):
-            try:
-                if filecmp.cmp(avail_fp, os.path.join(enabled_dir, entry)):
-                    return True
-            except OSError:
-                pass
-        return False
-
     def enable_site(self, vhost):
         """Enables an available site, Apache reload required.
 
         .. note:: Does not make sure that the site correctly works or that all
                   modules are enabled appropriately.
-
-        .. todo:: This function should number subdomains before the domain
-                  vhost
-
-        .. todo:: Make sure link is not broken...
+        .. note:: The distribution specific override replaces functionality
+                  of this method where available.
 
         :param vhost: vhost to enable
         :type vhost: :class:`~certbot_apache.obj.VirtualHost`
@@ -1705,23 +2159,19 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             supported.
 
         """
-        if self.is_site_enabled(vhost.filep):
+        if vhost.enabled:
             return
 
-        if "/sites-available/" in vhost.filep:
-            enabled_path = ("%s/sites-enabled/%s" %
-                            (self.parser.root, os.path.basename(vhost.filep)))
-            self.reverter.register_file_creation(False, enabled_path)
-            os.symlink(vhost.filep, enabled_path)
-            vhost.enabled = True
-            logger.info("Enabling available site: %s", vhost.filep)
+        if not self.parser.parsed_in_original(vhost.filep):
+            # Add direct include to root conf
+            logger.info("Enabling site %s by adding Include to root configuration",
+                        vhost.filep)
             self.save_notes += "Enabled site %s\n" % vhost.filep
-        else:
-            raise errors.NotSupportedError(
-                "Unsupported filesystem layout. "
-                "sites-available/enabled expected.")
+            self.parser.add_include(self.parser.loc["default"], vhost.filep)
+            vhost.enabled = True
+        return
 
-    def enable_mod(self, mod_name, temp=False):
+    def enable_mod(self, mod_name, temp=False):  # pylint: disable=unused-argument
         """Enables module in Apache.
 
         Both enables and reloads Apache so module is active.
@@ -1729,64 +2179,18 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         :param str mod_name: Name of the module to enable. (e.g. 'ssl')
         :param bool temp: Whether or not this is a temporary action.
 
-        :raises .errors.NotSupportedError: If the filesystem layout is not
-            supported.
-        :raises .errors.MisconfigurationError: If a2enmod or a2dismod cannot be
-            run.
+        .. note:: The distribution specific override replaces functionality
+                  of this method where available.
+
+        :raises .errors.MisconfigurationError: We cannot enable modules in
+            generic fashion.
 
         """
-        # Support Debian specific setup
-        avail_path = os.path.join(self.parser.root, "mods-available")
-        enabled_path = os.path.join(self.parser.root, "mods-enabled")
-        if not os.path.isdir(avail_path) or not os.path.isdir(enabled_path):
-            raise errors.NotSupportedError(
-                "Unsupported directory layout. You may try to enable mod %s "
-                "and try again." % mod_name)
-
-        deps = _get_mod_deps(mod_name)
-
-        # Enable all dependencies
-        for dep in deps:
-            if (dep + "_module") not in self.parser.modules:
-                self._enable_mod_debian(dep, temp)
-                self._add_parser_mod(dep)
-
-                note = "Enabled dependency of %s module - %s" % (mod_name, dep)
-                if not temp:
-                    self.save_notes += note + os.linesep
-                logger.debug(note)
-
-        # Enable actual module
-        self._enable_mod_debian(mod_name, temp)
-        self._add_parser_mod(mod_name)
-
-        if not temp:
-            self.save_notes += "Enabled %s module in Apache\n" % mod_name
-        logger.info("Enabled Apache %s module", mod_name)
-
-        # Modules can enable additional config files. Variables may be defined
-        # within these new configuration sections.
-        # Reload is not necessary as DUMP_RUN_CFG uses latest config.
-        self.parser.update_runtime_variables()
-
-    def _add_parser_mod(self, mod_name):
-        """Shortcut for updating parser modules."""
-        self.parser.modules.add(mod_name + "_module")
-        self.parser.modules.add("mod_" + mod_name + ".c")
-
-    def _enable_mod_debian(self, mod_name, temp):
-        """Assumes mods-available, mods-enabled layout."""
-        # Generate reversal command.
-        # Try to be safe here... check that we can probably reverse before
-        # applying enmod command
-        if not util.exe_exists(self.conf("dismod")):
-            raise errors.MisconfigurationError(
-                "Unable to find a2dismod, please make sure a2enmod and "
-                "a2dismod are configured correctly for certbot.")
-
-        self.reverter.register_undo_command(
-            temp, [self.conf("dismod"), mod_name])
-        util.run_script([self.conf("enmod"), mod_name])
+        mod_message = ("Apache needs to have module  \"{0}\" active for the " +
+            "requested installation options. Unfortunately Certbot is unable " +
+            "to install or enable it for you. Please install the module, and " +
+            "run Certbot again.")
+        raise errors.MisconfigurationError(mod_message.format(mod_name))
 
     def restart(self):
         """Runs a config test and reloads the Apache server.
@@ -1805,9 +2209,25 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         try:
-            util.run_script(constants.os_constant("restart_cmd"))
+            util.run_script(self.option("restart_cmd"))
         except errors.SubprocessError as err:
-            raise errors.MisconfigurationError(str(err))
+            logger.info("Unable to restart apache using %s",
+                        self.option("restart_cmd"))
+            alt_restart = self.option("restart_cmd_alt")
+            if alt_restart:
+                logger.debug("Trying alternative restart command: %s",
+                             alt_restart)
+                # There is an alternative restart command available
+                # This usually is "restart" verb while original is "graceful"
+                try:
+                    util.run_script(self.option(
+                        "restart_cmd_alt"))
+                    return
+                except errors.SubprocessError as secerr:
+                    error = str(secerr)
+            else:
+                error = str(err)
+            raise errors.MisconfigurationError(error)
 
     def config_test(self):  # pylint: disable=no-self-use
         """Check the configuration of Apache for errors.
@@ -1816,7 +2236,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         try:
-            util.run_script(constants.os_constant("conftest_cmd"))
+            util.run_script(self.option("conftest_cmd"))
         except errors.SubprocessError as err:
             raise errors.MisconfigurationError(str(err))
 
@@ -1832,11 +2252,11 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
 
         """
         try:
-            stdout, _ = util.run_script(constants.os_constant("version_cmd"))
+            stdout, _ = util.run_script(self.option("version_cmd"))
         except errors.SubprocessError:
             raise errors.PluginError(
                 "Unable to run %s -v" %
-                constants.os_constant("version_cmd"))
+                self.option("version_cmd"))
 
         regex = re.compile(r"Apache/([0-9\.]*)", re.IGNORECASE)
         matches = regex.findall(stdout)
@@ -1861,7 +2281,7 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
     ###########################################################################
     def get_chall_pref(self, unused_domain):  # pylint: disable=no-self-use
         """Return list of challenge preferences."""
-        return [challenges.TLSSNI01]
+        return [challenges.HTTP01]
 
     def perform(self, achalls):
         """Perform the configuration related challenge.
@@ -1873,16 +2293,16 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         """
         self._chall_out.update(achalls)
         responses = [None] * len(achalls)
-        chall_doer = tls_sni_01.ApacheTlsSni01(self)
+        http_doer = http_01.ApacheHttp01(self)
 
         for i, achall in enumerate(achalls):
             # Currently also have chall_doer hold associated index of the
             # challenge. This helps to put all of the responses back together
             # when they are all complete.
-            chall_doer.add_chall(achall, i)
+            http_doer.add_chall(achall, i)
 
-        sni_response = chall_doer.perform()
-        if sni_response:
+        http_response = http_doer.perform()
+        if http_response:
             # Must reload in order to activate the challenges.
             # Handled here because we may be able to load up other challenge
             # types
@@ -1892,13 +2312,16 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
             # of identifying when the new configuration is being used.
             time.sleep(3)
 
-            # Go through all of the challenges and assign them to the proper
-            # place in the responses return value. All responses must be in the
-            # same order as the original challenges.
-            for i, resp in enumerate(sni_response):
-                responses[chall_doer.indices[i]] = resp
+            self._update_responses(responses, http_response, http_doer)
 
         return responses
+
+    def _update_responses(self, responses, chall_response, chall_doer):
+        # Go through all of the challenges and assign them to the proper
+        # place in the responses return value. All responses must be in the
+        # same order as the original challenges.
+        for i, resp in enumerate(chall_response):
+            responses[chall_doer.indices[i]] = resp
 
     def cleanup(self, achalls):
         """Revert all challenges."""
@@ -1908,86 +2331,190 @@ class ApacheConfigurator(augeas_configurator.AugeasConfigurator):
         if not self._chall_out:
             self.revert_challenge_config()
             self.restart()
-            self.parser.init_modules()
+            self.parser.reset_modules()
+
+    def install_ssl_options_conf(self, options_ssl, options_ssl_digest):
+        """Copy Certbot's SSL options file into the system's config dir if required."""
+
+        # XXX if we ever try to enforce a local privilege boundary (eg, running
+        # certbot for unprivileged users via setuid), this function will need
+        # to be modified.
+        return common.install_version_controlled_file(options_ssl, options_ssl_digest,
+            self.option("MOD_SSL_CONF_SRC"), constants.ALL_SSL_OPTIONS_HASHES)
+
+    def enable_autohsts(self, _unused_lineage, domains):
+        """
+        Enable the AutoHSTS enhancement for defined domains
+
+        :param _unused_lineage: Certificate lineage object, unused
+        :type _unused_lineage: certbot.storage.RenewableCert
+
+        :param domains: List of domains in certificate to enhance
+        :type domains: str
+        """
+
+        self._autohsts_fetch_state()
+        _enhanced_vhosts = []
+        for d in domains:
+            matched_vhosts = self.choose_vhosts(d, create_if_no_ssl=False)
+            # We should be handling only SSL vhosts for AutoHSTS
+            vhosts = [vhost for vhost in matched_vhosts if vhost.ssl]
+
+            if not vhosts:
+                msg_tmpl = ("Certbot was not able to find SSL VirtualHost for a "
+                            "domain {0} for enabling AutoHSTS enhancement.")
+                msg = msg_tmpl.format(d)
+                logger.warning(msg)
+                raise errors.PluginError(msg)
+            for vh in vhosts:
+                try:
+                    self._enable_autohsts_domain(vh)
+                    _enhanced_vhosts.append(vh)
+                except errors.PluginEnhancementAlreadyPresent:
+                    if vh in _enhanced_vhosts:
+                        continue
+                    msg = ("VirtualHost for domain {0} in file {1} has a " +
+                           "String-Transport-Security header present, exiting.")
+                    raise errors.PluginEnhancementAlreadyPresent(
+                        msg.format(d, vh.filep))
+        if _enhanced_vhosts:
+            note_msg = "Enabling AutoHSTS"
+            self.save(note_msg)
+            logger.info(note_msg)
+            self.restart()
+
+        # Save the current state to pluginstorage
+        self._autohsts_save_state()
+
+    def _enable_autohsts_domain(self, ssl_vhost):
+        """Do the initial AutoHSTS deployment to a vhost
+
+        :param ssl_vhost: The VirtualHost object to deploy the AutoHSTS
+        :type ssl_vhost: :class:`~certbot_apache.obj.VirtualHost` or None
+
+        :raises errors.PluginEnhancementAlreadyPresent: When already enhanced
+
+        """
+        # This raises the exception
+        self._verify_no_matching_http_header(ssl_vhost,
+                                             "Strict-Transport-Security")
+
+        if "headers_module" not in self.parser.modules:
+            self.enable_mod("headers")
+        # Prepare the HSTS header value
+        hsts_header = constants.HEADER_ARGS["Strict-Transport-Security"][:-1]
+        initial_maxage = constants.AUTOHSTS_STEPS[0]
+        hsts_header.append("\"max-age={0}\"".format(initial_maxage))
+
+        # Add ID to the VirtualHost for mapping back to it later
+        uniq_id = self.add_vhost_id(ssl_vhost)
+        self.save_notes += "Adding unique ID {0} to VirtualHost in {1}\n".format(
+            uniq_id, ssl_vhost.filep)
+        # Add the actual HSTS header
+        self.parser.add_dir(ssl_vhost.path, "Header", hsts_header)
+        note_msg = ("Adding gradually increasing HSTS header with initial value "
+                    "of {0} to VirtualHost in {1}\n".format(
+                        initial_maxage, ssl_vhost.filep))
+        self.save_notes += note_msg
+
+        # Save the current state to pluginstorage
+        self._autohsts[uniq_id] = {"laststep": 0, "timestamp": time.time()}
+
+    def update_autohsts(self, _unused_domain):
+        """
+        Increase the AutoHSTS values of VirtualHosts that the user has enabled
+        this enhancement for.
+
+        :param _unused_domain: Not currently used
+        :type _unused_domain: Not Available
+
+        """
+        self._autohsts_fetch_state()
+        if not self._autohsts:
+            # No AutoHSTS enabled for any domain
+            return
+        curtime = time.time()
+        save_and_restart = False
+        for id_str, config in list(self._autohsts.items()):
+            if config["timestamp"] + constants.AUTOHSTS_FREQ > curtime:
+                # Skip if last increase was < AUTOHSTS_FREQ ago
+                continue
+            nextstep = config["laststep"] + 1
+            if nextstep < len(constants.AUTOHSTS_STEPS):
+                # If installer hasn't been prepared yet, do it now
+                if not self._prepared:
+                    self.prepare()
+                # Have not reached the max value yet
+                try:
+                    vhost = self.find_vhost_by_id(id_str)
+                except errors.PluginError:
+                    msg = ("Could not find VirtualHost with ID {0}, disabling "
+                           "AutoHSTS for this VirtualHost").format(id_str)
+                    logger.warning(msg)
+                    # Remove the orphaned AutoHSTS entry from pluginstorage
+                    self._autohsts.pop(id_str)
+                    continue
+                self._autohsts_increase(vhost, id_str, nextstep)
+                msg = ("Increasing HSTS max-age value for VirtualHost with id "
+                       "{0}").format(id_str)
+                self.save_notes += msg
+                save_and_restart = True
+
+        if save_and_restart:
+            self.save("Increased HSTS max-age values")
+            self.restart()
+
+        self._autohsts_save_state()
+
+    def deploy_autohsts(self, lineage):
+        """
+        Checks if autohsts vhost has reached maximum auto-increased value
+        and changes the HSTS max-age to a high value.
+
+        :param lineage: Certificate lineage object
+        :type lineage: certbot.storage.RenewableCert
+        """
+        self._autohsts_fetch_state()
+        if not self._autohsts:
+            # No autohsts enabled for any vhost
+            return
+
+        vhosts = []
+        affected_ids = []
+        # Copy, as we are removing from the dict inside the loop
+        for id_str, config in list(self._autohsts.items()):
+            if config["laststep"]+1 >= len(constants.AUTOHSTS_STEPS):
+                # max value reached, try to make permanent
+                try:
+                    vhost = self.find_vhost_by_id(id_str)
+                except errors.PluginError:
+                    msg = ("VirtualHost with id {} was not found, unable to "
+                           "make HSTS max-age permanent.").format(id_str)
+                    logger.warning(msg)
+                    self._autohsts.pop(id_str)
+                    continue
+                if self._autohsts_vhost_in_lineage(vhost, lineage):
+                    vhosts.append(vhost)
+                    affected_ids.append(id_str)
+
+        save_and_restart = False
+        for vhost in vhosts:
+            self._autohsts_write(vhost, constants.AUTOHSTS_PERMANENT)
+            msg = ("Strict-Transport-Security max-age value for "
+                   "VirtualHost in {0} was made permanent.").format(vhost.filep)
+            logger.debug(msg)
+            self.save_notes += msg+"\n"
+            save_and_restart = True
+
+        if save_and_restart:
+            self.save("Made HSTS max-age permanent")
+            self.restart()
+
+        for id_str in affected_ids:
+            self._autohsts.pop(id_str)
+
+        # Update AutoHSTS storage (We potentially removed vhosts from managed)
+        self._autohsts_save_state()
 
 
-def _get_mod_deps(mod_name):
-    """Get known module dependencies.
-
-    .. note:: This does not need to be accurate in order for the client to
-        run.  This simply keeps things clean if the user decides to revert
-        changes.
-    .. warning:: If all deps are not included, it may cause incorrect parsing
-        behavior, due to enable_mod's shortcut for updating the parser's
-        currently defined modules (`.ApacheConfigurator._add_parser_mod`)
-        This would only present a major problem in extremely atypical
-        configs that use ifmod for the missing deps.
-
-    """
-    deps = {
-        "ssl": ["setenvif", "mime"]
-    }
-    return deps.get(mod_name, [])
-
-
-def get_file_path(vhost_path):
-    """Get file path from augeas_vhost_path.
-
-    Takes in Augeas path and returns the file name
-
-    :param str vhost_path: Augeas virtual host path
-
-    :returns: filename of vhost
-    :rtype: str
-
-    """
-    if not vhost_path or not vhost_path.startswith("/files/"):
-        return None
-
-    return _split_aug_path(vhost_path)[0]
-
-
-def get_internal_aug_path(vhost_path):
-    """Get the Augeas path for a vhost with the file path removed.
-
-    :param str vhost_path: Augeas virtual host path
-
-    :returns: Augeas path to vhost relative to the containing file
-    :rtype: str
-
-    """
-    return _split_aug_path(vhost_path)[1]
-
-
-def _split_aug_path(vhost_path):
-    """Splits an Augeas path into a file path and an internal path.
-
-    After removing "/files", this function splits vhost_path into the
-    file path and the remaining Augeas path.
-
-    :param str vhost_path: Augeas virtual host path
-
-    :returns: file path and internal Augeas path
-    :rtype: `tuple` of `str`
-
-    """
-    # Strip off /files
-    file_path = vhost_path[6:]
-    internal_path = []
-
-    # Remove components from the end of file_path until it becomes valid
-    while not os.path.exists(file_path):
-        file_path, _, internal_path_part = file_path.rpartition("/")
-        internal_path.append(internal_path_part)
-
-    return file_path, "/".join(reversed(internal_path))
-
-
-def install_ssl_options_conf(options_ssl, options_ssl_digest):
-    """Copy Certbot's SSL options file into the system's config dir if required."""
-
-    # XXX if we ever try to enforce a local privilege boundary (eg, running
-    # certbot for unprivileged users via setuid), this function will need
-    # to be modified.
-    return common.install_ssl_options_conf(options_ssl, options_ssl_digest,
-        constants.os_constant("MOD_SSL_CONF_SRC"), constants.ALL_SSL_OPTIONS_HASHES)
+AutoHSTSEnhancement.register(ApacheConfigurator)  # pylint: disable=no-member

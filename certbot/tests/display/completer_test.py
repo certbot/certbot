@@ -1,6 +1,8 @@
 """Test certbot.display.completer."""
-import os
-import readline
+try:
+    import readline  # pylint: disable=import-error
+except ImportError:
+    import certbot.display.dummy_readline as readline  # type: ignore
 import string
 import sys
 import unittest
@@ -8,9 +10,14 @@ import unittest
 import mock
 from six.moves import reload_module  # pylint: disable=import-error
 
-from certbot.tests.util import TempDirTestCase
+from acme.magic_typing import List  # pylint: disable=unused-import,no-name-in-module
 
-class CompleterTest(TempDirTestCase):
+from certbot.compat import os  # pylint: disable=ungrouped-imports
+from certbot.compat import filesystem  # pylint: disable=ungrouped-imports
+import certbot.tests.util as test_util  # pylint: disable=ungrouped-imports
+
+
+class CompleterTest(test_util.TempDirTestCase):
     """Test certbot.display.completer.Completer."""
 
     def setUp(self):
@@ -21,13 +28,13 @@ class CompleterTest(TempDirTestCase):
         if self.tempdir[-1] != os.sep:
             self.tempdir += os.sep
 
-        self.paths = []
+        self.paths = []  # type: List[str]
         # create some files and directories in temp_dir
         for c in string.ascii_lowercase:
             path = os.path.join(self.tempdir, c)
             self.paths.append(path)
             if ord(c) % 2:
-                os.mkdir(path)
+                filesystem.mkdir(path)
             else:
                 with open(path, 'w'):
                     pass
@@ -46,6 +53,8 @@ class CompleterTest(TempDirTestCase):
         completion = my_completer.complete(self.tempdir, num_paths)
         self.assertEqual(completion, None)
 
+    @unittest.skipIf('readline' not in sys.modules,
+                     reason='Not relevant if readline is not available.')
     def test_import_error(self):
         original_readline = sys.modules['readline']
         sys.modules['readline'] = None
@@ -90,9 +99,10 @@ class CompleterTest(TempDirTestCase):
 
 def enable_tab_completion(unused_command):
     """Enables readline tab completion using the system specific syntax."""
-    libedit = 'libedit' in readline.__doc__
+    libedit = readline.__doc__ is not None and 'libedit' in readline.__doc__
     command = 'bind ^I rl_complete' if libedit else 'tab: complete'
     readline.parse_and_bind(command)
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover

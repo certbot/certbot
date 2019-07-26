@@ -9,6 +9,10 @@ Get Certbot
 About Certbot
 =============
 
+*Certbot is meant to be run directly on a web server*, normally by a system administrator. In most cases, running Certbot on your personal computer is not a useful option. The instructions below relate to installing and running Certbot on a server.
+
+System administrators can use Certbot directly to request certificates; they should *not* allow unprivileged users to run arbitrary Certbot commands as ``root``, because Certbot allows its user to specify arbitrary file locations and run arbitrary scripts.
+
 Certbot is packaged for many common operating systems and web servers. Check whether
 ``certbot`` (or ``letsencrypt``) is packaged for your web server's OS by visiting
 certbot.eff.org_, where you will also find the correct installation instructions for
@@ -19,28 +23,37 @@ your system.
 .. _certbot.eff.org: https://certbot.eff.org
 
 
+.. _system_requirements:
+
 System Requirements
 ===================
 
-Certbot currently requires Python 2.6, 2.7, or 3.3+. By default, it requires
-root access in order to write to ``/etc/letsencrypt``,
-``/var/log/letsencrypt``, ``/var/lib/letsencrypt``; to bind to ports 80 and 443
-(if you use the ``standalone`` plugin) and to read and modify webserver
-configurations (if you use the ``apache`` or ``nginx`` plugins).  If none of
-these apply to you, it is theoretically possible to run without root privileges,
-but for most users who want to avoid running an ACME client as root, either
-`letsencrypt-nosudo <https://github.com/diafygi/letsencrypt-nosudo>`_ or
-`simp_le <https://github.com/zenhack/simp_le>`_ are more appropriate choices.
+Certbot currently requires Python 2.7 or 3.4+ running on a UNIX-like operating
+system. By default, it requires root access in order to write to
+``/etc/letsencrypt``, ``/var/log/letsencrypt``, ``/var/lib/letsencrypt``; to
+bind to port 80 (if you use the ``standalone`` plugin) and to read and
+modify webserver configurations (if you use the ``apache`` or ``nginx``
+plugins).  If none of these apply to you, it is theoretically possible to run
+without root privileges, but for most users who want to avoid running an ACME
+client as root, either `letsencrypt-nosudo
+<https://github.com/diafygi/letsencrypt-nosudo>`_ or `simp_le
+<https://github.com/zenhack/simp_le>`_ are more appropriate choices.
 
 The Apache plugin currently requires an OS with augeas version 1.0; currently `it
 supports
 <https://github.com/certbot/certbot/blob/master/certbot-apache/certbot_apache/constants.py>`_
 modern OSes based on Debian, Fedora, SUSE, Gentoo and Darwin.
 
+
+Additional integrity verification of certbot-auto script can be done by verifying its digital signature.
+This requires a local installation of gpg2, which comes packaged in many Linux distributions under name gnupg or gnupg2.
+
+
 Installing with ``certbot-auto`` requires 512MB of RAM in order to build some
 of the dependencies. Installing from pre-built OS packages avoids this
 requirement. You can also temporarily set a swap file. See "Problems with
 Python virtual environment" below for details.
+
 
 Alternate installation methods
 ================================
@@ -58,15 +71,35 @@ from your web server OS and putting others in a python virtual environment. You 
 download and run it as follows::
 
   user@webserver:~$ wget https://dl.eff.org/certbot-auto
-  user@webserver:~$ chmod a+x ./certbot-auto
-  user@webserver:~$ ./certbot-auto --help
+  user@webserver:~$ sudo mv certbot-auto /usr/local/bin/certbot-auto
+  user@webserver:~$ sudo chown root /usr/local/bin/certbot-auto
+  user@webserver:~$ chmod 0755 /usr/local/bin/certbot-auto
+  user@webserver:~$ /usr/local/bin/certbot-auto --help
 
-.. hint:: The certbot-auto download is protected by HTTPS, which is pretty good, but if you'd like to
-          double check the integrity of the ``certbot-auto`` script, you can use these steps for verification before running it::
+To check the integrity of the ``certbot-auto`` script,
+you can use these steps::
 
-            user@server:~$ wget -N https://dl.eff.org/certbot-auto.asc
-            user@server:~$ gpg2 --recv-key A2CFB51FA275A7286234E7B24D17C995CD9775F2
-            user@server:~$ gpg2 --trusted-key 4D17C995CD9775F2 --verify certbot-auto.asc certbot-auto
+
+	    user@webserver:~$ wget -N https://dl.eff.org/certbot-auto.asc
+	    user@webserver:~$ gpg2 --keyserver pool.sks-keyservers.net --recv-key A2CFB51FA275A7286234E7B24D17C995CD9775F2
+	    user@webserver:~$ gpg2 --trusted-key 4D17C995CD9775F2 --verify certbot-auto.asc /usr/local/bin/certbot-auto
+
+
+
+The output of the last command should look something like::
+
+
+	    gpg: Signature made Wed 02 May 2018 05:29:12 AM IST
+	    gpg:                using RSA key A2CFB51FA275A7286234E7B24D17C995CD9775F2
+	    gpg: key 4D17C995CD9775F2 marked as ultimately trusted
+	    gpg: checking the trustdb
+	    gpg: marginals needed: 3  completes needed: 1  trust model: pgp
+	    gpg: depth: 0  valid:   2  signed:   2  trust: 0-, 0q, 0n, 0m, 0f, 2u
+	    gpg: depth: 1  valid:   2  signed:   0  trust: 2-, 0q, 0n, 0m, 0f, 0u
+	    gpg: next trustdb check due at 2027-11-22
+	    gpg: Good signature from "Let's Encrypt Client Team <letsencrypt-client@eff.org>" [ultimate]
+
+
 
 The ``certbot-auto`` command updates to the latest client release automatically.
 Since ``certbot-auto`` is a wrapper to ``certbot``, it accepts exactly
@@ -75,7 +108,7 @@ the same command line flags and arguments. For more information, see
 
 For full command line help, you can type::
 
-  ./certbot-auto --help all
+  /usr/local/bin/certbot-auto --help all
 
 Problems with Python virtual environment
 ----------------------------------------
@@ -93,6 +126,8 @@ Disable and remove the swapfile once the virtual environment is constructed::
 
   user@webserver:~$ sudo swapoff /tmp/swapfile
   user@webserver:~$ sudo rm /tmp/swapfile
+
+.. _docker-user:
 
 Running with Docker
 -------------------
@@ -115,13 +150,17 @@ these make much sense to you, you should definitely use the
 certbot-auto_ method, which enables you to use installer plugins
 that cover both of those hard topics.
 
-If you're still not convinced and have decided to use this method,
-from the server that the domain you're requesting a cert for resolves
-to, `install Docker`_, then issue the following command:
+If you're still not convinced and have decided to use this method, from
+the server that the domain you're requesting a certficate for resolves
+to, `install Docker`_, then issue a command like the one found below. If
+you are using Certbot with the :ref:`Standalone` plugin, you will need
+to make the port it uses accessible from outside of the container by
+including something like ``-p 80:80`` or ``-p 443:443`` on the command
+line before ``certbot/certbot``.
 
 .. code-block:: shell
 
-   sudo docker run -it --rm -p 443:443 -p 80:80 --name certbot \
+   sudo docker run -it --rm --name certbot \
                -v "/etc/letsencrypt:/etc/letsencrypt" \
                -v "/var/lib/letsencrypt:/var/lib/letsencrypt" \
                certbot/certbot certonly
@@ -130,6 +169,19 @@ Running Certbot with the ``certonly`` command will obtain a certificate and plac
 ``/etc/letsencrypt/live`` on your system. Because Certonly cannot install the certificate from
 within Docker, you must install the certificate manually according to the procedure
 recommended by the provider of your webserver.
+
+There are also Docker images for each of Certbot's DNS plugins available
+at https://hub.docker.com/u/certbot which automate doing domain
+validation over DNS for popular providers. To use one, just replace
+``certbot/certbot`` in the command above with the name of the image you
+want to use. For example, to use Certbot's plugin for Amazon Route 53,
+you'd use ``certbot/dns-route53``. You may also need to add flags to
+Certbot and/or mount additional directories to provide access to your
+DNS API credentials as specified in the :ref:`DNS plugin documentation
+<dns_plugins>`. If you would like to obtain a wildcard certificate from
+Let's Encrypt's ACMEv2 server, you'll need to include ``--server
+https://acme-v02.api.letsencrypt.org/directory`` on the command line as
+well.
 
 For more information about the layout
 of the ``/etc/letsencrypt`` directory, see :ref:`where-certs`.
@@ -156,7 +208,7 @@ If you run Debian Stretch or Debian Sid, you can install certbot packages.
    sudo apt-get install certbot python-certbot-apache
 
 If you don't want to use the Apache plugin, you can omit the
-``python-certbot-apache`` package.
+``python-certbot-apache`` package. Or you can install ``python-certbot-nginx`` instead.
 
 Packages exist for Debian Jessie via backports. First you'll have to follow the
 instructions at http://backports.debian.org/Instructions/ to enable the Jessie backports
@@ -187,10 +239,11 @@ want to use the Apache plugin, it has to be installed separately:
    emerge -av app-crypt/certbot
    emerge -av app-crypt/certbot-apache
 
-When using the Apache plugin, you will run into a "cannot find a cert or key
-directive" error if you're sporting the default Gentoo ``httpd.conf``.
-You can fix this by commenting out two lines in ``/etc/apache2/httpd.conf``
-as follows:
+When using the Apache plugin, you will run into a "cannot find an
+SSLCertificateFile directive" or "cannot find an SSLCertificateKeyFile
+directive for certificate" error if you're sporting the default Gentoo
+``httpd.conf``. You can fix this by commenting out two lines in
+``/etc/apache2/httpd.conf`` as follows:
 
 Change
 
@@ -240,4 +293,3 @@ whole process is described in the :doc:`contributing`.
    e.g. ``sudo python setup.py install``, ``sudo pip install``, ``sudo
    ./venv/bin/...``. These modes of operation might corrupt your operating
    system and are **not supported** by the Certbot team!
-

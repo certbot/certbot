@@ -1,12 +1,14 @@
 """Tests for certbot.configuration."""
-import os
 import unittest
 
 import mock
 
+from certbot import constants
 from certbot import errors
-
+from certbot.compat import misc
+from certbot.compat import os
 from certbot.tests import util as test_util
+
 
 class NamespaceConfigTest(test_util.ConfigTestCase):
     """Tests for certbot.configuration.NamespaceConfig."""
@@ -15,11 +17,11 @@ class NamespaceConfigTest(test_util.ConfigTestCase):
         super(NamespaceConfigTest, self).setUp()
         self.config.foo = 'bar'
         self.config.server = 'https://acme-server.org:443/new'
-        self.config.tls_sni_01_port = 1234
+        self.config.https_port = 1234
         self.config.http01_port = 4321
 
     def test_init_same_ports(self):
-        self.config.namespace.tls_sni_01_port = 4321
+        self.config.namespace.https_port = 4321
         from certbot.configuration import NamespaceConfig
         self.assertRaises(errors.Error, NamespaceConfig, self.config.namespace)
 
@@ -37,28 +39,35 @@ class NamespaceConfigTest(test_util.ConfigTestCase):
                          self.config.server_path.split(os.path.sep))
 
     @mock.patch('certbot.configuration.constants')
-    def test_dynamic_dirs(self, constants):
-        constants.ACCOUNTS_DIR = 'acc'
-        constants.BACKUP_DIR = 'backups'
-        constants.CSR_DIR = 'csr'
+    def test_dynamic_dirs(self, mock_constants):
+        mock_constants.ACCOUNTS_DIR = 'acc'
+        mock_constants.BACKUP_DIR = 'backups'
+        mock_constants.CSR_DIR = 'csr'
 
-        constants.IN_PROGRESS_DIR = '../p'
-        constants.KEY_DIR = 'keys'
-        constants.TEMP_CHECKPOINT_DIR = 't'
+        mock_constants.IN_PROGRESS_DIR = '../p'
+        mock_constants.KEY_DIR = 'keys'
+        mock_constants.TEMP_CHECKPOINT_DIR = 't'
 
+        ref_path = misc.underscores_for_unsupported_characters_in_path(
+            'acc/acme-server.org:443/new')
         self.assertEqual(
-            self.config.accounts_dir, os.path.join(
-                self.config.config_dir, 'acc/acme-server.org:443/new'))
+            os.path.normpath(self.config.accounts_dir),
+            os.path.normpath(os.path.join(self.config.config_dir, ref_path)))
         self.assertEqual(
-                self.config.backup_dir, os.path.join(self.config.work_dir, 'backups'))
+            os.path.normpath(self.config.backup_dir),
+            os.path.normpath(os.path.join(self.config.work_dir, 'backups')))
         self.assertEqual(
-                self.config.csr_dir, os.path.join(self.config.config_dir, 'csr'))
+            os.path.normpath(self.config.csr_dir),
+            os.path.normpath(os.path.join(self.config.config_dir, 'csr')))
         self.assertEqual(
-                self.config.in_progress_dir, os.path.join(self.config.work_dir, '../p'))
+            os.path.normpath(self.config.in_progress_dir),
+            os.path.normpath(os.path.join(self.config.work_dir, '../p')))
         self.assertEqual(
-                self.config.key_dir, os.path.join(self.config.config_dir, 'keys'))
+            os.path.normpath(self.config.key_dir),
+            os.path.normpath(os.path.join(self.config.config_dir, 'keys')))
         self.assertEqual(
-                self.config.temp_checkpoint_dir, os.path.join(self.config.work_dir, 't'))
+            os.path.normpath(self.config.temp_checkpoint_dir),
+            os.path.normpath(os.path.join(self.config.work_dir, 't')))
 
     def test_absolute_paths(self):
         from certbot.configuration import NamespaceConfig
@@ -70,7 +79,7 @@ class NamespaceConfigTest(test_util.ConfigTestCase):
 
         mock_namespace = mock.MagicMock(spec=['config_dir', 'work_dir',
                                               'logs_dir', 'http01_port',
-                                              'tls_sni_01_port',
+                                              'https_port',
                                               'domains', 'server'])
         mock_namespace.config_dir = config_base
         mock_namespace.work_dir = work_base
@@ -95,10 +104,10 @@ class NamespaceConfigTest(test_util.ConfigTestCase):
         self.assertTrue(os.path.isabs(config.temp_checkpoint_dir))
 
     @mock.patch('certbot.configuration.constants')
-    def test_renewal_dynamic_dirs(self, constants):
-        constants.ARCHIVE_DIR = 'a'
-        constants.LIVE_DIR = 'l'
-        constants.RENEWAL_CONFIGS_DIR = 'renewal_configs'
+    def test_renewal_dynamic_dirs(self, mock_constants):
+        mock_constants.ARCHIVE_DIR = 'a'
+        mock_constants.LIVE_DIR = 'l'
+        mock_constants.RENEWAL_CONFIGS_DIR = 'renewal_configs'
 
         self.assertEqual(
                 self.config.default_archive_dir, os.path.join(self.config.config_dir, 'a'))
@@ -117,7 +126,7 @@ class NamespaceConfigTest(test_util.ConfigTestCase):
 
         mock_namespace = mock.MagicMock(spec=['config_dir', 'work_dir',
                                               'logs_dir', 'http01_port',
-                                              'tls_sni_01_port',
+                                              'https_port',
                                               'domains', 'server'])
         mock_namespace.config_dir = config_base
         mock_namespace.work_dir = work_base
@@ -133,6 +142,20 @@ class NamespaceConfigTest(test_util.ConfigTestCase):
         self.assertEqual(self.config.namespace.foo, 42)
         self.config.namespace.bar = 1337
         self.assertEqual(self.config.bar, 1337)
+
+    def test_hook_directories(self):
+        self.assertEqual(self.config.renewal_hooks_dir,
+                         os.path.join(self.config.config_dir,
+                                      constants.RENEWAL_HOOKS_DIR))
+        self.assertEqual(self.config.renewal_pre_hooks_dir,
+                         os.path.join(self.config.renewal_hooks_dir,
+                                      constants.RENEWAL_PRE_HOOKS_DIR))
+        self.assertEqual(self.config.renewal_deploy_hooks_dir,
+                         os.path.join(self.config.renewal_hooks_dir,
+                                      constants.RENEWAL_DEPLOY_HOOKS_DIR))
+        self.assertEqual(self.config.renewal_post_hooks_dir,
+                         os.path.join(self.config.renewal_hooks_dir,
+                                      constants.RENEWAL_POST_HOOKS_DIR))
 
 
 if __name__ == '__main__':

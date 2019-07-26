@@ -1,18 +1,15 @@
 """Test :mod:`certbot.display.util`."""
 import inspect
-import os
 import socket
 import tempfile
 import unittest
 
-import six
 import mock
+import six
 
 from certbot import errors
 from certbot import interfaces
-
 from certbot.display import util as display_util
-
 
 CHOICES = [("First", "Description1"), ("Second", "Description2")]
 TAGS = ["tag1", "tag2", "tag3"]
@@ -34,7 +31,7 @@ class InputWithTimeoutTest(unittest.TestCase):
     def test_input(self, prompt=None):
         expected = "foo bar"
         stdin = six.StringIO(expected + "\n")
-        with mock.patch("certbot.display.util.select.select") as mock_select:
+        with mock.patch("certbot.compat.misc.select.select") as mock_select:
             mock_select.return_value = ([stdin], [], [],)
             self.assertEqual(self._call(prompt), expected)
 
@@ -51,6 +48,7 @@ class InputWithTimeoutTest(unittest.TestCase):
         stdin.listen(1)
         with mock.patch("certbot.display.util.sys.stdin", stdin):
             self.assertRaises(errors.Error, self._call, timeout=0.001)
+        stdin.close()
 
 
 class FileOutputDisplayTest(unittest.TestCase):
@@ -226,7 +224,6 @@ class FileOutputDisplayTest(unittest.TestCase):
 
     @mock.patch("certbot.display.util.input_with_timeout")
     def test_directory_select(self, mock_input):
-        # pylint: disable=star-args
         args = ["msg", "/var/www/html", "--flag", True]
         user_input = "/var/www/html"
         mock_input.return_value = user_input
@@ -281,10 +278,10 @@ class FileOutputDisplayTest(unittest.TestCase):
         msg = ("This is just a weak test{0}"
                "This function is only meant to be for easy viewing{0}"
                "Test a really really really really really really really really "
-               "really really really really long line...".format(os.linesep))
+               "really really really really long line...".format('\n'))
         text = display_util._wrap_lines(msg)
 
-        self.assertEqual(text.count(os.linesep), 3)
+        self.assertEqual(text.count('\n'), 3)
 
     def test_get_valid_int_ans_valid(self):
         # pylint: disable=protected-access
@@ -315,17 +312,17 @@ class FileOutputDisplayTest(unittest.TestCase):
     def test_methods_take_force_interactive(self):
         # Every IDisplay method implemented by FileDisplay must take
         # force_interactive to prevent workflow regressions.
-        for name in interfaces.IDisplay.names():  # pylint: disable=no-member
-            arg_spec = inspect.getargspec(getattr(self.displayer, name))
+        for name in interfaces.IDisplay.names():  # pylint: disable=no-member,no-value-for-parameter
+            if six.PY2:
+                getargspec = inspect.getargspec # pylint: disable=no-member
+            else:
+                getargspec = inspect.getfullargspec # pylint: disable=no-member
+            arg_spec = getargspec(getattr(self.displayer, name))
             self.assertTrue("force_interactive" in arg_spec.args)
 
 
 class NoninteractiveDisplayTest(unittest.TestCase):
-    """Test non-interactive display.
-
-    These tests are pretty easy!
-
-    """
+    """Test non-interactive display. These tests are pretty easy!"""
     def setUp(self):
         super(NoninteractiveDisplayTest, self).setUp()
         self.mock_stdout = mock.MagicMock()
@@ -374,10 +371,17 @@ class NoninteractiveDisplayTest(unittest.TestCase):
         # should take **kwargs because every method of FileDisplay must
         # take force_interactive which doesn't apply to
         # NoninteractiveDisplay.
-        for name in interfaces.IDisplay.names():  # pylint: disable=no-member
+
+        # Use pylint code for disable to keep on single line under line length limit
+        for name in interfaces.IDisplay.names():  # pylint: disable=no-member,E1120
             method = getattr(self.displayer, name)
             # asserts method accepts arbitrary keyword arguments
-            self.assertFalse(inspect.getargspec(method).keywords is None)
+            if six.PY2:
+                result = inspect.getargspec(method).keywords # pylint: disable=no-member
+                self.assertFalse(result is None)
+            else:
+                result = inspect.getfullargspec(method).varkw # pylint: disable=no-member
+                self.assertFalse(result is None)
 
 
 class SeparateListInputTest(unittest.TestCase):

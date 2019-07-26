@@ -6,7 +6,7 @@ Anyone who has gone through the trouble of setting up a secure website knows wha
 
 How you use Certbot depends on the configuration of your web server. The best way to get started is to use our `interactive guide <https://certbot.eff.org>`_. It generates instructions based on your configuration settings. In most cases, you’ll need `root or administrator access <https://certbot.eff.org/faq/#does-certbot-require-root-administrator-privileges>`_ to your web server to run Certbot.
 
-If you’re using a hosted service and don’t have direct access to your web server, you might not be able to use Certbot. Check with your hosting provider for documentation about uploading certificates or using certificates issued by Let’s Encrypt.
+Certbot is meant to be run directly on your web server, not on your personal computer. If you’re using a hosted service and don’t have direct access to your web server, you might not be able to use Certbot. Check with your hosting provider for documentation about uploading certificates or using certificates issued by Let’s Encrypt.
 
 Certbot is a fully-featured, extensible client for the Let's
 Encrypt CA (or any other CA that speaks the `ACME
@@ -14,6 +14,9 @@ Encrypt CA (or any other CA that speaks the `ACME
 protocol) that can automate the tasks of obtaining certificates and
 configuring webservers to use them. This client runs on Unix-based operating
 systems.
+
+To see the changes made to Certbot between versions please refer to our
+`changelog <https://github.com/certbot/certbot/blob/master/CHANGELOG.md>`_.
 
 Until May 2016, Certbot was named simply ``letsencrypt`` or ``letsencrypt-auto``,
 depending on install method. Instructions on the Internet, and some pieces of the
@@ -25,45 +28,19 @@ Contributing
 If you'd like to contribute to this project please read `Developer Guide
 <https://certbot.eff.org/docs/contributing.html>`_.
 
+This project is governed by `EFF's Public Projects Code of Conduct <https://www.eff.org/pages/eppcode>`_.
+
 .. _installation:
-
-Installation
-------------
-
-The easiest way to install Certbot is by visiting `certbot.eff.org`_, where you can
-find the correct installation instructions for many web server and OS combinations.
-For more information, see `Get Certbot <https://certbot.eff.org/docs/install.html>`_.
-
-.. _certbot.eff.org: https://certbot.eff.org/
 
 How to run the client
 ---------------------
 
-In many cases, you can just run ``certbot-auto`` or ``certbot``, and the
-client will guide you through the process of obtaining and installing certs
-interactively.
+The easiest way to install and run Certbot is by visiting `certbot.eff.org`_,
+where you can find the correct instructions for many web server and OS
+combinations.  For more information, see `Get Certbot
+<https://certbot.eff.org/docs/install.html>`_.
 
-For full command line help, you can type::
-
-  ./certbot-auto --help all
-
-
-You can also tell it exactly what you want it to do from the command line.
-For instance, if you want to obtain a cert for ``example.com``,
-``www.example.com``, and ``other.example.net``, using the Apache plugin to both
-obtain and install the certs, you could do this::
-
-  ./certbot-auto --apache -d example.com -d www.example.com -d other.example.net
-
-(The first time you run the command, it will make an account, and ask for an
-email and agreement to the Let's Encrypt Subscriber Agreement; you can
-automate those with ``--email`` and ``--agree-tos``)
-
-If you want to use a webserver that doesn't have full plugin support yet, you
-can still use "standalone" or "webroot" plugins to obtain a certificate::
-
-  ./certbot-auto certonly --standalone --email admin@example.com -d example.com -d www.example.com -d other.example.net
-
+.. _certbot.eff.org: https://certbot.eff.org/
 
 Understanding the client in more depth
 --------------------------------------
@@ -88,8 +65,6 @@ Main Website: https://certbot.eff.org
 
 Let's Encrypt Website: https://letsencrypt.org
 
-IRC Channel: #letsencrypt on `Freenode`_
-
 Community: https://community.letsencrypt.org
 
 ACME spec: http://ietf-wg-acme.github.io/acme/
@@ -98,14 +73,12 @@ ACME working area in github: https://github.com/ietf-wg-acme/acme
 
 |build-status| |coverage| |docs| |container|
 
-.. _Freenode: https://webchat.freenode.net?channels=%23letsencrypt
-
-.. |build-status| image:: https://travis-ci.org/certbot/certbot.svg?branch=master
-   :target: https://travis-ci.org/certbot/certbot
+.. |build-status| image:: https://travis-ci.com/certbot/certbot.svg?branch=master
+   :target: https://travis-ci.com/certbot/certbot
    :alt: Travis CI status
 
-.. |coverage| image:: https://coveralls.io/repos/certbot/certbot/badge.svg?branch=master
-   :target: https://coveralls.io/r/certbot/certbot
+.. |coverage| image:: https://codecov.io/gh/certbot/certbot/branch/master/graph/badge.svg
+   :target: https://codecov.io/gh/certbot/certbot
    :alt: Coverage status
 
 .. |docs| image:: https://readthedocs.org/projects/letsencrypt/badge/

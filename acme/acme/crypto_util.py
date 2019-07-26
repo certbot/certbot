@@ -2,28 +2,30 @@
 import binascii
 import contextlib
 import logging
+import os
 import re
 import socket
-import sys
 
-import OpenSSL
+from OpenSSL import crypto
+from OpenSSL import SSL # type: ignore # https://github.com/python/typeshed/issues/2052
+import josepy as jose
 
 from acme import errors
+# pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Callable, Union, Tuple, Optional
+# pylint: enable=unused-import, no-name-in-module
 
 
 logger = logging.getLogger(__name__)
 
-# TLSSNI01 certificate serving and probing is not affected by SSL
-# vulnerabilities: prober needs to check certificate for expected
-# contents anyway. Working SNI is the only thing that's necessary for
-# the challenge and thus scoping down SSL/TLS method (version) would
-# cause interoperability issues: TLSv1_METHOD is only compatible with
+# Default SSL method selected here is the most compatible, while secure
+# SSL method: TLSv1_METHOD is only compatible with
 # TLSv1_METHOD, while SSLv23_METHOD is compatible with all other
 # methods, including TLSv2_METHOD (read more at
 # https://www.openssl.org/docs/ssl/SSLv23_method.html). _serve_sni
 # should be changed to use "set_options" to disable SSLv2 and SSLv3,
 # in case it's used for things other than probing/serving!
-_DEFAULT_TLSSNI01_SSL_METHOD = OpenSSL.SSL.SSLv23_METHOD  # type: ignore
+_DEFAULT_SSL_METHOD = SSL.SSLv23_METHOD  # type: ignore
 
 
 class SSLSocket(object):  # pylint: disable=too-few-public-methods
@@ -35,7 +37,7 @@ class SSLSocket(object):  # pylint: disable=too-few-public-methods
     :ivar method: See `OpenSSL.SSL.Context` for allowed values.
 
     """
-    def __init__(self, sock, certs, method=_DEFAULT_TLSSNI01_SSL_METHOD):
+    def __init__(self, sock, certs, method=_DEFAULT_SSL_METHOD):
         self.sock = sock
         self.certs = certs
         self.method = method
@@ -62,9 +64,9 @@ class SSLSocket(object):  # pylint: disable=too-few-public-methods
             logger.debug("Server name (%s) not recognized, dropping SSL",
                          server_name)
             return
-        new_context = OpenSSL.SSL.Context(self.method)
-        new_context.set_options(OpenSSL.SSL.OP_NO_SSLv2)
-        new_context.set_options(OpenSSL.SSL.OP_NO_SSLv3)
+        new_context = SSL.Context(self.method)
+        new_context.set_options(SSL.OP_NO_SSLv2)
+        new_context.set_options(SSL.OP_NO_SSLv3)
         new_context.use_privatekey(key)
         new_context.use_certificate(cert)
         connection.set_context(new_context)
@@ -87,18 +89,18 @@ class SSLSocket(object):  # pylint: disable=too-few-public-methods
     def accept(self):  # pylint: disable=missing-docstring
         sock, addr = self.sock.accept()
 
-        context = OpenSSL.SSL.Context(self.method)
-        context.set_options(OpenSSL.SSL.OP_NO_SSLv2)
-        context.set_options(OpenSSL.SSL.OP_NO_SSLv3)
+        context = SSL.Context(self.method)
+        context.set_options(SSL.OP_NO_SSLv2)
+        context.set_options(SSL.OP_NO_SSLv3)
         context.set_tlsext_servername_callback(self._pick_certificate_cb)
 
-        ssl_sock = self.FakeConnection(OpenSSL.SSL.Connection(context, sock))
+        ssl_sock = self.FakeConnection(SSL.Connection(context, sock))
         ssl_sock.set_accept_state()
 
         logger.debug("Performing handshake with %s", addr)
         try:
             ssl_sock.do_handshake()
-        except OpenSSL.SSL.Error as error:
+        except SSL.Error as error:
             # _pick_certificate_cb might have returned without
             # creating SSL context (wrong server name)
             raise socket.error(error)
@@ -107,7 +109,7 @@ class SSLSocket(object):  # pylint: disable=too-few-public-methods
 
 
 def probe_sni(name, host, port=443, timeout=300,
-              method=_DEFAULT_TLSSNI01_SSL_METHOD, source_address=('', 0)):
+              method=_DEFAULT_SSL_METHOD, source_address=('', 0)):
     """Probe SNI server for SSL certificate.
 
     :param bytes name: Byte string to send as the server name in the
@@ -126,31 +128,32 @@ def probe_sni(name, host, port=443, timeout=300,
     :rtype: OpenSSL.crypto.X509
 
     """
-    context = OpenSSL.SSL.Context(method)
+    context = SSL.Context(method)
     context.set_timeout(timeout)
 
-    socket_kwargs = {} if sys.version_info < (2, 7) else {
-        'source_address': source_address}
-
-    host_protocol_agnostic = None if host == '::' or host == '0' else host
+    socket_kwargs = {'source_address': source_address}
 
     try:
-        # pylint: disable=star-args
-        logger.debug("Attempting to connect to %s:%d%s.", host_protocol_agnostic, port,
-            " from {0}:{1}".format(source_address[0], source_address[1]) if \
-            socket_kwargs else "")
-        sock = socket.create_connection((host_protocol_agnostic, port), **socket_kwargs)
+        logger.debug(
+            "Attempting to connect to %s:%d%s.", host, port,
+            " from {0}:{1}".format(
+                source_address[0],
+                source_address[1]
+            ) if socket_kwargs else ""
+        )
+        socket_tuple = (host, port)  # type: Tuple[str, int]
+        sock = socket.create_connection(socket_tuple, **socket_kwargs)  # type: ignore
     except socket.error as error:
         raise errors.Error(error)
 
     with contextlib.closing(sock) as client:
-        client_ssl = OpenSSL.SSL.Connection(context, client)
+        client_ssl = SSL.Connection(context, client)
         client_ssl.set_connect_state()
         client_ssl.set_tlsext_host_name(name)  # pyOpenSSL>=0.13
         try:
             client_ssl.do_handshake()
             client_ssl.shutdown()
-        except OpenSSL.SSL.Error as error:
+        except SSL.Error as error:
             raise errors.Error(error)
     return client_ssl.get_peer_certificate()
 
@@ -163,18 +166,18 @@ def make_csr(private_key_pem, domains, must_staple=False):
         OCSP Must Staple: https://tools.ietf.org/html/rfc7633).
     :returns: buffer PEM-encoded Certificate Signing Request.
     """
-    private_key = OpenSSL.crypto.load_privatekey(
-        OpenSSL.crypto.FILETYPE_PEM, private_key_pem)
-    csr = OpenSSL.crypto.X509Req()
+    private_key = crypto.load_privatekey(
+        crypto.FILETYPE_PEM, private_key_pem)
+    csr = crypto.X509Req()
     extensions = [
-        OpenSSL.crypto.X509Extension(
+        crypto.X509Extension(
             b'subjectAltName',
             critical=False,
             value=', '.join('DNS:' + d for d in domains).encode('ascii')
         ),
     ]
     if must_staple:
-        extensions.append(OpenSSL.crypto.X509Extension(
+        extensions.append(crypto.X509Extension(
             b"1.3.6.1.5.5.7.1.24",
             critical=False,
             value=b"DER:30:03:02:01:05"))
@@ -182,8 +185,16 @@ def make_csr(private_key_pem, domains, must_staple=False):
     csr.set_pubkey(private_key)
     csr.set_version(2)
     csr.sign(private_key, 'sha256')
-    return OpenSSL.crypto.dump_certificate_request(
-        OpenSSL.crypto.FILETYPE_PEM, csr)
+    return crypto.dump_certificate_request(
+        crypto.FILETYPE_PEM, csr)
+
+def _pyopenssl_cert_or_req_all_names(loaded_cert_or_req):
+    common_name = loaded_cert_or_req.get_subject().CN
+    sans = _pyopenssl_cert_or_req_san(loaded_cert_or_req)
+
+    if common_name is None:
+        return sans
+    return [common_name] + [d for d in sans if d != common_name]
 
 def _pyopenssl_cert_or_req_san(cert_or_req):
     """Get Subject Alternative Names from certificate or CSR using pyOpenSSL.
@@ -211,11 +222,12 @@ def _pyopenssl_cert_or_req_san(cert_or_req):
     parts_separator = ", "
     prefix = "DNS" + part_separator
 
-    if isinstance(cert_or_req, OpenSSL.crypto.X509):
-        func = OpenSSL.crypto.dump_certificate
+    if isinstance(cert_or_req, crypto.X509):
+        # pylint: disable=line-too-long
+        func = crypto.dump_certificate # type: Union[Callable[[int, crypto.X509Req], bytes], Callable[[int, crypto.X509], bytes]]
     else:
-        func = OpenSSL.crypto.dump_certificate_request
-    text = func(OpenSSL.crypto.FILETYPE_TEXT, cert_or_req).decode("utf-8")
+        func = crypto.dump_certificate_request
+    text = func(crypto.FILETYPE_TEXT, cert_or_req).decode("utf-8")
     # WARNING: this function does not support multiple SANs extensions.
     # Multiple X509v3 extensions of the same type is disallowed by RFC 5280.
     match = re.search(r"X509v3 Subject Alternative Name:(?: critical)?\s*(.*)", text)
@@ -242,12 +254,12 @@ def gen_ss_cert(key, domains, not_before=None,
 
     """
     assert domains, "Must provide one or more hostnames for the cert."
-    cert = OpenSSL.crypto.X509()
-    cert.set_serial_number(int(binascii.hexlify(OpenSSL.rand.bytes(16)), 16))
+    cert = crypto.X509()
+    cert.set_serial_number(int(binascii.hexlify(os.urandom(16)), 16))
     cert.set_version(2)
 
     extensions = [
-        OpenSSL.crypto.X509Extension(
+        crypto.X509Extension(
             b"basicConstraints", True, b"CA:TRUE, pathlen:0"),
     ]
 
@@ -256,7 +268,7 @@ def gen_ss_cert(key, domains, not_before=None,
     cert.set_issuer(cert.get_subject())
 
     if force_san or len(domains) > 1:
-        extensions.append(OpenSSL.crypto.X509Extension(
+        extensions.append(crypto.X509Extension(
             b"subjectAltName",
             critical=False,
             value=b", ".join(b"DNS:" + d.encode() for d in domains)
@@ -270,3 +282,26 @@ def gen_ss_cert(key, domains, not_before=None,
     cert.set_pubkey(key)
     cert.sign(key, "sha256")
     return cert
+
+def dump_pyopenssl_chain(chain, filetype=crypto.FILETYPE_PEM):
+    """Dump certificate chain into a bundle.
+
+    :param list chain: List of `OpenSSL.crypto.X509` (or wrapped in
+        :class:`josepy.util.ComparableX509`).
+
+    :returns: certificate chain bundle
+    :rtype: bytes
+
+    """
+    # XXX: returns empty string when no chain is available, which
+    # shuts up RenewableCert, but might not be the best solution...
+
+    def _dump_cert(cert):
+        if isinstance(cert, jose.ComparableX509):
+            # pylint: disable=protected-access
+            cert = cert.wrapped
+        return crypto.dump_certificate(filetype, cert)
+
+    # assumes that OpenSSL.crypto.dump_certificate includes ending
+    # newline character
+    return b"".join(_dump_cert(cert) for cert in chain)

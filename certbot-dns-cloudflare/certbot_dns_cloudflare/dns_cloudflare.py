@@ -10,7 +10,7 @@ from certbot.plugins import dns_common
 
 logger = logging.getLogger(__name__)
 
-ACCOUNT_URL = 'https://www.cloudflare.com/a/account/my-account'
+ACCOUNT_URL = 'https://dash.cloudflare.com/profile/api-tokens'
 
 
 @zope.interface.implementer(interfaces.IAuthenticator)
@@ -122,7 +122,7 @@ class _CloudflareClient(object):
                     self.cf.zones.dns_records.delete(zone_id, record_id)
                     logger.debug('Successfully deleted TXT record.')
                 except CloudFlare.exceptions.CloudFlareAPIError as e:
-                    logger.warn('Encountered CloudFlareAPIError deleting TXT record: %s', e)
+                    logger.warning('Encountered CloudFlareAPIError deleting TXT record: %s', e)
             else:
                 logger.debug('TXT record not found; no cleanup needed.')
         else:
@@ -159,7 +159,7 @@ class _CloudflareClient(object):
                                          'you have supplied valid Cloudflare API credentials.{2}'
                                          .format(code, e, ' ({0})'.format(hint) if hint else ''))
 
-            if len(zones) > 0:
+            if zones:
                 zone_id = zones[0]['id']
                 logger.debug('Found zone_id of %s for %s using name %s', zone_id, domain, zone_name)
                 return zone_id
@@ -191,9 +191,9 @@ class _CloudflareClient(object):
             logger.debug('Encountered CloudFlareAPIError getting TXT record_id: %s', e)
             records = []
 
-        if len(records) > 0:
+        if records:
             # Cleanup is returning the system to the state we found it. If, for some reason,
             # there are multiple matching records, we only delete one because we only added one.
             return records[0]['id']
-        else:
-            logger.debug('Unable to find TXT record.')
+        logger.debug('Unable to find TXT record.')
+        return None

@@ -1,23 +1,21 @@
 # coding=utf-8
 """Test certbot.display.ops."""
-import os
 import sys
 import unittest
 
+import josepy as jose
 import mock
 import zope.component
 
-from acme import jose
 from acme import messages
 
+import certbot.tests.util as test_util
 from certbot import account
 from certbot import errors
-
-from certbot.display import util as display_util
+from certbot.compat import os
+from certbot.compat import filesystem
 from certbot.display import ops
-
-import certbot.tests.util as test_util
-
+from certbot.display import util as display_util
 
 KEY = jose.JWKRSA.load(test_util.load_vector("rsa512_key.pem"))
 
@@ -43,7 +41,7 @@ class GetEmailTest(unittest.TestCase):
         mock_input.return_value = (display_util.OK, "foo@bar.baz")
         with mock.patch("certbot.display.ops.util.safe_email") as mock_safe_email:
             mock_safe_email.return_value = True
-            self.assertTrue(self._call() is "foo@bar.baz")
+            self.assertTrue(self._call() == "foo@bar.baz")
 
     @test_util.patch_get_utility("certbot.display.ops.z_util")
     def test_ok_not_safe(self, mock_get_utility):
@@ -51,7 +49,7 @@ class GetEmailTest(unittest.TestCase):
         mock_input.return_value = (display_util.OK, "foo@bar.baz")
         with mock.patch("certbot.display.ops.util.safe_email") as mock_safe_email:
             mock_safe_email.side_effect = [False, True]
-            self.assertTrue(self._call() is "foo@bar.baz")
+            self.assertTrue(self._call() == "foo@bar.baz")
 
     @test_util.patch_get_utility("certbot.display.ops.z_util")
     def test_invalid_flag(self, mock_get_utility):
@@ -96,7 +94,7 @@ class ChooseAccountTest(test_util.TempDirTestCase):
                                                                False))
 
         self.account_keys_dir = os.path.join(self.tempdir, "keys")
-        os.makedirs(self.account_keys_dir, 0o700)
+        filesystem.makedirs(self.account_keys_dir, 0o700)
 
         self.config = mock.MagicMock(
             accounts_dir=self.tempdir,
@@ -207,9 +205,9 @@ class ChooseNamesTest(unittest.TestCase):
         self.mock_install = mock.MagicMock()
 
     @classmethod
-    def _call(cls, installer):
+    def _call(cls, installer, question=None):
         from certbot.display.ops import choose_names
-        return choose_names(installer)
+        return choose_names(installer, question)
 
     @mock.patch("certbot.display.ops._choose_names_manually")
     def test_no_installer(self, mock_manual):
@@ -282,6 +280,15 @@ class ChooseNamesTest(unittest.TestCase):
         self.assertEqual(mock_util().checklist.call_count, 1)
 
     @test_util.patch_get_utility("certbot.display.ops.z_util")
+    def test_filter_namees_override_question(self, mock_util):
+        self.mock_install.get_all_names.return_value = set(["example.com"])
+        mock_util().checklist.return_value = (display_util.OK, ["example.com"])
+        names = self._call(self.mock_install, "Custom")
+        self.assertEqual(names, ["example.com"])
+        self.assertEqual(mock_util().checklist.call_count, 1)
+        self.assertEqual(mock_util().checklist.call_args[0][0], "Custom")
+
+    @test_util.patch_get_utility("certbot.display.ops.z_util")
     def test_filter_names_nothing_selected(self, mock_util):
         self.mock_install.get_all_names.return_value = set(["example.com"])
         mock_util().checklist.return_value = (display_util.OK, [])
@@ -300,8 +307,8 @@ class ChooseNamesTest(unittest.TestCase):
         from certbot.display.ops import get_valid_domains
         all_valid = ["example.com", "second.example.com",
                      "also.example.com", "under_score.example.com",
-                     "justtld"]
-        all_invalid = ["öóòps.net", "*.wildcard.com", "uniçodé.com"]
+                     "justtld", "*.wildcard.com"]
+        all_invalid = ["öóòps.net", "uniçodé.com"]
         two_valid = ["example.com", "úniçøde.com", "also.example.com"]
         self.assertEqual(get_valid_domains(all_valid), all_valid)
         self.assertEqual(get_valid_domains(all_invalid), [])
@@ -479,6 +486,43 @@ class ValidatorTests(unittest.TestCase):
         self.assertRaises(AssertionError,
                           ops.validated_directory,
                           self.__validator, "msg", default="")
+
+
+class ChooseValuesTest(unittest.TestCase):
+    """Test choose_values."""
+    @classmethod
+    def _call(cls, values, question):
+        from certbot.display.ops import choose_values
+        return choose_values(values, question)
+
+    @test_util.patch_get_utility("certbot.display.ops.z_util")
+    def test_choose_names_success(self, mock_util):
+        items = ["first", "second", "third"]
+        mock_util().checklist.return_value = (display_util.OK, [items[2]])
+        result = self._call(items, None)
+        self.assertEqual(result, [items[2]])
+        self.assertTrue(mock_util().checklist.called)
+        self.assertEqual(mock_util().checklist.call_args[0][0], None)
+
+    @test_util.patch_get_utility("certbot.display.ops.z_util")
+    def test_choose_names_success_question(self, mock_util):
+        items = ["first", "second", "third"]
+        question = "Which one?"
+        mock_util().checklist.return_value = (display_util.OK, [items[1]])
+        result = self._call(items, question)
+        self.assertEqual(result, [items[1]])
+        self.assertTrue(mock_util().checklist.called)
+        self.assertEqual(mock_util().checklist.call_args[0][0], question)
+
+    @test_util.patch_get_utility("certbot.display.ops.z_util")
+    def test_choose_names_user_cancel(self, mock_util):
+        items = ["first", "second", "third"]
+        question = "Want to cancel?"
+        mock_util().checklist.return_value = (display_util.CANCEL, [])
+        result = self._call(items, question)
+        self.assertEqual(result, [])
+        self.assertTrue(mock_util().checklist.called)
+        self.assertEqual(mock_util().checklist.call_args[0][0], question)
 
 
 if __name__ == "__main__":
