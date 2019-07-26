@@ -156,7 +156,7 @@ set -e
         with open(entrypoint_script_path, 'w') as file_h:
             file_h.write(entrypoint_script)
 
-        os.chmod(hook_path, os.stat(entrypoint_script_path).st_mode | stat.S_IEXEC)
+        os.chmod(entrypoint_script_path, os.stat(entrypoint_script_path).st_mode | stat.S_IEXEC)
 
 
 @contextlib.contextmanager

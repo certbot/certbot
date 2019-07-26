@@ -1,5 +1,4 @@
 import json
-import platform
 import os
 import stat
 
@@ -11,9 +10,7 @@ ASSETS_PATH = pkg_resources.resource_filename('certbot_integration_tests', 'asse
 
 
 def fetch(workspace):
-    suffix = '{0}-{1}{2}'.format(platform.system().lower(),
-                                 platform.machine().lower().replace('x86_64', 'amd64'),
-                                 '.exe' if platform.system() == 'Windows' else '')
+    suffix = 'linux-amd64' if os.name != 'nt' else 'windows-amd64.exe'
 
     pebble_path = _fetch_asset('pebble', suffix)
     challtestsrv_path = _fetch_asset('pebble-challtestsrv', suffix)
