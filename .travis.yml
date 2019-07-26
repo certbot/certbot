@@ -55,6 +55,10 @@ matrix:
       env: TOXENV=mypy
       <<: *not-on-master
     - python: "2.7"
+      # Ubuntu Trusty or older must be used because the oldest version of
+      # cryptography we support cannot be compiled against the version of
+      # OpenSSL in Xenial or newer.
+      dist: trusty
       env: TOXENV='py27-{acme,apache,certbot,dns,nginx}-oldest'
       sudo: required
       services: docker
