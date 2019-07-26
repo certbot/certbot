@@ -2,8 +2,9 @@ image: Visual Studio 2015
 
 environment:
   matrix:
-    - TOXENV: py35
-    - TOXENV: py37-cover
+#    - TOXENV: py35
+#    - TOXENV: py37-cover
+    - TOXENV: integration
 
 branches:
   only:
@@ -24,14 +25,14 @@ init:
 
 install:
   # Use Python 3.7 by default
-  - "SET PATH=C:\\Python37;C:\\Python37\\Scripts;%PATH%"
+  - SET PATH=C:\\Python37;C:\\Python37\\Scripts;%PATH%
   # Check env
-  - "python --version"
+  - python --version
   # Upgrade pip to avoid warnings
-  - "python -m pip install --upgrade pip"
+  - python -m pip install --upgrade pip
   # Ready to install tox and coverage
   # tools/pip_install.py is used to pin packages to a known working version.
-  - "python tools\\pip_install.py tox codecov"
+  - python tools\\pip_install.py tox codecov
 
 build: off
 
