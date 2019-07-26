@@ -306,12 +306,3 @@ def load_sample_data_path(workspace):
 def echo(line, path=None):
     return '{0} -c "from __future__ import print_function; print(\'{1}\')"{2}'.format(
         os.path.basename(sys.executable), line, ' >> "{0}"'.format(path) if path else '')
-
-
-def broken_on_windows(function):
-    """Decorator to skip temporarily a broken test on Windows."""
-    reason = 'Test is broken and ignored on windows but should be fixed.'
-    return unittest.skipIf(
-        sys.platform == 'win32'
-        and os.environ.get('SKIP_BROKEN_TESTS_ON_WINDOWS', 'true') == 'true',
-        reason)(function)
