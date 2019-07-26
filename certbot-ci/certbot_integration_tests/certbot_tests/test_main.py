@@ -14,7 +14,8 @@ from certbot_integration_tests.certbot_tests.assertions import (
     assert_hook_execution, assert_saved_renew_hook,
     assert_cert_count_for_lineage,
     assert_world_no_permissions, assert_world_read_permissions,
-    assert_equals_group_owner, assert_equals_group_permissions, assert_equals_world_read_permissions
+    assert_equals_group_owner, assert_equals_group_permissions, assert_equals_world_read_permissions,
+    EVERYBODY_SID
 )
 from certbot_integration_tests.utils import misc
 
@@ -206,9 +207,6 @@ def test_renew_with_hook_scripts(context):
 
 def test_renew_files_propagate_permissions(context):
     """Test proper certificate renewal with custom permissions propagated on private key."""
-    if os.name == 'nt':
-        pytest.skip('Certbot does not keep permissions across private keys on Windows for now.')
-
     certname = context.get_domain('renew')
     context.certbot(['-d', certname])
 
@@ -217,13 +215,32 @@ def test_renew_files_propagate_permissions(context):
     privkey1 = join(context.config_dir, 'archive', certname, 'privkey1.pem')
     privkey2 = join(context.config_dir, 'archive', certname, 'privkey2.pem')
 
-    os.chmod(privkey1, 0o444)
+    if os.name != 'nt':
+        os.chmod(privkey1, 0o444)
+    else:
+        import win32security
+        import ntsecuritycon
+        # Get the current DACL of the private key
+        security = win32security.GetFileSecurity(privkey1, win32security.DACL_SECURITY_INFORMATION)
+        dacl = security.GetSecurityDescriptorDacl()
+        # Create a read permission for Everybody group
+        everybody = win32security.ConvertStringSidToSid(EVERYBODY_SID)
+        dacl.AddAccessAllowedAce(win32security.ACL_REVISION, ntsecuritycon.FILE_GENERIC_READ, everybody)
+        # Apply the updated DACL to the private key
+        security.SetSecurityDescriptorDacl(1, dacl, 0)
+        win32security.SetFileSecurity(privkey1, win32security.DACL_SECURITY_INFORMATION, security)
+
     context.certbot(['renew'])
 
     assert_cert_count_for_lineage(context.config_dir, certname, 2)
-    assert_world_read_permissions(privkey2)
-    assert_equals_world_read_permissions(privkey1, privkey2)
-    assert_equals_group_permissions(privkey1, privkey2)
+    if os.name != 'nt':
+        # On Linux, read world permissions + all group permissions will be copied from the previous private key
+        assert_world_read_permissions(privkey2)
+        assert_equals_world_read_permissions(privkey1, privkey2)
+        assert_equals_group_permissions(privkey1, privkey2)
+    else:
+        # On Windows, world will never have any permissions, and group permission is irrelevant for this platform
+        assert_world_no_permissions(privkey2)
 
 
 def test_graceful_renew_it_is_not_time(context):
