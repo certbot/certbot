@@ -5,7 +5,7 @@ import stat
 import pkg_resources
 import requests
 
-PEBBLE_VERSION = 'v2.2.0'
+PEBBLE_VERSION = 'v2.2.1'
 ASSETS_PATH = pkg_resources.resource_filename('certbot_integration_tests', 'assets')
 
 
