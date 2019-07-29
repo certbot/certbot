@@ -10,7 +10,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* Follow  updated Mozilla recommendations for Nginx ssl_protocols, ssl_ciphers,
+  and ssl_prefer_server_ciphers
 
 ### Fixed
 
