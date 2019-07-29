@@ -176,7 +176,7 @@ that can be used once the virtual environment is activated:
 
 .. code-block:: shell
 
-    certbot_tests [ARGS...]
+    certbot_test [ARGS...]
 
 - Execute certbot with the provided arguments and other arguments useful for testing purposes,
   such as: verbose output, full tracebacks in case Certbot crashes, *etc.*

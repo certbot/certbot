@@ -16,6 +16,7 @@ except ImportError:
 
 import certbot.tests.util as test_util
 from certbot import lock
+from certbot import util
 from certbot.compat import os
 from certbot.compat import filesystem
 from certbot.tests.util import TempDirTestCase
@@ -47,18 +48,6 @@ class WindowsChmodTests(TempDirTestCase):
         cur_dacl_link = _get_security_dacl(link_path).GetSecurityDescriptorDacl()
         self.assertFalse(filesystem._compare_dacls(ref_dacl_probe, cur_dacl_probe))  # pylint: disable=protected-access
         self.assertTrue(filesystem._compare_dacls(ref_dacl_link, cur_dacl_link))  # pylint: disable=protected-access
-
-    def test_symlink_loop_mitigation(self):
-        link1_path = os.path.join(self.tempdir, 'link1')
-        link2_path = os.path.join(self.tempdir, 'link2')
-        link3_path = os.path.join(self.tempdir, 'link3')
-        os.symlink(link1_path, link2_path)
-        os.symlink(link2_path, link3_path)
-        os.symlink(link3_path, link1_path)
-
-        with self.assertRaises(RuntimeError) as error:
-            filesystem.chmod(link1_path, 0o755)
-        self.assertTrue('link1 is a loop!' in str(error.exception))
 
     def test_world_permission(self):
         everybody = win32security.ConvertStringSidToSid(EVERYBODY_SID)
@@ -318,9 +307,54 @@ class CopyOwnershipTest(test_util.TempDirTestCase):
         mock_chmod.assert_called_once_with(self.probe_path, 0o700)
 
 
+class CheckPermissionsTest(test_util.TempDirTestCase):
+    def setUp(self):
+        super(CheckPermissionsTest, self).setUp()
+        self.probe_path = _create_probe(self.tempdir)
+
+    def test_check_mode(self):
+        self.assertTrue(filesystem.check_mode(self.probe_path, 0o744))
+
+        filesystem.chmod(self.probe_path, 0o700)
+        self.assertFalse(filesystem.check_mode(self.probe_path, 0o744))
+
+    @unittest.skipIf(POSIX_MODE, reason='Test specific to Windows security')
+    def test_check_owner_windows(self):
+        self.assertTrue(filesystem.check_owner(self.probe_path))
+
+        system = win32security.ConvertStringSidToSid(SYSTEM_SID)
+        security = win32security.SECURITY_ATTRIBUTES().SECURITY_DESCRIPTOR
+        security.SetSecurityDescriptorOwner(system, False)
+
+        with mock.patch('win32security.GetFileSecurity') as mock_get:
+            mock_get.return_value = security
+            self.assertFalse(filesystem.check_owner(self.probe_path))
+
+    @unittest.skipUnless(POSIX_MODE, reason='Test specific to Linux security')
+    def test_check_owner_linux(self):
+        self.assertTrue(filesystem.check_owner(self.probe_path))
+
+        import os as std_os  # pylint: disable=os-module-forbidden
+        uid = std_os.getuid()
+
+        with mock.patch('os.getuid') as mock_uid:
+            mock_uid.return_value = uid + 1
+            self.assertFalse(filesystem.check_owner(self.probe_path))
+
+    def test_check_permissions(self):
+        self.assertTrue(filesystem.check_permissions(self.probe_path, 0o744))
+
+        with mock.patch('certbot.compat.filesystem.check_mode') as mock_mode:
+            mock_mode.return_value = False
+            self.assertFalse(filesystem.check_permissions(self.probe_path, 0o744))
+
+        with mock.patch('certbot.compat.filesystem.check_owner') as mock_owner:
+            mock_owner.return_value = False
+            self.assertFalse(filesystem.check_permissions(self.probe_path, 0o744))
+
+
 class OsReplaceTest(test_util.TempDirTestCase):
     """Test to ensure consistent behavior of rename method"""
-
     def test_os_replace_to_existing_file(self):
         """Ensure that replace will effectively rename src into dst for all platforms."""
         src = os.path.join(self.tempdir, 'src')
@@ -333,6 +367,48 @@ class OsReplaceTest(test_util.TempDirTestCase):
 
         self.assertFalse(os.path.exists(src))
         self.assertTrue(os.path.exists(dst))
+
+
+class RealpathTest(test_util.TempDirTestCase):
+    """Tests for realpath method"""
+    def setUp(self):
+        super(RealpathTest, self).setUp()
+        self.probe_path = _create_probe(self.tempdir)
+
+    def test_symlink_resolution(self):
+        # Remove any symlinks already in probe_path
+        self.probe_path = filesystem.realpath(self.probe_path)
+        # Absolute resolution
+        link_path = os.path.join(self.tempdir, 'link_abs')
+        os.symlink(self.probe_path, link_path)
+
+        self.assertEqual(self.probe_path, filesystem.realpath(self.probe_path))
+        self.assertEqual(self.probe_path, filesystem.realpath(link_path))
+
+        # Relative resolution
+        curdir = os.getcwd()
+        link_path = os.path.join(self.tempdir, 'link_rel')
+        probe_name = os.path.basename(self.probe_path)
+        try:
+            os.chdir(os.path.dirname(self.probe_path))
+            os.symlink(probe_name, link_path)
+
+            self.assertEqual(self.probe_path, filesystem.realpath(probe_name))
+            self.assertEqual(self.probe_path, filesystem.realpath(link_path))
+        finally:
+            os.chdir(curdir)
+
+    def test_symlink_loop_mitigation(self):
+        link1_path = os.path.join(self.tempdir, 'link1')
+        link2_path = os.path.join(self.tempdir, 'link2')
+        link3_path = os.path.join(self.tempdir, 'link3')
+        os.symlink(link1_path, link2_path)
+        os.symlink(link2_path, link3_path)
+        os.symlink(link3_path, link1_path)
+
+        with self.assertRaises(RuntimeError) as error:
+            filesystem.realpath(link1_path)
+        self.assertTrue('link1 is a loop!' in str(error.exception))
 
 
 def _get_security_dacl(target):
@@ -352,7 +428,7 @@ def _set_owner(target, security_owner, user):
 def _create_probe(tempdir):
     filesystem.chmod(tempdir, 0o744)
     probe_path = os.path.join(tempdir, 'probe')
-    open(probe_path, 'w').close()
+    util.safe_open(probe_path, 'w', chmod=0o744).close()
     return probe_path
 
 

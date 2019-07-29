@@ -675,8 +675,7 @@ class MultipleVhostsTest(util.ApacheTest):
     def test_make_vhost_ssl_nonexistent_vhost_path(self):
         ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[1])
         self.assertEqual(os.path.dirname(ssl_vhost.filep),
-                            os.path.dirname(os.path.realpath(
-                                self.vh_truth[1].filep)))
+                         os.path.dirname(filesystem.realpath(self.vh_truth[1].filep)))
 
     def test_make_vhost_ssl(self):
         ssl_vhost = self.config.make_vhost_ssl(self.vh_truth[0])
@@ -1336,7 +1335,7 @@ class MultipleVhostsTest(util.ApacheTest):
         self.config.parser.modules.add("ssl_module")
         self.config.parser.modules.add("mod_ssl.c")
         self.config.parser.modules.add("socache_shmcb_module")
-        tmp_path = os.path.realpath(tempfile.mkdtemp("vhostroot"))
+        tmp_path = filesystem.realpath(tempfile.mkdtemp("vhostroot"))
         filesystem.chmod(tmp_path, 0o755)
         mock_p = "certbot_apache.configurator.ApacheConfigurator._get_ssl_vhost_path"
         mock_a = "certbot_apache.parser.ApacheParser.add_include"

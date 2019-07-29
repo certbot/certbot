@@ -375,7 +375,7 @@ def cleanup(cl_args, instances, targetlist):
     # If lengths of instances and targetlist aren't equal, instances failed to
     # start before running tests so leaving instances running for debugging
     # isn't very useful. Let's cleanup after ourselves instead.
-    if len(instances) == len(targetlist) or not cl_args.saveinstances:
+    if len(instances) != len(targetlist) or not cl_args.saveinstances:
         print('Terminating EC2 Instances')
         if cl_args.killboulder:
             boulder_server.terminate()
