@@ -13,7 +13,7 @@ from os.path import join
 
 import requests
 
-from certbot_integration_tests.utils import misc, proxy, pebble_artifacts, ocsp_server
+from certbot_integration_tests.utils import misc, proxy, pebble_artifacts, pebble_ocsp_server
 from certbot_integration_tests.utils.constants import *
 
 

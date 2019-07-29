@@ -1,3 +1,8 @@
+#!/usr/bin/env python
+"""
+This runnable module interfaces itself with the Pebble management interface in order
+to serve a mock OCSP responder during integration tests against Pebble.
+"""
 import datetime
 import re
 
