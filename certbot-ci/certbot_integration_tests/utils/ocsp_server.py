@@ -1,7 +1,8 @@
 import datetime
-from dateutil import parser
+import re
 
 import requests
+from dateutil import parser
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization, hashes
@@ -42,9 +43,8 @@ def _create_ocsp_handler():
                     ocsp_status, revocation_time, revocation_reason = ocsp.OCSPCertStatus.GOOD, None, None
                 else:
                     ocsp_status, revocation_reason = ocsp.OCSPCertStatus.REVOKED, x509.ReasonFlags.unspecified
-                    print('time is')
-                    print(data['RevokedAt'])
-                    revocation_time = parser.parse(data['RevokedAt'])
+                    revoked_at = re.sub(r'( \+\d{4}).*$', r'\1', data['RevokedAt'])  # "+0000 UTC" => "+0000"
+                    revocation_time = parser.parse(revoked_at)
 
                 builder = ocsp.OCSPResponseBuilder()
                 builder = builder.add_response(
