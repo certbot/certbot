@@ -38,18 +38,6 @@ class ParserNode(object):
 
     @property
     @abc.abstractmethod
-    def arguments(self):
-        """
-        This property contains a list of arguments of this ParserNode object.
-
-        :returns: A list of arguments for this node
-        :rtype: list
-        """
-
-        raise NotImplementedError
-
-    @property
-    @abc.abstractmethod
     def dirty(self):
         """
         This property contains a boolean value of the information if this node has
@@ -87,7 +75,7 @@ class CommentNode(ParserNode):
     configuration structure. Because of the nature of comments, it is not able
     to have child nodes and hence it is always treated as a leaf node.
 
-    CommentNode stores its contents in class variable 'arguments' and does not
+    CommentNode stores its contents in class variable 'comment' and does not
     have a specific name.
     """
 
@@ -131,6 +119,18 @@ class DirectiveNode(ParserNode):
 
         :returns: Name of this node
         :rtype: str
+        """
+
+        raise NotImplementedError
+
+    @property
+    @abc.abstractmethod
+    def parameters(self):
+        """
+        This property contains a list of parameters of this ParserNode object.
+
+        :returns: A list of parameters for this node
+        :rtype: list
         """
 
         raise NotImplementedError
@@ -204,12 +204,12 @@ class BlockNode(ParserNode):
         """
 
     @abc.abstractmethod
-    def add_child_comment(self, arguments=None, position=None):
+    def add_child_comment(self, comment="", position=None):
         """
-        Adds a new CommentNode child node with provided values and marks the
+        Adds a new CommentNode child node with provided value and marks the
         callee BlockNode dirty. This is used to add new children to the AST.
 
-        :param list arguments: list of arguments for the node
+        :param str comment: Comment contents
         :param int position: Position in the list of children to add the new child
             node to. Defaults to None, which appends the newly created node to the list.
             If an integer is given, the child is inserted before that index in the
@@ -316,6 +316,18 @@ class BlockNode(ParserNode):
 
         :returns: Name of this node
         :rtype: str
+        """
+
+        raise NotImplementedError
+
+    @property
+    @abc.abstractmethod
+    def parameters(self):
+        """
+        This property contains a list of parameters of this ParserNode object.
+
+        :returns: A list of parameters for this node
+        :rtype: list
         """
 
         raise NotImplementedError
