@@ -20,7 +20,6 @@ from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
 from certbot import util
-from certbot.compat import misc
 from certbot.compat import os
 from certbot.plugins import common
 
@@ -903,13 +902,9 @@ class NginxConfigurator(common.Installer):
         have permissions of root.
 
         """
-        uid = misc.os_geteuid()
-        util.make_or_verify_dir(
-            self.config.work_dir, core_constants.CONFIG_DIRS_MODE, uid)
-        util.make_or_verify_dir(
-            self.config.backup_dir, core_constants.CONFIG_DIRS_MODE, uid)
-        util.make_or_verify_dir(
-            self.config.config_dir, core_constants.CONFIG_DIRS_MODE, uid)
+        util.make_or_verify_dir(self.config.work_dir, core_constants.CONFIG_DIRS_MODE)
+        util.make_or_verify_dir(self.config.backup_dir, core_constants.CONFIG_DIRS_MODE)
+        util.make_or_verify_dir(self.config.config_dir, core_constants.CONFIG_DIRS_MODE)
 
     def get_version(self):
         """Return version of Nginx Server.
