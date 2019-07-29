@@ -33,10 +33,17 @@ def check_until_timeout(url):
     :param str url: the URL to test
     :raise ValueError: exception raised after 150 unsuccessful attempts to reach the URL
     """
+    try:
+        import urllib3
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    except ImportError:
+        # Handle old versions of request with vendorized urllib3
+        from requests.packages.urllib3.exceptions import InsecureRequestWarning
+        requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+
     for _ in range(0, 150):
         time.sleep(1)
         try:
-            ignore_https_warnings()
             if requests.get(url, verify=False).status_code == 200:
                 return
         except requests.exceptions.ConnectionError:
@@ -266,14 +273,3 @@ def read_certificate(cert_path):
 
     cert = crypto.load_certificate(crypto.FILETYPE_PEM, data)
     return crypto.dump_certificate(crypto.FILETYPE_TEXT, cert).decode('utf-8')
-
-
-def ignore_https_warnings():
-    """Invoke logic to ignore HTTPS warning while invoking request"""
-    try:
-        import urllib3
-        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    except ImportError:
-        # Handle old versions of request with vendorized urllib3
-        from requests.packages.urllib3.exceptions import InsecureRequestWarning
-        requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
