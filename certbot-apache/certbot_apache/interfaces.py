@@ -224,7 +224,7 @@ class BlockNode(ParserNode):
     def children(self):
         """
         This property contains a list ParserNode objects that are the children
-        for this node. The order of children is the same than that of the parsed
+        for this node. The order of children is the same as that of the parsed
         configuration block.
 
         :returns: A tuple of this blocks children
