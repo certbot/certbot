@@ -44,6 +44,7 @@ def _build_pebble_config(workspace):
         file_h.write(json.dumps({
             'pebble': {
                 'listenAddress': '0.0.0.0:14000',
+                'managementListenAddress': '0.0.0.0:15000',
                 'certificate': os.path.join(ASSETS_PATH, 'cert.pem'),
                 'privateKey': os.path.join(ASSETS_PATH, 'key.pem'),
                 'httpPort': 5002,

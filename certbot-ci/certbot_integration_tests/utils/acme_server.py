@@ -134,7 +134,7 @@ class ACMEServer(object):
             [challtestsrv_path, '-management', ':{0}'.format(CHALLTESTSRV_PORT), '-defaultIPv6', '""',
              '-defaultIPv4', '127.0.0.1', '-http01', '""', '-tlsalpn01', '""', '-https01', '""'])
 
-        self._launch_process([sys.executable, ocsp_server.__file__])
+        #self._launch_process([sys.executable, ocsp_server.__file__])
 
         # Wait for the ACME CA server to be up.
         print('=> Waiting for pebble instance to respond...')
