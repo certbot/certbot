@@ -963,7 +963,8 @@ class InstallSslOptionsConfTest(util.NginxTest):
             "Constants.ALL_SSL_OPTIONS_HASHES must be appended"
             " with the sha256 hash of self.config.mod_ssl_conf when it is updated.")
 
-    def test_old_nginx_version_uses_old_config(self):
+    @mock.patch('ssl.OPENSSL_VERSION_INFO', (1, 1, 1))
+    def test_nginx_version_uses_correct_config(self):
         self.config.version = (1, 5, 8)
         self.assertEqual(os.path.basename(self.config.mod_ssl_conf_src),
                          "options-ssl-nginx-old.conf")
@@ -971,7 +972,23 @@ class InstallSslOptionsConfTest(util.NginxTest):
         self._assert_current_file()
         self.config.version = (1, 5, 9)
         self.assertEqual(os.path.basename(self.config.mod_ssl_conf_src),
+                         "options-ssl-nginx-tls12-only.conf")
+        self._call()
+        self._assert_current_file()
+        self.config.version = (1, 13, 0)
+        self.assertEqual(os.path.basename(self.config.mod_ssl_conf_src),
                          "options-ssl-nginx.conf")
+
+    def test_correct_config_for_old_openssl(self):
+        self.config.version = (1, 13, 0)
+        with mock.patch('ssl.OPENSSL_VERSION_INFO', (1, 1, 1)):
+            self.assertEqual(os.path.basename(self.config.mod_ssl_conf_src),
+                             "options-ssl-nginx.conf")
+        with mock.patch('ssl.OPENSSL_VERSION_INFO', (1, 1, 0)):
+            self.assertEqual(os.path.basename(self.config.mod_ssl_conf_src),
+                             "options-ssl-nginx-tls12-only.conf")
+
+
 
 
 class DetermineDefaultServerRootTest(certbot_test_util.ConfigTestCase):
