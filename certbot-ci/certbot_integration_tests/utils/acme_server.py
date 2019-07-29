@@ -13,7 +13,7 @@ from os.path import join
 
 import requests
 
-from certbot_integration_tests.utils import misc, proxy, pebble_artifacts
+from certbot_integration_tests.utils import misc, proxy, pebble_artifacts, ocsp_server
 from certbot_integration_tests.utils.constants import *
 
 
@@ -133,6 +133,8 @@ class ACMEServer(object):
         self._launch_process(
             [challtestsrv_path, '-management', ':{0}'.format(CHALLTESTSRV_PORT), '-defaultIPv6', '""',
              '-defaultIPv4', '127.0.0.1', '-http01', '""', '-tlsalpn01', '""', '-https01', '""'])
+
+        self._launch_process([sys.executable, ocsp_server.__file__])
 
         # Wait for the ACME CA server to be up.
         print('=> Waiting for pebble instance to respond...')

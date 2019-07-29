@@ -1,14 +1,10 @@
 """Module to handle the context of integration tests."""
 import os
 import shutil
-import subprocess
 import sys
 import tempfile
 
-import requests
-
-from certbot_integration_tests.utils import certbot_call, misc, ocsp_server
-from certbot_integration_tests.utils.constants import MOCK_OCSP_SERVER_PORT
+from certbot_integration_tests.utils import certbot_call
 
 
 class IntegrationTestsContext(object):
@@ -85,24 +81,3 @@ class IntegrationTestsContext(object):
         :return: the well-formed domain suitable for redirection on 
         """
         return '{0}.{1}.wtf'.format(subdomain, self.worker_id)
-
-    def mock_ocsp_server(self, cert_path, ocsp_status):
-        """
-        Start a mock OCSP server to check OSCP statuses with Pebble.
-        :param cert_path: the path to the cert whose OCSP status is checked
-        :param ocsp_status: the OCSP status to return
-        """
-        root_url = self.directory_url.replace('/dir', '')
-
-        issuer_key_path = os.path.join(self.workspace, 'ocsp_key.pem')
-        issuer_cert_path = os.path.join(self.workspace, 'ocsp_cert.pem')
-        with open(issuer_key_path, 'w') as file_h:
-            misc.ignore_https_warnings()
-            file_h.write(requests.get(root_url + '/intermediate-key', verify=False).content)
-        with open(issuer_cert_path, 'w') as file_h:
-            misc.ignore_https_warnings()
-            file_h.write(requests.get(root_url + '/intermediate', verify=False).content)
-
-        process = subprocess.Popen([sys.executable, ocsp_server.__file__, cert_path,
-                                    issuer_cert_path, issuer_key_path, ocsp_status])
-        self._subprocesses.append(process)

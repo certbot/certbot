@@ -556,12 +556,9 @@ def test_ocsp_status_stale(context):
 def test_ocsp_status_live(context):
     """Test retrieval of OCSP statuses for live config"""
     cert = context.get_domain('ocsp-check')
-    cert_path = join(context.config_dir, 'live', cert, 'cert.pem')
 
     # OSCP 1: Check live certificate OCSP status (VALID)
     context.certbot(['--domains', cert])
-    if context.acme_server == 'pebble':
-        context.mock_ocsp_server(cert_path, 'GOOD')
     output = context.certbot(['certificates'])
 
     assert output.count('VALID') == 1, 'Expected {0} to be VALID'.format(cert)
@@ -569,8 +566,6 @@ def test_ocsp_status_live(context):
 
     # OSCP 2: Check live certificate OCSP status (REVOKED)
     context.certbot(['revoke', '--cert-name', cert, '--no-delete-after-revoke'])
-    if context.acme_server == 'pebble':
-        context.mock_ocsp_server(cert_path, 'REVOKED')
     # Sometimes in oldest tests (using openssl binary and not cryptography), the OCSP status is
     # not seen immediately by Certbot as invalid. Waiting few seconds solves this transient issue.
     time.sleep(5)

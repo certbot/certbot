@@ -1,5 +1,8 @@
 import datetime
 import sys
+from dateutil import parser
+
+import requests
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization, hashes
@@ -8,23 +11,32 @@ from cryptography.x509 import ocsp
 from six.moves import BaseHTTPServer
 
 from certbot_integration_tests.utils.misc import GracefulTCPServer
-from certbot_integration_tests.utils.constants import MOCK_OCSP_SERVER_PORT
+from certbot_integration_tests.utils.constants import MOCK_OCSP_SERVER_PORT, PEBBLE_MANAGEMENT_URL
 
 
-def _create_ocsp_handler(cert_path, issuer_cert_path, issuer_key_path, ocsp_status_text):
+def _create_ocsp_handler():
     class ProxyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         def do_POST(self):
-            with open(issuer_cert_path, 'rb') as file_h1:
-                issuer_cert = x509.load_pem_x509_certificate(file_h1.read(), default_backend())
-            with open(issuer_key_path, 'rb') as file_h2:
-                issuer_key = serialization.load_pem_private_key(file_h2.read(), None, default_backend())
-            with open(cert_path, 'rb') as file_h3:
-                cert = x509.load_pem_x509_certificate(file_h3.read(), default_backend())
+            request = requests.get(PEBBLE_MANAGEMENT_URL + '/intermediate-key', verify=False)
+            issuer_key = serialization.load_pem_private_key(request.content, None, default_backend())
 
-            ocsp_status = getattr(ocsp.OCSPCertStatus, ocsp_status_text)
+            request = requests.get(PEBBLE_MANAGEMENT_URL + '/intermediate', verify=False)
+            issuer_cert = x509.load_pem_x509_certificate(request.content, default_backend())
+
+            try:
+                content_len = int(self.headers.getheader('content-length', 0))
+            except AttributeError:
+                content_len = int(self.headers.get('Content-Length'))
+
+            cert = x509.load_pem_x509_certificate(self.rfile.read(content_len), default_backend())
+            request = requests.get('{0}/cert-status-by-serial/{1}'.format(
+                PEBBLE_MANAGEMENT_URL, str(hex(cert.serial_number)).replace('0x', '')), verify=False)
+            data = request.json()
+
+            ocsp_status = getattr(ocsp.OCSPCertStatus, data['Status'].upper())
 
             now = datetime.datetime.utcnow()
-            revocation_time = now if ocsp_status == ocsp.OCSPCertStatus.REVOKED else None
+            revocation_time = parser.parse(data['RevokedAt']) if ocsp_status == ocsp.OCSPCertStatus.REVOKED else None
             revocation_reason = x509.ReasonFlags.unspecified if ocsp_status == ocsp.OCSPCertStatus.REVOKED else None
 
             builder = ocsp.OCSPResponseBuilder()
@@ -46,8 +58,8 @@ def _create_ocsp_handler(cert_path, issuer_cert_path, issuer_key_path, ocsp_stat
 
 
 if __name__ == '__main__':
-    httpd = GracefulTCPServer(('', MOCK_OCSP_SERVER_PORT), _create_ocsp_handler(*sys.argv[1:5]))
+    httpd = GracefulTCPServer(('', MOCK_OCSP_SERVER_PORT), _create_ocsp_handler())
     try:
-        httpd.handle_request()
+        httpd.serve_forever()
     except KeyboardInterrupt:
         pass
