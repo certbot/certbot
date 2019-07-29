@@ -10,7 +10,6 @@ from certbot_integration_tests.utils import certbot_call
 class IntegrationTestsContext(object):
     """General fixture describing a certbot integration tests context"""
     def __init__(self, request):
-        self._subprocesses = []
         self.request = request
 
         if hasattr(request.config, 'slaveinput'):  # Worker node
@@ -20,7 +19,7 @@ class IntegrationTestsContext(object):
             self.worker_id = 'primary'
             acme_xdist = request.config.acme_xdist
 
-        self.acme_server =acme_xdist['acme_server']
+        self.acme_server = acme_xdist['acme_server']
         self.directory_url = acme_xdist['directory_url']
         self.tls_alpn_01_port = acme_xdist['https_port'][self.worker_id]
         self.http_01_port = acme_xdist['http_port'][self.worker_id]
@@ -52,9 +51,6 @@ class IntegrationTestsContext(object):
 
     def cleanup(self):
         """Cleanup the integration test context."""
-        for process in self._subprocesses:
-            process.terminate()
-            process.wait()
         shutil.rmtree(self.workspace)
 
     def certbot(self, args, force_renew=True):
