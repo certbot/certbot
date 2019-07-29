@@ -227,7 +227,7 @@ class BlockNode(ParserNode):
         for this node. The order of children is the same as that of the parsed
         configuration block.
 
-        :returns: A tuple of this blocks children
+        :returns: A tuple of this block's children
         :rtype: tuple
         """
 
