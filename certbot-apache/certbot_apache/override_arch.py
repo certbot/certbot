@@ -1,6 +1,4 @@
 """ Distribution specific override class for Arch Linux """
-import pkg_resources
-
 import zope.interface
 
 from certbot import interfaces
@@ -26,6 +24,4 @@ class ArchConfigurator(configurator.ApacheConfigurator):
         handle_modules=False,
         handle_sites=False,
         challenge_location="/etc/httpd/conf",
-        MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
-            "certbot_apache", "options-ssl-apache.conf")
     )

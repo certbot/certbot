@@ -1,5 +1,4 @@
 """ Distribution specific override class for Fedora 29+ """
-import pkg_resources
 import zope.interface
 
 from certbot import errors
@@ -31,9 +30,6 @@ class FedoraConfigurator(configurator.ApacheConfigurator):
         handle_modules=False,
         handle_sites=False,
         challenge_location="/etc/httpd/conf.d",
-        MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
-            # TODO: eventually newest version of Fedora will need their own config
-            "certbot_apache", "centos-options-ssl-apache.conf")
     )
 
     def config_test(self):
