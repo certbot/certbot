@@ -12,7 +12,8 @@ branches:
     # rewriting the parser in the Apache plugin.
     - apache-parser-v2
     - master
-    - /^\d+\.\d+\.x$/ # Version branches like X.X.X
+    - /^\d+\.\d+\.x$/ # Version branches like 0.28.x
+    - /^v\d+\.\d+\.\d+$/ # Version tags like v0.28.1
     - /^test-.*$/
 
 init:
@@ -44,4 +45,22 @@ test_script:
   - tox
 
 on_success:
-  - if exist .coverage codecov -F windows
+  - if exist .coverage codecov
+
+# If deploy is needed, installer executable is constructed and published as artifact
+before_deploy:
+  - ps: .\windows-installer\construct.ps1
+  - ps: Get-ChildItem .\windows-installer\build\nsis\*.exe | % { Push-AppveyorArtifact $_.FullName -FileName $_.Name }
+
+# Deploy the installer to the relevant GitHub release
+deploy:
+  provider: GitHub
+  tag: $(APPVEYOR_REPO_TAG_NAME)
+  release: Certbot $(APPVEYOR_REPO_TAG_NAME)
+  description: Release of Certbot $(APPVEYOR_REPO_TAG_NAME)
+  auth_token: 
+    secure: wFtJuuyI4gizhyEAWbAFqkj2yivgcSKiMWIdfoPpHWhPktiU5C2I/bH8ZurcsDbn
+  artifact: /.*\.exe/
+  on:
+    TOXENV: py37-cover
+    APPVEYOR_REPO_TAG: true
