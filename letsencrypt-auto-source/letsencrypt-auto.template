@@ -339,7 +339,7 @@ elif [ -f /etc/redhat-release ]; then
   fi
   if [ "$PYVER" -eq 26 ]; then
     Bootstrap() {
-      BootstrapMessage "Legacy RedHat-based OSes that will use Python3"
+      BootstrapMessage "Legacy Red Hat-based OSes that will use Python3"
       BootstrapRpmPython3Legacy
     }
     USE_PYTHON_3=1
@@ -348,14 +348,14 @@ elif [ -f /etc/redhat-release ]; then
     PATH="/opt/rh/rh-python36/root/usr/bin:$PATH"
   elif [ "$RPM_DIST_NAME" = "fedora" -a "$RPM_DIST_VERSION" -ge 29 -o "$PYVER" -eq 26 ]; then
     Bootstrap() {
-      BootstrapMessage "RedHat-based OSes that will use Python3"
+      BootstrapMessage "Red Hat-based OSes that will use Python3"
       BootstrapRpmPython3
     }
     USE_PYTHON_3=1
     BOOTSTRAP_VERSION="BootstrapRpmPython3 $BOOTSTRAP_RPM_PYTHON3_VERSION"
   else
     Bootstrap() {
-      BootstrapMessage "RedHat-based OSes"
+      BootstrapMessage "Red Hat-based OSes"
       BootstrapRpmCommon
     }
     BOOTSTRAP_VERSION="BootstrapRpmCommon $BOOTSTRAP_RPM_COMMON_VERSION"

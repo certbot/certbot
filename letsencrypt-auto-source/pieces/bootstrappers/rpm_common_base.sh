@@ -25,17 +25,17 @@ InitializeRPMCommonBase() {
   fi
 
   if ! $TOOL list *virtualenv >/dev/null 2>&1; then
-    echo "To use Certbot, packages from the EPEL repository need to be installed."
+    echo "To use Certbot on this operating system, packages from the EPEL repository need to be installed."
     if ! $TOOL list epel-release >/dev/null 2>&1; then
       error "Enable the EPEL repository and try running Certbot again."
       exit 1
     fi
     if [ "$ASSUME_YES" = 1 ]; then
-      /bin/echo -n "Enabling the EPEL repository in 3 seconds..."
+      /bin/echo -n "Enabling the EPEL repository in 3 seconds... (Press Ctrl-C to cancel)"
       sleep 1s
-      /bin/echo -ne "\e[0K\rEnabling the EPEL repository in 2 seconds..."
+      /bin/echo -ne "\e[0K\rEnabling the EPEL repository in 2 seconds... (Press Ctrl-C to cancel)"
       sleep 1s
-      /bin/echo -e "\e[0K\rEnabling the EPEL repository in 1 second..."
+      /bin/echo -e "\e[0K\rEnabling the EPEL repository in 1 second... (Press Ctrl-C to cancel)"
       sleep 1s
     fi
     if ! $TOOL install $YES_FLAG $QUIET_FLAG epel-release; then
