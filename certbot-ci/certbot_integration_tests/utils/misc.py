@@ -31,9 +31,9 @@ ECDSA_KEY_TYPE = 'ecdsa'
 def check_until_timeout(url):
     """
     Wait and block until given url responds with status 200, or raise an exception
-    after 150 attempts.
+    after 240 attempts spread over ~4 minutes.
     :param str url: the URL to test
-    :raise ValueError: exception raised after 150 unsuccessful attempts to reach the URL
+    :raise ValueError: exception raised after 240 unsuccessful attempts to reach the URL
     """
     try:
         import urllib3
@@ -43,7 +43,7 @@ def check_until_timeout(url):
         from requests.packages.urllib3.exceptions import InsecureRequestWarning
         requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
-    for _ in range(0, 150):
+    for _ in range(0, 240):
         time.sleep(1)
         try:
             if requests.get(url, verify=False).status_code == 200:
@@ -51,7 +51,7 @@ def check_until_timeout(url):
         except requests.exceptions.ConnectionError:
             pass
 
-    raise ValueError('Error, url did not respond after 150 attempts: {0}'.format(url))
+    raise ValueError('Error, url did not respond after 240 attempts: {0}'.format(url))
 
 
 class GracefulTCPServer(socketserver.TCPServer):
