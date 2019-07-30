@@ -3,7 +3,7 @@ import logging
 
 from certbot import util
 from certbot.compat import os
-from certbot.compat.misc import STD_BINARIES_DIRS
+from certbot.compat.misc import STANDARD_BINARY_DIRS
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +40,7 @@ def path_surgery(cmd):
     """
     path = os.environ["PATH"]
     added = []
-    for d in STD_BINARIES_DIRS:
+    for d in STANDARD_BINARY_DIRS:
         if d not in path:
             path += os.pathsep + d
             added.append(d)
