@@ -469,7 +469,6 @@ def _fix_windows_runtime():
     if os.name != 'nt':
         yield
     else:
-        import ntsecuritycon  # pylint: disable=import-error
         with mock.patch('win32security.GetFileSecurity') as mock_get:
             dacl_mock = mock_get.return_value.GetSecurityDescriptorDacl
             mode_mock = dacl_mock.return_value.GetEffectiveRightsFromAcl
