@@ -77,6 +77,54 @@ def copy_ownership_and_apply_mode(src, dst, mode, copy_user, copy_group):
     chmod(dst, mode)
 
 
+def check_mode(file_path, mode):
+    # type: (str, int) -> bool
+    """
+    Check if the given mode matches the permissions of the given file.
+    On Linux, will make a direct comparison, on Windows, mode will be compared against
+    the security model.
+    :param str file_path: Path of the file
+    :param int mode: POSIX mode to test
+    :rtype: bool
+    :return: True if the POSIX mode matches the file permissions
+    """
+    if POSIX_MODE:
+        return stat.S_IMODE(os.stat(file_path).st_mode) == mode
+
+    return _check_win_mode(file_path, mode)
+
+
+def check_owner(file_path):
+    # type: (str) -> bool
+    """
+    Check if given file is owned by current user.
+    :param str file_path: File path to check
+    :rtype: bool
+    :return: True if given file is owned by current user, False otherwise.
+    """
+    if POSIX_MODE:
+        return os.stat(file_path).st_uid == os.getuid()
+
+    # Get owner sid of the file
+    security = win32security.GetFileSecurity(file_path, win32security.OWNER_SECURITY_INFORMATION)
+    user = security.GetSecurityDescriptorOwner()
+
+    # Compare sids
+    return _get_current_user() == user
+
+
+def check_permissions(file_path, mode):
+    # type: (str, int) -> bool
+    """
+    Check if given file has the given mode and is owned by current user.
+    :param str file_path: File path to check
+    :param int mode: POSIX mode to check
+    :rtype: bool
+    :return: True if file has correct mode and owner, False otherwise.
+    """
+    return check_owner(file_path) and check_mode(file_path, mode)
+
+
 def open(file_path, flags, mode=0o777):  # pylint: disable=redefined-builtin
     # type: (str, int, int) -> int
     """
@@ -107,6 +155,10 @@ def open(file_path, flags, mode=0o777):  # pylint: disable=redefined-builtin
         security = attributes.SECURITY_DESCRIPTOR
         user = _get_current_user()
         dacl = _generate_dacl(user, mode)
+        # We set second parameter to 0 (`False`) to say that this security descriptor is
+        # NOT constructed from a default mechanism, but is explicitly set by the user.
+        # See https://docs.microsoft.com/en-us/windows/desktop/api/securitybaseapi/nf-securitybaseapi-setsecuritydescriptorowner  # pylint: disable=line-too-long
+        security.SetSecurityDescriptorOwner(user, 0)
         # We set first parameter to 1 (`True`) to say that this security descriptor contains
         # a DACL. Otherwise second and third parameters are ignored.
         # We set third parameter to 0 (`False`) to say that this security descriptor is
@@ -177,6 +229,7 @@ def mkdir(file_path, mode=0o777):
     security = attributes.SECURITY_DESCRIPTOR
     user = _get_current_user()
     dacl = _generate_dacl(user, mode)
+    security.SetSecurityDescriptorOwner(user, False)
     security.SetSecurityDescriptorDacl(1, dacl, 0)
 
     try:
@@ -351,6 +404,28 @@ def _generate_windows_flags(rights_desc):
         flag = flag | ntsecuritycon.FILE_GENERIC_EXECUTE
 
     return flag
+
+
+def _check_win_mode(file_path, mode):
+    # Resolve symbolic links
+    file_path = realpath(file_path)
+    # Get current dacl file
+    security = win32security.GetFileSecurity(file_path, win32security.OWNER_SECURITY_INFORMATION
+                                             | win32security.DACL_SECURITY_INFORMATION)
+    dacl = security.GetSecurityDescriptorDacl()
+
+    # Get current file owner sid
+    user = security.GetSecurityDescriptorOwner()
+
+    if not dacl:
+        # No DACL means full control to everyone
+        # This is not a deterministic permissions set.
+        return False
+
+    # Calculate the target dacl
+    ref_dacl = _generate_dacl(user, mode)
+
+    return _compare_dacls(dacl, ref_dacl)
 
 
 def _compare_dacls(dacl1, dacl2):

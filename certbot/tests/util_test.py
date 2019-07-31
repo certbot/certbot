@@ -9,7 +9,6 @@ from six.moves import reload_module  # pylint: disable=import-error
 
 import certbot.tests.util as test_util
 from certbot import errors
-from certbot.compat import misc
 from certbot.compat import os
 from certbot.compat import filesystem
 
@@ -120,15 +119,14 @@ class SetUpCoreDirTest(test_util.TempDirTestCase):
     @mock.patch('certbot.util.lock_dir_until_exit')
     def test_success(self, mock_lock):
         new_dir = os.path.join(self.tempdir, 'new')
-        self._call(new_dir, 0o700, misc.os_geteuid(), False)
+        self._call(new_dir, 0o700, False)
         self.assertTrue(os.path.exists(new_dir))
         self.assertEqual(mock_lock.call_count, 1)
 
     @mock.patch('certbot.util.make_or_verify_dir')
     def test_failure(self, mock_make_or_verify):
         mock_make_or_verify.side_effect = OSError
-        self.assertRaises(errors.Error, self._call,
-                          self.tempdir, 0o700, misc.os_geteuid(), False)
+        self.assertRaises(errors.Error, self._call, self.tempdir, 0o700, False)
 
 
 class MakeOrVerifyDirTest(test_util.TempDirTestCase):
@@ -145,23 +143,20 @@ class MakeOrVerifyDirTest(test_util.TempDirTestCase):
         self.path = os.path.join(self.tempdir, "foo")
         filesystem.mkdir(self.path, 0o600)
 
-        self.uid = misc.os_geteuid()
-
     def _call(self, directory, mode):
         from certbot.util import make_or_verify_dir
-        return make_or_verify_dir(directory, mode, self.uid, strict=True)
+        return make_or_verify_dir(directory, mode, strict=True)
 
     def test_creates_dir_when_missing(self):
         path = os.path.join(self.tempdir, "bar")
         self._call(path, 0o650)
         self.assertTrue(os.path.isdir(path))
-        self.assertTrue(misc.compare_file_modes(os.stat(path).st_mode, 0o650))
+        self.assertTrue(filesystem.check_mode(path, 0o650))
 
     def test_existing_correct_mode_does_not_fail(self):
         self._call(self.path, 0o600)
-        self.assertTrue(misc.compare_file_modes(os.stat(self.path).st_mode, 0o600))
+        self.assertTrue(filesystem.check_mode(self.path, 0o600))
 
-    @test_util.skip_on_windows('Umask modes are mostly ignored on Windows.')
     def test_existing_wrong_mode_fails(self):
         self.assertRaises(errors.Error, self._call, self.path, 0o400)
 
@@ -169,39 +164,6 @@ class MakeOrVerifyDirTest(test_util.TempDirTestCase):
         with mock.patch.object(filesystem, "makedirs") as makedirs:
             makedirs.side_effect = OSError()
             self.assertRaises(OSError, self._call, "bar", 12312312)
-
-
-class CheckPermissionsTest(test_util.TempDirTestCase):
-    """Tests for certbot.util.check_permissions.
-
-    Note that it is not possible to test for a wrong file owner,
-    as this testing script would have to be run as root.
-
-    """
-
-    def setUp(self):
-        super(CheckPermissionsTest, self).setUp()
-
-        self.uid = misc.os_geteuid()
-
-    def _call(self, mode):
-        from certbot.util import check_permissions
-        return check_permissions(self.tempdir, mode, self.uid)
-
-    def test_ok_mode(self):
-        filesystem.chmod(self.tempdir, 0o600)
-        self.assertTrue(self._call(0o600))
-
-    # TODO: reactivate the test when all logic from windows file permissions is merged.
-    @test_util.broken_on_windows
-    def test_wrong_mode(self):
-        filesystem.chmod(self.tempdir, 0o400)
-        try:
-            self.assertFalse(self._call(0o600))
-        finally:
-            # Without proper write permissions, Windows is unable to delete a folder,
-            # even with admin permissions. Write access must be explicitly set first.
-            filesystem.chmod(self.tempdir, 0o700)
 
 
 class UniqueFileTest(test_util.TempDirTestCase):
@@ -226,8 +188,8 @@ class UniqueFileTest(test_util.TempDirTestCase):
     def test_right_mode(self):
         fd1, name1 = self._call(0o700)
         fd2, name2 = self._call(0o600)
-        self.assertTrue(misc.compare_file_modes(0o700, os.stat(name1).st_mode))
-        self.assertTrue(misc.compare_file_modes(0o600, os.stat(name2).st_mode))
+        self.assertTrue(filesystem.check_mode(name1, 0o700))
+        self.assertTrue(filesystem.check_mode(name2, 0o600))
         fd1.close()
         fd2.close()
 
