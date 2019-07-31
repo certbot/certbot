@@ -22,7 +22,9 @@ Credentials
 
 Use of this plugin requires a configuration file containing Cloudflare API
 credentials, obtained from your Cloudflare
-`account page <https://www.cloudflare.com/a/account/my-account>`_.
+`account page <https://www.cloudflare.com/a/account/my-account>`_. This plugin
+does not currently support Cloudflare's "API Tokens", so please ensure you use
+the "Global API Key" for authentication.
 
 .. code-block:: ini
    :name: credentials.ini
