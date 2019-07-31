@@ -412,7 +412,7 @@ class RealpathTest(test_util.TempDirTestCase):
         self.assertTrue('link1 is a loop!' in str(error.exception))
 
 
-class NotExecutableTest(test_util.TempDirTestCase):
+class IsExecutableTest(test_util.TempDirTestCase):
     """Tests for is_executable method"""
     def test_not_executable(self):
         file_path = os.path.join(self.tempdir, "foo")
