@@ -127,10 +127,22 @@ class DirectiveNode(ParserNode):
     @abc.abstractmethod
     def parameters(self):
         """
-        This property contains a list of parameters of this ParserNode object.
+        This property contains a tuple of parameters of this ParserNode object
+        excluding whitespaces.
 
-        :returns: A list of parameters for this node
-        :rtype: list
+        :returns: A tuple of parameters for this node
+        :rtype: tuple
+        """
+
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def set_parameters(self, parameters):
+        """
+        Sets the sequence of parameters for this ParserNode object without
+        whitespaces, and marks this object dirty.
+
+        :param list parameters: sequence of parameters
         """
 
         raise NotImplementedError
@@ -324,10 +336,22 @@ class BlockNode(ParserNode):
     @abc.abstractmethod
     def parameters(self):
         """
-        This property contains a list of parameters of this ParserNode object.
+        This property contains a tuple of parameters of this ParserNode object
+        excluding whitespaces.
 
-        :returns: A list of parameters for this node
-        :rtype: list
+        :returns: A tuple of parameters for this node
+        :rtype: tuple
+        """
+
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def set_parameters(self, parameters):
+        """
+        Sets the sequence of parameters for this ParserNode object without
+        whitespaces, and marks this object dirty.
+
+        :param list parameters: sequence of parameters
         """
 
         raise NotImplementedError

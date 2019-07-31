@@ -2,10 +2,14 @@
 
 import unittest
 
+from acme.magic_typing import Optional, Tuple  # pylint: disable=unused-import, no-name-in-module
+
 from certbot_apache import interfaces
 
 
+
 class DummyCommentNode(interfaces.CommentNode):
+    """ A dummy class implementing CommentNode interface """
     ancestor = None
     comment = ""
     dirty = False
@@ -15,8 +19,9 @@ class DummyCommentNode(interfaces.CommentNode):
 
 
 class DummyDirectiveNode(interfaces.DirectiveNode):
+    """ A dummy class implementing DirectiveNode interface """
     ancestor = None
-    parameters = []
+    parameters = tuple()  # type: Tuple[str, ...]
     dirty = False
     enabled = True
     name = ""
@@ -24,11 +29,15 @@ class DummyDirectiveNode(interfaces.DirectiveNode):
     def save(self, msg):
         pass
 
+    def set_parameters(self, parameters):
+        pass
+
 
 class DummyBlockNode(interfaces.BlockNode):
+    """ A dummy class implementing BlockNode interface """
     ancestor = None
-    parameters = []
-    children = []
+    parameters = tuple()  # type: Tuple[str, ...]
+    children = tuple()  # type: Tuple[str, ...]
     dirty = False
     enabled = True
     name = ""
@@ -51,10 +60,13 @@ class DummyBlockNode(interfaces.BlockNode):
     def find_directives(self, name, exclude=True):
         pass
 
-    def find_comments(self, name, exact=False):
+    def find_comments(self, comment, exact=False):
         pass
 
     def delete_child(self, child):
+        pass
+
+    def set_parameters(self, parameters):
         pass
 
     def unsaved_files(self):
