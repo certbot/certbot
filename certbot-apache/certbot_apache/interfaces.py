@@ -25,7 +25,7 @@ class ParserNode(object):
 
     @property
     @abc.abstractmethod
-    def ancestor(self):
+    def ancestor(self):  # pragma: no cover
         """
         This property contains a reference to ancestor node, or None if the node
         is the root node of the configuration tree.
@@ -38,7 +38,7 @@ class ParserNode(object):
 
     @property
     @abc.abstractmethod
-    def dirty(self):
+    def dirty(self):  # pragma: no cover
         """
         This property contains a boolean value of the information if this node has
         been modified since last save (or after the initial parse).
@@ -81,7 +81,7 @@ class CommentNode(ParserNode):
 
     @property
     @abc.abstractmethod
-    def comment(self):
+    def comment(self):  # pragma: no cover
         """
         Comment property contains the contents of the comment.
 
@@ -102,7 +102,7 @@ class DirectiveNode(ParserNode):
 
     @property
     @abc.abstractmethod
-    def enabled(self):
+    def enabled(self):  # pragma: no cover
         """
         Configuration blocks may have conditional statements enabling or disabling
         their contents. This property returns the state of this DirectiveNode.
@@ -111,9 +111,11 @@ class DirectiveNode(ParserNode):
         :rtype: bool
         """
 
+        raise NotImplementedError
+
     @property
     @abc.abstractmethod
-    def name(self):
+    def name(self):  # pragma: no cover
         """
         Name property contains the name of the directive.
 
@@ -125,7 +127,7 @@ class DirectiveNode(ParserNode):
 
     @property
     @abc.abstractmethod
-    def parameters(self):
+    def parameters(self):  # pragma: no cover
         """
         This property contains a tuple of parameters of this ParserNode object
         excluding whitespaces.
@@ -144,8 +146,6 @@ class DirectiveNode(ParserNode):
 
         :param list parameters: sequence of parameters
         """
-
-        raise NotImplementedError
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -233,7 +233,7 @@ class BlockNode(ParserNode):
 
     @property
     @abc.abstractmethod
-    def children(self):
+    def children(self):  # pragma: no cover
         """
         This property contains a list ParserNode objects that are the children
         for this node. The order of children is the same as that of the parsed
@@ -320,7 +320,7 @@ class BlockNode(ParserNode):
 
     @property
     @abc.abstractmethod
-    def name(self):
+    def name(self):  # pragma: no cover
         """
         Name property contains the name of the block. As an example for config:
             <VirtualHost *:80> ... </VirtualHost>
@@ -334,7 +334,7 @@ class BlockNode(ParserNode):
 
     @property
     @abc.abstractmethod
-    def parameters(self):
+    def parameters(self):  # pragma: no cover
         """
         This property contains a tuple of parameters of this ParserNode object
         excluding whitespaces.
@@ -353,8 +353,6 @@ class BlockNode(ParserNode):
 
         :param list parameters: sequence of parameters
         """
-
-        raise NotImplementedError
 
     @abc.abstractmethod
     def unsaved_files(self):
