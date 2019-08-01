@@ -296,6 +296,7 @@ def realpath(file_path):
 # elevated privileges or not. However this is not a problem since certbot always
 # requires to be run under a privileged shell, so the user will always benefit
 # from the highest (privileged one) set of permissions on a given file.
+def is_executable(path):
     """
     Is path an executable file?
     :param str path: path to test
