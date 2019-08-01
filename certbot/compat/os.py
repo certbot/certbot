@@ -116,4 +116,3 @@ def access(*unused_args, **unused_kwargs):
     raise RuntimeError('Usage of os.access() is forbidden. '
                        'Use certbot.compat.filesystem.check_mode() or '
                        'certbot.compat.filesystem.is_executable() instead.')
-
