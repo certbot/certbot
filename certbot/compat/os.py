@@ -107,3 +107,12 @@ def replace(*unused_args, **unused_kwargs):
     """Method os.replace() is forbidden"""
     raise RuntimeError('Usage of os.replace() is forbidden. '
                        'Use certbot.compat.filesystem.replace() instead.')
+
+
+# Results given by os.access are inconsistent or partial on Windows, because this platform is not
+# following the POSIX approach.
+def access(*unused_args, **unused_kwargs):
+    """Method os.access() is forbidden"""
+    raise RuntimeError('Usage of os.access() is forbidden. '
+                       'Use certbot.compat.filesystem.check_mode() or '
+                       'certbot.compat.filesystem.is_executable() instead.')

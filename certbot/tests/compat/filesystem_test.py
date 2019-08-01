@@ -1,4 +1,5 @@
 """Tests for certbot.compat.filesystem"""
+import contextlib
 import errno
 import unittest
 
@@ -409,6 +410,70 @@ class RealpathTest(test_util.TempDirTestCase):
         with self.assertRaises(RuntimeError) as error:
             filesystem.realpath(link1_path)
         self.assertTrue('link1 is a loop!' in str(error.exception))
+
+
+class IsExecutableTest(test_util.TempDirTestCase):
+    """Tests for is_executable method"""
+    def test_not_executable(self):
+        file_path = os.path.join(self.tempdir, "foo")
+
+        # On Windows a file created within Certbot will always have all permissions to the
+        # Administrators group set. Since the unit tests are typically executed under elevated
+        # privileges, it means that current user will always have effective execute rights on the
+        # hook script, and so the test will fail. To prevent that and represent a file created
+        # outside Certbot as typically a hook file is, we mock the _generate_dacl function in
+        # certbot.compat.filesystem to give rights only to the current user. This implies removing
+        # all ACEs except the first one from the DACL created by original _generate_dacl function.
+
+        from certbot.compat.filesystem import _generate_dacl
+
+        def _execute_mock(user_sid, mode):
+            dacl = _generate_dacl(user_sid, mode)
+            for _ in range(1, dacl.GetAceCount()):
+                dacl.DeleteAce(1)  # DeleteAce dynamically updates the internal index mapping.
+            return dacl
+
+        # create a non-executable file
+        with mock.patch("certbot.compat.filesystem._generate_dacl", side_effect=_execute_mock):
+            os.close(filesystem.open(file_path, os.O_CREAT | os.O_WRONLY, 0o666))
+
+        self.assertFalse(filesystem.is_executable(file_path))
+
+    @mock.patch("certbot.compat.filesystem.os.path.isfile")
+    @mock.patch("certbot.compat.filesystem.os.access")
+    def test_full_path(self, mock_access, mock_isfile):
+        with _fix_windows_runtime():
+            mock_access.return_value = True
+            mock_isfile.return_value = True
+            self.assertTrue(filesystem.is_executable("/path/to/exe"))
+
+    @mock.patch("certbot.compat.filesystem.os.path.isfile")
+    @mock.patch("certbot.compat.filesystem.os.access")
+    def test_rel_path(self, mock_access, mock_isfile):
+        with _fix_windows_runtime():
+            mock_access.return_value = True
+            mock_isfile.return_value = True
+            self.assertTrue(filesystem.is_executable("exe"))
+
+    @mock.patch("certbot.compat.filesystem.os.path.isfile")
+    @mock.patch("certbot.compat.filesystem.os.access")
+    def test_not_found(self, mock_access, mock_isfile):
+        with _fix_windows_runtime():
+            mock_access.return_value = True
+            mock_isfile.return_value = False
+            self.assertFalse(filesystem.is_executable("exe"))
+
+
+@contextlib.contextmanager
+def _fix_windows_runtime():
+    if os.name != 'nt':
+        yield
+    else:
+        with mock.patch('win32security.GetFileSecurity') as mock_get:
+            dacl_mock = mock_get.return_value.GetSecurityDescriptorDacl
+            mode_mock = dacl_mock.return_value.GetEffectiveRightsFromAcl
+            mode_mock.return_value = ntsecuritycon.FILE_GENERIC_EXECUTE
+            yield
 
 
 def _get_security_dacl(target):
