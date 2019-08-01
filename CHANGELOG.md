@@ -6,6 +6,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+* Turn off session tickets for apache plugin by default
 * acme: Authz deactivation added to `acme` module.
 
 ### Changed

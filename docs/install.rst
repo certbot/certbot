@@ -42,7 +42,7 @@ client as root, either `letsencrypt-nosudo
 The Apache plugin currently requires an OS with augeas version 1.0; currently `it
 supports
 <https://github.com/certbot/certbot/blob/master/certbot-apache/certbot_apache/constants.py>`_
-modern OSes based on Debian, Fedora, SUSE, Gentoo and Darwin.
+modern OSes based on Debian, Ubuntu, Fedora, SUSE, Gentoo and Darwin.
 
 
 Additional integrity verification of certbot-auto script can be done by verifying its digital signature.
@@ -217,6 +217,31 @@ repo, if you have not already done so. Then run:
 .. code-block:: shell
 
    sudo apt-get install certbot python-certbot-apache -t jessie-backports
+
+**Ubuntu**
+
+If you run Ubuntu Trusty, Xenial, or Bionic, certbot is available through the official PPA,
+that can be installed as followed:
+
+.. code-block:: shell
+
+   sudo apt-get update
+   sudo apt-get install software-properties-common
+   sudo add-apt-repository universe
+   sudo add-apt-repository ppa:certbot/certbot
+   sudo apt-get update
+
+Then, certbot can be installed using:
+
+.. code-block:: shell
+
+   sudo apt-get install certbot
+
+Optionally to install the Certbot Apache plugin, you can use:
+
+.. code-block:: shell
+
+   sudo apt-get install python-certbot-apache
 
 **Fedora**
 
