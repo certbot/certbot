@@ -8,6 +8,7 @@ from acme.magic_typing import Set, List  # pylint: disable=unused-import, no-nam
 
 from certbot import errors
 from certbot import util
+from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.plugins import util as plug_util
 
@@ -254,7 +255,7 @@ def execute(cmd_name, shell_cmd):
                      cmd_name, shell_cmd, cmd.returncode)
     if err:
         logger.error('Error output from %s command %s:\n%s', cmd_name, base_cmd, err)
-    return (err, out)
+    return err, out
 
 
 def list_hooks(dir_path):
@@ -267,5 +268,5 @@ def list_hooks(dir_path):
 
     """
     allpaths = (os.path.join(dir_path, f) for f in os.listdir(dir_path))
-    hooks = [path for path in allpaths if util.is_exe(path) and not path.endswith('~')]
+    hooks = [path for path in allpaths if filesystem.is_executable(path) and not path.endswith('~')]
     return sorted(hooks)

@@ -52,26 +52,13 @@ class ExeExistsTest(unittest.TestCase):
         from certbot.util import exe_exists
         return exe_exists(exe)
 
-    @mock.patch("certbot.util.os.path.isfile")
-    @mock.patch("certbot.util.os.access")
-    def test_full_path(self, mock_access, mock_isfile):
-        mock_access.return_value = True
-        mock_isfile.return_value = True
-        self.assertTrue(self._call("/path/to/exe"))
+    def test_exe_exists(self):
+        with mock.patch("certbot.util.filesystem.is_executable", return_value=True):
+            self.assertTrue(self._call("/path/to/exe"))
 
-    @mock.patch("certbot.util.os.path.isfile")
-    @mock.patch("certbot.util.os.access")
-    def test_on_path(self, mock_access, mock_isfile):
-        mock_access.return_value = True
-        mock_isfile.return_value = True
-        self.assertTrue(self._call("exe"))
-
-    @mock.patch("certbot.util.os.path.isfile")
-    @mock.patch("certbot.util.os.access")
-    def test_not_found(self, mock_access, mock_isfile):
-        mock_access.return_value = False
-        mock_isfile.return_value = True
-        self.assertFalse(self._call("exe"))
+    def test_exe_not_exists(self):
+        with mock.patch("certbot.util.filesystem.is_executable", return_value=False):
+            self.assertFalse(self._call("/path/to/exe"))
 
 
 class LockDirUntilExit(test_util.TempDirTestCase):

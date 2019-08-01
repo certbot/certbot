@@ -289,6 +289,42 @@ def realpath(file_path):
     return os.path.abspath(file_path)
 
 
+# On Windows is_executable run from an unprivileged shell may claim that a path is
+# executable when it is excutable only if run from a privileged shell. This result
+# is due to the fact that GetEffectiveRightsFromAcl calculate effective rights
+# without taking into consideration if the target user has currently required the
+# elevated privileges or not. However this is not a problem since certbot always
+# requires to be run under a privileged shell, so the user will always benefit
+# from the highest (privileged one) set of permissions on a given file.
+def is_executable(path):
+    """
+    Is path an executable file?
+    :param str path: path to test
+    :returns: True if path is an executable file
+    :rtype: bool
+    """
+    if POSIX_MODE:
+        return os.path.isfile(path) and os.access(path, os.X_OK)
+
+    return _win_is_executable(path)
+
+
+def _win_is_executable(path):
+    if not os.path.isfile(path):
+        return False
+
+    security = win32security.GetFileSecurity(path, win32security.DACL_SECURITY_INFORMATION)
+    dacl = security.GetSecurityDescriptorDacl()
+
+    mode = dacl.GetEffectiveRightsFromAcl({
+        'TrusteeForm': win32security.TRUSTEE_IS_SID,
+        'TrusteeType': win32security.TRUSTEE_IS_USER,
+        'Identifier': _get_current_user(),
+    })
+
+    return mode & ntsecuritycon.FILE_GENERIC_EXECUTE == ntsecuritycon.FILE_GENERIC_EXECUTE
+
+
 def _apply_win_mode(file_path, mode):
     """
     This function converts the given POSIX mode into a Windows ACL list, and applies it to the
