@@ -15,6 +15,7 @@ import time
 import warnings
 from distutils.version import LooseVersion
 
+import pkg_resources
 import requests
 from OpenSSL import crypto
 from cryptography.hazmat.backends import default_backend
@@ -274,3 +275,16 @@ def read_certificate(cert_path):
 
     cert = crypto.load_certificate(crypto.FILETYPE_PEM, data)
     return crypto.dump_certificate(crypto.FILETYPE_TEXT, cert).decode('utf-8')
+
+
+def load_sample_data_path(workspace):
+    """
+    Load the certbot configuration example designed to make OCSP tests, and return its path
+    :param str workspace: current test workspace directory path
+    :returns: the path to the loaded sample data directory
+    :rtype: str
+    """
+    original = pkg_resources.resource_filename('certbot_integration_tests', 'assets/sample-config')
+    copied = os.path.join(workspace, 'sample-config')
+    shutil.copytree(original, copied, symlinks=True)
+    return copied

@@ -542,6 +542,17 @@ def test_wildcard_certificates(context):
     assert exists(join(context.config_dir, 'live', certname, 'fullchain.pem'))
 
 
+def test_ocsp_status_stale(context):
+    """Test retrieval of OCSP statuses for staled config"""
+    sample_data_path = misc.load_sample_data_path(context.workspace)
+    output = context.certbot(['certificates', '--config-dir', sample_data_path])
+
+    assert output.count('TEST_CERT') == 2, ('Did not find two test certs as expected ({0})'
+                                            .format(output.count('TEST_CERT')))
+    assert output.count('EXPIRED') == 2, ('Did not find two expired certs as expected ({0})'
+                                          .format(output.count('EXPIRED')))
+
+
 def test_ocsp_status_live(context):
     """Test retrieval of OCSP statuses for live config"""
     cert = context.get_domain('ocsp-check')
