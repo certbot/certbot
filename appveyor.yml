@@ -4,7 +4,7 @@ environment:
   matrix:
     - TOXENV: py35
     - TOXENV: py37-cover
-    - TOXENV: integration-certbot-windows
+    - TOXENV: integration-certbot
 
 branches:
   only:
@@ -27,7 +27,7 @@ install:
   # Use Python 3.7 by default
   - SET PATH=C:\\Python37;C:\\Python37\\Scripts;%PATH%
   # Using 4 processes is proven to be the most efficient integration tests config for AppVeyor
-  - IF %TOXENV%==integration-certbot-windows SET PYTEST_ADDOPTS=--numprocesses=4
+  - IF %TOXENV%==integration-certbot SET PYTEST_ADDOPTS=--numprocesses=4
   # Check env
   - python --version
   # Upgrade pip to avoid warnings
