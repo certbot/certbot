@@ -57,11 +57,7 @@ class IntegrationTestsContext(object):
 
     def cleanup(self):
         """Cleanup the integration test context."""
-        try:
-            #shutil.rmtree(self.workspace)
-            pass
-        except BaseException as err:
-            LOGGER.warning('Could not clean workspace {0}, error was: {1}'.format(self.workspace, err))
+        shutil.rmtree(self.workspace)
 
     def certbot(self, args, force_renew=True):
         """

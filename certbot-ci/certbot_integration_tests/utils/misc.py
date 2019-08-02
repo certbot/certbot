@@ -102,10 +102,7 @@ def create_http_server(port):
                 process.terminate()
                 process.join()  # Block until process is effectively terminated
         finally:
-            try:
-                shutil.rmtree(webroot)
-            except BaseException as err:
-                LOGGER.warning('Could not clean webroot {0}, error was: {1}'.format(webroot, err))
+            shutil.rmtree(webroot)
 
 
 def list_renewal_hooks_dirs(config_dir):
