@@ -61,6 +61,7 @@ class ApacheParser(object):
         self.root = os.path.abspath(root)
         self.loc = {"root": self._find_config_root()}
         self.parse_file(self.loc["root"])
+        self.handle_includes()
 
         if version >= (2, 4):
             # Look up variables from httpd and add to DOM if not already parsed
@@ -269,6 +270,7 @@ class ApacheParser(object):
 
         """
         mods = set()  # type: Set[str]
+        self.handle_includes()
         matches = self.find_dir("LoadModule")
         iterator = iter(matches)
         # Make sure prev_size != cur_size for do: while: iteration
@@ -321,11 +323,7 @@ class ApacheParser(object):
     def update_includes(self):
         """Get includes from httpd process, and add them to DOM if needed"""
 
-        # Find_dir iterates over configuration for Include and IncludeOptional
-        # directives to make sure we see the full include tree present in the
-        # configuration files
-        _ = self.find_dir("Include")
-
+        self.handle_includes()
         inc_cmd = [self.configurator.option("ctl"), "-t", "-D",
                    "DUMP_INCLUDES"]
         matches = self.parse_from_subprocess(inc_cmd, r"\(.*\) (.*)")
@@ -606,6 +604,8 @@ class ApacheParser(object):
         # includes = self.aug.match(start +
         # "//* [self::directive='Include']/* [label()='arg']")
 
+        regex = "%s" % (case_i(directive))
+
         regex = "(%s)|(%s)|(%s)" % (case_i(directive),
                                     case_i("Include"),
                                     case_i("IncludeOptional"))
@@ -636,6 +636,49 @@ class ApacheParser(object):
                 ordered_matches.extend(self.aug.match(match + arg_suffix))
 
         return ordered_matches
+
+    def handle_includes(self, known_matches=None):
+        """
+        This method searches through the configuration tree for Include and
+        IncludeOptional directives and includes them in the Augeas DOM tree
+        recursively.
+
+        :param list known_matches: List of already known Augeas DOM paths of found
+            include directives.
+        """
+
+        start = get_aug_path(self.loc["root"])
+        regex = "(%s)|(%s)" % (case_i("Include"), case_i("IncludeOptional"))
+
+        all_matches = self.aug.match(
+            "%s//*[self::directive=~regexp('%s')]" % (start, regex))
+
+        if known_matches and all([True for m in all_matches if m in known_matches]):
+            # We already found everything previously
+            return
+
+        # Always use the exclusion as we want to have the correct state
+        matches = self._exclude_dirs(all_matches)
+
+        for match in matches:
+            incpath = self.get_arg(match + "/arg")
+            # Attempts to add a transform to the file if one does not already exist
+
+            # Standardize the include argument based on server root
+            if not incpath.startswith("/"):
+                # Normpath will condense ../
+                incpath = os.path.normpath(os.path.join(self.root, incpath))
+            else:
+                incpath = os.path.normpath(incpath)
+
+            if os.path.isdir(incpath):
+                self.parse_file(os.path.join(incpath, "*"))
+            else:
+                self.parse_file(incpath)
+
+        # Iterate. The results will be checked and the recursion broken when
+        # everything has been found.
+        self.handle_includes(all_matches)
 
     def get_all_args(self, match):
         """
@@ -755,10 +798,10 @@ class ApacheParser(object):
             arg = os.path.normpath(arg)
 
         # Attempts to add a transform to the file if one does not already exist
-        if os.path.isdir(arg):
-            self.parse_file(os.path.join(arg, "*"))
-        else:
-            self.parse_file(arg)
+        #if os.path.isdir(arg):
+        #    self.parse_file(os.path.join(arg, "*"))
+        #else:
+        #    self.parse_file(arg)
 
         # Argument represents an fnmatch regular expression, convert it
         # Split up the path and convert each into an Augeas accepted regex

@@ -91,6 +91,7 @@ class ComplexParserTest(util.ParserTest):
         from certbot_apache import parser
         self.parser.add_dir(parser.get_aug_path(self.parser.loc["default"]),
                             "Include", [arg])
+        self.parser.handle_includes()
         if hit:
             self.assertTrue(self.parser.find_dir("FNMATCH_DIRECTIVE"))
         else:
