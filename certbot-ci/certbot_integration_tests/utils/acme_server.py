@@ -134,6 +134,10 @@ class ACMEServer(object):
             [challtestsrv_path, '-management', ':{0}'.format(CHALLTESTSRV_PORT), '-defaultIPv6', '""',
              '-defaultIPv4', '127.0.0.1', '-http01', '""', '-tlsalpn01', '""', '-https01', '""'])
 
+        # pebble_ocsp_server is imported here and not at the top of module in order to avoid a useless
+        # ImportError, in the case where cryptography dependency is too old to support ocsp, but
+        # Boulder is used instead of Pebble, so pebble_ocsp_server is not used. This is the typical
+        # situation of integration-certbot-oldest tox testenv.
         from certbot_integration_tests.utils import pebble_ocsp_server
         self._launch_process([sys.executable, pebble_ocsp_server.__file__])
 
