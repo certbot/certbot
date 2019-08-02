@@ -7,13 +7,13 @@ import logging
 import errno
 import multiprocessing
 import os
+import re
 import shutil
 import stat
 import subprocess
 import sys
 import tempfile
 import time
-import unittest
 import warnings
 from distutils.version import LooseVersion
 
@@ -115,7 +115,7 @@ def list_renewal_hooks_dirs(config_dir):
     return [os.path.join(renewal_hooks_root, item) for item in ['pre', 'deploy', 'post']]
 
 
-def generate_test_file_hooks(config_dir, hook_probe, workspace):
+def generate_test_file_hooks(config_dir, hook_probe):
     """
     Create a suite of certbot hook scripts and put them in the relevant hook directory
     for the given certbot configuration directory. These scripts, when executed, will write
@@ -301,6 +301,16 @@ def load_sample_data_path(workspace):
     return copied
 
 
-def echo(line, path=None):
+def echo(keyword, path=None):
+    """
+    Generate a platform independent executable command
+    that echoes the given keyword into the given file.
+    :param keyword: the keyword to echo (must be a single keyword)
+    :param path: path to the file were keyword is echoed
+    :return: the executable command
+    """
+    if not re.match(r'^\w+$', keyword):
+        raise ValueError('Error, keyword `{0}` is not a single keyword.'
+                         .format(keyword))
     return '{0} -c "from __future__ import print_function; print(\'{1}\')"{2}'.format(
-        os.path.basename(sys.executable), line, ' >> "{0}"'.format(path) if path else '')
+        os.path.basename(sys.executable), keyword, ' >> "{0}"'.format(path) if path else '')

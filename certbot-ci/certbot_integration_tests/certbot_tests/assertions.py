@@ -124,14 +124,13 @@ def assert_world_no_permissions(file):
     else:
         security = win32security.GetFileSecurity(file, win32security.DACL_SECURITY_INFORMATION)
         dacl = security.GetSecurityDescriptorDacl()
-        authorized = (
-            _get_current_user(),
-            win32security.ConvertStringSidToSid(SYSTEM_SID),
-            win32security.ConvertStringSidToSid(ADMINS_SID),
-        )
+        mode = dacl.GetEffectiveRightsFromAcl({
+            'TrusteeForm': win32security.TRUSTEE_IS_SID,
+            'TrusteeType': win32security.TRUSTEE_IS_USER,
+            'Identifier': win32security.ConvertStringSidToSid(EVERYBODY_SID),
+        })
 
-        assert not [index for index in range(0, dacl.GetAceCount())
-                    if dacl.GetAce(index)[2] not in authorized]
+        assert not mode
 
 
 def assert_world_read_permissions(file):
@@ -145,17 +144,15 @@ def assert_world_read_permissions(file):
     else:
         security = win32security.GetFileSecurity(file, win32security.DACL_SECURITY_INFORMATION)
         dacl = security.GetSecurityDescriptorDacl()
-        authorized_rw = (
-            _get_current_user(),
-            win32security.ConvertStringSidToSid(SYSTEM_SID),
-            win32security.ConvertStringSidToSid(ADMINS_SID),
-        )
+        mode = dacl.GetEffectiveRightsFromAcl({
+            'TrusteeForm': win32security.TRUSTEE_IS_SID,
+            'TrusteeType': win32security.TRUSTEE_IS_USER,
+            'Identifier': win32security.ConvertStringSidToSid(EVERYBODY_SID),
+        })
 
-        modes_should_ro = [dacl.GetAce(index)[1] for index in range(0, dacl.GetAceCount())
-                           if dacl.GetAce(index)[2] not in authorized_rw]
-
-        assert not [mode for mode in modes_should_ro
-                    if mode != ntsecuritycon.FILE_GENERIC_READ]
+        assert not mode & ntsecuritycon.FILE_GENERIC_WRITE
+        assert not mode & ntsecuritycon.FILE_GENERIC_EXECUTE
+        assert mode & ntsecuritycon.FILE_GENERIC_READ == ntsecuritycon.FILE_GENERIC_READ
 
 
 def _get_current_user():

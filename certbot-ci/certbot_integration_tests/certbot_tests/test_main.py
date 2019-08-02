@@ -87,8 +87,8 @@ def test_http_01(context):
         context.certbot([
             '--domains', certname, '--preferred-challenges', 'http-01', 'run',
             '--cert-name', certname,
-            '--pre-hook', misc.echo('wtf.pre', context.hook_probe),
-            '--post-hook', misc.echo('wtf.post', context.hook_probe),
+            '--pre-hook', misc.echo('wtf_pre', context.hook_probe),
+            '--post-hook', misc.echo('wtf_post', context.hook_probe),
             '--deploy-hook', misc.echo('deploy', context.hook_probe),
         ])
 
@@ -107,8 +107,8 @@ def test_manual_http_auth(context):
             '--cert-name', certname,
             '--manual-auth-hook', scripts[0],
             '--manual-cleanup-hook', scripts[1],
-            '--pre-hook', misc.echo('wtf.pre', context.hook_probe),
-            '--post-hook', misc.echo('wtf.post', context.hook_probe),
+            '--pre-hook', misc.echo('wtf_pre', context.hook_probe),
+            '--post-hook', misc.echo('wtf_post', context.hook_probe),
             '--renew-hook', misc.echo('renew', context.hook_probe),
         ])
 
@@ -125,8 +125,8 @@ def test_manual_dns_auth(context):
         'run', '--cert-name', certname,
         '--manual-auth-hook', context.manual_dns_auth_hook,
         '--manual-cleanup-hook', context.manual_dns_cleanup_hook,
-        '--pre-hook', misc.echo('wtf.pre', context.hook_probe),
-        '--post-hook', misc.echo('wtf.post', context.hook_probe),
+        '--pre-hook', misc.echo('wtf_pre', context.hook_probe),
+        '--post-hook', misc.echo('wtf_post', context.hook_probe),
         '--renew-hook', misc.echo('renew', context.hook_probe),
     ])
 
@@ -198,7 +198,7 @@ def test_renew_with_hook_scripts(context):
 
     assert_cert_count_for_lineage(context.config_dir, certname, 1)
 
-    misc.generate_test_file_hooks(context.config_dir, context.hook_probe, context.workspace)
+    misc.generate_test_file_hooks(context.config_dir, context.hook_probe)
     context.certbot(['renew'])
 
     assert_cert_count_for_lineage(context.config_dir, certname, 2)
@@ -307,7 +307,7 @@ def test_renew_ignoring_directory_hooks(context):
 
     assert_cert_count_for_lineage(context.config_dir, certname, 1)
 
-    misc.generate_test_file_hooks(context.config_dir, context.hook_probe, context.workspace)
+    misc.generate_test_file_hooks(context.config_dir, context.hook_probe)
     context.certbot(['renew', '--no-directory-hooks'])
 
     assert_cert_count_for_lineage(context.config_dir, certname, 2)
@@ -322,7 +322,7 @@ def test_renew_empty_hook_scripts(context):
 
     assert_cert_count_for_lineage(context.config_dir, certname, 1)
 
-    misc.generate_test_file_hooks(context.config_dir, context.hook_probe, context.workspace)
+    misc.generate_test_file_hooks(context.config_dir, context.hook_probe)
     for hook_dir in misc.list_renewal_hooks_dirs(context.config_dir):
         shutil.rmtree(hook_dir)
         os.makedirs(join(hook_dir, 'dir'))
@@ -351,14 +351,14 @@ def test_renew_hook_override(context):
     open(context.hook_probe, 'w').close()
     context.certbot([
         'renew', '--cert-name', certname,
-        '--pre-hook', misc.echo('pre-override', context.hook_probe),
-        '--post-hook', misc.echo('post-override', context.hook_probe),
-        '--deploy-hook', misc.echo('deploy-override', context.hook_probe),
+        '--pre-hook', misc.echo('pre_override', context.hook_probe),
+        '--post-hook', misc.echo('post_override', context.hook_probe),
+        '--deploy-hook', misc.echo('deploy_override', context.hook_probe),
     ])
 
-    assert_hook_execution(context.hook_probe, 'pre-override')
-    assert_hook_execution(context.hook_probe, 'post-override')
-    assert_hook_execution(context.hook_probe, 'deploy-override')
+    assert_hook_execution(context.hook_probe, 'pre_override')
+    assert_hook_execution(context.hook_probe, 'post_override')
+    assert_hook_execution(context.hook_probe, 'deploy_override')
     with pytest.raises(AssertionError):
         assert_hook_execution(context.hook_probe, 'pre')
     with pytest.raises(AssertionError):
@@ -370,9 +370,9 @@ def test_renew_hook_override(context):
     open(context.hook_probe, 'w').close()
     context.certbot(['renew', '--cert-name', certname])
 
-    assert_hook_execution(context.hook_probe, 'pre-override')
-    assert_hook_execution(context.hook_probe, 'post-override')
-    assert_hook_execution(context.hook_probe, 'deploy-override')
+    assert_hook_execution(context.hook_probe, 'pre_override')
+    assert_hook_execution(context.hook_probe, 'post_override')
+    assert_hook_execution(context.hook_probe, 'deploy_override')
 
 
 def test_invalid_domain_with_dns_challenge(context):
