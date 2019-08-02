@@ -83,6 +83,6 @@ twine==1.11.0
 typed-ast==1.1.0
 typing==3.6.4
 uritemplate==0.6
-virtualenv==16.6.1
+virtualenv==16.6.2
 wcwidth==0.1.7
 wrapt==1.11.1
