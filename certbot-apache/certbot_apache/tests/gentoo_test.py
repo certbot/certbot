@@ -4,6 +4,7 @@ import unittest
 import mock
 
 from certbot import errors
+from certbot.compat import filesystem
 from certbot.compat import os
 
 from certbot_apache import obj
@@ -81,7 +82,7 @@ class MultipleVhostsTestGentoo(util.ApacheTest):
         """Make sure we read the Gentoo APACHE2_OPTS variable correctly"""
         defines = ['DEFAULT_VHOST', 'INFO',
                    'SSL', 'SSL_DEFAULT_VHOST', 'LANGUAGE']
-        self.config.parser.apacheconfig_filep = os.path.realpath(
+        self.config.parser.apacheconfig_filep = filesystem.realpath(
             os.path.join(self.config.parser.root, "../conf.d/apache2"))
         self.config.parser.variables = {}
         with mock.patch("certbot_apache.override_gentoo.GentooParser.update_modules"):

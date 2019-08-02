@@ -168,6 +168,7 @@ STATUS_VALID = Status('valid')
 STATUS_INVALID = Status('invalid')
 STATUS_REVOKED = Status('revoked')
 STATUS_READY = Status('ready')
+STATUS_DEACTIVATED = Status('deactivated')
 
 
 class IdentifierType(_Constant):
@@ -471,7 +472,7 @@ class Authorization(ResourceBody):
     :ivar datetime.datetime expires:
 
     """
-    identifier = jose.Field('identifier', decoder=Identifier.from_json)
+    identifier = jose.Field('identifier', decoder=Identifier.from_json, omitempty=True)
     challenges = jose.Field('challenges', omitempty=True)
     combinations = jose.Field('combinations', omitempty=True)
 
@@ -498,6 +499,12 @@ class Authorization(ResourceBody):
 class NewAuthorization(Authorization):
     """New authorization."""
     resource_type = 'new-authz'
+    resource = fields.Resource(resource_type)
+
+
+class UpdateAuthorization(Authorization):
+    """Update authorization."""
+    resource_type = 'authz'
     resource = fields.Resource(resource_type)
 
 

@@ -4,6 +4,7 @@ import unittest
 import mock
 
 from certbot import errors
+from certbot.compat import filesystem
 from certbot.compat import os
 
 from certbot_apache import obj
@@ -160,7 +161,7 @@ class MultipleVhostsTestCentOS(util.ApacheTest):
         """Make sure we read the sysconfig OPTIONS variable correctly"""
         # Return nothing for the process calls
         mock_cfg.return_value = ""
-        self.config.parser.sysconfig_filep = os.path.realpath(
+        self.config.parser.sysconfig_filep = filesystem.realpath(
             os.path.join(self.config.parser.root, "../sysconfig/httpd"))
         self.config.parser.variables = {}
 
@@ -188,6 +189,13 @@ class MultipleVhostsTestCentOS(util.ApacheTest):
                                        errors.SubprocessError,
                                        errors.SubprocessError]
         self.assertRaises(errors.MisconfigurationError, self.config.restart)
+
+    def test_pick_correct_tls_config(self):
+        self.config.version = (2, 4, 10)
+        self.assertTrue('centos-old' in self.config.pick_apache_config())
+
+        self.config.version = (2, 4, 11)
+        self.assertTrue('centos-current' in self.config.pick_apache_config())
 
 
 if __name__ == "__main__":

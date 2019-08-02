@@ -42,12 +42,12 @@ mypy==0.600
 ndg-httpsclient==0.3.2
 oauth2client==2.0.0
 pathlib2==2.3.0
-pexpect==4.2.1
+pexpect==4.7.0
 pickleshare==0.7.4
 pkginfo==1.4.2
 pluggy==0.5.2
 prompt-toolkit==1.0.15
-ptyprocess==0.5.2
+ptyprocess==0.6.0
 py==1.8.0
 pyasn1==0.1.9
 pyasn1-modules==0.0.10
@@ -82,6 +82,6 @@ twine==1.11.0
 typed-ast==1.1.0
 typing==3.6.4
 uritemplate==0.6
-virtualenv==16.6.1
+virtualenv==16.6.2
 wcwidth==0.1.7
 wrapt==1.11.1

@@ -15,6 +15,7 @@ Authors
 * [Alex Gaynor](https://github.com/alex)
 * [Alex Halderman](https://github.com/jhalderm)
 * [Alex Jordan](https://github.com/strugee)
+* [Alex Zorin](https://github.com/alexzorin)
 * [Amjad Mashaal](https://github.com/TheNavigat)
 * [Andrew Murray](https://github.com/radarhere)
 * [Anselm Levskaya](https://github.com/levskaya)
