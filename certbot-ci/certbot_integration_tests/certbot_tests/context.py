@@ -7,8 +7,6 @@ import tempfile
 
 from certbot_integration_tests.utils import certbot_call
 
-LOGGER = logging.getLogger()
-
 
 class IntegrationTestsContext(object):
     """General fixture describing a certbot integration tests context"""
@@ -22,7 +20,7 @@ class IntegrationTestsContext(object):
             self.worker_id = 'primary'
             acme_xdist = request.config.acme_xdist
 
-        self.acme_server =acme_xdist['acme_server']
+        self.acme_server = acme_xdist['acme_server']
         self.directory_url = acme_xdist['directory_url']
         self.tls_alpn_01_port = acme_xdist['https_port'][self.worker_id]
         self.http_01_port = acme_xdist['http_port'][self.worker_id]

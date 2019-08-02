@@ -576,11 +576,9 @@ def test_ocsp_status_stale(context):
 
 def test_ocsp_status_live(context):
     """Test retrieval of OCSP statuses for live config"""
-    if context.acme_server == 'pebble':
-        pytest.skip('Pebble does not support OCSP status requests.')
+    cert = context.get_domain('ocsp-check')
 
     # OSCP 1: Check live certificate OCSP status (VALID)
-    cert = context.get_domain('ocsp-check')
     context.certbot(['--domains', cert])
     output = context.certbot(['certificates'])
 
