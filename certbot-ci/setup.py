@@ -11,6 +11,7 @@ install_requires = [
     'pytest',
     'pytest-cov',
     'pytest-xdist',
+    'python-dateutil',
     'pyyaml',
     'requests',
     'six',
