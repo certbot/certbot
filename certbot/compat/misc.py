@@ -30,6 +30,10 @@ else:
     MASK_FOR_PRIVATE_KEY_PERMISSIONS = 0
 
 
+# For Linux: define OS specific standard binary directories
+STANDARD_BINARY_DIRS = ["/usr/sbin", "/usr/local/bin", "/usr/local/sbin"] if POSIX_MODE else []
+
+
 def raise_for_non_administrative_windows_rights():
     # type: () -> None
     """
@@ -40,22 +44,6 @@ def raise_for_non_administrative_windows_rights():
     """
     if not POSIX_MODE and shellwin32.IsUserAnAdmin() == 0:  # pragma: no cover
         raise errors.Error('Error, certbot must be run on a shell with administrative rights.')
-
-
-def os_geteuid():
-    """
-    Get current user uid
-
-    :returns: The current user uid.
-    :rtype: int
-
-    """
-    try:
-        # Linux specific
-        return os.geteuid()
-    except AttributeError:
-        # Windows specific
-        return 0
 
 
 def readline_with_timeout(timeout, prompt):
@@ -86,16 +74,6 @@ def readline_with_timeout(timeout, prompt):
         # as select only supports socket in this case.
         # So no timeout on Windows for now.
         return sys.stdin.readline()
-
-
-def compare_file_modes(mode1, mode2):
-    """Return true if the two modes can be considered as equals for this platform"""
-    if os.name != 'nt':
-        # Linux specific: standard compare
-        return oct(stat.S_IMODE(mode1)) == oct(stat.S_IMODE(mode2))
-    # Windows specific: most of mode bits are ignored on Windows. Only check user R/W rights.
-    return (stat.S_IMODE(mode1) & stat.S_IREAD == stat.S_IMODE(mode2) & stat.S_IREAD
-            and stat.S_IMODE(mode1) & stat.S_IWRITE == stat.S_IMODE(mode2) & stat.S_IWRITE)
 
 
 WINDOWS_DEFAULT_FOLDERS = {

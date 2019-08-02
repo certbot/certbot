@@ -97,8 +97,8 @@ class UpdateLiveSymlinksTest(BaseCertManagerTest):
                 for kind in ALL_FOUR:
                     os.chdir(os.path.dirname(self.config_files[domain][kind]))
                     self.assertEqual(
-                        os.path.realpath(os.readlink(self.config_files[domain][kind])),
-                        os.path.realpath(archive_paths[domain][kind]))
+                        filesystem.realpath(os.readlink(self.config_files[domain][kind])),
+                        filesystem.realpath(archive_paths[domain][kind]))
         finally:
             os.chdir(prev_dir)
 
@@ -277,13 +277,12 @@ class SearchLineagesTest(BaseCertManagerTest):
     @mock.patch('certbot.storage.renewal_conf_files')
     @mock.patch('certbot.storage.RenewableCert')
     def test_cert_storage_error(self, mock_renewable_cert, mock_renewal_conf_files,
-        mock_make_or_verify_dir):
+                                mock_make_or_verify_dir):
         mock_renewal_conf_files.return_value = ["badfile"]
         mock_renewable_cert.side_effect = errors.CertStorageError
         from certbot import cert_manager
         # pylint: disable=protected-access
-        self.assertEqual(cert_manager._search_lineages(self.config, lambda x: x, "check"),
-            "check")
+        self.assertEqual(cert_manager._search_lineages(self.config, lambda x: x, "check"), "check")
         self.assertTrue(mock_make_or_verify_dir.called)
 
 
@@ -294,33 +293,28 @@ class LineageForCertnameTest(BaseCertManagerTest):
     @mock.patch('certbot.storage.renewal_file_for_certname')
     @mock.patch('certbot.storage.RenewableCert')
     def test_found_match(self, mock_renewable_cert, mock_renewal_conf_file,
-        mock_make_or_verify_dir):
+                         mock_make_or_verify_dir):
         mock_renewal_conf_file.return_value = "somefile.conf"
         mock_match = mock.Mock(lineagename="example.com")
         mock_renewable_cert.return_value = mock_match
         from certbot import cert_manager
-        self.assertEqual(cert_manager.lineage_for_certname(self.config, "example.com"),
-            mock_match)
+        self.assertEqual(cert_manager.lineage_for_certname(self.config, "example.com"), mock_match)
         self.assertTrue(mock_make_or_verify_dir.called)
 
     @mock.patch('certbot.util.make_or_verify_dir')
     @mock.patch('certbot.storage.renewal_file_for_certname')
-    def test_no_match(self, mock_renewal_conf_file,
-        mock_make_or_verify_dir):
+    def test_no_match(self, mock_renewal_conf_file, mock_make_or_verify_dir):
         mock_renewal_conf_file.return_value = "other.com.conf"
         from certbot import cert_manager
-        self.assertEqual(cert_manager.lineage_for_certname(self.config, "example.com"),
-            None)
+        self.assertEqual(cert_manager.lineage_for_certname(self.config, "example.com"), None)
         self.assertTrue(mock_make_or_verify_dir.called)
 
     @mock.patch('certbot.util.make_or_verify_dir')
     @mock.patch('certbot.storage.renewal_file_for_certname')
-    def test_no_renewal_file(self, mock_renewal_conf_file,
-        mock_make_or_verify_dir):
+    def test_no_renewal_file(self, mock_renewal_conf_file, mock_make_or_verify_dir):
         mock_renewal_conf_file.side_effect = errors.CertStorageError()
         from certbot import cert_manager
-        self.assertEqual(cert_manager.lineage_for_certname(self.config, "example.com"),
-            None)
+        self.assertEqual(cert_manager.lineage_for_certname(self.config, "example.com"), None)
         self.assertTrue(mock_make_or_verify_dir.called)
 
 
@@ -331,7 +325,7 @@ class DomainsForCertnameTest(BaseCertManagerTest):
     @mock.patch('certbot.storage.renewal_file_for_certname')
     @mock.patch('certbot.storage.RenewableCert')
     def test_found_match(self, mock_renewable_cert, mock_renewal_conf_file,
-        mock_make_or_verify_dir):
+                         mock_make_or_verify_dir):
         mock_renewal_conf_file.return_value = "somefile.conf"
         mock_match = mock.Mock(lineagename="example.com")
         domains = ["example.com", "example.org"]
@@ -344,12 +338,10 @@ class DomainsForCertnameTest(BaseCertManagerTest):
 
     @mock.patch('certbot.util.make_or_verify_dir')
     @mock.patch('certbot.storage.renewal_file_for_certname')
-    def test_no_match(self, mock_renewal_conf_file,
-        mock_make_or_verify_dir):
+    def test_no_match(self, mock_renewal_conf_file, mock_make_or_verify_dir):
         mock_renewal_conf_file.return_value = "somefile.conf"
         from certbot import cert_manager
-        self.assertEqual(cert_manager.domains_for_certname(self.config, "other.com"),
-            None)
+        self.assertEqual(cert_manager.domains_for_certname(self.config, "other.com"), None)
         self.assertTrue(mock_make_or_verify_dir.called)
 
 

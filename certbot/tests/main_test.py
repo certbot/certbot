@@ -31,7 +31,6 @@ from certbot import interfaces  # pylint: disable=unused-import
 from certbot import main
 from certbot import updater
 from certbot import util
-from certbot.compat import misc
 from certbot.compat import os
 from certbot.compat import filesystem
 from certbot.plugins import disco
@@ -542,7 +541,7 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
                     return True
                 return orig_open(fn)
 
-            with mock.patch("os.path.isfile") as mock_if:
+            with mock.patch("certbot.compat.os.path.isfile") as mock_if:
                 mock_if.side_effect = mock_isfile
                 with mock.patch('certbot.main.client') as client:
                     ret, stdout, stderr = self._call_no_clientmock(args, stdout)
@@ -809,9 +808,9 @@ class MainTest(test_util.ConfigTestCase):  # pylint: disable=too-many-public-met
         ifaces = []  # type: List[interfaces.IPlugin]
         plugins = mock_disco.PluginsRegistry.find_all()
 
-        def throw_error(directory, mode, uid, strict):
+        def throw_error(directory, mode, strict):
             """Raises error.Error."""
-            _, _, _, _ = directory, mode, uid, strict
+            _, _, _ = directory, mode, strict
             raise errors.Error()
 
         stdout = six.StringIO()
@@ -1593,7 +1592,7 @@ class MakeOrVerifyNeededDirs(test_util.ConfigTestCase):
         for core_dir in (self.config.config_dir, self.config.work_dir,):
             mock_util.set_up_core_dir.assert_any_call(
                 core_dir, constants.CONFIG_DIRS_MODE,
-                misc.os_geteuid(), self.config.strict_permissions
+                self.config.strict_permissions
             )
 
         hook_dirs = (self.config.renewal_pre_hooks_dir,
@@ -1602,8 +1601,7 @@ class MakeOrVerifyNeededDirs(test_util.ConfigTestCase):
         for hook_dir in hook_dirs:
             # default mode of 755 is used
             mock_util.make_or_verify_dir.assert_any_call(
-                hook_dir, uid=misc.os_geteuid(),
-                strict=self.config.strict_permissions)
+                hook_dir, strict=self.config.strict_permissions)
 
 
 class EnhanceTest(test_util.ConfigTestCase):

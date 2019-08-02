@@ -159,7 +159,7 @@ class ACMEServer(object):
 
         # Wait for the ACME CA server to be up.
         print('=> Waiting for boulder instance to respond...')
-        misc.check_until_timeout(self.acme_xdist['directory_url'])
+        misc.check_until_timeout(self.acme_xdist['directory_url'], attempts=240)
 
         # Configure challtestsrv to answer any A record request with ip of the docker host.
         response = requests.post('http://localhost:{0}/set-default-ipv4'.format(CHALLTESTSRV_PORT),

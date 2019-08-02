@@ -79,9 +79,9 @@ class MultipleVhostsTestDebian(util.ApacheTest):
 
     def test_enable_site_failure(self):
         self.config.parser.root = "/tmp/nonexistent"
-        with mock.patch("os.path.isdir") as mock_dir:
+        with mock.patch("certbot.compat.os.path.isdir") as mock_dir:
             mock_dir.return_value = True
-            with mock.patch("os.path.islink") as mock_link:
+            with mock.patch("certbot.compat.os.path.islink") as mock_link:
                 mock_link.return_value = False
                 self.assertRaises(
                     errors.NotSupportedError,

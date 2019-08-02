@@ -1,7 +1,6 @@
 """Tests for certbot.cli."""
 import argparse
 import copy
-import sys
 import tempfile
 import unittest
 
@@ -44,11 +43,15 @@ class TestReadFile(TempDirTestCase):
 class FlagDefaultTest(unittest.TestCase):
     """Tests cli.flag_default"""
 
-    def test_linux_directories(self):
-        if 'fcntl' in sys.modules:
+    def test_default_directories(self):
+        if os.name != 'nt':
             self.assertEqual(cli.flag_default('config_dir'), '/etc/letsencrypt')
             self.assertEqual(cli.flag_default('work_dir'), '/var/lib/letsencrypt')
             self.assertEqual(cli.flag_default('logs_dir'), '/var/log/letsencrypt')
+        else:
+            self.assertEqual(cli.flag_default('config_dir'), 'C:\\Certbot')
+            self.assertEqual(cli.flag_default('work_dir'), 'C:\\Certbot\\lib')
+            self.assertEqual(cli.flag_default('logs_dir'), 'C:\\Certbot\\log')
 
 
 class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods

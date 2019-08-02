@@ -1,12 +1,12 @@
 """ Distribution specific override class for Debian family (Ubuntu/Debian) """
 import logging
 
-import pkg_resources
 import zope.interface
 
 from certbot import errors
 from certbot import interfaces
 from certbot import util
+from certbot.compat import filesystem
 from certbot.compat import os
 
 from certbot_apache import apache_util
@@ -34,8 +34,6 @@ class DebianConfigurator(configurator.ApacheConfigurator):
         handle_modules=True,
         handle_sites=True,
         challenge_location="/etc/apache2",
-        MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
-            "certbot_apache", "options-ssl-apache.conf")
     )
 
     def enable_site(self, vhost):
@@ -65,7 +63,7 @@ class DebianConfigurator(configurator.ApacheConfigurator):
         try:
             os.symlink(vhost.filep, enabled_path)
         except OSError as err:
-            if os.path.islink(enabled_path) and os.path.realpath(
+            if os.path.islink(enabled_path) and filesystem.realpath(
                enabled_path) == vhost.filep:
                 # Already in shape
                 vhost.enabled = True

@@ -1,6 +1,8 @@
 """ Utility functions for certbot-apache plugin """
 import binascii
 
+import pkg_resources
+
 from certbot import util
 from certbot.compat import os
 
@@ -105,3 +107,15 @@ def parse_define_file(filepath, varname):
 def unique_id():
     """ Returns an unique id to be used as a VirtualHost identifier"""
     return binascii.hexlify(os.urandom(16)).decode("utf-8")
+
+
+def find_ssl_apache_conf(prefix):
+    """
+    Find a TLS Apache config file in the dedicated storage.
+    :param str prefix: prefix of the TLS Apache config file to find
+    :return: the path the TLS Apache config file
+    :rtype: str
+    """
+    return pkg_resources.resource_filename(
+        "certbot_apache",
+        os.path.join("tls_configs", "{0}-options-ssl-apache.conf".format(prefix)))
