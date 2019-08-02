@@ -82,13 +82,15 @@ class CommentNode(ParserNode):
 
     CommentNode stores its contents in class variable 'comment' and does not
     have a specific name.
+
     """
 
     @property
     @abc.abstractmethod
     def comment(self):  # pragma: no cover
         """
-        Comment property contains the contents of the comment.
+        Comment property contains the contents of the comment without the comment
+        directives (typically # or /* ... */).
 
         :returns: A string containing the comment
         :rtype: str
