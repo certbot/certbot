@@ -21,6 +21,11 @@ class ParserNode(object):
     configuration block to their place. While we could unroll the included nodes
     to the parent tree, it remains important to keep the context of include nodes
     separate in order to write back the original configuration as it was.
+
+    For parsers that require the implementation to keep track of the whitespacing,
+    it's responsibility of each ParserNode object itself to store its prepending
+    whitespaces in order to be able to reconstruct the complete configuration file i
+    as it was when originally read from the disk.
     """
 
     @property

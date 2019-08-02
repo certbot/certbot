@@ -37,7 +37,7 @@ class DummyBlockNode(interfaces.BlockNode):
     """ A dummy class implementing BlockNode interface """
     ancestor = None
     parameters = tuple()  # type: Tuple[str, ...]
-    children = tuple()  # type: Tuple[str, ...]
+    children = tuple()  # type: Tuple[interfaces.ParserNode, ...]
     dirty = False
     enabled = True
     name = ""
@@ -80,10 +80,6 @@ class ParserNodeTest(unittest.TestCase):
         dummyblock = DummyBlockNode()
         dummydirective = DummyDirectiveNode()
         dummycomment = DummyCommentNode()
-
-
-
-
 
 
 if __name__ == "__main__":
