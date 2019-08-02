@@ -2,7 +2,6 @@
 import logging
 import re
 import socket
-import ssl
 import subprocess
 import tempfile
 import time
@@ -128,7 +127,7 @@ class NginxConfigurator(common.Installer):
         config_filename = "options-ssl-nginx.conf"
         if self.version < (1, 5, 9):
             config_filename = "options-ssl-nginx-old.conf"
-        elif self.version < (1, 13, 0) or ssl.OPENSSL_VERSION_INFO < (1, 1, 1):
+        elif self.version < (1, 13, 0):
             config_filename = "options-ssl-nginx-tls12-only.conf"
         return pkg_resources.resource_filename("certbot_nginx", config_filename)
 

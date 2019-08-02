@@ -25,8 +25,7 @@ UPDATED_MOD_SSL_CONF_DIGEST = ".updated-options-ssl-nginx-conf-digest.txt"
 SSL_OPTIONS_HASHES_NEW = [
     '108c4555058a087496a3893aea5d9e1cee0f20a3085d44a52dc1a66522299ac3',
 ]
-"""SHA256 hashes of the contents of versions of MOD_SSL_CONF_SRC for nginx >= 1.13.0
-   and OpenSSL >=1.1.1"""
+"""SHA256 hashes of the contents of versions of MOD_SSL_CONF_SRC for nginx >= 1.13.0"""
 
 SSL_OPTIONS_HASHES_MEDIUM = [
     '63e2bddebb174a05c9d8a7cf2adf72f7af04349ba59a1a925fe447f73b2f1abf',
@@ -34,7 +33,7 @@ SSL_OPTIONS_HASHES_MEDIUM = [
     '30baca73ed9a5b0e9a69ea40e30482241d8b1a7343aa79b49dc5d7db0bf53b6c',
 ]
 """SHA256 hashes of the contents of versions of MOD_SSL_CONF_SRC for nginx >= 1.5.9
-   and either nginx < 1.13.0 or OpenSSL < 1.1.1"""
+   and nginx < 1.13.0"""
 
 ALL_SSL_OPTIONS_HASHES = [
     '0f81093a1465e3d4eaa8b0c14e77b2a2e93568b0fc1351c2b87893a95f0de87c',
