@@ -24,8 +24,8 @@ init:
       { $Env:APPVEYOR_SKIP_FINALIZE_ON_EXIT = 'true'; Exit-AppVeyorBuild }
 
 install:
-  # Prepare PATH
-  - SET PATH=C:\\Python37;C:\\Python37\\Scripts;C:\\tools\nginx-1.17.1;%PATH%
+  # Use Python 3.7 by default
+  - SET PATH=C:\\Python37;C:\\Python37\\Scripts;%PATH%
   # Using 4 processes is proven to be the most efficient integration tests config for AppVeyor
   - IF %TOXENV%==integration-certbot-windows SET PYTEST_ADDOPTS=--numprocesses=4
   # Check env
