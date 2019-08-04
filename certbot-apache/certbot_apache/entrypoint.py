@@ -31,6 +31,7 @@ OVERRIDE_CLASSES = {
     "gentoo base system": override_gentoo.GentooConfigurator,
     "opensuse": override_suse.OpenSUSEConfigurator,
     "suse": override_suse.OpenSUSEConfigurator,
+    "scientific": override_centos.CentOSConfigurator,
 }
 
 
