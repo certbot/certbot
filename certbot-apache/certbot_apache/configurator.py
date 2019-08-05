@@ -29,6 +29,7 @@ from certbot.plugins.util import path_surgery
 from certbot.plugins.enhancements import AutoHSTSEnhancement
 
 from certbot_apache import apache_util
+from certbot_apache import augeasparser
 from certbot_apache import constants
 from certbot_apache import display_ops
 from certbot_apache import http_01
@@ -280,6 +281,10 @@ class ApacheConfigurator(common.Installer):
                 "Unable to create a lock file in {0}. Are you running"
                 " Certbot with sufficient privileges to modify your"
                 " Apache configuration?".format(self.option("server_root")))
+
+        # TODO: apache-parser-v2
+        self.parser_root = augeasparser.AugeasBlockNode(None, ancestor=None)
+
         self._prepared = True
 
     def save(self, title=None, temporary=False):
@@ -507,10 +512,25 @@ class ApacheConfigurator(common.Installer):
                 "cert_key": self.parser.find_dir("SSLCertificateKeyFile",
                                                  None, vhost.path)}
 
+        # TODO: apache-parser-v2
+        # We need to add a BlockNode reference to obj.VirtualHost
+        # v2_path = {"cert_path": vhost.node.find_directives(
+        #    "SSLCertificateFile"),
+        #            "cert_key": vhost.node.find_directives(
+        #    "SSLCertificateKeyFile")}
+        # parserassert.legacy_assert_dir(path["cert_path"], v2_path["cert_path"])
+        # parserassert.legacy_assert_dir(path["cert_key"], v2_path["cert_key"])
+
         # Only include if a certificate chain is specified
         if chain_path is not None:
             path["chain_path"] = self.parser.find_dir(
                 "SSLCertificateChainFile", None, vhost.path)
+            # TODO: apache-parser-v2
+            # v2_path["chain_path"] = vhost.node.find_directives(
+            #   "SSLCertificateChainFile")
+            # parserassert.legacy_assert_dir(path["chain_path"],
+            # v2_path["chain_path])
+
 
         # Handle errors when certificate/key directives cannot be found
         if not path["cert_path"]:
@@ -535,9 +555,15 @@ class ApacheConfigurator(common.Installer):
             set_cert_path = cert_path
             self.parser.aug.set(path["cert_path"][-1], cert_path)
             self.parser.aug.set(path["cert_key"][-1], key_path)
+            # TODO: apache-parser-v2
+            # path["cert_path"][-1].set_parameters(cert_path,)
+            # path["cert_key"][-1].set_parameters(key_path,)
             if chain_path is not None:
                 self.parser.add_dir(vhost.path,
                                     "SSLCertificateChainFile", chain_path)
+                # TODO: apache-parser-v2
+                # vhost.node.add_child_directive("SSLCertificateChainFile",
+                #                                (chain_path,))
             else:
                 raise errors.PluginError("--chain-path is required for your "
                                          "version of Apache")
@@ -548,6 +574,9 @@ class ApacheConfigurator(common.Installer):
             set_cert_path = fullchain_path
             self.parser.aug.set(path["cert_path"][-1], fullchain_path)
             self.parser.aug.set(path["cert_key"][-1], key_path)
+            # TODO: apache-parser-v2
+            # path["cert_path"][-1].set_parameters(fullchain_path,)
+            # path["cert_key"][-1].set_parameters(key_path,)
 
         # Enable the new vhost if needed
         if not vhost.enabled:
@@ -793,29 +822,48 @@ class ApacheConfigurator(common.Installer):
 
         return ""
 
-    def _get_vhost_names(self, path):
+    def _get_vhost_names(self, vhost):
         """Helper method for getting the ServerName and
-        ServerAlias values from vhost in path
+        ServerAlias values from vhost
 
-        :param path: Path to read ServerName and ServerAliases from
+        :param vhost: VirtualHost object to read ServerName and ServerAliases from
 
         :returns: Tuple including ServerName and `list` of ServerAlias strings
         """
 
         servername_match = self.parser.find_dir(
-            "ServerName", None, start=path, exclude=False)
+            "ServerName", None, start=vhost.path, exclude=False)
         serveralias_match = self.parser.find_dir(
-            "ServerAlias", None, start=path, exclude=False)
+            "ServerAlias", None, start=vhost.path, exclude=False)
+        # TODO: apache-parser-v2
+        # v2_servername_match = vhost.node.find_directives("ServerName",
+        #                                                  exclude=False)
+        # v2_serveralias_match = vhost.node.find_directives("ServerAlias",
+        #                                                   exclude=False)
+        # parserassert.legacy_assert_dir(servername_match, v2_servername_match)
+        # parserassert.legacy_assert_dir(serveralias_match, v2_serveralias_match)
+
 
         serveraliases = []
         for alias in serveralias_match:
             serveralias = self.parser.get_arg(alias)
             serveraliases.append(serveralias)
+        # TODO: apache-parser-v2
+        # v2_serveraliases = []
+        # for alias in v2_serveralias_match:
+        #    v2_serveraliases += list(alias.parameters)
+        # parserassert.legacy_assert_list(serveraliases, v2_serveraliases)
+
 
         servername = None
         if servername_match:
             # Get last ServerName as each overwrites the previous
             servername = self.parser.get_arg(servername_match[-1])
+        # TODO: apache-parser-v2
+        # v2_servername = None
+        # if v2_servername_match:
+        #     v2_servername = v2_servername_match[-1].parameters[-1]
+        # parserassert.simpleassert(servername, v2_servername)
 
         return (servername, serveraliases)
 
@@ -827,7 +875,7 @@ class ApacheConfigurator(common.Installer):
 
         """
 
-        servername, serveraliases = self._get_vhost_names(host.path)
+        servername, serveraliases = self._get_vhost_names(host)
 
         for alias in serveraliases:
             if not host.modmacro:
@@ -1476,7 +1524,7 @@ class ApacheConfigurator(common.Installer):
 
     def _add_servername_alias(self, target_name, vhost):
         vh_path = vhost.path
-        sname, saliases = self._get_vhost_names(vh_path)
+        sname, saliases = self._get_vhost_names(vhost)
         if target_name == sname or target_name in saliases:
             return
         if self._has_matching_wildcard(vh_path, target_name):
