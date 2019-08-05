@@ -129,7 +129,8 @@ class NginxConfigurator(common.Installer):
             config_filename = "options-ssl-nginx-old.conf"
         elif self.version < (1, 13, 0):
             config_filename = "options-ssl-nginx-tls12-only.conf"
-        return pkg_resources.resource_filename("certbot_nginx", config_filename)
+        return pkg_resources.resource_filename(
+            "certbot_nginx", os.path.join("tls_configs", config_filename))
 
     @property
     def mod_ssl_conf(self):
