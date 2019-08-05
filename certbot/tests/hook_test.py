@@ -1,14 +1,14 @@
 """Tests for certbot.hooks."""
-import stat
 import unittest
 
 import mock
 from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
 
 from certbot import errors
+from certbot import util
 from certbot.compat import os
 from certbot.compat import filesystem
-from certbot.tests import util
+from certbot.tests import util as test_util
 
 
 class ValidateHooksTest(unittest.TestCase):
@@ -30,7 +30,7 @@ class ValidateHooksTest(unittest.TestCase):
         self.assertEqual("renew", types[-1])
 
 
-class ValidateHookTest(util.TempDirTestCase):
+class ValidateHookTest(test_util.TempDirTestCase):
     """Tests for certbot.hooks.validate_hook."""
 
     @classmethod
@@ -38,22 +38,20 @@ class ValidateHookTest(util.TempDirTestCase):
         from certbot.hooks import validate_hook
         return validate_hook(*args, **kwargs)
 
-    @util.broken_on_windows
-    def test_not_executable(self):
-        file_path = os.path.join(self.tempdir, "foo")
-        # create a non-executable file
-        os.close(filesystem.open(file_path, os.O_CREAT | os.O_WRONLY, 0o666))
+    def test_hook_not_executable(self):
         # prevent unnecessary modifications to PATH
         with mock.patch("certbot.hooks.plug_util.path_surgery"):
-            self.assertRaises(errors.HookCommandNotFound,
-                              self._call, file_path, "foo")
+            # We just mock out filesystem.is_executable since on Windows, it is difficult
+            # to get a fully working test around executable permissions. See
+            # certbot.tests.compat.filesystem::NotExecutableTest for more in-depth tests.
+            with mock.patch("certbot.hooks.filesystem.is_executable", return_value=False):
+                self.assertRaises(errors.HookCommandNotFound, self._call, 'dummy', "foo")
 
     @mock.patch("certbot.hooks.util.exe_exists")
     def test_not_found(self, mock_exe_exists):
         mock_exe_exists.return_value = False
         with mock.patch("certbot.hooks.plug_util.path_surgery") as mock_ps:
-            self.assertRaises(errors.HookCommandNotFound,
-                              self._call, "foo", "bar")
+            self.assertRaises(errors.HookCommandNotFound, self._call, "foo", "bar")
         self.assertTrue(mock_ps.called)
 
     @mock.patch("certbot.hooks._prog")
@@ -62,7 +60,7 @@ class ValidateHookTest(util.TempDirTestCase):
         self.assertFalse(mock_prog.called)
 
 
-class HookTest(util.ConfigTestCase):
+class HookTest(test_util.ConfigTestCase):
     """Common base class for hook tests."""
 
     @classmethod
@@ -454,7 +452,7 @@ class ExecuteTest(unittest.TestCase):
             self.assertTrue(mock_logger.error.called)
 
 
-class ListHooksTest(util.TempDirTestCase):
+class ListHooksTest(test_util.TempDirTestCase):
     """Tests for certbot.hooks.list_hooks."""
 
     @classmethod
@@ -494,8 +492,7 @@ def create_hook(file_path):
     :param str file_path: path to create the file at
 
     """
-    open(file_path, "w").close()
-    filesystem.chmod(file_path, os.stat(file_path).st_mode | stat.S_IXUSR)
+    util.safe_open(file_path, mode="w", chmod=0o744).close()
 
 
 if __name__ == '__main__':

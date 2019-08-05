@@ -3,8 +3,10 @@ import logging
 
 from certbot import util
 from certbot.compat import os
+from certbot.compat.misc import STANDARD_BINARY_DIRS
 
 logger = logging.getLogger(__name__)
+
 
 def get_prefixes(path):
     """Retrieves all possible path prefixes of a path, in descending order
@@ -26,6 +28,7 @@ def get_prefixes(path):
             break
     return prefixes
 
+
 def path_surgery(cmd):
     """Attempt to perform PATH surgery to find cmd
 
@@ -35,10 +38,9 @@ def path_surgery(cmd):
 
     :returns: True if the operation succeeded, False otherwise
     """
-    dirs = ("/usr/sbin", "/usr/local/bin", "/usr/local/sbin")
     path = os.environ["PATH"]
     added = []
-    for d in dirs:
+    for d in STANDARD_BINARY_DIRS:
         if d not in path:
             path += os.pathsep + d
             added.append(d)

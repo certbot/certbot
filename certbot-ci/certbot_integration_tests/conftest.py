@@ -68,17 +68,18 @@ def _setup_primary_node(config):
     :param config: Configuration of the pytest primary node
     """
     # Check for runtime compatibility: some tools are required to be available in PATH
-    try:
-        subprocess.check_output(['docker', '-v'], stderr=subprocess.STDOUT)
-    except (subprocess.CalledProcessError, OSError):
-        raise ValueError('Error: docker is required in PATH to launch the integration tests, '
-                         'but is not installed or not available for current user.')
+    if 'boulder' in config.option.acme_server:
+        try:
+            subprocess.check_output(['docker', '-v'], stderr=subprocess.STDOUT)
+        except (subprocess.CalledProcessError, OSError):
+            raise ValueError('Error: docker is required in PATH to launch the integration tests on'
+                             'boulder, but is not installed or not available for current user.')
 
-    try:
-        subprocess.check_output(['docker-compose', '-v'], stderr=subprocess.STDOUT)
-    except (subprocess.CalledProcessError, OSError):
-        raise ValueError('Error: docker-compose is required in PATH to launch the integration tests, '
-                         'but is not installed or not available for current user.')
+        try:
+            subprocess.check_output(['docker-compose', '-v'], stderr=subprocess.STDOUT)
+        except (subprocess.CalledProcessError, OSError):
+            raise ValueError('Error: docker-compose is required in PATH to launch the integration tests, '
+                             'but is not installed or not available for current user.')
 
     # Parameter numprocesses is added to option by pytest-xdist
     workers = ['primary'] if not config.option.numprocesses\
@@ -86,7 +87,7 @@ def _setup_primary_node(config):
 
     # By calling setup_acme_server we ensure that all necessary acme server instances will be
     # fully started. This runtime is reflected by the acme_xdist returned.
-    acme_server = acme_lib.setup_acme_server(config.option.acme_server, workers)
+    acme_server = acme_lib.ACMEServer(config.option.acme_server, workers)
     config.add_cleanup(acme_server.stop)
     print('ACME xdist config:\n{0}'.format(acme_server.acme_xdist))
     acme_server.start()

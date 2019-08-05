@@ -17,6 +17,7 @@ from os import *  # type: ignore  # pylint: disable=wildcard-import,unused-wildc
 # and so not in `from os import *`.
 import os as std_os  # pylint: disable=os-module-forbidden
 import sys as std_sys
+
 ourselves = std_sys.modules[__name__]
 for attribute in dir(std_os):
     # Check if the attribute does not already exist in our module. It could be internal attributes
@@ -25,7 +26,9 @@ for attribute in dir(std_os):
     if not hasattr(ourselves, attribute):
         setattr(ourselves, attribute, getattr(std_os, attribute))
 
-# Similar to os.path, allow certbot.compat.os.path to behave as a module
+# Import our internal path module, then allow certbot.compat.os.path
+# to behave as a module (similarly to os.path).
+from certbot.compat import _path as path  # type: ignore  # pylint: disable=wrong-import-position
 std_sys.modules[__name__ + '.path'] = path
 
 # Clean all remaining importables that are not from the core os module.
@@ -49,6 +52,15 @@ def chmod(*unused_args, **unused_kwargs):
     """Method os.chmod() is forbidden"""
     raise RuntimeError('Usage of os.chmod() is forbidden. '
                        'Use certbot.compat.filesystem.chmod() instead.')
+
+
+# Because uid is not a concept on Windows, chown is useless. In fact, it is not even available
+# on Python for Windows. So to be consistent on both platforms for Certbot, this method is
+# always forbidden.
+def chown(*unused_args, **unused_kwargs):
+    """Method os.chown() is forbidden"""
+    raise RuntimeError('Usage of os.chown() is forbidden.'
+                       'Use certbot.compat.filesystem.copy_ownership_and_apply_mode() instead.')
 
 
 # The os.open function on Windows has the same effect as a call to os.chown concerning the file
@@ -95,3 +107,12 @@ def replace(*unused_args, **unused_kwargs):
     """Method os.replace() is forbidden"""
     raise RuntimeError('Usage of os.replace() is forbidden. '
                        'Use certbot.compat.filesystem.replace() instead.')
+
+
+# Results given by os.access are inconsistent or partial on Windows, because this platform is not
+# following the POSIX approach.
+def access(*unused_args, **unused_kwargs):
+    """Method os.access() is forbidden"""
+    raise RuntimeError('Usage of os.access() is forbidden. '
+                       'Use certbot.compat.filesystem.check_mode() or '
+                       'certbot.compat.filesystem.is_executable() instead.')

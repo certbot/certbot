@@ -9,7 +9,6 @@ import time
 
 from collections import defaultdict
 
-import pkg_resources
 import six
 
 import zope.component
@@ -23,6 +22,7 @@ from certbot import interfaces
 from certbot import util
 
 from certbot.achallenges import KeyAuthorizationAnnotatedChallenge  # pylint: disable=unused-import
+from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.plugins import common
 from certbot.plugins.util import path_surgery
@@ -109,13 +109,23 @@ class ApacheConfigurator(common.Installer):
         handle_modules=False,
         handle_sites=False,
         challenge_location="/etc/apache2",
-        MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
-            "certbot_apache", "options-ssl-apache.conf")
     )
 
     def option(self, key):
         """Get a value from options"""
         return self.options.get(key)
+
+    def pick_apache_config(self):
+        """
+        Pick the appropriate TLS Apache configuration file for current version of Apache and OS.
+        :return: the path to the TLS Apache configuration file to use
+        :rtype: str
+        """
+        # Disabling TLS session tickets is supported by Apache 2.4.11+.
+        # So for old versions of Apache we pick a configuration without this option.
+        if self.version < (2, 4, 11):
+            return apache_util.find_ssl_apache_conf("old")
+        return apache_util.find_ssl_apache_conf("current")
 
     def _prepare_options(self):
         """
@@ -895,7 +905,7 @@ class ApacheConfigurator(common.Installer):
                 if not new_vhost:
                     continue
                 internal_path = apache_util.get_internal_aug_path(new_vhost.path)
-                realpath = os.path.realpath(new_vhost.filep)
+                realpath = filesystem.realpath(new_vhost.filep)
                 if realpath not in file_paths:
                     file_paths[realpath] = new_vhost.filep
                     internal_paths[realpath].add(internal_path)
@@ -1221,11 +1231,11 @@ class ApacheConfigurator(common.Installer):
         """
 
         if self.conf("vhost-root") and os.path.exists(self.conf("vhost-root")):
-            fp = os.path.join(os.path.realpath(self.option("vhost_root")),
+            fp = os.path.join(filesystem.realpath(self.option("vhost_root")),
                               os.path.basename(non_ssl_vh_fp))
         else:
             # Use non-ssl filepath
-            fp = os.path.realpath(non_ssl_vh_fp)
+            fp = filesystem.realpath(non_ssl_vh_fp)
 
         if fp.endswith(".conf"):
             return fp[:-(len(".conf"))] + self.option("le_vhost_ext")
@@ -2338,8 +2348,9 @@ class ApacheConfigurator(common.Installer):
         # XXX if we ever try to enforce a local privilege boundary (eg, running
         # certbot for unprivileged users via setuid), this function will need
         # to be modified.
-        return common.install_version_controlled_file(options_ssl, options_ssl_digest,
-            self.option("MOD_SSL_CONF_SRC"), constants.ALL_SSL_OPTIONS_HASHES)
+        apache_config_path = self.pick_apache_config()
+        return common.install_version_controlled_file(
+            options_ssl, options_ssl_digest, apache_config_path, constants.ALL_SSL_OPTIONS_HASHES)
 
     def enable_autohsts(self, _unused_lineage, domains):
         """
