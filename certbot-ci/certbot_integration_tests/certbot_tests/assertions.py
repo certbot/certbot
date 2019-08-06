@@ -115,7 +115,7 @@ def assert_equals_group_owner(file1, file2):
 
 def assert_world_no_permissions(file):
     """
-    Assert that the given file is no world-readable.
+    Assert that the given file is not world-readable.
     :param file: path of the file to check
     """
     if POSIX_MODE:
