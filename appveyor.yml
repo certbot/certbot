@@ -2,8 +2,6 @@ image: Visual Studio 2015
 
 environment:
   matrix:
-    - TOXENV: py35
-    - TOXENV: py37-cover
     - TOXENV: integration-certbot
 
 branches:
