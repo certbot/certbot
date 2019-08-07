@@ -783,19 +783,19 @@ class ApacheConfigurator(common.Installer):
 
         return ""
 
-    def _get_vhost_names(self, path):
-        """Helper method for getting the ServerName and
-        ServerAlias values from vhost in path
+    def _get_vhost_names(self, vhost):
+        """Helper method for getting the ServerName and ServerAliases from
+        from VirtualHost object.
 
-        :param path: Path to read ServerName and ServerAliases from
+        :param vhost: VirtualHost object to read ServerName and ServerAliases from
 
         :returns: Tuple including ServerName and `list` of ServerAlias strings
         """
 
         servername_match = self.parser.find_dir(
-            "ServerName", None, start=path, exclude=False)
+            "ServerName", None, start=vhost.path, exclude=False)
         serveralias_match = self.parser.find_dir(
-            "ServerAlias", None, start=path, exclude=False)
+            "ServerAlias", None, start=vhost.path, exclude=False)
 
         serveraliases = []
         for alias in serveralias_match:
@@ -817,7 +817,7 @@ class ApacheConfigurator(common.Installer):
 
         """
 
-        servername, serveraliases = self._get_vhost_names(host.path)
+        servername, serveraliases = self._get_vhost_names(host)
 
         for alias in serveraliases:
             if not host.modmacro:
@@ -1466,7 +1466,7 @@ class ApacheConfigurator(common.Installer):
 
     def _add_servername_alias(self, target_name, vhost):
         vh_path = vhost.path
-        sname, saliases = self._get_vhost_names(vh_path)
+        sname, saliases = self._get_vhost_names(vhost)
         if target_name == sname or target_name in saliases:
             return
         if self._has_matching_wildcard(vh_path, target_name):
