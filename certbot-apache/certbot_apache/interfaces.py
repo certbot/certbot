@@ -1,4 +1,87 @@
-"""Parser interfaces."""
+"""ParserNode interface for interacting with configuration tree.
+
+General description
+-------------------
+
+The ParserNode interfaces are designed to be able to contain all the parsing logic,
+while allowing their users to interact with the configuration tree in a Pythonic
+and well structured manner.
+
+The structure allows easy traversal of the tree of ParserNodes. Each ParserNode
+stores a reference to its ancestor and immediate children, allowing the user to
+traverse the tree using built in interface methods as well as accessing the interface
+properties directly.
+
+ParserNode interface implementation should stand between the actual underlying
+parser functionality and the business logic within Configurator code, interfacing
+with both. The ParserNode tree is a result of configuration parsing action.
+
+ParserNode tree will be in charge of maintaining the parser state and hence the
+abstract syntax tree (AST). Interactions between ParserNode tree and underlying
+parser should involve only parsing the configuration files to this structure, and
+writing it back to the filesystem - while preserving the format including whitespaces.
+
+For some implementations (Apache for example) it's important to keep track of and
+to use state information while parsing conditional blocks and directives. This
+allows the implementation to set a flag to parts of the parsed configuration
+structure as not being in effect in a case of unmatched conditional block. It's
+important to store these blocks in the tree as well in order to not to conduct
+destructive actions (failing to write back parts of the configuration) while writing
+the AST back to the filesystem.
+
+The ParserNode tree is in charge of maintaining the its own structure while every
+child node fetched with find - methods or by iterating its list of children can be
+changed in place. When making changes the affected nodes should be flagged as "dirty"
+in order for the parser implementation to figure out the parts of the configuration
+that need to be written back to disk during the save() operation.
+
+
+Metadata
+--------
+
+The metadata holds all the implementation specific attributes of the ParserNodes -
+things like the positional information related to the AST, file paths, whitespacing,
+and any other information relevant to the underlying parser engine.
+
+Access to the metadata should be handled by implementation specific methods, allowing
+the Configurator functionality to access the underlying information where needed.
+A good example of this is file path of a node - something that is needed by the
+reverter functionality within the Configurator.
+
+
+Apache implementation
+---------------------
+
+The Apache implementation of ParserNode interface requires some implementation
+specific functionalities that are not described by the interface itself.
+
+Conditional blocks
+
+Apache configuration can have conditional blocks, for example: <IfModule ...>,
+resulting the directives and subblocks within it being either enabled or disabled.
+While find_* interface methods allow including the disabled parts of the configuration
+tree in searches a special care needs to be taken while parsing the structure in
+order to reflect the active state of configuration.
+
+Whitespaces
+
+Each ParserNode object is responsible of storing its prepending whitespace characters
+in order to be able to write the AST back to filesystem like it was, preserving the
+format, this applies for parameters of BlockNode and DirectiveNode as well.
+When parameters of ParserNode are changed, the pre-existing whitespaces are discarded
+however, as the general reason for storing them is to maintain the ability to write
+the configuration back to filesystem exactly like it was. This loses its meaning when
+we have to change the directives or blocks parameters for other reasons.
+
+Searches and matching
+
+Apache configuration is largely case insensitive, so the Apache implementation of
+ParserNode interface needs to provide the user means to match block and directive
+names and parameters in case insensitive manner. This does not apply to everything
+however, for example the parameters of a conditional statement may be case sensitive.
+For this reason the internal representation of data should not ignore the case.
+"""
+
 import abc
 import six
 
