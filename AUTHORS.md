@@ -261,3 +261,4 @@ Authors
 * [YourDaddyIsHere](https://github.com/YourDaddyIsHere)
 * [Zach Shepherd](https://github.com/zjs)
 * [陈三](https://github.com/chenxsan)
+* [Chuan-Heng Hsiao](https://github.com/chhsiao1981)

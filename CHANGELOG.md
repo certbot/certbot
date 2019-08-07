@@ -8,6 +8,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 * Turn off session tickets for apache plugin by default
 * acme: Authz deactivation added to `acme` module.
+* certbot-dns-dreamhost: DNS Authenticator for Dreamhost.
 
 ### Changed
 

@@ -17,7 +17,7 @@ codecov==2.0.15
 configparser==3.7.4
 coverage==4.4.2
 decorator==4.1.2
-dns-lexicon==3.2.1
+dns-lexicon==3.2.9
 dnspython==1.15.0
 docutils==0.12
 execnet==1.5.0

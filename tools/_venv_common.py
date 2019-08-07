@@ -29,6 +29,7 @@ REQUIREMENTS = [
     '-e certbot-dns-digitalocean',
     '-e certbot-dns-dnsimple',
     '-e certbot-dns-dnsmadeeasy',
+    '-e certbot-dns-dreamhost',
     '-e certbot-dns-gehirn',
     '-e certbot-dns-google',
     '-e certbot-dns-linode',

@@ -191,6 +191,7 @@ Once installed, you can find documentation on how to use each plugin at:
 * `certbot-dns-digitalocean <https://certbot-dns-digitalocean.readthedocs.io>`_
 * `certbot-dns-dnsimple <https://certbot-dns-dnsimple.readthedocs.io>`_
 * `certbot-dns-dnsmadeeasy <https://certbot-dns-dnsmadeeasy.readthedocs.io>`_
+* `certbot-dns-dreamhost <https://certbot-dns-dreamhost.readthedocs.io>`_
 * `certbot-dns-google <https://certbot-dns-google.readthedocs.io>`_
 * `certbot-dns-linode <https://certbot-dns-linode.readthedocs.io>`_
 * `certbot-dns-luadns <https://certbot-dns-luadns.readthedocs.io>`_

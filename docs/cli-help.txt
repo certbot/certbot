@@ -453,6 +453,8 @@ plugins:
                         using DNSimple for DNS). (default: False)
   --dns-dnsmadeeasy     Obtain certificates using a DNS TXT record (if you are
                         using DNS Made Easy for DNS). (default: False)
+  --dns-dreamhost       Obtain certificates using a DNS TXT record (if you are
+                        using Dreamhost for DNS). (default: False)
   --dns-gehirn          Obtain certificates using a DNS TXT record (if you are
                         using Gehirn Infrastracture Service for DNS).
                         (default: False)
@@ -560,6 +562,16 @@ dns-dnsmadeeasy:
                         record. (default: 60)
   --dns-dnsmadeeasy-credentials DNS_DNSMADEEASY_CREDENTIALS
                         DNS Made Easy credentials INI file. (default: None)
+
+dns-dreamhost:
+  Obtain certs using a DNS TXT record (if you are using Dreamhost for DNS).
+
+  --dns-dreamhost-propagation-seconds DNS_DREAMHOST_PROPAGATION_SECONDS
+                        The number of seconds to wait for DNS to propagate
+                        before asking the ACME server to verify the DNS
+                        record. (default: 1200)
+  --dns-dreamhost-credentials DNS_DREAMHOST_CREDENTIALS
+                        Dreamhost credentials INI file. (default: None)
 
 dns-gehirn:
   Obtain certificates using a DNS TXT record (if you are using Gehirn
