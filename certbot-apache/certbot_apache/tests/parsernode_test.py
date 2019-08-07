@@ -45,10 +45,10 @@ class DummyBlockNode(interfaces.BlockNode):
     def save(self, msg):  # pragma: no cover
         pass
 
-    def add_child_block(self, name, arguments=None, position=None):  # pragma: no cover
+    def add_child_block(self, name, parameters=None, position=None):  # pragma: no cover
         pass
 
-    def add_child_directive(self, name, arguments=None, position=None):  # pragma: no cover
+    def add_child_directive(self, name, parameters=None, position=None):  # pragma: no cover
         pass
 
     def add_child_comment(self, comment="", position=None):  # pragma: no cover

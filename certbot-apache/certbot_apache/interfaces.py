@@ -185,7 +185,7 @@ class CommentNode(ParserNode):
 class DirectiveNode(ParserNode):
     """
     DirectiveNode class represents a configuration directive within the configuration.
-    It can have zero or more arguments attached to it. Because of the nature of
+    It can have zero or more parameters attached to it. Because of the nature of
     single directives, it is not able to have child nodes and hence it is always
     treated as a leaf node.
     """
@@ -242,43 +242,43 @@ class DirectiveNode(ParserNode):
 class BlockNode(ParserNode):
     """
     BlockNode class represents a block of nested configuration directives, comments
-    and other blocks as its children. A BlockNode can have zero or more arguments
+    and other blocks as its children. A BlockNode can have zero or more parameters
     attached to it.
 
     Configuration blocks typically consist of one or more child nodes of all possible
     types. Because of this, the BlockNode class has various discovery and structure
     management methods.
 
-    Lists of arguments used as an optional argument for some of the methods should
-    be lists of strings that are applicable arguments for each specific BlockNode
-    or DirectiveNode types. As an example, for a following configuration example:
+    Lists of parameters used as an optional argument for some of the methods should
+    be lists of strings that are applicable parameters for each specific BlockNode
+    or DirectiveNode type. As an example, for a following configuration example:
 
         <VirtualHost *:80>
            ...
         </VirtualHost>
 
-    The node type would be BlockNode, name would be 'VirtualHost' and arguments
+    The node type would be BlockNode, name would be 'VirtualHost' and its parameters
     would be: ['*:80'].
 
     While for the following example:
 
         LoadModule alias_module /usr/lib/apache2/modules/mod_alias.so
 
-    The node type would be DirectiveNode, name would be 'LoadModule' and arguments
-    would be: ['alias_module', '/usr/lib/apache2/modules/mod_alias.so']
+    The node type would be DirectiveNode, name would be 'LoadModule' and its
+    parameters would be: ['alias_module', '/usr/lib/apache2/modules/mod_alias.so']
 
-    The applicable arguments are dependent on the underlying configuration language
+    The applicable parameters are dependent on the underlying configuration language
     and its grammar.
     """
 
     @abc.abstractmethod
-    def add_child_block(self, name, arguments=None, position=None):
+    def add_child_block(self, name, parameters=None, position=None):
         """
         Adds a new BlockNode child node with provided values and marks the callee
         BlockNode dirty. This is used to add new children to the AST.
 
         :param str name: The name of the child node to add
-        :param list arguments: list of arguments for the node
+        :param list parameters: list of parameters for the node
         :param int position: Position in the list of children to add the new child
             node to. Defaults to None, which appends the newly created node to the list.
             If an integer is given, the child is inserted before that index in the
@@ -289,13 +289,13 @@ class BlockNode(ParserNode):
         """
 
     @abc.abstractmethod
-    def add_child_directive(self, name, arguments=None, position=None):
+    def add_child_directive(self, name, parameters=None, position=None):
         """
         Adds a new DirectiveNode child node with provided values and marks the
         callee BlockNode dirty. This is used to add new children to the AST.
 
         :param str name: The name of the child node to add
-        :param list arguments: list of arguments for the node
+        :param list parameters: list of parameters for the node
         :param int position: Position in the list of children to add the new child
             node to. Defaults to None, which appends the newly created node to the list.
             If an integer is given, the child is inserted before that index in the
