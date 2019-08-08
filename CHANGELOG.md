@@ -16,7 +16,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-*
+* Stop disabling TLS session tickets in Apache as it caused TLS failures on
+  some systems.
 
 More details about these changes can be found on our GitHub repo.
 
