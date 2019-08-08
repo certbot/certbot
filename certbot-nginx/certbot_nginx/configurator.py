@@ -20,7 +20,6 @@ from certbot import crypto_util
 from certbot import errors
 from certbot import interfaces
 from certbot import util
-from certbot.compat import misc
 from certbot.compat import os
 from certbot.plugins import common
 
@@ -128,7 +127,10 @@ class NginxConfigurator(common.Installer):
         config_filename = "options-ssl-nginx.conf"
         if self.version < (1, 5, 9):
             config_filename = "options-ssl-nginx-old.conf"
-        return pkg_resources.resource_filename("certbot_nginx", config_filename)
+        elif self.version < (1, 13, 0):
+            config_filename = "options-ssl-nginx-tls12-only.conf"
+        return pkg_resources.resource_filename(
+            "certbot_nginx", os.path.join("tls_configs", config_filename))
 
     @property
     def mod_ssl_conf(self):
@@ -903,13 +905,9 @@ class NginxConfigurator(common.Installer):
         have permissions of root.
 
         """
-        uid = misc.os_geteuid()
-        util.make_or_verify_dir(
-            self.config.work_dir, core_constants.CONFIG_DIRS_MODE, uid)
-        util.make_or_verify_dir(
-            self.config.backup_dir, core_constants.CONFIG_DIRS_MODE, uid)
-        util.make_or_verify_dir(
-            self.config.config_dir, core_constants.CONFIG_DIRS_MODE, uid)
+        util.make_or_verify_dir(self.config.work_dir, core_constants.CONFIG_DIRS_MODE)
+        util.make_or_verify_dir(self.config.backup_dir, core_constants.CONFIG_DIRS_MODE)
+        util.make_or_verify_dir(self.config.config_dir, core_constants.CONFIG_DIRS_MODE)
 
     def get_version(self):
         """Return version of Nginx Server.

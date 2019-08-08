@@ -421,15 +421,6 @@ def skip_on_windows(reason):
     return wrapper
 
 
-def broken_on_windows(function):
-    """Decorator to skip temporarily a broken test on Windows."""
-    reason = 'Test is broken and ignored on windows but should be fixed.'
-    return unittest.skipIf(
-        sys.platform == 'win32'
-        and os.environ.get('SKIP_BROKEN_TESTS_ON_WINDOWS', 'true') == 'true',
-        reason)(function)
-
-
 def temp_join(path):
     """
     Return the given path joined to the tempdir path for the current platform

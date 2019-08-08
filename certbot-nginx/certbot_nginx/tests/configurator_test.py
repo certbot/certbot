@@ -963,13 +963,40 @@ class InstallSslOptionsConfTest(util.NginxTest):
             "Constants.ALL_SSL_OPTIONS_HASHES must be appended"
             " with the sha256 hash of self.config.mod_ssl_conf when it is updated.")
 
-    def test_old_nginx_version_uses_old_config(self):
+    def test_ssl_config_files_hash_in_all_hashes(self):
+        """
+        It is really critical that all TLS Nginx config files have their SHA256 hash registered in
+        constants.ALL_SSL_OPTIONS_HASHES. Otherwise Certbot will mistakenly assume that the config
+        file has been manually edited by the user, and will refuse to update it.
+        This test ensures that all necessary hashes are present.
+        """
+        from certbot_nginx.constants import ALL_SSL_OPTIONS_HASHES
+        import pkg_resources
+        all_files = [
+            pkg_resources.resource_filename("certbot_nginx", os.path.join("tls_configs", x))
+            for x in ("options-ssl-nginx.conf",
+                      "options-ssl-nginx-old.conf",
+                      "options-ssl-nginx-tls12-only.conf")
+        ]
+        self.assertTrue(all_files)
+        for one_file in all_files:
+            file_hash = crypto_util.sha256sum(one_file)
+            self.assertTrue(file_hash in ALL_SSL_OPTIONS_HASHES,
+                            "Constants.ALL_SSL_OPTIONS_HASHES must be appended with the sha256 "
+                            "hash of {0} when it is updated.".format(one_file))
+
+    def test_nginx_version_uses_correct_config(self):
         self.config.version = (1, 5, 8)
         self.assertEqual(os.path.basename(self.config.mod_ssl_conf_src),
                          "options-ssl-nginx-old.conf")
         self._call()
         self._assert_current_file()
         self.config.version = (1, 5, 9)
+        self.assertEqual(os.path.basename(self.config.mod_ssl_conf_src),
+                         "options-ssl-nginx-tls12-only.conf")
+        self._call()
+        self._assert_current_file()
+        self.config.version = (1, 13, 0)
         self.assertEqual(os.path.basename(self.config.mod_ssl_conf_src),
                          "options-ssl-nginx.conf")
 

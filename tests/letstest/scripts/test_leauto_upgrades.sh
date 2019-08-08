@@ -26,6 +26,17 @@ else
     # 0.33.x is the oldest version of letsencrypt-auto that works on Fedora 29+.
     INITIAL_VERSION="0.33.1"
 fi
+
+# If we're on RHEL 8, the initial version of certbot-auto will fail until we do
+# a release including https://github.com/certbot/certbot/pull/7240 and update
+# INITIAL_VERSION above to use a version containing this fix. This works around
+# the problem for now so we can successfully run tests on RHEL 8.
+RPM_DIST_NAME=`(. /etc/os-release 2> /dev/null && echo $ID) || echo "unknown"`
+RPM_DIST_VERSION=`(. /etc/os-release 2> /dev/null && echo $VERSION_ID) | cut -d '.' -f1 || echo "0"`
+if [ "$RPM_DIST_NAME" = "rhel" -a "$RPM_DIST_VERSION" -ge 8 ]; then
+    sudo yum install python3-virtualenv -y
+fi
+
 git checkout -f "v$INITIAL_VERSION" letsencrypt-auto
 if ! ./letsencrypt-auto -v --debug --version --no-self-upgrade 2>&1 | tail -n1 | grep "^certbot $INITIAL_VERSION$" ; then
     echo initial installation appeared to fail
