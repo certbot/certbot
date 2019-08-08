@@ -24,6 +24,7 @@ More details about these changes can be found on our GitHub repo.
 
 ### Added
 
+* Turn off session tickets for apache plugin by default
 * acme: Authz deactivation added to `acme` module.
 
 ### Changed
