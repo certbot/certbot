@@ -9,6 +9,7 @@ MOD_SSL_CONF_DEST = "options-ssl-apache.conf"
 UPDATED_MOD_SSL_CONF_DIGEST = ".updated-options-ssl-apache-conf-digest.txt"
 """Name of the hash of the updated or informed mod_ssl_conf as saved in `IConfig.config_dir`."""
 
+# NEVER REMOVE A SINGLE HASH FROM THIS LIST UNLESS YOU KNOW EXACTLY WHAT YOU ARE DOING!
 ALL_SSL_OPTIONS_HASHES = [
     '2086bca02db48daf93468332543c60ac6acdb6f0b58c7bfdf578a5d47092f82a',
     '4844d36c9a0f587172d9fa10f4f1c9518e3bcfa1947379f155e16a70a728c21a',
@@ -18,6 +19,10 @@ ALL_SSL_OPTIONS_HASHES = [
     'cfdd7c18d2025836ea3307399f509cfb1ebf2612c87dd600a65da2a8e2f2797b',
     '80720bd171ccdc2e6b917ded340defae66919e4624962396b992b7218a561791',
     'c0c022ea6b8a51ecc8f1003d0a04af6c3f2bc1c3ce506b3c2dfc1f11ef931082',
+    '717b0a89f5e4c39b09a42813ac6e747cfbdeb93439499e73f4f70a1fe1473f20',
+    '0fcdc81280cd179a07ec4d29d3595068b9326b455c488de4b09f585d5dafc137',
+    '86cc09ad5415cd6d5f09a947fe2501a9344328b1e8a8b458107ea903e80baa6c',
+    '06675349e457eae856120cdebb564efe546f0b87399f2264baeb41e442c724c7',
 ]
 """SHA256 hashes of the contents of previous versions of all versions of MOD_SSL_CONF_SRC"""
 
