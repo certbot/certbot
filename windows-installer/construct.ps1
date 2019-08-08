@@ -37,13 +37,12 @@ $certbot_packages += Get-ChildItem "$repo_path\certbot-dns-*" | Where-Object { $
 New-Item $build_path -ItemType directory -ErrorAction Ignore | Out-Null
 Copy-Item -Path "$repo_path\windows-installer\certbot.ico" -Destination $build_path -Force
 Copy-Item -Path "$repo_path\windows-installer\run.py" -Destination $build_path -Force
-Copy-Item -Path "$repo_path\windows-installer\config.nsi" -Destination $build_path -Force
 
 "### Prepare pynsist config ###"
 
 "
 [Application]
-name=Certbot Documentation
+name=Certbot
 version=$certbot_version
 icon=certbot.ico
 publisher=Electronic Frontier Fundation
@@ -52,7 +51,6 @@ script=run.py
 [Build]
 directory=nsis
 installer_name=certbot-$certbot_version-win32_install.exe
-nsi_template=config.nsi
 
 [Python]
 version=3.7.0
