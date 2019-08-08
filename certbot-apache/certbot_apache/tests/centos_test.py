@@ -190,13 +190,6 @@ class MultipleVhostsTestCentOS(util.ApacheTest):
                                        errors.SubprocessError]
         self.assertRaises(errors.MisconfigurationError, self.config.restart)
 
-    def test_pick_correct_tls_config(self):
-        self.config.version = (2, 4, 10)
-        self.assertTrue('centos-old' in self.config.pick_apache_config())
-
-        self.config.version = (2, 4, 11)
-        self.assertTrue('centos-current' in self.config.pick_apache_config())
-
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
