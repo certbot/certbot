@@ -41,7 +41,8 @@ class AuthenticatorTest(test_util.TempDirTestCase,
                                 dreamhost_propagation_seconds=0)
         auth = Authenticator(config, "dreamhost")
         auth._setup_credentials()
-        self.assertRaises(errors.PluginError, auth._get_dreamhost_client)
+        client = auth._get_dreamhost_client()
+        self.assertIsNotNone(client)
 
 
 class DreamhostLexiconClientTest(unittest.TestCase, dns_test_common_lexicon.BaseLexiconClientTest):
