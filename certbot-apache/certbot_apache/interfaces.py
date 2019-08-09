@@ -357,7 +357,8 @@ class BlockNode(ParserNode):
         Find a configuration block by name. This method walks the child tree of
         ParserNodes under the instance it was called from. This way it is possible
         to search for the whole configuration tree, when starting from root node or
-        to do a partial search when starting from a specified branch.
+        to do a partial search when starting from a specified branch. The lookup
+        should be case insensitive.
 
         :param str name: The name of the directive to search for
         :param bool exclude: If the search results should exclude the contents of
@@ -373,7 +374,8 @@ class BlockNode(ParserNode):
         Find a directive by name. This method walks the child tree of ParserNodes
         under the instance it was called from. This way it is possible to search
         for the whole configuration tree, when starting from root node, or to do
-        a partial search when starting from a specified branch.
+        a partial search when starting from a specified branch. The lookup should
+        be case insensitive.
 
         :param str name: The name of the directive to search for
         :param bool exclude: If the search results should exclude the contents of
@@ -392,7 +394,7 @@ class BlockNode(ParserNode):
         This method walks the child tree of ParserNodes under the instance it was
         called from. This way it is possible to search for the whole configuration
         tree, when starting from root node, or to do a partial search when starting
-        from a specified branch.
+        from a specified branch. The lookup should be case sensitive.
 
         :param str comment: The content of comment to search for
         :param bool exact: If the comment needs to exactly match the search term
