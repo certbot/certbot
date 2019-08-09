@@ -278,7 +278,10 @@ class BlockNode(ParserNode):
     def add_child_block(self, name, parameters=None, position=None):
         """
         Adds a new BlockNode child node with provided values and marks the callee
-        BlockNode dirty. This is used to add new children to the AST.
+        BlockNode dirty. This is used to add new children to the AST. The preceeding
+        whitespaces should not be added based on the ancestor or siblings for the
+        newly created object. This is to match the current behavior of the legacy
+        parser implementation.
 
         :param str name: The name of the child node to add
         :param list parameters: list of parameters for the node
@@ -295,7 +298,11 @@ class BlockNode(ParserNode):
     def add_child_directive(self, name, parameters=None, position=None):
         """
         Adds a new DirectiveNode child node with provided values and marks the
-        callee BlockNode dirty. This is used to add new children to the AST.
+        callee BlockNode dirty. This is used to add new children to the AST. The
+        preceeding whitespaces should not be added based on the ancestor or siblings i
+        for the newly created object. This is to match the current behavior of the
+        legacy parser implementation.
+
 
         :param str name: The name of the child node to add
         :param list parameters: list of parameters for the node
@@ -312,7 +319,11 @@ class BlockNode(ParserNode):
     def add_child_comment(self, comment="", position=None):
         """
         Adds a new CommentNode child node with provided value and marks the
-        callee BlockNode dirty. This is used to add new children to the AST.
+        callee BlockNode dirty. This is used to add new children to the AST. The
+        preceeding whitespaces should not be added based on the ancestor or siblings
+        for the newly created object. This is to match the current behavior of the
+        legacy parser implementation.
+
 
         :param str comment: Comment contents
         :param int position: Position in the list of children to add the new child
