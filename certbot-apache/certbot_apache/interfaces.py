@@ -68,10 +68,11 @@ Whitespaces
 Each ParserNode object is responsible of storing its prepending whitespace characters
 in order to be able to write the AST back to filesystem like it was, preserving the
 format, this applies for parameters of BlockNode and DirectiveNode as well.
-When parameters of ParserNode are changed, the pre-existing whitespaces are discarded
-however, as the general reason for storing them is to maintain the ability to write
-the configuration back to filesystem exactly like it was. This loses its meaning when
-we have to change the directives or blocks parameters for other reasons.
+When parameters of ParserNode are changed, the pre-existing whitespaces  in the
+parameter sequence are discarded, as the general reason for storing them is to
+maintain the ability to write the configuration back to filesystem exactly like
+it was. This loses its meaning when we have to change the directives or blocks
+parameters for other reasons.
 
 Searches and matching
 
@@ -232,7 +233,9 @@ class DirectiveNode(ParserNode):
     def set_parameters(self, parameters):
         """
         Sets the sequence of parameters for this ParserNode object without
-        whitespaces, and marks this object dirty.
+        whitespaces. While the whitespaces for parameters are discarded when using
+        this method, the whitespacing preceeding the ParserNode itself should be
+        kept intact.
 
         :param list parameters: sequence of parameters
         """
@@ -439,7 +442,9 @@ class BlockNode(ParserNode):
     def set_parameters(self, parameters):
         """
         Sets the sequence of parameters for this ParserNode object without
-        whitespaces, and marks this object dirty.
+        whitespaces. While the whitespaces for parameters are discarded when using
+        this method, the whitespacing preceeding the ParserNode itself should be
+        kept intact.
 
         :param list parameters: sequence of parameters
         """
