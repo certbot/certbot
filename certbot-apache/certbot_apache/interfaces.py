@@ -107,7 +107,7 @@ class ParserNode(object):
 
     For parsers that require the implementation to keep track of the whitespacing,
     it's responsibility of each ParserNode object itself to store its prepending
-    whitespaces in order to be able to reconstruct the complete configuration file i
+    whitespaces in order to be able to reconstruct the complete configuration file
     as it was when originally read from the disk.
     """
 
