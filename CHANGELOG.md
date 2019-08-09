@@ -10,7 +10,9 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* If Certbot fails to rollback your server configuration, the error message
+  links to the Let's Encrypt forum. Change the link to the Help category now
+  that the Server category has been closed.
 
 ### Fixed
 
