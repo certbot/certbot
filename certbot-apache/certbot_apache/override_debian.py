@@ -1,6 +1,7 @@
 """ Distribution specific override class for Debian family (Ubuntu/Debian) """
 import logging
 
+import pkg_resources
 import zope.interface
 
 from certbot import errors
@@ -34,6 +35,8 @@ class DebianConfigurator(configurator.ApacheConfigurator):
         handle_modules=True,
         handle_sites=True,
         challenge_location="/etc/apache2",
+        MOD_SSL_CONF_SRC=pkg_resources.resource_filename(
+            "certbot_apache", "options-ssl-apache.conf")
     )
 
     def enable_site(self, vhost):
