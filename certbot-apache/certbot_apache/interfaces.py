@@ -299,7 +299,7 @@ class BlockNode(ParserNode):
         """
         Adds a new DirectiveNode child node with provided values and marks the
         callee BlockNode dirty. This is used to add new children to the AST. The
-        preceeding whitespaces should not be added based on the ancestor or siblings i
+        preceeding whitespaces should not be added based on the ancestor or siblings
         for the newly created object. This is to match the current behavior of the
         legacy parser implementation.
 
