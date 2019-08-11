@@ -68,7 +68,7 @@ Whitespaces
 Each ParserNode object is responsible of storing its prepending whitespace characters
 in order to be able to write the AST back to filesystem like it was, preserving the
 format, this applies for parameters of BlockNode and DirectiveNode as well.
-When parameters of ParserNode are changed, the pre-existing whitespaces  in the
+When parameters of ParserNode are changed, the pre-existing whitespaces in the
 parameter sequence are discarded, as the general reason for storing them is to
 maintain the ability to write the configuration back to filesystem exactly like
 it was. This loses its meaning when we have to change the directives or blocks
