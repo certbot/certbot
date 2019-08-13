@@ -22,6 +22,8 @@ else:
 
 from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
 
+from certbot.compat import misc
+
 
 def chmod(file_path, mode):
     # type: (str, int) -> None
@@ -307,6 +309,26 @@ def is_executable(path):
         return os.path.isfile(path) and os.access(path, os.X_OK)
 
     return _win_is_executable(path)
+
+
+def get_private_key_mode(old_key, base_mode):
+    """
+    Calculate the POSIX mode to apply to a private key given the previous private key
+    :param str old_key: path to the previous private key
+    :param int base_mode: the minimum modes to apply to a private key
+    :return: the POSIX mode to apply
+    :rtype: int
+    """
+    if POSIX_MODE:
+        # On Linux, we keep read/write/execute permissions
+        # for group and read permissions for everybody.
+        old_mode = (stat.S_IMODE(os.stat(old_key).st_mode) &
+                    (stat.S_IRGRP | stat.S_IWGRP | stat.S_IXGRP | stat.S_IROTH))
+        return base_mode | old_mode
+
+    # On Windows, the mode returned by os.stat is not reliable,
+    # so we do not keep any permission from the previous private key.
+    return base_mode
 
 
 def _win_is_executable(path):
