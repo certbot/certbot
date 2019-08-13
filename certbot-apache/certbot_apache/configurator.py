@@ -810,6 +810,28 @@ class ApacheConfigurator(common.Installer):
 
         return (servername, serveraliases)
 
+    def _populate_vhost_names_v2(self, vhost):
+        """Helper function that populates the VirtualHost names.
+
+        :param host: In progress vhost whose names will be added
+        :type host: :class:`~certbot_apache.obj.VirtualHost`
+
+        """
+
+        servername_match = vhost.node.find_directives("ServerName",
+                                                      exclude=False)
+        serveralias_match = vhost.node.find_directives("ServerAlias",
+                                                       exclude=False)
+
+        if servername_match:
+            servername = servername_match[-1].parameters[-1]
+
+        if not vhost.modmacro:
+            for alias in serveralias_match:
+                for serveralias in alias.parameters:
+                    vhost.aliases.add(serveralias)
+            vhost.name = servername
+
     def _add_servernames(self, host):
         """Helper function for get_virtual_hosts().
 
@@ -869,6 +891,52 @@ class ApacheConfigurator(common.Installer):
         vhost = obj.VirtualHost(filename, path, addrs, is_ssl,
                                 vhost_enabled, modmacro=macro)
         self._add_servernames(vhost)
+        return vhost
+
+    def _create_vhost_v2(self, node):
+        """Used by get_virtual_hosts to create vhost objects using ParserNode
+        interfaces.
+
+        :param interfaces.BlockNode node: The BlockNode object of VirtualHost block
+
+        :returns: newly created vhost
+        :rtype: :class:`~certbot_apache.obj.VirtualHost`
+        """
+        addrs = set()
+        for param in node.parameters:
+            addrs.add(obj.Addr.fromstring(param))
+
+        is_ssl = False
+        sslengine = node.find_directives("SSLEngine")
+        if sslengine:
+            for directive in sslengine:
+                # TODO: apache-parser-v2
+                # This search should be made wiser. (using other identificators)
+                if directive.has_parameter("on", 0):
+                    is_ssl = True
+
+        # "SSLEngine on" might be set outside of <VirtualHost>
+        # Treat vhosts with port 443 as ssl vhosts
+        for addr in addrs:
+            if addr.get_port() == "443":
+                is_ssl = True
+
+        filename = node.get_filename()
+
+        if filename is None:
+            return None
+
+        macro = False
+        if node.find_directives("Macro"):
+            macro = True
+
+        vhost_enabled = self.parser.parsed_in_original(filename)
+
+        vhost = obj.VirtualHost(filename, node.get_metadata("augeas_path"),
+                                addrs, is_ssl, vhost_enabled, modmacro=macro,
+                                node=node)
+
+        self._populate_vhost_names_v2(vhost)
         return vhost
 
     def get_virtual_hosts(self):
