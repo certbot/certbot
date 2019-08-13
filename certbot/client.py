@@ -624,7 +624,7 @@ class Client(object):
             reporter.add_message(
                 "An error occurred and we failed to restore your config and "
                 "restart your server. Please post to "
-                "https://community.letsencrypt.org/c/server-config "
+                "https://community.letsencrypt.org/c/help "
                 "with details about your configuration and this error you received.",
                 reporter.HIGH_PRIORITY)
             raise
