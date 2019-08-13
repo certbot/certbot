@@ -2,7 +2,34 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 0.37.0 - master
+## 0.38.0 - master
+
+### Added
+
+*
+
+### Changed
+
+* If Certbot fails to rollback your server configuration, the error message
+  links to the Let's Encrypt forum. Change the link to the Help category now
+  that the Server category has been closed.
+
+### Fixed
+
+*
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.37.1 - 2019-08-08
+
+### Fixed
+
+* Stop disabling TLS session tickets in Apache as it caused TLS failures on
+  some systems.
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.37.0 - 2019-08-07
 
 ### Added
 
@@ -11,11 +38,12 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-*
+* Follow updated Mozilla recommendations for Nginx ssl_protocols, ssl_ciphers,
+  and ssl_prefer_server_ciphers
 
 ### Fixed
 
-*
+* Fix certbot-auto failures on RHEL 8.
 
 More details about these changes can be found on our GitHub repo.
 

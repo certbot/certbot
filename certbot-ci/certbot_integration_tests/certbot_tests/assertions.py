@@ -1,6 +1,17 @@
 """This module contains advanced assertions for the certbot integration tests."""
 import os
-import grp
+try:
+    import grp
+    POSIX_MODE = True
+except ImportError:
+    import win32api
+    import win32security
+    import ntsecuritycon
+    POSIX_MODE = False
+
+EVERYBODY_SID = 'S-1-1-0'
+SYSTEM_SID = 'S-1-5-18'
+ADMINS_SID = 'S-1-5-32-544'
 
 
 def assert_hook_execution(probe_path, probe_content):
@@ -10,9 +21,10 @@ def assert_hook_execution(probe_path, probe_content):
     :param probe_content: content expected when the hook is executed
     """
     with open(probe_path, 'r') as file:
-        lines = file.readlines()
+        data = file.read()
 
-    assert '{0}{1}'.format(probe_content, os.linesep) in lines
+    lines = [line.strip() for line in data.splitlines()]
+    assert probe_content in lines
 
 
 def assert_saved_renew_hook(config_dir, lineage):
@@ -38,16 +50,51 @@ def assert_cert_count_for_lineage(config_dir, lineage, count):
     assert len(certs) == count
 
 
-def assert_equals_permissions(file1, file2, mask):
+def assert_equals_group_permissions(file1, file2):
     """
-    Assert that permissions on two files are identical in respect to a given umask.
+    Assert that two files have the same permissions for group owner.
     :param file1: first file path to compare
     :param file2: second file path to compare
-    :param mask: 3-octal representation of a POSIX umask under which the two files mode
-                 should match (eg. 0o074 will test RWX on group and R on world)
     """
-    mode_file1 = os.stat(file1).st_mode & mask
-    mode_file2 = os.stat(file2).st_mode & mask
+    # On Windows there is no group, so this assertion does nothing on this platform
+    if POSIX_MODE:
+        mode_file1 = os.stat(file1).st_mode & 0o070
+        mode_file2 = os.stat(file2).st_mode & 0o070
+
+        assert mode_file1 == mode_file2
+
+
+def assert_equals_world_read_permissions(file1, file2):
+    """
+    Assert that two files have the same read permissions for everyone.
+    :param file1: first file path to compare
+    :param file2: second file path to compare
+    """
+    if POSIX_MODE:
+        mode_file1 = os.stat(file1).st_mode & 0o004
+        mode_file2 = os.stat(file2).st_mode & 0o004
+    else:
+        everybody = win32security.ConvertStringSidToSid(EVERYBODY_SID)
+
+        security1 = win32security.GetFileSecurity(file1, win32security.DACL_SECURITY_INFORMATION)
+        dacl1 = security1.GetSecurityDescriptorDacl()
+
+        mode_file1 = dacl1.GetEffectiveRightsFromAcl({
+            'TrusteeForm': win32security.TRUSTEE_IS_SID,
+            'TrusteeType': win32security.TRUSTEE_IS_USER,
+            'Identifier': everybody,
+        })
+        mode_file1 = mode_file1 & ntsecuritycon.FILE_GENERIC_READ
+
+        security2 = win32security.GetFileSecurity(file2, win32security.DACL_SECURITY_INFORMATION)
+        dacl2 = security2.GetSecurityDescriptorDacl()
+
+        mode_file2 = dacl2.GetEffectiveRightsFromAcl({
+            'TrusteeForm': win32security.TRUSTEE_IS_SID,
+            'TrusteeType': win32security.TRUSTEE_IS_USER,
+            'Identifier': everybody,
+        })
+        mode_file2 = mode_file2 & ntsecuritycon.FILE_GENERIC_READ
 
     assert mode_file1 == mode_file2
 
@@ -57,20 +104,57 @@ def assert_equals_group_owner(file1, file2):
     Assert that two files have the same group owner.
     :param file1: first file path to compare
     :param file2: second file path to compare
-    :return:
     """
-    group_owner_file1 = grp.getgrgid(os.stat(file1).st_gid)[0]
-    group_owner_file2 = grp.getgrgid(os.stat(file2).st_gid)[0]
+    # On Windows there is no group, so this assertion does nothing on this platform
+    if POSIX_MODE:
+        group_owner_file1 = grp.getgrgid(os.stat(file1).st_gid)[0]
+        group_owner_file2 = grp.getgrgid(os.stat(file2).st_gid)[0]
 
-    assert group_owner_file1 == group_owner_file2
+        assert group_owner_file1 == group_owner_file2
 
 
-def assert_world_permissions(file, mode):
+def assert_world_no_permissions(file):
     """
-    Assert that a file has the expected world permission.
-    :param file: file path to check
-    :param mode: world permissions mode expected
+    Assert that the given file is not world-readable.
+    :param file: path of the file to check
     """
-    mode_file_all = os.stat(file).st_mode & 0o007
+    if POSIX_MODE:
+        mode_file_all = os.stat(file).st_mode & 0o007
+        assert mode_file_all == 0
+    else:
+        security = win32security.GetFileSecurity(file, win32security.DACL_SECURITY_INFORMATION)
+        dacl = security.GetSecurityDescriptorDacl()
+        mode = dacl.GetEffectiveRightsFromAcl({
+            'TrusteeForm': win32security.TRUSTEE_IS_SID,
+            'TrusteeType': win32security.TRUSTEE_IS_USER,
+            'Identifier': win32security.ConvertStringSidToSid(EVERYBODY_SID),
+        })
 
-    assert mode_file_all == mode
+        assert not mode
+
+
+def assert_world_read_permissions(file):
+    """
+    Assert that the given file is world-readable, but not world-writable or world-executable.
+    :param file: path of the file to check
+    """
+    if POSIX_MODE:
+        mode_file_all = os.stat(file).st_mode & 0o007
+        assert mode_file_all == 4
+    else:
+        security = win32security.GetFileSecurity(file, win32security.DACL_SECURITY_INFORMATION)
+        dacl = security.GetSecurityDescriptorDacl()
+        mode = dacl.GetEffectiveRightsFromAcl({
+            'TrusteeForm': win32security.TRUSTEE_IS_SID,
+            'TrusteeType': win32security.TRUSTEE_IS_USER,
+            'Identifier': win32security.ConvertStringSidToSid(EVERYBODY_SID),
+        })
+
+        assert not mode & ntsecuritycon.FILE_GENERIC_WRITE
+        assert not mode & ntsecuritycon.FILE_GENERIC_EXECUTE
+        assert mode & ntsecuritycon.FILE_GENERIC_READ == ntsecuritycon.FILE_GENERIC_READ
+
+
+def _get_current_user():
+    account_name = win32api.GetUserNameEx(win32api.NameSamCompatible)
+    return win32security.LookupAccountName(None, account_name)[0]
