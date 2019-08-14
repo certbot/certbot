@@ -276,7 +276,7 @@ addons:
 # CERTBOT_NO_PIN is set to work around failures we've seen when using an older
 # version of virtualenv.
 install: 'tools/pip_install.py -U codecov tox virtualenv'
-script: '"$TRAVIS_RETRY" tox'
+script: '$TRAVIS_RETRY tox'
 
 after_success: '[ "$TOXENV" == "py27-cover" ] && codecov -F linux'
 
