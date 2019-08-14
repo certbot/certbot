@@ -1106,7 +1106,7 @@ class RenewableCert(object):
                 f.write(new_privkey)
             # Preserve gid and (mode & MASK_FOR_PRIVATE_KEY_PERMISSIONS)
             # from previous privkey in this lineage.
-            mode = filesystem.get_private_key_mode(old_privkey, BASE_PRIVKEY_MODE)
+            mode = filesystem.compute_private_key_mode(old_privkey, BASE_PRIVKEY_MODE)
             filesystem.copy_ownership_and_apply_mode(
                 old_privkey, target["privkey"], mode, copy_user=False, copy_group=True)
 

@@ -337,7 +337,7 @@ def is_word_reachable(path):
     }))
 
 
-def get_private_key_mode(old_key, base_mode):
+def compute_private_key_mode(old_key, base_mode):
     # type: (str, int) -> int
     """
     Calculate the POSIX mode to apply to a private key given the previous private key
@@ -402,11 +402,11 @@ def has_min_permissions(path, min_mode):
 
     for index in range(min_dacl.GetAceCount()):
         min_ace = min_dacl.GetAce(index)
-        target_ace = [dacl.GetAce(index2) for index2 in range(dacl.GetAceCount())
+        target_aces = [dacl.GetAce(index2) for index2 in range(dacl.GetAceCount())
                       if dacl.GetAce(index2)[2] == min_ace[2]]
-        if not target_ace:
+        if not target_aces:
             return False
-        if not target_ace[1] == target_ace[1] | min_ace[1]:
+        if not target_aces[0][1] == target_aces[0][1] | min_ace[1]:
             return False
 
     return True

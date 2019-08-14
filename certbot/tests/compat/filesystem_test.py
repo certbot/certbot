@@ -149,6 +149,18 @@ class WindowsChmodTests(TempDirTestCase):
         # since the user is also the admins group
         self.assertEqual(security_dacl.GetSecurityDescriptorDacl().GetAceCount(), 2)
 
+    def test_compute_private_key_mode(self):
+        filesystem.chmod(self.probe_path, 0o777)
+        new_mode = filesystem.compute_private_key_mode(self.probe_path, 0o600)
+
+        if POSIX_MODE:
+            # On Linux RWX permissions for group and R permission for world
+            # are persisted from the existing moe
+            self.assertEqual(new_mode, 0o674)
+        else:
+            # On Windows no permission is persisted
+            self.assertEqual(new_mode, 0o600)
+
 
 @unittest.skipIf(POSIX_MODE, reason='Tests specific to Windows security')
 class WindowsOpenTest(TempDirTestCase):
@@ -262,14 +274,14 @@ class WindowsMkdirTests(test_util.TempDirTestCase):
         self.assertEqual(original_mkdir, std_os.mkdir)
 
 
-class CopyOwnershipTest(test_util.TempDirTestCase):
-    """Tests about replacement of chown: copy_ownership_and_apply_mode"""
+class OwnershipTest(test_util.TempDirTestCase):
+    """Tests about copy_ownership_and_apply_mode and get_ownership"""
     def setUp(self):
-        super(CopyOwnershipTest, self).setUp()
+        super(OwnershipTest, self).setUp()
         self.probe_path = _create_probe(self.tempdir)
 
     @unittest.skipIf(POSIX_MODE, reason='Test specific to Windows security')
-    def test_windows(self):
+    def test_copy_ownership_windows(self):
         system = win32security.ConvertStringSidToSid(SYSTEM_SID)
         security = win32security.SECURITY_ATTRIBUTES().SECURITY_DESCRIPTOR
         security.SetSecurityDescriptorOwner(system, False)
@@ -295,7 +307,7 @@ class CopyOwnershipTest(test_util.TempDirTestCase):
                           if dacl.GetAce(index)[2] == everybody])
 
     @unittest.skipUnless(POSIX_MODE, reason='Test specific to Linux security')
-    def test_linux(self):
+    def test_copy_ownership_linux(self):
         with mock.patch('os.chown') as mock_chown:
             with mock.patch('os.chmod') as mock_chmod:
                 with mock.patch('os.stat') as mock_stat:
@@ -307,8 +319,20 @@ class CopyOwnershipTest(test_util.TempDirTestCase):
         mock_chown.assert_called_once_with(self.probe_path, 50, 51)
         mock_chmod.assert_called_once_with(self.probe_path, 0o700)
 
+    def test_get_ownership(self):
+        ownership = filesystem.get_ownership(self.probe_path)
+
+        if POSIX_MODE:
+            import os as std_os  # pylint: disable=os-module-forbidden
+            stats = os.stat(self.probe_path)
+            self.assertEqual((stats.st_uid, stats.st_gid), ownership)
+        else:
+            current_user = filesystem._get_current_user()  # pylint: disable=protected-access
+            self.assertEqual((win32security.ConvertSidToStringSid(current_user), None), ownership)
+
 
 class CheckPermissionsTest(test_util.TempDirTestCase):
+    """Tests relative to functions that check modes."""
     def setUp(self):
         super(CheckPermissionsTest, self).setUp()
         self.probe_path = _create_probe(self.tempdir)
@@ -352,6 +376,20 @@ class CheckPermissionsTest(test_util.TempDirTestCase):
         with mock.patch('certbot.compat.filesystem.check_owner') as mock_owner:
             mock_owner.return_value = False
             self.assertFalse(filesystem.check_permissions(self.probe_path, 0o744))
+
+    def test_check_min_permissions(self):
+        filesystem.chmod(self.probe_path, 0o744)
+        self.assertTrue(filesystem.has_min_permissions(self.probe_path, 0o744))
+
+        filesystem.chmod(self.probe_path, 0o700)
+        self.assertFalse(filesystem.has_min_permissions(self.probe_path, 0o744))
+
+    def test_is_world_reachable(self):
+        filesystem.chmod(self.probe_path, 0o744)
+        self.assertTrue(filesystem.is_word_reachable(self.probe_path))
+
+        filesystem.chmod(self.probe_path, 0o700)
+        self.assertFalse(filesystem.is_word_reachable(self.probe_path))
 
 
 class OsReplaceTest(test_util.TempDirTestCase):
