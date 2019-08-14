@@ -20,7 +20,7 @@ except ImportError:
 else:
     POSIX_MODE = False
 
-from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import List, Union, Tuple  # pylint: disable=unused-import, no-name-in-module
 
 from certbot.compat import misc
 
@@ -263,6 +263,7 @@ def replace(src, dst):
 
 
 def realpath(file_path):
+    # type: (str) -> str
     """
     Find the real path for the given path. This method resolves symlinks, including
     recursive symlinks, and is protected against symlinks that creates an infinite loop.
@@ -299,6 +300,7 @@ def realpath(file_path):
 # requires to be run under a privileged shell, so the user will always benefit
 # from the highest (privileged one) set of permissions on a given file.
 def is_executable(path):
+    # type: (str) -> bool
     """
     Is path an executable file?
     :param str path: path to test
@@ -312,6 +314,7 @@ def is_executable(path):
 
 
 def is_word_reachable(path):
+    # type: (str) -> bool
     """
     Check if everybody/world has any right (read/write/execute) to a file given its path
     :param str path: path to test
@@ -335,6 +338,7 @@ def is_word_reachable(path):
 
 
 def get_private_key_mode(old_key, base_mode):
+    # type: (str, int) -> int
     """
     Calculate the POSIX mode to apply to a private key given the previous private key
     :param str old_key: path to the previous private key
@@ -352,6 +356,26 @@ def get_private_key_mode(old_key, base_mode):
     # On Windows, the mode returned by os.stat is not reliable,
     # so we do not keep any permission from the previous private key.
     return base_mode
+
+
+def get_ownership(path):
+    # type: (str) -> Union[Tuple[int, int], Tuple[str, None]]
+    """
+    Retrieve ownership data about a file given its path
+    :param str path: path to the file
+    :return: on Linux a tuple (UID, GID) of respectively user and group owner of the file,
+             on Windows a tuple (SID, None) where SID corresponds to the user owner of the file.
+    :rtype: tuple of int and int or tuple of str and None
+
+    """
+    if POSIX_MODE:
+        stat = os.stat(path)
+        return stat.st_uid, stat.st_gid
+
+    security = win32security.GetFileSecurity(path, win32security.OWNER_SECURITY_INFORMATION)
+    user = security.GetSecurityDescriptorOwner()
+
+    return str(user), None
 
 
 def _win_is_executable(path):
