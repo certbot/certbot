@@ -37,8 +37,6 @@ matrix:
     # Main test suite
     - python: "2.7"
       env: ACME_SERVER=pebble TOXENV=integration
-      sudo: required
-      services: docker
       <<: *not-on-master
 
     # This job is always executed, including on master
@@ -60,19 +58,13 @@ matrix:
       # OpenSSL in Xenial or newer.
       dist: trusty
       env: TOXENV='py27-{acme,apache,certbot,dns,nginx}-oldest'
-      sudo: required
-      services: docker
       <<: *not-on-master
     - python: "3.4"
       env: TOXENV=py34
-      sudo: required
-      services: docker
       <<: *not-on-master
     - python: "3.7"
       dist: xenial
       env: TOXENV=py37
-      sudo: required
-      services: docker
       <<: *not-on-master
     - sudo: required
       env: TOXENV=apache_compat
@@ -86,8 +78,6 @@ matrix:
       <<: *not-on-master
     - python: "2.7"
       env: TOXENV=apacheconftest-with-pebble
-      sudo: required
-      services: docker
       <<: *not-on-master
     - python: "2.7"
       env: TOXENV=nginxroundtrip
@@ -123,7 +113,6 @@ matrix:
         - secure: "f+j/Lj9s1lcuKo5sEFrlRd1kIAMnIJI4z0MTI7QF8jl9Fkmbx7KECGzw31TNgzrOSzxSapHbcueFYvNCLKST+kE/8ogMZBbwqXfEDuKpyF6BY3uYoJn+wPVE5pIb8Hhe08xPte8TTDSMIyHI3EyTfcAKrIreauoArePvh/cRvSw="
       <<: *extended-test-suite
     - python: "3.7"
-      dist: xenial
       env: TOXENV=py37 CERTBOT_NO_PIN=1
       <<: *extended-test-suite
     - python: "2.7"
