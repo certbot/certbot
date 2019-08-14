@@ -82,7 +82,10 @@ class LockFileTest(test_util.TempDirTestCase):
         'Race conditions on lock are specific to the non-blocking file access approach on Linux.')
     def test_race(self):
         should_delete = [True, False]
-        stat = os.stat
+        # Normally os module should not be imported in certbot codebase except in certbot.compat
+        # for the sake of compatibility over Windows and Linux.
+        # We make an exception here, since test_race is a test function called only on Linux.
+        from os import stat  # pylint: disable=os-module-forbidden
 
         def delete_and_stat(path):
             """Wrap os.stat and maybe delete the file first."""

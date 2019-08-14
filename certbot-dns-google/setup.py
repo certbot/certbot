@@ -8,7 +8,7 @@ version = '0.38.0.dev0'
 # acme/certbot version.
 install_requires = [
     'acme>=0.29.0',
-    'certbot>=0.34.0',
+    'certbot>=0.38.0.dev0',
     # 1.5 is the first version that supports oauth2client>=2.0
     'google-api-python-client>=1.5',
     'mock',

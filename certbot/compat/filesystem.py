@@ -302,13 +302,36 @@ def is_executable(path):
     """
     Is path an executable file?
     :param str path: path to test
-    :returns: True if path is an executable file
+    :return: True if path is an executable file
     :rtype: bool
     """
     if POSIX_MODE:
         return os.path.isfile(path) and os.access(path, os.X_OK)
 
     return _win_is_executable(path)
+
+
+def is_word_reachable(path):
+    """
+    Check if everybody/world has any right (read/write/execute) to a file given its path
+    :param str path: path to test
+    :return: True if everybody/world has any right to the file
+    :rtype: bool
+    """
+    if POSIX_MODE:
+        return bool(stat.S_IMODE(os.stat(path).st_mode) & stat.S_IRWXO)
+
+    if not os.path.isfile(path):
+        return False
+
+    security = win32security.GetFileSecurity(path, win32security.DACL_SECURITY_INFORMATION)
+    dacl = security.GetSecurityDescriptorDacl()
+
+    return bool(dacl.GetEffectiveRightsFromAcl({
+        'TrusteeForm': win32security.TRUSTEE_IS_SID,
+        'TrusteeType': win32security.TRUSTEE_IS_USER,
+        'Identifier': win32security.ConvertStringSidToSid('S-1-1-0'),
+    }))
 
 
 def get_private_key_mode(old_key, base_mode):

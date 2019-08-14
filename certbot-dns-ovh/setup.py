@@ -8,7 +8,7 @@ version = '0.38.0.dev0'
 # acme/certbot version.
 install_requires = [
     'acme>=0.31.0',
-    'certbot>=0.34.0',
+    'certbot>=0.38.0.dev0',
     'dns-lexicon>=2.7.14',  # Correct proxy use on OVH provider
     'mock',
     'setuptools',

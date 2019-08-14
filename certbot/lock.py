@@ -167,14 +167,18 @@ class _UnixLockMechanism(_BaseLockMechanism):
         :returns: True if the lock was successfully acquired
         :rtype: bool
         """
+        # Normally os module should not be imported in certbot codebase except in certbot.compat
+        # for the sake of compatibility over Windows and Linux.
+        # We make an exception here, since _lock_success is private and called only on Linux.
+        from os import stat, fstat  # pylint: disable=os-module-forbidden
         try:
-            stat1 = os.stat(self._path)
+            stat1 = stat(self._path)
         except OSError as err:
             if err.errno == errno.ENOENT:
                 return False
             raise
 
-        stat2 = os.fstat(fd)
+        stat2 = fstat(fd)
         # If our locked file descriptor and the file on disk refer to
         # the same device and inode, they're the same file.
         return stat1.st_dev == stat2.st_dev and stat1.st_ino == stat2.st_ino
