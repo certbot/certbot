@@ -9,6 +9,7 @@ before_script:
   # On Travis, the fastest parallelization for integration tests has proved to be 4.
   - 'if [[ "$TOXENV" == *"integration"* ]]; then export PYTEST_ADDOPTS="--numprocesses 4"; fi'
   - export TOX_TESTENV_PASSENV=TRAVIS
+  - export RETRY_CMD=travis_retry
 
 # Only build pushes to the master branch, PRs, and branches beginning with
 # `test-` or of the form `digit(s).digit(s).x`. This reduces the number of
