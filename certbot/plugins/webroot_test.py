@@ -34,7 +34,9 @@ class AuthenticatorTest(unittest.TestCase):
 
     def setUp(self):
         from certbot.plugins.webroot import Authenticator
-        self.path = tempfile.mkdtemp()
+        self.workspace = tempfile.mkdtemp()
+        self.path = os.path.join(self.workspace, 'webroot')
+        filesystem.mkdir(self.path)
         self.partial_root_challenge_path = os.path.join(
             self.path, ".well-known")
         self.root_challenge_path = os.path.join(
@@ -177,6 +179,8 @@ class AuthenticatorTest(unittest.TestCase):
                 self.assertTrue(filesystem.check_mode(full_path, 0o755))
 
         parent_ownership = filesystem.get_ownership(self.path)
+        print(self.path)
+        print(self.validation_path)
 
         self.assertEqual(filesystem.get_ownership(self.validation_path), parent_ownership)
 

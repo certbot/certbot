@@ -375,7 +375,7 @@ def get_ownership(path):
     security = win32security.GetFileSecurity(path, win32security.OWNER_SECURITY_INFORMATION)
     user = security.GetSecurityDescriptorOwner()
 
-    return str(user), None
+    return win32security.ConvertSidToStringSid(user), None
 
 
 def has_min_permissions(path, min_mode):
