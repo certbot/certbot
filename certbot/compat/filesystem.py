@@ -22,8 +22,6 @@ else:
 
 from acme.magic_typing import List, Union, Tuple  # pylint: disable=unused-import, no-name-in-module
 
-from certbot.compat import misc
-
 
 def chmod(file_path, mode):
     # type: (str, int) -> None
@@ -369,8 +367,8 @@ def get_ownership(path):
 
     """
     if POSIX_MODE:
-        stat = os.stat(path)
-        return stat.st_uid, stat.st_gid
+        stats = os.stat(path)
+        return stats.st_uid, stats.st_gid
 
     security = win32security.GetFileSecurity(path, win32security.OWNER_SECURITY_INFORMATION)
     user = security.GetSecurityDescriptorOwner()
