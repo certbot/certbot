@@ -93,7 +93,7 @@ class LockFileTest(test_util.TempDirTestCase):
                 os.remove(path)
             return stat(path)
 
-        with mock.patch('certbot.lock.os.stat') as mock_stat:
+        with mock.patch('certbot.lock.filesystem.os.stat') as mock_stat:
             mock_stat.side_effect = delete_and_stat
             self._call(self.lock_path)
         self.assertFalse(should_delete)
@@ -120,7 +120,7 @@ class LockFileTest(test_util.TempDirTestCase):
 
     def test_unexpected_os_err(self):
         if POSIX_MODE:
-            mock_function = 'certbot.lock.os.stat'
+            mock_function = 'certbot.lock.filesystem.os.stat'
         else:
             mock_function = 'certbot.lock.msvcrt.locking'
         # The only expected errno are ENOENT and EACCES in lock module.
