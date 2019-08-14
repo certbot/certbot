@@ -378,6 +378,40 @@ def get_ownership(path):
     return str(user), None
 
 
+def has_min_permissions(path, min_mode):
+    # type: (str, int) -> bool
+    """
+    Check if a file given its path has at least the permissions defined by the given minimal mode.
+    :param str path: path to the file to check
+    :param int min_mode: the minimal permissions expected
+    :return: True if the file matches the minimal permissions expectations, False otherwise
+    :rtype: bool
+    """
+    if POSIX_MODE:
+        st_mode = os.stat(path).st_mode
+        return st_mode == st_mode | min_mode
+
+    path = realpath(path)
+
+    # Get owner sid of the file
+    security = win32security.GetFileSecurity(
+        path, win32security.OWNER_SECURITY_INFORMATION | win32security.DACL_SECURITY_INFORMATION)
+    user = security.GetSecurityDescriptorOwner()
+    dacl = security.GetSecurityDescriptorDacl()
+    min_dacl = _generate_dacl(user, min_mode)
+
+    for index in range(min_dacl.GetAceCount()):
+        min_ace = min_dacl.GetAce(index)
+        target_ace = [dacl.GetAce(index2) for index2 in range(dacl.GetAceCount())
+                      if dacl.GetAce(index2)[2] == min_ace[2]]
+        if not target_ace:
+            return False
+        if not target_ace[1] == target_ace[1] | min_ace[1]:
+            return False
+
+    return True
+
+
 def _win_is_executable(path):
     if not os.path.isfile(path):
         return False
@@ -538,8 +572,8 @@ def _compare_dacls(dacl1, dacl2):
     This method compare the two given DACLs to check if they are identical.
     Identical means here that they contains the same set of ACEs in the same order.
     """
-    return ([dacl1.GetAce(index) for index in range(0, dacl1.GetAceCount())] ==
-            [dacl2.GetAce(index) for index in range(0, dacl2.GetAceCount())])
+    return ([dacl1.GetAce(index) for index in range(dacl1.GetAceCount())] ==
+            [dacl2.GetAce(index) for index in range(dacl2.GetAceCount())])
 
 
 def _get_current_user():
