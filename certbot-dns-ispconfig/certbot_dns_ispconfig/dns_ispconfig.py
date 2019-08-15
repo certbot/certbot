@@ -63,6 +63,7 @@ class _ISPConfigClient(object):
     """
 
     def __init__(self, endpoint, username, password):
+        logger.debug('creating ispconfigclient')
         self.endpoint = endpoint
         self.username = username
         self.password = password
@@ -72,16 +73,20 @@ class _ISPConfigClient(object):
     def _login(self):
         if self.session_id is not None:
             return
+        logger.debug('logging in')
         logindata = {'username': self.username, 'password':self.password}
         self.session_id = self._api_request('login', logindata)
+        logger.debug('session id is %s', self.session_id)
 
     def _api_request(self, action, data):
         if self.session_id is not None:
             data['session_id'] = self.session_id
+        url = self._get_url(action)
         resp = self.session.get(
-            self._get_url(action),
+            url,
             json=data
         )
+        logger.debug('API REquest to URL: %s', url)
         if resp.status_code != 200:
             raise errors.PluginError('HTTP Error during login {0}'.format(resp.status_code))
         try:
@@ -113,17 +118,23 @@ class _ISPConfigClient(object):
         :raises certbot.errors.PluginError: if an error occurs communicating with the ISPConfig API
         """
         self._login()
-        zone_id = self._find_managed_zone_id(domain)
+        zone_id, zone_name = self._find_managed_zone_id(domain)
         if zone_id is None:
             raise errors.PluginError("Domain not known")
-        record = self.get_existing_txt(zone_id, record_name)
+        logger.debug('domain found: %s with id: %s', zone_name, zone_id)
+        o_record_name = record_name
+        record_name = record_name.replace(zone_name, '')[:-1]
+        logger.debug('using record_name: %s from original: %s', record_name, o_record_name)
+        record = self.get_existing_txt(zone_id, record_name, record_content)
         if record is not None:
             if record['data'] == record_content:
-                print('already there, id {0}'.format(record['id']))
+                logger.info('already there, id {0}'.format(record['id']))
                 return
             else:
+                logger.info('update {0}'.format(record['id']))
                 self._update_txt_record(zone_id, record['id'], record_name, record_content, record_ttl)
         else:
+            logger.info('insert new txt record')
             self._insert_txt_record(zone_id, record_name, record_content, record_ttl)
 
     def del_txt_record(self, domain, record_name, record_content, record_ttl):
@@ -137,12 +148,17 @@ class _ISPConfigClient(object):
         :raises certbot.errors.PluginError: if an error occurs communicating with the ISPConfig API
         """
         self._login()
-        zone_id = self._find_managed_zone_id(domain)
+        zone_id, zone_name = self._find_managed_zone_id(domain)
         if zone_id is None:
             raise errors.PluginError("Domain not known")
-        record = self.get_existing_txt(zone_id, record_name)
+        logger.debug('domain found: %s with id: %s', zone_name, zone_id)
+        o_record_name = record_name
+        record_name = record_name.replace(zone_name, '')[:-1]
+        logger.debug('using record_name: %s from original: %s', record_name, o_record_name)
+        record = self.get_existing_txt(zone_id, record_name, record_content)
         if record is not None:
             if record['data'] == record_content:
+                logger.debug('delete TXT record: %s', record['id'])
                 self._delete_txt_record(record['id'])
 
     def _prepare_rr_data(self, zone_id, record_name, record_content, record_ttl):
@@ -165,15 +181,18 @@ class _ISPConfigClient(object):
 
     def _insert_txt_record(self, zone_id, record_name, record_content, record_ttl):
         data = self._prepare_rr_data(zone_id, record_name, record_content, record_ttl)
+        logger.debug('insert with data: %s', data)
         result = self._api_request('dns_txt_add', data)
 
     def _update_txt_record(self, zone_id, primary_id, record_name, record_content, record_ttl):
         data = self._prepare_rr_data(zone_id, record_name, record_content, record_ttl)
         data['primary_id'] = primary_id
+        logger.debug('update with data: %s', data)
         result = self._api_request('dns_txt_update', data)
 
     def _delete_txt_record(self, primary_id):
         data = { 'primary_id': primary_id }
+        logger.debug('delete with data: %s', data)
         result = self._api_request('dns_txt_delete', data)
 
     def _find_managed_zone_id(self, domain):
@@ -191,13 +210,14 @@ class _ISPConfigClient(object):
         for zone_name in zone_dns_name_guesses:
             #get the zone id
             try:
+                logger.debug('looking for zone: %s', zone_name)
                 zone_id = self._api_request('dns_zone_get_id', {'origin': zone_name})
-                return zone_id
+                return zone_id, zone_name
             except errors.PluginError as e:
                 pass
         return None
 
-    def get_existing_txt(self, zone_id, record_name):
+    def get_existing_txt(self, zone_id, record_name, record_content):
         """
         Get existing TXT records from the RRset for the record name.
 
@@ -215,6 +235,6 @@ class _ISPConfigClient(object):
         read_zone_data = {'zone_id': zone_id}
         zone_data = self._api_request('dns_rr_get_all_by_zone', read_zone_data)
         for entry in zone_data:
-            if entry['name'] == record_name and entry['type'] == 'TXT':
+            if entry['name'] == record_name and entry['type'] == 'TXT' and entry['data'] == record_content:
                 return entry
         return None
