@@ -1,3 +1,4 @@
+# pylint: disable=abstract-method
 """ParserNode interface for interacting with configuration tree.
 
 General description
@@ -155,7 +156,7 @@ class ParserNode(object):
 
 
 @six.add_metaclass(abc.ABCMeta)
-class CommentNode(object):
+class CommentNode(ParserNode):
     """
     CommentNode class is used for representation of comments within the parsed
     configuration structure. Because of the nature of comments, it is not able
@@ -174,7 +175,7 @@ class CommentNode(object):
 
 
 @six.add_metaclass(abc.ABCMeta)
-class DirectiveNode(object):
+class DirectiveNode(ParserNode):
     """
     DirectiveNode class represents a configuration directive within the configuration.
     It can have zero or more parameters attached to it. Because of the nature of
@@ -208,7 +209,7 @@ class DirectiveNode(object):
 
 
 @six.add_metaclass(abc.ABCMeta)
-class BlockNode(object):
+class BlockNode(ParserNode):
     """
     BlockNode class represents a block of nested configuration directives, comments
     and other blocks as its children. A BlockNode can have zero or more parameters
