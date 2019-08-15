@@ -121,7 +121,20 @@ class ParserNode(object):
 
     # True if this node has been modified since last save.
     dirty: bool
+
+    # Filepath of the file where the configuration element for this ParserNode
+    # object resides.
+    filepath: str
     """
+
+    @abc.abstractmethod
+    def metadata(self, key):
+        """
+        Gets an element from the metadata dictionary for this ParserNode object.
+
+        :param str key: Element key name
+        :returns: Requested metadata element
+        """
 
     @abc.abstractmethod
     def save(self, msg):
@@ -142,7 +155,7 @@ class ParserNode(object):
 
 
 @six.add_metaclass(abc.ABCMeta)
-class CommentNode(ParserNode):
+class CommentNode(object):
     """
     CommentNode class is used for representation of comments within the parsed
     configuration structure. Because of the nature of comments, it is not able
@@ -161,7 +174,7 @@ class CommentNode(ParserNode):
 
 
 @six.add_metaclass(abc.ABCMeta)
-class DirectiveNode(ParserNode):
+class DirectiveNode(object):
     """
     DirectiveNode class represents a configuration directive within the configuration.
     It can have zero or more parameters attached to it. Because of the nature of
@@ -195,7 +208,7 @@ class DirectiveNode(ParserNode):
 
 
 @six.add_metaclass(abc.ABCMeta)
-class BlockNode(ParserNode):
+class BlockNode(object):
     """
     BlockNode class represents a block of nested configuration directives, comments
     and other blocks as its children. A BlockNode can have zero or more parameters
