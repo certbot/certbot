@@ -1,6 +1,5 @@
 """Common utilities for certbot_nginx."""
 import copy
-import logging
 import shutil
 import tempfile
 import unittest
