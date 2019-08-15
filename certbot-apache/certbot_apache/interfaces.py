@@ -86,6 +86,8 @@ For this reason the internal representation of data should not ignore the case.
 import abc
 import six
 
+from acme.magic_typing import Optional, Tuple  # pylint: disable=unused-import, no-name-in-module
+
 
 @six.add_metaclass(abc.ABCMeta)
 class ParserNode(object):
@@ -110,34 +112,16 @@ class ParserNode(object):
     it's responsibility of each ParserNode object itself to store its prepending
     whitespaces in order to be able to reconstruct the complete configuration file
     as it was when originally read from the disk.
+
+    ParserNode objects should have the following attributes:
+
+    # Reference to ancestor node, or None if the node is the root node of the
+    # configuration tree.
+    ancestor: Optional[ParserNode]
+
+    # True if this node has been modified since last save.
+    dirty: bool
     """
-
-    @property
-    @abc.abstractmethod
-    def ancestor(self):  # pragma: no cover
-        """
-        This property contains a reference to ancestor node, or None if the node
-        is the root node of the configuration tree.
-
-        :returns: The ancestor BlockNode object, or None for root node.
-        :rtype: ParserNode
-        """
-
-        raise NotImplementedError
-
-    @property
-    @abc.abstractmethod
-    def dirty(self):  # pragma: no cover
-        """
-        This property contains a boolean value of the information if this node has
-        been modified since last save (or after the initial parse).
-
-        :returns: True if this node has had changes that have not yet been written
-            to disk.
-        :rtype: bool
-        """
-
-        raise NotImplementedError
 
     @abc.abstractmethod
     def save(self, msg):
@@ -167,20 +151,14 @@ class CommentNode(ParserNode):
     CommentNode stores its contents in class variable 'comment' and does not
     have a specific name.
 
+    CommentNode objects should have the following attributes:
+
+    # Contains the contents of the comment without the directive notation
+    # (typically # or /* ... */
+    comment: str
+
     """
 
-    @property
-    @abc.abstractmethod
-    def comment(self):  # pragma: no cover
-        """
-        Comment property contains the contents of the comment without the comment
-        directives (typically # or /* ... */).
-
-        :returns: A string containing the comment
-        :rtype: str
-        """
-
-        raise NotImplementedError
 
 @six.add_metaclass(abc.ABCMeta)
 class DirectiveNode(ParserNode):
@@ -189,45 +167,20 @@ class DirectiveNode(ParserNode):
     It can have zero or more parameters attached to it. Because of the nature of
     single directives, it is not able to have child nodes and hence it is always
     treated as a leaf node.
+
+    DirectiveNode objects should have the following attributes:
+
+    # True if this DirectiveNode is enabled and False if it is inside of an
+    # inactive conditional block.
+    enabled: bool
+
+    # Name, or key of the configuration directive
+    name: str
+
+    # Tuple of parameters of this ParserNode object, excluding whitespaces.
+    parameters: Tuple[str]
+
     """
-
-    @property
-    @abc.abstractmethod
-    def enabled(self):  # pragma: no cover
-        """
-        Configuration blocks may have conditional statements enabling or disabling
-        their contents. This property returns the state of this DirectiveNode.
-
-        :returns: True if the DirectiveNode is parsed and enabled in the configuration.
-        :rtype: bool
-        """
-
-        raise NotImplementedError
-
-    @property
-    @abc.abstractmethod
-    def name(self):  # pragma: no cover
-        """
-        Name property contains the name of the directive.
-
-        :returns: Name of this node
-        :rtype: str
-        """
-
-        raise NotImplementedError
-
-    @property
-    @abc.abstractmethod
-    def parameters(self):  # pragma: no cover
-        """
-        This property contains a tuple of parameters of this ParserNode object
-        excluding whitespaces.
-
-        :returns: A tuple of parameters for this node
-        :rtype: tuple
-        """
-
-        raise NotImplementedError
 
     @abc.abstractmethod
     def set_parameters(self, parameters):
@@ -272,6 +225,24 @@ class BlockNode(ParserNode):
 
     The applicable parameters are dependent on the underlying configuration language
     and its grammar.
+
+    BlockNode objects should have the following attributes:
+
+    # True if this BlockNode is enabled and False if it is inside of an
+    # inactive conditional block. If a BlockNode contains an unmatched
+    # conditional statement, it should itself be flagged as enabled as it's
+    # parsed, but its children should be flagged as disabled.
+    enabled: bool
+
+    # Name, or key of the configuration directive
+    name: str
+
+    # Tuple of parameters of this ParserNode object, excluding whitespaces.
+    parameters: Tuple[str]
+
+    # Tuple of ParserNode objects that are the children for this node. The order
+    # of the children is the same s that of the parsed configuration block.
+    children: Tuple[ParserNode]
     """
 
     @abc.abstractmethod
@@ -335,33 +306,6 @@ class BlockNode(ParserNode):
 
         """
 
-    @property
-    @abc.abstractmethod
-    def children(self):  # pragma: no cover
-        """
-        This property contains a list ParserNode objects that are the children
-        for this node. The order of children is the same as that of the parsed
-        configuration block.
-
-        :returns: A tuple of this block's children
-        :rtype: tuple
-        """
-
-        raise NotImplementedError
-
-    @property
-    @abc.abstractmethod
-    def enabled(self):
-        """
-        Configuration blocks may have conditional statements enabling or disabling
-        their contents. This property returns the state of this configuration block.
-        In case of unmatched conditional statement in block, this block itself should
-        be set enabled while its children should be set disabled.
-
-        :returns: True if the BlockNode is parsed and enabled in the configuration.
-        :rtype: bool
-        """
-
     @abc.abstractmethod
     def find_blocks(self, name, exclude=True):
         """
@@ -423,33 +367,6 @@ class BlockNode(ParserNode):
         :param ParserNode child: Child ParserNode object to remove from the list
             of children of the callee.
         """
-
-    @property
-    @abc.abstractmethod
-    def name(self):  # pragma: no cover
-        """
-        Name property contains the name of the block. As an example for config:
-            <VirtualHost *:80> ... </VirtualHost>
-        the name would be "VirtualHost".
-
-        :returns: Name of this node
-        :rtype: str
-        """
-
-        raise NotImplementedError
-
-    @property
-    @abc.abstractmethod
-    def parameters(self):  # pragma: no cover
-        """
-        This property contains a tuple of parameters of this ParserNode object
-        excluding whitespaces.
-
-        :returns: A tuple of parameters for this node
-        :rtype: tuple
-        """
-
-        raise NotImplementedError
 
     @abc.abstractmethod
     def set_parameters(self, parameters):
