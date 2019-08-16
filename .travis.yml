@@ -8,6 +8,8 @@ before_script:
   - 'if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then ulimit -n 1024 ; fi'
   # On Travis, the fastest parallelization for integration tests has proved to be 4.
   - 'if [[ "$TOXENV" == *"integration"* ]]; then export PYTEST_ADDOPTS="--numprocesses 4"; fi'
+  # Use Travis retry feature for farm tests since they are flaky
+  - 'if [[ "$TOXENV" == "travis-test-farm"* ]]; then export TRAVIS_RETRY=travis_retry; fi'
   - export TOX_TESTENV_PASSENV=TRAVIS
 
 # Only build pushes to the master branch, PRs, and branches beginning with
@@ -262,8 +264,12 @@ addons:
 # virtualenv is listed here explicitly to make sure it is upgraded when
 # CERTBOT_NO_PIN is set to work around failures we've seen when using an older
 # version of virtualenv.
-install: "tools/pip_install.py -U codecov tox virtualenv"
-script: tox
+install: 'tools/pip_install.py -U codecov tox virtualenv'
+# Most of the time TRAVIS_RETRY is an empty string, and has no effect on the
+# script command. It is set only to `travis_retry` during farm tests, in
+# order to trigger the Travis retry feature, and compensate the inherent
+# flakiness of these specific tests.
+script: '$TRAVIS_RETRY tox'
 
 after_success: '[ "$TOXENV" == "py27-cover" ] && codecov -F linux'
 
