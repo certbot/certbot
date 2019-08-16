@@ -1,0 +1,71 @@
+trigger:
+- master
+
+strategy:
+  matrix:
+    windows-py35:
+      IMAGE: windows-latest
+      PYTHON_VERSION: 3.5
+      TOXENV: py35
+      APPVEYOR: true
+      TOX_TESTENV_PASSENV: APPVEYOR
+    windows-py37-cover:
+      IMAGE: windows-latest
+      PYTHON_VERSION: 3.7
+      TOXENV: py37-cover
+      APPVEYOR: true
+      TOX_TESTENV_PASSENV: APPVEYOR
+    windows-integration-certbot:
+      IMAGE: windows-latest
+      PYTHON_VERSION: 3.7
+      TOXENV: integration-certbot
+      PYTEST_ADDOPTS: --numprocesses 4
+    linux-py27-cover:
+      IMAGE: ubuntu-latest
+      PYTHON_VERSION: 2.7
+      TOXENV: py35
+    linux-py34:
+      IMAGE: ubuntu-latest
+      PYTHON_VERSION: 3.4
+      TOXENV: py34
+    linux-py37:
+      IMAGE: ubuntu-latest
+      PYTHON_VERSION: 3.7
+      TOXENV: py37
+    linux-integration-certbot:
+      IMAGE: ubuntu-latest
+      PYTHON_VERSION: 2.7
+      TOXENV: integration
+      PYTEST_ADDOPTS: --numprocesses 4
+    linux-pylint:
+      IMAGE: ubuntu-latest
+      PYTHON_VERSION: 2.7
+      TOXENV: lint
+    linux-mypy:
+      IMAGE: ubuntu-latest
+      PYTHON_VERSION: 3.5
+      TOXENV: mypy
+
+pool:
+  vmImage: $(IMAGE)
+
+steps:
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: $(PYTHON_VERSION)
+    addToPath: true 
+
+- script: |
+    sudo letsencrypt-auto-source/letsencrypt-auto -n --os-packages-only
+    sudo apt install -y --no-install-recommends nginx-light
+  condition: eq(variables['Agent.OS'], 'Linux')
+  displayName: Install OS packages
+
+- script: python tools/pip_install.py tox codecov
+  displayName: Install tools
+
+- script: python tools/pip_install.py tox codecov
+  displayName: Install dependencies
+
+- script: python -m tox
+  displayName: 'Run tox'
