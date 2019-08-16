@@ -1,4 +1,3 @@
-# pylint: disable=abstract-method
 """ParserNode interface for interacting with configuration tree.
 
 General description
@@ -129,15 +128,6 @@ class ParserNode(object):
     """
 
     @abc.abstractmethod
-    def metadata(self, key):
-        """
-        Gets an element from the metadata dictionary for this ParserNode object.
-
-        :param str key: Element key name
-        :returns: Requested metadata element
-        """
-
-    @abc.abstractmethod
     def save(self, msg):
         """
         Save traverses the children, and attempts to write the AST to disk for
@@ -154,7 +144,8 @@ class ParserNode(object):
 
         """
 
-
+# Linter rule exclusion done because of https://github.com/PyCQA/pylint/issues/179
+# pylint: disable=abstract-method
 @six.add_metaclass(abc.ABCMeta)
 class CommentNode(ParserNode):
     """
