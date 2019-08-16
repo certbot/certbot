@@ -252,7 +252,7 @@ class BlockNode(ParserNode):
     name: str
 
     # Tuple of parameters of this ParserNode object, excluding whitespaces.
-    parameters: Tuple[str]
+    parameters: Tuple[str, ...]
 
     # Tuple of ParserNode objects that are the children for this node. The order
     # of the children is the same s that of the parsed configuration block.
