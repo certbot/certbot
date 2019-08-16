@@ -256,7 +256,7 @@ class BlockNode(ParserNode):
 
     # Tuple of ParserNode objects that are the children for this node. The order
     # of the children is the same s that of the parsed configuration block.
-    children: Tuple[ParserNode]
+    children: Tuple[ParserNode, ...]
     """
 
     @abc.abstractmethod
