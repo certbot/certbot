@@ -183,7 +183,7 @@ class DirectiveNode(ParserNode):
     name: str
 
     # Tuple of parameters of this ParserNode object, excluding whitespaces.
-    parameters: Tuple[str]
+    parameters: Tuple[str, ...]
 
     """
 
