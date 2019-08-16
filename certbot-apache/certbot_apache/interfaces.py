@@ -159,7 +159,7 @@ class CommentNode(ParserNode):
     CommentNode objects should have the following attributes:
 
     # Contains the contents of the comment without the directive notation
-    # (typically # or /* ... */
+    # (typically # or /* ... */).
     comment: str
 
     """
