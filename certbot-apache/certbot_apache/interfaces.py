@@ -124,7 +124,7 @@ class ParserNode(object):
 
     # Filepath of the file where the configuration element for this ParserNode
     # object resides.
-    filepath: str
+    filepath: Optional[str]
     """
 
     @abc.abstractmethod

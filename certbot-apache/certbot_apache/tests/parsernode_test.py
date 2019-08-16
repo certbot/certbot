@@ -7,58 +7,39 @@ from acme.magic_typing import Optional, Tuple  # pylint: disable=unused-import, 
 from certbot_apache import interfaces
 
 
-
-class DummyCommentNode(interfaces.ParserNode):
-    """ A dummy class implementing CommentNode interface """
+class DummyParserNode(interfaces.ParserNode):
+    """ A dummy class implementing ParserNode interface """
     ancestor = None
-    comment = ""
     dirty = False
-    filename = ""
-
-    def metadata(self, key):  # pragma: no cover
-        """Metadata"""
-        pass
+    filepath = None
 
     def save(self, msg):  # pragma: no cover
         """Save"""
         pass
 
 
-class DummyDirectiveNode(interfaces.ParserNode):
+class DummyCommentNode(DummyParserNode):
+    """ A dummy class implementing CommentNode interface """
+    comment = ""
+
+
+class DummyDirectiveNode(DummyParserNode):
     """ A dummy class implementing DirectiveNode interface """
-    ancestor = None
     parameters = tuple()  # type: Tuple[str, ...]
-    dirty = False
     enabled = True
     name = ""
-    filename = ""
-
-    def metadata(self, key):  # pragma: no cover
-        """Metadata"""
-        pass
-
-    def save(self, msg):  # pragma: no cover
-        """Save"""
-        pass
 
     def set_parameters(self, parameters):  # pragma: no cover
         """Set parameters"""
         pass
 
 
-class DummyBlockNode(interfaces.BlockNode):
+class DummyBlockNode(DummyParserNode):
     """ A dummy class implementing BlockNode interface """
-    ancestor = None
     parameters = tuple()  # type: Tuple[str, ...]
     children = tuple()  # type: Tuple[interfaces.ParserNode, ...]
-    dirty = False
     enabled = True
     name = ""
-    filename = ""
-
-    def save(self, msg):  # pragma: no cover
-        """Save"""
-        pass
 
     def add_child_block(self, name, parameters=None, position=None):  # pragma: no cover
         """Add child block"""
@@ -86,10 +67,6 @@ class DummyBlockNode(interfaces.BlockNode):
 
     def delete_child(self, child):  # pragma: no cover
         """Delete child"""
-        pass
-
-    def metadata(self, key):  # pragma: no cover
-        """Metadata"""
         pass
 
     def set_parameters(self, parameters):  # pragma: no cover
