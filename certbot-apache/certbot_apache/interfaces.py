@@ -145,8 +145,7 @@ class ParserNode(object):
         """
 
 # Linter rule exclusion done because of https://github.com/PyCQA/pylint/issues/179
-# pylint: disable=abstract-method
-@six.add_metaclass(abc.ABCMeta)
+@six.add_metaclass(abc.ABCMeta)  # pylint: disable=abstract-method
 class CommentNode(ParserNode):
     """
     CommentNode class is used for representation of comments within the parsed
