@@ -123,9 +123,18 @@ class ParserNode(object):
     dirty: bool
 
     # Filepath of the file where the configuration element for this ParserNode
-    # object resides.
+    # object resides. This can be None if a configuration directive is defined in
+    # for example the httpd command line.
     filepath: Optional[str]
     """
+
+    @abc.abstractmethod
+    def __init__(self, ancestor=None, filepath="", dirty=False):  # pragma: no cover
+        """
+        Initializes the ParserNode instance, and sets the ParserNode specific
+        instance variables. This is not meant to be used directly, but through
+        specific classes implementing ParserNode interface.
+        """
 
     @abc.abstractmethod
     def save(self, msg):
@@ -163,6 +172,20 @@ class CommentNode(ParserNode):
 
     """
 
+    # pylint: disable=super-init-not-called
+    @abc.abstractmethod
+    def __init__(self, comment, ancestor, filepath, dirty=False):  # pragma: no cover
+        """
+        Initializes the CommentNode instance and sets its instance variables.
+
+        :param str comment: Contents of the comment.
+        :param BlockNode ancestor: BlockNode ancestor for this CommentNode.
+        :param str filepath: Filesystem path for the file where this CommentNode
+            does or should exist in the filesystem.
+        :param bool dirty: Boolean flag for denoting if this CommentNode has been
+            created or changed after the last save.
+        """
+
 
 @six.add_metaclass(abc.ABCMeta)
 class DirectiveNode(ParserNode):
@@ -171,6 +194,10 @@ class DirectiveNode(ParserNode):
     It can have zero or more parameters attached to it. Because of the nature of
     single directives, it is not able to have child nodes and hence it is always
     treated as a leaf node.
+
+    If a this directive was defined on the httpd command line, the ancestor instance
+    variable for this DirectiveNode should be None, and it should be inserted to the
+    beginning of root BlockNode children sequence.
 
     DirectiveNode objects should have the following attributes:
 
@@ -185,6 +212,26 @@ class DirectiveNode(ParserNode):
     parameters: Tuple[str, ...]
 
     """
+    # pylint: disable=too-many-arguments, super-init-not-called
+    def __init__(self, name, parameters=(), ancestor=None, filepath="",
+                 dirty=False, enabled=True):  # pragma: no cover
+        """
+        Initializes the DirectiveNode instance and sets its instance variables.
+
+        :param name: Name or key of the DirectiveNode object.
+        :param tuple parameters: Tuple of str parameters for this DirectiveNode.
+        :param ancestor: BlockNode ancestor for this DirectiveNode, or None for
+            directives introduced at the httpd command line.
+        :param str filepath: Filesystem path for the file where this DirectiveNode
+            does or should exist in the filesystem, or None for directives introduced
+            in the httpd command line.
+        :param bool dirty: Boolean flag for denoting if this DirectiveNode has been
+            created or changed after the last save.
+        :param bool enabled: True if this DirectiveNode object is parsed in the active
+            configuration of the httpd. False if the DirectiveNode exists within a
+            unmatched conditional configuration block.
+
+        """
 
     @abc.abstractmethod
     def set_parameters(self, parameters):
@@ -238,8 +285,9 @@ class BlockNode(ParserNode):
     # parsed, but its children should be flagged as disabled.
     enabled: bool
 
-    # Name, or key of the configuration directive
-    name: str
+    # Name, or key of the configuration directive. If the BlockNode is the root
+    # configuration node, the name should be None.
+    name: Optional[str]
 
     # Tuple of parameters of this ParserNode object, excluding whitespaces.
     parameters: Tuple[str, ...]
@@ -248,6 +296,28 @@ class BlockNode(ParserNode):
     # of the children is the same s that of the parsed configuration block.
     children: Tuple[ParserNode, ...]
     """
+
+    # pylint: disable=too-many-arguments, super-init-not-called
+    @abc.abstractmethod
+    def __init__(self, name="", parameters=(), children=(), ancestor=None,
+                 filepath="", dirty=False, enabled=True):  # pragma: no cover
+        """
+        Initializes the BlockNode instance and sets its instance variables.
+
+        :param name: Name or key of the BlockNode object, or None for root
+            configuration node.
+        :param tuple parameters: Tuple of str parameters for this BlockNode.
+        :param tuple children: Tuple of ParserNode children for this BlockNode.
+        :param ancestor: BlockNode ancestor for this BlockNode, or None for root
+            configuration node.
+        :param str filepath: Filesystem path for the file where this BlockNode does
+            or should exist in the filesystem.
+        :param bool dirty: Boolean flag for denoting if this BlockNode has been
+            created or changed after the last save.
+        :param bool enabled: True if this BlockNode object is parsed in the active
+            configuration object by the httpd. False if the BlockNode exists within
+            a unmatched conditional configuration block.
+        """
 
     @abc.abstractmethod
     def add_child_block(self, name, parameters=None, position=None):

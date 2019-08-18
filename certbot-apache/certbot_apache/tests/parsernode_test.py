@@ -13,6 +13,15 @@ class DummyParserNode(interfaces.ParserNode):
     dirty = False
     filepath = None
 
+    def __init__(self, ancestor=None, filepath=str(), dirty=False):
+        """
+        Initializes the ParserNode instance.
+        """
+        super(DummyParserNode, self).__init__(ancestor, filepath, dirty)
+        self.ancestor = ancestor
+        self.dirty = dirty
+        self.filepath = filepath
+
     def save(self, msg):  # pragma: no cover
         """Save"""
         pass
@@ -20,7 +29,13 @@ class DummyParserNode(interfaces.ParserNode):
 
 class DummyCommentNode(DummyParserNode):
     """ A dummy class implementing CommentNode interface """
-    comment = ""
+
+    def __init__(self, comment, ancestor, filepath, dirty=False):
+        """
+        Initializes the CommentNode instance and sets its instance variables.
+        """
+        super(DummyCommentNode, self).__init__(ancestor, filepath, dirty)
+        self.comment = comment
 
 
 class DummyDirectiveNode(DummyParserNode):
@@ -28,6 +43,17 @@ class DummyDirectiveNode(DummyParserNode):
     parameters = tuple()  # type: Tuple[str, ...]
     enabled = True
     name = ""
+
+    # pylint: disable=too-many-arguments
+    def __init__(self, name, parameters=(), ancestor=None, filepath="",
+                 dirty=False, enabled=True):
+        """
+        Initializes the DirectiveNode instance and sets its instance variables.
+        """
+        super(DummyDirectiveNode, self).__init__(ancestor, filepath, dirty)
+        self.name = name
+        self.parameters = parameters
+        self.enabled = enabled
 
     def set_parameters(self, parameters):  # pragma: no cover
         """Set parameters"""
@@ -40,6 +66,18 @@ class DummyBlockNode(DummyParserNode):
     children = tuple()  # type: Tuple[interfaces.ParserNode, ...]
     enabled = True
     name = ""
+
+    # pylint: disable=too-many-arguments
+    def __init__(self, name="", parameters=(), children=(), ancestor=None,
+                 filepath="", dirty=False, enabled=True):
+        """
+        Initializes the BlockNode instance and sets its instance variables.
+        """
+        super(DummyBlockNode, self).__init__(ancestor, filepath, dirty)
+        self.name = name
+        self.parameters = parameters
+        self.children = children
+        self.enabled = enabled
 
     def add_child_block(self, name, parameters=None, position=None):  # pragma: no cover
         """Add child block"""
@@ -87,8 +125,8 @@ class ParserNodeTest(unittest.TestCase):
 
     def test_dummy(self):
         dummyblock = DummyBlockNode()
-        dummydirective = DummyDirectiveNode()
-        dummycomment = DummyCommentNode()
+        dummydirective = DummyDirectiveNode("Name")
+        dummycomment = DummyCommentNode("Comment", dummyblock, "/some/file")
 
 
 if __name__ == "__main__":
