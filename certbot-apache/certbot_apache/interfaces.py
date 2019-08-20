@@ -116,20 +116,21 @@ class ParserNode(object):
     ParserNode objects should have the following attributes:
 
     # Reference to ancestor node, or None if the node is the root node of the
-    # configuration tree.
+    # configuration tree. Required.
     ancestor: Optional[ParserNode]
 
-    # True if this node has been modified since last save.
+    # True if this node has been modified since last save. Default: False
     dirty: bool
 
     # Filepath of the file where the configuration element for this ParserNode
-    # object resides. This can be None if a configuration directive is defined in
-    # for example the httpd command line.
+    # object resides. For root node, the value for filepath is the httpd root
+    # configuration file. Filepath can be None if a configuration directive is
+    # defined in for example the httpd command line. Required.
     filepath: Optional[str]
     """
 
     @abc.abstractmethod
-    def __init__(self, ancestor=None, filepath="", dirty=False):  # pragma: no cover
+    def __init__(self, **kwargs):
         """
         Initializes the ParserNode instance, and sets the ParserNode specific
         instance variables. This is not meant to be used directly, but through
@@ -153,6 +154,7 @@ class ParserNode(object):
 
         """
 
+
 # Linter rule exclusion done because of https://github.com/PyCQA/pylint/issues/179
 @six.add_metaclass(abc.ABCMeta)  # pylint: disable=abstract-method
 class CommentNode(ParserNode):
@@ -164,17 +166,18 @@ class CommentNode(ParserNode):
     CommentNode stores its contents in class variable 'comment' and does not
     have a specific name.
 
-    CommentNode objects should have the following attributes:
+    CommentNode objects should have the following attributes in addition to
+    the ones described in ParserNode:
 
     # Contains the contents of the comment without the directive notation
-    # (typically # or /* ... */).
+    # (typically # or /* ... */). Required.
     comment: str
 
     """
 
     # pylint: disable=super-init-not-called
     @abc.abstractmethod
-    def __init__(self, comment, ancestor, filepath, dirty=False):  # pragma: no cover
+    def __init__(self, **kwargs):
         """
         Initializes the CommentNode instance and sets its instance variables.
 
@@ -199,22 +202,23 @@ class DirectiveNode(ParserNode):
     variable for this DirectiveNode should be None, and it should be inserted to the
     beginning of root BlockNode children sequence.
 
-    DirectiveNode objects should have the following attributes:
+    DirectiveNode objects should have the following attributes in addition to
+    the ones described in ParserNode:
 
     # True if this DirectiveNode is enabled and False if it is inside of an
-    # inactive conditional block.
+    # inactive conditional block. Default: True
     enabled: bool
 
-    # Name, or key of the configuration directive
+    # Name, or key of the configuration directive. Required.
     name: str
 
     # Tuple of parameters of this ParserNode object, excluding whitespaces.
+    # Default: ()
     parameters: Tuple[str, ...]
 
     """
     # pylint: disable=too-many-arguments, super-init-not-called
-    def __init__(self, name, parameters=(), ancestor=None, filepath="",
-                 dirty=False, enabled=True):  # pragma: no cover
+    def __init__(self, **kwargs):
         """
         Initializes the DirectiveNode instance and sets its instance variables.
 
@@ -277,37 +281,34 @@ class BlockNode(ParserNode):
     The applicable parameters are dependent on the underlying configuration language
     and its grammar.
 
-    BlockNode objects should have the following attributes:
+    BlockNode objects should have the following attributes in addition to
+    the ones described in ParserNode:
 
     # True if this BlockNode is enabled and False if it is inside of an
     # inactive conditional block. If a BlockNode contains an unmatched
     # conditional statement, it should itself be flagged as enabled as it's
-    # parsed, but its children should be flagged as disabled.
+    # parsed, but its children should be flagged as disabled. Default: True
     enabled: bool
 
     # Name, or key of the configuration directive. If the BlockNode is the root
-    # configuration node, the name should be None.
+    # configuration node, the name should be None. Required.
     name: Optional[str]
 
     # Tuple of parameters of this ParserNode object, excluding whitespaces.
+    # Default: ()
     parameters: Tuple[str, ...]
 
-    # Tuple of ParserNode objects that are the children for this node. The order
-    # of the children is the same s that of the parsed configuration block.
-    children: Tuple[ParserNode, ...]
     """
 
     # pylint: disable=too-many-arguments, super-init-not-called
     @abc.abstractmethod
-    def __init__(self, name="", parameters=(), children=(), ancestor=None,
-                 filepath="", dirty=False, enabled=True):  # pragma: no cover
+    def __init__(self, **kwargs):
         """
         Initializes the BlockNode instance and sets its instance variables.
 
         :param name: Name or key of the BlockNode object, or None for root
             configuration node.
         :param tuple parameters: Tuple of str parameters for this BlockNode.
-        :param tuple children: Tuple of ParserNode children for this BlockNode.
         :param ancestor: BlockNode ancestor for this BlockNode, or None for root
             configuration node.
         :param str filepath: Filesystem path for the file where this BlockNode does

@@ -5,22 +5,21 @@ import unittest
 from acme.magic_typing import Optional, Tuple  # pylint: disable=unused-import, no-name-in-module
 
 from certbot_apache import interfaces
+from certbot_apache import parsernode_util as util
 
 
 class DummyParserNode(interfaces.ParserNode):
     """ A dummy class implementing ParserNode interface """
-    ancestor = None
-    dirty = False
-    filepath = None
 
-    def __init__(self, ancestor=None, filepath=str(), dirty=False):
+    def __init__(self, **kwargs):
         """
         Initializes the ParserNode instance.
         """
-        super(DummyParserNode, self).__init__(ancestor, filepath, dirty)
+        ancestor, dirty, filepath = util.parsernode_kwargs(kwargs)
         self.ancestor = ancestor
         self.dirty = dirty
         self.filepath = filepath
+        super(DummyParserNode, self).__init__(**kwargs)
 
     def save(self, msg):  # pragma: no cover
         """Save"""
@@ -30,30 +29,29 @@ class DummyParserNode(interfaces.ParserNode):
 class DummyCommentNode(DummyParserNode):
     """ A dummy class implementing CommentNode interface """
 
-    def __init__(self, comment, ancestor, filepath, dirty=False):
+    def __init__(self, **kwargs):
         """
         Initializes the CommentNode instance and sets its instance variables.
         """
-        super(DummyCommentNode, self).__init__(ancestor, filepath, dirty)
+        comment, kwargs = util.commentnode_kwargs(kwargs)
         self.comment = comment
+        super(DummyCommentNode, self).__init__(**kwargs)
 
 
 class DummyDirectiveNode(DummyParserNode):
     """ A dummy class implementing DirectiveNode interface """
-    parameters = tuple()  # type: Tuple[str, ...]
-    enabled = True
-    name = ""
 
     # pylint: disable=too-many-arguments
-    def __init__(self, name, parameters=(), ancestor=None, filepath="",
-                 dirty=False, enabled=True):
+    def __init__(self, **kwargs):
         """
         Initializes the DirectiveNode instance and sets its instance variables.
         """
-        super(DummyDirectiveNode, self).__init__(ancestor, filepath, dirty)
+        name, parameters, enabled, kwargs = util.node_kwargs(kwargs)
         self.name = name
         self.parameters = parameters
         self.enabled = enabled
+
+        super(DummyDirectiveNode, self).__init__(**kwargs)
 
     def set_parameters(self, parameters):  # pragma: no cover
         """Set parameters"""
@@ -62,22 +60,18 @@ class DummyDirectiveNode(DummyParserNode):
 
 class DummyBlockNode(DummyParserNode):
     """ A dummy class implementing BlockNode interface """
-    parameters = tuple()  # type: Tuple[str, ...]
-    children = tuple()  # type: Tuple[interfaces.ParserNode, ...]
-    enabled = True
-    name = ""
 
-    # pylint: disable=too-many-arguments
-    def __init__(self, name="", parameters=(), children=(), ancestor=None,
-                 filepath="", dirty=False, enabled=True):
+    def __init__(self, **kwargs):
         """
         Initializes the BlockNode instance and sets its instance variables.
         """
-        super(DummyBlockNode, self).__init__(ancestor, filepath, dirty)
+
+        name, parameters, enabled, kwargs = util.node_kwargs(kwargs)
         self.name = name
         self.parameters = parameters
-        self.children = children
         self.enabled = enabled
+
+        super(DummyBlockNode, self).__init__(**kwargs)
 
     def add_child_block(self, name, parameters=None, position=None):  # pragma: no cover
         """Add child block"""
@@ -124,9 +118,45 @@ class ParserNodeTest(unittest.TestCase):
     """Dummy placeholder test case for ParserNode interfaces"""
 
     def test_dummy(self):
-        dummyblock = DummyBlockNode()
-        dummydirective = DummyDirectiveNode("Name")
-        dummycomment = DummyCommentNode("Comment", dummyblock, "/some/file")
+        dummyblock = DummyBlockNode(
+            name=None,
+            parameters=(),
+            ancestor=None,
+            dirty=False,
+            filepath="/some/random/path"
+        )
+        dummydirective = DummyDirectiveNode(
+            name="Name",
+            ancestor=None,
+            filepath="/another/path"
+        )
+        dummycomment = DummyCommentNode(
+            comment="Comment",
+            ancestor=dummyblock,
+            filepath="/some/file"
+        )
+
+    def test_unknown_parameter(self):
+        params = {
+            "comment": "x",
+            "ancestor": None,
+            "dirty": False,
+            "filepath": "/tmp",
+            "unknown": "x"
+        }
+        self.assertRaises(TypeError, DummyCommentNode, **params)
+        params["name"] = "unnamed"
+        params.pop("comment")
+        self.assertRaises(TypeError, DummyDirectiveNode, **params)
+        self.assertRaises(TypeError, DummyBlockNode, **params)
+
+    def test_missing_required(self):
+        params = {
+            "ancestor": None,
+            "dirty": False,
+            "filepath": "/tmp",
+        }
+        self.assertRaises(TypeError, DummyCommentNode, **params)
 
 
 if __name__ == "__main__":
