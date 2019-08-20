@@ -22,8 +22,11 @@ services:
 deploy:
   'on':
     branch: master
-  provider: script
-  script: |
-    openssl aes-256-cbc -K $encrypted_edc9d3b1405a_key -iv $encrypted_edc9d3b1405a_iv -in .snapcraft/travis_snapcraft.cfg -out .snapcraft/snapcraft.cfg -d
-    docker run -v $(pwd):$(pwd) -t snapcore/snapcraft sh -c "cd $(pwd) && snapcraft push *.snap --release edge"
+  provider: snap
+  snap: certbot_*.snap
+  channel: edge
   skip_cleanup: true
+notifications:
+  email:
+    recipients: [robie.basak@canonical.com]
+    on_failure: change
