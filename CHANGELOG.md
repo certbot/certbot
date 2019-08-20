@@ -17,6 +17,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Fixed
 
 * Fixed OS detection in the Apache plugin on Scientific Linux.
+* Fix acme module warnings when response Content-Type includes params (e.g. charset).
 
 More details about these changes can be found on our GitHub repo.
 
