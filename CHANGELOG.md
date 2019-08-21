@@ -17,6 +17,8 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 ### Fixed
 
 * Fixed OS detection in the Apache plugin on Scientific Linux.
+* Stop disabling TLS session tickets in Nginx as it caused TLS failures on
+  some systems.
 
 More details about these changes can be found on our GitHub repo.
 
