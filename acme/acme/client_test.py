@@ -1011,7 +1011,8 @@ class ClientNetworkTest(unittest.TestCase):
             )
         except AssertionError:
             return
-        raise AssertionError('Expected Content-Type warning to not have been logged')
+        raise AssertionError('Expected Content-Type warning ' #pragma: no cover
+            'to not have been logged')
 
     @mock.patch('acme.client.logger')
     def test_check_response_ok_bad_ct(self, mock_logger):
