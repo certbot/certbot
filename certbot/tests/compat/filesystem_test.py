@@ -210,15 +210,15 @@ class WindowsOpenTest(TempDirTestCase):
     def _test_one_creation(self, num, file_exist, flags):
         one_file = os.path.join(self.tempdir, str(num))
         if file_exist and not os.path.exists(one_file):
-            open(one_file, 'w').close()
+            with open(one_file, 'w'):
+                pass
 
         handler = None
         try:
             handler = filesystem.open(one_file, flags)
-        except BaseException as err:
+        finally:
             if handler:
                 os.close(handler)
-            raise err
 
 
 @unittest.skipIf(POSIX_MODE, reason='Test specific to Windows security')
