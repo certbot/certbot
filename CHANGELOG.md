@@ -6,7 +6,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* Added option --dns-rfc2136-zone to explicitly provide the name of DNS zone to be updated, since in some cases automatic detection of zone name works incorrectly.
 
 ### Changed
 
