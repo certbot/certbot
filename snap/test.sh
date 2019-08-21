@@ -1,10 +1,11 @@
 #!/bin/bash
 set -ex
 
-cd certbot
-
 python3 -m venv venv
-. venv/bin/activate
-pip install -e certbot-ci
+venv/bin/python -m pip install -e certbot/certbot-ci
+venv/bin/python -m pytest certbot/certbot-ci/certbot_integration_tests -n 4
 
-pytest certbot-ci/certbot_integration_tests/certbot_tests --numprocesses 4 --acme-server=pebble 
+# DO NOT RUN `apache-conf-test` LOCALLY, IT WILL BREAK YOUR APACHE CONFIGURATION!
+if [ -n "$TRAVIS" ]; then
+    venv/bin/python certbot/certbot-apache/certbot_apache/tests/apache-conf-files/apache-conf-test-pebble.py --debian-modules
+fi

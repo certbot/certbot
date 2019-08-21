@@ -2,7 +2,6 @@ name: certbot
 version: script
 version-script: cd parts/certbot/src && git describe|sed s/^v//
 summary: Automatically configure HTTPS using Let's Encrypt
-base: core18
 description: |
  The objective of Certbot, Let's Encrypt, and the ACME (Automated
  Certificate Management Environment) protocol is to make it possible
@@ -38,6 +37,12 @@ apps:
         timer: 00:00~24:00/2
 
 parts:
+  python-augeas:
+    plugin: python
+    source: git://github.com/basak/python-augeas
+    source-branch: snap
+    python-version: python3
+    build-packages: [libaugeas-dev]
   acme:
     plugin: python
     source: certbot
@@ -49,8 +54,6 @@ parts:
     source: certbot
     constraints: $SNAPCRAFT_PART_SRC/constraints.txt
     python-version: python3
-    python-packages:
-    - acme
     after: [acme]
   certbot-apache:
     plugin: python
@@ -58,8 +61,12 @@ parts:
     source-subdir: certbot-apache
     constraints: $SNAPCRAFT_PART_SRC/constraints.txt
     python-version: python3
-    python-packages:
-    - certbot
-    build-packages: [libaugeas-dev]
+    after: [python-augeas, certbot]
     stage-packages: [libaugeas0]
+  certbot-nginx:
+    plugin: python
+    source: certbot
+    source-subdir: certbot-nginx
+    constraints: $SNAPCRAFT_PART_SRC/constraints.txt
+    python-version: python3
     after: [certbot]
