@@ -1,5 +1,5 @@
 # ![](https://certbot.eff.org/images/certbot-logo-1A.svg)
-[![](https://img.shields.io/badge/current-v0.37.1-blue.svg)](https://github.com/certbot/certbot.git) &nbsp; [![](https://travis-ci.com/certbot/certbot.svg?branch=0.37.x)](https://travis-ci.com/certbot/certbot)
+[![](https://img.shields.io/badge/current-v0.37.2-blue.svg)](https://github.com/certbot/certbot.git) &nbsp; [![](https://travis-ci.com/certbot/certbot.svg?branch=0.37.x)](https://travis-ci.com/certbot/certbot)
 
 This is one of the Docker repository for the Certbot DNS plugins.
 
