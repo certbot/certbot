@@ -135,6 +135,12 @@ class ParserNode(object):
         Initializes the ParserNode instance, and sets the ParserNode specific
         instance variables. This is not meant to be used directly, but through
         specific classes implementing ParserNode interface.
+
+        :param ancestor: BlockNode ancestor for this CommentNode.
+        :param filepath: Filesystem path for the file where this CommentNode
+            does or should exist in the filesystem.
+        :param bool dirty: Boolean flag for denoting if this CommentNode has been
+            created or changed after the last save.
         """
 
     @abc.abstractmethod
@@ -182,8 +188,8 @@ class CommentNode(ParserNode):
         Initializes the CommentNode instance and sets its instance variables.
 
         :param str comment: Contents of the comment.
-        :param BlockNode ancestor: BlockNode ancestor for this CommentNode.
-        :param str filepath: Filesystem path for the file where this CommentNode
+        :param ancestor: BlockNode ancestor for this CommentNode.
+        :param filepath: Filesystem path for the file where this CommentNode
             does or should exist in the filesystem.
         :param bool dirty: Boolean flag for denoting if this CommentNode has been
             created or changed after the last save.
@@ -209,7 +215,9 @@ class DirectiveNode(ParserNode):
     # inactive conditional block. Default: True
     enabled: bool
 
-    # Name, or key of the configuration directive. Required.
+    # Name, or key of the configuration directive. If BlockNode subclass of
+    # DirectiveNode is the root configuration node, the name should be None.
+    # Required.
     name: str
 
     # Tuple of parameters of this ParserNode object, excluding whitespaces.
@@ -217,7 +225,7 @@ class DirectiveNode(ParserNode):
     parameters: Tuple[str, ...]
 
     """
-    # pylint: disable=too-many-arguments, super-init-not-called
+    # pylint: disable=super-init-not-called
     def __init__(self, **kwargs):
         """
         Initializes the DirectiveNode instance and sets its instance variables.
@@ -225,8 +233,8 @@ class DirectiveNode(ParserNode):
         :param name: Name or key of the DirectiveNode object.
         :param tuple parameters: Tuple of str parameters for this DirectiveNode.
         :param ancestor: BlockNode ancestor for this DirectiveNode, or None for
-            directives introduced at the httpd command line.
-        :param str filepath: Filesystem path for the file where this DirectiveNode
+            root configuratio node.
+        :param filepath: Filesystem path for the file where this DirectiveNode
             does or should exist in the filesystem, or None for directives introduced
             in the httpd command line.
         :param bool dirty: Boolean flag for denoting if this DirectiveNode has been
@@ -250,7 +258,7 @@ class DirectiveNode(ParserNode):
 
 
 @six.add_metaclass(abc.ABCMeta)
-class BlockNode(ParserNode):
+class BlockNode(DirectiveNode):
     """
     BlockNode class represents a block of nested configuration directives, comments
     and other blocks as its children. A BlockNode can have zero or more parameters
@@ -281,26 +289,9 @@ class BlockNode(ParserNode):
     The applicable parameters are dependent on the underlying configuration language
     and its grammar.
 
-    BlockNode objects should have the following attributes in addition to
-    the ones described in ParserNode:
-
-    # True if this BlockNode is enabled and False if it is inside of an
-    # inactive conditional block. If a BlockNode contains an unmatched
-    # conditional statement, it should itself be flagged as enabled as it's
-    # parsed, but its children should be flagged as disabled. Default: True
-    enabled: bool
-
-    # Name, or key of the configuration directive. If the BlockNode is the root
-    # configuration node, the name should be None. Required.
-    name: Optional[str]
-
-    # Tuple of parameters of this ParserNode object, excluding whitespaces.
-    # Default: ()
-    parameters: Tuple[str, ...]
-
     """
 
-    # pylint: disable=too-many-arguments, super-init-not-called
+    # pylint: disable=super-init-not-called
     @abc.abstractmethod
     def __init__(self, **kwargs):
         """
@@ -441,17 +432,6 @@ class BlockNode(ParserNode):
 
         :param ParserNode child: Child ParserNode object to remove from the list
             of children of the callee.
-        """
-
-    @abc.abstractmethod
-    def set_parameters(self, parameters):
-        """
-        Sets the sequence of parameters for this ParserNode object without
-        whitespaces. While the whitespaces for parameters are discarded when using
-        this method, the whitespacing preceeding the ParserNode itself should be
-        kept intact.
-
-        :param list parameters: sequence of parameters
         """
 
     @abc.abstractmethod

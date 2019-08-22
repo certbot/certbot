@@ -58,7 +58,7 @@ class DummyDirectiveNode(DummyParserNode):
         pass
 
 
-class DummyBlockNode(DummyParserNode):
+class DummyBlockNode(DummyDirectiveNode):
     """ A dummy class implementing BlockNode interface """
 
     def __init__(self, **kwargs):
@@ -99,10 +99,6 @@ class DummyBlockNode(DummyParserNode):
 
     def delete_child(self, child):  # pragma: no cover
         """Delete child"""
-        pass
-
-    def set_parameters(self, parameters):  # pragma: no cover
-        """Set parameters"""
         pass
 
     def unsaved_files(self):  # pragma: no cover
