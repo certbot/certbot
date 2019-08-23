@@ -115,12 +115,18 @@ python-augeas==0.5.0 \
 pytz==2019.2 \
     --hash=sha256:26c0b32e437e54a18161324a2fca3c4b9846b74a8dccddd843113109e1116b32 \
     --hash=sha256:c894d57500a4cd2d5c71114aaab77dbab5eabd9022308ce5ac9bb93a60a6f0c7
+requests==2.21.0 \
+    --hash=sha256:502a824f31acdacb3a35b6690b5fbf0bc41d63a24a45c4004352b0242707598e \
+    --hash=sha256:7bf2a778576d825600030a110f3c0e3e8edc51dfaafe1c146e39a2027784957b
 requests-toolbelt==0.9.1 \
     --hash=sha256:380606e1d10dc85c3bd47bf5a6095f815ec007be7a8b69c878507068df059e6f \
     --hash=sha256:968089d4584ad4ad7c171454f0a5c6dac23971e9472521ea3b6d49d610aa6fc0
 six==1.12.0 \
     --hash=sha256:3350809f0555b11f552448330d0b52d5f24c91a322ea4a15ef22629740f3761c \
     --hash=sha256:d16a0141ec1a18405cd4ce8b4613101da75da0e9a7aec5bdd4fa804d0e0eba73
+urllib3==1.24.3 \
+    --hash=sha256:2393a695cd12afedd0dcb26fe5d50d0cf248e5a66f75dbd89a3d4eb333a61af4 \
+    --hash=sha256:a637e5fae88995b256e3409dc4d52c2e2e0ba32c42a6365fee8bbd2238de3cfb
 zope.component==4.5 \
     --hash=sha256:6edfd626c3b593b72895a8cfcf79bff41f4619194ce996a85bce31ac02b94e55 \
     --hash=sha256:984a06ba3def0b02b1117fa4c45b56e772e8c29c0340820fbf367e440a93a3a4
@@ -186,7 +192,3 @@ zope.proxy==4.3.2 \
     --hash=sha256:bc29b3665eac34f14c4aef5224bef045efcfb1a7d12d78c8685858de5fbf21c0 \
     --hash=sha256:c39fa6a159affeae5fe31b49d9f5b12bd674fe77271a9a324408b271440c50a7 \
     --hash=sha256:e946a036ac5b9f897e986ac9dc950a34cffc857d88eae6727b8434fbc4752366
-
-## ! SOME ERRORS OCCURRED ! ##
-# package urllib3 is declared with several versions: 1.24.3 (centos:6), 1.25.3 (ubuntu:18.04,ubuntu:16.04,debian:stretch,debian:jessie,centos:7,opensuse/leap:15,fedora:29)
-# package requests is declared with several versions: 2.22.0 (ubuntu:18.04,ubuntu:16.04,debian:stretch,debian:jessie,centos:7,opensuse/leap:15,fedora:29), 2.21.0 (centos:6)
