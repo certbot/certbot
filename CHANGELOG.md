@@ -20,6 +20,13 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 More details about these changes can be found on our GitHub repo.
 
+## 0.37.2 - 2019-08-21
+
+* Stop disabling TLS session tickets in Nginx as it caused TLS failures on
+  some systems.
+
+More details about these changes can be found on our GitHub repo.
+
 ## 0.37.1 - 2019-08-08
 
 ### Fixed
