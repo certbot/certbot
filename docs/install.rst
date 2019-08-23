@@ -200,7 +200,7 @@ Operating System Packages
 
 **Debian**
 
-If you run Debian Buster or Debian testing/sid, you can easily install certbot
+If you run Debian Buster or Debian testing/Sid, you can easily install certbot
 packages through commands like:
 
 .. code-block:: shell
@@ -210,7 +210,7 @@ packages through commands like:
 
 If you run Debian Stretch, we recommend you use the packages in Debian
 backports repository. First you'll have to follow the instructions at
-http://backports.debian.org/Instructions/ to enable the Stretch backports repo,
+https://backports.debian.org/Instructions/ to enable the Stretch backports repo,
 if you have not already done so. Then run:
 
 .. code-block:: shell
@@ -218,18 +218,21 @@ if you have not already done so. Then run:
    sudo apt-get install certbot -t stretch-backports
 
 In all of these cases, there also packages available to help Certbot integrate
-with Apache, nginx, or various DNS services. These packages can be
-found through a command like:
+with Apache, nginx, or various DNS services. If you are using Apache or nginx,
+we strongly recommend that you install the ``python-certbot-apache`` or
+``python-certbot-nginx`` package so that Certbot can fully automate HTTPS
+configuration for your server. A full list of these packages can be found
+through a command like:
 
 .. code-block:: shell
 
-    apt search python-certbot*
+    apt search 'python-certbot*'
 
 They can be installed by running the same installation command above but
-replace ``certbot`` with the name of the desired package.
+replacing ``certbot`` with the name of the desired package.
 
-There are no Certbot packages available for Debian Jessie and you should
-instead use certbot-auto_.
+There are no Certbot packages available for Debian Jessie and Jessie users
+should instead use certbot-auto_.
 
 **Ubuntu**
 
