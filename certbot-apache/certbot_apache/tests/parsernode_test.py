@@ -2,8 +2,6 @@
 
 import unittest
 
-from acme.magic_typing import Optional, Tuple  # pylint: disable=unused-import, no-name-in-module
-
 from certbot_apache import interfaces
 from certbot_apache import parsernode_util as util
 
@@ -61,18 +59,6 @@ class DummyDirectiveNode(DummyParserNode):
 class DummyBlockNode(DummyDirectiveNode):
     """ A dummy class implementing BlockNode interface """
 
-    def __init__(self, **kwargs):
-        """
-        Initializes the BlockNode instance and sets its instance variables.
-        """
-
-        name, parameters, enabled, kwargs = util.node_kwargs(kwargs)
-        self.name = name
-        self.parameters = parameters
-        self.enabled = enabled
-
-        super(DummyBlockNode, self).__init__(**kwargs)
-
     def add_child_block(self, name, parameters=None, position=None):  # pragma: no cover
         """Add child block"""
         pass
@@ -115,7 +101,7 @@ class ParserNodeTest(unittest.TestCase):
 
     def test_dummy(self):
         dummyblock = DummyBlockNode(
-            name=None,
+            name="None",
             parameters=(),
             ancestor=None,
             dirty=False,
