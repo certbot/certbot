@@ -4,6 +4,7 @@ import subprocess
 import os
 import sys
 import shutil
+import time
 
 
 def main():
@@ -32,9 +33,11 @@ def main():
 
     print('Copy assets')
 
-    os.makedirs(build_path, exist_ok=True)
+    if os.path.exists(build_path):
+        os.rename(build_path, '{0}.{1}.bak'.format(build_path, int(time.time())))
+    os.makedirs(build_path)
     shutil.copy(os.path.join(repo_path, 'windows-installer', 'certbot.ico'), build_path)
-    shutil.copy(os.path.join(repo_path, 'windows-installer', 'run.py'), build_path)
+    shutil.copy(os.path.join(repo_path, 'windows-installer', 'run.bat'), build_path)
 
     print('Prepare pynsist config')
 
@@ -44,18 +47,20 @@ def main():
 name=Certbot
 version={certbot_version}
 icon=certbot.ico
-publisher=Electronic Frontier Fundation
-script=run.py
+publisher=Electronic Frontier Foundation
+target=$INSTDIR\\run.bat
 
 [Build]
 directory=nsis
-installer_name=certbot-{certbot_version}-win32_install.exe
+installer_name=certbot-{certbot_version}-win32_installer.exe
 
 [Python]
-version=3.7.0
+version=3.7.4
+bitness=32
 
 [Include]
 local_wheels=wheels\*.whl
+files=run.bat
 
 [Command certbot]
 entry_point=certbot.main:main
@@ -63,17 +68,15 @@ entry_point=certbot.main:main
 
     print('Prepare build environment')
 
-    subprocess.check_call([sys.executable, '-m', 'venv', '--clear', venv_path])
+    subprocess.check_call([sys.executable, '-m', 'venv', venv_path])
     subprocess.check_call(['choco', 'upgrade', '-y', 'nsis'])
     subprocess.check_call([venv_python, '-m', 'pip', 'install', '--upgrade', 'pip'])
-
-    shutil.rmtree(wheels_path, ignore_errors=True)
-    os.makedirs(wheels_path, exist_ok=True)
 
     subprocess.check_call([venv_python, '-m', 'pip', 'install', 'wheel', 'pynsist'])
 
     print('Compile wheels')
 
+    os.makedirs(wheels_path)
     wheels_project = [os.path.join(repo_path, package) for package in certbot_packages]
     command = [venv_python, '-m', 'pip', 'wheel', '-w', wheels_path]
     command.extend(wheels_project)
