@@ -78,14 +78,14 @@ target=$INSTDIR\\run.bat
 
 [Build]
 directory=nsis
-installer_name=certbot-{certbot_version}-win32-installer.exe
+installer_name=certbot-{certbot_version}-installer-win_amd64.exe
 
 [Python]
 version=3.7.4
-bitness=32
+bitness=64
 
 [Include]
-local_wheels=wheels\*.whl
+local_wheels=wheels\\*.whl
 files=run.bat
 
 [Command certbot]
