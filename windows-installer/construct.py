@@ -77,7 +77,7 @@ target=$INSTDIR\\run.bat
 
 [Build]
 directory=nsis
-installer_name=certbot-{certbot_version}-win32_installer.exe
+installer_name=certbot-{certbot_version}-win32-installer.exe
 
 [Python]
 version=3.7.4
