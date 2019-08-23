@@ -14,7 +14,7 @@ def main():
         subprocess.check_output(['choco', '--version'])
     except subprocess.CalledProcessError:
         raise RuntimeError('Error: Chocolatey (https://chocolatey.org/) needs'
-                           'to be installed to run this script.')
+                           ' to be installed to run this script.')
 
     script_path = os.path.realpath(__file__)
     repo_path = os.path.dirname(os.path.dirname(script_path))
