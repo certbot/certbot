@@ -214,8 +214,12 @@ def get_certbot_version():
     Find the version of the certbot available in PATH.
     :return str: the certbot version
     """
+    workspace = os.environ.get('WORKSPACE', os.path.join(os.getcwd(), '.certbot_test_workspace'))
+    if not os.path.exists(workspace):
+        os.mkdir(workspace)
     output = subprocess.check_output(['certbot', '--version'],
-                                     universal_newlines=True, stderr=subprocess.STDOUT)
+                                     universal_newlines=True, stderr=subprocess.STDOUT,
+                                     cwd=workspace)
     # Typical response is: output = 'certbot 0.31.0.dev0'
     version_str = output.split(' ')[1].strip()
     return LooseVersion(version_str)
