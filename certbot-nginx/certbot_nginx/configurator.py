@@ -91,8 +91,12 @@ class NginxConfigurator(common.Installer):
         :param tup version: version of Nginx as a tuple (1, 4, 7)
             (used mostly for unittesting)
 
+        :param tup openssl_version: version of OpenSSL linked to Nginx as a tuple (1, 4, 7)
+            (used mostly for unittesting)
+
         """
         version = kwargs.pop("version", None)
+        openssl_version = kwargs.pop("openssl_version", None)
         super(NginxConfigurator, self).__init__(*args, **kwargs)
 
         # Verify that all directories and files exist with proper permissions
@@ -115,6 +119,7 @@ class NginxConfigurator(common.Installer):
         # These will be set in the prepare function
         self.parser = None
         self.version = version
+        self.openssl_version = openssl_version
         self._enhance_func = {"redirect": self._enable_redirect,
                               "ensure-http-header": self._set_http_header,
                               "staple-ocsp": self._enable_ocsp_stapling}
@@ -168,6 +173,9 @@ class NginxConfigurator(common.Installer):
         # Set Version
         if self.version is None:
             self.version = self.get_version()
+
+        if self.openssl_version is None:
+            self.openssl_version = self._get_openssl_version()
 
         self.install_ssl_options_conf(self.mod_ssl_conf, self.updated_mod_ssl_conf_digest)
 
@@ -963,6 +971,41 @@ class NginxConfigurator(common.Installer):
             raise errors.NotSupportedError("Nginx version must be 0.8.48+")
 
         return nginx_version
+
+    def _get_openssl_version(self):
+        """Return version of OpenSSL linked to Nginx.
+
+        Version is returned as string.
+
+        :returns: openssl_version
+        :rtype: str
+
+        :raises .PluginError:
+            Unable to find OpenSSL version
+
+        """
+        try:
+            proc = subprocess.Popen(
+                [self.conf('ctl'), "-c", self.nginx_conf, "-V"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                universal_newlines=True)
+            text = proc.communicate()[1]  # nginx prints output to stderr
+        except (OSError, ValueError) as error:
+            logger.debug(str(error), exc_info=True)
+            raise errors.PluginError(
+                "Unable to run %s -V" % self.conf('ctl'))
+
+        running_with_regex = re.compile(r"running with OpenSSL ([^\S]+) ")
+        matches = running_with_regex.findall(text)
+        if not matches:
+            built_with_regex = re.compile(r"built with OpenSSL ([^\S]+) ")
+            matches = built_with_regex.findall(text)
+            if not matches:
+                logger.warning("NGINX configured with OpenSSL alternatives is not officially"
+                    "supported by Certbot.")
+                return ""
+        return matches[0]
 
     def more_info(self):
         """Human-readable string to help understand the module"""
