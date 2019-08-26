@@ -39,7 +39,7 @@ def _prepare_args_env(certbot_args, directory_url, http_01_port, tls_alpn_01_por
     new_environ['TMPDIR'] = workspace
 
     additional_args = []
-    if misc.get_certbot_version() >= LooseVersion('0.30.0'):
+    if misc.get_certbot_version(workspace) >= LooseVersion('0.30.0'):
         additional_args.append('--no-random-sleep-on-renew')
 
     if force_renew:
