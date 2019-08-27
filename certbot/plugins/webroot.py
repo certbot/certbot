@@ -173,6 +173,10 @@ to serve all files under specified web root ({0})."""
                 # We ignore the last prefix in the next iteration,
                 # as it does not correspond to a folder path ('/' or 'C:')
                 for prefix in sorted(util.get_prefixes(self.full_roots[name])[:-1], key=len):
+                    if os.path.isdir(prefix):
+                        # Don't try to create directory if it already exists, as some instances
+                        # won't reliably raise EEXIST or EISDIR if directory exists.
+                        continue
                     try:
                         # Set owner as parent directory if possible, apply mode for Linux/Windows.
                         # For Linux, this is coupled with the "umask" call above because
@@ -187,10 +191,9 @@ to serve all files under specified web root ({0})."""
                             logger.info("Unable to change owner and uid of webroot directory")
                             logger.debug("Error was: %s", exception)
                     except OSError as exception:
-                        if exception.errno not in (errno.EEXIST, errno.EISDIR):
-                            raise errors.PluginError(
-                                "Couldn't create root for {0} http-01 "
-                                "challenge responses: {1}".format(name, exception))
+                        raise errors.PluginError(
+                            "Couldn't create root for {0} http-01 "
+                            "challenge responses: {1}".format(name, exception))
             finally:
                 os.umask(old_umask)
 
