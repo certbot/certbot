@@ -41,7 +41,7 @@ def _prepare_environ(workspace):
     # In order to help user to call seamlessly any piece of python code without requiring to
     # install it as a full-fledged setuptools distribution for instance, it injects the current
     # path into the PYTHONPATH environment variable. This allows the python interpreter to import
-    # as modules any python file available in current working directory.
+    # as modules any python file available at this path.
     # See https://docs.pytest.org/en/3.2.5/pythonpath.html for the explanation and description.
     # However this behavior is not good in integration tests, in particular the nginx oldest ones.
     # Indeed during these kind of tests certbot is installed as a transitive dependency to
