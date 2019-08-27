@@ -39,7 +39,15 @@ def _prepare_args_env(certbot_args, directory_url, http_01_port, tls_alpn_01_por
     new_environ['TMPDIR'] = workspace
 
     additional_args = []
-    if misc.get_certbot_version(workspace) >= LooseVersion('0.30.0'):
+
+    version_output = subprocess.check_output(['certbot', '--version'],
+                                     universal_newlines=True, stderr=subprocess.STDOUT,
+                                     cwd=workspace)
+    # Typical response is: output = 'certbot 0.31.0.dev0'
+    version_str = version_output.split(' ')[1].strip()
+    version = LooseVersion(version_str)
+
+    if version >= LooseVersion('0.30.0'):
         additional_args.append('--no-random-sleep-on-renew')
 
     if force_renew:
