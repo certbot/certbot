@@ -59,7 +59,7 @@ def node_kwargs(kwargs):
 
     :param dict kwargs: Keyword argument dictionary to validate.
 
-    :returns: Tuple of validated and prepared arguments.
+    :returns: Tuple of validated and prepared arguments and ParserNode kwargs.
     """
     kwargs.setdefault("dirty", False)
     kwargs.setdefault("enabled", True)
