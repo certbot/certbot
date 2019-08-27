@@ -37,7 +37,7 @@ def _prepare_environ(workspace):
     new_environ = os.environ.copy()
     new_environ['TMPDIR'] = workspace
 
-    # So, pytest is nice, and a little to for our usage.
+    # So, pytest is nice, and a little too nice for our usage.
     # In order to help user to call seamlessly any piece of python code without requiring to
     # install it as a full-fledged setuptools distribution for instance, it injects the current
     # path into the PYTHONPATH environment variable. This allows the python interpreter to import
