@@ -3,7 +3,9 @@
 
 def validate_kwargs(kwargs, required_names):
     """
-    Ensures that the kwargs dict has all the expected values.
+    Ensures that the kwargs dict has all the expected values. This function modifies
+    the kwargs dictionary, and hence the returned dictionary should be used instead
+    in the caller function instead of the original kwargs.
 
     :param dict kwargs: Dictionary of keyword arguments to validate.
     :param list required_names: List of required parameter names.

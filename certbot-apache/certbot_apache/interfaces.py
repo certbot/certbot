@@ -136,11 +136,11 @@ class ParserNode(object):
         instance variables. This is not meant to be used directly, but through
         specific classes implementing ParserNode interface.
 
-        :param ancestor: BlockNode ancestor for this CommentNode.
+        :param ancestor: BlockNode ancestor for this CommentNode. Required.
         :param filepath: Filesystem path for the file where this CommentNode
-            does or should exist in the filesystem.
+            does or should exist in the filesystem. Required.
         :param bool dirty: Boolean flag for denoting if this CommentNode has been
-            created or changed after the last save.
+            created or changed after the last save. Default: False.
         """
 
     @abc.abstractmethod
@@ -187,12 +187,12 @@ class CommentNode(ParserNode):
         """
         Initializes the CommentNode instance and sets its instance variables.
 
-        :param str comment: Contents of the comment.
-        :param ancestor: BlockNode ancestor for this CommentNode.
+        :param str comment: Contents of the comment. Required.
+        :param ancestor: BlockNode ancestor for this CommentNode. Required.
         :param filepath: Filesystem path for the file where this CommentNode
-            does or should exist in the filesystem.
+            does or should exist in the filesystem. Required.
         :param bool dirty: Boolean flag for denoting if this CommentNode has been
-            created or changed after the last save.
+            created or changed after the last save. Default: False.
         """
 
 
@@ -230,18 +230,19 @@ class DirectiveNode(ParserNode):
         """
         Initializes the DirectiveNode instance and sets its instance variables.
 
-        :param name: Name or key of the DirectiveNode object.
+        :param name: Name or key of the DirectiveNode object. Required.
         :param tuple parameters: Tuple of str parameters for this DirectiveNode.
+            Default: ().
         :param ancestor: BlockNode ancestor for this DirectiveNode, or None for
-            root configuratio node.
+            root configuratio node. Required.
         :param filepath: Filesystem path for the file where this DirectiveNode
             does or should exist in the filesystem, or None for directives introduced
-            in the httpd command line.
+            in the httpd command line. Required.
         :param bool dirty: Boolean flag for denoting if this DirectiveNode has been
-            created or changed after the last save.
+            created or changed after the last save. Default: False.
         :param bool enabled: True if this DirectiveNode object is parsed in the active
             configuration of the httpd. False if the DirectiveNode exists within a
-            unmatched conditional configuration block.
+            unmatched conditional configuration block. Default: True.
 
         """
 
@@ -298,17 +299,18 @@ class BlockNode(DirectiveNode):
         Initializes the BlockNode instance and sets its instance variables.
 
         :param name: Name or key of the BlockNode object, or None for root
-            configuration node.
+            configuration node. Required.
         :param tuple parameters: Tuple of str parameters for this BlockNode.
+            Default: ().
         :param ancestor: BlockNode ancestor for this BlockNode, or None for root
-            configuration node.
+            configuration node. Required.
         :param str filepath: Filesystem path for the file where this BlockNode does
-            or should exist in the filesystem.
+            or should exist in the filesystem. Required.
         :param bool dirty: Boolean flag for denoting if this BlockNode has been
-            created or changed after the last save.
+            created or changed after the last save. Default: False.
         :param bool enabled: True if this BlockNode object is parsed in the active
             configuration object by the httpd. False if the BlockNode exists within
-            a unmatched conditional configuration block.
+            a unmatched conditional configuration block. Default: True.
         """
 
     @abc.abstractmethod
