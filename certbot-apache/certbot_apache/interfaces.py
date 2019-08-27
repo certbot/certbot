@@ -234,7 +234,7 @@ class DirectiveNode(ParserNode):
         :param tuple parameters: Tuple of str parameters for this DirectiveNode.
             Default: ().
         :param ancestor: BlockNode ancestor for this DirectiveNode, or None for
-            root configuratio node. Required.
+            root configuration node. Required.
         :param filepath: Filesystem path for the file where this DirectiveNode
             does or should exist in the filesystem, or None for directives introduced
             in the httpd command line. Required.
