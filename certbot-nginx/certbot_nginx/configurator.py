@@ -10,6 +10,7 @@ import pkg_resources
 
 import OpenSSL
 import zope.interface
+from distutils.version import LooseVersion
 
 from acme import challenges
 from acme import crypto_util as acme_crypto_util
@@ -129,11 +130,21 @@ class NginxConfigurator(common.Installer):
     @property
     def mod_ssl_conf_src(self):
         """Full absolute path to SSL configuration file source."""
-        config_filename = "options-ssl-nginx.conf"
-        if self.version < (1, 5, 9):
-            config_filename = "options-ssl-nginx-old.conf"
-        elif self.version < (1, 13, 0):
-            config_filename = "options-ssl-nginx-tls12-only.conf"
+        use_tls13 = self.version >= (1, 13, 0)
+        session_tix_off = self.version >= (1, 5, 9) and
+            LooseVersion(self.openssl_version) >= LooseVersion('1.0.2l')
+
+        if use_tls13:
+            if session_tix_off:
+                config_filename = "options-ssl-nginx.conf"
+            else:
+                config_filename = "options-ssl-nginx-tls13-session-tix-on.conf"
+        else:
+            if session_tix_off:
+                config_filename = "options-ssl-nginx-tls12-only.conf"
+            else:
+                config_filename = "options-ssl-nginx-old.conf"
+
         return pkg_resources.resource_filename(
             "certbot_nginx", os.path.join("tls_configs", config_filename))
 
