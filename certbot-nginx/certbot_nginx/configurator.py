@@ -131,7 +131,7 @@ class NginxConfigurator(common.Installer):
     def mod_ssl_conf_src(self):
         """Full absolute path to SSL configuration file source."""
         use_tls13 = self.version >= (1, 13, 0)
-        session_tix_off = self.version >= (1, 5, 9) and
+        session_tix_off = self.version >= (1, 5, 9) and self.openssl_version and
             LooseVersion(self.openssl_version) >= LooseVersion('1.0.2l')
 
         if use_tls13:
