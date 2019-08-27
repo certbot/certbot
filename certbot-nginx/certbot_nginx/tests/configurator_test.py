@@ -920,13 +920,12 @@ class InstallSslOptionsConfTest(util.NginxTest):
         self._assert_current_file()
 
     def test_prev_file_updates_to_current_old_nginx(self):
-        from certbot_nginx.constants import ALL_SSL_OPTIONS_HASHES, SSL_OPTIONS_HASHES_NEW
+        from certbot_nginx.constants import ALL_SSL_OPTIONS_HASHES
         self.config.version = (1, 5, 8)
         with mock.patch('certbot.crypto_util.sha256sum',
                 new=self._mock_hash_except_ssl_conf_src(ALL_SSL_OPTIONS_HASHES[0])):
             self._call()
         self._assert_current_file()
-        self.assertTrue(self._current_ssl_options_hash() not in SSL_OPTIONS_HASHES_NEW)
 
     def test_manually_modified_current_file_does_not_update(self):
         with open(self.config.mod_ssl_conf, "a") as mod_ssl_conf:
