@@ -40,7 +40,7 @@ targets:
     #     - [ apt-get, install, -y, curl ]
   #-----------------------------------------------------------------------------
   # Other Redhat Distros
-  - ami: ami-a8d369c0
+  - ami: ami-0916c408cb02e310b
     name: RHEL7
     type: centos
     virt: hvm

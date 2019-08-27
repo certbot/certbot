@@ -209,18 +209,6 @@ shutil.rmtree(well_known)
         shutil.rmtree(tempdir)
 
 
-def get_certbot_version():
-    """
-    Find the version of the certbot available in PATH.
-    :return str: the certbot version
-    """
-    output = subprocess.check_output(['certbot', '--version'],
-                                     universal_newlines=True, stderr=subprocess.STDOUT)
-    # Typical response is: output = 'certbot 0.31.0.dev0'
-    version_str = output.split(' ')[1].strip()
-    return LooseVersion(version_str)
-
-
 def generate_csr(domains, key_path, csr_path, key_type=RSA_KEY_TYPE):
     """
     Generate a private key, and a CSR for the given domains using this key.
