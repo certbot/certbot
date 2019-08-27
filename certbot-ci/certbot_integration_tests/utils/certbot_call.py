@@ -39,8 +39,8 @@ def _prepare_environ(workspace):
 
     # So, pytest is nice, and a little too nice for our usage.
     # In order to help user to call seamlessly any piece of python code without requiring to
-    # install it as a full-fledged setuptools distribution for instance, it injects the current
-    # path into the PYTHONPATH environment variable. This allows the python interpreter to import
+    # install it as a full-fledged setuptools distribution for instance, it may inject the path
+    # to the test files into the PYTHONPATH. This allows the python interpreter to import
     # as modules any python file available at this path.
     # See https://docs.pytest.org/en/3.2.5/pythonpath.html for the explanation and description.
     # However this behavior is not good in integration tests, in particular the nginx oldest ones.
@@ -48,10 +48,11 @@ def _prepare_environ(workspace):
     # certbot-nginx. Here is the trick: this certbot version is not necessarily the same as
     # the certbot codebase lying in current working directory. For instance in oldest tests
     # certbot==0.36.0 may be installed while the codebase corresponds to certbot==0.37.0.dev0.
-    # If at this point PYTHONPATH is set up like pytest does, invoking certbot will import the
-    # modules from the codebase (0.37.0.dev0), not from the required/installed version (0.36.0).
-    # This will lead to funny and totally incomprehensible errors. To avoid that, we ensure that if
-    # PYTHONPATH is set, it does not contain the path to the root of the codebase.
+    # Then during a pytest run, PYTHONPATH contains the path to the Certbot codebase, so invoking
+    # certbot will import the modules from the codebase (0.37.0.dev0), not from the
+    # required/installed version (0.36.0).
+    # This will lead to funny and totally incomprehensible errors. To avoid that, we ensure that
+    # if PYTHONPATH is set, it does not contain the path to the root of the codebase.
     if new_environ.get('PYTHONPATH'):
         # certbot_integration_tests.__file__ is:
         # '/path/to/certbot/certbot-ci/certbot_integration_tests/__init__.pyc'
