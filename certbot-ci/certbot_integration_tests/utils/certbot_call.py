@@ -45,7 +45,7 @@ def _prepare_environ(workspace):
     # See https://docs.pytest.org/en/3.2.5/pythonpath.html for the explanation and description.
     # However this behavior is not good in integration tests, in particular the nginx oldest ones.
     # Indeed during these kind of tests certbot is installed as a transitive dependency to
-    # certbot-nginx. Here is the trick: this certbot version is not necessarily the same than
+    # certbot-nginx. Here is the trick: this certbot version is not necessarily the same as
     # the certbot codebase lying in current working directory. For instance in oldest tests
     # certbot==0.36.0 may be installed while the codebase corresponds to certbot==0.37.0.dev0.
     # If at this point PYTHONPATH is set up like pytest does, invoking certbot will import the
