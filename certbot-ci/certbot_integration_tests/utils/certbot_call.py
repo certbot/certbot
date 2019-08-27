@@ -37,6 +37,7 @@ def _prepare_args_env(certbot_args, directory_url, http_01_port, tls_alpn_01_por
                       config_dir, workspace, force_renew):
     new_environ = os.environ.copy()
     new_environ['TMPDIR'] = workspace
+    new_environ.pop('PYTHONPATH')
 
     additional_args = []
 
@@ -45,7 +46,7 @@ def _prepare_args_env(certbot_args, directory_url, http_01_port, tls_alpn_01_por
     try:
         version_output = subprocess.check_output(['certbot', '--version'],
                                          universal_newlines=True, stderr=subprocess.STDOUT,
-                                         cwd=workspace)
+                                         cwd=workspace, env=new_environ)
     except BaseException as e:
         print(e.output)
         raise
