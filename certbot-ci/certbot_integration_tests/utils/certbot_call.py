@@ -51,7 +51,7 @@ def _prepare_environ(workspace):
     # If at this point PYTHONPATH is set up like pytest does, invoking certbot will import the
     # modules from the codebase (0.37.0.dev0), not from the required/installed version (0.36.0).
     # This will lead to funny and totally incomprehensible errors. To avoid that, we ensure that if
-    # PYTHONPATH is set, it does not contain the current working directory.
+    # PYTHONPATH is set, it does not contain the path to the root of the codebase.
     if new_environ.get('PYTHONPATH'):
         # certbot_integration_tests.__file__ is:
         # '/path/to/certbot/certbot-ci/certbot_integration_tests/__init__.pyc'
