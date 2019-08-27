@@ -131,7 +131,7 @@ class NginxConfigurator(common.Installer):
     def mod_ssl_conf_src(self):
         """Full absolute path to SSL configuration file source."""
         use_tls13 = self.version >= (1, 13, 0)
-        session_tix_off = self.version >= (1, 5, 9) and self.openssl_version and
+        session_tix_off = self.version >= (1, 5, 9) and self.openssl_version and\
             LooseVersion(self.openssl_version) >= LooseVersion('1.0.2l')
 
         if use_tls13:
@@ -1007,10 +1007,10 @@ class NginxConfigurator(common.Installer):
             raise errors.PluginError(
                 "Unable to run %s -V" % self.conf('ctl'))
 
-        running_with_regex = re.compile(r"running with OpenSSL ([^\S]+) ")
+        running_with_regex = re.compile(r"running with OpenSSL ([^ ]+) ")
         matches = running_with_regex.findall(text)
         if not matches:
-            built_with_regex = re.compile(r"built with OpenSSL ([^\S]+) ")
+            built_with_regex = re.compile(r"built with OpenSSL ([^ ]+) ")
             matches = built_with_regex.findall(text)
             if not matches:
                 logger.warning("NGINX configured with OpenSSL alternatives is not officially"

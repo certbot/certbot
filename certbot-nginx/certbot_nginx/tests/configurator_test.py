@@ -395,6 +395,67 @@ class NginxConfiguratorTest(util.NginxTest):
         self.assertRaises(errors.PluginError, self.config.get_version)
 
     @mock.patch("certbot_nginx.configurator.subprocess.Popen")
+    def test_get_openssl_version(self, mock_popen):
+        mock_popen().communicate.return_value = (
+            "", """
+                nginx version: nginx/1.15.5
+                built by gcc 5.4.0 20160609 (Ubuntu 5.4.0-6ubuntu1~16.04.9)
+                built with OpenSSL 1.0.2g  1 Mar 2016
+                TLS SNI support enabled
+                configure arguments:
+            """)
+        self.assertEqual(self.config._get_openssl_version(), "1.0.2g")
+
+        mock_popen().communicate.return_value = (
+            "", """
+                nginx version: nginx/1.15.5
+                built by gcc 5.4.0 20160609 (Ubuntu 5.4.0-6ubuntu1~16.04.9)
+                built with OpenSSL 1.0.2-beta1  1 Mar 2016
+                TLS SNI support enabled
+                configure arguments:
+            """)
+        self.assertEqual(self.config._get_openssl_version(), "1.0.2-beta1")
+
+        mock_popen().communicate.return_value = (
+            "", """
+                nginx version: nginx/1.15.5
+                built by gcc 5.4.0 20160609 (Ubuntu 5.4.0-6ubuntu1~16.04.9)
+                built with OpenSSL 1.0.2  1 Mar 2016
+                TLS SNI support enabled
+                configure arguments:
+            """)
+        self.assertEqual(self.config._get_openssl_version(), "1.0.2")
+
+        mock_popen().communicate.return_value = (
+            "", """
+                nginx version: nginx/1.15.5
+                built by gcc 5.4.0 20160609 (Ubuntu 5.4.0-6ubuntu1~16.04.9)
+                built with OpenSSL 1.0.2g  1 Mar 2016 (running with OpenSSL 1.0.2a  1 Mar 2016)
+                TLS SNI support enabled
+                configure arguments:
+            """)
+        self.assertEqual(self.config._get_openssl_version(), "1.0.2a")
+
+        mock_popen().communicate.return_value = (
+            "", """
+                nginx version: nginx/1.15.5
+                built by gcc 5.4.0 20160609 (Ubuntu 5.4.0-6ubuntu1~16.04.9)
+                built with LibreSSL 2.2.2
+                TLS SNI support enabled
+                configure arguments:
+            """)
+        self.assertEqual(self.config._get_openssl_version(), "")
+
+        mock_popen().communicate.return_value = (
+            "", """
+                nginx version: nginx/1.15.5
+                built by gcc 5.4.0 20160609 (Ubuntu 5.4.0-6ubuntu1~16.04.9)
+                TLS SNI support enabled
+                configure arguments:
+            """)
+        self.assertEqual(self.config._get_openssl_version(), "")
+
+    @mock.patch("certbot_nginx.configurator.subprocess.Popen")
     def test_nginx_restart(self, mock_popen):
         mocked = mock_popen()
         mocked.communicate.return_value = ('', '')

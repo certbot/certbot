@@ -54,7 +54,7 @@ def get_data_filename(filename):
 
 
 def get_nginx_configurator(
-        config_path, config_dir, work_dir, logs_dir, version=(1, 6, 2)):
+        config_path, config_dir, work_dir, logs_dir, version=(1, 6, 2), openssl_version="1.0.2g"):
     """Create an Nginx Configurator with the specified options."""
 
     backups = os.path.join(work_dir, "backups")
@@ -79,7 +79,8 @@ def get_nginx_configurator(
                     https_port=5001,
                 ),
                 name="nginx",
-                version=version)
+                version=version,
+                openssl_version=openssl_version)
             config.prepare()
 
     # Provide general config utility.
