@@ -41,6 +41,7 @@ def _prepare_args_env(certbot_args, directory_url, http_01_port, tls_alpn_01_por
     additional_args = []
 
     print(os.environ)
+    print(sys.path)
     try:
         version_output = subprocess.check_output(['certbot', '--version'],
                                          universal_newlines=True, stderr=subprocess.STDOUT,
