@@ -1,4 +1,6 @@
 """Nginx Configuration"""
+# https://github.com/PyCQA/pylint/issues/73
+from distutils.version import LooseVersion # pylint: disable=no-name-in-module,import-error
 import logging
 import re
 import socket
@@ -10,7 +12,6 @@ import pkg_resources
 
 import OpenSSL
 import zope.interface
-from distutils.version import LooseVersion
 
 from acme import challenges
 from acme import crypto_util as acme_crypto_util
