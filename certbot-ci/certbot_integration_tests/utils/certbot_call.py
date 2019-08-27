@@ -6,7 +6,7 @@ import subprocess
 import sys
 import os
 
-from certbot_integration_tests.utils import misc
+import certbot_integration_tests
 from certbot_integration_tests.utils.constants import *
 
 
@@ -33,17 +33,41 @@ def certbot_test(certbot_args, directory_url, http_01_port, tls_alpn_01_port,
     return subprocess.check_output(command, universal_newlines=True, cwd=workspace, env=env)
 
 
-def _prepare_args_env(certbot_args, directory_url, http_01_port, tls_alpn_01_port,
-                      config_dir, workspace, force_renew):
+def _prepare_environ(workspace):
     new_environ = os.environ.copy()
     new_environ['TMPDIR'] = workspace
 
+    if new_environ.get('PYTHONPATH'):
+        # certbot_integration_tests.__file__ is:
+        # '/path/to/certbot/certbot-ci/certbot_integration_tests/__init__.pyc'
+        # ... and we want '/path/to/certbot'
+        certbot_root = os.path.dirname(os.path.dirname(os.path.dirname(certbot_integration_tests.__file__)))
+        python_paths = [path for path in new_environ['PYTHONPATH'].split(':') if path != certbot_root]
+        new_environ['PYTHONPATH'] = ':'.join(python_paths)
+
+    return new_environ
+
+
+def _compute_additional_args(workspace, environ, force_renew):
     additional_args = []
-    if misc.get_certbot_version() >= LooseVersion('0.30.0'):
+    output = subprocess.check_output(['certbot', '--version'],
+                                     universal_newlines=True, stderr=subprocess.STDOUT,
+                                     cwd=workspace, env=environ)
+    version_str = output.split(' ')[1].strip()  # Typical response is: output = 'certbot 0.31.0.dev0'
+    if LooseVersion(version_str) >= LooseVersion('0.30.0'):
         additional_args.append('--no-random-sleep-on-renew')
 
     if force_renew:
         additional_args.append('--renew-by-default')
+
+    return additional_args
+
+
+def _prepare_args_env(certbot_args, directory_url, http_01_port, tls_alpn_01_port,
+                      config_dir, workspace, force_renew):
+
+    new_environ = _prepare_environ(workspace)
+    additional_args = _compute_additional_args(workspace, new_environ, force_renew)
 
     command = [
         'certbot',
