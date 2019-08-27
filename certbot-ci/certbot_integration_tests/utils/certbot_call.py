@@ -40,9 +40,14 @@ def _prepare_args_env(certbot_args, directory_url, http_01_port, tls_alpn_01_por
 
     additional_args = []
 
-    version_output = subprocess.check_output(['certbot', '--version'],
-                                     universal_newlines=True, stderr=subprocess.STDOUT,
-                                     cwd=workspace)
+    print(os.environ)
+    try:
+        version_output = subprocess.check_output(['certbot', '--version'],
+                                         universal_newlines=True, stderr=subprocess.STDOUT,
+                                         cwd=workspace)
+    except BaseException as e:
+        print(e)
+        raise
     # Typical response is: output = 'certbot 0.31.0.dev0'
     version_str = version_output.split(' ')[1].strip()
     version = LooseVersion(version_str)
