@@ -43,7 +43,7 @@ def commentnode_kwargs(kwargs):
 
     :param dict kwargs: Keyword argument dictionary to validate.
 
-    :returns: Tuple of validated and prepared arguments and the remaining kwargs.
+    :returns: Tuple of validated and prepared arguments and ParserNode kwargs.
     """
     kwargs.setdefault("dirty", False)
     kwargs = validate_kwargs(kwargs, ["ancestor", "dirty", "filepath", "comment"])
