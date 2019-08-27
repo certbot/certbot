@@ -46,7 +46,7 @@ def _prepare_args_env(certbot_args, directory_url, http_01_port, tls_alpn_01_por
                                          universal_newlines=True, stderr=subprocess.STDOUT,
                                          cwd=workspace)
     except BaseException as e:
-        print(e)
+        print(e.output)
         raise
     # Typical response is: output = 'certbot 0.31.0.dev0'
     version_str = version_output.split(' ')[1].strip()
