@@ -1047,11 +1047,13 @@ class InstallSslOptionsConfTest(util.NginxTest):
 
     def test_nginx_version_uses_correct_config(self):
         self.config.version = (1, 5, 8)
+        self.config.openssl_version = "1.0.2g" # shouldn't matter
         self.assertEqual(os.path.basename(self.config.mod_ssl_conf_src),
                          "options-ssl-nginx-old.conf")
         self._call()
         self._assert_current_file()
         self.config.version = (1, 5, 9)
+        self.config.openssl_version = "1.0.2l"
         self.assertEqual(os.path.basename(self.config.mod_ssl_conf_src),
                          "options-ssl-nginx-tls12-only.conf")
         self._call()
@@ -1059,6 +1061,18 @@ class InstallSslOptionsConfTest(util.NginxTest):
         self.config.version = (1, 13, 0)
         self.assertEqual(os.path.basename(self.config.mod_ssl_conf_src),
                          "options-ssl-nginx.conf")
+        self._call()
+        self._assert_current_file()
+        self.config.version = (1, 13, 0)
+        self.config.openssl_version = "1.0.2k"
+        self.assertEqual(os.path.basename(self.config.mod_ssl_conf_src),
+                         "options-ssl-nginx-tls13-session-tix-on.conf")
+
+        from distutils.version import LooseVersion
+        self.assertTrue(LooseVersion("1.0.2i") < LooseVersion("1.0.2l"))
+        self.assertTrue(LooseVersion("1.0.2-beta1") < LooseVersion("1.0.2l"))
+        self.assertTrue(LooseVersion("1.0.2") < LooseVersion("1.0.2l"))
+        self.assertTrue(LooseVersion("1.1.0") > LooseVersion("1.0.2l"))
 
 
 class DetermineDefaultServerRootTest(certbot_test_util.ConfigTestCase):
