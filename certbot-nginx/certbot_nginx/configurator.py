@@ -975,7 +975,7 @@ class NginxConfigurator(common.Installer):
             Unable to find Nginx version or version is unsupported
 
         """
-        text = _nginx_version()
+        text = self._nginx_version()
 
         version_regex = re.compile(r"nginx version: ([^/]+)/([0-9\.]*)", re.IGNORECASE)
         version_matches = version_regex.findall(text)
@@ -1019,7 +1019,7 @@ class NginxConfigurator(common.Installer):
         :raises .PluginError:
             Unable to run Nginx version command
         """
-        text = _nginx_version()
+        text = self._nginx_version()
 
         matches = re.findall(r"running with OpenSSL ([^ ]+) ", text)
         if not matches:
