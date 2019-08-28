@@ -9,7 +9,7 @@ import getpass
 def construct_apache_config_dir(apache_root, http_port, https_port, key_path=None,
                                 cert_path=None, wtf_prefix='le'):
     config_path = os.path.join(apache_root, 'config')
-    shutil.copytree('/etc/apache2-save', config_path, symlinks=True)
+    shutil.copytree('/etc/apache2', config_path, symlinks=True)
 
     webroot_path = os.path.join(apache_root, 'www')
     os.mkdir(webroot_path)
