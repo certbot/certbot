@@ -1,3 +1,4 @@
+import errno
 import os
 import signal
 import subprocess
@@ -42,4 +43,9 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
             pid = None
 
         if pid:
-            os.kill(pid, signal.SIGTERM)
+            try:
+                os.kill(pid, signal.SIGTERM)
+            except OSError as err:
+                # Ignore "No such process" error, Apache may already be stopped.
+                if err.errno != errno.ESRCH:
+                    raise
