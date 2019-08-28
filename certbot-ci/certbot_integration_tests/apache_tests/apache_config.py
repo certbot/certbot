@@ -15,11 +15,58 @@ def construct_apache_config_dir(apache_root, http_port, https_port, key_path=Non
     os.mkdir(webroot_path)
 
     main_config_path = os.path.join(config_path, 'apache2.conf')
-    with open(main_config_path, 'r') as file_h:
-        data = file_h.read()
-    data.replace('/var/www/html', webroot_path)
     with open(main_config_path, 'w') as file_h:
-        file_h.write(data)
+        file_h.write('''\
+ServerRoot "{config}"
+DefaultRuntimeDir ${{APACHE_RUN_DIR}}
+PidFile ${{APACHE_PID_FILE}}
+Timeout 300
+KeepAlive On
+MaxKeepAliveRequests 100
+KeepAliveTimeout 5
+User ${{APACHE_RUN_USER}}
+Group ${{APACHE_RUN_GROUP}}
+HostnameLookups Off
+ErrorLog ${{APACHE_LOG_DIR}}/error.log
+LogLevel warn
+
+IncludeOptional mods-enabled/*.load
+IncludeOptional mods-enabled/*.conf
+
+Include ports.conf
+
+<Directory />
+    Options FollowSymLinks
+    AllowOverride None
+    Require all denied
+</Directory>
+
+<Directory /usr/share>
+    AllowOverride None
+    Require all granted
+</Directory>
+
+<Directory {webroot}/>
+    Options Indexes FollowSymLinks
+    AllowOverride None
+    Require all granted
+</Directory>
+
+AccessFileName .htaccess
+
+<FilesMatch "^\.ht">
+    Require all denied
+</FilesMatch>
+
+LogFormat "%v:%p %h %l %u %t \"%r\" %>s %O \"%{{Referer}}i\" \"%{{User-Agent}}i\"" vhost_combined
+LogFormat "%h %l %u %t \"%r\" %>s %O \"%{{Referer}}i\" \"%{{User-Agent}}i\"" combined
+LogFormat "%h %l %u %t \"%r\" %>s %O" common
+LogFormat "%{{Referer}}i -> %U" referer
+LogFormat "%{{User-agent}}i" agent
+
+IncludeOptional conf-enabled/*.conf
+IncludeOptional sites-enabled/*.conf
+'''.format(config=config_path, webroot=webroot_path))
 
     with open(os.path.join(config_path, 'ports.conf'), 'w') as file_h:
         file_h.write('''\
