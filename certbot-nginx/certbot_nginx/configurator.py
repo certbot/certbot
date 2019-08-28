@@ -131,6 +131,18 @@ class NginxConfigurator(common.Installer):
     @property
     def mod_ssl_conf_src(self):
         """Full absolute path to SSL configuration file source."""
+        """
+        Why all this complexity? Well, we want to support Mozilla's intermediate
+        recommendations. But TLS1.3 is only supported by newer versions of Nginx.
+        And as for session tickets, our ideal is to turn them off across the board.
+        But! Turning them off at all is only supported with new enough versions of
+        Nginx. And older versions of OpenSSL have a bug that leads to browser errors
+        given certain configurations. While we'd prefer to have forward secrecy, we'd
+        rather fail open than error out. Unfortunately, Nginx can be compiled against
+        many versions of OpenSSL. So we have to check both for the two different features,
+        leading to four different combinations of options.
+        For a complete history, check out https://github.com/certbot/certbot/issues/7322
+        """
         use_tls13 = self.version >= (1, 13, 0)
         session_tix_off = self.version >= (1, 5, 9) and self.openssl_version and\
             LooseVersion(self.openssl_version) >= LooseVersion('1.0.2l')
@@ -929,17 +941,14 @@ class NginxConfigurator(common.Installer):
         util.make_or_verify_dir(self.config.backup_dir, core_constants.CONFIG_DIRS_MODE)
         util.make_or_verify_dir(self.config.config_dir, core_constants.CONFIG_DIRS_MODE)
 
-    def get_version(self):
-        """Return version of Nginx Server.
+    def _nginx_version(self):
+        """Return results of nginx -V
 
-        Version is returned as tuple. (ie. 2.4.7 = (2, 4, 7))
-
-        :returns: version
-        :rtype: tuple
+        :returns: version text
+        :rtype: str
 
         :raises .PluginError:
-            Unable to find Nginx version or version is unsupported
-
+            Unable to run Nginx version command
         """
         try:
             proc = subprocess.Popen(
@@ -952,6 +961,21 @@ class NginxConfigurator(common.Installer):
             logger.debug(str(error), exc_info=True)
             raise errors.PluginError(
                 "Unable to run %s -V" % self.conf('ctl'))
+        return text
+
+    def get_version(self):
+        """Return version of Nginx Server.
+
+        Version is returned as tuple. (ie. 2.4.7 = (2, 4, 7))
+
+        :returns: version
+        :rtype: tuple
+
+        :raises .PluginError:
+            Unable to find Nginx version or version is unsupported
+
+        """
+        text = _nginx_version()
 
         version_regex = re.compile(r"nginx version: ([^/]+)/([0-9\.]*)", re.IGNORECASE)
         version_matches = version_regex.findall(text)
@@ -987,32 +1011,19 @@ class NginxConfigurator(common.Installer):
     def _get_openssl_version(self):
         """Return version of OpenSSL linked to Nginx.
 
-        Version is returned as string.
+        Version is returned as string. If no version can be found, empty string is returned.
 
         :returns: openssl_version
         :rtype: str
 
         :raises .PluginError:
-            Unable to find OpenSSL version
-
+            Unable to run Nginx version command
         """
-        try:
-            proc = subprocess.Popen(
-                [self.conf('ctl'), "-c", self.nginx_conf, "-V"],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                universal_newlines=True)
-            text = proc.communicate()[1]  # nginx prints output to stderr
-        except (OSError, ValueError) as error:
-            logger.debug(str(error), exc_info=True)
-            raise errors.PluginError(
-                "Unable to run %s -V" % self.conf('ctl'))
+        text = _nginx_version()
 
-        running_with_regex = re.compile(r"running with OpenSSL ([^ ]+) ")
-        matches = running_with_regex.findall(text)
+        matches = re.findall(r"running with OpenSSL ([^ ]+) ", text)
         if not matches:
-            built_with_regex = re.compile(r"built with OpenSSL ([^ ]+) ")
-            matches = built_with_regex.findall(text)
+            matches = re.findall(r"built with OpenSSL ([^ ]+) ", text)
             if not matches:
                 logger.warning("NGINX configured with OpenSSL alternatives is not officially"
                     "supported by Certbot.")

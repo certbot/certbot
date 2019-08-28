@@ -1069,13 +1069,6 @@ class InstallSslOptionsConfTest(util.NginxTest):
         self.assertEqual(os.path.basename(self.config.mod_ssl_conf_src),
                          "options-ssl-nginx-tls13-session-tix-on.conf")
 
-        # https://github.com/PyCQA/pylint/issues/73
-        from distutils.version import LooseVersion # pylint: disable=no-name-in-module,import-error
-        self.assertTrue(LooseVersion("1.0.2i") < LooseVersion("1.0.2l"))
-        self.assertTrue(LooseVersion("1.0.2-beta1") < LooseVersion("1.0.2l"))
-        self.assertTrue(LooseVersion("1.0.2") < LooseVersion("1.0.2l"))
-        self.assertTrue(LooseVersion("1.1.0") > LooseVersion("1.0.2l"))
-
 
 class DetermineDefaultServerRootTest(certbot_test_util.ConfigTestCase):
     """Tests for certbot_nginx.configurator._determine_default_server_root."""
