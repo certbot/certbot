@@ -13,7 +13,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 * If Certbot fails to rollback your server configuration, the error message
   links to the Let's Encrypt forum. Change the link to the Help category now
   that the Server category has been closed.
-* Replace platform.linux_dependencies with distro.linux_dependencies, allowing
+* Replace platform.linux_distribution with distro.linux_distribution, allowing
   Certbot to be run with Python 3.8.
 
 ### Fixed
