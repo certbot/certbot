@@ -58,9 +58,9 @@ AccessFileName .htaccess
     Require all denied
 </FilesMatch>
 
-LogFormat "%v:%p %h %l %u %t \"%r\" %>s %O \"%{{Referer}}i\" \"%{{User-Agent}}i\"" vhost_combined
-LogFormat "%h %l %u %t \"%r\" %>s %O \"%{{Referer}}i\" \"%{{User-Agent}}i\"" combined
-LogFormat "%h %l %u %t \"%r\" %>s %O" common
+LogFormat "%v:%p %h %l %u %t \\"%r\\" %>s %O \\"%{{Referer}}i\\" \\"%{{User-Agent}}i\\"" vhost_combined
+LogFormat "%h %l %u %t \\"%r\\" %>s %O \\"%{{Referer}}i\\" \\"%{{User-Agent}}i\\"" combined
+LogFormat "%h %l %u %t \\"%r\\" %>s %O" common
 LogFormat "%{{Referer}}i -> %U" referer
 LogFormat "%{{User-agent}}i" agent
 
