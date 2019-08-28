@@ -27,7 +27,10 @@ def validate_kwargs(kwargs, required_names):
 
 def parsernode_kwargs(kwargs):
     """
-    Validates keyword arguments for ParserNode.
+    Validates keyword arguments for ParserNode. This function modifies the kwargs
+    dictionary, and hence the returned dictionary should be used instead in the
+    caller function instead of the original kwargs.
+
 
     :param dict kwargs: Keyword argument dictionary to validate.
 
@@ -41,7 +44,10 @@ def parsernode_kwargs(kwargs):
 def commentnode_kwargs(kwargs):
     """
     Validates keyword arguments for CommentNode and sets the default values for
-    optional kwargs.
+    optional kwargs. This function modifies the kwargs dictionary, and hence the
+    returned dictionary should be used instead in the caller function instead of
+    the original kwargs.
+
 
     :param dict kwargs: Keyword argument dictionary to validate.
 
@@ -54,15 +60,18 @@ def commentnode_kwargs(kwargs):
     return comment, kwargs
 
 
-def node_kwargs(kwargs):
+def directivenode_kwargs(kwargs):
     """
     Validates keyword arguments for DirectiveNode and BlockNode and sets the
-    default values for optional kwargs.
+    default values for optional kwargs. This function modifies the kwargs
+    dictionary, and hence the returned dictionary should be used instead in the
+    caller function instead of the original kwargs.
 
     :param dict kwargs: Keyword argument dictionary to validate.
 
     :returns: Tuple of validated and prepared arguments and ParserNode kwargs.
     """
+
     kwargs.setdefault("dirty", False)
     kwargs.setdefault("enabled", True)
     kwargs.setdefault("parameters", ())

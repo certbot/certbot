@@ -44,7 +44,7 @@ class DummyDirectiveNode(DummyParserNode):
         """
         Initializes the DirectiveNode instance and sets its instance variables.
         """
-        name, parameters, enabled, kwargs = util.node_kwargs(kwargs)
+        name, parameters, enabled, kwargs = util.directivenode_kwargs(kwargs)
         self.name = name
         self.parameters = parameters
         self.enabled = enabled

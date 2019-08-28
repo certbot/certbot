@@ -193,7 +193,9 @@ class CommentNode(ParserNode):
         :param bool dirty: Boolean flag for denoting if this CommentNode has been
             created or changed after the last save. Default: False.
         """
-        super(CommentNode, self).__init__(**kwargs)  # pragma: no cover
+        super(CommentNode, self).__init__(ancestor=kwargs['ancestor'],
+                                          dirty=kwargs.get('dirty', False),
+                                          filepath=kwargs['filepath'])  # pragma: no cover
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -224,7 +226,6 @@ class DirectiveNode(ParserNode):
 
     """
 
-    # pylint: disable=useless-super-delegation
     @abc.abstractmethod
     def __init__(self, **kwargs):
         """
@@ -245,7 +246,9 @@ class DirectiveNode(ParserNode):
             unmatched conditional configuration block. Default: True.
 
         """
-        super(DirectiveNode, self).__init__(**kwargs)  # pragma: no cover
+        super(DirectiveNode, self).__init__(ancestor=kwargs['ancestor'],
+                                            dirty=kwargs.get('dirty', False),
+                                            filepath=kwargs['filepath'])  # pragma: no cover
 
     @abc.abstractmethod
     def set_parameters(self, parameters):
