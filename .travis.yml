@@ -38,11 +38,15 @@ matrix:
   include:
     - python: "3.8-dev"
       dist: xenial
-      env: ACME_SERVER=pebble TOXENV=integration
+      env: ACME_SERVER=boulder-v1 TOXENV=integration
       <<: *not-on-master
     - python: "3.8-dev"
       dist: xenial
-      env: TOXENV=py3
+      env: ACME_SERVER=boulder-v2 TOXENV=integration
+      <<: *not-on-master
+    - python: "3.8-dev"
+      dist: xenial
+      env: TOXENV=py38
       <<: *not-on-master
 
 # container-based infrastructure
