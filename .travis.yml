@@ -7,12 +7,14 @@ cache:
 before_script:
   # Install required apt packages
   - |
-    ./certbot-auto --non-interactive --os-packages-only
-    sudo -E echo -e '#!/bin/bash\nexit 101' > /usr/sbin/policy-rc.d
-    sudo -E chmod +x /usr/sbin/policy-rc.d
-    sudo -E apt-get -yq --no-install-suggests --no-install-recommends install nginx-light apache2
-    sudo -E rm -f /usr/sbin/policy-rc.d
-    sudo -E chmod 777 -R /var/lib/apache2/module
+    if [[ "$TRAVIS_OS_NAME" != "osx" ]]; then
+      ./certbot-auto --non-interactive --os-packages-only
+      sudo -E echo -e '#!/bin/bash\nexit 101' > /usr/sbin/policy-rc.d
+      sudo -E chmod +x /usr/sbin/policy-rc.d
+      sudo -E apt-get -yq --no-install-suggests --no-install-recommends install nginx-light apache2
+      sudo -E rm -f /usr/sbin/policy-rc.d
+      sudo -E chmod 777 -R /var/lib/apache2/module
+    fi
   - 'if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then ulimit -n 1024 ; fi'
   # On Travis, the fastest parallelization for integration tests has proved to be 4.
   - 'if [[ "$TOXENV" == *"integration"* ]]; then export PYTEST_ADDOPTS="--numprocesses 4"; fi'
