@@ -6,7 +6,7 @@ import subprocess
 import sys
 import os
 
-from certbot_integration_tests.utils import misc
+import certbot_integration_tests
 from certbot_integration_tests.utils.constants import *
 
 
@@ -33,17 +33,57 @@ def certbot_test(certbot_args, directory_url, http_01_port, tls_alpn_01_port,
     return subprocess.check_output(command, universal_newlines=True, cwd=workspace, env=env)
 
 
-def _prepare_args_env(certbot_args, directory_url, http_01_port, tls_alpn_01_port,
-                      config_dir, workspace, force_renew):
+def _prepare_environ(workspace):
     new_environ = os.environ.copy()
     new_environ['TMPDIR'] = workspace
 
+    # So, pytest is nice, and a little too nice for our usage.
+    # In order to help user to call seamlessly any piece of python code without requiring to
+    # install it as a full-fledged setuptools distribution for instance, it may inject the path
+    # to the test files into the PYTHONPATH. This allows the python interpreter to import
+    # as modules any python file available at this path.
+    # See https://docs.pytest.org/en/3.2.5/pythonpath.html for the explanation and description.
+    # However this behavior is not good in integration tests, in particular the nginx oldest ones.
+    # Indeed during these kind of tests certbot is installed as a transitive dependency to
+    # certbot-nginx. Here is the trick: this certbot version is not necessarily the same as
+    # the certbot codebase lying in current working directory. For instance in oldest tests
+    # certbot==0.36.0 may be installed while the codebase corresponds to certbot==0.37.0.dev0.
+    # Then during a pytest run, PYTHONPATH contains the path to the Certbot codebase, so invoking
+    # certbot will import the modules from the codebase (0.37.0.dev0), not from the
+    # required/installed version (0.36.0).
+    # This will lead to funny and totally incomprehensible errors. To avoid that, we ensure that
+    # if PYTHONPATH is set, it does not contain the path to the root of the codebase.
+    if new_environ.get('PYTHONPATH'):
+        # certbot_integration_tests.__file__ is:
+        # '/path/to/certbot/certbot-ci/certbot_integration_tests/__init__.pyc'
+        # ... and we want '/path/to/certbot'
+        certbot_root = os.path.dirname(os.path.dirname(os.path.dirname(certbot_integration_tests.__file__)))
+        python_paths = [path for path in new_environ['PYTHONPATH'].split(':') if path != certbot_root]
+        new_environ['PYTHONPATH'] = ':'.join(python_paths)
+
+    return new_environ
+
+
+def _compute_additional_args(workspace, environ, force_renew):
     additional_args = []
-    if misc.get_certbot_version() >= LooseVersion('0.30.0'):
+    output = subprocess.check_output(['certbot', '--version'],
+                                     universal_newlines=True, stderr=subprocess.STDOUT,
+                                     cwd=workspace, env=environ)
+    version_str = output.split(' ')[1].strip()  # Typical response is: output = 'certbot 0.31.0.dev0'
+    if LooseVersion(version_str) >= LooseVersion('0.30.0'):
         additional_args.append('--no-random-sleep-on-renew')
 
     if force_renew:
         additional_args.append('--renew-by-default')
+
+    return additional_args
+
+
+def _prepare_args_env(certbot_args, directory_url, http_01_port, tls_alpn_01_port,
+                      config_dir, workspace, force_renew):
+
+    new_environ = _prepare_environ(workspace)
+    additional_args = _compute_additional_args(workspace, new_environ, force_renew)
 
     command = [
         'certbot',
