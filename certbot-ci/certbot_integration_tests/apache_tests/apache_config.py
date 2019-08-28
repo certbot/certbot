@@ -1,7 +1,9 @@
 import shutil
+import subprocess
 import os
 
 import pkg_resources
+import getpass
 
 
 def construct_apache_config_dir(apache_root, http_port, https_port, key_path=None,
@@ -40,21 +42,32 @@ Listen {http}
     os.mkdir(lock_path)
     os.mkdir(logs_path)
 
+    user = getpass.getuser()
+    user = user if user != 'root' else 'www-data'
+    group = user
+
     with open(os.path.join(config_path, 'envvars'), 'w') as file_h:
         file_h.write('''\
 unset HOME
-export APACHE_RUN_USER=www-data
-export APACHE_RUN_GROUP=www-data
+export APACHE_RUN_USER={user}
+export APACHE_RUN_GROUP={group}
 export APACHE_PID_FILE={run_path}/apache2.pid
 export APACHE_RUN_DIR={run_path}
 export APACHE_LOCK_DIR={lock_path}
 export APACHE_LOG_DIR={logs_path}
 export LANG=C
-'''.format(run_path=run_path, lock_path=lock_path, logs_path=logs_path))
+'''.format(user=user, group=group, run_path=run_path, lock_path=lock_path, logs_path=logs_path))
+
+    new_environ['APACHE_RUN_USER'] = user
+    new_environ['APACHE_RUN_GROUP'] = group
+    new_environ['APACHE_PID_FILE'] = os.path.join(run_path, 'apache.pid')
+    new_environ['APACHE_RUN_DIR'] = run_path
+    new_environ['APACHE_LOCK_DIR'] = lock_path
+    new_environ['APACHE_LOG_DIR'] = logs_path
 
     le_host = 'apache.{0}.wtf'.format(wtf_prefix)
 
-    with open(os.path.join(config_path, 'sites-available', '0000-default.conf')) as file_h:
+    with open(os.path.join(config_path, 'sites-available', '000-default.conf'), 'w') as file_h:
         file_h.write('''\
 <VirtualHost *:{http}>
     ServerAdmin webmaster@localhost
@@ -99,3 +112,8 @@ export LANG=C
            cert_path=cert_path, key_path=key_path))
 
     return new_environ
+
+
+def test():
+    env = construct_apache_config_dir('/tmp/test1', 5001, 5002)
+    subprocess.call(['apache2', '-f', '/tmp/test1/config/apache2.conf'], env=env)
