@@ -118,28 +118,6 @@ class ParserNodeTest(unittest.TestCase):
             filepath="/some/file"
         )
 
-    def test_unknown_parameter(self):
-        params = {
-            "comment": "x",
-            "ancestor": None,
-            "dirty": False,
-            "filepath": "/tmp",
-            "unknown": "x"
-        }
-        self.assertRaises(TypeError, DummyCommentNode, **params)
-        params["name"] = "unnamed"
-        params.pop("comment")
-        self.assertRaises(TypeError, DummyDirectiveNode, **params)
-        self.assertRaises(TypeError, DummyBlockNode, **params)
-
-    def test_missing_required(self):
-        params = {
-            "ancestor": None,
-            "dirty": False,
-            "filepath": "/tmp",
-        }
-        self.assertRaises(TypeError, DummyCommentNode, **params)
-
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
