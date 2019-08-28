@@ -9,7 +9,7 @@ import getpass
 def construct_apache_config_dir(apache_root, http_port, https_port, key_path=None,
                                 cert_path=None, wtf_prefix='le'):
     config_path = os.path.join(apache_root, 'config')
-    shutil.copytree('/etc/apache2', config_path)
+    shutil.copytree('/etc/apache2', config_path, symlinks=True)
 
     webroot_path = os.path.join(apache_root, 'www')
     os.mkdir(webroot_path)
@@ -30,8 +30,8 @@ HostnameLookups Off
 ErrorLog ${{APACHE_LOG_DIR}}/error.log
 LogLevel warn
 
-IncludeOptional {config}/mods-enabled/*.load
-IncludeOptional {config}/mods-enabled/*.conf
+IncludeOptional mods-enabled/*.load
+IncludeOptional mods-enabled/*.conf
 
 Include ports.conf
 
@@ -64,8 +64,8 @@ LogFormat "%h %l %u %t \\"%r\\" %>s %O" common
 LogFormat "%{{Referer}}i -> %U" referer
 LogFormat "%{{User-agent}}i" agent
 
-IncludeOptional {config}/conf-enabled/*.conf
-IncludeOptional {config}/sites-enabled/*.conf
+IncludeOptional conf-enabled/*.conf
+IncludeOptional sites-enabled/*.conf
 '''.format(config=config_path, webroot=webroot_path))
 
     with open(os.path.join(config_path, 'ports.conf'), 'w') as file_h:
