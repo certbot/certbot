@@ -11,7 +11,7 @@ from certbot_integration_tests.utils.constants import *
 
 
 def certbot_test(certbot_args, directory_url, http_01_port, tls_alpn_01_port,
-                 config_dir, workspace, force_renew=True):
+                 config_dir, workspace, env=None, force_renew=True):
     """
     Invoke the certbot executable available in PATH in a test context for the given args.
     The test context consists in running certbot in debug mode, with various flags suitable
@@ -23,19 +23,21 @@ def certbot_test(certbot_args, directory_url, http_01_port, tls_alpn_01_port,
     :param int tls_alpn_01_port: port for the TLS-ALPN-01 challenges
     :param str config_dir: certbot configuration directory to use
     :param str workspace: certbot current directory to use
+    :param obj env: the environment variables to use (default: None, then current env will be used)
     :param bool force_renew: set False to not force renew existing certificates (default: True)
     :return: stdout as string
     :rtype: str
     """
+    new_environ = env if env else os.environ.copy()
     command, env = _prepare_args_env(certbot_args, directory_url, http_01_port, tls_alpn_01_port,
-                                     config_dir, workspace, force_renew)
+                                     config_dir, workspace, force_renew, new_environ)
 
     return subprocess.check_output(command, universal_newlines=True, cwd=workspace, env=env)
 
 
 def _prepare_args_env(certbot_args, directory_url, http_01_port, tls_alpn_01_port,
-                      config_dir, workspace, force_renew):
-    new_environ = os.environ.copy()
+                      config_dir, workspace, force_renew, env):
+    new_environ = env.copy()
     new_environ['TMPDIR'] = workspace
 
     additional_args = []

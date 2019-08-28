@@ -13,6 +13,8 @@ def construct_apache_config_dir(apache_root, http_port, https_port, key_path=Non
 
     webroot_path = os.path.join(apache_root, 'www')
     os.mkdir(webroot_path)
+    with open(os.path.join(webroot_path, 'index.html'), 'w') as file_h:
+        file_h.write('Hello World!')
 
     main_config_path = os.path.join(config_path, 'apache2.conf')
     with open(main_config_path, 'w') as file_h:
@@ -93,21 +95,24 @@ Listen {http}
     user = user if user != 'root' else 'www-data'
     group = user
 
+    pid_file = os.path.join(run_path, 'apache.pid')
+
     with open(os.path.join(config_path, 'envvars'), 'w') as file_h:
         file_h.write('''\
 unset HOME
 export APACHE_RUN_USER={user}
 export APACHE_RUN_GROUP={group}
-export APACHE_PID_FILE={run_path}/apache2.pid
+export APACHE_PID_FILE={pid_file}
 export APACHE_RUN_DIR={run_path}
 export APACHE_LOCK_DIR={lock_path}
 export APACHE_LOG_DIR={logs_path}
 export LANG=C
-'''.format(user=user, group=group, run_path=run_path, lock_path=lock_path, logs_path=logs_path))
+'''.format(user=user, group=group, pid_file=pid_file,
+           run_path=run_path, lock_path=lock_path, logs_path=logs_path))
 
     new_environ['APACHE_RUN_USER'] = user
     new_environ['APACHE_RUN_GROUP'] = group
-    new_environ['APACHE_PID_FILE'] = os.path.join(run_path, 'apache.pid')
+    new_environ['APACHE_PID_FILE'] = pid_file
     new_environ['APACHE_RUN_DIR'] = run_path
     new_environ['APACHE_LOCK_DIR'] = lock_path
     new_environ['APACHE_LOG_DIR'] = logs_path
@@ -158,9 +163,9 @@ export LANG=C
 '''.format(https=https_port, le_host=le_host, webroot=webroot_path,
            cert_path=cert_path, key_path=key_path))
 
-    return new_environ
+    return new_environ, pid_file
 
 
 def test():
     env = construct_apache_config_dir('/tmp/test1', 5001, 5002)
-    subprocess.call(['apache2', '-f', '/tmp/test1/config/apache2.conf'], env=env)
+    subprocess.call(['apache2ctl', '-DFOREGROUND'], env=env)
