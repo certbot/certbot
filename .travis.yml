@@ -5,6 +5,15 @@ cache:
         - $HOME/.cache/pip
 
 before_script:
+  # Install required apt packages
+  - |
+    echo travis_fold:start:install_apt_packages
+    ./certbot-auto --non-interactive --os-packages-only
+    sudo -E echo -e '#!/bin/bash\nexit 101' > /usr/sbin/policy-rc.d
+    sudo -E chmod +x /usr/sbin/policy-rc.d
+    sudo -E apt-get -yq --no-install-suggests --no-install-recommends install nginx-light apache2
+    sudo -E rm -f /usr/sbin/policy-rc.d
+    echo travis_fold:end:install_apt_packages
   - 'if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then ulimit -n 1024 ; fi'
   # On Travis, the fastest parallelization for integration tests has proved to be 4.
   - 'if [[ "$TOXENV" == *"integration"* ]]; then export PYTEST_ADDOPTS="--numprocesses 4"; fi'
@@ -68,14 +77,12 @@ matrix:
       dist: xenial
       env: TOXENV=py37
       <<: *not-on-master
-    - sudo: required
-      env: TOXENV=apache_compat
+    - env: TOXENV=apache_compat
       services: docker
       before_install:
       addons:
       <<: *not-on-master
-    - sudo: required
-      env: TOXENV=le_auto_xenial
+    - env: TOXENV=le_auto_xenial
       services: docker
       <<: *not-on-master
     - python: "2.7"
@@ -86,8 +93,7 @@ matrix:
       <<: *not-on-master
 
     # Extended test suite on cron jobs and pushes to tested branches other than master
-    - sudo: required
-      env: TOXENV=nginx_compat
+    - env: TOXENV=nginx_compat
       services: docker
       before_install:
       addons:
@@ -119,32 +125,26 @@ matrix:
       <<: *extended-test-suite
     - python: "2.7"
       env: ACME_SERVER=boulder-v1 TOXENV=integration
-      sudo: required
       services: docker
       <<: *extended-test-suite
     - python: "2.7"
       env: ACME_SERVER=boulder-v2 TOXENV=integration
-      sudo: required
       services: docker
       <<: *extended-test-suite
     - python: "2.7"
       env: ACME_SERVER=boulder-v1 TOXENV=integration-certbot-oldest
-      sudo: required
       services: docker
       <<: *extended-test-suite
     - python: "2.7"
       env: ACME_SERVER=boulder-v2 TOXENV=integration-certbot-oldest
-      sudo: required
       services: docker
       <<: *extended-test-suite
     - python: "2.7"
       env: ACME_SERVER=boulder-v1 TOXENV=integration-nginx-oldest
-      sudo: required
       services: docker
       <<: *extended-test-suite
     - python: "2.7"
       env: ACME_SERVER=boulder-v2 TOXENV=integration-nginx-oldest
-      sudo: required
       services: docker
       <<: *extended-test-suite
     - python: "3.4"
@@ -162,56 +162,45 @@ matrix:
       <<: *extended-test-suite
     - python: "3.4"
       env: ACME_SERVER=boulder-v1 TOXENV=integration
-      sudo: required
       services: docker
       <<: *extended-test-suite
     - python: "3.4"
       env: ACME_SERVER=boulder-v2 TOXENV=integration
-      sudo: required
       services: docker
       <<: *extended-test-suite
     - python: "3.5"
       env: ACME_SERVER=boulder-v1 TOXENV=integration
-      sudo: required
       services: docker
       <<: *extended-test-suite
     - python: "3.5"
       env: ACME_SERVER=boulder-v2 TOXENV=integration
-      sudo: required
       services: docker
       <<: *extended-test-suite
     - python: "3.6"
       env: ACME_SERVER=boulder-v1 TOXENV=integration
-      sudo: required
       services: docker
       <<: *extended-test-suite
     - python: "3.6"
       env: ACME_SERVER=boulder-v2 TOXENV=integration
-      sudo: required
       services: docker
       <<: *extended-test-suite
     - python: "3.7"
       dist: xenial
       env: ACME_SERVER=boulder-v1 TOXENV=integration
-      sudo: required
       services: docker
       <<: *extended-test-suite
     - python: "3.7"
       dist: xenial
       env: ACME_SERVER=boulder-v2 TOXENV=integration
-      sudo: required
       services: docker
       <<: *extended-test-suite
-    - sudo: required
-      env: TOXENV=le_auto_jessie
+    - env: TOXENV=le_auto_jessie
       services: docker
       <<: *extended-test-suite
-    - sudo: required
-      env: TOXENV=le_auto_centos6
+    - env: TOXENV=le_auto_centos6
       services: docker
       <<: *extended-test-suite
-    - sudo: required
-      env: TOXENV=docker_dev
+    - env: TOXENV=docker_dev
       services: docker
       addons:
         apt:
@@ -242,24 +231,6 @@ matrix:
             - augeas
             - python3
       <<: *extended-test-suite
-
-# container-based infrastructure
-sudo: false
-
-addons:
-  apt:
-    packages:  # Keep in sync with letsencrypt-auto-source/pieces/bootstrappers/deb_common.sh and Boulder.
-    - python-dev
-    - gcc
-    - libaugeas0
-    - libssl-dev
-    - libffi-dev
-    - ca-certificates
-    # For certbot-nginx integration testing
-    - nginx-light
-    # For certbot-apache integration testing
-    - apache2
-    - openssl
 
 # tools/pip_install.py is used to pin packages to a known working version
 # except in tests where the environment variable CERTBOT_NO_PIN is set.
