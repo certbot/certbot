@@ -116,16 +116,16 @@ class ParserNode(object):
     ParserNode objects should have the following attributes:
 
     # Reference to ancestor node, or None if the node is the root node of the
-    # configuration tree. Required.
+    # configuration tree.
     ancestor: Optional[ParserNode]
 
-    # True if this node has been modified since last save. Default: False
+    # True if this node has been modified since last save.
     dirty: bool
 
     # Filepath of the file where the configuration element for this ParserNode
     # object resides. For root node, the value for filepath is the httpd root
     # configuration file. Filepath can be None if a configuration directive is
-    # defined in for example the httpd command line. Required.
+    # defined in for example the httpd command line.
     filepath: Optional[str]
     """
 
@@ -176,12 +176,11 @@ class CommentNode(ParserNode):
     the ones described in ParserNode:
 
     # Contains the contents of the comment without the directive notation
-    # (typically # or /* ... */). Required.
+    # (typically # or /* ... */).
     comment: str
 
     """
 
-    # pylint: disable=super-init-not-called
     @abc.abstractmethod
     def __init__(self, **kwargs):
         """
@@ -194,6 +193,7 @@ class CommentNode(ParserNode):
         :param bool dirty: Boolean flag for denoting if this CommentNode has been
             created or changed after the last save. Default: False.
         """
+        super(CommentNode, self).__init__(**kwargs)
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -212,20 +212,18 @@ class DirectiveNode(ParserNode):
     the ones described in ParserNode:
 
     # True if this DirectiveNode is enabled and False if it is inside of an
-    # inactive conditional block. Default: True
+    # inactive conditional block.
     enabled: bool
 
     # Name, or key of the configuration directive. If BlockNode subclass of
     # DirectiveNode is the root configuration node, the name should be None.
-    # Required.
     name: str
 
     # Tuple of parameters of this ParserNode object, excluding whitespaces.
-    # Default: ()
     parameters: Tuple[str, ...]
 
     """
-    # pylint: disable=super-init-not-called
+    # pylint: disable=useless-super-delegation
     def __init__(self, **kwargs):
         """
         Initializes the DirectiveNode instance and sets its instance variables.
@@ -245,6 +243,7 @@ class DirectiveNode(ParserNode):
             unmatched conditional configuration block. Default: True.
 
         """
+        super(DirectiveNode, self).__init__(**kwargs)
 
     @abc.abstractmethod
     def set_parameters(self, parameters):
@@ -291,27 +290,6 @@ class BlockNode(DirectiveNode):
     and its grammar.
 
     """
-
-    # pylint: disable=super-init-not-called
-    @abc.abstractmethod
-    def __init__(self, **kwargs):
-        """
-        Initializes the BlockNode instance and sets its instance variables.
-
-        :param name: Name or key of the BlockNode object, or None for root
-            configuration node. Required.
-        :param tuple parameters: Tuple of str parameters for this BlockNode.
-            Default: ().
-        :param ancestor: BlockNode ancestor for this BlockNode, or None for root
-            configuration node. Required.
-        :param str filepath: Filesystem path for the file where this BlockNode does
-            or should exist in the filesystem. Required.
-        :param bool dirty: Boolean flag for denoting if this BlockNode has been
-            created or changed after the last save. Default: False.
-        :param bool enabled: True if this BlockNode object is parsed in the active
-            configuration object by the httpd. False if the BlockNode exists within
-            a unmatched conditional configuration block. Default: True.
-        """
 
     @abc.abstractmethod
     def add_child_block(self, name, parameters=None, position=None):
