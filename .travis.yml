@@ -257,6 +257,8 @@ addons:
     - ca-certificates
     # For certbot-nginx integration testing
     - nginx-light
+    # For certbot-apache integration testing
+    - apache2
     - openssl
 
 # tools/pip_install.py is used to pin packages to a known working version
