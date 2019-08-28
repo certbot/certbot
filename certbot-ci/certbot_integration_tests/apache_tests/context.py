@@ -16,25 +16,27 @@ class IntegrationTestsContext(certbot_context.IntegrationTestsContext):
         self.apache_root = os.path.join(self.workspace, 'apache')
         os.mkdir(self.apache_root)
 
-        self.apache_env, self.apache_pid_file = apache_config.construct_apache_config_dir(
+        self.env, self.config_dir, self.pid_file = apache_config.construct_apache_config_dir(
             self.apache_root, self.http_01_port, self.tls_alpn_01_port,
             wtf_prefix=self.worker_id)
 
     def cleanup(self):
         self._stop_apache()
-        #super(IntegrationTestsContext, self).cleanup()
+        super(IntegrationTestsContext, self).cleanup()
 
     def certbot_test_apache(self, args):
-        command = ['--authenticator', 'apache', '--installer', 'apache']
+        command = ['--authenticator', 'apache', '--installer', 'apache',
+                   '--apache-server-root', self.config_dir,
+                   '--apache-challenge-location', self.apache_root]
         command.extend(args)
 
         return certbot_call.certbot_test(
             command, self.directory_url, self.http_01_port, self.tls_alpn_01_port,
-            self.config_dir, self.workspace, env=self.apache_env, force_renew=True)
+            self.config_dir, self.workspace, env=self.env, force_renew=True)
 
     def _stop_apache(self):
         try:
-            with open(self.apache_pid_file) as file_h:
+            with open(self.pid_file) as file_h:
                 pid = int(file_h.read().strip())
         except BaseException:
             pid = None
