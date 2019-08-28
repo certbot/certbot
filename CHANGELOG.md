@@ -6,7 +6,7 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* Disable session tickets for Nginx users when appropriate.
 
 ### Changed
 
