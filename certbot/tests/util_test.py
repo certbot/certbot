@@ -520,11 +520,11 @@ class OsInfoTest(unittest.TestCase):
 
             with mock.patch('platform.system_alias',
                             return_value=('linux', '', '')):
-                with mock.patch('platform.linux_distribution',
+                with mock.patch('distro.linux_distribution',
                                 return_value=('', '', '')):
                     self.assertEqual(get_python_os_info(), ("linux", ""))
 
-                with mock.patch('platform.linux_distribution',
+                with mock.patch('distro.linux_distribution',
                                 return_value=('testdist', '42', '')):
                     self.assertEqual(get_python_os_info(), ("testdist", "42"))
 
