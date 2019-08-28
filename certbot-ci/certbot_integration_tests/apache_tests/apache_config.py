@@ -30,8 +30,8 @@ HostnameLookups Off
 ErrorLog ${{APACHE_LOG_DIR}}/error.log
 LogLevel warn
 
-IncludeOptional mods-enabled/*.load
-IncludeOptional mods-enabled/*.conf
+IncludeOptional {config}/mods-enabled/*.load
+IncludeOptional {config}/mods-enabled/*.conf
 
 Include ports.conf
 
@@ -64,8 +64,8 @@ LogFormat "%h %l %u %t \\"%r\\" %>s %O" common
 LogFormat "%{{Referer}}i -> %U" referer
 LogFormat "%{{User-agent}}i" agent
 
-IncludeOptional conf-enabled/*.conf
-IncludeOptional sites-enabled/*.conf
+IncludeOptional {config}/conf-enabled/*.conf
+IncludeOptional {config}/sites-enabled/*.conf
 '''.format(config=config_path, webroot=webroot_path))
 
     with open(os.path.join(config_path, 'ports.conf'), 'w') as file_h:
@@ -82,9 +82,9 @@ Listen {http}
     new_environ = os.environ.copy()
     new_environ['APACHE_CONFDIR'] = config_path
 
-    run_path = os.path.join(config_path, 'run')
-    lock_path = os.path.join(config_path, 'lock')
-    logs_path = os.path.join(config_path, 'logs')
+    run_path = os.path.join(apache_root, 'run')
+    lock_path = os.path.join(apache_root, 'lock')
+    logs_path = os.path.join(apache_root, 'logs')
     os.mkdir(run_path)
     os.mkdir(lock_path)
     os.mkdir(logs_path)
