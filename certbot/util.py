@@ -14,6 +14,7 @@ import socket
 import subprocess
 
 import configargparse
+import distro
 import six
 
 from acme.magic_typing import Tuple, Union  # pylint: disable=unused-import, no-name-in-module
@@ -391,8 +392,8 @@ def get_python_os_info():
     os_type, os_ver, _ = info
     os_type = os_type.lower()
     if os_type.startswith('linux'):
-        info = platform.linux_distribution()
-        # On arch, platform.linux_distribution() is reportedly ('','',''),
+        info = distro.linux_distribution()
+        # On arch, distro.linux_distribution() is reportedly ('','',''),
         # so handle it defensively
         if info[0]:
             os_type = info[0]
