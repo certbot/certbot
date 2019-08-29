@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import ctypes
+import struct
 import subprocess
 import os
 import sys
@@ -8,6 +9,7 @@ import time
 
 
 PYTHON_VERSION = (3, 7, 4)
+PYTHON_BITNESS = 32
 
 
 def main():
@@ -81,11 +83,11 @@ target=$INSTDIR\\run.bat
 
 [Build]
 directory=nsis
-installer_name=certbot-{certbot_version}-installer-win_amd64.exe
+installer_name=certbot-{certbot_version}-installer-{installer_suffix}.exe
 
 [Python]
 version={python_version}
-bitness=64
+bitness={python_bitness}
 
 [Include]
 local_wheels=wheels\\*.whl
@@ -93,7 +95,10 @@ files=run.bat
 
 [Command certbot]
 entry_point=certbot.main:main
-""".format(certbot_version=certbot_version, python_version='.'.join([str(item) for item in PYTHON_VERSION])))
+""".format(certbot_version=certbot_version,
+           installer_suffix='win_amd64' if PYTHON_BITNESS == 64 else 'win32',
+           python_bitness=PYTHON_BITNESS,
+           python_version='.'.join([str(item) for item in PYTHON_VERSION])))
 
         return installer_cfg_path
 
@@ -117,6 +122,7 @@ def _prepare_environment():
 if __name__ == '__main__':
     if not os.name == 'nt':
         raise RuntimeError('This script must be run under Windows.')
+
     if ctypes.windll.shell32.IsUserAnAdmin() == 0:
         # Administrator privileges are required to properly install NSIS through Chocolatey
         raise RuntimeError('This script must be run with administrator privileges.')
@@ -124,4 +130,8 @@ if __name__ == '__main__':
     if not (sys.version_info[0], sys.version_info[1]) == PYTHON_VERSION[0:2]:
         raise RuntimeError('This script must be run with Python {0}'
                            .format('.'.join([str(item) for item in PYTHON_VERSION[0:2]])))
+
+    if not struct.calcsize('P') * 8 == PYTHON_BITNESS:
+        raise RuntimeError('This script must be run with a Python {0} bits version.'
+                           .format(PYTHON_BITNESS))
     main()
