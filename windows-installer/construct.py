@@ -7,6 +7,9 @@ import shutil
 import time
 
 
+PYTHON_VERSION = (3, 7, 4)
+
+
 def main():
     build_path, repo_path, venv_path, venv_python = _prepare_environment()
 
@@ -81,7 +84,7 @@ directory=nsis
 installer_name=certbot-{certbot_version}-installer-win_amd64.exe
 
 [Python]
-version=3.7.4
+version={python_version}
 bitness=64
 
 [Include]
@@ -90,7 +93,7 @@ files=run.bat
 
 [Command certbot]
 entry_point=certbot.main:main
-""".format(certbot_version=certbot_version))
+""".format(certbot_version=certbot_version, python_version='.'.join([str(item) for item in PYTHON_VERSION])))
 
         return installer_cfg_path
 
@@ -117,4 +120,8 @@ if __name__ == '__main__':
     if ctypes.windll.shell32.IsUserAnAdmin() == 0:
         # Administrator privileges are required to properly install NSIS through Chocolatey
         raise RuntimeError('This script must be run with administrator privileges.')
+
+    if not (sys.version_info[0], sys.version_info[1]) == PYTHON_VERSION[0:2]:
+        raise RuntimeError('This script must be run with Python {0}'
+                           .format('.'.join([str(item) for item in PYTHON_VERSION[0:2]])))
     main()
