@@ -359,24 +359,28 @@ def compute_private_key_mode(old_key, base_mode):
     return base_mode
 
 
-def get_ownership(path):
-    # type: (str) -> Union[Tuple[int, int], Tuple[str, None]]
+def compare_ownership(path1, path2):
+    # type: (str, str) -> bool
     """
-    Retrieve ownership data about a file given its path
-    :param str path: path to the file
-    :return: on Linux a tuple (UID, GID) of respectively user and group owner of the file,
-             on Windows a tuple (SID, None) where SID corresponds to the user owner of the file.
-    :rtype: tuple of int and int or tuple of str and None
+    Compare the ownership of two files given their respective path
+    :param str path1: path to the first file
+    :param str path2: path to the second file
+    :return: True if both files have the same ownership, False otherwise
+    :rtype: bool
 
     """
     if POSIX_MODE:
-        stats = os.stat(path)
-        return stats.st_uid, stats.st_gid
+        stats1 = os.stat(path1)
+        stats2 = os.stat(path2)
+        return (stats1.st_uid, stats1.st_gid) == (stats2.st_uid, stats2.st_gid)
 
-    security = win32security.GetFileSecurity(path, win32security.OWNER_SECURITY_INFORMATION)
-    user = security.GetSecurityDescriptorOwner()
+    security1 = win32security.GetFileSecurity(path1, win32security.OWNER_SECURITY_INFORMATION)
+    user1 = security1.GetSecurityDescriptorOwner()
 
-    return win32security.ConvertSidToStringSid(user), None
+    security2 = win32security.GetFileSecurity(path2, win32security.OWNER_SECURITY_INFORMATION)
+    user2 = security2.GetSecurityDescriptorOwner()
+
+    return user1 == user2
 
 
 def has_min_permissions(path, min_mode):

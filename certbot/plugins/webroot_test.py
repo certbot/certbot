@@ -172,17 +172,12 @@ class AuthenticatorTest(unittest.TestCase):
         self.assertTrue(filesystem.check_mode(self.validation_path, 0o644))
 
         # Check permissions of the directories
-
         for dirpath, dirnames, _ in os.walk(self.path):
             for directory in dirnames:
                 full_path = os.path.join(dirpath, directory)
                 self.assertTrue(filesystem.check_mode(full_path, 0o755))
 
-        parent_ownership = filesystem.get_ownership(self.path)
-        print(self.path)
-        print(self.validation_path)
-
-        self.assertEqual(filesystem.get_ownership(self.validation_path), parent_ownership)
+        self.assertTrue(filesystem.compare_ownership(self.validation_path, self.path))
 
     def test_perform_cleanup(self):
         self.auth.prepare()

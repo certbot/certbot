@@ -319,17 +319,6 @@ class OwnershipTest(test_util.TempDirTestCase):
         mock_chown.assert_called_once_with(self.probe_path, 50, 51)
         mock_chmod.assert_called_once_with(self.probe_path, 0o700)
 
-    def test_get_ownership(self):
-        ownership = filesystem.get_ownership(self.probe_path)
-
-        if POSIX_MODE:
-            import os as std_os  # pylint: disable=os-module-forbidden
-            stats = std_os.stat(self.probe_path)
-            self.assertEqual((stats.st_uid, stats.st_gid), ownership)
-        else:
-            current_user = filesystem._get_current_user()  # pylint: disable=protected-access
-            self.assertEqual((win32security.ConvertSidToStringSid(current_user), None), ownership)
-
 
 class CheckPermissionsTest(test_util.TempDirTestCase):
     """Tests relative to functions that check modes."""
