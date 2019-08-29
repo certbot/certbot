@@ -124,15 +124,19 @@ matrix:
       <<: *extended-test-suite
     - python: "2.7"
       env: ACME_SERVER=boulder-v1 TOXENV=integration-certbot-oldest
+      dist: trusty  # See py27-{acme,apache,certbot,dns,nginx}-oldest tests
       <<: *extended-test-suite
     - python: "2.7"
       env: ACME_SERVER=boulder-v2 TOXENV=integration-certbot-oldest
+      dist: trusty  # See py27-{acme,apache,certbot,dns,nginx}-oldest tests
       <<: *extended-test-suite
     - python: "2.7"
       env: ACME_SERVER=boulder-v1 TOXENV=integration-nginx-oldest
+      dist: trusty  # See py27-{acme,apache,certbot,dns,nginx}-oldest tests
       <<: *extended-test-suite
     - python: "2.7"
       env: ACME_SERVER=boulder-v2 TOXENV=integration-nginx-oldest
+      dist: trusty  # See py27-{acme,apache,certbot,dns,nginx}-oldest tests
       <<: *extended-test-suite
     - python: "3.4"
       env: TOXENV=py34
