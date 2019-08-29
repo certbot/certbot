@@ -9,10 +9,10 @@ before_script:
   - |
     if [[ "$TRAVIS_OS_NAME" != "osx" ]]; then
       ./certbot-auto --non-interactive --os-packages-only
-      sudo -E echo -e '#!/bin/bash\nexit 101' > /usr/sbin/policy-rc.d
-      sudo -E chmod +x /usr/sbin/policy-rc.d
-      sudo -E apt-get -yq --no-install-suggests --no-install-recommends install nginx-light apache2
-      sudo -E rm -f /usr/sbin/policy-rc.d
+      sudo -E apt-get -yq --no-install-suggests --no-install-recommends install nginx-light
+      sudo -E /etc/init.d/nginx stop
+      sudo -E apt-get -yq --no-install-suggests --no-install-recommends install apache2
+      sudo -E /etc/init.d/apache2 stop
       sudo -E chmod 777 -R /var/lib/apache2/module
     fi
   - 'if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then ulimit -n 1024 ; fi'
@@ -75,16 +75,11 @@ matrix:
       env: TOXENV=py34
       <<: *not-on-master
     - python: "3.7"
-      dist: xenial
       env: TOXENV=py37
       <<: *not-on-master
     - env: TOXENV=apache_compat
-      services: docker
-      before_install:
-      addons:
       <<: *not-on-master
     - env: TOXENV=le_auto_xenial
-      services: docker
       <<: *not-on-master
     - python: "2.7"
       env: TOXENV=apacheconftest-with-pebble
@@ -95,9 +90,6 @@ matrix:
 
     # Extended test suite on cron jobs and pushes to tested branches other than master
     - env: TOXENV=nginx_compat
-      services: docker
-      before_install:
-      addons:
       <<: *extended-test-suite
     - python: "2.7"
       env:
@@ -126,27 +118,21 @@ matrix:
       <<: *extended-test-suite
     - python: "2.7"
       env: ACME_SERVER=boulder-v1 TOXENV=integration
-      services: docker
       <<: *extended-test-suite
     - python: "2.7"
       env: ACME_SERVER=boulder-v2 TOXENV=integration
-      services: docker
       <<: *extended-test-suite
     - python: "2.7"
       env: ACME_SERVER=boulder-v1 TOXENV=integration-certbot-oldest
-      services: docker
       <<: *extended-test-suite
     - python: "2.7"
       env: ACME_SERVER=boulder-v2 TOXENV=integration-certbot-oldest
-      services: docker
       <<: *extended-test-suite
     - python: "2.7"
       env: ACME_SERVER=boulder-v1 TOXENV=integration-nginx-oldest
-      services: docker
       <<: *extended-test-suite
     - python: "2.7"
       env: ACME_SERVER=boulder-v2 TOXENV=integration-nginx-oldest
-      services: docker
       <<: *extended-test-suite
     - python: "3.4"
       env: TOXENV=py34
@@ -158,55 +144,37 @@ matrix:
       env: TOXENV=py36
       <<: *extended-test-suite
     - python: "3.7"
-      dist: xenial
       env: TOXENV=py37
       <<: *extended-test-suite
     - python: "3.4"
       env: ACME_SERVER=boulder-v1 TOXENV=integration
-      services: docker
       <<: *extended-test-suite
     - python: "3.4"
       env: ACME_SERVER=boulder-v2 TOXENV=integration
-      services: docker
       <<: *extended-test-suite
     - python: "3.5"
       env: ACME_SERVER=boulder-v1 TOXENV=integration
-      services: docker
       <<: *extended-test-suite
     - python: "3.5"
       env: ACME_SERVER=boulder-v2 TOXENV=integration
-      services: docker
       <<: *extended-test-suite
     - python: "3.6"
       env: ACME_SERVER=boulder-v1 TOXENV=integration
-      services: docker
       <<: *extended-test-suite
     - python: "3.6"
       env: ACME_SERVER=boulder-v2 TOXENV=integration
-      services: docker
       <<: *extended-test-suite
     - python: "3.7"
-      dist: xenial
       env: ACME_SERVER=boulder-v1 TOXENV=integration
-      services: docker
       <<: *extended-test-suite
     - python: "3.7"
-      dist: xenial
       env: ACME_SERVER=boulder-v2 TOXENV=integration
-      services: docker
       <<: *extended-test-suite
     - env: TOXENV=le_auto_jessie
-      services: docker
       <<: *extended-test-suite
     - env: TOXENV=le_auto_centos6
-      services: docker
       <<: *extended-test-suite
     - env: TOXENV=docker_dev
-      services: docker
-      addons:
-        apt:
-          packages:  # don't install nginx and apache
-            - libaugeas0
       <<: *extended-test-suite
     - language: generic
       env: TOXENV=py27
