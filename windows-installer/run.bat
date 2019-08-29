@@ -28,4 +28,4 @@ if '%errorlevel%' NEQ '0' (
     pushd "%CD%"
     CD /D "%~dp0"
 :--------------------------------------    
-cmd.exe /k echo Welcome to Certbot. Please type 'certbot --help' to find every available actions.
+cmd.exe /k echo You can run 'certbot' commands here. Type 'certbot --help' for more information.
