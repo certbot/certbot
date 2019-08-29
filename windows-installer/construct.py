@@ -115,5 +115,6 @@ if __name__ == '__main__':
     if not os.name == 'nt':
         raise RuntimeError('This script must be run under Windows.')
     if ctypes.windll.shell32.IsUserAnAdmin() == 0:
+        # Administrator privileges are required to properly install NSIS through Chocolatey
         raise RuntimeError('This script must be run with administrator privileges.')
     main()
