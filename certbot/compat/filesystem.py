@@ -166,11 +166,11 @@ def open(file_path, flags, mode=0o777):  # pylint: disable=redefined-builtin
         # See https://docs.microsoft.com/en-us/windows/desktop/api/securitybaseapi/nf-securitybaseapi-setsecuritydescriptordacl  # pylint: disable=line-too-long
         security.SetSecurityDescriptorDacl(1, dacl, 0)
 
+        handle = None
         try:
             handle = win32file.CreateFile(file_path, win32file.GENERIC_READ,
                                           win32file.FILE_SHARE_READ & win32file.FILE_SHARE_WRITE,
                                           attributes, disposition, 0, None)
-            handle.Close()
         except pywintypes.error as err:
             # Handle native windows errors into python errors to be consistent with the API
             # of os.open in the situation of a file already existing or locked.
@@ -179,6 +179,9 @@ def open(file_path, flags, mode=0o777):  # pylint: disable=redefined-builtin
             if err.winerror == winerror.ERROR_SHARING_VIOLATION:
                 raise OSError(errno.EACCES, err.strerror)
             raise err
+        finally:
+            if handle:
+                handle.Close()
 
         # At this point, the file that did not exist has been created with proper permissions,
         # so os.O_CREAT and os.O_EXCL are not needed anymore. We remove them from the flags to

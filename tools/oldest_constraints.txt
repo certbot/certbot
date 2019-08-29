@@ -51,6 +51,7 @@ funcsigs==0.4
 zope.hookable==4.0.4
 
 # Ubuntu Bionic constraints.
+distro==1.0.1
 # Lexicon oldest constraint is overridden appropriately on relevant DNS provider plugins
 # using their local-oldest-requirements.txt
 dns-lexicon==2.2.1
