@@ -86,6 +86,8 @@ For this reason the internal representation of data should not ignore the case.
 import abc
 import six
 
+from acme.magic_typing import Optional, Tuple  # pylint: disable=unused-import, no-name-in-module
+
 
 @six.add_metaclass(abc.ABCMeta)
 class ParserNode(object):
@@ -110,34 +112,41 @@ class ParserNode(object):
     it's responsibility of each ParserNode object itself to store its prepending
     whitespaces in order to be able to reconstruct the complete configuration file
     as it was when originally read from the disk.
+
+    ParserNode objects should have the following attributes:
+
+    # Reference to ancestor node, or None if the node is the root node of the
+    # configuration tree.
+    ancestor: Optional[ParserNode]
+
+    # True if this node has been modified since last save.
+    dirty: bool
+
+    # Filepath of the file where the configuration element for this ParserNode
+    # object resides. For root node, the value for filepath is the httpd root
+    # configuration file. Filepath can be None if a configuration directive is
+    # defined in for example the httpd command line.
+    filepath: Optional[str]
     """
 
-    @property
     @abc.abstractmethod
-    def ancestor(self):  # pragma: no cover
+    def __init__(self, **kwargs):
         """
-        This property contains a reference to ancestor node, or None if the node
-        is the root node of the configuration tree.
+        Initializes the ParserNode instance, and sets the ParserNode specific
+        instance variables. This is not meant to be used directly, but through
+        specific classes implementing ParserNode interface.
 
-        :returns: The ancestor BlockNode object, or None for root node.
-        :rtype: ParserNode
+        :param ancestor: BlockNode ancestor for this CommentNode. Required.
+        :type ancestor: BlockNode or None
+
+        :param filepath: Filesystem path for the file where this CommentNode
+            does or should exist in the filesystem. Required.
+        :type filepath: str or None
+
+        :param dirty: Boolean flag for denoting if this CommentNode has been
+            created or changed after the last save. Default: False.
+        :type dirty: bool
         """
-
-        raise NotImplementedError
-
-    @property
-    @abc.abstractmethod
-    def dirty(self):  # pragma: no cover
-        """
-        This property contains a boolean value of the information if this node has
-        been modified since last save (or after the initial parse).
-
-        :returns: True if this node has had changes that have not yet been written
-            to disk.
-        :rtype: bool
-        """
-
-        raise NotImplementedError
 
     @abc.abstractmethod
     def save(self, msg):
@@ -154,10 +163,13 @@ class ParserNode(object):
         file writes properly, the file specific temporary trees should be extracted
         from the full ParserNode tree where necessary when writing to disk.
 
+        :param str msg: Message describing the reason for the save.
+
         """
 
 
-@six.add_metaclass(abc.ABCMeta)
+# Linter rule exclusion done because of https://github.com/PyCQA/pylint/issues/179
+@six.add_metaclass(abc.ABCMeta)  # pylint: disable=abstract-method
 class CommentNode(ParserNode):
     """
     CommentNode class is used for representation of comments within the parsed
@@ -167,20 +179,38 @@ class CommentNode(ParserNode):
     CommentNode stores its contents in class variable 'comment' and does not
     have a specific name.
 
+    CommentNode objects should have the following attributes in addition to
+    the ones described in ParserNode:
+
+    # Contains the contents of the comment without the directive notation
+    # (typically # or /* ... */).
+    comment: str
+
     """
 
-    @property
     @abc.abstractmethod
-    def comment(self):  # pragma: no cover
+    def __init__(self, **kwargs):
         """
-        Comment property contains the contents of the comment without the comment
-        directives (typically # or /* ... */).
+        Initializes the CommentNode instance and sets its instance variables.
 
-        :returns: A string containing the comment
-        :rtype: str
+        :param comment: Contents of the comment. Required.
+        :type comment: str
+
+        :param ancestor: BlockNode ancestor for this CommentNode. Required.
+        :type ancestor: BlockNode or None
+
+        :param filepath: Filesystem path for the file where this CommentNode
+            does or should exist in the filesystem. Required.
+        :type filepath: str or None
+
+        :param dirty: Boolean flag for denoting if this CommentNode has been
+            created or changed after the last save. Default: False.
+        :type dirty: bool
         """
+        super(CommentNode, self).__init__(ancestor=kwargs['ancestor'],
+                                          dirty=kwargs.get('dirty', False),
+                                          filepath=kwargs['filepath'])  # pragma: no cover
 
-        raise NotImplementedError
 
 @six.add_metaclass(abc.ABCMeta)
 class DirectiveNode(ParserNode):
@@ -189,45 +219,61 @@ class DirectiveNode(ParserNode):
     It can have zero or more parameters attached to it. Because of the nature of
     single directives, it is not able to have child nodes and hence it is always
     treated as a leaf node.
+
+    If a this directive was defined on the httpd command line, the ancestor instance
+    variable for this DirectiveNode should be None, and it should be inserted to the
+    beginning of root BlockNode children sequence.
+
+    DirectiveNode objects should have the following attributes in addition to
+    the ones described in ParserNode:
+
+    # True if this DirectiveNode is enabled and False if it is inside of an
+    # inactive conditional block.
+    enabled: bool
+
+    # Name, or key of the configuration directive. If BlockNode subclass of
+    # DirectiveNode is the root configuration node, the name should be None.
+    name: Optional[str]
+
+    # Tuple of parameters of this ParserNode object, excluding whitespaces.
+    parameters: Tuple[str, ...]
+
     """
 
-    @property
     @abc.abstractmethod
-    def enabled(self):  # pragma: no cover
+    def __init__(self, **kwargs):
         """
-        Configuration blocks may have conditional statements enabling or disabling
-        their contents. This property returns the state of this DirectiveNode.
+        Initializes the DirectiveNode instance and sets its instance variables.
 
-        :returns: True if the DirectiveNode is parsed and enabled in the configuration.
-        :rtype: bool
+        :param name: Name or key of the DirectiveNode object. Required.
+        :type name: str or None
+
+        :param tuple parameters: Tuple of str parameters for this DirectiveNode.
+            Default: ().
+        :type parameters: tuple
+
+        :param ancestor: BlockNode ancestor for this DirectiveNode, or None for
+            root configuration node. Required.
+        :type ancestor: BlockNode or None
+
+        :param filepath: Filesystem path for the file where this DirectiveNode
+            does or should exist in the filesystem, or None for directives introduced
+            in the httpd command line. Required.
+        :type filepath: str or None
+
+        :param dirty: Boolean flag for denoting if this DirectiveNode has been
+            created or changed after the last save. Default: False.
+        :type dirty: bool
+
+        :param enabled: True if this DirectiveNode object is parsed in the active
+            configuration of the httpd. False if the DirectiveNode exists within a
+            unmatched conditional configuration block. Default: True.
+        :type enabled: bool
+
         """
-
-        raise NotImplementedError
-
-    @property
-    @abc.abstractmethod
-    def name(self):  # pragma: no cover
-        """
-        Name property contains the name of the directive.
-
-        :returns: Name of this node
-        :rtype: str
-        """
-
-        raise NotImplementedError
-
-    @property
-    @abc.abstractmethod
-    def parameters(self):  # pragma: no cover
-        """
-        This property contains a tuple of parameters of this ParserNode object
-        excluding whitespaces.
-
-        :returns: A tuple of parameters for this node
-        :rtype: tuple
-        """
-
-        raise NotImplementedError
+        super(DirectiveNode, self).__init__(ancestor=kwargs['ancestor'],
+                                            dirty=kwargs.get('dirty', False),
+                                            filepath=kwargs['filepath'])  # pragma: no cover
 
     @abc.abstractmethod
     def set_parameters(self, parameters):
@@ -242,7 +288,7 @@ class DirectiveNode(ParserNode):
 
 
 @six.add_metaclass(abc.ABCMeta)
-class BlockNode(ParserNode):
+class BlockNode(DirectiveNode):
     """
     BlockNode class represents a block of nested configuration directives, comments
     and other blocks as its children. A BlockNode can have zero or more parameters
@@ -272,6 +318,15 @@ class BlockNode(ParserNode):
 
     The applicable parameters are dependent on the underlying configuration language
     and its grammar.
+
+    BlockNode objects should have the following attributes in addition to
+    the ones described in DirectiveNode:
+
+    # Tuple of direct children of this BlockNode object. The order of children
+    # in this tuple retain the order of elements in the parsed configuration
+    # block.
+    children: Tuple[ParserNode, ...]
+
     """
 
     @abc.abstractmethod
@@ -335,33 +390,6 @@ class BlockNode(ParserNode):
 
         """
 
-    @property
-    @abc.abstractmethod
-    def children(self):  # pragma: no cover
-        """
-        This property contains a list ParserNode objects that are the children
-        for this node. The order of children is the same as that of the parsed
-        configuration block.
-
-        :returns: A tuple of this block's children
-        :rtype: tuple
-        """
-
-        raise NotImplementedError
-
-    @property
-    @abc.abstractmethod
-    def enabled(self):
-        """
-        Configuration blocks may have conditional statements enabling or disabling
-        their contents. This property returns the state of this configuration block.
-        In case of unmatched conditional statement in block, this block itself should
-        be set enabled while its children should be set disabled.
-
-        :returns: True if the BlockNode is parsed and enabled in the configuration.
-        :rtype: bool
-        """
-
     @abc.abstractmethod
     def find_blocks(self, name, exclude=True):
         """
@@ -422,44 +450,6 @@ class BlockNode(ParserNode):
 
         :param ParserNode child: Child ParserNode object to remove from the list
             of children of the callee.
-        """
-
-    @property
-    @abc.abstractmethod
-    def name(self):  # pragma: no cover
-        """
-        Name property contains the name of the block. As an example for config:
-            <VirtualHost *:80> ... </VirtualHost>
-        the name would be "VirtualHost".
-
-        :returns: Name of this node
-        :rtype: str
-        """
-
-        raise NotImplementedError
-
-    @property
-    @abc.abstractmethod
-    def parameters(self):  # pragma: no cover
-        """
-        This property contains a tuple of parameters of this ParserNode object
-        excluding whitespaces.
-
-        :returns: A tuple of parameters for this node
-        :rtype: tuple
-        """
-
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def set_parameters(self, parameters):
-        """
-        Sets the sequence of parameters for this ParserNode object without
-        whitespaces. While the whitespaces for parameters are discarded when using
-        this method, the whitespacing preceeding the ParserNode itself should be
-        kept intact.
-
-        :param list parameters: sequence of parameters
         """
 
     @abc.abstractmethod
