@@ -145,7 +145,7 @@ class ParserNode(object):
 
         :param dirty: Boolean flag for denoting if this CommentNode has been
             created or changed after the last save. Default: False.
-        :type dirty: bool or None
+        :type dirty: bool
         """
 
     @abc.abstractmethod
