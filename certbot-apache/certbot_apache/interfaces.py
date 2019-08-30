@@ -233,7 +233,7 @@ class DirectiveNode(ParserNode):
 
     # Name, or key of the configuration directive. If BlockNode subclass of
     # DirectiveNode is the root configuration node, the name should be None.
-    name: str
+    name: Optional[str]
 
     # Tuple of parameters of this ParserNode object, excluding whitespaces.
     parameters: Tuple[str, ...]
