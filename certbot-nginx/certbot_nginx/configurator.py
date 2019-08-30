@@ -131,8 +131,8 @@ class NginxConfigurator(common.Installer):
     @property
     def mod_ssl_conf_src(self):
         """Full absolute path to SSL configuration file source."""
-        """
-        Why all this complexity? Well, we want to support Mozilla's intermediate
+
+        """Why all this complexity? Well, we want to support Mozilla's intermediate
         recommendations. But TLS1.3 is only supported by newer versions of Nginx.
         And as for session tickets, our ideal is to turn them off across the board.
         But! Turning them off at all is only supported with new enough versions of
@@ -141,8 +141,8 @@ class NginxConfigurator(common.Installer):
         rather fail open than error out. Unfortunately, Nginx can be compiled against
         many versions of OpenSSL. So we have to check both for the two different features,
         leading to four different combinations of options.
-        For a complete history, check out https://github.com/certbot/certbot/issues/7322
-        """
+        For a complete history, check out https://github.com/certbot/certbot/issues/7322"""
+
         use_tls13 = self.version >= (1, 13, 0)
         session_tix_off = self.version >= (1, 5, 9) and self.openssl_version and\
             LooseVersion(self.openssl_version) >= LooseVersion('1.0.2l')
