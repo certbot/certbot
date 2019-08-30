@@ -137,10 +137,15 @@ class ParserNode(object):
         specific classes implementing ParserNode interface.
 
         :param ancestor: BlockNode ancestor for this CommentNode. Required.
+        :type ancestor: BlockNode or None
+
         :param filepath: Filesystem path for the file where this CommentNode
             does or should exist in the filesystem. Required.
-        :param bool dirty: Boolean flag for denoting if this CommentNode has been
+        :type filepath: str or None
+
+        :param dirty: Boolean flag for denoting if this CommentNode has been
             created or changed after the last save. Default: False.
+        :type dirty: bool or None
         """
 
     @abc.abstractmethod
@@ -157,6 +162,8 @@ class ParserNode(object):
         of actual configuration files that reside in the filesystem. To handle
         file writes properly, the file specific temporary trees should be extracted
         from the full ParserNode tree where necessary when writing to disk.
+
+        :param str msg: Message describing the reason for the save.
 
         """
 
@@ -186,12 +193,19 @@ class CommentNode(ParserNode):
         """
         Initializes the CommentNode instance and sets its instance variables.
 
-        :param str comment: Contents of the comment. Required.
+        :param comment: Contents of the comment. Required.
+        :type comment: str
+
         :param ancestor: BlockNode ancestor for this CommentNode. Required.
+        :type ancestor: BlockNode or None
+
         :param filepath: Filesystem path for the file where this CommentNode
             does or should exist in the filesystem. Required.
-        :param bool dirty: Boolean flag for denoting if this CommentNode has been
+        :type filepath: str or None
+
+        :param dirty: Boolean flag for denoting if this CommentNode has been
             created or changed after the last save. Default: False.
+        :type dirty: bool
         """
         super(CommentNode, self).__init__(ancestor=kwargs['ancestor'],
                                           dirty=kwargs.get('dirty', False),
@@ -232,18 +246,29 @@ class DirectiveNode(ParserNode):
         Initializes the DirectiveNode instance and sets its instance variables.
 
         :param name: Name or key of the DirectiveNode object. Required.
+        :type name: str or None
+
         :param tuple parameters: Tuple of str parameters for this DirectiveNode.
             Default: ().
+        :type parameters: tuple
+
         :param ancestor: BlockNode ancestor for this DirectiveNode, or None for
             root configuration node. Required.
+        :type ancestor: BlockNode or None
+
         :param filepath: Filesystem path for the file where this DirectiveNode
             does or should exist in the filesystem, or None for directives introduced
             in the httpd command line. Required.
-        :param bool dirty: Boolean flag for denoting if this DirectiveNode has been
+        :type filepath: str or None
+
+        :param dirty: Boolean flag for denoting if this DirectiveNode has been
             created or changed after the last save. Default: False.
-        :param bool enabled: True if this DirectiveNode object is parsed in the active
+        :type dirty: bool
+
+        :param enabled: True if this DirectiveNode object is parsed in the active
             configuration of the httpd. False if the DirectiveNode exists within a
             unmatched conditional configuration block. Default: True.
+        :type enabled: bool
 
         """
         super(DirectiveNode, self).__init__(ancestor=kwargs['ancestor'],
