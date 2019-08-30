@@ -319,6 +319,14 @@ class BlockNode(DirectiveNode):
     The applicable parameters are dependent on the underlying configuration language
     and its grammar.
 
+    BlockNode objects should have the following attributes in addition to
+    the ones described in DirectiveNode:
+
+    # Tuple of direct children of this BlockNode object. The order of children
+    # in this tuple retain the order of elements in the parsed configuration
+    # block.
+    children: Tuple[ParserNode, ...]
+
     """
 
     @abc.abstractmethod
