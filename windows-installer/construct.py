@@ -131,7 +131,7 @@ if __name__ == '__main__':
         raise RuntimeError('This script must be run with Python {0}'
                            .format('.'.join([str(item) for item in PYTHON_VERSION[0:2]])))
 
-    if not struct.calcsize('P') * 8 == PYTHON_BITNESS:
+    if struct.calcsize('P') * 8 != PYTHON_BITNESS:
         raise RuntimeError('This script must be run with a {0} bit version of Python.'
                            .format(PYTHON_BITNESS))
     main()
