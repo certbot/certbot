@@ -346,6 +346,12 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertTrue(cli.option_was_set(key_size_option, key_size_value))
         self.assertTrue(cli.option_was_set('no_verify_ssl', True))
 
+        ecdsa_key_size_option = 'ecdsa_key_size'
+        ecdsa_key_size_value = cli.flag_default(ecdsa_key_size_option)
+        self.parse('--ecdsa-key-size {0}'.format(ecdsa_key_size_value).split())
+
+        self.assertFalse(cli.option_was_set(ecdsa_key_size_option, ecdsa_key_size_value))
+
         config_dir_option = 'config_dir'
         self.assertFalse(cli.option_was_set(
             config_dir_option, cli.flag_default(config_dir_option)))

@@ -339,7 +339,7 @@ class Client(object):
             key = key or util.Key(file=None,
                                   pem=crypto_util.make_key(
                                       self.config.rsa_key_size,
-                                      self.config.ec_key_size,
+                                      self.config.ecdsa_key_size,
                                       self.config.key_type,
                                       ))
             csr = util.CSR(file=None, form="pem",
@@ -348,7 +348,7 @@ class Client(object):
         else:
             key = key or crypto_util.init_save_key(self.config.rsa_key_size,
                                                    self.config.key_dir,
-                                                   self.config.ec_key_size,
+                                                   self.config.ecdsa_key_size,
                                                    self.config.key_type)
             csr = crypto_util.init_save_csr(key, domains, self.config.csr_dir)
 

@@ -319,7 +319,7 @@ class ClientTest(ClientTestCommon):
         mock_crypto_util.init_save_key.assert_called_once_with(
             self.config.rsa_key_size,
             self.config.key_dir,
-            self.config.ec_key_size,
+            self.config.ecdsa_key_size,
             self.config.key_type
         )
         mock_crypto_util.init_save_csr.assert_called_once_with(
@@ -359,7 +359,7 @@ class ClientTest(ClientTestCommon):
 
         mock_crypto.make_key.assert_called_once_with(
             self.config.rsa_key_size,
-            self.config.ec_key_size,
+            self.config.ecdsa_key_size,
             self.config.key_type
         )
         mock_acme_crypto.make_csr.assert_called_once_with(
