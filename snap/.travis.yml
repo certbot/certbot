@@ -1,12 +1,15 @@
 language: python
 before_install:
-  - sudo -E apt-get -yq --no-install-suggests --no-install-recommends install nginx-light snapd python3-venv
+  - sudo -E apt-get -yq --no-install-suggests --no-install-recommends install nginx-light python3-venv
   - sudo -E /etc/init.d/nginx stop
 install:
+  - sudo /snap/bin/lxd.migrate -yes
+  - sudo /snap/bin/lxd waitready
+  - sudo /snap/bin/lxd init --auto
   - git clone https://github.com/certbot/certbot.git certbot --branch master
   - certbot/tools/strip_hashes.py certbot/letsencrypt-auto-source/pieces/dependency-requirements.txt > certbot/constraints.txt
 before_script:
-  - docker run -v $(pwd):$(pwd) -t snapcore/snapcraft sh -c "apt-get update -qq && apt-get install -qq git && cd $(pwd) && snapcraft"
+  - sudo snapcraft --use-lxd
 script:
   - sudo snap install --dangerous --classic *.snap
   - sudo bash test.sh
@@ -21,3 +24,10 @@ notifications:
   email:
     recipients: [robie.basak@canonical.com]
     on_failure: change
+addons:
+  snaps:
+    - name: snapcraft
+      channel: stable
+      classic: true
+    - name: lxd
+      channel: stable
