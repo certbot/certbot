@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 # High level functions
 def init_save_key(
     key_size, key_dir,
-    ec_key_size=384, key_type='rsa',
+    ecdsa_key_size=384, key_type='rsa',
     keyname="key-certbot.pem"):
     """Initializes and saves a privkey.
 
@@ -48,7 +48,7 @@ def init_save_key(
         already exists at the path.
 
     :param int rsa_key_size: RSA key size in bits
-    :param int ec_key_size: EC key size in bits
+    :param int ecdsa_key_size: EC key size in bits
     :param str key_dir: Key save directory.
     :param str keyname: Filename of key
 
@@ -59,7 +59,7 @@ def init_save_key(
 
     """
     try:
-        key_pem = make_key(rsa_bits=key_size, ec_bits=ec_key_size, key_type=key_type)
+        key_pem = make_key(rsa_bits=key_size, ecdsa_bits=ecdsa_key_size, key_type=key_type)
     except ValueError as err:
         logger.error("", exc_info=True)
         raise err
@@ -74,7 +74,7 @@ def init_save_key(
     if key_type.lower() == 'rsa':
         logger.debug("Generating RSA key (%d bits): %s", key_size, key_path)
     else:
-        logger.debug("Generating EC key (%d bits): %s", ec_key_size, key_path)
+        logger.debug("Generating EC key (%d bits): %s", ecdsa_key_size, key_path)
 
     return util.Key(key_path, key_pem)
 
@@ -183,11 +183,11 @@ def import_csr_file(csrfile, data):
     return PEM, util.CSR(file=csrfile, data=data_pem, form="pem"), domains
 
 
-def make_key(rsa_bits, ec_bits=384, key_type='rsa'):
+def make_key(rsa_bits, ecdsa_bits=384, key_type='rsa'):
     """Generate PEM encoded RSA|EC key.
 
     :param int rsa_bits: Number of bits, at least 1024 for RSA.
-    :param int ec_bits: Number of bits, at least 256 for EC.
+    :param int ecdsa_bits: Number of bits, at least 256 for EC.
     :param str key_type: Key type to create (rsa|ec).
 
     :returns: new RSA|EC key in PEM form with specified number of bits
@@ -204,11 +204,11 @@ def make_key(rsa_bits, ec_bits=384, key_type='rsa'):
             256: ec.SECP256R1(),
             384: ec.SECP384R1(),
         }
-        if _ECDSACurves.get(ec_bits) is None:
-            raise errors.Error("Unsupported EC key length: {}".format(ec_bits))
+        if _ECDSACurves.get(ecdsa_bits) is None:
+            raise errors.Error("Unsupported EC key length: {}".format(ecdsa_bits))
 
         _key = ec.generate_private_key(
-            _ECDSACurves.get(ec_bits),
+            _ECDSACurves.get(ecdsa_bits),
             backend=default_backend()
         )
         _key_pem = _key.private_bytes(
