@@ -1,6 +1,4 @@
 name: certbot
-version: script
-version-script: cd parts/certbot/src && git describe|sed s/^v//
 summary: Automatically configure HTTPS using Let's Encrypt
 description: |
  The objective of Certbot, Let's Encrypt, and the ACME (Automated
@@ -17,6 +15,8 @@ description: |
    - Help you revoke the certificate if that ever becomes necessary.
 confinement: classic
 grade: devel
+base: core18
+adopt-info: certbot
 
 apps:
   certbot:
@@ -47,26 +47,31 @@ parts:
     plugin: python
     source: certbot
     source-subdir: acme
-    constraints: $SNAPCRAFT_PART_SRC/constraints.txt
+    constraints: [$SNAPCRAFT_PART_SRC/constraints.txt]
     python-version: python3
   certbot:
     plugin: python
     source: certbot
-    constraints: $SNAPCRAFT_PART_SRC/constraints.txt
+    constraints: [$SNAPCRAFT_PART_SRC/constraints.txt]
     python-version: python3
     after: [acme]
+    override-pull: |
+        snapcraftctl pull
+        snapcraftctl set-version `cd $SNAPCRAFT_PART_SRC && git describe|sed s/^v//`
   certbot-apache:
     plugin: python
     source: certbot
     source-subdir: certbot-apache
-    constraints: $SNAPCRAFT_PART_SRC/constraints.txt
+    constraints: [$SNAPCRAFT_PART_SRC/constraints.txt]
     python-version: python3
     after: [python-augeas, certbot]
     stage-packages: [libaugeas0]
+    python-packages: ['git+https://github.com/certbot/certbot.git']  # workaround for #12
   certbot-nginx:
     plugin: python
     source: certbot
     source-subdir: certbot-nginx
-    constraints: $SNAPCRAFT_PART_SRC/constraints.txt
+    constraints: [$SNAPCRAFT_PART_SRC/constraints.txt]
     python-version: python3
     after: [certbot]
+    python-packages: ['git+https://github.com/certbot/certbot.git']  # workaround for #12
