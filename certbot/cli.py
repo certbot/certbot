@@ -644,6 +644,11 @@ class HelpfulArgumentParser(object):
 
         possible_deprecation_warning(parsed_args)
 
+        if isinstance(parsed_args.key_type, list) and len(parsed_args.key_type) > 1:
+            print("Parser {} Type: {}".format(parsed_args.key_type, type(parsed_args.key_type)))
+            raise errors.Error(
+                "Only *one* --key-type type may be provided at this time.")
+
         return parsed_args
 
     def set_test_server(self, parsed_args):
@@ -1143,7 +1148,7 @@ def prepare_and_parse_args(plugins, args, detect_defaults=False):  # pylint: dis
         "security", "--ecdsa-key-size", type=int, metavar="N",
         default=flag_default("ecdsa_key_size"), help=config_help("ecdsa_key_size"))
     helpful.add(
-        "security", "--key-type", type=one_key_type_arg, choices=['rsa', 'ecdsa'], nargs="+",
+        "security", "--key-type", type=str, choices=['rsa', 'ecdsa'], nargs="+",
         default=flag_default("key_type"), help=config_help("key_type"))
     helpful.add(
         "security", "--must-staple", action="store_true",
@@ -1635,23 +1640,3 @@ def nonnegative_int(value):
     if int_value < 0:
         raise argparse.ArgumentTypeError("value must be non-negative")
     return int_value
-
-
-def one_key_type_arg(value):
-    """Validate arguement is a single string value
-
-    This is a temporary test until certbot supports processing multiple
-    --key-type values at a time
-
-    :param str value: value provided on the command line
-
-    :returns: value provided on the command line
-    :rtype: str
-
-    :raises argparse.ArguementError: if value isn't a singular string
-
-    """
-    if isinstance(value, str):
-        return value
-
-    raise argparse.ArgumentError("Only *one* --key-type type may be provided at this time")
