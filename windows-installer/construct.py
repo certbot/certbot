@@ -127,7 +127,7 @@ if __name__ == '__main__':
         # Administrator privileges are required to properly install NSIS through Chocolatey
         raise RuntimeError('This script must be run with administrator privileges.')
 
-    if not (sys.version_info[0], sys.version_info[1]) == PYTHON_VERSION[0:2]:
+    if sys.version_info[:2] != PYTHON_VERSION[:2]:
         raise RuntimeError('This script must be run with Python {0}'
                            .format('.'.join([str(item) for item in PYTHON_VERSION[0:2]])))
 
