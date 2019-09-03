@@ -363,6 +363,9 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.parse('--key-type {}'.format(key_type_value))
         self.assertFalse(cli.option_was_set(key_type_option, key_type_value))
 
+        self.assertRaises(SystemExit, self.parse, "--key-type foo")
+        self.assertRaises(errors.Error, self.parse, "--key-type ecdsa rsa")
+
 
     def test_encode_revocation_reason(self):
         for reason, code in constants.REVOCATION_REASONS.items():
