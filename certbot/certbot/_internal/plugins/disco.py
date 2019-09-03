@@ -2,6 +2,8 @@
 import collections
 import itertools
 import logging
+import os
+import sys
 
 import pkg_resources
 import six
