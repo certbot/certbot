@@ -45,8 +45,10 @@ and any other information relevant to the underlying parser engine.
 
 Access to the metadata should be handled by implementation specific methods, allowing
 the Configurator functionality to access the underlying information where needed.
-A good example of this is file path of a node - something that is needed by the
-reverter functionality within the Configurator.
+
+For some implementations the node can be initialized using the information carried
+in metadata alone. This is useful especially when populating the ParserNode tree
+while parsing the configuration.
 
 
 Apache implementation
@@ -54,6 +56,22 @@ Apache implementation
 
 The Apache implementation of ParserNode interface requires some implementation
 specific functionalities that are not described by the interface itself.
+
+Initialization
+
+As many ParserNode variables can be extracted from the information provided by
+metadata, the following otherwise required keyword arguments can be omitted if
+metadata argument is provided. The list of such arguments is as follows:
+    ParserNode
+        - filepath
+    CommentNode
+        - comment
+    DirectiveNode
+        - name
+
+If an argument is provided directly in the ParserNode initialization parameters
+as well as within metadata it's important to establish clear precedence rules around
+this scenario within the implementation.
 
 Conditional blocks
 
@@ -86,7 +104,7 @@ For this reason the internal representation of data should not ignore the case.
 import abc
 import six
 
-from acme.magic_typing import Optional, Tuple  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Any, Dict, Optional, Tuple  # pylint: disable=unused-import, no-name-in-module
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -127,6 +145,11 @@ class ParserNode(object):
     # configuration file. Filepath can be None if a configuration directive is
     # defined in for example the httpd command line.
     filepath: Optional[str]
+
+    # Metadata dictionary holds all the implementation specific key-value pairs
+    # for the ParserNode instance. If metadata is provided, some of the required
+    # keyword arguments may be omitted depending on the implementation.
+    metadata: Dict[str, Any]
     """
 
     @abc.abstractmethod
@@ -146,6 +169,10 @@ class ParserNode(object):
         :param dirty: Boolean flag for denoting if this CommentNode has been
             created or changed after the last save. Default: False.
         :type dirty: bool
+
+        :param metadata: Dictionary of metadata values for this ParserNode object.
+            Default: {}
+        :type metadata: dict
         """
 
     @abc.abstractmethod
@@ -182,6 +209,9 @@ class CommentNode(ParserNode):
     CommentNode objects should have the following attributes in addition to
     the ones described in ParserNode:
 
+    # If metadata is provided, the otherwise required argument "comment" may be
+    # omitted if the implementation is able to extract its value from the metadata.
+
     # Contains the contents of the comment without the directive notation
     # (typically # or /* ... */).
     comment: str
@@ -209,7 +239,8 @@ class CommentNode(ParserNode):
         """
         super(CommentNode, self).__init__(ancestor=kwargs['ancestor'],
                                           dirty=kwargs.get('dirty', False),
-                                          filepath=kwargs['filepath'])  # pragma: no cover
+                                          filepath=kwargs['filepath'],
+                                          metadata=kwargs['metadata'])  # pragma: no cover
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -226,6 +257,9 @@ class DirectiveNode(ParserNode):
 
     DirectiveNode objects should have the following attributes in addition to
     the ones described in ParserNode:
+
+    # If metadata is provided, the otherwise required argument "name" may be
+    # omitted if the implementation is able to extract its value from the metadata.
 
     # True if this DirectiveNode is enabled and False if it is inside of an
     # inactive conditional block.
@@ -273,7 +307,8 @@ class DirectiveNode(ParserNode):
         """
         super(DirectiveNode, self).__init__(ancestor=kwargs['ancestor'],
                                             dirty=kwargs.get('dirty', False),
-                                            filepath=kwargs['filepath'])  # pragma: no cover
+                                            filepath=kwargs['filepath'],
+                                            metadata=kwargs['metadata'])  # pragma: no cover
 
     @abc.abstractmethod
     def set_parameters(self, parameters):
@@ -321,6 +356,9 @@ class BlockNode(DirectiveNode):
 
     BlockNode objects should have the following attributes in addition to
     the ones described in DirectiveNode:
+
+    # If metadata is provided, the otherwise required argument "comment" may be
+    # omitted if the implementation is able to extract its value from the metadata.
 
     # Tuple of direct children of this BlockNode object. The order of children
     # in this tuple retain the order of elements in the parsed configuration

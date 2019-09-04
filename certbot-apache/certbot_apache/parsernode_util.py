@@ -36,9 +36,17 @@ def parsernode_kwargs(kwargs):
 
     :returns: Tuple of validated and prepared arguments.
     """
+
+    # As ParserNode instances can be initialized with metadata alone, make sure
+    # we permit it here as well.
+    if "metadata" in kwargs:
+        kwargs.setdefault("filepath", None)
+
     kwargs.setdefault("dirty", False)
-    kwargs = validate_kwargs(kwargs, ["ancestor", "dirty", "filepath"])
-    return kwargs["ancestor"], kwargs["dirty"], kwargs["filepath"]
+    kwargs.setdefault("metadata", {})
+
+    kwargs = validate_kwargs(kwargs, ["ancestor", "dirty", "filepath", "metadata"])
+    return kwargs["ancestor"], kwargs["dirty"], kwargs["filepath"], kwargs["metadata"]
 
 
 def commentnode_kwargs(kwargs):
@@ -53,8 +61,18 @@ def commentnode_kwargs(kwargs):
 
     :returns: Tuple of validated and prepared arguments and ParserNode kwargs.
     """
+
+    # As ParserNode instances can be initialized with metadata alone, make sure
+    # we permit it here as well.
+    if "metadata" in kwargs:
+        kwargs.setdefault("comment", None)
+        kwargs.setdefault("filepath", None)
+
     kwargs.setdefault("dirty", False)
-    kwargs = validate_kwargs(kwargs, ["ancestor", "dirty", "filepath", "comment"])
+    kwargs.setdefault("metadata", {})
+
+    kwargs = validate_kwargs(kwargs, ["ancestor", "dirty", "filepath", "comment",
+                                      "metadata"])
 
     comment = kwargs.pop("comment")
     return comment, kwargs
@@ -72,12 +90,19 @@ def directivenode_kwargs(kwargs):
     :returns: Tuple of validated and prepared arguments and ParserNode kwargs.
     """
 
+    # As ParserNode instances can be initialized with metadata alone, make sure
+    # we permit it here as well.
+    if "metadata" in kwargs:
+        kwargs.setdefault("name", None)
+        kwargs.setdefault("filepath", None)
+
     kwargs.setdefault("dirty", False)
     kwargs.setdefault("enabled", True)
     kwargs.setdefault("parameters", ())
+    kwargs.setdefault("metadata", {})
 
     kwargs = validate_kwargs(kwargs, ["ancestor", "dirty", "filepath", "name",
-                                      "parameters", "enabled"])
+                                      "parameters", "enabled", "metadata"])
 
     name = kwargs.pop("name")
     parameters = kwargs.pop("parameters")

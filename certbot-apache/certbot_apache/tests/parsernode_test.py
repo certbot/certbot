@@ -13,10 +13,11 @@ class DummyParserNode(interfaces.ParserNode):
         """
         Initializes the ParserNode instance.
         """
-        ancestor, dirty, filepath = util.parsernode_kwargs(kwargs)
+        ancestor, dirty, filepath, metadata = util.parsernode_kwargs(kwargs)
         self.ancestor = ancestor
         self.dirty = dirty
         self.filepath = filepath
+        self.metadata = metadata
         super(DummyParserNode, self).__init__(**kwargs)
 
     def save(self, msg):  # pragma: no cover

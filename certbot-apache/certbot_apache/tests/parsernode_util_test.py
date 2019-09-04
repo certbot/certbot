@@ -48,10 +48,21 @@ class ParserNodeUtilTest(unittest.TestCase):
         params = self._setup_parsernode()
         ctrl = self._setup_parsernode()
 
-        ancestor, dirty, filepath = util.parsernode_kwargs(params)
+        ancestor, dirty, filepath, metadata = util.parsernode_kwargs(params)
         self.assertEqual(ancestor, ctrl["ancestor"])
         self.assertEqual(dirty, ctrl["dirty"])
         self.assertEqual(filepath, ctrl["filepath"])
+        self.assertEqual(metadata, {})
+
+    def test_parsernode_from_metadata(self):
+        params = self._setup_parsernode()
+        params.pop("filepath")
+        md = {"some": "value"}
+        params["metadata"] = md
+
+        # Just testing that error from missing required parameters is not raised
+        _, _, _, metadata = util.parsernode_kwargs(params)
+        self.assertEqual(metadata, md)
 
     def test_commentnode(self):
         params = self._setup_commentnode()
@@ -59,6 +70,14 @@ class ParserNodeUtilTest(unittest.TestCase):
 
         comment, _ = util.commentnode_kwargs(params)
         self.assertEqual(comment, ctrl["comment"])
+
+    def test_commentnode_from_metadata(self):
+        params = self._setup_commentnode()
+        params.pop("comment")
+        params["metadata"] = {}
+
+        # Just testing that error from missing required parameters is not raised
+        util.commentnode_kwargs(params)
 
     def test_directivenode(self):
         params = self._setup_directivenode()
@@ -68,6 +87,15 @@ class ParserNodeUtilTest(unittest.TestCase):
         self.assertEqual(name, ctrl["name"])
         self.assertEqual(parameters, ctrl["parameters"])
         self.assertEqual(enabled, ctrl["enabled"])
+
+    def test_directivenode_from_metadata(self):
+        params = self._setup_directivenode()
+        params.pop("filepath")
+        params.pop("name")
+        params["metadata"] = {"irrelevant": "value"}
+
+        # Just testing that error from missing required parameters is not raised
+        util.directivenode_kwargs(params)
 
     def test_missing_required(self):
         c_params = self._setup_commentnode()
