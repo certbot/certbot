@@ -317,7 +317,7 @@ def is_executable(path):
 def has_world_permissions(path):
     # type: (str) -> bool
     """
-    Check if everybody/world has any right (read/write/execute) to a file given its path
+    Check if everybody/world has any right (read/write/execute) on a file given its path
     :param str path: path to test
     :return: True if everybody/world has any right to the file
     :rtype: bool
