@@ -314,7 +314,7 @@ def is_executable(path):
     return _win_is_executable(path)
 
 
-def is_word_reachable(path):
+def has_world_permissions(path):
     # type: (str) -> bool
     """
     Check if everybody/world has any right (read/write/execute) to a file given its path
