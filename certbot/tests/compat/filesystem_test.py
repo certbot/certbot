@@ -282,7 +282,7 @@ class WindowsMkdirTests(test_util.TempDirTestCase):
 
 
 class OwnershipTest(test_util.TempDirTestCase):
-    """Tests about copy_ownership_and_apply_mode and get_ownership"""
+    """Tests about copy_ownership_and_apply_mode and has_same_ownership"""
     def setUp(self):
         super(OwnershipTest, self).setUp()
         self.probe_path = _create_probe(self.tempdir)
@@ -325,6 +325,15 @@ class OwnershipTest(test_util.TempDirTestCase):
 
         mock_chown.assert_called_once_with(self.probe_path, 50, 51)
         mock_chmod.assert_called_once_with(self.probe_path, 0o700)
+
+    def test_has_same_ownership(self):
+        path1 = os.path.join(self.tempdir, 'test1')
+        path2 = os.path.join(self.tempdir, 'test2')
+
+        util.safe_open(path1, 'w').close()
+        util.safe_open(path2, 'w').close()
+
+        self.assertTrue(filesystem.has_same_ownership(path1, path2))
 
 
 class CheckPermissionsTest(test_util.TempDirTestCase):
