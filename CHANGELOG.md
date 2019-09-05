@@ -22,7 +22,7 @@ More details about these changes can be found on our GitHub repo.
 
 ### Added
 
-*
+* Disable session tickets for Nginx users when appropriate.
 
 ### Changed
 
