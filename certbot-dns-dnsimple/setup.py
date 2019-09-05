@@ -9,7 +9,7 @@ version = '0.39.0.dev0'
 # acme/certbot version.
 install_requires = [
     'acme>=0.31.0',
-    'certbot>=0.38.0.dev0',
+    'certbot>=0.39.0.dev0',
     'mock',
     'setuptools',
     'zope.interface',
