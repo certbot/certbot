@@ -411,7 +411,7 @@ def has_min_permissions(path, min_mode):
                        if dacl.GetAce(index2)[2] == min_ace[2]]
         if not target_aces:
             return False
-        if not target_aces[0][1] == target_aces[0][1] | min_ace[1]:
+        if not any(ace[1] == ace[1] | min_ace[1] for ace in target_aces):
             return False
 
     return True
