@@ -403,11 +403,12 @@ def has_min_permissions(path, min_mode):
     user = security.GetSecurityDescriptorOwner()
     dacl = security.GetSecurityDescriptorDacl()
     min_dacl = _generate_dacl(user, min_mode)
-
+    # On a given ACE, index 0 is the ACE type, 1 is the permission mask, and 2 is the SID.
+    # See: http://timgolden.me.uk/pywin32-docs/PyACL__GetAce_meth.html
     for index in range(min_dacl.GetAceCount()):
         min_ace = min_dacl.GetAce(index)
         target_aces = [dacl.GetAce(index2) for index2 in range(dacl.GetAceCount())
-                      if dacl.GetAce(index2)[2] == min_ace[2]]
+                       if dacl.GetAce(index2)[2] == min_ace[2]]
         if not target_aces:
             return False
         if not target_aces[0][1] == target_aces[0][1] | min_ace[1]:
