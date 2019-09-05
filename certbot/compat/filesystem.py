@@ -356,10 +356,10 @@ def compute_private_key_mode(old_key, base_mode):
     return base_mode
 
 
-def compare_ownership(path1, path2):
+def has_same_ownership(path1, path2):
     # type: (str, str) -> bool
     """
-    Compare the ownership of two files given their respective path
+    Return True if the ownership of two files given their respective path is the same
     :param str path1: path to the first file
     :param str path2: path to the second file
     :return: True if both files have the same ownership, False otherwise

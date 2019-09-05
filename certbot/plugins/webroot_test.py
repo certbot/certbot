@@ -181,7 +181,7 @@ class AuthenticatorTest(unittest.TestCase):
                 full_path = os.path.join(dirpath, directory)
                 self.assertTrue(filesystem.check_mode(full_path, 0o755))
 
-        self.assertTrue(filesystem.compare_ownership(self.validation_path, self.path))
+        self.assertTrue(filesystem.has_same_ownership(self.validation_path, self.path))
 
     def test_perform_cleanup(self):
         self.auth.prepare()
