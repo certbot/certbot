@@ -325,9 +325,6 @@ def has_world_permissions(path):
     if POSIX_MODE:
         return bool(stat.S_IMODE(os.stat(path).st_mode) & stat.S_IRWXO)
 
-    if not os.path.isfile(path):
-        return False
-
     security = win32security.GetFileSecurity(path, win32security.DACL_SECURITY_INFORMATION)
     dacl = security.GetSecurityDescriptorDacl()
 
