@@ -31,15 +31,19 @@ def parsernode_kwargs(kwargs):
     dictionary, and hence the returned dictionary should be used instead in the
     caller function instead of the original kwargs.
 
+    If metadata is provided, the otherwise required argument "filepath" may be
+    omitted if the implementation is able to extract its value from the metadata.
+    This usecase is handled within this function. Filepath defaults to None.
 
     :param dict kwargs: Keyword argument dictionary to validate.
 
     :returns: Tuple of validated and prepared arguments.
     """
 
-    # As ParserNode instances can be initialized with metadata alone, make sure
-    # we permit it here as well.
+    # As many values of ParserNode instances can be derived from the metadata,
+    # (ancestor being a common exception here) make sure we permit it here as well.
     if "metadata" in kwargs:
+        # Filepath can be derived from the metadata in Augeas implementation.
         kwargs.setdefault("filepath", None)
 
     kwargs.setdefault("dirty", False)
@@ -56,16 +60,20 @@ def commentnode_kwargs(kwargs):
     returned dictionary should be used instead in the caller function instead of
     the original kwargs.
 
+    If metadata is provided, the otherwise required argument "comment" may be
+    omitted if the implementation is able to extract its value from the metadata.
+    This usecase is handled within this function.
 
     :param dict kwargs: Keyword argument dictionary to validate.
 
     :returns: Tuple of validated and prepared arguments and ParserNode kwargs.
     """
 
-    # As ParserNode instances can be initialized with metadata alone, make sure
-    # we permit it here as well.
+    # As many values of ParserNode instances can be derived from the metadata,
+    # (ancestor being a common exception here) make sure we permit it here as well.
     if "metadata" in kwargs:
         kwargs.setdefault("comment", None)
+        # Filepath can be derived from the metadata in Augeas implementation
         kwargs.setdefault("filepath", None)
 
     kwargs.setdefault("dirty", False)
@@ -85,15 +93,20 @@ def directivenode_kwargs(kwargs):
     dictionary, and hence the returned dictionary should be used instead in the
     caller function instead of the original kwargs.
 
+    If metadata is provided, the otherwise required argument "name" may be
+    omitted if the implementation is able to extract its value from the metadata.
+    This usecase is handled within this function.
+
     :param dict kwargs: Keyword argument dictionary to validate.
 
     :returns: Tuple of validated and prepared arguments and ParserNode kwargs.
     """
 
-    # As ParserNode instances can be initialized with metadata alone, make sure
-    # we permit it here as well.
+    # As many values of ParserNode instances can be derived from the metadata,
+    # (ancestor being a common exception here) make sure we permit it here as well.
     if "metadata" in kwargs:
         kwargs.setdefault("name", None)
+        # Filepath can be derived from the metadata in Augeas implementation
         kwargs.setdefault("filepath", None)
 
     kwargs.setdefault("dirty", False)

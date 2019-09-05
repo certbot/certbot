@@ -59,15 +59,17 @@ specific functionalities that are not described by the interface itself.
 
 Initialization
 
-As many ParserNode variables can be extracted from the information provided by
-metadata, the following otherwise required keyword arguments can be omitted if
-metadata argument is provided. The list of such arguments is as follows:
-    ParserNode
-        - filepath
-    CommentNode
-        - comment
-    DirectiveNode
-        - name
+When the user of a ParserNode class is creating these objects, they must specify
+the parameters as described in the documentation for the __init__ methods below.
+When these objects are created internally, however, some parameters may not be
+needed because (possible more detailed) information is included in the metadata
+parameter. In this case, implementations can deviate from the required parameters
+from __init__, however, they should still behave the same when metadata is not
+provided.
+
+For consistency internally, if an argument is provided directly in the ParserNode
+initialization parameters as well as within metadata it's recommended to establish
+clear behavior around this scenario within the implementation.
 
 If an argument is provided directly in the ParserNode initialization parameters
 as well as within metadata it's important to establish clear precedence rules around
@@ -147,8 +149,7 @@ class ParserNode(object):
     filepath: Optional[str]
 
     # Metadata dictionary holds all the implementation specific key-value pairs
-    # for the ParserNode instance. If metadata is provided, some of the required
-    # keyword arguments may be omitted depending on the implementation.
+    # for the ParserNode instance.
     metadata: Dict[str, Any]
     """
 
@@ -171,6 +172,7 @@ class ParserNode(object):
         :type dirty: bool
 
         :param metadata: Dictionary of metadata values for this ParserNode object.
+            Metadata information should be used only internally in the implementation.
             Default: {}
         :type metadata: dict
         """
@@ -208,9 +210,6 @@ class CommentNode(ParserNode):
 
     CommentNode objects should have the following attributes in addition to
     the ones described in ParserNode:
-
-    # If metadata is provided, the otherwise required argument "comment" may be
-    # omitted if the implementation is able to extract its value from the metadata.
 
     # Contains the contents of the comment without the directive notation
     # (typically # or /* ... */).
@@ -257,9 +256,6 @@ class DirectiveNode(ParserNode):
 
     DirectiveNode objects should have the following attributes in addition to
     the ones described in ParserNode:
-
-    # If metadata is provided, the otherwise required argument "name" may be
-    # omitted if the implementation is able to extract its value from the metadata.
 
     # True if this DirectiveNode is enabled and False if it is inside of an
     # inactive conditional block.
@@ -356,9 +352,6 @@ class BlockNode(DirectiveNode):
 
     BlockNode objects should have the following attributes in addition to
     the ones described in DirectiveNode:
-
-    # If metadata is provided, the otherwise required argument "comment" may be
-    # omitted if the implementation is able to extract its value from the metadata.
 
     # Tuple of direct children of this BlockNode object. The order of children
     # in this tuple retain the order of elements in the parsed configuration
