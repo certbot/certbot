@@ -44,6 +44,8 @@ def parsernode_kwargs(kwargs):
     # (ancestor being a common exception here) make sure we permit it here as well.
     if "metadata" in kwargs:
         # Filepath can be derived from the metadata in Augeas implementation.
+        # Default is None, as in this case the responsibility of populating this
+        # variable lies on the implementation.
         kwargs.setdefault("filepath", None)
 
     kwargs.setdefault("dirty", False)
@@ -73,7 +75,9 @@ def commentnode_kwargs(kwargs):
     # (ancestor being a common exception here) make sure we permit it here as well.
     if "metadata" in kwargs:
         kwargs.setdefault("comment", None)
-        # Filepath can be derived from the metadata in Augeas implementation
+        # Filepath can be derived from the metadata in Augeas implementation.
+        # Default is None, as in this case the responsibility of populating this
+        # variable lies on the implementation.
         kwargs.setdefault("filepath", None)
 
     kwargs.setdefault("dirty", False)
@@ -106,7 +110,9 @@ def directivenode_kwargs(kwargs):
     # (ancestor being a common exception here) make sure we permit it here as well.
     if "metadata" in kwargs:
         kwargs.setdefault("name", None)
-        # Filepath can be derived from the metadata in Augeas implementation
+        # Filepath can be derived from the metadata in Augeas implementation.
+        # Default is None, as in this case the responsibility of populating this
+        # variable lies on the implementation.
         kwargs.setdefault("filepath", None)
 
     kwargs.setdefault("dirty", False)
