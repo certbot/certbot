@@ -149,6 +149,13 @@ class WindowsChmodTests(TempDirTestCase):
         # since the user is also the admins group
         self.assertEqual(security_dacl.GetSecurityDescriptorDacl().GetAceCount(), 2)
 
+
+@unittest.skipIf(POSIX_MODE, reason='Tests specific to Windows security')
+class ComputePrivateKeyModeTest(TempDirTestCase):
+    def setUp(self):
+        super(ComputePrivateKeyModeTest, self).setUp()
+        self.probe_path = _create_probe(self.tempdir)
+
     def test_compute_private_key_mode(self):
         filesystem.chmod(self.probe_path, 0o777)
         new_mode = filesystem.compute_private_key_mode(self.probe_path, 0o600)
