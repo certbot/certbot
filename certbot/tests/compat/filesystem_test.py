@@ -375,10 +375,10 @@ class CheckPermissionsTest(test_util.TempDirTestCase):
 
     def test_is_world_reachable(self):
         filesystem.chmod(self.probe_path, 0o744)
-        self.assertTrue(filesystem.is_word_reachable(self.probe_path))
+        self.assertTrue(filesystem.has_world_permissions(self.probe_path))
 
         filesystem.chmod(self.probe_path, 0o700)
-        self.assertFalse(filesystem.is_word_reachable(self.probe_path))
+        self.assertFalse(filesystem.has_world_permissions(self.probe_path))
 
 
 class OsReplaceTest(test_util.TempDirTestCase):

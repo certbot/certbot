@@ -312,7 +312,7 @@ def validate_file_permissions(filename):
 
     validate_file(filename)
 
-    if filesystem.is_word_reachable(filename):
+    if filesystem.has_world_permissions(filename):
         logger.warning('Unsafe permissions on credentials configuration file: %s', filename)
 
 
