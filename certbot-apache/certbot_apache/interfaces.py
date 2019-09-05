@@ -308,7 +308,7 @@ class DirectiveNode(ParserNode):
         super(DirectiveNode, self).__init__(ancestor=kwargs['ancestor'],
                                             dirty=kwargs.get('dirty', False),
                                             filepath=kwargs['filepath'],
-                                            metadata=kwargs['metadata'])  # pragma: no cover
+                                            metadata=kwargs.get('metadata', {})  # pragma: no cover
 
     @abc.abstractmethod
     def set_parameters(self, parameters):
