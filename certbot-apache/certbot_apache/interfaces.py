@@ -240,7 +240,7 @@ class CommentNode(ParserNode):
         super(CommentNode, self).__init__(ancestor=kwargs['ancestor'],
                                           dirty=kwargs.get('dirty', False),
                                           filepath=kwargs['filepath'],
-                                          metadata=kwargs['metadata'])  # pragma: no cover
+                                          metadata=kwargs.get('metadata', {})  # pragma: no cover
 
 
 @six.add_metaclass(abc.ABCMeta)
