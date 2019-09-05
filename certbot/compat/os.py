@@ -123,7 +123,8 @@ def access(*unused_args, **unused_kwargs):
 def stat(*unused_args, **unused_kwargs):
     """Method os.stat() is forbidden"""
     raise RuntimeError('Usage of os.stat() is forbidden. '
-                       'Use certbot.compat.filesystem.is_*() functions instead.')
+                       'Use certbot.compat.filesystem functions instead '
+                       '(eg. has_min_permissions, has_same_ownership).')
 
 
 # Method os.fstat has the same problem than os.stat, since it is the same function,
