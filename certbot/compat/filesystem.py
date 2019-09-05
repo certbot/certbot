@@ -393,6 +393,8 @@ def has_min_permissions(path, min_mode):
         st_mode = os.stat(path).st_mode
         return st_mode == st_mode | min_mode
 
+    # Resolve symlinks, to get a consistent result with os.stat on Linux,
+    # that follows symlinks by default.
     path = realpath(path)
 
     # Get owner sid of the file
