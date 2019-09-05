@@ -380,6 +380,9 @@ class CheckPermissionsTest(test_util.TempDirTestCase):
         filesystem.chmod(self.probe_path, 0o700)
         self.assertFalse(filesystem.has_min_permissions(self.probe_path, 0o744))
 
+        filesystem.chmod(self.probe_path, 0o741)
+        self.assertFalse(filesystem.has_min_permissions(self.probe_path, 0o744))
+
     def test_is_world_reachable(self):
         filesystem.chmod(self.probe_path, 0o744)
         self.assertTrue(filesystem.has_world_permissions(self.probe_path))
