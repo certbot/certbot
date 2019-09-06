@@ -116,3 +116,21 @@ def access(*unused_args, **unused_kwargs):
     raise RuntimeError('Usage of os.access() is forbidden. '
                        'Use certbot.compat.filesystem.check_mode() or '
                        'certbot.compat.filesystem.is_executable() instead.')
+
+
+# On Windows os.stat call result is inconsistent, with a lot of flags that are not set or
+# meaningless. We need to use specialized functions from the certbot.compat.filesystem module.
+def stat(*unused_args, **unused_kwargs):
+    """Method os.stat() is forbidden"""
+    raise RuntimeError('Usage of os.stat() is forbidden. '
+                       'Use certbot.compat.filesystem functions instead '
+                       '(eg. has_min_permissions, has_same_ownership).')
+
+
+# Method os.fstat has the same problem than os.stat, since it is the same function,
+# but accepting a file descriptor instead of a path.
+def fstat(*unused_args, **unused_kwargs):
+    """Method os.stat() is forbidden"""
+    raise RuntimeError('Usage of os.fstat() is forbidden. '
+                       'Use certbot.compat.filesystem functions instead '
+                       '(eg. has_min_permissions, has_same_ownership).')

@@ -20,7 +20,7 @@ except ImportError:
 else:
     POSIX_MODE = False
 
-from acme.magic_typing import List  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import List, Union, Tuple  # pylint: disable=unused-import, no-name-in-module
 
 
 def chmod(file_path, mode):
@@ -264,6 +264,7 @@ def replace(src, dst):
 
 
 def realpath(file_path):
+    # type: (str) -> str
     """
     Find the real path for the given path. This method resolves symlinks, including
     recursive symlinks, and is protected against symlinks that creates an infinite loop.
@@ -300,16 +301,129 @@ def realpath(file_path):
 # requires to be run under a privileged shell, so the user will always benefit
 # from the highest (privileged one) set of permissions on a given file.
 def is_executable(path):
+    # type: (str) -> bool
     """
     Is path an executable file?
     :param str path: path to test
-    :returns: True if path is an executable file
+    :return: True if path is an executable file
     :rtype: bool
     """
     if POSIX_MODE:
         return os.path.isfile(path) and os.access(path, os.X_OK)
 
     return _win_is_executable(path)
+
+
+def has_world_permissions(path):
+    # type: (str) -> bool
+    """
+    Check if everybody/world has any right (read/write/execute) on a file given its path
+    :param str path: path to test
+    :return: True if everybody/world has any right to the file
+    :rtype: bool
+    """
+    if POSIX_MODE:
+        return bool(stat.S_IMODE(os.stat(path).st_mode) & stat.S_IRWXO)
+
+    security = win32security.GetFileSecurity(path, win32security.DACL_SECURITY_INFORMATION)
+    dacl = security.GetSecurityDescriptorDacl()
+
+    return bool(dacl.GetEffectiveRightsFromAcl({
+        'TrusteeForm': win32security.TRUSTEE_IS_SID,
+        'TrusteeType': win32security.TRUSTEE_IS_USER,
+        'Identifier': win32security.ConvertStringSidToSid('S-1-1-0'),
+    }))
+
+
+def compute_private_key_mode(old_key, base_mode):
+    # type: (str, int) -> int
+    """
+    Calculate the POSIX mode to apply to a private key given the previous private key
+    :param str old_key: path to the previous private key
+    :param int base_mode: the minimum modes to apply to a private key
+    :return: the POSIX mode to apply
+    :rtype: int
+    """
+    if POSIX_MODE:
+        # On Linux, we keep read/write/execute permissions
+        # for group and read permissions for everybody.
+        old_mode = (stat.S_IMODE(os.stat(old_key).st_mode) &
+                    (stat.S_IRGRP | stat.S_IWGRP | stat.S_IXGRP | stat.S_IROTH))
+        return base_mode | old_mode
+
+    # On Windows, the mode returned by os.stat is not reliable,
+    # so we do not keep any permission from the previous private key.
+    return base_mode
+
+
+def has_same_ownership(path1, path2):
+    # type: (str, str) -> bool
+    """
+    Return True if the ownership of two files given their respective path is the same.
+    On Windows, ownership is checked against owner only, since files do not have a group owner.
+    :param str path1: path to the first file
+    :param str path2: path to the second file
+    :return: True if both files have the same ownership, False otherwise
+    :rtype: bool
+
+    """
+    if POSIX_MODE:
+        stats1 = os.stat(path1)
+        stats2 = os.stat(path2)
+        return (stats1.st_uid, stats1.st_gid) == (stats2.st_uid, stats2.st_gid)
+
+    security1 = win32security.GetFileSecurity(path1, win32security.OWNER_SECURITY_INFORMATION)
+    user1 = security1.GetSecurityDescriptorOwner()
+
+    security2 = win32security.GetFileSecurity(path2, win32security.OWNER_SECURITY_INFORMATION)
+    user2 = security2.GetSecurityDescriptorOwner()
+
+    return user1 == user2
+
+
+def has_min_permissions(path, min_mode):
+    # type: (str, int) -> bool
+    """
+    Check if a file given its path has at least the permissions defined by the given minimal mode.
+    On Windows, group permissions are ignored since files do not have a group owner.
+    :param str path: path to the file to check
+    :param int min_mode: the minimal permissions expected
+    :return: True if the file matches the minimal permissions expectations, False otherwise
+    :rtype: bool
+    """
+    if POSIX_MODE:
+        st_mode = os.stat(path).st_mode
+        return st_mode == st_mode | min_mode
+
+    # Resolve symlinks, to get a consistent result with os.stat on Linux,
+    # that follows symlinks by default.
+    path = realpath(path)
+
+    # Get owner sid of the file
+    security = win32security.GetFileSecurity(
+        path, win32security.OWNER_SECURITY_INFORMATION | win32security.DACL_SECURITY_INFORMATION)
+    user = security.GetSecurityDescriptorOwner()
+    dacl = security.GetSecurityDescriptorDacl()
+    min_dacl = _generate_dacl(user, min_mode)
+
+    for index in range(min_dacl.GetAceCount()):
+        min_ace = min_dacl.GetAce(index)
+
+        # On a given ACE, index 0 is the ACE type, 1 is the permission mask, and 2 is the SID.
+        # See: http://timgolden.me.uk/pywin32-docs/PyACL__GetAce_meth.html
+        mask = min_ace[1]
+        user = min_ace[2]
+
+        effective_mask = dacl.GetEffectiveRightsFromAcl({
+            'TrusteeForm': win32security.TRUSTEE_IS_SID,
+            'TrusteeType': win32security.TRUSTEE_IS_USER,
+            'Identifier': user,
+        })
+
+        if effective_mask != effective_mask | mask:
+            return False
+
+    return True
 
 
 def _win_is_executable(path):
@@ -472,8 +586,8 @@ def _compare_dacls(dacl1, dacl2):
     This method compare the two given DACLs to check if they are identical.
     Identical means here that they contains the same set of ACEs in the same order.
     """
-    return ([dacl1.GetAce(index) for index in range(0, dacl1.GetAceCount())] ==
-            [dacl2.GetAce(index) for index in range(0, dacl2.GetAceCount())])
+    return ([dacl1.GetAce(index) for index in range(dacl1.GetAceCount())] ==
+            [dacl2.GetAce(index) for index in range(dacl2.GetAceCount())])
 
 
 def _get_current_user():
