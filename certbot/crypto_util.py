@@ -199,13 +199,13 @@ def make_key(rsa_bits, ecdsa_bits=384, key_type='rsa'):
         assert rsa_bits >= 1024  # XXX
         key = crypto.PKey()
         key.generate_key(crypto.TYPE_RSA, rsa_bits)
-    elif key_type.lower() == 'ec':
+    elif key_type.lower() == 'ecdsa':
         _ECDSACurves = {
             256: ec.SECP256R1(),
             384: ec.SECP384R1(),
         }
         if _ECDSACurves.get(ecdsa_bits) is None:
-            raise errors.Error("Unsupported EC key length: {}".format(ecdsa_bits))
+            raise errors.Error("Unsupported ECDSA key length: {}".format(ecdsa_bits))
 
         _key = ec.generate_private_key(
             _ECDSACurves.get(ecdsa_bits),
@@ -218,7 +218,7 @@ def make_key(rsa_bits, ecdsa_bits=384, key_type='rsa'):
         )
         key = crypto.load_privatekey(crypto.FILETYPE_PEM, _key_pem)
     else:
-        raise errors.Error("Invalid key_type specified: {}.  Use [rsa|ecc]".format(key_type))
+        raise errors.Error("Invalid key_type specified: {}.  Use [rsa|ecdsa]".format(key_type))
     return crypto.dump_privatekey(crypto.FILETYPE_PEM, key)
 
 
