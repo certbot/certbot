@@ -418,7 +418,7 @@ def has_min_permissions(path, min_mode):
             'Identifier': user,
         })
 
-        if not effective_mask == effective_mask | mask:
+        if effective_mask != effective_mask | mask:
             return False
 
     return True
