@@ -352,11 +352,12 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertTrue(cli.option_was_set(key_size_option, key_size_value))
         self.assertTrue(cli.option_was_set('no_verify_ssl', True))
 
+        self.setUp() #cleanup
         ecdsa_key_size_option = 'ecdsa_key_size'
         ecdsa_key_size_value = cli.flag_default(ecdsa_key_size_option)
         self.parse('--ecdsa-key-size {0}'.format(ecdsa_key_size_value).split())
 
-        self.assertFalse(cli.option_was_set(ecdsa_key_size_option, ecdsa_key_size_value))
+        self.assertTrue(cli.option_was_set(ecdsa_key_size_option, ecdsa_key_size_value))
 
         config_dir_option = 'config_dir'
         self.assertFalse(cli.option_was_set(
@@ -364,10 +365,13 @@ class ParseTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
         self.assertFalse(cli.option_was_set(
             'authenticator', cli.flag_default('authenticator')))
 
+        self.setUp() #cleanup
         key_type_option = 'key_type'
         key_type_value = cli.flag_default(key_type_option)
-        self.parse('--key-type {}'.format(key_type_value))
-        self.assertFalse(cli.option_was_set(key_type_option, key_type_value))
+        self.parse('--key-type {0}'.format(key_type_value).split())
+        print("key type: {}".format(key_type_option))
+        print("key type value: {}".format(key_type_value))
+        self.assertTrue(cli.option_was_set(key_type_option, key_type_value))
 
         self.assertRaises(SystemExit, self.parse, "--key-type foo")
         self.assertRaises(errors.Error, self.parse, "--key-type ecdsa rsa")
