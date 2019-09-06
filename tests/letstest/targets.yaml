@@ -40,8 +40,13 @@ targets:
     #     - [ apt-get, install, -y, curl ]
   #-----------------------------------------------------------------------------
   # Other Redhat Distros
-  - ami: ami-a8d369c0
+  - ami: ami-0916c408cb02e310b
     name: RHEL7
+    type: centos
+    virt: hvm
+    user: ec2-user
+  - ami: ami-0c322300a1dd5dc79
+    name: RHEL8
     type: centos
     virt: hvm
     user: ec2-user

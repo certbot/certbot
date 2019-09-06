@@ -5,7 +5,6 @@
 """
 import logging
 import shutil
-import stat
 import sys
 import tempfile
 import unittest
@@ -339,16 +338,7 @@ class TempDirTestCase(unittest.TestCase):
         logging.getLogger().handlers = []
         util._release_locks()  # pylint: disable=protected-access
 
-        def handle_rw_files(_, path, __):
-            """Handle read-only files, that will fail to be removed on Windows."""
-            filesystem.chmod(path, stat.S_IWRITE)
-            try:
-                os.remove(path)
-            except (IOError, OSError):
-                # TODO: remote the try/except once all logic from windows file permissions is merged
-                if os.name != 'nt':
-                    raise
-        shutil.rmtree(self.tempdir, onerror=handle_rw_files)
+        shutil.rmtree(self.tempdir)
 
 
 class ConfigTestCase(TempDirTestCase):
@@ -419,15 +409,6 @@ def skip_on_windows(reason):
         """Wrapped version"""
         return unittest.skipIf(sys.platform == 'win32', reason)(function)
     return wrapper
-
-
-def broken_on_windows(function):
-    """Decorator to skip temporarily a broken test on Windows."""
-    reason = 'Test is broken and ignored on windows but should be fixed.'
-    return unittest.skipIf(
-        sys.platform == 'win32'
-        and os.environ.get('SKIP_BROKEN_TESTS_ON_WINDOWS', 'true') == 'true',
-        reason)(function)
 
 
 def temp_join(path):

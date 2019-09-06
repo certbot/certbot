@@ -23,21 +23,27 @@ PLUGINS = disco.PluginsRegistry.find_all()
 
 
 class TestReadFile(TempDirTestCase):
-    '''Test cli.read_file'''
-
-
+    """Test cli.read_file"""
     def test_read_file(self):
-        rel_test_path = os.path.relpath(os.path.join(self.tempdir, 'foo'))
-        self.assertRaises(
-            argparse.ArgumentTypeError, cli.read_file, rel_test_path)
+        curr_dir = os.getcwd()
+        try:
+            # On Windows current directory may be on a different drive than self.tempdir.
+            # However a relative path between two different drives is invalid. So we move to
+            # self.tempdir to ensure that we stay on the same drive.
+            os.chdir(self.tempdir)
+            rel_test_path = os.path.relpath(os.path.join(self.tempdir, 'foo'))
+            self.assertRaises(
+                argparse.ArgumentTypeError, cli.read_file, rel_test_path)
 
-        test_contents = b'bar\n'
-        with open(rel_test_path, 'wb') as f:
-            f.write(test_contents)
+            test_contents = b'bar\n'
+            with open(rel_test_path, 'wb') as f:
+                f.write(test_contents)
 
-        path, contents = cli.read_file(rel_test_path)
-        self.assertEqual(path, os.path.abspath(path))
-        self.assertEqual(contents, test_contents)
+            path, contents = cli.read_file(rel_test_path)
+            self.assertEqual(path, os.path.abspath(path))
+            self.assertEqual(contents, test_contents)
+        finally:
+            os.chdir(curr_dir)
 
 
 class FlagDefaultTest(unittest.TestCase):

@@ -11,6 +11,7 @@ from certbot import errors
 from certbot import interfaces
 from certbot import util
 from certbot.compat import os
+from certbot.compat import filesystem
 
 RSA256_KEY = test_util.load_vector('rsa256_key.pem')
 RSA256_KEY_PATH = test_util.vector_path('rsa256_key.pem')
@@ -29,6 +30,9 @@ class InitSaveKeyTest(test_util.TempDirTestCase):
     def setUp(self):
         super(InitSaveKeyTest, self).setUp()
 
+        self.workdir = os.path.join(self.tempdir, 'workdir')
+        filesystem.mkdir(self.workdir, mode=0o700)
+
         logging.disable(logging.CRITICAL)
         zope.component.provideUtility(
             mock.Mock(strict_permissions=True), interfaces.IConfig)
@@ -46,15 +50,15 @@ class InitSaveKeyTest(test_util.TempDirTestCase):
     @mock.patch('certbot.crypto_util.make_key')
     def test_success(self, mock_make):
         mock_make.return_value = b'key_pem'
-        key = self._call(1024, self.tempdir)
+        key = self._call(1024, self.workdir)
         self.assertEqual(key.pem, b'key_pem')
         self.assertTrue('key-certbot.pem' in key.file)
-        self.assertTrue(os.path.exists(os.path.join(self.tempdir, key.file)))
+        self.assertTrue(os.path.exists(os.path.join(self.workdir, key.file)))
 
     @mock.patch('certbot.crypto_util.make_key')
     def test_key_failure(self, mock_make):
         mock_make.side_effect = ValueError
-        self.assertRaises(ValueError, self._call, 431, self.tempdir)
+        self.assertRaises(ValueError, self._call, 431, self.workdir)
 
 
 class InitSaveCSRTest(test_util.TempDirTestCase):

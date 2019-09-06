@@ -23,6 +23,7 @@ from certbot import interfaces
 from certbot import util
 
 from certbot.achallenges import KeyAuthorizationAnnotatedChallenge  # pylint: disable=unused-import
+from certbot.compat import filesystem
 from certbot.compat import os
 from certbot.plugins import common
 from certbot.plugins.util import path_surgery
@@ -895,7 +896,7 @@ class ApacheConfigurator(common.Installer):
                 if not new_vhost:
                     continue
                 internal_path = apache_util.get_internal_aug_path(new_vhost.path)
-                realpath = os.path.realpath(new_vhost.filep)
+                realpath = filesystem.realpath(new_vhost.filep)
                 if realpath not in file_paths:
                     file_paths[realpath] = new_vhost.filep
                     internal_paths[realpath].add(internal_path)
@@ -1221,11 +1222,11 @@ class ApacheConfigurator(common.Installer):
         """
 
         if self.conf("vhost-root") and os.path.exists(self.conf("vhost-root")):
-            fp = os.path.join(os.path.realpath(self.option("vhost_root")),
+            fp = os.path.join(filesystem.realpath(self.option("vhost_root")),
                               os.path.basename(non_ssl_vh_fp))
         else:
             # Use non-ssl filepath
-            fp = os.path.realpath(non_ssl_vh_fp)
+            fp = filesystem.realpath(non_ssl_vh_fp)
 
         if fp.endswith(".conf"):
             return fp[:-(len(".conf"))] + self.option("le_vhost_ext")

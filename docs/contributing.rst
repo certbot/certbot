@@ -114,9 +114,9 @@ Once you are done with your code changes, and the tests in ``foo_test.py`` pass,
 run all of the unittests for Certbot with ``tox -e py27`` (this uses Python
 2.7).
 
-Once all the unittests pass, check for sufficient test coverage using
-``tox -e cover``, and then check for code style with ``tox -e lint`` (all files)
-or ``pylint --rcfile=.pylintrc path/to/file.py`` (single file at a time).
+Once all the unittests pass, check for sufficient test coverage using ``tox -e
+py27-cover``, and then check for code style with ``tox -e lint`` (all files) or
+``pylint --rcfile=.pylintrc path/to/file.py`` (single file at a time).
 
 Once all of the above is successful, you may run the full test suite using
 ``tox --skip-missing-interpreters``. We recommend running the commands above
@@ -176,7 +176,7 @@ that can be used once the virtual environment is activated:
 
 .. code-block:: shell
 
-    certbot_tests [ARGS...]
+    certbot_test [ARGS...]
 
 - Execute certbot with the provided arguments and other arguments useful for testing purposes,
   such as: verbose output, full tracebacks in case Certbot crashes, *etc.*

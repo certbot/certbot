@@ -2,7 +2,7 @@
 
 Certbot adheres to [Semantic Versioning](https://semver.org/).
 
-## 0.37.0 - master
+## 0.39.0 - master
 
 ### Added
 
@@ -18,11 +18,66 @@ Certbot adheres to [Semantic Versioning](https://semver.org/).
 
 More details about these changes can be found on our GitHub repo.
 
-## 0.37.0 - 2019-09-03
+
+## 0.39.0 - 2019-09-05
 
 ### Added
 * CLI flag `--key-type` has been added to specify 'rsa' or 'ecdsa' (default 'rsa').  Only accepts a single value at this time.
 * CLI flag `--ecdsa-key-size` has been added to specify bits for ECDSA type keys (default 384)
+
+## 0.38.0 - 2019-09-03
+
+### Added
+
+* Disable session tickets for Nginx users when appropriate.
+
+### Changed
+
+* If Certbot fails to rollback your server configuration, the error message
+  links to the Let's Encrypt forum. Change the link to the Help category now
+  that the Server category has been closed.
+* Replace platform.linux_distribution with distro.linux_distribution as a step
+  towards Python 3.8 support in Certbot.
+
+### Fixed
+
+* Fixed OS detection in the Apache plugin on Scientific Linux.
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.37.2 - 2019-08-21
+
+* Stop disabling TLS session tickets in Nginx as it caused TLS failures on
+  some systems.
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.37.1 - 2019-08-08
+
+### Fixed
+
+* Stop disabling TLS session tickets in Apache as it caused TLS failures on
+  some systems.
+
+More details about these changes can be found on our GitHub repo.
+
+## 0.37.0 - 2019-08-07
+
+### Added
+
+* Turn off session tickets for apache plugin by default
+* acme: Authz deactivation added to `acme` module.
+
+### Changed
+
+* Follow updated Mozilla recommendations for Nginx ssl_protocols, ssl_ciphers,
+  and ssl_prefer_server_ciphers
+
+### Fixed
+
+* Fix certbot-auto failures on RHEL 8.
+
+More details about these changes can be found on our GitHub repo.
 
 ## 0.36.0 - 2019-07-11
 

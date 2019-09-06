@@ -395,6 +395,68 @@ class NginxConfiguratorTest(util.NginxTest):
         self.assertRaises(errors.PluginError, self.config.get_version)
 
     @mock.patch("certbot_nginx.configurator.subprocess.Popen")
+    def test_get_openssl_version(self, mock_popen):
+        # pylint: disable=protected-access
+        mock_popen().communicate.return_value = (
+            "", """
+                nginx version: nginx/1.15.5
+                built by gcc 5.4.0 20160609 (Ubuntu 5.4.0-6ubuntu1~16.04.9)
+                built with OpenSSL 1.0.2g  1 Mar 2016
+                TLS SNI support enabled
+                configure arguments:
+            """)
+        self.assertEqual(self.config._get_openssl_version(), "1.0.2g")
+
+        mock_popen().communicate.return_value = (
+            "", """
+                nginx version: nginx/1.15.5
+                built by gcc 5.4.0 20160609 (Ubuntu 5.4.0-6ubuntu1~16.04.9)
+                built with OpenSSL 1.0.2-beta1  1 Mar 2016
+                TLS SNI support enabled
+                configure arguments:
+            """)
+        self.assertEqual(self.config._get_openssl_version(), "1.0.2-beta1")
+
+        mock_popen().communicate.return_value = (
+            "", """
+                nginx version: nginx/1.15.5
+                built by gcc 5.4.0 20160609 (Ubuntu 5.4.0-6ubuntu1~16.04.9)
+                built with OpenSSL 1.0.2  1 Mar 2016
+                TLS SNI support enabled
+                configure arguments:
+            """)
+        self.assertEqual(self.config._get_openssl_version(), "1.0.2")
+
+        mock_popen().communicate.return_value = (
+            "", """
+                nginx version: nginx/1.15.5
+                built by gcc 5.4.0 20160609 (Ubuntu 5.4.0-6ubuntu1~16.04.9)
+                built with OpenSSL 1.0.2g  1 Mar 2016 (running with OpenSSL 1.0.2a  1 Mar 2016)
+                TLS SNI support enabled
+                configure arguments:
+            """)
+        self.assertEqual(self.config._get_openssl_version(), "1.0.2a")
+
+        mock_popen().communicate.return_value = (
+            "", """
+                nginx version: nginx/1.15.5
+                built by gcc 5.4.0 20160609 (Ubuntu 5.4.0-6ubuntu1~16.04.9)
+                built with LibreSSL 2.2.2
+                TLS SNI support enabled
+                configure arguments:
+            """)
+        self.assertEqual(self.config._get_openssl_version(), "")
+
+        mock_popen().communicate.return_value = (
+            "", """
+                nginx version: nginx/1.15.5
+                built by gcc 5.4.0 20160609 (Ubuntu 5.4.0-6ubuntu1~16.04.9)
+                TLS SNI support enabled
+                configure arguments:
+            """)
+        self.assertEqual(self.config._get_openssl_version(), "")
+
+    @mock.patch("certbot_nginx.configurator.subprocess.Popen")
     def test_nginx_restart(self, mock_popen):
         mocked = mock_popen()
         mocked.communicate.return_value = ('', '')
@@ -920,13 +982,12 @@ class InstallSslOptionsConfTest(util.NginxTest):
         self._assert_current_file()
 
     def test_prev_file_updates_to_current_old_nginx(self):
-        from certbot_nginx.constants import ALL_SSL_OPTIONS_HASHES, SSL_OPTIONS_HASHES_NEW
+        from certbot_nginx.constants import ALL_SSL_OPTIONS_HASHES
         self.config.version = (1, 5, 8)
         with mock.patch('certbot.crypto_util.sha256sum',
                 new=self._mock_hash_except_ssl_conf_src(ALL_SSL_OPTIONS_HASHES[0])):
             self._call()
         self._assert_current_file()
-        self.assertTrue(self._current_ssl_options_hash() not in SSL_OPTIONS_HASHES_NEW)
 
     def test_manually_modified_current_file_does_not_update(self):
         with open(self.config.mod_ssl_conf, "a") as mod_ssl_conf:
@@ -963,15 +1024,50 @@ class InstallSslOptionsConfTest(util.NginxTest):
             "Constants.ALL_SSL_OPTIONS_HASHES must be appended"
             " with the sha256 hash of self.config.mod_ssl_conf when it is updated.")
 
-    def test_old_nginx_version_uses_old_config(self):
+    def test_ssl_config_files_hash_in_all_hashes(self):
+        """
+        It is really critical that all TLS Nginx config files have their SHA256 hash registered in
+        constants.ALL_SSL_OPTIONS_HASHES. Otherwise Certbot will mistakenly assume that the config
+        file has been manually edited by the user, and will refuse to update it.
+        This test ensures that all necessary hashes are present.
+        """
+        from certbot_nginx.constants import ALL_SSL_OPTIONS_HASHES
+        import pkg_resources
+        all_files = [
+            pkg_resources.resource_filename("certbot_nginx", os.path.join("tls_configs", x))
+            for x in ("options-ssl-nginx.conf",
+                      "options-ssl-nginx-old.conf",
+                      "options-ssl-nginx-tls12-only.conf")
+        ]
+        self.assertTrue(all_files)
+        for one_file in all_files:
+            file_hash = crypto_util.sha256sum(one_file)
+            self.assertTrue(file_hash in ALL_SSL_OPTIONS_HASHES,
+                            "Constants.ALL_SSL_OPTIONS_HASHES must be appended with the sha256 "
+                            "hash of {0} when it is updated.".format(one_file))
+
+    def test_nginx_version_uses_correct_config(self):
         self.config.version = (1, 5, 8)
+        self.config.openssl_version = "1.0.2g" # shouldn't matter
         self.assertEqual(os.path.basename(self.config.mod_ssl_conf_src),
                          "options-ssl-nginx-old.conf")
         self._call()
         self._assert_current_file()
         self.config.version = (1, 5, 9)
+        self.config.openssl_version = "1.0.2l"
+        self.assertEqual(os.path.basename(self.config.mod_ssl_conf_src),
+                         "options-ssl-nginx-tls12-only.conf")
+        self._call()
+        self._assert_current_file()
+        self.config.version = (1, 13, 0)
         self.assertEqual(os.path.basename(self.config.mod_ssl_conf_src),
                          "options-ssl-nginx.conf")
+        self._call()
+        self._assert_current_file()
+        self.config.version = (1, 13, 0)
+        self.config.openssl_version = "1.0.2k"
+        self.assertEqual(os.path.basename(self.config.mod_ssl_conf_src),
+                         "options-ssl-nginx-tls13-session-tix-on.conf")
 
 
 class DetermineDefaultServerRootTest(certbot_test_util.ConfigTestCase):

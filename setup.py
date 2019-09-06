@@ -41,6 +41,7 @@ install_requires = [
     'ConfigArgParse>=0.9.3',
     'configobj',
     'cryptography>=1.2.3',  # load_pem_x509_certificate
+    'distro>=1.0.1',
     # 1.1.0+ is required to avoid the warnings described at
     # https://github.com/certbot/josepy/issues/13.
     'josepy>=1.1.0',
@@ -59,7 +60,7 @@ install_requires = [
 # So this dependency is not added for old Linux distributions with old setuptools,
 # in order to allow these systems to build certbot from sources.
 if StrictVersion(setuptools_version) >= StrictVersion('36.2'):
-    install_requires.append("pywin32 ; sys_platform == 'win32'")
+    install_requires.append("pywin32>=224 ; sys_platform == 'win32'")
 elif 'bdist_wheel' in sys.argv[1:]:
     raise RuntimeError('Error, you are trying to build certbot wheels using an old version '
                        'of setuptools. Version 36.2+ of setuptools is required.')

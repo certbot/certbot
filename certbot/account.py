@@ -20,7 +20,6 @@ from certbot import constants
 from certbot import errors
 from certbot import interfaces
 from certbot import util
-from certbot.compat import misc
 from certbot.compat import os
 
 logger = logging.getLogger(__name__)
@@ -139,8 +138,7 @@ class AccountFileStorage(interfaces.AccountStorage):
     """
     def __init__(self, config):
         self.config = config
-        util.make_or_verify_dir(config.accounts_dir, 0o700, misc.os_geteuid(),
-                                self.config.strict_permissions)
+        util.make_or_verify_dir(config.accounts_dir, 0o700, self.config.strict_permissions)
 
     def _account_dir_path(self, account_id):
         return self._account_dir_path_for_server_path(account_id, self.config.server_path)
@@ -322,8 +320,7 @@ class AccountFileStorage(interfaces.AccountStorage):
 
     def _save(self, account, acme, regr_only):
         account_dir_path = self._account_dir_path(account.id)
-        util.make_or_verify_dir(account_dir_path, 0o700, misc.os_geteuid(),
-                                self.config.strict_permissions)
+        util.make_or_verify_dir(account_dir_path, 0o700, self.config.strict_permissions)
         try:
             with open(self._regr_path(account_dir_path), "w") as regr_file:
                 regr = account.regr

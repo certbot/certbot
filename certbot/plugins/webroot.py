@@ -24,6 +24,7 @@ from certbot.display import ops
 from certbot.display import util as display_util
 from certbot.plugins import common
 from certbot.plugins import util
+from certbot.util import safe_open
 
 logger = logging.getLogger(__name__)
 
@@ -207,7 +208,7 @@ to serve all files under specified web root ({0})."""
         old_umask = os.umask(0o022)
 
         try:
-            with open(validation_path, "wb") as validation_file:
+            with safe_open(validation_path, mode="wb", chmod=0o644) as validation_file:
                 validation_file.write(validation.encode())
         finally:
             os.umask(old_umask)
