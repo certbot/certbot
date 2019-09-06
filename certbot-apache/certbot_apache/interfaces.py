@@ -239,7 +239,7 @@ class CommentNode(ParserNode):
         super(CommentNode, self).__init__(ancestor=kwargs['ancestor'],
                                           dirty=kwargs.get('dirty', False),
                                           filepath=kwargs['filepath'],
-                                          metadata=kwargs.get('metadata', {})  # pragma: no cover
+                                          metadata=kwargs.get('metadata', {}))  # pragma: no cover
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -304,7 +304,7 @@ class DirectiveNode(ParserNode):
         super(DirectiveNode, self).__init__(ancestor=kwargs['ancestor'],
                                             dirty=kwargs.get('dirty', False),
                                             filepath=kwargs['filepath'],
-                                            metadata=kwargs.get('metadata', {})  # pragma: no cover
+                                            metadata=kwargs.get('metadata', {}))  # pragma: no cover
 
     @abc.abstractmethod
     def set_parameters(self, parameters):
