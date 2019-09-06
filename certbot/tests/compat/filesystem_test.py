@@ -150,7 +150,6 @@ class WindowsChmodTests(TempDirTestCase):
         self.assertEqual(security_dacl.GetSecurityDescriptorDacl().GetAceCount(), 2)
 
 
-@unittest.skipIf(POSIX_MODE, reason='Tests specific to Windows security')
 class ComputePrivateKeyModeTest(TempDirTestCase):
     def setUp(self):
         super(ComputePrivateKeyModeTest, self).setUp()

@@ -359,7 +359,8 @@ def compute_private_key_mode(old_key, base_mode):
 def has_same_ownership(path1, path2):
     # type: (str, str) -> bool
     """
-    Return True if the ownership of two files given their respective path is the same
+    Return True if the ownership of two files given their respective path is the same.
+    On Windows, ownership is checked against owner only, since files do not have a group owner.
     :param str path1: path to the first file
     :param str path2: path to the second file
     :return: True if both files have the same ownership, False otherwise
@@ -384,6 +385,7 @@ def has_min_permissions(path, min_mode):
     # type: (str, int) -> bool
     """
     Check if a file given its path has at least the permissions defined by the given minimal mode.
+    On Windows, group permissions are ignored since files do not have a group owner.
     :param str path: path to the file to check
     :param int min_mode: the minimal permissions expected
     :return: True if the file matches the minimal permissions expectations, False otherwise
