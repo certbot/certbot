@@ -46,6 +46,10 @@ matrix:
       <<: *not-on-master
     - python: "3.8-dev"
       dist: xenial
+      env: ACME_SERVER=pebble TOXENV=integration
+      <<: *not-on-master
+    - python: "3.8-dev"
+      dist: xenial
       env: TOXENV=py38
       <<: *not-on-master
 
