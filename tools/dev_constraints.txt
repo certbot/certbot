@@ -76,7 +76,7 @@ Sphinx==1.7.5
 sphinx-rtd-theme==0.2.4
 sphinxcontrib-websupport==1.0.1
 tldextract==2.2.0
-tox==2.9.1
+tox==3.14.0
 tqdm==4.19.4
 traitlets==4.3.2
 twine==1.11.0
