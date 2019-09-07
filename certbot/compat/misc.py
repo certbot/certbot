@@ -5,7 +5,6 @@ particular category.
 from __future__ import absolute_import
 
 import select
-import stat
 import sys
 
 try:
@@ -16,18 +15,6 @@ except ImportError:  # pragma: no cover
 
 from certbot import errors
 from certbot.compat import os
-
-
-# MASK_FOR_PRIVATE_KEY_PERMISSIONS defines what are the permissions flags to keep
-# when transferring the permissions from an old private key to a new one.
-if POSIX_MODE:
-    # On Linux, we keep read/write/execute permissions
-    # for group and read permissions for everybody.
-    MASK_FOR_PRIVATE_KEY_PERMISSIONS = stat.S_IRGRP | stat.S_IWGRP | stat.S_IXGRP | stat.S_IROTH
-else:
-    # On Windows, the mode returned by os.stat is not reliable,
-    # so we do not keep any permission from the previous private key.
-    MASK_FOR_PRIVATE_KEY_PERMISSIONS = 0
 
 
 # For Linux: define OS specific standard binary directories
