@@ -31,14 +31,28 @@ def parsernode_kwargs(kwargs):
     dictionary, and hence the returned dictionary should be used instead in the
     caller function instead of the original kwargs.
 
+    If metadata is provided, the otherwise required argument "filepath" may be
+    omitted if the implementation is able to extract its value from the metadata.
+    This usecase is handled within this function. Filepath defaults to None.
 
     :param dict kwargs: Keyword argument dictionary to validate.
 
     :returns: Tuple of validated and prepared arguments.
     """
+
+    # As many values of ParserNode instances can be derived from the metadata,
+    # (ancestor being a common exception here) make sure we permit it here as well.
+    if "metadata" in kwargs:
+        # Filepath can be derived from the metadata in Augeas implementation.
+        # Default is None, as in this case the responsibility of populating this
+        # variable lies on the implementation.
+        kwargs.setdefault("filepath", None)
+
     kwargs.setdefault("dirty", False)
-    kwargs = validate_kwargs(kwargs, ["ancestor", "dirty", "filepath"])
-    return kwargs["ancestor"], kwargs["dirty"], kwargs["filepath"]
+    kwargs.setdefault("metadata", {})
+
+    kwargs = validate_kwargs(kwargs, ["ancestor", "dirty", "filepath", "metadata"])
+    return kwargs["ancestor"], kwargs["dirty"], kwargs["filepath"], kwargs["metadata"]
 
 
 def commentnode_kwargs(kwargs):
@@ -48,13 +62,29 @@ def commentnode_kwargs(kwargs):
     returned dictionary should be used instead in the caller function instead of
     the original kwargs.
 
+    If metadata is provided, the otherwise required argument "comment" may be
+    omitted if the implementation is able to extract its value from the metadata.
+    This usecase is handled within this function.
 
     :param dict kwargs: Keyword argument dictionary to validate.
 
     :returns: Tuple of validated and prepared arguments and ParserNode kwargs.
     """
+
+    # As many values of ParserNode instances can be derived from the metadata,
+    # (ancestor being a common exception here) make sure we permit it here as well.
+    if "metadata" in kwargs:
+        kwargs.setdefault("comment", None)
+        # Filepath can be derived from the metadata in Augeas implementation.
+        # Default is None, as in this case the responsibility of populating this
+        # variable lies on the implementation.
+        kwargs.setdefault("filepath", None)
+
     kwargs.setdefault("dirty", False)
-    kwargs = validate_kwargs(kwargs, ["ancestor", "dirty", "filepath", "comment"])
+    kwargs.setdefault("metadata", {})
+
+    kwargs = validate_kwargs(kwargs, ["ancestor", "dirty", "filepath", "comment",
+                                      "metadata"])
 
     comment = kwargs.pop("comment")
     return comment, kwargs
@@ -67,17 +97,31 @@ def directivenode_kwargs(kwargs):
     dictionary, and hence the returned dictionary should be used instead in the
     caller function instead of the original kwargs.
 
+    If metadata is provided, the otherwise required argument "name" may be
+    omitted if the implementation is able to extract its value from the metadata.
+    This usecase is handled within this function.
+
     :param dict kwargs: Keyword argument dictionary to validate.
 
     :returns: Tuple of validated and prepared arguments and ParserNode kwargs.
     """
 
+    # As many values of ParserNode instances can be derived from the metadata,
+    # (ancestor being a common exception here) make sure we permit it here as well.
+    if "metadata" in kwargs:
+        kwargs.setdefault("name", None)
+        # Filepath can be derived from the metadata in Augeas implementation.
+        # Default is None, as in this case the responsibility of populating this
+        # variable lies on the implementation.
+        kwargs.setdefault("filepath", None)
+
     kwargs.setdefault("dirty", False)
     kwargs.setdefault("enabled", True)
     kwargs.setdefault("parameters", ())
+    kwargs.setdefault("metadata", {})
 
     kwargs = validate_kwargs(kwargs, ["ancestor", "dirty", "filepath", "name",
-                                      "parameters", "enabled"])
+                                      "parameters", "enabled", "metadata"])
 
     name = kwargs.pop("name")
     parameters = kwargs.pop("parameters")

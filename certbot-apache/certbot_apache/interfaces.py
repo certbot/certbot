@@ -45,8 +45,10 @@ and any other information relevant to the underlying parser engine.
 
 Access to the metadata should be handled by implementation specific methods, allowing
 the Configurator functionality to access the underlying information where needed.
-A good example of this is file path of a node - something that is needed by the
-reverter functionality within the Configurator.
+
+For some implementations the node can be initialized using the information carried
+in metadata alone. This is useful especially when populating the ParserNode tree
+while parsing the configuration.
 
 
 Apache implementation
@@ -54,6 +56,20 @@ Apache implementation
 
 The Apache implementation of ParserNode interface requires some implementation
 specific functionalities that are not described by the interface itself.
+
+Initialization
+
+When the user of a ParserNode class is creating these objects, they must specify
+the parameters as described in the documentation for the __init__ methods below.
+When these objects are created internally, however, some parameters may not be
+needed because (possibly more detailed) information is included in the metadata
+parameter. In this case, implementations can deviate from the required parameters
+from __init__, however, they should still behave the same when metadata is not
+provided.
+
+For consistency internally, if an argument is provided directly in the ParserNode
+initialization parameters as well as within metadata it's recommended to establish
+clear behavior around this scenario within the implementation.
 
 Conditional blocks
 
@@ -86,7 +102,7 @@ For this reason the internal representation of data should not ignore the case.
 import abc
 import six
 
-from acme.magic_typing import Optional, Tuple  # pylint: disable=unused-import, no-name-in-module
+from acme.magic_typing import Any, Dict, Optional, Tuple  # pylint: disable=unused-import, no-name-in-module
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -127,6 +143,10 @@ class ParserNode(object):
     # configuration file. Filepath can be None if a configuration directive is
     # defined in for example the httpd command line.
     filepath: Optional[str]
+
+    # Metadata dictionary holds all the implementation specific key-value pairs
+    # for the ParserNode instance.
+    metadata: Dict[str, Any]
     """
 
     @abc.abstractmethod
@@ -146,6 +166,11 @@ class ParserNode(object):
         :param dirty: Boolean flag for denoting if this CommentNode has been
             created or changed after the last save. Default: False.
         :type dirty: bool
+
+        :param metadata: Dictionary of metadata values for this ParserNode object.
+            Metadata information should be used only internally in the implementation.
+            Default: {}
+        :type metadata: dict
         """
 
     @abc.abstractmethod
@@ -209,7 +234,8 @@ class CommentNode(ParserNode):
         """
         super(CommentNode, self).__init__(ancestor=kwargs['ancestor'],
                                           dirty=kwargs.get('dirty', False),
-                                          filepath=kwargs['filepath'])  # pragma: no cover
+                                          filepath=kwargs['filepath'],
+                                          metadata=kwargs.get('metadata', {}))  # pragma: no cover
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -273,7 +299,8 @@ class DirectiveNode(ParserNode):
         """
         super(DirectiveNode, self).__init__(ancestor=kwargs['ancestor'],
                                             dirty=kwargs.get('dirty', False),
-                                            filepath=kwargs['filepath'])  # pragma: no cover
+                                            filepath=kwargs['filepath'],
+                                            metadata=kwargs.get('metadata', {}))  # pragma: no cover
 
     @abc.abstractmethod
     def set_parameters(self, parameters):
