@@ -16,9 +16,9 @@ jobs:
       inputs:
         versionSpec: 3.7
         addToPath: true
-    - script: windows-installer/construct.py
+    - script: python windows-installer/construct.py
       displayName: Install NSIS
-    - script: (build/certbot-*-installer-*.exe) /SD
+    - bash: (build/certbot-*-installer-*.exe) /SD
       displayName: Run Certbot installer
     - script: certbot --version
       displayName: Check certbot availability
