@@ -62,7 +62,7 @@ Initialization
 When the user of a ParserNode class is creating these objects, they must specify
 the parameters as described in the documentation for the __init__ methods below.
 When these objects are created internally, however, some parameters may not be
-needed because (possible more detailed) information is included in the metadata
+needed because (possibly more detailed) information is included in the metadata
 parameter. In this case, implementations can deviate from the required parameters
 from __init__, however, they should still behave the same when metadata is not
 provided.
