@@ -19,7 +19,7 @@ jobs:
         addToPath: true
     - script: python windows-installer/construct.py
       displayName: Install NSIS
-    - bash: cmd.exe /C "(build/certbot-*-installer-*.exe) /SD"
+    - bash: (build/certbot-*-installer-*.exe) \/SD
       displayName: Run Certbot installer
     - script: certbot --version
       displayName: Check certbot availability
