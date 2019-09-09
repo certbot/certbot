@@ -71,10 +71,6 @@ For consistency internally, if an argument is provided directly in the ParserNod
 initialization parameters as well as within metadata it's recommended to establish
 clear behavior around this scenario within the implementation.
 
-If an argument is provided directly in the ParserNode initialization parameters
-as well as within metadata it's important to establish clear precedence rules around
-this scenario within the implementation.
-
 Conditional blocks
 
 Apache configuration can have conditional blocks, for example: <IfModule ...>,
