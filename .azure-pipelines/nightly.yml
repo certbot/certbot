@@ -6,7 +6,7 @@ schedules:
     - master
 
 jobs:
-  - template: .azure-pipelines/templates/standard.yml
+  - template: templates/standard.yml
 
   - job: installer
     pool:

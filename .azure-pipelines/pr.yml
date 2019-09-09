@@ -5,4 +5,4 @@ trigger:
 - master
 
 jobs:
-- template: .azure-pipelines/templates/standard.yml
+- template: templates/standard.yml
