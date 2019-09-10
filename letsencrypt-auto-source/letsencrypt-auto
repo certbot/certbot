@@ -529,6 +529,10 @@ BootstrapRpmPython3Legacy() {
     exit 1
   fi
 
+  # Try now to enable SCL rh-python36 for systems that are not yet bootstrapped
+  # NB: function EnablePython36SCL has been defined along with BootstrapRpmPython3Legacy in certbot-auto
+  EnablePython36SCL
+
   BootstrapRpmCommonBase "${python_pkgs}"
 }
 
@@ -812,15 +816,25 @@ elif [ -f /etc/redhat-release ]; then
       BootstrapMessage "Legacy Red Hat-based OSes that will use Python3"
       BootstrapRpmPython3Legacy
     }
+    EnablePython36SCL() {
+      # Do nothing if Python 3.6 is already available
+      if ! python3.6 --version > /dev/null 2> /dev/null; then
+        # Do nothing if SCL Python 3.6 is not installed
+        if [ -f /opt/rh/rh-python36/enable ]; then
+          source /opt/rh/rh-python36/enable
+        fi
+      fi
+    }
     USE_PYTHON_3=1
     BOOTSTRAP_VERSION="BootstrapRpmPython3Legacy $BOOTSTRAP_RPM_PYTHON3_LEGACY_VERSION"
-    # Enable SCL rh-python36
-    source scl_source enable rh-python36
+
+    # Try now to enable SCL rh-python36 for systems already bootstrapped
+    EnablePython36SCL
   else
     # Starting to Fedora 29, python2 is on a deprecation path. Let's move to python3 then.
     # RHEL 8 also uses python3 by default.
     if [ "$RPM_DIST_NAME" = "fedora" -a "$RPM_DIST_VERSION" -ge 29 ]; then
-      RPM_USE_PYTHON_3=1
+      RPM_USE_PYTHON_
     elif [ "$RPM_DIST_NAME" = "rhel" -a "$RPM_DIST_VERSION" -ge 8 ]; then
       RPM_USE_PYTHON_3=1
     else

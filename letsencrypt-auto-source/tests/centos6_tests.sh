@@ -56,7 +56,7 @@ if ! "$LE_AUTO" 2>&1 | grep -q "WARNING: couldn't find Python"; then
 fi
 
 # Enable SCL rh-python36
-source scl_source enable rh-python36
+source /opt/rh/rh-python36/enable
 
 # bootstrap from the old letsencrypt-auto, this time installing python3.4
 "$LE_AUTO_PY_34" --no-self-upgrade -n > /dev/null 2> /dev/null

@@ -39,5 +39,9 @@ BootstrapRpmPython3Legacy() {
     exit 1
   fi
 
+  # Try now to enable SCL rh-python36 for systems that are not yet bootstrapped
+  # NB: function EnablePython36SCL has been defined along with BootstrapRpmPython3Legacy in certbot-auto
+  EnablePython36SCL
+
   BootstrapRpmCommonBase "${python_pkgs}"
 }
