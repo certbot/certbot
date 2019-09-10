@@ -55,6 +55,24 @@ if ! "$LE_AUTO" 2>&1 | grep -q "WARNING: couldn't find Python"; then
   exit 1
 fi
 
+# As "certbot-auto" (so without implicit --non-interactive flag set), check that the script
+# refuses to install SCL Python 3.6 when run in a non interactive shell (simulated here
+# using | tee /dev/null) if --non-interactive flag is not provided.
+cp "$LE_AUTO" /tmp/certbot-auto
+cat > /tmp/run.sh << UNLIKELY_EOF
+#!/bin/bash
+/tmp/certbot-auto > /dev/null 2> /dev/null
+UNLIKELY_EOF
+chmod +x /tmp/run.sh
+/tmp/run.sh | tee /dev/null
+rm -f /tmp/certbot-auto /tmp/run.sh
+if [ -f /opt/rh/rh-python36/enable ]; then
+  echo "ERROR: certbot-auto installed Python3.6 in a non-interactive shell with --non-interactive flag not set."
+  exit 1
+fi
+
+echo "PASSED: certbot-auto did not installed Python3.6 in a non-interactive shell with --non-interactive flag not set."
+
 # bootstrap from the old letsencrypt-auto, this time installing python3.4
 "$LE_AUTO_PY_34" --no-self-upgrade -n > /dev/null 2> /dev/null
 
