@@ -68,6 +68,10 @@ matrix:
       dist: xenial
       env: TOXENV=py37
       <<: *not-on-master
+    - python: "3.8-dev"
+      dist: xenial
+      env: TOXENV=py38
+      <<: *not-on-master
     - sudo: required
       env: TOXENV=apache_compat
       services: docker
@@ -159,6 +163,10 @@ matrix:
     - python: "3.7"
       dist: xenial
       env: TOXENV=py37
+      <<: *extended-test-suite
+    - python: "3.8-dev"
+      dist: xenial
+      env: TOXENV=py38
       <<: *extended-test-suite
     - python: "3.4"
       env: ACME_SERVER=boulder-v1 TOXENV=clean,integration,integration-report
